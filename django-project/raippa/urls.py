@@ -6,6 +6,9 @@ admin.autodiscover()
 
 urlpatterns = patterns('',
     url(r'^courses/$', 'courses.views.index'),
+    url(r'^courses/(?P<course_name>.+)/$', 'courses.views.course'),
+    url(r'^courses/(?P<course_name>.+)/(?P<incarnation_name>.+)/$', 'courses.views.incarnation'),
+    url(r'^courses/(?P<course_name>.+)/(?P<incarnation_name>.+)/(?P<content_name>.+)/$', 'courses.views.content'),
     # Examples:
     # url(r'^$', 'raippa.views.home', name='home'),
     # url(r'^raippa/', include('raippa.foo.urls')),

@@ -12,4 +12,13 @@ def index(request):
     })
     return HttpResponse(t.render(c))
 
+def course(request, course_name):
+    pass
+
+def incarnation(request, course_name, incarnation_name):
+    pass
+
+def content(request, course_name, incarnation_name, content_name):
+    pass
+
 # Create your views here.

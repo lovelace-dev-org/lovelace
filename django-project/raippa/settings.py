@@ -12,7 +12,7 @@ MANAGERS = ADMINS
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3', # TODO: Change to 'postgresql_psycopg2' when migrating to PostgreSQL.
-        'NAME': '/home/mdf/projects/raippa/sqlite3.db', # Path to database file if using sqlite3. TODO: Migrate to psql.
+        'NAME': '/home/mdf/projects/raippa_ng/django-project/sqlite3.db', # Path to database file if using sqlite3. TODO: Migrate to psql.
         'USER': '',                      # Not used with sqlite3.
         'PASSWORD': '',                  # Not used with sqlite3.
         'HOST': '',                      # Set to empty string for localhost. Not used with sqlite3.
@@ -48,7 +48,7 @@ USE_TZ = True
 
 # Absolute filesystem path to the directory that will hold user-uploaded files.
 # Example: "/home/media/media.lawrence.com/media/"
-MEDIA_ROOT = '/home/mdf/projects/raippa/upload/'
+MEDIA_ROOT = '/home/mdf/projects/raippa_ng/django-project/upload/'
 
 # URL that handles the media served from MEDIA_ROOT. Make sure to use a
 # trailing slash.
@@ -106,7 +106,7 @@ ROOT_URLCONF = 'raippa.urls'
 WSGI_APPLICATION = 'raippa.wsgi.application'
 
 TEMPLATE_DIRS = (
-    '/home/mdf/projects/raippa/templates/',
+    '/home/mdf/projects/raippa_ng/django-project/templates/',
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
