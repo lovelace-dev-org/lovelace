@@ -1,0 +1,20 @@
+= Biggest heading =
+
+some content
+
+== Bigger heading ==
+
+some more content
+
+=== Big heading ===
+
+content, content, content
+
+==== Small heading ====
+
+little content
+
+{{{
+some code here
+more code
+}}}
