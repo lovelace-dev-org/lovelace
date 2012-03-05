@@ -18,14 +18,37 @@
 	
 	{% include "courses/nav-bar.html" %}
 
-	<section><!-- The RAiPPA content -->
-		<h1>Lecture 1</h1>
-		<div>
-			Lorem ipsum.
-		</div>
-		<form class="feedback">
-			<input type="submit">
-		</form>
+	<section class="page_content"><!-- The RAiPPA content -->
+          {% if course_list %}
+		<h1>Available courses</h1>
+		<ul>
+                  {% for course in course_list %}
+                    <li><a href="/courses/{{ course.name }}/">{{ course.name }}</a></li>
+                  {% endfor %}
+		</ul>
+          {% endif %}
+          
+          {% if incarnation_list %}
+                <h1>Select incarnation</h1>
+                <ul>
+                  {% for incarnation in incarnation_list %}
+                    <li><a href="/courses/{{ course.name }}/{{ incarnation.name }}/">{{ incarnation.name }}</a></li>
+                  {% endfor %}
+                </ul>
+          {% endif %}
+          
+          {% if content_list %}
+                <h1>Available content on this course</h1>
+                <ul>
+                  {% for content in content_list %}
+                    <li><a href="/courses/{{ course.name }}/{{ incarnation.name }}/{{ content.name }}/">{{ content.name }}</a></li>
+                  {% endfor %}
+                </ul>
+          {% endif %}
+
+          {% if content %}
+            {{ content|safe }}
+          {% endif %}
 	</section>
 	
 	<footer><!-- The footer -->

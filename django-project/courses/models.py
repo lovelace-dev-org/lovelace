@@ -45,12 +45,17 @@ class Incarnation(models.Model):
     A user or a group can be in charge of a course incarnation."""
     
     course = models.ForeignKey(Course)
+    name = models.CharField(max_length=200)
     frozen = models.BooleanField() # If no changes are possible to this instance of the course
     start_date = models.DateTimeField('course begin date')
     end_date = models.DateTimeField('course end date')
 
     def __unicode__(self):
-        return str(self.start_date)
+        return self.name
+
+import os
+def get_upload_path(instance, filename):
+    return os.path.join("%s" % instance.course.name, filename)
 
 class File(models.Model):
     """Metadata of a file that a user has uploaded."""
@@ -61,8 +66,11 @@ class File(models.Model):
     date_uploaded = models.DateTimeField('date uploaded')
     name = models.CharField(max_length=200)
     typeinfo = models.CharField(max_length=200)
-    fileinfo = models.FileField(upload_to='%s/files' % course.name) # TODO: Can this cause problems if course.name has /?
+    fileinfo = models.FileField(upload_to=get_upload_path) # TODO: Can this cause problems if course.name has /?
     # https://docs.djangoproject.com/en/dev/ref/models/fields/#filefield
+
+    def __unicode__(self):
+        return self.name
 
 class ContentGraph(models.Model):
     """Defines the tree (or the graph) of the course content."""
@@ -76,7 +84,14 @@ class ContentPage(models.Model):
     """A single content containing page of a course.
 
     May be a part of a course incarnation graph."""
+    course = models.ForeignKey(Course)
+    incarnation = models.ForeignKey(Incarnation)
+
+    name = models.CharField(max_length=200)
     content = models.TextField()
+
+    def __unicode__(self):
+        return self.name
 
 class LecturePage(ContentPage):
     """A single page from a lecture."""

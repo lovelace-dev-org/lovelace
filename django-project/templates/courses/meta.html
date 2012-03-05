@@ -14,5 +14,9 @@
   
   <script type="text/javascript" src="{{ STATIC_URL}}raippa.js" charset="UTF-8"></script>
   
-  <title>Raippa page template</title>
+  {% if title %}
+    <title>Raippa - {{ title }}</title>
+  {% else %}
+    <title>Raippa</title>
+  {% endif %}
 </head>
