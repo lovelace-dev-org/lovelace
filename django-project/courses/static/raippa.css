@@ -168,6 +168,11 @@ section.page_content {
             padding-bottom: 15px;
         }
 
+        section.page div {
+            padding-bottom: 15px;
+            padding-right: 15px;
+        }
+
 	section.page_content form.feedback {
 	}
 

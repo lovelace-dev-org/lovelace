@@ -1,4 +1,5 @@
 <head>
+  {% include "courses/meta-block.html" %}
   <meta charset="UTF-8" />
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
   <meta http-equiv="Content-Style-Type" content="text/css" />
@@ -12,7 +13,7 @@
   <link rel="shortcut icon" href="{{ STATIC_URL }}favicon.png" type="image/png" />
   <link rel="stylesheet" href="{{ STATIC_URL }}raippa.css" type="text/css" />
   
-  <script type="text/javascript" src="{{ STATIC_URL}}raippa.js" charset="UTF-8"></script>
+  <script type="text/javascript" src="{{ STATIC_URL }}raippa.js" charset="UTF-8"></script>
   
   {% if title %}
     <title>Raippa - {{ title }}</title>

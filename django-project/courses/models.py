@@ -3,19 +3,19 @@ from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 
 # http://stackoverflow.com/questions/44109/extending-the-user-model-with-custom-fields-in-django
-class UserProfile(models.Model):
-    """The user profile."""
-    user = models.OneToOneField(User)
-    student_id = models.IntegerField()
+#class UserProfile(models.Model):
+#    """The user profile."""
+#    user = models.OneToOneField(User)
+#    student_id = models.IntegerField()
+#
+#    def __unicode__(self):
+#        return "%s's profile" % self.user
 
-    def __unicode__(self):
-        return "%s's profile" % self.user
+#def create_user_profile(sender, instance, created, **kwargs):
+#    if created:
+#        profile, created = UserProfile.objects.get_or_create(user=instance)
 
-def create_user_profile(sender, instance, created, **kwargs):
-    if created:
-        profile, created = UserProfile.objects.get_or_create(user=instance)
-
-post_save.connect(create_user_profile, sender=User)
+#post_save.connect(create_user_profile, sender=User)
 
 class Course(models.Model):
     """A single course in the system.
@@ -99,7 +99,7 @@ class LecturePage(ContentPage):
 
 class TaskPage(ContentPage):
     """A single task."""
-    pass
+    question = models.TextField()
 
 class RadiobuttonTask(TaskPage):
     pass
@@ -116,3 +116,15 @@ class FileTask(TaskPage):
 class FileTaskTest(models.Model):
     pass
 
+class TextFieldTaskAnswer(models.Model):
+    task = models.ForeignKey(TaskPage)
+    correct = models.BooleanField()
+    regexp = models.BooleanField()
+    answer = models.TextField()
+    hint = models.TextField()
+
+class ChoiceTaskAnswer(models.Model):
+    task = models.ForeignKey(TaskPage)
+    correct = models.BooleanField()
+    answer = models.TextField()
+    hint = models.TextField()

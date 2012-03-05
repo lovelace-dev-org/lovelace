@@ -52,6 +52,8 @@ def incarnation(request, course_name, incarnation_name):
 
 def content(request, course_name, incarnation_name, content_name, **kwargs):
     import re
+    import codecs
+    import os
 
     selected_course = Course.objects.get(name=course_name)
     selected_incarnation = Incarnation.objects.get(course=selected_course.id, name=incarnation_name)
@@ -62,11 +64,15 @@ def content(request, course_name, incarnation_name, content_name, **kwargs):
 
     rendered_content = u''
     unparsed_content = re.split(r"\r\n|\r|\n", content.content)
-    print unparsed_content
 
     parser = content_parser.ContentParser(iter(unparsed_content))
     parser.set_fileroot(kwargs["media_root"])
     for line in parser.parse():
+        include_file_re = re.match("{{\s+(?P<filename>.+)\s+}}", line)
+        if include_file_re:
+            if include_file_re.group("filename") == parser.get_current_filename():
+                file_contents = codecs.open(os.path.join(kwargs["media_root"], course_name, include_file_re.group("filename")), "r", "utf-8").read()
+                line = line.replace(include_file_re.group(0), file_contents)
         rendered_content += line
 
     t = loader.get_template("courses/index.html")
