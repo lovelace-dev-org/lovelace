@@ -1,53 +1,13 @@
-<!DOCTYPE html>
-<!-- https://gist.github.com/889703 -->
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>Blockcode</title>
-    <style type="text/css"><!--
-        * {
-                        -moz-box-sizing: border-box;
-                        -webkit-box-sizing: border-box;
-                        box-sizing: border-box;
-                        margin: 0px;
-                        padding: 0px;
-                }
-                /* */ -->
-        </style>
-        <link rel="stylesheet" href="blockcode.css" type="text/css" />
-
-    <!--[if IE]>
-		<meta http-equiv="X-UA-Compatible" content="IE=Edge">
-    	<script type="text/javascript" src="iecompat.js"></script>
-    <![endif]-->
-    <script type="text/javascript" src="jquery-1.7.1.min.js"></script>
-    <script type="text/javascript" src="blockcode.js"></script>
-    <script type="text/javascript"><!--
-	    $(document).ready(function() {
-		addLineNumbers();
-		setColumnWidths();
-		setLineWidths();
-		setPreHeights();
-	    });
-	    //-->
-	</script>
-</head>
-<body>
-    <p>Tässäpä mainio pätkä koodia! Kokeilehan toki.</p>
-    
     <div class="blockcode">
     <section>
     <div class="heading">
     	<header>
-	    	<h1 class="codeheading"><a href="esimerkki.py" title="Download esimerkki.py">&gt;&gt; esimerkki.py</a>&nbsp; – &nbsp;Python source code</h1>
+	    	<h1 class="codeheading"><a href="{{ filename }}" title="Download {{ filename }}">&gt;&gt; {{ filename }} </a>&nbsp; – &nbsp;Python source code</h1>
     	</header>
     </div>
-    <pre><code class="Python"># -*- coding: iso-8859-1 -*-
-# Luodaan lista kalusteista ja tallennetaan se muuttujaan huonekalut
-huonekalut = ["tuoli", "pöytä", "lamppu", "sänky", "peili"]
+    <pre><code class="Python">
 
-<span style="color: blue;">for</span> indeksi, kaluste in enumerate(huonekalut):
-    print "Huonekalu nro. %d on %s" % (indeksi, kaluste)</code></pre>
+    </code></pre>
     </section>
     </div>
     
