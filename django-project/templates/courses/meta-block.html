@@ -1,0 +1,16 @@
+<link rel="stylesheet" href="{{ STATIC_URL }}blockcode.css" type="text/css" />
+<!--[if IE]>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+    <script type="text/javascript" src="{{ STATIC_URL }}iecompat.js"></script>
+<![endif]-->
+<script type="text/javascript" src="{{ STATIC_URL }}jquery-1.7.1.min.js"></script>
+<script type="text/javascript" src="{{ STATIC_URL }}blockcode.js"></script>
+<script type="text/javascript"><!--
+    $(document).ready(function() {
+        addLineNumbers();
+        setColumnWidths();
+        setLineWidths();
+        setPreHeights();
+    });
+//-->
+</script>
