@@ -48,19 +48,14 @@ admin.site.register(CheckboxTask, CheckboxTaskAdmin)
 admin.site.register(TextfieldTask, TextfieldTaskAdmin)
 admin.site.register(File)
 
-class ContentGraphNodeInline(admin.TabularInline):
-    model = ContentGraphNode
+class ContentGraphNodeAdmin(admin.ModelAdmin):
+    pass
 
 class ContentGraphAdmin(admin.ModelAdmin):
-    inlines = [ContentGraphNodeInline]
+    pass
 
-class ContentGraphNodeAdmin(admin.ModelAdmin):
-    inlines = [
-        ContentGraphNodeInline,
-    ]
-
-admin.site.register(ContentGraphNode, ContentGraphNodeAdmin)
 admin.site.register(ContentGraph, ContentGraphAdmin)
+admin.site.register(ContentGraphNode, ContentGraphNodeAdmin)
 
 # http://jeffelmore.org/2010/11/11/automatic-downcasting-of-inherited-models-in-django/
 #class AbstractQuestionAdmin(admin.ModelAdmin):

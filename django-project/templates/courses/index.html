@@ -49,6 +49,19 @@
                 </ul>
           {% endif %}
 
+          {% if content_tree %}
+            <h1>Training path</h1>
+            {% for list_direction in content_tree %}
+              {% if list_direction == '>' %}
+                <ul>
+              {% elif list_direction == '<' %}
+                </ul>
+              {% else %}
+                <li><a href="/training/{{ course.name }}/{{ incarnation.name }}/{{ list_direction.name }}/">{{ list_direction.name }}</a></li>
+              {% endif %}
+            {% endfor %}
+          {% endif %}
+
           {% if content %}
             {{ content|safe }}
             {% if tasktype %}

@@ -3,9 +3,10 @@
     {% csrf_token %}
     <fieldset>
       <legend>User login</legend>
+      <div>No account? <a href="">Create</a> one!<br /></div>
       <label for="username">Username:</label><input type="text" id="username" name="username" /><br />
       <label for="password">Password:</label><input type="password" id="password" name="password" /><br />
-      <a href="">Create a new account</a><input type="submit" value="Login" id="loginbutton" />
+      <input type="submit" value="Login" id="loginbutton" />
     </fieldset>
   </form>
 </div>

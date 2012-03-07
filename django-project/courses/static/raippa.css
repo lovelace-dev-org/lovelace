@@ -12,16 +12,17 @@
 	padding: 0px;
 }
 
-body {/*
-	min-height: 100%;
-	width: 100%;
-	height: 100%;*/
+html {
+    height: 100%;
 }
 
-div#container {/*
-	min-height: 800px;
-	height: 100%;
-	width: 100%;*/
+body {
+    height: 100%;
+}
+
+div#container {
+    position: relative;
+    min-height: 100%;
 }
 
 /* HEADER */
@@ -54,9 +55,6 @@ header.header {
 		font-weight: normal;
 		font-size: 50px;
 		display: inline-block;
-/*		position: absolute;
-		left: 40px;
-		top: 20px;*/
 	}
 	
 	header.header heading h2 {
@@ -87,7 +85,16 @@ header.header {
 		-moz-border-radius: 10px;
 		border-radius: 10px;
 	}
-	
+
+        header.header div.login form fieldset div {
+            position: absolute;
+            left: 5px;
+            bottom: 5px;
+        }
+        header.header div.login form fieldset div a {
+	    color: #99f;
+        }
+
 	header.header div.login form label {
 		display: block;
 		float: left;
@@ -100,21 +107,20 @@ header.header {
 	}
 	
 	header.header div.login form input#loginbutton {
-		/*font-size: 10px;*/
+            float: right;
 	}
 
 /* NAVIGATION */
 nav.main-nav {
 	background: #5c5;
 	left: 0px;
-/*	width: 100%;*/
 	height: 2em;
 }
 
 	nav.main-nav ul {
 		height: 2em;
 		position: relative;
-		left: 40px;
+		margin-left: 40px;
 		top: 0px;
 		height: 100%;
 	}
@@ -152,9 +158,10 @@ nav.main-nav {
 section.page_content {
 	top: 0px;
 	background: #fff;
-	min-height: 42em;
         margin-left: 40px;
+        margin-right: 40px;
         font-family: arial;
+        padding-bottom: 4em; /* Size of footer */
 }
 
         section.page_content h1,h2,h3,h4,h5,h6 {
@@ -167,13 +174,18 @@ section.page_content {
             margin-bottom: 5px;
         }
 
-        section.page_content div {
+        section.page_content div.normal {
             margin-bottom: 15px;
             margin-right: 15px;
         }
 
-        section.page_content li {
-            margin-left: 40px;
+        section.page_content ul {
+            padding-left: 15px;
+            font-size: 10pt;
+        }
+        
+        ul ul {
+            padding-left: 15px;
             font-size: 10pt;
         }
 
@@ -189,7 +201,7 @@ section.page_content {
             font-size: 10pt;
         }
 
-	section.page_content pre {
+	section.page_content pre.normal {
 		white-space: pre;
 		overflow-x: auto;
 		width: auto;
@@ -200,6 +212,7 @@ section.page_content {
 		font-size: 12px;
                 margin-top: 10px;
                 margin-bottom: 10px;
+                padding: 5px;
 	}
 
 /* FOOTER */
@@ -207,9 +220,10 @@ footer {
 	font-family: arial, sans-serif;
 	font-size: 12px;
 	background: #7d7;
-/*	clear: both;
-	width: 100%;*/
+        position: absolute;
+        bottom: 0;
 	height: 4em;
+        width: 100%;
 }
 
 	footer div {

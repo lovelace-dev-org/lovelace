@@ -77,7 +77,7 @@ class ContentParser(object):
 
     def block_code(self, block, settings):
         for part in block:
-            yield u'<pre>'
+            yield u'<pre class="normal">'
             line = self.lines.next()
             while not line.startswith("}}}"):
                 yield line + "\n"

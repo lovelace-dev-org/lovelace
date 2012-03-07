@@ -135,13 +135,22 @@ class Incarnation(models.Model):
         return self.name
 
 class ContentGraphNode(models.Model):
-    parentnode = models.ForeignKey('self', blank=True)
-    content = models.OneToOneField(ContentPage)
+    incarnation = models.ForeignKey(Incarnation)
+    parentnode = models.ForeignKey('self', null=True, blank=True)
+    content = models.ForeignKey(ContentPage)
+    name = models.CharField(max_length=30)
+
+    def __unicode__(self):
+        return self.name
 
 class ContentGraph(models.Model):
     """Defines the tree (or the graph) of the course content."""
     incarnation = models.ForeignKey(Incarnation)
     starting_node = models.ForeignKey(ContentGraphNode, blank=True)
+    name = models.CharField(max_length=50)
+
+    def __unicode__(self):
+        return self.name
 
 class Responsible(models.Model):
     """A user or a group that has been assigned as responsible for a course, course incarnation or some specific material."""
