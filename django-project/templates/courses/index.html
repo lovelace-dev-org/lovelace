@@ -7,9 +7,11 @@
 	<header class="header"><!-- The RAiPPA header at the top of the page -->
 		<heading>
 			<hgroup>
-				<h1>RAiPPA</h1>
-				<h2>Remote Automat in Programming Pre-exercise Assignments<br />
-				<a class="easter_egg" href="http://www.hs.fi/fingerpori/1135248791558">Konevitsa</a> edition</h2>
+				<!--<h1>RAiPPA</h1>-->
+                                <img src="{{ STATIC_URL }}diamonds_logo.png" style="float: left; clear: both;" />
+                                <h1>Training</h1>
+				<!--<h2>Remote Automat in Programming Pre-exercise Assignments<br />
+				<a class="easter_egg" href="http://www.hs.fi/fingerpori/1135248791558">Konevitsa</a> edition</h2>-->
 			</hgroup>
 		</heading>
 		
@@ -20,40 +22,61 @@
 
 	<section class="page_content"><!-- The RAiPPA content -->
           {% if course_list %}
-		<h1>Available courses</h1>
+		<h1>Available trainings<!-- courses --></h1>
 		<ul>
                   {% for course in course_list %}
-                    <li><a href="/courses/{{ course.name }}/">{{ course.name }}</a></li>
+                    <li><a href="/training/{{ course.name }}/">{{ course.name }}</a></li>
                   {% endfor %}
 		</ul>
           {% endif %}
           
           {% if incarnation_list %}
-                <h1>Select incarnation</h1>
+                <h1>Please select</h1>
                 <ul>
                   {% for incarnation in incarnation_list %}
-                    <li><a href="/courses/{{ course.name }}/{{ incarnation.name }}/">{{ incarnation.name }}</a></li>
+                    <li><a href="/training/{{ course.name }}/{{ incarnation.name }}/">{{ incarnation.name }}</a></li>
                   {% endfor %}
                 </ul>
           {% endif %}
           
           {% if content_list %}
-                <h1>Available content on this course</h1>
+                <!--<h1>Available content on this training<!-- course </h1>-->
+                <h1>{{ incarnation.name }}</h1>
                 <ul>
                   {% for content in content_list %}
-                    <li><a href="/courses/{{ course.name }}/{{ incarnation.name }}/{{ content.name }}/">{{ content.name }}</a></li>
+                    <li><a href="/training/{{ course.name }}/{{ incarnation.name }}/{{ content.name }}/">{{ content.name }}</a></li>
                   {% endfor %}
                 </ul>
           {% endif %}
 
           {% if content %}
             {{ content|safe }}
+            {% if tasktype %}
+              <div class="question">{{ question }}</div>
+              <form method="POST" class="task">
+                {% csrf_token %}
+                {% if tasktype == "radio" %}
+                  {% for choice in choices %}
+                    <input type="radio" name="{{ question }}" id="{{ choice.id }}" /><label for="{{ choice.id }}">{{ choice.answer }}</label><br />
+                  {% endfor %}
+                {% elif tasktype == "checkbox" %}
+                  {% for choice in choices %}
+                    <input type="checkbox" name="{{ choice.id }}" id="{{ choice.id }}" /><label for="{{ choice.id }}">{{ choice.answer }}</label><br />
+                  {% endfor %}
+                {% elif tasktype == "textfield" %}
+                  <textarea name=""></textarea><br />
+                {% elif tasktype == "file" %}
+                  <input name="" type="file" />
+                {% endif %}
+                <input type="submit" />
+              </form>
+            {% endif %}
           {% endif %}
 	</section>
 	
 	<footer><!-- The footer -->
 		<div class="column0">
-			RAiPPA design & backend<br />
+			<!-- RAiPPA -->Design & backend<br />
 			Copyright &copy; 2012, Miikka Salminen
 		</div>
 		<div class="column1">

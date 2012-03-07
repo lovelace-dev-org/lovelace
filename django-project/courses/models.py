@@ -35,26 +35,9 @@ class Course(models.Model):
 
     def __unicode__(self):
         return self.name
-    
-class Incarnation(models.Model):
-    """An incarnation of a course.
 
-    Saves data on which users are partaking and which course material is
-    available on this specific instance of a course.
-
-    A user or a group can be in charge of a course incarnation."""
-    
-    course = models.ForeignKey(Course)
-    name = models.CharField(max_length=200)
-    frozen = models.BooleanField() # If no changes are possible to this instance of the course
-    start_date = models.DateTimeField('course begin date')
-    end_date = models.DateTimeField('course end date')
-
-    def __unicode__(self):
-        return self.name
-
-import os
 def get_upload_path(instance, filename):
+    import os
     return os.path.join("%s" % instance.course.name, filename)
 
 class File(models.Model):
@@ -72,20 +55,11 @@ class File(models.Model):
     def __unicode__(self):
         return self.name
 
-class ContentGraph(models.Model):
-    """Defines the tree (or the graph) of the course content."""
-    incarnation = models.ForeignKey(Incarnation)
-
-class Responsible(models.Model):
-    """A user or a group that has been assigned as responsible for a course, course incarnation or some specific material."""
-    pass
-
 class ContentPage(models.Model):
     """A single content containing page of a course.
 
     May be a part of a course incarnation graph."""
     course = models.ForeignKey(Course)
-    incarnation = models.ForeignKey(Incarnation)
 
     name = models.CharField(max_length=200)
     content = models.TextField()
@@ -116,15 +90,59 @@ class FileTask(TaskPage):
 class FileTaskTest(models.Model):
     pass
 
-class TextFieldTaskAnswer(models.Model):
-    task = models.ForeignKey(TaskPage)
+class TextfieldTaskAnswer(models.Model):
+    task = models.ForeignKey(TextfieldTask)
     correct = models.BooleanField()
     regexp = models.BooleanField()
     answer = models.TextField()
-    hint = models.TextField()
+    hint = models.TextField(blank=True)
 
-class ChoiceTaskAnswer(models.Model):
-    task = models.ForeignKey(TaskPage)
+class RadiobuttonTaskAnswer(models.Model):
+    task = models.ForeignKey(RadiobuttonTask)
     correct = models.BooleanField()
     answer = models.TextField()
-    hint = models.TextField()
+    hint = models.TextField(blank=True)
+
+    def __unicode__(self):
+        return self.answer
+
+class CheckboxTaskAnswer(models.Model):
+    task = models.ForeignKey(CheckboxTask)
+    correct = models.BooleanField()
+    answer = models.TextField()
+    hint = models.TextField(blank=True)
+
+    def __unicode__(self):
+        return self.answer
+    
+class Incarnation(models.Model):
+    """An incarnation of a course.
+
+    Saves data on which users are partaking and which course material is
+    available on this specific instance of a course.
+
+    A user or a group can be in charge of a course incarnation."""
+    
+    course = models.ForeignKey(Course)
+    contents = models.ManyToManyField(ContentPage, blank=True)
+
+    name = models.CharField(max_length=200)
+    frozen = models.BooleanField() # If no changes are possible to this instance of the course
+    start_date = models.DateTimeField('course begin date')
+    end_date = models.DateTimeField('course end date')
+
+    def __unicode__(self):
+        return self.name
+
+class ContentGraphNode(models.Model):
+    parentnode = models.ForeignKey('self', blank=True)
+    content = models.OneToOneField(ContentPage)
+
+class ContentGraph(models.Model):
+    """Defines the tree (or the graph) of the course content."""
+    incarnation = models.ForeignKey(Incarnation)
+    starting_node = models.ForeignKey(ContentGraphNode, blank=True)
+
+class Responsible(models.Model):
+    """A user or a group that has been assigned as responsible for a course, course incarnation or some specific material."""
+    pass

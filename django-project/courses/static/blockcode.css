@@ -6,7 +6,7 @@ body {
 
 div.blockcode {
 	text-align: left;
-//	width: 1000px;
+/*	width: 1000px;*/
 	border: 1px dashed grey;
 	clear: both;
 	overflow: hidden;

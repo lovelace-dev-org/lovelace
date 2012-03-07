@@ -53,7 +53,10 @@ class ContentParser(object):
         pass
     
     def block_bullet(self, block, settings):
-        yield u''
+        yield u'<ul>'
+        for line in block:
+            yield '<li>%s</li>' % (line.strip("* \r\n\t"))
+        yield u'</ul>'
     def settings_bullet(self, matchobj):
         pass
 
@@ -77,7 +80,7 @@ class ContentParser(object):
             yield u'<pre>'
             line = self.lines.next()
             while not line.startswith("}}}"):
-                yield line
+                yield line + "\n"
                 line = self.lines.next()
             yield u'</pre>\n'
     def settings_code(self, matchobj):

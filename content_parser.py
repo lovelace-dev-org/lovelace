@@ -79,7 +79,7 @@ class ContentParser(object):
 
 
 if __name__ == "__main__":
-    test_file = open("test2.txt")
+    test_file = open("test1.txt")
     
     test = ContentParser(iter("\n".join(test_file.readlines()).split("\n")))
     html = u""

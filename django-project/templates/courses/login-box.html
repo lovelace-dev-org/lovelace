@@ -1,5 +1,6 @@
 <div class="login">
-  <form>
+  <form method="POST">
+    {% csrf_token %}
     <fieldset>
       <legend>User login</legend>
       <label for="username">Username:</label><input type="text" id="username" name="username" /><br />

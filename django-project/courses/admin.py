@@ -2,12 +2,65 @@ from courses.models import Course
 from courses.models import Incarnation
 from courses.models import ContentPage
 from courses.models import File
-from courses.models import TaskPage, RadiobuttonTask, CheckboxTask, TextfieldTask
+from courses.models import LecturePage, TaskPage, RadiobuttonTask, CheckboxTask, TextfieldTask
+from courses.models import RadiobuttonTaskAnswer, CheckboxTaskAnswer, TextfieldTaskAnswer
+from courses.models import ContentGraph, ContentGraphNode
 
 from django.contrib import admin
 
-admin.site.register(ContentPage)
+class RadiobuttonTaskAnswerInline(admin.TabularInline):
+    model = RadiobuttonTaskAnswer
+    extra = 1
+
+class RadiobuttonTaskAdmin(admin.ModelAdmin):
+    fieldsets = [
+        (None,               {'fields': ['course', 'question']}),
+        ('Page information', {'fields': ['name', 'content']}),
+    ]
+    inlines = [RadiobuttonTaskAnswerInline]
+
+class CheckboxTaskAnswerInline(admin.TabularInline):
+    model = CheckboxTaskAnswer
+    extra = 1
+
+class CheckboxTaskAdmin(admin.ModelAdmin):
+    fieldsets = [
+        (None,               {'fields': ['course', 'question']}),
+        ('Page information', {'fields': ['name', 'content']}),
+    ]
+    inlines = [CheckboxTaskAnswerInline]
+
+class TextfieldTaskAnswerInline(admin.StackedInline):
+    model = TextfieldTaskAnswer
+    extra = 1
+
+class TextfieldTaskAdmin(admin.ModelAdmin):
+    fieldsets = [
+        (None,               {'fields': ['course', 'question']}),
+        ('Page information', {'fields': ['name', 'content']}),
+    ]
+    inlines = [TextfieldTaskAnswerInline]
+
+
+admin.site.register(LecturePage)
+admin.site.register(RadiobuttonTask, RadiobuttonTaskAdmin)
+admin.site.register(CheckboxTask, CheckboxTaskAdmin)
+admin.site.register(TextfieldTask, TextfieldTaskAdmin)
 admin.site.register(File)
+
+class ContentGraphNodeInline(admin.TabularInline):
+    model = ContentGraphNode
+
+class ContentGraphAdmin(admin.ModelAdmin):
+    inlines = [ContentGraphNodeInline]
+
+class ContentGraphNodeAdmin(admin.ModelAdmin):
+    inlines = [
+        ContentGraphNodeInline,
+    ]
+
+admin.site.register(ContentGraphNode, ContentGraphNodeAdmin)
+admin.site.register(ContentGraph, ContentGraphAdmin)
 
 # http://jeffelmore.org/2010/11/11/automatic-downcasting-of-inherited-models-in-django/
 #class AbstractQuestionAdmin(admin.ModelAdmin):
@@ -22,11 +75,9 @@ admin.site.register(File)
 #            return qs.select_subclasses()
 #        return qs.select_subclasses().filter(users=request.user)
 
-
-
 class IncarnationInline(admin.StackedInline):
     model = Incarnation
-    extra = 1
+    extra = 0
 
 class CourseAdmin(admin.ModelAdmin):
     fields = ['name']
