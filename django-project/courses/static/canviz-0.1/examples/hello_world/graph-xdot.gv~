@@ -1,0 +1,16 @@
+digraph test2 {
+    node [label="\N", href="/blah/lesson1.html"];
+    graph [bb="0,0,615,112",
+        _draw_="c 9 -#ffffffff C 9 -#ffffffff P 4 0 -1 0 112 616 112 616 -1 ",
+        xdotversion="1.2"];
+    root [pos="157,93", width="0.88889", height="0.51389", _draw_="c 9 -#000000ff e 157 93 32 18 ", _ldraw_="F 14.000000 11 -Times-Roman c 9 -#000000ff T 157 88 0 29 4 -root "];
+    Lecture [pos="49,19", width="1.3611", height="0.51389", _draw_="c 9 -#000000ff e 49 19 49 18 ", _ldraw_="F 14.000000 11 -Times-Roman c 9 -#000000ff T 49 14 0 53 7 -Lecture "];
+    1 [pos="234,93", width="0.75", height="0.51389", _draw_="c 9 -#000000ff e 234 93 27 18 ", _ldraw_="F 14.000000 11 -Times-Roman c 9 -#000000ff T 234 88 0 10 1 -1 "];
+    Check [pos="157,19", width="1.1389", height="0.51389", _draw_="c 9 -#000000ff e 157 19 41 18 ", _ldraw_="F 14.000000 11 -Times-Roman c 9 -#000000ff T 157 14 0 43 5 -Check "];
+    your [pos="313,93", width="0.94444", height="0.51389", _draw_="c 9 -#000000ff e 313 93 34 18 ", _ldraw_="F 14.000000 11 -Times-Roman c 9 -#000000ff T 313 88 0 32 4 -your "];
+    knowledge [pos="430,93", width="1.8056", height="0.51389", _draw_="c 9 -#000000ff e 430 93 65 18 ", _ldraw_="F 14.000000 11 -Times-Roman c 9 -#000000ff T 430 88 0 76 9 -knowledge "];
+    Programming [pos="293,19", width="2.1389", height="0.51389", _draw_="c 9 -#000000ff e 293 19 77 18 ", _ldraw_="F 14.000000 11 -Times-Roman c 9 -#000000ff T 293 14 0 93 11 -Programming "];
+    exercise [pos="564,93", width="1.4167", height="0.51389", _draw_="c 9 -#000000ff e 564 93 51 18 ", _ldraw_="F 14.000000 11 -Times-Roman c 9 -#000000ff T 564 88 0 56 8 -exercise "];
+    root -> Lecture [pos="e,72.768,35.285 136.18,78.732 120.58,68.049 98.967,53.237 81.16,41.036", _draw_="c 9 -#000000ff B 4 136 79 121 68 99 53 81 41 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 83 38 73 35 79 44 "];    root -> Check [pos="e,157,37.667 157,74.327 157,66.264 157,56.648 157,47.711", _draw_="c 9 -#000000ff B 4 157 74 157 66 157 57 157 48 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 161 48 157 38 154 48 "];
+    root -> Programming [pos="e,261.78,35.986 180.38,80.279 200.22,69.481 229.15,53.742 252.72,40.92", _draw_="c 9 -#000000ff B 4 180 80 200 69 229 54 253 41 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 255 44 262 36 251 38 "];
+}

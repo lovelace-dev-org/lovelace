@@ -1,0 +1,9 @@
+digraph testi {
+    node [label="\N"];
+    graph [bb="0,0,54,112",
+        _draw_="c 9 -#ffffffff C 9 -#ffffffff P 4 0 -1 0 112 55 112 55 -1 ",
+        xdotversion="1.2"];
+    a [pos="27,93", width="0.75", height="0.51389", _draw_="c 9 -#000000ff e 27 93 27 18 ", _ldraw_="F 14.000000 11 -Times-Roman c 9 -#000000ff T 27 88 0 9 1 -a "];
+    b [pos="27,19", width="0.75", height="0.51389", _draw_="c 9 -#000000ff e 27 19 27 18 ", _ldraw_="F 14.000000 11 -Times-Roman c 9 -#000000ff T 27 14 0 9 1 -b "];
+    a -> b [pos="e,27,37.667 27,74.327 27,66.264 27,56.648 27,47.711", _draw_="c 9 -#000000ff B 4 27 74 27 66 27 57 27 48 ", _hdraw_="S 5 -solid c 9 -#000000ff C 9 -#000000ff P 3 31 48 27 38 24 48 "];
+}
