@@ -3,6 +3,105 @@
 {% include "courses/meta.html" %}
 <body>
 
+<script language="javascript" type="text/javascript">
+<!-- 
+/* jQuery port of below
+$(function() {
+   $("
+});
+
+var mimetype = "application/x-www-form-urlencoded"; // Needed?
+var csrftoken = "csrfmiddlewaretoken=" + document.getElementById('task_form').elements["csrfmiddlewaretoken"].value;
+
+var dataString = csrftoken;
+var datalen = len(csrftoken);
+
+$.ajax({
+     type: "POST",
+     url: "{{ answer_check_url }}",
+     data: dataString,
+     success: function(data) {
+         $('#result').html(data);
+     }
+});
+return false;
+*/
+
+//Browser Support Code
+function validateAnswer(e) {
+        e.preventDefault(); // Prevent the form from submitting
+	var ajaxRequest;
+	
+	try{
+		// Opera 8.0+, Firefox, Safari
+		ajaxRequest = new XMLHttpRequest();
+	} catch (e){
+		// Internet Explorer Browsers
+		try{
+			ajaxRequest = new ActiveXObject("Msxml2.XMLHTTP");
+		} catch (e) {
+			try{
+				ajaxRequest = new ActiveXObject("Microsoft.XMLHTTP");
+			} catch (e){
+				// Something went wrong
+				alert("Your browser doesn't support AJAX!");
+				return false;
+			}
+		}
+	}
+
+        var mimetype = "application/x-www-form-urlencoded";
+
+        var form = document.getElementById('task_form');
+        var csrftoken = "csrfmiddlewaretoken=" + form.elements["csrfmiddlewaretoken"].value;
+
+        var rbchoices = $('form#task_form input.task_radio'); //document.getElementsByName('{{ question }}'); // Radio
+        var cbchoices = $('form#task_form input.task_check'); // Checkbox
+        var answer = $('form#task_form textarea.task_text'); //document.getElementsByName('{{ question }}-text'); // Textarea
+        var files = $('form#task_form input.task_file'); // Files
+
+        var data = csrftoken;
+
+        //alert(rbchoices.length);
+        //alert(cbchoices.length);
+        //alert(answer.length);
+
+        for(var i=0; i < rbchoices.length; i++)
+        {
+            //alert(rbchoices[i].value + rbchoices[i].checked);
+            data += "&" + rbchoices[i].value + "=" + rbchoices[i].checked;
+        }
+
+        for(var i=0; i < cbchoices.length; i++)
+        {
+            //alert(cbchoices[i].value + "=" + cbchoices[i].checked);
+            data += "&" + cbchoices[i].value + "=" + cbchoices[i].checked;
+        }
+        if (answer.val())
+        {
+            data += "&" + "answer=" + answer.val();
+        }
+
+        var datalen = data.length;
+
+        // Create a function that will receive data sent from the server
+        ajaxRequest.onreadystatechange = function() {
+	        if(ajaxRequest.readyState == 4 && ajaxRequest.status == 200) {
+	                document.getElementById('result').innerHTML = ajaxRequest.responseText;
+	        }
+        }
+        ajaxRequest.open("POST", "{{ answer_check_url }}", true);
+        ajaxRequest.setRequestHeader("Content-type", mimetype);
+        ajaxRequest.setRequestHeader("Content-length", datalen);
+        ajaxRequest.setRequestHeader("Connection", "close");
+        ajaxRequest.setRequestHeader("HTTP_X_REQUESTED_WITH", "XMLHttpRequest");
+        ajaxRequest.send(data);
+}
+
+
+//-->
+</script>
+
 <div id="container">
 	<header class="header"><!-- The RAiPPA header at the top of the page -->
 		<heading>
@@ -62,27 +161,36 @@
             {% endfor %}
           {% endif %}
 
+          {% if course_graph_url %}
+            <h1>{{ incarnation.name }}</h1>
+            <div class="graph">
+              <div id="canviz"></div>
+            </div>
+            <div id="debug_output"></div>
+          {% endif %}
+
           {% if content %}
             {{ content|safe }}
             {% if tasktype %}
               <div class="question">{{ question }}</div>
-              <form method="POST" class="task">
+              <form name="task_form" id="task_form" class="task" method="POST" onSubmit="validateAnswer(event);return false;" >
                 {% csrf_token %}
                 {% if tasktype == "radio" %}
                   {% for choice in choices %}
-                    <input type="radio" name="{{ question }}" id="{{ choice.id }}" /><label for="{{ choice.id }}">{{ choice.answer }}</label><br />
+                    <input type="radio" name="{{ question }}" id="{{ choice.id }}" value="{{ choice.id }}" class="task_radio" /><label for="{{ choice.id }}">{{ choice.answer }}</label><br />
                   {% endfor %}
                 {% elif tasktype == "checkbox" %}
                   {% for choice in choices %}
-                    <input type="checkbox" name="{{ choice.id }}" id="{{ choice.id }}" /><label for="{{ choice.id }}">{{ choice.answer }}</label><br />
+                    <input type="checkbox" name="{{ question }}" id="{{ choice.id }}" value="{{ choice.id }}" class="task_check" /><label for="{{ choice.id }}">{{ choice.answer }}</label><br />
                   {% endfor %}
                 {% elif tasktype == "textfield" %}
-                  <textarea name=""></textarea><br />
+                  <textarea name="{{ question }}-text" class="task_text"></textarea><br />
                 {% elif tasktype == "file" %}
-                  <input name="" type="file" />
+                  <input name="" type="file" class="task_file" />
                 {% endif %}
-                <input type="submit" />
+                <input type="submit" name="submit" value="Send answer" onClick="validateAnswer(event);return false;" />
               </form>
+              <div id="result"></div>
             {% endif %}
           {% endif %}
 	</section>

@@ -62,8 +62,9 @@ class ContentParser(object):
 
     def block_codefile(self, block, settings):
         import codecs
-        codefile_normal_begin = codecs.open("courses/codefile-normal-begin.html", "r", "utf-8").read().replace("{{ filename }}", settings["filename"]).strip()
-        codefile_normal_end = codecs.open("courses/codefile-normal-end.html", "r", "utf-8").read()
+        codefile_normal_begin = codecs.open("courses/codefile-normal-begin.html", "r", "utf-8").read().strip()
+        codefile_normal_begin = codefile_normal_begin.replace("{{ filename }}", settings["filename"])
+        codefile_normal_end = codecs.open("courses/codefile-normal-end.html", "r", "utf-8").read().strip()
         self.current_filename = settings["filename"]
         for part in block:
             yield codefile_normal_begin

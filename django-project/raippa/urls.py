@@ -12,6 +12,7 @@ urlpatterns = patterns('',
     url(r'^%s/$' % courses_name, 'courses.views.index'),
     url(r'^%s/(?P<course_name>[^/]+)/$' % courses_name, 'courses.views.course'),
     url(r'^%s/(?P<course_name>[^/]+)/(?P<incarnation_name>[^/]+)/$' % courses_name, 'courses.views.incarnation'),
+    url(r'^%s/(?P<course_name>[^/]+)/(?P<incarnation_name>[^/]+)/graph\.vg$' % courses_name, 'courses.views.course_graph'),
     url(r'^%s/(?P<course_name>[^/]+)/(?P<incarnation_name>[^/]+)/(?P<content_name>[^/]+)/$' % courses_name, 'courses.views.content', {'media_root': settings.MEDIA_ROOT,}),
 
     url(r'^media/(?P<course_name>[^/]+)/(?P<filename>.+)$', 'courses.views.file_download', {'media_root': settings.MEDIA_ROOT,}),
