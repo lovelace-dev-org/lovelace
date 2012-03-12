@@ -247,7 +247,7 @@ def content(request, course_name, incarnation_name, content_name, **kwargs):
         print "here we are"
         question = TaskPage.objects.get(id=content.id).question
 
-        correct = False
+        correct = True
         tasktype = None
         choices = None
         answers = None
@@ -263,7 +263,7 @@ def content(request, course_name, incarnation_name, content_name, **kwargs):
 
         if choices and tasktype == "radiobutton":
             for choice in choices:
-                if request.POST[str(choice.id)] == "true" and choice.correct == True:
+                if request.POST[str(choice.id)] == "true" and choice.correct == True and correct == True:
                     correct = True
                 elif request.POST[str(choice.id)] == "false" and choice.correct == True:
                     correct = False
@@ -284,7 +284,7 @@ def content(request, course_name, incarnation_name, content_name, **kwargs):
 
         if choices and tasktype == "checkbox":
             for choice in choices:
-                if request.POST[str(choice.id)] == "true" and choice.correct == True:
+                if request.POST[str(choice.id)] == "true" and choice.correct == True and correct == True:
                     correct = True
                 elif request.POST[str(choice.id)] == "false" and choice.correct == True:
                     correct = False
@@ -308,16 +308,26 @@ def content(request, course_name, incarnation_name, content_name, **kwargs):
                 if answer.regexp:
                     import re
                     # TODO: Regexp error checking!!!! To prevent crashes.
-                    if re.match(answer.answer, given) and answer.correct:
+                    if re.match(answer.answer, given) and answer.correct and correct == True:
                         correct = True
                         break
                     elif re.match(answer.answer, given) and not answer.correct:
                         correct = False
+                        if answer.hint:
+                            hints.append(answer.hint)
+                    elif not re.match(answer.answer, given):
+                        correct = False
+                        if answer.hint:
+                            hints.append(answer.hint)
                 else:
-                    if given == answer.answer and answer.correct:
+                    if given == answer.answer and answer.correct and correct == True:
                         correct = True
                         break
                     elif given == answer.answer and not answer.correct:
+                        correct = False
+                        if answer.hint:
+                            hints.append(answer.hint)
+                    elif given != answer.answer:
                         correct = False
                         if answer.hint:
                             hints.append(answer.hint)
@@ -369,6 +379,7 @@ def content(request, course_name, incarnation_name, content_name, **kwargs):
                 emb_c = RequestContext(request, {
                         'emb_content': rendered_em_content,
                         'content_name': embedded_content.name,
+                        'content_name_id': embedded_content.name.replace(" ", "_"),
                         'tasktype': emb_tasktype,
                         'question': emb_question,
                         'choices': emb_choices,
@@ -387,6 +398,7 @@ def content(request, course_name, incarnation_name, content_name, **kwargs):
         'incarnation': selected_incarnation,
         'content': rendered_content,
         'content_name': content.name,
+        'content_name_id': content.name.replace(" ", "_"),
         'navurls': navurls,
         'title': '%s - %s' % (content.name, selected_course.name),
         'answer_check_url': reverse('courses.views.incarnation', kwargs={"course_name":course_name, "incarnation_name":incarnation_name}),

@@ -57,9 +57,9 @@ function validateAnswer(e, task_name) {
 
         //var task_name = $('div.question').attr('id');
         var task = $('div#' + task_name);
-        var rbchoices = $('div#' + task_name + ' form#task_form input.task_radio'); //document.getElementsByName('{{ question }}'); // Radio
+        var rbchoices = $('div#' + task_name + ' form#task_form input.task_radio'); //document.getElementsByName(''); // Radio
         var cbchoices = $('div#' + task_name + ' form#task_form input.task_check'); // Checkbox
-        var answer = $('div#' + task_name + ' form#task_form textarea.task_text'); //document.getElementsByName('{{ question }}-text'); // Textarea
+        var answer = $('div#' + task_name + ' form#task_form textarea.task_text'); //document.getElementsByName(''); // Textarea
         var files = $('div#' + task_name + ' form#task_form input.task_file'); // Files
 
         var data = csrftoken;
@@ -67,6 +67,8 @@ function validateAnswer(e, task_name) {
         //alert(rbchoices.length);
         //alert(cbchoices.length);
         //alert(answer.length);
+
+        //alert(task_name);
 
         for(var i=0; i < rbchoices.length; i++)
         {
@@ -92,7 +94,8 @@ function validateAnswer(e, task_name) {
 	                $('div#' + task_name + ' form div#result').html(ajaxRequest.responseText);
 	        }
         }
-        ajaxRequest.open("POST", "{{ answer_check_url }}" + task_name + "/", true);
+
+        ajaxRequest.open("POST", "{{ answer_check_url }}" + task_name.replace(/_/g, " ") + "/", true);
         ajaxRequest.setRequestHeader("Content-type", mimetype);
         ajaxRequest.setRequestHeader("Content-length", datalen);
         ajaxRequest.setRequestHeader("Connection", "close");
