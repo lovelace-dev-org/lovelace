@@ -56,10 +56,11 @@ function validateAnswer(e, task_name) {
         var csrftoken = "csrfmiddlewaretoken=" + form.elements["csrfmiddlewaretoken"].value;
 
         //var task_name = $('div.question').attr('id');
-        var rbchoices = $('form#task_form input.task_radio'); //document.getElementsByName('{{ question }}'); // Radio
-        var cbchoices = $('form#task_form input.task_check'); // Checkbox
-        var answer = $('form#task_form textarea.task_text'); //document.getElementsByName('{{ question }}-text'); // Textarea
-        var files = $('form#task_form input.task_file'); // Files
+        var task = $('div#' + task_name);
+        var rbchoices = $('div#' + task_name + ' form#task_form input.task_radio'); //document.getElementsByName('{{ question }}'); // Radio
+        var cbchoices = $('div#' + task_name + ' form#task_form input.task_check'); // Checkbox
+        var answer = $('div#' + task_name + ' form#task_form textarea.task_text'); //document.getElementsByName('{{ question }}-text'); // Textarea
+        var files = $('div#' + task_name + ' form#task_form input.task_file'); // Files
 
         var data = csrftoken;
 
