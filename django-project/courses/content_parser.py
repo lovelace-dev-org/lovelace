@@ -9,6 +9,7 @@ class ContentParser(object):
         "bullet" : ur"^\s*[*]\s+",
         "codefile" : ur"[{]{3}\!(?P<filename>[^\s]+)\s*[}]{3}$",
         "code" : ur"^[{]{3}\s*$",
+        "taskembed" : ur"^\[\[\[(?P<taskname>[^\s]+)\]\]\]$$",
         "empty" : ur"^\s*$",
         "heading" : ur"^\s*(?P<len>[=]{1,6})[=]*\s*.+\s*(?P=len)\s*$",
         "indent" : ur"^[ \t]+",
@@ -23,6 +24,8 @@ class ContentParser(object):
         """
         
         self.lines = lines
+        self.current_filename = None
+        self.current_taskname = None
     
     def get_line_kind(self, line):
         matchobj = self.block_re.match(line)
@@ -87,11 +90,24 @@ class ContentParser(object):
     def settings_code(self, matchobj):
         pass
 
+    def block_taskembed(self, block, settings):
+        self.current_taskname = settings["taskname"]
+        yield '<div class="embedded_task">'
+        yield '{{ %s }}' % settings["taskname"]
+        yield '</div>'
+    def settings_taskembed(self, matchobj):
+        taskname = matchobj.group("taskname")
+
+        settings = {"taskname" : taskname}
+        return settings
+
     def set_fileroot(self, fileroot):
         self.fileroot = fileroot
 
     def get_current_filename(self):
         return self.current_filename
+    def get_current_taskname(self):
+        return self.current_taskname
         
     def parse(self):
         for group_info, block in itertools.groupby(self.lines, self.get_line_kind):

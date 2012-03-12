@@ -219,6 +219,17 @@ section.page_content {
                 margin-bottom: 10px;
                 padding: 5px;
 	}
+        
+        section.page_content div.embedded_task {
+            border: 1px solid grey;
+            /*float: right;
+            display: inline;
+            clear: both;*/
+            width: 50%;
+            background: #bfb;
+            padding: 5px;
+            margin-bottom: 10px;
+        }
 
 /* FOOTER */
 footer {

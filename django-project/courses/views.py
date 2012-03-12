@@ -195,6 +195,43 @@ def incarnation(request, course_name, incarnation_name):
     })
     return HttpResponse(t.render(c))
 
+def get_task_info(content):
+    tasktype = None
+    choices = None
+    question = None
+    try:
+        if content.taskpage.radiobuttontask:
+            tasktype = "radio"
+            choices = RadiobuttonTaskAnswer.objects.filter(task=content.id)
+            question = TaskPage.objects.get(id=content.id).question
+    except ContentPage.DoesNotExist as e:
+        pass
+
+    try:
+        if content.taskpage.checkboxtask:
+            tasktype = "checkbox"
+            choices = CheckboxTaskAnswer.objects.filter(task=content.id)
+            question = TaskPage.objects.get(id=content.id).question
+    except ContentPage.DoesNotExist as e:
+        pass
+
+    try:
+        if content.taskpage.textfieldtask:
+            tasktype = "textfield"
+            question = TaskPage.objects.get(id=content.id).question
+    except ContentPage.DoesNotExist as e:
+        pass
+
+    try:
+        if content.taskpage.filetask:
+            tasktype = "file"
+            question = TaskPage.objects.get(id=content.id).question
+    except ContentPage.DoesNotExist as e:
+        pass
+
+    return (tasktype, question, choices)
+
+
 def content(request, course_name, incarnation_name, content_name, **kwargs):
     import re
     import codecs
@@ -203,9 +240,11 @@ def content(request, course_name, incarnation_name, content_name, **kwargs):
     selected_course = Course.objects.get(name=course_name)
     selected_incarnation = Incarnation.objects.get(course=selected_course.id, name=incarnation_name)
     content = ContentPage.objects.get(incarnation=selected_incarnation.id, name=content_name)
+    pages = [content]
 
-    # Validate the answer
+    # Validate an answer to question
     if request.POST:
+        print "here we are"
         question = TaskPage.objects.get(id=content.id).question
 
         correct = False
@@ -293,6 +332,7 @@ def content(request, course_name, incarnation_name, content_name, **kwargs):
         response = HttpResponse(response_string)
         return response
 
+    # back to normal flow (representing a content page)
 
     navurls = [NavURL(reverse('courses.views.index'), "Training home"), # Courses
                NavURL(reverse('courses.views.course', kwargs={"course_name":course_name}), course_name),
@@ -305,46 +345,41 @@ def content(request, course_name, incarnation_name, content_name, **kwargs):
     parser = content_parser.ContentParser(iter(unparsed_content))
     parser.set_fileroot(kwargs["media_root"])
     for line in parser.parse():
+        # Embed a file or page (TODO: Use custom template tags for a nicer solution)
         include_file_re = re.match("{{\s+(?P<filename>.+)\s+}}", line)
         if include_file_re:
+            # It's an embedded source code file
             if include_file_re.group("filename") == parser.get_current_filename():
                 file_contents = codecs.open(File.objects.get(name=include_file_re.group("filename")).fileinfo.path, "r", "utf-8").read()
                 #file_contents = codecs.open(os.path.join(kwargs["media_root"], course_name, include_file_re.group("filename")), "r", "utf-8").read()
                 line = line.replace(include_file_re.group(0), file_contents)
+            # It's an embedded task
+            elif include_file_re.group("filename") == parser.get_current_taskname():
+                embedded_content = ContentPage.objects.get(incarnation=selected_incarnation.id, name=parser.get_current_taskname())
+                pages.append(embedded_content)
+                unparsed_embedded_content = re.split(r"\r\n|\r|\n", embedded_content.content)
+                embedded_parser = content_parser.ContentParser(iter(unparsed_embedded_content))
+                rendered_em_content = u''
+                for emline in embedded_parser.parse():
+                    rendered_em_content += emline
+                
+                # use template here to render to rendered_em_content
+                emb_tasktype, emb_question, emb_choices = get_task_info(embedded_content)
+                emb_t = loader.get_template("courses/task.html")
+                emb_c = RequestContext(request, {
+                        'emb_content': rendered_em_content,
+                        'content_name': embedded_content.name,
+                        'tasktype': emb_tasktype,
+                        'question': emb_question,
+                        'choices': emb_choices,
+                })
+                rendered_em_content = emb_t.render(emb_c)
+
+                line = line.replace(include_file_re.group(0), rendered_em_content)
+                
         rendered_content += line
     
-    tasktype = None
-    choices = None
-    question = None
-    try:
-        if content.taskpage.radiobuttontask:
-            tasktype = "radio"
-            choices = RadiobuttonTaskAnswer.objects.filter(task=content.id)
-            question = TaskPage.objects.get(id=content.id).question
-    except ContentPage.DoesNotExist as e:
-        pass
-
-    try:
-        if content.taskpage.checkboxtask:
-            tasktype = "checkbox"
-            choices = CheckboxTaskAnswer.objects.filter(task=content.id)
-            question = TaskPage.objects.get(id=content.id).question
-    except ContentPage.DoesNotExist as e:
-        pass
-
-    try:
-        if content.taskpage.textfieldtask:
-            tasktype = "textfield"
-            question = TaskPage.objects.get(id=content.id).question
-    except ContentPage.DoesNotExist as e:
-        pass
-
-    try:
-        if content.taskpage.filetask:
-            tasktype = "file"
-            question = TaskPage.objects.get(id=content.id).question
-    except ContentPage.DoesNotExist as e:
-        pass
+    tasktype, question, choices = get_task_info(content)
 
     t = loader.get_template("courses/index.html")
     c = RequestContext(request, {
@@ -354,7 +389,7 @@ def content(request, course_name, incarnation_name, content_name, **kwargs):
         'content_name': content.name,
         'navurls': navurls,
         'title': '%s - %s' % (content.name, selected_course.name),
-        'answer_check_url': reverse('courses.views.content', kwargs={"course_name":course_name, "incarnation_name":incarnation_name, "content_name":content.name}),
+        'answer_check_url': reverse('courses.views.incarnation', kwargs={"course_name":course_name, "incarnation_name":incarnation_name}),
         'tasktype': tasktype,
         'question': question,
         'choices': choices,

@@ -28,7 +28,7 @@ return false;
 */
 
 //Browser Support Code
-function validateAnswer(e) {
+function validateAnswer(e, task_name) {
         e.preventDefault(); // Prevent the form from submitting
 	var ajaxRequest;
 	
@@ -55,6 +55,7 @@ function validateAnswer(e) {
         var form = document.getElementById('task_form');
         var csrftoken = "csrfmiddlewaretoken=" + form.elements["csrfmiddlewaretoken"].value;
 
+        //var task_name = $('div.question').attr('id');
         var rbchoices = $('form#task_form input.task_radio'); //document.getElementsByName('{{ question }}'); // Radio
         var cbchoices = $('form#task_form input.task_check'); // Checkbox
         var answer = $('form#task_form textarea.task_text'); //document.getElementsByName('{{ question }}-text'); // Textarea
@@ -87,10 +88,10 @@ function validateAnswer(e) {
         // Create a function that will receive data sent from the server
         ajaxRequest.onreadystatechange = function() {
 	        if(ajaxRequest.readyState == 4 && ajaxRequest.status == 200) {
-	                document.getElementById('result').innerHTML = ajaxRequest.responseText;
+	                $('div#' + task_name + ' form div#result').html(ajaxRequest.responseText);
 	        }
         }
-        ajaxRequest.open("POST", "{{ answer_check_url }}", true);
+        ajaxRequest.open("POST", "{{ answer_check_url }}" + task_name + "/", true);
         ajaxRequest.setRequestHeader("Content-type", mimetype);
         ajaxRequest.setRequestHeader("Content-length", datalen);
         ajaxRequest.setRequestHeader("Connection", "close");
@@ -171,27 +172,7 @@ function validateAnswer(e) {
 
           {% if content %}
             {{ content|safe }}
-            {% if tasktype %}
-              <div class="question">{{ question }}</div>
-              <form name="task_form" id="task_form" class="task" method="POST" onSubmit="validateAnswer(event);return false;" >
-                {% csrf_token %}
-                {% if tasktype == "radio" %}
-                  {% for choice in choices %}
-                    <input type="radio" name="{{ question }}" id="{{ choice.id }}" value="{{ choice.id }}" class="task_radio" /><label for="{{ choice.id }}">{{ choice.answer }}</label><br />
-                  {% endfor %}
-                {% elif tasktype == "checkbox" %}
-                  {% for choice in choices %}
-                    <input type="checkbox" name="{{ question }}" id="{{ choice.id }}" value="{{ choice.id }}" class="task_check" /><label for="{{ choice.id }}">{{ choice.answer }}</label><br />
-                  {% endfor %}
-                {% elif tasktype == "textfield" %}
-                  <textarea name="{{ question }}-text" class="task_text"></textarea><br />
-                {% elif tasktype == "file" %}
-                  <input name="" type="file" class="task_file" />
-                {% endif %}
-                <input type="submit" name="submit" value="Send answer" onClick="validateAnswer(event);return false;" />
-              </form>
-              <div id="result"></div>
-            {% endif %}
+            {% include "courses/task.html" %}
           {% endif %}
 	</section>
 	
