@@ -332,11 +332,14 @@ def content(request, course_name, incarnation_name, content_name, **kwargs):
                         if answer.hint:
                             hints.append(answer.hint)
 
+        # TODO: Use a template here to make it look nicer.
         if correct:
             response_string = u"Correct!"
         else:
             response_string = u"Incorrect answer.<br />"
             if hints:
+                import random
+                random.shuffle(hints)
                 response_string += "<br />".join(hints)
 
         response = HttpResponse(response_string)

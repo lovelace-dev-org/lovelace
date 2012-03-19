@@ -3,13 +3,16 @@
 
 import re
 import itertools
+from django.utils.html import escape
 
 class ContentParser(object):
     block = {
-        "bullet" : ur"^\s*[*]\s+",
+        "bullet" : ur"^\s*(?P<ulist_level>[*]+)\s+",
+        "ordered_list" : ur"^\s*(?P<olist_level>[#]+)\s+",
+        "separator" : ur"^\s*[-]{2}\s*$",
         "codefile" : ur"[{]{3}\!(?P<filename>[^\s]+)\s*[}]{3}$",
         "code" : ur"^[{]{3}\s*$",
-        "taskembed" : ur"^\[\[\[(?P<taskname>[^\s]+)\]\]\]$$",
+        "taskembed" : ur"^\[\[\[(?P<taskname>[^\s]+)\]\]\]$",
         "empty" : ur"^\s*$",
         "heading" : ur"^\s*(?P<len>[=]{1,6})[=]*\s*.+\s*(?P=len)\s*$",
         "indent" : ur"^[ \t]+",
@@ -26,6 +29,7 @@ class ContentParser(object):
         self.lines = lines
         self.current_filename = None
         self.current_taskname = None
+        self.list_state = []
     
     def get_line_kind(self, line):
         matchobj = self.block_re.match(line)
@@ -34,7 +38,7 @@ class ContentParser(object):
     def block_heading(self, block, settings):
         yield u"<h%d>" % settings["heading_size"]
         for line in block:
-            yield line.strip("= \r\n\t")
+            yield escape(line.strip("= \r\n\t"))
         yield u'</h%d>\n' % settings["heading_size"]
     def settings_heading(self, matchobj):
         heading_size = len(matchobj.group("len"))
@@ -45,7 +49,7 @@ class ContentParser(object):
     def block_paragraph(self, block, settings):
         yield u'<p>'
         for line in block:
-            yield line
+            yield escape(line)
         yield u'</p>\n'
     def settings_paragraph(self, matchobj):
         pass
@@ -54,14 +58,59 @@ class ContentParser(object):
         yield u''
     def settings_empty(self, matchobj):
         pass
+
+    def block_separator(self, block, settings):
+        yield u'<hr />'
+    def settings_separator(self, matchobj):
+        pass
     
     def block_bullet(self, block, settings):
-        yield u'<ul>'
+        if len(self.list_state) < settings["list_level"]:
+            for new_lvl in range(settings["list_level"] - len(self.list_state)):
+                self.list_state.append("ul")
+                yield u'<ul>'
+            #self.list_level = settings["list_level"]
+        elif len(self.list_state) > settings["list_level"]:
+            for new_lvl in range(len(self.list_state) - settings["list_level"]):
+                top_lvl = self.list_state.pop()
+                yield u'</%s>' % top_lvl
+            #self.list_level = settings["list_level"]
+        if len(self.list_state) == settings["list_level"]:
+            if self.list_state[-1] == "ol":
+                top_lvl = self.list_state.pop()
+                yield u'</ol>'
+                self.list_state.append("ul")
+                yield u'<ul>'
         for line in block:
-            yield '<li>%s</li>' % (line.strip("* \r\n\t"))
-        yield u'</ul>'
+            yield '<li>%s</li>' % (escape(line.strip("* \r\n\t")))
     def settings_bullet(self, matchobj):
-        pass
+        list_level = len(matchobj.group("ulist_level"))
+        settings = {"list_level" : list_level}
+        return settings
+
+    def block_ordered_list(self, block, settings):
+        if len(self.list_state) < settings["list_level"]:
+            for new_lvl in range(settings["list_level"] - len(self.list_state)):
+                self.list_state.append("ol")
+                yield u'<ol>'
+            #self.list_level = settings["list_level"]
+        elif len(self.list_state) > settings["list_level"]:
+            for new_lvl in range(len(self.list_state) - settings["list_level"]):
+                top_lvl = self.list_state.pop()
+                yield u'</%s>' % top_lvl
+            #self.list_level = settings["list_level"]
+        if len(self.list_state) == settings["list_level"]:
+            if self.list_state[-1] == "ul":
+                top_lvl = self.list_state.pop()
+                yield u'</ul>'
+                self.list_state.append("ol")
+                yield u'<ol>'
+        for line in block:
+            yield '<li>%s</li>' % (escape(line.strip("# \r\n\t")))
+    def settings_ordered_list(self, matchobj):
+        list_level = len(matchobj.group("olist_level"))
+        settings = {"list_level" : list_level}
+        return settings
 
     def block_codefile(self, block, settings):
         import codecs
@@ -71,10 +120,10 @@ class ContentParser(object):
         self.current_filename = settings["filename"]
         for part in block:
             yield codefile_normal_begin
-            yield '{{ %s }}' % settings["filename"]
+            yield '{{ %s }}' % settings["filename"]  # TODO: Output the file here instead of in the view.
             yield codefile_normal_end
     def settings_codefile(self, matchobj):
-        filename = matchobj.group("filename")
+        filename = escape(matchobj.group("filename"))
         
         settings = {"filename" : filename}
         return settings
@@ -84,7 +133,7 @@ class ContentParser(object):
             yield u'<pre class="normal">'
             line = self.lines.next()
             while not line.startswith("}}}"):
-                yield line + "\n"
+                yield escape(line) + "\n"
                 line = self.lines.next()
             yield u'</pre>\n'
     def settings_code(self, matchobj):
@@ -96,7 +145,7 @@ class ContentParser(object):
         yield '{{ %s }}' % settings["taskname"]
         yield '</div>'
     def settings_taskembed(self, matchobj):
-        taskname = matchobj.group("taskname")
+        taskname = escape(matchobj.group("taskname"))
 
         settings = {"taskname" : taskname}
         return settings
@@ -113,6 +162,11 @@ class ContentParser(object):
         for group_info, block in itertools.groupby(self.lines, self.get_line_kind):
             func = getattr(self, "block_%s" % group_info[0])
             settings = getattr(self, "settings_%s" % group_info[0])(group_info[1])
+            if group_info[0] != "bullet" and group_info[0] != "ordered_list":
+                for undent_lvl in range(len(self.list_state)):
+                    top_lvl = self.list_state.pop()
+                    yield u'</%s>' % top_lvl
+                #self.list_level = 0
             #print group_info[0], settings
             for part in func(block, settings):
                 yield part

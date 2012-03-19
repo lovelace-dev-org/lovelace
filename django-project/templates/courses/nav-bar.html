@@ -1,7 +1,17 @@
-<nav class="main-nav">
+<nav class="breadcrumb">
+  <div class="nav-title">Trail:</div>
   <ul>
     {% for navurl in navurls %}
-    <li><a href="{{ navurl.url }}">{{ navurl.name }}</a></li>
+      {% if forloop.first %}
+      {% else %}
+        <div class="separator">»</div>
+      {% endif %}
+
+      {% if forloop.last %}
+        <li class="last">{{ navurl.name }}</li>
+      {% else %}
+        <li><a href="{{ navurl.url }}">{{ navurl.name }}</a></li>
+      {% endif %}
     {% endfor %}
   </ul>
 </nav>
