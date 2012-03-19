@@ -240,6 +240,17 @@ section.page_content {
             margin-bottom: 0px;
         }
 
+        section.page_content table {
+            border-collapse: collapse;
+            border: 1px solid #8a8;
+            margin-bottom: 5px;
+        }
+
+        section.page_content table th, td {
+            border: 1px solid #8a8;
+            padding: 2px 4px 2px 4px;
+        }
+
 	section.page_content form.feedback {
 	}
 

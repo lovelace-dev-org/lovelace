@@ -13,12 +13,12 @@ class ContentParser(object):
         "codefile" : ur"[{]{3}\!(?P<filename>[^\s]+)\s*[}]{3}$",
         "code" : ur"^[{]{3}\s*$",
         "taskembed" : ur"^\[\[\[(?P<taskname>[^\s]+)\]\]\]$",
+        "table" : ur"^([|]{2}[^|]*)+[|]{2}$",
         "empty" : ur"^\s*$",
         "heading" : ur"^\s*(?P<len>[=]{1,6})[=]*\s*.+\s*(?P=len)\s*$",
         "indent" : ur"^[ \t]+",
     }
-    block_re = re.compile(ur"|".join("(?P<%s>%s)" % kv
-                          for kv in sorted(block.iteritems())))
+    block_re = re.compile(ur"|".join("(?P<%s>%s)" % kv for kv in sorted(block.iteritems())))
 
     def __init__(self, lines=None):
         """asdf
@@ -30,6 +30,8 @@ class ContentParser(object):
         self.current_filename = None
         self.current_taskname = None
         self.list_state = []
+        self.in_table = False
+        self.table_header_used = False
     
     def get_line_kind(self, line):
         matchobj = self.block_re.match(line)
@@ -150,6 +152,35 @@ class ContentParser(object):
         settings = {"taskname" : taskname}
         return settings
 
+    def block_table(self, block, settings):
+        if not self.in_table:
+            self.in_table = True
+            yield u'<table>'
+        if not self.table_header_used and settings["thead"]:
+            yield u'<thead>'
+        yield u'<tr>'
+        for i, cell in enumerate(settings["cells"]):
+            if settings["thcells"][i]:
+                yield u'<th>%s</th>' % cell
+            else:
+                yield u'<td>%s</td>' % cell
+        yield u'</tr>'
+        if not self.table_header_used and settings["thead"]:
+            self.table_header_used = True
+            yield u'</thead>'
+    def settings_table(self, matchobj):
+        cells = matchobj.group(0).strip().split("||")
+        cells.pop() # Remove the entry after last ||
+        cells.pop(0) # Remove the entry before first ||
+        thcells = [cell.startswith("!") for cell in cells]
+        cells = [cell.lstrip("!") for cell in cells]
+        thead = False not in thcells
+        
+        settings = {"cells" : cells,
+                    "thcells" : thcells,
+                    "thead" : thead,}
+        return settings
+
     def set_fileroot(self, fileroot):
         self.fileroot = fileroot
 
@@ -162,15 +193,28 @@ class ContentParser(object):
         for group_info, block in itertools.groupby(self.lines, self.get_line_kind):
             func = getattr(self, "block_%s" % group_info[0])
             settings = getattr(self, "settings_%s" % group_info[0])(group_info[1])
+
+            # Reset list settings
             if group_info[0] != "bullet" and group_info[0] != "ordered_list":
                 for undent_lvl in range(len(self.list_state)):
                     top_lvl = self.list_state.pop()
                     yield u'</%s>' % top_lvl
-                #self.list_level = 0
-            #print group_info[0], settings
+
+            # Reset table settings
+            if group_info[0] != 'table' and self.in_table:
+                self.in_table = False
+                self.table_header_used = False
+                yield u'</table>'
+
+            #print block, settings
             for part in func(block, settings):
                 yield part
 
+        # Close remaining tags when the end of the page has been reached
+        for remaining_lvl in reversed(self.list_state): # Clean up possible list indentations
+            yield u'</%s>' % remaining_lvl
+        if self.in_table: # Clean up possible open tables
+            yield u'</table>'
 
 
 

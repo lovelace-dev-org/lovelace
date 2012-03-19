@@ -1,26 +1,28 @@
 digraph course_graph {
     node [penwidth="2",fixedsize="True",width="1.6",height="0.5"]
     "start" [width="0.1",shape="point",height="0.1"]
-    "node13" [style="filled",fontname="Arial",label="Intro to fuzzing",href="/training/DIAMONDS%20training%20and%20dissemination/Fuzzing%20testing%20with%20RADAMSA/Intro%20to%20fuzzing/",fontsize="13",fillcolor="#55aaff"]
-    "node14" [style="filled",fontname="Arial",label="RADAMSA",href="/training/DIAMONDS%20training%20and%20dissemination/Fuzzing%20testing%20with%20RADAMSA/RADAMSA/",fontsize="13",fillcolor="#55aaff"]
-    "node15" [style="filled",fontname="Arial",label="Exercise 1",href="/training/DIAMONDS%20training%20and%20dissemination/Fuzzing%20testing%20with%20RADAMSA/Exercise%201/",fontsize="13",fillcolor="#55aaff"]
-    "node16" [style="filled",fontname="Arial",label="Intro 1",href="/training/DIAMONDS%20training%20and%20dissemination/Fuzzing%20testing%20with%20RADAMSA/Intro%201/",fontsize="13",fillcolor="#55aaff"]
-    "node17" [style="filled",fontname="Arial",label="Intro 2",href="/training/DIAMONDS%20training%20and%20dissemination/Fuzzing%20testing%20with%20RADAMSA/Intro%202/",fontsize="13",fillcolor="#55aaff"]
-    "node18" [style="filled",fontname="Arial",label="Intro 3",href="/training/DIAMONDS%20training%20and%20dissemination/Fuzzing%20testing%20with%20RADAMSA/Intro%203/",fontsize="13",fillcolor="#55aaff"]
-    "node19" [style="filled",fontname="Arial",label="HTML test 1",href="/training/DIAMONDS%20training%20and%20dissemination/Fuzzing%20testing%20with%20RADAMSA/HTML%20test%201/",fontsize="13",fillcolor="#55aaff"]
-    "node20" [style="filled",fontname="Arial",label="WAV ",href="/training/DIAMONDS%20training%20and%20dissemination/Fuzzing%20testing%20with%20RADAMSA/WAV%20/",fontsize="13",fillcolor="#55aaff"]
-    "node21" [style="filled",fontname="Arial",label="WAV project",href="/training/DIAMONDS%20training%20and%20dissemination/Fuzzing%20testing%20with%20RADAMSA/WAV%20project/",fontsize="13",fillcolor="#55aaff"]
-    "node22" [style="filled",fontname="Arial",label="JPEG",href="/training/DIAMONDS%20training%20and%20dissemination/Fuzzing%20testing%20with%20RADAMSA/JPEG/",fontsize="13",fillcolor="#55aaff"]
-    "node23" [style="filled",fontname="Arial",label="HTML test 2",href="/training/DIAMONDS%20training%20and%20dissemination/Fuzzing%20testing%20with%20RADAMSA/HTML%20test%202/",fontsize="13",fillcolor="#55aaff"]
-    start -> node13
-    start -> node14
-    node13 -> node15
-    node14 -> node16
-    node16 -> node17
-    node17 -> node18
-    node14 -> node19
-    node14 -> node20
-    node20 -> node21
-    node14 -> node22
-    node19 -> node23
+    "node1" [style="filled",fontname="Arial",label="list_test",href="/training/Test%20environment/testi-inkarnaatio/list_test/",fontsize="13",fillcolor="#55aaff"]
+    "node2" [style="filled",fontname="Arial",label="tekstikenttä",href="/training/Test%20environment/testi-inkarnaatio/tekstikentt%C3%A4/",fontsize="13",fillcolor="#55aaff"]
+    "node3" [style="filled",fontname="Arial",label="pitkä sivu",href="/training/Test%20environment/testi-inkarnaatio/pitk%C3%A4%20sivu/",fontsize="13",fillcolor="#55aaff"]
+    "node4" [style="filled",fontname="Arial",label="pitkä sivu",href="/training/Test%20environment/testi-inkarnaatio/pitk%C3%A4%20sivu/",fontsize="13",fillcolor="#55aaff"]
+    "node5" [style="filled",fontname="Arial",label="emb'd task",href="/training/Test%20environment/testi-inkarnaatio/emb'd%20task/",fontsize="13",fillcolor="#55aaff"]
+    "node6" [style="filled",fontname="Arial",label="Taulukkosivu",href="/training/Test%20environment/testi-inkarnaatio/Taulukkosivu/",fontsize="13",fillcolor="#55aaff"]
+    "node7" [style="filled",fontname="Arial",label="emb'd task",href="/training/Test%20environment/testi-inkarnaatio/emb'd%20task/",fontsize="13",fillcolor="#55aaff"]
+    "node8" [style="filled",fontname="Arial",label="pitkä sivu",href="/training/Test%20environment/testi-inkarnaatio/pitk%C3%A4%20sivu/",fontsize="13",fillcolor="#55aaff"]
+    "node9" [style="filled",fontname="Arial",label="valinta",href="/training/Test%20environment/testi-inkarnaatio/valinta/",fontsize="13",fillcolor="#55aaff"]
+    "node10" [style="filled",fontname="Arial",label="emb'd task",href="/training/Test%20environment/testi-inkarnaatio/emb'd%20task/",fontsize="13",fillcolor="#55aaff"]
+    "node11" [style="filled",fontname="Arial",label="emb'd task",href="/training/Test%20environment/testi-inkarnaatio/emb'd%20task/",fontsize="13",fillcolor="#55aaff"]
+    "node12" [style="filled",fontname="Arial",label="yksristikaks",href="/training/Test%20environment/testi-inkarnaatio/yksristikaks/",fontsize="13",fillcolor="#55aaff"]
+    start -> node1
+    node1 -> node2
+    node2 -> node3
+    node3 -> node4
+    node1 -> node5
+    start -> node6
+    start -> node7
+    node7 -> node8
+    node7 -> node9
+    node7 -> node10
+    node9 -> node11
+    node9 -> node12
 }
