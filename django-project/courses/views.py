@@ -363,7 +363,12 @@ def content(request, course_name, incarnation_name, content_name, **kwargs):
         if include_file_re:
             # It's an embedded source code file
             if include_file_re.group("filename") == parser.get_current_filename():
+                # Read the embedded file into file_contents, then syntax highlight it, then replace the placeholder with the contents
+                from pygments import highlight
+                from pygments.lexers import PythonLexer
+                from pygments.formatters import HtmlFormatter
                 file_contents = codecs.open(File.objects.get(name=include_file_re.group("filename")).fileinfo.path, "r", "utf-8").read()
+                file_contents = highlight(file_contents, PythonLexer(), HtmlFormatter(nowrap=True))
                 #file_contents = codecs.open(os.path.join(kwargs["media_root"], course_name, include_file_re.group("filename")), "r", "utf-8").read()
                 line = line.replace(include_file_re.group(0), file_contents)
             # It's an embedded task

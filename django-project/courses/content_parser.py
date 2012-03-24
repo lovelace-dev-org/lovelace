@@ -3,7 +3,15 @@
 
 import re
 import itertools
-from django.utils.html import escape
+#from django.utils.html import escape # Not good, escapes ' characters which prevents syntax parsing
+from cgi import escape
+
+from pygments import highlight
+from pygments.lexers import PythonLexer, CLexer
+from pygments.formatters import HtmlFormatter
+from highlighters import highlighters
+
+import blockparser
 
 class ContentParser(object):
     block = {
@@ -11,14 +19,14 @@ class ContentParser(object):
         "ordered_list" : ur"^\s*(?P<olist_level>[#]+)\s+",
         "separator" : ur"^\s*[-]{2}\s*$",
         "codefile" : ur"[{]{3}\!(?P<filename>[^\s]+)\s*[}]{3}$",
-        "code" : ur"^[{]{3}\s*$",
+        "code" : ur"^[{]{3}(\#\!(?P<highlight>%s))?\s*$" % (u"|".join(highlighters.iterkeys())),
         "taskembed" : ur"^\[\[\[(?P<taskname>[^\s]+)\]\]\]$",
         "table" : ur"^([|]{2}[^|]*)+[|]{2}$",
         "empty" : ur"^\s*$",
         "heading" : ur"^\s*(?P<len>[=]{1,6})[=]*\s*.+\s*(?P=len)\s*$",
         "indent" : ur"^[ \t]+",
     }
-    block_re = re.compile(ur"|".join("(?P<%s>%s)" % kv for kv in sorted(block.iteritems())))
+    block_re = re.compile(ur"|".join(ur"(?P<%s>%s)" % kv for kv in sorted(block.iteritems())))
 
     def __init__(self, lines=None):
         """asdf
@@ -50,8 +58,13 @@ class ContentParser(object):
     
     def block_paragraph(self, block, settings):
         yield u'<p>'
+        paragraph = u""
+        paragraph_lines = []
         for line in block:
-            yield escape(line)
+            paragraph_lines.append(escape(line))
+        paragraph = u"<br />".join(paragraph_lines)
+        paragraph = blockparser.parseblock(paragraph)
+        yield paragraph
         yield u'</p>\n'
     def settings_paragraph(self, matchobj):
         pass
@@ -71,12 +84,10 @@ class ContentParser(object):
             for new_lvl in range(settings["list_level"] - len(self.list_state)):
                 self.list_state.append("ul")
                 yield u'<ul>'
-            #self.list_level = settings["list_level"]
         elif len(self.list_state) > settings["list_level"]:
             for new_lvl in range(len(self.list_state) - settings["list_level"]):
                 top_lvl = self.list_state.pop()
                 yield u'</%s>' % top_lvl
-            #self.list_level = settings["list_level"]
         if len(self.list_state) == settings["list_level"]:
             if self.list_state[-1] == "ol":
                 top_lvl = self.list_state.pop()
@@ -84,7 +95,7 @@ class ContentParser(object):
                 self.list_state.append("ul")
                 yield u'<ul>'
         for line in block:
-            yield '<li>%s</li>' % (escape(line.strip("* \r\n\t")))
+            yield '<li>%s</li>' % (blockparser.parseblock(escape(line.strip("* \r\n\t"))))
     def settings_bullet(self, matchobj):
         list_level = len(matchobj.group("ulist_level"))
         settings = {"list_level" : list_level}
@@ -133,13 +144,28 @@ class ContentParser(object):
     def block_code(self, block, settings):
         for part in block:
             yield u'<pre class="normal">'
-            line = self.lines.next()
-            while not line.startswith("}}}"):
-                yield escape(line) + "\n"
+            if settings["highlight"]:
+                yield u'<code class="%s">' % ("highlight-" + settings["highlight"])
+                lines = []
                 line = self.lines.next()
+                while not line.startswith("}}}"):
+                    lines.append(line)
+                    line = self.lines.next()
+                code_string = u"\n".join(lines)
+                highlighted = highlight(code_string, highlighters[settings["highlight"]](), HtmlFormatter(nowrap=True))
+                yield highlighted
+                yield u'</code>'
+            else:
+                line = self.lines.next()
+                while not line.startswith("}}}"):
+                    yield escape(line) + "\n"
+                    line = self.lines.next()
             yield u'</pre>\n'
     def settings_code(self, matchobj):
-        pass
+        highlight = matchobj.group("highlight")
+        
+        settings = {"highlight" : highlight,}
+        return settings
 
     def block_taskembed(self, block, settings):
         self.current_taskname = settings["taskname"]
@@ -163,7 +189,7 @@ class ContentParser(object):
             if settings["thcells"][i]:
                 yield u'<th>%s</th>' % cell
             else:
-                yield u'<td>%s</td>' % cell
+                yield u'<td>%s</td>' % blockparser.parseblock(cell)
         yield u'</tr>'
         if not self.table_header_used and settings["thead"]:
             self.table_header_used = True
@@ -173,7 +199,7 @@ class ContentParser(object):
         cells.pop() # Remove the entry after last ||
         cells.pop(0) # Remove the entry before first ||
         thcells = [cell.startswith("!") for cell in cells]
-        cells = [cell.lstrip("!") for cell in cells]
+        cells = [escape(cell.lstrip("!")) for cell in cells]
         thead = False not in thcells
         
         settings = {"cells" : cells,

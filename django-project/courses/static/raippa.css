@@ -177,7 +177,7 @@ section.page_content {
         padding-bottom: 32px; /* Size of footer */
 }
 
-        section.page_content h1,h2,h3,h4,h5,h6 {
+        section.page_content h1, section.page_content h2, section.page_content h3, section.page_content h4, section.page_content h5, section.page_content h6 {
             font-family: "Trebuchet MS", "Helvetica", sans-serif;
             font-weight: bold;
             margin-bottom: 10px;
@@ -218,24 +218,12 @@ section.page_content {
             margin-right: 15px;
         }
 
-        section.page_content ul,ol {
+        section.page_content ul, section.page_content ol {
             margin-left: 1.5em;
             margin-bottom: 5px;
         }
         
-        ul ul {
-            margin-left: 1.5em;
-            margin-bottom: 0px;
-        }
-        ul ol {
-            margin-left: 1.5em;
-            margin-bottom: 0px;
-        }
-        ol ol {
-            margin-left: 1.5em;
-            margin-bottom: 0px;
-        }
-        ol ul {
+        section.page_content * ul ul, section.page_content * ul ol, section.page_content * ol ol, section.page_content * ol ul {
             margin-left: 1.5em;
             margin-bottom: 0px;
         }
@@ -246,9 +234,36 @@ section.page_content {
             margin-bottom: 5px;
         }
 
-        section.page_content table th, td {
+        section.page_content table th, section.page_content table td {
             border: 1px solid #8a8;
             padding: 2px 4px 2px 4px;
+        }
+
+        section.page_content p code, section.page_content table * code {
+            font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
+            background: #ffb;
+            font-size: 14.5px;
+            border-top: 1px;
+            border-bottom: 1px;
+            border-left: 0;
+            border-right: 0;
+            border-style: dashed;
+            border-color: #bbb;
+        }
+
+        section.page_content * a {
+            color: #282;
+        }
+        section.page_content * a:visited {
+            color: #828;
+        }
+        section.page_content * a:hover {
+            color: #fff;
+            background: #282;
+        }
+
+        section.page_content p mark {
+            background: #ff0;
         }
 
 	section.page_content form.feedback {
@@ -268,11 +283,16 @@ section.page_content {
 		background: #ccc;
 		border: 1px dashed grey;
 		text-shadow: -1px 1px 1px rgba(0, 0, 0, 0.1);
-		font-family: "DejaVu Sans Mono", monospace;
-		font-size: 12px;
+		font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
+		font-size: 14.5px;
                 margin-bottom: 10px;
                 padding: 5px;
 	}
+
+        section.page_content pre.normal code {
+            background: #ccc;
+            font-family: inherit;
+        }
         
         section.page_content div.embedded_task {
             border: 1px solid grey;

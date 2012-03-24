@@ -1,15 +1,11 @@
 /* blockcode.css */
 
-body {
-	width: 100%;
-}
-
 div.blockcode {
 	text-align: left;
-/*	width: 1000px;*/
 	border: 1px dashed grey;
 	clear: both;
 	overflow: hidden;
+        margin-bottom: 5px;
 }
 	
 	div.blockcode div.heading {
@@ -81,11 +77,11 @@ div.blockcode {
 		background: #eee;
 		border-top: 1px solid grey;
 		text-shadow: -1px 1px 1px rgba(0, 0, 0, 0.1);
-		font-family: "DejaVu Sans Mono", monospace;
-		font-size: 12px;
-		/* word-spacing: .5em; */
+		font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
+		font-size: 14.5px;
 	}
 		div.blockcode pre code {
+                        font-family: inherit;
 			white-space: pre;
 			counter-reset: code-line;
 			display: inline-block;
