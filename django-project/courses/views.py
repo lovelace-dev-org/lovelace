@@ -1,3 +1,7 @@
+"""
+Django views.
+TODO: Heavy commenting!
+"""
 from django.http import HttpResponse
 from courses.models import Course, Incarnation, ContentPage, TaskPage, RadiobuttonTaskAnswer, CheckboxTaskAnswer, TextfieldTaskAnswer, ContentGraphNode, File
 from django.template import Context, RequestContext, loader
@@ -122,64 +126,6 @@ def incarnation(request, course_name, incarnation_name):
     navurls = [NavURL(reverse('courses.views.index'), "Training home"), # Course
                NavURL(reverse('courses.views.course', kwargs={"course_name":course_name}), course_name),
                NavURL(reverse('courses.views.incarnation', kwargs={"course_name":course_name, "incarnation_name":incarnation_name}), incarnation_name),]
-
-    # # Build the course content tree
-
-    #node_ids = [id['id'] for id in course_graph_nodes.values('id')]
-    #parent_node_ids = [id['parentnode_id'] for id in course_graph_nodes.values('parentnode_id')]
-    # end_ids = set(node_ids) - set(parent_node_ids)
-
-    # course_tree = Tree()
-    # list_tree = []
-    # visited_nodes = {}
-    # saved_starting_nodes = []
-    # for end_id in end_ids:
-    #     node = Node(end_id, [])
-
-    #     node_start_found = False
-    #     nop_loop = False
-
-    #     current_id = end_id
-    #     lnode = [current_id]
-    #     visited_nodes[current_id] = lnode
-
-    #     while not node_start_found:
-    #         parent_id = course_graph_nodes.get(id=current_id).parentnode_id
-    #         if not parent_id:
-    #             break
-    #         if nop_loop:
-    #             lnode = visited_nodes[parent_id]
-    #         elif parent_id not in visited_nodes.keys():
-    #             node = node.addParent(parent_id)
-    #             lnode = [parent_id, lnode]
-    #             visited_nodes[parent_id] = lnode
-    #         else:
-    #             visited_nodes[parent_id].append(lnode)
-    #             lnode = visited_nodes[parent_id]
-    #             nop_loop = True
-    #         current_id = parent_id
-
-    #     course_tree.addNode(node)
-    #     if lnode[0] not in saved_starting_nodes:
-    #         list_tree.append(lnode)
-    #         saved_starting_nodes.append(lnode[0])
-
-    # get_content = lambda x: content_list.get(id=course_graph_nodes.get(id=x).content_id)
-    # tree = traverse_tree(list_tree)
-
-    # print tree
-
-    # for n, item in enumerate(tree[::]):
-    #     if item == '<' or item == '>':
-    #         tree[n] = item
-    #     else:
-    #         tree[n] = get_content(str(item))
-
-            
-#    tree = [get_content(str(x)) for x in tree if str(x) != "<" and str(x) != ">"]
-#    tree = [content_list.get(course_graph_nodes.get(str(id)).content_id) for id in tree if str(id) != "<" and str(id) != ">"]
-
-#    print tree
 
     course_graph_url = reverse('courses.views.course_graph', kwargs={'course_name':course_name, 'incarnation_name':incarnation_name})
 

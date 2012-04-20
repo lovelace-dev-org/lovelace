@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
-# http://wiki.sheep.art.pl/Wiki%20Markup%20Parser%20in%20Python
+"""
+Parser for wiki markup block content, i.e. paragraphs, bullet lists, tables, etc.
+Idea from http://wiki.sheep.art.pl/Wiki%20Markup%20Parser%20in%20Python
+"""
 
 import re
 import itertools
 #from django.utils.html import escape # Not good, escapes ' characters which prevents syntax parsing
-from cgi import escape
+from cgi import escape # Use this instead
 
 from pygments import highlight
 from pygments.lexers import PythonLexer, CLexer
@@ -14,6 +17,9 @@ from highlighters import highlighters
 import blockparser
 
 class ContentParser(object):
+    """Parser class for generating HTML from wiki markup block types."""
+
+    # Generates a regular expression from the supported block types
     block = {
         "bullet" : ur"^\s*(?P<ulist_level>[*]+)\s+",
         "ordered_list" : ur"^\s*(?P<olist_level>[#]+)\s+",
@@ -28,18 +34,13 @@ class ContentParser(object):
     }
     block_re = re.compile(ur"|".join(ur"(?P<%s>%s)" % kv for kv in sorted(block.iteritems())))
 
-    def __init__(self, lines=None):
-        """asdf
-        
-        asdf
-        """
-        
-        self.lines = lines
-        self.current_filename = None
-        self.current_taskname = None
-        self.list_state = []
-        self.in_table = False
-        self.table_header_used = False
+    def __init__(self, lines=None):        
+        self.lines = lines             # The lines of the markup text that's going to get parsed
+        self.current_filename = None   # If we've found a file name that has to be stored
+        self.current_taskname = None   # If we've found an embedded task page name that has to be stored
+        self.list_state = []           # For the stateful ul-ol-tag representation
+        self.in_table = False          # If we are currently inside a table
+        self.table_header_used = False # If th tag equivalent was used
     
     def get_line_kind(self, line):
         matchobj = self.block_re.match(line)
@@ -243,7 +244,7 @@ class ContentParser(object):
             yield u'</table>'
 
 
-
+# Test code
 if __name__ == "__main__":
     test_file = open("test1.txt")
     

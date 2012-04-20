@@ -1,12 +1,16 @@
 # -*- coding: utf-8 -*-
+"""Parser for inline wiki markup tags that appear in paragraphs, tables etc."""
 
 import re
+# TODO: Add more syntax highlighters!
 from pygments import highlight
 from pygments.lexers import PythonLexer
 from pygments.formatters import HtmlFormatter
 from highlighters import highlighters
 
 class Tag:
+    """One markup tag type."""
+
     def __init__(self, tagname, tagbegin, tagend, tagre):
         self.name = tagname
         self.begin = tagbegin
@@ -18,6 +22,7 @@ class Tag:
         self.options = options
 
     def htmlbegin(self, options=None):
+        """Returns the HTML equivalent begin tag of the inline wiki markup."""
         if not self.options and not options:
             return u"<%s>" % (self.name)
         elif self.options and not options:
@@ -28,13 +33,17 @@ class Tag:
             return u"<%s %s>" % (self.name, u" ".join(u"%s=\"%s\"" % kv for kv in dict(self.options.items() + options.items()).iteritems()))
     
     def htmlend(self):
+        """Returns the HTML equivalent end tag."""
         return u"</%s>" % (self.name)
 
     def lb(self):
+        """Length of the beginning wiki markup tag."""
         return len(self.begin)
     def le(self):
+        """Length of the ending wiki markup tag."""
         return len(self.end)
 
+# A library of different tags supported by the wiki markup
 tags = {u"bold":   Tag(u"strong", u"'''", u"'''", re.compile(ur"[']{3}(?P<bold_italic>[']{2})?.+?(?P=bold_italic)?[']{3}")),
         u"italic": Tag(u"em", u"''", u"''", re.compile(ur"[']{2}.+?[']{2}")),
         u"pre":    Tag(u"code", u"{{{", u"}}}", re.compile(ur"[{]{3}(?P<highlight>\#\!(%s) )?.+?[}]{3}" % (u"|".join(highlighters.iterkeys())))),
@@ -43,7 +52,7 @@ tags = {u"bold":   Tag(u"strong", u"'''", u"'''", re.compile(ur"[']{3}(?P<bold_i
         u"anchor": Tag(u"a", u"[[", u"]]", re.compile(ur"\[\[(?P<address>.+?)([|](?P<link_text>.+?))?\]\]")),} 
 
 def parsetag(tagname, unparsed_string):
-    """Parses one tag and applies it's settings."""
+    """Parses one tag and applies it's settings. Generates the HTML."""
     tag = tags[tagname]
     hilite = address = link_text = None
     parsed_string = u""
@@ -102,6 +111,7 @@ def parseblock(blockstring):
 
     return parsed_string
 
+# Some test code
 if __name__ == "__main__":
     block1 = u"'''alku on boldia ''ja valissa on italistoitua'' ja sitten jatkuu boldi'''"
     block2 = u"alku ei ole boldia '''''mutta sitte tulee itaboldi kohta'' joka jatkuu boldina''' ja loppuu epaboldina"

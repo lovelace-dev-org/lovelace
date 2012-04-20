@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+"""Simple graph structure for the course graph."""
 
 class Node:
     def __init__(self, data):
@@ -45,6 +46,7 @@ class Graph:
         self.index -= 1
         return self.edges[self.index]
 
+# Test code
 if __name__ == "__main__":
     nodes = []
     edges = []
