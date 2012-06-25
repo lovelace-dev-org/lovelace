@@ -1,113 +1,174 @@
+{% load i18n %}
 <!DOCTYPE html>
 <html>
 {% include "courses/meta.html" %}
 <body>
 
-<script language="javascript" type="text/javascript">
-<!-- 
-/* jQuery port of below
-$(function() {
-   $("
-});
-
-var mimetype = "application/x-www-form-urlencoded"; // Needed?
-var csrftoken = "csrfmiddlewaretoken=" + document.getElementById('task_form').elements["csrfmiddlewaretoken"].value;
-
-var dataString = csrftoken;
-var datalen = len(csrftoken);
-
-$.ajax({
-     type: "POST",
-     url: "{{ answer_check_url }}",
-     data: dataString,
-     success: function(data) {
-         $('#result').html(data);
-     }
-});
-return false;
-*/
-
-//Browser Support Code
+<script language="javascript" type="text/javascript"><!--
 function validateAnswer(e, task_name) {
-        e.preventDefault(); // Prevent the form from submitting
-	var ajaxRequest;
-	
-	try{
-		// Opera 8.0+, Firefox, Safari
-		ajaxRequest = new XMLHttpRequest();
-	} catch (e){
-		// Internet Explorer Browsers
-		try{
-			ajaxRequest = new ActiveXObject("Msxml2.XMLHTTP");
-		} catch (e) {
-			try{
-				ajaxRequest = new ActiveXObject("Microsoft.XMLHTTP");
-			} catch (e){
-				// Something went wrong
-				alert("Your browser doesn't support AJAX!");
-				return false;
-			}
-		}
-	}
+    e.preventDefault(); // Prevent the form from submitting
+    var xhr;
 
-        var mimetype = "application/x-www-form-urlencoded";
-
-        var form = document.getElementById('task_form');
-        var csrftoken = "csrfmiddlewaretoken=" + form.elements["csrfmiddlewaretoken"].value;
-
-        //var task_name = $('div.question').attr('id');
-        var task = $('div#' + task_name);
-        var rbchoices = $('div#' + task_name + ' form#task_form input.task_radio'); //document.getElementsByName(''); // Radio
-        var cbchoices = $('div#' + task_name + ' form#task_form input.task_check'); // Checkbox
-        var answer = $('div#' + task_name + ' form#task_form textarea.task_text'); //document.getElementsByName(''); // Textarea
-        var files = $('div#' + task_name + ' form#task_form input.task_file'); // Files
-
-        var data = csrftoken;
-
-        //alert(rbchoices.length);
-        //alert(cbchoices.length);
-        //alert(answer.length);
-
-        //alert(task_name);
-
-        for(var i=0; i < rbchoices.length; i++)
-        {
-            //alert(rbchoices[i].value + rbchoices[i].checked);
-            data += "&" + rbchoices[i].value + "=" + rbchoices[i].checked;
+    //Browser Support Code
+    try {
+        // Opera 8.0+, Firefox, Safari
+        xhr = new XMLHttpRequest();
+    } catch (e) {
+        // Internet Explorer Browsers
+        try {
+            xhr = new ActiveXObject("Msxml2.XMLHTTP");
+        } catch (e) {
+            try{
+                xhr = new ActiveXObject("Microsoft.XMLHTTP");
+            } catch (e){
+                // Something went wrong
+                alert("Your browser doesn't support AJAX!");
+                return false;
+            }
         }
+    }
 
-        for(var i=0; i < cbchoices.length; i++)
-        {
-            //alert(cbchoices[i].value + "=" + cbchoices[i].checked);
-            data += "&" + cbchoices[i].value + "=" + cbchoices[i].checked;
+    var form = document.getElementById('task_form');
+    var csrftoken = form.elements["csrfmiddlewaretoken"].value;
+
+    //var task_name = $('div.question').attr('id');
+    var task = $('div#' + task_name);
+
+    var rbchoices = $('div#' + task_name + ' form#task_form input.task_radio'); //document.getElementsByName(''); // Radio
+    var cbchoices = $('div#' + task_name + ' form#task_form input.task_check'); // Checkbox
+    var answer = $('div#' + task_name + ' form#task_form textarea.task_text'); //document.getElementsByName(''); // Textarea
+    //var files = $('div#' + task_name + ' form#task_form input.task_file'); // Files
+    var file_element = $('div#' + task_name + ' form#task_form input.task_file');
+    if (file_element) {
+        var filename = file_element.val();
+    }
+
+    var data = "csrfmiddlewaretoken=" + csrftoken;
+
+    for(var i=0; i < rbchoices.length; i++) {
+        //alert(rbchoices[i].value + rbchoices[i].checked);
+        data += "&" + rbchoices[i].value + "=" + rbchoices[i].checked;
+    }
+    for(var i=0; i < cbchoices.length; i++) {
+        //alert(cbchoices[i].value + "=" + cbchoices[i].checked);
+        data += "&" + cbchoices[i].value + "=" + cbchoices[i].checked;
+    }
+    if (answer.val()) {
+        data += "&" + "answer=" + answer.val();
+    }
+    // http://stackoverflow.com/questions/4856917/jquery-upload-progress-and-ajax-file-upload/4943774#4943774
+    // http://www.html5rocks.com/en/tutorials/file/xhr2/
+    // http://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.2
+    if (filename) { // For adding a progress bar
+        var files = file_element[0].files;
+        xhr.file = files[0];
+        xhr.addEventListener('progress', function(e1) {
+            var done = e1.position || e1.loaded, total = e1.totalSize || e1.total;
+            console.log('xhr progress: ' + ((Math.floor(done/total*1000)/10) + '%'));
+        }, false);
+        if (xhr.upload) {
+            xhr.upload.onprogress = function(e1) {
+                var done = e1.position || e1.loaded, total = e1.totalSize || e1.total;
+                console.log('xhr.upload progress: ' + done + ' / ' + total + ' = ' + (Math.floor(done/total*1000)/10) + '%');
+            };
         }
-        if (answer.val())
-        {
-            data += "&" + "answer=" + answer.val();
+        xhr.onreadystatechange = function(e1) {
+            if ( 4 == this.readyState ) {
+                console.log(['xhr upload complete', e1]);
+            }
+        };
+    }
+
+    var datalen = data.length;
+
+    // Create a function that will receive data sent from the server
+    xhr.onreadystatechange = function() {
+        if(xhr.readyState == 4 && xhr.status == 200) {
+            $('div#' + task_name + ' form div#result').html(xhr.responseText);
         }
+    }
+    // TODO: Check http://www.html5rocks.com/en/tutorials/file/dndfiles/ to allow drag & dropping files!
 
-        var datalen = data.length;
+    var mimetype = "application/x-www-form-urlencoded";
+    var boundary = "-----raJa9x";
+    var filemimetype = "multipart/form-data; boundary=" + boundary;
+    //var filemimetype = "multipart/form-data";
 
-        // Create a function that will receive data sent from the server
-        ajaxRequest.onreadystatechange = function() {
-	        if(ajaxRequest.readyState == 4 && ajaxRequest.status == 200) {
-	                $('div#' + task_name + ' form div#result').html(ajaxRequest.responseText);
-	        }
+    xhr.open("POST", "{{ answer_check_url }}" + task_name /* .replace(/_/g, " ") */ + "/", true);
+    if (filename) {
+        //xhr.setRequestHeader("Content-type", filemimetype);
+        xhr.setRequestHeader("X-CSRFToken", csrftoken);
+        xhr.setRequestHeader("X_REQUESTED_WITH", "XMLHttpRequest");
+        //xhr.setRequestHeader("Connection", "close");
+
+        /* Manually construct the message - works
+        data = "--" + boundary + "\r\nContent-Disposition: form-data; name=\"csrfmiddlewaretoken\"\r\n\r\n" + csrftoken + "\r\n";
+        data += "--" + boundary + "\r\nContent-Disposition: form-data; name=\"file\"; filename=\"" + filename + "\"\r\n";
+        data += "Content-Type: application/octet-stream\r\n\r\n";
+        var reader = new FileReader();
+        function rT() {
+            var x = reader.result;
+            data += x;
+            data += "--" + boundary + "--\r\n";
+            //alert(data);
+            xhr.send(data);
         }
+        reader.onload = rT;
+        reader.readAsBinaryString(files);
+        */
+        
+        /* Use the file sending API - doesn't work
+        xhr.send(files);
+        */
 
-        ajaxRequest.open("POST", "{{ answer_check_url }}" + task_name.replace(/_/g, " ") + "/", true);
-        ajaxRequest.setRequestHeader("Content-type", mimetype);
-        ajaxRequest.setRequestHeader("Content-length", datalen);
-        ajaxRequest.setRequestHeader("Connection", "close");
-        ajaxRequest.setRequestHeader("HTTP_X_REQUESTED_WITH", "XMLHttpRequest");
-        ajaxRequest.send(data);
+        // Use FormData to achieve the same as the manual version - works
+        var form_data = new FormData();
+        form_data.append("csrfmiddlewaretoken", csrftoken);
+        for (var filen = 0; filen < files.length; filen++) {
+            form_data.append("file" + filen, files[filen]);
+        }
+        xhr.send(form_data);
+    } else {
+        xhr.setRequestHeader("Content-type", mimetype);
+        xhr.setRequestHeader("Content-length", datalen);
+        xhr.setRequestHeader("Connection", "close");
+        xhr.setRequestHeader("X_REQUESTED_WITH", "XMLHttpRequest");
+        xhr.send(data);
+    }
 }
-
-
 //-->
 </script>
 
 <div id="container">
+
+	{% comment %}
+    <div id="header">
+        <div id="branding">
+        {% block branding %}{% endblock %}
+        </div>
+        <div id="user-tools">
+            {% trans 'Welcome,' %}
+	        {% if user.is_active %}
+            		<strong>{% filter force_escape %}{% firstof user.first_name user.username %}{% endfilter %}</strong>.
+        	{% endif %}
+
+            		{% block userlinks %}
+	        		{% if user.is_active %}
+                			<a href="/accounts/password/change/">{% trans 'Change password' %}</a> /
+                			<a href="/accounts/logout/">{% trans 'Log out' %}</a>
+	        			{% if user.is_active and user.is_staff %}
+                				<a href="/admin/">{% trans 'Admin pages' %}</a>	
+        				{% endif %}
+        			{% else %}
+                			please <a href="/accounts/login/">{% trans 'log in' %}</a>
+	   	     		{% endif %}
+            		{% endblock %}
+        </div>
+        {% block nav-global %}{% endblock %}
+    </div>
+	{% endcomment %}
+    <!-- END Header -->
+
 	<header class="header"><!-- The RAiPPA header at the top of the page -->
 		<heading>
 			<hgroup>
@@ -118,61 +179,59 @@ function validateAnswer(e, task_name) {
 				<a class="easter_egg" href="http://www.hs.fi/fingerpori/1135248791558">Konevitsa</a> edition</h2>-->
 			</hgroup>
 		</heading>
-		
                 {% include "courses/login-box.html" %}
-	</header>
-	
+	</header>	
+        {% block nav-global %}{% endblock %}
 	{% include "courses/nav-bar.html" %}
+
+
+
 
 	<section class="page_content"><!-- The RAiPPA content -->
           {% if course_list %}
 		<h1>Available trainings<!-- courses --></h1>
 		<ul>
                   {% for course in course_list %}
-                    <li><a href="/training/{{ course.name }}/">{{ course.name }}</a></li>
+                    <li><a href="/{{ course.name }}/">{{ course.name }}</a></li>
                   {% endfor %}
 		</ul>
           {% endif %}
           
-          {% if incarnation_list %}
-                <h1>Please select</h1>
-                <ul>
-                  {% for incarnation in incarnation_list %}
-                    <li><a href="/training/{{ course.name }}/{{ incarnation.name }}/">{{ incarnation.name }}</a></li>
-                  {% endfor %}
-                </ul>
-          {% endif %}
-          
           {% if content_list %}
                 <!--<h1>Available content on this training<!-- course </h1>-->
-                <h1>{{ incarnation.name }}</h1>
+                <h1>{{ training.name }}</h1>
                 <ul>
                   {% for content in content_list %}
-                    <li><a href="/training/{{ course.name }}/{{ incarnation.name }}/{{ content.name }}/">{{ content.name }}</a></li>
+                    <li><a href="/training/{{ training.name }}/{{ content.name }}/">{{ content.name }}</a></li>
                   {% endfor %}
                 </ul>
           {% endif %}
 
           {% if content_tree %}
-            <h1>Training path</h1>
+	    <hr>
+            <h2>Table of contents</h2>
             {% for list_direction in content_tree %}
               {% if list_direction == '>' %}
                 <ul>
               {% elif list_direction == '<' %}
                 </ul>
               {% else %}
-                <li><a href="/training/{{ course.name }}/{{ incarnation.name }}/{{ list_direction.name }}/">{{ list_direction.name }}</a></li>
+                <li><a href="/{{ training.name }}/{{ list_direction.name }}/">{{ list_direction.name }}</a></li>
               {% endif %}
             {% endfor %}
+	    <p>
+ 	    <hr>
           {% endif %}
 
+	  {% comment %}
           {% if course_graph_url %}
-            <h1>{{ incarnation.name }}</h1>
+            <h1>{{ training.name }}</h1>
             <div class="graph">
               <div id="canviz"></div>
             </div>
             <div id="debug_output"></div>
           {% endif %}
+	  {% endcomment %}
 
           {% if content %}
             {{ content|safe }}
@@ -183,7 +242,7 @@ function validateAnswer(e, task_name) {
 	<footer><!-- The footer -->
 		<div class="column0">
 			<!-- RAiPPA -->Design & backend<br />
-			Copyright &copy; 2012, Miikka Salminen
+			by Miikka Salminen
 		</div>
 		<div class="column1">
 			Powered by Python, Django and jQuery.

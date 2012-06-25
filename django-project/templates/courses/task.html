@@ -3,7 +3,9 @@
                 {{ emb_content|safe }}
               {% endif %}
               <div class="question" id="{{ content_name_id }}">{{ question }}
-              <form name="task_form" id="task_form" class="task" method="POST" onSubmit="validateAnswer(event);return false;" >
+              <form name="task_form" id="task_form" class="task"
+                    method="POST"
+                    onSubmit="validateAnswer(event);return false;" enctype="multipart/form-data" >
                 {% csrf_token %}
                 {% if tasktype == "radio" %}
                   {% for choice in choices %}
@@ -16,7 +18,7 @@
                 {% elif tasktype == "textfield" %}
                   <textarea name="answer" class="task_text"></textarea><br />
                 {% elif tasktype == "file" %}
-                  <input name="" type="file" class="task_file" />
+                  <input name="file" type="file" class="task_file" multiple="multiple" />
                 {% endif %}
                 <input type="submit" name="submit" value="Send answer" onClick="validateAnswer(event, '{{ content_name_id }}');return false;" />
                 <div id="result"></div>

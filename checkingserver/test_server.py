@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-    @copyright: 2008 by Mika Seppänen, Rauli Puuperä, Erno Kuusela
-    @license: MIT <http://www.opensource.org/licenses/mit-license.php>
+@copyright: 2008 by Mika Seppänen, Rauli Puuperä, Erno Kuusela
+@license: MIT <http://www.opensource.org/licenses/mit-license.php>
 """
 
 import datetime
@@ -9,6 +9,7 @@ import time
 import socket
 import json
 import os
+import shlex
 import subprocess
 import tempfile
 import shutil
@@ -25,6 +26,9 @@ def info(msg):
     date = datetime.datetime.now().isoformat()[:19]
     print "%s [info] %s" % (date, msg)
 
+def demote():
+    pass
+
 def runTest(arg, input, tempdir, timeout=10):
 
     #open files for stdout and stderr
@@ -37,8 +41,31 @@ def runTest(arg, input, tempdir, timeout=10):
     
     open(inpath, 'w').write("\n".join(input))
     infile = open(inpath, 'r')
- 
-    p = subprocess.Popen('ulimit -f 50 -n 50;' + arg, shell=True, stdout=outfile, stderr=errfile, stdin=infile)
+
+    # http://stackoverflow.com/a/6037494
+    # TODO: Many security measures!
+    # Running external code is _dangerous_! Therefore, we must do our best to prevent the following:
+    # 1. Code uses too many resources (memory, cpu, takes too much time to run etc.)
+    # -> use ulimit?
+    # 2. Code tries to access/delete files/directories on the machine
+    # -> set proper chmods for all files, run the code with a low privileged user
+    # 3. Code tries to send a KILL signal to a process (e.g. this checking bot)
+    # -> run the code with a different user than this checking bot
+    # use grsecurity?
+
+    #if arg:
+    #    arg = shlex.split(arg)
+    #p = subprocess.Popen('ulimit -f 50 -n 50;' + arg, shell=True, stdout=outfile, stderr=errfile, stdin=infile)
+    p = subprocess.Popen(
+        args='ulimit -f 50 -n 50;' + arg,
+        #preexec_fn=demote(),
+        shell=True,
+        cwd=tempdir,
+        universal_newlines=True,
+        stdout=outfile,
+        stderr=errfile,
+        stdin=infile
+    )
     
     timedout = True
     counter = 0
@@ -48,9 +75,8 @@ def runTest(arg, input, tempdir, timeout=10):
             break
         time.sleep(0.2)
         counter += 0.2
-        
-        
-    # if timeout then kill 
+    
+    # if timeout then kill
     if timedout:
         info('Timed out!')
         os.kill(p.pid, signal.SIGTERM)
@@ -119,14 +145,15 @@ def runTests(codes, tests, tempdir):
         
         for filename in os.listdir(tempdir):
             #clean up everything except the codes
-            if filename not in codes: 
+            if filename not in codes:
                 os.remove(os.path.join(tempdir, filename))
 
     return testResults
 
 
 def maketemp():
-    tempdir = "/Users/therauli/src/newRaippa/temp" #tempfile.mkdtemp()
+    #tempdir = "/Users/therauli/src/newRaippa/temp" #tempfile.mkdtemp()
+    tempdir = "/home/mdf/temp/raippa_temp"
     info("Created tempdir %s" % tempdir)
     os.chdir(tempdir)
     return tempdir
@@ -155,20 +182,24 @@ class ConnectionHandler(BaseHandler):
         info('Removing ' + tempdir)
         #shutil.rmtree(tempdir) #fixme
 
-        return "You Fail", "???"
+        return studentResults, referenceResults
 
-    def checkWithOuput(self, codes, tests):
+    def checkWithOutput(self, codes, tests):
         tempdir = maketemp()
 
+        print repr(codes)
+        print repr(tests)
+
         studentResults = runTests(codes, tests, tempdir)
+        print studentResults
 
         #compare with output
         for i, test in enumerate(tests):
-            test["output"], studentResults[i]['output']
+            print test["output"], studentResults[i]['output']
 
         info('Removing ' + tempdir)
         #shutil.rmtree(tempdir) #fixme
-
+        return studentResults
 
 test1 = {"args": ['python *.py'],
         "input": [],
@@ -191,9 +222,9 @@ testCases = {"codes": {"foo.py": "print 'hello World'"},
 
 # c = ConnectionHandler(None)
 # test1 = {"args": ['python *.py'],
-#         "input": [],
-#         "inputfiles" : {},
-#         }
+# "input": [],
+# "inputfiles" : {},
+# }
 # codes = {"foo.py": "print 'hello World'"}
 # references = {"hello.py": "print 'Hello World!'"}
 # tests = [test1]

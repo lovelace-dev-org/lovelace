@@ -1,5 +1,3 @@
-<head>
-  {% include "courses/meta-block.html" %}
   <meta charset="UTF-8" />
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
   <meta http-equiv="Content-Style-Type" content="text/css" />
@@ -18,22 +16,17 @@
   
   <script type="text/javascript" src="{{ STATIC_URL }}raippa.js" charset="UTF-8"></script>
 
-  {% if course_graph_url__ %} <!-- disabled support for course graph, since canviz conflicts with jquery -->
+  {% if course_graph_url %}
     <meta name="MSSmartTagsPreventParsing" content="true" />
     <!--[if IE]><script type="text/javascript" src="../../excanvas/excanvas.js"></script><![endif]-->
     <script type="text/javascript" src="{{ STATIC_URL }}canviz-0.1/prototype/prototype.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}canviz-0.1/path/path.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}canviz-0.1/canviz.js"></script>
-    <!--<script type="text/javascript">
-      //document.observe('dom:loaded', function() {
-      //  new Canviz('canviz', '{{ course_graph_url }}');
-      //});
-    </script>-->
+    <script type="text/javascript">
+	alert("jee");
+      document.observe('dom:loaded', function() {
+        new Canviz('canviz', '{{ course_graph_url }}');
+      });
+    </script>
   {% endif %}
   
-  {% if title %}
-    <title>DIAMONDS Training - {{ title }}</title>
-  {% else %}
-    <title>DIAMONDS Training</title>
-  {% endif %}
-</head>

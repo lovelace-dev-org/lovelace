@@ -1,0 +1,54 @@
+{% extends "admin/change_form.html" %}
+
+{% block after_related_objects %}
+  <p>
+{% autoescape on %}
+
+<h2>Editing instructions>
+<table>
+<tr>
+<td>
+<h1>= Top level header=</h1>
+<h2>== 2nd level header ==</h2>
+<h3>=== 3rd level header ===</h3>
+<h4>==== etc. ====</h4>
+</td>
+<td>
+-- horisontal line<p>
+
+{ {image:picture name}} link one of the pictures here<br>
+{ {video:videon name }} link one of the videos here<br>
+{ { {!file name}}} embed a code file to this page<br>
+
+[[[page name]]] an embedded content, such as a task<p>
+
+* list item <br>
+** 2nd level list item<br>
+*** etc.<br>
+<p>
+# numbered list item.<br>
+## etc.<br>
+### etc.<br>
+</td><td>
+ { { {<br>
+preformatted text<br>
+}}}<br>
+<p>
+ { { {#!python<br>
+python colour-coded text<br>
+}}}<br>
+<p>
+[[http://www.google.com|Google]] link<br>
+'''bold'''<br>
+''italics''<br>
+!!!highlighted text!!!<br>
+{ { {preformatted text}}}<br>
+{ { {#!python python syntax highlight}}}<br>
+</td></tr></table>
+{% endautoescape %}
+</p>
+
+
+{% endblock %}
+
+

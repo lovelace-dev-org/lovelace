@@ -1,0 +1,75 @@
+{% if checkboxtask_answers %}
+    <table border="1">
+    <tr>
+        <th>Task name</th>
+        <th>Answer date</th>
+        <th></th>
+    </tr>
+    {% for answer in checkboxtask_answers %}
+        <tr>
+            <td>{{ answer.task.name }}</td>
+            <td>{{ answer.answer_date }}</td>
+            <td></td>
+        </tr>
+    {% endfor %}
+    </table>
+{% else %}
+    <p>You haven't answered any checkbox tasks!</p>
+{% endif %}
+
+{% if radiobuttontask_answers %}
+    <table border="1">
+    <tr>
+        <th>Task name</th>
+        <th>Answer date</th>
+        <th></th>
+    </tr>
+    {% for answer in radiobuttontask_answers %}
+        <tr>
+            <td>{{ answer.task.name }}</td>
+            <td>{{ answer.answer_date }}</td>
+            <td></td>
+        </tr>
+    {% endfor %}
+    </table>
+{% else %}
+    <p>You haven't answered any radio button tasks!</p>
+{% endif %}
+
+{% if textfieldtask_answers %}
+    <table border="1">
+    <tr>
+        <th>Task name</th>
+        <th>Answer date</th>
+        <th></th>
+    </tr>
+    {% for answer in textfieldtask_answers %}
+        <tr>
+            <td>{{ answer.task.name }}</td>
+            <td>{{ answer.answer_date }}</td>
+            <td></td>
+        </tr>
+    {% endfor %}
+    </table>
+{% else %}
+    <p>You haven't answered any text field tasks!</p>
+{% endif %}
+
+{% if filetask_answers %}
+    <table border="1">
+    <tr>
+        <th>Task name</th>
+        <th>Answer date</th>
+        <th></th>
+    </tr>
+    {% for answer in filetask_answers %}
+        <tr>
+            <td>{{ answer.task.name }}</td>
+            <td>{{ answer.answer_date }}</td>
+            <td></td>
+        </tr>
+    {% endfor %}
+    </table>
+{% else %}
+    <p>You haven't answered any file tasks!</p>
+{% endif %}
