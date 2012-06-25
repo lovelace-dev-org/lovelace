@@ -310,6 +310,18 @@ section.page_content {
             font-weight: bold;
         }
 
+        section.page_content div_result table td {
+            font-weight: normal;
+        }
+
+        section.page_content div#result table span.diff_sub {
+            background: #f99;
+        }
+
+        section.page_content div#result table span.diff_chg {
+            background: #99f;
+        }
+
 /* FOOTER */
 footer {
 	font-family: arial, sans-serif;

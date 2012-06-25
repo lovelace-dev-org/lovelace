@@ -14,6 +14,19 @@ framework.
 
 """
 import os
+import sys
+
+# Copied from the old project
+sys.path.append('/local/django')
+sys.path.append('/local/django/raippa_ng')
+
+sys.path.append('/local/django/raippa_ng/raippa')
+
+# Try to use the newest version of django
+sys.path.insert(0, "/local/django/raippa_ng/Django-1.4")
+
+# Use pygments
+sys.path.append("/local/django/raippa_ng/pygments")
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "raippa.settings")
 

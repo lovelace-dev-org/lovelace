@@ -1,10 +1,4 @@
-from courses.models import Course
-from courses.models import Incarnation
-from courses.models import ContentPage
-from courses.models import File
-from courses.models import LecturePage, TaskPage, RadiobuttonTask, CheckboxTask, TextfieldTask
-from courses.models import RadiobuttonTaskAnswer, CheckboxTaskAnswer, TextfieldTaskAnswer
-from courses.models import ContentGraph, ContentGraphNode
+from courses.models import *
 
 from django.contrib import admin
 
@@ -14,7 +8,7 @@ class RadiobuttonTaskAnswerInline(admin.TabularInline):
 
 class RadiobuttonTaskAdmin(admin.ModelAdmin):
     fieldsets = [
-        (None,               {'fields': ['course', 'question']}),
+        (None,               {'fields': ['question']}),
         ('Page information', {'fields': ['name', 'content']}),
     ]
     inlines = [RadiobuttonTaskAnswerInline]
@@ -25,7 +19,7 @@ class CheckboxTaskAnswerInline(admin.TabularInline):
 
 class CheckboxTaskAdmin(admin.ModelAdmin):
     fieldsets = [
-        (None,               {'fields': ['course', 'question']}),
+        (None,               {'fields': ['question']}),
         ('Page information', {'fields': ['name', 'content']}),
     ]
     inlines = [CheckboxTaskAnswerInline]
@@ -36,26 +30,52 @@ class TextfieldTaskAnswerInline(admin.StackedInline):
 
 class TextfieldTaskAdmin(admin.ModelAdmin):
     fieldsets = [
-        (None,               {'fields': ['course', 'question']}),
+        (None,               {'fields': ['question']}),
         ('Page information', {'fields': ['name', 'content']}),
     ]
     inlines = [TextfieldTaskAnswerInline]
 
+class FileTaskTestCommandAdmin(admin.TabularInline):
+    model = FileTaskTestCommand
+    extra = 1
+
+class FileTaskTestExpectedOutputAdmin(admin.StackedInline):
+    model = FileTaskTestExpectedOutput
+    extra = 0
+
+class FileTaskTestExpectedErrorAdmin(admin.StackedInline):
+    model = FileTaskTestExpectedError
+    extra = 0
+
+class FileTaskTestIncludeFileAdmin(admin.StackedInline):
+    model = FileTaskTestIncludeFile
+    extra = 0
+
+class FileTaskTestAdmin(admin.ModelAdmin):
+    inlines = [FileTaskTestCommandAdmin, FileTaskTestExpectedOutputAdmin, FileTaskTestExpectedErrorAdmin, FileTaskTestIncludeFileAdmin]
+
+class FileTaskAdmin(admin.ModelAdmin):
+    fieldsets = [
+        (None, {'fields': ['question']}),
+        ('Page information', {'fields': ['name', 'content']}),
+    ]
 
 admin.site.register(LecturePage)
 admin.site.register(RadiobuttonTask, RadiobuttonTaskAdmin)
 admin.site.register(CheckboxTask, CheckboxTaskAdmin)
 admin.site.register(TextfieldTask, TextfieldTaskAdmin)
-admin.site.register(File)
+admin.site.register(FileTask, FileTaskAdmin)
+admin.site.register(FileTaskTest, FileTaskTestAdmin)
 
-class ContentGraphNodeAdmin(admin.ModelAdmin):
-    pass
+admin.site.register(File)
+admin.site.register(Image)
+admin.site.register(Video)
+admin.site.register(Evaluation)
 
 class ContentGraphAdmin(admin.ModelAdmin):
     pass
 
 admin.site.register(ContentGraph, ContentGraphAdmin)
-admin.site.register(ContentGraphNode, ContentGraphNodeAdmin)
 
 # http://jeffelmore.org/2010/11/11/automatic-downcasting-of-inherited-models-in-django/
 #class AbstractQuestionAdmin(admin.ModelAdmin):
@@ -70,14 +90,27 @@ admin.site.register(ContentGraphNode, ContentGraphNodeAdmin)
 #            return qs.select_subclasses()
 #        return qs.select_subclasses().filter(users=request.user)
 
-class IncarnationInline(admin.StackedInline):
-    model = Incarnation
-    extra = 0
+#class IncarnationInline(admin.StackedInline):
+#    model = Incarnation
+#    extra = 0
 
-class CourseAdmin(admin.ModelAdmin):
-    fields = ['name']
+#class CourseAdmin(admin.ModelAdmin):
+#    fields = ['name']
+#
+#    inlines = [IncarnationInline]
 
-    inlines = [IncarnationInline]
+class TrainingAdmin(admin.ModelAdmin):
+ 	fieldsets = [
+        	(None,               {'fields': ['name','responsible','frontpage']}),
+        	('Other staff for this training', {'fields': ['staff'],'classes': ['collapse']}),
+        	('Settings for start date and end date of training', {'fields': ['start_date','end_date'],'classes': ['collapse']}),
+        	('Users enrolled in the training', {'fields': ['students'],'classes': ['collapse']}),
+        	('Training outline', {'fields': ['contents']}),
+    		    ]
+	filter_horizontal = ['responsible','staff','students']
+	#formfield_overrides = {models.ManyToManyField: {'widget':}}
 
-admin.site.register(Course, CourseAdmin)
+admin.site.register(Training,TrainingAdmin)
 #admin.site.register(TaskPage, QuestionAdmin)
+
+

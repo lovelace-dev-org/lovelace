@@ -6,16 +6,19 @@ from django.conf import settings
 from django.contrib import admin
 admin.autodiscover()
 
-courses_name = "training" # courses
+#courses_name = "training" # courses
 
 urlpatterns = patterns('',
-    url(r'^%s/$' % courses_name, 'courses.views.index'),
-    url(r'^%s/(?P<course_name>[^/]+)/$' % courses_name, 'courses.views.course'),
-    url(r'^%s/(?P<course_name>[^/]+)/(?P<incarnation_name>[^/]+)/$' % courses_name, 'courses.views.incarnation'),
-    url(r'^%s/(?P<course_name>[^/]+)/(?P<incarnation_name>[^/]+)/graph\.vg$' % courses_name, 'courses.views.course_graph'),
-    url(r'^%s/(?P<course_name>[^/]+)/(?P<incarnation_name>[^/]+)/(?P<content_name>[^/]+)/$' % courses_name, 'courses.views.content', {'media_root': settings.MEDIA_ROOT,}),
+    url(r'^$', 'courses.views.index'),
+    url(r'^admin/', include(admin.site.urls)),
+    url(r'^accounts/', include('registration.urls')),
+    url(r'^accounts/', 'courses.views.index'),
+    url(r'^user/(?P<user_name>[^/]+)/$', 'courses.views.user'),
+    url(r'^media/(?P<filename>.+)$', 'courses.views.file_download', {'media_root': settings.MEDIA_ROOT,}),
+    url(r'^(?P<training_name>[^/]+)/$', 'courses.views.training', {'media_root': settings.MEDIA_ROOT, 'media_url':settings.MEDIA_URL,}),
+    url(r'^(?P<training_name>[^/]+)/graph\.vg$', 'courses.views.course_graph'),
+    url(r'^(?P<training_name>[^/]+)/(?P<content_name>[^/]+)/$', 'courses.views.content', {'media_root': settings.MEDIA_ROOT, 'media_url':settings.MEDIA_URL,}),
 
-    url(r'^media/(?P<course_name>[^/]+)/(?P<filename>.+)$', 'courses.views.file_download', {'media_root': settings.MEDIA_ROOT,}),
     # Examples:
     # url(r'^$', 'raippa.views.home', name='home'),
     # url(r'^raippa/', include('raippa.foo.urls')),
@@ -24,5 +27,4 @@ urlpatterns = patterns('',
     # url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
 
     # Uncomment the next line to enable the admin:
-    url(r'^admin/', include(admin.site.urls)),
 )

@@ -5,6 +5,8 @@ Idea from http://wiki.sheep.art.pl/Wiki%20Markup%20Parser%20in%20Python
 """
 
 import re
+import os
+import codecs
 import itertools
 #from django.utils.html import escape # Not good, escapes ' characters which prevents syntax parsing
 from cgi import escape # Use this instead
@@ -24,6 +26,8 @@ class ContentParser(object):
         "bullet" : ur"^\s*(?P<ulist_level>[*]+)\s+",
         "ordered_list" : ur"^\s*(?P<olist_level>[#]+)\s+",
         "separator" : ur"^\s*[-]{2}\s*$",
+        "image" : ur"^[{]{2}image\:(?P<imagename>[^|]+)(\|(?P<alt>.+))?[}]{2}$",
+        "video" : ur"^[{]{2}video\:(?P<videoname>.+)[}]{2}$",
         "codefile" : ur"[{]{3}\!(?P<filename>[^\s]+)\s*[}]{3}$",
         "code" : ur"^[{]{3}(\#\!(?P<highlight>%s))?\s*$" % (u"|".join(highlighters.iterkeys())),
         "taskembed" : ur"^\[\[\[(?P<taskname>[^\s]+)\]\]\]$",
@@ -38,6 +42,8 @@ class ContentParser(object):
         self.lines = lines             # The lines of the markup text that's going to get parsed
         self.current_filename = None   # If we've found a file name that has to be stored
         self.current_taskname = None   # If we've found an embedded task page name that has to be stored
+        self.current_videoname = None  # If we've found an embedded video name that has to be stored
+        self.current_imagename = None  # If we've found an embedded picture name that has to be stored
         self.list_state = []           # For the stateful ul-ol-tag representation
         self.in_table = False          # If we are currently inside a table
         self.table_header_used = False # If th tag equivalent was used
@@ -126,11 +132,45 @@ class ContentParser(object):
         settings = {"list_level" : list_level}
         return settings
 
+    def block_image(self, block, settings):
+        if settings["alt"]:
+            yield u'<img src="%s" alt="%s" />' % (settings["imageurl"], settings["alt"])
+        else:
+            yield u'<img src="%s" />' % (settings["imageurl"])
+    def settings_image(self, matchobj):
+        imagename = escape(matchobj.group("imagename"))
+        #imageurl = "%s%s/%s" % (self.mediaurl, self.coursename, imagename)
+	imageurl = "{{ %s }}" % (imagename)
+	self.current_imagename = imagename
+        alt = u""
+        try:
+            alt = escape(matchobj.group("alt"))
+        except AttributeError:
+            pass
+
+        settings = {"imagename" : imagename, "alt" : alt, "imageurl" : imageurl}
+        return settings
+
+    def block_video(self, block, settings):
+        # No <video> tag support yet
+        #yield u'<video src="%s">Your browsers doesn\'t support videos!</video>' % (settings["videoname"])
+        self.current_videoname = settings["videoname"]
+        yield u'<iframe width="560" height="315" src="{{ %s }}" frameborder="0" allowfullscreen></iframe>' % (settings["videoname"])
+    def settings_video(self, matchobj):
+        videoname = escape(matchobj.group("videoname"))
+        
+        settings = {"videoname" : videoname}
+        return settings
+
     def block_codefile(self, block, settings):
-        import codecs
-        codefile_normal_begin = codecs.open("courses/codefile-normal-begin.html", "r", "utf-8").read().strip()
+        #fp = os.path.join("/local", "django", "raippa_ng", "courses")
+        fp = os.path.join("/home", "mdf", "raippa_ng_2012-06-12", "courses")
+        fpb = os.path.join(fp, "codefile-normal-begin.html")
+        fpe = os.path.join(fp, "codefile-normal-end.html")
+        codefile_normal_begin = codecs.open(fpb, "r", "utf-8").read().strip()
         codefile_normal_begin = codefile_normal_begin.replace("{{ filename }}", settings["filename"])
-        codefile_normal_end = codecs.open("courses/codefile-normal-end.html", "r", "utf-8").read().strip()
+        codefile_normal_begin = codefile_normal_begin.replace("{{ fileurl }}",  settings["fileurl"])
+        codefile_normal_end = codecs.open(fpe, "r", "utf-8").read().strip()
         self.current_filename = settings["filename"]
         for part in block:
             yield codefile_normal_begin
@@ -138,8 +178,9 @@ class ContentParser(object):
             yield codefile_normal_end
     def settings_codefile(self, matchobj):
         filename = escape(matchobj.group("filename"))
-        
-        settings = {"filename" : filename}
+        fileurl = "%s%s" % (self.mediaurl, filename)
+ 
+        settings = {"filename" : filename, "fileurl" : fileurl}
         return settings
 
     def block_code(self, block, settings):
@@ -210,11 +251,19 @@ class ContentParser(object):
 
     def set_fileroot(self, fileroot):
         self.fileroot = fileroot
+    def set_mediaurl(self, mediaurl):
+        self.mediaurl = mediaurl
+    def set_coursename(self, coursename):
+        self.coursename = coursename
 
     def get_current_filename(self):
         return self.current_filename
     def get_current_taskname(self):
         return self.current_taskname
+    def get_current_videoname(self):
+        return self.current_videoname
+    def get_current_imagename(self):
+        return self.current_imagename
         
     def parse(self):
         for group_info, block in itertools.groupby(self.lines, self.get_line_kind):
