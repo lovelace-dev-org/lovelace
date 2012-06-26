@@ -2,6 +2,8 @@
 
 DEBUG = True # Use True when viewing through web browser
 TEMPLATE_DEBUG = DEBUG
+RAIPPA_ROOT = "/home/mdf/raippa_ng/django-project/"
+#RAIPPA_ROOT = "/local/django/raippa_ng/"
 
 ADMINS = (
     # ('Your Name', 'your_email@example.com'),
@@ -12,8 +14,8 @@ EMAIL_HOST = 'portal.mdf.dy.fi'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3', # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': '/home/mdf/raippa_ng_2012-06-12/sqlite3.db',                      # Or path to database file if using sqlite3.
+        'ENGINE': 'django.db.backends.sqlite3',  # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
+        'NAME': RAIPPA_ROOT + 'sqlite3.db',      # Or path to database file if using sqlite3.
         'USER': 'diamonds',                      # Not used with sqlite3.
         'PASSWORD': 'timantit',                  # Not used with sqlite3.
         'HOST': '',                      # Set to empty string for localhost. Not used with sqlite3.
@@ -49,8 +51,7 @@ USE_TZ = True
 
 # Absolute filesystem path to the directory that will hold user-uploaded files.
 # Example: "/home/media/media.lawrence.com/media/"
-#MEDIA_ROOT = '/home/mdf/projects/raippa_ng/django-project/upload/'
-MEDIA_ROOT = '/home/mdf/raippa_ng_2012-06-12/upload/'
+MEDIA_ROOT = RAIPPA_ROOT + 'upload/'
 
 # URL that handles the media served from MEDIA_ROOT. Make sure to use a
 # trailing slash.
@@ -61,8 +62,7 @@ MEDIA_URL = '/media/'
 # Don't put anything in this directory yourself; store your static files
 # in apps' "static/" subdirectories and in STATICFILES_DIRS.
 # Example: "/home/media/media.lawrence.com/static/"
-#STATIC_ROOT = '/local/django/raippa_ng/raippa/static/'
-STATIC_ROOT = ''
+STATIC_ROOT = RAIPPA_ROOT + 'raippa/static/'
 
 # URL prefix for static files.
 # Example: "http://media.lawrence.com/static/"
@@ -109,7 +109,7 @@ ROOT_URLCONF = 'raippa.urls'
 WSGI_APPLICATION = 'raippa.wsgi.application'
 
 TEMPLATE_DIRS = (
-    '/home/mdf/raippa_ng_2012-06-12/templates/',
+    RAIPPA_ROOT + 'templates/',
     #'/home/mdf/projects/raippa_ng/django-project/templates/',
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
     # Always use forward slashes, even on Windows.

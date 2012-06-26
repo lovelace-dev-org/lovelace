@@ -1,8 +1,15 @@
 """
 Django views.
 TODO: Heavy commenting!
+TODO: Use classes instead of bare functions to group data!
 """
+import os
+import re
+import codecs
+import random
+import difflib
 import datetime
+import mimetypes
 
 from django.http import HttpResponse
 from django.template import Context, RequestContext, loader
@@ -14,6 +21,7 @@ from courses.models import *
 
 import content_parser
 import filecheck_client
+import graph_builder
 
 class NavURL:
     def __init__(self, url, name):
@@ -45,16 +53,13 @@ def training_b(request, course_name):
     })
     return HttpResponse(t.render(c))
 
-import graph_builder
-
 def add_tree(nodelist,id):
 	nodelist.append(ContentGraph.objects.get(id=id))
 	for child in ContentGraph.objects.filter(parentnode_id=id):
 		add_tree(nodelist,child.id)
 
 def course_graph(request, training_name):
-    import codecs
-    import os
+    # TODO: Use temporary files and/or dynamic root directory!
     selected_course = Training.objects.get(name=training_name)
     topnodes = selected_course.contents.all()
     course_graph_nodes = [] 
@@ -157,8 +162,6 @@ def dirtree(tree,node):
 			dirtree(tree,K)
             	tree.append(mark_safe('<'))
 
-	
-
 def get_task_info(content):
     tasktype = None
     choices = None
@@ -195,12 +198,7 @@ def get_task_info(content):
 
     return (tasktype, question, choices)
 
-
 def content(request, training_name, content_name, **kwargs):
-    import re
-    import codecs
-    import os
-
     print "Ollaan contentissa."
 
     selected_course = Training.objects.get(name=training_name)
@@ -208,6 +206,7 @@ def content(request, training_name, content_name, **kwargs):
     pages = [content]
 
     # Validate an answer to question
+    # TODO: Create an own view (and URL) for answer checking to tidy this up!
     if request.method == "POST":
         print "Flow @ content view POST data check"
         question = TaskPage.objects.get(id=content.id).question
@@ -355,7 +354,7 @@ def content(request, training_name, content_name, **kwargs):
             
             results = filecheck_client.check_file_answer(f_answer)
             print results
-            import difflib
+
             received_output = results["output"].split("\n")
             expected_output = results["ref_output"].split("\n")
             difftable = difflib.HtmlDiff().make_table(fromlines=received_output,tolines=expected_output,fromdesc="Your program's output",todesc="Expected output")
@@ -368,7 +367,6 @@ def content(request, training_name, content_name, **kwargs):
             # TODO: Account for the video hints!
             response_string = u"Incorrect answer.<br />"
             if hints:
-                import random
                 random.shuffle(hints)
                 response_string += "<br />".join(hints)
 
@@ -487,9 +485,6 @@ def user(request, user_name):
     return HttpResponse(t.render(c))
 
 def file_download(request, filename, **kwargs):
-    import os
-    import mimetypes
-
     file_path = File.objects.get(name=filename).fileinfo.path
     mimetypes.init()
     # TODO: Check user rights!
@@ -501,7 +496,6 @@ def file_download(request, filename, **kwargs):
         return response
     except IOError:
         return Http404()
-
 
 def check_for_answer(request,content_id):
     # Validate an answer to question
@@ -607,13 +601,7 @@ def check_for_answer(request,content_id):
         response = HttpResponse(response_string)
         return response
 
-
-
 def get_content(content_id,training,request,kwargs):
-    import re
-    import codecs
-    import os
-
     content = ContentPage.objects.get(id=content_id)
     pages = [content]
 

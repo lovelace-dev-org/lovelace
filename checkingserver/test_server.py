@@ -1,33 +1,39 @@
 # -*- coding: utf-8 -*-
 """
-@copyright: 2008 by Mika Seppänen, Rauli Puuperä, Erno Kuusela
+@copyright: 2008 by Mika Seppänen, Rauli Puuperä, Erno Kuusela, 2012 by Rauli Puuperä, Miikka Salminen
 @license: MIT <http://www.opensource.org/licenses/mit-license.php>
 """
 
+import os
+import pwd
 import datetime
 import time
 import socket
 import json
-import os
 import shlex
 import subprocess
 import tempfile
 import shutil
 import difflib
+import sys
 
+sys.path.append("/var/local/raippa/dependencies/")
 import bjsonrpc
 from bjsonrpc.handlers import BaseHandler
 
+class colors:
+    _CSI = "\x1B["
+    reset = _CSI+"m"
+    fgred = _CSI+"31m"
+    fgcyan = _CSI+"36m"
+
 def error(msg):
     date = datetime.datetime.now().isoformat()[:19]
-    print "%s [error] %s" % (date, msg)
+    print "%s %s[error]%s %s" % (date, colors.fgred, colors.reset, msg)
 
 def info(msg):
     date = datetime.datetime.now().isoformat()[:19]
-    print "%s [info] %s" % (date, msg)
-
-def demote():
-    pass
+    print "%s %s[info]%s %s" % (date, colors.fgcyan, colors.fgreset, msg)
 
 def runTest(arg, input, tempdir, timeout=10):
 
@@ -230,6 +236,43 @@ testCases = {"codes": {"foo.py": "print 'hello World'"},
 # tests = [test1]
 # c.checkWithReference(codes, references, tests)
 
-server = bjsonrpc.createserver(host='127.0.0.1', port=10123, handler_factory=ConnectionHandler)
-server.debug_socket(True)
-server.serve()
+def get_home_uid_gid(username):
+    pwrec = pwd.getpwnam(username)
+    home = pwrec.pw_dir
+    uid = pwrec.pw_uid
+    gid = pwrec.pw_gid
+    return (home, uid, gid)
+
+def demote_server():
+    server_username = "mdf"
+    server_home, server_uid, server_gid = get_home_uid_gid(server_username)
+
+    subprocess_username = "mdf"
+    sp_home, sp_uid, sp_gid = get_home_uid_gid(subprocess_username)
+
+    # Demote the server to server_uid, but allow further demotion to sp_uid
+    try:
+        os.setresgid(server_gid, server_gid, sp_gid)
+        os.setresuid(server_uid, server_uid, sp_uid)
+    except OSError:
+        print "Losing privileges not permitted."
+
+def demote_subprocess(user_uid, user_gid):
+    os.setresgid(user_gid, user_gid, user_gid)
+    os.setresuid(user_uid, user_uid, user_uid)
+
+def main():
+    uid = os.getuid()
+    if uid == 0:
+        print "Running as a root. Trying to lose privileges."
+        demote_server()
+    else:
+        print "Running as a normal user. Warning! Dangerous code will have the same rights as the server, enabling a malicious user to kill the server!"
+    
+    # Run the server
+    server = bjsonrpc.createserver(host='127.0.0.1', port=10123, handler_factory=ConnectionHandler)
+    server.debug_socket(True)
+    server.serve()
+
+if __name__ == "__main__":
+    main()
