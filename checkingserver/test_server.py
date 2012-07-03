@@ -19,6 +19,8 @@ import tempfile
 import shutil
 import sys
 
+from signal import SIGINT
+
 sys.path.append("/var/local/raippa/dependencies/")
 import bjsonrpc
 from bjsonrpc.handlers import BaseHandler
@@ -61,7 +63,7 @@ def runCommand(arg, input_data, tempdir, outfile, errfile, infile, signal=None, 
 
     if signal:
         if signal == "SIGINT":
-            os.kill(p.pid(), signal.SIGINT)
+            os.kill(p.pid, SIGINT)
     
     timedout = True
     counter = 0
