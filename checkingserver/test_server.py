@@ -8,6 +8,7 @@
 # TODO: Daemonize.
 
 import os
+import re
 import pwd
 import datetime
 import time
@@ -36,13 +37,14 @@ def info(msg):
     date = datetime.datetime.now().isoformat()[:19]
     print "%s %s[info]%s %s" % (date, colors.fgcyan, colors.reset, msg)
 
-def runCommand(arg, input_data, tempdir, outfile, errfile, infile, timeout=10):
+def runCommand(arg, input_data, tempdir, outfile, errfile, infile, signal=None, timeout=10):
     """Run one command from a test."""
     arg = shlex.split(arg)
     env = {'HOME':tempdir, 'LOGNAME':Privileges.get_low_name(), 'PWD':tempdir, 'USER':Privileges.get_low_name(),
            'PATH':'/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
            'PYTHONPATH':''}
     info("Running command: %s" % (" ".join(arg)))
+
     p = subprocess.Popen(
         args=arg,
         executable=arg[0],
@@ -53,8 +55,13 @@ def runCommand(arg, input_data, tempdir, outfile, errfile, infile, timeout=10):
         stdout=outfile,
         stderr=errfile,
         stdin=infile
-    )
-    act("server")
+        )
+
+    act("server") # Is this soon enough to prevent the child from killing the parent?
+
+    if signal:
+        if signal == "SIGINT":
+            os.kill(p.pid(), signal.SIGINT)
     
     timedout = True
     counter = 0
@@ -81,9 +88,19 @@ def runCommand(arg, input_data, tempdir, outfile, errfile, infile, timeout=10):
         else:
             info('Child killed with SIGKILL.')
 
-    return timedout
+    # Clean up in case there was a fork bomb
+    #act("server")
+    #os.system("killall -9 -v -g -u %s" % (Privileges.get_low_name()))
+    os.system("killall -STOP --verbose --user %s --younger-than %ds" % (Privileges.get_low_name(), timeout + 5))
+    os.system("killall -9 --verbose --user %s --younger-than %ds" % (Privileges.get_low_name(), timeout + 5))
+    #act("subprocess")
 
-def runTest(args, input_data, input_files, code_files, tempdir, timeout=10):
+    return retval, timedout
+
+def build_arg(arg, returnables):
+    re_arg = re.match(r"\$returnables(\((?P<old>.+)\,\s+(?P<new>.+)\))?", arg)
+
+def runTest(args, input_data, input_files, code_files, signal, tempdir, timeout=10):
     """
     Runs all the commands of one test.
     Enters the specified inputs.
@@ -96,19 +113,23 @@ def runTest(args, input_data, input_files, code_files, tempdir, timeout=10):
     timedout = False
     outputs = list()
     errors = list()
+    rvalues = list()
     outfiles = dict()
-    for arg in args:
+    for arg, is_main_arg in args:
+        # Fill the stdin file with the specified input
+        with open(inpath, "w") as infile_w:
+            # Only enter the input for the main command (i.e., usually, the interpreted or compiled program)
+            if is_main_arg:
+                infile_w.write(input_data)
         # Open files for stdout, stderr and stdin and run the current command
         # TODO: Consider a separate temporary path for stdout, stderr and stdin files or use temporary files instead
-        # TODO: Only enter input for the main command
-        with open(inpath, "w") as infile_w:
-            infile_w.write("\n".join(input_data))
         outfile = open(outpath, "w")
         errfile = open(errpath, "w")
         infile = open(inpath, "r")
 
-        rtimedout = runCommand(arg.replace("$returnables", " ".join(code_files)), input_data, tempdir, outfile, errfile, infile)
+        rvalue, rtimedout = runCommand(arg.replace("$returnables", " ".join(code_files)), input_data, tempdir, outfile, errfile, infile, signal, timeout)
         timedout = timedout or rtimedout
+        rvalues.append(rvalue)
         
         outfile.close()
         errfile.close()
@@ -116,10 +137,8 @@ def runTest(args, input_data, input_files, code_files, tempdir, timeout=10):
 
         # Save the contents of stdout and stderr
         with open(outpath, "r") as outfile_r:
-            print outfile_r.read()
             outputs.append(outfile_r.read())
         with open(errpath, "r") as errfile_r:
-            print errfile_r.read()
             errors.append(errfile_r.read())
 
         # Clean up the files
@@ -133,7 +152,7 @@ def runTest(args, input_data, input_files, code_files, tempdir, timeout=10):
                 with open(ofile, "r") as f:
                     outfiles[ofile] = f.read()
 
-    return outputs, outfiles, errors, timedout
+    return outputs, outfiles, errors, rvalues, timedout
 
 def maketemp():
     tempdir = tempfile.mkdtemp()
@@ -145,31 +164,41 @@ def runTests(code_files, tests):
     """
     Runs all the tests for the given codes.
     """
-    # Write the submitted codes
     tempdir = maketemp()
-    for filename, content in code_files.items():
-        info('Writing source file %s' % filename)
-        with open(os.path.join(tempdir, filename), 'w') as source_file:
-            source_file.write(content)
 
-    testResults = list()
-
+    testResults = dict()
     for test in tests:
+        testname = test['name']
         args = test['args']
         input_data = test['input']
         input_files = test['inputfiles']
+        output_files = test['outputfiles']
+        signal = test['signal']
+        timeout = test['timeout']
 
-        routputs, routfiles, rerrors, rtimedout = runTest(args, input_data, input_files, code_files, tempdir)
+        # Write the submitted codes and input files
+        for filename, content in code_files.iteritems():
+            info('Writing source file %s' % filename)
+            with open(os.path.join(tempdir, filename), 'w') as source_file:
+                source_file.write(content)
+        for filename, content in input_files.iteritems():
+            info('Writing input file %s' % filename)
+            with open(os.path.join(tempdir, filename), 'w') as input_file:
+                input_file.write(content)
+
+        routputs, routfiles, rerrors, rvalues, rtimedout = runTest(args, input_data, input_files, code_files, signal, tempdir, timeout)
 
         result = dict()
-        result['output'] = routputs
-        result['outputfiles'] = [] #routfiles
-        result['error'] = rerrors
+        result['cmds'] = args
+        result['outputs'] = routputs
+        result['errors'] = rerrors
+        result['inputfiles'] = input_files
+        result['outputfiles'] = dict((k, v) for k, v in routfiles.iteritems() if k in output_files)
+        result['returnvalues'] = rvalues
         result['timedout'] = rtimedout
+        testResults[testname] = result
 
-        testResults.append(result)
-
-        # Clean up everything from the temporary directory, except the submitted codes
+        # Clean up everything from the temporary directory
         for filename in os.listdir(tempdir):
             if filename not in code_files:
                 os.remove(os.path.join(tempdir, filename))
@@ -189,22 +218,12 @@ class ConnectionHandler(BaseHandler):
         referenceResults = runTests(references, tests)
         studentResults = runTests(codes, tests)
 
-        # Compare outputs of the user and reference programs
-        for i in range(len(tests)):
-            print "Actual:", studentResults[i]
-            print "Expected:", referenceResults[i]
-                       
-        return studentResults, referenceResults
+        return {"student":studentResults, "reference":referenceResults}
 
     def checkWithOutput(self, codes, tests):
         studentResults = runTests(codes, tests)
 
-        # Compare actual with expected output
-        for i, test in enumerate(tests):
-            print "Expected:", test["output"]
-            print "Actual:", studentResults[i]['output']
-
-        return studentResults
+        return {"student":studentResults}
 
 class Privileges:
     _low = {"username":str(), "userid":int(), "groupid":int()}
@@ -299,9 +318,10 @@ def demote_subprocess():
     """
     #info("Demoting subprocess.")
     # Set resource limits
-    resource.setrlimit(resource.RLIMIT_NPROC, (50, 50))  # Prevent fork bombs
+    resource.setrlimit(resource.RLIMIT_NPROC, (10, 10))  # Prevent fork bombs
     resource.setrlimit(resource.RLIMIT_NOFILE, (50, 50)) # Limit number of files
     resource.setrlimit(resource.RLIMIT_FSIZE, (500*1024, 500*1024))  # Limit space used by a file
+    resource.setrlimit(resource.RLIMIT_CPU, (2, 2))      # Limit CPU time
     
     # Change the group and user IDs to lower privileged ones
     user_gid = Privileges.get_low_gid()
