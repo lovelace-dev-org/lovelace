@@ -4,7 +4,7 @@
 @license: MIT <http://www.opensource.org/licenses/mit-license.php>
 """
 
-# FUTURE: LD_PRELOAD
+# FUTURE: Use LD_PRELOAD?
 # TODO: Daemonize.
 
 import os
@@ -12,6 +12,7 @@ import re
 import pwd
 import datetime
 import time
+import fcntl
 import shlex
 import resource
 import subprocess
@@ -19,7 +20,7 @@ import tempfile
 import shutil
 import sys
 
-from signal import SIGINT
+from signal import SIGINT, SIGTERM, SIGKILL
 
 sys.path.append("/var/local/raippa/dependencies/")
 import bjsonrpc
@@ -338,9 +339,49 @@ def demote_subprocess():
         #info("Successfully demoted the subprocess to uid: %d, gid: %d." % (user_uid, user_gid))
         pass
 
+def start():
+    '''
+    Starts the process as a daemon.
+    http://daemonize.sourceforge.net/daemonize.txt used as an example.
+    '''
+
+    # Fork a child and quit the parent
+    pid = os.fork()
+    if pid < 0:
+        sys.exit(1)
+    elif pid != 0:
+        sys.exit(0)
+
+    # Get a new PID and detach from terminal
+    pid = os.setsid()
+    if pid == -1:
+        sys.exit(1)
+
+    # Set the file descriptors to null
+    dev_null = "/dev/null"
+    if hasattr(os, "devnull"):
+        dev_null = os.devnull
+    null_fd = open(dev_null, "rw")
+    log_fd = open("/tmp/test_server.log", "w", 0)
+    for fd in (sys.stdin, sys.stdout, sys.stderr):
+        fd.close()
+
+    sys.stdin = null_fd
+    sys.stdout = log_fd
+    sys.stderr = log_fd
+
+    os.umask(027) # Set default file creation mask
+    os.chdir("/")
+    lock_fd = open("/tmp/test_server.lock", "w")
+    fcntl.lockf(lock_fd, fcntl.LOCK_EX|fcntl.LOCK_NB)
+    lock_fd.write("%s" % (os.getpid()))
+    lock_fd.flush()
+
+    main()
+
 def main():
-    server_username = "mdf"
-    subprocess_username = "npc"
+    server_username = "program_evaluator"
+    subprocess_username = "test_subject"
     host = "0.0.0.0"
     port = 10123
 
@@ -363,4 +404,16 @@ def main():
     server.serve()
 
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) >= 2:
+        if sys.argv[1] == "--daemon":
+            start()
+        elif sys.argv[1] == "--die":
+            lock_fd = open("/tmp/test_server.lock", "r")
+            os.kill(int(lock_fd.read().strip()), SIGTERM)
+            lock_fd.close()
+            os.remove("/tmp/test_server.lock") # TODO: Use os.path.join
+            sys.exit(0)
+        else:
+            main()
+    else:
+        main()
