@@ -242,11 +242,12 @@ def content(request, training_name, content_name, **kwargs):
                     chosen = choice
                     break
             
-            rb_evaluation = Evaluation(points=1.0,feedback="jee")
-            rb_evaluation.save()
-            rb_answer = UserRadiobuttonTaskAnswer(task=content.taskpage.radiobuttontask, chosen_answer=chosen, evaluation=rb_evaluation,
-                                                  user=request.user, answer_date=timezone.now())
-            rb_answer.save()
+            if request.user:
+                rb_evaluation = Evaluation(points=1.0,feedback="jee")
+                rb_evaluation.save()
+                rb_answer = UserRadiobuttonTaskAnswer(task=content.taskpage.radiobuttontask, chosen_answer=chosen, evaluation=rb_evaluation,
+                                                      user=request.user, answer_date=timezone.now())
+                rb_answer.save()
 
         try:
             if content.taskpage.checkboxtask:
@@ -271,13 +272,14 @@ def content(request, training_name, content_name, **kwargs):
                         hints.append(choice.hint)
                     chosen.append(choice)
 
-            cb_evaluation = Evaluation(points=1.0,feedback="jee")
-            cb_evaluation.save()
-            cb_answer = UserCheckboxTaskAnswer(task=content.taskpage.checkboxtask, evaluation=cb_evaluation,
-                                               user=request.user, answer_date=timezone.now())
-            cb_answer.save()
-            cb_answer.chosen_answers.add(*chosen)
-            cb_answer.save()
+            if request.user:
+                cb_evaluation = Evaluation(points=1.0,feedback="jee")
+                cb_evaluation.save()
+                cb_answer = UserCheckboxTaskAnswer(task=content.taskpage.checkboxtask, evaluation=cb_evaluation,
+                                                   user=request.user, answer_date=timezone.now())
+                cb_answer.save()
+                cb_answer.chosen_answers.add(*chosen)
+                cb_answer.save()
 
 
         try:
@@ -291,7 +293,6 @@ def content(request, training_name, content_name, **kwargs):
             given = request.POST["answer"]
             for answer in answers:
                 if answer.regexp:
-                    import re
                     # TODO: Regexp error checking!!!! To prevent crashes.
                     if re.match(answer.answer, given) and answer.correct and correct == True:
                         correct = True
@@ -317,11 +318,12 @@ def content(request, training_name, content_name, **kwargs):
                         if answer.hint:
                             hints.append(answer.hint)
 
-            tf_evaluation = Evaluation(points=1.0,feedback="jee")
-            tf_evaluation.save()
-            tf_answer = UserTextfieldTaskAnswer(task=content.taskpage.textfieldtask, given_answer=given, evaluation=tf_evaluation,
-                                                user=request.user, answer_date=timezone.now())
-            tf_answer.save()
+            if request.user:
+                tf_evaluation = Evaluation(points=1.0,feedback="jee")
+                tf_evaluation.save()
+                tf_answer = UserTextfieldTaskAnswer(task=content.taskpage.textfieldtask, given_answer=given, evaluation=tf_evaluation,
+                                                    user=request.user, answer_date=timezone.now())
+                tf_answer.save()
         
         try:
             if content.taskpage.filetask:
@@ -330,35 +332,35 @@ def content(request, training_name, content_name, **kwargs):
             pass
 
         if tasktype == "filetask":
-            f_returnable = FileTaskReturnable(run_time=datetime.time(0,0,1,500), output="asdf", errors="asdf")
-            f_returnable.save()
-            f_evaluation = Evaluation(points=1.0,feedback="jee")
-            f_evaluation.save()
-            f_answer = UserFileTaskAnswer(task=content.taskpage.filetask, returnable=f_returnable, evaluation=f_evaluation,
-                                          user=request.user, answer_date=timezone.now())
-            f_answer.save()
+            if type(request.user) == User:
+                f_returnable = FileTaskReturnable(run_time=datetime.time(0,0,1,500), output="asdf", errors="asdf")
+                f_returnable.save()
+                f_evaluation = Evaluation(points=1.0,feedback="jee")
+                f_evaluation.save()
+                f_answer = UserFileTaskAnswer(task=content.taskpage.filetask, returnable=f_returnable, evaluation=f_evaluation,
+                                              user=request.user, answer_date=timezone.now())
+                f_answer.save()
 
-            for entry_name, uploaded_file in request.FILES.iteritems():
-                print "Contents of file '%s':" % (uploaded_file.name)
-                f_filetaskreturnfile = FileTaskReturnFile(fileinfo=uploaded_file, returnable=f_returnable)
-                f_filetaskreturnfile.save()
-
-                #with open("returnables/%s/%04d/%s" % (user_id, version, uploaded_file.name), "wb+") as destination:
-                if uploaded_file.multiple_chunks():
-                    for chunk in uploaded_file.chunks():
-                        print chunk,
-                        #destination.write(chunk)
-                else:
-                    print uploaded_file.read()
-                    #destination.write(uploaded_file.read())
+                for entry_name, uploaded_file in request.FILES.iteritems():
+                    f_filetaskreturnfile = FileTaskReturnFile(fileinfo=uploaded_file, returnable=f_returnable)
+                    f_filetaskreturnfile.save()
             
-            results = filecheck_client.check_file_answer(f_answer)
-            print results
+                results = filecheck_client.check_file_answer(task=content.taskpage.filetask, files={}, answer=f_answer)
+                print results
+            else:
+                files = {}
+                print request.FILES
+                for rf in request.FILES.itervalues():
+                    f = ""
+                    for chunk in rf.chunks():
+                        f += chunk
+                    files[rf.name] = f
+                results = filecheck_client.check_file_answer(task=content.taskpage.filetask, files=files)
+                print results
 
-            received_output = results["output"].split("\n")
-            expected_output = results["ref_output"].split("\n")
-            difftable = difflib.HtmlDiff().make_table(fromlines=received_output,tolines=expected_output,fromdesc="Your program's output",todesc="Expected output")
-            return HttpResponse(difftable)
+            diff_table = filecheck_client.html(results)
+
+            return HttpResponse(diff_table)
 
         # TODO: Use a template here to make it look nicer.
         if correct:
