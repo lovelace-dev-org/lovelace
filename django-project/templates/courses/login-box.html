@@ -2,12 +2,24 @@
   <form method="POST">
     {% csrf_token %}
     <fieldset>
-      <legend>{% if user.is_active  %}{% filter force_escape %}{% firstof user.first_name user.username %}{% endfilter %}{% else %}User login{% endif %}</legend>
-	{% if not user.is_active  %}Have an account already? <a href="accounts/login/">Log in</a>!<br />No account? <a href="accounts/register/">Create</a> one!<br />
-	{% elif user.is_staff  %}<a href="/admin/">Admin tools</a><br />Not {% firstof user.first_name user.username %}?<a href="/accounts/logout/">Log out!</a><br />
-
-	{% else  %}Not {% firstof user.first_name user.username %}?<a href="/accounts/logout/">Log out!</a><br />
-	{% endif %}
+      <legend>
+        {% if user.is_active  %}
+          {% filter force_escape %}
+            {% firstof user.first_name user.username %}
+          {% endfilter %}
+        {% else %}
+          User login
+        {% endif %}
+      </legend>
+      {% if not user.is_active  %}
+        Have an account already? <a href="/accounts/login/">Log in</a>!<br />
+        No account? <a href="/accounts/register/">Create</a> one!<br />
+      {% elif user.is_staff  %}
+        <a href="/admin/">Admin tools</a><br />
+        Not {% firstof user.first_name user.username %}? <a href="/accounts/logout/">Log out!</a><br />
+      {% else  %}
+        Not {% firstof user.first_name user.username %}? <a href="/accounts/logout/">Log out!</a><br />
+      {% endif %}
     </fieldset>
   </form>
 </div>
