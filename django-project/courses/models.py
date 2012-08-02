@@ -125,23 +125,55 @@ class ContentPage(models.Model):
 
 class LecturePage(ContentPage):
     """A single page from a lecture."""
-    pass
+    def save(self, *args, **kwargs):
+        if not self.url_name:
+            self.url_name = self.get_url_name()
+        if not self.short_name:
+            self.short_name = self._shortify_name()
+        super(LecturePage, self).save(*args, **kwargs)
 
 class TaskPage(ContentPage):
     """A single task."""
     question = models.TextField()
 
+    def save(self, *args, **kwargs):
+        if not self.url_name:
+            self.url_name = self.get_url_name()
+        if not self.short_name:
+            self.short_name = self._shortify_name()
+        super(TaskPage, self).save(*args, **kwargs)
+
 class RadiobuttonTask(TaskPage):
-    pass
+    def save(self, *args, **kwargs):
+        if not self.url_name:
+            self.url_name = self.get_url_name()
+        if not self.short_name:
+            self.short_name = self._shortify_name()
+        super(RadiobuttonTask, self).save(*args, **kwargs)
 
 class CheckboxTask(TaskPage):
-    pass
+    def save(self, *args, **kwargs):
+        if not self.url_name:
+            self.url_name = self.get_url_name()
+        if not self.short_name:
+            self.short_name = self._shortify_name()
+        super(CheckboxTask, self).save(*args, **kwargs)
 
 class TextfieldTask(TaskPage):
-    pass
+    def save(self, *args, **kwargs):
+        if not self.url_name:
+            self.url_name = self.get_url_name()
+        if not self.short_name:
+            self.short_name = self._shortify_name()
+        super(TextfieldTask, self).save(*args, **kwargs)
 
 class FileTask(TaskPage):
-    pass
+    def save(self, *args, **kwargs):
+        if not self.url_name:
+            self.url_name = self.get_url_name()
+        if not self.short_name:
+            self.short_name = self._shortify_name()
+        super(FileTask, self).save(*args, **kwargs)
 
 class FileTaskTest(models.Model):
     task = models.ForeignKey(FileTask)

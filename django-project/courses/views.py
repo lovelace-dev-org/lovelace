@@ -202,7 +202,7 @@ def content(request, training_name, content_name, **kwargs):
     print "Ollaan contentissa."
 
     selected_course = Training.objects.get(name=training_name)
-    content = ContentPage.objects.get(name=content_name)
+    content = ContentPage.objects.get(url_name=content_name)
     pages = [content]
 
     # Validate an answer to question
@@ -412,7 +412,8 @@ def content(request, training_name, content_name, **kwargs):
                 line = line.replace(include_file_re.group(0), image)
             # It's an embedded task
             elif include_file_re.group("filename") == parser.get_current_taskname():
-                embedded_content = ContentPage.objects.get(incarnation=selected_incarnation.id, name=parser.get_current_taskname())
+                print parser.get_current_taskname()
+                embedded_content = ContentPage.objects.get(url_name=parser.get_current_taskname())
                 pages.append(embedded_content)
                 unparsed_embedded_content = re.split(r"\r\n|\r|\n", embedded_content.content)
                 embedded_parser = content_parser.ContentParser(iter(unparsed_embedded_content))
@@ -426,7 +427,8 @@ def content(request, training_name, content_name, **kwargs):
                 emb_c = RequestContext(request, {
                         'emb_content': rendered_em_content,
                         'content_name': embedded_content.name,
-                        'content_name_id': embedded_content.name.replace(" ", "_"),
+                        'content_name_id': embedded_content.url_name,
+                        'content_urlname': embedded_content.url_name,
                         'tasktype': emb_tasktype,
                         'question': emb_question,
                         'choices': emb_choices,
@@ -444,7 +446,8 @@ def content(request, training_name, content_name, **kwargs):
         'training': selected_course,
         'content': rendered_content,
         'content_name': content.name,
-        'content_name_id': content.name,
+        'content_name_id': content.url_name,
+        'content_urlname': content.url_name,
         'navurls': navurls,
         'title': '%s - %s' % (content.name, selected_course.name),
         'answer_check_url': reverse('courses.views.training', kwargs={"training_name":training_name}),

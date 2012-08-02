@@ -2,7 +2,7 @@
               {% if emb_content %}
                 {{ emb_content|safe }}
               {% endif %}
-              <div class="question" id="{{ content_name_id }}">{{ question }}
+              <div class="question" id="{{ content_urlname }}">{{ question }}
               <form name="task_form" id="task_form" class="task"
                     method="POST"
                     onSubmit="validateAnswer(event);return false;" enctype="multipart/form-data" >
@@ -20,7 +20,7 @@
                 {% elif tasktype == "file" %}
                   <input name="file" type="file" class="task_file" multiple="multiple" />
                 {% endif %}
-                <input type="submit" name="submit" value="Send answer" onClick="validateAnswer(event, '{{ content_name_id }}');return false;" />
+                <input type="submit" name="submit" value="Send answer" onClick="validateAnswer(event, '{{ content_urlname }}');return false;" />
                 <div id="result"></div>
               </form>
               </div>
