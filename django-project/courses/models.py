@@ -2,6 +2,7 @@
 """Django database models for RAIPPA courses."""
 
 import datetime
+import re
 import os
 
 from django.db import models
@@ -111,11 +112,11 @@ class ContentPage(models.Model):
         return self.name[0:32]
 
     def get_url_name(self):
-        return self.name.replace(" ", "_").lower()
+        """Creates an URL and HTML ID field friendly version of the name."""
+        return re.sub(r"[^A-Za-z0-9_]", "_", self.name).lower()
 
     def save(self, *args, **kwargs):
-        if not self.url_name:
-            self.url_name = self.get_url_name()
+        self.url_name = self.get_url_name()
         if not self.short_name:
             self.short_name = self._shortify_name()
         super(ContentPage, self).save(*args, **kwargs)
@@ -126,8 +127,7 @@ class ContentPage(models.Model):
 class LecturePage(ContentPage):
     """A single page from a lecture."""
     def save(self, *args, **kwargs):
-        if not self.url_name:
-            self.url_name = self.get_url_name()
+        self.url_name = self.get_url_name()
         if not self.short_name:
             self.short_name = self._shortify_name()
         super(LecturePage, self).save(*args, **kwargs)
@@ -137,40 +137,35 @@ class TaskPage(ContentPage):
     question = models.TextField()
 
     def save(self, *args, **kwargs):
-        if not self.url_name:
-            self.url_name = self.get_url_name()
+        self.url_name = self.get_url_name()
         if not self.short_name:
             self.short_name = self._shortify_name()
         super(TaskPage, self).save(*args, **kwargs)
 
 class RadiobuttonTask(TaskPage):
     def save(self, *args, **kwargs):
-        if not self.url_name:
-            self.url_name = self.get_url_name()
+        self.url_name = self.get_url_name()
         if not self.short_name:
             self.short_name = self._shortify_name()
         super(RadiobuttonTask, self).save(*args, **kwargs)
 
 class CheckboxTask(TaskPage):
     def save(self, *args, **kwargs):
-        if not self.url_name:
-            self.url_name = self.get_url_name()
+        self.url_name = self.get_url_name()
         if not self.short_name:
             self.short_name = self._shortify_name()
         super(CheckboxTask, self).save(*args, **kwargs)
 
 class TextfieldTask(TaskPage):
     def save(self, *args, **kwargs):
-        if not self.url_name:
-            self.url_name = self.get_url_name()
+        self.url_name = self.get_url_name()
         if not self.short_name:
             self.short_name = self._shortify_name()
         super(TextfieldTask, self).save(*args, **kwargs)
 
 class FileTask(TaskPage):
     def save(self, *args, **kwargs):
-        if not self.url_name:
-            self.url_name = self.get_url_name()
+        self.url_name = self.get_url_name()
         if not self.short_name:
             self.short_name = self._shortify_name()
         super(FileTask, self).save(*args, **kwargs)

@@ -37,7 +37,7 @@ function validateAnswer(e, task_name) {
     var rbchoices = $('div#' + task_name + ' form#task_form input.task_radio'); //document.getElementsByName(''); // Radio
     var cbchoices = $('div#' + task_name + ' form#task_form input.task_check'); // Checkbox
     var answer = $('div#' + task_name + ' form#task_form textarea.task_text'); //document.getElementsByName(''); // Textarea
-    
+
     var file_element = $('div#' + task_name + ' form#task_form input.task_file');
     if (file_element) {
         var filename = file_element.val();
