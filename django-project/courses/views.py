@@ -157,14 +157,13 @@ def training(request, training_name,**kwargs):
     return HttpResponse(t.render(c))
 
 def dirtree(tree,node):
-    	from django.utils.safestring import mark_safe
-	tree.append(node.content)
-	kids = ContentGraph.objects.filter(parentnode=node)
-	if len(kids) > 0:
-            	tree.append(mark_safe('>'))
-		for K in kids:
-			dirtree(tree,K)
-            	tree.append(mark_safe('<'))
+    tree.append(node.content)
+    kids = ContentGraph.objects.filter(parentnode=node)
+    if len(kids) > 0:
+        tree.append(mark_safe('>'))
+        for K in kids:
+            dirtree(tree,K)
+        tree.append(mark_safe('<'))
 
 def get_task_info(content):
     tasktype = None

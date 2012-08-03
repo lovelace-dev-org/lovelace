@@ -30,6 +30,10 @@
       //});
     </script>-->
   {% endif %}
+
+  {% if tasktype %}
+    <script type="text/javascript" src="{{ STATIC_URL }}task.js" charset="UTF-8"></script>
+  {% endif %}
   
   {% if title %}
     <title>DIAMONDS Training - {{ title }}</title>

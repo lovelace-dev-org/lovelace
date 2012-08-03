@@ -20,7 +20,7 @@
                 {% elif tasktype == "file" %}
                   <input name="file" type="file" class="task_file" multiple="multiple" />
                 {% endif %}
-                <input type="submit" name="submit" value="Send answer" onClick="validateAnswer(event, '{{ content_urlname }}');return false;" />
+                <input type="submit" name="submit" value="Send answer" onClick="validateAnswer(event, '{{ answer_check_url }}', '{{ content_urlname }}');return false;" />
                 <div id="result"></div>
               </form>
               </div>
