@@ -21,6 +21,9 @@ urlpatterns = patterns('',
     # For viewing user information
     url(r'^user/(?P<user_name>[^/]+)/$', 'courses.views.user'),
 
+    # For viewing task statistics
+    url(r'^stats/(?P<task_name>[^/]+)/$', 'courses.views.stats'),
+
     # For serving uploaded files
     url(r'^media/(?P<filename>.+)$', 'courses.views.file_download',
         {'media_root': settings.MEDIA_ROOT,}

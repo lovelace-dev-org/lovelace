@@ -489,6 +489,14 @@ def user(request, user_name):
     })
     return HttpResponse(t.render(c))
 
+def stats(request, task_name):
+    '''Shows statistics on the selected task.'''
+    t = load.get_template("courses/task_stats.html")
+    c = RequestContext(request, {
+        'x': "x",
+    })
+    return HttpResponse(t.render(c))
+
 def file_download(request, filename, **kwargs):
     file_path = File.objects.get(name=filename).fileinfo.path
     mimetypes.init()
