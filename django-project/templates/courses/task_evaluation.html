@@ -1,0 +1,21 @@
+<span class="evaluation">{{ evaluation }}</span>
+
+{% if hints %}
+  <div class="hintbox">
+  {% for hint in hints %}
+    Hint: {{ hint }}<br />
+  {% endfor %}
+  </div>
+{% endif %}
+
+{% if comments %}
+  <div class="commentbox">
+  {% for comment in comments %}
+    {{ comment }}<br />
+  {% endfor %}
+  </div>
+{% endif %}
+
+{% if diff_table %}
+  {{ diff_table|safe }}
+{% endif %}

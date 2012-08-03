@@ -16,6 +16,11 @@ from django.template import Context, RequestContext, loader
 from django.core.urlresolvers import reverse
 from django.core.servers.basehttp import FileWrapper
 from django.utils import timezone
+from django.utils.safestring import mark_safe
+
+from pygments import highlight
+from pygments.lexers import PythonLexer
+from pygments.formatters import HtmlFormatter
 
 from courses.models import *
 
@@ -119,7 +124,6 @@ def course_graph(request, training_name):
     return response
  
 def training(request, training_name,**kwargs):
-    from django.utils.safestring import mark_safe
     selected_course = Training.objects.get(name=training_name)
     navurls = [NavURL(reverse('courses.views.index'), "Training home"), # Course
                NavURL(reverse('courses.views.training', kwargs={"training_name":training_name}), training_name),]
@@ -164,11 +168,12 @@ def dirtree(tree,node):
 
 def get_task_info(content):
     tasktype = None
-    choices = None
     question = None
+    choices = None
+    answers = None
     try:
         if content.taskpage.radiobuttontask:
-            tasktype = "radio"
+            tasktype = "radiobutton"
             choices = RadiobuttonTaskAnswer.objects.filter(task=content.id)
             question = TaskPage.objects.get(id=content.id).question
     except ContentPage.DoesNotExist as e:
@@ -185,6 +190,7 @@ def get_task_info(content):
     try:
         if content.taskpage.textfieldtask:
             tasktype = "textfield"
+            answers = TextfieldTaskAnswer.objects.filter(task=content.id)
             question = TaskPage.objects.get(id=content.id).question
     except ContentPage.DoesNotExist as e:
         pass
@@ -196,7 +202,188 @@ def get_task_info(content):
     except ContentPage.DoesNotExist as e:
         pass
 
-    return (tasktype, question, choices)
+    return (tasktype, question, choices, answers)
+
+def radiobutton_task_check(content, user, choices, post_data):
+    # Determine, if the given answer was correct and which hints to show
+    correct = True
+    hints = []
+    for choice in choices:
+        if post_data[str(choice.id)] == "true" and choice.correct == True and correct == True:
+            correct = True
+            chosen = choice
+        elif post_data[str(choice.id)] == "false" and choice.correct == True:
+            correct = False
+            if choice.hint:
+                hints.append(choice.hint)
+        elif post_data[str(choice.id)] == "true" and choice.correct == False:
+            correct = False
+            if choice.hint:
+                hints.append(choice.hint)
+            chosen = choice
+            break
+    
+    # Save the results to the database, if the question was answered by a non-anonymous user
+    if user:
+        rb_evaluation = Evaluation(points=1.0,feedback="jee")
+        rb_evaluation.save()
+        rb_answer = UserRadiobuttonTaskAnswer(task=content.taskpage.radiobuttontask, chosen_answer=chosen, evaluation=rb_evaluation,
+                                              user=user, answer_date=timezone.now())
+        rb_answer.save()
+    
+    return correct, hints
+
+def checkbox_task_check(content, user, choices, post_data):
+    # Determine, if the given answer was correct and which hints to show
+    correct = True
+    hints = []
+    chosen = []
+    for choice in choices:
+        if post_data[str(choice.id)] == "true" and choice.correct == True and correct == True:
+            correct = True
+            chosen.append(choice)
+        elif post_data[str(choice.id)] == "false" and choice.correct == True:
+            correct = False
+            if choice.hint:
+                hints.append(choice.hint)
+        elif post_data[str(choice.id)] == "true" and choice.correct == False:
+            correct = False
+            if choice.hint:
+                hints.append(choice.hint)
+            chosen.append(choice)
+
+    # Save the results to the database, if the question was answered by a non-anonymous user
+    if user:
+        cb_evaluation = Evaluation(points=1.0,feedback="jee")
+        cb_evaluation.save()
+        cb_answer = UserCheckboxTaskAnswer(task=content.taskpage.checkboxtask, evaluation=cb_evaluation,
+                                           user=user, answer_date=timezone.now())
+        cb_answer.save()
+        cb_answer.chosen_answers.add(*chosen)
+        cb_answer.save()
+
+    return correct, hints
+
+def textfield_task_check(content, user, answers, post_data):
+    # Determine, if the given answer was correct and which hints to show
+    correct = True
+    hints = []
+    given = post_data["answer"]
+    for answer in answers:
+        if answer.regexp:
+            # TODO: Regexp error checking!!!! To prevent crashes.
+            if re.match(answer.answer, given) and answer.correct and correct == True:
+                correct = True
+                break
+            elif re.match(answer.answer, given) and not answer.correct:
+                correct = False
+                if answer.hint:
+                    hints.append(answer.hint)
+            elif not re.match(answer.answer, given):
+                correct = False
+                if answer.hint:
+                    hints.append(answer.hint)
+        else:
+            if given == answer.answer and answer.correct and correct == True:
+                correct = True
+                break
+            elif given == answer.answer and not answer.correct:
+                correct = False
+                if answer.hint:
+                    hints.append(answer.hint)
+            elif given != answer.answer:
+                correct = False
+                if answer.hint:
+                    hints.append(answer.hint)
+
+    # Save the results to the database, if the question was answered by a non-anonymous user
+    if user:
+        tf_evaluation = Evaluation(points=1.0,feedback="jee")
+        tf_evaluation.save()
+        tf_answer = UserTextfieldTaskAnswer(task=content.taskpage.textfieldtask, given_answer=given, evaluation=tf_evaluation,
+                                            user=user, answer_date=timezone.now())
+        tf_answer.save()
+
+    return correct, hints
+
+def file_task_check(content, user, files_data):
+    correct = True
+    hints = []
+    if type(user) == User:
+        # TODO: Fix the information that will be saved
+        f_returnable = FileTaskReturnable(run_time=datetime.time(0,0,1,500), output="asdf", errors="asdf")
+        f_returnable.save()
+        f_evaluation = Evaluation(points=1.0,feedback="jee")
+        f_evaluation.save()
+        f_answer = UserFileTaskAnswer(task=content.taskpage.filetask, returnable=f_returnable, evaluation=f_evaluation,
+                                      user=user, answer_date=timezone.now())
+        f_answer.save()
+
+        for entry_name, uploaded_file in files_data.iteritems():
+            f_filetaskreturnfile = FileTaskReturnFile(fileinfo=uploaded_file, returnable=f_returnable)
+            f_filetaskreturnfile.save()
+            
+        results = filecheck_client.check_file_answer(task=content.taskpage.filetask, files={}, answer=f_answer)
+        print results
+    else:
+        files = {}
+        print files_data
+        for rf in files_data.itervalues():
+            f = ""
+            for chunk in rf.chunks():
+                f += chunk
+            files[rf.name] = f
+        results = filecheck_client.check_file_answer(task=content.taskpage.filetask, files=files)
+        print results
+
+    diff_table = filecheck_client.html(results)
+
+    return correct, hints, diff_table
+
+def check_answer(request, training_name, content_name, **kwargs):
+    print u"Ollaan tehtavan tarkistuksessa"
+    # Validate an answer to question
+    if request.method == "POST":
+        pass
+    else:
+        return HttpResponse("")
+
+    selected_course = Training.objects.get(name=training_name)
+    content = ContentPage.objects.get(url_name=content_name)
+
+    tasktype, question, choices, answers = get_task_info(content)
+
+    correct = True
+    hints = []
+    comments = [] # TODO: Implement comments (giving feedback on a correct answer)
+    diff_table = u""
+
+    if choices and tasktype == "radiobutton":
+        correct, hints = radiobutton_task_check(content, request.user, choices, request.POST)
+    elif choices and tasktype == "checkbox":
+        correct, hints = checkbox_task_check(content, request.user, choices, request.POST)
+    elif answers and tasktype == "textfield":
+        correct, hints = textfield_task_check(content, request.user, answers, request.POST)
+    elif tasktype == "file":
+        correct, hints, diff_table = file_task_check(content, request.user, request.FILES)
+
+    # Compile the information required for the task evaluation
+    if correct:
+        evaluation = u"Correct!"
+    else:
+        # TODO: Account for the video hints!
+        evaluation = u"Incorrect answer."
+        if hints:
+            random.shuffle(hints)
+
+    t = loader.get_template("courses/task_evaluation.html")
+    c = RequestContext(request, {
+        'evaluation': evaluation,
+        'hints': hints,
+        'comments': comments,
+        'diff_table': diff_table,
+    })
+    return HttpResponse(t.render(c))
 
 def content(request, training_name, content_name, **kwargs):
     print "Ollaan contentissa."
@@ -205,177 +392,7 @@ def content(request, training_name, content_name, **kwargs):
     content = ContentPage.objects.get(url_name=content_name)
     pages = [content]
 
-    # Validate an answer to question
-    # TODO: Create an own view (and URL) for answer checking to tidy this up!
-    if request.method == "POST":
-        print "Flow @ content view POST data check"
-        question = TaskPage.objects.get(id=content.id).question
-
-        correct = True
-        tasktype = None
-        choices = None
-        answers = None
-        hints = []
-
-        # TODO: Create an abstracted answer checking mechanism
-        try:
-            if content.taskpage.radiobuttontask:
-                choices = RadiobuttonTaskAnswer.objects.filter(task=content.id)
-                tasktype = "radiobutton"
-                
-        except ContentPage.DoesNotExist as e:
-            pass
-
-        if choices and tasktype == "radiobutton":
-            for choice in choices:
-                if request.POST[str(choice.id)] == "true" and choice.correct == True and correct == True:
-                    correct = True
-                    chosen = choice
-                elif request.POST[str(choice.id)] == "false" and choice.correct == True:
-                    correct = False
-                    if choice.hint:
-                        hints.append(choice.hint)
-                elif request.POST[str(choice.id)] == "true" and choice.correct == False:
-                    correct = False
-                    if choice.hint:
-                        hints.append(choice.hint)
-                    chosen = choice
-                    break
-            
-            if request.user:
-                rb_evaluation = Evaluation(points=1.0,feedback="jee")
-                rb_evaluation.save()
-                rb_answer = UserRadiobuttonTaskAnswer(task=content.taskpage.radiobuttontask, chosen_answer=chosen, evaluation=rb_evaluation,
-                                                      user=request.user, answer_date=timezone.now())
-                rb_answer.save()
-
-        try:
-            if content.taskpage.checkboxtask:
-                choices = CheckboxTaskAnswer.objects.filter(task=content.id)
-                tasktype = "checkbox"
-        except ContentPage.DoesNotExist as e:
-            pass
-
-        if choices and tasktype == "checkbox":
-            chosen = []
-            for choice in choices:
-                if request.POST[str(choice.id)] == "true" and choice.correct == True and correct == True:
-                    correct = True
-                    chosen.append(choice)
-                elif request.POST[str(choice.id)] == "false" and choice.correct == True:
-                    correct = False
-                    if choice.hint:
-                        hints.append(choice.hint)
-                elif request.POST[str(choice.id)] == "true" and choice.correct == False:
-                    correct = False
-                    if choice.hint:
-                        hints.append(choice.hint)
-                    chosen.append(choice)
-
-            if request.user:
-                cb_evaluation = Evaluation(points=1.0,feedback="jee")
-                cb_evaluation.save()
-                cb_answer = UserCheckboxTaskAnswer(task=content.taskpage.checkboxtask, evaluation=cb_evaluation,
-                                                   user=request.user, answer_date=timezone.now())
-                cb_answer.save()
-                cb_answer.chosen_answers.add(*chosen)
-                cb_answer.save()
-
-
-        try:
-            if content.taskpage.textfieldtask:
-                answers = TextfieldTaskAnswer.objects.filter(task=content.id)
-                tasktype = "textfield"
-        except ContentPage.DoesNotExist as e:
-            pass
-
-        if answers and tasktype == "textfield":
-            given = request.POST["answer"]
-            for answer in answers:
-                if answer.regexp:
-                    # TODO: Regexp error checking!!!! To prevent crashes.
-                    if re.match(answer.answer, given) and answer.correct and correct == True:
-                        correct = True
-                        break
-                    elif re.match(answer.answer, given) and not answer.correct:
-                        correct = False
-                        if answer.hint:
-                            hints.append(answer.hint)
-                    elif not re.match(answer.answer, given):
-                        correct = False
-                        if answer.hint:
-                            hints.append(answer.hint)
-                else:
-                    if given == answer.answer and answer.correct and correct == True:
-                        correct = True
-                        break
-                    elif given == answer.answer and not answer.correct:
-                        correct = False
-                        if answer.hint:
-                            hints.append(answer.hint)
-                    elif given != answer.answer:
-                        correct = False
-                        if answer.hint:
-                            hints.append(answer.hint)
-
-            if request.user:
-                tf_evaluation = Evaluation(points=1.0,feedback="jee")
-                tf_evaluation.save()
-                tf_answer = UserTextfieldTaskAnswer(task=content.taskpage.textfieldtask, given_answer=given, evaluation=tf_evaluation,
-                                                    user=request.user, answer_date=timezone.now())
-                tf_answer.save()
-        
-        try:
-            if content.taskpage.filetask:
-                tasktype = "filetask"
-        except ContentPage.DoesNotExist as e:
-            pass
-
-        if tasktype == "filetask":
-            if type(request.user) == User:
-                f_returnable = FileTaskReturnable(run_time=datetime.time(0,0,1,500), output="asdf", errors="asdf")
-                f_returnable.save()
-                f_evaluation = Evaluation(points=1.0,feedback="jee")
-                f_evaluation.save()
-                f_answer = UserFileTaskAnswer(task=content.taskpage.filetask, returnable=f_returnable, evaluation=f_evaluation,
-                                              user=request.user, answer_date=timezone.now())
-                f_answer.save()
-
-                for entry_name, uploaded_file in request.FILES.iteritems():
-                    f_filetaskreturnfile = FileTaskReturnFile(fileinfo=uploaded_file, returnable=f_returnable)
-                    f_filetaskreturnfile.save()
-            
-                results = filecheck_client.check_file_answer(task=content.taskpage.filetask, files={}, answer=f_answer)
-                print results
-            else:
-                files = {}
-                print request.FILES
-                for rf in request.FILES.itervalues():
-                    f = ""
-                    for chunk in rf.chunks():
-                        f += chunk
-                    files[rf.name] = f
-                results = filecheck_client.check_file_answer(task=content.taskpage.filetask, files=files)
-                print results
-
-            diff_table = filecheck_client.html(results)
-
-            return HttpResponse(diff_table)
-
-        # TODO: Use a template here to make it look nicer.
-        if correct:
-            response_string = u"Correct!"
-        else:
-            # TODO: Account for the video hints!
-            response_string = u"Incorrect answer.<br />"
-            if hints:
-                random.shuffle(hints)
-                response_string += "<br />".join(hints)
-
-        response = HttpResponse(response_string)
-        return response
-
-    # back to normal flow (representing a content page)
+    tasktype, question, choices, answers = get_task_info(content)
 
     navurls = [NavURL(reverse('courses.views.index'), "Training home"), # Courses
                NavURL(reverse('courses.views.training', kwargs={"training_name":training_name}), training_name),
@@ -395,9 +412,6 @@ def content(request, training_name, content_name, **kwargs):
             # It's an embedded source code file
             if include_file_re.group("filename") == parser.get_current_filename():
                 # Read the embedded file into file_contents, then syntax highlight it, then replace the placeholder with the contents
-                from pygments import highlight
-                from pygments.lexers import PythonLexer
-                from pygments.formatters import HtmlFormatter
                 file_contents = codecs.open(File.objects.get(name=include_file_re.group("filename")).fileinfo.path, "r", "utf-8").read()
                 file_contents = highlight(file_contents, PythonLexer(), HtmlFormatter(nowrap=True))
                 #file_contents = codecs.open(os.path.join(kwargs["media_root"], course_name, include_file_re.group("filename")), "r", "utf-8").read()
@@ -422,7 +436,7 @@ def content(request, training_name, content_name, **kwargs):
                     rendered_em_content += emline
                 
                 # use template here to render to rendered_em_content
-                emb_tasktype, emb_question, emb_choices = get_task_info(embedded_content)
+                emb_tasktype, emb_question, emb_choices, emb_answers = get_task_info(embedded_content)
                 emb_t = loader.get_template("courses/task.html")
                 emb_c = RequestContext(request, {
                         'emb_content': rendered_em_content,
@@ -439,8 +453,6 @@ def content(request, training_name, content_name, **kwargs):
                 
         rendered_content += line
     
-    tasktype, question, choices = get_task_info(content)
-
     t = loader.get_template("courses/index.html")
     c = RequestContext(request, {
         'training': selected_course,
@@ -491,7 +503,7 @@ def user(request, user_name):
 
 def stats(request, task_name):
     '''Shows statistics on the selected task.'''
-    t = load.get_template("courses/task_stats.html")
+    t = loader.get_template("courses/task_stats.html")
     c = RequestContext(request, {
         'x': "x",
     })

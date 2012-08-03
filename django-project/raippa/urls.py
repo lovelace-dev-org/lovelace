@@ -39,6 +39,10 @@ urlpatterns = patterns('',
         {'media_root': settings.MEDIA_ROOT,
          'media_url':settings.MEDIA_URL,}
        ),
+    url(r'^(?P<training_name>[^/]+)/(?P<content_name>[^/]+)/check/$', 'courses.views.check_answer',
+        {'media_root': settings.MEDIA_ROOT,
+         'media_url':settings.MEDIA_URL,}
+       ),
 
     # Uncomment the admin/doc line below to enable admin documentation:
     # url(r'^admin/doc/', include('django.contrib.admindocs.urls')),

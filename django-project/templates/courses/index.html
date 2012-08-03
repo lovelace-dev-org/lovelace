@@ -94,7 +94,7 @@ function validateAnswer(e, task_name) {
     var filemimetype = "multipart/form-data; boundary=" + boundary;
     //var filemimetype = "multipart/form-data";
 
-    xhr.open("POST", "{{ answer_check_url }}" + task_name /* .replace(/_/g, " ") */ + "/", true);
+    xhr.open("POST", "{{ answer_check_url }}" + task_name + "/check/", true);
     if (filename) {
         //xhr.setRequestHeader("Content-type", filemimetype);
         xhr.setRequestHeader("X-CSRFToken", csrftoken);
@@ -184,9 +184,6 @@ function validateAnswer(e, task_name) {
         {% block nav-global %}{% endblock %}
 	{% include "courses/nav-bar.html" %}
 
-
-
-
 	<section class="page_content"><!-- The RAiPPA content -->
           {% if course_list %}
 		<h1>Available trainings<!-- courses --></h1>
@@ -233,7 +230,7 @@ function validateAnswer(e, task_name) {
           {% endif %}
 	  {% endcomment %}
 
-          {% if content %}
+          {% if content or tasktype %}
             {{ content|safe }}
             {% include "courses/task.html" %}
           {% endif %}

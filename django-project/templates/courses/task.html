@@ -7,7 +7,7 @@
                     method="POST"
                     onSubmit="validateAnswer(event);return false;" enctype="multipart/form-data" >
                 {% csrf_token %}
-                {% if tasktype == "radio" %}
+                {% if tasktype == "radiobutton" %}
                   {% for choice in choices %}
                     <input type="radio" name="radio" id="{{ choice.id }}" value="{{ choice.id }}" class="task_radio" /><label for="{{ choice.id }}">{{ choice.answer }}</label><br />
                   {% endfor %}
