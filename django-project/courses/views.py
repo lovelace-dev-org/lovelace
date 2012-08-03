@@ -253,7 +253,7 @@ def textfield_task_check(content, user, answers, post_data):
     # Determine, if the given answer was correct and which hints to show
     correct = True
     hints = []
-    given = post_data["answer"]
+    given = post_data["answer"].replace("\r\n", "\n").replace("\n\r", "\n")
     for answer in answers:
         if answer.regexp:
             # TODO: Regexp error checking!!!! To prevent crashes.
@@ -264,7 +264,7 @@ def textfield_task_check(content, user, answers, post_data):
                 correct = False
                 if answer.hint:
                     hints.append(answer.hint)
-            elif not re.match(answer.answer, given):
+            elif not re.match(answer.answer, given) and answer.correct:
                 correct = False
                 if answer.hint:
                     hints.append(answer.hint)
@@ -276,7 +276,7 @@ def textfield_task_check(content, user, answers, post_data):
                 correct = False
                 if answer.hint:
                     hints.append(answer.hint)
-            elif given != answer.answer:
+            elif given != answer.answer and answer.correct:
                 correct = False
                 if answer.hint:
                     hints.append(answer.hint)

@@ -242,6 +242,10 @@ class TextfieldTaskAnswer(models.Model):
             return self.answer[0:80] + u" ..."
         else:
             return self.answer
+
+    def save(self, *args, **kwargs):
+        self.answer = self.answer.replace("\r\n", "\n").replace("\n\r", "\n")
+        super(TextfieldTaskAnswer, self).save(*args, **kwargs)
  
 class RadiobuttonTaskAnswer(models.Model):
     task = models.ForeignKey(RadiobuttonTask)
