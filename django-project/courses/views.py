@@ -44,24 +44,10 @@ def index(request):
     })
     return HttpResponse(t.render(c))
 
-def training_b(request, course_name):
-    selected_course = Training.objects.get(name=course_name)
-
-    navurls = [NavURL(reverse('courses.views.index'), "Training home"),
-               NavURL(reverse('courses.views.course', kwargs={"course_name":course_name}), course_name),] # Courses
-    t = loader.get_template("courses/index.html")
-    c = RequestContext(request, {
-        'incarnation_list': incarnation_list,
-        'course': selected_course,
-        'navurls': navurls,
-        'title': '%s' % selected_course.name,
-    })
-    return HttpResponse(t.render(c))
-
 def add_tree(nodelist,id):
-	nodelist.append(ContentGraph.objects.get(id=id))
-	for child in ContentGraph.objects.filter(parentnode_id=id):
-		add_tree(nodelist,child.id)
+    nodelist.append(ContentGraph.objects.get(id=id))
+    for child in ContentGraph.objects.filter(parentnode_id=id):
+        add_tree(nodelist,child.id)
 
 def course_graph(request, training_name):
     # TODO: Use temporary files and/or dynamic root directory!
@@ -123,7 +109,7 @@ def course_graph(request, training_name):
     #response['Content-Disposition'] = 'attachment; filename=graph.vg'
     return response
  
-def training(request, training_name,**kwargs):
+def training(request, training_name, **kwargs):
     selected_course = Training.objects.get(name=training_name)
     navurls = [NavURL(reverse('courses.views.index'), "Training home"), # Course
                NavURL(reverse('courses.views.training', kwargs={"training_name":training_name}), training_name),]
@@ -131,10 +117,10 @@ def training(request, training_name,**kwargs):
     course_graph_url = reverse('courses.views.course_graph', kwargs={'training_name':training_name})
     frontpage = selected_course.frontpage
 
-    if not frontpage is None:
-    	contentid = frontpage.id 
-	check_for_answer(request,contentid)
-	contextdict = get_content(contentid,selected_course,request,kwargs)
+    if frontpage:
+    	content_name = frontpage.url_name
+        kwargs["frontpage"] = True
+	contextdict = content(request, training_name, content_name, **kwargs)
     else:
 	contextdict = {}
 
@@ -145,12 +131,12 @@ def training(request, training_name,**kwargs):
 
     contents = selected_course.contents.all()
     if len(contents) > 0:
-    	tree = []    
+        tree = []    
         tree.append(mark_safe('>'))
-	for C in contents:
-		dirtree(tree,C)
+        for C in contents:
+            dirtree(tree,C)
         tree.append(mark_safe('<'))
-    	contextdict["content_tree"] = tree
+        contextdict["content_tree"] = tree
 
     t = loader.get_template("courses/index.html")
     c = RequestContext(request, contextdict)
@@ -392,6 +378,7 @@ def content(request, training_name, content_name, **kwargs):
     pages = [content]
 
     tasktype, question, choices, answers = get_task_info(content)
+    emb_tasktype = None
 
     navurls = [NavURL(reverse('courses.views.index'), "Training home"), # Courses
                NavURL(reverse('courses.views.training', kwargs={"training_name":training_name}), training_name),
@@ -442,6 +429,7 @@ def content(request, training_name, content_name, **kwargs):
                         'content_name': embedded_content.name,
                         'content_name_id': embedded_content.url_name,
                         'content_urlname': embedded_content.url_name,
+                        'answer_check_url': reverse('courses.views.training', kwargs={"training_name":training_name}),
                         'tasktype': emb_tasktype,
                         'question': emb_question,
                         'choices': emb_choices,
@@ -452,7 +440,6 @@ def content(request, training_name, content_name, **kwargs):
                 
         rendered_content += line
     
-    t = loader.get_template("courses/index.html")
     c = RequestContext(request, {
         'training': selected_course,
         'content': rendered_content,
@@ -462,11 +449,16 @@ def content(request, training_name, content_name, **kwargs):
         'navurls': navurls,
         'title': '%s - %s' % (content.name, selected_course.name),
         'answer_check_url': reverse('courses.views.training', kwargs={"training_name":training_name}),
+        'emb_tasktype': emb_tasktype,
         'tasktype': tasktype,
         'question': question,
         'choices': choices,
     })
-    return HttpResponse(t.render(c))
+    if "frontpage" in kwargs:
+        return c
+    else:
+        t = loader.get_template("courses/index.html")
+        return HttpResponse(t.render(c))
 
 def user(request, user_name):
     '''Shows user information to the requesting user. The amount of information depends on who the
@@ -520,189 +512,3 @@ def file_download(request, filename, **kwargs):
         return response
     except IOError:
         return Http404()
-
-def check_for_answer(request,content_id):
-    # Validate an answer to question
-    if request.POST:
-        print "here we are"
-        question = TaskPage.objects.get(id=content.id).question
-
-        correct = True
-        tasktype = None
-        choices = None
-        answers = None
-        hints = []
-
-        try:
-            if content.taskpage.radiobuttontask:
-                choices = RadiobuttonTaskAnswer.objects.filter(task=content.id)
-                tasktype = "radiobutton"
-                
-        except ContentPage.DoesNotExist as e:
-            pass
-
-        if choices and tasktype == "radiobutton":
-            for choice in choices:
-                if request.POST[str(choice.id)] == "true" and choice.correct == True and correct == True:
-                    correct = True
-                elif request.POST[str(choice.id)] == "false" and choice.correct == True:
-                    correct = False
-                    if choice.hint:
-                        hints.append(choice.hint)
-                elif request.POST[str(choice.id)] == "true" and choice.correct == False:
-                    correct = False
-                    if choice.hint:
-                        hints.append(choice.hint)
-                    break
-
-        try:
-            if content.taskpage.checkboxtask:
-                choices = CheckboxTaskAnswer.objects.filter(task=content.id)
-                tasktype = "checkbox"
-        except ContentPage.DoesNotExist as e:
-            pass
-
-        if choices and tasktype == "checkbox":
-            for choice in choices:
-                if request.POST[str(choice.id)] == "true" and choice.correct == True and correct == True:
-                    correct = True
-                elif request.POST[str(choice.id)] == "false" and choice.correct == True:
-                    correct = False
-                    if choice.hint:
-                        hints.append(choice.hint)
-                elif request.POST[str(choice.id)] == "true" and choice.correct == False:
-                    correct = False
-                    if choice.hint:
-                        hints.append(choice.hint)
-
-        try:
-            if content.taskpage.textfieldtask:
-                answers = TextfieldTaskAnswer.objects.filter(task=content.id)
-                tasktype = "textfield"
-        except ContentPage.DoesNotExist as e:
-            pass
-
-        if answers and tasktype == "textfield":
-            given = request.POST["answer"]
-            for answer in answers:
-                if answer.regexp:
-                    import re
-                    # TODO: Regexp error checking!!!! To prevent crashes.
-                    if re.match(answer.answer, given) and answer.correct and correct == True:
-                        correct = True
-                        break
-                    elif re.match(answer.answer, given) and not answer.correct:
-                        correct = False
-                        if answer.hint:
-                            hints.append(answer.hint)
-                    elif not re.match(answer.answer, given):
-                        correct = False
-                        if answer.hint:
-                            hints.append(answer.hint)
-                else:
-                    if given == answer.answer and answer.correct and correct == True:
-                        correct = True
-                        break
-                    elif given == answer.answer and not answer.correct:
-                        correct = False
-                        if answer.hint:
-                            hints.append(answer.hint)
-                    elif given != answer.answer:
-                        correct = False
-                        if answer.hint:
-                            hints.append(answer.hint)
-
-        # TODO: Use a template here to make it look nicer.
-        if correct:
-            response_string = u"Correct!"
-        else:
-            response_string = u"Incorrect answer.<br />"
-            if hints:
-                import random
-                random.shuffle(hints)
-                response_string += "<br />".join(hints)
-
-        response = HttpResponse(response_string)
-        return response
-
-def get_content(content_id,training,request,kwargs):
-    content = ContentPage.objects.get(id=content_id)
-    pages = [content]
-
-    navurls = [NavURL(reverse('courses.views.index'), "Training home"), # Courses
-               NavURL(reverse('courses.views.training', kwargs={"training_name":training.name}), training.name),
-               NavURL(reverse('courses.views.content', kwargs={"training_name":training.name, "content_name":content.name}), content.name)]
-
-    rendered_content = u''
-    unparsed_content = re.split(r"\r\n|\r|\n", content.content)
-
-    parser = content_parser.ContentParser(iter(unparsed_content))
-    parser.set_fileroot(kwargs["media_root"])
-    parser.set_mediaurl(kwargs["media_url"])
-    parser.set_coursename(training)
-    for line in parser.parse():
-        # Embed a file, page or a video (TODO: Use custom template tags for a nicer solution)
-        include_file_re = re.search("{{\s+(?P<filename>.+)\s+}}", line)
-        if include_file_re:
-            # It's an embedded source code file
-            if include_file_re.group("filename") == parser.get_current_filename():
-                # Read the embedded file into file_contents, then syntax highlight it, then replace the placeholder with the contents
-                from pygments import highlight
-                from pygments.lexers import PythonLexer
-                from pygments.formatters import HtmlFormatter
-                file_contents = codecs.open(File.objects.get(name=include_file_re.group("filename")).fileinfo.path, "r", "utf-8").read()
-                file_contents = highlight(file_contents, PythonLexer(), HtmlFormatter(nowrap=True))
-                #file_contents = codecs.open(os.path.join(kwargs["media_root"], course_name, include_file_re.group("filename")), "r", "utf-8").read()
-                line = line.replace(include_file_re.group(0), file_contents)
-            # It's an embedded video
-            elif include_file_re.group("filename") == parser.get_current_videoname():
-                video = Video.objects.get(name=parser.get_current_videoname()).link
-                line = line.replace(include_file_re.group(0), video)
-            # It's an embedded image
-            elif include_file_re.group("filename") == parser.get_current_imagename():
-                image = Image.objects.get(name=parser.get_current_imagename()).fileinfo.url
-                line = line.replace(include_file_re.group(0), image)
-            # It's an embedded task
-            elif include_file_re.group("filename") == parser.get_current_taskname():
-                #embedded_content = ContentPage.objects.get(incarnation=selected_incarnation.id, name=parser.get_current_taskname())
-                embedded_content = ContentPage.objects.get(name=parser.get_current_taskname())
-                pages.append(embedded_content)
-                unparsed_embedded_content = re.split(r"\r\n|\r|\n", embedded_content.content)
-                embedded_parser = content_parser.ContentParser(iter(unparsed_embedded_content))
-                rendered_em_content = u''
-                for emline in embedded_parser.parse():
-                    rendered_em_content += emline
-
-                # use template here to render to rendered_em_content
-                emb_tasktype, emb_question, emb_choices = get_task_info(embedded_content)
-                emb_t = loader.get_template("courses/task.html")
-                emb_c = RequestContext(request, {
-                        'emb_content': rendered_em_content,
-                        'content_name': embedded_content.name,
-                        'content_name_id': embedded_content.name.replace(" ", "_"),
-                        'tasktype': emb_tasktype,
-                        'question': emb_question,
-                        'choices': emb_choices,
-                })
-                rendered_em_content = emb_t.render(emb_c)
-
-                line = line.replace(include_file_re.group(0), rendered_em_content)
-
-        rendered_content += line
- 
-    tasktype, question, choices = get_task_info(content)
-
-    pagedict = {
-        'training': training,
-        'content': rendered_content,
-        'content_name': content.name,
-        'content_name_id': content.id, #name.replace(" ", "_"),
-        'navurls': navurls,
-        'title': '%s - %s' % (content.name, training.name),
-        'answer_check_url': reverse('courses.views.training', kwargs={"training_name":training.name}),
-        'tasktype': tasktype,
-        'question': question,
-        'choices': choices,
-    }
-    return pagedict
-
