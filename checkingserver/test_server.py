@@ -54,7 +54,7 @@ def runCommand(arg, input_data, tempdir, outfile, errfile, infile, signal=None, 
         preexec_fn=demote_subprocess,
         cwd=tempdir,
         env=env,
-        universal_newlines=True,
+        universal_newlines=False,
         stdout=outfile,
         stderr=errfile,
         stdin=infile
@@ -123,7 +123,7 @@ def runTest(args, input_data, input_files, code_files, signal, tempdir, timeout=
         with open(inpath, "w") as infile_w:
             # Only enter the input for the main command (i.e., usually, the interpreted or compiled program)
             if is_main_arg:
-                infile_w.write(input_data)
+                infile_w.write(input_data.replace("\r\n", "\n"))
         # Open files for stdout, stderr and stdin and run the current command
         # TODO: Consider a separate temporary path for stdout, stderr and stdin files or use temporary files instead
         outfile = open(outpath, "w")
