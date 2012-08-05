@@ -310,8 +310,22 @@ section.page_content {
             font-weight: bold;
         }
 
-        section.page_content div_result table td {
+        section.page_content div#result table td {
+            white-space: pre;
             font-weight: normal;
+            font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
+        }
+
+        section.page_content div#result table td.diff_next {
+            width: 10px;
+        }
+
+        section.page_content div#result table td.diff_header {
+            width: 20px;
+        }
+
+        section.page_content div#result table th.diff_header {
+            width: 500px;
         }
 
         section.page_content div#result table span.diff_sub {
@@ -320,6 +334,10 @@ section.page_content {
 
         section.page_content div#result table span.diff_chg {
             background: #99f;
+        }
+
+        section.page_content div#result table span.diff_add {
+            background: #9f9;
         }
 
 /* FOOTER */

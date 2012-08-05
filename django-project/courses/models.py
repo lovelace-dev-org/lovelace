@@ -2,6 +2,7 @@
 """Django database models for RAIPPA courses."""
 
 import datetime
+import re
 import os
 
 from django.db import models
@@ -111,11 +112,11 @@ class ContentPage(models.Model):
         return self.name[0:32]
 
     def get_url_name(self):
-        return self.name.replace(" ", "_").lower()
+        """Creates an URL and HTML ID field friendly version of the name."""
+        return re.sub(r"[^A-Za-z0-9_]", "_", self.name).lower()
 
     def save(self, *args, **kwargs):
-        if not self.url_name:
-            self.url_name = self.get_url_name()
+        self.url_name = self.get_url_name()
         if not self.short_name:
             self.short_name = self._shortify_name()
         super(ContentPage, self).save(*args, **kwargs)
@@ -125,23 +126,49 @@ class ContentPage(models.Model):
 
 class LecturePage(ContentPage):
     """A single page from a lecture."""
-    pass
+    def save(self, *args, **kwargs):
+        self.url_name = self.get_url_name()
+        if not self.short_name:
+            self.short_name = self._shortify_name()
+        super(LecturePage, self).save(*args, **kwargs)
 
 class TaskPage(ContentPage):
     """A single task."""
     question = models.TextField()
 
+    def save(self, *args, **kwargs):
+        self.url_name = self.get_url_name()
+        if not self.short_name:
+            self.short_name = self._shortify_name()
+        super(TaskPage, self).save(*args, **kwargs)
+
 class RadiobuttonTask(TaskPage):
-    pass
+    def save(self, *args, **kwargs):
+        self.url_name = self.get_url_name()
+        if not self.short_name:
+            self.short_name = self._shortify_name()
+        super(RadiobuttonTask, self).save(*args, **kwargs)
 
 class CheckboxTask(TaskPage):
-    pass
+    def save(self, *args, **kwargs):
+        self.url_name = self.get_url_name()
+        if not self.short_name:
+            self.short_name = self._shortify_name()
+        super(CheckboxTask, self).save(*args, **kwargs)
 
 class TextfieldTask(TaskPage):
-    pass
+    def save(self, *args, **kwargs):
+        self.url_name = self.get_url_name()
+        if not self.short_name:
+            self.short_name = self._shortify_name()
+        super(TextfieldTask, self).save(*args, **kwargs)
 
 class FileTask(TaskPage):
-    pass
+    def save(self, *args, **kwargs):
+        self.url_name = self.get_url_name()
+        if not self.short_name:
+            self.short_name = self._shortify_name()
+        super(FileTask, self).save(*args, **kwargs)
 
 class FileTaskTest(models.Model):
     task = models.ForeignKey(FileTask)
@@ -215,6 +242,10 @@ class TextfieldTaskAnswer(models.Model):
             return self.answer[0:80] + u" ..."
         else:
             return self.answer
+
+    def save(self, *args, **kwargs):
+        self.answer = self.answer.replace("\r\n", "\n").replace("\n\r", "\n")
+        super(TextfieldTaskAnswer, self).save(*args, **kwargs)
  
 class RadiobuttonTaskAnswer(models.Model):
     task = models.ForeignKey(RadiobuttonTask)

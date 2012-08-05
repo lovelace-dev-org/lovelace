@@ -21,6 +21,9 @@ urlpatterns = patterns('',
     # For viewing user information
     url(r'^user/(?P<user_name>[^/]+)/$', 'courses.views.user'),
 
+    # For viewing task statistics
+    url(r'^stats/(?P<task_name>[^/]+)/$', 'courses.views.stats'),
+
     # For serving uploaded files
     url(r'^media/(?P<filename>.+)$', 'courses.views.file_download',
         {'media_root': settings.MEDIA_ROOT,}
@@ -33,6 +36,10 @@ urlpatterns = patterns('',
        ),
     url(r'^(?P<training_name>[^/]+)/graph\.vg$', 'courses.views.course_graph'),
     url(r'^(?P<training_name>[^/]+)/(?P<content_name>[^/]+)/$', 'courses.views.content',
+        {'media_root': settings.MEDIA_ROOT,
+         'media_url':settings.MEDIA_URL,}
+       ),
+    url(r'^(?P<training_name>[^/]+)/(?P<content_name>[^/]+)/check/$', 'courses.views.check_answer',
         {'media_root': settings.MEDIA_ROOT,
          'media_url':settings.MEDIA_URL,}
        ),
