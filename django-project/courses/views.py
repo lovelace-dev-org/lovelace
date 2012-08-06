@@ -146,36 +146,34 @@ def training(request, training_name, **kwargs):
 def dirtree(tree, node, user):
     result = "not_answered"
     if user.is_authenticated():
-        if user.username == "mdf":
-            points = 0.0
-            answers = None
-            evaluations = None
-            try:
-                if not evaluations: evaluations = Evaluation.objects.filter(useranswer__usercheckboxtaskanswer__task=node.content, useranswer__user=user)
-            except ContentPage.DoesNotExist:
-                pass
-            try:
-                if not evaluations: evaluations = Evaluation.objects.filter(useranswer__userradiobuttontaskanswer__task=node.content, useranswer__user=user)
-            except ContentPage.DoesNotExist:
-                pass
-            try:
-                if not evaluations: evaluations = Evaluation.objects.filter(useranswer__usertextfieldtaskanswer__task=node.content, useranswer__user=user)
-            except ContentPage.DoesNotExist:
-                pass
-            try:
-                if not evaluations: evaluations = Evaluation.objects.filter(useranswer__userfiletaskanswer__task=node.content, useranswer__user=user)
-            except ContentPage.DoesNotExist:
-                pass
+#        if user.username == "mdf" or user.username == "testimdf":
+        evaluations = None
+        try:
+            if not evaluations: evaluations = Evaluation.objects.filter(useranswer__usercheckboxtaskanswer__task=node.content, useranswer__user=user)
+        except ContentPage.DoesNotExist:
+            pass
+        try:
+            if not evaluations: evaluations = Evaluation.objects.filter(useranswer__userradiobuttontaskanswer__task=node.content, useranswer__user=user)
+        except ContentPage.DoesNotExist:
+            pass
+        try:
+            if not evaluations: evaluations = Evaluation.objects.filter(useranswer__usertextfieldtaskanswer__task=node.content, useranswer__user=user)
+        except ContentPage.DoesNotExist:
+            pass
+        try:
+            if not evaluations: evaluations = Evaluation.objects.filter(useranswer__userfiletaskanswer__task=node.content, useranswer__user=user)
+        except ContentPage.DoesNotExist:
+            pass
 
-            if not evaluations:
-                result = "not_answered"
+        if not evaluations:
+            result = "not_answered"
+        else:
+            correct = evaluations.filter(points__gt=0.0)
+            print correct
+            if correct:
+                result = "correct"
             else:
-                correct = evaluations.filter(points__gte=0.0)
-                print correct
-                if correct:
-                    result = "correct"
-                else:
-                    result = "incorrect"
+                result = "incorrect"
 
     list_item = (node.content, result)
     tree.append(list_item)
