@@ -133,24 +133,59 @@ def training(request, training_name, **kwargs):
     contents = selected_course.contents.all()
     if len(contents) > 0:
         tree = []    
-        tree.append(mark_safe('>'))
-        for C in contents:
-            dirtree(tree,C)
-        tree.append(mark_safe('<'))
+        tree.append((mark_safe('>'), None))
+        for content_ in contents:
+            dirtree(tree, content_, request.user)
+        tree.append((mark_safe('<'), None))
         contextdict["content_tree"] = tree
 
     t = loader.get_template("courses/index.html")
     c = RequestContext(request, contextdict)
     return HttpResponse(t.render(c))
 
-def dirtree(tree,node):
-    tree.append(node.content)
-    kids = ContentGraph.objects.filter(parentnode=node)
-    if len(kids) > 0:
-        tree.append(mark_safe('>'))
-        for K in kids:
-            dirtree(tree,K)
-        tree.append(mark_safe('<'))
+def dirtree(tree, node, user):
+    result = "not_answered"
+    if user.is_authenticated():
+        if user.username == "mdf":
+            points = 0.0
+            answers = None
+            evaluations = None
+            try:
+                if not evaluations: evaluations = Evaluation.objects.filter(useranswer__usercheckboxtaskanswer__task=node.content, useranswer__user=user)
+            except ContentPage.DoesNotExist:
+                pass
+            try:
+                if not evaluations: evaluations = Evaluation.objects.filter(useranswer__userradiobuttontaskanswer__task=node.content, useranswer__user=user)
+            except ContentPage.DoesNotExist:
+                pass
+            try:
+                if not evaluations: evaluations = Evaluation.objects.filter(useranswer__usertextfieldtaskanswer__task=node.content, useranswer__user=user)
+            except ContentPage.DoesNotExist:
+                pass
+            try:
+                if not evaluations: evaluations = Evaluation.objects.filter(useranswer__userfiletaskanswer__task=node.content, useranswer__user=user)
+            except ContentPage.DoesNotExist:
+                pass
+
+            if not evaluations:
+                result = "not_answered"
+            else:
+                correct = evaluations.filter(points__gte=0.0)
+                print correct
+                if correct:
+                    result = "correct"
+                else:
+                    result = "incorrect"
+
+    list_item = (node.content, result)
+    tree.append(list_item)
+
+    children = ContentGraph.objects.filter(parentnode=node)
+    if len(children) > 0:
+        tree.append((mark_safe('>'), None))
+        for child in children:
+            dirtree(tree, child, user)
+        tree.append((mark_safe('<'), None))
 
 def get_task_info(content):
     tasktype = None
@@ -191,6 +226,8 @@ def get_task_info(content):
     return (tasktype, question, choices, answers)
 
 def radiobutton_task_check(content, user, choices, post_data):
+    points = 0.0
+
     # Determine, if the given answer was correct and which hints to show
     correct = True
     hints = []
@@ -210,8 +247,10 @@ def radiobutton_task_check(content, user, choices, post_data):
             break
     
     # Save the results to the database, if the question was answered by a non-anonymous user
-    if user:
-        rb_evaluation = Evaluation(points=1.0,feedback="jee")
+    if user.is_authenticated():
+        if correct:
+            points = 1.0
+        rb_evaluation = Evaluation(points=points,feedback="")
         rb_evaluation.save()
         rb_answer = UserRadiobuttonTaskAnswer(task=content.taskpage.radiobuttontask, chosen_answer=chosen, evaluation=rb_evaluation,
                                               user=user, answer_date=timezone.now())
@@ -220,6 +259,8 @@ def radiobutton_task_check(content, user, choices, post_data):
     return correct, hints
 
 def checkbox_task_check(content, user, choices, post_data):
+    points = 0.0
+
     # Determine, if the given answer was correct and which hints to show
     correct = True
     hints = []
@@ -239,8 +280,10 @@ def checkbox_task_check(content, user, choices, post_data):
             chosen.append(choice)
 
     # Save the results to the database, if the question was answered by a non-anonymous user
-    if user:
-        cb_evaluation = Evaluation(points=1.0,feedback="jee")
+    if user.is_authenticated():
+        if correct:
+            points = 1.0
+        cb_evaluation = Evaluation(points=points,feedback="")
         cb_evaluation.save()
         cb_answer = UserCheckboxTaskAnswer(task=content.taskpage.checkboxtask, evaluation=cb_evaluation,
                                            user=user, answer_date=timezone.now())
@@ -251,6 +294,8 @@ def checkbox_task_check(content, user, choices, post_data):
     return correct, hints
 
 def textfield_task_check(content, user, answers, post_data):
+    points = 0.0
+
     # Determine, if the given answer was correct and which hints to show
     correct = True
     hints = []
@@ -287,8 +332,10 @@ def textfield_task_check(content, user, answers, post_data):
                     hints.append(answer.hint)
 
     # Save the results to the database, if the question was answered by a non-anonymous user
-    if user:
-        tf_evaluation = Evaluation(points=1.0,feedback="jee")
+    if user.is_authenticated():
+        if correct:
+            points = 1.0
+        tf_evaluation = Evaluation(points=points,feedback="")
         tf_evaluation.save()
         tf_answer = UserTextfieldTaskAnswer(task=content.taskpage.textfieldtask, given_answer=given, evaluation=tf_evaluation,
                                             user=user, answer_date=timezone.now())
@@ -297,13 +344,15 @@ def textfield_task_check(content, user, answers, post_data):
     return correct, hints, errors
 
 def file_task_check(content, user, files_data):
+    points = 0.0
     correct = True
     hints = []
-    if type(user) == User:
+
+    if user.is_authenticated():
         # TODO: Fix the information that will be saved
-        f_returnable = FileTaskReturnable(run_time=datetime.time(0,0,1,500), output="asdf", errors="asdf")
+        f_returnable = FileTaskReturnable(run_time=datetime.time(0,0,1,500), output="filler-output-filler", errors="filler-errors-filler")
         f_returnable.save()
-        f_evaluation = Evaluation(points=1.0,feedback="jee")
+        f_evaluation = Evaluation(points=points,feedback="")
         f_evaluation.save()
         f_answer = UserFileTaskAnswer(task=content.taskpage.filetask, returnable=f_returnable, evaluation=f_evaluation,
                                       user=user, answer_date=timezone.now())
@@ -312,10 +361,31 @@ def file_task_check(content, user, files_data):
         for entry_name, uploaded_file in files_data.iteritems():
             f_filetaskreturnfile = FileTaskReturnFile(fileinfo=uploaded_file, returnable=f_returnable)
             f_filetaskreturnfile.save()
-            
+        
         results = filecheck_client.check_file_answer(task=content.taskpage.filetask, files={}, answer=f_answer)
+
+        # Quickly determine, whether the answer was correct
+        results_zipped = []
+        student_results = []
+        reference_results = []
+        for test in results["student"].iterkeys():
+            results_zipped.append(zip(results["student"][test]["outputs"], results["reference"][test]["outputs"]))
+
+        for test in results_zipped:
+            print test
+            for resultpair in test:
+                if resultpair[0] != resultpair[1]:
+                    correct = False
+
+        print correct
+        if correct:
+            f_evaluation.points = 1.0
+            f_evaluation.save()
+            f_answer.save()
+
         print results
     else:
+        print "Blaa?"
         files = {}
         print files_data
         for rf in files_data.itervalues():
@@ -324,8 +394,23 @@ def file_task_check(content, user, files_data):
                 f += chunk
             files[rf.name] = f
         results = filecheck_client.check_file_answer(task=content.taskpage.filetask, files=files)
+
+        # Quickly determine, whether the answer was correct
+        results_zipped = []
+        student_results = []
+        reference_results = []
+        for test in results["student"].iterkeys():
+            results_zipped.append(zip(results["student"][test]["outputs"], results["reference"][test]["outputs"]))
+
+        for test in results_zipped:
+            print test
+            for resultpair in test:
+                if resultpair[0] != resultpair[1]:
+                    correct = False
+
         print results
 
+    # Get a nice HTML table for the diffs
     diff_table = filecheck_client.html(results)
 
     return correct, hints, diff_table

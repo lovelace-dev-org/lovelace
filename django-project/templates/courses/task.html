@@ -1,27 +1,25 @@
 {% if tasktype %}
-              {% if emb_content %}
-                {{ emb_content|safe }}
-              {% endif %}
-              <div class="question" id="{{ content_urlname }}">{{ question }}
-              <form name="task_form" id="task_form" class="task"
-                    method="POST"
-                    onSubmit="validateAnswer(event);return false;" enctype="multipart/form-data" >
-                {% csrf_token %}
-                {% if tasktype == "radiobutton" %}
-                  {% for choice in choices %}
-                    <input type="radio" name="radio" id="{{ choice.id }}" value="{{ choice.id }}" class="task_radio" /><label for="{{ choice.id }}">{{ choice.answer }}</label><br />
-                  {% endfor %}
-                {% elif tasktype == "checkbox" %}
-                  {% for choice in choices %}
-                    <input type="checkbox" name="checkbox" id="{{ choice.id }}" value="{{ choice.id }}" class="task_check" /><label for="{{ choice.id }}">{{ choice.answer }}</label><br />
-                  {% endfor %}
-                {% elif tasktype == "textfield" %}
-                  <textarea name="answer" class="task_text"></textarea><br />
-                {% elif tasktype == "file" %}
-                  <input name="file" type="file" class="task_file" multiple="multiple" />
-                {% endif %}
-                <input type="submit" name="submit" value="Send answer" onClick="validateAnswer(event, '{{ answer_check_url }}', '{{ content_urlname }}');return false;" />
-                <div id="result"></div>
-              </form>
-              </div>
+  {% if emb_content %}
+    {{ emb_content|safe }}
+  {% endif %}
+  <div class="question" id="{{ content_urlname }}">{{ question }}
+    <form name="task_form" id="task_form" class="task" method="POST" onSubmit="validateAnswer(event);return false;" enctype="multipart/form-data" >
+      {% csrf_token %}
+      {% if tasktype == "radiobutton" %}
+        {% for choice in choices %}
+          <input type="radio" name="radio" id="{{ choice.id }}" value="{{ choice.id }}" class="task_radio" /><label for="{{ choice.id }}">{{ choice.answer }}</label><br />
+        {% endfor %}
+      {% elif tasktype == "checkbox" %}
+        {% for choice in choices %}
+          <input type="checkbox" name="checkbox" id="{{ choice.id }}" value="{{ choice.id }}" class="task_check" /><label for="{{ choice.id }}">{{ choice.answer }}</label><br />
+        {% endfor %}
+      {% elif tasktype == "textfield" %}
+        <textarea name="answer" class="task_text" rows="3" cols="70"></textarea><br />
+      {% elif tasktype == "file" %}
+        <input name="file" type="file" class="task_file" multiple="multiple" />
+      {% endif %}
+      <input type="submit" name="submit" value="Send answer" onClick="validateAnswer(event, '{{ answer_check_url }}', '{{ content_urlname }}');return false;" />
+      <div id="result"></div>
+    </form>
+  </div>
 {% endif %}

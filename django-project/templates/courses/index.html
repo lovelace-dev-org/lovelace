@@ -71,13 +71,23 @@
           {% if content_tree %}
 	    <hr>
             <h2>Table of contents</h2>
-            {% for list_direction in content_tree %}
+            {% for list_direction, result in content_tree %}
               {% if list_direction == '>' %}
                 <ul>
               {% elif list_direction == '<' %}
                 </ul>
               {% else %}
-                <li><a href="/{{ training.name }}/{{ list_direction.url_name }}/">{{ list_direction.name }}</a></li>
+                <li>
+                  <a href="/{{ training.name }}/{{ list_direction.url_name }}/">{{ list_direction.name }}</a>
+                  {% if result %}
+                    {% if result == 'not_answered' %}
+                    {% elif result == 'correct' %}
+                      <img src="{{ STATIC_URL }}correct.png" alt="Correctly answered!" />
+                    {% elif result == 'incorrect' %}
+                      <img src="{{ STATIC_URL }}incorrect.png" alt="Incorrectly answered!" />
+                    {% endif %}
+                  {% endif %}
+                </li>
               {% endif %}
             {% endfor %}
 	    <p>
