@@ -5,6 +5,7 @@ TODO: Use classes instead of bare functions to group data!
 """
 import os
 import re
+import sre_constants
 import codecs
 import random
 import difflib
@@ -253,21 +254,25 @@ def textfield_task_check(content, user, answers, post_data):
     # Determine, if the given answer was correct and which hints to show
     correct = True
     hints = []
+    errors = []
     given = post_data["answer"].replace("\r\n", "\n").replace("\n\r", "\n")
     for answer in answers:
         if answer.regexp:
-            # TODO: Regexp error checking!!!! To prevent crashes.
-            if re.match(answer.answer, given) and answer.correct and correct == True:
-                correct = True
-                break
-            elif re.match(answer.answer, given) and not answer.correct:
+            try:
+                if re.match(answer.answer, given) and answer.correct and correct == True:
+                    correct = True
+                    break
+                elif re.match(answer.answer, given) and not answer.correct:
+                    correct = False
+                    if answer.hint:
+                        hints.append(answer.hint)
+                elif not re.match(answer.answer, given) and answer.correct:
+                    correct = False
+                    if answer.hint:
+                        hints.append(answer.hint)
+            except sre_constants.error, e_msg:
+                errors.append("Contact staff, regexp error: " + e_msg)
                 correct = False
-                if answer.hint:
-                    hints.append(answer.hint)
-            elif not re.match(answer.answer, given) and answer.correct:
-                correct = False
-                if answer.hint:
-                    hints.append(answer.hint)
         else:
             if given == answer.answer and answer.correct and correct == True:
                 correct = True
@@ -289,7 +294,7 @@ def textfield_task_check(content, user, answers, post_data):
                                             user=user, answer_date=timezone.now())
         tf_answer.save()
 
-    return correct, hints
+    return correct, hints, errors
 
 def file_task_check(content, user, files_data):
     correct = True
@@ -341,6 +346,7 @@ def check_answer(request, training_name, content_name, **kwargs):
     correct = True
     hints = []
     comments = [] # TODO: Implement comments (giving feedback on a correct answer)
+    errors = []
     diff_table = u""
 
     if choices and tasktype == "radiobutton":
@@ -348,7 +354,7 @@ def check_answer(request, training_name, content_name, **kwargs):
     elif choices and tasktype == "checkbox":
         correct, hints = checkbox_task_check(content, request.user, choices, request.POST)
     elif answers and tasktype == "textfield":
-        correct, hints = textfield_task_check(content, request.user, answers, request.POST)
+        correct, hints, errors = textfield_task_check(content, request.user, answers, request.POST)
     elif tasktype == "file":
         correct, hints, diff_table = file_task_check(content, request.user, request.FILES)
 
@@ -364,6 +370,7 @@ def check_answer(request, training_name, content_name, **kwargs):
     t = loader.get_template("courses/task_evaluation.html")
     c = RequestContext(request, {
         'evaluation': evaluation,
+        'errors': errors,
         'hints': hints,
         'comments': comments,
         'diff_table': diff_table,
