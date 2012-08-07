@@ -2,7 +2,7 @@
 
 DEBUG = True # Use True when viewing through web browser
 TEMPLATE_DEBUG = DEBUG
-RAIPPA_ROOT = "/home/mdf/raippa_sandbox/django-project/"
+RAIPPA_ROOT = "/home/mdf/raippa_ng/django-project/"
 #RAIPPA_ROOT = "/local/django/raippa_ng/"
 
 ADMINS = (
