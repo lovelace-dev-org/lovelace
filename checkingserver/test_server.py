@@ -195,6 +195,7 @@ def runTests(code_files, tests):
         result['cmds'] = args
         result['outputs'] = routputs
         result['errors'] = rerrors
+        result['input'] = input_data
         result['inputfiles'] = input_files
         result['outputfiles'] = dict((k, v) for k, v in routfiles.iteritems() if k in output_files)
         result['returnvalues'] = rvalues
