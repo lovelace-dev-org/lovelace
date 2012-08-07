@@ -78,7 +78,7 @@ def check_file_answer(task, files={}, answer=None):
         tests.append(test)
         expected[ft_test_name] = {"outputs":outputs, "outputfiles":output_files, "errors":errors}
 
-    print tests
+    #print tests
 
     results = None
 
@@ -105,6 +105,12 @@ def html(results):
             reference = results["reference"][test_name]
         elif "expected" in results.keys():
             expected = results["expected"][test_name]
+
+        if test_result["input"]:
+            diff_tables += "<h3>Input:</h3>\n<pre class=\"normal\">%s</pre>" % (test_result["input"])
+        #if test_result["inputfiles"]:
+        #    for inputfile in test_result["inputfiles"]:
+        #        diff_tables += "<h3>Input file: %s</h3>\n<pre class=\"normal\">%s</pre>" % (inputfile, test_result["input"])
 
         for i, cmd in enumerate(test_result["cmds"]):
             diff_tables += "<h3>Command: %s</h3>" % (cmd[0])

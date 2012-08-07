@@ -365,12 +365,23 @@ def file_task_check(content, user, files_data):
         results_zipped = []
         student_results = []
         reference_results = []
+        ref = ""
+        if "reference" in results.keys():
+            ref = "reference"
+        elif "expected" in results.keys():
+            ref = "expected"
+
         for test in results["student"].iterkeys():
-            results_zipped.append(zip(results["student"][test]["outputs"], results["reference"][test]["outputs"]))
+            results_zipped.append(zip(results["student"][test]["outputs"], results[ref][test]["outputs"]))
+            results_zipped.append(zip(results["student"][test]["errors"], results[ref][test]["errors"]))
+            results_zipped.append(zip(results["student"][test]["outputfiles"], results[ref][test]["outputfiles"]))
 
         for test in results_zipped:
             print test
             for resultpair in test:
+                print "Vertaus 1", resultpair[0]
+                print
+                print "Vertaus 2", resultpair[1]
                 if resultpair[0] != resultpair[1]:
                     correct = False
 
