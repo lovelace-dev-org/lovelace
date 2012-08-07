@@ -1,1 +1,90 @@
-todo
+<h1>Statistics for "{{ content.name }}"</h1>
+<h2>General task information</h2>
+{% if tasktype == "radiobutton" %}
+  <p>
+    "{{ content.name }}" is a radio button task.<br />
+    {% if choices %}
+      <table>
+        <tr><th>Answer choice</th><th>Correct?</th></tr>
+        {% for choice in choices %}
+          <tr>
+            <td>{{ choice }}</td>
+            {% if choice.correct %}
+              <td class="correct">{{ choice.correct }}</td>
+            {% else %}
+              <td class="incorrect">{{ choice.correct }}</td>
+            {% endif %}
+          </tr>
+        {% endfor %}
+      </table>
+    {% else %}
+      It has no answer choices.
+    {% endif %}
+  </p>
+{% elif tasktype == "checkbox" %}
+  <p>
+    "{{ content.name }}" is a check box task.<br />
+    {% if choices %}
+      <table>
+        <tr><th>Answer choice</th><th>Correct?</th></tr>
+        {% for choice in choices %}
+          <tr>
+            <td>{{ choice }}</td>
+            {% if choice.correct %}
+              <td class="correct">{{ choice.correct }}</td>
+            {% else %}
+              <td class="incorrect">{{ choice.correct }}</td>
+            {% endif %}
+          </tr>
+        {% endfor %}
+      </table>
+    {% else %}
+      It has no answer choices.
+    {% endif %}
+  </p>
+{% elif tasktype == "textfield" %}
+  <p>
+    "{{ content.name }}" is a text field task.<br />
+    {% if answers %}
+      <table>
+        <tr><th>Answer choice</th>
+        <th>Correct?</th></tr>
+        {% for answer in answers %}
+          <tr>
+            <td>{{ answer }}</td>
+            {% if answer.correct %}
+              <td class="correct">{{ answer.correct }}</td>
+            {% else %}
+              <td class="incorrect">{{ answer.correct }}</td>
+            {% endif %}
+          </tr>
+        {% endfor %}
+      </table>
+    {% else %}
+      It has no answer choices.
+    {% endif %}
+
+    {% if textfield_answers %}
+      The task has been answered {{ textfield_answers_count }} times.<br />
+      <table>
+        <tr><th>User answer</th><th>Count</th><th>Correct?</th><th>Hint given?</th></tr>
+        {% for answer, count, correct, hinted in textfield_final %}
+          <tr>
+            <td>{{ answer }}</td>
+            <td>{{ count }}</td>
+            {% if correct %}
+              <td class="correct">{{ correct }}</td>
+            {% else %}
+              <td class="incorrect">{{ correct }}</td>
+            {% endif %}
+            <td>{{ hinted }}</td>
+          </tr>
+        {% endfor %}
+      </table>
+    {% endif %}
+  </p>
+{% elif tasktype == "file" %}
+  <p>
+    "{{ content.name }}" is a file task.<br />
+  </p>
+{% endif %}

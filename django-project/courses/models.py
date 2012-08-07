@@ -210,7 +210,6 @@ class FileTaskTestExpectedError(models.Model):
     videohint = models.ForeignKey(Video,blank=True,null=True)
 
 def get_testfile_path(instance, filename):
-    import os
     return os.path.join(
         "%s_files" % (instance.test.name),
         "%s" % (filename)

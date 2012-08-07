@@ -1,5 +1,13 @@
 <span class="evaluation">{{ evaluation }}</span>
 
+{% if errors %}
+  <div class="errorbox">
+  {% for error in errors %}
+    {{ error }}<br />
+  {% endfor %}
+  </div>
+{% endif %}
+
 {% if hints %}
   <div class="hintbox">
   {% for hint in hints %}
