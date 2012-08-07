@@ -380,6 +380,20 @@ section.page_content {
         section.page_content div#result table span.diff_add {
             background: #9f9;
         }
+    
+    section.page_content div.admin_tools {
+        margin-top: 64px;
+        margin-bottom: 16px;
+        padding: 8px;
+        border: 2px solid rgb(127,127,127);
+        border-radius: 0px 15px 0px 15px;
+        background: #b6ffb6;
+        width: 800px;
+    }
+        section.page_content div.admin_tools h1 {
+            font-size: 16px;
+            margin-left: 0px;
+        }
 
 /* FOOTER */
 footer {

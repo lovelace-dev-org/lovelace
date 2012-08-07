@@ -12,7 +12,7 @@ import difflib
 import datetime
 import mimetypes
 
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseNotFound, Http404
 from django.template import Context, RequestContext, loader
 from django.core.urlresolvers import reverse
 from django.core.servers.basehttp import FileWrapper
@@ -169,7 +169,6 @@ def dirtree(tree, node, user):
             result = "not_answered"
         else:
             correct = evaluations.filter(points__gt=0.0)
-            print correct
             if correct:
                 result = "correct"
             else:
@@ -511,7 +510,6 @@ def content(request, training_name, content_name, **kwargs):
                 for emline in embedded_parser.parse():
                     rendered_em_content += emline
                 
-                # use template here to render to rendered_em_content
                 emb_tasktype, emb_question, emb_choices, emb_answers = get_task_info(embedded_content)
                 emb_t = loader.get_template("courses/task.html")
                 emb_c = RequestContext(request, {
@@ -525,7 +523,6 @@ def content(request, training_name, content_name, **kwargs):
                         'choices': emb_choices,
                 })
                 rendered_em_content = emb_t.render(emb_c)
-
                 line = line.replace(include_file_re.group(0), rendered_em_content)
                 
         rendered_content += line
@@ -582,16 +579,105 @@ def user(request, user_name):
     })
     return HttpResponse(t.render(c))
 
+def textfield_eval(given, answers):
+    given = given.replace("\r\n", "\n").replace("\n\r", "\n")
+    correct = True
+    hinted = False
+    errors = []
+    for answer in answers:
+        if answer.regexp:
+            try:
+                if re.match(answer.answer, given) and answer.correct and correct == True:
+                    correct = True
+                    break
+                elif re.match(answer.answer, given) and not answer.correct:
+                    correct = False
+                    if answer.hint: hinted = True
+                elif not re.match(answer.answer, given) and answer.correct:
+                    correct = False
+            except sre_constants.error, e_msg:
+                errors.append("Regexp error: " + e_msg)
+                correct = False
+        else:
+            if given == answer.answer and answer.correct and correct == True:
+                correct = True
+                break
+            elif given == answer.answer and not answer.correct:
+                correct = False
+                if answer.hint: hinted = True
+            elif given != answer.answer and answer.correct:
+                correct = False
+    return (correct, hinted)
+
 def stats(request, task_name):
     '''Shows statistics on the selected task.'''
+    if not request.user.is_authenticated() and not request.user.is_active and not request.user.is_staff:
+        return HttpResponseNotFound()
+
+    checkbox_answers = radiobutton_answers = textfield_answers = file_answers = None
+    content_page = ContentPage.objects.get(url_name=task_name)
+    tasktype, question, choices, answers = get_task_info(content_page)
+
+    if tasktype == "checkbox":
+        checkbox_answers = UserCheckboxTaskAnswer.objects.filter(task=content_page)
+    elif tasktype == "radiobutton":
+        radiobutton_answers = UserRadiobuttonTaskAnswer.objects.filter(task=content_page)
+    elif tasktype == "textfield":
+        textfield_answers = list(UserTextfieldTaskAnswer.objects.filter(task=content_page).values_list("given_answer", flat=True))
+        textfield_answers_count = len(textfield_answers)
+        textfield_set = set(textfield_answers)
+        textfield_final = []
+        for answer in textfield_set:
+            textfield_final.append((answer, textfield_answers.count(answer),) + textfield_eval(answer, answers))
+        textfield_final = sorted(textfield_final, key=lambda x: x[1], reverse=True)
+        print textfield_final
+    elif tasktype == "file":
+        file_answers = UserFileTaskAnswer.objects.filter(task=content_page)
+
     t = loader.get_template("courses/task_stats.html")
     c = RequestContext(request, {
-        'x': "x",
+        "content": content_page,
+        "question": question,
+        "tasktype": tasktype,
+        "choices": choices,
+        "answers": answers,
+        "checkbox_answers": checkbox_answers,
+        "radiobutton_answers": radiobutton_answers,
+        "textfield_answers": textfield_answers,
+        "textfield_answers_count": textfield_answers_count,
+        "textfield_final": textfield_final,
+        "file_answers": file_answers,
     })
     return HttpResponse(t.render(c))
 
+def image_download(request, imagename, **kwargs):
+    try:
+        file_path = Image.objects.get(name=imagename).fileinfo.path
+    except Image.DoesNotExist:
+        file_path = ""
+
+    mimetypes.init()
+    try:
+        fd = open(file_path, "rb")
+        mime_type_guess = mimetypes.guess_type(file_path)
+        response = HttpResponse(fd, mime_type_guess[0])
+        return response
+    except IOError:
+        return HttpResponseNotFound()
+
 def file_download(request, filename, **kwargs):
-    file_path = File.objects.get(name=filename).fileinfo.path
+    try:
+        file_path = File.objects.get(name=filename).fileinfo.path
+    except File.DoesNotExist:
+        try:
+            file_path = File.objects.get(fileinfo='files/'+filename).fileinfo.path
+        except File.DoesNotExist:
+            try:
+                file_path = FileTaskTestIncludeFile.objects.get(fileinfo=filename).fileinfo.path
+            except File.DoesNotExist:
+                file_path = ""
+
+    #file_path = os.path.join(kwargs['media_root'], 'files', filename)
     mimetypes.init()
     # TODO: Check user rights!
     try:
@@ -599,6 +685,7 @@ def file_download(request, filename, **kwargs):
         fd = open(file_path, "rb")
         mime_type_guess = mimetypes.guess_type(file_path)
         response = HttpResponse(fd, mime_type_guess[0])
+        #response['Content-Disposition'] = 'attachment; filename=%s' % (filename) # Force download?
         return response
     except IOError:
-        return Http404()
+        return HttpResponseNotFound()
