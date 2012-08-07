@@ -615,6 +615,7 @@ def stats(request, task_name):
         return HttpResponseNotFound()
 
     checkbox_answers = radiobutton_answers = textfield_answers = file_answers = None
+    textfield_answers_count = textfield_final = None
     content_page = ContentPage.objects.get(url_name=task_name)
     tasktype, question, choices, answers = get_task_info(content_page)
 
