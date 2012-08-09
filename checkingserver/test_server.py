@@ -14,6 +14,7 @@ import datetime
 import time
 import fcntl
 import shlex
+import codecs
 import resource
 import subprocess
 import tempfile
@@ -42,7 +43,6 @@ def info(msg):
 
 def runCommand(arg, input_data, tempdir, outfile, errfile, infile, signal=None, timeout=10):
     """Run one command from a test."""
-    arg = shlex.split(arg)
     env = {'HOME':tempdir, 'LOGNAME':Privileges.get_low_name(), 'PWD':tempdir, 'USER':Privileges.get_low_name(),
            'PATH':'/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
            'PYTHONPATH':''}
@@ -101,8 +101,18 @@ def runCommand(arg, input_data, tempdir, outfile, errfile, infile, signal=None, 
     return retval, timedout
 
 def build_arg(arg, returnables):
-    #re_arg = re.match(r"\$returnables(\((?P<old>.+)\,\s+(?P<new>.+)\))?", arg)
-    return arg.replace("$returnables", " ".join(returnables))
+    #re_arg =
+    #re.match(r"\$returnables(\((?P<old>.+)\,\s+(?P<new>.+)\))?", arg)
+    new_args = shlex.split(arg)
+    new_args2 = []
+    for new_arg in new_args[::]:
+        if new_arg == "$returnables":
+            new_args2.extend(returnables)
+        else:
+            new_args2.append(new_arg)
+
+    #return arg.replace("$returnables", " ".join(returnables))
+    return new_args2
 
 def runTest(args, input_data, input_files, code_files, signal, tempdir, timeout=10):
     """
@@ -121,15 +131,15 @@ def runTest(args, input_data, input_files, code_files, signal, tempdir, timeout=
     outfiles = dict()
     for arg, is_main_arg in args:
         # Fill the stdin file with the specified input
-        with open(inpath, "w") as infile_w:
+        with codecs.open(inpath, "w", "utf-8") as infile_w:
             # Only enter the input for the main command (i.e., usually, the interpreted or compiled program)
             if is_main_arg:
                 infile_w.write(input_data.replace("\r\n", "\n"))
         # Open files for stdout, stderr and stdin and run the current command
         # TODO: Consider a separate temporary path for stdout, stderr and stdin files or use temporary files instead
-        outfile = open(outpath, "w")
-        errfile = open(errpath, "w")
-        infile = open(inpath, "r")
+        outfile = codecs.open(outpath, "w", "utf-8")
+        errfile = codecs.open(errpath, "w", "utf-8")
+        infile = codecs.open(inpath, "r", "utf-8")
 
         rvalue, rtimedout = runCommand(arg, input_data, tempdir, outfile, errfile, infile, signal, timeout)
         timedout = timedout or rtimedout
@@ -140,9 +150,9 @@ def runTest(args, input_data, input_files, code_files, signal, tempdir, timeout=
         infile.close()
 
         # Save the contents of stdout and stderr
-        with open(outpath, "r") as outfile_r:
+        with codecs.open(outpath, "r", "utf-8") as outfile_r:
             outputs.append(outfile_r.read())
-        with open(errpath, "r") as errfile_r:
+        with codecs.open(errpath, "r", "utf-8") as errfile_r:
             errors.append(errfile_r.read())
 
         # Clean up the files
@@ -153,7 +163,7 @@ def runTest(args, input_data, input_files, code_files, signal, tempdir, timeout=
         # Save the contents of files created by running the commands
         for ofile in os.listdir(tempdir):
             if ofile not in code_files and ofile not in input_files:
-                with open(ofile, "r") as f:
+                with codecs.open(ofile, "r", "utf-8") as f:
                     outfiles[ofile] = f.read()
 
     return outputs, outfiles, errors, rvalues, timedout
@@ -173,7 +183,6 @@ def runTests(code_files, tests):
     testResults = dict()
     for test in tests:
         testname = test['name']
-        #args = test['args']
         args = [(build_arg(newarg, code_files), is_main) for newarg, is_main in test['args']]
         input_data = test['input']
         input_files = test['inputfiles']
