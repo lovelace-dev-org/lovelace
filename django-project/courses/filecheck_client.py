@@ -52,7 +52,7 @@ def check_file_answer(task, files={}, answer=None):
 
         ft_test_include_files = FileTaskTestIncludeFile.objects.filter(test=ft_test)
         include_files = {}
-        input_gens = {}
+        inputgens = {}
         unittests = {}
         input_files = {}
         output_files = {}
@@ -71,6 +71,7 @@ def check_file_answer(task, files={}, answer=None):
             elif ft_test_include_file.purpose == "OUTPUT":
                 output_files[filename] = include_files[filename]
 
+        print unittests
         test = {"name": ft_test_name,
                 "timeout": _secs(ft_test_timeout),
                 "signal": ft_test_signal,
