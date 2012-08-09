@@ -101,7 +101,8 @@ def runCommand(arg, input_data, tempdir, outfile, errfile, infile, signal=None, 
     return retval, timedout
 
 def build_arg(arg, returnables):
-    re_arg = re.match(r"\$returnables(\((?P<old>.+)\,\s+(?P<new>.+)\))?", arg)
+    #re_arg = re.match(r"\$returnables(\((?P<old>.+)\,\s+(?P<new>.+)\))?", arg)
+    return arg.replace("$returnables", " ".join(returnables))
 
 def runTest(args, input_data, input_files, code_files, signal, tempdir, timeout=10):
     """
@@ -130,7 +131,7 @@ def runTest(args, input_data, input_files, code_files, signal, tempdir, timeout=
         errfile = open(errpath, "w")
         infile = open(inpath, "r")
 
-        rvalue, rtimedout = runCommand(arg.replace("$returnables", " ".join(code_files)), input_data, tempdir, outfile, errfile, infile, signal, timeout)
+        rvalue, rtimedout = runCommand(arg, input_data, tempdir, outfile, errfile, infile, signal, timeout)
         timedout = timedout or rtimedout
         rvalues.append(rvalue)
         
@@ -172,7 +173,8 @@ def runTests(code_files, tests):
     testResults = dict()
     for test in tests:
         testname = test['name']
-        args = test['args']
+        #args = test['args']
+        args = [(build_arg(newarg, code_files), is_main) for newarg, is_main in test['args']]
         input_data = test['input']
         input_files = test['inputfiles']
         output_files = test['outputfiles']
@@ -188,6 +190,10 @@ def runTests(code_files, tests):
             info('Writing input file %s' % filename)
             with open(os.path.join(tempdir, filename), 'w') as input_file:
                 input_file.write(content)
+
+        # TODO: Generate stdin and file inputs with INPUTGEN if it exists
+        # - anything INPUTGEN gives as stdout will be used as stdin (input_data)
+        # - any files INPUTGEN writes shall be used input files (input_files)
 
         routputs, routfiles, rerrors, rvalues, rtimedout = runTest(args, input_data, input_files, code_files, signal, tempdir, timeout)
 
