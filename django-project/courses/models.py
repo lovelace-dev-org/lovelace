@@ -52,6 +52,8 @@ class ContentGraph(models.Model):
     responsible = models.ManyToManyField(User,blank=True,null=True)
     compulsory = models.BooleanField('Must be answered correctly before proceeding to next task', default=True)
     deadline = models.DateTimeField('The due date for completing this task',blank=True,null=True)
+    # TODO: Add this when next database layout comes
+    # publish_date = models.DateTimeField('When does this task become available',blank=True,null=True)
 
     def __unicode__(self):
         return self.content.short_name
@@ -87,7 +89,7 @@ class Image(models.Model):
         return self.name
 
 class Video(models.Model):
-    """Youtuub"""
+    """Youtube link for embedded videos"""
     name = models.CharField(max_length=200)
     link = models.URLField()
     uploader = models.ForeignKey(User)
@@ -172,15 +174,16 @@ class FileTask(TaskPage):
 
 class FileTaskTest(models.Model):
     task = models.ForeignKey(FileTask)
-    name = models.CharField(max_length=200)
+    name = models.CharField("Test name",max_length=200)
     timeout = models.TimeField(default=datetime.time(0,0,5))                  # How long is the test allowed to run before sending a KILL signal?
     POSIX_SIGNALS_CHOICES = (
         ('None', "Don't send any signals"),
         ('SIGINT', 'Interrupt signal (same as Ctrl-C)'),
     )
     signals = models.CharField(max_length=7,default="None",choices=POSIX_SIGNALS_CHOICES) # What POSIX signals shall be fired at the program?
-    inputs = models.TextField(blank=True)                                     # What input shall be entered to the program's stdin upon execution?
-    #retval = models.IntegerField('Expected return value',blank=True,null=True) FIXME
+    inputs = models.TextField("Input given to the main command through STDIN",blank=True) # What input shall be entered to the program's stdin upon execution?
+    # TODO: Add this at the next database upgrade
+    #retval = models.IntegerField('Expected return value',blank=True,null=True)
 
     def __unicode__(self):
         return self.name
@@ -219,13 +222,24 @@ class FileTaskTestIncludeFile(models.Model):
     """File which an admin can include to the test. For example, a reference program, expected output file or input file for the program."""
     test = models.ForeignKey(FileTaskTest)
     name = models.CharField(max_length=200)
+
     FILE_PURPOSE_CHOICES = (
-        ('TEST', "Unit test"),
-        ('INPUT', "Input file"),
-        ('OUTPUT', "Expected output file"),
-        ('REFERENCE', "Reference implementation"),
+        ('Files given to the program for reading', (
+                ('INPUT', "Input file"),
+            )
+        ),
+        ('Files the program is expected to generate', (
+                ('OUTPUT', "Expected output file"),
+            )
+        ),
+        ('Executable files', (
+                ('REFERENCE', "Reference implementation"),
+                ('INPUTGEN', "Input generator"),
+                ('TEST', "Unit test"),
+            )
+        ),
     )
-    purpose = models.CharField('This file shall be used as a...',max_length=10,default="REFERENCE",choices=FILE_PURPOSE_CHOICES)
+    purpose = models.CharField('Used as',max_length=10,default="REFERENCE",choices=FILE_PURPOSE_CHOICES)
     fileinfo = models.FileField(upload_to=get_testfile_path)
 
 class TextfieldTaskAnswer(models.Model):
@@ -276,12 +290,15 @@ class UserAnswer(models.Model):
     evaluation = models.OneToOneField(Evaluation) # A single answer is always linked to a single evaluation
     user = models.ForeignKey(User)                # Whose answer is this?
     answer_date = models.DateTimeField('Date and time of when the user answered this task')
+    # TODO: Add this in next database upgrade!
+    # collaborators = models.TextField('Which users was this task made with', blank=True, null=True)
 
 class FileTaskReturnable(models.Model):
     run_time = models.TimeField()
     output = models.TextField()
     errors = models.TextField()
-    #retval = models.IntegerField() FIXME
+    # TODO: Add this in the next database upgrade!
+    # retval = models.IntegerField()
 
 def get_version(instance):
     return UserFileTaskAnswer.objects.filter(user=instance.returnable.userfiletaskanswer.user,

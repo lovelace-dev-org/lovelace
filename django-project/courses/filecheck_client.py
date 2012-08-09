@@ -52,6 +52,8 @@ def check_file_answer(task, files={}, answer=None):
 
         ft_test_include_files = FileTaskTestIncludeFile.objects.filter(test=ft_test)
         include_files = {}
+        input_gens = {}
+        unittests = {}
         input_files = {}
         output_files = {}
         for ft_test_include_file in ft_test_include_files:
@@ -60,6 +62,10 @@ def check_file_answer(task, files={}, answer=None):
                 include_files[filename] = f.read()
             if ft_test_include_file.purpose == "REFERENCE":
                 references[filename] = include_files[filename]
+            elif ft_test_include_file.purpose == "INPUTGEN":
+                inputgens[filename] = include_files[filename]
+            elif ft_test_include_file.purpose == "TEST":
+                unittests[filename] = include_files[filename]
             elif ft_test_include_file.purpose == "INPUT":
                 input_files[filename] = include_files[filename]
             elif ft_test_include_file.purpose == "OUTPUT":
@@ -69,6 +75,8 @@ def check_file_answer(task, files={}, answer=None):
                 "timeout": _secs(ft_test_timeout),
                 "signal": ft_test_signal,
                 "args": commands,
+                "unittests": unittests,
+                "inputgens": inputgens,
                 "input": ft_test_input,
                 "inputfiles": input_files,
                 "output": outputs,
@@ -113,7 +121,7 @@ def html(results):
         #        diff_tables += "<h3>Input file: %s</h3>\n<pre class=\"normal\">%s</pre>" % (inputfile, test_result["input"])
 
         for i, cmd in enumerate(test_result["cmds"]):
-            diff_tables += "<h3>Command: %s</h3>" % (cmd[0])
+            diff_tables += "<h3>Command: <span class=\"command\">%s</span></h3>" % (cmd[0])
 
             rcv_retval = test_result["returnvalues"][i]
             rcv_output = test_result["outputs"][i].split("\n")

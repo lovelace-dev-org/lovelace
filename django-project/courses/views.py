@@ -130,7 +130,7 @@ def training(request, training_name, **kwargs):
     contextdict["navurls"] = navurls 
     contextdict["title"] = '%s' % selected_course.name
 
-    contents = selected_course.contents.all()
+    contents = selected_course.contents.all().order_by('parentnode', '-id')
     if len(contents) > 0:
         tree = []    
         tree.append((mark_safe('>'), None))
@@ -175,7 +175,8 @@ def dirtree(tree, node, user):
                 result = "incorrect"
 
     list_item = (node.content, result)
-    tree.append(list_item)
+    if list_item not in tree:
+        tree.append(list_item)
 
     children = ContentGraph.objects.filter(parentnode=node)
     if len(children) > 0:
