@@ -189,13 +189,16 @@ section.page_content {
 
     section.page_content h1, section.page_content h2, section.page_content h3, section.page_content h4, section.page_content h5, section.page_content h6 {
         font-family: "Trebuchet MS", "Helvetica", sans-serif;
-        font-weight: bold;
+        font-weight: normal;
+        text-shadow: rgba(127, 127, 127, 63) 1px 1px 0;
         margin-bottom: 10px;
-        margin-left: -16px;
     }
 
     section.page_content h1 {
-        font-size: 21.5px;
+        font-size: 23.0px;
+        margin-left: -16px;
+        border-bottom: 1px solid #888;
+        /*text-decoration: underline;*/
     }
     section.page_content h2 {
         font-size: 20px;
@@ -211,6 +214,7 @@ section.page_content {
     }
     section.page_content h6 {
         font-size: 14px;
+        font-weight: bold;
     }
         
     section.page_content hr {
@@ -317,6 +321,11 @@ section.page_content {
             margin-bottom: 10px;
         }
 
+        section.page_content div.auth_warning {
+            font-weight: bold;
+            color: red;
+        }
+
         section.page_content div#result {
             width: 100%;
         }
@@ -346,6 +355,10 @@ section.page_content {
         }
         section.page_content div#result h3 {
             font-size: 16px;
+        }
+        section.page_content div#result h3 span.command {
+            white-space: pre;
+            font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
         }
 
         section.page_content div#result table th {

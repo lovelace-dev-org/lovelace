@@ -19,6 +19,9 @@
         <input name="file" type="file" class="task_file" multiple="multiple" />
       {% endif %}
       <input type="submit" name="submit" value="Send answer" onClick="validateAnswer(event, '{{ answer_check_url }}', '{{ content_urlname }}');return false;" />
+      {% if not user.is_authenticated %}
+        <div class="auth_warning">Warning: You have not logged in. Your answer will not be saved.</div>
+      {% endif %}
       <div id="result"></div>
     </form>
   </div>
