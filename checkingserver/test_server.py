@@ -20,6 +20,7 @@ import subprocess
 import tempfile
 import shutil
 import sys
+import base64
 
 from signal import SIGINT, SIGTERM, SIGKILL
 
@@ -195,8 +196,14 @@ def runTests(code_files, tests):
         # Write the submitted codes and input files
         for filename, content in code_files.iteritems():
             info('Writing source file %s' % filename)
-            with codecs.open(os.path.join(tempdir, filename), 'w', "utf-8") as source_file:
-                source_file.write(content)
+            if type(content) == type(unicode()):
+                # It's a reference file, assumme utf-8
+                with codecs.open(os.path.join(tempdir, filename), 'w', 'utf-8') as source_file:
+                    source_file.write(content)
+            else: 
+                # It's a binary blob sent by a student
+                with open(os.path.join(tempdir, filename), 'wb') as source_file:
+                    source_file.write(content)
         for filename, content in input_files.iteritems():
             info('Writing input file %s' % filename)
             with codecs.open(os.path.join(tempdir, filename), 'w', "utf-8") as input_file:
@@ -243,6 +250,10 @@ class ConnectionHandler(BaseHandler):
         return "Test", test
 
     def checkWithReference(self, codes, references, tests):
+        # Base 64 decode the binary blobs students call source code
+        for name, contents in codes.iteritems():
+            codes[name] = base64.b64decode(contents)
+        
         referenceResults = runTests(references, tests)
         studentResults = runTests(codes, tests)
 
