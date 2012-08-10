@@ -373,16 +373,20 @@ def file_task_check(content, user, files_data):
             ref = "expected"
 
         for test in results["student"].iterkeys():
+            # TODO: Do the output and stderr comparison here instead of below
             results_zipped.append(zip(results["student"][test]["outputs"], results[ref][test]["outputs"]))
             results_zipped.append(zip(results["student"][test]["errors"], results[ref][test]["errors"]))
-            results_zipped.append(zip(results["student"][test]["outputfiles"], results[ref][test]["outputfiles"]))
+
+            for name, content in results[ref][test]["outputfiles"].iteritems():
+                if name not in results["student"][test]["outputfiles"].iterkeys():
+                    correct = False
+                else:
+                    if content != results["student"][test]["outputfiles"][name]:
+                        correct = False
 
         for test in results_zipped:
-            print test
             for resultpair in test:
-                print "Vertaus 1", resultpair[0]
-                print
-                print "Vertaus 2", resultpair[1]
+                print resultpair
                 if resultpair[0] != resultpair[1]:
                     correct = False
 
@@ -391,8 +395,6 @@ def file_task_check(content, user, files_data):
             f_evaluation.points = 1.0
             f_evaluation.save()
             f_answer.save()
-
-        print results
     else:
         print "Blaa?"
         files = {}
@@ -643,7 +645,6 @@ def stats(request, task_name):
         for answer in textfield_set:
             textfield_final.append((answer, textfield_answers.count(answer),) + textfield_eval(answer, answers))
         textfield_final = sorted(textfield_final, key=lambda x: x[1], reverse=True)
-        print textfield_final
     elif tasktype == "file":
         file_answers = UserFileTaskAnswer.objects.filter(task=content_page)
 

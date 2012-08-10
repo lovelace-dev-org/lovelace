@@ -71,7 +71,6 @@ def check_file_answer(task, files={}, answer=None):
             elif ft_test_include_file.purpose == "OUTPUT":
                 output_files[filename] = include_files[filename]
 
-        print unittests
         test = {"name": ft_test_name,
                 "timeout": _secs(ft_test_timeout),
                 "signal": ft_test_signal,
@@ -86,8 +85,6 @@ def check_file_answer(task, files={}, answer=None):
                }
         tests.append(test)
         expected[ft_test_name] = {"outputs":outputs, "outputfiles":output_files, "errors":errors}
-
-    #print tests
 
     results = None
 
@@ -117,9 +114,9 @@ def html(results):
 
         if test_result["input"]:
             diff_tables += "<h3>Input:</h3>\n<pre class=\"normal\">%s</pre>" % (test_result["input"])
-        #if test_result["inputfiles"]:
-        #    for inputfile in test_result["inputfiles"]:
-        #        diff_tables += "<h3>Input file: %s</h3>\n<pre class=\"normal\">%s</pre>" % (inputfile, test_result["input"])
+        if test_result["inputfiles"]:
+            for inputfile, contents in test_result["inputfiles"].iteritems():
+                diff_tables += "<h3>Input file: %s</h3>\n<pre class=\"normal\">%s</pre>" % (inputfile, contents)
 
         for i, cmd in enumerate(test_result["cmds"]):
             diff_tables += "<h3>Command: <span class=\"command\">%s</span></h3>" % (cmd[0])
@@ -148,15 +145,19 @@ def html(results):
             diff_tables += out_diff
             diff_tables += err_diff
 
-        for filename, content in test_result["outputfiles"].iteritems():
+        if reference:
+            exp_outputfiles = reference["outputfiles"]
+        elif expected:
+            exp_outputfiles = expected["outputfiles"]
+
+        for filename, content in exp_outputfiles.iteritems():
             diff_tables += "<h3>File: %s</h3>" % (filename)
 
-            rcv_content = content.split("\n")
-
-            if reference:
-                exp_content = reference["outputfiles"][filename].split("\n")
-            elif expected:
-                exp_content = expected["outputfiles"][filename].split("\n")
+            exp_content = content.split("\n")
+            if filename in test_result["outputfiles"].keys():
+                rcv_content = test_result["outputfiles"][filename].split("\n")
+            else:
+                rcv_content = [str()]
 
             file_diff = difflib.HtmlDiff().make_table(fromlines=rcv_content,tolines=exp_content,fromdesc="Your program's output",todesc="Expected output")
             diff_tables += file_diff
