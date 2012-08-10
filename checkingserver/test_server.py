@@ -163,7 +163,7 @@ def runTest(args, input_data, input_files, code_files, signal, tempdir, timeout=
         # Save the contents of files created by running the commands
         for ofile in os.listdir(tempdir):
             if ofile not in code_files and ofile not in input_files:
-                with codecs.open(ofile, "r", "utf-8") as f:
+                with open(ofile, "r") as f:
                     outfiles[ofile] = f.read()
 
     return outputs, outfiles, errors, rvalues, timedout
@@ -184,6 +184,8 @@ def runTests(code_files, tests):
     for test in tests:
         testname = test['name']
         args = [(build_arg(newarg, code_files), is_main) for newarg, is_main in test['args']]
+        unittests = test['unittests']
+        inputgens = test['inputgens']
         input_data = test['input']
         input_files = test['inputfiles']
         output_files = test['outputfiles']
@@ -193,16 +195,21 @@ def runTests(code_files, tests):
         # Write the submitted codes and input files
         for filename, content in code_files.iteritems():
             info('Writing source file %s' % filename)
-            with open(os.path.join(tempdir, filename), 'w') as source_file:
+            with codecs.open(os.path.join(tempdir, filename), 'w', "utf-8") as source_file:
                 source_file.write(content)
         for filename, content in input_files.iteritems():
             info('Writing input file %s' % filename)
-            with open(os.path.join(tempdir, filename), 'w') as input_file:
+            with codecs.open(os.path.join(tempdir, filename), 'w', "utf-8") as input_file:
                 input_file.write(content)
+        for filename, content in unittests.iteritems():
+            info('Writing unit test file %s' % filename)
+            with codecs.open(os.path.join(tempdir, filename), 'w', "utf-8") as unittest:
+                unittest.write(content)
 
         # TODO: Generate stdin and file inputs with INPUTGEN if it exists
         # - anything INPUTGEN gives as stdout will be used as stdin (input_data)
         # - any files INPUTGEN writes shall be used input files (input_files)
+        # test['inputgens']
 
         routputs, routfiles, rerrors, rvalues, rtimedout = runTest(args, input_data, input_files, code_files, signal, tempdir, timeout)
 
@@ -210,8 +217,10 @@ def runTests(code_files, tests):
         result['cmds'] = args
         result['outputs'] = routputs
         result['errors'] = rerrors
+        result['unittests'] = unittests
         result['input'] = input_data
         result['inputfiles'] = input_files
+        result['inputgens'] = inputgens
         result['outputfiles'] = dict((k, v) for k, v in routfiles.iteritems() if k in output_files)
         result['returnvalues'] = rvalues
         result['timedout'] = rtimedout
