@@ -386,11 +386,9 @@ def file_task_check(content, user, files_data):
 
         for test in results_zipped:
             for resultpair in test:
-                print resultpair
                 if resultpair[0] != resultpair[1]:
                     correct = False
 
-        print correct
         if correct:
             f_evaluation.points = 1.0
             f_evaluation.save()
@@ -418,7 +416,6 @@ def file_task_check(content, user, files_data):
             for resultpair in test:
                 if resultpair[0] != resultpair[1]:
                     correct = False
-
         print results
 
     # Get a nice HTML table for the diffs

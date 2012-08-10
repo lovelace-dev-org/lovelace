@@ -7,6 +7,7 @@ from the test results.
 import bjsonrpc
 import difflib
 import datetime
+import base64
 
 from courses.models import FileTaskTest, FileTaskTestCommand, FileTaskTestExpectedOutput, FileTaskTestExpectedError, FileTaskTestIncludeFile
 from courses.models import FileTaskReturnFile
@@ -21,9 +22,8 @@ def check_file_answer(task, files={}, answer=None):
         ft_returned_files = FileTaskReturnFile.objects.filter(returnable=answer.returnable)
         codefiles = {}
         for ft_returned_file in ft_returned_files:
-            with open(ft_returned_file.fileinfo.path, 'r') as f:
+            with open(ft_returned_file.fileinfo.path, 'rb') as f:
                 codefiles[ft_returned_file.filename()] = f.read()
-                print ft_returned_file.filename()
     else:
         codefiles = files
 
@@ -87,6 +87,10 @@ def check_file_answer(task, files={}, answer=None):
         expected[ft_test_name] = {"outputs":outputs, "outputfiles":output_files, "errors":errors}
 
     results = None
+
+    # Encode into base64 in order to avoid trouble
+    for name, contents in codefiles.iteritems():
+        codefiles[name] = base64.b64encode(contents)
 
     # Send the tests and files to the checking server
     bjsonrpc_client = bjsonrpc.connect(host='10.0.0.10', port=10123)
