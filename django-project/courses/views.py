@@ -440,7 +440,7 @@ def check_answer(request, training_name, content_name, **kwargs):
     hints = []
     comments = [] # TODO: Implement comments (giving feedback on a correct answer)
     errors = []
-    diff_table = u""
+    diff_table = ""
 
     if choices and tasktype == "radiobutton":
         correct, hints = radiobutton_task_check(content, request.user, choices, request.POST)
@@ -460,14 +460,21 @@ def check_answer(request, training_name, content_name, **kwargs):
         if hints:
             random.shuffle(hints)
 
+    r_diff_table = u""
+    try:
+        r_diff_table = unicode(diff_table, "utf-8")
+    except UnicodeDecodeError:
+        r_diff_table = unicode(diff_table, "iso-8859-1")
+
     t = loader.get_template("courses/task_evaluation.html")
-    c = RequestContext(request, {
+    c = Context({
         'evaluation': evaluation,
         'errors': errors,
         'hints': hints,
         'comments': comments,
-        'diff_table': diff_table,
+        'diff_table': r_diff_table,
     })
+
     return HttpResponse(t.render(c))
 
 def content(request, training_name, content_name, **kwargs):
@@ -627,6 +634,7 @@ def stats(request, task_name):
 
     checkbox_answers = radiobutton_answers = textfield_answers = file_answers = None
     textfield_answers_count = textfield_final = None
+    file_answers = file_answers_count = file_user_count = file_correctly_by = None
     content_page = ContentPage.objects.get(url_name=task_name)
     tasktype, question, choices, answers = get_task_info(content_page)
 
@@ -643,7 +651,15 @@ def stats(request, task_name):
             textfield_final.append((answer, textfield_answers.count(answer),) + textfield_eval(answer, answers))
         textfield_final = sorted(textfield_final, key=lambda x: x[1], reverse=True)
     elif tasktype == "file":
-        file_answers = UserFileTaskAnswer.objects.filter(task=content_page)
+        file_answers = list(UserFileTaskAnswer.objects.filter(task=content_page).values_list("user", flat=True))
+        file_answers_count = len(file_answers) # how many times answered
+        file_set = set(file_answers)
+        file_user_count = len(file_set) # how many different users have answered
+        file_correctly_by = 0
+        for user in file_set:
+            evaluations = Evaluation.objects.filter(useranswer__userfiletaskanswer__task=content_page, useranswer__user=user)
+            correct = evaluations.filter(points__gt=0.0)
+            if correct: file_correctly_by += 1
 
     t = loader.get_template("courses/task_stats.html")
     c = RequestContext(request, {
@@ -654,10 +670,15 @@ def stats(request, task_name):
         "answers": answers,
         "checkbox_answers": checkbox_answers,
         "radiobutton_answers": radiobutton_answers,
+
         "textfield_answers": textfield_answers,
         "textfield_answers_count": textfield_answers_count,
         "textfield_final": textfield_final,
+
         "file_answers": file_answers,
+        "file_answers_count": file_answers_count,
+        "file_user_count": file_user_count,
+        "file_correctly_by": file_correctly_by,
     })
     return HttpResponse(t.render(c))
 
@@ -665,7 +686,10 @@ def image_download(request, imagename, **kwargs):
     try:
         file_path = Image.objects.get(name=imagename).fileinfo.path
     except Image.DoesNotExist:
-        file_path = ""
+        try:
+            file_path = Image.objects.get(fileinfo='images/'+imagename).fileinfo.path
+        except Image.DoesNotExist:
+            file_path = ""
 
     mimetypes.init()
     try:

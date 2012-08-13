@@ -86,5 +86,9 @@
 {% elif tasktype == "file" %}
   <p>
     "{{ content.name }}" is a file task.<br />
+    The task has been answered {{ file_answers_count }} times.<br />
+    The task has been answered by {{ file_user_count }} different users.<br />
+    The task has been answered correctly by {{ file_correctly_by }} different users.<br />
+
   </p>
 {% endif %}
