@@ -64,6 +64,7 @@ def runCommand(arg, input_data, tempdir, outfile, errfile, infile, signal=None, 
     act("server") # Is this soon enough to prevent the child from killing the parent?
 
     if signal:
+        time.sleep(0.5)
         if signal == "SIGINT":
             os.kill(p.pid, SIGINT)
     
@@ -151,9 +152,9 @@ def runTest(args, input_data, input_files, code_files, signal, tempdir, timeout=
         infile.close()
 
         # Save the contents of stdout and stderr
-        with codecs.open(outpath, "r", "utf-8") as outfile_r:
+        with open(outpath, "rb") as outfile_r:
             outputs.append(outfile_r.read())
-        with codecs.open(errpath, "r", "utf-8") as errfile_r:
+        with open(errpath, "rb") as errfile_r:
             errors.append(errfile_r.read())
 
         # Clean up the files
@@ -164,7 +165,7 @@ def runTest(args, input_data, input_files, code_files, signal, tempdir, timeout=
         # Save the contents of files created by running the commands
         for ofile in os.listdir(tempdir):
             if ofile not in code_files and ofile not in input_files:
-                with open(ofile, "r") as f:
+                with open(ofile, "rb") as f:
                     outfiles[ofile] = f.read()
 
     return outputs, outfiles, errors, rvalues, timedout
@@ -185,10 +186,10 @@ def runTests(code_files, tests):
     for test in tests:
         testname = test['name']
         args = [(build_arg(newarg, code_files), is_main) for newarg, is_main in test['args']]
-        unittests = test['unittests']
-        inputgens = test['inputgens']
+        unittests = dict((k, base64.b64decode(v)) for k, v in test['unittests'].iteritems())
+        inputgens = dict((k, base64.b64decode(v)) for k, v in test['inputgens'].iteritems())
         input_data = test['input']
-        input_files = test['inputfiles']
+        input_files = dict((k, base64.b64decode(v)) for k, v in test['inputfiles'].iteritems())
         output_files = test['outputfiles']
         signal = test['signal']
         timeout = test['timeout']
@@ -206,11 +207,11 @@ def runTests(code_files, tests):
                     source_file.write(content)
         for filename, content in input_files.iteritems():
             info('Writing input file %s' % filename)
-            with codecs.open(os.path.join(tempdir, filename), 'w', "utf-8") as input_file:
+            with open(os.path.join(tempdir, filename), 'wb') as input_file:
                 input_file.write(content)
         for filename, content in unittests.iteritems():
             info('Writing unit test file %s' % filename)
-            with codecs.open(os.path.join(tempdir, filename), 'w', "utf-8") as unittest:
+            with open(os.path.join(tempdir, filename), 'wb') as unittest:
                 unittest.write(content)
 
         # TODO: Generate stdin and file inputs with INPUTGEN if it exists
@@ -224,10 +225,10 @@ def runTests(code_files, tests):
         result['cmds'] = args
         result['outputs'] = routputs
         result['errors'] = rerrors
-        result['unittests'] = unittests
+        result['unittests'] = dict((k, base64.b64encode(v)) for k, v in unittests.iteritems())
         result['input'] = input_data
-        result['inputfiles'] = input_files
-        result['inputgens'] = inputgens
+        result['inputfiles'] = dict((k, base64.b64encode(v)) for k, v in input_files.iteritems())
+        result['inputgens'] = dict((k, base64.b64encode(v)) for k, v in inputgens.iteritems())
         result['outputfiles'] = dict((k, v) for k, v in routfiles.iteritems() if k in output_files)
         result['returnvalues'] = rvalues
         result['timedout'] = rtimedout
@@ -253,14 +254,33 @@ class ConnectionHandler(BaseHandler):
         # Base 64 decode the binary blobs students call source code
         for name, contents in codes.iteritems():
             codes[name] = base64.b64decode(contents)
+
+        for name, contents in references.iteritems():
+            references[name] = base64.b64decode(contents)
         
         referenceResults = runTests(references, tests)
+        for test_name, test_result in referenceResults.iteritems():
+            test_result["outputs"] = [base64.b64encode(output) for output in test_result["outputs"]]
+            test_result["errors"] = [base64.b64encode(error) for error in test_result["errors"]]
+            for output_file_name, output_file_contents in test_result["outputfiles"].iteritems():
+                test_result["outputfiles"][output_file_name] = base64.b64encode(output_file_contents)
+
         studentResults = runTests(codes, tests)
+        for test_name, test_result in studentResults.iteritems():
+            test_result["outputs"] = [base64.b64encode(output) for output in test_result["outputs"]]
+            test_result["errors"] = [base64.b64encode(error) for error in test_result["errors"]]
+            for output_file_name, output_file_contents in test_result["outputfiles"].iteritems():
+                test_result["outputfiles"][output_file_name] = base64.b64encode(output_file_contents)
 
         return {"student":studentResults, "reference":referenceResults}
 
     def checkWithOutput(self, codes, tests):
         studentResults = runTests(codes, tests)
+        for test_name, test_result in studentResults.iteritems():
+            test_result["outputs"] = base64.b64encode(test_result["outputs"])
+            test_result["errors"] = base64.b64encode(test_result["errors"])
+            for output_file_name, output_file_contents in test_result["outputfiles"].iteritems():
+                test_result["outputfiles"][output_file_name] = base64.b64encode(output_file_contents)
 
         return {"student":studentResults}
 
