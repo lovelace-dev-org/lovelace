@@ -77,7 +77,7 @@ function validateAnswer(e, answer_check_url, task_name) {
     // Create a function that will receive data sent from the server
     xhr.onreadystatechange = function() {
         if(xhr.readyState == 4 && xhr.status == 200) {
-            $('div#' + task_name + ' form div#result').html(xhr.responseText);
+            $('div#' + task_name + ' div#result').html(xhr.responseText);
         }
     }
     // TODO: Check http://www.html5rocks.com/en/tutorials/file/dndfiles/ to allow drag & dropping files!

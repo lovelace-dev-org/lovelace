@@ -179,9 +179,9 @@ nav.breadcrumb {
 section.page_content {
     top: 0px;
     background: #fff;
-    margin-left: 60px;
+    margin-left: 90px;
     margin-right: 40px;
-    margin-top: 2em;
+    margin-top: 0;
     font-family: arial;
     font-size: 14px;
     padding-bottom: 32px; /* Size of footer */
@@ -190,33 +190,50 @@ section.page_content {
     section.page_content h1, section.page_content h2, section.page_content h3, section.page_content h4, section.page_content h5, section.page_content h6 {
         font-family: "Trebuchet MS", "Helvetica", sans-serif;
         font-weight: normal;
-        text-shadow: rgba(127, 127, 127, 63) 1px 1px 0;
-        margin-bottom: 10px;
+        margin-bottom: 1em;
     }
 
     section.page_content h1 {
-        font-size: 23.0px;
-        margin-left: -16px;
+        font-size: 24.0px;
+        margin-left: -48px;
+        margin-top: 1em;
         border-bottom: 1px solid #888;
+        text-shadow: rgba(127, 127, 127, 63) 1px 1px 1px;
         /*text-decoration: underline;*/
     }
     section.page_content h2 {
-        font-size: 20px;
+        font-size: 22px;
+        margin-left: -24px;
+        margin-top: 24px;
+        text-shadow: rgba(127, 127, 127, 63) 1px 1px 1px;
     }
     section.page_content h3 {
-        font-size: 18.5px;
+        font-size: 18px;
+        margin-top: 24px;
+        text-shadow: rgba(127, 127, 127, 127) 1px 1px 1px;
     }
     section.page_content h4 {
-        font-size: 17px;
+        font-size: 16px;
+        margin-bottom: 0.5em;
+        font-weight: bold;
     }
     section.page_content h5 {
-        font-size: 15.5px;
+        font-size: 15px;
+        margin-bottom: 0.5em;
+        font-weight: bold;
     }
     section.page_content h6 {
         font-size: 14px;
+        margin-bottom: 0.5em:
         font-weight: bold;
     }
-        
+    
+    section.page_content > img {
+        margin-top: 0.5em;
+        margin-left: 0.5em;
+        margin-bottom: 1em;
+    }
+
     section.page_content hr {
         margin-bottom: 10px;
         margin-left: -16px;
@@ -226,7 +243,7 @@ section.page_content {
     }
 
     section.page_content p {
-        margin-bottom: 5px;
+        margin-bottom: 8px;
     }
     
     section.page_content div.normal {
@@ -237,6 +254,10 @@ section.page_content {
     section.page_content ul, section.page_content ol {
         margin-left: 1.5em;
         margin-bottom: 5px;
+    }
+
+    section.page_content ul > li, section.page_content ol > li {
+        margin-bottom: 4px;
     }
         
     section.page_content * ul ul, section.page_content * ul ol, section.page_content * ol ol, section.page_content * ol ul {
@@ -255,7 +276,7 @@ section.page_content {
         padding: 2px 4px 2px 4px;
     }
 
-        section.page_content p code, section.page_content table * code {
+        section.page_content p code, section.page_content table * code, section.page_content ul * code {
             font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
             background: #ffb;
             font-size: 14.5px;
@@ -321,13 +342,29 @@ section.page_content {
             margin-bottom: 10px;
         }
 
-        section.page_content div.auth_warning {
+        section.page_content div.question {
+            margin-bottom: 48px;
+        }
+
+        section.page_content div.question form {
+            padding: 8px;
+            border: 2px solid rgb(127,127,127);
+            border-radius: 0px 15px 0px 15px;
+            background: #eeffee;
+        }
+
+       section.page_content div.auth_warning {
             font-weight: bold;
             color: red;
         }
 
         section.page_content div#result {
             width: 100%;
+            margin-left: 32px;
+        }
+
+        section.page_content pre {
+            width: auto;
         }
 
         section.page_content span.evaluation {
@@ -348,9 +385,11 @@ section.page_content {
 
         section.page_content div#result h1 {
             font-size: 20px;
+            margin-top: 16px;
             border-top: 1px solid grey;
         }
         section.page_content div#result h2 {
+            margin-top: 8px;
             font-size: 18px;
         }
         section.page_content div#result h3 {
