@@ -434,6 +434,18 @@ def check_answer(request, training_name, content_name, **kwargs):
     selected_course = Training.objects.get(name=training_name)
     content = ContentPage.objects.get(url_name=content_name)
 
+    # Check if a deadline exists and if we are past it
+    training = Training.objects.get(name=training_name)
+    try:
+        content_graph = training.contents.get(content=content)
+    except ContentGraph.DoesNotExist as e:
+        pass
+    else:
+        if not content_graph.deadline or datetime.datetime.now() < content_graph.deadline:
+            pass
+        else:
+            return HttpResponse("The deadline for this task (%s) has passed. Your answer will not be evaluated!" % (content_graph.deadline))
+
     tasktype, question, choices, answers = get_task_info(content)
 
     correct = True
