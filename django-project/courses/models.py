@@ -9,6 +9,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 
+# TODO: Extend the user profiles!
 # http://stackoverflow.com/questions/44109/extending-the-user-model-with-custom-fields-in-django
 #class UserProfile(models.Model):
 #    """The user profile."""
@@ -23,6 +24,11 @@ from django.db.models.signals import post_save
 #        profile, created = UserProfile.objects.get_or_create(user=instance)
 
 #post_save.connect(create_user_profile, sender=User)
+
+# TODO: A user group system for allowing users to form groups
+# - max users / group
+
+# TODO: Abstract the task model to allow "an answering entity" to give the answer, be it a group or a student
 
 class Training(models.Model):
     """A single course in the system.
@@ -53,7 +59,7 @@ class ContentGraph(models.Model):
     compulsory = models.BooleanField('Must be answered correctly before proceeding to next task', default=True)
     deadline = models.DateTimeField('The due date for completing this task',blank=True,null=True)
     # TODO: Add this when next database layout comes
-    # publish_date = models.DateTimeField('When does this task become available',blank=True,null=True)
+    #publish_date = models.DateTimeField('When does this task become available',blank=True,null=True)
 
     def __unicode__(self):
         return self.content.short_name
@@ -67,7 +73,7 @@ class File(models.Model):
     uploader = models.ForeignKey(User)
 
     date_uploaded = models.DateTimeField('date uploaded')
-    name = models.CharField(max_length=200)
+    name = models.CharField('Name for reference in content',max_length=200) # TODO: ,unique=True)
     typeinfo = models.CharField(max_length=200)
     fileinfo = models.FileField(upload_to=get_file_upload_path)
 
@@ -80,7 +86,7 @@ def get_image_upload_path(instance, filename):
 class Image(models.Model):
     """Image"""
     uploader = models.ForeignKey(User)
-    name = models.CharField(max_length=200)
+    name = models.CharField('Name for reference in content',max_length=200) # TODO: ,unique=True)
     date_uploaded = models.DateTimeField('date uploaded')
     description = models.CharField(max_length=500)
     fileinfo = models.ImageField(upload_to=get_image_upload_path)
@@ -97,6 +103,11 @@ class Video(models.Model):
     def __unicode__(self):
         return self.name
 
+# TODO: Page embeddable calendar for, e.g., reserving review times
+#class Calendar(models.Model):
+#    """A multi purpose calendar for course events markups, time reservations etc."""
+#    name = models.CharField('Name for reference in content',max_length=200,unique=True)
+
 class ContentPage(models.Model):
     """A single content containing page of a course.
     The other content pages (LecturePage and TaskPage) and their
@@ -109,6 +120,10 @@ class ContentPage(models.Model):
     short_name = models.CharField(max_length=32) #, default=_shortify_name)
     content = models.TextField(blank=True,null=True)
     maxpoints = models.IntegerField(blank=True,null=True)
+    # TODO: Add this when next database layout comes
+    #access_count = models.IntegerField(editable=False)
+    #tags = models.TextField(blank=True,null=True)
+    #require_correct_embedded_tasks = models.BooleanField('If the page has embedded tasks, they must be answered correctly to make this task correct',default=True)
 
     def _shortify_name(self):
         return self.name[0:32]
@@ -128,6 +143,10 @@ class ContentPage(models.Model):
 
 class LecturePage(ContentPage):
     """A single page from a lecture."""
+    # TODO: Add this when the next database layout comes
+    #answerable = models.BooleanField("Do the users need to confirm they've read this lecture",default=False)
+    # TODO: Add a lecturepageuseranswer model for this!
+
     def save(self, *args, **kwargs):
         self.url_name = self.get_url_name()
         if not self.short_name:
@@ -240,6 +259,16 @@ class FileTaskTestIncludeFile(models.Model):
         ),
     )
     purpose = models.CharField('Used as',max_length=10,default="REFERENCE",choices=FILE_PURPOSE_CHOICES)
+
+    FILE_OWNERSHIP_CHOICES = (
+        ('OWNED', "Owned by the tested program"),
+        ('NOT_OWNED', "Now owned by the tested program"),
+    )
+    # TODO: Add this at the next database upgrade
+    #chown_settings = models.CharField('File user ownership',max_length=10,default="OWNED",choices=FILE_OWNERSHIP_CHOICES)
+    #chgrp_settings = models.CharField('File group ownership',max_length=10,default="OWNED",choices=FILE_OWNERSHIP_CHOICES)
+    #chmod_settings = models.CharField('File access mode',max_length=10,default="rw-rw-rw-") # TODO: Create validator and own field type
+
     fileinfo = models.FileField(upload_to=get_testfile_path)
 
 class TextfieldTaskAnswer(models.Model):
@@ -249,6 +278,8 @@ class TextfieldTaskAnswer(models.Model):
     answer = models.TextField()
     hint = models.TextField(blank=True)
     videohint = models.ForeignKey(Video,blank=True,null=True)
+    # TODO: Add this at the next database upgrade
+    #comment = models.TextField('Extra comment given upon selection of this answer',blank=True)
 
     def __unicode__(self):
         if len(self.answer) > 80:
@@ -266,6 +297,8 @@ class RadiobuttonTaskAnswer(models.Model):
     answer = models.TextField()
     hint = models.TextField(blank=True)
     videohint = models.ForeignKey(Video,blank=True,null=True)
+    # TODO: Add this at the next database upgrade
+    #comment = models.TextField('Extra comment given upon selection of this answer',blank=True)
 
     def __unicode__(self):
         return self.answer
@@ -276,6 +309,8 @@ class CheckboxTaskAnswer(models.Model):
     answer = models.TextField()
     hint = models.TextField(blank=True)    
     videohint = models.ForeignKey(Video,blank=True,null=True)  
+    # TODO: Add this at the next database upgrade
+    #comment = models.TextField('Extra comment given upon selection of this answer',blank=True)
 
     def __unicode__(self):
         return self.answer
@@ -283,7 +318,7 @@ class CheckboxTaskAnswer(models.Model):
 class Evaluation(models.Model):
     """Evaluation of training item performance"""
     points = models.FloatField()
-    feedback = models.CharField(max_length=2000,blank=True)
+    feedback = models.CharField('Feedback given by a teacher',max_length=2000,blank=True)
     
 class UserAnswer(models.Model):
     """Parent class for what users have given as their answers to different tasks."""
@@ -291,7 +326,7 @@ class UserAnswer(models.Model):
     user = models.ForeignKey(User)                # Whose answer is this?
     answer_date = models.DateTimeField('Date and time of when the user answered this task')
     # TODO: Add this in next database upgrade!
-    # collaborators = models.TextField('Which users was this task made with', blank=True, null=True)
+    # collaborators = models.TextField('Which users was this task answered with', blank=True, null=True)
 
 class FileTaskReturnable(models.Model):
     run_time = models.TimeField()
