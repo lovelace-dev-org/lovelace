@@ -178,6 +178,7 @@ class CheckboxTask(TaskPage):
         super(CheckboxTask, self).save(*args, **kwargs)
 
 class TextfieldTask(TaskPage):
+    # TODO: Create a Textfield task variant that's run like a file task! (like in Viope)
     def save(self, *args, **kwargs):
         self.url_name = self.get_url_name()
         if not self.short_name:
