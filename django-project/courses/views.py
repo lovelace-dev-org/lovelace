@@ -610,6 +610,52 @@ def user(request, user_name):
     })
     return HttpResponse(t.render(c))
 
+def users(request, training_name):
+    '''Admin view that shows a table of all users and the tasks they've done on a particular course.'''
+    if not request.user.is_authenticated() and not request.user.is_active and not request.user.is_staff:
+        return HttpResponseNotFound()
+
+    selected_course = Training.objects.get(name=training_name)
+    users = User.objects.all()
+    content_nodes = selected_course.contents.all()
+    contents = [cn.content for cn in content_nodes]
+
+    user_evaluations = []
+    for user in users:
+        username = user.username
+        db_user_evaluations = Evaluation.objects.filter(useranswer__user=user, points__gt=0.0)
+        evaluations = []
+
+        print username
+
+        for content in contents:
+            tasktype, question, choices, answers = get_task_info(content)
+            if tasktype == "checkbox":
+                db_evaluations = db_user_evaluations.filter(useranswer__usercheckboxtaskanswer__task=content)
+            elif tasktype == "radiobutton":
+                db_evaluations = db_user_evaluations.filter(useranswer__userradiobuttontaskanswer__task=content)
+            elif tasktype == "textfield":
+                db_evaluations = db_user_evaluations.filter(useranswer__usertextfieldtaskanswer__task=content)
+            elif tasktype == "file":
+                db_evaluations = db_user_evaluations.filter(useranswer__userfiletaskanswer__task=content)
+            else:
+                db_evaluations = []
+
+            if db_evaluations:
+                evaluations.append(1)
+            else:
+                evaluations.append(0)
+        user_evaluations.append((username, evaluations, sum(evaluations)))
+
+    t = loader.get_template("courses/usertable.html")
+    c = RequestContext(request, {
+        'training_name':training_name,
+        'content_count':len(contents),
+        'contents':contents,
+        'user_evaluations':user_evaluations,
+    })
+    return HttpResponse(t.render(c))
+
 def textfield_eval(given, answers):
     given = given.replace("\r\n", "\n").replace("\n\r", "\n")
     correct = True

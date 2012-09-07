@@ -1,0 +1,27 @@
+<html>
+<head>
+</head>
+<body>
+<h1>{{ training_name }}</h1>
+<table border="1">
+<tr>
+<th>User name</th>
+{% for content in contents %}
+<th><span title="{{ content.name }}">{{ content.id }}</span></th>
+{% endfor %}
+<th>Total ({{ content_count }})</th>
+</tr>
+
+{% for user_name, evaluations, total in user_evaluations %}
+<tr>
+<td>{{ user_name }}</td>
+{% for evaluation in evaluations %}
+<td>{{ evaluation }}</td>
+{% endfor %}
+<td>{{ total }}</td>
+</tr>
+{% endfor %}
+
+</table>
+</body>
+</html>

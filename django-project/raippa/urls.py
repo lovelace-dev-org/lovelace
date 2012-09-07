@@ -24,6 +24,7 @@ urlpatterns = patterns('',
 
     # For viewing task statistics
     url(r'^stats/(?P<task_name>[^/]+)/$', 'courses.views.stats'),
+    url(r'^users/(?P<training_name>[^/]+)/$', 'courses.views.users'),
 
     # For serving images
     url(r'^media/images/(?P<imagename>.+)$', 'courses.views.image_download',

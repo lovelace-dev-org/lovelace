@@ -192,6 +192,18 @@ class FileTask(TaskPage):
             self.short_name = self._shortify_name()
         super(FileTask, self).save(*args, **kwargs)
 
+# TODO: Add for the next database upgrade
+#class ContentFeedbackQuestion(models.Model):
+#    """A ten half-star feedback that can be linked to any content."""
+#    which content?
+#    question = models.CharField("Question",max_length=100)
+#
+#class ContentFeedbackUserAnswer(models.Model):
+#    user = models.ForeignKey(User)
+#    which content?
+#    question = models.ForeignKey(ContentFeedbackQuestion)
+#    rating = models.IntegerField(min_value=0,max_value=10)
+
 class FileTaskTest(models.Model):
     task = models.ForeignKey(FileTask)
     name = models.CharField("Test name",max_length=200)
