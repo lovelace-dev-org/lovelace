@@ -56,10 +56,11 @@ class ContentGraph(models.Model):
     parentnode = models.ForeignKey('self', null=True, blank=True)
     content = models.ForeignKey('ContentPage', null=True, blank=True)
     responsible = models.ManyToManyField(User,blank=True,null=True)
-    compulsory = models.BooleanField('Must be answered correctly before proceeding to next task', default=True)
+    compulsory = models.BooleanField('Must be answered correctly before proceeding to next task', default=False)
     deadline = models.DateTimeField('The due date for completing this task',blank=True,null=True)
     # TODO: Add this when next database layout comes
     #publish_date = models.DateTimeField('When does this task become available',blank=True,null=True)
+    #scored = models.BooleanField('Does this task have an effect on scoring', default=True)
 
     def __unicode__(self):
         return self.content.short_name
@@ -284,6 +285,8 @@ class FileTaskTestIncludeFile(models.Model):
 
     fileinfo = models.FileField(upload_to=get_testfile_path)
 
+# TODO: Create a superclass for task answers
+
 class TextfieldTaskAnswer(models.Model):
     task = models.ForeignKey(TextfieldTask)
     correct = models.BooleanField()
@@ -330,6 +333,8 @@ class CheckboxTaskAnswer(models.Model):
 
 class Evaluation(models.Model):
     """Evaluation of training item performance"""
+    # TODO: Add this at the next database upgrade
+    #correct = models.BooleanField()
     points = models.FloatField()
     feedback = models.CharField('Feedback given by a teacher',max_length=2000,blank=True)
     
