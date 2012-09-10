@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-"""Django database models for RAIPPA courses."""
+"""Django database models for RAiPPA courses."""
+# TODO: Refactor into multiple apps
 
 import datetime
 import re
@@ -9,21 +10,24 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 
-# TODO: Extend the user profiles!
-# http://stackoverflow.com/questions/44109/extending-the-user-model-with-custom-fields-in-django
-#class UserProfile(models.Model):
-#    """The user profile."""
-#    user = models.OneToOneField(User)
-#    student_id = models.IntegerField()
-#
-#    def __unicode__(self):
-#        return "%s's profile" % self.user
+# TODO: Extend the registration system to allow users to enter the profile data!
+class UserProfile(models.Model):
+    """User profile, which extends the Django's User model."""
+    # For more information, see:
+    # https://docs.djangoproject.com/en/dev/topics/auth/#storing-additional-information-about-users
+    # http://stackoverflow.com/questions/44109/extending-the-user-model-with-custom-fields-in-django
+    user = models.OneToOneField(User)
+    student_id = models.IntegerField('Student number', blank=True, null=True)
+    study_program = models.CharField('Study program', max_length=80, blank=True, null=True)
 
-#def create_user_profile(sender, instance, created, **kwargs):
-#    if created:
-#        profile, created = UserProfile.objects.get_or_create(user=instance)
+    def __unicode__(self):
+        return "%s's profile" % self.user
 
-#post_save.connect(create_user_profile, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    if created:
+        profile, created = UserProfile.objects.get_or_create(user=instance)
+
+post_save.connect(create_user_profile, sender=User)
 
 # TODO: A user group system for allowing users to form groups
 # - max users / group
@@ -34,12 +38,8 @@ class Training(models.Model):
     """A single course in the system.
 
     A course consists of shared content, i.e. lectures, tasks etc.
-    but is represented to users via an Incarnation.
-
-    A course also holds its own set of files (source code, images, pdfs, etc.)
-    with their metadata.
-
-    A user or a group can be in charge of a course."""
+    A course also holds its own set of files (source code, images, pdfs, etc.) with their metadata.
+    """
     name = models.CharField(max_length=200)
     frontpage = models.ForeignKey('LecturePage', blank=True,null=True)
     contents = models.ManyToManyField('ContentGraph', blank=True,null=True)
@@ -53,16 +53,18 @@ class Training(models.Model):
         return self.name
 
 class ContentGraph(models.Model):
+    """A node in the course tree/graph. Links content into a course."""
     parentnode = models.ForeignKey('self', null=True, blank=True)
     content = models.ForeignKey('ContentPage', null=True, blank=True)
     responsible = models.ManyToManyField(User,blank=True,null=True)
     compulsory = models.BooleanField('Must be answered correctly before proceeding to next task', default=False)
     deadline = models.DateTimeField('The due date for completing this task',blank=True,null=True)
-    # TODO: Add this when next database layout comes
-    #publish_date = models.DateTimeField('When does this task become available',blank=True,null=True)
-    #scored = models.BooleanField('Does this task have an effect on scoring', default=True)
+    publish_date = models.DateTimeField('When does this task become available',blank=True,null=True)
+    scored = models.BooleanField('Does this task affect scoring', default=True)
 
     def __unicode__(self):
+        if not self.content:
+            return "No linked content yet"
         return self.content.short_name
 
 def get_file_upload_path(instance, filename):
@@ -70,11 +72,9 @@ def get_file_upload_path(instance, filename):
 
 class File(models.Model):
     """Metadata of an embedded or attached file that an admin has uploaded."""
-
     uploader = models.ForeignKey(User)
-
+    name = models.CharField('Name for reference in content',max_length=200,unique=True)
     date_uploaded = models.DateTimeField('date uploaded')
-    name = models.CharField('Name for reference in content',max_length=200) # TODO: ,unique=True)
     typeinfo = models.CharField(max_length=200)
     fileinfo = models.FileField(upload_to=get_file_upload_path)
 
@@ -87,7 +87,7 @@ def get_image_upload_path(instance, filename):
 class Image(models.Model):
     """Image"""
     uploader = models.ForeignKey(User)
-    name = models.CharField('Name for reference in content',max_length=200) # TODO: ,unique=True)
+    name = models.CharField('Name for reference in content',max_length=200,unique=True)
     date_uploaded = models.DateTimeField('date uploaded')
     description = models.CharField(max_length=500)
     fileinfo = models.ImageField(upload_to=get_image_upload_path)
@@ -104,27 +104,48 @@ class Video(models.Model):
     def __unicode__(self):
         return self.name
 
-# TODO: Page embeddable calendar for, e.g., reserving review times
-#class Calendar(models.Model):
-#    """A multi purpose calendar for course events markups, time reservations etc."""
-#    name = models.CharField('Name for reference in content',max_length=200,unique=True)
+## Time reservation and event calendar system
+class Calendar(models.Model):
+    """A multi purpose calendar for course events markups, time reservations etc."""
+    name = models.CharField('Name for reference in content',max_length=200,unique=True)
 
+    def __unicode__(self):
+        return self.name
+
+class CalendarDate(models.Model):
+    """A single date on a calendar."""
+    calendar = models.ForeignKey(Calendar)
+    event_name = models.CharField('Name of the event', max_length=200)
+    event_description = models.CharField('Description', max_length=200, blank=True, null=True)
+    start_time = models.DateTimeField('Starts at')
+    end_time = models.DateTimeField('Ends at')
+    reservable_slots = models.IntegerField('Amount of reservable slots')
+
+    def __unicode__(self):
+        return self.event_name
+
+class CalendarReservation(models.Model):
+    """A single user made reservation on a calendar date."""
+    calendar_date = models.ForeignKey(CalendarDate)
+    user = models.ForeignKey(User)
+
+## Content management
 class ContentPage(models.Model):
-    """A single content containing page of a course.
-    The other content pages (LecturePage and TaskPage) and their
+    """
+    A single content containing page of a course.
+    The used content pages (LecturePage and TaskPage) and their
     child classes (RadiobuttonTask, CheckboxTask, TextfieldTask and FileTask)
     all inherit from this class.
-
-    May be a part of a course incarnation graph."""
+    """
     name = models.CharField(max_length=200)
-    url_name = models.CharField(max_length=200,editable=False) #,default=get_url_name) # Use SlugField instead?
-    short_name = models.CharField(max_length=32) #, default=_shortify_name)
+    url_name = models.CharField(max_length=200,editable=False) # Use SlugField instead?
+    short_name = models.CharField(max_length=32)
     content = models.TextField(blank=True,null=True)
     maxpoints = models.IntegerField(blank=True,null=True)
-    # TODO: Add this when next database layout comes
-    #access_count = models.IntegerField(editable=False)
-    #tags = models.TextField(blank=True,null=True)
-    #require_correct_embedded_tasks = models.BooleanField('If the page has embedded tasks, they must be answered correctly to make this task correct',default=True)
+    access_count = models.IntegerField(editable=False,blank=True,null=True)
+    tags = models.TextField(blank=True,null=True)
+    feedback_questions = models.ManyToManyField('ContentFeedbackQuestion', blank=True, null=True)
+    require_correct_embedded_tasks = models.BooleanField('Embedded tasks must be answered correctly to mark this task correct',default=True)
 
     def _shortify_name(self):
         return self.name[0:32]
@@ -144,9 +165,7 @@ class ContentPage(models.Model):
 
 class LecturePage(ContentPage):
     """A single page from a lecture."""
-    # TODO: Add this when the next database layout comes
-    #answerable = models.BooleanField("Do the users need to confirm they've read this lecture",default=False)
-    # TODO: Add a lecturepageuseranswer model for this!
+    answerable = models.BooleanField("Need confirmation of reading this lecture",default=False)
 
     def save(self, *args, **kwargs):
         self.url_name = self.get_url_name()
@@ -193,18 +212,21 @@ class FileTask(TaskPage):
             self.short_name = self._shortify_name()
         super(FileTask, self).save(*args, **kwargs)
 
-# TODO: Add for the next database upgrade
-#class ContentFeedbackQuestion(models.Model):
-#    """A ten half-star feedback that can be linked to any content."""
-#    which content?
-#    question = models.CharField("Question",max_length=100)
-#
-#class ContentFeedbackUserAnswer(models.Model):
-#    user = models.ForeignKey(User)
-#    which content?
-#    question = models.ForeignKey(ContentFeedbackQuestion)
-#    rating = models.IntegerField(min_value=0,max_value=10)
+## Feedback models
+class ContentFeedbackQuestion(models.Model):
+    """A five star feedback that can be linked to any content."""
+    question = models.CharField("Question",max_length=100)
 
+    def __unicode__(self):
+        return self.question
+
+class ContentFeedbackUserAnswer(models.Model):
+    user = models.ForeignKey(User)                          # The user who has given this feedback
+    content = models.ForeignKey(ContentPage)                # The content on which this feedback was given
+    question = models.ForeignKey(ContentFeedbackQuestion)   # The feedback question this feedback answers
+    rating = models.PositiveSmallIntegerField()
+
+## File task test related models
 class FileTaskTest(models.Model):
     task = models.ForeignKey(FileTask)
     name = models.CharField("Test name",max_length=200)
@@ -215,8 +237,7 @@ class FileTaskTest(models.Model):
     )
     signals = models.CharField(max_length=7,default="None",choices=POSIX_SIGNALS_CHOICES) # What POSIX signals shall be fired at the program?
     inputs = models.TextField("Input given to the main command through STDIN",blank=True) # What input shall be entered to the program's stdin upon execution?
-    # TODO: Add this at the next database upgrade
-    #retval = models.IntegerField('Expected return value',blank=True,null=True)
+    retval = models.IntegerField('Expected return value',blank=True,null=True)
 
     def __unicode__(self):
         return self.name
@@ -278,15 +299,14 @@ class FileTaskTestIncludeFile(models.Model):
         ('OWNED', "Owned by the tested program"),
         ('NOT_OWNED', "Now owned by the tested program"),
     )
-    # TODO: Add this at the next database upgrade
-    #chown_settings = models.CharField('File user ownership',max_length=10,default="OWNED",choices=FILE_OWNERSHIP_CHOICES)
-    #chgrp_settings = models.CharField('File group ownership',max_length=10,default="OWNED",choices=FILE_OWNERSHIP_CHOICES)
-    #chmod_settings = models.CharField('File access mode',max_length=10,default="rw-rw-rw-") # TODO: Create validator and own field type
+    chown_settings = models.CharField('File user ownership',max_length=10,default="OWNED",choices=FILE_OWNERSHIP_CHOICES)
+    chgrp_settings = models.CharField('File group ownership',max_length=10,default="OWNED",choices=FILE_OWNERSHIP_CHOICES)
+    chmod_settings = models.CharField('File access mode',max_length=10,default="rw-rw-rw-") # TODO: Create validator and own field type
 
     fileinfo = models.FileField(upload_to=get_testfile_path)
 
 # TODO: Create a superclass for task answers
-
+## Answer models
 class TextfieldTaskAnswer(models.Model):
     task = models.ForeignKey(TextfieldTask)
     correct = models.BooleanField()
@@ -294,8 +314,7 @@ class TextfieldTaskAnswer(models.Model):
     answer = models.TextField()
     hint = models.TextField(blank=True)
     videohint = models.ForeignKey(Video,blank=True,null=True)
-    # TODO: Add this at the next database upgrade
-    #comment = models.TextField('Extra comment given upon selection of this answer',blank=True)
+    comment = models.TextField('Extra comment given upon selection of this answer',blank=True)
 
     def __unicode__(self):
         if len(self.answer) > 80:
@@ -313,8 +332,7 @@ class RadiobuttonTaskAnswer(models.Model):
     answer = models.TextField()
     hint = models.TextField(blank=True)
     videohint = models.ForeignKey(Video,blank=True,null=True)
-    # TODO: Add this at the next database upgrade
-    #comment = models.TextField('Extra comment given upon selection of this answer',blank=True)
+    comment = models.TextField('Extra comment given upon selection of this answer',blank=True)
 
     def __unicode__(self):
         return self.answer
@@ -325,33 +343,35 @@ class CheckboxTaskAnswer(models.Model):
     answer = models.TextField()
     hint = models.TextField(blank=True)    
     videohint = models.ForeignKey(Video,blank=True,null=True)  
-    # TODO: Add this at the next database upgrade
-    #comment = models.TextField('Extra comment given upon selection of this answer',blank=True)
+    comment = models.TextField('Extra comment given upon selection of this answer',blank=True)
 
     def __unicode__(self):
         return self.answer
 
 class Evaluation(models.Model):
     """Evaluation of training item performance"""
-    # TODO: Add this at the next database upgrade
-    #correct = models.BooleanField()
-    points = models.FloatField()
+    correct = models.BooleanField()
+    points = models.FloatField(blank=True)
     feedback = models.CharField('Feedback given by a teacher',max_length=2000,blank=True)
+
+    def __unicode__(self):
+        if self.correct:
+            return u"Correct answer to (todo: task) by %s with %f points: %s" % (self.useranswer.user.username, self.points, self.feedback)
+        else:
+            return u"Incorrect answer to (todo: task) by %s with %f points: %s" % (self.useranswer.user.username, self.points, self.feedback)
     
 class UserAnswer(models.Model):
     """Parent class for what users have given as their answers to different tasks."""
     evaluation = models.OneToOneField(Evaluation) # A single answer is always linked to a single evaluation
     user = models.ForeignKey(User)                # Whose answer is this?
     answer_date = models.DateTimeField('Date and time of when the user answered this task')
-    # TODO: Add this in next database upgrade!
-    # collaborators = models.TextField('Which users was this task answered with', blank=True, null=True)
+    collaborators = models.TextField('Which users was this task answered with', blank=True, null=True)
 
 class FileTaskReturnable(models.Model):
     run_time = models.TimeField()
     output = models.TextField()
     errors = models.TextField()
-    # TODO: Add this in the next database upgrade!
-    # retval = models.IntegerField()
+    retval = models.IntegerField()
 
 def get_version(instance):
     return UserFileTaskAnswer.objects.filter(user=instance.returnable.userfiletaskanswer.user,
@@ -408,4 +428,11 @@ class UserCheckboxTaskAnswer(UserAnswer):
     def __unicode__(self):
         #return u"Answer no. %04d: %s" % (self.answer_count, ", ".join(self.chosen_answers))
         return u"Answer by %s: %s" % (self.user.username, ", ".join(self.chosen_answers))
+
+class UserLecturePageAnswer(UserAnswer):
+    task = models.ForeignKey(LecturePage)
+    answered = models.BooleanField(LecturePage)
     
+    def __unicode__(self):
+        return u"Answered by %s." % (self.user.username)
+

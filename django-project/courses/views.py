@@ -229,12 +229,15 @@ def radiobutton_task_check(content, user, choices, post_data):
     # Determine, if the given answer was correct and which hints to show
     correct = True
     hints = []
+    comments = []
     for choice in choices:
         if post_data[str(choice.id)] == "true":
             chosen = choice
 
         if post_data[str(choice.id)] == "true" and choice.correct == True and correct == True:
             correct = True
+            if choice.comment:
+                comments.append(choice.comment)
         elif post_data[str(choice.id)] == "false" and choice.correct == True:
             correct = False
             if choice.hint:
@@ -243,19 +246,21 @@ def radiobutton_task_check(content, user, choices, post_data):
             correct = False
             if choice.hint:
                 hints.append(choice.hint)
+            if choice.comment:
+                comments.append(choice.comment)
             break
     
     # Save the results to the database, if the question was answered by a non-anonymous user
     if user.is_authenticated():
         if correct:
             points = 1.0
-        rb_evaluation = Evaluation(points=points,feedback="")
+        rb_evaluation = Evaluation(points=points,feedback="",correct=correct)
         rb_evaluation.save()
         rb_answer = UserRadiobuttonTaskAnswer(task=content.taskpage.radiobuttontask, chosen_answer=chosen, evaluation=rb_evaluation,
                                               user=user, answer_date=timezone.now())
         rb_answer.save()
     
-    return correct, hints
+    return correct, hints, comments
 
 def checkbox_task_check(content, user, choices, post_data):
     points = 0.0
@@ -263,11 +268,14 @@ def checkbox_task_check(content, user, choices, post_data):
     # Determine, if the given answer was correct and which hints to show
     correct = True
     hints = []
+    comments = []
     chosen = []
     for choice in choices:
         if post_data[str(choice.id)] == "true" and choice.correct == True and correct == True:
             correct = True
             chosen.append(choice)
+            if choice.comment:
+                comments.append(choice.comment)
         elif post_data[str(choice.id)] == "false" and choice.correct == True:
             correct = False
             if choice.hint:
@@ -276,13 +284,15 @@ def checkbox_task_check(content, user, choices, post_data):
             correct = False
             if choice.hint:
                 hints.append(choice.hint)
+            if choice.comment:
+                comments.append(choice.comment)
             chosen.append(choice)
 
     # Save the results to the database, if the question was answered by a non-anonymous user
     if user.is_authenticated():
         if correct:
             points = 1.0
-        cb_evaluation = Evaluation(points=points,feedback="")
+        cb_evaluation = Evaluation(points=points,feedback="",correct=correct)
         cb_evaluation.save()
         cb_answer = UserCheckboxTaskAnswer(task=content.taskpage.checkboxtask, evaluation=cb_evaluation,
                                            user=user, answer_date=timezone.now())
@@ -290,7 +300,7 @@ def checkbox_task_check(content, user, choices, post_data):
         cb_answer.chosen_answers.add(*chosen)
         cb_answer.save()
 
-    return correct, hints
+    return correct, hints, comments
 
 def textfield_task_check(content, user, answers, post_data):
     points = 0.0
@@ -298,6 +308,7 @@ def textfield_task_check(content, user, answers, post_data):
     # Determine, if the given answer was correct and which hints to show
     correct = True
     hints = []
+    comments = []
     errors = []
     given = post_data["answer"].replace("\r\n", "\n").replace("\n\r", "\n")
     for answer in answers:
@@ -305,11 +316,15 @@ def textfield_task_check(content, user, answers, post_data):
             try:
                 if re.match(answer.answer, given) and answer.correct and correct == True:
                     correct = True
+                    if answer.comment:
+                        comments.append(answer.comment)
                     break
                 elif re.match(answer.answer, given) and not answer.correct:
                     correct = False
                     if answer.hint:
                         hints.append(answer.hint)
+                    if answer.comment:
+                        comments.append(answer.comment)
                 elif not re.match(answer.answer, given) and answer.correct:
                     correct = False
                     if answer.hint:
@@ -320,11 +335,15 @@ def textfield_task_check(content, user, answers, post_data):
         else:
             if given == answer.answer and answer.correct and correct == True:
                 correct = True
+                if answer.comment:
+                    comments.append(answer.comment)
                 break
             elif given == answer.answer and not answer.correct:
                 correct = False
                 if answer.hint:
                     hints.append(answer.hint)
+                if answer.comment:
+                    comments.append(answer.comment)
             elif given != answer.answer and answer.correct:
                 correct = False
                 if answer.hint:
@@ -334,24 +353,25 @@ def textfield_task_check(content, user, answers, post_data):
     if user.is_authenticated():
         if correct:
             points = 1.0
-        tf_evaluation = Evaluation(points=points,feedback="")
+        tf_evaluation = Evaluation(points=points,feedback="",correct=correct)
         tf_evaluation.save()
         tf_answer = UserTextfieldTaskAnswer(task=content.taskpage.textfieldtask, given_answer=given, evaluation=tf_evaluation,
                                             user=user, answer_date=timezone.now())
         tf_answer.save()
 
-    return correct, hints, errors
+    return correct, hints, comments, errors
 
 def file_task_check(content, user, files_data):
     points = 0.0
     correct = True
     hints = []
+    comments = []
 
     if user.is_authenticated():
         # TODO: Fix the information that will be saved
         f_returnable = FileTaskReturnable(run_time=datetime.time(0,0,1,500), output="filler-output-filler", errors="filler-errors-filler")
         f_returnable.save()
-        f_evaluation = Evaluation(points=points,feedback="")
+        f_evaluation = Evaluation(points=points,feedback="",correct=False)
         f_evaluation.save()
         f_answer = UserFileTaskAnswer(task=content.taskpage.filetask, returnable=f_returnable, evaluation=f_evaluation,
                                       user=user, answer_date=timezone.now())
@@ -392,6 +412,7 @@ def file_task_check(content, user, files_data):
 
         if correct:
             f_evaluation.points = 1.0
+            f_evaluations.correct = correct
             f_evaluation.save()
             f_answer.save()
     else:
@@ -422,7 +443,7 @@ def file_task_check(content, user, files_data):
     # Get a nice HTML table for the diffs
     diff_table = filecheck_client.html(results)
 
-    return correct, hints, diff_table
+    return correct, hints, comments, diff_table
 
 def check_answer(request, training_name, content_name, **kwargs):
     print u"Ollaan tehtavan tarkistuksessa"
@@ -456,13 +477,13 @@ def check_answer(request, training_name, content_name, **kwargs):
     diff_table = ""
 
     if choices and tasktype == "radiobutton":
-        correct, hints = radiobutton_task_check(content, request.user, choices, request.POST)
+        correct, hints, comments = radiobutton_task_check(content, request.user, choices, request.POST)
     elif choices and tasktype == "checkbox":
-        correct, hints = checkbox_task_check(content, request.user, choices, request.POST)
+        correct, hints, comments = checkbox_task_check(content, request.user, choices, request.POST)
     elif answers and tasktype == "textfield":
-        correct, hints, errors = textfield_task_check(content, request.user, answers, request.POST)
+        correct, hints, comments, errors = textfield_task_check(content, request.user, answers, request.POST)
     elif tasktype == "file":
-        correct, hints, diff_table = file_task_check(content, request.user, request.FILES)
+        correct, hints, comments, diff_table = file_task_check(content, request.user, request.FILES)
 
     # Compile the information required for the task evaluation
     if correct:
