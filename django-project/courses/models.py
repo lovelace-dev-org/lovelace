@@ -23,11 +23,21 @@ class UserProfile(models.Model):
     def __unicode__(self):
         return "%s's profile" % self.user
 
+    def save(self, *args, **kwargs):
+        # To prevent 'column user_id is not unique' error from creating a new user in admin interface
+        # http://stackoverflow.com/a/2813728
+        try:
+            existing = UserProfile.objects.get(user=self.user)
+            self.id = existing.id
+        except UserProfile.DoesNotExist:
+            pass
+        models.Model.save(self, *args, **kwargs)
+
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
-        profile, created = UserProfile.objects.get_or_create(user=instance)
+        UserProfile.objects.create(user=instance)
 
-post_save.connect(create_user_profile, sender=User)
+post_save.connect(create_user_profile, sender=User, dispatch_uid="create_user_profile_raippa")
 
 # TODO: A user group system for allowing users to form groups
 # - max users / group
