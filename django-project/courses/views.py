@@ -513,6 +513,28 @@ def check_answer(request, training_name, content_name, **kwargs):
 
     return HttpResponse(t.render(c))
 
+def get_user_task_info(user, task, tasktype):
+    evaluations = None
+    if tasktype == "checkbox":
+        if not evaluations: evaluations = Evaluation.objects.filter(useranswer__usercheckboxtaskanswer__task=task, useranswer__user=user)
+    elif tasktype == "radiobutton":
+        if not evaluations: evaluations = Evaluation.objects.filter(useranswer__userradiobuttontaskanswer__task=task, useranswer__user=user)
+    elif tasktype == "textfield":
+        if not evaluations: evaluations = Evaluation.objects.filter(useranswer__usertextfieldtaskanswer__task=task, useranswer__user=user)
+    elif tasktype == "file":
+        if not evaluations: evaluations = Evaluation.objects.filter(useranswer__userfiletaskanswer__task=task, useranswer__user=user)
+
+    if not evaluations:
+        result = "not_answered"
+    else:
+        correct = evaluations.filter(correct=True)
+        if correct:
+            result = "correct"
+        else:
+            result = "incorrect"
+
+    return result
+
 def content(request, training_name, content_name, **kwargs):
     print "Ollaan contentissa."
 
@@ -521,6 +543,11 @@ def content(request, training_name, content_name, **kwargs):
     pages = [content]
 
     tasktype, question, choices, answers = get_task_info(content)
+    if request.user.is_authenticated():
+        task_evaluation = get_user_task_info(request.user, content, tasktype)
+    else:
+        task_evaluation = None
+
     emb_tasktype = None
 
     navurls = [NavURL(reverse('courses.views.index'), "Training home"), # Courses
@@ -569,16 +596,22 @@ def content(request, training_name, content_name, **kwargs):
                     rendered_em_content += emline
                 
                 emb_tasktype, emb_question, emb_choices, emb_answers = get_task_info(embedded_content)
+                if request.user.is_authenticated():
+                    emb_task_evaluation = get_user_task_info(request.user, embedded_content, emb_tasktype)
+                else:
+                    emb_task_evaluation = None
+
                 emb_t = loader.get_template("courses/task.html")
                 emb_c = RequestContext(request, {
-                        'emb_content': rendered_em_content,
-                        'content_name': embedded_content.name,
-                        'content_name_id': embedded_content.url_name,
-                        'content_urlname': embedded_content.url_name,
-                        'answer_check_url': reverse('courses.views.training', kwargs={"training_name":training_name}),
-                        'tasktype': emb_tasktype,
-                        'question': emb_question,
-                        'choices': emb_choices,
+                    'emb_content': rendered_em_content,
+                    'content_name': embedded_content.name,
+                    'content_name_id': embedded_content.url_name,
+                    'content_urlname': embedded_content.url_name,
+                    'answer_check_url': reverse('courses.views.training', kwargs={"training_name":training_name}),
+                    'tasktype': emb_tasktype,
+                    'question': emb_question,
+                    'choices': emb_choices,
+                    'evaluation': emb_task_evaluation,
                 })
                 rendered_em_content = emb_t.render(emb_c)
                 line = line.replace(include_file_re.group(0), rendered_em_content)
@@ -598,6 +631,7 @@ def content(request, training_name, content_name, **kwargs):
         'tasktype': tasktype,
         'question': question,
         'choices': choices,
+        'evaluation': task_evaluation,
     })
     if "frontpage" in kwargs:
         return c

@@ -23,7 +23,22 @@
       {% if not user.is_authenticated %}
         <div class="auth_warning">Warning: You have not logged in. Your answer will not be saved.</div>
       {% endif %}
+      {% if evaluation == "not_answered" %}
+        <div class="answered_status"></div>
+      {% elif evaluation == "incorrect" %}
+        <div class="answered_status"><span class="incorrect">You have previously answered this task incorrectly.</span></div>
+      {% elif evaluation == "correct" %}
+        <div class="answered_status"><span class="correct">You have already answered this task correctly.</span></div>
+      {% endif %}
     </form>
     <div id="result"></div>
   </div>
+  {% if emb_content %}
+    {% if user.is_active and user.is_staff %}
+      <div class="admin_tools">
+        <h1>Teacher's toolbox for {{ content_name }}</h1>
+        <a href="/stats/{{ content_urlname }}/">Statistics</a>
+      </div>
+    {% endif %}
+  {% endif %}
 {% endif %}
