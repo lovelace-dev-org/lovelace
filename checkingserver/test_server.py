@@ -5,7 +5,6 @@
 """
 
 # FUTURE: Use LD_PRELOAD?
-# TODO: Daemonize.
 
 import os
 import re
@@ -14,6 +13,7 @@ import datetime
 import time
 import fcntl
 import shlex
+import pipes
 import codecs
 import resource
 import subprocess
@@ -33,6 +33,7 @@ class colors:
     reset = _CSI+"m"
     fgred = _CSI+"31m"
     fgcyan = _CSI+"36m"
+    fgyellow = _CSI+"33m"
 
 def error(msg):
     date = datetime.datetime.now().isoformat()[:19]
@@ -42,12 +43,16 @@ def info(msg):
     date = datetime.datetime.now().isoformat()[:19]
     print "%s %s[info]%s %s" % (date, colors.fgcyan, colors.reset, msg)
 
+def note(msg):
+    date = datetime.datetime.now().isoformat()[:19]
+    print "%s %s[note]%s %s" % (date, colors.fgyellow, colors.reset, msg)
+
 def runCommand(arg, input_data, tempdir, outfile, errfile, infile, signal=None, timeout=10):
     """Run one command from a test."""
     env = {'HOME':tempdir, 'LOGNAME':Privileges.get_low_name(), 'PWD':tempdir, 'USER':Privileges.get_low_name(),
            'PATH':'/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
            'PYTHONPATH':''}
-    info("Running command: %s" % (" ".join(arg)))
+    info("Running command: %s" % (" ".join((pipes.quote(s) for s in arg))))
 
     p = subprocess.Popen(
         args=arg,
@@ -96,8 +101,9 @@ def runCommand(arg, input_data, tempdir, outfile, errfile, infile, signal=None, 
     # Clean up in case there was a fork bomb
     #act("server")
     #os.system("killall -9 -v -g -u %s" % (Privileges.get_low_name()))
-    os.system("killall -STOP --verbose --user %s --younger-than %ds" % (Privileges.get_low_name(), timeout + 5))
-    os.system("killall -9 --verbose --user %s --younger-than %ds" % (Privileges.get_low_name(), timeout + 5))
+    # TODO: FIX FOR CENTOS!
+    #os.system("killall -STOP --verbose --user %s --younger-than %ds" % (Privileges.get_low_name(), timeout + 5))
+    #os.system("killall -9 --verbose --user %s --younger-than %ds" % (Privileges.get_low_name(), timeout + 5))
     #act("subprocess")
 
     return retval, timedout
@@ -251,13 +257,18 @@ class ConnectionHandler(BaseHandler):
         return "Test", test
 
     def checkWithReference(self, codes, references, tests):
+        """Run the same tests for both the students' files and the reference implementation."""
+        note("Received a test set with codes and reference codes.")
+
         # Base 64 decode the binary blobs students call source code
         for name, contents in codes.iteritems():
             codes[name] = base64.b64decode(contents)
 
         for name, contents in references.iteritems():
             references[name] = base64.b64decode(contents)
-        
+
+        # Get the results by running the tests and base 64 encode them
+        # for transmission back to the web application
         referenceResults = runTests(references, tests)
         for test_name, test_result in referenceResults.iteritems():
             test_result["outputs"] = [base64.b64encode(output) for output in test_result["outputs"]]
@@ -272,16 +283,27 @@ class ConnectionHandler(BaseHandler):
             for output_file_name, output_file_contents in test_result["outputfiles"].iteritems():
                 test_result["outputfiles"][output_file_name] = base64.b64encode(output_file_contents)
 
+        info("Testing successful. Returning results.")
         return {"student":studentResults, "reference":referenceResults}
 
     def checkWithOutput(self, codes, tests):
+        """Run the tests for the students' files only."""
+        note("Received a test set with codes.")
+
+        # Base 64 decode the binary blobs students call source code
+        for name, contents in codes.iteritems():
+            codes[name] = base64.b64decode(contents)
+
+        # Get the results by running the tests and base 64 encode them
+        # for transmission back to the web application
         studentResults = runTests(codes, tests)
         for test_name, test_result in studentResults.iteritems():
-            test_result["outputs"] = base64.b64encode(test_result["outputs"])
-            test_result["errors"] = base64.b64encode(test_result["errors"])
+            test_result["outputs"] = [base64.b64encode(output) for output in test_result["outputs"]]
+            test_result["errors"] = [base64.b64encode(error) for error in test_result["errors"]]
             for output_file_name, output_file_contents in test_result["outputfiles"].iteritems():
                 test_result["outputfiles"][output_file_name] = base64.b64encode(output_file_contents)
-
+        
+        info("Testing successful. Returning results.")
         return {"student":studentResults}
 
 class Privileges:
@@ -414,9 +436,10 @@ def start():
         sys.exit(1)
 
     # Set the file descriptors to null
-    dev_null = "/dev/null"
     if hasattr(os, "devnull"):
         dev_null = os.devnull
+    else:
+        dev_null = "/dev/null"
     null_fd = open(dev_null, "rw")
     log_fd = open("/tmp/test_server.log", "w", 0)
     for fd in (sys.stdin, sys.stdout, sys.stderr):
