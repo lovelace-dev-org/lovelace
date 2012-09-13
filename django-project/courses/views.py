@@ -467,13 +467,14 @@ def check_answer(request, training_name, content_name, **kwargs):
         if not content_graph.deadline or datetime.datetime.now() < content_graph.deadline:
             pass
         else:
+            # TODO: Use a template!
             return HttpResponse("The deadline for this task (%s) has passed. Your answer will not be evaluated!" % (content_graph.deadline))
 
     tasktype, question, choices, answers = get_task_info(content)
 
     correct = True
     hints = []
-    comments = [] # TODO: Implement comments (giving feedback on a correct answer)
+    comments = []
     errors = []
     diff_table = ""
 
