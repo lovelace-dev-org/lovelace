@@ -369,7 +369,7 @@ def file_task_check(content, user, files_data):
 
     if user.is_authenticated():
         # TODO: Fix the information that will be saved
-        f_returnable = FileTaskReturnable(run_time=datetime.time(0,0,1,500), output="filler-output-filler", errors="filler-errors-filler")
+        f_returnable = FileTaskReturnable(run_time=datetime.time(0,0,1,500), output="filler-output-filler", errors="filler-errors-filler", retval=0)
         f_returnable.save()
         f_evaluation = Evaluation(points=points,feedback="",correct=False)
         f_evaluation.save()
@@ -407,12 +407,13 @@ def file_task_check(content, user, files_data):
 
         for test in results_zipped:
             for resultpair in test:
-                if resultpair[0] != resultpair[1]:
+                print resultpair
+                if resultpair[0].replace('\r\n', '\n') != resultpair[1].replace('\r\n', '\n'):
                     correct = False
 
         if correct:
             f_evaluation.points = 1.0
-            f_evaluations.correct = correct
+            f_evaluation.correct = correct
             f_evaluation.save()
             f_answer.save()
     else:
@@ -554,7 +555,11 @@ def content(request, training_name, content_name, **kwargs):
             # It's an embedded task
             elif include_file_re.group("filename") == parser.get_current_taskname():
                 print parser.get_current_taskname()
-                embedded_content = ContentPage.objects.get(url_name=parser.get_current_taskname())
+                try:
+                    embedded_content = ContentPage.objects.get(url_name=parser.get_current_taskname())
+                except ContentPage.DoesNotExist as e:
+                    embedded_content = LecturePage()
+                    embedded_content.content = u"Embedded content '%s' not found.\n" % (parser.get_current_taskname())
                 pages.append(embedded_content)
                 unparsed_embedded_content = re.split(r"\r\n|\r|\n", embedded_content.content)
                 embedded_parser = content_parser.ContentParser(iter(unparsed_embedded_content))

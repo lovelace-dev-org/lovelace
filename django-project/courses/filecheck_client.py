@@ -8,6 +8,7 @@ import bjsonrpc
 import difflib
 import datetime
 import base64
+import pipes
 
 from courses.models import FileTaskTest, FileTaskTestCommand, FileTaskTestExpectedOutput, FileTaskTestExpectedError, FileTaskTestIncludeFile
 from courses.models import FileTaskReturnFile
@@ -93,7 +94,8 @@ def check_file_answer(task, files={}, answer=None):
         codefiles[name] = base64.b64encode(contents)
 
     # Send the tests and files to the checking server and receive the results
-    bjsonrpc_client = bjsonrpc.connect(host='10.0.0.10', port=10123)
+    bjsonrpc_client = bjsonrpc.connect(host='10.10.110.66', port=10123)
+        
     if references:
         results = bjsonrpc_client.call.checkWithReference(codefiles, references, tests)
         for test_name, test_result in results["reference"].iteritems():
@@ -103,7 +105,6 @@ def check_file_answer(task, files={}, answer=None):
                 test_result["outputfiles"][output_file_name] = base64.b64decode(output_file_contents)
             for input_file_name, input_file_contents in test_result["inputfiles"].iteritems():
                 test_result["inputfiles"][input_file_name] = base64.b64decode(input_file_contents)
-
     else:
         results = bjsonrpc_client.call.checkWithOutput(codefiles, tests)
         results["expected"] = expected
@@ -140,7 +141,7 @@ def html(results):
                 diff_tables += "<h3>Input file: %s</h3>\n<pre class=\"normal\">%s</pre>" % (str(inputfile.decode("utf-8")), contents)
 
         for i, cmd in enumerate(test_result["cmds"]):
-            diff_tables += "<h3>Command: <span class=\"command\">%s</span></h3>" % (cmd[0])
+            diff_tables += "<h3>Command: <span class=\"command\">%s</span></h3>" % (str(" ".join(pipes.quote(s) for s in cmd[0]).decode("utf-8")))    #(cmd[0])
 
             rcv_retval = test_result["returnvalues"][i]
             rcv_output = test_result["outputs"][i].split("\n")
