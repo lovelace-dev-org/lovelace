@@ -37,18 +37,21 @@ function validateAnswer(e, answer_check_url, task_name) {
     }
 
     var data = "csrfmiddlewaretoken=" + csrftoken;
+    var data_add;
 
     for(var i=0; i < rbchoices.length; i++) {
         //alert(rbchoices[i].value + rbchoices[i].checked);
-        data += "&" + rbchoices[i].value + "=" + rbchoices[i].checked;
+        data_add = "&" + rbchoices[i].value + "=" + rbchoices[i].checked;
     }
     for(var i=0; i < cbchoices.length; i++) {
         //alert(cbchoices[i].value + "=" + cbchoices[i].checked);
-        data += "&" + cbchoices[i].value + "=" + cbchoices[i].checked;
+        data_add = "&" + cbchoices[i].value + "=" + cbchoices[i].checked;
     }
     if (answer.val()) {
-        data += "&" + "answer=" + answer.val();
+        data_add = "&" + "answer=" + encodeURIComponent(answer.val()).replace(/%20/g, "+");
     }
+    data += data_add;
+    
     // http://stackoverflow.com/questions/4856917/jquery-upload-progress-and-ajax-file-upload/4943774#4943774
     // http://www.html5rocks.com/en/tutorials/file/xhr2/
     // http://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.2
@@ -121,7 +124,7 @@ function validateAnswer(e, answer_check_url, task_name) {
             form_data.append("file" + filen, files[filen]);
         }
         xhr.send(form_data);
-        $('div#' + task_name + ' div#result').html("Answer sent. Waiting for evaluation.");
+        $('div#' + task_name + ' div#result').html("<div class='answersent'>Answer sent. Waiting for evaluation.</div>");
     } else {
         xhr.setRequestHeader("Content-type", mimetype);
         xhr.setRequestHeader("Content-length", datalen);
