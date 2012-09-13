@@ -121,11 +121,13 @@ function validateAnswer(e, answer_check_url, task_name) {
             form_data.append("file" + filen, files[filen]);
         }
         xhr.send(form_data);
+        $('div#' + task_name + ' div#result').html("Answer sent. Waiting for evaluation.");
     } else {
         xhr.setRequestHeader("Content-type", mimetype);
         xhr.setRequestHeader("Content-length", datalen);
         xhr.setRequestHeader("Connection", "close");
         xhr.setRequestHeader("X_REQUESTED_WITH", "XMLHttpRequest");
         xhr.send(data);
+        $('div#' + task_name + ' div#result').html("<div class='answersent'>Answer sent. Waiting for evaluation.</div>");
     }
 }
