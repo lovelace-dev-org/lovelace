@@ -603,6 +603,7 @@ def content(request, training_name, content_name, **kwargs):
 
                 emb_t = loader.get_template("courses/task.html")
                 emb_c = RequestContext(request, {
+                    'embedded_task': True,
                     'emb_content': rendered_em_content,
                     'content_name': embedded_content.name,
                     'content_name_id': embedded_content.url_name,
@@ -619,6 +620,7 @@ def content(request, training_name, content_name, **kwargs):
         rendered_content += line
     
     c = RequestContext(request, {
+        'embedded_task': False,
         'training': selected_course,
         'content': rendered_content,
         'content_name': content.name,
