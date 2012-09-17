@@ -20,6 +20,24 @@
     {% else %}
       It has no answer choices.
     {% endif %}
+
+    {% if radiobutton_answers_count %}
+      The task has been answered {{ radiobutton_answers_count }} times.<br />
+      <table>
+        <tr><th>User answer</th><th>Count</th><th>Correct?</th></tr>
+        {% for answer, count, correct in radiobutton_final %}
+          <tr>
+            <td>{{ answer }}</td>
+            <td>{{ count }}</td>
+            {% if correct %}
+              <td class="correct">{{ correct }}</td>
+            {% else %}
+              <td class="incorrect">{{ correct }}</td>
+            {% endif %}
+          </tr>
+        {% endfor %}
+      </table>
+    {% endif %}
   </p>
 {% elif tasktype == "checkbox" %}
   <p>

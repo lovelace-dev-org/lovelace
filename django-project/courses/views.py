@@ -764,6 +764,13 @@ def stats(request, task_name):
         checkbox_answers = UserCheckboxTaskAnswer.objects.filter(task=content_page)
     elif tasktype == "radiobutton":
         radiobutton_answers = UserRadiobuttonTaskAnswer.objects.filter(task=content_page)
+        radiobutton_answers_count = radiobutton_answers.count()
+        radiobutton_selected_answers = list(radiobutton_answers.values_list("chosen_answer", flat=True))
+        radiobutton_set = set(radiobutton_selected_answers)
+        radiobutton_final = []
+        for answer in radiobutton_set:
+            answer_choice = RadiobuttonTaskAnswer.objects.get(id=answer)
+            radiobutton_final.append((answer_choice.answer, radiobutton_selected_answers.count(answer), answer_choice.correct))
     elif tasktype == "textfield":
         textfield_answers = list(UserTextfieldTaskAnswer.objects.filter(task=content_page).values_list("given_answer", flat=True))
         textfield_answers_count = len(textfield_answers)
@@ -791,7 +798,10 @@ def stats(request, task_name):
         "choices": choices,
         "answers": answers,
         "checkbox_answers": checkbox_answers,
+
         "radiobutton_answers": radiobutton_answers,
+        "radiobutton_answers_count": radiobutton_answers_count,
+        "radiobutton_final": radiobutton_final,
 
         "textfield_answers": textfield_answers,
         "textfield_answers_count": textfield_answers_count,
