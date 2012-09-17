@@ -126,7 +126,7 @@ class ContentParser(object):
                 self.list_state.append("ol")
                 yield u'<ol>'
         for line in block:
-            yield '<li>%s</li>' % (escape(line.strip("# \r\n\t")))
+            yield '<li>%s</li>' % (blockparser.parseblock(escape(line.strip("# \r\n\t"))))
     def settings_ordered_list(self, matchobj):
         list_level = len(matchobj.group("olist_level"))
         settings = {"list_level" : list_level}

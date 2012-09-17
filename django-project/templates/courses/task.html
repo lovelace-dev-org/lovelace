@@ -2,7 +2,7 @@
   {% if emb_content %}
     {{ emb_content|safe }}
   {% endif %}
-  <div class="question" id="{{ content_urlname }}">{{ question }}
+  <div class="question" id="{{ content_urlname }}">{{ question|safe }}
     <form name="task_form" id="task_form" class="task" method="POST" onSubmit="validateAnswer(event);return false;" enctype="multipart/form-data" >
       {% csrf_token %}
       {% if tasktype == "radiobutton" %}

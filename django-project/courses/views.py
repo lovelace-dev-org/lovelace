@@ -26,6 +26,7 @@ from pygments.formatters import HtmlFormatter
 from courses.models import *
 
 import content_parser
+import blockparser
 import filecheck_client
 import graph_builder
 
@@ -548,6 +549,11 @@ def content(request, training_name, content_name, **kwargs):
     else:
         task_evaluation = None
 
+    try:
+        question = blockparser.parseblock(question)
+    except TypeError: # It was NoneType
+        pass
+
     emb_tasktype = None
     contains_embedded_task = False
 
@@ -604,6 +610,11 @@ def content(request, training_name, content_name, **kwargs):
                     emb_task_evaluation = get_user_task_info(request.user, embedded_content, emb_tasktype)
                 else:
                     emb_task_evaluation = None
+
+                try:
+                    emb_question = blockparser.parseblock(emb_question)
+                except TypeError: # It was NoneType
+                    pass
 
                 emb_t = loader.get_template("courses/task.html")
                 emb_c = RequestContext(request, {
