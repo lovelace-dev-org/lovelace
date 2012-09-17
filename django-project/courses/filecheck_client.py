@@ -99,6 +99,8 @@ def check_file_answer(task, files={}, answer=None):
         
     if references:
         results = bjsonrpc_client.call.checkWithReference(codefiles, references, tests)
+        bjsonrpc_client.close()
+
         for test_name, test_result in results["reference"].iteritems():
             test_result["outputs"] = [base64.b64decode(output) for output in test_result["outputs"]]
             test_result["errors"] = [base64.b64decode(error) for error in test_result["errors"]]
@@ -108,6 +110,7 @@ def check_file_answer(task, files={}, answer=None):
                 test_result["inputfiles"][input_file_name] = base64.b64decode(input_file_contents)
     else:
         results = bjsonrpc_client.call.checkWithOutput(codefiles, tests)
+        bjsonrpc_client.close()
         results["expected"] = expected
 
     for test_name, test_result in results["student"].iteritems():
