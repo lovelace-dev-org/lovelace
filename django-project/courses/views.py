@@ -11,6 +11,7 @@ import random
 import difflib
 import datetime
 import mimetypes
+from cgi import escape
 
 from django.http import HttpResponse, HttpResponseNotFound, Http404
 from django.template import Context, RequestContext, loader
@@ -550,8 +551,10 @@ def content(request, training_name, content_name, **kwargs):
         task_evaluation = None
 
     try:
-        question = blockparser.parseblock(question)
+        question = blockparser.parseblock(escape(question))
     except TypeError: # It was NoneType
+        pass
+    except AttributeError: # It was NoneType
         pass
 
     emb_tasktype = None
@@ -612,8 +615,10 @@ def content(request, training_name, content_name, **kwargs):
                     emb_task_evaluation = None
 
                 try:
-                    emb_question = blockparser.parseblock(emb_question)
+                    emb_question = blockparser.parseblock(escape(emb_question))
                 except TypeError: # It was NoneType
+                    pass
+                except AttributeError: # It was NoneType
                     pass
 
                 emb_t = loader.get_template("courses/task.html")
@@ -773,6 +778,7 @@ def stats(request, task_name):
     checkbox_answers = radiobutton_answers = textfield_answers = file_answers = None
     textfield_answers_count = textfield_final = None
     file_answers = file_answers_count = file_user_count = file_correctly_by = None
+    radiobutton_answers_count = radiobutton_final = None
     content_page = ContentPage.objects.get(url_name=task_name)
     tasktype, question, choices, answers = get_task_info(content_page)
 

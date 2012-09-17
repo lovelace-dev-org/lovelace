@@ -9,6 +9,7 @@ import difflib
 import datetime
 import base64
 import pipes
+from cgi import escape
 
 from courses.models import FileTaskTest, FileTaskTestCommand, FileTaskTestExpectedOutput, FileTaskTestExpectedError, FileTaskTestIncludeFile
 from courses.models import FileTaskReturnFile
@@ -128,17 +129,17 @@ def html(results):
     reference = None
     for test_name, test_result in results["student"].iteritems():
         # TODO: Use templates instead!
-        diff_tables += "<h2>Test: %s</h2>" % (str(test_name.decode("utf-8")))
+        diff_tables += "<h2>Test: %s</h2>" % (escape(str(test_name.decode("utf-8"))))
         if "reference" in results.keys():
             reference = results["reference"][test_name]
         elif "expected" in results.keys():
             expected = results["expected"][test_name]
 
         if test_result["input"]:
-            diff_tables += "<h3>Input:</h3>\n<pre class=\"normal\">%s</pre>" % (str(test_result["input"].decode("utf-8")))
+            diff_tables += "<h3>Input:</h3>\n<pre class=\"normal\">%s</pre>" % (escape(str(test_result["input"].decode("utf-8"))))
         if test_result["inputfiles"]:
             for inputfile, contents in test_result["inputfiles"].iteritems():
-                diff_tables += "<h3>Input file: %s</h3>\n<pre class=\"normal\">%s</pre>" % (str(inputfile.decode("utf-8")), contents)
+                diff_tables += "<h3>Input file: %s</h3>\n<pre class=\"normal\">%s</pre>" % (escape(str(inputfile.decode("utf-8"))), escape(contents))
 
         for i, cmd in enumerate(test_result["cmds"]):
             diff_tables += "<h3>Command: <span class=\"command\">%s</span></h3>" % (str(" ".join(pipes.quote(s) for s in cmd[0]).decode("utf-8")))    #(cmd[0])
