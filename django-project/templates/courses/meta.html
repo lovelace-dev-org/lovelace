@@ -31,7 +31,7 @@
     </script>-->
   {% endif %}
 
-  {% if tasktype or emb_tasktype %}
+  {% if tasktype or emb_tasktype or contains_embedded_task %}
     <script type="text/javascript" src="{{ STATIC_URL }}task.js" charset="UTF-8"></script>
   {% endif %}
   

@@ -549,6 +549,7 @@ def content(request, training_name, content_name, **kwargs):
         task_evaluation = None
 
     emb_tasktype = None
+    contains_embedded_task = False
 
     navurls = [NavURL(reverse('courses.views.index'), "Training home"), # Courses
                NavURL(reverse('courses.views.training', kwargs={"training_name":training_name}), training_name),
@@ -596,6 +597,9 @@ def content(request, training_name, content_name, **kwargs):
                     rendered_em_content += emline
                 
                 emb_tasktype, emb_question, emb_choices, emb_answers = get_task_info(embedded_content)
+                if emb_tasktype:
+                    contains_embedded_task = True
+
                 if request.user.is_authenticated():
                     emb_task_evaluation = get_user_task_info(request.user, embedded_content, emb_tasktype)
                 else:
@@ -621,6 +625,7 @@ def content(request, training_name, content_name, **kwargs):
     
     c = RequestContext(request, {
         'embedded_task': False,
+        'contains_embedded_task': contains_embedded_task,
         'training': selected_course,
         'content': rendered_content,
         'content_name': content.name,
