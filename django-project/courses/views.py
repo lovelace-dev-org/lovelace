@@ -11,6 +11,7 @@ import random
 import difflib
 import datetime
 import mimetypes
+from cgi import escape
 
 from django.http import HttpResponse, HttpResponseNotFound, Http404
 from django.template import Context, RequestContext, loader
@@ -26,6 +27,7 @@ from pygments.formatters import HtmlFormatter
 from courses.models import *
 
 import content_parser
+import blockparser
 import filecheck_client
 import graph_builder
 
@@ -548,7 +550,15 @@ def content(request, training_name, content_name, **kwargs):
     else:
         task_evaluation = None
 
+    try:
+        question = blockparser.parseblock(escape(question))
+    except TypeError: # It was NoneType
+        pass
+    except AttributeError: # It was NoneType
+        pass
+
     emb_tasktype = None
+    contains_embedded_task = False
 
     navurls = [NavURL(reverse('courses.views.index'), "Training home"), # Courses
                NavURL(reverse('courses.views.training', kwargs={"training_name":training_name}), training_name),
@@ -596,10 +606,20 @@ def content(request, training_name, content_name, **kwargs):
                     rendered_em_content += emline
                 
                 emb_tasktype, emb_question, emb_choices, emb_answers = get_task_info(embedded_content)
+                if emb_tasktype:
+                    contains_embedded_task = True
+
                 if request.user.is_authenticated():
                     emb_task_evaluation = get_user_task_info(request.user, embedded_content, emb_tasktype)
                 else:
                     emb_task_evaluation = None
+
+                try:
+                    emb_question = blockparser.parseblock(escape(emb_question))
+                except TypeError: # It was NoneType
+                    pass
+                except AttributeError: # It was NoneType
+                    pass
 
                 emb_t = loader.get_template("courses/task.html")
                 emb_c = RequestContext(request, {
@@ -621,6 +641,7 @@ def content(request, training_name, content_name, **kwargs):
     
     c = RequestContext(request, {
         'embedded_task': False,
+        'contains_embedded_task': contains_embedded_task,
         'training': selected_course,
         'content': rendered_content,
         'content_name': content.name,
@@ -757,6 +778,7 @@ def stats(request, task_name):
     checkbox_answers = radiobutton_answers = textfield_answers = file_answers = None
     textfield_answers_count = textfield_final = None
     file_answers = file_answers_count = file_user_count = file_correctly_by = None
+    radiobutton_answers_count = radiobutton_final = None
     content_page = ContentPage.objects.get(url_name=task_name)
     tasktype, question, choices, answers = get_task_info(content_page)
 
@@ -764,6 +786,13 @@ def stats(request, task_name):
         checkbox_answers = UserCheckboxTaskAnswer.objects.filter(task=content_page)
     elif tasktype == "radiobutton":
         radiobutton_answers = UserRadiobuttonTaskAnswer.objects.filter(task=content_page)
+        radiobutton_answers_count = radiobutton_answers.count()
+        radiobutton_selected_answers = list(radiobutton_answers.values_list("chosen_answer", flat=True))
+        radiobutton_set = set(radiobutton_selected_answers)
+        radiobutton_final = []
+        for answer in radiobutton_set:
+            answer_choice = RadiobuttonTaskAnswer.objects.get(id=answer)
+            radiobutton_final.append((answer_choice.answer, radiobutton_selected_answers.count(answer), answer_choice.correct))
     elif tasktype == "textfield":
         textfield_answers = list(UserTextfieldTaskAnswer.objects.filter(task=content_page).values_list("given_answer", flat=True))
         textfield_answers_count = len(textfield_answers)
@@ -791,7 +820,10 @@ def stats(request, task_name):
         "choices": choices,
         "answers": answers,
         "checkbox_answers": checkbox_answers,
+
         "radiobutton_answers": radiobutton_answers,
+        "radiobutton_answers_count": radiobutton_answers_count,
+        "radiobutton_final": radiobutton_final,
 
         "textfield_answers": textfield_answers,
         "textfield_answers_count": textfield_answers_count,
