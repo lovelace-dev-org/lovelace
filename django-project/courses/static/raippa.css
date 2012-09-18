@@ -179,12 +179,15 @@ nav.breadcrumb {
 section.page_content {
     top: 0px;
     background: #fff;
-    margin-left: 90px;
-    margin-right: 40px;
+    margin-left: auto;
+    margin-right: auto;
     margin-top: 0;
     font-family: arial;
-    font-size: 14px;
+    font-size: 15px;
+    line-height: 120%;
     padding-bottom: 32px; /* Size of footer */
+    width: 60%;
+    
 }
 
     section.page_content h1, section.page_content h2, section.page_content h3, section.page_content h4, section.page_content h5, section.page_content h6 {
@@ -311,6 +314,7 @@ section.page_content {
         }
 
         section.page_content form.task {
+	    width: 100%;
         }
 
 	section.page_content pre.normal {
@@ -336,7 +340,7 @@ section.page_content {
             /*float: right;
             display: inline;
             clear: both;*/
-            width: 75%;
+            width: 100%;
             background: #bfb;
             padding: 5px;
             margin-bottom: 10px;
@@ -441,7 +445,7 @@ section.page_content {
         border: 2px solid rgb(127,127,127);
         border-radius: 0px 15px 0px 15px;
         background: #b6ffb6;
-        width: 800px;
+        width: 100%;
     }
         section.page_content div.admin_tools h1 {
             font-size: 16px;
