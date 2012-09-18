@@ -568,7 +568,7 @@ def content(request, training_name, content_name, **kwargs):
     unparsed_content = re.split(r"\r\n|\r|\n", content.content)
 
     parser = content_parser.ContentParser(iter(unparsed_content))
-    parser.set_fileroot(kwargs["media_root"])
+    parser.set_fileroot(kwargs["raippa_root"])
     parser.set_mediaurl(kwargs["media_url"])
     parser.set_coursename(training_name)
     for line in parser.parse():

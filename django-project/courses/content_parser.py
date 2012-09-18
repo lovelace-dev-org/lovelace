@@ -164,7 +164,7 @@ class ContentParser(object):
 
     def block_codefile(self, block, settings):
         #fp = os.path.join("/local", "django", "raippa_ng", "courses")
-        fp = os.path.join("/home", "mdf", "raippa_ng_2012-06-12", "courses")
+        fp = os.path.join(self.fileroot, "courses")
         fpb = os.path.join(fp, "codefile-normal-begin.html")
         fpe = os.path.join(fp, "codefile-normal-end.html")
         codefile_normal_begin = codecs.open(fpb, "r", "utf-8").read().strip()
