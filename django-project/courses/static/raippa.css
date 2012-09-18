@@ -187,9 +187,7 @@ section.page_content {
     line-height: 120%;
     padding-bottom: 32px; /* Size of footer */
     width: 60%;
-    
 }
-
     section.page_content h1, section.page_content h2, section.page_content h3, section.page_content h4, section.page_content h5, section.page_content h6 {
         font-family: "Trebuchet MS", "Helvetica", sans-serif;
         font-weight: normal;
@@ -199,6 +197,8 @@ section.page_content {
     section.page_content h1 {
         font-size: 24.0px;
         margin-top: 1em;
+	margin-left: -25px;
+	padding-bottom: 2px;
         border-bottom: 1px solid #888;
         text-shadow: rgba(127, 127, 127, 63) 1px 1px 1px;
         /*text-decoration: underline;*/
@@ -206,6 +206,7 @@ section.page_content {
     section.page_content h2 {
         font-size: 22px;
         margin-top: 24px;
+	margin-left: -15px;
         text-shadow: rgba(127, 127, 127, 63) 1px 1px 1px;
     }
     section.page_content h3 {
@@ -343,6 +344,15 @@ section.page_content {
             padding: 5px;
             margin-bottom: 10px;
         }
+
+ 	section.page_content div.embedded_task h1 {
+	    margin-left: 0px;
+	}
+
+ 	section.page_content div.embedded_task h2 {
+	    margin-left: 0px;
+	}
+
 
         section.page_content div.question {
             margin-bottom: 48px;
