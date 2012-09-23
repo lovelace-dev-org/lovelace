@@ -1,53 +1,67 @@
 {% extends "admin/change_form.html" %}
 
 {% block after_related_objects %}
-  <p>
-{% autoescape on %}
 
-<h2>Editing instructions>
-<table>
-<tr>
-<td>
-<h1>= Top level header=</h1>
-<h2>== 2nd level header ==</h2>
-<h3>=== 3rd level header ===</h3>
-<h4>==== etc. ====</h4>
-</td>
-<td>
--- horisontal line<p>
+<div>
+  <h2>Editing instructions</h2>
+  <table>
+    <tr>
+      <td>
+        <h3>Headings</h3>
+        = Heading 1 =<br/>
+        == Heading 2 ==<br/>
+        === Heading 3 ===<br/>
+        ==== Heading 4 ====<br/>
+        ===== Heading 5 =====<br/>
+        ====== Heading 6 ======<br/><br/>
 
-{ {image:picture name}} link one of the pictures here<br>
-{ {video:videon name }} link one of the videos here<br>
-{ { {!file name}}} embed a code file to this page<br>
+        <h3>Tables</h3>
+        ||!Cell heading||!Another cell heading||<br/>
+        ||Normal cell||Another normal cell||<br/><br/>
+      </td>
+      <td>
+        <h3>Embedded content</h3>
+        {% templatetag openbrace %}{% templatetag openbrace %}image:picture name{% templatetag closebrace %}{% templatetag closebrace %} an embedded picture<br/>
+        {% templatetag openbrace %}{% templatetag openbrace %}video:video name{% templatetag closebrace %}{% templatetag closebrace %} an embedded video<br/>
+        {% templatetag openbrace %}{% templatetag openbrace %}{% templatetag openbrace %}!file name{% templatetag closebrace %}{% templatetag closebrace %}{% templatetag closebrace %} an embedded code file<br/>
+        [[[page_name]]] an embedded page, such as a task<br/><br/>
 
-[[[page name]]] an embedded content, such as a task<p>
+        <h3>Lists</h3>
+        * unordered list item<br/>
+        ** 2nd level unordered list item<br/>
+        *** etc.<br/><br/>
 
-* list item <br>
-** 2nd level list item<br>
-*** etc.<br>
-<p>
-# numbered list item.<br>
-## etc.<br>
-### etc.<br>
-</td><td>
- { { {<br>
-preformatted text<br>
-}}}<br>
-<p>
- { { {#!python<br>
-python colour-coded text<br>
-}}}<br>
-<p>
-[[http://www.google.com|Google]] link<br>
-'''bold'''<br>
-''italics''<br>
-!!!highlighted text!!!<br>
-{ { {preformatted text}}}<br>
-{ { {#!python python syntax highlight}}}<br>
-</td></tr></table>
-{% endautoescape %}
-</p>
+        # ordered list item.<br/>
+        ## 2nd level ordered list item<br/>
+        ### etc.<br/><br/>
+      </td>
+      <td>
+        <h3>Preformatted text blocks</h3>
+        {% templatetag openbrace %}{% templatetag openbrace %}{% templatetag openbrace %}<br/>
+        normal preformatted text block<br/>
+        {% templatetag closebrace %}{% templatetag closebrace %}{% templatetag closebrace %}<br/><br/>
 
+        {% templatetag openbrace %}{% templatetag openbrace %}{% templatetag openbrace %}#!python<br/>
+        Python syntax highlighted preformatted text block<br/>
+        {% templatetag closebrace %}{% templatetag closebrace %}{% templatetag closebrace %}<br/><br/>
+
+        (Also try pythonconsole, pythontraceback and c instead of python!)
+
+        <h3>Miscellaneous</h3>
+        -- horisontal line<br/><br/>
+      </td>
+      <td>
+        <h3>Inline formatting markup</h3>
+        [[http://www.google.com|Google]] link<br/>
+        '''bold'''<br/>
+        ''italics''<br/>
+        !!!highlighted text!!!<br/>
+        {% templatetag openbrace %}{% templatetag openbrace %}{% templatetag openbrace %}preformatted text{% templatetag closebrace %}{% templatetag closebrace %}{% templatetag closebrace %}<br/>
+        {% templatetag openbrace %}{% templatetag openbrace %}{% templatetag openbrace %}#!python python syntax highlight{% templatetag closebrace %}{% templatetag closebrace %}{% templatetag closebrace %}<br/>
+      </td>
+    </tr>
+  </table>
+</div>
 
 {% endblock %}
 
