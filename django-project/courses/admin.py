@@ -4,6 +4,9 @@ from django.contrib import admin
 from django.contrib.auth.models import User
 from django.contrib.auth.admin import UserAdmin
 
+from django.db import models
+from django.forms import TextInput, Textarea
+
 ## User profiles
 # http://stackoverflow.com/questions/4565814/django-user-userprofile-and-admin
 admin.site.unregister(User)
@@ -77,20 +80,40 @@ class FileTaskTestCommandAdmin(admin.TabularInline):
     model = FileTaskTestCommand
     extra = 1
 
+    def formfield_for_dbfield(self, db_field, **kwargs):
+        formfield = super(FileTaskTestCommandAdmin, self).formfield_for_dbfield(db_field, **kwargs)
+        if db_field.name == 'command_line':
+            formfield.widget = TextInput(attrs={'size':120})
+        return formfield
+
 class FileTaskTestExpectedOutputAdmin(admin.StackedInline):
     model = FileTaskTestExpectedOutput
     extra = 0
+    fields = (('expected_answer', 'hint'), 'correct', 'regexp', 'videohint')
 
 class FileTaskTestExpectedErrorAdmin(admin.StackedInline):
     model = FileTaskTestExpectedError
     extra = 0
+    fields = (('expected_answer', 'hint'), 'correct', 'regexp', 'videohint')
 
 class FileTaskTestIncludeFileAdmin(admin.StackedInline):
     model = FileTaskTestIncludeFile
     extra = 0
+    fieldsets = (
+        ('General information', {
+            'fields': ('name', 'purpose', 'fileinfo')
+        }),
+        ('UNIX permissions', {
+            'classes': ('collapse',),
+            'fields': ('chown_settings', 'chgrp_settings', 'chmod_settings')
+        }),
+    )
 
 class FileTaskTestAdmin(admin.ModelAdmin):
     inlines = [FileTaskTestCommandAdmin, FileTaskTestExpectedOutputAdmin, FileTaskTestExpectedErrorAdmin, FileTaskTestIncludeFileAdmin]
+
+#class FileTaskTestAdmin(admin.StackedInline):
+#    inlines = [FileTaskTestCommandAdmin, FileTaskTestExpectedOutputAdmin, FileTaskTestExpectedErrorAdmin, FileTaskTestIncludeFileAdmin]
 
 class FileTaskAdmin(admin.ModelAdmin):
     fieldsets = [
@@ -99,8 +122,18 @@ class FileTaskAdmin(admin.ModelAdmin):
                                 'classes': ['wide']}),
         ('Feedback settings',  {'fields': ['feedback_questions']}),
     ]
+    #inlines = [FileTaskTestAdmin]
 
-admin.site.register(LecturePage)
+class LecturePageAdmin(admin.ModelAdmin):
+    def formfield_for_dbfield(self, db_field, **kwargs):
+        formfield = super(LecturePageAdmin, self).formfield_for_dbfield(db_field, **kwargs)
+        if db_field.name == 'content':
+            formfield.widget = Textarea(attrs={'rows':25, 'cols':120})
+        elif db_field.name == 'tags':
+            formfield.widget = Textarea(attrs={'rows':2})
+        return formfield
+
+admin.site.register(LecturePage, LecturePageAdmin)
 admin.site.register(RadiobuttonTask, RadiobuttonTaskAdmin)
 admin.site.register(CheckboxTask, CheckboxTaskAdmin)
 admin.site.register(TextfieldTask, TextfieldTaskAdmin)

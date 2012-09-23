@@ -256,7 +256,10 @@ class FileTaskTestCommand(models.Model):
     """A command that shall be executed on the test machine."""
     test = models.ForeignKey(FileTaskTest)
     command_line = models.CharField(max_length=500)
-    main_command = models.BooleanField() # Is this the command which the inputs are entered into and signals are fired at?
+    main_command = models.BooleanField('Command which receives the specified input') # The command which the inputs are entered into and signals are fired at?
+
+    def __unicode__(self):
+        return u"%s" % (self.command_line)
 
 class FileTaskTestExpectedOutput(models.Model):
     """What kind of output is expected from the program's stdout?"""
@@ -285,7 +288,7 @@ def get_testfile_path(instance, filename):
 class FileTaskTestIncludeFile(models.Model):
     """File which an admin can include to the test. For example, a reference program, expected output file or input file for the program."""
     test = models.ForeignKey(FileTaskTest)
-    name = models.CharField(max_length=200)
+    name = models.CharField('File name during test',max_length=200)
 
     FILE_PURPOSE_CHOICES = (
         ('Files given to the program for reading', (
@@ -307,13 +310,16 @@ class FileTaskTestIncludeFile(models.Model):
 
     FILE_OWNERSHIP_CHOICES = (
         ('OWNED', "Owned by the tested program"),
-        ('NOT_OWNED', "Now owned by the tested program"),
+        ('NOT_OWNED', "Not owned by the tested program"),
     )
     chown_settings = models.CharField('File user ownership',max_length=10,default="OWNED",choices=FILE_OWNERSHIP_CHOICES)
     chgrp_settings = models.CharField('File group ownership',max_length=10,default="OWNED",choices=FILE_OWNERSHIP_CHOICES)
     chmod_settings = models.CharField('File access mode',max_length=10,default="rw-rw-rw-") # TODO: Create validator and own field type
 
     fileinfo = models.FileField(upload_to=get_testfile_path)
+
+    def __unicode__(self):
+        return u"%s - %s" % (self.purpose, self.name)
 
 # TODO: Create a superclass for task answers
 ## Answer models
