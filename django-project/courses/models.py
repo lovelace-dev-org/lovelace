@@ -261,6 +261,10 @@ class FileTaskTestCommand(models.Model):
     def __unicode__(self):
         return u"%s" % (self.command_line)
 
+    class Meta:
+        verbose_name = "UNIX command to run for the test"
+        verbose_name_plural = "UNIX commands to run for the test"
+
 class FileTaskTestExpectedOutput(models.Model):
     """What kind of output is expected from the program's stdout?"""
     test = models.ForeignKey(FileTaskTest)
@@ -270,6 +274,9 @@ class FileTaskTestExpectedOutput(models.Model):
     hint = models.TextField(blank=True)
     videohint = models.ForeignKey(Video,blank=True,null=True)
 
+    class Meta:
+        verbose_name = "expected output"
+
 class FileTaskTestExpectedError(models.Model):
     """What kind of output is expected from the program's stderr?"""
     test = models.ForeignKey(FileTaskTest)
@@ -278,6 +285,9 @@ class FileTaskTestExpectedError(models.Model):
     expected_answer = models.TextField(blank=True)
     hint = models.TextField(blank=True)
     videohint = models.ForeignKey(Video,blank=True,null=True)
+
+    class Meta:
+        verbose_name = "expected error"
 
 def get_testfile_path(instance, filename):
     return os.path.join(
@@ -320,6 +330,9 @@ class FileTaskTestIncludeFile(models.Model):
 
     def __unicode__(self):
         return u"%s - %s" % (self.purpose, self.name)
+
+    class Meta:
+        verbose_name = "included file"
 
 # TODO: Create a superclass for task answers
 ## Answer models
