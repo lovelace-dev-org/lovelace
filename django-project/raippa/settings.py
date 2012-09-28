@@ -1,8 +1,9 @@
 # Django settings for raippa project.
+import os
 
 DEBUG = True # Use True when viewing through web browser
 TEMPLATE_DEBUG = DEBUG
-RAIPPA_ROOT = "/home/mdf/raippa_ng/django-project/"
+RAIPPA_ROOT = os.path.split(os.path.dirname(os.path.realpath(__file__)))[0] + "/"
 #RAIPPA_ROOT = "/local/django/raippa_ng/"
 
 ADMINS = (
