@@ -178,7 +178,7 @@ class ContentParser(object):
             yield codefile_normal_end
     def settings_codefile(self, matchobj):
         filename = escape(matchobj.group("filename"))
-        fileurl = "%s%s" % (self.mediaurl, filename)
+        fileurl = "%sfiles/%s" % (self.mediaurl, filename)
  
         settings = {"filename" : filename, "fileurl" : fileurl}
         return settings

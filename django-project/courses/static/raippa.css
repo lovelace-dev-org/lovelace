@@ -335,13 +335,10 @@ section.page_content {
         }
         
         section.page_content div.embedded_task {
-            border: 1px solid grey;
-            /*float: right;
-            display: inline;
-            clear: both;*/
+            border: 1px solid #ebebeb;
             width: 100%;
-            background: #bfb;
-            padding: 5px;
+            background: #daffda;
+            padding: 10px;
             margin-bottom: 10px;
         }
 
@@ -355,15 +352,27 @@ section.page_content {
 
 
         section.page_content div.question {
-            margin-bottom: 48px;
+            margin-bottom: 16px;
         }
 
         section.page_content div.question form {
-            padding: 8px;
-            border: 2px solid rgb(127,127,127);
+            margin-top: 5px;
+            padding: 9px;
+            border: 2px solid rgb(224,224,224);
             border-radius: 0px 15px 0px 15px;
             background: #eeffee;
         }
+
+            section.page_content div.question form div.answered_status {
+                display: inline;
+            }
+
+            div.answered_status span.correct {
+                color: green;
+            }
+            div.answered_status span.incorrect {
+                color: red;
+            }
 
        section.page_content div.auth_warning {
             font-weight: bold;
@@ -447,12 +456,12 @@ section.page_content {
         }
     
     section.page_content div.admin_tools {
-        margin-top: 64px;
-        margin-bottom: 16px;
-        padding: 8px;
-        border: 2px solid rgb(127,127,127);
+        margin-top: 32px;
+        margin-bottom: 10px;
+        padding: 9px;
+        border: 2px solid rgb(224,224,224);
         border-radius: 0px 15px 0px 15px;
-        background: #b6ffb6;
+        background: #eeffee;
         width: 100%;
     }
         section.page_content div.admin_tools h1 {

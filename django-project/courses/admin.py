@@ -43,7 +43,7 @@ class RadiobuttonTaskAnswerInline(admin.TabularInline):
 
 class RadiobuttonTaskAdmin(admin.ModelAdmin):
     fieldsets = [
-        ('Page information',   {'fields': ['name', 'content', 'question', 'tags']}),
+        ('Page information',   {'fields': ['name', 'content', 'question', 'tags'],}),
         ('Task miscellaneous', {'fields': ['maxpoints', 'require_correct_embedded_tasks'],
                                 'classes': ['wide']}),
         ('Feedback settings',  {'fields': ['feedback_questions']}),
@@ -110,7 +110,17 @@ class FileTaskTestIncludeFileAdmin(admin.StackedInline):
     )
 
 class FileTaskTestAdmin(admin.ModelAdmin):
+    fieldsets = (
+        ('General settings', {
+            'fields': ('task', 'name', 'inputs')
+        }),
+        ('Advanced settings', {
+            'classes': ('collapse',),
+            'fields': ('timeout', 'signals', 'retval')
+        }),
+    )
     inlines = [FileTaskTestCommandAdmin, FileTaskTestExpectedOutputAdmin, FileTaskTestExpectedErrorAdmin, FileTaskTestIncludeFileAdmin]
+    list_display = ("name", "task",)
 
 #class FileTaskTestAdmin(admin.StackedInline):
 #    inlines = [FileTaskTestCommandAdmin, FileTaskTestExpectedOutputAdmin, FileTaskTestExpectedErrorAdmin, FileTaskTestIncludeFileAdmin]
