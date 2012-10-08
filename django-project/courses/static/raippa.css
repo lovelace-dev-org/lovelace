@@ -391,7 +391,7 @@ section.page_content {
 
         section.page_content div#result {
             width: 100%;
-            margin-left: 32px;
+            /*padding-left: 32px;*/
         }
 
         section.page_content pre {
@@ -431,12 +431,32 @@ section.page_content {
             font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
         }
 
+        section.page_content div#result table {
+            table-layout: fixed;
+            width: 100%;
+        }
+
+        section.page_content div#result table colgroup.student col.lnum {
+            width: 20px;
+        }
+        section.page_content div#result table colgroup.student {
+            width: 50%;
+        }
+        section.page_content div#result table colgroup.expected col.lnum {
+            width: 20px;
+        }
+        section.page_content div#result table colgroup.expected {
+            width: 50%;
+        }
+
         section.page_content div#result table th {
             background: #ccc;
         }
 
         section.page_content div#result table td {
-            white-space: pre;
+            white-space: pre-wrap;
+            overflow-x: hidden;
+            word-wrap: break-word;
             font-weight: normal;
             font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
         }
@@ -450,7 +470,7 @@ section.page_content {
         }
 
         section.page_content div#result table th.diff_header {
-            width: 500px;
+            /*width: 500px;*/
         }
 
         section.page_content div#result table span.diff_sub {

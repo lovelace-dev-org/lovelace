@@ -95,7 +95,7 @@ def check_file_answer(task, files={}, answer=None):
         codefiles[name] = base64.b64encode(contents)
 
     # Send the tests and files to the checking server and receive the results
-    bjsonrpc_client = bjsonrpc.connect(host='10.10.110.66', port=10123)
+    bjsonrpc_client = bjsonrpc.connect(host='10.0.0.10', port=10123)
         
     if references:
         results = bjsonrpc_client.call.checkWithReference(codefiles, references, tests)
@@ -127,25 +127,28 @@ def check_file_answer(task, files={}, answer=None):
     return results
 
 def html(results):
-    diff_tables = "<h1>Test results</h1>"
+    colgroup_old = "<colgroup></colgroup> <colgroup></colgroup> <colgroup></colgroup>\n        <colgroup></colgroup> <colgroup></colgroup> <colgroup></colgroup>"
+    colgroup_new = '''<colgroup class="student"><col class="lnum" span="2" /><col class="content" />
+</colgroup><colgroup class="expected"><col class="lnum" span="2"><col class="content" /></colgroup>'''
+    diff_tables = "<h1>Test results</h1>\n"
     expected = None
     reference = None
     for test_name, test_result in results["student"].iteritems():
         # TODO: Use templates instead!
-        diff_tables += "<h2>Test: %s</h2>" % (escape(str(test_name.decode("utf-8"))))
+        diff_tables += "<h2>Test: %s</h2>\n" % (escape(str(test_name.decode("utf-8"))))
         if "reference" in results.keys():
             reference = results["reference"][test_name]
         elif "expected" in results.keys():
             expected = results["expected"][test_name]
 
         if test_result["input"]:
-            diff_tables += "<h3>Input:</h3>\n<pre class=\"normal\">%s</pre>" % (escape(str(test_result["input"].decode("utf-8"))))
+            diff_tables += "<h3>Input:</h3>\n<pre class=\"normal\">%s</pre>\n" % (escape(str(test_result["input"].decode("utf-8"))))
         if test_result["inputfiles"]:
             for inputfile, contents in test_result["inputfiles"].iteritems():
-                diff_tables += "<h3>Input file: %s</h3>\n<pre class=\"normal\">%s</pre>" % (escape(str(inputfile.decode("utf-8"))), escape(contents))
+                diff_tables += "<h3>Input file: %s</h3>\n<pre class=\"normal\">%s</pre>\n" % (escape(str(inputfile.decode("utf-8"))), escape(contents))
 
         for i, cmd in enumerate(test_result["cmds"]):
-            diff_tables += "<h3>Command: <span class=\"command\">%s</span></h3>" % (str(" ".join(pipes.quote(s) for s in cmd[0]).decode("utf-8")))    #(cmd[0])
+            diff_tables += "<h3>Command: <span class=\"command\">%s</span></h3>\n" % (str(" ".join(pipes.quote(s) for s in cmd[0]).decode("utf-8")))    #(cmd[0])
 
             rcv_retval = test_result["returnvalues"][i]
             rcv_output = test_result["outputs"][i].split("\n")
@@ -165,8 +168,8 @@ def html(results):
                     exp_output = [str()]
                     exp_error = [str()]
 
-            out_diff = difflib.HtmlDiff().make_table(fromlines=rcv_output,tolines=exp_output,fromdesc="Your program's output",todesc="Expected output")
-            err_diff = difflib.HtmlDiff().make_table(fromlines=rcv_error,tolines=exp_error,fromdesc="Your program's errors",todesc="Expected errors")
+            out_diff = difflib.HtmlDiff().make_table(fromlines=rcv_output,tolines=exp_output,fromdesc="Your program's output",todesc="Expected output").replace(colgroup_old, colgroup_new)
+            err_diff = difflib.HtmlDiff().make_table(fromlines=rcv_error,tolines=exp_error,fromdesc="Your program's errors",todesc="Expected errors").replace(colgroup_old, colgroup_new)
 
             diff_tables += out_diff
             diff_tables += err_diff
@@ -177,7 +180,7 @@ def html(results):
             exp_outputfiles = expected["outputfiles"]
 
         for filename, content in exp_outputfiles.iteritems():
-            diff_tables += "<h3>File: %s</h3>" % (str(filename.decode("utf-8")))
+            diff_tables += "<h3>File: %s</h3>\n" % (str(filename.decode("utf-8")))
 
             exp_content = content.split("\n")
             if filename in test_result["outputfiles"].keys():
@@ -185,7 +188,7 @@ def html(results):
             else:
                 rcv_content = [str()]
 
-            file_diff = difflib.HtmlDiff().make_table(fromlines=rcv_content,tolines=exp_content,fromdesc="Your program's output",todesc="Expected output")
+            file_diff = difflib.HtmlDiff().make_table(fromlines=rcv_content,tolines=exp_content,fromdesc="Your program's output",todesc="Expected output").replace(colgroup_old, colgroup_new)
             diff_tables += file_diff
 
     return diff_tables
