@@ -363,7 +363,7 @@ def textfield_task_check(content, user, answers, post_data):
 
     return correct, hints, comments, errors
 
-def file_task_check(content, user, files_data):
+def file_task_check(content, user, files_data, post_data):
     points = 0.0
     correct = True
     hints = []
@@ -375,8 +375,13 @@ def file_task_check(content, user, files_data):
         f_returnable.save()
         f_evaluation = Evaluation(points=points,feedback="",correct=False)
         f_evaluation.save()
+        if "collaborators" in post_data.keys():
+            collaborators = post_data["collaborators"]
+        else:
+            collaborators = None
+        print collaborators
         f_answer = UserFileTaskAnswer(task=content.taskpage.filetask, returnable=f_returnable, evaluation=f_evaluation,
-                                      user=user, answer_date=timezone.now())
+                                      user=user, answer_date=timezone.now(), collaborators=collaborators)
         f_answer.save()
 
         for entry_name, uploaded_file in files_data.iteritems():
@@ -487,7 +492,7 @@ def check_answer(request, training_name, content_name, **kwargs):
     elif answers and tasktype == "textfield":
         correct, hints, comments, errors = textfield_task_check(content, request.user, answers, request.POST)
     elif tasktype == "file":
-        correct, hints, comments, diff_table = file_task_check(content, request.user, request.FILES)
+        correct, hints, comments, diff_table = file_task_check(content, request.user, request.FILES, request.POST)
 
     # Compile the information required for the task evaluation
     if correct:

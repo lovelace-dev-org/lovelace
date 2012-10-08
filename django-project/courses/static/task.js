@@ -31,9 +31,15 @@ function validateAnswer(e, answer_check_url, task_name) {
     var cbchoices = $('div#' + task_name + ' form#task_form input.task_check'); // Checkbox
     var answer = $('div#' + task_name + ' form#task_form textarea.task_text'); //document.getElementsByName(''); // Textarea
 
-    var file_element = $('div#' + task_name + ' form#task_form input.task_file');
+    var file_element = $('div#' + task_name + ' form#task_form input[name="file"]');
     if (file_element) {
         var filename = file_element.val();
+        var collaborators = $('div#' + task_name + ' form#task_form input[name="collaborators"]');
+        if (collaborators.val()) {
+            collaborators = collaborators.val(); // encodeURIComponent(collaborators.val()).replace(/%20/g, "+");
+        } else {
+            collaborators = "";
+        }
     }
 
     var data = "csrfmiddlewaretoken=" + csrftoken;
@@ -120,6 +126,7 @@ function validateAnswer(e, answer_check_url, task_name) {
         // Use FormData to achieve the same as the manual version - works
         var form_data = new FormData();
         form_data.append("csrfmiddlewaretoken", csrftoken);
+        form_data.append("collaborators", collaborators);
         for (var filen = 0; filen < files.length; filen++) {
             form_data.append("file" + filen, files[filen]);
         }

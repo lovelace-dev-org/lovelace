@@ -16,8 +16,8 @@
       {% elif tasktype == "textfield" %}
         <textarea name="answer" class="task_text" placeholder="Enter your answer here" rows="3" cols="70"></textarea><br />
       {% elif tasktype == "file" %}
-        <!--<label for="collaborators">Done together with:</label><input type="text" name="collaborators" id="collaborators" /><br />-->
-        <input name="file" type="file" class="task_file" multiple="multiple" /><br />
+        <label for="collaborators" class="file">Collaborators:</label><input name="collaborators" type="text" size="60" class="task_file" placeholder="Who did you co-operate with?" /><br />
+        <label for="file" class="file">Submit your files here:</label><input name="file" type="file" class="task_file" multiple="multiple" /><br />
       {% endif %}
       <input type="submit" name="submit" value="Send answer" onClick="validateAnswer(event, '{{ answer_check_url }}', '{{ content_urlname }}');return false;" />
       {% if not user.is_authenticated %}
