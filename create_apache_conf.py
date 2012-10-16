@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
-    Helper script for creating the appropriate settings for Apache HTTP Server.
-    Based on https://docs.djangoproject.com/en/dev/howto/deployment/wsgi/modwsgi/
+Helper script for creating the appropriate settings for Apache HTTP Server.
+Based on https://docs.djangoproject.com/en/dev/howto/deployment/wsgi/modwsgi/
 """
 import os
 

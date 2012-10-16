@@ -1,0 +1,23 @@
+TROUBLESHOOTING
+---------------
+
+If the file uploads stop working for file names that have non-ASCII characters
+in them and Django returns a UnicodeEncodeError response tracing back to
+os.stat, you should check that your Apache configuration has UTF-8 as the file
+system encoding.
+
+(Referring to https://docs.djangoproject.com/en/1.4/howto/deployment/modpython/#if-you-get-a-unicodeencodeerror)
+
+On RHEL based distributions, edit
+    /etc/sysconfig/httpd
+and on Debian based distributions, edit
+    /etc/apache2/envvars
+
+Add the following lines to the file you edited:
+export LANG='en_US.UTF-8'
+export LC_ALL='en_US.UTF-8'
+
+and restart Apache.
+('/etc/init.d/httpd restart' seems to work if 'apachectl restart' doesn't.)
+
+
