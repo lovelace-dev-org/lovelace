@@ -315,6 +315,7 @@ def textfield_task_check(content, user, answers, post_data):
 
     # Determine, if the given answer was correct and which hints to show
     correct = True
+    correct_found = False
     hints = []
     comments = []
     errors = []
@@ -325,38 +326,42 @@ def textfield_task_check(content, user, answers, post_data):
     for answer in answers:
         if answer.regexp:
             try:
-                if re.match(answer.answer, given) and answer.correct and correct == True:
+                if re.match(answer.answer, given) and answer.correct:
                     correct = True
+                    correct_found = True
                     if answer.comment:
                         comments.append(answer.comment)
-                    break
                 elif re.match(answer.answer, given) and not answer.correct:
-                    correct = False
+                    if not correct_found:
+                        correct = False
                     if answer.hint:
                         hints.append(answer.hint)
                     if answer.comment:
                         comments.append(answer.comment)
                 elif not re.match(answer.answer, given) and answer.correct:
-                    correct = False
+                    if not correct_found:
+                        correct = False
                     if answer.hint:
                         hints.append(answer.hint)
             except sre_constants.error, e_msg:
                 errors.append("Contact staff, regexp error: " + e_msg)
                 correct = False
         else:
-            if given == answer.answer and answer.correct and correct == True:
+            if given == answer.answer and answer.correct:
                 correct = True
+                correct_found = True
                 if answer.comment:
                     comments.append(answer.comment)
-                break
             elif given == answer.answer and not answer.correct:
-                correct = False
+                if not correct_found:
+                    correct = False
                 if answer.hint:
                     hints.append(answer.hint)
                 if answer.comment:
                     comments.append(answer.comment)
             elif given != answer.answer and answer.correct:
-                correct = False
+                if not correct_found:
+                    correct = False
                 if answer.hint:
                     hints.append(answer.hint)
 
