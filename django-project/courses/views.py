@@ -344,7 +344,10 @@ def textfield_task_check(content, user, answers, post_data):
                     if answer.hint:
                         hints.append(answer.hint)
             except sre_constants.error, e_msg:
-                errors.append("Contact staff, regexp error: " + e_msg)
+                if user.is_staff:
+                    errors.append(u"Contact staff, regexp error '%s' from regexp: %s" % (e_msg.__unicode__(), answer.answer))
+                else:
+                    errors.append(u"Contact staff! Regexp error '%s' in task '%s'." % (e_msg.__unicode__(), content.name))
                 correct = False
         else:
             if given == answer.answer and answer.correct:
