@@ -230,6 +230,7 @@ def radiobutton_task_check(content, user, choices, post_data):
 
     # Determine, if the given answer was correct and which hints to show
     correct = True
+    correct_found = False
     hints = []
     comments = []
     for choice in choices:
@@ -238,10 +239,16 @@ def radiobutton_task_check(content, user, choices, post_data):
 
         if post_data[str(choice.id)] == "true" and choice.correct == True and correct == True:
             correct = True
+            correct_found = True
+            if choice.comment:
+                comments.append(choice.comment)
+        elif post_data[str(choice.id)] == "true" and choice.correct == True and correct == False:
+            correct = True
             if choice.comment:
                 comments.append(choice.comment)
         elif post_data[str(choice.id)] == "false" and choice.correct == True:
-            correct = False
+            if not correct_found:
+                correct = False
             if choice.hint:
                 hints.append(choice.hint)
         elif post_data[str(choice.id)] == "true" and choice.correct == False:
@@ -250,7 +257,6 @@ def radiobutton_task_check(content, user, choices, post_data):
                 hints.append(choice.hint)
             if choice.comment:
                 comments.append(choice.comment)
-            break
     
     # Save the results to the database, if the question was answered by a non-anonymous user
     if user.is_authenticated():
