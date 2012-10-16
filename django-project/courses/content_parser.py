@@ -188,19 +188,26 @@ class ContentParser(object):
             if settings["highlight"]:
                 yield u'<code class="%s">' % ("highlight-" + settings["highlight"])
                 lines = []
-                line = self.lines.next()
-                while not line.startswith("}}}"):
-                    lines.append(line)
+                try:
                     line = self.lines.next()
+                    print settings["highlight"]
+                    while not line.startswith("}}}"):
+                        lines.append(line)
+                        line = self.lines.next()
+                except StopIteration:
+                    lines.append(u'Warning: unclosed code block!\n')
                 code_string = u"\n".join(lines)
                 highlighted = highlight(code_string, highlighters[settings["highlight"]](), HtmlFormatter(nowrap=True))
                 yield highlighted
                 yield u'</code>'
             else:
-                line = self.lines.next()
-                while not line.startswith("}}}"):
-                    yield escape(line) + "\n"
+                try:
                     line = self.lines.next()
+                    while not line.startswith("}}}"):
+                        yield escape(line) + "\n"
+                        line = self.lines.next()
+                except StopIteration:
+                    yield u'Warning: unclosed code block!\n'
             yield u'</pre>\n'
     def settings_code(self, matchobj):
         highlight = matchobj.group("highlight")
