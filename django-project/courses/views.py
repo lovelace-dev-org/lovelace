@@ -582,27 +582,41 @@ def content(request, training_name, content_name, **kwargs):
         if include_file_re:
             # It's an embedded source code file
             if include_file_re.group("filename") == parser.get_current_filename():
-                # Read the embedded file into file_contents, then syntax highlight it, then replace the placeholder with the contents
-                file_contents = codecs.open(File.objects.get(name=include_file_re.group("filename")).fileinfo.path, "r", "utf-8").read()
-                file_contents = highlight(file_contents, PythonLexer(), HtmlFormatter(nowrap=True))
-                #file_contents = codecs.open(os.path.join(kwargs["media_root"], course_name, include_file_re.group("filename")), "r", "utf-8").read()
-                line = line.replace(include_file_re.group(0), file_contents)
+                # Read the embedded file into file_contents, then
+                # syntax highlight it, then replace the placeholder
+                # with the contents
+                try:
+                    file_contents = codecs.open(File.objects.get(name=include_file_re.group("filename")).fileinfo.path, "r", "utf-8").read()
+                except File.DoesNotExist as e:
+                    line = u'<div class="parser_warning">Warning: file %s not found!</div>' % (include_file_re.group("filename"))
+                else:
+                    file_contents = highlight(file_contents, PythonLexer(), HtmlFormatter(nowrap=True))
+                    line = line.replace(include_file_re.group(0), file_contents)
             # It's an embedded video
             elif include_file_re.group("filename") == parser.get_current_videoname():
-                video = Video.objects.get(name=parser.get_current_videoname()).link
-                line = line.replace(include_file_re.group(0), video)
+                try:
+                    video = Video.objects.get(name=parser.get_current_videoname()).link
+                except Video.DoesNotExist as e:
+                    line = u'<div class="parser_warning">Warning: video %s not found!</div>' % (include_file_re.group("filename"))
+                else:
+                    line = line.replace(include_file_re.group(0), video)
             # It's an embedded image
             elif include_file_re.group("filename") == parser.get_current_imagename():
-                image = Image.objects.get(name=parser.get_current_imagename()).fileinfo.url
-                line = line.replace(include_file_re.group(0), image)
+                try:
+                    image = Image.objects.get(name=parser.get_current_imagename()).fileinfo.url
+                except Image.DoesNotExist as e:
+                    line = u'<div class="parser_warning">Warning: image %s not found!</div>' % (include_file_re.group("filename"))
+                else:
+                    line = line.replace(include_file_re.group(0), image)
             # It's an embedded task
             elif include_file_re.group("filename") == parser.get_current_taskname():
                 print parser.get_current_taskname()
                 try:
                     embedded_content = ContentPage.objects.get(url_name=parser.get_current_taskname())
                 except ContentPage.DoesNotExist as e:
-                    embedded_content = LecturePage()
-                    embedded_content.content = u"Embedded content '%s' not found.\n" % (parser.get_current_taskname())
+                    line = u'<div class="parser_warning">Warning: embedded task %s not found!</div>' % (include_file_re.group("filename"))
+                    rendered_content += line
+                    continue
                 pages.append(embedded_content)
                 unparsed_embedded_content = re.split(r"\r\n|\r|\n", embedded_content.content)
                 embedded_parser = content_parser.ContentParser(iter(unparsed_embedded_content))
