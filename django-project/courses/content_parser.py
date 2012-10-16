@@ -34,7 +34,7 @@ class ContentParser(object):
         "table" : ur"^([|]{2}[^|]*)+[|]{2}$",
         "empty" : ur"^\s*$",
         "heading" : ur"^\s*(?P<len>[=]{1,6})[=]*\s*.+\s*(?P=len)\s*$",
-        "indent" : ur"^[ \t]+",
+        #"indent" : ur"^[ \t]+", # Indents are not supported
     }
     block_re = re.compile(ur"|".join(ur"(?P<%s>%s)" % kv for kv in sorted(block.iteritems())))
 
@@ -163,7 +163,6 @@ class ContentParser(object):
         return settings
 
     def block_codefile(self, block, settings):
-        #fp = os.path.join("/local", "django", "raippa_ng", "courses")
         fp = os.path.join(self.fileroot, "courses")
         fpb = os.path.join(fp, "codefile-normal-begin.html")
         fpe = os.path.join(fp, "codefile-normal-end.html")
