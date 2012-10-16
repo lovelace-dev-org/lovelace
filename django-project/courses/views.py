@@ -312,7 +312,10 @@ def textfield_task_check(content, user, answers, post_data):
     hints = []
     comments = []
     errors = []
-    given = post_data["answer"].replace("\r\n", "\n").replace("\n\r", "\n")
+    if "answer" in post_data.keys():
+        given = post_data["answer"].replace("\r\n", "\n").replace("\n\r", "\n")
+    else:
+        return False, [], [], ["No data sent"]
     for answer in answers:
         if answer.regexp:
             try:

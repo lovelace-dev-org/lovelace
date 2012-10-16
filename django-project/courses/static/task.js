@@ -53,8 +53,12 @@ function validateAnswer(e, answer_check_url, task_name) {
         //alert(cbchoices[i].value + "=" + cbchoices[i].checked);
         data_add += "&" + cbchoices[i].value + "=" + cbchoices[i].checked;
     }
-    if (answer.val()) {
-        data_add = "&" + "answer=" + encodeURIComponent(answer.val()).replace(/%20/g, "+");
+    if (answer.length) {
+        if (answer.val()) {
+            data_add = "&" + "answer=" + encodeURIComponent(answer.val()).replace(/%20/g, "+");
+        } else {
+            data_add = "&" + "answer=";
+        }
     }
     data += data_add;
     
