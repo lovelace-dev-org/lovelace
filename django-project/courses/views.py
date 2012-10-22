@@ -1,8 +1,9 @@
 """
 Django views.
-TODO: Heavy commenting!
-TODO: Use classes instead of bare functions to group data!
 """
+# TODO: Heavy commenting!
+# TODO: Use classes instead of bare functions to group data!
+
 import os
 import re
 import sre_constants
@@ -13,7 +14,7 @@ import datetime
 import mimetypes
 from cgi import escape
 
-from django.http import HttpResponse, HttpResponseNotFound, Http404
+from django.http import HttpResponse, HttpResponseRedirect, HttpResponseNotFound, Http404
 from django.template import Context, RequestContext, loader
 from django.core.urlresolvers import reverse
 from django.core.servers.basehttp import FileWrapper
@@ -697,6 +698,52 @@ def content(request, training_name, content_name, **kwargs):
     else:
         t = loader.get_template("courses/index.html")
         return HttpResponse(t.render(c))
+
+def user_profile_save(request):
+    """
+    Save the submitted form.
+    """
+    if not request.user.is_authenticated():
+        return HttpResponseNotFound()
+    if not request.method == "POST":
+        return HttpResponseNotFound()
+    form = request.POST
+    if not set(["first_name", "last_name", "student_id", "study_program"]).issubset(form.keys()):
+        return HttpResponseNotFound()
+
+    profile = UserProfile.objects.get(user=request.user)
+
+    request.user.first_name = form["first_name"][:30]
+    request.user.last_name = form["last_name"][:30]
+    try:
+        profile.student_id = int(form["student_id"])
+    except ValueError:
+        return HttpResponseNotFound()
+    profile.study_program = form["study_program"][:80]
+
+    profile.save()
+    request.user.save()
+    return HttpResponseRedirect('/')
+
+def user_profile(request):
+    """
+    Allow the user to change information in their profile.
+    """
+    if not request.user.is_authenticated():
+        return HttpResponseNotFound()
+
+    profile = UserProfile.objects.get(user=request.user)
+
+    t = loader.get_template("courses/userprofile.html")
+    c = RequestContext(request, {
+        'username': request.user.username,
+        'first_name': request.user.first_name,
+        'last_name': request.user.last_name,
+        'email': request.user.email,
+        'student_id': profile.student_id,
+        'study_program': profile.study_program,
+    })
+    return HttpResponse(t.render(c))
 
 def user(request, user_name):
     '''Shows user information to the requesting user. The amount of information depends on who the

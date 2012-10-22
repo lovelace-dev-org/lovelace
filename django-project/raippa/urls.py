@@ -8,7 +8,8 @@ admin.autodiscover()
 
 #courses_name = "training" # courses
 
-urlpatterns = patterns('',
+urlpatterns = patterns(
+    '',
     url(r'^$', 'courses.views.index'),
     url(r'^favicon\.ico$', 'django.views.generic.simple.redirect_to', {'url': '/static/favicon.ico'}),
 
@@ -19,8 +20,10 @@ urlpatterns = patterns('',
     url(r'^accounts/', include('registration.urls')),
     url(r'^accounts/', 'courses.views.index'),
 
-    # For viewing user information
+    # For viewing and changing user information
     url(r'^user/(?P<user_name>[^/]+)/$', 'courses.views.user'),
+    url(r'^profile/$', 'courses.views.user_profile'),
+    url(r'^profile/save/$', 'courses.views.user_profile_save'),
 
     # For viewing task statistics
     url(r'^stats/(?P<task_name>[^/]+)/$', 'courses.views.stats'),

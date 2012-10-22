@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>RAiPPA - User profile for {{ username }}</title>
+<style type="text/css">
+form {
+    width: 500px;
+}
+div > label {
+    display: inline-block;
+    clear: both;
+    width: 140px;
+}
+div > input {
+    clear: both;
+    width: 260px;
+}
+
+</style>
+</head>
+<body>
+<form action="/profile/save/" method="post">
+  {% csrf_token %}
+  <fieldset>
+    <legend>Basic information</legend>
+    <div>
+      <label for="username">Username</label>
+      <input type="text" name="username" id="username" value="{{ username }}" readonly="readonly" />
+    </div>
+    <div>
+      <label for="first_name">First name</label>
+      <input type="text" name="first_name" id="first_name" value="{{ first_name }}" />
+    </div>
+    <div>
+      <label for="last_name">Last name</label>
+      <input type="text" name="last_name" id="last_name" value="{{ last_name }}" />
+    </div>
+    <div>
+      <label for="email">E-mail</label>
+      <input type="email" name="email" id="email" value="{{ email }}" readonly="readonly" />
+    </div>
+  </fieldset>
+  <fieldset>
+    <legend>Identification</legend>
+    <div>
+      <label for="student_id">Student ID</label>
+      <input type="number" name="student_id" id="student_id" value="{{ student_id }}" placeholder="Your student ID number" />
+    </div>
+    <div>
+      <label for="study_program">Study program</label>
+      <input type="text" name="study_program" id="study_program" value="{{ study_program }}" placeholder="What field do you study" />
+    </div>
+  </fieldset>
+  <input type="submit" value="Save changes"/>
+</form>
+</body>
+</html>

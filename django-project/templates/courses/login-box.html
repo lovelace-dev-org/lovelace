@@ -16,8 +16,10 @@
         No account? <a href="/accounts/register/">Create</a> one!<br />
       {% elif user.is_staff  %}
         <a href="/admin/">Admin tools</a><br />
+        <a href="/profile/">Change your profile settings</a><br />
         Not {% firstof user.first_name user.username %}? <a href="/accounts/logout/">Log out!</a><br />
       {% else  %}
+        <a href="/profile/">Change your profile settings</a><br />
         Not {% firstof user.first_name user.username %}? <a href="/accounts/logout/">Log out!</a><br />
       {% endif %}
     </fieldset>
