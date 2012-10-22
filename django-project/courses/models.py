@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Django database models for RAiPPA courses."""
 # TODO: Refactor into multiple apps
+# TODO: Profile the app and add relevant indexes!
 
 import datetime
 import re
@@ -44,6 +45,8 @@ post_save.connect(create_user_profile, sender=User, dispatch_uid="create_user_pr
 
 # TODO: Abstract the task model to allow "an answering entity" to give the answer, be it a group or a student
 
+# TODO: Rename back to Course
+# TODO: Reintroduce the incarnation system and make it transparent to users
 class Training(models.Model):
     """A single course in the system.
 
@@ -52,7 +55,7 @@ class Training(models.Model):
     """
     name = models.CharField(max_length=200)
     frontpage = models.ForeignKey('LecturePage', blank=True,null=True)
-    contents = models.ManyToManyField('ContentGraph', blank=True,null=True)
+    contents = models.ManyToManyField('ContentGraph', blank=True,null=True) # TODO: Rethink the content graph system!
     start_date = models.DateTimeField('Date and time after which the training is available',blank=True,null=True)
     end_date = models.DateTimeField('Date and time on which the training becomes obsolete',blank=True,null=True)
     responsible = models.ManyToManyField(User,related_name="responsiblefor",blank=True,null=True)
@@ -64,6 +67,8 @@ class Training(models.Model):
 
 class ContentGraph(models.Model):
     """A node in the course tree/graph. Links content into a course."""
+    # TODO: Rethink the content graph system!
+    # TODO: Take embedded content into account!
     parentnode = models.ForeignKey('self', null=True, blank=True)
     content = models.ForeignKey('ContentPage', null=True, blank=True)
     responsible = models.ManyToManyField(User,blank=True,null=True)
@@ -82,9 +87,9 @@ def get_file_upload_path(instance, filename):
 
 class File(models.Model):
     """Metadata of an embedded or attached file that an admin has uploaded."""
-    uploader = models.ForeignKey(User)
+    uploader = models.ForeignKey(User) # TODO: Make the uploading user the default and don't allow it to change
     name = models.CharField('Name for reference in content',max_length=200,unique=True)
-    date_uploaded = models.DateTimeField('date uploaded')
+    date_uploaded = models.DateTimeField('date uploaded') # TODO: Make the current date default
     typeinfo = models.CharField(max_length=200)
     fileinfo = models.FileField(upload_to=get_file_upload_path)
 
@@ -396,6 +401,7 @@ class UserAnswer(models.Model):
     answer_date = models.DateTimeField('Date and time of when the user answered this task')
     collaborators = models.TextField('Which users was this task answered with', blank=True, null=True)
 
+# TODO: Rewrite this system to take multiple tests and all test data into account!
 class FileTaskReturnable(models.Model):
     run_time = models.TimeField()
     output = models.TextField()
