@@ -133,10 +133,10 @@ def runTest(args, input_data, input_files, code_files, signal, tempdir, timeout=
     inpath = os.path.join(tempdir, '__in__')
 
     timedout = False
-    outputs = list()
-    errors = list()
-    rvalues = list()
-    outfiles = dict()
+    outputs = []
+    errors = []
+    rvalues = []
+    outfiles = {}
     for arg, is_main_arg in args:
         # Fill the stdin file with the specified input
         with codecs.open(inpath, "w", "utf-8") as infile_w:
@@ -188,14 +188,14 @@ def runTests(code_files, tests):
     """
     tempdir = maketemp()
 
-    testResults = dict()
+    testResults = {}
     for test in tests:
         testname = test['name']
         args = [(build_arg(newarg, code_files), is_main) for newarg, is_main in test['args']]
-        unittests = dict((k, base64.b64decode(v)) for k, v in test['unittests'].iteritems())
-        inputgens = dict((k, base64.b64decode(v)) for k, v in test['inputgens'].iteritems())
+        unittests = {k: base64.b64decode(v) for k, v in test['unittests'].iteritems()}
+        inputgens = {k: base64.b64decode(v) for k, v in test['inputgens'].iteritems()}
         input_data = test['input']
-        input_files = dict((k, base64.b64decode(v)) for k, v in test['inputfiles'].iteritems())
+        input_files = {k: base64.b64decode(v) for k, v in test['inputfiles'].iteritems()}
         output_files = test['outputfiles']
         signal = test['signal']
         timeout = test['timeout']
@@ -227,15 +227,15 @@ def runTests(code_files, tests):
 
         routputs, routfiles, rerrors, rvalues, rtimedout = runTest(args, input_data, input_files, code_files, signal, tempdir, timeout)
 
-        result = dict()
+        result = {}
         result['cmds'] = args
         result['outputs'] = routputs
         result['errors'] = rerrors
-        result['unittests'] = dict((k, base64.b64encode(v)) for k, v in unittests.iteritems())
+        result['unittests'] = {k: base64.b64encode(v) for k, v in unittests.iteritems()}
         result['input'] = input_data
-        result['inputfiles'] = dict((k, base64.b64encode(v)) for k, v in input_files.iteritems())
-        result['inputgens'] = dict((k, base64.b64encode(v)) for k, v in inputgens.iteritems())
-        result['outputfiles'] = dict((k, v) for k, v in routfiles.iteritems() if k in output_files)
+        result['inputfiles'] = {k: base64.b64encode(v) for k, v in input_files.iteritems()}
+        result['inputgens'] = {k: base64.b64encode(v) for k, v in inputgens.iteritems()}
+        result['outputfiles'] = {k: v for k, v in routfiles.iteritems() if k in output_files}
         result['returnvalues'] = rvalues
         result['timedout'] = rtimedout
         testResults[testname] = result
@@ -307,8 +307,8 @@ class ConnectionHandler(BaseHandler):
         return {"student":studentResults}
 
 class Privileges:
-    _low = {"username":str(), "userid":int(), "groupid":int()}
-    _high = {"username":str(), "userid":int(), "groupid":int()}
+    _low = {"username":"", "userid":0, "groupid":0}
+    _high = {"username":"", "userid":0, "groupid":0}
 
     @staticmethod
     def set_info(todict, name, uid, gid):
