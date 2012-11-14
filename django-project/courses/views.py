@@ -397,7 +397,6 @@ def file_task_check(content, user, files_data, post_data):
             collaborators = post_data["collaborators"]
         else:
             collaborators = None
-        print collaborators
         f_answer = UserFileTaskAnswer(task=content.taskpage.filetask, returnable=f_returnable, evaluation=f_evaluation,
                                       user=user, answer_date=timezone.now(), collaborators=collaborators)
         f_answer.save()
@@ -432,7 +431,6 @@ def file_task_check(content, user, files_data, post_data):
 
         for test in results_zipped:
             for resultpair in test:
-                print resultpair
                 if resultpair[0].replace('\r\n', '\n') != resultpair[1].replace('\r\n', '\n'):
                     correct = False
 
@@ -442,9 +440,7 @@ def file_task_check(content, user, files_data, post_data):
             f_evaluation.save()
             f_answer.save()
     else:
-        print "Blaa?"
         files = {}
-        print files_data
         for rf in files_data.itervalues():
             f = ""
             for chunk in rf.chunks():
@@ -456,15 +452,28 @@ def file_task_check(content, user, files_data, post_data):
         results_zipped = []
         student_results = []
         reference_results = []
+        ref = ""
+        if "reference" in results.keys():
+            ref = "reference"
+        elif "expected" in results.keys():
+            ref = "expected"
+
         for test in results["student"].iterkeys():
-            results_zipped.append(zip(results["student"][test]["outputs"], results["reference"][test]["outputs"]))
+            # TODO: Do the output and stderr comparison here instead of below
+            results_zipped.append(zip(results["student"][test]["outputs"], results[ref][test]["outputs"]))
+            results_zipped.append(zip(results["student"][test]["errors"], results[ref][test]["errors"]))
+
+            for name, content in results[ref][test]["outputfiles"].iteritems():
+                if name not in results["student"][test]["outputfiles"].iterkeys():
+                    correct = False
+                else:
+                    if content != results["student"][test]["outputfiles"][name]:
+                        correct = False
 
         for test in results_zipped:
-            print test
             for resultpair in test:
-                if resultpair[0] != resultpair[1]:
+                if resultpair[0].replace('\r\n', '\n') != resultpair[1].replace('\r\n', '\n'):
                     correct = False
-        print results
 
     # Get a nice HTML table for the diffs
     diff_table = filecheck_client.html(results)
