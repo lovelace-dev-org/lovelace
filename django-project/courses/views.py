@@ -635,6 +635,40 @@ def content(request, training_name, content_name, **kwargs):
                     line = u'<div class="parser_warning">Warning: image %s not found!</div>' % (include_file_re.group("filename"))
                 else:
                     line = line.replace(include_file_re.group(0), image)
+            # It's an embedded calendar
+            elif include_file_re.group("filename") == parser.get_current_calendarname():
+                try:
+                    calendar = Calendar.objects.get(name=parser.get_current_calendarname())
+                    cal_dates = CalendarDate.objects.filter(calendar=calendar)
+                    cal_reservations = {}
+                    user_has_slot = False
+                    reserved_event_name = None
+                    event_users = {}
+                    for date in cal_dates:
+                        cal_reservations[date] = CalendarReservation.objects.filter(calendar_date=date)
+                        if request.user.is_authenticated():
+                            reservation_by_user = cal_reservations[date].filter(user=request.user)
+                            if reservation_by_user.count() >= 1:
+                                user_has_slot = True
+                                reserved_event_name = date.event_name
+                            if request.user.is_staff:
+                                event_user_list = list(User.objects.filter(id__in=list(cal_reservations[date].values_list('user', flat=True))))
+                                event_users[date] = event_user_list
+                        else:
+                            pass
+                except Calendar.DoesNotExist as e:
+                    line = u'<div class="parser_warning">Warning: calendar %s not found!</div>' % (include_file_re.group("filename"))
+                else:
+                    cal_t = loader.get_template("courses/calendar.html")
+                    cal_c = RequestContext(request, {
+                        'cal_id': calendar.id,
+                        'cal_reservations': cal_reservations,
+                        'event_users': event_users,
+                        'user_has_slot': user_has_slot,
+                        'reserved_event_name': reserved_event_name,
+                    })
+                    cal_rendered = cal_t.render(cal_c)
+                    line = line.replace(include_file_re.group(0), cal_rendered)
             # It's an embedded task
             elif include_file_re.group("filename") == parser.get_current_taskname():
                 print parser.get_current_taskname()
@@ -970,3 +1004,41 @@ def file_download(request, filename, **kwargs):
         return response
     except IOError:
         return HttpResponseNotFound()
+
+def calendar_post(request, calendar_id, event_id):
+    if not request.user.is_authenticated():
+        return HttpResponseNotFound()
+    if not request.method == "POST":
+        return HttpResponseNotFound()
+    form = request.POST
+
+    event_id = int(event_id)
+
+    try:
+        calendar_date = CalendarDate.objects.get(id=event_id)
+    except CalendarDate.DoesNotExist:
+        return HttpResponseNotFound("Error: the selected calendar does not exist.")
+
+    if "reserve" in form.keys():
+        # TODO: How to make this atomic?
+        reservations = CalendarReservation.objects.filter(calendar_date_id=event_id)
+        if reservations.count() >= calendar_date.reservable_slots:
+            return HttpResponse("This event is already full.")
+        user_reservations = reservations.filter(user=request.user)
+        if user_reservations.count() >= 1:
+            return HttpResponse("You have already reserved a slot in this event.")
+
+        new_reservation = CalendarReservation(calendar_date_id=event_id, user=request.user)
+        new_reservation.save()
+        # TODO: Check that we didn't overfill the event
+        return HttpResponse("Slot reserved!")
+    elif "cancel" in form.keys():
+        user_reservations = CalendarReservation.objects.filter(calendar_date_id=event_id, user=request.user)
+        if user_reservations.count() >= 1:
+            user_reservations.delete()
+            return HttpResponse("Reservation cancelled.")
+        else:
+            return HttpResponse("Reservation already cancelled.")
+    else:
+        return HttpResponseNotFound()
+

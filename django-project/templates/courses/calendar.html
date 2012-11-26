@@ -1,0 +1,43 @@
+<div class="calendar" id="calendar_{{ cal_id }}">
+  {% for event, reservations in cal_reservations.iteritems %}
+    <form id="event_{{ event.id }}">
+      {% csrf_token %}
+      <fieldset>
+        <legend>{{ event.event_name }}</legend>
+        <div class="datetime">From {{ event.start_time|date:"l, Y-m-d, H:i" }} to {{ event.end_time|date:"l, Y-m-d, H:i" }}</div>
+        <div class="description">{{ event.event_description }}</div>
+        <div class="{% if reservations|length >= event.reservable_slots %}full{% else %}free{% endif %}">Reserved/total slots: {{ reservations|length }} / {{ event.reservable_slots }}</div>
+
+        {% if user.is_staff %}
+          {% if reservations %}
+            The following users have reserved a slot:
+            {% for ievent, iusers in event_users.iteritems %}
+              {% if ievent.event_name == event.event_name %}
+                {% for iuser in iusers %}
+                  <div>{{ iuser.username }}, {{ iuser.userprofile.student_id }}</div>
+                {% endfor %}
+              {% endif %}
+            {% endfor %}
+          {% else %}
+            No reservations.
+          {% endif %}
+        {% endif %}
+
+        {% if user.is_authenticated and not user_has_slot %}
+          <div class="result"></div>
+          {% if reservations|length >= event.reservable_slots %}
+            <div><input type="submit" value="Reserve a slot" disabled="disabled" /></div>
+          {% else %}
+            <div><input type="submit" value="Reserve a slot" onClick="reserveSlot(event, '{{ cal_id }}', '{{ event.id }}');return false;"/></div>
+          {% endif %}
+      {% elif user.is_authenticated and user_has_slot and reserved_event_name == event.event_name %}
+          <div class="result">You have been reserved a slot in {{ reserved_event_name }}.</div>
+          <div><input type="submit" value="Cancel reservation" onClick="cancelSlot(event, '{{ cal_id }}', '{{ event.id }}');return false;"/></div>
+        {% else %}
+          <div><input type="submit" value="Reserve a slot" disabled="disabled" /></div>
+        {% endif %}
+      </fieldset>
+    </form>
+  {% endfor %}
+</div>
+

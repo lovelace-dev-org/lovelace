@@ -27,6 +27,7 @@ class ContentParser(object):
         "ordered_list" : ur"^\s*(?P<olist_level>[#]+)\s+",
         "separator" : ur"^\s*[-]{2}\s*$",
         "image" : ur"^[{]{2}image\:(?P<imagename>[^|]+)(\|(?P<alt>.+))?[}]{2}$",
+        "calendar" : ur"^[{]{2}calendar\:(?P<calendarname>.+)[}]{2}$",
         "video" : ur"^[{]{2}video\:(?P<videoname>.+)[}]{2}$",
         "codefile" : ur"[{]{3}\!(?P<filename>[^\s]+)\s*[}]{3}$",
         "code" : ur"^[{]{3}(\#\!(?P<highlight>%s))?\s*$" % (u"|".join(highlighters.iterkeys())),
@@ -44,6 +45,7 @@ class ContentParser(object):
         self.current_taskname = None   # If we've found an embedded task page name that has to be stored
         self.current_videoname = None  # If we've found an embedded video name that has to be stored
         self.current_imagename = None  # If we've found an embedded picture name that has to be stored
+        self.current_calendarname = None # Same but for embedded calendars
         self.list_state = []           # For the stateful ul-ol-tag representation
         self.in_table = False          # If we are currently inside a table
         self.table_header_used = False # If th tag equivalent was used
@@ -149,6 +151,17 @@ class ContentParser(object):
             pass
 
         settings = {"imagename" : imagename, "alt" : alt, "imageurl" : imageurl}
+        return settings
+
+    def block_calendar(self, block, settings):
+        yield '<div class="calendar">'
+        yield '{{ %s }}' % settings["calendarname"]
+        yield '</div>'
+    def settings_calendar(self, matchobj):
+        calendarname = escape(matchobj.group("calendarname"))
+        self.current_calendarname = calendarname
+
+        settings = {"calendarname" : calendarname}
         return settings
 
     def block_video(self, block, settings):
@@ -270,6 +283,8 @@ class ContentParser(object):
         return self.current_videoname
     def get_current_imagename(self):
         return self.current_imagename
+    def get_current_calendarname(self):
+        return self.current_calendarname
         
     def parse(self):
         for group_info, block in itertools.groupby(self.lines, self.get_line_kind):

@@ -34,6 +34,9 @@ urlpatterns = patterns(
         {'media_root': settings.MEDIA_ROOT,}
        ),
 
+    # For calendar POST requests
+    url(r'^calendar/(?P<calendar_id>\d+)/(?P<event_id>\d+)/$', 'courses.views.calendar_post'),
+
     # For serving uploaded files
     url(r'^media/files/(?P<filename>.+)$', 'courses.views.file_download',
         {'media_root': settings.MEDIA_ROOT,}
