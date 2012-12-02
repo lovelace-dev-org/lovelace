@@ -29,6 +29,8 @@ urlpatterns = patterns(
     url(r'^stats/(?P<task_name>[^/]+)/$', 'courses.views.stats'),
     url(r'^users/(?P<training_name>[^/]+)/$', 'courses.views.users'),
 
+    url(r'^usertask/(?P<user_name>[^/]+)/(?P<task_name>.+)/$', 'courses.views.user_task_stats'),
+
     # For serving images
     url(r'^media/images/(?P<imagename>.+)$', 'courses.views.image_download',
         {'media_root': settings.MEDIA_ROOT,}

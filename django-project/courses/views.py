@@ -820,6 +820,38 @@ def user(request, user_name):
     })
     return HttpResponse(t.render(c))
 
+def user_task_stats(request, user_name, task_name):
+    '''Shows a user's answers to a task.'''
+    if not request.user.is_authenticated() and not request.user.is_staff:
+        return HttpResponseNotFound()
+
+    content = ContentPage.objects.get(url_name=task_name)
+
+    tasktype, question, choices, answers = get_task_info(content)
+
+    ruser = User.objects.get(username=user_name)
+
+    checkboxanswers = radiobuttonanswers = textfieldanswers = fileanswers = None
+    if tasktype == "checkbox":
+        checkboxanswers = UserCheckboxTaskAnswer.objects.filter(task=content, user=ruser)
+    elif tasktype == "radiobutton":
+        radiobuttonanswers = UserRadiobuttonTaskAnswer.objects.filter(task=content, user=ruser)
+    elif tasktype == "textfield":
+        textfieldanswers = UserTextfieldTaskAnswer.objects.filter(task=content, user=ruser)
+    elif tasktype == "file":
+        fileanswers = UserFileTaskAnswer.objects.filter(task=content, user=ruser)
+
+    t = loader.get_template("courses/user_task_stats.html")
+    c = RequestContext(request, {
+        'username': user_name,
+        'taskname': task_name,
+        'checkboxanswers': checkboxanswers,
+        'radiobuttonanswers': radiobuttonanswers,
+        'textfieldanswers': textfieldanswers,
+        'fileanswers': fileanswers,
+    })
+    return HttpResponse(t.render(c))
+
 def users(request, training_name):
     '''Admin view that shows a table of all users and the tasks they've done on a particular course.'''
     if not request.user.is_authenticated() and not request.user.is_active and not request.user.is_staff:

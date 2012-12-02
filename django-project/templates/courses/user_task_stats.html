@@ -1,0 +1,33 @@
+<h1>{{ username }} answers to {{ taskname }}</h1>
+
+{% if checkboxanswers %}
+  {% for answer in checkboxanswers %}
+    <p>
+      Answer @ {{ answer.answer_date }}<br/>
+      {% for ians in answer.chosen_answers.all %}
+        {{ ians }}<br/>
+      {% endfor %}
+    </p>
+  {% endfor %}
+{% endif %}
+
+{% if radiobuttonanswers %}
+  {% for answer in radiobuttonanswers %}
+    <p>
+      Answer @ {{ answer.answer_date }}<br/>
+      {{ answer.chosen_answer }}<br/>
+    </p>
+  {% endfor %}
+{% endif %}
+
+{% if textfieldanswers %}
+  {% for answer in textfieldanswers %}
+    <p>
+      Answer @ {{ answer.answer_date }}<br/>
+      {{ answer.given_answer }}<br/>
+    </p>
+  {% endfor %}
+{% endif %}
+
+{% if fileanswers %}
+{% endif %}
