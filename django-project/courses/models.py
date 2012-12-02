@@ -408,6 +408,7 @@ class FileTaskReturnable(models.Model):
     errors = models.TextField()
     retval = models.IntegerField()
 
+# TODO: Replace with a value saved into database
 def get_version(instance):
     return UserFileTaskAnswer.objects.filter(user=instance.returnable.userfiletaskanswer.user,
                                              task=instance.returnable.userfiletaskanswer.task).count()
