@@ -196,7 +196,7 @@ def get_task_info(content):
     try:
         if content.taskpage.radiobuttontask:
             tasktype = "radiobutton"
-            choices = RadiobuttonTaskAnswer.objects.filter(task=content.id)
+            choices = RadiobuttonTaskAnswer.objects.filter(task=content.id).order_by('id')
             question = TaskPage.objects.get(id=content.id).question
     except ContentPage.DoesNotExist as e:
         pass
@@ -204,7 +204,7 @@ def get_task_info(content):
     try:
         if content.taskpage.checkboxtask:
             tasktype = "checkbox"
-            choices = CheckboxTaskAnswer.objects.filter(task=content.id)
+            choices = CheckboxTaskAnswer.objects.filter(task=content.id).order_by('id')
             question = TaskPage.objects.get(id=content.id).question
     except ContentPage.DoesNotExist as e:
         pass
