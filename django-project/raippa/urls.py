@@ -28,6 +28,7 @@ urlpatterns = patterns(
     # For viewing task statistics
     url(r'^stats/(?P<task_name>[^/]+)/$', 'courses.views.stats'),
     url(r'^users/(?P<training_name>[^/]+)/$', 'courses.views.users'),
+    url(r'^allstats/(?P<course_name>[^/]+)/$', 'courses.views.all_task_stats'),
 
     url(r'^usertask/(?P<user_name>[^/]+)/(?P<task_name>.+)/$', 'courses.views.user_task_stats'),
 

@@ -1,0 +1,27 @@
+<html>
+<head>
+</head>
+<body>
+<h1>{{ course_name }}</h1>
+<table border="1">
+<tr>
+  <th>Task name</th>
+  <th>Total answer attempts</th>
+  <th>Unique answerers</th>
+  <th>Unique passers</th>
+  <th>Average tries/unique answerer</th>
+</tr>
+
+{% for name, url, total, u_answerers, u_passers, avg_tries in task_infos %}
+<tr>
+  <td><a href="{{ url }}">{{ name }}</a></td>
+  <td>{{ total }}</td>
+  <td>{{ u_answerers }}</td>
+  <td>{{ u_passers }}</td>
+  <td>{{ avg_tries }}</td>
+</tr>
+{% endfor %}
+
+</table>
+</body>
+</html>

@@ -852,6 +852,53 @@ def user_task_stats(request, user_name, task_name):
     })
     return HttpResponse(t.render(c))
 
+def all_task_stats(request, course_name):
+    '''Shows statistics for all the tasks.'''
+    if not request.user.is_authenticated() and not request.user.is_staff:
+        return HttpResponseNotFound()
+
+    tasks = ContentPage.objects.all()
+    staff = User.objects.filter(is_staff=True)
+    non_staff = User.objects.filter(is_staff=False)
+
+    task_infos = []
+    for task in tasks:
+        taskname = task.name
+        taskurl = "/" + course_name + "/" + task.url_name
+        tasktype, question, choices, answers = get_task_info(task)
+
+        if tasktype == "checkbox":
+            all_evaluations = Evaluation.objects.filter(useranswer__usercheckboxtaskanswer__task=task).exclude(useranswer__user__in=staff)
+        elif tasktype == "radiobutton":
+            all_evaluations = Evaluation.objects.filter(useranswer__userradiobuttontaskanswer__task=task).exclude(useranswer__user__in=staff)
+        elif tasktype == "textfield":
+            all_evaluations = Evaluation.objects.filter(useranswer__usertextfieldtaskanswer__task=task).exclude(useranswer__user__in=staff)
+        elif tasktype == "file":
+            all_evaluations = Evaluation.objects.filter(useranswer__userfiletaskanswer__task=task).exclude(useranswer__user__in=staff)
+        else:
+            continue
+
+        total_attempts = all_evaluations.count()
+        by_users = all_evaluations.values_list("useranswer__user", flat=True)
+        unique_users_set = set(list(by_users))
+        unique_users = len(unique_users_set)
+        correct = all_evaluations.filter(points__gt=0.0).values_list("useranswer__user", flat=True)
+        correct_set = set(list(correct))
+        correct_by = len(correct_set)
+        try:
+            avg = 1.0*total_attempts/unique_users
+        except ZeroDivisionError:
+            avg = "N/A"
+
+        task_infos.append((taskname, taskurl, total_attempts, unique_users, correct_by, avg))
+
+    t = loader.get_template("courses/alltaskstats.html")
+    c = RequestContext(request, {
+        'course_name': course_name,
+        'task_infos': task_infos,
+    })
+    return HttpResponse(t.render(c))
+
 def users(request, training_name):
     '''Admin view that shows a table of all users and the tasks they've done on a particular course.'''
     if not request.user.is_authenticated() and not request.user.is_active and not request.user.is_staff:
