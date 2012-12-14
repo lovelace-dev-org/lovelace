@@ -899,23 +899,34 @@ def all_task_stats(request, course_name):
     })
     return HttpResponse(t.render(c))
 
-def users(request, training_name):
+def users(request, training_name, content_to_search, year, month, day):
     '''Admin view that shows a table of all users and the tasks they've done on a particular course.'''
     if not request.user.is_authenticated() and not request.user.is_active and not request.user.is_staff:
         return HttpResponseNotFound()
 
     selected_course = Training.objects.get(name=training_name)
     users = User.objects.all()
-    content_nodes = selected_course.contents.all()
-    contents = [cn.content for cn in content_nodes]
+    #content_nodes = selected_course.contents.all()
+    #contents = [cn.content for cn in content_nodes]
+
+    cns = ContentPage.objects.get(url_name=content_to_search).content.splitlines()
+    content_names = []
+    for line in cns:
+        mo = re.match("^\[\[\[(?P<embname>.+)\]\]\]", line)
+        if mo:
+            content_names.append(mo.group("embname"))
+    deadline = datetime.datetime(int(year), int(month), int(day))
+    contents = ContentPage.objects.filter(url_name__in=content_names)
+    print content_names
 
     user_evaluations = []
     for user in users:
-        username = user.username
-        db_user_evaluations = Evaluation.objects.filter(useranswer__user=user, points__gt=0.0)
+        username = user.userprofile.student_id or user.username
+        if not deadline: db_user_evaluations = Evaluation.objects.filter(useranswer__user=user, points__gt=0.0)
+        else: db_user_evaluations = Evaluation.objects.filter(useranswer__user=user, points__gt=0.0, useranswer__answer_date__lt=deadline)
         evaluations = []
 
-        print username
+        print username,
 
         for content in contents:
             tasktype, question, choices, answers = get_task_info(content)
