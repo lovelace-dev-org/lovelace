@@ -68,7 +68,8 @@ class Training(models.Model):
 class ContentGraph(models.Model):
     """A node in the course tree/graph. Links content into a course."""
     # TODO: Rethink the content graph system!
-    # TODO: Take embedded content into account!
+    # TODO: Take embedded content into account! (Maybe: automatically make content nodes from embedded content)
+    # TODO: "Allow answering after deadline has passed" flag.
     parentnode = models.ForeignKey('self', null=True, blank=True)
     content = models.ForeignKey('ContentPage', null=True, blank=True)
     responsible = models.ManyToManyField(User,blank=True,null=True)
