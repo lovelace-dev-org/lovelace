@@ -480,7 +480,11 @@ def main():
     # Run the server
     server = bjsonrpc.createserver(host=host, port=port, handler_factory=ConnectionHandler)
     server.debug_socket(False)
-    server.serve()
+    for i in range(10):
+        if 0 == os.fork():
+            server.serve()
+            os._exit(0)
+    os.waitpid(-1, 0)
 
 if __name__ == "__main__":
     if len(sys.argv) >= 2:
