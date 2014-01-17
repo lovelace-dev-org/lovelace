@@ -95,7 +95,7 @@ def check_file_answer(task, files={}, answer=None):
         codefiles[name] = base64.b64encode(contents)
 
     # Send the tests and files to the checking server and receive the results
-    bjsonrpc_client = bjsonrpc.connect(host='10.0.0.10', port=10123)
+    bjsonrpc_client = bjsonrpc.connect(host='10.10.110.66', port=10123)
         
     if references:
         results = bjsonrpc_client.call.checkWithReference(codefiles, references, tests)

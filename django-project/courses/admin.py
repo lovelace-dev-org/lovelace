@@ -43,12 +43,15 @@ class RadiobuttonTaskAnswerInline(admin.TabularInline):
 
 class RadiobuttonTaskAdmin(admin.ModelAdmin):
     fieldsets = [
-        ('Page information',   {'fields': ['name', 'content', 'question', 'tags'],}),
+        ('Page information',   {'fields': ['name', 'url_name', 'content', 'question', 'tags'],}),
         ('Task miscellaneous', {'fields': ['maxpoints', 'require_correct_embedded_tasks'],
                                 'classes': ['wide']}),
         ('Feedback settings',  {'fields': ['feedback_questions']}),
     ]
     inlines = [RadiobuttonTaskAnswerInline]
+    readonly_fields = ("url_name",)
+    list_display = ("name", "url_name",)
+    list_per_page = 500
 
 class CheckboxTaskAnswerInline(admin.TabularInline):
     model = CheckboxTaskAnswer
@@ -56,12 +59,15 @@ class CheckboxTaskAnswerInline(admin.TabularInline):
 
 class CheckboxTaskAdmin(admin.ModelAdmin):
     fieldsets = [
-        ('Page information',   {'fields': ['name', 'content', 'question', 'tags']}),
+        ('Page information',   {'fields': ['name', 'url_name', 'content', 'question', 'tags']}),
         ('Task miscellaneous', {'fields': ['maxpoints', 'require_correct_embedded_tasks'],
                                 'classes': ['wide']}),
         ('Feedback settings',  {'fields': ['feedback_questions']}),
     ]
     inlines = [CheckboxTaskAnswerInline]
+    readonly_fields = ("url_name",)
+    list_display = ("name", "url_name",)
+    list_per_page = 500
 
 class TextfieldTaskAnswerInline(admin.StackedInline):
     model = TextfieldTaskAnswer
@@ -69,12 +75,15 @@ class TextfieldTaskAnswerInline(admin.StackedInline):
 
 class TextfieldTaskAdmin(admin.ModelAdmin):
     fieldsets = [
-        ('Page information',   {'fields': ['name', 'content', 'question', 'tags']}),
+        ('Page information',   {'fields': ['name', 'url_name', 'content', 'question', 'tags']}),
         ('Task miscellaneous', {'fields': ['maxpoints', 'require_correct_embedded_tasks'],
                                 'classes': ['wide']}),
         ('Feedback settings',  {'fields': ['feedback_questions']}),
     ]
     inlines = [TextfieldTaskAnswerInline]
+    readonly_fields = ("url_name",)
+    list_display = ("name", "url_name",)
+    list_per_page = 500
 
 class FileTaskTestCommandAdmin(admin.TabularInline):
     model = FileTaskTestCommand
@@ -121,18 +130,27 @@ class FileTaskTestAdmin(admin.ModelAdmin):
     )
     inlines = [FileTaskTestCommandAdmin, FileTaskTestExpectedOutputAdmin, FileTaskTestExpectedErrorAdmin, FileTaskTestIncludeFileAdmin]
     list_display = ("name", "task",)
+    list_per_page = 500
+    
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "task":
+            kwargs["queryset"] = FileTask.objects.order_by("name")
+        return super(FileTaskTestAdmin, self).formfield_for_foreignkey(db_field, request, **kwargs)
 
 #class FileTaskTestAdmin(admin.StackedInline):
 #    inlines = [FileTaskTestCommandAdmin, FileTaskTestExpectedOutputAdmin, FileTaskTestExpectedErrorAdmin, FileTaskTestIncludeFileAdmin]
 
 class FileTaskAdmin(admin.ModelAdmin):
     fieldsets = [
-        ('Page information',   {'fields': ['name', 'content', 'question', 'tags']}),
+        ('Page information',   {'fields': ['name', 'url_name', 'content', 'question', 'tags']}),
         ('Task miscellaneous', {'fields': ['maxpoints', 'require_correct_embedded_tasks'],
                                 'classes': ['wide']}),
         ('Feedback settings',  {'fields': ['feedback_questions']}),
     ]
     #inlines = [FileTaskTestAdmin]
+    readonly_fields = ("url_name",)
+    list_display = ("name", "url_name",)
+    list_per_page = 500
 
 class LecturePageAdmin(admin.ModelAdmin):
     def formfield_for_dbfield(self, db_field, **kwargs):
@@ -142,6 +160,9 @@ class LecturePageAdmin(admin.ModelAdmin):
         elif db_field.name == 'tags':
             formfield.widget = Textarea(attrs={'rows':2})
         return formfield
+    readonly_fields = ("url_name",)
+    list_display = ("name", "url_name",)
+    list_per_page = 500
 
 admin.site.register(LecturePage, LecturePageAdmin)
 admin.site.register(RadiobuttonTask, RadiobuttonTaskAdmin)

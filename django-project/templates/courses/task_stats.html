@@ -1,3 +1,21 @@
+<style type="text/css">
+    table {
+        white-space: pre-wrap;
+        max-width: 100%;
+    }
+    td {
+        border: 1px solid #666;
+    }
+    .correct {
+        color: #0C0;
+    }
+    .incorrect {
+        color: #F00;
+    }
+    td.answer {
+        word-wrap: break-word;
+    }
+</style>
 <h1>Statistics for "{{ content.name }}"</h1>
 <h2>General task information</h2>
 {% if tasktype == "radiobutton" %}
@@ -84,11 +102,12 @@
 
     {% if textfield_answers %}
       The task has been answered {{ textfield_answers_count }} times.<br />
+      The task has been answered by {{ textfield_user_count }} different users.<br />
       <table>
-        <tr><th>User answer</th><th>Count</th><th>Correct?</th><th>Hint given?</th></tr>
-        {% for answer, count, correct, hinted in textfield_final %}
+        <tr><th>User answer</th><th>Count</th><th>Correct?</th><th>Hint given?</th><th>Latest answer</th></tr>
+        {% for answer, count, correct, hinted, latest in textfield_final %}
           <tr>
-            <td>{{ answer }}</td>
+            <td class="answer">{{ answer }}</td>
             <td>{{ count }}</td>
             {% if correct %}
               <td class="correct">{{ correct }}</td>
@@ -96,6 +115,7 @@
               <td class="incorrect">{{ correct }}</td>
             {% endif %}
             <td>{{ hinted }}</td>
+            <td>{{ latest|date:"Y-m-d, H:i:s" }}</td>
           </tr>
         {% endfor %}
       </table>

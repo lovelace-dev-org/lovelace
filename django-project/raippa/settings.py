@@ -1,24 +1,35 @@
 # Django settings for raippa project.
-import os
 
 DEBUG = True # Use True when viewing through web browser
 TEMPLATE_DEBUG = DEBUG
-RAIPPA_ROOT = os.path.split(os.path.dirname(os.path.realpath(__file__)))[0] + "/"
+
+# For switching between computers
+#RAIPPA_ROOT = "/home/mdf/raippa_ng/django-project/"
 #RAIPPA_ROOT = "/local/django/raippa_ng/"
+RAIPPA_ROOT = "/export/raippa/"
 
 ADMINS = (
     # ('Your Name', 'your_email@example.com'),
 )
 
 MANAGERS = ADMINS
-EMAIL_HOST = 'localhost'
+
+# Extended UserProfile settings
+AUTH_PROFILE_MODULE = 'courses.UserProfile'
+
+# For django-registration module configuration:
+# http://devdoodles.wordpress.com/2009/02/16/user-authentication-with-django-registration/
+ACCOUNT_ACTIVATION_DAYS = 7
+EMAIL_HOST = 'mail.virtues.local'
+DEFAULT_FROM_EMAIL = 'raippa-accounts@dev.raippa.fi'
+LOGIN_REDIRECT_URL = '/'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',  # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': RAIPPA_ROOT + 'sqlite3.db',      # Or path to database file if using sqlite3.
-        'USER': 'diamonds',                      # Not used with sqlite3.
-        'PASSWORD': 'timantit',                  # Not used with sqlite3.
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',  # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
+        'NAME': 'raippadb',              # Or path to database file if using sqlite3.
+        'USER': 'raippa',                # Not used with sqlite3.
+        'PASSWORD': 'Gah2gaiveeboch8I',  # Not used with sqlite3.
         'HOST': '',                      # Set to empty string for localhost. Not used with sqlite3.
         'PORT': '',                      # Set to empty string for default. Not used with sqlite3.
     }

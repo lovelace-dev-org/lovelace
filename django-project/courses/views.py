@@ -224,6 +224,14 @@ def get_task_info(content):
     except ContentPage.DoesNotExist as e:
         pass
 
+    ##
+    try:
+        if content.taskpage.lecturepage:
+            tasktype = "lecture"
+    except ContentPage.DoesNotExist as e:
+        pass
+    ##
+
     return (tasktype, question, choices, answers)
 
 def radiobutton_task_check(content, user, choices, post_data):
@@ -547,16 +555,22 @@ def check_answer(request, training_name, content_name, **kwargs):
 
     return HttpResponse(t.render(c))
 
-def get_user_task_info(user, task, tasktype):
+def get_user_task_info(user, task, tasktype, pub_date=None):
+    if not pub_date:
+        pub_date = datetime.datetime(2000, 1, 1)
     evaluations = None
     if tasktype == "checkbox":
-        if not evaluations: evaluations = Evaluation.objects.filter(useranswer__usercheckboxtaskanswer__task=task, useranswer__user=user)
+        if not evaluations:
+            evaluations = Evaluation.objects.filter(useranswer__usercheckboxtaskanswer__task=task, useranswer__user=user, useranswer__answer_date__gte=pub_date)
     elif tasktype == "radiobutton":
-        if not evaluations: evaluations = Evaluation.objects.filter(useranswer__userradiobuttontaskanswer__task=task, useranswer__user=user)
+        if not evaluations:
+            evaluations = Evaluation.objects.filter(useranswer__userradiobuttontaskanswer__task=task, useranswer__user=user, useranswer__answer_date__gte=pub_date)
     elif tasktype == "textfield":
-        if not evaluations: evaluations = Evaluation.objects.filter(useranswer__usertextfieldtaskanswer__task=task, useranswer__user=user)
+        if not evaluations:
+            evaluations = Evaluation.objects.filter(useranswer__usertextfieldtaskanswer__task=task, useranswer__user=user, useranswer__answer_date__gte=pub_date)
     elif tasktype == "file":
-        if not evaluations: evaluations = Evaluation.objects.filter(useranswer__userfiletaskanswer__task=task, useranswer__user=user)
+        if not evaluations:
+            evaluations = Evaluation.objects.filter(useranswer__userfiletaskanswer__task=task, useranswer__user=user, useranswer__answer_date__gte=pub_date)
 
     if not evaluations:
         result = "not_answered"
@@ -576,11 +590,28 @@ def content(request, training_name, content_name, **kwargs):
     content = ContentPage.objects.get(url_name=content_name)
     pages = [content]
 
+    content_graph = None
+    try:
+        content_graph = selected_course.contents.get(content=content)
+    except ContentGraph.DoesNotExist as e:
+        pass
+
     tasktype, question, choices, answers = get_task_info(content)
     if request.user.is_authenticated():
-        task_evaluation = get_user_task_info(request.user, content, tasktype)
+        if not content_graph or not content_graph.publish_date or content_graph.publish_date < datetime.datetime.now():
+            task_evaluation = get_user_task_info(request.user, content, tasktype)
     else:
         task_evaluation = None
+
+    admin_url = ""
+    if tasktype:
+        tasktypes = {"radiobutton":"radiobuttontask",
+                     "checkbox":"checkboxtask",
+                     "textfield":"textfieldtask",
+                     "file":"filetask",
+                     "lecture":"lecturepage",}
+        admin_url = reverse("admin:courses_%s_change" % tasktypes[tasktype], args=(content.id,))
+
 
     try:
         question = blockparser.parseblock(escape(question))
@@ -686,11 +717,23 @@ def content(request, training_name, content_name, **kwargs):
                     rendered_em_content += emline
                 
                 emb_tasktype, emb_question, emb_choices, emb_answers = get_task_info(embedded_content)
+                emb_admin_url = ""
                 if emb_tasktype:
                     contains_embedded_task = True
+                    tasktypes = {"radiobutton":"radiobuttontask",
+                                 "checkbox":"checkboxtask",
+                                 "textfield":"textfieldtask",
+                                 "file":"filetask",
+                                 "lecture":"lecturepage",}
+                    emb_admin_url = reverse("admin:courses_%s_change" % tasktypes[emb_tasktype], args=(embedded_content.id,))
 
                 if request.user.is_authenticated():
-                    emb_task_evaluation = get_user_task_info(request.user, embedded_content, emb_tasktype)
+                    if not content_graph or not content_graph.publish_date:
+                        #emb_task_evaluation = get_user_task_info(request.user, embedded_content, emb_tasktype)
+                        emb_task_evaluation = None
+                        pass
+                    else:
+                        emb_task_evaluation = get_user_task_info(request.user, embedded_content, emb_tasktype, content_graph.publish_date)
                 else:
                     emb_task_evaluation = None
 
@@ -705,6 +748,7 @@ def content(request, training_name, content_name, **kwargs):
                 emb_c = RequestContext(request, {
                     'embedded_task': True,
                     'emb_content': rendered_em_content,
+                    'emb_admin_url': emb_admin_url,
                     'content_name': embedded_content.name,
                     'content_name_id': embedded_content.url_name,
                     'content_urlname': embedded_content.url_name,
@@ -727,6 +771,7 @@ def content(request, training_name, content_name, **kwargs):
         'content_name': content.name,
         'content_name_id': content.url_name,
         'content_urlname': content.url_name,
+        'admin_url': admin_url,
         'navurls': navurls,
         'title': '%s - %s' % (content.name, selected_course.name),
         'answer_check_url': reverse('courses.views.training', kwargs={"training_name":training_name}),
@@ -992,7 +1037,7 @@ def stats(request, task_name):
         return HttpResponseNotFound()
 
     checkbox_answers = radiobutton_answers = textfield_answers = file_answers = None
-    textfield_answers_count = textfield_final = None
+    textfield_answers_count = textfield_final = textfield_user_count = None
     file_answers = file_answers_count = file_user_count = file_correctly_by = None
     radiobutton_answers_count = radiobutton_final = None
     content_page = ContentPage.objects.get(url_name=task_name)
@@ -1010,12 +1055,16 @@ def stats(request, task_name):
             answer_choice = RadiobuttonTaskAnswer.objects.get(id=answer)
             radiobutton_final.append((answer_choice.answer, radiobutton_selected_answers.count(answer), answer_choice.correct))
     elif tasktype == "textfield":
-        textfield_answers = list(UserTextfieldTaskAnswer.objects.filter(task=content_page).values_list("given_answer", flat=True))
+        textfield_answers1 = UserTextfieldTaskAnswer.objects.filter(task=content_page)
+        textfield_answers = list(textfield_answers1.values_list("given_answer", flat=True))
         textfield_answers_count = len(textfield_answers)
         textfield_set = set(textfield_answers)
+
+        textfield_user_count = len(set(list(textfield_answers1.values_list("user", flat=True))))
         textfield_final = []
         for answer in textfield_set:
-            textfield_final.append((answer, textfield_answers.count(answer),) + textfield_eval(answer, answers))
+            latest = textfield_answers1.filter(given_answer=answer).latest('answer_date').answer_date
+            textfield_final.append((answer, textfield_answers.count(answer),) + textfield_eval(answer, answers) + (latest,))
         textfield_final = sorted(textfield_final, key=lambda x: x[1], reverse=True)
     elif tasktype == "file":
         file_answers = list(UserFileTaskAnswer.objects.filter(task=content_page).values_list("user", flat=True))
@@ -1044,6 +1093,7 @@ def stats(request, task_name):
         "textfield_answers": textfield_answers,
         "textfield_answers_count": textfield_answers_count,
         "textfield_final": textfield_final,
+        "textfield_user_count": textfield_user_count,
 
         "file_answers": file_answers,
         "file_answers_count": file_answers_count,

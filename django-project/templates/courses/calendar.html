@@ -4,7 +4,10 @@
       {% csrf_token %}
       <fieldset>
         <legend>{{ event.event_name }}</legend>
-        <div class="datetime">From {{ event.start_time|date:"l, Y-m-d, H:i" }} to {{ event.end_time|date:"l, Y-m-d, H:i" }}</div>
+        <div class="datetime">
+          <p>From: {{ event.start_time|date:"l, Y-m-d, H:i" }}</p>
+          <p>To: {{ event.end_time|date:"l, Y-m-d, H:i" }}</p>
+        </div>
         <div class="description">{{ event.event_description }}</div>
         <div class="{% if reservations|length >= event.reservable_slots %}full{% else %}free{% endif %}">Reserved/total slots: {{ reservations|length }} / {{ event.reservable_slots }}</div>
 
