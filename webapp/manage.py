@@ -1,7 +1,8 @@
 #!/usr/bin/env python
-import os, sys
+import os
+import sys
 
-sys.path.insert(0, '/var/local/raippa/dependencies/')
+#sys.path.insert(0, '/var/local/raippa/dependencies/')
 
 if __name__ == "__main__":
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "raippa.settings")

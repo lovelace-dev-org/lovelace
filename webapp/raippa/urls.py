@@ -50,13 +50,13 @@ urlpatterns = patterns(
 
     # Course front page, course graph and content views
     url(r'^(?P<training_name>[^/]+)/$', 'courses.views.training',
-        {'raippa_root': settings.RAIPPA_ROOT,
+        {'raippa_root': settings.BASE_DIR,
          'media_root': settings.MEDIA_ROOT,
          'media_url': settings.MEDIA_URL,}
        ),
     url(r'^(?P<training_name>[^/]+)/graph\.vg$', 'courses.views.course_graph'),
     url(r'^(?P<training_name>[^/]+)/(?P<content_name>[^/]+)/$', 'courses.views.content',
-        {'raippa_root': settings.RAIPPA_ROOT,
+        {'raippa_root': settings.BASE_DIR,
          'media_root': settings.MEDIA_ROOT,
          'media_url':settings.MEDIA_URL,}
        ),

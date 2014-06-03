@@ -4,7 +4,7 @@ Module for connecting to the file checking bot on a remote machine using JSON-RP
 from the test results.
 """
 
-import bjsonrpc
+#import bjsonrpc
 import difflib
 import datetime
 import base64
@@ -16,7 +16,7 @@ from courses.models import FileTaskReturnFile
 
 def check_file_answer(task, files={}, answer=None):
     """Iterates through all the tests for a returnable package of user content."""
-    print "Checking a file"
+    print("Checking a file")
     _secs = lambda dt: dt.hour*3600+dt.minute*60+dt.second
 
     # Read the returned files from database objects
@@ -122,7 +122,7 @@ def check_file_answer(task, files={}, answer=None):
             test_result["inputfiles"][input_file_name] = base64.b64decode(input_file_contents)
 
     
-    print "File checked"
+    print("File checked")
 
     return results
 

@@ -6,7 +6,8 @@ import re
 from pygments import highlight
 from pygments.lexers import PythonLexer
 from pygments.formatters import HtmlFormatter
-from highlighters import highlighters
+
+from courses.highlighters import highlighters
 
 class Tag:
     """One markup tag type."""
@@ -44,12 +45,12 @@ class Tag:
         return len(self.end)
 
 # A library of different tags supported by the wiki markup
-tags = {u"bold":   Tag(u"strong", u"'''", u"'''", re.compile(ur"[']{3}(?P<bold_italic>[']{2})?.+?(?P=bold_italic)?[']{3}")),
-        u"italic": Tag(u"em", u"''", u"''", re.compile(ur"[']{2}.+?[']{2}")),
-        u"pre":    Tag(u"code", u"{{{", u"}}}", re.compile(ur"[{]{3}(?P<highlight>\#\!(%s) )?.+?[}]{3}" % (u"|".join(highlighters.iterkeys())))),
-        u"dfn":    Tag(u"dfn", u"", u"", re.compile(ur"")),
-        u"mark":   Tag(u"mark", u"!!!", u"!!!", re.compile(ur"[\!]{3}.+?[\!]{3}")),
-        u"anchor": Tag(u"a", u"[[", u"]]", re.compile(ur"\[\[(?P<address>.+?)([|](?P<link_text>.+?))?\]\]")),} 
+tags = {u"bold":   Tag(u"strong", u"'''", u"'''", re.compile(r"[']{3}(?P<bold_italic>[']{2})?.+?(?P=bold_italic)?[']{3}")),
+        u"italic": Tag(u"em", u"''", u"''", re.compile(r"[']{2}.+?[']{2}")),
+        u"pre":    Tag(u"code", u"{{{", u"}}}", re.compile(r"[{]{3}(?P<highlight>\#\!(%s) )?.+?[}]{3}" % (u"|".join(highlighters.keys())))),
+        u"dfn":    Tag(u"dfn", u"", u"", re.compile(r"")),
+        u"mark":   Tag(u"mark", u"!!!", u"!!!", re.compile(r"[\!]{3}.+?[\!]{3}")),
+        u"anchor": Tag(u"a", u"[[", u"]]", re.compile(r"\[\[(?P<address>.+?)([|](?P<link_text>.+?))?\]\]")),} 
 
 def parsetag(tagname, unparsed_string):
     """Parses one tag and applies it's settings. Generates the HTML."""
@@ -122,6 +123,6 @@ if __name__ == "__main__":
     blocks = [block1, block2, block3, block4, block5]
 
     for i, block in enumerate(blocks):
-        print "Test %02d:" % i
+        print("Test %02d:" % i)
         parseblock(block)
-        print
+        print()

@@ -27,10 +27,10 @@ from pygments.formatters import HtmlFormatter
 
 from courses.models import *
 
-import content_parser
-import blockparser
-import filecheck_client
-import graph_builder
+import courses.content_parser
+import courses.blockparser
+import courses.filecheck_client
+import courses.graph_builder
 
 class NavURL:
     def __init__(self, url, name):
@@ -39,7 +39,8 @@ class NavURL:
 
 def index(request):
     course_list = Training.objects.all()
-    navurls = [NavURL(reverse('courses.views.index'), "Training home")] # Courses
+    #navurls = [NavURL(reverse('courses.views.index'), "Training home")] # Courses
+    navurls = [NavURL('a', 'a')]
     t = loader.get_template("courses/index.html")
     c = RequestContext(request, {
         'course_list': course_list,
@@ -59,7 +60,7 @@ def course_graph(request, training_name):
     topnodes = selected_course.contents.all()
     course_graph_nodes = [] 
     for node in topnodes:
-	add_tree(course_graph_nodes,node.id)
+        add_tree(course_graph_nodes,node.id)
 
     nodes = []
     edges = []
@@ -122,11 +123,11 @@ def training(request, training_name, **kwargs):
     frontpage = selected_course.frontpage
 
     if frontpage:
-    	content_name = frontpage.url_name
+        content_name = frontpage.url_name
         kwargs["frontpage"] = True
-	contextdict = content(request, training_name, content_name, **kwargs)
+        contextdict = content(request, training_name, content_name, **kwargs)
     else:
-	contextdict = {}
+        contextdict = {}
 
     contextdict["training"] = selected_course 
     contextdict["course_graph_url"] = course_graph_url
@@ -352,7 +353,7 @@ def textfield_task_check(content, user, answers, post_data):
                         correct = False
                     if answer.hint:
                         hints.append(answer.hint)
-            except sre_constants.error, e_msg:
+            except sre_constants.error as e_msg:
                 if user.is_staff:
                     errors.append(u"Contact staff, regexp error '%s' from regexp: %s" % (e_msg.__unicode__(), answer.answer))
                 else:
@@ -489,7 +490,7 @@ def file_task_check(content, user, files_data, post_data):
     return correct, hints, comments, diff_table
 
 def check_answer(request, training_name, content_name, **kwargs):
-    print u"Ollaan tehtavan tarkistuksessa"
+    print("Ollaan tehtavan tarkistuksessa")
     # Validate an answer to question
     if request.method == "POST":
         pass
@@ -584,7 +585,7 @@ def get_user_task_info(user, task, tasktype, pub_date=None):
     return result
 
 def content(request, training_name, content_name, **kwargs):
-    print "Ollaan contentissa."
+    print("Ollaan contentissa.")
 
     selected_course = Training.objects.get(name=training_name)
     content = ContentPage.objects.get(url_name=content_name)
@@ -702,7 +703,7 @@ def content(request, training_name, content_name, **kwargs):
                     line = line.replace(include_file_re.group(0), cal_rendered)
             # It's an embedded task
             elif include_file_re.group("filename") == parser.get_current_taskname():
-                print parser.get_current_taskname()
+                print(parser.get_current_taskname())
                 try:
                     embedded_content = ContentPage.objects.get(url_name=parser.get_current_taskname())
                 except ContentPage.DoesNotExist as e:
@@ -962,7 +963,7 @@ def users(request, training_name, content_to_search, year, month, day):
             content_names.append(mo.group("embname"))
     deadline = datetime.datetime(int(year), int(month), int(day))
     contents = ContentPage.objects.filter(url_name__in=content_names)
-    print content_names
+    print(content_names)
 
     user_evaluations = []
     for user in users:
@@ -971,7 +972,7 @@ def users(request, training_name, content_to_search, year, month, day):
         else: db_user_evaluations = Evaluation.objects.filter(useranswer__user=user, points__gt=0.0, useranswer__answer_date__lt=deadline)
         evaluations = []
 
-        print username,
+        print(username,)
 
         for content in contents:
             tasktype, question, choices, answers = get_task_info(content)
@@ -1017,7 +1018,7 @@ def textfield_eval(given, answers):
                     if answer.hint: hinted = True
                 elif not re.match(answer.answer, given) and answer.correct:
                     correct = False
-            except sre_constants.error, e_msg:
+            except sre_constants.error as e_msg:
                 errors.append("Regexp error: " + e_msg)
                 correct = False
         else:

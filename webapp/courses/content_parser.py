@@ -14,30 +14,31 @@ from cgi import escape # Use this instead
 from pygments import highlight
 from pygments.lexers import PythonLexer, CLexer
 from pygments.formatters import HtmlFormatter
-from highlighters import highlighters
 
-import blockparser
+from courses.highlighters import highlighters
 
-class ContentParser(object):
+import courses.blockparser
+
+class ContentParser:
     """Parser class for generating HTML from wiki markup block types."""
-
+    
     # Generates a regular expression from the supported block types
     block = {
-        "bullet" : ur"^\s*(?P<ulist_level>[*]+)\s+",
-        "ordered_list" : ur"^\s*(?P<olist_level>[#]+)\s+",
-        "separator" : ur"^\s*[-]{2}\s*$",
-        "image" : ur"^[{]{2}image\:(?P<imagename>[^|]+)(\|(?P<alt>.+))?[}]{2}$",
-        "calendar" : ur"^[{]{2}calendar\:(?P<calendarname>.+)[}]{2}$",
-        "video" : ur"^[{]{2}video\:(?P<videoname>.+)[}]{2}$",
-        "codefile" : ur"[{]{3}\!(?P<filename>[^\s]+)\s*[}]{3}$",
-        "code" : ur"^[{]{3}(\#\!(?P<highlight>%s))?\s*$" % (u"|".join(highlighters.iterkeys())),
-        "taskembed" : ur"^\[\[\[(?P<taskname>[^\s]+)\]\]\]$",
-        "table" : ur"^([|]{2}[^|]*)+[|]{2}$",
-        "empty" : ur"^\s*$",
-        "heading" : ur"^\s*(?P<len>[=]{1,6})[=]*\s*.+\s*(?P=len)\s*$",
-        #"indent" : ur"^[ \t]+", # Indents are not supported
+        "bullet" : r"^\s*(?P<ulist_level>[*]+)\s+",
+        "ordered_list" : r"^\s*(?P<olist_level>[#]+)\s+",
+        "separator" : r"^\s*[-]{2}\s*$",
+        "image" : r"^[{]{2}image\:(?P<imagename>[^|]+)(\|(?P<alt>.+))?[}]{2}$",
+        "calendar" : r"^[{]{2}calendar\:(?P<calendarname>.+)[}]{2}$",
+        "video" : r"^[{]{2}video\:(?P<videoname>.+)[}]{2}$",
+        "codefile" : r"[{]{3}\!(?P<filename>[^\s]+)\s*[}]{3}$",
+        "code" : r"^[{]{3}(\#\!(?P<highlight>%s))?\s*$" % ("|".join(highlighters.keys())),
+        "taskembed" : r"^\[\[\[(?P<taskname>[^\s]+)\]\]\]$",
+        "table" : r"^([|]{2}[^|]*)+[|]{2}$",
+        "empty" : r"^\s*$",
+        "heading" : r"^\s*(?P<len>[=]{1,6})[=]*\s*.+\s*(?P=len)\s*$",
+        #"indent" : r"^[ \t]+", # Indents are not supported
     }
-    block_re = re.compile(ur"|".join(ur"(?P<%s>%s)" % kv for kv in sorted(block.iteritems())))
+    block_re = re.compile(r"|".join(r"(?P<%s>%s)" % kv for kv in sorted(block.items())))
 
     def __init__(self, lines=None):        
         self.lines = lines             # The lines of the markup text that's going to get parsed
@@ -142,8 +143,8 @@ class ContentParser(object):
     def settings_image(self, matchobj):
         imagename = escape(matchobj.group("imagename"))
         #imageurl = "%s%s/%s" % (self.mediaurl, self.coursename, imagename)
-	imageurl = "{{ %s }}" % (imagename)
-	self.current_imagename = imagename
+        imageurl = "{{ %s }}" % (imagename)
+        self.current_imagename = imagename
         alt = u""
         try:
             alt = escape(matchobj.group("alt"))
@@ -203,7 +204,7 @@ class ContentParser(object):
                 lines = []
                 try:
                     line = self.lines.next()
-                    print settings["highlight"]
+                    print(settings["highlight"])
                     while not line.startswith("}}}"):
                         lines.append(line)
                         line = self.lines.next()
@@ -323,4 +324,4 @@ if __name__ == "__main__":
     for line in test.parse():
         html += line
     
-    print html
+    print(html)

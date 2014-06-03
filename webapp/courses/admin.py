@@ -192,15 +192,15 @@ class ContentGraphAdmin(admin.ModelAdmin):
 admin.site.register(ContentGraph, ContentGraphAdmin)
 
 class TrainingAdmin(admin.ModelAdmin):
- 	fieldsets = [
+    fieldsets = [
         (None,                                               {'fields': ['name','frontpage','responsible']}),
         ('Training outline',                                 {'fields': ['contents']}),
         ('Settings for start date and end date of training', {'fields': ['start_date','end_date'], 'classes': ['collapse']}),
         ('Other staff for this training',                    {'fields': ['staff'], 'classes': ['collapse']}),
         ('Users enrolled in the training',                   {'fields': ['students'], 'classes': ['collapse']}),
     ]
-	filter_horizontal = ['responsible','staff','students']
-	#formfield_overrides = {models.ManyToManyField: {'widget':}}
+    filter_horizontal = ['responsible','staff','students']
+    #formfield_overrides = {models.ManyToManyField: {'widget':}}
 
 admin.site.register(Training,TrainingAdmin)
 

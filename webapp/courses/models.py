@@ -21,7 +21,7 @@ class UserProfile(models.Model):
     student_id = models.IntegerField('Student number', blank=True, null=True)
     study_program = models.CharField('Study program', max_length=80, blank=True, null=True)
 
-    def __unicode__(self):
+    def __str__(self):
         return "%s's profile" % self.user
 
     def save(self, *args, **kwargs):
@@ -62,7 +62,7 @@ class Training(models.Model):
     staff = models.ManyToManyField(User,blank=True,null=True,related_name="staffing")
     students = models.ManyToManyField(User,blank=True,null=True,related_name="studentin")
 
-    def __unicode__(self):
+    def __str__(self):
         return self.name
 
 class ContentGraph(models.Model):
@@ -78,7 +78,7 @@ class ContentGraph(models.Model):
     publish_date = models.DateTimeField('When does this task become available',blank=True,null=True)
     scored = models.BooleanField('Does this task affect scoring', default=True)
 
-    def __unicode__(self):
+    def __str__(self):
         if not self.content:
             return "No linked content yet"
         return self.content.short_name
@@ -94,7 +94,7 @@ class File(models.Model):
     typeinfo = models.CharField(max_length=200)
     fileinfo = models.FileField(upload_to=get_file_upload_path)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.name
 
 def get_image_upload_path(instance, filename):
@@ -108,7 +108,7 @@ class Image(models.Model):
     description = models.CharField(max_length=500)
     fileinfo = models.ImageField(upload_to=get_image_upload_path)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.name
 
 class Video(models.Model):
@@ -117,7 +117,7 @@ class Video(models.Model):
     link = models.URLField()
     uploader = models.ForeignKey(User)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.name
 
 ## Time reservation and event calendar system
@@ -125,7 +125,7 @@ class Calendar(models.Model):
     """A multi purpose calendar for course events markups, time reservations etc."""
     name = models.CharField('Name for reference in content',max_length=200,unique=True)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.name
 
 class CalendarDate(models.Model):
@@ -137,7 +137,7 @@ class CalendarDate(models.Model):
     end_time = models.DateTimeField('Ends at')
     reservable_slots = models.IntegerField('Amount of reservable slots')
 
-    def __unicode__(self):
+    def __str__(self):
         return self.event_name
 
 class CalendarReservation(models.Model):
@@ -176,7 +176,7 @@ class ContentPage(models.Model):
             self.short_name = self._shortify_name()
         super(ContentPage, self).save(*args, **kwargs)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.name
 
 class LecturePage(ContentPage):
@@ -233,7 +233,7 @@ class ContentFeedbackQuestion(models.Model):
     """A five star feedback that can be linked to any content."""
     question = models.CharField("Question",max_length=100)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.question
 
 class ContentFeedbackUserAnswer(models.Model):
@@ -243,10 +243,12 @@ class ContentFeedbackUserAnswer(models.Model):
     rating = models.PositiveSmallIntegerField()
 
 ## File task test related models
+def default_timeout(): return datetime.time(0,0,5)
+
 class FileTaskTest(models.Model):
     task = models.ForeignKey(FileTask)
     name = models.CharField("Test name",max_length=200)
-    timeout = models.TimeField(default=datetime.time(0,0,5))                  # How long is the test allowed to run before sending a KILL signal?
+    timeout = models.TimeField(default=default_timeout)     # How long is the test allowed to run before sending a KILL signal?
     POSIX_SIGNALS_CHOICES = (
         ('None', "Don't send any signals"),
         ('SIGINT', 'Interrupt signal (same as Ctrl-C)'),
@@ -255,16 +257,16 @@ class FileTaskTest(models.Model):
     inputs = models.TextField("Input given to the main command through STDIN",blank=True) # What input shall be entered to the program's stdin upon execution?
     retval = models.IntegerField('Expected return value',blank=True,null=True)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.name
 
 class FileTaskTestCommand(models.Model):
     """A command that shall be executed on the test machine."""
     test = models.ForeignKey(FileTaskTest)
     command_line = models.CharField(max_length=500)
-    main_command = models.BooleanField('Command which receives the specified input') # The command which the inputs are entered into and signals are fired at?
+    main_command = models.BooleanField('Command which receives the specified input', default=None) # The command which the inputs are entered into and signals are fired at?
 
-    def __unicode__(self):
+    def __str__(self):
         return u"%s" % (self.command_line)
 
     class Meta:
@@ -274,8 +276,8 @@ class FileTaskTestCommand(models.Model):
 class FileTaskTestExpectedOutput(models.Model):
     """What kind of output is expected from the program's stdout?"""
     test = models.ForeignKey(FileTaskTest)
-    correct = models.BooleanField()
-    regexp = models.BooleanField()
+    correct = models.BooleanField(default=None)
+    regexp = models.BooleanField(default=None)
     expected_answer = models.TextField(blank=True)
     hint = models.TextField(blank=True)
     videohint = models.ForeignKey(Video,blank=True,null=True)
@@ -286,8 +288,8 @@ class FileTaskTestExpectedOutput(models.Model):
 class FileTaskTestExpectedError(models.Model):
     """What kind of output is expected from the program's stderr?"""
     test = models.ForeignKey(FileTaskTest)
-    correct = models.BooleanField()
-    regexp = models.BooleanField()
+    correct = models.BooleanField(default=None)
+    regexp = models.BooleanField(default=None)
     expected_answer = models.TextField(blank=True)
     hint = models.TextField(blank=True)
     videohint = models.ForeignKey(Video,blank=True,null=True)
@@ -334,7 +336,7 @@ class FileTaskTestIncludeFile(models.Model):
 
     fileinfo = models.FileField(upload_to=get_testfile_path)
 
-    def __unicode__(self):
+    def __str__(self):
         return u"%s - %s" % (self.purpose, self.name)
 
     class Meta:
@@ -344,14 +346,14 @@ class FileTaskTestIncludeFile(models.Model):
 ## Answer models
 class TextfieldTaskAnswer(models.Model):
     task = models.ForeignKey(TextfieldTask)
-    correct = models.BooleanField()
-    regexp = models.BooleanField()
+    correct = models.BooleanField(default=None)
+    regexp = models.BooleanField(default=None)
     answer = models.TextField()
     hint = models.TextField(blank=True)
     videohint = models.ForeignKey(Video,blank=True,null=True)
     comment = models.TextField('Extra comment given upon selection of this answer',blank=True)
 
-    def __unicode__(self):
+    def __str__(self):
         if len(self.answer) > 80:
             return self.answer[0:80] + u" ..."
         else:
@@ -363,33 +365,33 @@ class TextfieldTaskAnswer(models.Model):
  
 class RadiobuttonTaskAnswer(models.Model):
     task = models.ForeignKey(RadiobuttonTask)
-    correct = models.BooleanField()
+    correct = models.BooleanField(default=None)
     answer = models.TextField()
     hint = models.TextField(blank=True)
     videohint = models.ForeignKey(Video,blank=True,null=True)
     comment = models.TextField('Extra comment given upon selection of this answer',blank=True)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.answer
 
 class CheckboxTaskAnswer(models.Model):
     task = models.ForeignKey(CheckboxTask)
-    correct = models.BooleanField()
+    correct = models.BooleanField(default=None)
     answer = models.TextField()
     hint = models.TextField(blank=True)    
     videohint = models.ForeignKey(Video,blank=True,null=True)  
     comment = models.TextField('Extra comment given upon selection of this answer',blank=True)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.answer
 
 class Evaluation(models.Model):
     """Evaluation of training item performance"""
-    correct = models.BooleanField()
+    correct = models.BooleanField(default=None)
     points = models.FloatField(blank=True)
     feedback = models.CharField('Feedback given by a teacher',max_length=2000,blank=True)
 
-    def __unicode__(self):
+    def __str__(self):
         if self.correct:
             return u"Correct answer to (todo: task) by %s with %f points: %s" % (self.useranswer.user.username, self.points, self.feedback)
         else:
@@ -435,7 +437,7 @@ class UserFileTaskAnswer(UserAnswer):
     task = models.ForeignKey(FileTask)
     returnable = models.OneToOneField(FileTaskReturnable)
 
-    def __unicode__(self):
+    def __str__(self):
         #return u"Answer no. %04d: %s" % (self.answer_count, self.returnable)
         return u"Answer by %s: %s" % (self.user.username, self.returnable.output)
 
@@ -443,7 +445,7 @@ class UserTextfieldTaskAnswer(UserAnswer):
     task = models.ForeignKey(TextfieldTask)
     given_answer = models.TextField()
 
-    def __unicode__(self):
+    def __str__(self):
         #return u"Answer no. %04d: %s" % (self.answer_count, self.given_answer)
         return u"Answer by %s: %s" % (self.user.username, self.given_answer)
 
@@ -451,7 +453,7 @@ class UserRadiobuttonTaskAnswer(UserAnswer):
     task = models.ForeignKey(RadiobuttonTask)
     chosen_answer = models.ForeignKey(RadiobuttonTaskAnswer)
 
-    def __unicode__(self):
+    def __str__(self):
         #return u"Answer no. %04d by %s: %s" % (self.answer_count, self.user.username, self.chosen_answer)
         return u"Answer by %s: %s" % (self.user.username, self.chosen_answer)
 
@@ -462,14 +464,14 @@ class UserCheckboxTaskAnswer(UserAnswer):
     task = models.ForeignKey(CheckboxTask)
     chosen_answers = models.ManyToManyField(CheckboxTaskAnswer)
 
-    def __unicode__(self):
+    def __str__(self):
         #return u"Answer no. %04d: %s" % (self.answer_count, ", ".join(self.chosen_answers))
         return u"Answer by %s: %s" % (self.user.username, ", ".join(self.chosen_answers))
 
 class UserLecturePageAnswer(UserAnswer):
     task = models.ForeignKey(LecturePage)
-    answered = models.BooleanField(LecturePage)
+    answered = models.BooleanField(LecturePage, default=None)
     
-    def __unicode__(self):
+    def __str__(self):
         return u"Answered by %s." % (self.user.username)
 

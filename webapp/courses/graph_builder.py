@@ -56,8 +56,8 @@ if __name__ == "__main__":
             edges.append(Edge(nodes[-1], nodes[-2]))
             edges = [e for e in reversed(edges)]
             graph = Graph(nodes, edges)
-    print "digraph generated {"
+    print("digraph generated {")
     for rel in graph:
-        print "    %s" % (rel)
-    print "}"
+        print("    %s" % (rel))
+    print("}")
 
