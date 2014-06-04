@@ -1,0 +1,18 @@
+{% load staticfiles %}
+<link rel="stylesheet" href="{% static 'courses/blockcode.css' %}" type="text/css" />
+<!--[if IE]>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+    <script type="text/javascript" src="{% static 'courses/iecompat.js' %}"></script>
+<![endif]-->
+<script type="text/javascript" src="{% static 'courses/jquery-2.1.1.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'courses/blockcode.js' %}"></script>
+<script type="text/javascript"><!--
+    $(document).ready(function() {
+        addLineNumbers();
+        setColumnWidths();
+        setLineWidths();
+        setPreHeights();
+        //new Canviz('canviz', '{{ course_graph_url }}');
+    });
+//-->
+</script>

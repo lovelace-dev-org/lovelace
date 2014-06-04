@@ -5,6 +5,7 @@ Django views.
 # TODO: Use classes instead of bare functions to group data!
 
 import os
+import sys
 import re
 import sre_constants
 import codecs
@@ -14,6 +15,7 @@ import datetime
 import mimetypes
 from cgi import escape
 
+import django
 from django.http import HttpResponse, HttpResponseRedirect, HttpResponseNotFound, Http404
 from django.template import Context, RequestContext, loader
 from django.core.urlresolvers import reverse
@@ -39,13 +41,14 @@ class NavURL:
 
 def index(request):
     course_list = Training.objects.all()
-    #navurls = [NavURL(reverse('courses.views.index'), "Training home")] # Courses
-    navurls = [NavURL('a', 'a')]
+    navurls = [NavURL(reverse('courses:index'), "Training home")] # Courses
     t = loader.get_template("courses/index.html")
     c = RequestContext(request, {
         'course_list': course_list,
         'navurls': navurls,
         'title': 'Available trainings',
+        'python_version': "%d.%d.%d" % (sys.version_info.major, sys.version_info.minor, sys.version_info.micro),
+        'django_version': django.get_version(),
     })
     return HttpResponse(t.render(c))
 
