@@ -17,7 +17,7 @@ from pygments.formatters import HtmlFormatter
 
 from courses.highlighters import highlighters
 
-import courses.blockparser
+import courses.blockparser as blockparser
 
 class ContentParser:
     """Parser class for generating HTML from wiki markup block types."""

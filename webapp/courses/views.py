@@ -29,10 +29,10 @@ from pygments.formatters import HtmlFormatter
 
 from courses.models import *
 
-import courses.content_parser
-import courses.blockparser
-import courses.filecheck_client
-import courses.graph_builder
+import courses.content_parser as content_parser
+import courses.blockparser as blockparser
+import courses.filecheck_client as filecheck_client
+import courses.graph_builder as graph_builder
 
 class NavURL:
     def __init__(self, url, name):
@@ -72,7 +72,7 @@ def course_graph(request, training_name):
     for graph_node in course_graph_nodes:
         #node = graph_builder.Node(graph_node)
         content = ContentPage.objects.get(id=graph_node.content_id)
-        node_url = reverse('courses.views.content', kwargs={"training_name":training_name, "content_id":content.id})
+        node_url = reverse('courses:content', kwargs={"training_name":training_name, "content_id":content.id})
         label = content.name # TODO: Use a shorter name
         node = graph_builder.Node({"name":"node%d" % (graph_node.id),
                                    "style":"filled",
@@ -119,10 +119,10 @@ def course_graph(request, training_name):
  
 def training(request, training_name, **kwargs):
     selected_course = Training.objects.get(name=training_name)
-    navurls = [NavURL(reverse('courses.views.index'), "Training home"), # Course
-               NavURL(reverse('courses.views.training', kwargs={"training_name":training_name}), training_name),]
+    navurls = [NavURL(reverse('courses:index'), "Training home"), # Course
+               NavURL(reverse('courses:training', kwargs={"training_name":training_name}), training_name),]
 
-    course_graph_url = reverse('courses.views.course_graph', kwargs={'training_name':training_name})
+    course_graph_url = reverse('courses:course_graph', kwargs={'training_name':training_name})
     frontpage = selected_course.frontpage
 
     if frontpage:
@@ -627,9 +627,9 @@ def content(request, training_name, content_name, **kwargs):
     emb_tasktype = None
     contains_embedded_task = False
 
-    navurls = [NavURL(reverse('courses.views.index'), "Training home"), # Courses
-               NavURL(reverse('courses.views.training', kwargs={"training_name":training_name}), training_name),
-               NavURL(reverse('courses.views.content', kwargs={"training_name":training_name, "content_name":content.name}), content.name)]
+    navurls = [NavURL(reverse('courses:index'), "Training home"), # Courses
+               NavURL(reverse('courses:training', kwargs={"training_name":training_name}), training_name),
+               NavURL(reverse('courses:content', kwargs={"training_name":training_name, "content_name":content.name}), content.name)]
 
     rendered_content = u''
     unparsed_content = re.split(r"\r\n|\r|\n", content.content)
@@ -756,7 +756,7 @@ def content(request, training_name, content_name, **kwargs):
                     'content_name': embedded_content.name,
                     'content_name_id': embedded_content.url_name,
                     'content_urlname': embedded_content.url_name,
-                    'answer_check_url': reverse('courses.views.training', kwargs={"training_name":training_name}),
+                    'answer_check_url': reverse('courses:training', kwargs={"training_name":training_name}),
                     'tasktype': emb_tasktype,
                     'question': emb_question,
                     'choices': emb_choices,
@@ -778,7 +778,7 @@ def content(request, training_name, content_name, **kwargs):
         'admin_url': admin_url,
         'navurls': navurls,
         'title': '%s - %s' % (content.name, selected_course.name),
-        'answer_check_url': reverse('courses.views.training', kwargs={"training_name":training_name}),
+        'answer_check_url': reverse('courses:training', kwargs={"training_name":training_name}),
         'emb_tasktype': emb_tasktype,
         'tasktype': tasktype,
         'question': question,

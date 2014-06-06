@@ -11,10 +11,6 @@ https://docs.djangoproject.com/en/dev/ref/settings/
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 import os
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
-PROJECT_ROOT = os.path.split(os.path.dirname(os.path.realpath(__file__)))[0]
-
-print(BASE_DIR)
-print(PROJECT_ROOT)
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True # Use True when viewing through web browser
@@ -87,12 +83,6 @@ USE_TZ = False
 # https://docs.djangoproject.com/en/dev/howto/static-files/
 STATIC_URL = '/static/'
 
-ADMINS = (
-    # ('Your Name', 'your_email@example.com'),
-)
-
-MANAGERS = ADMINS
-
 # Extended UserProfile settings
 AUTH_PROFILE_MODULE = 'courses.UserProfile'
 
@@ -132,10 +122,6 @@ SECRET_KEY = '$34r(o@3yfyr-=v8*ndtqm6^ti0=p%cyt&amp;a*giv-1w%q21r4ae'
 
 TEMPLATE_DIRS = (
     os.path.join(BASE_DIR, 'templates'),
-    #'/home/mdf/projects/raippa_ng/django-project/templates/',
-    # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
-    # Always use forward slashes, even on Windows.
-    # Don't forget to use absolute paths, not relative paths.
 )
 
 AUTH_PROFILE_MODULE = 'courses.UserProfile'

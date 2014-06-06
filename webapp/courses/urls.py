@@ -47,13 +47,15 @@ urlpatterns = patterns(
     url(r'^(?P<training_name>[^/]+)/$', 'courses.views.training',
         {'raippa_root': settings.BASE_DIR,
          'media_root': settings.MEDIA_ROOT,
-         'media_url': settings.MEDIA_URL,}
+         'media_url': settings.MEDIA_URL,},
+        name='training'
        ),
-    url(r'^(?P<training_name>[^/]+)/graph\.vg$', 'courses.views.course_graph'),
+    url(r'^(?P<training_name>[^/]+)/graph\.vg$', 'courses.views.course_graph', name='course_graph'),
     url(r'^(?P<training_name>[^/]+)/(?P<content_name>[^/]+)/$', 'courses.views.content',
         {'raippa_root': settings.BASE_DIR,
          'media_root': settings.MEDIA_ROOT,
-         'media_url':settings.MEDIA_URL,}
+         'media_url':settings.MEDIA_URL,},
+        name='content'
        ),
     url(r'^(?P<training_name>[^/]+)/(?P<content_name>[^/]+)/check/$', 'courses.views.check_answer',
         {'media_root': settings.MEDIA_ROOT,

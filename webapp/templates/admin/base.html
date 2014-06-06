@@ -38,7 +38,7 @@
                 {% endif %}
                 <a href="{% url 'admin:password_change' %}">{% trans 'Change password' %}</a> /
                 <a href="{% url 'admin:logout' %}">{% trans 'Log out' %}</a> / 
-                <a href="/">{% trans 'Training pages' %}</a>
+                <a href="{% url 'courses:index' %}">{% trans 'Training pages' %}</a><!-- !!!!!!!!!!!!!!!!!!! -->
             {% endblock %}
         </div>
         {% endif %}

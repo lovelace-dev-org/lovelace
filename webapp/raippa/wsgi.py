@@ -12,23 +12,10 @@ that later delegates to the Django one. For example, you could introduce WSGI
 middleware here, or combine a Django application with an application of another
 framework.
 
+https://docs.djangoproject.com/en/dev/howto/deployment/wsgi/
 """
+
 import os
-import sys
-
-# Copied from the old project
-#sys.path.append('/local/django')
-#sys.path.append('/local/django/raippa_ng')
-
-#sys.path.append('/local/django/raippa_ng/raippa')
-
-# Try to use the newest version of django
-#sys.path.insert(0, "/local/django/raippa_ng/Django-1.4")
-
-# Use pygments
-#sys.path.append("/local/django/raippa_ng/pygments")
-sys.path.append('/export/raippa')
-
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "raippa.settings")
 
 # This application object is used by any WSGI server configured to use this
@@ -36,7 +23,3 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "raippa.settings")
 # setting points here.
 from django.core.wsgi import get_wsgi_application
 application = get_wsgi_application()
-
-# Apply WSGI middleware here.
-# from helloworld.wsgi import HelloWorldApplication
-# application = HelloWorldApplication(application)
