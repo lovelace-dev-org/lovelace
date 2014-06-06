@@ -5,6 +5,11 @@
 """
 
 # FUTURE: Use LD_PRELOAD?
+# TODO: Rewrite from scratch, using rabbitmq (and celery?)
+#       - Multiple task processors running at the same time
+#         * Can serve multiple users returning code simultaneously
+#         * Can do multiple tests per file task simultaneously
+#       - Check some ready made containers LXC etc. 
 
 import os
 import re
