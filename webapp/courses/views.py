@@ -358,9 +358,9 @@ def textfield_task_check(content, user, answers, post_data):
                         hints.append(answer.hint)
             except sre_constants.error as e_msg:
                 if user.is_staff:
-                    errors.append(u"Contact staff, regexp error '%s' from regexp: %s" % (e_msg.__unicode__(), answer.answer))
+                    errors.append(u"Contact staff, regexp error '%s' from regexp: %s" % (e_msg.__str__(), answer.answer))
                 else:
-                    errors.append(u"Contact staff! Regexp error '%s' in task '%s'." % (e_msg.__unicode__(), content.name))
+                    errors.append(u"Contact staff! Regexp error '%s' in task '%s'." % (e_msg.__str__(), content.name))
                 correct = False
         else:
             if given == answer.answer and answer.correct:
@@ -413,7 +413,7 @@ def file_task_check(content, user, files_data, post_data):
                                       user=user, answer_date=timezone.now(), collaborators=collaborators)
         f_answer.save()
 
-        for entry_name, uploaded_file in files_data.iteritems():
+        for entry_name, uploaded_file in files_data.items():
             f_filetaskreturnfile = FileTaskReturnFile(fileinfo=uploaded_file, returnable=f_returnable)
             f_filetaskreturnfile.save()
         
@@ -429,13 +429,13 @@ def file_task_check(content, user, files_data, post_data):
         elif "expected" in results.keys():
             ref = "expected"
 
-        for test in results["student"].iterkeys():
+        for test in results["student"].keys():
             # TODO: Do the output and stderr comparison here instead of below
             results_zipped.append(zip(results["student"][test]["outputs"], results[ref][test]["outputs"]))
             results_zipped.append(zip(results["student"][test]["errors"], results[ref][test]["errors"]))
 
-            for name, content in results[ref][test]["outputfiles"].iteritems():
-                if name not in results["student"][test]["outputfiles"].iterkeys():
+            for name, content in results[ref][test]["outputfiles"].items():
+                if name not in results["student"][test]["outputfiles"].keys():
                     correct = False
                 else:
                     if content != results["student"][test]["outputfiles"][name]:
@@ -453,7 +453,7 @@ def file_task_check(content, user, files_data, post_data):
             f_answer.save()
     else:
         files = {}
-        for rf in files_data.itervalues():
+        for rf in files_data.values():
             f = ""
             for chunk in rf.chunks():
                 f += chunk
@@ -470,13 +470,13 @@ def file_task_check(content, user, files_data, post_data):
         elif "expected" in results.keys():
             ref = "expected"
 
-        for test in results["student"].iterkeys():
+        for test in results["student"].keys():
             # TODO: Do the output and stderr comparison here instead of below
             results_zipped.append(zip(results["student"][test]["outputs"], results[ref][test]["outputs"]))
             results_zipped.append(zip(results["student"][test]["errors"], results[ref][test]["errors"]))
 
-            for name, content in results[ref][test]["outputfiles"].iteritems():
-                if name not in results["student"][test]["outputfiles"].iterkeys():
+            for name, content in results[ref][test]["outputfiles"].items():
+                if name not in results["student"][test]["outputfiles"].keys():
                     correct = False
                 else:
                     if content != results["student"][test]["outputfiles"][name]:
@@ -488,7 +488,8 @@ def file_task_check(content, user, files_data, post_data):
                     correct = False
 
     # Get a nice HTML table for the diffs
-    diff_table = filecheck_client.html(results)
+    #diff_table = filecheck_client.html(results)
+    diff_table = ""
 
     return correct, hints, comments, diff_table
 
@@ -543,10 +544,10 @@ def check_answer(request, training_name, content_name, **kwargs):
             random.shuffle(hints)
 
     r_diff_table = u""
-    try:
-        r_diff_table = unicode(diff_table, "utf-8")
-    except UnicodeDecodeError:
-        r_diff_table = unicode(diff_table, "iso-8859-1")
+    #try:
+        #r_diff_table = unicode(diff_table, "utf-8")
+    #except UnicodeDecodeError:
+        #r_diff_table = unicode(diff_table, "iso-8859-1")
 
     t = loader.get_template("courses/task_evaluation.html")
     c = Context({

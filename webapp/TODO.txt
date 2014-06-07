@@ -1,2 +1,16 @@
 allauth to replace django-registration
 silk or django debug toolbar for profiling
+
+rabbitmq:
+    - https://github.com/renshawbay/pika-python3
+
+database:
+    - keep track of the average time to run tests, to use with message queuing
+    - keep track of whether file task returnables have been checked or not
+    - keep track of which tests (with which files etc.) were used for testing
+      each returnable
+    - 
+
+ui:
+    - line references for included code
+        * referenced lines highlighted in the included code box

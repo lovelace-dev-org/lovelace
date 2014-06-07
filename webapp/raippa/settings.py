@@ -125,3 +125,6 @@ TEMPLATE_DIRS = (
 )
 
 AUTH_PROFILE_MODULE = 'courses.UserProfile'
+
+# Celery settings
+BROKER_URL = 'amqp://guest:guest@localhost:5672//'

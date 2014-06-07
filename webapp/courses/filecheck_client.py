@@ -14,7 +14,17 @@ from cgi import escape
 from courses.models import FileTaskTest, FileTaskTestCommand, FileTaskTestExpectedOutput, FileTaskTestExpectedError, FileTaskTestIncludeFile
 from courses.models import FileTaskReturnFile
 
+import courses.tasks as rpc_tasks
+
 def check_file_answer(task, files={}, answer=None):
+    results = {"student":{"asdf":{"outputs":"moi","errors":"","outputfiles":{}}},
+               "reference":{"asdf":{"outputs":"moimoi","errors":"","outputfiles":{}}}}
+
+    result = rpc_tasks.xsum.delay((1, 2, 3, 4, 5))
+
+    return results
+
+def ex_check_file_answer(task, files={}, answer=None):
     """Iterates through all the tests for a returnable package of user content."""
     print("Checking a file")
     _secs = lambda dt: dt.hour*3600+dt.minute*60+dt.second
@@ -91,7 +101,7 @@ def check_file_answer(task, files={}, answer=None):
     results = None
 
     # Encode into base64 in order to avoid trouble
-    for name, contents in codefiles.iteritems():
+    for name, contents in codefiles.items():
         codefiles[name] = base64.b64encode(contents)
 
     # Send the tests and files to the checking server and receive the results
@@ -101,24 +111,24 @@ def check_file_answer(task, files={}, answer=None):
         results = bjsonrpc_client.call.checkWithReference(codefiles, references, tests)
         bjsonrpc_client.close()
 
-        for test_name, test_result in results["reference"].iteritems():
+        for test_name, test_result in results["reference"].items():
             test_result["outputs"] = [base64.b64decode(output) for output in test_result["outputs"]]
             test_result["errors"] = [base64.b64decode(error) for error in test_result["errors"]]
-            for output_file_name, output_file_contents in test_result["outputfiles"].iteritems():
+            for output_file_name, output_file_contents in test_result["outputfiles"].items():
                 test_result["outputfiles"][output_file_name] = base64.b64decode(output_file_contents)
-            for input_file_name, input_file_contents in test_result["inputfiles"].iteritems():
+            for input_file_name, input_file_contents in test_result["inputfiles"].items():
                 test_result["inputfiles"][input_file_name] = base64.b64decode(input_file_contents)
     else:
         results = bjsonrpc_client.call.checkWithOutput(codefiles, tests)
         bjsonrpc_client.close()
         results["expected"] = expected
 
-    for test_name, test_result in results["student"].iteritems():
+    for test_name, test_result in results["student"].items():
         test_result["outputs"] = [base64.b64decode(output) for output in test_result["outputs"]]
         test_result["errors"] = [base64.b64decode(error) for error in test_result["errors"]]
-        for output_file_name, output_file_contents in test_result["outputfiles"].iteritems():
+        for output_file_name, output_file_contents in test_result["outputfiles"].items():
             test_result["outputfiles"][output_file_name] = base64.b64decode(output_file_contents)
-        for input_file_name, input_file_contents in test_result["inputfiles"].iteritems():
+        for input_file_name, input_file_contents in test_result["inputfiles"].items():
             test_result["inputfiles"][input_file_name] = base64.b64decode(input_file_contents)
 
     
@@ -133,7 +143,7 @@ def html(results):
     diff_tables = "<h1>Test results</h1>\n"
     expected = None
     reference = None
-    for test_name, test_result in results["student"].iteritems():
+    for test_name, test_result in results["student"].items():
         # TODO: Use templates instead!
         diff_tables += "<h2>Test: %s</h2>\n" % (escape(str(test_name.decode("utf-8"))))
         if "reference" in results.keys():
@@ -144,7 +154,7 @@ def html(results):
         if test_result["input"]:
             diff_tables += "<h3>Input:</h3>\n<pre class=\"normal\">%s</pre>\n" % (escape(str(test_result["input"].decode("utf-8"))))
         if test_result["inputfiles"]:
-            for inputfile, contents in test_result["inputfiles"].iteritems():
+            for inputfile, contents in test_result["inputfiles"].items():
                 diff_tables += "<h3>Input file: %s</h3>\n<pre class=\"normal\">%s</pre>\n" % (escape(str(inputfile.decode("utf-8"))), escape(contents))
 
         for i, cmd in enumerate(test_result["cmds"]):
@@ -179,7 +189,7 @@ def html(results):
         elif expected:
             exp_outputfiles = expected["outputfiles"]
 
-        for filename, content in exp_outputfiles.iteritems():
+        for filename, content in exp_outputfiles.items():
             diff_tables += "<h3>File: %s</h3>\n" % (str(filename.decode("utf-8")))
 
             exp_content = content.split("\n")
