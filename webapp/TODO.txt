@@ -1,1 +1,2 @@
 allauth to replace django-registration
+silk or django debug toolbar for profiling
