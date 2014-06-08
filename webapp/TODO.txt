@@ -14,6 +14,14 @@ database:
 ui:
     - line references for included code
         * referenced lines highlighted in the included code box
+    - a user bar at the top of the window (facebook/stackoverflow-kinda)
+        * a green "+1" (or "+<number of points>") for each passed task
+        * user history of task tries and other actions
+            o including views for submitted files and entered answers
+
+logic:
+    - prevent viewing of tasks if not linked to a course
+        * except for admins
 
 apt-get:
     - postgresql-server-dev-all libpq-dev (for psycopg2)
