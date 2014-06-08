@@ -37,9 +37,7 @@
     <heading>
       <hgroup>
         <h1>RAiPPA</h1>
-        <!--<img src="{{ STATIC_URL }}diamonds_logo.png" style="float: left; clear: both;" /><h1>Training</h1>-->
         <h2>Remote Automat in Programming Pre-exercise Assignments</h2>
-        <!--<a class="easter_egg" href="http://www.hs.fi/fingerpori/1135248791558">Konevitsa</a> edition</h2>-->
       </hgroup>
     </heading>
     {% include "courses/login-box.html" %}
@@ -57,16 +55,6 @@
       {% endfor %}
     </ul>
     {% endif %}
-          
-    {% if content_list %}
-      <!--<h1>Available content on this training<!-- course </h1>-->
-      <h1>{{ training.name }}</h1>
-      <ul>
-        {% for content in content_list %}
-          <li><a href="/training/{{ training.name }}/{{ content.name }}/">{{ content.name }}</a></li>
-        {% endfor %}
-      </ul>
-    {% endif %}
 
     {% if content_tree %}
       <hr />
@@ -82,9 +70,9 @@
             {% if result %}
               {% if result == 'not_answered' %}
               {% elif result == 'correct' %}
-                <img src="{{ STATIC_URL }}correct.png" alt="Correctly answered!" />
+                <img src="{% static 'courses/correct.png' %}" alt="Correctly answered!" />
               {% elif result == 'incorrect' %}
-                <img src="{{ STATIC_URL }}incorrect.png" alt="Incorrectly answered!" />
+                <img src="{% static 'courses/incorrect.png' %}" alt="Incorrectly answered!" />
               {% endif %}
             {% endif %}
           </li>
