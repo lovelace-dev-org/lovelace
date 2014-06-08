@@ -14,3 +14,14 @@ database:
 ui:
     - line references for included code
         * referenced lines highlighted in the included code box
+
+apt-get:
+    - postgresql-server-dev-all libpq-dev (for psycopg2)
+    - rabbitmq-server (for celery)
+
+pip:
+    - django
+    - pillow
+    - pygments
+    - psycopg2
+    - celery
