@@ -18,6 +18,18 @@ ui:
         * a green "+1" (or "+<number of points>") for each passed task
         * user history of task tries and other actions
             o including views for submitted files and entered answers
+    - admin panel showing the status of needed services:
+        * nginx/apache
+        * mod_wsgi/uwsgi
+        * redis
+        * rabbitmq
+        * postgresql
+        * checking server on/off
+        * LXC
+        * https
+    - admin panel showing the availability of components/plugins:
+        * celery, pygments, pillow, etc.
+    - real time preview for page editing
 
 logic:
     - prevent viewing of tasks if not linked to a course
