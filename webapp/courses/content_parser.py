@@ -19,6 +19,67 @@ from courses.highlighters import highlighters
 
 import courses.blockparser as blockparser
 
+class MarkupParser:
+    """Parser class for generating HTML from the used markup block types."""
+
+    # Each markup component provides its used markup as a regexp and
+    # its block_* and settings_* functions.
+    # Finally, the components are collected to create the markup language.
+    # TODO: Find a way to integrate the blockparser here! Single pass
+    #       would be extremely nice!
+    # TODO: Stateless would be nice.
+    # TODO: Should these be static?
+
+    def __init__(self):
+        self.markups = {}
+        self.block_re = None
+    
+    def add(self, *markups):
+        for markup in markups:
+            self.markups[markup.shortname] = markup
+
+    def compile(self):
+        block = {name : markup.regexp for name, markup in self.markups.items()}
+        self.block_re = re.compile(r"|".join(r"(?P<%s>%s)" % kv for kv in sorted(block.items())))
+        # TODO: Add the Markup's methods
+        for name, markup in self.markups.items():
+            setattr(self, "block_%s" % (name), markup.block)
+            setattr(self, "settings_%s" % (name), markup.settings)
+
+class Markup:
+    def __init__(self, name="", shortname="", description="", regexp=r"^$",
+                 markup_class="", example="", inline=False):
+        self.name = name
+        self.shortname = shorname
+        self.description = description
+        self.regexp = regexp
+        self.markup_class = markup_class
+        self.example = example
+        self.inline = inline
+
+    def block(self):
+        pass
+
+    def settings(self):
+        pass
+
+class SeparatorMarkup(Markup):
+    def __init__(self):
+        name = "Separator"
+        shortname = "separator"
+        description = "A separating horizontal line, hr tag in HTML."
+        regexp = r"^\s*[-]{2}\s*$"
+        markup_class = "miscellaneous"
+        example = "--"
+        inline = False
+        super(SeparatorMarkup, self).__init__(name, shortname, description,
+                                              regexp, markup_class, example,
+                                              inline)
+
+    def block(self):
+        
+    
+
 class ContentParser:
     """Parser class for generating HTML from wiki markup block types."""
     
@@ -36,7 +97,7 @@ class ContentParser:
         "table" : r"^([|]{2}[^|]*)+[|]{2}$",
         "empty" : r"^\s*$",
         "heading" : r"^\s*(?P<len>[=]{1,6})[=]*\s*.+\s*(?P=len)\s*$",
-        #"indent" : r"^[ \t]+", # Indents are not supported
+        #"indent" : r"^[ \t]+", # Indents are not supported, TODO: SUPPORT! just a div block with css margin
     }
     block_re = re.compile(r"|".join(r"(?P<%s>%s)" % kv for kv in sorted(block.items())))
 
