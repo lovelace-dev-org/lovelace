@@ -20,8 +20,11 @@ def check_file_answer(task, files={}, answer=None):
     results = {"student":{"asdf":{"outputs":"moi","errors":"","outputfiles":{}}},
                "reference":{"asdf":{"outputs":"moimoi","errors":"","outputfiles":{}}}}
 
-    result = rpc_tasks.xsum.delay((1, 2, 3, 4, 5))
+    #result = rpc_tasks.xsum.delay((1, 2, 3, 4, 5))
     result = rpc_tasks.run_test.delay(b"\xFF")
+    if result.ready():
+        print("valmis!")
+    print(result.get(timeout=2))
 
     return results
 

@@ -128,3 +128,4 @@ AUTH_PROFILE_MODULE = 'courses.UserProfile'
 
 # Celery settings
 BROKER_URL = 'amqp://guest:guest@localhost:5672//'
+CELERY_RESULT_BACKEND = 'amqp://guest:guest@localhost:5672//'
