@@ -36,6 +36,12 @@ ui:
             o implies per command expected outputs/errors -> hints
         * show the command run
         * etc.
+    - scriptable test result displayer plugins
+        * plugin: classic (results & expected results from stdout, stderr)
+        * plugin: if program (e.g. python) returns with 1, use stacktrace
+          highlighter
+        * plugin: compare two images/graphs/tables
+        * plugin: automatic plugin select based on mimetype
     - How to Use Raippa - tutorial
         * introduces to, e.g., file uploads and reading the test results, hints
           notices etc.
