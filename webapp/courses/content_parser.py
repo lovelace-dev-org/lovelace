@@ -57,10 +57,10 @@ class Markup:
         self.example = example
         self.inline = inline
 
-    def block(self):
+    def block(self, block, settings):
         pass
 
-    def settings(self):
+    def settings(self, matchobj):
         pass
 
 class SeparatorMarkup(Markup):
@@ -75,10 +75,13 @@ class SeparatorMarkup(Markup):
         super(SeparatorMarkup, self).__init__(name, shortname, description,
                                               regexp, markup_class, example,
                                               inline)
+    def block(self, block, settings):
+        yield '<hr>'
 
-    def block(self):
-        
-    
+    def settings(self, matchobj):
+        pass
+
+
 
 class ContentParser:
     """Parser class for generating HTML from wiki markup block types."""

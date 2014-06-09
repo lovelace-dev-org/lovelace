@@ -30,6 +30,16 @@ ui:
     - admin panel showing the availability of components/plugins:
         * celery, pygments, pillow, etc.
     - real time preview for page editing
+    - TEST STAGES for the commands run in tests (compilation phase, run, ...)
+    - checkboxes for test commands:
+        * show output/errors
+            o implies per command expected outputs/errors -> hints
+        * show the command run
+        * etc.
+    - How to Use Raippa - tutorial
+        * introduces to, e.g., file uploads and reading the test results, hints
+          notices etc.
+            o user agent detection for showing the proper file dialogs
 
 logic:
     - prevent viewing of tasks if not linked to a course
