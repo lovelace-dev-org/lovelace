@@ -436,6 +436,7 @@ class FileTaskReturnFile(models.Model):
 class UserFileTaskAnswer(UserAnswer):
     task = models.ForeignKey(FileTask)
     returnable = models.OneToOneField(FileTaskReturnable)
+    #celery_task_id = models.CharField()
 
     def __str__(self):
         #return u"Answer no. %04d: %s" % (self.answer_count, self.returnable)

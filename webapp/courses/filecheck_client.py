@@ -24,7 +24,8 @@ def check_file_answer(task, files={}, answer=None):
     result = rpc_tasks.run_test.delay(b"\xFF")
     if result.ready():
         print("valmis!")
-    print(result.get(timeout=2))
+    print(result.task_id)
+    #print(result.get(timeout=2))
 
     return results
 
