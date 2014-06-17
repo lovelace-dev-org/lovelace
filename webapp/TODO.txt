@@ -46,6 +46,9 @@ ui:
         * introduces to, e.g., file uploads and reading the test results, hints
           notices etc.
             o user agent detection for showing the proper file dialogs
+    - Integrated "free" tips for tasks
+        * Shown to users even before answering
+        * [+] expandable
 
 logic:
     - prevent viewing of tasks if not linked to a course
