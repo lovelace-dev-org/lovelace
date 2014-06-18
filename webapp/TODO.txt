@@ -49,6 +49,11 @@ ui:
     - Integrated "free" tips for tasks
         * Shown to users even before answering
         * [+] expandable
+    - Consider warn before closing the tab warning when there's unsent data
+    - Save the unsent user answers periodically/on changes with AJAX as drafts
+        * Load the unsent answers when loading the page
+    - "View my previous answers" button for tasks
+    - BIG AND VISIBLE green check marks/yellow ?s/red Xs for task correctness
 
 logic:
     - prevent viewing of tasks if not linked to a course
