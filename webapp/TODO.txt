@@ -54,6 +54,8 @@ ui:
         * Load the unsent answers when loading the page
     - "View my previous answers" button for tasks
     - BIG AND VISIBLE green check marks/yellow ?s/red Xs for task correctness
+    - Students can link their returnables straight as links
+        * Links only viewable by teachers and the student
 
 logic:
     - prevent viewing of tasks if not linked to a course
