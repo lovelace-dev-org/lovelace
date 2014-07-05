@@ -14,6 +14,7 @@ database:
 ui:
     - line references for included code
         * referenced lines highlighted in the included code box
+    - keyboard lookalike render for <kbd> tag, stackoverflow-kinda
     - a user bar at the top of the window (facebook/stackoverflow-kinda)
         * a green "+1" (or "+<number of points>") for each passed task
         * user history of task tries and other actions
