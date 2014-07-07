@@ -15,6 +15,13 @@ ui:
     - line references for included code
         * referenced lines highlighted in the included code box
     - keyboard lookalike render for <kbd> tag, stackoverflow-kinda
+    - autofocus forms when the user scrolls the page so that the upmost visible
+      form is autofocused
+    - <meter> element for completed embedded tasks
+        * min=0, max=num of embedded tasks
+        * value=num of completed tasks
+        * optimum=max
+        * high=best achieved num by students for this page
     - a user bar at the top of the window (facebook/stackoverflow-kinda)
         * a green "+1" (or "+<number of points>") for each passed task
         * user history of task tries and other actions
