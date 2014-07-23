@@ -1,38 +1,9 @@
-{% load i18n %}
 {% load staticfiles %}
 <!DOCTYPE html>
 <html>
 {% include "courses/meta.html" %}
 <body>
 <div id="container">
-  {% comment %}
-    <div id="header">
-      <div id="branding">
-        {% block branding %}{% endblock %}
-      </div>
-        <div id="user-tools">
-            {% trans 'Welcome,' %}
-          {% if user.is_active %}
-                <strong>{% filter force_escape %}{% firstof user.first_name user.username %}{% endfilter %}</strong>.
-          {% endif %}
-
-                {% block userlinks %}
-              {% if user.is_active %}
-                      <a href="/accounts/password/change/">{% trans 'Change password' %}</a> /
-                      <a href="/accounts/logout/">{% trans 'Log out' %}</a>
-                {% if user.is_active and user.is_staff %}
-                        <a href="/admin/">{% trans 'Admin pages' %}</a>  
-                {% endif %}
-              {% else %}
-                      please <a href="/accounts/login/">{% trans 'log in' %}</a>
-                {% endif %}
-                {% endblock %}
-        </div>
-        {% block nav-global %}{% endblock %}
-    </div>
-  <!-- END Header -->  
-  {% endcomment %}
-  
   <header class="header"><!-- The RAiPPA header at the top of the page -->
     <heading>
       <hgroup>
