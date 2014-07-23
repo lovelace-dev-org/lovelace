@@ -116,7 +116,7 @@ def course_graph(request, training_name):
  
 def training(request, training_name, **kwargs):
     selected_course = Training.objects.get(name=training_name)
-    navurls = [NavURL(reverse('courses:index'), "Available courses"), # Course
+    navurls = [NavURL(reverse('courses:index'), "Available courses"),
                NavURL(reverse('courses:training', kwargs={"training_name":training_name}), training_name),]
 
     course_graph_url = reverse('courses:course_graph', kwargs={'training_name':training_name})
@@ -150,7 +150,6 @@ def training(request, training_name, **kwargs):
 def dirtree(tree, node, user):
     result = "not_answered"
     if user.is_authenticated():
-#        if user.username == "mdf" or user.username == "testimdf":
         evaluations = None
         try:
             if not evaluations: evaluations = Evaluation.objects.filter(useranswer__usercheckboxtaskanswer__task=node.content, useranswer__user=user)
@@ -194,6 +193,7 @@ def get_task_info(content):
     question = None
     choices = None
     answers = None
+
     try:
         if content.taskpage.radiobuttontask:
             tasktype = "radiobutton"
@@ -323,7 +323,7 @@ def checkbox_task_check(content, user, choices, post_data):
 def textfield_task_check(content, user, answers, post_data):
     points = 0.0
 
-    # Determine, if the given answer was correct and which hints to show
+    # Determine, if the given answer was correct and which hints/comments to show
     correct = True
     correct_found = False
     hints = []
@@ -333,50 +333,40 @@ def textfield_task_check(content, user, answers, post_data):
         given = post_data["answer"].replace("\r\n", "\n").replace("\n\r", "\n")
     else:
         return False, [], [], ["No data sent"]
+
+    re_validate = lambda db_ans, given_ans: re.match(db_ans, given_ans)
+    str_validate = lambda db_ans, given_ans: db_ans == given_ans
+
     for answer in answers:
-        if answer.regexp:
-            try:
-                if re.match(answer.answer, given) and answer.correct:
-                    correct = True
-                    correct_found = True
-                    if answer.comment:
-                        comments.append(answer.comment)
-                elif re.match(answer.answer, given) and not answer.correct:
-                    if not correct_found:
-                        correct = False
-                    if answer.hint:
-                        hints.append(answer.hint)
-                    if answer.comment:
-                        comments.append(answer.comment)
-                elif not re.match(answer.answer, given) and answer.correct:
-                    if not correct_found:
-                        correct = False
-                    if answer.hint:
-                        hints.append(answer.hint)
-            except sre_constants.error as e_msg:
-                if user.is_staff:
-                    errors.append(u"Contact staff, regexp error '%s' from regexp: %s" % (e_msg.__str__(), answer.answer))
-                else:
-                    errors.append(u"Contact staff! Regexp error '%s' in task '%s'." % (e_msg.__str__(), content.name))
+        validate = re_validate if answer.regexp else str_validate
+
+        try:
+            match = validate(answer.answer, given)
+        except re.error as e:
+            if user.is_staff:
+                errors.append("Contact staff, regexp error '%s' from regexp: %s" % (e, answer.answer))
+            else:
+                errors.append("Contact staff! Regexp error '%s' in task '%s'." % (e, content.name))
+            correct = False
+            continue
+
+        if match and answer.correct:
+            correct = True
+            correct_found = True
+            if answer.comment:
+                comments.append(answer.comment)
+        elif match and not answer.correct:
+            if not correct_found:
                 correct = False
-        else:
-            if given == answer.answer and answer.correct:
-                correct = True
-                correct_found = True
-                if answer.comment:
-                    comments.append(answer.comment)
-            elif given == answer.answer and not answer.correct:
-                if not correct_found:
-                    correct = False
-                if answer.hint:
-                    hints.append(answer.hint)
-                if answer.comment:
-                    comments.append(answer.comment)
-            elif given != answer.answer and answer.correct:
-                if not correct_found:
-                    correct = False
-                if answer.hint:
-                    hints.append(answer.hint)
+            if answer.hint:
+                hints.append(answer.hint)
+            if answer.comment:
+                comments.append(answer.comment)
+        elif not match and answer.correct:
+            if not correct_found:
+                correct = False
+            if answer.hint:
+                hints.append(answer.hint)
 
     # Save the results to the database, if the question was answered by a non-anonymous user
     if user.is_authenticated():
