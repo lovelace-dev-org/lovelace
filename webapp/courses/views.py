@@ -227,7 +227,7 @@ def get_task_info(content):
 
     ##
     try:
-        if content.taskpage.lecturepage:
+        if content.lecturepage:
             tasktype = "lecture"
     except ContentPage.DoesNotExist as e:
         pass
