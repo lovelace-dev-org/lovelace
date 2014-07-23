@@ -41,14 +41,11 @@ class NavURL:
 
 def index(request):
     course_list = Training.objects.all()
-    navurls = [NavURL(reverse('courses:index'), "Training home")] # Courses
+    navurls = [NavURL(reverse('courses:index'), "Available courses")]
     t = loader.get_template("courses/index.html")
     c = RequestContext(request, {
         'course_list': course_list,
         'navurls': navurls,
-        'title': 'Available trainings',
-        'python_version': "%d.%d.%d" % (sys.version_info.major, sys.version_info.minor, sys.version_info.micro),
-        'django_version': django.get_version(),
     })
     return HttpResponse(t.render(c))
 
@@ -119,7 +116,7 @@ def course_graph(request, training_name):
  
 def training(request, training_name, **kwargs):
     selected_course = Training.objects.get(name=training_name)
-    navurls = [NavURL(reverse('courses:index'), "Training home"), # Course
+    navurls = [NavURL(reverse('courses:index'), "Available courses"), # Course
                NavURL(reverse('courses:training', kwargs={"training_name":training_name}), training_name),]
 
     course_graph_url = reverse('courses:course_graph', kwargs={'training_name':training_name})
@@ -146,7 +143,7 @@ def training(request, training_name, **kwargs):
         tree.append((mark_safe('<'), None))
         contextdict["content_tree"] = tree
 
-    t = loader.get_template("courses/index.html")
+    t = loader.get_template("courses/course.html")
     c = RequestContext(request, contextdict)
     return HttpResponse(t.render(c))
 
@@ -628,7 +625,7 @@ def content(request, training_name, content_name, **kwargs):
     emb_tasktype = None
     contains_embedded_task = False
 
-    navurls = [NavURL(reverse('courses:index'), "Training home"), # Courses
+    navurls = [NavURL(reverse('courses:index'), "Available courses"), # Courses
                NavURL(reverse('courses:training', kwargs={"training_name":training_name}), training_name),
                NavURL(reverse('courses:content', kwargs={"training_name":training_name, "content_name":content.name}), content.name)]
 
@@ -789,7 +786,7 @@ def content(request, training_name, content_name, **kwargs):
     if "frontpage" in kwargs:
         return c
     else:
-        t = loader.get_template("courses/index.html")
+        t = loader.get_template("courses/contentpage.html")
         return HttpResponse(t.render(c))
 
 def user_profile_save(request):

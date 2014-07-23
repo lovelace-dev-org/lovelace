@@ -1,94 +1,17 @@
+{% extends 'courses/base.html' %}
 {% load staticfiles %}
-<!DOCTYPE html>
-<html>
-{% include "courses/meta.html" %}
-<body>
-<div id="container">
-  <header class="header"><!-- The RAiPPA header at the top of the page -->
-    <heading>
-      <hgroup>
-        <h1>RAiPPA</h1>
-        <h2>Remote Automat in Programming Pre-exercise Assignments</h2>
-      </hgroup>
-    </heading>
-    {% include "courses/login-box.html" %}
-  </header>  
-  
-  {% block nav-global %}{% endblock %}
-  {% include "courses/nav-bar.html" %}
 
-  <section class="page_content"><!-- The RAiPPA content -->
-    {% if course_list %}
-    <h1>Available courses</h1>
-    <ul>
-      {% for course in course_list %}
-        <li><a href="/{{ course.name }}/">{{ course.name }}</a></li>
-      {% endfor %}
-    </ul>
-    {% endif %}
+{% block page-title %}RAiPPA - Available courses{% endblock %}
 
-    {% if content_tree %}
-      <hr />
-      <h2>Table of contents</h2>
-      {% for list_direction, result in content_tree %}
-        {% if list_direction == '>' %}
-          <ul>
-        {% elif list_direction == '<' %}
-          </ul>
-        {% else %}
-          <li>
-            <a href="/{{ training.name }}/{{ list_direction.url_name }}/">{{ list_direction.name }}</a>
-            {% if result %}
-              {% if result == 'not_answered' %}
-              {% elif result == 'correct' %}
-                <img src="{% static 'courses/correct.png' %}" alt="Correctly answered!" />
-              {% elif result == 'incorrect' %}
-                <img src="{% static 'courses/incorrect.png' %}" alt="Incorrectly answered!" />
-              {% endif %}
-            {% endif %}
-          </li>
-        {% endif %}
-      {% endfor %}
-      <hr />
-    {% endif %}
-
-    {% comment %}
-      {% if course_graph_url %}
-        <h1>{{ training.name }}</h1>
-        <div class="graph">
-          <div id="canviz"></div>
-        </div>
-        <div id="debug_output"></div>
-      {% endif %}
-    {% endcomment %}
-
-    {% if content or tasktype %}
-      {{ content|safe }}
-      {% include "courses/task.html" %}
-      {% if user.is_active and user.is_staff %}
-        <div class="admin_tools">
-          <h1>Teacher's toolbox for {{ content_name }}</h1>
-          <a href="{% url 'stats:single_task' content_urlname %}">Statistics</a><br/>
-          <a href="{{ admin_url }}">Edit this task</a><br />
-          <span>Url-name: </span><span>{{ content_urlname }}</span>
-        </div>
-      {% endif %}
-    {% endif %}
-  </section>
-  
-  <footer><!-- The footer -->
-    <div class="column0">
-      Site design &amp; backend<br />
-      by Miikka Salminen
-    </div>
-    <div class="column1">
-      Powered by
-      Python <span class="python-version">{{ python_version }}</span>,
-      Django <span class="django-version">{{ django_version }}</span> and
-      jQuery <span class="jquery-version"></span>.
-    </div>
-  </footer>
-</div>
-
-</body>
-</html>
+{% block page-content %}
+{% if course_list %}
+  <h1>Available courses</h1>
+  <ul>
+    {% for course in course_list %}
+      <li><a href="/{{ course.name }}/">{{ course.name }}</a></li>
+    {% endfor %}
+  </ul>
+{% else %}
+  No courses available!
+{% endif %}
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends 'courses/base.html' %}
+{% load staticfiles %}
+
+{% block page-title %}RAiPPA - {{ title }}{% endblock %}
+
+{% block page-content %}
+{% if content_tree %}
+  <hr>
+  <h2>Table of contents</h2>
+  {% for list_direction, result in content_tree %}
+    {% if list_direction == '>' %}
+      <ul>
+        {% elif list_direction == '<' %}
+      </ul>
+    {% else %}
+      <li>
+        <a href="/{{ training.name }}/{{ list_direction.url_name }}/">{{ list_direction.name }}</a>
+        {% if result %}
+          {% if result == 'not_answered' %}
+          {% elif result == 'correct' %}
+            <img src="{% static 'courses/correct.png' %}" alt="Correctly answered!">
+          {% elif result == 'incorrect' %}
+            <img src="{% static 'courses/incorrect.png' %}" alt="Incorrectly answered!">
+          {% endif %}
+        {% endif %}
+      </li>
+    {% endif %}
+  {% endfor %}
+  <hr>
+{% endif %}
+
+{% if content or tasktype %}
+  {{ content|safe }}
+  {% include "courses/task.html" %}
+  {% if user.is_active and user.is_staff %}
+    <div class="admin_tools">
+      <h1>Teacher's toolbox for {{ content_name }}</h1>
+      <a href="{% url 'stats:single_task' content_urlname %}">Statistics</a><br/>
+      <a href="{{ admin_url }}">Edit this task</a><br />
+      <span>Url-name: </span><span>{{ content_urlname }}</span>
+    </div>
+  {% endif %}
+{% endif %}
+{% endblock %}
