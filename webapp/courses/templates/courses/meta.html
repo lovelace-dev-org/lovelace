@@ -1,48 +1,32 @@
 {% load staticfiles %}
 <head>
-  {% include "courses/meta-block.html" %}
-  <meta charset="UTF-8" />
-  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-  <meta http-equiv="Content-Style-Type" content="text/css" />
-  <meta http-equiv="Content-Script-Type" content="text/javascript" />
+  <meta charset="UTF-8">
   
-  <meta name="description" content="RAiPPA Online Learning/Teaching Environment" />
-  <meta name="keywords" content="RAiPPA,Python,tutorial" />
-  <meta name="author" content="Miikka Salminen" />
-  <meta name="application-name" content="RAiPPA programming task" />
+  <meta name="description" content="RAiPPA Online Learning/Teaching Environment">
+  <meta name="keywords" content="RAiPPA,Python,tutorial">
+  <meta name="author" content="Miikka Salminen">
+  <meta name="application-name" content="RAiPPA programming task">
   
-  <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=Inconsolata" type="text/css" />
-  <link rel="shortcut icon" href="{% static 'courses/favicon.ico' %}" />
-  <link rel="stylesheet" href="{% static 'courses/raippa.css' %}" type="text/css" />
-  <link rel="stylesheet" href="{% static 'courses/python_hilite.css' %}" type="text/css" />
-  <link rel="stylesheet" href="{% static 'courses/pythonconsole_hilite.css' %}" type="text/css" />
-  <link rel="stylesheet" href="{% static 'courses/pythontraceback_hilite.css' %}" type="text/css" />
-  <link rel="stylesheet" href="{% static 'courses/c_hilite.css' %}" type="text/css" />
+  <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=Inconsolata">
+  <link rel="shortcut icon" href="{% static 'courses/favicon.ico' %}">
+  <link rel="stylesheet" href="{% static 'courses/raippa.css' %}">
+  <link rel="stylesheet" href="{% static 'courses/syntax.css' %}">
+  <link rel="stylesheet" href="{% static 'courses/blockcode.css' %}">
   
-  <script type="text/javascript" src="{% static 'courses/raippa.js' %}" charset="UTF-8"></script>
+  <script src="{% static 'courses/jquery-2.1.1.min.js' %}"></script>
+  <script src="{% static 'courses/raippa.js' %}"></script>
+  <script src="{% static 'courses/blockcode.js' %}"></script>
+  <script src="{% static 'courses/task.js' %}"></script>
+  <script src="{% static 'courses/calendar.js' %}"></script>
+  <script>
+    $(document).ready(function() {
+      addLineNumbers();
+      setColumnWidths();
+      setLineWidths();
+      setPreHeights();
 
-  {% if course_graph_url__ %} <!-- disabled support for course graph, since canviz conflicts with jquery -->
-    <meta name="MSSmartTagsPreventParsing" content="true" />
-    <!--[if IE]><script type="text/javascript" src="../../excanvas/excanvas.js"></script><![endif]-->
-    <script type="text/javascript" src="{% static 'courses/canviz-0.1/prototype/prototype.js' %}"></script>
-    <script type="text/javascript" src="{% static 'courses/canviz-0.1/path/path.js' %}"></script>
-    <script type="text/javascript" src="{% static 'courses/canviz-0.1/canviz.js' %}"></script>
-    <!--<script type="text/javascript">
-      //document.observe('dom:loaded', function() {
-      //  new Canviz('canviz', '{{ course_graph_url }}');
-      //});
-    </script>-->
-  {% endif %}
-
-  {% if tasktype or emb_tasktype or contains_embedded_task %}
-    <script type="text/javascript" src="{% static 'courses/task.js' %}" charset="UTF-8"></script>
-  {% endif %}
-  <script type="text/javascript" src="{% static 'courses/calendar.js' %}" charset="UTF-8"></script>
-
-  <script type="text/javascript">
-     $(document).ready(function() {
-       $("span.jquery-version").html($.fn.jquery);
-     });
+      $("span.jquery-version").html($.fn.jquery);
+    });
   </script>
   
   {% if title %}
