@@ -1,3 +1,24 @@
+// TODO: Use the following code
+// http://stackoverflow.com/questions/7335780/how-to-post-a-django-form-with-ajax-jquery
+function x_validateAnswer(form_id) {
+    // TODO: File uploads.
+    var answer_form = $('#' + form_id);
+    answer_form.submit(function(event) {
+        event.preventDefault();
+        $.ajax({
+            type: answer_form.attr('method'),
+            url: answer_form.attr('action'),
+            data: answer_form.serialize(),
+            success: function(data) {
+                $('#' + result_div_id).html(data);
+            },
+            error: function(data) {
+                $('#' + error_div_id).html("XHR Error!");
+            }
+        }
+    }
+}
+
 function validateAnswer(e, answer_check_url, task_name) {
     e.preventDefault(); // Prevent the form from submitting
     var xhr;

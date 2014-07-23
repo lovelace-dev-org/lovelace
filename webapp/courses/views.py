@@ -454,7 +454,7 @@ def file_task_check(content, user, files_data, post_data):
     else:
         files = {}
         for rf in files_data.values():
-            f = ""
+            f = bytes()
             for chunk in rf.chunks():
                 f += chunk
             files[rf.name] = f

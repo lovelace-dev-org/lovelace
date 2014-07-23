@@ -24,6 +24,28 @@ def xsum(numbers):
 def run_test(test_data):
     return "lollerolle-lol"
 
+# TODO: Subtask division:
+#       - Run all tests:
+#           * individual tests for the student's program
+#           * chainable stages (e.g. save the results of compilation, and then
+#             use these results for each of the tests)
+#           * dependent stages (e.g. must pass compilation to even try running)
+#       - Run all reference program tests
+#           * stages that depend on student's test stage success (no need run
+#             if student's code fails to compile etc.)
+#           * cacheable reference tests results
+#               o checkbox for marking whether the results _can_ be cached
+#                 (e.g. using an input generator prevents reference result
+#                  caching -> automatically disable checkbox)
+#       - Calculate the diffs in between the tests
+#           * correct/failed status for individual tests!
+
+# TODO: Progress checking!
+#       - which subtasks have been completed
+#       - how many tests have failed, how many have been correct
+#       - how many and what kind are left
+
+# TODO: Celery worker status checking:
 # http://stackoverflow.com/questions/8506914/detect-whether-celery-is-available-running    
 def get_celery_worker_status():
     ERROR_KEY = "ERROR"
