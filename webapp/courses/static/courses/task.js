@@ -15,8 +15,8 @@ function x_validateAnswer(form_id) {
             error: function(data) {
                 $('#' + error_div_id).html("XHR Error!");
             }
-        }
-    }
+        });
+    });
 }
 
 function validateAnswer(e, answer_check_url, task_name) {
