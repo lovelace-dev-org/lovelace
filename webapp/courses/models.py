@@ -95,7 +95,7 @@ class File(models.Model):
     name = models.CharField(verbose_name='Name for reference in content',max_length=200,unique=True)
     date_uploaded = models.DateTimeField(verbose_name='date uploaded') # TODO: Make the current date default
     typeinfo = models.CharField(max_length=200)
-    fileinfo = models.FileField(upload_to=get_file_upload_path)
+    fileinfo = models.FileField(max_length=255, upload_to=get_file_upload_path)
 
     def __str__(self):
         return self.name
@@ -337,7 +337,7 @@ class FileTaskTestIncludeFile(models.Model):
     chgrp_settings = models.CharField(verbose_name='File group ownership',max_length=10,default="OWNED",choices=FILE_OWNERSHIP_CHOICES)
     chmod_settings = models.CharField(verbose_name='File access mode',max_length=10,default="rw-rw-rw-") # TODO: Create validator and own field type
 
-    fileinfo = models.FileField(upload_to=get_testfile_path)
+    fileinfo = models.FileField(max_length=255, upload_to=get_testfile_path)
 
     def __str__(self):
         return u"%s - %s" % (self.purpose, self.name)
@@ -406,6 +406,8 @@ class UserAnswer(models.Model):
     user = models.ForeignKey(User)                # Whose answer is this?
     answer_date = models.DateTimeField(verbose_name='Date and time of when the user answered this task')
     collaborators = models.TextField(verbose_name='Which users was this task answered with', blank=True, null=True)
+    checked = models.BooleanField(verbose_name='This answer has been checked', default=False)
+    draft = models.BooleanField(verbose_name='This answer is a draft', default=False)
 
 # TODO: Rewrite this system to take multiple tests and all test data into account!
 class FileTaskReturnable(models.Model):
@@ -431,7 +433,7 @@ def get_answerfile_path(instance, filename):
 class FileTaskReturnFile(models.Model):
     """File that a user returns for checking."""
     returnable = models.ForeignKey(FileTaskReturnable)
-    fileinfo = models.FileField(upload_to=get_answerfile_path)
+    fileinfo = models.FileField(max_length=255, upload_to=get_answerfile_path)
 
     def filename(self):
         return os.path.basename(self.fileinfo.name)
