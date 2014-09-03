@@ -1,1 +1,5 @@
 *.pyc
+webapp/bin/
+webapp/db.sqlite3
+webapp/lib/
+webapp/pyvenv.cfg
