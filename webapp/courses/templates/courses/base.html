@@ -34,25 +34,44 @@
   </head>
   <body>
     <div id="container">
-      <header class="header"><!-- The RAiPPA header at the top of the page -->
-        <heading>
-          <hgroup>
-            <h1>RAiPPA</h1>
-            <h2>Remote Automat in Programming Pre-exercise Assignments</h2>
-          </hgroup>
-        </heading>
-        {% include "courses/login-box.html" %}
+      <header>
+        <div id="container-top">
+          <heading>
+            <hgroup>
+              <h1>RAiPPA</h1>
+              <h2>Remote Automat in Programming Pre-exercise Assignments</h2>
+            </hgroup>
+          </heading>
+          {% include "courses/login-box.html" %}
+        </div>
       </header>
       
-      {% block nav-global %}{% endblock %}
-      {% include "courses/nav-bar.html" %}
+      {% block breadcrumb %}
+      <nav class="breadcrumb">
+        <div class="nav-title">Trail:</div>
+        <ul>
+          {% for navurl in navurls %}
+            {% if forloop.first %}
+            {% else %}
+              <div class="separator">»</div>
+            {% endif %}
+
+            {% if forloop.last %}
+              <li class="last">{{ navurl.name }}</li>
+            {% else %}
+              <li><a href="{{ navurl.url }}">{{ navurl.name }}</a></li>
+            {% endif %}
+          {% endfor %}
+        </ul>
+      </nav>
+      {% endblock %}
       
-      <section class="page_content"><!-- The RAiPPA content -->
+      <section class="content">
         {% block page-content %}
         {% endblock %}
       </section>
   
-      <footer><!-- The footer -->
+      <footer>
         <div class="column0">
           <p>Site design &amp; backend</p>
           <p>by Miikka Salminen</p>
@@ -61,6 +80,6 @@
           Powered by Python, Django and jQuery.
         </div>
       </footer>
-    </div>
+    </div><!-- container -->
   </body>
 </html>

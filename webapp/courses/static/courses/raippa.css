@@ -17,39 +17,54 @@ html {
 }
 
 body {
+    background-image: url("200-90-15-monochrome.png");
+    background-color: #143a14;
     height: 100%;
 }
 
 div#container {
+    margin-left: auto;
+    margin-right: auto;
+    width: 1000px;
     position: relative;
-    min-height: 100%;
+    height: 100%;
 }
 
 /* HEADER */
-header.header {
-    background: #052;
-    background: -moz-linear-gradient(top, #242, #576);
+header {
+    /* background: #052; */
+    /*background: -moz-linear-gradient(top, rgba(46, 134, 46, 0.5), rgba(46, 134, 46, 0.9)),*/
+    background-image: url("200-90-15-monochrome.png");
+    background-color: #2e862e;
+    /*
     background: -ms-linear-gradient(top, #242, #576);
     background: -o-linear-gradient(top, #242, #576);
     background: -webkit-linear-gradient(top, #242, #576);
     background: linear-gradient(top, #242, #576);
+    */
 
     top: 0px;
     left: 0px;
     width: 100%;
-    height: 100px;
+    height: 6em;
 }
 
-    header.header heading {
-        color: #eee;
+div#container-top {
+    margin-left: auto;
+    margin-right: auto;
+    width: 1000px;
+}
+
+    div#container-top heading {
+        color: #143a14;
         font-family: arial;
-        position: absolute;
-        left: 40px;
+        position: relative;
+
         top: 20px;
-        text-align: center;
+        /*text-align: center;*/
     }
 
-    header.header heading h1 {
+    div#container-top heading h1 {
         text-shadow: 0px 0px 5px rgba(255, 255, 255, 0.9);
         font-style: normal;
         font-weight: normal;
@@ -57,7 +72,7 @@ header.header {
         display: inline-block;
     }
 	
-    header.header heading h2 {
+    div#container-top heading h2 {
         text-shadow: 0px 0px 3px rgba(255, 255, 255, 0.9);
         font-style: italic;
         font-weight: normal;
@@ -67,12 +82,7 @@ header.header {
         margin-top: -20px;
     }
 	
-    header.header a.easter_egg {
-        text-decoration: none;
-        color: #eee;
-    }
-	
-    header.header div.login form fieldset {
+    div#container-top div.login form fieldset {
         color: #eee;
         font-family: arial;
         font-size: 12px;
@@ -88,49 +98,48 @@ header.header {
         background: #5a7760;
     }
 
-    header.header div.login form fieldset legend {
+    div#container-top div.login form fieldset legend {
         font-size: 15px;
         font-weight: bold;
     }
 
-    header.header div.login form fieldset div {
-        position: absolute;
+    div#container-top div.login form fieldset div {
+        position: relative;
         left: 5px;
         bottom: 5px;
     }
-    header.header div.login form fieldset a {
+    div#container-top div.login form fieldset a {
         color: #6cf;
     }
-    header.header div.login form fieldset a:visited {
+    div#container-top div.login form fieldset a:visited {
         color: #faf;
     }
 
-    header.header div.login form label {
+    div#container-top div.login form label {
         display: block;
         float: left;
         width: 80px;
         text-align: right;
     }
 	
-    header.header div.login form {
+    div#container-top div.login form {
         width: auto;
     }
 	
-    header.header div.login form input#loginbutton {
+    div#container-top div.login form input#loginbutton {
         float: right;
     }
 
 /* NAVIGATION */
 nav.breadcrumb {
-    background: #b6ffb6;
+    /*background: #b6ffb6;*/
+    background-image: url("200-90-15-monochrome.png");
+    background-color: #39ad39;
     left: 0px;
-    height: 100%;
+    height: 2em;
     font-family: arial;
     font-size: 12px;
     font-weight: bold;
-    padding-left: 20px;
-    padding-top: 4px;
-    padding-bottom: 4px;
 }
 
     nav.breadcrumb div {
@@ -176,7 +185,7 @@ nav.breadcrumb {
             }
 
 /* MAIN CONTENT */
-section.page_content {
+section.content {
     top: 0px;
     background: #fff;
     margin-left: auto;
@@ -185,16 +194,17 @@ section.page_content {
     font-family: arial;
     font-size: 15px;
     line-height: 120%;
-    padding-bottom: 32px; /* Size of footer */
-    width: 60%;
+    padding-bottom: 3em; /* Size of footer */
+    min-height: calc(100% - 8em); /* Header 6em, breadcrumbs 2em, footer 3em*/
+    word-wrap: break-word;
 }
-    section.page_content h1, section.page_content h2, section.page_content h3, section.page_content h4, section.page_content h5, section.page_content h6 {
+    section.content h1, section.content h2, section.content h3, section.content h4, section.content h5, section.content h6 {
         font-family: "Trebuchet MS", "Helvetica", sans-serif;
         font-weight: normal;
         margin-bottom: 1em;
     }
 
-    section.page_content h1 {
+    section.content h1 {
         font-size: 24.0px;
         margin-top: 1em;
 	margin-left: -25px;
@@ -203,40 +213,40 @@ section.page_content {
         text-shadow: rgba(127, 127, 127, 63) 1px 1px 1px;
         /*text-decoration: underline;*/
     }
-    section.page_content h2 {
+    section.content h2 {
         font-size: 22px;
         margin-top: 24px;
 	margin-left: -15px;
         text-shadow: rgba(127, 127, 127, 63) 1px 1px 1px;
     }
-    section.page_content h3 {
+    section.content h3 {
         font-size: 18px;
         margin-top: 24px;
         text-shadow: rgba(127, 127, 127, 127) 1px 1px 1px;
     }
-    section.page_content h4 {
+    section.content h4 {
         font-size: 16px;
         margin-bottom: 0.5em;
         font-weight: bold;
     }
-    section.page_content h5 {
+    section.content h5 {
         font-size: 15px;
         margin-bottom: 0.5em;
         font-weight: bold;
     }
-    section.page_content h6 {
+    section.content h6 {
         font-size: 14px;
         margin-bottom: 0.5em:
         font-weight: bold;
     }
     
-    section.page_content > img {
+    section.content > img {
         margin-top: 0.5em;
         margin-left: 0.5em;
         margin-bottom: 1em;
     }
 
-    section.page_content hr {
+    section.content hr {
         margin-bottom: 10px;
         margin-left: -16px;
         height: 1px;
@@ -244,41 +254,41 @@ section.page_content {
         background: #000;
     }
 
-    section.page_content p {
+    section.content p {
         margin-bottom: 8px;
     }
     
-    section.page_content div.normal {
+    section.content div.normal {
         margin-bottom: 15px;
         margin-right: 15px;
     }
 
-    section.page_content ul, section.page_content ol {
+    section.content ul, section.content ol {
         margin-left: 1.5em;
         margin-bottom: 5px;
     }
 
-    section.page_content ul > li, section.page_content ol > li {
+    section.content ul > li, section.content ol > li {
         margin-bottom: 4px;
     }
         
-    section.page_content * ul ul, section.page_content * ul ol, section.page_content * ol ol, section.page_content * ol ul {
+    section.content * ul ul, section.content * ul ol, section.content * ol ol, section.content * ol ul {
         margin-left: 1.5em;
         margin-bottom: 0px;
     }
 
-    section.page_content table {
+    section.content table {
         border-collapse: collapse;
         border: 1px solid #8a8;
         margin-bottom: 5px;
     }
 
-    section.page_content table th, section.page_content table td {
+    section.content table th, section.content table td {
         border: 1px solid #8a8;
         padding: 2px 4px 2px 4px;
     }
 
-        section.page_content p code, section.page_content table * code, section.page_content ul * code {
+        section.content p code, section.content table * code, section.content ul * code {
             font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
             background: #ffb;
             font-size: 14.5px;
@@ -290,33 +300,33 @@ section.page_content {
             border-color: #bbb;
         }
 
-        section.page_content * a {
+        section.content * a {
             color: #282;
         }
-        section.page_content * a:visited {
+        section.content * a:visited {
             color: #828;
         }
-        section.page_content * a:hover {
+        section.content * a:hover {
             color: #fff;
             background: #282;
         }
 
-        section.page_content p mark {
+        section.content p mark {
             background: #ff0;
         }
 
-	section.page_content form.feedback {
+	section.content form.feedback {
 	}
 
-        section.page_content div.question {
+        section.content div.question {
             margin-bottom: 0px;
         }
 
-        section.page_content form.task {
+        section.content form.task {
 	    width: 100%;
         }
 
-	section.page_content pre.normal {
+	section.content pre.normal {
 		white-space: pre;
 		overflow-x: auto;
 		width: auto;
@@ -329,12 +339,12 @@ section.page_content {
                 padding: 5px;
 	}
 
-        section.page_content pre.normal code {
+        section.content pre.normal code {
             background: #ccc;
             font-family: inherit;
         }
         
-        section.page_content div.embedded_task {
+        section.content div.embedded_task {
             border: 1px solid #ebebeb;
             width: 100%;
             background: #daffda;
@@ -342,20 +352,20 @@ section.page_content {
             margin-bottom: 10px;
         }
 
- 	section.page_content div.embedded_task h1 {
+ 	section.content div.embedded_task h1 {
 	    margin-left: 0px;
 	}
 
- 	section.page_content div.embedded_task h2 {
+ 	section.content div.embedded_task h2 {
 	    margin-left: 0px;
 	}
 
 
-        section.page_content div.question {
+        section.content div.question {
             margin-bottom: 16px;
         }
 
-        section.page_content div.question form {
+        section.content div.question form {
             margin-top: 5px;
             padding: 9px;
             border: 2px solid rgb(224,224,224);
@@ -363,17 +373,17 @@ section.page_content {
             background: #eeffee;
         }
 
-            section.page_content div.question form label.file {
+            section.content div.question form label.file {
                 display: inline-block;
                 clear: both;
                 width: 160px;
             }
 
-            section.page_content div.question form input.task_file {
+            section.content div.question form input.task_file {
                 clear: both;
             }
 
-            section.page_content div.question form div.answered_status {
+            section.content div.question form div.answered_status {
                 display: inline;
             }
 
@@ -384,55 +394,55 @@ section.page_content {
                 color: red;
             }
 
-       section.page_content div.auth_warning {
+       section.content div.auth_warning {
             font-weight: bold;
             color: red;
         }
 
-        section.page_content div#result {
+        section.content div#result {
             width: 100%;
             /*padding-left: 32px;*/
         }
 
-        section.page_content pre {
+        section.content pre {
             width: auto;
         }
 
-        section.page_content span.evaluation {
+        section.content span.evaluation {
             font-weight: bold;
             font-size: 15px;
             vertical-align: middle;
         }
-        section.page_content span.evaluation:before {
+        section.content span.evaluation:before {
             content: ">>>";
             font-size: 19px;
             color: #aaa;
             font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
         }
 
-        section.page_content div#result div.hintbox {
+        section.content div#result div.hintbox {
             
         }
 
-        section.page_content div#result div.test {
+        section.content div#result div.test {
             padding: 9px;
             border: 2px solid rgb(224,224,224);
             background: #e7ffe7;
         }            
 
-        section.page_content div#result h_1 {
+        section.content div#result h_1 {
             font-size: 20px;
             margin-top: 16px;
             /*border-top: 1px solid grey;*/
         }
-        section.page_content div#result h_2 {
+        section.content div#result h_2 {
             margin-top: 8px;
             font-size: 18px;
         }
-        section.page_content div#result h_3 {
+        section.content div#result h_3 {
             font-size: 16px;
         }
-        section.page_content div#result h3 span.command {
+        section.content div#result h3 span.command {
             white-space: pre;
             font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
         }
@@ -441,29 +451,29 @@ section.page_content {
          * The results table
          */
 
-        section.page_content div#result table {
+        section.content div#result table {
             table-layout: fixed;
             width: 100%;
         }
 
-        section.page_content div#result table colgroup.student col.lnum {
+        section.content div#result table colgroup.student col.lnum {
             width: 38px;
         }
-        section.page_content div#result table colgroup.student {
+        section.content div#result table colgroup.student {
             width: 50%;
         }
-        section.page_content div#result table colgroup.expected col.lnum {
+        section.content div#result table colgroup.expected col.lnum {
             width: 38px;
         }
-        section.page_content div#result table colgroup.expected {
+        section.content div#result table colgroup.expected {
             width: 50%;
         }
 
-        section.page_content div#result table th {
+        section.content div#result table th {
             background: #ccc;
         }
 
-        section.page_content div#result table td {
+        section.content div#result table td {
             white-space: pre-wrap;
             overflow-x: hidden;
             word-wrap: break-word;
@@ -471,31 +481,31 @@ section.page_content {
             font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
         }
 
-        section.page_content div#result table td.diff_next {
+        section.content div#result table td.diff_next {
             width: 10px;
         }
 
-        section.page_content div#result table td.diff_header {
+        section.content div#result table td.diff_header {
             width: 20px;
         }
 
-        section.page_content div#result table th.diff_header {
+        section.content div#result table th.diff_header {
             /*width: 500px;*/
         }
 
-        section.page_content div#result table span.diff_sub {
+        section.content div#result table span.diff_sub {
             background: #f99;
         }
 
-        section.page_content div#result table span.diff_chg {
+        section.content div#result table span.diff_chg {
             background: #99f;
         }
 
-        section.page_content div#result table span.diff_add {
+        section.content div#result table span.diff_add {
             background: #9f9;
         }
     
-    section.page_content div.admin_tools {
+    section.content div.admin_tools {
         margin-top: 32px;
         margin-bottom: 10px;
         padding: 9px;
@@ -504,7 +514,7 @@ section.page_content {
         background: #eeffee;
         width: 100%;
     }
-        section.page_content div.admin_tools h1 {
+        section.content div.admin_tools h1 {
             font-size: 16px;
             margin-left: 0px;
         }
@@ -514,9 +524,10 @@ footer {
 	font-family: arial, sans-serif;
 	font-size: 12px;
 	background: #b6ffb6;
-        position: absolute;
+        position: relative;
         bottom: 0;
-	height: 32px;
+	height: 3em;
+        margin-top: -3em;
         width: 100%;
 }
 
