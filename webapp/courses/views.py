@@ -965,6 +965,7 @@ def show_answers(request, user, course, task):
     # TODO: Error checking for tasks that don't belong to this course
     
     answers = []
+
     if tasktype == "radiobutton":
         answers = UserRadioButtonTaskAnswer.objects.filter(user=user_obj, task=task_obj)
     elif tasktype == "checkbox":

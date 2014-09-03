@@ -159,14 +159,17 @@ class ContentPage(models.Model):
     name = models.CharField(max_length=200, help_text="The full name of this page")
     url_name = models.CharField(max_length=200,editable=False) # Use SlugField instead?
     short_name = models.CharField(max_length=32, help_text="The short name is used for referring this page on other pages")
-    content = models.TextField(blank=True,null=True)
-    maxpoints = models.IntegerField(blank=True,null=True)
+    content = models.TextField(verbose_name="Page content body", blank=True, null=True)
+    maxpoints = models.IntegerField(verbose_name="Maximum points", blank=True, null=True,
+                                    help_text="The maximum points a user can gain by finishing this task correctly")
     access_count = models.IntegerField(editable=False,blank=True,null=True)
     tags = models.TextField(blank=True,null=True)
+
     feedback_questions = models.ManyToManyField('ContentFeedbackQuestion', blank=True, null=True)
     require_correct_embedded_tasks = models.BooleanField(verbose_name='Embedded tasks must be answered correctly to mark this task correct',default=True)
 
     def _shortify_name(self):
+        # duplicate page warning! what if two pages have the same [0:32]?
         return self.name[0:32]
 
     def get_url_name(self):
@@ -250,7 +253,7 @@ def default_timeout(): return datetime.time(0,0,5)
 
 class FileTaskTest(models.Model):
     task = models.ForeignKey(FileTask)
-    name = models.CharField("Test name",max_length=200)
+    name = models.CharField(verbose_name="Test name", max_length=200)
     timeout = models.TimeField(default=default_timeout)     # How long is the test allowed to run before sending a KILL signal?
     POSIX_SIGNALS_CHOICES = (
         ('None', "Don't send any signals"),
@@ -399,7 +402,7 @@ class Evaluation(models.Model):
             return u"Correct answer to (todo: task) by %s with %f points: %s" % (self.useranswer.user.username, self.points, self.feedback)
         else:
             return u"Incorrect answer to (todo: task) by %s with %f points: %s" % (self.useranswer.user.username, self.points, self.feedback)
-    
+
 class UserAnswer(models.Model):
     """Parent class for what users have given as their answers to different tasks."""
     evaluation = models.OneToOneField(Evaluation) # A single answer is always linked to a single evaluation
