@@ -18,8 +18,8 @@ class UserProfile(models.Model):
     # https://docs.djangoproject.com/en/dev/topics/auth/#storing-additional-information-about-users
     # http://stackoverflow.com/questions/44109/extending-the-user-model-with-custom-fields-in-django
     user = models.OneToOneField(User)
-    student_id = models.IntegerField('Student number', blank=True, null=True)
-    study_program = models.CharField('Study program', max_length=80, blank=True, null=True)
+    student_id = models.IntegerField(verbose_name='Student number', blank=True, null=True)
+    study_program = models.CharField(verbose_name='Study program', max_length=80, blank=True, null=True)
 
     def __str__(self):
         return "%s's profile" % self.user
@@ -54,10 +54,13 @@ class Training(models.Model):
     A course also holds its own set of files (source code, images, pdfs, etc.) with their metadata.
     """
     name = models.CharField(max_length=200)
-    frontpage = models.ForeignKey('LecturePage', blank=True,null=True)
+    frontpage = models.ForeignKey('LecturePage', blank=True,null=True) # TODO: Create one automatically!
     contents = models.ManyToManyField('ContentGraph', blank=True,null=True) # TODO: Rethink the content graph system!
-    start_date = models.DateTimeField('Date and time after which the training is available',blank=True,null=True)
-    end_date = models.DateTimeField('Date and time on which the training becomes obsolete',blank=True,null=True)
+
+    start_date = models.DateTimeField(verbose_name='Date and time after which the training is available',blank=True,null=True)
+    end_date = models.DateTimeField(verbose_name='Date and time on which the training becomes obsolete',blank=True,null=True)
+    # TODO: Registration start and end dates for students!
+
     responsible = models.ManyToManyField(User,related_name="responsiblefor",blank=True,null=True)
     staff = models.ManyToManyField(User,blank=True,null=True,related_name="staffing")
     students = models.ManyToManyField(User,blank=True,null=True,related_name="studentin")
@@ -73,10 +76,10 @@ class ContentGraph(models.Model):
     parentnode = models.ForeignKey('self', null=True, blank=True)
     content = models.ForeignKey('ContentPage', null=True, blank=True)
     responsible = models.ManyToManyField(User,blank=True,null=True)
-    compulsory = models.BooleanField('Must be answered correctly before proceeding to next task', default=False)
-    deadline = models.DateTimeField('The due date for completing this task',blank=True,null=True)
-    publish_date = models.DateTimeField('When does this task become available',blank=True,null=True)
-    scored = models.BooleanField('Does this task affect scoring', default=True)
+    compulsory = models.BooleanField(verbose_name='Must be answered correctly before proceeding to next task', default=False)
+    deadline = models.DateTimeField(verbose_name='The due date for completing this task',blank=True,null=True)
+    publish_date = models.DateTimeField(verbose_name='When does this task become available',blank=True,null=True)
+    scored = models.BooleanField(verbose_name='Does this task affect scoring', default=True)
 
     def __str__(self):
         if not self.content:
@@ -89,8 +92,8 @@ def get_file_upload_path(instance, filename):
 class File(models.Model):
     """Metadata of an embedded or attached file that an admin has uploaded."""
     uploader = models.ForeignKey(User) # TODO: Make the uploading user the default and don't allow it to change
-    name = models.CharField('Name for reference in content',max_length=200,unique=True)
-    date_uploaded = models.DateTimeField('date uploaded') # TODO: Make the current date default
+    name = models.CharField(verbose_name='Name for reference in content',max_length=200,unique=True)
+    date_uploaded = models.DateTimeField(verbose_name='date uploaded') # TODO: Make the current date default
     typeinfo = models.CharField(max_length=200)
     fileinfo = models.FileField(upload_to=get_file_upload_path)
 
@@ -103,8 +106,8 @@ def get_image_upload_path(instance, filename):
 class Image(models.Model):
     """Image"""
     uploader = models.ForeignKey(User)
-    name = models.CharField('Name for reference in content',max_length=200,unique=True)
-    date_uploaded = models.DateTimeField('date uploaded')
+    name = models.CharField(verbose_name='Name for reference in content',max_length=200,unique=True)
+    date_uploaded = models.DateTimeField(verbose_name='date uploaded')
     description = models.CharField(max_length=500)
     fileinfo = models.ImageField(upload_to=get_image_upload_path)
 
@@ -123,7 +126,7 @@ class Video(models.Model):
 ## Time reservation and event calendar system
 class Calendar(models.Model):
     """A multi purpose calendar for course events markups, time reservations etc."""
-    name = models.CharField('Name for reference in content',max_length=200,unique=True)
+    name = models.CharField(verbose_name='Name for reference in content',max_length=200,unique=True)
 
     def __str__(self):
         return self.name
@@ -131,11 +134,11 @@ class Calendar(models.Model):
 class CalendarDate(models.Model):
     """A single date on a calendar."""
     calendar = models.ForeignKey(Calendar)
-    event_name = models.CharField('Name of the event', max_length=200)
-    event_description = models.CharField('Description', max_length=200, blank=True, null=True)
-    start_time = models.DateTimeField('Starts at')
-    end_time = models.DateTimeField('Ends at')
-    reservable_slots = models.IntegerField('Amount of reservable slots')
+    event_name = models.CharField(verbose_name='Name of the event', max_length=200)
+    event_description = models.CharField(verbose_name='Description', max_length=200, blank=True, null=True)
+    start_time = models.DateTimeField(verbose_name='Starts at')
+    end_time = models.DateTimeField(verbose_name='Ends at')
+    reservable_slots = models.IntegerField(verbose_name='Amount of reservable slots')
 
     def __str__(self):
         return self.event_name
@@ -153,15 +156,15 @@ class ContentPage(models.Model):
     child classes (RadiobuttonTask, CheckboxTask, TextfieldTask and FileTask)
     all inherit from this class.
     """
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=200, help_text="The full name of this page")
     url_name = models.CharField(max_length=200,editable=False) # Use SlugField instead?
-    short_name = models.CharField(max_length=32)
+    short_name = models.CharField(max_length=32, help_text="The short name is used for referring this page on other pages")
     content = models.TextField(blank=True,null=True)
     maxpoints = models.IntegerField(blank=True,null=True)
     access_count = models.IntegerField(editable=False,blank=True,null=True)
     tags = models.TextField(blank=True,null=True)
     feedback_questions = models.ManyToManyField('ContentFeedbackQuestion', blank=True, null=True)
-    require_correct_embedded_tasks = models.BooleanField('Embedded tasks must be answered correctly to mark this task correct',default=True)
+    require_correct_embedded_tasks = models.BooleanField(verbose_name='Embedded tasks must be answered correctly to mark this task correct',default=True)
 
     def _shortify_name(self):
         return self.name[0:32]
@@ -231,7 +234,7 @@ class FileTask(TaskPage):
 ## Feedback models
 class ContentFeedbackQuestion(models.Model):
     """A five star feedback that can be linked to any content."""
-    question = models.CharField("Question",max_length=100)
+    question = models.CharField(verbose_name="Question",max_length=100)
 
     def __str__(self):
         return self.question
@@ -254,8 +257,8 @@ class FileTaskTest(models.Model):
         ('SIGINT', 'Interrupt signal (same as Ctrl-C)'),
     )
     signals = models.CharField(max_length=7,default="None",choices=POSIX_SIGNALS_CHOICES) # What POSIX signals shall be fired at the program?
-    inputs = models.TextField("Input given to the main command through STDIN",blank=True) # What input shall be entered to the program's stdin upon execution?
-    retval = models.IntegerField('Expected return value',blank=True,null=True)
+    inputs = models.TextField(verbose_name="Input given to the main command through STDIN",blank=True) # What input shall be entered to the program's stdin upon execution?
+    retval = models.IntegerField(verbose_name='Expected return value',blank=True,null=True)
 
     def __str__(self):
         return self.name
@@ -264,7 +267,7 @@ class FileTaskTestCommand(models.Model):
     """A command that shall be executed on the test machine."""
     test = models.ForeignKey(FileTaskTest)
     command_line = models.CharField(max_length=500)
-    main_command = models.BooleanField('Command which receives the specified input', default=None) # The command which the inputs are entered into and signals are fired at?
+    main_command = models.BooleanField(verbose_name='Command which receives the specified input', default=None) # The command which the inputs are entered into and signals are fired at?
 
     def __str__(self):
         return u"%s" % (self.command_line)
@@ -306,7 +309,7 @@ def get_testfile_path(instance, filename):
 class FileTaskTestIncludeFile(models.Model):
     """File which an admin can include to the test. For example, a reference program, expected output file or input file for the program."""
     test = models.ForeignKey(FileTaskTest)
-    name = models.CharField('File name during test',max_length=200)
+    name = models.CharField(verbose_name='File name during test',max_length=200)
 
     FILE_PURPOSE_CHOICES = (
         ('Files given to the program for reading', (
@@ -324,15 +327,15 @@ class FileTaskTestIncludeFile(models.Model):
             )
         ),
     )
-    purpose = models.CharField('Used as',max_length=10,default="REFERENCE",choices=FILE_PURPOSE_CHOICES)
+    purpose = models.CharField(verbose_name='Used as',max_length=10,default="REFERENCE",choices=FILE_PURPOSE_CHOICES)
 
     FILE_OWNERSHIP_CHOICES = (
         ('OWNED', "Owned by the tested program"),
         ('NOT_OWNED', "Not owned by the tested program"),
     )
-    chown_settings = models.CharField('File user ownership',max_length=10,default="OWNED",choices=FILE_OWNERSHIP_CHOICES)
-    chgrp_settings = models.CharField('File group ownership',max_length=10,default="OWNED",choices=FILE_OWNERSHIP_CHOICES)
-    chmod_settings = models.CharField('File access mode',max_length=10,default="rw-rw-rw-") # TODO: Create validator and own field type
+    chown_settings = models.CharField(verbose_name='File user ownership',max_length=10,default="OWNED",choices=FILE_OWNERSHIP_CHOICES)
+    chgrp_settings = models.CharField(verbose_name='File group ownership',max_length=10,default="OWNED",choices=FILE_OWNERSHIP_CHOICES)
+    chmod_settings = models.CharField(verbose_name='File access mode',max_length=10,default="rw-rw-rw-") # TODO: Create validator and own field type
 
     fileinfo = models.FileField(upload_to=get_testfile_path)
 
@@ -351,7 +354,7 @@ class TextfieldTaskAnswer(models.Model):
     answer = models.TextField()
     hint = models.TextField(blank=True)
     videohint = models.ForeignKey(Video,blank=True,null=True)
-    comment = models.TextField('Extra comment given upon selection of this answer',blank=True)
+    comment = models.TextField(verbose_name='Extra comment given upon writing matching answer',blank=True)
 
     def __str__(self):
         if len(self.answer) > 80:
@@ -369,7 +372,7 @@ class RadiobuttonTaskAnswer(models.Model):
     answer = models.TextField()
     hint = models.TextField(blank=True)
     videohint = models.ForeignKey(Video,blank=True,null=True)
-    comment = models.TextField('Extra comment given upon selection of this answer',blank=True)
+    comment = models.TextField(verbose_name='Extra comment given upon selection of this answer',blank=True)
 
     def __str__(self):
         return self.answer
@@ -380,7 +383,7 @@ class CheckboxTaskAnswer(models.Model):
     answer = models.TextField()
     hint = models.TextField(blank=True)    
     videohint = models.ForeignKey(Video,blank=True,null=True)  
-    comment = models.TextField('Extra comment given upon selection of this answer',blank=True)
+    comment = models.TextField(verbose_name='Extra comment given upon selection of this answer',blank=True)
 
     def __str__(self):
         return self.answer
@@ -389,7 +392,7 @@ class Evaluation(models.Model):
     """Evaluation of training item performance"""
     correct = models.BooleanField(default=None)
     points = models.FloatField(blank=True)
-    feedback = models.CharField('Feedback given by a teacher',max_length=2000,blank=True)
+    feedback = models.CharField(verbose_name='Feedback given by a teacher',max_length=2000,blank=True)
 
     def __str__(self):
         if self.correct:
@@ -401,8 +404,8 @@ class UserAnswer(models.Model):
     """Parent class for what users have given as their answers to different tasks."""
     evaluation = models.OneToOneField(Evaluation) # A single answer is always linked to a single evaluation
     user = models.ForeignKey(User)                # Whose answer is this?
-    answer_date = models.DateTimeField('Date and time of when the user answered this task')
-    collaborators = models.TextField('Which users was this task answered with', blank=True, null=True)
+    answer_date = models.DateTimeField(verbose_name='Date and time of when the user answered this task')
+    collaborators = models.TextField(verbose_name='Which users was this task answered with', blank=True, null=True)
 
 # TODO: Rewrite this system to take multiple tests and all test data into account!
 class FileTaskReturnable(models.Model):
