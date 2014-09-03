@@ -589,11 +589,10 @@ def content(request, training_name, content_name, **kwargs):
         pass
 
     tasktype, question, choices, answers = get_task_info(content)
+    task_evaluation = None
     if request.user.is_authenticated():
         if not content_graph or not content_graph.publish_date or content_graph.publish_date < datetime.datetime.now():
             task_evaluation = get_user_task_info(request.user, content, tasktype)
-    else:
-        task_evaluation = None
 
     admin_url = ""
     if tasktype:
