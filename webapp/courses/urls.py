@@ -17,6 +17,8 @@ urlpatterns = patterns(
     url(r'^accounts/', 'courses.views.index'),
 
     # For viewing and changing user information
+    url(r'^answers/(?P<user>[^/]+)/(?P<course>[^/]+)/(?P<task>[^/]+)',
+        views.show_answers, name='show_answers'),
     url(r'^user/(?P<user_name>[^/]+)/$', 'courses.views.user'),
     url(r'^profile/$', 'courses.views.user_profile'),
     url(r'^profile/save/$', 'courses.views.user_profile_save'),

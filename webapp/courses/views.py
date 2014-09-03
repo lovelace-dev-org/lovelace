@@ -16,7 +16,7 @@ import mimetypes
 from cgi import escape
 
 import django
-from django.http import HttpResponse, HttpResponseRedirect, HttpResponseNotFound, Http404
+from django.http import HttpResponse, HttpResponseRedirect, HttpResponseNotFound, HttpResponseForbidden
 from django.template import Context, RequestContext, loader
 from django.core.urlresolvers import reverse
 from django.core.servers.basehttp import FileWrapper
@@ -831,7 +831,7 @@ def user(request, user_name):
         # TODO: Don't allow anons to view anything
         # Return 404 even if the users exists to prevent snooping around
         # Distinguishing 403 and 404 here would give away information
-        return Http404()
+        return HttpResponseNotFound()
     elif request.user == user_name:
         # TODO: Allow the user to view their own info and edit some of it
         pass
@@ -936,3 +936,47 @@ def calendar_post(request, calendar_id, event_id):
     else:
         return HttpResponseNotFound()
 
+def show_answers(request, user, course, task):
+    """
+    Show the user's answers for a specific task on a specific course.
+    """
+    if request.user.is_authenticated() and (request.user.username == user or request.user.is_staff):
+        pass
+    else:
+        return HttpResponseForbidden("You're only allowed to view your own answers.")
+
+    try:
+        user_obj = User.objects.get(username=user)
+    except User.DoesNotExist as e:
+        return HttpResponseNotFound("No such user %s" % user)
+
+    try:
+        course_obj = Training.objects.get(name=course)
+    except Training.DoesNotExist as e:
+        return HttpResponseNotFound("No such course %s" % course)
+    
+    try:
+        task_obj = TaskPage.objects.get(url_name=task)
+    except TaskPage.DoesNotExist as e:
+        return HttpResponseNotFound("No such task %s" % task)
+
+    tasktype, question, choices, answers = get_task_info(task_obj)
+
+    # TODO: Error checking for tasks that don't belong to this course
+    
+    answers = []
+    if tasktype == "radiobutton":
+        answers = UserRadioButtonTaskAnswer.objects.filter(user=user_obj, task=task_obj)
+    elif tasktype == "checkbox":
+        answers = UserCheckboxTaskAnswer.objects.filter(user=user_obj, task=task_obj)
+    elif tasktype == "textfield":
+        answers = UserTextfieldTaskAnswer.objects.filter(user=user_obj, task=task_obj)
+    elif tasktype == "file":
+        answers = UserFileTaskAnswer.objects.filter(user=user_obj, task=task_obj)
+
+    # TODO: Own subtemplates for each of the task types.
+    t = loader.get_template("courses/user_task_answers.html")
+    c = RequestContext(request, {
+        'answers': answers,
+    })
+    return HttpResponse(t.render(c))

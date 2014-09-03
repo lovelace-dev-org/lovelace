@@ -1,0 +1,12 @@
+{{ answers.count }} answers
+
+<table>
+{% for answer in answers %}
+<tr>
+<td><a name="#{{ answer.id }}" href="#{{ answer.id }}">Permalink</a></td>
+<td>{{ answer.answer_date }}</td>
+<td>{{ answer.given_answer }}</td>
+<td>{{ answer.evaluation.correct }}</td>
+</tr>
+{% endfor %}
+</table>
