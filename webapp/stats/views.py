@@ -1,8 +1,7 @@
 import re
-import sre_constants
 
 import django
-from django.http import HttpResponse, HttpResponseRedirect, HttpResponseNotFound, Http404
+from django.http import HttpResponse, HttpResponseRedirect, HttpResponseNotFound
 from django.template import Context, RequestContext, loader
 from django.core.urlresolvers import reverse
 from django.core.servers.basehttp import FileWrapper
@@ -28,7 +27,7 @@ def textfield_eval(given, answers):
                     if answer.hint: hinted = True
                 elif not re.match(answer.answer, given) and answer.correct:
                     correct = False
-            except sre_constants.error as e_msg:
+            except re.error as e_msg:
                 errors.append("Regexp error: " + e_msg)
                 correct = False
         else:

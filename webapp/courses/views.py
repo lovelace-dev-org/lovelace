@@ -7,7 +7,6 @@ Django views.
 import os
 import sys
 import re
-import sre_constants
 import codecs
 import random
 import difflib
