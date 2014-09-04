@@ -1,10 +1,10 @@
-{{ answers.count }} answers
+Answered {{ answers.count }} times.
 
-<table>
+<table border="1">
 {% for answer in answers %}
 <tr>
 <td><a name="#{{ answer.id }}" href="#{{ answer.id }}">Permalink</a></td>
-<td>{{ answer.answer_date }}</td>
+<td>{{ answer.answer_date|date:"Y-m-d, H:i:s" }}</td>
 <td>{{ answer.given_answer }}</td>
 <td>{{ answer.evaluation.correct }}</td>
 </tr>
