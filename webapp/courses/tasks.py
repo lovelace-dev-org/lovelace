@@ -1,5 +1,9 @@
 # Celery tasks
 from __future__ import absolute_import
+import time
+import shlex
+import subprocess
+from collections import namedtuple
 
 from celery import shared_task
 
@@ -14,15 +18,64 @@ def add(x, y):
 def mul(x, y):
     return x * y
 
-
 @shared_task
 def xsum(numbers):
     sleep(10)
     return sum(numbers)
 
 @shared_task(name="courses.run-filetask-test")
-def run_test(test_data):
-    return "lollerolle-lol"
+def run_tests(tests, test_files, student_files, reference_files):
+    # tests: the metadata for all the tests
+    # test_files: the files that are integral for the tests
+    # student_files: the files the student uploaded - these will be tested
+    # reference_files: the reference files - these will be tested the same way
+    #                  as the student's files
+
+
+    exercise_results = (1, 2, 3, "moi")
+
+    # Should we:
+    # - return the results?
+    # - save the results directly into db?
+    # - send the results to a more privileged Celery worker for saving into db?
+    # DEBUG: As a development stage measure, just return the result:
+    return exercise_results
+
+@shared_task(name="courses.run-stage")
+def run_stage(cmds):
+    """
+    Runs all the commands of this stage and collects the return values and the
+    outputs.
+    """
+    for cmd in cmds:
+        run_command(cmd)
+
+    # determine if the stage fails
+
+    return stage_results
+
+@shared_task(name="courses.run-command")
+def run_command(cmd, env, stdin, stdout, stderr, timeout):
+    """
+    Runs the current command of this stage by automated fork & exec.
+    """
+    env = {}
+    #cmd = shlex.split(cmd)
+    #start_time = time.time()
+    #proc = Popen(...)
+
+    #proc_runtime = time.time() - start_time
+
+    # For this function's return value:
+    proc_retval = 0
+    proc_timedout = False
+    proc_runtime = 0.0
+
+    proc_results = (proc_retval, proc_timedout, proc_runtime)
+
+    return proc_results
+
+    #return namedtuple()
 
 # TODO: Subtask division:
 #       - Run all tests:

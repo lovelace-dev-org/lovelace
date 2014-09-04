@@ -224,13 +224,11 @@ def get_task_info(content):
     except ContentPage.DoesNotExist as e:
         pass
 
-    ##
     try:
         if content.lecturepage:
             tasktype = "lecture"
     except ContentPage.DoesNotExist as e:
         pass
-    ##
 
     return (tasktype, question, choices, answers)
 
@@ -480,7 +478,7 @@ def file_task_check(content, user, files_data, post_data):
 
     # Get a nice HTML table for the diffs
     #diff_table = filecheck_client.html(results)
-    diff_table = ""
+    diff_table = results
 
     return correct, hints, comments, diff_table
 
@@ -534,7 +532,7 @@ def check_answer(request, training_name, content_name, **kwargs):
         if hints:
             random.shuffle(hints)
 
-    r_diff_table = u""
+    r_diff_table = diff_table
     #try:
         #r_diff_table = unicode(diff_table, "utf-8")
     #except UnicodeDecodeError:
