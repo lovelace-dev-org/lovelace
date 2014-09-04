@@ -1,4 +1,4 @@
-{% if tasktype %}
+{% if tasktype and tasktype != "lecture" %}
   {% if emb_content %}
     {{ emb_content|safe }}
   {% endif %}
