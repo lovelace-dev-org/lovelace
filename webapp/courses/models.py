@@ -91,6 +91,10 @@ class ContentGraph(models.Model):
             return "No linked content yet"
         return self.content.short_name
 
+    class Meta:
+        verbose_name = "content to course link"
+        verbose_name_plural = "content to course links"
+
 def get_file_upload_path(instance, filename):
     return os.path.join("files", "%s" % (filename))
 
