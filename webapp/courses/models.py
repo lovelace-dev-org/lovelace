@@ -68,6 +68,9 @@ class Training(models.Model):
     def __str__(self):
         return self.name
 
+    class Meta:
+        verbose_name = "course"
+
 class ContentGraph(models.Model):
     """A node in the course tree/graph. Links content into a course."""
     # TODO: Rethink the content graph system!
@@ -195,6 +198,9 @@ class LecturePage(ContentPage):
             self.short_name = self._shortify_name()
         super(LecturePage, self).save(*args, **kwargs)
 
+    class Meta:
+        verbose_name = "lecture page"
+
 class TaskPage(ContentPage):
     """A single task."""
     question = models.TextField()
@@ -212,12 +218,18 @@ class RadiobuttonTask(TaskPage):
             self.short_name = self._shortify_name()
         super(RadiobuttonTask, self).save(*args, **kwargs)
 
+    class Meta:
+        verbose_name = "radio button exercise page"
+
 class CheckboxTask(TaskPage):
     def save(self, *args, **kwargs):
         self.url_name = self.get_url_name()
         if not self.short_name:
             self.short_name = self._shortify_name()
         super(CheckboxTask, self).save(*args, **kwargs)
+
+    class Meta:
+        verbose_name = "checkbox exercise page"
 
 class TextfieldTask(TaskPage):
     # TODO: Create a Textfield task variant that's run like a file task! (like in Viope)
@@ -227,12 +239,18 @@ class TextfieldTask(TaskPage):
             self.short_name = self._shortify_name()
         super(TextfieldTask, self).save(*args, **kwargs)
 
+    class Meta:
+        verbose_name = "text field exercise page"
+
 class FileTask(TaskPage):
     def save(self, *args, **kwargs):
         self.url_name = self.get_url_name()
         if not self.short_name:
             self.short_name = self._shortify_name()
         super(FileTask, self).save(*args, **kwargs)
+
+    class Meta:
+        verbose_name = "file exercise page"
 
 ## Feedback models
 class ContentFeedbackQuestion(models.Model):
@@ -265,6 +283,9 @@ class FileTaskTest(models.Model):
 
     def __str__(self):
         return self.name
+
+    class Meta:
+        verbose_name = "file exercise test"
 
 class FileTaskTestCommand(models.Model):
     """A command that shall be executed on the test machine."""
