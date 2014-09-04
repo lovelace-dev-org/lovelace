@@ -101,8 +101,12 @@
     {% endif %}
 
     {% if textfield_answers %}
-      The task has been answered {{ textfield_answers_count }} times.<br />
-      The task has been answered by {{ textfield_user_count }} different users.<br />
+      <div>The task has been answered {{ textfield_answers_count }} times.</div>
+      <div>The task has been answered by {{ textfield_user_count }} different users.</div>
+      <div>Average attempts per user: </div>
+      <div>- Standard deviation: </div>
+      <div>Median attempts per user: </div>
+      <div>Hint coverage for incorrect answers: </div>
       <table>
         <tr><th>User answer</th><th>Count</th><th>Correct?</th><th>Hint given?</th><th>Latest answer</th></tr>
         {% for answer, count, correct, hinted, latest in textfield_final %}
