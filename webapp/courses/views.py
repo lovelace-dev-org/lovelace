@@ -384,6 +384,11 @@ def file_task_check(content, user, files_data, post_data):
     correct = True
     hints = []
     comments = []
+    
+    # TODO: Create a model manager that fetches all relevant information
+    #       for the file exercise in question.
+    # TODO: Fetch all the relevant information using the above manager.
+    # TODO: Cache it to save many complicated db queries and filesystem reads.
 
     if user.is_authenticated():
         # TODO: Fix the information that will be saved
