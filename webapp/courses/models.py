@@ -11,6 +11,8 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 
+from feedback.models import ContentFeedbackQuestion
+
 # TODO: Extend the registration system to allow users to enter the profile data!
 class UserProfile(models.Model):
     """User profile, which extends the Django's User model."""
@@ -168,7 +170,7 @@ class ContentPage(models.Model):
     access_count = models.IntegerField(editable=False,blank=True,null=True)
     tags = models.TextField(blank=True,null=True)
 
-    feedback_questions = models.ManyToManyField('ContentFeedbackQuestion', blank=True, null=True)
+    feedback_questions = models.ManyToManyField(ContentFeedbackQuestion, blank=True, null=True)
     require_correct_embedded_tasks = models.BooleanField(verbose_name='Embedded tasks must be answered correctly to mark this task correct',default=True)
 
     def _shortify_name(self):
@@ -251,20 +253,6 @@ class FileTask(TaskPage):
 
     class Meta:
         verbose_name = "file exercise page"
-
-## Feedback models
-class ContentFeedbackQuestion(models.Model):
-    """A five star feedback that can be linked to any content."""
-    question = models.CharField(verbose_name="Question",max_length=100)
-
-    def __str__(self):
-        return self.question
-
-class ContentFeedbackUserAnswer(models.Model):
-    user = models.ForeignKey(User)                          # The user who has given this feedback
-    content = models.ForeignKey(ContentPage)                # The content on which this feedback was given
-    question = models.ForeignKey(ContentFeedbackQuestion)   # The feedback question this feedback answers
-    rating = models.PositiveSmallIntegerField()
 
 ## File task test related models
 def default_timeout(): return datetime.time(0,0,5)

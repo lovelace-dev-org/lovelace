@@ -183,7 +183,6 @@ admin.site.register(Calendar, CalendarAdmin)
 admin.site.register(File)
 admin.site.register(Image)
 admin.site.register(Video)
-admin.site.register(ContentFeedbackQuestion)
 
 ## Course related administration
 class ContentGraphAdmin(admin.ModelAdmin):
