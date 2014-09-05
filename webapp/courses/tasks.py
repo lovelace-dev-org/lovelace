@@ -38,6 +38,9 @@ def run_tests(tests, test_files, student_files, reference_files):
     # reference_files: the reference files - these will be tested the same way
     #                  as the student's files
 
+    student_results = {}
+    reference_results = {}
+    
     for i, test in enumerate(tests):
         current_task.update_state(state="PROGRESS",
                                   meta={"current":i, "total":len(tests)})
@@ -63,15 +66,47 @@ def run_test(test, test_files, files_to_check):
     # Replace with the directory of the ramdisk
     temp_dir_prefix = os.path.join("/", "tmp")
 
+    test_results = {}
     with tempfile.TemporaryDirectory(dir=temp_dir_prefix) as test_dir:
-        # Write the test files
+        # Write the files required by this test
+        for fp in (test_files[fp] for fp in test.required_test_files):
+            fpath = os.path.join(test_dir, fp.filename)
+            with open(fpath, "wb") as fd:
+                fd.write(fp.contents)
+            # TODO: chmod, chown, chgrp
+
+        # Write the files under test
+        for fp in files_to_check:
+            fpath = os.path.join(test_dir, fp.filename)
+            with open(fpath, "wb") as fd:
+                fd.write(fp.contents)
+            # TODO: chmod, chown, chgrp    
 
         # TODO: Replace with chaining
         for i, stage in enumerate(test.stages):
             current_task.update_state(state="PROGRESS",
-                                      meta={"current":i, "total":len(test.stages)})
+                                      meta={"current":i,
+                                            "total":len(test.stages)})
             
             stage_results = run_stage(stage.cmds)
+
+            if stage_results["fail"] == True:
+                break
+
+            # TODO: Read the directory and save the stage results in cache
+            if stage.cache_results == True:
+                test_dir_contents = os.listdir(test_dir)
+                for fp in test_dir_contents:
+                    with open(fp, "rb") as fd:
+                        contents = fd.read()
+        else:
+            test_results["fail"] == True
+
+        # TODO: Read the expected output files
+        test_dir_contents = os.listdir(test_dir)
+        
+
+    return test_results
 
 @shared_task(name="courses.run-stage")
 def run_stage(cmds, temp_dir_prefix):
@@ -183,7 +218,7 @@ def run_command(cmd, env, stdin, stdout, stderr, timeout):
 #       - how many and what kind are left
 
 # TODO: Celery worker status checking:
-# http://stackoverflow.com/questions/8506914/detect-whether-celery-is-available-running    
+# http://stackoverflow.com/questions/8506914/detect-whether-celery-is-available-running
 def get_celery_worker_status():
     ERROR_KEY = "ERROR"
     try:

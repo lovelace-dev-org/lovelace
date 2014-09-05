@@ -1,5 +1,7 @@
 """
-Django views.
+Django views for the courses application:
+- content pages
+- exercise result checking
 """
 # TODO: Heavy commenting!
 # TODO: Use classes instead of bare functions to group data!
@@ -11,16 +13,18 @@ import codecs
 import random
 import difflib
 import datetime
+import json
 import mimetypes
 from cgi import escape
 
-import django
 from django.http import HttpResponse, HttpResponseRedirect, HttpResponseNotFound, HttpResponseForbidden
 from django.template import Context, RequestContext, loader
 from django.core.urlresolvers import reverse
 from django.core.servers.basehttp import FileWrapper
 from django.utils import timezone
 from django.utils.safestring import mark_safe
+
+from celery.result import AsyncResult
 
 from pygments import highlight
 from pygments.lexers import PythonLexer
@@ -388,7 +392,7 @@ def file_task_check(content, user, files_data, post_data):
     # TODO: Fetch all the relevant information using the above manager.
     # TODO: Cache it to save many complicated db queries and filesystem reads.
 
-    if user.is_authenticated():
+    if user.is_authenticated() and points==666.6:
         # TODO: Fix the information that will be saved
         f_returnable = FileTaskReturnable(run_time=datetime.time(0,0,1,500), output="filler-output-filler", errors="filler-errors-filler", retval=0)
         f_returnable.save()
@@ -440,7 +444,7 @@ def file_task_check(content, user, files_data, post_data):
             f_evaluation.correct = correct
             f_evaluation.save()
             f_answer.save()
-    else:
+    elif points==555.5:
         files = {}
         for rf in files_data.values():
             f = bytes()
@@ -478,6 +482,7 @@ def file_task_check(content, user, files_data, post_data):
 
     # Get a nice HTML table for the diffs
     #diff_table = filecheck_client.html(results)
+    results = filecheck_client.check_file_answer(1, 2, 3)
     diff_table = results
 
     return correct, hints, comments, diff_table
@@ -522,6 +527,10 @@ def check_answer(request, training_name, content_name, **kwargs):
         correct, hints, comments, errors = textfield_task_check(content, request.user, answers, request.POST)
     elif tasktype == "file":
         correct, hints, comments, diff_table = file_task_check(content, request.user, request.FILES, request.POST)
+        return HttpResponseRedirect(reverse('courses:check_progress',
+                                            kwargs={"course_name":training_name,
+                                                    "content_name":content_name,
+                                                    "task_id":diff_table}))
 
     # Compile the information required for the task evaluation
     if correct:
@@ -548,6 +557,13 @@ def check_answer(request, training_name, content_name, **kwargs):
     })
 
     return HttpResponse(t.render(c))
+
+def check_progress(request, course_name, content_name, task_id):
+    # Based on https://djangosnippets.org/snippets/2898/
+    # TODO: Check permissions
+    task = AsyncResult(task_id)
+    data = task.result or task.state
+    return HttpResponse(json.dumps(data), mimetype='application/json')
 
 def get_user_task_info(user, task, tasktype, pub_date=None):
     if not pub_date:

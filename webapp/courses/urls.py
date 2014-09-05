@@ -59,4 +59,6 @@ urlpatterns = patterns(
         {'media_root': settings.MEDIA_ROOT,
          'media_url':settings.MEDIA_URL,}
        ),
+    url(r'^(?P<course_name>[^/]+)/(?P<content_name>[^/]+)/progress/(?P<task_id>[^/]+)/$',
+        views.check_progress, name='check_progress'),
 )

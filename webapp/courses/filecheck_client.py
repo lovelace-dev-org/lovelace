@@ -21,13 +21,13 @@ def check_file_answer(task, files={}, answer=None):
                "reference":{"asdf":{"outputs":"moimoi","errors":"","outputfiles":{}}}}
 
     #result = rpc_tasks.xsum.delay((1, 2, 3, 4, 5))
-    result = rpc_tasks.run_tests.delay(1, 2, 3, 4)
+    result = rpc_tasks.run_tests.delay([], 2, 3, 4)
     if result.ready():
         print("valmis!")
     print(result.task_id)
     #print(result.get(timeout=2))
 
-    return results
+    return result.task_id
 
 def ex_check_file_answer(task, files={}, answer=None):
     """Iterates through all the tests for a returnable package of user content."""
