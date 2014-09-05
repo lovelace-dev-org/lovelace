@@ -1,13 +1,20 @@
-# Celery tasks
+"""
+Celery tasks for checking the File Exercise files returned by the student.
+"""
 from __future__ import absolute_import
+
+from collections import namedtuple
+
+# Test dependencies
+import tempfile
+import os
+
+# Command dependencies
 import time
 import shlex
 import subprocess
-from collections import namedtuple
 
 from celery import shared_task
-
-from time import sleep
 
 @shared_task
 def add(x, y):
@@ -20,10 +27,10 @@ def mul(x, y):
 
 @shared_task
 def xsum(numbers):
-    sleep(10)
+    time.sleep(10)
     return sum(numbers)
 
-@shared_task(name="courses.run-filetask-test")
+@shared_task(name="courses.run-filetask-tests")
 def run_tests(tests, test_files, student_files, reference_files):
     # tests: the metadata for all the tests
     # test_files: the files that are integral for the tests
@@ -31,26 +38,87 @@ def run_tests(tests, test_files, student_files, reference_files):
     # reference_files: the reference files - these will be tested the same way
     #                  as the student's files
 
+    for i, test in enumerate(tests):
+        current_task.update_state(state="PROGRESS",
+                                  meta={"current":i, "total":len(tests)})
 
-    exercise_results = (1, 2, 3, "moi")
+        # TODO: The student's code can be run in parallel with the reference
+        student_test_results = run_test(test, test_files, student_files)
+        reference_test_results = run_test(test, test_files, reference_files)
 
-    # Should we:
-    # - return the results?
-    # - save the results directly into db?
+    exercise_results = ["lol", "FIX", student_results, reference_results]
+    
+    # TODO: Should we:
+    # - return the results? (most probably not)
+    # - save the results directly into db? (is this worker contained enough?)
     # - send the results to a more privileged Celery worker for saving into db?
     # DEBUG: As a development stage measure, just return the result:
     return exercise_results
 
+@shared_task(name="courses.run-test")
+def run_test(test, test_files, files_to_check):
+    """
+    Runs all the stages of the given test.
+    """
+    # Replace with the directory of the ramdisk
+    temp_dir_prefix = os.path.join("/", "tmp")
+
+    with tempfile.TemporaryDirectory(dir=temp_dir_prefix) as test_dir:
+        # Write the test files
+
+        # TODO: Replace with chaining
+        for i, stage in enumerate(test.stages):
+            current_task.update_state(state="PROGRESS",
+                                      meta={"current":i, "total":len(test.stages)})
+            
+            stage_results = run_stage(stage.cmds)
+
 @shared_task(name="courses.run-stage")
-def run_stage(cmds):
+def run_stage(cmds, temp_dir_prefix):
     """
     Runs all the commands of this stage and collects the return values and the
     outputs.
     """
-    for cmd in cmds:
-        run_command(cmd)
+
+    stage_results = {}
+
+    # TODO: Replace with chaining
+    for i, cmd in enumerate(cmds):
+        current_task.update_state(state="PROGRESS",
+                                  meta={"current":i, "total":len(cmds)})
+        
+        stdout = tempfile.TemporaryFile(dir=temp_dir_prefix)
+        stderr = tempfile.TemporaryFile(dir=temp_dir_prefix)
+        stdin = tempfile.TemporaryFile(dir=temp_dir_prefix)
+        stdin.write(cmd.stdin)
+
+        proc_results = run_command(cmd)
+
+        stdout.seek(0)
+        stage_results[cmd].stdout = stdout.read()
+        stdout.close()
+        stderr.seek(0)
+        stage_results[cmd].stderr = stderr.read()
+        stderr.close()
+
+        # If the command failed, abort the stage
+        if cmd.expected.retval != proc_results.retval:
+            break
+        if cmd.expected.stdout != stage_results[cmd].stdout:
+            break
+        if cmd.expected.stderr != stage_results[cmd].stderr:
+            break
+    else:
+        stage_results["fail"] = True
 
     # determine if the stage fails
+    # if the stage fails, we can abort the tests/stages dependent on this stage
+    # IDEA: stages are defined to be used by any test making those tests run or
+    #       use the cached result of that stage
+    #       - possible pitfall: same command, e.g. python student.py
+    #         interpreted as "same stage"
+    # IDEA: each stage can define a stage they depend on, making a directed
+    #       graph of dependent stages
 
     return stage_results
 
@@ -60,22 +128,38 @@ def run_command(cmd, env, stdin, stdout, stderr, timeout):
     Runs the current command of this stage by automated fork & exec.
     """
     env = {}
-    #cmd = shlex.split(cmd)
-    #start_time = time.time()
-    #proc = Popen(...)
-
-    #proc_runtime = time.time() - start_time
-
-    # For this function's return value:
-    proc_retval = 0
+    args = shlex.split(cmd)
+    cwd = env["PWD"]
+    start_time = time.time()
+    proc = Popen(args=args, bufsize=-1, executable=None,
+                 stdin=stdin, stdout=stdout, stderr=stderr, # Standard fds
+                 preexec_fn=demote_process,                 # Demote before fork
+                 close_fds=True,                            # Don't inherit fds
+                 shell=False,                               # Don't run in shell
+                 cwd=cwd, env=env,
+                 univeral_newlines=False)                   # Binary stdout
+    
+    proc_retval = None
     proc_timedout = False
-    proc_runtime = 0.0
+    try:
+        proc.wait(timeout=timeout)
+        proc_runtime = time.time() - start_time
+        proc_retval = proc.returncode
+    except TimeoutExpired:
+        proc_timedout = True
+        proc.terminate() # Try terminating the process nicely
+        time.sleep(0.5)
+        
+    # Clean up by halting all action (forking etc.) by the student's process
+    # with SIGSTOP and by killing the frozen processes with SIGKILL
 
+    # ...or maybe kill -SIGKILL -1 with the student's credentials?
+
+    proc_runtime = proc_runtime or (time.time() - start_time)
+    proc_retval = proc_retval or proc.returncode
     proc_results = (proc_retval, proc_timedout, proc_runtime)
 
     return proc_results
-
-    #return namedtuple()
 
 # TODO: Subtask division:
 #       - Run all tests:
