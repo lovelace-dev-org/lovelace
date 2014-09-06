@@ -9,7 +9,8 @@ database:
     - keep track of whether file task returnables have been checked or not
     - keep track of which tests (with which files etc.) were used for testing
       each returnable
-    - 
+    - task revisions
+        * stats: switch between revision specific/overall stats; links to revs
 
 ui:
     - line references for included code
@@ -64,6 +65,8 @@ ui:
     - BIG AND VISIBLE green check marks/yellow ?s/red Xs for task correctness
     - Students can link their returnables straight as links
         * Links only viewable by teachers and the student
+    - When a student opens a page, answered (embedded) tasks have
+      [+] expandable evaluations
 
 logic:
     - prevent viewing of tasks if not linked to a course
