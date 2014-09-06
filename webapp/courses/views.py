@@ -562,8 +562,22 @@ def check_progress(request, course_name, content_name, task_id):
     # Based on https://djangosnippets.org/snippets/2898/
     # TODO: Check permissions
     task = AsyncResult(task_id)
-    data = task.result or task.state
-    return HttpResponse(json.dumps(data), mimetype='application/json')
+    if task.result:
+        return HttpResponseRedirect(reverse('courses:file_exercise_evaluation',
+                                            kwargs={"course_name":course_name,
+                                                    "content_name":content_name,
+                                                    "task_id":task_id,}))
+    else:
+        data = task.state
+        return HttpResponse(json.dumps(data), mimetype='application/json')
+
+def file_exercise_evaluation(request, course_name, content_name, task_id):
+    # TODO: Render the exercise results and send them to the user
+    t = loader.get_template("courses/file_exercise_evaluation.html")
+    c = Context({
+        'placeholder': 'placeholder',
+    })
+    return HttpResponse(t.render(c))
 
 def get_user_task_info(user, task, tasktype, pub_date=None):
     if not pub_date:

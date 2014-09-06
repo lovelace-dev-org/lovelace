@@ -1,6 +1,6 @@
 from django.conf.urls import patterns, include, url
 
-from django.conf import settings # Bad style! This info is not really needed!
+from django.conf import settings # Bad style! This info is not actually needed!
 
 from . import views
 
@@ -55,10 +55,14 @@ urlpatterns = patterns(
          'media_url':settings.MEDIA_URL,},
         name='content'
        ),
+
+    # Exercise sending for checking, progress and evaluation views
     url(r'^(?P<training_name>[^/]+)/(?P<content_name>[^/]+)/check/$', views.check_answer,
         {'media_root': settings.MEDIA_ROOT,
          'media_url':settings.MEDIA_URL,}
        ),
     url(r'^(?P<course_name>[^/]+)/(?P<content_name>[^/]+)/progress/(?P<task_id>[^/]+)/$',
         views.check_progress, name='check_progress'),
+    url(r'^(?P<course_name>[^/]+)/(?P<content_name>[^/]+)/evaluation/(?P<task_id>[^/]+)/$',
+        views.file_exercise_evaluation, name='file_exercise_evaluation'),
 )
