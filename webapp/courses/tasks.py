@@ -20,23 +20,25 @@ from celery import shared_task
 def add(x, y):
     return x + y
 
-
-@shared_task
-def mul(x, y):
-    return x * y
-
-@shared_task
-def xsum(numbers):
-    time.sleep(10)
-    return sum(numbers)
-
 @shared_task(name="courses.run-filetask-tests")
 def run_tests(tests, test_files, student_files, reference_files):
+    # TODO: Actually, just receive the relevant ids for fetching the Django
+    #       models here instead of in the Django view.
+    # http://celery.readthedocs.org/en/latest/userguide/tasks.html#database-transactions
+
     # tests: the metadata for all the tests
     # test_files: the files that are integral for the tests
     # student_files: the files the student uploaded - these will be tested
     # reference_files: the reference files - these will be tested the same way
     #                  as the student's files
+
+    # TODO: Check if any input generators are used. If yes, find a way to supply
+    #       the same generated input to both the student's and reference codes.
+    #       Some possibilities:
+    #       - Generate a seed _here_ and pass it on (wastes CPU time?)
+    #       - Generate the inputs _here_ and pass them on (best guess)
+    #       - Generate the inputs during the code evaluation process and have
+    #         the other code set depend on them (complicated to implement)
 
     student_results = {}
     reference_results = {}
