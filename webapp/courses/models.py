@@ -225,7 +225,7 @@ class RadiobuttonTask(TaskPage):
         super(RadiobuttonTask, self).save(*args, **kwargs)
 
     class Meta:
-        verbose_name = "radio button exercise page"
+        verbose_name = "radio button exercise page" # Rename to choise task or something
 
 class CheckboxTask(TaskPage):
     def save(self, *args, **kwargs):
@@ -256,13 +256,47 @@ class FileTask(TaskPage):
         super(FileTask, self).save(*args, **kwargs)
 
     class Meta:
-        verbose_name = "file exercise page"
+        verbose_name = "file upload exercise page"
+
+class CodeInputExercise(TaskPage):
+    def save(self, *args, **kwargs):
+        self.url_name = self.get_url_name()
+        if not self.short_name:
+            self.short_name = self._shortify_name()
+        super(FileTask, self).save(*args, **kwargs)
+
+    class Meta:
+        verbose_name = "code input exercise page"
+
+class CodeReplaceExercise(TaskPage):
+    def save(self, *args, **kwargs):
+        self.url_name = self.get_url_name()
+        if not self.short_name:
+            self.short_name = self._shortify_name()
+        super(FileTask, self).save(*args, **kwargs)
+
+    class Meta:
+        verbose_name = "code replace exercise page"
+
+class Hint(models.Model):
+    """
+    A hint that is linked to an exercise and shown to the user under
+    configurable conditions.
+    """
+    exercise = models.ForeignKey(TaskPage)
+    hint = models.TextField(verbose_name="hint text")
+    tries_to_unlock = models.IntegerField(default=0,
+                                          verbose_name="number of tries to unlock this hint",
+                                          help_text="User 0 to show the hint immediately, before any answers")
+
+    class Meta:
+        verbose_name = "configurable hint"
 
 ## File task test related models
 def default_timeout(): return datetime.time(0,0,5)
 
 class FileTaskTest(models.Model):
-    task = models.ForeignKey(FileTask)
+    task = models.ForeignKey(FileTask, verbose_name="for file exercise")
     name = models.CharField(verbose_name="Test name", max_length=200)
     timeout = models.TimeField(default=default_timeout)     # How long is the test allowed to run before sending a KILL signal?
     POSIX_SIGNALS_CHOICES = (
@@ -370,7 +404,7 @@ class TextfieldTaskAnswer(models.Model):
     answer = models.TextField()
     hint = models.TextField(blank=True)
     videohint = models.ForeignKey(Video,blank=True,null=True)
-    comment = models.TextField(verbose_name='Extra comment given upon writing matching answer',blank=True)
+    comment = models.TextField(verbose_name='Extra comment given upon entering a matching answer',blank=True)
 
     def __str__(self):
         if len(self.answer) > 80:

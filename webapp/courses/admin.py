@@ -37,6 +37,10 @@ admin.site.register(Evaluation)
 #        return qs.select_subclasses().filter(users=request.user)
 
 # TODO: How to link ContentFeedbackQuestion objects nicely?
+class HintInline(admin.TabularInline):
+    model = Hint
+    extra = 0
+
 class RadiobuttonTaskAnswerInline(admin.TabularInline):
     model = RadiobuttonTaskAnswer
     extra = 1
@@ -48,7 +52,7 @@ class RadiobuttonTaskAdmin(admin.ModelAdmin):
                                 'classes': ['wide']}),
         ('Feedback settings',  {'fields': ['feedback_questions']}),
     ]
-    inlines = [RadiobuttonTaskAnswerInline]
+    inlines = [RadiobuttonTaskAnswerInline, HintInline]
     readonly_fields = ("url_name",)
     list_display = ("name", "url_name",)
     list_per_page = 500
@@ -64,7 +68,7 @@ class CheckboxTaskAdmin(admin.ModelAdmin):
                                 'classes': ['wide']}),
         ('Feedback settings',  {'fields': ['feedback_questions']}),
     ]
-    inlines = [CheckboxTaskAnswerInline]
+    inlines = [CheckboxTaskAnswerInline, HintInline]
     readonly_fields = ("url_name",)
     list_display = ("name", "url_name",)
     list_per_page = 500
@@ -80,7 +84,7 @@ class TextfieldTaskAdmin(admin.ModelAdmin):
                                 'classes': ['wide']}),
         ('Feedback settings',  {'fields': ['feedback_questions']}),
     ]
-    inlines = [TextfieldTaskAnswerInline]
+    inlines = [TextfieldTaskAnswerInline, HintInline]
     readonly_fields = ("url_name",)
     list_display = ("name", "url_name",)
     list_per_page = 500
@@ -147,7 +151,7 @@ class FileTaskAdmin(admin.ModelAdmin):
                                 'classes': ['wide']}),
         ('Feedback settings',  {'fields': ['feedback_questions']}),
     ]
-    #inlines = [FileTaskTestAdmin]
+    inlines = [HintInline]
     readonly_fields = ("url_name",)
     list_display = ("name", "url_name",)
     list_per_page = 500
