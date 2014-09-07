@@ -196,7 +196,7 @@ admin.site.register(ContentGraph, ContentGraphAdmin)
 
 class TrainingAdmin(admin.ModelAdmin):
     fieldsets = [
-        (None,                                               {'fields': ['name','frontpage','responsible']}),
+        (None,                                               {'fields': ['name','frontpage']}),
         ('Training outline',                                 {'fields': ['contents']}),
         ('Settings for start date and end date of training', {'fields': ['start_date','end_date'], 'classes': ['collapse']}),
     ]
