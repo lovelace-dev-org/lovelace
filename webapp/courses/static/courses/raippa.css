@@ -519,6 +519,24 @@ section.content {
             margin-left: 0px;
         }
 
+    section.content div.task-meta {
+        position: absolute;
+        width: 120px;
+        left: -130px;
+        top: -10px;
+        margin-right: 120px;
+        background: #0cffcc;
+        font-size: 0.8em;
+    }
+    
+    section.content div.task-meta hr {
+        margin: 3px 6px;
+        height: 1px;
+        border: 0px;
+        color: #000;
+        background: #000;
+    }
+
 /* FOOTER */
 footer {
 	font-family: arial, sans-serif;

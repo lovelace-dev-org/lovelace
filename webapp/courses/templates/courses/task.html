@@ -1,4 +1,23 @@
 {% if tasktype and tasktype != "lecture" %}
+  <div class="task-meta-container" style="position:relative;width:0px;height:0px;">
+  <div class="task-meta">
+    {% if evaluation == "not_answered" %}
+      <img src="question_mark.png" width="96" height="96" alt="?" title="You haven't answered this exercise yet">
+    {% elif evaluation == "incorrect" %}
+      <img src="incorrect.png" width="96" height="96" alt="✘" title="You have answered this exercise incorrectly">
+    {% elif evaluation == "correct" %}
+      <img src="correct.png" width="96" height="96" alt="✔" title="You have answered this exercise correctly">
+    {% endif %}
+    <hr>
+    Deadline: yyyy-mm-dd
+    <hr>
+    <p>Your answers:<br>
+    <span class="answer-count">538</span><br>
+    times</p>
+    <a href="answers">View answers</a>
+  </div>
+  </div>
+
   {% if emb_content %}
     {{ emb_content|safe }}
   {% endif %}
@@ -43,4 +62,5 @@
       </div>
     {% endif %}
   {% endif %}
+  
 {% endif %}

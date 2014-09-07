@@ -26,7 +26,6 @@
         setColumnWidths();
         setLineWidths();
         setPreHeights();
-        $("span.jquery-version").html($.fn.jquery);
       });
     </script>
     
@@ -63,6 +62,11 @@
             {% endif %}
           {% endfor %}
         </ul>
+      </nav>
+      {% endblock %}
+
+      {% block toc %}
+      <nav class="toc">
       </nav>
       {% endblock %}
       

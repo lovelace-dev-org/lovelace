@@ -646,7 +646,7 @@ def content(request, training_name, content_name, **kwargs):
     emb_tasktype = None
     contains_embedded_task = False
 
-    navurls = [NavURL(reverse('courses:index'), "Available courses"), # Courses
+    navurls = [NavURL(reverse('courses:index'), "Available courses"),
                NavURL(reverse('courses:training', kwargs={"training_name":training_name}), training_name),
                NavURL(reverse('courses:content', kwargs={"training_name":training_name, "content_name":content.name}), content.name)]
 
