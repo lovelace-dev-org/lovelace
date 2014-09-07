@@ -63,10 +63,6 @@ class Training(models.Model):
     end_date = models.DateTimeField(verbose_name='Date and time on which the training becomes obsolete',blank=True,null=True)
     # TODO: Registration start and end dates for students!
 
-    responsible = models.ManyToManyField(User,related_name="responsiblefor",blank=True,null=True)
-    staff = models.ManyToManyField(User,blank=True,null=True,related_name="staffing")
-    students = models.ManyToManyField(User,blank=True,null=True,related_name="studentin")
-
     def __str__(self):
         return self.name
 
@@ -298,7 +294,7 @@ def default_timeout(): return datetime.time(0,0,5)
 class FileTaskTest(models.Model):
     task = models.ForeignKey(FileTask, verbose_name="for file exercise")
     name = models.CharField(verbose_name="Test name", max_length=200)
-    timeout = models.TimeField(default=default_timeout)     # How long is the test allowed to run before sending a KILL signal?
+    timeout = models.TimeField(default=default_timeout, help_text="How long is the test allowed to run before sending a KILL signal?")
     POSIX_SIGNALS_CHOICES = (
         ('None', "Don't send any signals"),
         ('SIGINT', 'Interrupt signal (same as Ctrl-C)'),
