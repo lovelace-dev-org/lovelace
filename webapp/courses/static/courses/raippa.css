@@ -56,8 +56,8 @@ div#container-top {
 }
 
     div#container-top heading {
-        color: #143a14;
-        font-family: arial;
+        color: #333;
+        font-family: "Verdana";
         position: relative;
 
         top: 20px;
@@ -84,7 +84,7 @@ div#container-top {
 	
     div#container-top div.login form fieldset {
         color: #eee;
-        font-family: arial;
+        font-family: ;
         font-size: 12px;
         position: absolute;
         right: 5px;
@@ -95,7 +95,7 @@ div#container-top {
         -moz-border-radius: 10px;
         border-radius: 10px;
         width: 200px;
-        background: #5a7760;
+        background: #143a14;
     }
 
     div#container-top div.login form fieldset legend {
@@ -137,8 +137,9 @@ nav.breadcrumb {
     background-color: #39ad39;
     left: 0px;
     height: 2em;
-    font-family: arial;
-    font-size: 12px;
+    padding: 4px;
+    font-family: "Verdana";
+    font-size: 9pt;
     font-weight: bold;
 }
 
@@ -186,57 +187,68 @@ nav.breadcrumb {
 
 /* MAIN CONTENT */
 section.content {
+    position: relative;
     top: 0px;
-    background: #fff;
+    background: #eee;
     margin-left: auto;
     margin-right: auto;
     margin-top: 0;
-    font-family: arial;
-    font-size: 15px;
-    line-height: 120%;
-    padding-bottom: 3em; /* Size of footer */
+    font-family: "DejaVu Sans", "Lucida Grande", "Verdana", "Ubuntu", "Arial", sans-serif;
+    font-size: 1.0em;
+    color: #222;
+    line-height: 1.5;
+    padding: 1em 2em 3em 120px;
     min-height: calc(100% - 8em); /* Header 6em, breadcrumbs 2em, footer 3em*/
     word-wrap: break-word;
 }
     section.content h1, section.content h2, section.content h3, section.content h4, section.content h5, section.content h6 {
         font-family: "Trebuchet MS", "Helvetica", sans-serif;
         font-weight: normal;
-        margin-bottom: 1em;
+        letter-spacing: 0.05em;
+        word-spacing: 0.1em;
+    }
+
+    section.content h1:first-child, section.content h2:first-child, section.content h3:first-child, section.content h4:first-child, section.content h5:first-child, section.content h6:first-child {
+        margin-top: 0;
     }
 
     section.content h1 {
-        font-size: 24.0px;
         margin-top: 1em;
-	margin-left: -25px;
+        font-size: 1.5em;
+        letter-spacing: 0.07em;
+        word-spacing: 0.2em;
 	padding-bottom: 2px;
         border-bottom: 1px solid #888;
-        text-shadow: rgba(127, 127, 127, 63) 1px 1px 1px;
-        /*text-decoration: underline;*/
+        margin-bottom: 1em;
+        text-shadow: rgba(63, 63, 63, 0.5) 1px 1px 1px;
     }
     section.content h2 {
-        font-size: 22px;
-        margin-top: 24px;
-	margin-left: -15px;
-        text-shadow: rgba(127, 127, 127, 63) 1px 1px 1px;
+        font-size: 1.3em;
+        margin-top: 1em;
+        margin-bottom: 0.5em;
+        text-shadow: rgba(63, 63, 63, 0.5) 1px 1px 1px;
+        font-weight: bold;
     }
     section.content h3 {
-        font-size: 18px;
-        margin-top: 24px;
-        text-shadow: rgba(127, 127, 127, 127) 1px 1px 1px;
+        font-size: 1.25em;
+        margin-top: 1em;
+        margin-bottom: 0.5em;
+        text-shadow: rgba(63, 63, 63, 0.5) 1px 1px 1px;
     }
     section.content h4 {
-        font-size: 16px;
+        font-size: 1.2em;
+        letter-spacing: 0.03em;
+        word-spacing: 0.07em;
         margin-bottom: 0.5em;
         font-weight: bold;
     }
     section.content h5 {
-        font-size: 15px;
+        font-size: 1.1em;
         margin-bottom: 0.5em;
-        font-weight: bold;
     }
     section.content h6 {
-        font-size: 14px;
-        margin-bottom: 0.5em:
+        font-size: 1.0em;
+        margin-bottom: 0.5em;
         font-weight: bold;
     }
     
@@ -255,7 +267,7 @@ section.content {
     }
 
     section.content p {
-        margin-bottom: 8px;
+        margin-bottom: 1em;
     }
     
     section.content div.normal {
@@ -269,12 +281,14 @@ section.content {
     }
 
     section.content ul > li, section.content ol > li {
+        margin-left: 0;
         margin-bottom: 4px;
+        padding-left: 5px;
     }
-        
-    section.content * ul ul, section.content * ul ol, section.content * ol ol, section.content * ol ul {
-        margin-left: 1.5em;
-        margin-bottom: 0px;
+
+    section.content ul > ul, section.content ul > ol, section.content ol > ol, section.content ol > ul {
+        margin-left: 3em;
+        margin-bottom: 0;
     }
 
     section.content table {
@@ -539,17 +553,17 @@ section.content {
 
 /* FOOTER */
 footer {
-	font-family: arial, sans-serif;
-	font-size: 12px;
-	background: #b6ffb6;
-        position: relative;
-        bottom: 0;
-	height: 3em;
-        margin-top: -3em;
-        width: 100%;
+    font-family: arial, sans-serif;
+    font-size: 12px;
+    background: #b6ffb6;
+    position: relative;
+    bottom: 0;
+    height: 3em;
+    margin-top: -3em;
+    width: 100%;
 }
 
-	footer div {
-		padding-right: 60px;
-		float: left;
-	}
+    footer div {
+	padding-right: 60px;
+	float: left;
+    }
