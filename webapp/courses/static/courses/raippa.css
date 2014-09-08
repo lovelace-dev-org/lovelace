@@ -382,6 +382,7 @@ section.content {
         }
 
         section.content div.question form {
+            position: relative;
             margin-top: 5px;
             padding: 9px;
             border: 2px solid #d0d0d0;
@@ -395,9 +396,21 @@ section.content {
                 line-height: 1.5;
             }
 
+            section.content div.question form div.input-label-container {
+                display: block;
+                vertical-align: bottom;
+            }
+
             section.content div.question form label {
                 margin-left: 0.5em;
                 line-height: 1.75;
+                display: inline;
+                vertical-align: middle;
+            }
+
+            section.content div.question form div.input-label-container > input {
+                display: inline;
+                vertical-align: middle;
             }
 
             section.content div.question form label.file {
