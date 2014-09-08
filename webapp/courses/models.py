@@ -295,7 +295,7 @@ class Hint(models.Model):
     hint = models.TextField(verbose_name="hint text")
     tries_to_unlock = models.IntegerField(default=0,
                                           verbose_name="number of tries to unlock this hint",
-                                          help_text="User 0 to show the hint immediately, before any answers")
+                                          help_text="Use 0 to show the hint immediately – before any answers.")
 
     class Meta:
         verbose_name = "configurable hint"
