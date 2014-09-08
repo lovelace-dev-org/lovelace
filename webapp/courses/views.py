@@ -772,6 +772,7 @@ def content(request, training_name, content_name, **kwargs):
                     'embedded_task': True,
                     'emb_content': rendered_em_content,
                     'emb_admin_url': emb_admin_url,
+                    'training': selected_course,
                     'content_name': embedded_content.name,
                     'content_name_id': embedded_content.url_name,
                     'content_urlname': embedded_content.url_name,

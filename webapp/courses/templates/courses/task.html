@@ -11,34 +11,42 @@
     <hr>
     Deadline: yyyy-mm-dd
     <hr>
-    <p>Your answers:<br>
-    <span class="answer-count">538</span><br>
-    times</p>
-    <a href="answers">View answers</a>
+    <div><a href="{% url 'courses:show_answers' user training content_urlname %}"><span class="answer-count">538</span> answers</a></div>
+    {% if embedded_task %}
+      {% if user.is_active and user.is_staff %}
+        <hr>
+        <div class="admin-tools">
+          <div>Teacher's tools</div>
+          <div><a href="{% url 'stats:single_task' content_urlname %}">Statistics</a></div>
+          <div><a href="{{ emb_admin_url }}">Edit this {{ tasktype }} task</a></div>
+          <div><span>Url-name: </span><span>{{ content_urlname }}</span></div>
+        </div>
+      {% endif %}
+    {% endif %}
   </div>
   </div>
 
   {% if emb_content %}
-    {{ emb_content|safe }}
+    <div>{{ emb_content|safe }}</div>
   {% endif %}
   <div class="question" id="{{ content_urlname }}">{{ question|safe }}
     <form name="task_form" id="task_form" class="task" method="POST" enctype="multipart/form-data">
       {% csrf_token %}
       {% if tasktype == "radiobutton" %}
         {% for choice in choices %}
-          <input type="radio" name="radio" id="{{ choice.id }}" value="{{ choice.id }}" class="task_radio" /><label for="{{ choice.id }}">{{ choice.answer }}</label><br />
+          <input type="radio" name="radio" id="{{ choice.id }}" value="{{ choice.id }}" class="task_radio"><label for="{{ choice.id }}">{{ choice.answer }}</label><br>
         {% endfor %}
       {% elif tasktype == "checkbox" %}
         {% for choice in choices %}
-          <input type="checkbox" name="checkbox" id="{{ choice.id }}" value="{{ choice.id }}" class="task_check" /><label for="{{ choice.id }}">{{ choice.answer }}</label><br />
+          <input type="checkbox" name="checkbox" id="{{ choice.id }}" value="{{ choice.id }}" class="task_check"><label for="{{ choice.id }}">{{ choice.answer }}</label><br>
         {% endfor %}
       {% elif tasktype == "textfield" %}
-        <textarea name="answer" class="task_text" placeholder="Enter your answer here" rows="3" cols="70"></textarea><br />
+        <textarea name="answer" class="task_text" placeholder="Enter your answer here" rows="3" cols="70"></textarea><br>
       {% elif tasktype == "file" %}
-        <label for="collaborators" class="file">Collaborators:</label><input name="collaborators" type="text" size="60" class="task_file" placeholder="Who did you co-operate with?" /><br />
-        <label for="file" class="file">Submit your files here:</label><input name="file" type="file" class="task_file" multiple="multiple" /><br />
+        <label for="collaborators" class="file">Collaborators:</label><input name="collaborators" type="text" size="60" class="task_file" placeholder="Who did you co-operate with?"><br>
+        <label for="file" class="file">Submit your files here:</label><input name="file" type="file" class="task_file" multiple="multiple"><br>
       {% endif %}
-      <input type="submit" name="submit" value="Send answer" onClick="validateAnswer(event, '{{ answer_check_url }}', '{{ content_urlname }}');return false;" />
+      <input type="submit" name="submit" value="Send answer" onClick="validateAnswer(event, '{{ answer_check_url }}', '{{ content_urlname }}');return false;">
       {% if not user.is_authenticated %}
         <div class="auth_warning">Warning: You have not logged in. Your answer will not be saved.</div>
       {% endif %}
@@ -51,16 +59,5 @@
       {% endif %}
     </form>
     <div id="result"></div>
-  </div>
-  {% if embedded_task %}
-    {% if user.is_active and user.is_staff %}
-      <div class="admin_tools">
-        <h1>Teacher's toolbox for {{ content_name }}</h1>
-        <a href="{% url 'stats:single_task' content_urlname %}">Statistics</a><br/>
-        <a href="{{ emb_admin_url }}">Edit this {{ tasktype }} task</a><br />
-        <span>Url-name: </span><span>{{ content_urlname }}</span>
-      </div>
-    {% endif %}
-  {% endif %}
-  
+  </div>  
 {% endif %}

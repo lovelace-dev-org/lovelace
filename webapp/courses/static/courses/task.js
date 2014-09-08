@@ -1,5 +1,7 @@
 // TODO: Use the following code
 // http://stackoverflow.com/questions/7335780/how-to-post-a-django-form-with-ajax-jquery
+// http://stackoverflow.com/questions/9622901/how-to-upload-a-file-using-jquery-ajax-and-formdata
+// http://portfolio.planetjon.ca/2014/01/26/submit-file-input-via-ajax-jquery-easy-way/
 function x_validateAnswer(form_id) {
     // TODO: File uploads.
     var answer_form = $('#' + form_id);

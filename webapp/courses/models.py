@@ -162,15 +162,18 @@ class ContentPage(models.Model):
     all inherit from this class.
     """
     name = models.CharField(max_length=200, help_text="The full name of this page")
-    url_name = models.CharField(max_length=200,editable=False) # Use SlugField instead?
+    url_name = models.CharField(max_length=200,editable=False) # Use SlugField instead? rename to slug
+    # TODO: Get rid of short_name
     short_name = models.CharField(max_length=32, help_text="The short name is used for referring this page on other pages")
     content = models.TextField(verbose_name="Page content body", blank=True, null=True)
+    # TODO: maxpoints -> default points
     maxpoints = models.IntegerField(verbose_name="Maximum points", blank=True, null=True,
                                     help_text="The maximum points a user can gain by finishing this task correctly")
     access_count = models.IntegerField(editable=False,blank=True,null=True)
     tags = models.TextField(blank=True,null=True)
 
     feedback_questions = models.ManyToManyField(ContentFeedbackQuestion, blank=True, null=True)
+    # TODO: Move to ContentGraph (course content link)
     require_correct_embedded_tasks = models.BooleanField(verbose_name='Embedded tasks must be answered correctly to mark this task correct',default=True)
 
     def _shortify_name(self):
@@ -179,20 +182,27 @@ class ContentPage(models.Model):
 
     def get_url_name(self):
         """Creates an URL and HTML ID field friendly version of the name."""
+        # TODO: HTML5 id accepts unicode. Only problematic characters:  ,.:;
         return re.sub(r"[^A-Za-z0-9_]", "_", self.name).lower()
 
     def save(self, *args, **kwargs):
         self.url_name = self.get_url_name()
         if not self.short_name:
             self.short_name = self._shortify_name()
+
+        # TODO: Run through content parser
+        #       - Check for & report errors (all errors on same notice)
+        #       - Put into Redis cache
+        #       - Automatically link embedded pages (maybe own field?)
         super(ContentPage, self).save(*args, **kwargs)
 
     def __str__(self):
         return self.name
 
+# TODO: Rename to Lecture
 class LecturePage(ContentPage):
     """A single page from a lecture."""
-    answerable = models.BooleanField("Need confirmation of reading this lecture",default=False)
+    answerable = models.BooleanField(verbose_name="Need confirmation of reading this lecture",default=False)
 
     def save(self, *args, **kwargs):
         self.url_name = self.get_url_name()
@@ -203,6 +213,8 @@ class LecturePage(ContentPage):
     class Meta:
         verbose_name = "lecture page"
 
+# TODO: Rename to Exercise
+# TODO: Manually evaluated flag (good for final projects)
 class TaskPage(ContentPage):
     """A single task."""
     question = models.TextField()
@@ -221,7 +233,7 @@ class RadiobuttonTask(TaskPage):
         super(RadiobuttonTask, self).save(*args, **kwargs)
 
     class Meta:
-        verbose_name = "radio button exercise page" # Rename to choise task or something
+        verbose_name = "radio button exercise" # Rename to choice exercise or something
 
 class CheckboxTask(TaskPage):
     def save(self, *args, **kwargs):
@@ -231,7 +243,7 @@ class CheckboxTask(TaskPage):
         super(CheckboxTask, self).save(*args, **kwargs)
 
     class Meta:
-        verbose_name = "checkbox exercise page"
+        verbose_name = "checkbox exercise"     # Rename to multiple choice exercise
 
 class TextfieldTask(TaskPage):
     # TODO: Create a Textfield task variant that's run like a file task! (like in Viope)
@@ -242,7 +254,7 @@ class TextfieldTask(TaskPage):
         super(TextfieldTask, self).save(*args, **kwargs)
 
     class Meta:
-        verbose_name = "text field exercise page"
+        verbose_name = "text field exercise"
 
 class FileTask(TaskPage):
     def save(self, *args, **kwargs):
@@ -252,7 +264,7 @@ class FileTask(TaskPage):
         super(FileTask, self).save(*args, **kwargs)
 
     class Meta:
-        verbose_name = "file upload exercise page"
+        verbose_name = "file upload exercise"
 
 class CodeInputExercise(TaskPage):
     def save(self, *args, **kwargs):
@@ -262,7 +274,7 @@ class CodeInputExercise(TaskPage):
         super(FileTask, self).save(*args, **kwargs)
 
     class Meta:
-        verbose_name = "code input exercise page"
+        verbose_name = "code input exercise"
 
 class CodeReplaceExercise(TaskPage):
     def save(self, *args, **kwargs):
@@ -272,7 +284,7 @@ class CodeReplaceExercise(TaskPage):
         super(FileTask, self).save(*args, **kwargs)
 
     class Meta:
-        verbose_name = "code replace exercise page"
+        verbose_name = "code replace exercise"
 
 class Hint(models.Model):
     """

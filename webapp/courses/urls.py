@@ -41,6 +41,11 @@ urlpatterns = patterns(
         {'media_root': settings.MEDIA_ROOT,}
        ),
 
+    # Sandbox: admin view & answer for content pages without saved results
+    url(r'^sandbox/(?P<content_name>[^/]+)/$', views.content,
+        {'sandbox': True,},
+        name='sandbox_content',),
+
     # Course front page, course graph and content views
     url(r'^(?P<training_name>[^/]+)/$', views.training,
         {'raippa_root': settings.BASE_DIR,

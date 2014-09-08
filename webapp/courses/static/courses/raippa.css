@@ -5,11 +5,11 @@
  
 /* reset */
 * {
-	-moz-box-sizing: border-box;
-	-webkit-box-sizing: border-box;
-	box-sizing: border-box;
-	margin: 0px;
-	padding: 0px;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    box-sizing: border-box;
+    margin: 0px;
+    padding: 0px;
 }
 
 html {
@@ -185,6 +185,17 @@ nav.breadcrumb {
                 text-decoration: underline;
             }
 
+/* Table of Contents */
+nav.toc {
+    position: fixed;
+    right: 10px;
+    top: 100px;
+    width: 160px;
+    min-height: 80px;
+
+    background: #f41;
+}
+
 /* MAIN CONTENT */
 section.content {
     position: relative;
@@ -359,38 +370,41 @@ section.content {
         }
         
         section.content div.embedded_task {
-            border: 1px solid #ebebeb;
+            border: 2px solid #d0d0d0;
             width: 100%;
-            background: #daffda;
+            background: #caeaca;
             padding: 10px;
-            margin-bottom: 10px;
+            margin-bottom: 1em;
         }
 
- 	section.content div.embedded_task h1 {
-	    margin-left: 0px;
-	}
-
- 	section.content div.embedded_task h2 {
-	    margin-left: 0px;
-	}
-
-
         section.content div.question {
-            margin-bottom: 16px;
+            /*margin-bottom: 2em;*/
         }
 
         section.content div.question form {
             margin-top: 5px;
             padding: 9px;
-            border: 2px solid rgb(224,224,224);
-            border-radius: 0px 15px 0px 15px;
-            background: #eeffee;
+            border: 2px solid #d0d0d0;
+            background: #daeeda;
         }
 
+            section.content div.question form input[type=file], section.content div.question form input[type=submit] {
+                font-family: "DejaVu Sans";
+                font-size: 0.9em;
+                min-width: 150px;
+                line-height: 1.5;
+            }
+
+            section.content div.question form label {
+                margin-left: 0.5em;
+                line-height: 1.75;
+            }
+
             section.content div.question form label.file {
+                margin: 0;
                 display: inline-block;
                 clear: both;
-                width: 160px;
+                width: 180px;
             }
 
             section.content div.question form input.task_file {
@@ -428,7 +442,7 @@ section.content {
             vertical-align: middle;
         }
         section.content span.evaluation:before {
-            content: ">>>";
+            content: ">>> roskaa";
             font-size: 19px;
             color: #aaa;
             font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
@@ -518,38 +532,44 @@ section.content {
         section.content div#result table span.diff_add {
             background: #9f9;
         }
-    
-    section.content div.admin_tools {
-        margin-top: 32px;
-        margin-bottom: 10px;
-        padding: 9px;
-        border: 2px solid rgb(224,224,224);
-        border-radius: 0px 15px 0px 15px;
-        background: #eeffee;
-        width: 100%;
-    }
-        section.content div.admin_tools h1 {
-            font-size: 16px;
-            margin-left: 0px;
-        }
 
+    section.content div.task-meta-container {
+        font-size: 0.7em;
+    }
+    
     section.content div.task-meta {
         position: absolute;
-        width: 120px;
-        left: -130px;
-        top: -10px;
-        margin-right: 120px;
-        background: #0cffcc;
-        font-size: 0.8em;
+        width: 112px;
+        left: -128px;
+        top: -12px;
+        margin-right: 128px;
+        border: 2px solid #d0d0d0;
+        padding: 4px;
+        text-align: center;
+
+        background: #eee;
+    }
+
+    section.content > div.task-meta-container > div.task-meta {
+        left: -120px;
     }
     
     section.content div.task-meta hr {
         margin: 3px 6px;
         height: 1px;
-        border: 0px;
-        color: #000;
+        border: 0;
+        color: #333;
         background: #000;
     }
+
+    section.content div.task-meta > div.admin-tools {
+
+        padding: 0;
+        background: #eee;
+    }
+        section.content div.admin-tools h1 {
+            font-size: 1em;
+        }
 
 /* FOOTER */
 footer {
