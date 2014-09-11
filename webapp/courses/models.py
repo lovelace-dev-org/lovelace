@@ -55,7 +55,8 @@ class Training(models.Model):
     A course consists of shared content, i.e. lectures, tasks etc.
     A course also holds its own set of files (source code, images, pdfs, etc.) with their metadata.
     """
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=255)
+    slug = models.CharField(max_length=255, db_index=True, unique=True)
     frontpage = models.ForeignKey('LecturePage', blank=True,null=True) # TODO: Create one automatically!
     contents = models.ManyToManyField('ContentGraph', blank=True,null=True) # TODO: Rethink the content graph system!
 
@@ -90,6 +91,14 @@ class ContentGraph(models.Model):
     class Meta:
         verbose_name = "content to course link"
         verbose_name_plural = "content to course links"
+
+class EmbeddedContentLink(models.Model):
+    """
+    Automatically generated link from content to other content - based on
+    content pages embedded in other content pages.
+    """
+    page = models.ForeignKey('ContentPage', related_name='embedded_page_link')
+    embedded_pages = models.ManyToManyField('ContentPage', related_name='parent_page_links')
 
 def get_file_upload_path(instance, filename):
     return os.path.join("files", "%s" % (filename))
@@ -157,12 +166,12 @@ class CalendarReservation(models.Model):
 class ContentPage(models.Model):
     """
     A single content containing page of a course.
-    The used content pages (LecturePage and TaskPage) and their
-    child classes (RadiobuttonTask, CheckboxTask, TextfieldTask and FileTask)
-    all inherit from this class.
+    The used content pages (Lecture and Exercise) and their
+    child classes all inherit from this class.
     """
-    name = models.CharField(max_length=200, help_text="The full name of this page")
+    name = models.CharField(max_length=255, help_text="The full name of this page")
     url_name = models.CharField(max_length=200,editable=False) # Use SlugField instead? rename to slug
+    slug = models.CharField(max_length=255, db_index=True, unique=True)
     # TODO: Get rid of short_name
     short_name = models.CharField(max_length=32, help_text="The short name is used for referring this page on other pages")
     content = models.TextField(verbose_name="Page content body", blank=True, null=True)
@@ -181,8 +190,10 @@ class ContentPage(models.Model):
         return self.name[0:32]
 
     def get_url_name(self):
-        """Creates an URL and HTML ID field friendly version of the name."""
+        """Creates a URL and HTML ID field friendly version of the name."""
         # TODO: HTML5 id accepts unicode. Only problematic characters:  ,.:;
+        # TODO: Use mozilla/unicode-slugify
+        # https://github.com/mozilla/unicode-slugify
         return re.sub(r"[^A-Za-z0-9_]", "_", self.name).lower()
 
     def save(self, *args, **kwargs):
@@ -193,7 +204,8 @@ class ContentPage(models.Model):
         # TODO: Run through content parser
         #       - Check for & report errors (all errors on same notice)
         #       - Put into Redis cache
-        #       - Automatically link embedded pages (maybe own field?)
+        #       - Automatically link embedded pages (create/update an
+        #         EmbeddedContentLink object)
         super(ContentPage, self).save(*args, **kwargs)
 
     def __str__(self):
@@ -234,7 +246,7 @@ class RadiobuttonTask(TaskPage):
         super(RadiobuttonTask, self).save(*args, **kwargs)
 
     class Meta:
-        verbose_name = "radio button exercise" # Rename to choice exercise or something
+        verbose_name = "multiple choice exercise"
 
 class CheckboxTask(TaskPage):
     def save(self, *args, **kwargs):
@@ -244,10 +256,9 @@ class CheckboxTask(TaskPage):
         super(CheckboxTask, self).save(*args, **kwargs)
 
     class Meta:
-        verbose_name = "checkbox exercise"     # Rename to multiple choice exercise
+        verbose_name = "checkbox exercise"
 
 class TextfieldTask(TaskPage):
-    # TODO: Create a Textfield task variant that's run like a file task! (like in Viope)
     def save(self, *args, **kwargs):
         self.url_name = self.get_url_name()
         if not self.short_name:
@@ -268,6 +279,7 @@ class FileTask(TaskPage):
         verbose_name = "file upload exercise"
 
 class CodeInputExercise(TaskPage):
+    # TODO: Create a Textfield task variant that's run like a file task! (like in Viope)
     def save(self, *args, **kwargs):
         self.url_name = self.get_url_name()
         if not self.short_name:
@@ -296,7 +308,7 @@ class Hint(models.Model):
     hint = models.TextField(verbose_name="hint text")
     tries_to_unlock = models.IntegerField(default=0,
                                           verbose_name="number of tries to unlock this hint",
-                                          help_text="Use 0 to show the hint immediately – before any answers.")
+                                          help_text="Use 0 to show the hint immediately – before any answer attempts.")
 
     class Meta:
         verbose_name = "configurable hint"
@@ -422,8 +434,8 @@ class TextfieldTaskAnswer(models.Model):
     comment = models.TextField(verbose_name='Extra comment given upon entering a matching answer',blank=True)
 
     def __str__(self):
-        if len(self.answer) > 80:
-            return self.answer[0:80] + u" ..."
+        if len(self.answer) > 76:
+            return self.answer[0:76] + " ..."
         else:
             return self.answer
 
