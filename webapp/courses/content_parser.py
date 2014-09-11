@@ -19,6 +19,8 @@ from courses.highlighters import highlighters
 
 import courses.blockparser as blockparser
 
+# TODO: Support indented blocks (e.g. <pre>) within indents, uls & ols
+
 class MarkupParser:
     """Parser class for generating HTML from the used markup block types."""
 
@@ -120,9 +122,11 @@ class ContentParser:
         return getattr(matchobj, "lastgroup", u"paragraph"), matchobj
     
     def block_heading(self, block, settings):
+        # TODO: Set id = unicode_slugify(text_between_tags)
         yield u"<h%d>" % settings["heading_size"]
         for line in block:
             yield escape(line.strip("= \r\n\t"))
+        yield '<a href="#unic_slug_..." class="permalink">&para;</a>'
         yield u'</h%d>\n' % settings["heading_size"]
     def settings_heading(self, matchobj):
         heading_size = len(matchobj.group("len"))
