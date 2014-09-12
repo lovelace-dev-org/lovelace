@@ -73,7 +73,7 @@ logic:
         * except for admins
 
 apt-get:
-    - postgresql-server-dev-all libpq-dev (for psycopg2)
+    - postgresql postgresql-server-dev-all libpq-dev (for psycopg2)
     - rabbitmq-server (for celery)
 
 pip:
@@ -82,3 +82,4 @@ pip:
     - pygments
     - psycopg2
     - celery
+    - unicode-slugify
