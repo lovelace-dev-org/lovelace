@@ -47,9 +47,8 @@ post_save.connect(create_user_profile, sender=User, dispatch_uid="create_user_pr
 
 # TODO: Abstract the task model to allow "an answering entity" to give the answer, be it a group or a student
 
-# TODO: Rename back to Course
 # TODO: Reintroduce the incarnation system and make it transparent to users
-class Training(models.Model):
+class Course(models.Model):
     """A single course in the system.
 
     A course consists of shared content, i.e. lectures, tasks etc.
@@ -60,8 +59,8 @@ class Training(models.Model):
     frontpage = models.ForeignKey('LecturePage', blank=True,null=True) # TODO: Create one automatically!
     contents = models.ManyToManyField('ContentGraph', blank=True,null=True) # TODO: Rethink the content graph system!
 
-    start_date = models.DateTimeField(verbose_name='Date and time after which the training is available',blank=True,null=True)
-    end_date = models.DateTimeField(verbose_name='Date and time on which the training becomes obsolete',blank=True,null=True)
+    start_date = models.DateTimeField(verbose_name='Date and time on which the course begins',blank=True,null=True)
+    end_date = models.DateTimeField(verbose_name='Date and time on which the course ends',blank=True,null=True)
     # TODO: Registration start and end dates for students!
 
     def __str__(self):
@@ -213,7 +212,7 @@ class ContentPage(models.Model):
 
 # TODO: Rename to Lecture
 class LecturePage(ContentPage):
-    """A single page from a lecture."""
+    """A single page for a lecture."""
     answerable = models.BooleanField(verbose_name="Need confirmation of reading this lecture",default=False)
 
     def save(self, *args, **kwargs):
@@ -466,10 +465,10 @@ class CheckboxTaskAnswer(models.Model):
         return self.answer
 
 class Evaluation(models.Model):
-    """Evaluation of training item performance"""
+    """Evaluation of a student's exercise answer."""
     correct = models.BooleanField(default=None)
     points = models.FloatField(blank=True)
-    feedback = models.CharField(verbose_name='Feedback given by a teacher',max_length=2000,blank=True)
+    feedback = models.TextField(verbose_name='Feedback given by a teacher',blank=True)
 
     def __str__(self):
         if self.correct:
