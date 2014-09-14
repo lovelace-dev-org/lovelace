@@ -27,11 +27,11 @@ class Tag:
         if not self.options and not options:
             return u"<%s>" % (self.name)
         elif self.options and not options:
-            return u"<%s %s>" % (self.name, u" ".join(u"%s=\"%s\"" % kv for kv in self.options.iteritems()))
+            return u"<%s %s>" % (self.name, u" ".join(u"%s=\"%s\"" % kv for kv in self.options.items()))
         elif not self.options and options:
-            return u"<%s %s>" % (self.name, u" ".join(u"%s=\"%s\"" % kv for kv in options.iteritems()))
+            return u"<%s %s>" % (self.name, u" ".join(u"%s=\"%s\"" % kv for kv in options.items()))
         else:
-            return u"<%s %s>" % (self.name, u" ".join(u"%s=\"%s\"" % kv for kv in dict(self.options.items() + options.items()).iteritems()))
+            return u"<%s %s>" % (self.name, u" ".join(u"%s=\"%s\"" % kv for kv in dict(self.options.items() + options.items()).items()))
     
     def htmlend(self):
         """Returns the HTML equivalent end tag."""
@@ -72,7 +72,7 @@ def parsetag(tagname, unparsed_string):
             pass
         if hilite:
             code_string = m.group(0)[tag.lb()+len(hilite):-tag.le()]
-            for escaped, unescaped in {"&lt;":"<", "&gt;":">", "&amp;":"&"}.iteritems():
+            for escaped, unescaped in {"&lt;":"<", "&gt;":">", "&amp;":"&"}.items():
                 code_string = code_string.replace(escaped, unescaped)
             hilite = hilite.strip("#! ")
             parsed_string += tag.htmlbegin({"class":"highlight-"+hilite.strip("#! ")})

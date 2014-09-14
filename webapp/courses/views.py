@@ -43,7 +43,7 @@ class NavURL:
         self.name = name
 
 def index(request):
-    course_list = Training.objects.all()
+    course_list = Course.objects.all()
     navurls = [NavURL(reverse('courses:index'), "Available courses")]
     t = loader.get_template("courses/index.html")
     c = RequestContext(request, {
@@ -59,7 +59,7 @@ def add_tree(nodelist,id):
 
 def course_graph(request, training_name):
     # TODO: Use temporary files and/or dynamic root directory!
-    selected_course = Training.objects.get(name=training_name)
+    selected_course = Course.objects.get(name=training_name)
     topnodes = selected_course.contents.all()
     course_graph_nodes = [] 
     for node in topnodes:
@@ -118,7 +118,7 @@ def course_graph(request, training_name):
     return response
  
 def training(request, training_name, **kwargs):
-    selected_course = Training.objects.get(name=training_name)
+    selected_course = Course.objects.get(name=training_name)
     navurls = [NavURL(reverse('courses:index'), "Available courses"),
                NavURL(reverse('courses:training', kwargs={"training_name":training_name}), training_name),]
 
@@ -495,11 +495,11 @@ def check_answer(request, training_name, content_name, **kwargs):
     else:
         return HttpResponse("")
 
-    selected_course = Training.objects.get(name=training_name)
+    selected_course = Course.objects.get(name=training_name)
     content = ContentPage.objects.get(url_name=content_name)
 
     # Check if a deadline exists and if we are past it
-    training = Training.objects.get(name=training_name)
+    training = Course.objects.get(name=training_name)
     try:
         content_graph = training.contents.get(content=content)
     except ContentGraph.DoesNotExist as e:
@@ -610,7 +610,7 @@ def get_user_task_info(user, task, tasktype, pub_date=None):
 def content(request, training_name, content_name, **kwargs):
     print("Ollaan contentissa.")
 
-    selected_course = Training.objects.get(name=training_name)
+    selected_course = Course.objects.get(name=training_name)
     content = ContentPage.objects.get(url_name=content_name)
     pages = [content]
 
@@ -984,8 +984,8 @@ def show_answers(request, user, course, task):
         return HttpResponseNotFound("No such user %s" % user)
 
     try:
-        course_obj = Training.objects.get(name=course)
-    except Training.DoesNotExist as e:
+        course_obj = Course.objects.get(name=course)
+    except Course.DoesNotExist as e:
         return HttpResponseNotFound("No such course %s" % course)
     
     try:

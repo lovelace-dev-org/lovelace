@@ -39,6 +39,11 @@ def run_tests(tests, test_files, student_files, reference_files):
     #       - Generate the inputs _here_ and pass them on (best guess)
     #       - Generate the inputs during the code evaluation process and have
     #         the other code set depend on them (complicated to implement)
+    # TODO: Input generator targets:
+    #       - stdin
+    #       - readable file
+    #       - as command line parameters!
+    #       - in env?
 
     student_results = {}
     reference_results = {}

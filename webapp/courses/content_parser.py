@@ -271,11 +271,11 @@ class ContentParser:
                 yield u'<code class="%s">' % ("highlight-" + settings["highlight"])
                 lines = []
                 try:
-                    line = self.lines.next()
+                    line = next(self.lines) # was self.lines.next()
                     print(settings["highlight"])
                     while not line.startswith("}}}"):
                         lines.append(line)
-                        line = self.lines.next()
+                        line = next(self.lines) # was self.lines.next()
                 except StopIteration:
                     lines.append(u'Warning: unclosed code block!\n')
                 code_string = u"\n".join(lines)
@@ -284,10 +284,10 @@ class ContentParser:
                 yield u'</code>'
             else:
                 try:
-                    line = self.lines.next()
+                    line = next(self.lines) # was self.lines.next()
                     while not line.startswith("}}}"):
                         yield escape(line) + "\n"
-                        line = self.lines.next()
+                        line = next(self.lines) # was self.lines.next()
                 except StopIteration:
                     yield u'Warning: unclosed code block!\n'
             yield u'</pre>\n'

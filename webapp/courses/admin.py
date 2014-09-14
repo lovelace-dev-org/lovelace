@@ -89,28 +89,28 @@ class TextfieldTaskAdmin(admin.ModelAdmin):
     list_display = ("name", "url_name",)
     list_per_page = 500
 
-class FileTaskTestCommandAdmin(admin.TabularInline):
-    model = FileTaskTestCommand
+class FileExerciseTestCommandAdmin(admin.TabularInline):
+    model = FileExerciseTestCommand
     extra = 1
 
     def formfield_for_dbfield(self, db_field, **kwargs):
-        formfield = super(FileTaskTestCommandAdmin, self).formfield_for_dbfield(db_field, **kwargs)
+        formfield = super(FileExerciseTestCommandAdmin, self).formfield_for_dbfield(db_field, **kwargs)
         if db_field.name == 'command_line':
             formfield.widget = TextInput(attrs={'size':120})
         return formfield
 
-class FileTaskTestExpectedOutputAdmin(admin.StackedInline):
-    model = FileTaskTestExpectedOutput
+class FileExerciseTestExpectedOutputAdmin(admin.StackedInline):
+    model = FileExerciseTestExpectedOutput
     extra = 0
     fields = (('expected_answer', 'hint'), 'correct', 'regexp', 'videohint')
 
-class FileTaskTestExpectedErrorAdmin(admin.StackedInline):
-    model = FileTaskTestExpectedError
+class FileExerciseTestExpectedErrorAdmin(admin.StackedInline):
+    model = FileExerciseTestExpectedError
     extra = 0
     fields = (('expected_answer', 'hint'), 'correct', 'regexp', 'videohint')
 
-class FileTaskTestIncludeFileAdmin(admin.StackedInline):
-    model = FileTaskTestIncludeFile
+class FileExerciseTestIncludeFileAdmin(admin.StackedInline):
+    model = FileExerciseTestIncludeFile
     extra = 0
     fieldsets = (
         ('General information', {
@@ -122,7 +122,7 @@ class FileTaskTestIncludeFileAdmin(admin.StackedInline):
         }),
     )
 
-class FileTaskTestAdmin(admin.ModelAdmin):
+class FileExerciseTestAdmin(admin.ModelAdmin):
     fieldsets = (
         ('General settings', {
             'fields': ('task', 'name', 'inputs')
@@ -132,19 +132,19 @@ class FileTaskTestAdmin(admin.ModelAdmin):
             'fields': ('timeout', 'signals', 'retval')
         }),
     )
-    inlines = [FileTaskTestCommandAdmin, FileTaskTestExpectedOutputAdmin, FileTaskTestExpectedErrorAdmin, FileTaskTestIncludeFileAdmin]
+    inlines = [FileExerciseTestCommandAdmin, FileExerciseTestExpectedOutputAdmin, FileExerciseTestExpectedErrorAdmin, FileExerciseTestIncludeFileAdmin]
     list_display = ("name", "task",)
     list_per_page = 500
     
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == "task":
-            kwargs["queryset"] = FileTask.objects.order_by("name")
-        return super(FileTaskTestAdmin, self).formfield_for_foreignkey(db_field, request, **kwargs)
+            kwargs["queryset"] = FileUploadExercise.objects.order_by("name")
+        return super(FileExerciseTestAdmin, self).formfield_for_foreignkey(db_field, request, **kwargs)
 
 #class FileTaskTestAdmin(admin.StackedInline):
 #    inlines = [FileTaskTestCommandAdmin, FileTaskTestExpectedOutputAdmin, FileTaskTestExpectedErrorAdmin, FileTaskTestIncludeFileAdmin]
 
-class FileTaskAdmin(admin.ModelAdmin):
+class FileExerciseAdmin(admin.ModelAdmin):
     fieldsets = [
         ('Page information',   {'fields': ['name', 'url_name', 'content', 'question', 'tags']}),
         ('Task miscellaneous', {'fields': ['maxpoints', 'require_correct_embedded_tasks'],
@@ -172,8 +172,8 @@ admin.site.register(LecturePage, LecturePageAdmin)
 admin.site.register(RadiobuttonTask, RadiobuttonTaskAdmin)
 admin.site.register(CheckboxTask, CheckboxTaskAdmin)
 admin.site.register(TextfieldTask, TextfieldTaskAdmin)
-admin.site.register(FileTask, FileTaskAdmin)
-admin.site.register(FileTaskTest, FileTaskTestAdmin)
+admin.site.register(FileUploadExercise, FileExerciseAdmin)
+admin.site.register(FileExerciseTest, FileExerciseTestAdmin)
 
 ## Page embeddable objects
 class CalendarDateAdmin(admin.StackedInline):
@@ -194,13 +194,13 @@ class ContentGraphAdmin(admin.ModelAdmin):
 
 admin.site.register(ContentGraph, ContentGraphAdmin)
 
-class TrainingAdmin(admin.ModelAdmin):
+class CourseAdmin(admin.ModelAdmin):
     fieldsets = [
-        (None,                                               {'fields': ['name','frontpage']}),
-        ('Training outline',                                 {'fields': ['contents']}),
-        ('Settings for start date and end date of training', {'fields': ['start_date','end_date'], 'classes': ['collapse']}),
+        (None,                                                 {'fields': ['name','frontpage']}),
+        ('Course outline',                                     {'fields': ['contents']}),
+        ('Settings for start date and end date of the course', {'fields': ['start_date','end_date'], 'classes': ['collapse']}),
     ]
     #formfield_overrides = {models.ManyToManyField: {'widget':}}
 
-admin.site.register(Training,TrainingAdmin)
+admin.site.register(Course, CourseAdmin)
 

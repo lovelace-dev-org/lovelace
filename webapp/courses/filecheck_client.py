@@ -29,6 +29,14 @@ def check_file_answer(task, files={}, answer=None):
 
     return result.task_id
 
+def compose_test_object(exercise):
+    """
+    Get the exercise related tests from the database and compose an easily
+    readable object of them for the Celery task.
+    """
+
+    return test_object
+
 def ex_check_file_answer(task, files={}, answer=None):
     """Iterates through all the tests for a returnable package of user content."""
     print("Checking a file")
