@@ -99,13 +99,13 @@ class FileExerciseTestCommandAdmin(admin.TabularInline):
             formfield.widget = TextInput(attrs={'size':120})
         return formfield
 
-class FileExerciseTestExpectedOutputAdmin(admin.StackedInline):
-    model = FileExerciseTestExpectedOutput
+class FileExerciseTestExpectedStdoutAdmin(admin.StackedInline):
+    model = FileExerciseTestExpectedStdout
     extra = 0
     fields = (('expected_answer', 'hint'), 'correct', 'regexp', 'videohint')
 
-class FileExerciseTestExpectedErrorAdmin(admin.StackedInline):
-    model = FileExerciseTestExpectedError
+class FileExerciseTestExpectedStderrAdmin(admin.StackedInline):
+    model = FileExerciseTestExpectedStderr
     extra = 0
     fields = (('expected_answer', 'hint'), 'correct', 'regexp', 'videohint')
 
@@ -132,12 +132,12 @@ class FileExerciseTestAdmin(admin.ModelAdmin):
             'fields': ('timeout', 'signals', 'retval')
         }),
     )
-    inlines = [FileExerciseTestCommandAdmin, FileExerciseTestExpectedOutputAdmin, FileExerciseTestExpectedErrorAdmin, FileExerciseTestIncludeFileAdmin]
-    list_display = ("name", "task",)
+    inlines = []
+    list_display = ("name", "exercise",)
     list_per_page = 500
     
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        if db_field.name == "task":
+        if db_field.name == "exercise":
             kwargs["queryset"] = FileUploadExercise.objects.order_by("name")
         return super(FileExerciseTestAdmin, self).formfield_for_foreignkey(db_field, request, **kwargs)
 

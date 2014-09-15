@@ -167,7 +167,7 @@ def dirtree(tree, node, user):
         except ContentPage.DoesNotExist:
             pass
         try:
-            if not evaluations: evaluations = Evaluation.objects.filter(useranswer__userfiletaskanswer__task=node.content, useranswer__user=user)
+            if not evaluations: evaluations = Evaluation.objects.filter(useranswer__userfileuploadexerciseanswer__task=node.content, useranswer__user=user)
         except ContentPage.DoesNotExist:
             pass
 
@@ -222,7 +222,7 @@ def get_task_info(content):
         pass
 
     try:
-        if content.taskpage.filetask:
+        if content.taskpage.fileuploadexercise:
             tasktype = "file"
             question = TaskPage.objects.get(id=content.id).question
     except ContentPage.DoesNotExist as e:
@@ -594,7 +594,7 @@ def get_user_task_info(user, task, tasktype, pub_date=None):
             evaluations = Evaluation.objects.filter(useranswer__usertextfieldtaskanswer__task=task, useranswer__user=user, useranswer__answer_date__gte=pub_date)
     elif tasktype == "file":
         if not evaluations:
-            evaluations = Evaluation.objects.filter(useranswer__userfiletaskanswer__task=task, useranswer__user=user, useranswer__answer_date__gte=pub_date)
+            evaluations = Evaluation.objects.filter(useranswer__userfileuploadexerciseanswer__task=task, useranswer__user=user, useranswer__answer_date__gte=pub_date)
 
     if not evaluations:
         result = "not_answered"
@@ -631,7 +631,7 @@ def content(request, training_name, content_name, **kwargs):
         tasktypes = {"radiobutton":"radiobuttontask",
                      "checkbox":"checkboxtask",
                      "textfield":"textfieldtask",
-                     "file":"filetask",
+                     "file":"fileuploadexercise",
                      "lecture":"lecturepage",}
         admin_url = reverse("admin:courses_%s_change" % tasktypes[tasktype], args=(content.id,))
 
@@ -746,7 +746,7 @@ def content(request, training_name, content_name, **kwargs):
                     tasktypes = {"radiobutton":"radiobuttontask",
                                  "checkbox":"checkboxtask",
                                  "textfield":"textfieldtask",
-                                 "file":"filetask",
+                                 "file":"fileuploadexercise",
                                  "lecture":"lecturepage",}
                     emb_admin_url = reverse("admin:courses_%s_change" % tasktypes[emb_tasktype], args=(embedded_content.id,))
 
@@ -878,7 +878,7 @@ def user(request, user_name):
     checkboxtask_answers = UserCheckboxTaskAnswer.objects.filter(user=request.user)
     radiobuttontask_answers = UserRadiobuttonTaskAnswer.objects.filter(user=request.user)
     textfieldtask_answers = UserTextfieldTaskAnswer.objects.filter(user=request.user)
-    filetask_answers = UserFileTaskAnswer.objects.filter(user=request.user)
+    filetask_answers = UserFileUploadExerciseAnswer.objects.filter(user=request.user)
 
     t = loader.get_template("courses/userinfo.html")
     c = RequestContext(request, {
@@ -915,7 +915,7 @@ def file_download(request, filename, **kwargs):
             file_path = File.objects.get(fileinfo='files/'+filename).fileinfo.path
         except File.DoesNotExist:
             try:
-                file_path = FileTaskTestIncludeFile.objects.get(fileinfo=filename).fileinfo.path
+                file_path = FileExerciseTestIncludeFile.objects.get(fileinfo=filename).fileinfo.path
             except File.DoesNotExist:
                 file_path = ""
 
@@ -1006,7 +1006,7 @@ def show_answers(request, user, course, task):
     elif tasktype == "textfield":
         answers = UserTextfieldTaskAnswer.objects.filter(user=user_obj, task=task_obj)
     elif tasktype == "file":
-        answers = UserFileTaskAnswer.objects.filter(user=user_obj, task=task_obj)
+        answers = UserFileUploadExerciseAnswer.objects.filter(user=user_obj, task=task_obj)
 
     # TODO: Own subtemplates for each of the task types.
     t = loader.get_template("courses/user_task_answers.html")

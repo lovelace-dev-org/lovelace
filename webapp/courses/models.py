@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Django database models for RAiPPA courses."""
 # TODO: Refactor into multiple apps
 # TODO: Profile the app and add relevant indexes!
@@ -81,6 +80,7 @@ class ContentGraph(models.Model):
     deadline = models.DateTimeField(verbose_name='The due date for completing this task',blank=True,null=True)
     publish_date = models.DateTimeField(verbose_name='When does this task become available',blank=True,null=True)
     scored = models.BooleanField(verbose_name='Does this task affect scoring', default=True)
+    require_correct_embedded = models.BooleanField(verbose_name='Embedded exercises must be answered correctly in order to mark this item as correct',default=True)
 
     def __str__(self):
         if not self.content:
@@ -96,6 +96,7 @@ class EmbeddedContentLink(models.Model):
     Automatically generated link from content to other content - based on
     content pages embedded in other content pages.
     """
+    # TODO: Um... rethink relations
     page = models.ForeignKey('ContentPage', related_name='embedded_page_link')
     embedded_pages = models.ManyToManyField('ContentPage', related_name='parent_page_links')
 
@@ -106,7 +107,7 @@ class File(models.Model):
     """Metadata of an embedded or attached file that an admin has uploaded."""
     uploader = models.ForeignKey(User) # TODO: Make the uploading user the default and don't allow it to change
     name = models.CharField(verbose_name='Name for reference in content',max_length=200,unique=True)
-    date_uploaded = models.DateTimeField(verbose_name='date uploaded') # TODO: Make the current date default
+    date_uploaded = models.DateTimeField(verbose_name='date uploaded', auto_now_add=True)
     typeinfo = models.CharField(max_length=200)
     fileinfo = models.FileField(max_length=255, upload_to=get_file_upload_path)
 
@@ -120,7 +121,7 @@ class Image(models.Model):
     """Image"""
     uploader = models.ForeignKey(User)
     name = models.CharField(verbose_name='Name for reference in content',max_length=200,unique=True)
-    date_uploaded = models.DateTimeField(verbose_name='date uploaded')
+    date_uploaded = models.DateTimeField(verbose_name='date uploaded', auto_now_add=True)
     description = models.CharField(max_length=500)
     fileinfo = models.ImageField(upload_to=get_image_upload_path)
 
@@ -174,15 +175,23 @@ class ContentPage(models.Model):
     # TODO: Get rid of short_name
     short_name = models.CharField(max_length=32, help_text="The short name is used for referring this page on other pages")
     content = models.TextField(verbose_name="Page content body", blank=True, null=True)
-    # TODO: maxpoints -> default points
-    maxpoints = models.IntegerField(verbose_name="Maximum points", blank=True, null=True,
-                                    help_text="The maximum points a user can gain by finishing this task correctly")
-    access_count = models.IntegerField(editable=False,blank=True,null=True)
+    default_points = models.IntegerField(blank=True, null=True,
+                                         help_text="The default points a user can gain by finishing this exercise correctly")
+    access_count = models.PositiveIntegerField(editable=False,blank=True,null=True)
     tags = models.TextField(blank=True,null=True)
+    
+    CONTENT_TYPE_CHOICES = (
+        ('LECTURE', 'Lecture'),
+        ('TEXTFIELD_EXERCISE', 'Textfield exercise'),
+        ('MULTIPLE_CHOICE_EXERCISE', 'Multiple choice exercise'),
+        ('CHECKBOX_EXERCISE', 'Checkbox exercise'),
+        ('FILE_UPLOAD_EXERCISE', 'File upload exercise'),
+        ('CODE_INPUT_EXERCISE', 'Code input exercise'),
+        ('CODE_REPLACE_EXERCISE', 'Code replace exercise'),
+    )
+    content_type = models.CharField(max_length=28, default='LECTURE', choices=CONTENT_TYPE_CHOICES)
 
     feedback_questions = models.ManyToManyField(ContentFeedbackQuestion, blank=True, null=True)
-    # TODO: Move to ContentGraph (course content link)
-    require_correct_embedded_tasks = models.BooleanField(verbose_name='Embedded tasks must be answered correctly to mark this task correct',default=True)
 
     def _shortify_name(self):
         # duplicate page warning! what if two pages have the same [0:32]?
@@ -210,6 +219,9 @@ class ContentPage(models.Model):
     def __str__(self):
         return self.name
 
+# TODO: Use the below models as Meta -> proxy = True
+#       - override save(): automatically save content_type based on which kind
+#         of lecture/exercise the object is
 # TODO: Rename to Lecture
 class LecturePage(ContentPage):
     """A single page for a lecture."""
@@ -278,7 +290,7 @@ class FileUploadExercise(TaskPage):
         verbose_name = "file upload exercise"
 
 class CodeInputExercise(TaskPage):
-    # TODO: Create a Textfield task variant that's run like a file task! (like in Viope)
+    # TODO: A textfield exercise variant that's run like a file exercise (like in Viope)
     def save(self, *args, **kwargs):
         self.url_name = self.get_url_name()
         if not self.short_name:
@@ -312,21 +324,13 @@ class Hint(models.Model):
     class Meta:
         verbose_name = "configurable hint"
 
-## File task test related models
+## File exercise test related models
 def default_timeout(): return datetime.time(0,0,5)
 
 class FileExerciseTest(models.Model):
-    task = models.ForeignKey(FileUploadExercise, verbose_name="for file exercise", db_index=True)
+    exercise = models.ForeignKey(FileUploadExercise, verbose_name="for file exercise", db_index=True)
     name = models.CharField(verbose_name="Test name", max_length=200)
-    timeout = models.TimeField(default=default_timeout, help_text="How long is the test allowed to run before sending a KILL signal?")
-    POSIX_SIGNALS_CHOICES = (
-        ('None', "Don't send any signals"),
-        ('SIGINT', 'Interrupt signal (same as Ctrl-C)'),
-    )
-    signals = models.CharField(max_length=7,default="None",choices=POSIX_SIGNALS_CHOICES) # What POSIX signals shall be fired at the program?
-    inputs = models.TextField(verbose_name="Input given to the main command through STDIN",blank=True) # What input shall be entered to the program's stdin upon execution?
-    retval = models.IntegerField(verbose_name='Expected return value',blank=True,null=True)
-
+    
     def __str__(self):
         return self.name
 
@@ -336,7 +340,7 @@ class FileExerciseTest(models.Model):
 class FileExerciseTestStage(models.Model):
     """A stage – a named sequence of commands to run in a file exercise test."""
     test = models.ForeignKey(FileExerciseTest)
-    depends_on = models.ForeignKey('FileExerciseTestStage', null=True, blank=True)
+    depends_on = models.ForeignKey('FileExerciseTestStage', null=True, blank=True) # TODO: limit_choices_to
     name = models.CharField(max_length=64)
     ordinal_number = models.PositiveSmallIntegerField() # TODO: Enforce min=1
 
@@ -345,52 +349,69 @@ class FileExerciseTestStage(models.Model):
 
     class Meta:
         unique_together = ('test', 'ordinal_number')
+        ordering = ['ordinal_number']
 
 class FileExerciseTestCommand(models.Model):
     """A command that shall be executed on the test machine."""
-    # TODO: Command sequence order indicator!
     stage = models.ForeignKey(FileExerciseTestStage)
-    command_line = models.CharField(max_length=500)
-    main_command = models.BooleanField(verbose_name='Command which receives the specified input', default=None) # The command which the inputs are entered into and signals are fired at?
-    #significant_stdout = models.BooleanField(verbose_name="Compare the generated stdout to reference",
-#                                             default=False,
-                                             #help_text="Determines whether the standard output generated by this command is compared to the one generated by running this command with the reference files.")
-    #significant_stderr = models.BooleanField(verbose_name="Compare the generated stderr to reference",
-                                             #default=False,
-                                             #help_text="Determines whether the standard errors generated by this command are compared to those generated by running this command with the reference files.")
+    command_line = models.CharField(max_length=255)
+    significant_stdout = models.BooleanField(verbose_name="Compare the generated stdout to reference",
+                                             default=False,
+                                             help_text="Determines whether the"\
+                                             " standard output generated by "\
+                                             "this command is compared to the "\
+                                             "one generated by running this "\
+                                             "command with the reference files.")
+    significant_stderr = models.BooleanField(verbose_name="Compare the generated stderr to reference",
+                                             default=False,
+                                             help_text="Determines whether the standard errors generated by this command are compared to those generated by running this command with the reference files.")
+    timeout = models.TimeField(default=default_timeout,
+                               help_text="How long is the command allowed to run before termination?")
+    POSIX_SIGNALS_CHOICES = (
+        ('None', "Don't send any signals"),
+        ('SIGINT', 'Interrupt signal (same as Ctrl-C)'),
+        ('SIGTERM', 'Terminate signal'),
+    )
+    signal = models.CharField(max_length=8,default="None",choices=POSIX_SIGNALS_CHOICES,
+                              help_text="Which POSIX signal shall be fired at the program?")
+    input_text = models.TextField(verbose_name="Input fed to the command through STDIN",blank=True,
+                                  help_text="What input shall be entered to the program's stdin upon execution?")
+    return_value = models.IntegerField(verbose_name='Expected return value',blank=True,null=True)
     ordinal_number = models.PositiveSmallIntegerField() # TODO: Enforce min=1
 
     def __str__(self):
-        return u"%s" % (self.command_line)
+        return "%s" % (self.command_line)
 
     class Meta:
         verbose_name = "command to run for the test"
         verbose_name_plural = "commands to run for the test"
         unique_together = ('stage', 'ordinal_number')
+        ordering = ['ordinal_number']
 
 class FileExerciseTestExpectedOutput(models.Model):
-    """What kind of output is expected from the program's stdout?"""
-    test = models.ForeignKey(FileExerciseTest)
+    """What kind of output is expected from the program?"""
+    command = models.ForeignKey(FileExerciseTestCommand)
     correct = models.BooleanField(default=None)
     regexp = models.BooleanField(default=None)
     expected_answer = models.TextField(blank=True)
     hint = models.TextField(blank=True)
-    videohint = models.ForeignKey(Video,blank=True,null=True)
+    OUTPUT_TYPE_CHOICES = (
+        ('STDOUT', 'Standard output (stdout)'),
+        ('STDERR', 'Standard error (stderr)'),
+    )
+    output_type = models.CharField(max_length=7, default='STDOUT', choices=OUTPUT_TYPE_CHOICES)
 
+class FileExerciseTestExpectedStdout(FileExerciseTestExpectedOutput):
     class Meta:
         verbose_name = "expected output"
+        proxy = True
+    # TODO: save()
 
-class FileExerciseTestExpectedError(models.Model):
-    """What kind of output is expected from the program's stderr?"""
-    test = models.ForeignKey(FileExerciseTest)
-    correct = models.BooleanField(default=None)
-    regexp = models.BooleanField(default=None)
-    expected_answer = models.TextField(blank=True)
-    hint = models.TextField(blank=True)
-    videohint = models.ForeignKey(Video,blank=True,null=True)
-
+class FileExerciseTestExpectedStderr(FileExerciseTestExpectedOutput):
     class Meta:
         verbose_name = "expected error"
+        proxy = True
+    # TODO: save()
 
 def get_testfile_path(instance, filename):
     return os.path.join(
@@ -399,12 +420,16 @@ def get_testfile_path(instance, filename):
     )
 
 class FileExerciseTestIncludeFile(models.Model):
-    """File which an admin can include to the test. For example, a reference program, expected output file or input file for the program."""
-    test = models.ForeignKey(FileUploadExercise)
+    """
+    A file which an admin can include in an exercise's file pool for use in
+    tests. For example, a reference program, expected output file or input file
+    for the program.
+    """
+    exercise = models.ForeignKey(FileUploadExercise)
     name = models.CharField(verbose_name='File name during test',max_length=255)
 
     FILE_PURPOSE_CHOICES = (
-        ('Files given to the program for reading', (
+        ('Files written into the test directory for reading', (
                 ('INPUT', "Input file"),
             )
         ),
@@ -437,7 +462,7 @@ class FileExerciseTestIncludeFile(models.Model):
     class Meta:
         verbose_name = "included file"
 
-# TODO: Create a superclass for task answers
+# TODO: Create a superclass for task answer choices
 ## Answer models
 class TextfieldTaskAnswer(models.Model):
     task = models.ForeignKey(TextfieldTask)
@@ -494,37 +519,33 @@ class Evaluation(models.Model):
 
 class UserAnswer(models.Model):
     """Parent class for what users have given as their answers to different tasks."""
-    evaluation = models.OneToOneField(Evaluation) # A single answer is always linked to a single evaluation
-    user = models.ForeignKey(User)                # Whose answer is this?
-    answer_date = models.DateTimeField(verbose_name='Date and time of when the user answered this task')
+    evaluation = models.OneToOneField(Evaluation)
+    user = models.ForeignKey(User)
+    answer_date = models.DateTimeField(verbose_name='Date and time of when the user answered this task',
+                                       auto_now_add=True)
+    answerer_ip = models.GenericIPAddressField()
+
     collaborators = models.TextField(verbose_name='Which users was this task answered with', blank=True, null=True)
     checked = models.BooleanField(verbose_name='This answer has been checked', default=False)
     draft = models.BooleanField(verbose_name='This answer is a draft', default=False)
 
-# TODO: Rewrite this system to take multiple tests and all test data into account!
-class FileUploadExerciseReturnable(models.Model):
-    run_time = models.TimeField()
-    output = models.TextField()
-    errors = models.TextField()
-    retval = models.IntegerField()
-
-# TODO: Replace with a value saved into database
+# TODO: Put in UserFileUploadExerciseAnswer's manager?
 def get_version(instance):
-    return UserFileUploadExerciseAnswer.objects.filter(user=instance.returnable.userfileuploadexerciseanswer.user,
-                                                       task=instance.returnable.userfileuploadexerciseanswer.task).count()
+    return UserFileUploadExerciseAnswer.objects.filter(user=instance.answer.user,
+                                                       task=instance.answer.task).count()
 
 def get_answerfile_path(instance, filename):
     return os.path.join(
         "returnables",
-        "%s" % (instance.returnable.userfileuploadexerciseanswer.user.username),
-        "%s" % (instance.returnable.userfileuploadexerciseanswer.task.name),
+        "%s" % (instance.answer.user.username),
+        "%s" % (instance.answer.task.name),
         "%04d" % (get_version(instance)),
         "%s" % (filename)
     )
 
 class FileUploadExerciseReturnFile(models.Model):
-    """File that a user returns for checking."""
-    returnable = models.ForeignKey(FileUploadExerciseReturnable)
+    """A file that a user returns for checking."""
+    answer = models.ForeignKey('UserFileUploadExerciseAnswer')
     fileinfo = models.FileField(max_length=255, upload_to=get_answerfile_path)
 
     def filename(self):
@@ -532,13 +553,9 @@ class FileUploadExerciseReturnFile(models.Model):
 
 class UserFileUploadExerciseAnswer(UserAnswer):
     task = models.ForeignKey(FileUploadExercise)
-    returnable = models.OneToOneField(FileUploadExerciseReturnable)
-    # TODO: remove the stupid onetoonefield and put the things here
-    #celery_task_id = models.CharField()
 
     def __str__(self):
-        #return u"Answer no. %04d: %s" % (self.answer_count, self.returnable)
-        return u"Answer by %s: %s" % (self.user.username, self.returnable.output)
+        return u"Answer by %s" % (self.user.username)
 
 class UserTextfieldTaskAnswer(UserAnswer):
     task = models.ForeignKey(TextfieldTask)

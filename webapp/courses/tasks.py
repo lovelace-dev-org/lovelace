@@ -195,7 +195,7 @@ def run_command(cmd, env, stdin, stdout, stderr, timeout):
     # Clean up by halting all action (forking etc.) by the student's process
     # with SIGSTOP and by killing the frozen processes with SIGKILL
 
-    # ...or maybe kill -SIGKILL -1 with the student's credentials?
+    # ...or maybe kill -SIGKILL -1 with the student's credentials? No.
 
     proc_runtime = proc_runtime or (time.time() - start_time)
     proc_retval = proc_retval or proc.returncode

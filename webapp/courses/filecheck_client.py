@@ -4,28 +4,28 @@ Module for connecting to the file checking bot on a remote machine using JSON-RP
 from the test results.
 """
 
-#import bjsonrpc
 import difflib
 import datetime
 import base64
 import pipes
 from cgi import escape
 
-from courses.models import FileTaskTest, FileTaskTestCommand, FileTaskTestExpectedOutput, FileTaskTestExpectedError, FileTaskTestIncludeFile
-from courses.models import FileTaskReturnFile
+# Testing related data
+from courses.models import FileExerciseTest
+from courses.models import FileExerciseTestIncludeFile
+from courses.models import FileExerciseTestStage, FileExerciseTestCommand
+from courses.models import FileExerciseTestExpectedOutput
+
+# Given answer related data
+from courses.models import FileUploadExerciseReturnFile
 
 import courses.tasks as rpc_tasks
 
-def check_file_answer(task, files={}, answer=None):
-    results = {"student":{"asdf":{"outputs":"moi","errors":"","outputfiles":{}}},
-               "reference":{"asdf":{"outputs":"moimoi","errors":"","outputfiles":{}}}}
+def check_file_answer(exercise, files={}, answer=None):
+    test_object = compose_test_object(exercise)
+    result = rpc_tasks.run_tests.delay(test_object, 2, 3, 4)
 
-    #result = rpc_tasks.xsum.delay((1, 2, 3, 4, 5))
-    result = rpc_tasks.run_tests.delay([], 2, 3, 4)
-    if result.ready():
-        print("valmis!")
     print(result.task_id)
-    #print(result.get(timeout=2))
 
     return result.task_id
 
@@ -34,7 +34,16 @@ def compose_test_object(exercise):
     Get the exercise related tests from the database and compose an easily
     readable object of them for the Celery task.
     """
-
+    test_object = {}
+    # TODO: Use select_related to speed up the queries
+    db_tests = FileExerciseTest.objects.filter(exercise=exercise)
+    for db_test in db_tests:
+        db_stages = FileExerciseTestStage.objects.filter(test=db_test)
+        for db_stage in db_stages:
+            db_cmds = FileExerciseTestCommand.objects.filter(stage=db_stage)
+            for db_cmd in db_cmds:
+                db_outputs = FileExerciseTestExpectedOutput.objects.filter(command=db_cmd)
+    
     return test_object
 
 def ex_check_file_answer(task, files={}, answer=None):
