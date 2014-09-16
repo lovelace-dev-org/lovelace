@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Parser for wiki markup block content, i.e. paragraphs, bullet lists, tables, etc.
 Idea from http://wiki.sheep.art.pl/Wiki%20Markup%20Parser%20in%20Python
@@ -11,6 +10,8 @@ import itertools
 #from django.utils.html import escape # Not good, escapes ' characters which prevents syntax parsing
 from cgi import escape # Use this instead
 
+from slugify import slugify
+
 from pygments import highlight
 from pygments.lexers import PythonLexer, CLexer
 from pygments.formatters import HtmlFormatter
@@ -21,6 +22,22 @@ import courses.blockparser as blockparser
 
 # TODO: Support indented blocks (e.g. <pre>) within indents, uls & ols
 
+# TODO: Support admonitions/warnings/good to know boxes/etc.
+
+# TODO: Support KaTeX ( https://news.ycombinator.com/item?id=8320439 )
+
+class ParserUninitializedError(Exception):
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
+
+class InvalidParserError(Exception):
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
+
 class MarkupParser:
     """Parser class for generating HTML from the used markup block types."""
 
@@ -30,60 +47,170 @@ class MarkupParser:
     # TODO: Find a way to integrate the blockparser here! Single pass
     #       would be extremely nice!
     # TODO: Stateless would be nice.
-    # TODO: Should these be static?
 
-    def __init__(self):
-        self.markups = {}
-        self.block_re = None
+    markups = {}
+    block_re = None
+    ready = False
     
-    def add(self, *markups):
+    @classmethod
+    def add(cls, *markups):
+        cls.ready = False
         for markup in markups:
-            self.markups[markup.shortname] = markup
+            cls.markups[markup.shortname] = markup
 
-    def compile(self):
-        block = {name : markup.regexp for name, markup in self.markups.items()}
-        self.block_re = re.compile(r"|".join(r"(?P<%s>%s)" % kv for kv in sorted(block.items())))
-        # TODO: Add the Markup's methods
-        for name, markup in self.markups.items():
-            setattr(self, "block_%s" % (name), markup.block)
-            setattr(self, "settings_%s" % (name), markup.settings)
+    @classmethod
+    def compile(cls):
+        block = {name : markup.regexp for name, markup in cls.markups.items() if markup.regexp}
+        try:
+            cls.block_re = re.compile(r"|".join(r"(?P<%s>%s)" % kv for kv in sorted(block.items())))
+        except re.error as e:
+            raise InvalidParserError("invalid regular expression syntax in a markup: %s" % e)
+        
+        for name, markup in cls.markups.items():
+            setattr(cls, "_block_%s" % (name), markup.block)
+            setattr(cls, "_settings_%s" % (name), markup.settings)
 
+        cls.ready = True
+
+    @classmethod
+    def _get_line_kind(cls, line):
+        matchobj = cls.block_re.match(line)
+        return getattr(matchobj, "lastgroup", "paragraph"), matchobj
+
+    @classmethod
+    def parse(cls, text):
+        """
+        A generator that gets the text written in the markup language, splits
+        it at newlines and yields the parsed text until the whole text has
+        been parsed.
+        """
+        if not cls.ready:
+            raise ParserUninitializedError("compile() not called")
+
+        lines = iter(re.split(r"\r\n|\r|\n", text))
+
+        state = {}
+
+        for (block_type, matchobj), block in itertools.groupby(lines, cls._get_line_kind):
+            block_func = getattr(cls, "_block_%s" % block_type)
+            print(matchobj)
+            settings = getattr(cls, "_settings_%s" % block_type)(matchobj)
+
+            yield from block_func(block, settings, state)
+            #for block_line in block_func(block, settings, state):
+                #yield block_line
+
+# inline = this markup is inline
+# allow_inline = if use of inline markup, such as <b> is allowed
 class Markup:
-    def __init__(self, name="", shortname="", description="", regexp=r"^$",
-                 markup_class="", example="", inline=False):
-        self.name = name
-        self.shortname = shorname
-        self.description = description
-        self.regexp = regexp
-        self.markup_class = markup_class
-        self.example = example
-        self.inline = inline
+    name = ""
+    shortname = ""
+    description = ""
+    regexp = r""
+    markup_class = ""
+    example = ""
+    inline = False
+    allow_inline = False
 
-    def block(self, block, settings):
+    @classmethod
+    def block(cls, block, settings, state):
         pass
 
-    def settings(self, matchobj):
+    @classmethod
+    def settings(cls, matchobj):
+        pass
+
+class EmptyMarkup(Markup):
+    name = "Empty"
+    shortname = "empty"
+    description = ""
+    regexp = "^\s*$"
+    markup_class = ""
+    example = ""
+    inline = False
+    allow_inline = False
+
+    @classmethod
+    def block(cls, block, settings, state):
+        yield ''
+
+    @classmethod
+    def settings(cls, matchobj):
+        pass
+
+class HeadingMarkup:
+    name = "Heading"
+    shortname = "heading"
+    description = ""
+    regexp = r"^\s*(?P<level>[=]{1,6})[=]*\s*.+\s*(?P=level)\s*$"
+    markup_class = ""
+    example = ""
+    inline = False
+    allow_inline = False
+
+    @classmethod
+    def block(cls, block, settings, state):
+        heading = ''
+        for line in block:
+            heading += escape(line.strip("= \r\n\t"))
+        slug = slugify(heading)
+        yield '<h%d id="%s">' % (settings["heading_level"], slug)
+        yield heading
+        yield '<a href="#%s" class="permalink">&para;</a>' % slug
+        yield '</h%d>\n' % settings["heading_level"]
+    
+    @classmethod
+    def settings(cls, matchobj):
+        heading_level = len(matchobj.group("level"))
+        settings = {"heading_level" : heading_level}
+        return settings
+
+class ParagraphMarkup(Markup):
+    name = "Paragraph"
+    shortname = "paragraph"
+    description = "A paragraph of text, p tag in HTML."
+    regexp = r""
+    markup_class = "text"
+    example = "Text without any of the block level markups."
+    inline = False
+    allow_inline = True
+
+    @classmethod
+    def block(cls, block, settings, state):
+        yield '<p>'
+        paragraph = ""
+        paragraph_lines = []
+        for line in block:
+            paragraph_lines.append(escape(line))
+        paragraph = "<br>\n".join(paragraph_lines)
+        paragraph = blockparser.parseblock(paragraph)
+        yield paragraph
+        yield '</p>\n'
+
+    @classmethod
+    def settings(cls, matchobj):
         pass
 
 class SeparatorMarkup(Markup):
-    def __init__(self):
-        name = "Separator"
-        shortname = "separator"
-        description = "A separating horizontal line, hr tag in HTML."
-        regexp = r"^\s*[-]{2}\s*$"
-        markup_class = "miscellaneous"
-        example = "--"
-        inline = False
-        super(SeparatorMarkup, self).__init__(name, shortname, description,
-                                              regexp, markup_class, example,
-                                              inline)
-    def block(self, block, settings):
+    name = "Separator"
+    shortname = "separator"
+    description = "A separating horizontal line, hr tag in HTML."
+    regexp = r"^\s*[-]{2}\s*$"
+    markup_class = "miscellaneous"
+    example = "--"
+    inline = False
+    allow_inline = False
+    
+    @classmethod
+    def block(cls, block, settings, state):
         yield '<hr>'
 
-    def settings(self, matchobj):
+    @classmethod
+    def settings(cls, matchobj):
         pass
 
-
+MarkupParser.add(EmptyMarkup, HeadingMarkup, ParagraphMarkup, SeparatorMarkup)
+MarkupParser.compile()
 
 class ContentParser:
     """Parser class for generating HTML from wiki markup block types."""
@@ -385,6 +512,8 @@ class ContentParser:
 
 # Test code
 if __name__ == "__main__":
+    pass
+    """
     test_file = open("test1.txt")
     
     test = ContentParser(test_file)
@@ -393,3 +522,4 @@ if __name__ == "__main__":
         html += line
     
     print(html)
+    """
