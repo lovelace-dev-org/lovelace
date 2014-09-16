@@ -24,8 +24,6 @@ import courses.blockparser as blockparser
 
 # TODO: Support admonitions/warnings/good to know boxes/etc.
 
-# TODO: Support KaTeX ( https://news.ycombinator.com/item?id=8320439 )
-
 class ParserUninitializedError(Exception):
     def __init__(self, value):
         self.value = value
@@ -89,11 +87,10 @@ class MarkupParser:
 
         lines = iter(re.split(r"\r\n|\r|\n", text))
 
-        state = {}
+        state = {"lines": lines}
 
         for (block_type, matchobj), block in itertools.groupby(lines, cls._get_line_kind):
             block_func = getattr(cls, "_block_%s" % block_type)
-            print(matchobj)
             settings = getattr(cls, "_settings_%s" % block_type)(matchobj)
 
             yield from block_func(block, settings, state)
@@ -209,7 +206,33 @@ class SeparatorMarkup(Markup):
     def settings(cls, matchobj):
         pass
 
-MarkupParser.add(EmptyMarkup, HeadingMarkup, ParagraphMarkup, SeparatorMarkup)
+class TeXMarkup:
+    name = "TeX"
+    shortname = "tex"
+    description = ""
+    regexp = r"^[<]math[>]\s*$"
+    markup_class = ""
+    example = ""
+    inline = False
+    allow_inline = False
+
+    @classmethod
+    def block(cls, block, settings, state):
+        yield '<div class="tex">'
+        try:
+            line = next(state["lines"])
+            while not line.startswith("</math>"):
+                yield escape(line) + "\n"
+                line = next(state["lines"])
+        except StopIteration:
+            yield 'Warning: unclosed TeX block!\n'
+        yield '</div>'
+
+    @classmethod
+    def settings(cls, matchobj):
+        pass
+
+MarkupParser.add(EmptyMarkup, HeadingMarkup, ParagraphMarkup, SeparatorMarkup, TeXMarkup)
 MarkupParser.compile()
 
 class ContentParser:
@@ -229,6 +252,7 @@ class ContentParser:
         "table" : r"^([|]{2}[^|]*)+[|]{2}$",
         "empty" : r"^\s*$",
         "heading" : r"^\s*(?P<len>[=]{1,6})[=]*\s*.+\s*(?P=len)\s*$",
+        "math" : r"^[<]math[>]\s*$",
         #"indent" : r"^[ \t]+", # Indents are not supported, TODO: SUPPORT! just a div block with css margin
     }
     block_re = re.compile(r"|".join(r"(?P<%s>%s)" % kv for kv in sorted(block.items())))
@@ -463,6 +487,19 @@ class ContentParser:
                     "thcells" : thcells,
                     "thead" : thead,}
         return settings
+
+    def block_math(self, block, settings):
+        yield '<div class="tex">'
+        try:
+            line = next(self.lines)
+            while not line.startswith("</math>"):
+                yield escape(line) + "\n"
+                line = next(self.lines)
+        except StopIteration:
+            yield 'Warning: unclosed TeX block!\n'
+        yield '</div>'
+    def settings_math(self, matchobj):
+        pass
 
     def set_fileroot(self, fileroot):
         self.fileroot = fileroot

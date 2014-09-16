@@ -15,7 +15,9 @@
     <link rel="stylesheet" href="{% static 'courses/raippa.css' %}">
     <link rel="stylesheet" href="{% static 'courses/syntax.css' %}">
     <link rel="stylesheet" href="{% static 'courses/blockcode.css' %}">
-    
+    <link rel="stylesheet" href="{% static 'courses/katex.min.css' %}">
+
+    <script src="{% static 'courses/katex.min.js' %}"></script>
     <script src="{% static 'courses/jquery-2.1.1.min.js' %}"></script>
     <script src="{% static 'courses/raippa.js' %}"></script>
     <script src="{% static 'courses/blockcode.js' %}"></script>
@@ -27,6 +29,10 @@
         setColumnWidths();
         setLineWidths();
         setPreHeights();
+
+        $("div.tex").each(function(index) {
+          katex.render($(this).text(), this);
+        });
       });
     </script>
     
