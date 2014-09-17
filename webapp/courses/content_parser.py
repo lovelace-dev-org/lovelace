@@ -37,17 +37,21 @@ class InvalidParserError(Exception):
         return repr(self.value)
 
 class MarkupParser:
-    """Parser class for generating HTML from the used markup block types."""
+    """
+    Static parser class for generating HTML from the used markup block types.
 
-    # Each markup component provides its used markup as a regexp and
-    # its block_* and settings_* functions.
-    # Finally, the components are collected to create the markup language.
+    Each markup component (given to this parser class as a markup class)
+    provides its own markup as a regexp and block & settings functions. The
+    markups are combined to form the markup language.
+    """
+
     # TODO: Find a way to integrate the blockparser here! Single pass
     #       would be extremely nice!
     # TODO: Stateless would be nice.
 
     markups = {}
     block_re = None
+    inline_re = None
     ready = False
     
     @classmethod
@@ -58,26 +62,25 @@ class MarkupParser:
         is required.
         """
         cls.ready = False
-        for markup in markups:
-            cls.markups[markup.shortname] = markup
+        cls.markups = {markup.shortname : markup for markup in markups}
 
     @classmethod
     def compile(cls):
         """
-        Iterate the parser's internal markup dictionary to:
-        - create and compile the parsing regexp based on individual regexes of
-          the different Markup classes,
-        - add the markup specific block & settings functions to this class.
+        Iterate the parser's internal markup dictionary to create and compile
+        the parsing regexp based on individual regexes of the different Markup
+        classes.
         """
-        block = {name : markup.regexp for name, markup in cls.markups.items() if markup.regexp}
         try:
-            cls.block_re = re.compile(r"|".join(r"(?P<%s>%s)" % kv for kv in sorted(block.items())))
+            cls.block_re = re.compile(
+                r"|".join(
+                    r"(?P<%s>%s)" % (shortname, markup.regexp)
+                    for shortname, markup in sorted(cls.markups.items())
+                    if markup.regexp and not markup.inline
+                )
+            )
         except re.error as e:
             raise InvalidParserError("invalid regular expression syntax in a markup: %s" % e)
-        
-        for name, markup in cls.markups.items():
-            setattr(cls, "_block_%s" % (name), markup.block)
-            setattr(cls, "_settings_%s" % (name), markup.settings)
 
         cls.ready = True
 
@@ -85,6 +88,7 @@ class MarkupParser:
     def _get_line_kind(cls, line):
         """
         Key function for itertools.groupby(...)
+
         When a line matches the compiled regexp, select the name of the matched
         group (the shortname attribute of the specifically matching Markup) as
         the key. Otherwise, default the key to 'paragraph'.
@@ -110,10 +114,12 @@ class MarkupParser:
         state = {"lines": lines}
 
         for (block_type, matchobj), block in itertools.groupby(lines, cls._get_line_kind):
-            block_func = getattr(cls, "_block_%s" % block_type)
-            settings = getattr(cls, "_settings_%s" % block_type)(matchobj)
+            block_func = cls.markups[block_type].block
+            settings = cls.markups[block_type].settings(matchobj)
 
             yield from block_func(block, settings, state)
+
+markups = []
 
 # inline = this markup is inline
 # allow_inline = if use of inline markup, such as <b> is allowed
@@ -135,6 +141,30 @@ class Markup:
     def settings(cls, matchobj):
         pass
 
+class EmbeddedPageMarkup:
+    name = "Embedded page"
+    shortname = "embedded_page"
+    description = "A lecture or exercise, embedded into the page in question."
+    regexp = r"^\<\!page\=(?P<page_slug>[^\s>]+)\>\s*$"
+    markup_class = "embedded item"
+    example = "<!page=slug-of-some-exercise>"
+    inline = False
+    allow_inline = False
+
+    @classmethod
+    def block(cls, block, settings, state):
+        # TODO: embedded_page custom template tag (inclusion tag?)
+        yield '<div class="embedded-page">\n'
+        yield '{% embedded_page "%s" %}\n' % settings["page_slug"]
+        yield '</div>\n'
+
+    @classmethod
+    def settings(cls, matchobj):
+        settings["slug"] = matchobj.group("page_slug")
+        return settings
+
+markups.append(EmbeddedPageMarkup)
+
 class EmptyMarkup(Markup):
     name = "Empty"
     shortname = "empty"
@@ -152,6 +182,8 @@ class EmptyMarkup(Markup):
     @classmethod
     def settings(cls, matchobj):
         pass
+
+markups.append(EmptyMarkup)
 
 class HeadingMarkup:
     name = "Heading"
@@ -180,6 +212,8 @@ class HeadingMarkup:
         settings = {"heading_level" : heading_level}
         return settings
 
+markups.append(HeadingMarkup)
+
 class ParagraphMarkup(Markup):
     name = "Paragraph"
     shortname = "paragraph"
@@ -206,6 +240,8 @@ class ParagraphMarkup(Markup):
     def settings(cls, matchobj):
         pass
 
+markups.append(ParagraphMarkup)
+
 class SeparatorMarkup(Markup):
     name = "Separator"
     shortname = "separator"
@@ -218,11 +254,13 @@ class SeparatorMarkup(Markup):
     
     @classmethod
     def block(cls, block, settings, state):
-        yield '<hr>'
+        yield '<hr>\n'
 
     @classmethod
     def settings(cls, matchobj):
         pass
+
+markups.append(SeparatorMarkup)
 
 class TeXMarkup:
     name = "TeX"
@@ -250,7 +288,9 @@ class TeXMarkup:
     def settings(cls, matchobj):
         pass
 
-MarkupParser.add(EmptyMarkup, HeadingMarkup, ParagraphMarkup, SeparatorMarkup, TeXMarkup)
+markups.append(TeXMarkup)
+
+MarkupParser.add(*markups)
 MarkupParser.compile()
 
 class ContentParser:
@@ -310,7 +350,7 @@ class ContentParser:
         for line in block:
             paragraph_lines.append(escape(line))
         paragraph = u"<br />".join(paragraph_lines)
-        paragraph = blockparser.parseblock(paragraph)
+        paragraph = blockparser.parseblock(paragraph) # No. Allows <br> inside <span>.
         yield paragraph
         yield u'</p>\n'
     def settings_paragraph(self, matchobj):
