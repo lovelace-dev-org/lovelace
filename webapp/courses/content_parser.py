@@ -52,12 +52,23 @@ class MarkupParser:
     
     @classmethod
     def add(cls, *markups):
+        """
+        Add the Markup classes given as arguments into the parser's internal
+        dictionary and set the ready flag False to indicate that re-compilation
+        is required.
+        """
         cls.ready = False
         for markup in markups:
             cls.markups[markup.shortname] = markup
 
     @classmethod
     def compile(cls):
+        """
+        Iterate the parser's internal markup dictionary to:
+        - create and compile the parsing regexp based on individual regexes of
+          the different Markup classes,
+        - add the markup specific block & settings functions to this class.
+        """
         block = {name : markup.regexp for name, markup in cls.markups.items() if markup.regexp}
         try:
             cls.block_re = re.compile(r"|".join(r"(?P<%s>%s)" % kv for kv in sorted(block.items())))
@@ -72,6 +83,15 @@ class MarkupParser:
 
     @classmethod
     def _get_line_kind(cls, line):
+        """
+        Key function for itertools.groupby(...)
+        When a line matches the compiled regexp, select the name of the matched
+        group (the shortname attribute of the specifically matching Markup) as
+        the key. Otherwise, default the key to 'paragraph'.
+
+        The match object is returned for use in the settings function of the
+        markup.        
+        """
         matchobj = cls.block_re.match(line)
         return getattr(matchobj, "lastgroup", "paragraph"), matchobj
 
@@ -94,8 +114,6 @@ class MarkupParser:
             settings = getattr(cls, "_settings_%s" % block_type)(matchobj)
 
             yield from block_func(block, settings, state)
-            #for block_line in block_func(block, settings, state):
-                #yield block_line
 
 # inline = this markup is inline
 # allow_inline = if use of inline markup, such as <b> is allowed
