@@ -80,7 +80,7 @@ class MarkupParser:
                 )
             )
         except re.error as e:
-            raise InvalidParserError("invalid regular expression syntax in a markup: %s" % e)
+            raise InvalidParserError("invalid regex syntax in a markup: %s" % e)
 
         cls.ready = True
 
@@ -109,6 +109,7 @@ class MarkupParser:
         if not cls.ready:
             raise ParserUninitializedError("compile() not called")
 
+        # TODO: Generator version of splitter to avoid memory overhead of list
         lines = iter(re.split(r"\r\n|\r|\n", text))
 
         state = {"lines": lines}
@@ -116,6 +117,8 @@ class MarkupParser:
         for (block_type, matchobj), block in itertools.groupby(lines, cls._get_line_kind):
             block_func = cls.markups[block_type].block
             settings = cls.markups[block_type].settings(matchobj)
+            
+            # TODO: Modular cleanup of indent, ul, ol, table etc.
 
             yield from block_func(block, settings, state)
 
@@ -141,7 +144,29 @@ class Markup:
     def settings(cls, matchobj):
         pass
 
-class EmbeddedPageMarkup:
+class CalendarMarkup(Markup):
+    name = "Calendar"
+    shortname = "calendar"
+    description = "A calendar for time reservations."
+    regexp = r"^\<\!calendar\=(?P<calendar_name>[^\s>]+)\>\s*$"
+    markup_class = "embedded item"
+    example = "<!calendar=course-project-demo-calendar>"
+    inline = False
+    allow_inline = False
+
+    @classmethod
+    def block(cls, block, settings, state):
+        # TODO: embedded_calendar custom template tag
+        yield '{%% embedded_calendar "%s" %%}' % settings["calendar_name"]
+
+    @classmethod
+    def settings(cls, matchobj):
+        settings = {"calendar_name" : matchobj.group("calendar_name")}
+        return settings
+
+markups.append(CalendarMarkup)
+
+class EmbeddedPageMarkup(Markup):
     name = "Embedded page"
     shortname = "embedded_page"
     description = "A lecture or exercise, embedded into the page in question."
@@ -155,12 +180,16 @@ class EmbeddedPageMarkup:
     def block(cls, block, settings, state):
         # TODO: embedded_page custom template tag (inclusion tag?)
         yield '<div class="embedded-page">\n'
-        yield '{% embedded_page "%s" %}\n' % settings["page_slug"]
+        yield '{%% embedded_page "%s" %%}\n' % settings["page_slug"]
         yield '</div>\n'
+        try:
+            state["embedded_pages"].append(settings["page_slug"])
+        except KeyError:
+            state["embedded_pages"] = [settings["page_slug"]]
 
     @classmethod
     def settings(cls, matchobj):
-        settings["slug"] = matchobj.group("page_slug")
+        settings = {"page_slug" : matchobj.group("page_slug")}
         return settings
 
 markups.append(EmbeddedPageMarkup)
@@ -185,11 +214,11 @@ class EmptyMarkup(Markup):
 
 markups.append(EmptyMarkup)
 
-class HeadingMarkup:
+class HeadingMarkup(Markup):
     name = "Heading"
     shortname = "heading"
     description = ""
-    regexp = r"^\s*(?P<level>[=]{1,6})[=]*\s*.+\s*(?P=level)\s*$"
+    regexp = r"^\s*(?P<level>\={1,6})\=*\s*.+\s*(?P=level)\s*$"
     markup_class = ""
     example = ""
     inline = False
@@ -208,11 +237,39 @@ class HeadingMarkup:
     
     @classmethod
     def settings(cls, matchobj):
-        heading_level = len(matchobj.group("level"))
-        settings = {"heading_level" : heading_level}
+        settings = {"heading_level" : len(matchobj.group("level"))}
         return settings
 
 markups.append(HeadingMarkup)
+
+class ImageMarkup(Markup):
+    name = "Image"
+    shortname = "image"
+    description = "An image, img tag in HTML."
+    regexp = r"^\<\!image\=(?P<image_name>[^>|]+)(\|alt\=(?P<alt_text>[^>|]+))?\>\s*$"
+    markup_class = "embedded item"
+    example = "<!image=name-of-some-image.png|alt=alternative text>"
+    inline = False
+    allow_inline = False
+
+    @classmethod
+    def block(cls, block, settings, state):
+        # TODO: Implement embedded_image template tag
+        if "alt_text" in settings.keys():
+            yield '<img src="{%% embedded_image \'%s\' %%}" alt="%s">\n' % (settings["image_name"], settings["alt_text"])
+        else:
+            yield '<img src="{%% embedded_image \'%s\' %%}">\n' % settings["image_name"]
+
+    @classmethod
+    def settings(cls, matchobj):
+        settings = {"image_name" : escape(matchobj.group("image_name"))}
+        try:
+            settings["alt_text"] = escape(matchobj.group("alt_text"))
+        except AttributeError:
+            pass
+        return settings
+
+markups.append(ImageMarkup)
 
 class ParagraphMarkup(Markup):
     name = "Paragraph"
@@ -246,7 +303,7 @@ class SeparatorMarkup(Markup):
     name = "Separator"
     shortname = "separator"
     description = "A separating horizontal line, hr tag in HTML."
-    regexp = r"^\s*[-]{2}\s*$"
+    regexp = r"^\s*\-{2}\s*$"
     markup_class = "miscellaneous"
     example = "--"
     inline = False
@@ -262,7 +319,29 @@ class SeparatorMarkup(Markup):
 
 markups.append(SeparatorMarkup)
 
-class TeXMarkup:
+class SourceCodeMarkup(Markup):
+    name = "Source code file"
+    shortname = "sourcecodefile"
+    description = "A listing of uploaded source code."
+    regexp = r"^\<\!sourcecodefile\=(?P<source_filename>[^>]+)\>\s*$"
+    markup_class = "embedded item"
+    example = "<!sourcecodefile=hello_world.py>"
+    inline = False
+    allow_inline = False
+
+    @classmethod
+    def block(cls, block, settings, state):
+        # TODO: embedded_sourcecode custom template tag
+        yield '{%% embedded_sourcecode "%s" %%}' % settings["source_filename"]
+
+    @classmethod
+    def settings(cls, matchobj):
+        settings = {"source_filename": matchobj.group("source_filename")}
+        return settings
+
+markups.append(SourceCodeMarkup)
+
+class TeXMarkup(Markup):
     name = "TeX"
     shortname = "tex"
     description = ""
@@ -281,8 +360,9 @@ class TeXMarkup:
                 yield escape(line) + "\n"
                 line = next(state["lines"])
         except StopIteration:
+            # TODO: Modular, class-based warning system
             yield 'Warning: unclosed TeX block!\n'
-        yield '</div>'
+        yield '</div>\n'
 
     @classmethod
     def settings(cls, matchobj):

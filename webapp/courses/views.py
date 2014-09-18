@@ -650,6 +650,11 @@ def content(request, training_name, content_name, **kwargs):
                NavURL(reverse('courses:training', kwargs={"training_name":training_name}), training_name),
                NavURL(reverse('courses:content', kwargs={"training_name":training_name, "content_name":content.name}), content.name)]
 
+    rendered_content = ""
+    for line in content_parser.MarkupParser.parse(content.content):
+        rendered_content += line
+
+    """
     rendered_content = u''
     unparsed_content = re.split(r"\r\n|\r|\n", content.content)
 
@@ -786,7 +791,8 @@ def content(request, training_name, content_name, **kwargs):
                 line = line.replace(include_file_re.group(0), rendered_em_content)
                 
         rendered_content += line
-    
+    """
+
     c = RequestContext(request, {
         'embedded_task': False,
         'contains_embedded_task': contains_embedded_task,
