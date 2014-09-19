@@ -1,28 +1,21 @@
 <div class="login">
-  <form method="POST">
-    {% csrf_token %}
-    <fieldset>
-      <legend>
-        {% if user.is_active  %}
-          {% filter force_escape %}
-            {% firstof user.first_name user.username %}
-          {% endfilter %}
-        {% else %}
-          User login
-        {% endif %}
-      </legend>
-      {% if not user.is_active  %}
-        Have an account already? <a href="/accounts/login/">Log in</a>!<br />
-        No account? <a href="/accounts/register/">Create</a> one!<br />
-      {% elif user.is_staff  %}
-        <a href="/admin/">Admin tools</a><br />
-        <a href="/profile/">Change your profile settings</a><br />
-        Not {% firstof user.first_name user.username %}? <a href="/accounts/logout/">Log out!</a><br />
-      {% else  %}
-        <a href="/profile/">Change your profile settings</a><br />
-        Not {% firstof user.first_name user.username %}? <a href="/accounts/logout/">Log out!</a><br />
-      {% endif %}
-    </fieldset>
-  </form>
-</div>
+  {% if user.is_active %}
+    {% filter force_escape %}
+    {% firstof user.first_name user.username %}
+    {% endfilter %}
+  {% else %}
+    User login
+  {% endif %}
 
+  {% if not user.is_active %}
+    <div>Have an account already? <a href="/accounts/login/">Log in</a>!</div>
+    <div>No account? <a href="/accounts/register/">Create</a> one!</div>
+  {% elif user.is_staff %}
+    <div><a href="/admin/">Admin tools</a></div>
+    <div><a href="/profile/">Change your profile settings</a></div>
+    <div>Not {% firstof user.first_name user.username %}? <a href="/accounts/logout/">Log out!</a></div>
+  {% else  %}
+    <div><a href="/profile/">Change your profile settings</a></div>
+    <div>Not {% firstof user.first_name user.username %}? <a href="/accounts/logout/">Log out!</a></div>
+  {% endif %}
+</div>

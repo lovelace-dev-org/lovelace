@@ -232,7 +232,7 @@ class HeadingMarkup(Markup):
         slug = slugify(heading)
         yield '<h%d id="%s">' % (settings["heading_level"], slug)
         yield heading
-        yield '<a href="#%s" class="permalink">&para;</a>' % slug
+        yield '<a href="#%s" class="permalink" title="Permalink to this heading">&para;</a>' % slug
         yield '</h%d>\n' % settings["heading_level"]
     
     @classmethod

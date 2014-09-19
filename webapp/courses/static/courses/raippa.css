@@ -46,7 +46,7 @@ header {
     top: 0px;
     left: 0px;
     width: 100%;
-    height: 6em;
+    height: 4em;
 }
 
 div#container-top {
@@ -55,79 +55,63 @@ div#container-top {
     width: 1000px;
 }
 
-    div#container-top heading {
-        color: #333;
-        font-family: "Verdana";
+    div#container-top hgroup {
+        color: #222;
+        font-family: "Arial Black";
         position: relative;
-
-        top: 20px;
-        /*text-align: center;*/
     }
 
-    div#container-top heading h1 {
+    div#container-top hgroup h1 {
         text-shadow: 0px 0px 5px rgba(255, 255, 255, 0.9);
         font-style: normal;
         font-weight: normal;
-        font-size: 50px;
+        font-size: 3em;
         display: inline-block;
     }
 	
-    div#container-top heading h2 {
+    div#container-top hgroup h2 {
         text-shadow: 0px 0px 3px rgba(255, 255, 255, 0.9);
         font-style: italic;
         font-weight: normal;
-        font-size: 14px;
+        font-size: 1em;
         display: inline-block;
         padding-left: 20px;
         margin-top: -20px;
     }
 	
-    div#container-top div.login form fieldset {
+    div#container-top div.login {
         color: #eee;
-        font-family: ;
-        font-size: 12px;
+        font-family: "Arial Black";
+        font-size: 1.1em;
         position: absolute;
-        right: 5px;
-        top: 5px;
+        top: 0;
+        right: 0;
         padding: 5px;
-        height: 90px;
-        border: 1px solid #eee;
-        -moz-border-radius: 10px;
-        border-radius: 10px;
+        height: 4em;
+        border: 1px solid #143a14;
         width: 200px;
-        background: #143a14;
+        background: #39ad39;
+        z-index: 1;
+        letter-spacing: 0.05em;
+        word-spacing: 0.1em;
     }
 
-    div#container-top div.login form fieldset legend {
-        font-size: 15px;
-        font-weight: bold;
-    }
-
-    div#container-top div.login form fieldset div {
+    div#container-top div.login div {
         position: relative;
-        left: 5px;
-        bottom: 5px;
-    }
-    div#container-top div.login form fieldset a {
-        color: #6cf;
-    }
-    div#container-top div.login form fieldset a:visited {
-        color: #faf;
     }
 
-    div#container-top div.login form label {
-        display: block;
-        float: left;
-        width: 80px;
-        text-align: right;
+    div#container-top a {
+        text-decoration: none;
     }
-	
-    div#container-top div.login form {
-        width: auto;
+    div#container-top a:link {
+        color: #ccc;
     }
-	
-    div#container-top div.login form input#loginbutton {
-        float: right;
+    div#container-top a:visited {
+        color: #ccc;
+    }
+    div#container-top a:hover {
+        color: #333;
+        background-color: #ccc;
     }
 
 /* NAVIGATION */
@@ -188,13 +172,51 @@ nav.breadcrumb {
 /* Table of Contents */
 nav.toc {
     position: fixed;
-    right: 10px;
-    top: 100px;
-    width: 160px;
+    right: 2em;
+    top: 2em;
+    width: 300px;
     min-height: 80px;
 
-    background: #f41;
+    padding: 4px;
+
+    background-color: #39ad39;
+    color: #222;
+
+    font-family: "DejaVu Sans", "Lucida Grande", "Verdana", "Ubuntu", "Arial", sans-serif;
+    font-size: 0.8em;
+    font-weight: normal;
+
+    border: 1px solid #2e862e;
 }
+
+    nav.toc > div {
+        font-weight: bold;
+        border-bottom: 1px solid #222;
+        margin-bottom: 4px;
+    }
+    nav.toc ol {
+        margin-left: 1.5em;
+    }
+    nav.toc ol > li {
+        margin-left: -1.5em;
+        padding: 2px 0;
+        /*margin-bottom: 4px;*/
+        list-style-type: none;
+    }
+    nav.toc li.ol-container {
+        }
+    nav.toc a:link {
+        color: #143a14;
+    }
+    nav.toc a:visited {
+        color: #ad3939;
+    }
+    nav.toc li:hover {
+        background-color: #59cd59;
+    }
+    nav.toc a:active {
+        color: #eee;
+    }
 
 /* MAIN CONTENT */
 section.content {
@@ -300,6 +322,10 @@ section.content {
     section.content ul > ul, section.content ul > ol, section.content ol > ol, section.content ol > ul {
         margin-left: 3em;
         margin-bottom: 0;
+    }
+
+    section.content div.tex {
+        margin-left: 8em;
     }
 
     section.content table {
@@ -545,6 +571,21 @@ section.content {
         section.content div#result table span.diff_add {
             background: #9f9;
         }
+
+    section.content a.permalink {
+        position: relative;
+        top: -1px;
+        font-size: 0.8em;
+        text-shadow: none;
+        text-decoration: none;
+        padding: 2px 4px;
+        margin-left: 4px;
+        color: transparent;
+    }
+    section.content a.permalink:hover {
+        color: #39ad39;
+        background-color: transparent;
+    }
 
     section.content div.task-meta-container {
         font-size: 0.7em;

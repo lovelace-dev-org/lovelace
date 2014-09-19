@@ -30,8 +30,46 @@
         setLineWidths();
         setPreHeights();
 
+        // Apply KaTeX to render all the math blocks
         $("div.tex").each(function(index) {
           katex.render($(this).text(), this);
+        });
+
+        // Build the table of contents
+        var toc = $("nav.toc > ol");
+        var current_toc_level = 1;
+        //var topmost_ol = null;
+        $("section.content h1, section.content h2, section.content h3, section.content h4, section.content h5, section.content h6").each(function(index) {
+          // TODO: http://stackoverflow.com/questions/123999/how-to-tell-if-a-dom-element-is-visible-in-the-current-viewport
+          var new_toc_level = parseInt(this.tagName[1]);
+          
+          // TODO: Fix, ol can only contain li
+          if (new_toc_level > current_toc_level) {
+            for (var i = current_toc_level; i < new_toc_level; i += 1) { // >
+              //var new_li = document.createElement("li");
+              var new_ol = document.createElement("ol");
+              toc.append(new_ol);
+              //$(new_li).append(new_ol);
+              //$(new_li).attr("class", "ol-container");
+
+              toc = $(new_ol);
+            }
+          } else if (new_toc_level < current_toc_level) { // >
+            for (var i = current_toc_level; i > new_toc_level; i -= 1) {
+              toc = toc.parent();
+            }
+          }
+          current_toc_level = new_toc_level;
+
+          var li = document.createElement("li");
+          var text = this.firstChild.nodeValue;
+          var id = this.id;
+          var anchor = document.createElement("a");
+          $(anchor).attr("href", "#" + id)
+          $(anchor).text(text);
+          $(li).append(anchor);
+
+          toc.append(li);
         });
       });
     </script>
@@ -42,19 +80,17 @@
     <div id="container">
       <header>
         <div id="container-top">
-          <heading>
-            <hgroup>
-              <h1>RAiPPA</h1>
-              <h2>Remote Automat in Programming Pre-exercise Assignments</h2>
-            </hgroup>
-          </heading>
+          <hgroup>
+            <h1>BRAND</h1>
+            <h2>Something clever and insightful</h2>
+          </hgroup>
           {% include "courses/login-box.html" %}
         </div>
       </header>
       
       {% block breadcrumb %}
       <nav class="breadcrumb">
-        <div class="nav-title">Trail:</div>
+        <!--<div class="nav-title">Trail:</div>-->
         <ul>
           {% for navurl in navurls %}
             {% if forloop.first %}
@@ -76,12 +112,6 @@
       <nav class="toc">
         <div>Table of Contents</div>
         <ol>
-          <li><a href="#id">otsikko 1</a></li>
-          <ol>
-            <li><a href="#id2">otsikko 1.1</a></li>
-            <li><a href="#id3">otsikko 1.2</a></li>
-            <li><a href="#id4">otsikko 1.3</a></li>
-          </ol>
         </ol>
       </nav>
       {% endblock %}
@@ -101,5 +131,42 @@
         </div>
       </footer>
     </div><!-- container -->
+
+    <script>
+      function isElementInViewport (el) {
+        //special bonus for those using jQuery
+        if (el instanceof jQuery) {
+          el = el[0];
+        }
+
+        var rect = el.getBoundingClientRect();
+
+        return (
+          rect.top >= 0 &&
+          rect.left >= 0 &&
+          rect.bottom <= $(window).height()
+          rect.right <= $(window).width()
+        );
+      }
+
+      function callback() {
+        //your code here, e.g. console.log('is visible now');
+      } 
+
+      function fireIfElementVisible(el, callback) {
+        return function () {
+          if ( isElementInViewport(el) ) {
+            callback();
+          }
+        }
+      }
+
+      //var handler = fireIfElementVisible(el, callback);
+      var handler = function() {
+        var headings = $("section.content h1, section.content h2, section.content h3, section.content h4, section.content h5, section.content h6");
+      };
+
+      $(window).on('DOMContentLoaded load resize scroll', handler);
+    </script>
   </body>
 </html>
