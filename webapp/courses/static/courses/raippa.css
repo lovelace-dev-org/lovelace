@@ -352,14 +352,14 @@ section.content {
         }
 
         section.content * a {
-            color: #282;
+            color: #143a14;
         }
         section.content * a:visited {
-            color: #828;
+            color: #ad3939;
         }
         section.content * a:hover {
-            color: #fff;
-            background: #282;
+            color: #eee;
+            background: #39ad39;
         }
 
         section.content p mark {
