@@ -395,7 +395,7 @@ section.content {
             font-family: inherit;
         }
         
-        section.content div.embedded_task {
+        section.content div.embedded-page {
             border: 2px solid #d0d0d0;
             width: 100%;
             background: #caeaca;
