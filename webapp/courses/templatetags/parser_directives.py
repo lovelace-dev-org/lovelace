@@ -5,6 +5,8 @@ from courses.content_parser import MarkupParser
 
 register = template.Library()
 
+# TODO: This allows code injection via admin. Not good.
+
 # {% embedded_calendar "calendar_name" %}
 @register.simple_tag
 def embedded_calendar(calendar_name):
