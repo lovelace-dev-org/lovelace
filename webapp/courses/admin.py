@@ -48,7 +48,7 @@ class RadiobuttonTaskAnswerInline(admin.TabularInline):
 class RadiobuttonTaskAdmin(admin.ModelAdmin):
     fieldsets = [
         ('Page information',   {'fields': ['name', 'url_name', 'content', 'question', 'tags'],}),
-        ('Task miscellaneous', {'fields': ['maxpoints', 'require_correct_embedded_tasks'],
+        ('Task miscellaneous', {'fields': ['default_points'],
                                 'classes': ['wide']}),
         ('Feedback settings',  {'fields': ['feedback_questions']}),
     ]
@@ -64,7 +64,7 @@ class CheckboxTaskAnswerInline(admin.TabularInline):
 class CheckboxTaskAdmin(admin.ModelAdmin):
     fieldsets = [
         ('Page information',   {'fields': ['name', 'url_name', 'content', 'question', 'tags']}),
-        ('Task miscellaneous', {'fields': ['maxpoints', 'require_correct_embedded_tasks'],
+        ('Task miscellaneous', {'fields': ['default_points'],
                                 'classes': ['wide']}),
         ('Feedback settings',  {'fields': ['feedback_questions']}),
     ]
@@ -80,7 +80,7 @@ class TextfieldTaskAnswerInline(admin.StackedInline):
 class TextfieldTaskAdmin(admin.ModelAdmin):
     fieldsets = [
         ('Page information',   {'fields': ['name', 'url_name', 'content', 'question', 'tags']}),
-        ('Task miscellaneous', {'fields': ['maxpoints', 'require_correct_embedded_tasks'],
+        ('Task miscellaneous', {'fields': ['default_points'],
                                 'classes': ['wide']}),
         ('Feedback settings',  {'fields': ['feedback_questions']}),
     ]
@@ -146,8 +146,8 @@ class FileExerciseTestAdmin(admin.ModelAdmin):
 
 class FileExerciseAdmin(admin.ModelAdmin):
     fieldsets = [
-        ('Page information',   {'fields': ['name', 'url_name', 'content', 'question', 'tags']}),
-        ('Task miscellaneous', {'fields': ['maxpoints', 'require_correct_embedded_tasks'],
+        ('Page information',   {'fields': ['name', 'url_name', 'slug', 'content', 'question', 'tags']}),
+        ('Task miscellaneous', {'fields': ['default_points'],
                                 'classes': ['wide']}),
         ('Feedback settings',  {'fields': ['feedback_questions']}),
     ]
