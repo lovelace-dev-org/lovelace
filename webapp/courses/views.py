@@ -18,7 +18,7 @@ import mimetypes
 from cgi import escape
 
 from django.http import HttpResponse, HttpResponseRedirect, HttpResponseNotFound, HttpResponseForbidden
-from django.template import Context, RequestContext, loader
+from django.template import Context, RequestContext, Template, loader
 from django.core.urlresolvers import reverse
 from django.core.servers.basehttp import FileWrapper
 from django.utils import timezone
@@ -650,9 +650,13 @@ def content(request, training_name, content_name, **kwargs):
                NavURL(reverse('courses:training', kwargs={"training_name":training_name}), training_name),
                NavURL(reverse('courses:content', kwargs={"training_name":training_name, "content_name":content.name}), content.name)]
 
-    rendered_content = ""
+    rendered_content = "{% load parser_directives %}\n"
     for line in content_parser.MarkupParser.parse(content.content):
         rendered_content += line
+
+    rct = Template(rendered_content)
+    rcc = Context({})
+    rc = rct.render(rcc)
 
     """
     rendered_content = u''
@@ -797,7 +801,7 @@ def content(request, training_name, content_name, **kwargs):
         'embedded_task': False,
         'contains_embedded_task': contains_embedded_task,
         'training': selected_course,
-        'content': rendered_content,
+        'content': rc, #rendered_content,
         'content_name': content.name,
         'content_name_id': content.url_name,
         'content_urlname': content.url_name,

@@ -24,6 +24,8 @@ import courses.blockparser as blockparser
 
 # TODO: Support admonitions/warnings/good to know boxes/etc.
 
+# TODO: Support tags that, when hovered, highlight lines in source code files
+
 class ParserUninitializedError(Exception):
     def __init__(self, value):
         self.value = value
@@ -45,9 +47,7 @@ class MarkupParser:
     markups are combined to form the markup language.
     """
 
-    # TODO: Find a way to integrate the blockparser here! Single pass
-    #       would be extremely nice!
-    # TODO: Stateless would be nice.
+    # TODO: Handle the inline markups and HTML escapes on the same pass
 
     markups = {}
     block_re = None

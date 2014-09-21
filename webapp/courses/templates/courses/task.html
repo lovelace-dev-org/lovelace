@@ -11,6 +11,7 @@
     <hr>
     Deadline: yyyy-mm-dd
     <hr>
+    {% comment %}
     <div><a href="{% url 'courses:show_answers' user training content_urlname %}"><span class="answer-count">538</span> answers</a></div>
     {% if embedded_task %}
       {% if user.is_active and user.is_staff %}
@@ -23,6 +24,7 @@
         </div>
       {% endif %}
     {% endif %}
+    {% endcomment %}
   </div>
   </div>
 
