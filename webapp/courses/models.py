@@ -1,5 +1,6 @@
-"""Django database models for RAiPPA courses."""
+"""Django database models for courses."""
 # TODO: Refactor into multiple apps
+# TODO: Serious effort to normalize the db!
 # TODO: Profile the app and add relevant indexes!
 
 import datetime
@@ -46,15 +47,26 @@ post_save.connect(create_user_profile, sender=User, dispatch_uid="create_user_pr
 
 # TODO: Abstract the task model to allow "an answering entity" to give the answer, be it a group or a student
 
-# TODO: Reintroduce the incarnation system and make it transparent to users
 class Course(models.Model):
-    """A single course in the system.
-
-    A course consists of shared content, i.e. lectures, tasks etc.
-    A course also holds its own set of files (source code, images, pdfs, etc.) with their metadata.
+    """
+    Describes the metadata for a course.
     """
     name = models.CharField(max_length=255)
+    code = models.CharField(verbose_name="Course code",
+                            help_text="Course code for e.g. universities",
+                            max_length=64, blank=True, null=True)
+    credits = models.DecimalField(verbose_name="Course credits",
+                                  help_text="How many credits does the course"
+                                  "yield on completion. (For e.g. universities",
+                                  max_digits=6, decimal_places=2,
+                                  blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
     slug = models.CharField(max_length=255, db_index=True, unique=True)
+    prerequisites = models.ManyToManyField('Course',
+                                           verbose_name="Prerequisite courses",
+                                           blank=True, null=True)
+
+    # TODO: Move the fields below to instance
     frontpage = models.ForeignKey('LecturePage', blank=True,null=True) # TODO: Create one automatically!
     contents = models.ManyToManyField('ContentGraph', blank=True,null=True) # TODO: Rethink the content graph system!
 
@@ -65,8 +77,17 @@ class Course(models.Model):
     def __str__(self):
         return self.name
 
-    class Meta:
-        verbose_name = "course"
+# TODO: Reintroduce the incarnation system and make it transparent to users
+class CourseInstance(models.Model):
+    """
+    A running instance of a course. Contains details about the start and end
+    dates of the course.
+    """
+    name = models.CharField(max_length=255)
+    course = models.ForeignKey('Course')
+    start_date = models.DateTimeField(verbose_name='Date and time on which the course begins',blank=True,null=True)
+    end_date = models.DateTimeField(verbose_name='Date and time on which the course ends',blank=True,null=True)
+    #link the content graph nodes to this instead
 
 class ContentGraph(models.Model):
     """A node in the course tree/graph. Links content into a course."""
