@@ -4,8 +4,7 @@ from django.conf import settings # Bad style! This info is not actually needed!
 
 from . import views
 
-urlpatterns = patterns(
-    '',
+urlpatterns = [
     url(r'^$', views.index, name='index'),
 
     # TODO: redirect_to doesn't work anymore, serve favicon properly through a web server directive!
@@ -14,30 +13,30 @@ urlpatterns = patterns(
     # For the registration module
     # TODO: AllAuth
     url(r'^accounts/', include('registration.urls')),
-    url(r'^accounts/', 'courses.views.index'),
+    url(r'^accounts/', views.index),
 
     # For viewing and changing user information
     url(r'^answers/(?P<user>[^/]+)/(?P<course>[^/]+)/(?P<task>[^/]+)',
         views.show_answers, name='show_answers'),
-    url(r'^user/(?P<user_name>[^/]+)/$', 'courses.views.user'),
-    url(r'^profile/$', 'courses.views.user_profile'),
-    url(r'^profile/save/$', 'courses.views.user_profile_save'),
+    url(r'^user/(?P<user_name>[^/]+)/$', views.user),
+    url(r'^profile/$', views.user_profile),
+    url(r'^profile/save/$', views.user_profile_save),
 
     # For serving images
     # TODO: Serve directly from the web server
-    url(r'^media/images/(?P<imagename>.+)$', 'courses.views.image_download',
+    url(r'^media/images/(?P<imagename>.+)$', views.image_download,
         {'media_root': settings.MEDIA_ROOT,}
        ),
 
     # For calendar POST requests
-    url(r'^calendar/(?P<calendar_id>\d+)/(?P<event_id>\d+)/$', 'courses.views.calendar_post'),
+    url(r'^calendar/(?P<calendar_id>\d+)/(?P<event_id>\d+)/$', views.calendar_post),
 
     # For serving uploaded files
     # TODO: Noooo... Do it with the web server conf.
-    url(r'^media/files/(?P<filename>.+)$', 'courses.views.file_download',
+    url(r'^media/files/(?P<filename>.+)$', views.file_download,
         {'media_root': settings.MEDIA_ROOT,}
        ),
-    url(r'^media/(?P<filename>.+)$', 'courses.views.file_download',
+    url(r'^media/(?P<filename>.+)$', views.file_download,
         {'media_root': settings.MEDIA_ROOT,}
        ),
 
@@ -70,4 +69,4 @@ urlpatterns = patterns(
         views.check_progress, name='check_progress'),
     url(r'^(?P<course_name>[^/]+)/(?P<content_name>[^/]+)/evaluation/(?P<task_id>[^/]+)/$',
         views.file_exercise_evaluation, name='file_exercise_evaluation'),
-)
+]
