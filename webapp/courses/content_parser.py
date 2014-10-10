@@ -7,8 +7,8 @@ import re
 import os
 import codecs
 import itertools
-#from django.utils.html import escape # Not good, escapes ' characters which prevents syntax parsing
-from cgi import escape # Use this instead
+#from django.utils.html import escape # Escapes ' characters -> prevents inline parsing
+from cgi import escape # Use this instead? Security? HTML injection?
 
 from slugify import slugify
 
@@ -21,10 +21,9 @@ from courses.highlighters import highlighters
 import courses.blockparser as blockparser
 
 # TODO: Support indented blocks (e.g. <pre>) within indents, uls & ols
-
 # TODO: Support admonitions/warnings/good to know boxes/etc.
-
 # TODO: Support tags that, when hovered, highlight lines in source code files
+# TODO: Support tags that get highlighted upon receiving hints
 
 class ParserUninitializedError(Exception):
     def __init__(self, value):
@@ -62,7 +61,7 @@ class MarkupParser:
         is required.
         """
         cls.ready = False
-        cls.markups = {markup.shortname : markup for markup in markups}
+        cls.markups.update((markup.shortname, markup) for markup in markups)
 
     @classmethod
     def compile(cls):
@@ -109,9 +108,13 @@ class MarkupParser:
         if not cls.ready:
             raise ParserUninitializedError("compile() not called")
 
-        # TODO: Generator version of splitter to avoid memory overhead of list
+        # TODO: Generator version of splitter to avoid memory & CPU overhead of
+        # first creating a complete list and afterwards iterating through it.
+        # I.e. reduce from O(2n) to O(n)
         lines = iter(re.split(r"\r\n|\r|\n", text))
 
+        # Note: stateless single-pass parsing of HTML-like languages is
+        # impossible because of the closing tags.
         state = {"lines": lines}
 
         for (block_type, matchobj), block in itertools.groupby(lines, cls._get_line_kind):
@@ -157,6 +160,7 @@ class CalendarMarkup(Markup):
     @classmethod
     def block(cls, block, settings, state):
         # TODO: embedded_calendar custom template tag
+        # TODO: On the other hand, no (security risk).
         yield '{%% embedded_calendar "%s" %%}' % settings["calendar_name"]
 
     @classmethod
@@ -179,6 +183,7 @@ class EmbeddedPageMarkup(Markup):
     @classmethod
     def block(cls, block, settings, state):
         # TODO: embedded_page custom template tag (inclusion tag?)
+        # TODO: On the other hand, no (security risk).
         yield '<div class="embedded-page">\n'
         yield '{%% embedded_page "%s" %%}\n' % settings["page_slug"]
         yield '</div>\n'
@@ -255,6 +260,7 @@ class ImageMarkup(Markup):
     @classmethod
     def block(cls, block, settings, state):
         # TODO: Implement embedded_image template tag
+        # TODO: On the other hand, no (security risk).
         if "alt_text" in settings.keys():
             yield '<img src="{%% embedded_image \'%s\' %%}" alt="%s">\n' % (settings["image_name"], settings["alt_text"])
         else:
@@ -332,6 +338,7 @@ class SourceCodeMarkup(Markup):
     @classmethod
     def block(cls, block, settings, state):
         # TODO: embedded_sourcecode custom template tag
+        # TODO: On the other hand, no (security risk).
         yield '{%% embedded_sourcecode "%s" %%}' % settings["source_filename"]
 
     @classmethod
