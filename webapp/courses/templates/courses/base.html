@@ -107,11 +107,13 @@
       </nav>
       {% endblock %}
 
-      {% block toc %}
+      {% block toc %}{% comment %}TODO: Put inside a container (progress bar inside nav not semantic){% endcomment %}
       <nav class="toc">
         <div>Table of Contents</div>
         <ol>
         </ol>
+        <div>Completed: 7/10 exercises</div>
+        <progress value="7" max="10"></progress>
       </nav>
       {% endblock %}
       
@@ -122,8 +124,8 @@
   
       <footer>
         <div class="column0">
-          <p>Site design &amp; backend</p>
-          <p>by Miikka Salminen</p>
+          <p>Site design &amp; backend by Miikka Salminen</p>
+          <p>Page contents available under Creative Commons license.</p>
         </div>
         <div class="column1">
           Powered by Python, Django and jQuery.
