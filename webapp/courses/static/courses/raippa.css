@@ -17,7 +17,7 @@ html {
 }
 
 body {
-    background-image: url("200-90-15-monochrome.png");
+    background-image: url("noise-200x200-1.png");
     background-color: #143a14;
     height: 100%;
 }
@@ -28,13 +28,14 @@ div#container {
     width: 1000px;
     position: relative;
     height: 100%;
+    box-shadow: 0 0 2em rgba(0, 0, 0, 0.9);
 }
 
 /* HEADER */
 header {
     /* background: #052; */
     /*background: -moz-linear-gradient(top, rgba(46, 134, 46, 0.5), rgba(46, 134, 46, 0.9)),*/
-    background-image: url("200-90-15-monochrome.png");
+    background-image: url("noise-200x200-1.png");
     background-color: #2e862e;
     /*
     background: -ms-linear-gradient(top, #242, #576);
@@ -117,7 +118,7 @@ div#container-top {
 /* NAVIGATION */
 nav.breadcrumb {
     /*background: #b6ffb6;*/
-    background-image: url("200-90-15-monochrome.png");
+    background-image: url("noise-200x200-1.png");
     background-color: #39ad39;
     left: 0px;
     height: 2em;
