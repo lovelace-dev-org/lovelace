@@ -377,6 +377,8 @@ class TeXMarkup(Markup):
 
 markups.append(TeXMarkup)
 
+# TODO: Add indentation support to all compatible markups.
+
 MarkupParser.add(*markups)
 MarkupParser.compile()
 
