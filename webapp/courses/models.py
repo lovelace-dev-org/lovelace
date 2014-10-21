@@ -10,6 +10,7 @@ import os
 from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
+from django.core.urlresolvers import reverse
 
 import slugify
 
@@ -47,7 +48,7 @@ post_save.connect(create_user_profile, sender=User, dispatch_uid="create_user_pr
 # TODO: A user group system for allowing users to form groups
 # - max users / group
 
-# TODO: Abstract the task model to allow "an answering entity" to give the answer, be it a group or a student
+# TODO: Abstract the exercise model to allow "an answering entity" to give the answer, be it a group or a student
 
 class Course(models.Model):
     """
@@ -108,10 +109,10 @@ class ContentGraph(models.Model):
     parentnode = models.ForeignKey('self', null=True, blank=True)
     content = models.ForeignKey('ContentPage', null=True, blank=True)
     responsible = models.ManyToManyField(User,blank=True,null=True)
-    compulsory = models.BooleanField(verbose_name='Must be answered correctly before proceeding to next task', default=False)
-    deadline = models.DateTimeField(verbose_name='The due date for completing this task',blank=True,null=True)
-    publish_date = models.DateTimeField(verbose_name='When does this task become available',blank=True,null=True)
-    scored = models.BooleanField(verbose_name='Does this task affect scoring', default=True)
+    compulsory = models.BooleanField(verbose_name='Must be answered correctly before proceeding to next exercise', default=False)
+    deadline = models.DateTimeField(verbose_name='The due date for completing this exercise',blank=True,null=True)
+    publish_date = models.DateTimeField(verbose_name='When does this exercise become available',blank=True,null=True)
+    scored = models.BooleanField(verbose_name='Does this exercise affect scoring', default=True)
     require_correct_embedded = models.BooleanField(verbose_name='Embedded exercises must be answered correctly in order to mark this item as correct',default=True)
 
     def __str__(self):
@@ -222,6 +223,10 @@ class ContentPage(models.Model):
 
     feedback_questions = models.ManyToManyField(ContentFeedbackQuestion, blank=True, null=True)
 
+    def get_admin_change_url(self):
+        adminized_type = self.content_type.replace("_", "").lower()
+        return reverse("admin:courses_%s_change" % (adminized_type), args=(self.id,))
+
     def get_url_name(self):
         """Creates a URL and HTML5 ID field friendly version of the name."""
         # TODO: Ensure uniqueness!
@@ -264,7 +269,7 @@ class Lecture(ContentPage):
 
 # TODO: Break the exercises into an exercises app
 class Exercise(ContentPage):
-    """A single task."""
+    """A single exercise."""
     question = models.TextField(blank=True, null=True)
     manually_evaluated = models.BooleanField(verbose_name="This exercise is evaluated by hand", default=False)
 
@@ -503,10 +508,10 @@ class FileExerciseTestIncludeFile(models.Model):
     class Meta:
         verbose_name = "included file"
 
-# TODO: Create a superclass for task answer choices
+# TODO: Create a superclass for exercise answer choices
 ## Answer models
 class TextfieldExerciseAnswer(models.Model):
-    task = models.ForeignKey(TextfieldExercise)
+    exercise = models.ForeignKey(TextfieldExercise)
     correct = models.BooleanField(default=None)
     regexp = models.BooleanField(default=None)
     answer = models.TextField()
@@ -525,7 +530,7 @@ class TextfieldExerciseAnswer(models.Model):
         super(TextfieldExerciseAnswer, self).save(*args, **kwargs)
  
 class MultipleChoiceExerciseAnswer(models.Model):
-    task = models.ForeignKey(MultipleChoiceExercise)
+    exercise = models.ForeignKey(MultipleChoiceExercise)
     correct = models.BooleanField(default=None)
     answer = models.TextField()
     hint = models.TextField(blank=True)
@@ -536,7 +541,7 @@ class MultipleChoiceExerciseAnswer(models.Model):
         return self.answer
 
 class CheckboxExerciseAnswer(models.Model):
-    task = models.ForeignKey(CheckboxExercise)
+    exercise = models.ForeignKey(CheckboxExercise)
     correct = models.BooleanField(default=None)
     answer = models.TextField()
     hint = models.TextField(blank=True)    
@@ -554,32 +559,32 @@ class Evaluation(models.Model):
 
     def __str__(self):
         if self.correct:
-            return u"Correct answer to (todo: task) by %s with %f points: %s" % (self.useranswer.user.username, self.points, self.feedback)
+            return u"Correct answer to (todo: exercise) by %s with %f points: %s" % (self.useranswer.user.username, self.points, self.feedback)
         else:
-            return u"Incorrect answer to (todo: task) by %s with %f points: %s" % (self.useranswer.user.username, self.points, self.feedback)
+            return u"Incorrect answer to (todo: exercise) by %s with %f points: %s" % (self.useranswer.user.username, self.points, self.feedback)
 
 class UserAnswer(models.Model):
-    """Parent class for what users have given as their answers to different tasks."""
+    """Parent class for what users have given as their answers to different exercises."""
     evaluation = models.OneToOneField(Evaluation)
     user = models.ForeignKey(User)
-    answer_date = models.DateTimeField(verbose_name='Date and time of when the user answered this task',
+    answer_date = models.DateTimeField(verbose_name='Date and time of when the user answered this exercise',
                                        auto_now_add=True)
     answerer_ip = models.GenericIPAddressField()
 
-    collaborators = models.TextField(verbose_name='Which users was this task answered with', blank=True, null=True)
+    collaborators = models.TextField(verbose_name='Which users was this exercise answered with', blank=True, null=True)
     checked = models.BooleanField(verbose_name='This answer has been checked', default=False)
     draft = models.BooleanField(verbose_name='This answer is a draft', default=False)
 
 # TODO: Put in UserFileUploadExerciseAnswer's manager?
 def get_version(instance):
     return UserFileUploadExerciseAnswer.objects.filter(user=instance.answer.user,
-                                                       task=instance.answer.task).count()
+                                                       exercise=instance.answer.exercise).count()
 
 def get_answerfile_path(instance, filename):
     return os.path.join(
         "returnables",
         "%s" % (instance.answer.user.username),
-        "%s" % (instance.answer.task.name),
+        "%s" % (instance.answer.exercise.name),
         "%04d" % (get_version(instance)),
         "%s" % (filename)
     )
@@ -593,13 +598,13 @@ class FileUploadExerciseReturnFile(models.Model):
         return os.path.basename(self.fileinfo.name)
 
 class UserFileUploadExerciseAnswer(UserAnswer):
-    task = models.ForeignKey(FileUploadExercise)
+    exercise = models.ForeignKey(FileUploadExercise)
 
     def __str__(self):
         return u"Answer by %s" % (self.user.username)
 
 class UserTextfieldExerciseAnswer(UserAnswer):
-    task = models.ForeignKey(TextfieldExercise)
+    exercise = models.ForeignKey(TextfieldExercise)
     given_answer = models.TextField()
 
     def __str__(self):
@@ -607,7 +612,7 @@ class UserTextfieldExerciseAnswer(UserAnswer):
         return u"Answer by %s: %s" % (self.user.username, self.given_answer)
 
 class UserMultipleChoiceExerciseAnswer(UserAnswer):
-    task = models.ForeignKey(MultipleChoiceExercise)
+    exercise = models.ForeignKey(MultipleChoiceExercise)
     chosen_answer = models.ForeignKey(MultipleChoiceExerciseAnswer)
 
     def __str__(self):
@@ -618,7 +623,7 @@ class UserMultipleChoiceExerciseAnswer(UserAnswer):
         return chosen_answer.correct
 
 class UserCheckboxExerciseAnswer(UserAnswer):
-    task = models.ForeignKey(CheckboxExercise)
+    exercise = models.ForeignKey(CheckboxExercise)
     chosen_answers = models.ManyToManyField(CheckboxExerciseAnswer)
 
     def __str__(self):
@@ -626,7 +631,7 @@ class UserCheckboxExerciseAnswer(UserAnswer):
         return u"Answer by %s: %s" % (self.user.username, ", ".join(self.chosen_answers))
 
 class UserLecturePageAnswer(UserAnswer):
-    task = models.ForeignKey(Lecture)
+    exercise = models.ForeignKey(Lecture)
     answered = models.BooleanField(default=None)
     
     def __str__(self):

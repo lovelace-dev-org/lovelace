@@ -6,36 +6,25 @@ Django views for the courses application:
 # TODO: Heavy commenting!
 # TODO: Use classes instead of bare functions to group data!
 
-import os
-import sys
 import re
-import codecs
 import random
-import difflib
 import datetime
 import json
-import mimetypes
 from cgi import escape
 
 from django.http import HttpResponse, HttpResponseRedirect, HttpResponseNotFound, HttpResponseForbidden
 from django.template import Context, RequestContext, Template, loader
 from django.core.urlresolvers import reverse
-from django.core.servers.basehttp import FileWrapper
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 
 from celery.result import AsyncResult
-
-from pygments import highlight
-from pygments.lexers import PythonLexer
-from pygments.formatters import HtmlFormatter
 
 from courses.models import *
 
 import courses.content_parser as content_parser
 import courses.blockparser as blockparser
 import courses.filecheck_client as filecheck_client
-import courses.graph_builder as graph_builder
 
 class NavURL:
     def __init__(self, url, name):
@@ -51,78 +40,12 @@ def index(request):
         'navurls': navurls,
     })
     return HttpResponse(t.render(c))
-
-def add_tree(nodelist,id):
-    nodelist.append(ContentGraph.objects.get(id=id))
-    for child in ContentGraph.objects.filter(parentnode_id=id):
-        add_tree(nodelist,child.id)
-
-def course_graph(request, training_name):
-    # TODO: Use temporary files and/or dynamic root directory!
-    selected_course = Course.objects.get(name=training_name)
-    topnodes = selected_course.contents.all()
-    course_graph_nodes = [] 
-    for node in topnodes:
-        add_tree(course_graph_nodes,node.id)
-
-    nodes = []
-    edges = []
-    root_node = graph_builder.Node({"name":"start","shape":"point","width":"0.1","height":"0.1"})
-    nodes.append(root_node)
-    for graph_node in course_graph_nodes:
-        #node = graph_builder.Node(graph_node)
-        content = ContentPage.objects.get(id=graph_node.content_id)
-        node_url = reverse('courses:content', kwargs={"course_slug":course_slug, "content_id":content.id})
-        label = content.name # TODO: Use a shorter name
-        node = graph_builder.Node({"name":"node%d" % (graph_node.id),
-                                   "style":"filled",
-                                   "fillcolor":"#55aaff",
-                                   "href":node_url,
-                                   "label":label,
-                                   "fontname":"Arial",
-                                   "fontsize":"13",
-                                   })
-        if graph_node.parentnode_id:
-            #parent_node = graph_builder.Node(course_graph_nodes.get(id=graph_node.parentnode_id))
-            parent_node = graph_builder.Node({"name":"node%d" % (graph_node.parentnode_id),})
-        else:
-            parent_node = root_node # Parent node id was None
-        edge = graph_builder.Edge(parent_node, node)
-        edges.append(edge)
-        nodes.append(node)
-
-    graph = graph_builder.Graph(nodes, edges)
-
-    # TODO: Use templates and temporary files to achieve this
-    #uncompiled_graph = codecs.open("uncompiled.vg", "w", "utf-8")
-    uncompiled_graph = codecs.open("/local/django/raippa_ng/courses/uncompiled.vg", "w", "utf-8")
-    uncompiled_graph.write("digraph course_graph {\n")
-    uncompiled_graph.write('    node [penwidth="2",fixedsize="True",width="1.6",height="0.5"]\n')
-    for node in graph.nodes:
-        uncompiled_graph.write("    %s\n" % (node))
-    for edge in graph.edges:
-        uncompiled_graph.write("    %s\n" % (edge))
-    uncompiled_graph.write("}\n")
-    uncompiled_graph.close()
-
-    #os.system("dot uncompiled.vg -Txdot -ograph.vg")
-    os.system("/usr/bin/dot /local/django/raippa_ng/courses/uncompiled.vg -Txdot -o/local/django/raippa_ng/courses/graph.vg")
-
-    #graph_file = codecs.open("graph.vg", "r", "utf-8")
-    graph_file = codecs.open("/local/django/raippa_ng/courses/graph.vg", "r", "utf-8")
-    #graph_file = codecs.open("uncompiled.vg", "r", "utf-8") # to debug the uncompile dot file
-
-    # http://stackoverflow.com/questions/908258/generating-file-to-download-with-django
-    response = HttpResponse(FileWrapper(graph_file), content_type='text/plain')
-    #response['Content-Disposition'] = 'attachment; filename=graph.vg'
-    return response
  
 def course(request, course_slug, **kwargs):
     selected_course = Course.objects.get(slug=course_slug)
     navurls = [NavURL(reverse('courses:index'), "Available courses"),
                NavURL(reverse('courses:course', kwargs={"course_slug":course_slug}), selected_course.name),]
 
-    course_graph_url = reverse('courses:course_graph', kwargs={'course_slug':course_slug})
     frontpage = selected_course.frontpage
 
     if frontpage:
@@ -133,7 +56,6 @@ def course(request, course_slug, **kwargs):
         contextdict = {}
 
     contextdict["course"] = selected_course 
-    contextdict["course_graph_url"] = course_graph_url
     contextdict["navurls"] = navurls 
     contextdict["title"] = '%s' % selected_course.name
 
@@ -300,7 +222,7 @@ def textfield_exercise_check(content, user, answers, post_data):
     comments = []
     errors = []
     if "answer" in post_data.keys():
-        given = post_data["answer"].replace("\r\n", "\n").replace("\n\r", "\n")
+        given = post_data["answer"].replace("\r", "")
     else:
         return False, [], [], ["No data sent"]
 
@@ -479,7 +401,7 @@ def check_answer(request, course_slug, content_slug, **kwargs):
             # TODO: Use a template!
             return HttpResponse("The deadline for this exercise (%s) has passed. Your answer will not be evaluated!" % (content_graph.deadline))
 
-    tasktype, question, choices, answers = get_exercise_info(content)
+    content_type, question, choices, answers = get_exercise_info(content)
 
     correct = True
     hints = []
@@ -487,13 +409,13 @@ def check_answer(request, course_slug, content_slug, **kwargs):
     errors = []
     diff_table = ""
 
-    if choices and tasktype == "multiplechoice":
+    if choices and content_type == "multiplechoice":
         correct, hints, comments = multiplechoice_exercise_check(content, request.user, choices, request.POST)
-    elif choices and tasktype == "checkbox":
+    elif choices and content_type == "checkbox":
         correct, hints, comments = checkbox_exercise_check(content, request.user, choices, request.POST)
-    elif answers and tasktype == "textfield":
+    elif answers and content_type == "textfield":
         correct, hints, comments, errors = textfield_exercise_check(content, request.user, answers, request.POST)
-    elif tasktype == "file":
+    elif content_type == "file":
         correct, hints, comments, diff_table = file_exercise_check(content, request.user, request.FILES, request.POST)
         return HttpResponseRedirect(reverse('courses:check_progress',
                                             kwargs={"course_slug": training_slug,
@@ -589,16 +511,13 @@ def content(request, course_slug, content_slug, **kwargs):
     except ContentGraph.DoesNotExist as e:
         pass
 
-    tasktype, question, choices, answers = get_exercise_info(content)
+    content_type, question, choices, answers = get_exercise_info(content)
     exercise_evaluation = None
     if request.user.is_authenticated():
         if not content_graph or not content_graph.publish_date or content_graph.publish_date < datetime.datetime.now():
-            exercise_evaluation = get_user_exercise_info(request.user, content, tasktype)
+            exercise_evaluation = get_user_exercise_info(request.user, content, content_type)
 
-    admin_url = ""
-    if tasktype:
-        adminized_urlform = tasktype.replace("_", "").lower()
-        admin_url = reverse("admin:courses_%s_change" % adminized_urlform, args=(content.id,))
+    admin_url = content.get_admin_change_url()
 
     try:
         question = blockparser.parseblock(escape(question))
@@ -607,7 +526,7 @@ def content(request, course_slug, content_slug, **kwargs):
     except AttributeError: # It was NoneType
         pass
 
-    emb_tasktype = None
+    emb_content_type = None
     contains_embedded_exercise = False
 
     navurls = [NavURL(reverse('courses:index'), "Available courses"),
@@ -773,8 +692,8 @@ def content(request, course_slug, content_slug, **kwargs):
         'navurls': navurls,
         'title': '%s - %s' % (content.name, selected_course.name),
         'answer_check_url': reverse('courses:course', kwargs={"course_slug":course_slug}),
-        'emb_tasktype': emb_tasktype,
-        'tasktype': tasktype,
+        'emb_content_type': emb_content_type,
+        'content_type': content_type,
         'question': question,
         'choices': choices,
         'evaluation': exercise_evaluation,

@@ -1,7 +1,5 @@
 from django.conf.urls import patterns, include, url
 
-from django.conf import settings # Bad style! This info is not actually needed!
-
 from . import views
 
 urlpatterns = [
@@ -24,47 +22,25 @@ urlpatterns = [
 
     # For serving images
     # TODO: Serve directly from the web server
-    url(r'^media/images/(?P<imagename>.+)$', views.image_download,
-        {'media_root': settings.MEDIA_ROOT,}
-       ),
+    url(r'^media/images/(?P<imagename>.+)$', views.image_download),
+
+    # For serving uploaded files
+    # TODO: Noooo... Do it with the web server conf.
+    url(r'^media/files/(?P<filename>.+)$', views.file_download),
+    url(r'^media/(?P<filename>.+)$', views.file_download),
 
     # For calendar POST requests
     url(r'^calendar/(?P<calendar_id>\d+)/(?P<event_id>\d+)/$', views.calendar_post),
 
-    # For serving uploaded files
-    # TODO: Noooo... Do it with the web server conf.
-    url(r'^media/files/(?P<filename>.+)$', views.file_download,
-        {'media_root': settings.MEDIA_ROOT,}
-       ),
-    url(r'^media/(?P<filename>.+)$', views.file_download,
-        {'media_root': settings.MEDIA_ROOT,}
-       ),
-
     # Sandbox: admin view & answer for content pages without saved results
-    url(r'^sandbox/(?P<content_slug>[^/]+)/$', views.content,
-        {'sandbox': True,},
-        name='sandbox_content',),
+    url(r'^sandbox/(?P<content_slug>[^/]+)/$', views.content, {'sandbox': True,}, name='sandbox_content',),
 
-    # Course front page, course graph and content views
-    url(r'^(?P<course_slug>[^/]+)/$', views.course,
-        {'raippa_root': settings.BASE_DIR,
-         'media_root': settings.MEDIA_ROOT,
-         'media_url': settings.MEDIA_URL,},
-        name='course'
-       ),
-    url(r'^(?P<course_slug>[^/]+)/graph\.vg$', views.course_graph, name='course_graph'),
-    url(r'^(?P<course_slug>[^/]+)/(?P<content_slug>[^/]+)/$', views.content,
-        {'raippa_root': settings.BASE_DIR,
-         'media_root': settings.MEDIA_ROOT,
-         'media_url':settings.MEDIA_URL,},
-        name='content'
-       ),
+    # Course front page and content views
+    url(r'^(?P<course_slug>[^/]+)/$', views.course, name='course'),
+    url(r'^(?P<course_slug>[^/]+)/(?P<content_slug>[^/]+)/$', views.content, name='content'),
 
     # Exercise sending for checking, progress and evaluation views
-    url(r'^(?P<course_slug>[^/]+)/(?P<content_slug>[^/]+)/check/$', views.check_answer,
-        {'media_root': settings.MEDIA_ROOT,
-         'media_url':settings.MEDIA_URL,}
-       ),
+    url(r'^(?P<course_slug>[^/]+)/(?P<content_slug>[^/]+)/check/$', views.check_answer),
     url(r'^(?P<course_slug>[^/]+)/(?P<content_slug>[^/]+)/progress/(?P<task_id>[^/]+)/$',
         views.check_progress, name='check_progress'),
     url(r'^(?P<course_slug>[^/]+)/(?P<content_slug>[^/]+)/evaluation/(?P<task_id>[^/]+)/$',
