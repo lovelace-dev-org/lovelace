@@ -196,11 +196,12 @@ admin.site.register(ContentGraph, ContentGraphAdmin)
 
 class CourseAdmin(admin.ModelAdmin):
     fieldsets = [
-        (None,                                                 {'fields': ['name','frontpage']}),
-        ('Course outline',                                     {'fields': ['contents']}),
+        (None,             {'fields': ['name','frontpage', 'slug']}),
+        ('Course outline', {'fields': ['contents']}),
         #('Settings for start date and end date of the course', {'fields': ['start_date','end_date'], 'classes': ['collapse']}),
     ]
     #formfield_overrides = {models.ManyToManyField: {'widget':}}
+    readonly_fields = ('slug',)
 
 admin.site.register(Course, CourseAdmin)
 

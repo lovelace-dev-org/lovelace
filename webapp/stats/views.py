@@ -9,7 +9,7 @@ from django.utils import timezone
 from django.utils.safestring import mark_safe
 
 from courses.models import *
-from courses.views import get_task_info
+from courses.views import get_exercise_info
 
 def textfield_eval(given, answers):
     given = given.replace("\r\n", "\n").replace("\n\r", "\n")
@@ -51,11 +51,11 @@ def single_task(request, task_name):
     file_answers = file_answers_count = file_user_count = file_correctly_by = None
     radiobutton_answers_count = radiobutton_final = None
     content_page = ContentPage.objects.get(url_name=task_name)
-    tasktype, question, choices, answers = get_task_info(content_page)
+    tasktype, question, choices, answers = get_exercise_info(content_page)
 
-    if tasktype == "checkbox":
+    if tasktype == "CHECKBOX_EXERCISE":
         checkbox_answers = UserCheckboxTaskAnswer.objects.filter(task=content_page)
-    elif tasktype == "radiobutton":
+    elif tasktype == "MULTIPLE_CHOICE_EXERCISE":
         radiobutton_answers = UserRadiobuttonTaskAnswer.objects.filter(task=content_page)
         radiobutton_answers_count = radiobutton_answers.count()
         radiobutton_selected_answers = list(radiobutton_answers.values_list("chosen_answer", flat=True))
@@ -64,7 +64,7 @@ def single_task(request, task_name):
         for answer in radiobutton_set:
             answer_choice = RadiobuttonTaskAnswer.objects.get(id=answer)
             radiobutton_final.append((answer_choice.answer, radiobutton_selected_answers.count(answer), answer_choice.correct))
-    elif tasktype == "textfield":
+    elif tasktype == "TEXTFIELD_EXERCISE":
         textfield_answers1 = UserTextfieldTaskAnswer.objects.filter(task=content_page)
         textfield_answers = list(textfield_answers1.values_list("given_answer", flat=True))
         textfield_answers_count = len(textfield_answers)
@@ -76,7 +76,7 @@ def single_task(request, task_name):
             latest = textfield_answers1.filter(given_answer=answer).latest('answer_date').answer_date
             textfield_final.append((answer, textfield_answers.count(answer),) + textfield_eval(answer, answers) + (latest,))
         textfield_final = sorted(textfield_final, key=lambda x: x[1], reverse=True)
-    elif tasktype == "file":
+    elif tasktype == "FILE_UPLOAD_EXERCISE":
         file_answers = list(UserFileTaskAnswer.objects.filter(task=content_page).values_list("user", flat=True))
         file_answers_count = len(file_answers) # how many times answered
         file_set = set(file_answers)
@@ -119,18 +119,18 @@ def user_task(request, user_name, task_name):
 
     content = ContentPage.objects.get(url_name=task_name)
 
-    tasktype, question, choices, answers = get_task_info(content)
+    tasktype, question, choices, answers = get_exercise_info(content)
 
     ruser = User.objects.get(username=user_name)
 
     checkboxanswers = radiobuttonanswers = textfieldanswers = fileanswers = None
-    if tasktype == "checkbox":
+    if tasktype == "CHECKBOX_EXERCISE":
         checkboxanswers = UserCheckboxTaskAnswer.objects.filter(task=content, user=ruser)
-    elif tasktype == "radiobutton":
+    elif tasktype == "MULTIPLE_CHOICE_EXERCISE":
         radiobuttonanswers = UserRadiobuttonTaskAnswer.objects.filter(task=content, user=ruser)
-    elif tasktype == "textfield":
+    elif tasktype == "TEXTFIELD_EXERCISE":
         textfieldanswers = UserTextfieldTaskAnswer.objects.filter(task=content, user=ruser)
-    elif tasktype == "file":
+    elif tasktype == "FILE_UPLOAD_EXERCISE":
         fileanswers = UserFileTaskAnswer.objects.filter(task=content, user=ruser)
 
     t = loader.get_template("stats/user_task_stats.html")
@@ -157,15 +157,15 @@ def all_tasks(request, course_name):
     for task in tasks:
         taskname = task.name
         taskurl = "/" + course_name + "/" + task.url_name
-        tasktype, question, choices, answers = get_task_info(task)
+        tasktype, question, choices, answers = get_exercise_info(task)
 
-        if tasktype == "checkbox":
+        if tasktype == "CHECKBOX_EXERCISE":
             all_evaluations = Evaluation.objects.filter(useranswer__usercheckboxtaskanswer__task=task).exclude(useranswer__user__in=staff)
-        elif tasktype == "radiobutton":
+        elif tasktype == "MULTIPLE_CHOICE_EXERCISE":
             all_evaluations = Evaluation.objects.filter(useranswer__userradiobuttontaskanswer__task=task).exclude(useranswer__user__in=staff)
-        elif tasktype == "textfield":
+        elif tasktype == "TEXTFIELD_EXERCISE":
             all_evaluations = Evaluation.objects.filter(useranswer__usertextfieldtaskanswer__task=task).exclude(useranswer__user__in=staff)
-        elif tasktype == "file":
+        elif tasktype == "FILE_UPLOAD_EXERCISE":
             all_evaluations = Evaluation.objects.filter(useranswer__userfiletaskanswer__task=task).exclude(useranswer__user__in=staff)
         else:
             continue
@@ -221,14 +221,14 @@ def course_users(request, training_name, content_to_search, year, month, day):
         print(username,)
 
         for content in contents:
-            tasktype, question, choices, answers = get_task_info(content)
-            if tasktype == "checkbox":
+            tasktype, question, choices, answers = get_exercise_info(content)
+            if tasktype == "CHECKBOX_EXERCISE":
                 db_evaluations = db_user_evaluations.filter(useranswer__usercheckboxtaskanswer__task=content)
-            elif tasktype == "radiobutton":
+            elif tasktype == "MULTIPLE_CHOICE_EXERCISE":
                 db_evaluations = db_user_evaluations.filter(useranswer__userradiobuttontaskanswer__task=content)
-            elif tasktype == "textfield":
+            elif tasktype == "TEXTFIELD_EXERCISE":
                 db_evaluations = db_user_evaluations.filter(useranswer__usertextfieldtaskanswer__task=content)
-            elif tasktype == "file":
+            elif tasktype == "FILE_UPLOAD_EXERCISE":
                 db_evaluations = db_user_evaluations.filter(useranswer__userfiletaskanswer__task=content)
             else:
                 db_evaluations = []

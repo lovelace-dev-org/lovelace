@@ -41,19 +41,19 @@ urlpatterns = [
        ),
 
     # Sandbox: admin view & answer for content pages without saved results
-    url(r'^sandbox/(?P<content_name>[^/]+)/$', views.content,
+    url(r'^sandbox/(?P<content_slug>[^/]+)/$', views.content,
         {'sandbox': True,},
         name='sandbox_content',),
 
     # Course front page, course graph and content views
-    url(r'^(?P<training_name>[^/]+)/$', views.training,
+    url(r'^(?P<course_slug>[^/]+)/$', views.course,
         {'raippa_root': settings.BASE_DIR,
          'media_root': settings.MEDIA_ROOT,
          'media_url': settings.MEDIA_URL,},
-        name='training'
+        name='course'
        ),
-    url(r'^(?P<training_name>[^/]+)/graph\.vg$', views.course_graph, name='course_graph'),
-    url(r'^(?P<training_name>[^/]+)/(?P<content_name>[^/]+)/$', views.content,
+    url(r'^(?P<course_slug>[^/]+)/graph\.vg$', views.course_graph, name='course_graph'),
+    url(r'^(?P<course_slug>[^/]+)/(?P<content_slug>[^/]+)/$', views.content,
         {'raippa_root': settings.BASE_DIR,
          'media_root': settings.MEDIA_ROOT,
          'media_url':settings.MEDIA_URL,},
@@ -61,12 +61,12 @@ urlpatterns = [
        ),
 
     # Exercise sending for checking, progress and evaluation views
-    url(r'^(?P<training_name>[^/]+)/(?P<content_name>[^/]+)/check/$', views.check_answer,
+    url(r'^(?P<course_slug>[^/]+)/(?P<content_slug>[^/]+)/check/$', views.check_answer,
         {'media_root': settings.MEDIA_ROOT,
          'media_url':settings.MEDIA_URL,}
        ),
-    url(r'^(?P<course_name>[^/]+)/(?P<content_name>[^/]+)/progress/(?P<task_id>[^/]+)/$',
+    url(r'^(?P<course_slug>[^/]+)/(?P<content_slug>[^/]+)/progress/(?P<task_id>[^/]+)/$',
         views.check_progress, name='check_progress'),
-    url(r'^(?P<course_name>[^/]+)/(?P<content_name>[^/]+)/evaluation/(?P<task_id>[^/]+)/$',
+    url(r'^(?P<course_slug>[^/]+)/(?P<content_slug>[^/]+)/evaluation/(?P<task_id>[^/]+)/$',
         views.file_exercise_evaluation, name='file_exercise_evaluation'),
 ]

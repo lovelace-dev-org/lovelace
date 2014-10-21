@@ -117,7 +117,7 @@ class ContentGraph(models.Model):
     def __str__(self):
         if not self.content:
             return "No linked content yet"
-        return self.content.short_name
+        return self.content.slug
 
     class Meta:
         verbose_name = "content to course link"

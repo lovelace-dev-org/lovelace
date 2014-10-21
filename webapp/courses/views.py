@@ -72,7 +72,7 @@ def course_graph(request, training_name):
     for graph_node in course_graph_nodes:
         #node = graph_builder.Node(graph_node)
         content = ContentPage.objects.get(id=graph_node.content_id)
-        node_url = reverse('courses:content', kwargs={"training_name":training_name, "content_id":content.id})
+        node_url = reverse('courses:content', kwargs={"course_slug":course_slug, "content_id":content.id})
         label = content.name # TODO: Use a shorter name
         node = graph_builder.Node({"name":"node%d" % (graph_node.id),
                                    "style":"filled",
@@ -117,22 +117,22 @@ def course_graph(request, training_name):
     #response['Content-Disposition'] = 'attachment; filename=graph.vg'
     return response
  
-def training(request, training_name, **kwargs):
-    selected_course = Course.objects.get(name=training_name)
+def course(request, course_slug, **kwargs):
+    selected_course = Course.objects.get(slug=course_slug)
     navurls = [NavURL(reverse('courses:index'), "Available courses"),
-               NavURL(reverse('courses:training', kwargs={"training_name":training_name}), training_name),]
+               NavURL(reverse('courses:course', kwargs={"course_slug":course_slug}), selected_course.name),]
 
-    course_graph_url = reverse('courses:course_graph', kwargs={'training_name':training_name})
+    course_graph_url = reverse('courses:course_graph', kwargs={'course_slug':course_slug})
     frontpage = selected_course.frontpage
 
     if frontpage:
-        content_name = frontpage.url_name
+        content_slug = frontpage.slug
         kwargs["frontpage"] = True
-        contextdict = content(request, training_name, content_name, **kwargs)
+        contextdict = content(request, course_slug, content_slug, **kwargs)
     else:
         contextdict = {}
 
-    contextdict["training"] = selected_course 
+    contextdict["course"] = selected_course 
     contextdict["course_graph_url"] = course_graph_url
     contextdict["navurls"] = navurls 
     contextdict["title"] = '%s' % selected_course.name
@@ -154,23 +154,15 @@ def dirtree(tree, node, user):
     result = "not_answered"
     if user.is_authenticated():
         evaluations = None
-        try:
-            if not evaluations: evaluations = Evaluation.objects.filter(useranswer__usercheckboxtaskanswer__task=node.content, useranswer__user=user)
-        except ContentPage.DoesNotExist:
-            pass
-        try:
-            if not evaluations: evaluations = Evaluation.objects.filter(useranswer__userradiobuttontaskanswer__task=node.content, useranswer__user=user)
-        except ContentPage.DoesNotExist:
-            pass
-        try:
-            if not evaluations: evaluations = Evaluation.objects.filter(useranswer__usertextfieldtaskanswer__task=node.content, useranswer__user=user)
-        except ContentPage.DoesNotExist:
-            pass
-        try:
-            if not evaluations: evaluations = Evaluation.objects.filter(useranswer__userfileuploadexerciseanswer__task=node.content, useranswer__user=user)
-        except ContentPage.DoesNotExist:
-            pass
-
+        if node.content.content_type == "CHECKBOX_EXERCISE":
+            evaluations = Evaluation.objects.filter(useranswer__usercheckboxexerciseanswer__exercise=node.content, useranswer__user=user)
+        elif node.content.content_type == "MULTIPLE_CHOICE_EXERCISE":
+            evaluations = Evaluation.objects.filter(useranswer__usermultiplechoiceexerciseanswer__exercise=node.content, useranswer__user=user)
+        elif node.content.content_type == "TEXTFIELD_EXERCISE":
+            evaluations = Evaluation.objects.filter(useranswer__usertextfieldexerciseanswer__exercise=node.content, useranswer__user=user)
+        elif node.content.content_type == "FILE_UPLOAD_EXERCISE":
+            evaluations = Evaluation.objects.filter(useranswer__userfileuploadexerciseanswer__exercise=node.content, useranswer__user=user)
+        
         if not evaluations:
             result = "not_answered"
         else:
@@ -191,52 +183,29 @@ def dirtree(tree, node, user):
             dirtree(tree, child, user)
         tree.append((mark_safe('<'), None))
 
-def get_task_info(content):
-    tasktype = None
+def get_exercise_info(content):
+    content_type = content.content_type
     question = None
     choices = None
     answers = None
 
-    try:
-        if content.taskpage.radiobuttontask:
-            tasktype = "radiobutton"
-            choices = RadiobuttonTaskAnswer.objects.filter(task=content.id).order_by('id')
-            question = TaskPage.objects.get(id=content.id).question
-    except ContentPage.DoesNotExist as e:
+    if content_type == "MULTIPLE_CHOICE_EXERCISE":
+        choices = MultipleChoiceExerciseAnswer.objects.filter(exercise=content.id).order_by('id')
+        question = Exercise.objects.get(id=content.id).question
+    elif content_type == "CHECKBOX_EXERCISE":
+        choices = CheckboxExerciseAnswer.objects.filter(exercise=content.id).order_by('id')
+        question = Exercise.objects.get(id=content.id).question
+    elif content_type == "TEXTFIELD_EXERCISE":
+        answers = TextfieldExerciseAnswer.objects.filter(exercise=content.id)
+        question = Exercise.objects.get(id=content.id).question
+    elif content_type == "FILE_UPLOAD_EXERCISE":
+        question = Exercise.objects.get(id=content.id).question
+    elif content_type == "LECTURE":
         pass
 
-    try:
-        if content.taskpage.checkboxtask:
-            tasktype = "checkbox"
-            choices = CheckboxTaskAnswer.objects.filter(task=content.id).order_by('id')
-            question = TaskPage.objects.get(id=content.id).question
-    except ContentPage.DoesNotExist as e:
-        pass
+    return (content_type, question, choices, answers)
 
-    try:
-        if content.taskpage.textfieldtask:
-            tasktype = "textfield"
-            answers = TextfieldTaskAnswer.objects.filter(task=content.id)
-            question = TaskPage.objects.get(id=content.id).question
-    except ContentPage.DoesNotExist as e:
-        pass
-
-    try:
-        if content.taskpage.fileuploadexercise:
-            tasktype = "file"
-            question = TaskPage.objects.get(id=content.id).question
-    except ContentPage.DoesNotExist as e:
-        pass
-
-    try:
-        if content.lecturepage:
-            tasktype = "lecture"
-    except ContentPage.DoesNotExist as e:
-        pass
-
-    return (tasktype, question, choices, answers)
-
-def radiobutton_task_check(content, user, choices, post_data):
+def multiplechoice_exercise_check(content, user, choices, post_data):
     points = 0.0
 
     # Determine, if the given answer was correct and which hints to show
@@ -275,13 +244,13 @@ def radiobutton_task_check(content, user, choices, post_data):
             points = 1.0
         rb_evaluation = Evaluation(points=points,feedback="",correct=correct)
         rb_evaluation.save()
-        rb_answer = UserRadiobuttonTaskAnswer(task=content.taskpage.radiobuttontask, chosen_answer=chosen, evaluation=rb_evaluation,
+        rb_answer = UserMultipleChoiceExerciseAnswer(exercise=content.exercisepage.multiplechoiceexercise, chosen_answer=chosen, evaluation=rb_evaluation,
                                               user=user, answer_date=timezone.now())
         rb_answer.save()
     
     return correct, hints, comments
 
-def checkbox_task_check(content, user, choices, post_data):
+def checkbox_exercise_check(content, user, choices, post_data):
     points = 0.0
 
     # Determine, if the given answer was correct and which hints to show
@@ -313,7 +282,7 @@ def checkbox_task_check(content, user, choices, post_data):
             points = 1.0
         cb_evaluation = Evaluation(points=points,feedback="",correct=correct)
         cb_evaluation.save()
-        cb_answer = UserCheckboxTaskAnswer(task=content.taskpage.checkboxtask, evaluation=cb_evaluation,
+        cb_answer = UserCheckboxExerciseAnswer(exercise=content.exercisepage.checkboxexercise, evaluation=cb_evaluation,
                                            user=user, answer_date=timezone.now())
         cb_answer.save()
         cb_answer.chosen_answers.add(*chosen)
@@ -321,7 +290,7 @@ def checkbox_task_check(content, user, choices, post_data):
 
     return correct, hints, comments
 
-def textfield_task_check(content, user, answers, post_data):
+def textfield_exercise_check(content, user, answers, post_data):
     points = 0.0
 
     # Determine, if the given answer was correct and which hints/comments to show
@@ -347,7 +316,7 @@ def textfield_task_check(content, user, answers, post_data):
             if user.is_staff:
                 errors.append("Contact staff, regexp error '%s' from regexp: %s" % (e, answer.answer))
             else:
-                errors.append("Contact staff! Regexp error '%s' in task '%s'." % (e, content.name))
+                errors.append("Contact staff! Regexp error '%s' in exercise '%s'." % (e, content.name))
             correct = False
             continue
 
@@ -375,13 +344,13 @@ def textfield_task_check(content, user, answers, post_data):
             points = 1.0
         tf_evaluation = Evaluation(points=points,feedback="",correct=correct)
         tf_evaluation.save()
-        tf_answer = UserTextfieldTaskAnswer(task=content.taskpage.textfieldtask, given_answer=given, evaluation=tf_evaluation,
+        tf_answer = UserTextfieldExerciseAnswer(exercise=content.exercisepage.textfieldexercise, given_answer=given, evaluation=tf_evaluation,
                                             user=user, answer_date=timezone.now())
         tf_answer.save()
 
     return correct, hints, comments, errors
 
-def file_task_check(content, user, files_data, post_data):
+def file_exercise_check(content, user, files_data, post_data):
     points = 0.0
     correct = True
     hints = []
@@ -402,7 +371,7 @@ def file_task_check(content, user, files_data, post_data):
             collaborators = post_data["collaborators"]
         else:
             collaborators = None
-        f_answer = UserFileTaskAnswer(task=content.taskpage.filetask, returnable=f_returnable, evaluation=f_evaluation,
+        f_answer = UserFileTaskAnswer(exercise=content.exercisepage.filetask, returnable=f_returnable, evaluation=f_evaluation,
                                       user=user, answer_date=timezone.now(), collaborators=collaborators)
         f_answer.save()
 
@@ -410,7 +379,7 @@ def file_task_check(content, user, files_data, post_data):
             f_filetaskreturnfile = FileTaskReturnFile(fileinfo=uploaded_file, returnable=f_returnable)
             f_filetaskreturnfile.save()
         
-        results = filecheck_client.check_file_answer(task=content.taskpage.filetask, files={}, answer=f_answer)
+        results = filecheck_client.check_file_answer(exercise=content.exercisepage.filetask, files={}, answer=f_answer)
 
         # Quickly determine, whether the answer was correct
         results_zipped = []
@@ -451,7 +420,7 @@ def file_task_check(content, user, files_data, post_data):
             for chunk in rf.chunks():
                 f += chunk
             files[rf.name] = f
-        results = filecheck_client.check_file_answer(task=content.taskpage.filetask, files=files)
+        results = filecheck_client.check_file_answer(exercise=content.exercisepage.filetask, files=files)
 
         # Quickly determine, whether the answer was correct
         results_zipped = []
@@ -487,21 +456,20 @@ def file_task_check(content, user, files_data, post_data):
 
     return correct, hints, comments, diff_table
 
-def check_answer(request, training_name, content_name, **kwargs):
-    print("Ollaan tehtavan tarkistuksessa")
+def check_answer(request, course_slug, content_slug, **kwargs):
+    print("Ollaan tehtävän tarkistuksessa")
     # Validate an answer to question
     if request.method == "POST":
         pass
     else:
         return HttpResponse("")
 
-    selected_course = Course.objects.get(name=training_name)
-    content = ContentPage.objects.get(url_name=content_name)
+    selected_course = Course.objects.get(slug=course_slug)
+    content = ContentPage.objects.get(slug=content_slug)
 
     # Check if a deadline exists and if we are past it
-    training = Course.objects.get(name=training_name)
     try:
-        content_graph = training.contents.get(content=content)
+        content_graph = selected_course.contents.get(content=content)
     except ContentGraph.DoesNotExist as e:
         pass
     else:
@@ -509,9 +477,9 @@ def check_answer(request, training_name, content_name, **kwargs):
             pass
         else:
             # TODO: Use a template!
-            return HttpResponse("The deadline for this task (%s) has passed. Your answer will not be evaluated!" % (content_graph.deadline))
+            return HttpResponse("The deadline for this exercise (%s) has passed. Your answer will not be evaluated!" % (content_graph.deadline))
 
-    tasktype, question, choices, answers = get_task_info(content)
+    tasktype, question, choices, answers = get_exercise_info(content)
 
     correct = True
     hints = []
@@ -519,20 +487,20 @@ def check_answer(request, training_name, content_name, **kwargs):
     errors = []
     diff_table = ""
 
-    if choices and tasktype == "radiobutton":
-        correct, hints, comments = radiobutton_task_check(content, request.user, choices, request.POST)
+    if choices and tasktype == "multiplechoice":
+        correct, hints, comments = multiplechoice_exercise_check(content, request.user, choices, request.POST)
     elif choices and tasktype == "checkbox":
-        correct, hints, comments = checkbox_task_check(content, request.user, choices, request.POST)
+        correct, hints, comments = checkbox_exercise_check(content, request.user, choices, request.POST)
     elif answers and tasktype == "textfield":
-        correct, hints, comments, errors = textfield_task_check(content, request.user, answers, request.POST)
+        correct, hints, comments, errors = textfield_exercise_check(content, request.user, answers, request.POST)
     elif tasktype == "file":
-        correct, hints, comments, diff_table = file_task_check(content, request.user, request.FILES, request.POST)
+        correct, hints, comments, diff_table = file_exercise_check(content, request.user, request.FILES, request.POST)
         return HttpResponseRedirect(reverse('courses:check_progress',
-                                            kwargs={"course_name":training_name,
-                                                    "content_name":content_name,
-                                                    "task_id":diff_table}))
+                                            kwargs={"course_slug": training_slug,
+                                                    "content_slug": content_slug,
+                                                    "task_id": diff_table}))
 
-    # Compile the information required for the task evaluation
+    # Compile the information required for the exercise evaluation
     if correct:
         evaluation = u"Correct!"
     else:
@@ -547,7 +515,7 @@ def check_answer(request, training_name, content_name, **kwargs):
     #except UnicodeDecodeError:
         #r_diff_table = unicode(diff_table, "iso-8859-1")
 
-    t = loader.get_template("courses/task_evaluation.html")
+    t = loader.get_template("courses/exercise_evaluation.html")
     c = Context({
         'evaluation': evaluation,
         'errors': errors,
@@ -558,15 +526,15 @@ def check_answer(request, training_name, content_name, **kwargs):
 
     return HttpResponse(t.render(c))
 
-def check_progress(request, course_name, content_name, task_id):
+def check_progress(request, course_slug, content_slug, task_id):
     # Based on https://djangosnippets.org/snippets/2898/
     # TODO: Check permissions
     task = AsyncResult(task_id)
     if task.result:
         return HttpResponseRedirect(reverse('courses:file_exercise_evaluation',
-                                            kwargs={"course_name":course_name,
-                                                    "content_name":content_name,
-                                                    "task_id":task_id,}))
+                                            kwargs={"course_slug": course_slug,
+                                                    "content_slug": content_slug,
+                                                    "task_id": task_id,}))
     else:
         data = task.state
         return HttpResponse(json.dumps(data), mimetype='application/json')
@@ -579,22 +547,22 @@ def file_exercise_evaluation(request, course_name, content_name, task_id):
     })
     return HttpResponse(t.render(c))
 
-def get_user_task_info(user, task, tasktype, pub_date=None):
+def get_user_exercise_info(user, exercise, exercisetype, pub_date=None):
     if not pub_date:
         pub_date = datetime.datetime(2000, 1, 1)
     evaluations = None
-    if tasktype == "checkbox":
+    if exercisetype == "checkbox":
         if not evaluations:
-            evaluations = Evaluation.objects.filter(useranswer__usercheckboxtaskanswer__task=task, useranswer__user=user, useranswer__answer_date__gte=pub_date)
-    elif tasktype == "radiobutton":
+            evaluations = Evaluation.objects.filter(useranswer__usercheckboxexerciseanswer__exercise=exercise, useranswer__user=user, useranswer__answer_date__gte=pub_date)
+    elif exercisetype == "multiplechoice":
         if not evaluations:
-            evaluations = Evaluation.objects.filter(useranswer__userradiobuttontaskanswer__task=task, useranswer__user=user, useranswer__answer_date__gte=pub_date)
-    elif tasktype == "textfield":
+            evaluations = Evaluation.objects.filter(useranswer__usermultiplechoiceexerciseanswer__exercise=exercise, useranswer__user=user, useranswer__answer_date__gte=pub_date)
+    elif exercisetype == "textfield":
         if not evaluations:
-            evaluations = Evaluation.objects.filter(useranswer__usertextfieldtaskanswer__task=task, useranswer__user=user, useranswer__answer_date__gte=pub_date)
-    elif tasktype == "file":
+            evaluations = Evaluation.objects.filter(useranswer__usertextfieldexerciseanswer__exercise=exercise, useranswer__user=user, useranswer__answer_date__gte=pub_date)
+    elif exercisetype == "file":
         if not evaluations:
-            evaluations = Evaluation.objects.filter(useranswer__userfileuploadexerciseanswer__task=task, useranswer__user=user, useranswer__answer_date__gte=pub_date)
+            evaluations = Evaluation.objects.filter(useranswer__userfileuploadexerciseanswer__exercise=exercise, useranswer__user=user, useranswer__answer_date__gte=pub_date)
 
     if not evaluations:
         result = "not_answered"
@@ -607,11 +575,12 @@ def get_user_task_info(user, task, tasktype, pub_date=None):
 
     return result
 
-def content(request, training_name, content_name, **kwargs):
+def content(request, course_slug, content_slug, **kwargs):
     print("Ollaan contentissa.")
 
-    selected_course = Course.objects.get(name=training_name)
-    content = ContentPage.objects.get(url_name=content_name)
+    selected_course = Course.objects.get(slug=course_slug)
+    # TODO: Ensure content is part of course!
+    content = ContentPage.objects.get(slug=content_slug)
     pages = [content]
 
     content_graph = None
@@ -620,21 +589,16 @@ def content(request, training_name, content_name, **kwargs):
     except ContentGraph.DoesNotExist as e:
         pass
 
-    tasktype, question, choices, answers = get_task_info(content)
-    task_evaluation = None
+    tasktype, question, choices, answers = get_exercise_info(content)
+    exercise_evaluation = None
     if request.user.is_authenticated():
         if not content_graph or not content_graph.publish_date or content_graph.publish_date < datetime.datetime.now():
-            task_evaluation = get_user_task_info(request.user, content, tasktype)
+            exercise_evaluation = get_user_exercise_info(request.user, content, tasktype)
 
     admin_url = ""
     if tasktype:
-        tasktypes = {"radiobutton":"radiobuttontask",
-                     "checkbox":"checkboxtask",
-                     "textfield":"textfieldtask",
-                     "file":"fileuploadexercise",
-                     "lecture":"lecturepage",}
-        admin_url = reverse("admin:courses_%s_change" % tasktypes[tasktype], args=(content.id,))
-
+        adminized_urlform = tasktype.replace("_", "").lower()
+        admin_url = reverse("admin:courses_%s_change" % adminized_urlform, args=(content.id,))
 
     try:
         question = blockparser.parseblock(escape(question))
@@ -644,11 +608,11 @@ def content(request, training_name, content_name, **kwargs):
         pass
 
     emb_tasktype = None
-    contains_embedded_task = False
+    contains_embedded_exercise = False
 
     navurls = [NavURL(reverse('courses:index'), "Available courses"),
-               NavURL(reverse('courses:training', kwargs={"training_name":training_name}), training_name),
-               NavURL(reverse('courses:content', kwargs={"training_name":training_name, "content_name":content.name}), content.name)]
+               NavURL(reverse('courses:course', kwargs={"course_slug":course_slug}), selected_course.name),
+               NavURL(reverse('courses:content', kwargs={"course_slug":course_slug, "content_slug":content.slug}), content.name)]
 
     rendered_content = "{% load parser_directives %}\n"
     for line in content_parser.MarkupParser.parse(content.content):
@@ -798,22 +762,22 @@ def content(request, training_name, content_name, **kwargs):
     """
 
     c = RequestContext(request, {
-        'embedded_task': False,
-        'contains_embedded_task': contains_embedded_task,
+        'embedded_exercise': False,
+        'contains_embedded_exercise': contains_embedded_exercise,
         'training': selected_course,
         'content': rc, #rendered_content,
         'content_name': content.name,
-        'content_name_id': content.url_name,
-        'content_urlname': content.url_name,
+        'content_name_id': content.slug,
+        'content_urlname': content.slug,
         'admin_url': admin_url,
         'navurls': navurls,
         'title': '%s - %s' % (content.name, selected_course.name),
-        'answer_check_url': reverse('courses:training', kwargs={"training_name":training_name}),
+        'answer_check_url': reverse('courses:course', kwargs={"course_slug":course_slug}),
         'emb_tasktype': emb_tasktype,
         'tasktype': tasktype,
         'question': question,
         'choices': choices,
-        'evaluation': task_evaluation,
+        'evaluation': exercise_evaluation,
     })
     if "frontpage" in kwargs:
         return c
@@ -885,17 +849,17 @@ def user(request, user_name):
         # TODO: Allow normal users to view some very basic information?
         pass
     
-    checkboxtask_answers = UserCheckboxTaskAnswer.objects.filter(user=request.user)
-    radiobuttontask_answers = UserRadiobuttonTaskAnswer.objects.filter(user=request.user)
-    textfieldtask_answers = UserTextfieldTaskAnswer.objects.filter(user=request.user)
-    filetask_answers = UserFileUploadExerciseAnswer.objects.filter(user=request.user)
+    checkboxexercise_answers = UserCheckboxExerciseAnswer.objects.filter(user=request.user)
+    multiplechoiceexercise_answers = UserMultipleChoiceExerciseAnswer.objects.filter(user=request.user)
+    textfieldexercise_answers = UserTextfieldExerciseAnswer.objects.filter(user=request.user)
+    fileexercise_answers = UserFileUploadExerciseAnswer.objects.filter(user=request.user)
 
     t = loader.get_template("courses/userinfo.html")
     c = RequestContext(request, {
-        'checkboxtask_answers': checkboxtask_answers,
-        'radiobuttontask_answers': radiobuttontask_answers,
-        'textfieldtask_answers': textfieldtask_answers,
-        'filetask_answers': filetask_answers,
+        'checkboxexercise_answers': checkboxexercise_answers,
+        'multiplechoiceexercise_answers': multiplechoiceexercise_answers,
+        'textfieldexercise_answers': textfieldexercise_answers,
+        'fileexercise_answers': fileexercise_answers,
     })
     return HttpResponse(t.render(c))
 
@@ -979,9 +943,9 @@ def calendar_post(request, calendar_id, event_id):
     else:
         return HttpResponseNotFound()
 
-def show_answers(request, user, course, task):
+def show_answers(request, user, course, exercise):
     """
-    Show the user's answers for a specific task on a specific course.
+    Show the user's answers for a specific exercise on a specific course.
     """
     if request.user.is_authenticated() and (request.user.username == user or request.user.is_staff):
         pass
@@ -994,32 +958,32 @@ def show_answers(request, user, course, task):
         return HttpResponseNotFound("No such user %s" % user)
 
     try:
-        course_obj = Course.objects.get(name=course)
+        course_obj = Course.objects.get(slug=course)
     except Course.DoesNotExist as e:
         return HttpResponseNotFound("No such course %s" % course)
     
     try:
-        task_obj = TaskPage.objects.get(url_name=task)
-    except TaskPage.DoesNotExist as e:
-        return HttpResponseNotFound("No such task %s" % task)
+        exercise_obj = Exercise.objects.get(slug=exercise)
+    except Exercise.DoesNotExist as e:
+        return HttpResponseNotFound("No such exercise %s" % exercise)
 
-    tasktype, question, choices, answers = get_task_info(task_obj)
+    content_type, question, choices, answers = get_exercise_info(exercise_obj)
 
-    # TODO: Error checking for tasks that don't belong to this course
+    # TODO: Error checking for exercises that don't belong to this course
     
     answers = []
 
-    if tasktype == "radiobutton":
-        answers = UserRadioButtonTaskAnswer.objects.filter(user=user_obj, task=task_obj)
-    elif tasktype == "checkbox":
-        answers = UserCheckboxTaskAnswer.objects.filter(user=user_obj, task=task_obj)
-    elif tasktype == "textfield":
-        answers = UserTextfieldTaskAnswer.objects.filter(user=user_obj, task=task_obj)
-    elif tasktype == "file":
-        answers = UserFileUploadExerciseAnswer.objects.filter(user=user_obj, task=task_obj)
+    if content_type == "MULTIPLE_CHOICE_EXERCISE":
+        answers = UserMultipleChoiceExerciseAnswer.objects.filter(user=user_obj, exercise=exercise_obj)
+    elif content_type == "CHECKBOX_EXERCISE":
+        answers = UserCheckboxExerciseAnswer.objects.filter(user=user_obj, exercise=exercise_obj)
+    elif content_type == "TEXTFIELD_EXERCISE":
+        answers = UserTextfieldExerciseAnswer.objects.filter(user=user_obj, exercise=exercise_obj)
+    elif content_type == "FILE_UPLOAD_EXERCISE":
+        answers = UserFileUploadExerciseAnswer.objects.filter(user=user_obj, exercise=exercise_obj)
 
-    # TODO: Own subtemplates for each of the task types.
-    t = loader.get_template("courses/user_task_answers.html")
+    # TODO: Own subtemplates for each of the exercise types.
+    t = loader.get_template("courses/user_exercise_answers.html")
     c = RequestContext(request, {
         'answers': answers,
     })

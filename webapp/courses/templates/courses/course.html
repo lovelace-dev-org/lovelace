@@ -4,9 +4,11 @@
 {% block page-title %}RAiPPA - {{ title }}{% endblock %}
 
 {% block page-content %}
+<h1>{{ course.name }}</h1>
+
 {% if content_tree %}
   <hr>
-  <h2>Table of contents</h2>
+  <h2>Course Contents</h2>
   {% for list_direction, result in content_tree %}
     {% if list_direction == '>' %}
       <ul>
@@ -14,7 +16,7 @@
       </ul>
     {% else %}
       <li>
-        <a href="/{{ training.name }}/{{ list_direction.url_name }}/">{{ list_direction.name }}</a>
+        <a href="{% url 'courses:content' course.slug list_direction.slug %}">{{ list_direction.name }}</a>
         {% if result %}
           {% if result == 'not_answered' %}
           {% elif result == 'correct' %}
