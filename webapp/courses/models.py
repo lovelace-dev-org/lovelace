@@ -262,7 +262,7 @@ class LecturePage(ContentPage):
 # TODO: Manually evaluated flag (good for final projects)
 class TaskPage(ContentPage):
     """A single task."""
-    question = models.TextField()
+    question = models.TextField(blank=True, null=True)
 
     def save(self, *args, **kwargs):
         self.url_name = self.get_url_name()
