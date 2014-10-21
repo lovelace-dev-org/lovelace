@@ -11,6 +11,8 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 
+import slugify
+
 from feedback.models import ContentFeedbackQuestion
 
 # TODO: Extend the registration system to allow users to enter the profile data!
@@ -67,12 +69,21 @@ class Course(models.Model):
                                            blank=True, null=True)
 
     # TODO: Move the fields below to instance
-    frontpage = models.ForeignKey('LecturePage', blank=True,null=True) # TODO: Create one automatically!
+    frontpage = models.ForeignKey('Lecture', blank=True,null=True) # TODO: Create one automatically!
     contents = models.ManyToManyField('ContentGraph', blank=True,null=True) # TODO: Rethink the content graph system!
 
-    start_date = models.DateTimeField(verbose_name='Date and time on which the course begins',blank=True,null=True)
-    end_date = models.DateTimeField(verbose_name='Date and time on which the course ends',blank=True,null=True)
-    # TODO: Registration start and end dates for students!
+    def get_url_name(self):
+        """Creates a URL and HTML5 ID field friendly version of the name."""
+        # TODO: Ensure uniqueness!
+        return slugify.slugify(self.name)
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = self.get_url_name()
+        else:
+            self.slug = slugify.slugify(self.slug)
+
+        super(Course, self).save(*args, **kwargs)
 
     def __str__(self):
         return self.name
@@ -191,10 +202,7 @@ class ContentPage(models.Model):
     child classes all inherit from this class.
     """
     name = models.CharField(max_length=255, help_text="The full name of this page")
-    url_name = models.CharField(max_length=200,editable=False) # Use SlugField instead? rename to slug
     slug = models.CharField(max_length=255, db_index=True, unique=True)
-    # TODO: Get rid of short_name
-    short_name = models.CharField(max_length=32, help_text="The short name is used for referring this page on other pages")
     content = models.TextField(verbose_name="Page content body", blank=True, null=True)
     default_points = models.IntegerField(blank=True, null=True,
                                          help_text="The default points a user can gain by finishing this exercise correctly")
@@ -214,21 +222,16 @@ class ContentPage(models.Model):
 
     feedback_questions = models.ManyToManyField(ContentFeedbackQuestion, blank=True, null=True)
 
-    def _shortify_name(self):
-        # duplicate page warning! what if two pages have the same [0:32]?
-        return self.name[0:32]
-
     def get_url_name(self):
-        """Creates a URL and HTML ID field friendly version of the name."""
-        # TODO: HTML5 id accepts unicode. Only problematic characters:  ,.:;
-        # TODO: Use mozilla/unicode-slugify
-        # https://github.com/mozilla/unicode-slugify
-        return re.sub(r"[^A-Za-z0-9_]", "_", self.name).lower()
+        """Creates a URL and HTML5 ID field friendly version of the name."""
+        # TODO: Ensure uniqueness!
+        return slugify.slugify(self.name)
 
     def save(self, *args, **kwargs):
-        self.url_name = self.get_url_name()
-        if not self.short_name:
-            self.short_name = self._shortify_name()
+        if not self.slug:
+            self.slug = self.get_url_name()
+        else:
+            self.slug = slugify.slugify(self.slug)
 
         # TODO: Run through content parser
         #       - Check for & report errors (all errors on same notice)
@@ -243,89 +246,109 @@ class ContentPage(models.Model):
 # TODO: Use the below models as Meta -> proxy = True
 #       - override save(): automatically save content_type based on which kind
 #         of lecture/exercise the object is
-# TODO: Rename to Lecture
-class LecturePage(ContentPage):
+class Lecture(ContentPage):
     """A single page for a lecture."""
     answerable = models.BooleanField(verbose_name="Need confirmation of reading this lecture",default=False)
 
     def save(self, *args, **kwargs):
-        self.url_name = self.get_url_name()
-        if not self.short_name:
-            self.short_name = self._shortify_name()
-        super(LecturePage, self).save(*args, **kwargs)
+        if not self.slug:
+            self.slug = self.get_url_name()
+        else:
+            self.slug = slugify.slugify(self.slug)
+        
+        self.content_type = "LECTURE"
+        super(Lecture, self).save(*args, **kwargs)
 
     class Meta:
         verbose_name = "lecture page"
 
-# TODO: Rename to Exercise
 # TODO: Break the exercises into an exercises app
-# TODO: Manually evaluated flag (good for final projects)
-class TaskPage(ContentPage):
+class Exercise(ContentPage):
     """A single task."""
     question = models.TextField(blank=True, null=True)
+    manually_evaluated = models.BooleanField(verbose_name="This exercise is evaluated by hand", default=False)
 
     def save(self, *args, **kwargs):
-        self.url_name = self.get_url_name()
-        if not self.short_name:
-            self.short_name = self._shortify_name()
-        super(TaskPage, self).save(*args, **kwargs)
+        if not self.slug:
+            self.slug = self.get_url_name()
+        else:
+            self.slug = slugify.slugify(self.slug)
+        super(Exercise, self).save(*args, **kwargs)
 
-class RadiobuttonTask(TaskPage):
+class MultipleChoiceExercise(Exercise):
     def save(self, *args, **kwargs):
-        self.url_name = self.get_url_name()
-        if not self.short_name:
-            self.short_name = self._shortify_name()
-        super(RadiobuttonTask, self).save(*args, **kwargs)
+        if not self.slug:
+            self.slug = self.get_url_name()
+        else:
+            self.slug = slugify.slugify(self.slug)
+
+        self.content_type = "MULTIPLE_CHOICE_EXERCISE"
+        super(MultipleChoiceExercise, self).save(*args, **kwargs)
 
     class Meta:
         verbose_name = "multiple choice exercise"
 
-class CheckboxTask(TaskPage):
+class CheckboxExercise(Exercise):
     def save(self, *args, **kwargs):
-        self.url_name = self.get_url_name()
-        if not self.short_name:
-            self.short_name = self._shortify_name()
-        super(CheckboxTask, self).save(*args, **kwargs)
+        if not self.slug:
+            self.slug = self.get_url_name()
+        else:
+            self.slug = slugify.slugify(self.slug)
+
+        self.content_type = "CHECKBOX_EXERCISE"
+        super(CheckboxExercise, self).save(*args, **kwargs)
 
     class Meta:
         verbose_name = "checkbox exercise"
 
-class TextfieldTask(TaskPage):
+class TextfieldExercise(Exercise):
     def save(self, *args, **kwargs):
-        self.url_name = self.get_url_name()
-        if not self.short_name:
-            self.short_name = self._shortify_name()
-        super(TextfieldTask, self).save(*args, **kwargs)
+        if not self.slug:
+            self.slug = self.get_url_name()
+        else:
+            self.slug = slugify.slugify(self.slug)
+
+        self.content_type = "TEXTFIELD_EXERCISE"
+        super(TextfieldExercise, self).save(*args, **kwargs)
 
     class Meta:
         verbose_name = "text field exercise"
 
-class FileUploadExercise(TaskPage):
+class FileUploadExercise(Exercise):
     def save(self, *args, **kwargs):
-        self.url_name = self.get_url_name()
-        if not self.short_name:
-            self.short_name = self._shortify_name()
+        if not self.slug:
+            self.slug = self.get_url_name()
+        else:
+            self.slug = slugify.slugify(self.slug)
+
+        self.content_type = "FILE_UPLOAD_EXERCISE"
         super(FileUploadExercise, self).save(*args, **kwargs)
 
     class Meta:
         verbose_name = "file upload exercise"
 
-class CodeInputExercise(TaskPage):
+class CodeInputExercise(Exercise):
     # TODO: A textfield exercise variant that's run like a file exercise (like in Viope)
     def save(self, *args, **kwargs):
-        self.url_name = self.get_url_name()
-        if not self.short_name:
-            self.short_name = self._shortify_name()
+        if not self.slug:
+            self.slug = self.get_url_name()
+        else:
+            self.slug = slugify.slugify(self.slug)
+
+        self.content_type = "CODE_INPUT_EXERCISE"
         super(CodeInputExercise, self).save(*args, **kwargs)
 
     class Meta:
         verbose_name = "code input exercise"
 
-class CodeReplaceExercise(TaskPage):
+class CodeReplaceExercise(Exercise):
     def save(self, *args, **kwargs):
-        self.url_name = self.get_url_name()
-        if not self.short_name:
-            self.short_name = self._shortify_name()
+        if not self.slug:
+            self.slug = self.get_url_name()
+        else:
+            self.slug = slugify.slugify(self.slug)
+
+        self.content_type = "CODE_REPLACE_EXERCISE"
         super(CodeReplaceExercise, self).save(*args, **kwargs)
 
     class Meta:
@@ -336,7 +359,7 @@ class Hint(models.Model):
     A hint that is linked to an exercise and shown to the user under
     configurable conditions.
     """
-    exercise = models.ForeignKey(TaskPage)
+    exercise = models.ForeignKey(Exercise)
     hint = models.TextField(verbose_name="hint text")
     tries_to_unlock = models.IntegerField(default=0,
                                           verbose_name="number of tries to unlock this hint",
@@ -482,8 +505,8 @@ class FileExerciseTestIncludeFile(models.Model):
 
 # TODO: Create a superclass for task answer choices
 ## Answer models
-class TextfieldTaskAnswer(models.Model):
-    task = models.ForeignKey(TextfieldTask)
+class TextfieldExerciseAnswer(models.Model):
+    task = models.ForeignKey(TextfieldExercise)
     correct = models.BooleanField(default=None)
     regexp = models.BooleanField(default=None)
     answer = models.TextField()
@@ -499,10 +522,10 @@ class TextfieldTaskAnswer(models.Model):
 
     def save(self, *args, **kwargs):
         self.answer = self.answer.replace("\r\n", "\n").replace("\n\r", "\n")
-        super(TextfieldTaskAnswer, self).save(*args, **kwargs)
+        super(TextfieldExerciseAnswer, self).save(*args, **kwargs)
  
-class RadiobuttonTaskAnswer(models.Model):
-    task = models.ForeignKey(RadiobuttonTask)
+class MultipleChoiceExerciseAnswer(models.Model):
+    task = models.ForeignKey(MultipleChoiceExercise)
     correct = models.BooleanField(default=None)
     answer = models.TextField()
     hint = models.TextField(blank=True)
@@ -512,8 +535,8 @@ class RadiobuttonTaskAnswer(models.Model):
     def __str__(self):
         return self.answer
 
-class CheckboxTaskAnswer(models.Model):
-    task = models.ForeignKey(CheckboxTask)
+class CheckboxExerciseAnswer(models.Model):
+    task = models.ForeignKey(CheckboxExercise)
     correct = models.BooleanField(default=None)
     answer = models.TextField()
     hint = models.TextField(blank=True)    
@@ -575,17 +598,17 @@ class UserFileUploadExerciseAnswer(UserAnswer):
     def __str__(self):
         return u"Answer by %s" % (self.user.username)
 
-class UserTextfieldTaskAnswer(UserAnswer):
-    task = models.ForeignKey(TextfieldTask)
+class UserTextfieldExerciseAnswer(UserAnswer):
+    task = models.ForeignKey(TextfieldExercise)
     given_answer = models.TextField()
 
     def __str__(self):
         #return u"Answer no. %04d: %s" % (self.answer_count, self.given_answer)
         return u"Answer by %s: %s" % (self.user.username, self.given_answer)
 
-class UserRadiobuttonTaskAnswer(UserAnswer):
-    task = models.ForeignKey(RadiobuttonTask)
-    chosen_answer = models.ForeignKey(RadiobuttonTaskAnswer)
+class UserMultipleChoiceExerciseAnswer(UserAnswer):
+    task = models.ForeignKey(MultipleChoiceExercise)
+    chosen_answer = models.ForeignKey(MultipleChoiceExerciseAnswer)
 
     def __str__(self):
         #return u"Answer no. %04d by %s: %s" % (self.answer_count, self.user.username, self.chosen_answer)
@@ -594,17 +617,17 @@ class UserRadiobuttonTaskAnswer(UserAnswer):
     def is_correct(self):
         return chosen_answer.correct
 
-class UserCheckboxTaskAnswer(UserAnswer):
-    task = models.ForeignKey(CheckboxTask)
-    chosen_answers = models.ManyToManyField(CheckboxTaskAnswer)
+class UserCheckboxExerciseAnswer(UserAnswer):
+    task = models.ForeignKey(CheckboxExercise)
+    chosen_answers = models.ManyToManyField(CheckboxExerciseAnswer)
 
     def __str__(self):
         #return u"Answer no. %04d: %s" % (self.answer_count, ", ".join(self.chosen_answers))
         return u"Answer by %s: %s" % (self.user.username, ", ".join(self.chosen_answers))
 
 class UserLecturePageAnswer(UserAnswer):
-    task = models.ForeignKey(LecturePage)
-    answered = models.BooleanField(LecturePage, default=None)
+    task = models.ForeignKey(Lecture)
+    answered = models.BooleanField(default=None)
     
     def __str__(self):
         return u"Answered by %s." % (self.user.username)

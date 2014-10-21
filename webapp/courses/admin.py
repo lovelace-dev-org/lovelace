@@ -22,7 +22,7 @@ admin.site.register(User, UserProfileAdmin)
 ## Feedback for user answers
 admin.site.register(Evaluation)
 
-## Task types
+## Exercise types
 # TODO: Create an abstract way to admin the different task types
 #class AbstractQuestionAdmin(admin.ModelAdmin):
 #    def save_model(self, request, obj, form, change):
@@ -41,52 +41,52 @@ class HintInline(admin.TabularInline):
     model = Hint
     extra = 0
 
-class RadiobuttonTaskAnswerInline(admin.TabularInline):
-    model = RadiobuttonTaskAnswer
+class MultipleChoiceExerciseAnswerInline(admin.TabularInline):
+    model = MultipleChoiceExerciseAnswer
     extra = 1
 
-class RadiobuttonTaskAdmin(admin.ModelAdmin):
+class MultipleChoiceExerciseAdmin(admin.ModelAdmin):
     fieldsets = [
-        ('Page information',   {'fields': ['name', 'url_name', 'content', 'question', 'tags'],}),
-        ('Task miscellaneous', {'fields': ['default_points'],
+        ('Page information',   {'fields': ['name', 'slug', 'content', 'question', 'tags'],}),
+        ('Exercise miscellaneous', {'fields': ['default_points'],
                                 'classes': ['wide']}),
         ('Feedback settings',  {'fields': ['feedback_questions']}),
     ]
-    inlines = [RadiobuttonTaskAnswerInline, HintInline]
-    readonly_fields = ("url_name",)
-    list_display = ("name", "url_name",)
+    inlines = [MultipleChoiceExerciseAnswerInline, HintInline]
+    readonly_fields = ("slug",)
+    list_display = ("name", "slug",)
     list_per_page = 500
 
-class CheckboxTaskAnswerInline(admin.TabularInline):
-    model = CheckboxTaskAnswer
+class CheckboxExerciseAnswerInline(admin.TabularInline):
+    model = CheckboxExerciseAnswer
     extra = 1
 
-class CheckboxTaskAdmin(admin.ModelAdmin):
+class CheckboxExerciseAdmin(admin.ModelAdmin):
     fieldsets = [
-        ('Page information',   {'fields': ['name', 'url_name', 'content', 'question', 'tags']}),
-        ('Task miscellaneous', {'fields': ['default_points'],
+        ('Page information',   {'fields': ['name', 'slug', 'content', 'question', 'tags']}),
+        ('Exercise miscellaneous', {'fields': ['default_points'],
                                 'classes': ['wide']}),
         ('Feedback settings',  {'fields': ['feedback_questions']}),
     ]
-    inlines = [CheckboxTaskAnswerInline, HintInline]
-    readonly_fields = ("url_name",)
-    list_display = ("name", "url_name",)
+    inlines = [CheckboxExerciseAnswerInline, HintInline]
+    readonly_fields = ("slug",)
+    list_display = ("name", "slug",)
     list_per_page = 500
 
-class TextfieldTaskAnswerInline(admin.StackedInline):
-    model = TextfieldTaskAnswer
+class TextfieldExerciseAnswerInline(admin.StackedInline):
+    model = TextfieldExerciseAnswer
     extra = 1
 
-class TextfieldTaskAdmin(admin.ModelAdmin):
+class TextfieldExerciseAdmin(admin.ModelAdmin):
     fieldsets = [
-        ('Page information',   {'fields': ['name', 'url_name', 'content', 'question', 'tags']}),
-        ('Task miscellaneous', {'fields': ['default_points'],
+        ('Page information',   {'fields': ['name', 'slug', 'content', 'question', 'tags']}),
+        ('Exercise miscellaneous', {'fields': ['default_points'],
                                 'classes': ['wide']}),
         ('Feedback settings',  {'fields': ['feedback_questions']}),
     ]
-    inlines = [TextfieldTaskAnswerInline, HintInline]
-    readonly_fields = ("url_name",)
-    list_display = ("name", "url_name",)
+    inlines = [TextfieldExerciseAnswerInline, HintInline]
+    readonly_fields = ("slug",)
+    list_display = ("name", "slug",)
     list_per_page = 500
 
 class FileExerciseTestCommandAdmin(admin.TabularInline):
@@ -141,37 +141,37 @@ class FileExerciseTestAdmin(admin.ModelAdmin):
             kwargs["queryset"] = FileUploadExercise.objects.order_by("name")
         return super(FileExerciseTestAdmin, self).formfield_for_foreignkey(db_field, request, **kwargs)
 
-#class FileTaskTestAdmin(admin.StackedInline):
-#    inlines = [FileTaskTestCommandAdmin, FileTaskTestExpectedOutputAdmin, FileTaskTestExpectedErrorAdmin, FileTaskTestIncludeFileAdmin]
+#class FileExerciseTestAdmin(admin.StackedInline):
+#    inlines = [FileExerciseTestCommandAdmin, FileExerciseTestExpectedOutputAdmin, FileExerciseTestExpectedErrorAdmin, FileExerciseTestIncludeFileAdmin]
 
 class FileExerciseAdmin(admin.ModelAdmin):
     fieldsets = [
-        ('Page information',   {'fields': ['name', 'url_name', 'slug', 'content', 'question', 'tags']}),
-        ('Task miscellaneous', {'fields': ['default_points'],
+        ('Page information',   {'fields': ['name', 'slug', 'content', 'question', 'tags']}),
+        ('Exercise miscellaneous', {'fields': ['default_points'],
                                 'classes': ['wide']}),
         ('Feedback settings',  {'fields': ['feedback_questions']}),
     ]
     inlines = [HintInline]
-    readonly_fields = ("url_name",)
-    list_display = ("name", "url_name",)
+    readonly_fields = ("slug",)
+    list_display = ("name", "slug",)
     list_per_page = 500
 
-class LecturePageAdmin(admin.ModelAdmin):
+class LectureAdmin(admin.ModelAdmin):
     def formfield_for_dbfield(self, db_field, **kwargs):
-        formfield = super(LecturePageAdmin, self).formfield_for_dbfield(db_field, **kwargs)
+        formfield = super(LectureAdmin, self).formfield_for_dbfield(db_field, **kwargs)
         if db_field.name == 'content':
             formfield.widget = Textarea(attrs={'rows':25, 'cols':120})
         elif db_field.name == 'tags':
             formfield.widget = Textarea(attrs={'rows':2})
         return formfield
-    readonly_fields = ("url_name",)
-    list_display = ("name", "url_name",)
+    readonly_fields = ("slug",)
+    list_display = ("name", "slug",)
     list_per_page = 500
 
-admin.site.register(LecturePage, LecturePageAdmin)
-admin.site.register(RadiobuttonTask, RadiobuttonTaskAdmin)
-admin.site.register(CheckboxTask, CheckboxTaskAdmin)
-admin.site.register(TextfieldTask, TextfieldTaskAdmin)
+admin.site.register(Lecture, LectureAdmin)
+admin.site.register(MultipleChoiceExercise, MultipleChoiceExerciseAdmin)
+admin.site.register(CheckboxExercise, CheckboxExerciseAdmin)
+admin.site.register(TextfieldExercise, TextfieldExerciseAdmin)
 admin.site.register(FileUploadExercise, FileExerciseAdmin)
 admin.site.register(FileExerciseTest, FileExerciseTestAdmin)
 
@@ -198,7 +198,7 @@ class CourseAdmin(admin.ModelAdmin):
     fieldsets = [
         (None,                                                 {'fields': ['name','frontpage']}),
         ('Course outline',                                     {'fields': ['contents']}),
-        ('Settings for start date and end date of the course', {'fields': ['start_date','end_date'], 'classes': ['collapse']}),
+        #('Settings for start date and end date of the course', {'fields': ['start_date','end_date'], 'classes': ['collapse']}),
     ]
     #formfield_overrides = {models.ManyToManyField: {'widget':}}
 
