@@ -451,19 +451,16 @@ class FileExerciseTestIncludeFile(models.Model):
 
     FILE_PURPOSE_CHOICES = (
         ('Files written into the test directory for reading', (
-                ('INPUT', "Input file"),
-            )
-        ),
+            ('INPUT', "Input file"),
+        )),
         ('Files the program is expected to generate', (
-                ('OUTPUT', "Expected output file"),
-            )
-        ),
+            ('OUTPUT', "Expected output file"),
+        )),
         ('Executable files', (
-                ('REFERENCE', "Reference implementation"),
-                ('INPUTGEN', "Input generator"),
-                ('TEST', "Unit test"),
-            )
-        ),
+            ('REFERENCE', "Reference implementation"),
+            ('INPUTGEN', "Input generator"),
+            ('TEST', "Unit test"),
+        )),
     )
     purpose = models.CharField(verbose_name='Used as',max_length=10,default="REFERENCE",choices=FILE_PURPOSE_CHOICES)
 
