@@ -7,28 +7,28 @@
 <h1>{{ course.name }}</h1>
 
 {% if content_tree %}
-  <hr>
-  <h2>Course Contents</h2>
-  {% for list_direction, result in content_tree %}
-    {% if list_direction == '>' %}
-      <ul>
-        {% elif list_direction == '<' %}
-      </ul>
-    {% else %}
-      <li>
-        <a href="{% url 'courses:content' course.slug list_direction.slug %}">{{ list_direction.name }}</a>
-        {% if result %}
-          {% if result == 'not_answered' %}
-          {% elif result == 'correct' %}
-            <img src="{% static 'courses/correct.png' %}" alt="Correctly answered!">
-          {% elif result == 'incorrect' %}
-            <img src="{% static 'courses/incorrect.png' %}" alt="Incorrectly answered!">
+  <div class="course-contents">
+    <h2>Course Contents</h2>
+    {% for list_direction, result in content_tree %}
+      {% if list_direction == '>' %}
+        <ul>
+          {% elif list_direction == '<' %}
+        </ul>
+      {% else %}
+        <li>
+          <a href="{% url 'courses:content' course.slug list_direction.slug %}">{{ list_direction.name }}</a>
+          {% if result %}
+            {% if result == 'not_answered' %}
+            {% elif result == 'correct' %}
+              <img src="{% static 'courses/correct.png' %}" alt="Correctly answered!">
+            {% elif result == 'incorrect' %}
+              <img src="{% static 'courses/incorrect.png' %}" alt="Incorrectly answered!">
+            {% endif %}
           {% endif %}
-        {% endif %}
-      </li>
-    {% endif %}
-  {% endfor %}
-  <hr>
+        </li>
+      {% endif %}
+    {% endfor %}
+  </div>
 {% endif %}
 
 {% if content or tasktype %}
