@@ -32,6 +32,7 @@ class ParserUninitializedError(Exception):
         return repr(self.value)
 
 class InvalidParserError(Exception):
+    # TODO: Add the ability to trace to the defunctional regex
     def __init__(self, value):
         self.value = value
     def __str__(self):
@@ -115,13 +116,18 @@ class MarkupParser:
 
         # Note: stateless single-pass parsing of HTML-like languages is
         # impossible because of the closing tags.
-        state = {"lines": lines}
+        # TODO: Initialize states from markups
+        state = {"lines": lines, "list": []}
 
         for (block_type, matchobj), block in itertools.groupby(lines, cls._get_line_kind):
             block_func = cls.markups[block_type].block
             settings = cls.markups[block_type].settings(matchobj)
             
             # TODO: Modular cleanup of indent, ul, ol, table etc.
+            if block_type != "list":
+                for undent_lvl in reversed(state["list"]):
+                    yield '</%s>' % undent_lvl
+                state["list"] = []
 
             yield from block_func(block, settings, state)
 
@@ -136,6 +142,7 @@ class Markup:
     regexp = r""
     markup_class = ""
     example = ""
+    states = {}
     inline = False
     allow_inline = False
 
@@ -276,6 +283,52 @@ class ImageMarkup(Markup):
         return settings
 
 markups.append(ImageMarkup)
+
+class ListMarkup(Markup):
+    name = "List"
+    shortname = "list"
+    description = "Unordered and ordered lists."
+    regexp = r"^(?P<list_level>[*#]+)(?P<text>.+)$"
+    markup_class = ""
+    example = "* unordered list item 1\n** indented unordered list item 1\n"\
+              "# ordered list item 1\n## indented ordered list item 1\n"
+    states = {"list" : []}
+    inline = False
+    allow_inline = True
+
+    @classmethod
+    def block(cls, block, settings, state):
+        tag = settings["tag"]
+
+        if len(state["list"]) < settings["level"]:
+            for new_lvl in range(settings["level"] - len(state["list"])):
+                state["list"].append(tag)
+                yield '<%s>' % tag
+        elif len(state["list"]) > settings["level"]:
+            for new_lvl in range(len(state["list"]) - settings["level"]):
+                top_tag = state["list"].pop()
+                yield '</%s>' % top_tag
+        
+        if len(state["list"]) == settings["level"]:
+            if state["list"][-1] != tag:
+                top_tag = self.list_state.pop()
+                yield '</%s>' % top_tag
+                
+                state["list"].append(tag)
+                yield '<%s>' % tag
+        
+        for line in block:
+            yield '<li>%s</li>' % escape(line.strip("*#").strip())
+
+    @classmethod
+    def settings(cls, matchobj):
+        list_level = matchobj.group("list_level")
+        settings = {"level" : len(list_level),
+                    #"text" : matchobj.group("text").strip(),
+                    "tag" : "ul" if list_level[-1] == "*" else "ol"}
+        return settings
+
+markups.append(ListMarkup)
 
 class ParagraphMarkup(Markup):
     name = "Paragraph"
