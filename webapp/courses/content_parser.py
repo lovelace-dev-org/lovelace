@@ -68,7 +68,7 @@ class MarkupParser:
     def compile(cls):
         """
         Iterate the parser's internal markup dictionary to create and compile
-        the parsing regexp based on individual regexes of the different Markup
+        the parsing regex based on individual regexes of the different Markup
         classes.
         """
         try:
@@ -176,6 +176,36 @@ class CalendarMarkup(Markup):
         return settings
 
 markups.append(CalendarMarkup)
+
+class CodeMarkup(Markup):
+    name = "Code"
+    shortname = "code"
+    description = "Monospaced field for code and other preformatted text."
+    regexp = r"^[{]{3}(?P<highlight>.*)\s*$" # TODO: Better settings
+    markup_class = ""
+    example = ""
+    states = {}
+    inline = False
+    allow_inline = False
+
+    @classmethod
+    def block(cls, block, settings, state):
+        # TODO: Code syntax highlighting
+        yield '<pre>\n'
+        try:
+            line = next(state["lines"])
+            while not line.startswith("}}}"):
+                yield escape(line) + "\n"
+                line = next(state["lines"])
+        except StopIteration:
+            yield 'Warning: unclosed code block!\n'
+        yield '</pre>\n'
+
+    @classmethod
+    def settings(cls, matchobj):
+        pass
+
+markups.append(CodeMarkup)
 
 class EmbeddedPageMarkup(Markup):
     name = "Embedded page"
@@ -400,6 +430,33 @@ class SourceCodeMarkup(Markup):
         return settings
 
 markups.append(SourceCodeMarkup)
+
+class TableMarkup(Markup):
+    name = "Table"
+    shortname = "table"
+    description = "A table for representing tabular information."
+    regexp = r"^[|]{2}([^|]+[|]{2})+\s*$"
+    markup_class = ""
+    example = "|| Heading 1 || Heading 2 ||"
+    states = {}
+    inline = False
+    allow_inline = False
+
+    @classmethod
+    def block(cls, block, settings, state):
+        yield '<table>'
+        for line in block:
+            row = line.split("||")[1:-1]
+            yield '<tr>'
+            yield '\n'.join("<td>%s</td>" % cell for cell in row)
+            yield '</tr>'
+        yield '</table>'
+
+    @classmethod
+    def settings(cls, matchobj):
+        pass
+
+markups.append(TableMarkup)
 
 class TeXMarkup(Markup):
     name = "TeX"
