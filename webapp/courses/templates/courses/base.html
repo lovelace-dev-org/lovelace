@@ -87,7 +87,31 @@
             <h1>BRAND</h1>
             <h2>Something clever and insightful</h2>
           </hgroup>
-          {% include "courses/login-box.html" %}
+          <div class="user-actions">
+            {% if user.is_active %}
+              <div class="user-name">
+                {% filter force_escape %}
+                  {% firstof user.first_name user.username %}
+                {% endfilter %}
+              </div><div class="user-settings">
+                <a href="/profile/">Settings</a>
+              </div><div class="user-logout">
+                <a href="/accounts/logout/">Log out</a>
+              </div>
+            {% else %}
+              <div class="user-login">
+                <a href="/accounts/login/">Log in</a>
+              </div><div class="user-register">
+                <a href="/accounts/register/">Create account</a>
+              </div>
+            {% endif %}
+            
+            {% if user.is_staff and user.is_active %}
+              <div class="user-teacherstools">
+                <a href="/admin/">Teacher's tools</a>
+              </div>
+            {% endif %}
+          </div>{% comment %}login box{% endcomment %}
         </div>
       </header>
       
