@@ -8,7 +8,16 @@
   <h1>Available courses</h1>
   <ul>
     {% for course in course_list %}
-      <li><a href="{% url 'courses:course' course.slug %}">{{ course.name }}</a></li>
+      <li>
+        <div>
+          <div>
+            <a href="{% url 'courses:course' course.slug %}">{{ course.name }}</a>
+            {% if course.code %}– {{ course.code }}{% endif %}
+            {% if course.credits %}/ {{ course.credits }} credits{% endif %}
+          </div>
+          {% if course.description %}<div>{{ course.description }}</div>{% endif %}
+        </div>
+      </li>
     {% endfor %}
   </ul>
 {% else %}

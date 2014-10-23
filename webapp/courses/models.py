@@ -56,11 +56,11 @@ class Course(models.Model):
     """
     name = models.CharField(max_length=255)
     code = models.CharField(verbose_name="Course code",
-                            help_text="Course code for e.g. universities",
+                            help_text="Course code, for e.g. universities",
                             max_length=64, blank=True, null=True)
     credits = models.DecimalField(verbose_name="Course credits",
-                                  help_text="How many credits does the course"
-                                  "yield on completion. (For e.g. universities",
+                                  help_text="How many credits does the course "
+                                  "yield on completion, for e.g. universities",
                                   max_digits=6, decimal_places=2,
                                   blank=True, null=True)
     description = models.TextField(blank=True, null=True)
