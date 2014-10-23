@@ -22,7 +22,7 @@ from celery.result import AsyncResult
 
 from courses.models import *
 
-import courses.content_parser as content_parser
+import courses.markupparser as markupparser
 import courses.blockparser as blockparser
 import courses.filecheck_client as filecheck_client
 
@@ -534,7 +534,7 @@ def content(request, course_slug, content_slug, **kwargs):
                NavURL(reverse('courses:content', kwargs={"course_slug":course_slug, "content_slug":content.slug}), content.name)]
 
     rendered_content = "{% load parser_directives %}\n"
-    for line in content_parser.MarkupParser.parse(content.content):
+    for line in markupparser.MarkupParser.parse(content.content):
         rendered_content += line
 
     rct = Template(rendered_content)

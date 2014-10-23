@@ -1,7 +1,7 @@
 from django import template
 
 from courses.models import ContentPage
-from courses.content_parser import MarkupParser
+from courses.markupparser import MarkupParser
 
 register = template.Library()
 
