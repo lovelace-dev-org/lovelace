@@ -374,6 +374,7 @@ class Hint(models.Model):
         verbose_name = "configurable hint"
 
 ## File exercise test related models
+# TODO: whitelist for allowed file name extensions (e.g. only allow files that end ".py")
 def default_timeout(): return datetime.time(0,0,5)
 
 class FileExerciseTest(models.Model):

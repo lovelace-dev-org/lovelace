@@ -67,6 +67,7 @@ ui:
         * Links only viewable by teachers and the student
     - When a student opens a page, answered (embedded) tasks have
       [+] expandable evaluations
+    - Whitelist for allowed file name endings for upload exercises
 
 logic:
     - prevent viewing of tasks if not linked to a course
