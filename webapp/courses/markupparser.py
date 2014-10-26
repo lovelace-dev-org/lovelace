@@ -181,7 +181,7 @@ class CodeMarkup(Markup):
     name = "Code"
     shortname = "code"
     description = "Monospaced field for code and other preformatted text."
-    regexp = r"^[{]{3}(highlight=(?P<highlight>.*))?\s*$" # TODO: Better settings
+    regexp = r"^[{]{3}(highlight=(?P<highlight>[^\s]*))?\s*$" # TODO: Better settings
     markup_class = ""
     example = ""
     states = {}
