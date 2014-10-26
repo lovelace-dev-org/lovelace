@@ -10,8 +10,8 @@ from cgi import escape # Use this instead? Security? HTML injection?
 
 from slugify import slugify
 
-from pygments import highlight
-from pygments.lexers import PythonLexer, CLexer
+import pygments
+from pygments.lexers import get_lexer_by_name
 from pygments.formatters import HtmlFormatter
 
 import courses.blockparser as blockparser
@@ -181,7 +181,7 @@ class CodeMarkup(Markup):
     name = "Code"
     shortname = "code"
     description = "Monospaced field for code and other preformatted text."
-    regexp = r"^[{]{3}(?P<highlight>.*)\s*$" # TODO: Better settings
+    regexp = r"^[{]{3}(highlight=(?P<highlight>.*))?\s*$" # TODO: Better settings
     markup_class = ""
     example = ""
     states = {}
@@ -191,19 +191,36 @@ class CodeMarkup(Markup):
     @classmethod
     def block(cls, block, settings, state):
         # TODO: Code syntax highlighting
-        yield '<pre>\n'
+        highlight = settings["highlight"]
+        yield '<pre class="normal">' # TODO: Change class!
+        text = ""
+        if highlight:
+            try:
+                lexer = get_lexer_by_name(highlight)
+            except pygments.util.ClassNotFound as e:
+                yield '<div class="warning">%s</div>' % str(e).capitalize()
+                highlight = False
+            else:
+                yield '<code class="highlight %s">' % highlight
+
         try:
             line = next(state["lines"])
             while not line.startswith("}}}"):
-                yield escape(line) + "\n"
+                text += line + "\n"
                 line = next(state["lines"])
         except StopIteration:
             yield 'Warning: unclosed code block!\n'
+        if highlight:
+            highlighted = pygments.highlight(text[:-1], lexer, HtmlFormatter(nowrap=True))
+            yield '%s</code>' % highlighted
+        else:
+            yield text
         yield '</pre>\n'
 
     @classmethod
     def settings(cls, matchobj):
-        pass
+        settings = {"highlight" : matchobj.group("highlight")}
+        return settings
 
 markups.append(CodeMarkup)
 
