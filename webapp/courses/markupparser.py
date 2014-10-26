@@ -45,10 +45,10 @@ class MarkupParser:
 
     # TODO: Handle the inline markups and HTML escapes on the same pass
 
-    markups = {}
-    block_re = None
-    inline_re = None
-    ready = False
+    _markups = {}
+    _block_re = None
+    _inline_re = None
+    _ready = False
     
     @classmethod
     def add(cls, *markups):
@@ -57,8 +57,8 @@ class MarkupParser:
         dictionary and set the ready flag False to indicate that re-compilation
         is required.
         """
-        cls.ready = False
-        cls.markups.update((markup.shortname, markup) for markup in markups)
+        cls._ready = False
+        cls._markups.update((markup.shortname, markup) for markup in markups)
 
     @classmethod
     def compile(cls):
@@ -68,17 +68,17 @@ class MarkupParser:
         classes.
         """
         try:
-            cls.block_re = re.compile(
+            cls._block_re = re.compile(
                 r"|".join(
                     r"(?P<%s>%s)" % (shortname, markup.regexp)
-                    for shortname, markup in sorted(cls.markups.items())
+                    for shortname, markup in sorted(cls._markups.items())
                     if markup.regexp and not markup.inline
                 )
             )
         except re.error as e:
             raise InvalidParserError("invalid regex syntax in a markup: %s" % e)
 
-        cls.ready = True
+        cls._ready = True
 
     @classmethod
     def _get_line_kind(cls, line):
@@ -92,7 +92,7 @@ class MarkupParser:
         The match object is returned for use in the settings function of the
         markup.        
         """
-        matchobj = cls.block_re.match(line)
+        matchobj = cls._block_re.match(line)
         return getattr(matchobj, "lastgroup", "paragraph"), matchobj
 
     @classmethod
@@ -102,7 +102,7 @@ class MarkupParser:
         it at newlines and yields the parsed text until the whole text has
         been parsed.
         """
-        if not cls.ready:
+        if not cls._ready:
             raise ParserUninitializedError("compile() not called")
 
         # TODO: Generator version of splitter to avoid memory & CPU overhead of
@@ -116,8 +116,8 @@ class MarkupParser:
         state = {"lines": lines, "list": []}
 
         for (block_type, matchobj), block in itertools.groupby(lines, cls._get_line_kind):
-            block_func = cls.markups[block_type].block
-            settings = cls.markups[block_type].settings(matchobj)
+            block_func = cls._markups[block_type].block
+            settings = cls._markups[block_type].settings(matchobj)
             
             # TODO: Modular cleanup of indent, ul, ol, table etc.
             if block_type != "list":
