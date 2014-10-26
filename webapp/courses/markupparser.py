@@ -127,6 +127,10 @@ class MarkupParser:
 
             yield from block_func(block, settings, state)
 
+        # Clean up the remaining open tags
+        for undent_lvl in reversed(state["list"]):
+            yield '</%s>' % undent_lvl
+
 markups = []
 
 # inline = this markup is inline
@@ -344,7 +348,7 @@ class ListMarkup(Markup):
                 yield '<%s>' % tag
         
         for line in block:
-            yield '<li>%s</li>' % escape(line.strip("*#").strip())
+            yield '<li>%s</li>' % blockparser.parseblock(escape(line.strip("*#").strip()))
 
     @classmethod
     def settings(cls, matchobj):
@@ -444,7 +448,7 @@ class TableMarkup(Markup):
         for line in block:
             row = line.split("||")[1:-1]
             yield '<tr>'
-            yield '\n'.join("<td>%s</td>" % cell for cell in row)
+            yield '\n'.join("<td>%s</td>" % blockparser.parseblock(escape(cell)) for cell in row)
             yield '</tr>'
         yield '</table>'
 

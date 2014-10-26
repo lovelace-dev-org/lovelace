@@ -367,16 +367,15 @@ section.content {
         padding: 2px 4px 2px 4px;
     }
 
-        section.content p code, section.content table * code, section.content ul * code {
+        section.content p code, section.content table * code,
+        section.content ul * code, section.content ol * code {
             font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
-            background: #ffb;
-            font-size: 14.5px;
-            border-top: 1px;
-            border-bottom: 1px;
-            border-left: 0;
-            border-right: 0;
-            border-style: dashed;
-            border-color: #bbb;
+            background: #e2e2e2;
+            font-size: 1em;
+            padding: 1px 3px;
+            border: 1px solid #cacaca;
+            border-radius: 3px;
+            box-shadow: inset 0 0 5px #cacaca;
         }
 
         section.content * a {
