@@ -27,17 +27,17 @@ class Tag:
     def htmlbegin(self, options=None):
         """Returns the HTML equivalent begin tag of the inline wiki markup."""
         if not self.options and not options:
-            return u"<%s>" % (self.name)
+            return "<%s>" % (self.name)
         elif self.options and not options:
-            return u"<%s %s>" % (self.name, u" ".join(u"%s=\"%s\"" % kv for kv in self.options.items()))
+            return "<%s %s>" % (self.name, " ".join("%s=\"%s\"" % kv for kv in self.options.items()))
         elif not self.options and options:
-            return u"<%s %s>" % (self.name, u" ".join(u"%s=\"%s\"" % kv for kv in options.items()))
+            return "<%s %s>" % (self.name, " ".join("%s=\"%s\"" % kv for kv in options.items()))
         else:
-            return u"<%s %s>" % (self.name, u" ".join(u"%s=\"%s\"" % kv for kv in dict(self.options.items() + options.items()).items()))
+            return "<%s %s>" % (self.name, " ".join("%s=\"%s\"" % kv for kv in dict(self.options.items() + options.items()).items()))
     
     def htmlend(self):
         """Returns the HTML equivalent end tag."""
-        return u"</%s>" % (self.name)
+        return "</%s>" % (self.name)
 
     def lb(self):
         """Length of the beginning wiki markup tag."""
@@ -47,18 +47,18 @@ class Tag:
         return len(self.end)
 
 # A library of different tags supported by the wiki markup
-tags = {u"bold":   Tag(u"strong", u"'''", u"'''", re.compile(r"[']{3}(?P<bold_italic>[']{2})?.+?(?P=bold_italic)?[']{3}")),
-        u"italic": Tag(u"em", u"''", u"''", re.compile(r"[']{2}.+?[']{2}")),
-        u"pre":    Tag(u"code", u"{{{", u"}}}", re.compile(r"[{]{3}(?P<highlight>\#\!(%s) )?.+?[}]{3}" % (u"|".join(highlighters.keys())))),
-        u"dfn":    Tag(u"dfn", u"", u"", re.compile(r"")),
-        u"mark":   Tag(u"mark", u"!!!", u"!!!", re.compile(r"[\!]{3}.+?[\!]{3}")),
-        u"anchor": Tag(u"a", u"[[", u"]]", re.compile(r"\[\[(?P<address>.+?)([|](?P<link_text>.+?))?\]\]")),} 
+tags = {"bold":   Tag("strong", "'''", "'''", re.compile(r"[']{3}(?P<bold_italic>[']{2})?.+?(?P=bold_italic)?[']{3}")),
+        "italic": Tag("em", "''", "''", re.compile(r"[']{2}.+?[']{2}")),
+        "pre":    Tag("code", "{{{", "}}}", re.compile(r"[{]{3}(?P<highlight>\#\!(%s) )?.+?[}]{3}" % ("|".join(highlighters.keys())))),
+        "dfn":    Tag("dfn", "", "", re.compile(r"")),
+        "mark":   Tag("mark", "!!!", "!!!", re.compile(r"[\!]{3}.+?[\!]{3}")),
+        "anchor": Tag("a", "[[", "]]", re.compile(r"\[\[(?P<address>.+?)([|](?P<link_text>.+?))?\]\]")),} 
 
 def parsetag(tagname, unparsed_string):
     """Parses one tag and applies it's settings. Generates the HTML."""
     tag = tags[tagname]
     hilite = address = link_text = None
-    parsed_string = u""
+    parsed_string = ""
     cursor = 0
     for m in re.finditer(tag.re, unparsed_string):
         parsed_string += unparsed_string[cursor:m.start()]
@@ -116,11 +116,11 @@ def parseblock(blockstring):
 
 # Some test code
 if __name__ == "__main__":
-    block1 = u"'''alku on boldia ''ja valissa on italistoitua'' ja sitten jatkuu boldi'''"
-    block2 = u"alku ei ole boldia '''''mutta sitte tulee itaboldi kohta'' joka jatkuu boldina''' ja loppuu epaboldina"
-    block3 = u"normi '''bold''' normi '''bold''' normi ''italic'' normi '''bold''' normi ''italic'' '''bold''' normi"
-    block4 = u"one '''doesn't''' simply walk into mordor"
-    block5 = u"jeejee ''ita'''itabold'''''"
+    block1 = "'''alku on boldia ''ja valissa on italistoitua'' ja sitten jatkuu boldi'''"
+    block2 = "alku ei ole boldia '''''mutta sitte tulee itaboldi kohta'' joka jatkuu boldina''' ja loppuu epaboldina"
+    block3 = "normi '''bold''' normi '''bold''' normi ''italic'' normi '''bold''' normi ''italic'' '''bold''' normi"
+    block4 = "one '''doesn't''' simply walk into mordor"
+    block5 = "jeejee ''ita'''itabold'''''"
 
     blocks = [block1, block2, block3, block4, block5]
 

@@ -249,8 +249,6 @@ class ContentPage(models.Model):
         return self.name
 
 # TODO: Use the below models as Meta -> proxy = True
-#       - override save(): automatically save content_type based on which kind
-#         of lecture/exercise the object is
 class Lecture(ContentPage):
     """A single page for a lecture."""
     answerable = models.BooleanField(verbose_name="Need confirmation of reading this lecture",default=False)
@@ -455,13 +453,19 @@ class FileExerciseTestExpectedStdout(FileExerciseTestExpectedOutput):
     class Meta:
         verbose_name = "expected output"
         proxy = True
-    # TODO: save()
+
+    def save(self, *args, **kwargs):
+        self.output_type = "STDOUT"
+        super(FileExerciseTestExpectedStdout, self).save(*args, **kwargs)
 
 class FileExerciseTestExpectedStderr(FileExerciseTestExpectedOutput):
     class Meta:
         verbose_name = "expected error"
         proxy = True
-    # TODO: save()
+
+    def save(self, *args, **kwargs):
+        self.output_type = "STDERR"
+        super(FileExerciseTestExpectedStderr, self).save(*args, **kwargs)
 
 def get_testfile_path(instance, filename):
     return os.path.join(
