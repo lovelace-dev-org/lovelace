@@ -424,10 +424,10 @@ def check_answer(request, course_slug, content_slug, **kwargs):
 
     # Compile the information required for the exercise evaluation
     if correct:
-        evaluation = u"Correct!"
+        evaluation = "Correct!"
     else:
         # TODO: Account for the video hints!
-        evaluation = u"Incorrect answer."
+        evaluation = "Incorrect answer."
         if hints:
             random.shuffle(hints)
 

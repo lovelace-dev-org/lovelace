@@ -504,7 +504,7 @@ class FileExerciseTestIncludeFile(models.Model):
     fileinfo = models.FileField(max_length=255, upload_to=get_testfile_path)
 
     def __str__(self):
-        return u"%s - %s" % (self.purpose, self.name)
+        return "%s - %s" % (self.purpose, self.name)
 
     class Meta:
         verbose_name = "included file"
@@ -560,9 +560,9 @@ class Evaluation(models.Model):
 
     def __str__(self):
         if self.correct:
-            return u"Correct answer to (todo: exercise) by %s with %f points: %s" % (self.useranswer.user.username, self.points, self.feedback)
+            return "Correct answer to (todo: exercise) by %s with %f points: %s" % (self.useranswer.user.username, self.points, self.feedback)
         else:
-            return u"Incorrect answer to (todo: exercise) by %s with %f points: %s" % (self.useranswer.user.username, self.points, self.feedback)
+            return "Incorrect answer to (todo: exercise) by %s with %f points: %s" % (self.useranswer.user.username, self.points, self.feedback)
 
 class UserAnswer(models.Model):
     """Parent class for what users have given as their answers to different exercises."""
@@ -602,23 +602,23 @@ class UserFileUploadExerciseAnswer(UserAnswer):
     exercise = models.ForeignKey(FileUploadExercise)
 
     def __str__(self):
-        return u"Answer by %s" % (self.user.username)
+        return "Answer by %s" % (self.user.username)
 
 class UserTextfieldExerciseAnswer(UserAnswer):
     exercise = models.ForeignKey(TextfieldExercise)
     given_answer = models.TextField()
 
     def __str__(self):
-        #return u"Answer no. %04d: %s" % (self.answer_count, self.given_answer)
-        return u"Answer by %s: %s" % (self.user.username, self.given_answer)
+        #return "Answer no. %04d: %s" % (self.answer_count, self.given_answer)
+        return "Answer by %s: %s" % (self.user.username, self.given_answer)
 
 class UserMultipleChoiceExerciseAnswer(UserAnswer):
     exercise = models.ForeignKey(MultipleChoiceExercise)
     chosen_answer = models.ForeignKey(MultipleChoiceExerciseAnswer)
 
     def __str__(self):
-        #return u"Answer no. %04d by %s: %s" % (self.answer_count, self.user.username, self.chosen_answer)
-        return u"Answer by %s: %s" % (self.user.username, self.chosen_answer)
+        #return "Answer no. %04d by %s: %s" % (self.answer_count, self.user.username, self.chosen_answer)
+        return "Answer by %s: %s" % (self.user.username, self.chosen_answer)
 
     def is_correct(self):
         return chosen_answer.correct
@@ -628,13 +628,13 @@ class UserCheckboxExerciseAnswer(UserAnswer):
     chosen_answers = models.ManyToManyField(CheckboxExerciseAnswer)
 
     def __str__(self):
-        #return u"Answer no. %04d: %s" % (self.answer_count, ", ".join(self.chosen_answers))
-        return u"Answer by %s: %s" % (self.user.username, ", ".join(self.chosen_answers))
+        #return "Answer no. %04d: %s" % (self.answer_count, ", ".join(self.chosen_answers))
+        return "Answer by %s: %s" % (self.user.username, ", ".join(self.chosen_answers))
 
 class UserLecturePageAnswer(UserAnswer):
     exercise = models.ForeignKey(Lecture)
     answered = models.BooleanField(default=None)
     
     def __str__(self):
-        return u"Answered by %s." % (self.user.username)
+        return "Answered by %s." % (self.user.username)
 
