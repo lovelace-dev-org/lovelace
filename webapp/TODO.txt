@@ -6,11 +6,15 @@ rabbitmq:
 
 database:
     - keep track of the average time to run tests, to use with message queuing
-    - keep track of whether file task returnables have been checked or not
+    - keep track of whether file upload exercise returnables have been checked or not
     - keep track of which tests (with which files etc.) were used for testing
       each returnable
-    - task revisions
+    - exercise revisions
         * stats: switch between revision specific/overall stats; links to revs
+    - support more complex relations between exercises
+        * interchangeable: a student can choose from a set
+        * interdependent: exercise 1 must be completed before exercise 2
+            o multi-stage exercises
 
 ui:
     - line references for included code
