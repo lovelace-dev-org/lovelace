@@ -24,8 +24,7 @@
     <!-- Header -->
     <div id="header">
         <div id="branding">
-        	<img src="{{ STATIC_URL }}diamonds_logo.png" style="float: left; clear: both;" />
-        <br />{% block branding %}{% endblock %}
+        {% block branding %}{% endblock %}
         </div>
         {% if user.is_active and user.is_staff %}
         <div id="user-tools">
@@ -38,7 +37,7 @@
                 {% endif %}
                 <a href="{% url 'admin:password_change' %}">{% trans 'Change password' %}</a> /
                 <a href="{% url 'admin:logout' %}">{% trans 'Log out' %}</a> / 
-                <a href="{% url 'courses:index' %}">{% trans 'Training pages' %}</a><!-- !!!!!!!!!!!!!!!!!!! -->
+                <a href="{% url 'courses:index' %}">{% trans 'Course list' %}</a>
             {% endblock %}
         </div>
         {% endif %}
