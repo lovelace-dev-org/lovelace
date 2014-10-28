@@ -9,8 +9,11 @@ database:
     - keep track of whether file upload exercise returnables have been checked or not
     - keep track of which tests (with which files etc.) were used for testing
       each returnable
+    - db model translations:
+        * django-hvad vs. django-modeltranslation
     - exercise revisions
         * stats: switch between revision specific/overall stats; links to revs
+        * try existing django app: 
     - support more complex relations between exercises
         * interchangeable: a student can choose from a set
         * interdependent: exercise 1 must be completed before exercise 2

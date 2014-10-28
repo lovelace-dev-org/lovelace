@@ -19,7 +19,8 @@
         <div class="admin-tools">
           <div>Teacher's tools</div>
           <div><a href="{% url 'stats:single_task' content_urlname %}">Statistics</a></div>
-          <div><a href="{{ emb_admin_url }}">Edit this {{ tasktype }} task</a></div>
+          <div><a href="{{ emb_admin_url }}">Edit this {{ tasktype }} exercise</a></div>
+          <div><a href="TODO">View reference answer</a></div>
           <div><span>Url-name: </span><span>{{ content_urlname }}</span></div>
         </div>
       {% endif %}

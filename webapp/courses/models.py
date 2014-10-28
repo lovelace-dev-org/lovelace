@@ -318,6 +318,7 @@ class TextfieldExercise(Exercise):
         verbose_name = "text field exercise"
 
 class FileUploadExercise(Exercise):
+    # TODO: A field for restricting uploadable file names (e.g. by extension, like .py)
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = self.get_url_name()
@@ -356,6 +357,26 @@ class CodeReplaceExercise(Exercise):
 
     class Meta:
         verbose_name = "code replace exercise"
+
+# TODO: Code exercise that is ranked (against others/by some known scale/etc.)
+# Inspiration:
+# - coding competitions (correctness + timing/cpu cycle restrictions)
+# - artificial intelligence course (competing othello AI algorithms)
+# - pattern recognition and neural networks course (performance of an pattern
+#   recognition algorithm)
+#class RankedCodeExercise(Exercise):
+    #def save(self, *args, **kwargs):
+        #if not self.slug:
+            #self.slug = self.get_url_name()
+        #else:
+            #self.slug = slugify.slugify(self.slug)
+#
+        #self.content_type = "RANKED_CODE_EXERCISE"
+        #super(RankedCodeExercise, self).save(*args, **kwargs)
+
+# TODO: Group code exercise. All group members must return their own files!
+# Inspiration:
+# - computer networks I course
 
 class Hint(models.Model):
     """
