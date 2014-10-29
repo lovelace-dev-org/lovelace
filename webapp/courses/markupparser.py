@@ -20,6 +20,9 @@ import courses.blockparser as blockparser
 # TODO: Support admonitions/warnings/good to know boxes/etc.
 # TODO: Support tags that, when hovered, highlight lines in source code files
 # TODO: Support tags that get highlighted upon receiving hints
+# TODO: Support tags for monospace ASCII art with horizontal and vertical rulers
+# TODO: Support embeddable JavaScript apps (maybe in iframe?)
+#       - http://www.html5rocks.com/en/tutorials/security/sandboxed-iframes/
 
 class ParserUninitializedError(Exception):
     def __init__(self, value):
