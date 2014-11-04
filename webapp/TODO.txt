@@ -54,6 +54,7 @@ ui:
         * etc.
     - scriptable test result displayer plugins
         * plugin: classic (results & expected results from stdout, stderr)
+        * plugin: unit test result view
         * plugin: if program (e.g. python) returns with 1, use stacktrace
           highlighter
         * plugin: compare two images/graphs/tables
@@ -75,10 +76,11 @@ ui:
     - When a student opens a page, answered (embedded) tasks have
       [+] expandable evaluations
     - Whitelist for allowed file name endings for upload exercises
+        * Also applies to file _type_ (e.g. forbid .pyc but allow .py)
 
 logic:
     - prevent viewing of tasks if not linked to a course
-        * except for admins
+        * except for admins, by using the sandbox url
 
 apt-get:
     - postgresql postgresql-server-dev-all libpq-dev (for psycopg2)
