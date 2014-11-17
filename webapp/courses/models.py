@@ -513,9 +513,11 @@ class FileExerciseTestIncludeFile(models.Model):
         ('Executable files', (
             ('REFERENCE', "Reference implementation"),
             ('INPUTGEN', "Input generator"),
+            ('WRAPPER', "Wrapper for uploaded code"),
             ('TEST', "Unit test"),
         )),
     )
+    # Default order: reference, inputgen, wrapper, test
     purpose = models.CharField(verbose_name='Used as',max_length=10,default="REFERENCE",choices=FILE_PURPOSE_CHOICES)
 
     FILE_OWNERSHIP_CHOICES = (
