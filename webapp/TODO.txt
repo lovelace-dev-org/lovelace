@@ -20,6 +20,8 @@ database:
             o multi-stage exercises
 
 ui:
+    - AJAX notification of session timeout
+        * maybe when sending an answer?
     - line references for included code
         * referenced lines highlighted in the included code box
     - keyboard lookalike render for <kbd> tag, stackoverflow-kinda
