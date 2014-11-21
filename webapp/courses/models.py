@@ -16,6 +16,8 @@ import slugify
 
 from feedback.models import ContentFeedbackQuestion
 
+import courses.markupparser as markupparser
+
 # TODO: Extend the registration system to allow users to enter the profile data!
 class UserProfile(models.Model):
     """User profile, which extends the Django's User model."""
@@ -222,6 +224,22 @@ class ContentPage(models.Model):
     content_type = models.CharField(max_length=28, default='LECTURE', choices=CONTENT_TYPE_CHOICES)
 
     feedback_questions = models.ManyToManyField(ContentFeedbackQuestion, blank=True, null=True)
+
+    def rendered_markup(self):
+        """
+        Uses the included MarkupParser library to render the page content into
+        HTML. If a rendered version already exists in the cache, use that
+        instead.
+        """
+        # TODO: Cache
+        # TODO: Save the embedded pages as embedded content links
+        # TODO: Take csrf protection into account; use cookies only
+        #       - https://docs.djangoproject.com/en/1.7/ref/contrib/csrf/
+        rendered = ""
+        for chunk in markupparser.MarkupParser.parse(self.content):
+            rendered += chunk
+
+        return rendered
 
     def get_admin_change_url(self):
         adminized_type = self.content_type.replace("_", "").lower()

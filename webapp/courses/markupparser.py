@@ -15,6 +15,7 @@ from pygments.lexers import get_lexer_by_name
 from pygments.formatters import HtmlFormatter
 
 import courses.blockparser as blockparser
+import courses.models
 
 # TODO: Support indented blocks (e.g. <pre>) within indents, uls & ols
 # TODO: Support admonitions/warnings/good to know boxes/etc.
@@ -239,10 +240,8 @@ class EmbeddedPageMarkup(Markup):
 
     @classmethod
     def block(cls, block, settings, state):
-        # TODO: embedded_page custom template tag (inclusion tag?)
-        # TODO: On the other hand, no (security risk).
         yield '<div class="embedded-page">\n'
-        yield '{%% embedded_page "%s" %%}\n' % settings["page_slug"]
+        yield settings["embedded_content"]
         yield '</div>\n'
         try:
             state["embedded_pages"].append(settings["page_slug"])
@@ -252,6 +251,15 @@ class EmbeddedPageMarkup(Markup):
     @classmethod
     def settings(cls, matchobj):
         settings = {"page_slug" : matchobj.group("page_slug")}
+        try:
+            embedded_obj = courses.models.ContentPage.objects.get(slug=settings["page_slug"])
+        except ContentPage.DoesNotExist as e:
+            # TODO: A proper warning!
+            embedded_content = "warning about inexistent page %s\n" % settings["page_slug"]
+            print("a proper warning not implemented!")
+        else:
+            embedded_content = embedded_obj.rendered_markup()
+        settings["embedded_content"] = embedded_content
         return settings
 
 markups.append(EmbeddedPageMarkup)
