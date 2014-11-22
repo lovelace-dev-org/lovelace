@@ -276,7 +276,6 @@ class EmbeddedPageMarkup(Markup):
             c["content"] = embedded_obj
             c["content_slug"] = embedded_obj.slug
             rendered_content = t.render(c)
-            print(rendered_content)
 
         settings["rendered_content"] = rendered_content or embedded_content
         return settings
