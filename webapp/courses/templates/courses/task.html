@@ -11,21 +11,20 @@
     <hr>
     Deadline: yyyy-mm-dd
     <hr>
-    {% comment %}
-    <div><a href="{% url 'courses:show_answers' user training content_urlname %}"><span class="answer-count">538</span> answers</a></div>
-    {% if embedded_task %}
-      {% if user.is_active and user.is_staff %}
-        <hr>
-        <div class="admin-tools">
-          <div>Teacher's tools</div>
-          <div><a href="{% url 'stats:single_task' content_urlname %}">Statistics</a></div>
-          <div><a href="{{ emb_admin_url }}">Edit this {{ tasktype }} exercise</a></div>
-          <div><a href="TODO">View reference answer</a></div>
-          <div><span>Url-name: </span><span>{{ content_urlname }}</span></div>
-        </div>
-      {% endif %}
+    
+    <div><a href="{% url 'courses:show_answers' user course_slug content_slug %}"><span class="answer-count">538</span> answers</a></div>
+
+    {% if user.is_active and user.is_staff %}
+    <hr>
+    <div class="admin-tools">
+      <div>Teacher's tools</div>
+      <div><a href="{% url 'stats:single_task' content_slug %}">Statistics</a></div>
+      <div><a href="{{ content.get_admin_change_url }}">Edit this {{ content.get_human_readable_type }}</a></div>
+      <div><a href="TODO">View reference answer</a></div>
+      <div><span>Url-name: </span><span>{{ content_slug }}</span></div>
+    </div>
     {% endif %}
-    {% endcomment %}
+    
   </div>
   </div>
 

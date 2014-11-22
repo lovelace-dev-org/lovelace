@@ -8,6 +8,8 @@ import itertools
 #from django.utils.html import escape # Escapes ' characters -> prevents inline parsing
 from cgi import escape # Use this instead? Security? HTML injection?
 
+from django.template import loader
+
 from slugify import slugify
 
 import pygments
@@ -24,6 +26,7 @@ import courses.models
 # TODO: Support tags for monospace ASCII art with horizontal and vertical rulers
 # TODO: Support embeddable JavaScript apps (maybe in iframe?)
 #       - http://www.html5rocks.com/en/tutorials/security/sandboxed-iframes/
+#       - https://developer.mozilla.org/en-US/docs/Web/API/window.postMessage
 
 class ParserUninitializedError(Exception):
     def __init__(self, value):
@@ -100,7 +103,7 @@ class MarkupParser:
         return getattr(matchobj, "lastgroup", "paragraph"), matchobj
 
     @classmethod
-    def parse(cls, text):
+    def parse(cls, text, context=None):
         """
         A generator that gets the text written in the markup language, splits
         it at newlines and yields the parsed text until the whole text has
@@ -108,6 +111,8 @@ class MarkupParser:
         """
         if not cls._ready:
             raise ParserUninitializedError("compile() not called")
+
+        if not context: context = {}
 
         # TODO: Generator version of splitter to avoid memory & CPU overhead of
         # first creating a complete list and afterwards iterating through it.
@@ -117,11 +122,11 @@ class MarkupParser:
         # Note: stateless single-pass parsing of HTML-like languages is
         # impossible because of the closing tags.
         # TODO: Initialize states from markups
-        state = {"lines": lines, "list": []}
+        state = {"lines": lines, "context": context, "list": []}
 
         for (block_type, matchobj), block in itertools.groupby(lines, cls._get_line_kind):
             block_func = cls._markups[block_type].block
-            settings = cls._markups[block_type].settings(matchobj)
+            settings = cls._markups[block_type].settings(matchobj, state)
             
             # TODO: Modular cleanup of indent, ul, ol, table etc.
             if block_type != "list":
@@ -129,6 +134,10 @@ class MarkupParser:
                     yield '</%s>' % undent_lvl
                 state["list"] = []
 
+            # TODO: Maybe 'try' this and catch error exceptions, such as
+            # inexistent embedded page or image, unclosed pre tag etc.
+            # and in the 'except' block 'yield' the HTML generated in the
+            # exception?
             yield from block_func(block, settings, state)
 
         # Clean up the remaining open tags
@@ -155,7 +164,7 @@ class Markup:
         pass
 
     @classmethod
-    def settings(cls, matchobj):
+    def settings(cls, matchobj, state):
         pass
 
 class CalendarMarkup(Markup):
@@ -175,7 +184,7 @@ class CalendarMarkup(Markup):
         yield '{%% embedded_calendar "%s" %%}' % settings["calendar_name"]
 
     @classmethod
-    def settings(cls, matchobj):
+    def settings(cls, matchobj, state):
         settings = {"calendar_name" : matchobj.group("calendar_name")}
         return settings
 
@@ -222,7 +231,7 @@ class CodeMarkup(Markup):
         yield '</pre>\n'
 
     @classmethod
-    def settings(cls, matchobj):
+    def settings(cls, matchobj, state):
         settings = {"highlight" : matchobj.group("highlight")}
         return settings
 
@@ -241,7 +250,7 @@ class EmbeddedPageMarkup(Markup):
     @classmethod
     def block(cls, block, settings, state):
         yield '<div class="embedded-page">\n'
-        yield settings["embedded_content"]
+        yield settings["rendered_content"]
         yield '</div>\n'
         try:
             state["embedded_pages"].append(settings["page_slug"])
@@ -249,7 +258,7 @@ class EmbeddedPageMarkup(Markup):
             state["embedded_pages"] = [settings["page_slug"]]
 
     @classmethod
-    def settings(cls, matchobj):
+    def settings(cls, matchobj, state):
         settings = {"page_slug" : matchobj.group("page_slug")}
         try:
             embedded_obj = courses.models.ContentPage.objects.get(slug=settings["page_slug"])
@@ -258,8 +267,18 @@ class EmbeddedPageMarkup(Markup):
             embedded_content = "warning about inexistent page %s\n" % settings["page_slug"]
             print("a proper warning not implemented!")
         else:
+            # TODO: Prevent recursion depth > 2
             embedded_content = embedded_obj.rendered_markup()
-        settings["embedded_content"] = embedded_content
+            t = loader.get_template("courses/task.html") # TODO: Exercise specific templates
+            c = state["context"]
+            c["emb_content"] = embedded_content
+            c["tasktype"] = embedded_obj.content_type
+            c["content"] = embedded_obj
+            c["content_slug"] = embedded_obj.slug
+            rendered_content = t.render(c)
+            print(rendered_content)
+
+        settings["rendered_content"] = rendered_content or embedded_content
         return settings
 
 markups.append(EmbeddedPageMarkup)
@@ -279,7 +298,7 @@ class EmptyMarkup(Markup):
         yield ''
 
     @classmethod
-    def settings(cls, matchobj):
+    def settings(cls, matchobj, state):
         pass
 
 markups.append(EmptyMarkup)
@@ -306,7 +325,7 @@ class HeadingMarkup(Markup):
         yield '</h%d>\n' % settings["heading_level"]
     
     @classmethod
-    def settings(cls, matchobj):
+    def settings(cls, matchobj, state):
         settings = {"heading_level" : len(matchobj.group("level"))}
         return settings
 
@@ -332,7 +351,7 @@ class ImageMarkup(Markup):
             yield '<img src="{%% embedded_image \'%s\' %%}">\n' % settings["image_name"]
 
     @classmethod
-    def settings(cls, matchobj):
+    def settings(cls, matchobj, state):
         settings = {"image_name" : escape(matchobj.group("image_name"))}
         try:
             settings["alt_text"] = escape(matchobj.group("alt_text"))
@@ -379,7 +398,7 @@ class ListMarkup(Markup):
             yield '<li>%s</li>' % blockparser.parseblock(escape(line.strip("*#").strip()))
 
     @classmethod
-    def settings(cls, matchobj):
+    def settings(cls, matchobj, state):
         list_level = matchobj.group("list_level")
         settings = {"level" : len(list_level),
                     #"text" : matchobj.group("text").strip(),
@@ -411,7 +430,7 @@ class ParagraphMarkup(Markup):
         yield '</p>\n'
 
     @classmethod
-    def settings(cls, matchobj):
+    def settings(cls, matchobj, state):
         pass
 
 markups.append(ParagraphMarkup)
@@ -431,7 +450,7 @@ class SeparatorMarkup(Markup):
         yield '<hr>\n'
 
     @classmethod
-    def settings(cls, matchobj):
+    def settings(cls, matchobj, state):
         pass
 
 markups.append(SeparatorMarkup)
@@ -453,7 +472,7 @@ class SourceCodeMarkup(Markup):
         yield '{%% embedded_sourcecode "%s" %%}' % settings["source_filename"]
 
     @classmethod
-    def settings(cls, matchobj):
+    def settings(cls, matchobj, state):
         settings = {"source_filename": matchobj.group("source_filename")}
         return settings
 
@@ -481,7 +500,7 @@ class TableMarkup(Markup):
         yield '</table>'
 
     @classmethod
-    def settings(cls, matchobj):
+    def settings(cls, matchobj, state):
         pass
 
 markups.append(TableMarkup)
@@ -510,7 +529,7 @@ class TeXMarkup(Markup):
         yield '</div>\n'
 
     @classmethod
-    def settings(cls, matchobj):
+    def settings(cls, matchobj, state):
         pass
 
 markups.append(TeXMarkup)

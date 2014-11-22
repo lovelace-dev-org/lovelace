@@ -533,10 +533,16 @@ def content(request, course_slug, content_slug, **kwargs):
                NavURL(reverse('courses:course', kwargs={"course_slug":course_slug}), selected_course.name),
                NavURL(reverse('courses:content', kwargs={"course_slug":course_slug, "content_slug":content.slug}), content.name)]
 
-    rendered_content = content.rendered_markup()
-    rct = Template(rendered_content)
-    rcc = Context({})
-    rc = rct.render(rcc)
+    context = RequestContext(request, {
+        'course': selected_course,
+        'course_slug': course_slug,
+    })
+                             
+    rendered_content = content.rendered_markup(context)
+    rc = rendered_content
+    #rct = Template(rendered_content)
+    #rcc = Context({})
+    #rc = rct.render(rcc)
 
     """
     rendered_content = u''

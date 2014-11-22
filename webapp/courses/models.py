@@ -210,7 +210,7 @@ class ContentPage(models.Model):
     default_points = models.IntegerField(blank=True, null=True,
                                          help_text="The default points a user can gain by finishing this exercise correctly")
     access_count = models.PositiveIntegerField(editable=False,blank=True,null=True)
-    tags = models.TextField(blank=True,null=True)
+    tags = models.TextField(blank=True,null=True) # TODO: Maybe use an ArrayField (Django 1.8) or manytomany
     
     CONTENT_TYPE_CHOICES = (
         ('LECTURE', 'Lecture'),
@@ -225,7 +225,7 @@ class ContentPage(models.Model):
 
     feedback_questions = models.ManyToManyField(ContentFeedbackQuestion, blank=True, null=True)
 
-    def rendered_markup(self):
+    def rendered_markup(self, context=None):
         """
         Uses the included MarkupParser library to render the page content into
         HTML. If a rendered version already exists in the cache, use that
@@ -236,10 +236,14 @@ class ContentPage(models.Model):
         # TODO: Take csrf protection into account; use cookies only
         #       - https://docs.djangoproject.com/en/1.7/ref/contrib/csrf/
         rendered = ""
-        for chunk in markupparser.MarkupParser.parse(self.content):
+        for chunk in markupparser.MarkupParser.parse(self.content, context):
             rendered += chunk
 
         return rendered
+
+    def get_human_readable_type(self):
+        humanized_type = self.content_type.replace("_", " ").lower()
+        return humanized_type
 
     def get_admin_change_url(self):
         adminized_type = self.content_type.replace("_", "").lower()
