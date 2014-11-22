@@ -271,6 +271,8 @@ class EmbeddedPageMarkup(Markup):
             embedded_content = embedded_obj.rendered_markup()
             t = loader.get_template("courses/task.html") # TODO: Exercise specific templates
             c = state["context"]
+            # TODO: Actually, use a copy! Otherwise the same context will be
+            # used across different embedded page instances.
             c["emb_content"] = embedded_content
             c["tasktype"] = embedded_obj.content_type
             c["content"] = embedded_obj
