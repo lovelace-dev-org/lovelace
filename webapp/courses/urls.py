@@ -14,7 +14,7 @@ urlpatterns = [
     url(r'^accounts/', views.index),
 
     # For viewing and changing user information
-    url(r'^answers/(?P<user>[^/]+)/(?P<course>[^/]+)/(?P<task>[^/]+)',
+    url(r'^answers/(?P<user>[^/]+)/(?P<course>[^/]+)/(?P<exercise>[^/]+)',
         views.show_answers, name='show_answers'),
     url(r'^user/(?P<user_name>[^/]+)/$', views.user),
     url(r'^profile/$', views.user_profile),

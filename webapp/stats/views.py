@@ -50,13 +50,13 @@ def single_task(request, task_name):
     textfield_answers_count = textfield_final = textfield_user_count = None
     file_answers = file_answers_count = file_user_count = file_correctly_by = None
     radiobutton_answers_count = radiobutton_final = None
-    content_page = ContentPage.objects.get(url_name=task_name)
+    content_page = ContentPage.objects.get(slug=task_name)
     tasktype, question, choices, answers = get_exercise_info(content_page)
 
     if tasktype == "CHECKBOX_EXERCISE":
         checkbox_answers = UserCheckboxTaskAnswer.objects.filter(task=content_page)
     elif tasktype == "MULTIPLE_CHOICE_EXERCISE":
-        radiobutton_answers = UserRadiobuttonTaskAnswer.objects.filter(task=content_page)
+        radiobutton_answers = UserMultipleChoiceExerciseAnswer.objects.filter(exercise=content_page)
         radiobutton_answers_count = radiobutton_answers.count()
         radiobutton_selected_answers = list(radiobutton_answers.values_list("chosen_answer", flat=True))
         radiobutton_set = set(radiobutton_selected_answers)
@@ -117,7 +117,7 @@ def user_task(request, user_name, task_name):
     if not request.user.is_authenticated() and not request.user.is_staff:
         return HttpResponseNotFound()
 
-    content = ContentPage.objects.get(url_name=task_name)
+    content = ContentPage.objects.get(slug=task_name)
 
     tasktype, question, choices, answers = get_exercise_info(content)
 
@@ -156,7 +156,7 @@ def all_tasks(request, course_name):
     task_infos = []
     for task in tasks:
         taskname = task.name
-        taskurl = "/" + course_name + "/" + task.url_name
+        taskurl = "/" + course_name + "/" + task.slug
         tasktype, question, choices, answers = get_exercise_info(task)
 
         if tasktype == "CHECKBOX_EXERCISE":
@@ -201,14 +201,14 @@ def course_users(request, training_name, content_to_search, year, month, day):
     #content_nodes = selected_course.contents.all()
     #contents = [cn.content for cn in content_nodes]
 
-    cns = ContentPage.objects.get(url_name=content_to_search).content.splitlines()
+    cns = ContentPage.objects.get(slug=content_to_search).content.splitlines()
     content_names = []
     for line in cns:
         mo = re.match("^\[\[\[(?P<embname>.+)\]\]\]", line)
         if mo:
             content_names.append(mo.group("embname"))
     deadline = datetime.datetime(int(year), int(month), int(day))
-    contents = ContentPage.objects.filter(url_name__in=content_names)
+    contents = ContentPage.objects.filter(slug__in=content_names)
     print(content_names)
 
     user_evaluations = []
