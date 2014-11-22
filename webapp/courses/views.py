@@ -21,6 +21,7 @@ from django.utils.safestring import mark_safe
 from celery.result import AsyncResult
 
 from courses.models import *
+from courses.forms import *
 
 import courses.markupparser as markupparser
 import courses.blockparser as blockparser
