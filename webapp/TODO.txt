@@ -22,6 +22,8 @@ database:
 ui:
     - AJAX notification of session timeout
         * maybe when sending an answer?
+
+    - make collaborators-field for file exercises optional
     - prevent sending an empty file exercise answer (i.e. without files)
     - line references for included code
         * referenced lines highlighted in the included code box
