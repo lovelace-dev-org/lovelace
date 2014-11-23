@@ -296,6 +296,7 @@ class EmbeddedPageMarkup(Markup):
             c["tasktype"] = embedded_obj.content_type
             c["content"] = embedded_obj
             c["content_slug"] = embedded_obj.slug
+            c["evaluation"] = "incorrect"
             rendered_content = t.render(c)
 
         settings["rendered_content"] = rendered_content or embedded_content

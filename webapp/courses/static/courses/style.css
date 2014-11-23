@@ -490,9 +490,17 @@ section.content {
                 color: red;
             }
 
-       section.content div.auth_warning {
+        section.content div.auth_warning {
             font-weight: bold;
             color: red;
+        }
+
+        section.content div.markup-error {
+            font-weight: bold;
+            color: red;
+            border: 2px dashed red;
+            padding: 4px 8px;
+            margin-bottom: 1rem;
         }
 
         section.content div#result {
@@ -617,7 +625,7 @@ section.content {
     }
 
     section.content div.task-meta-container {
-        font-size: 0.7em;
+        font-size: 0.6rem;
     }
     
     section.content div.task-meta {
