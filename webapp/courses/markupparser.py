@@ -19,6 +19,7 @@ from pygments.formatters import HtmlFormatter
 
 import courses.blockparser as blockparser
 import courses.models
+import courses.forms
 
 # TODO: Support indented blocks (e.g. <pre>) within indents, uls & ols
 # TODO: Support admonitions/warnings/good to know boxes/etc.
