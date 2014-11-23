@@ -6,6 +6,7 @@ Idea from http://wiki.sheep.art.pl/Wiki%20Markup%20Parser%20in%20Python
 import re
 import itertools
 #from django.utils.html import escape # Escapes ' characters -> prevents inline parsing
+# Possible solution: Import above as strict_escape and below as body_escape
 from cgi import escape # Use this instead? Security? HTML injection?
 
 from django.template import loader
@@ -40,6 +41,25 @@ class InvalidParserError(Exception):
         self.value = value
     def __str__(self):
         return repr(self.value)
+
+class MarkupError(Exception):
+    _type = ""
+    _template = """<div class="markup-error">
+    <div>Error in page markup: %s</div>
+    <div>Description: %s</div>
+</div>"""
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
+    def html(self):
+        return self._template % (self._type, self.value)
+
+class UnclosedTagError(MarkupError):
+    _type = "unclosed tag"
+
+class EmbeddedObjectNotFoundError(MarkupError):
+    _type = "embedded object not found"
 
 class MarkupParser:
     """
@@ -126,19 +146,18 @@ class MarkupParser:
 
         for (block_type, matchobj), block in itertools.groupby(lines, cls._get_line_kind):
             block_func = cls._markups[block_type].block
-            settings = cls._markups[block_type].settings(matchobj, state)
             
             # TODO: Modular cleanup of indent, ul, ol, table etc.
             if block_type != "list":
                 for undent_lvl in reversed(state["list"]):
                     yield '</%s>' % undent_lvl
                 state["list"] = []
-
-            # TODO: Maybe 'try' this and catch error exceptions, such as
-            # inexistent embedded page or image, unclosed pre tag etc.
-            # and in the 'except' block 'yield' the HTML generated in the
-            # exception?
-            yield from block_func(block, settings, state)
+            
+            try:
+                settings = cls._markups[block_type].settings(matchobj, state)
+                yield from block_func(block, settings, state)
+            except MarkupError as e:
+                yield e.html()
 
         # Clean up the remaining open tags
         for undent_lvl in reversed(state["list"]):
@@ -222,6 +241,7 @@ class CodeMarkup(Markup):
                 text += line + "\n"
                 line = next(state["lines"])
         except StopIteration:
+            # TODO: Raise an error (and close the pre and code tags)
             yield 'Warning: unclosed code block!\n'
         if highlight:
             highlighted = pygments.highlight(text[:-1], lexer, HtmlFormatter(nowrap=True))
@@ -262,10 +282,8 @@ class EmbeddedPageMarkup(Markup):
         settings = {"page_slug" : matchobj.group("page_slug")}
         try:
             embedded_obj = courses.models.ContentPage.objects.get(slug=settings["page_slug"])
-        except ContentPage.DoesNotExist as e:
-            # TODO: A proper warning!
-            embedded_content = "warning about inexistent page %s\n" % settings["page_slug"]
-            print("a proper warning not implemented!")
+        except courses.models.ContentPage.DoesNotExist as e:
+            raise EmbeddedObjectNotFoundError("embedded page '%s' couldn't be found" % settings["page_slug"])
         else:
             # TODO: Prevent recursion depth > 2
             embedded_content = embedded_obj.rendered_markup()
