@@ -5,11 +5,12 @@ Idea from http://wiki.sheep.art.pl/Wiki%20Markup%20Parser%20in%20Python
 
 import re
 import itertools
+import copy
 #from django.utils.html import escape # Escapes ' characters -> prevents inline parsing
 # Possible solution: Import above as strict_escape and below as body_escape
 from cgi import escape # Use this instead? Security? HTML injection?
 
-from django.template import loader
+from django.template import loader, RequestContext
 
 from slugify import slugify
 
@@ -124,7 +125,7 @@ class MarkupParser:
         return getattr(matchobj, "lastgroup", "paragraph"), matchobj
 
     @classmethod
-    def parse(cls, text, context=None):
+    def parse(cls, text, request=None, context=None):
         """
         A generator that gets the text written in the markup language, splits
         it at newlines and yields the parsed text until the whole text has
@@ -143,7 +144,7 @@ class MarkupParser:
         # Note: stateless single-pass parsing of HTML-like languages is
         # impossible because of the closing tags.
         # TODO: Initialize states from markups
-        state = {"lines": lines, "context": context, "list": []}
+        state = {"lines": lines, "request": request, "context": context, "list": []}
 
         for (block_type, matchobj), block in itertools.groupby(lines, cls._get_line_kind):
             block_func = cls._markups[block_type].block
@@ -289,9 +290,7 @@ class EmbeddedPageMarkup(Markup):
             # TODO: Prevent recursion depth > 2
             embedded_content = embedded_obj.rendered_markup()
             t = loader.get_template("courses/task.html") # TODO: Exercise specific templates
-            c = state["context"]
-            # TODO: Actually, use a copy! Otherwise the same context will be
-            # used across different embedded page instances.
+            c = RequestContext(state["request"], state["context"])
             c["emb_content"] = embedded_content
             c["tasktype"] = embedded_obj.content_type
             c["content"] = embedded_obj

@@ -225,7 +225,7 @@ class ContentPage(models.Model):
 
     feedback_questions = models.ManyToManyField(ContentFeedbackQuestion, blank=True, null=True)
 
-    def rendered_markup(self, context=None):
+    def rendered_markup(self, request=None, context=None):
         """
         Uses the included MarkupParser library to render the page content into
         HTML. If a rendered version already exists in the cache, use that
@@ -236,7 +236,7 @@ class ContentPage(models.Model):
         # TODO: Take csrf protection into account; use cookies only
         #       - https://docs.djangoproject.com/en/1.7/ref/contrib/csrf/
         rendered = ""
-        for chunk in markupparser.MarkupParser.parse(self.content, context):
+        for chunk in markupparser.MarkupParser.parse(self.content, request, context):
             rendered += chunk
 
         return rendered
