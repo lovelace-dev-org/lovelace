@@ -107,6 +107,7 @@ def dirtree(tree, node, user):
         tree.append((mark_safe('<'), None))
 
 def get_exercise_info(content):
+    # TODO: Refactor into model methods
     content_type = content.content_type
     question = None
     choices = None
@@ -162,6 +163,7 @@ def multiplechoice_exercise_check(content, user, choices, post_data):
                 comments.append(choice.comment)
     
     # Save the results to the database, if the question was answered by a non-anonymous user
+    # TODO: Refactor into own function
     if user.is_authenticated():
         if correct:
             points = 1.0

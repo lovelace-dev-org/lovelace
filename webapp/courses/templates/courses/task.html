@@ -19,10 +19,12 @@
     <hr>
     <div class="admin-tools">
       <div><b>Teacher's tools</b></div>
-      <div><a href="{% url 'stats:single_task' content_slug %}">Statistics</a></div>
-      <div><a href="{{ content.get_admin_change_url }}">Edit this {{ content.get_human_readable_type }}</a></div>
-      <div><a href="TODO">View reference answer</a></div>
-      <div><span>Url-name: </span><span>{{ content_slug }}</span></div>
+      <ul>
+      <li><div><a href="{% url 'stats:single_task' content_slug %}">Statistics</a></div></li>
+      <li><div><a href="{{ content.get_admin_change_url }}">Edit this {{ content.get_human_readable_type }}</a></div></li>
+      <li><div><a href="TODO">View reference answer</a></div></li>
+      <li><div><span>Url-name: </span><span>{{ content_slug }}</span></div></li>
+      </ul>
     </div>
     {% endif %}
     

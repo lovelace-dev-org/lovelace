@@ -654,12 +654,19 @@ section.content {
     }
 
     section.content div.task-meta > div.admin-tools {
-
+        margin: -4px -4px -9px -4px;
         padding: 0;
-        background: #eee;
+        background: #e5e5e5;
     }
         section.content div.admin-tools h1 {
-            font-size: 1em;
+            font-size: 1rem;
+        }
+
+        section.content div.admin-tools li {
+            margin-left: -4px;
+            padding-left: 0;
+            text-align: left;
+            list-style-type: square;
         }
 
 /* FOOTER */
