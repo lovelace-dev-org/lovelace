@@ -479,6 +479,15 @@ section.content {
                 clear: both;
             }
 
+            section.content div.question form textarea {
+                width: 100%;
+                border: 2px solid #ddd;
+                padding: 2px;
+                resize: vertical;
+                background: #f5f5f5;
+                font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;;
+            }
+
             section.content div.question form div.answered_status {
                 display: inline;
             }

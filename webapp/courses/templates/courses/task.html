@@ -34,28 +34,32 @@
   {% if emb_content %}
     <div>{{ emb_content|safe }}</div>
   {% endif %}
-  <div class="question">{{ question|safe }}
-    <form name="task_form" id="{{ content_slug }}-form" class="task" method="POST" enctype="multipart/form-data">
+  <div class="question">
+    <form id="{{ content_slug }}-form" class="task" method="POST" enctype="multipart/form-data"
+          action="{% url 'courses:check' course_slug content_slug %}"
+          onsubmit="validateAnswer(event);return false;">
       {% csrf_token %}
+      {% if question %}{{ question|safe }}{% endif %}
       {% if tasktype == "MULTIPLE_CHOICE_EXERCISE" %}
         {% for choice in choices %}
           <div class="input-label-container">
-            <input type="radio" name="radio" id="{{ choice.id }}" value="{{ choice.id }}" class="task_radio"><label for="{{ choice.id }}">{{ choice.answer }}</label>
+            <input type="radio" name="{{ content_slug }}-radio" id="{{ choice.id }}" value="{{ choice.id }}" class="task_radio"><label for="{{ choice.id }}">{{ choice.answer }}</label>
           </div>
         {% endfor %}
-      {% elif tasktype == "checkbox" %}
+      {% elif tasktype == "CHECKBOX_EXERCISE" %}
         {% for choice in choices %}
           <div class="input-label-container">
-            <input type="checkbox" name="checkbox" id="{{ choice.id }}" value="{{ choice.id }}" class="task_check"><label for="{{ choice.id }}">{{ choice.answer }}</label>
+            <input type="checkbox" name="{{ choice.id }}" id="{{ choice.id }}" value="{{ choice.id }}" class="task_check"><label for="{{ choice.id }}">{{ choice.answer }}</label>
           </div>
         {% endfor %}
-      {% elif tasktype == "textfield" %}
-        <textarea name="answer" class="task_text" placeholder="Enter your answer here" rows="3" cols="70"></textarea><br>
-      {% elif tasktype == "file" %}
+      {% elif tasktype == "TEXTFIELD_EXERCISE" %}
+        <textarea name="answer" class="task_text" placeholder="Enter your answer here" rows="3"></textarea><br>
+      {% elif tasktype == "FILE_UPLOAD_EXERCISE" %}
         <label for="collaborators" class="file">Collaborators:</label><input name="collaborators" type="text" size="60" class="task_file" placeholder="Who did you co-operate with?"><br>
         <label for="file" class="file">Submit your files here:</label><input name="file" type="file" class="task_file" multiple="multiple"><br>
+        {% comment %}Use the accept and multiple properties for the file!{% endcomment %}
       {% endif %}
-      <input type="submit" name="submit" value="Send answer" onClick="validateAnswer(event, '{{ answer_check_url }}', '{{ content_urlname }}');return false;">
+      <input type="submit" name="submit" value="Send answer">
       {% if not user.is_authenticated %}
         <div class="auth_warning">Warning: You have not logged in. Your answer will not be saved.</div>
       {% endif %}

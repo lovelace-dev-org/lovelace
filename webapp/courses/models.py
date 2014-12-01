@@ -310,6 +310,14 @@ class MultipleChoiceExercise(Exercise):
         self.content_type = "MULTIPLE_CHOICE_EXERCISE"
         super(MultipleChoiceExercise, self).save(*args, **kwargs)
 
+    def get_choices(self):
+        choices = MultipleChoiceExerciseAnswer.objects.filter(exercise=self.id).order_by('id')
+        return choices
+
+    def get_question(self):
+        question = Exercise.objects.get(id=self.id).question
+        return question
+
     class Meta:
         verbose_name = "multiple choice exercise"
 

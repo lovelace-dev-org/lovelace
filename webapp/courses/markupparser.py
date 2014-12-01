@@ -274,10 +274,6 @@ class EmbeddedPageMarkup(Markup):
         yield '<div class="embedded-page">\n'
         yield settings["rendered_content"]
         yield '</div>\n'
-        try:
-            state["embedded_pages"].append(settings["page_slug"])
-        except KeyError:
-            state["embedded_pages"] = [settings["page_slug"]]
 
     @classmethod
     def settings(cls, matchobj, state):
@@ -287,15 +283,32 @@ class EmbeddedPageMarkup(Markup):
         except courses.models.ContentPage.DoesNotExist as e:
             raise EmbeddedObjectNotFoundError("embedded page '%s' couldn't be found" % settings["page_slug"])
         else:
+            # TODO: Change from list to set
+            try:
+                state["embedded_pages"].append(settings["page_slug"])
+            except KeyError:
+                state["embedded_pages"] = [settings["page_slug"]]
+
             # TODO: Prevent recursion depth > 2
             embedded_content = embedded_obj.rendered_markup()
             t = loader.get_template("courses/task.html") # TODO: Exercise specific templates
             c = RequestContext(state["request"], state["context"])
+            
+            # TODO: purkkaa pois :/
+            choices = None
+            question = None
+            if embedded_obj.content_type == "MULTIPLE_CHOICE_EXERCISE":
+                embedded_obj_mce = courses.models.MultipleChoiceExercise(id=embedded_obj.id)
+                choices = embedded_obj_mce.get_choices()
+                question = embedded_obj_mce.get_question() # TODO: Question must be inline-parsed
+            
             c["emb_content"] = embedded_content
             c["tasktype"] = embedded_obj.content_type
             c["content"] = embedded_obj
             c["content_slug"] = embedded_obj.slug
             c["evaluation"] = "incorrect"
+            c["question"] = question
+            c["choices"] = choices
             rendered_content = t.render(c)
 
         settings["rendered_content"] = rendered_content or embedded_content
@@ -339,6 +352,7 @@ class HeadingMarkup(Markup):
         for line in block:
             heading += escape(line.strip("= \r\n\t"))
         slug = slugify(heading)
+        # TODO: Add "-heading" to id
         yield '<h%d id="%s">' % (settings["heading_level"], slug)
         yield heading
         yield '<a href="#%s" class="permalink" title="Permalink to this heading">&para;</a>' % slug

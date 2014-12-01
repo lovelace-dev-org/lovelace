@@ -40,7 +40,7 @@ urlpatterns = [
     url(r'^(?P<course_slug>[^/]+)/(?P<content_slug>[^/]+)/$', views.content, name='content'),
 
     # Exercise sending for checking, progress and evaluation views
-    url(r'^(?P<course_slug>[^/]+)/(?P<content_slug>[^/]+)/check/$', views.check_answer),
+    url(r'^(?P<course_slug>[^/]+)/(?P<content_slug>[^/]+)/check/$', views.check_answer, name='check'),
     url(r'^(?P<course_slug>[^/]+)/(?P<content_slug>[^/]+)/progress/(?P<task_id>[^/]+)/$',
         views.check_progress, name='check_progress'),
     url(r'^(?P<course_slug>[^/]+)/(?P<content_slug>[^/]+)/evaluation/(?P<task_id>[^/]+)/$',
