@@ -390,8 +390,7 @@ section.content {
         }
 
         section.content p mark {
-            background: #ff6;
-            color: #000;
+            background: #59cd59;
             border-radius: 7px;
             padding: 2px 4px;
         }
