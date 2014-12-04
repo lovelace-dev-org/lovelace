@@ -22,7 +22,8 @@ database:
 ui:
     - AJAX notification of session timeout
         * maybe when sending an answer?
-
+    - allow users to highlight text from pages, save the highlights on the
+      server
     - make collaborators-field for file exercises optional
     - prevent sending an empty file exercise answer (i.e. without files)
     - line references for included code
