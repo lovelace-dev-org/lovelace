@@ -390,7 +390,18 @@ section.content {
         }
 
         section.content p mark {
-            background: #ff0;
+            background: #ff6;
+            color: #000;
+            border-radius: 7px;
+            padding: 2px 4px;
+        }
+
+        section.content p kbd { /* .key */
+            padding: 4px 3px;
+            margin-right: 1px;
+            border: 1px solid #c6c6c6;
+            border-radius: 3px;
+            box-shadow: 1px 1px 1px rgba(127, 127, 127, 0.2), inset 0 0 6px #fff;
         }
 
 	section.content form.feedback {
