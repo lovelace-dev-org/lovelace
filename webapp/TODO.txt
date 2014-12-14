@@ -25,6 +25,7 @@ ui:
     - allow users to highlight text from pages, save the highlights on the
       server
     - link for opening code in a new browser window
+    - make calendar reservations atomic
     - make collaborators-field for file exercises optional
     - prevent sending an empty file exercise answer (i.e. without files)
     - line references for included code
@@ -80,6 +81,7 @@ ui:
     - BIG AND VISIBLE green check marks/yellow ?s/red Xs for task correctness
     - Students can link their returnables straight as links
         * Links only viewable by teachers and the student
+        * Teachers can highlight lines and add comments
     - When a student opens a page, answered (embedded) tasks have
       [+] expandable evaluations
     - Whitelist for allowed file name endings for upload exercises
