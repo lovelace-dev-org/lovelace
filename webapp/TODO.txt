@@ -86,6 +86,9 @@ ui:
       [+] expandable evaluations
     - Whitelist for allowed file name endings for upload exercises
         * Also applies to file _type_ (e.g. forbid .pyc but allow .py)
+    - Autocomplete suggestions for admin textfield editing
+        * E.g. when typing <!page=abc, a list of page slugs beginning with abc
+          is displayed below the text cursor
 
 logic:
     - prevent viewing of tasks if not linked to a course
