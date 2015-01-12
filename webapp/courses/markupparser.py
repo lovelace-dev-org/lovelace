@@ -170,6 +170,12 @@ markups = []
 # inline = this markup is inline
 # allow_inline = if use of inline markup, such as <b> is allowed
 class Markup:
+    """
+    Base class for the markups.
+
+    The below metadata is used for documentation purposes. E.g. the example is
+    displayed both as rendered and without rendering.
+    """
     name = ""
     shortname = ""
     description = ""
@@ -232,6 +238,7 @@ class CodeMarkup(Markup):
             try:
                 lexer = get_lexer_by_name(highlight)
             except pygments.util.ClassNotFound as e:
+                # TODO: Raise an error that handles this instead
                 yield '<div class="warning">%s</div>' % str(e).capitalize()
                 highlight = False
             else:
