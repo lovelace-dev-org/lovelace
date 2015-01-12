@@ -34,7 +34,7 @@
         var current_toc_level = 1;
         //var topmost_ol = null;
         var headings = $.map([1, 2, 3, 4, 5, 6], function(i) {
-          return "section.content h" + i;
+          return "section.content h" + i + ".content-heading";
         }).join(", ");
         $(headings).each(function(index) {
           // TODO: http://stackoverflow.com/questions/123999/how-to-tell-if-a-dom-element-is-visible-in-the-current-viewport
