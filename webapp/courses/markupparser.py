@@ -392,7 +392,7 @@ class HeadingMarkup(Markup):
         # TODO: Add "-heading" to id
         yield '<h%d id="%s" class="content-heading">' % (settings["heading_level"], slug)
         yield heading
-        yield '<a href="#%s" class="permalink" title="Permalink to this heading">&para;</a>' % slug
+        yield '<a href="#%s" class="permalink" title="Permalink to %s">&para;</a>' % (slug, heading)
         yield '</h%d>\n' % settings["heading_level"]
     
     @classmethod
