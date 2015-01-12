@@ -27,9 +27,6 @@ import courses.forms
 # TODO: Support tags that, when hovered, highlight lines in source code files
 # TODO: Support tags that get highlighted upon receiving hints
 # TODO: Support tags for monospace ASCII art with horizontal and vertical rulers
-# TODO: Support embeddable JavaScript apps (maybe in iframe?)
-#       - http://www.html5rocks.com/en/tutorials/security/sandboxed-iframes/
-#       - https://developer.mozilla.org/en-US/docs/Web/API/window.postMessage
 
 class ParserUninitializedError(Exception):
     def __init__(self, value):
@@ -304,10 +301,19 @@ class EmbeddedPageMarkup(Markup):
             # TODO: purkkaa pois :/
             choices = None
             question = None
+
+            # TODO: It's possible to do these in the template, now.
             if embedded_obj.content_type == "MULTIPLE_CHOICE_EXERCISE":
                 embedded_obj_mce = courses.models.MultipleChoiceExercise(id=embedded_obj.id)
                 choices = embedded_obj_mce.get_choices()
-                question = embedded_obj_mce.get_question() # TODO: Question must be inline-parsed
+            elif embedded_obj.content_type == "TEXTFIELD_EXERCISE":
+                embedded_obj_tfe = courses.models.TextfieldExercise(id=embedded_obj.id)
+            elif embedded_obj.content_type == "CHECKBOX_EXERCISE":
+                embedded_obj_cbe = courses.models.CheckboxExercise(id=embedded_obj.id)
+                choices = embedded_obj_cbe.get_choices()
+
+            # TODO: Question must be inline-parsed
+            question = embedded_obj.question
             
             c["emb_content"] = embedded_content
             c["tasktype"] = embedded_obj.content_type
@@ -322,6 +328,38 @@ class EmbeddedPageMarkup(Markup):
         return settings
 
 markups.append(EmbeddedPageMarkup)
+
+# TODO: Support embeddable JavaScript apps (maybe in iframe?)
+#       - http://www.html5rocks.com/en/tutorials/security/sandboxed-iframes/
+#       - https://developer.mozilla.org/en-US/docs/Web/API/window.postMessage
+class EmbeddedScriptMarkup(Markup):
+    name = "Embedded script"
+    shortname = "script"
+    description = "An embedded script, contained inside an iframe."
+    regexp = r"^\<\!script\=(?P<script_slug>[^\s>]+)\>\s*$"
+    markup_class = "embedded item"
+    example = "<!script=djikstra-clickable-demo>"
+    states = {}
+    inline = False
+    allow_inline = False
+
+    @classmethod
+    def block(cls, block, settings, state):
+        pass
+
+    @classmethod
+    def settings(cls, matchobj, state):
+        pass
+
+    def block(cls, block, settings, state):
+        yield '<iframe src="%s" sandbox="allow-scripts">\n' % settings["script_slug"]
+
+    @classmethod
+    def settings(cls, matchobj, state):
+        settings = {"script_slug" : escape(matchobj.group("script"))}
+        return settings
+
+markups.append(EmbeddedScriptMarkup)
 
 class EmptyMarkup(Markup):
     name = "Empty"

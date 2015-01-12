@@ -115,15 +115,15 @@ def get_exercise_info(content):
 
     if content_type == "MULTIPLE_CHOICE_EXERCISE":
         choices = MultipleChoiceExerciseAnswer.objects.filter(exercise=content.id).order_by('id')
-        question = Exercise.objects.get(id=content.id).question
+        question = ContentPage.objects.get(id=content.id).question
     elif content_type == "CHECKBOX_EXERCISE":
         choices = CheckboxExerciseAnswer.objects.filter(exercise=content.id).order_by('id')
-        question = Exercise.objects.get(id=content.id).question
+        question = ContentPage.objects.get(id=content.id).question
     elif content_type == "TEXTFIELD_EXERCISE":
         answers = TextfieldExerciseAnswer.objects.filter(exercise=content.id)
-        question = Exercise.objects.get(id=content.id).question
+        question = ContentPage.objects.get(id=content.id).question
     elif content_type == "FILE_UPLOAD_EXERCISE":
-        question = Exercise.objects.get(id=content.id).question
+        question = ContentPage.objects.get(id=content.id).question
     elif content_type == "LECTURE":
         pass
 
@@ -888,8 +888,8 @@ def show_answers(request, user, course, exercise):
         return HttpResponseNotFound("No such course %s" % course)
     
     try:
-        exercise_obj = Exercise.objects.get(slug=exercise)
-    except Exercise.DoesNotExist as e:
+        exercise_obj = ContentPage.objects.get(slug=exercise)
+    except ContentPage.DoesNotExist as e:
         return HttpResponseNotFound("No such exercise %s" % exercise)
 
     content_type, question, choices, answers = get_exercise_info(exercise_obj)

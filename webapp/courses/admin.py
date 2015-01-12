@@ -46,6 +46,9 @@ class MultipleChoiceExerciseAnswerInline(admin.TabularInline):
     extra = 1
 
 class MultipleChoiceExerciseAdmin(admin.ModelAdmin):
+    def get_queryset(self, request):
+        return self.model.objects.filter(content_type="MULTIPLE_CHOICE_EXERCISE")
+
     fieldsets = [
         ('Page information',   {'fields': ['name', 'slug', 'content', 'question', 'tags'],}),
         ('Exercise miscellaneous', {'fields': ['default_points'],
@@ -62,6 +65,9 @@ class CheckboxExerciseAnswerInline(admin.TabularInline):
     extra = 1
 
 class CheckboxExerciseAdmin(admin.ModelAdmin):
+    def get_queryset(self, request):
+        return self.model.objects.filter(content_type="CHECKBOX_EXERCISE")
+
     fieldsets = [
         ('Page information',   {'fields': ['name', 'slug', 'content', 'question', 'tags']}),
         ('Exercise miscellaneous', {'fields': ['default_points'],
@@ -78,6 +84,9 @@ class TextfieldExerciseAnswerInline(admin.StackedInline):
     extra = 1
 
 class TextfieldExerciseAdmin(admin.ModelAdmin):
+    def get_queryset(self, request):
+        return self.model.objects.filter(content_type="TEXTFIELD_EXERCISE")
+
     fieldsets = [
         ('Page information',   {'fields': ['name', 'slug', 'content', 'question', 'tags']}),
         ('Exercise miscellaneous', {'fields': ['default_points'],
@@ -145,6 +154,9 @@ class FileExerciseTestAdmin(admin.ModelAdmin):
 #    inlines = [FileExerciseTestCommandAdmin, FileExerciseTestExpectedOutputAdmin, FileExerciseTestExpectedErrorAdmin, FileExerciseTestIncludeFileAdmin]
 
 class FileExerciseAdmin(admin.ModelAdmin):
+    def get_queryset(self, request):
+        return self.model.objects.filter(content_type="FILE_UPLOAD_EXERCISE")
+
     fieldsets = [
         ('Page information',   {'fields': ['name', 'slug', 'content', 'question', 'tags']}),
         ('Exercise miscellaneous', {'fields': ['default_points'],
@@ -157,6 +169,9 @@ class FileExerciseAdmin(admin.ModelAdmin):
     list_per_page = 500
 
 class LectureAdmin(admin.ModelAdmin):
+    def get_queryset(self, request):
+        return self.model.objects.filter(content_type="LECTURE")
+
     def formfield_for_dbfield(self, db_field, **kwargs):
         formfield = super(LectureAdmin, self).formfield_for_dbfield(db_field, **kwargs)
         if db_field.name == 'content':

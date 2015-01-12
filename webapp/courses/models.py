@@ -225,6 +225,10 @@ class ContentPage(models.Model):
 
     feedback_questions = models.ManyToManyField(ContentFeedbackQuestion, blank=True, null=True)
 
+    # Exercise fields
+    question = models.TextField(blank=True, null=True)
+    manually_evaluated = models.BooleanField(verbose_name="This exercise is evaluated by hand", default=False)
+
     def rendered_markup(self, request=None, context=None):
         """
         Uses the included MarkupParser library to render the page content into
@@ -270,11 +274,8 @@ class ContentPage(models.Model):
     def __str__(self):
         return self.name
 
-# TODO: Use the below models as Meta -> proxy = True
 class Lecture(ContentPage):
     """A single page for a lecture."""
-    answerable = models.BooleanField(verbose_name="Need confirmation of reading this lecture",default=False)
-
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = self.get_url_name()
@@ -286,21 +287,9 @@ class Lecture(ContentPage):
 
     class Meta:
         verbose_name = "lecture page"
+        proxy = True
 
-# TODO: Break the exercises into an exercises app
-class Exercise(ContentPage):
-    """A single exercise."""
-    question = models.TextField(blank=True, null=True)
-    manually_evaluated = models.BooleanField(verbose_name="This exercise is evaluated by hand", default=False)
-
-    def save(self, *args, **kwargs):
-        if not self.slug:
-            self.slug = self.get_url_name()
-        else:
-            self.slug = slugify.slugify(self.slug)
-        super(Exercise, self).save(*args, **kwargs)
-
-class MultipleChoiceExercise(Exercise):
+class MultipleChoiceExercise(ContentPage):
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = self.get_url_name()
@@ -314,14 +303,11 @@ class MultipleChoiceExercise(Exercise):
         choices = MultipleChoiceExerciseAnswer.objects.filter(exercise=self.id).order_by('id')
         return choices
 
-    def get_question(self):
-        question = Exercise.objects.get(id=self.id).question
-        return question
-
     class Meta:
         verbose_name = "multiple choice exercise"
+        proxy = True
 
-class CheckboxExercise(Exercise):
+class CheckboxExercise(ContentPage):
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = self.get_url_name()
@@ -331,10 +317,15 @@ class CheckboxExercise(Exercise):
         self.content_type = "CHECKBOX_EXERCISE"
         super(CheckboxExercise, self).save(*args, **kwargs)
 
+    def get_choices(self):
+        choices = CheckboxExerciseAnswer.objects.filter(exercise=self.id).order_by('id')
+        return choices
+
     class Meta:
         verbose_name = "checkbox exercise"
+        proxy = True
 
-class TextfieldExercise(Exercise):
+class TextfieldExercise(ContentPage):
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = self.get_url_name()
@@ -346,8 +337,9 @@ class TextfieldExercise(Exercise):
 
     class Meta:
         verbose_name = "text field exercise"
+        proxy = True
 
-class FileUploadExercise(Exercise):
+class FileUploadExercise(ContentPage):
     # TODO: A field for restricting uploadable file names (e.g. by extension, like .py)
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -360,8 +352,9 @@ class FileUploadExercise(Exercise):
 
     class Meta:
         verbose_name = "file upload exercise"
+        proxy = True
 
-class CodeInputExercise(Exercise):
+class CodeInputExercise(ContentPage):
     # TODO: A textfield exercise variant that's run like a file exercise (like in Viope)
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -374,8 +367,9 @@ class CodeInputExercise(Exercise):
 
     class Meta:
         verbose_name = "code input exercise"
+        proxy = True
 
-class CodeReplaceExercise(Exercise):
+class CodeReplaceExercise(ContentPage):
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = self.get_url_name()
@@ -387,6 +381,7 @@ class CodeReplaceExercise(Exercise):
 
     class Meta:
         verbose_name = "code replace exercise"
+        proxy = True
 
 # TODO: Code exercise that is ranked (against others/by some known scale/etc.)
 # Inspiration:
@@ -413,7 +408,7 @@ class Hint(models.Model):
     A hint that is linked to an exercise and shown to the user under
     configurable conditions.
     """
-    exercise = models.ForeignKey(Exercise)
+    exercise = models.ForeignKey(ContentPage)
     hint = models.TextField(verbose_name="hint text")
     tries_to_unlock = models.IntegerField(default=0,
                                           verbose_name="number of tries to unlock this hint",
