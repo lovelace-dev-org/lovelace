@@ -343,14 +343,6 @@ class EmbeddedScriptMarkup(Markup):
     inline = False
     allow_inline = False
 
-    @classmethod
-    def block(cls, block, settings, state):
-        pass
-
-    @classmethod
-    def settings(cls, matchobj, state):
-        pass
-
     def block(cls, block, settings, state):
         yield '<iframe src="%s" sandbox="allow-scripts">\n' % settings["script_slug"]
 
