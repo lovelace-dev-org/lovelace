@@ -522,9 +522,21 @@ section.content {
             margin-bottom: 1rem;
         }
 
-        section.content div#result {
-            width: 100%;
-            /*padding-left: 32px;*/
+        section.content div.error {
+            position: relative;
+            margin-top: -2px;
+            padding: 9px;
+            border: 2px solid #d0d0d0;
+            color: #f00;
+            background: #eedada;
+        }
+
+        section.content div.result {
+            position: relative;
+            margin-top: -2px;
+            padding: 9px;
+            border: 2px solid #d0d0d0;
+            background: #daeeda;
         }
 
         section.content pre {
