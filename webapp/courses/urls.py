@@ -33,7 +33,7 @@ urlpatterns = [
     url(r'^calendar/(?P<calendar_id>\d+)/(?P<event_id>\d+)/$', views.calendar_post),
 
     # Sandbox: admin view & answer for content pages without saved results
-    url(r'^sandbox/(?P<content_slug>[^/]+)/$', views.content, {'sandbox': True,}, name='sandbox_content',),
+    url(r'^sandbox/(?P<content_slug>[^/]+)/$', views.content, {'sandbox': True,}, name='sandbox',),
 
     # Course front page and content views
     url(r'^(?P<course_slug>[^/]+)/$', views.course, name='course'),

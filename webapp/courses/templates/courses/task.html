@@ -23,7 +23,7 @@
       <li><div><a href="{% url 'stats:single_task' content_slug %}">Statistics</a></div></li>
       <li><div><a href="{{ content.get_admin_change_url }}">Edit this {{ content.get_human_readable_type }}</a></div></li>
       <li><div><a href="TODO">View reference answer</a></div></li>
-      <li><div><span>Url-name: </span><span>{{ content_slug }}</span></div></li>
+      <li><div><a href="{% url 'courses:sandbox' content_slug %}">View separately</a></div></li>
       </ul>
     </div>
     {% endif %}
