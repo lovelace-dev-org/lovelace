@@ -1,11 +1,6 @@
 """
-Django views for the courses application:
-- content pages
-- exercise result checking
+Django views for rendering the course contents and checking exercises.
 """
-# TODO: Heavy commenting!
-# TODO: Use classes instead of bare functions to group data!
-
 import re
 import random
 import datetime
@@ -27,6 +22,7 @@ import courses.markupparser as markupparser
 import courses.blockparser as blockparser
 import courses.filecheck_client as filecheck_client
 
+# TODO: Deprecated
 class NavURL:
     def __init__(self, url, name):
         self.url = url
