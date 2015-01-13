@@ -13,7 +13,7 @@
     Deadline: yyyy-mm-dd
     <hr>
     
-    <div><a href="{% url 'courses:show_answers' user course_slug content_slug %}"><span class="answer-count">538</span> answers</a></div>
+    <div><a href="{% url 'courses:show_answers' user course_slug content_slug %}" title="View your previous answers"><span class="answer-count">538</span> answers</a></div>
 
     {% if user.is_active and user.is_staff %}
     <hr>
