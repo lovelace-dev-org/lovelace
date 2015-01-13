@@ -89,6 +89,7 @@ ui:
     - Autocomplete suggestions for admin textfield editing
         * E.g. when typing <!page=abc, a list of page slugs beginning with abc
           is displayed below the text cursor
+        * Perhaps use jQuery-textcomplete
 
 logic:
     - prevent viewing of tasks if not linked to a course
