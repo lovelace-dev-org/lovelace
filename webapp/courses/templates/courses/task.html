@@ -35,9 +35,8 @@
     <div>{{ emb_content|safe }}</div>
   {% endif %}
   <div class="question">
-    <form id="{{ content_slug }}-form" class="task" method="POST" enctype="multipart/form-data"
-          action="{% url 'courses:check' course_slug content_slug %}"
-          onsubmit="validateAnswer(event);return false;">
+    <form id="{{ content_slug }}-form" class="exercise-form" method="POST" enctype="multipart/form-data"
+          action="{% url 'courses:check' course_slug content_slug %}">
       {% csrf_token %}
       {% if question %}{{ question|safe }}{% endif %}
       {% if tasktype == "MULTIPLE_CHOICE_EXERCISE" %}
@@ -71,6 +70,7 @@
         <div class="answered_status"><span class="correct">You have already answered this task correctly.</span></div>
       {% endif %}
     </form>
-    <div id="result"></div>
+    <div class="error"></div>
+    <div class="result"></div>
   </div>  
 {% endif %}

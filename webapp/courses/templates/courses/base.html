@@ -15,7 +15,7 @@
     <script src="{% static 'courses/katex.min.js' %}"></script>
     <script src="{% static 'courses/jquery-2.1.1.min.js' %}"></script>
     <script src="{% static 'courses/blockcode.js' %}"></script>
-    <script src="{% static 'courses/task.js' %}"></script>
+    <script src="{% static 'courses/exercise.js' %}"></script>
     <script src="{% static 'courses/calendar.js' %}"></script>
     <script>
       $(document).ready(function() {
@@ -23,6 +23,8 @@
         setColumnWidths();
         setLineWidths();
         setPreHeights();
+
+        add_exercise_form_callbacks();
 
         // Apply KaTeX to render all the math blocks
         $("div.tex").each(function(index) {

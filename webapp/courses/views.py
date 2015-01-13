@@ -229,7 +229,7 @@ def textfield_exercise_check(content, user, answers, post_data):
     else:
         return False, [], [], ["No data sent"]
 
-    re_validate = lambda db_ans, given_ans: re.match(db_ans, given_ans)
+    re_validate = lambda db_ans, given_ans: re.match(db_ans, given_ans) is not None
     str_validate = lambda db_ans, given_ans: db_ans == given_ans
 
     for answer in answers:
@@ -385,6 +385,16 @@ def check_answer(request, course_slug, content_slug, **kwargs):
     print("Ollaan tehtävän tarkistuksessa")
     # Validate an answer to question
     if request.method == "POST":
+        print(request.POST)
+        f = request.FILES or None
+        if f:
+            print("FILES object:", request.FILES)
+
+            filelist = request.FILES.getlist('file')
+            
+            for uploaded_file in filelist:
+                print(uploaded_file.name)
+                print(b"".join(uploaded_file.chunks()))
         pass
     else:
         return HttpResponse("")
