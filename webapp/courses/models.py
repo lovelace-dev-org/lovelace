@@ -258,6 +258,18 @@ class ContentPage(models.Model):
         # TODO: Ensure uniqueness!
         return slugify.slugify(self.name)
 
+    def get_type_object(self):
+        type_models = {
+            "LECTURE" : Lecture,
+            "TEXTFIELD_EXERCISE" : TextfieldExercise,
+            "MULTIPLE_CHOICE_EXERCISE" : MultipleChoiceExercise,
+            "CHECKBOX_EXERCISE" : CheckboxExercise,
+            "FILE_UPLOAD_EXERCISE" : FileUploadExercise,
+            "CODE_INPUT_EXERCISE" : CodeInputExercise,
+            "CODE_REPLACE_EXERCISE" : CodeReplaceExercise,
+        }                       
+        return type_models[self.content_type](id=self.id)
+
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = self.get_url_name()

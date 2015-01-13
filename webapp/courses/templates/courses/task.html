@@ -43,13 +43,13 @@
       {% if tasktype == "MULTIPLE_CHOICE_EXERCISE" %}
         {% for choice in choices %}
           <div class="input-label-container">
-            <input type="radio" name="{{ content_slug }}-radio" id="{{ choice.id }}" value="{{ choice.id }}" class="task_radio"><label for="{{ choice.id }}">{{ choice.answer }}</label>
+            <input type="radio" name="{{ content_slug }}-radio" id="mce-{{ choice.id }}" value="{{ choice.id }}" class="task_radio"><label for="mce-{{ choice.id }}">{{ choice.answer }}</label>
           </div>
         {% endfor %}
       {% elif tasktype == "CHECKBOX_EXERCISE" %}
         {% for choice in choices %}
           <div class="input-label-container">
-            <input type="checkbox" name="{{ choice.id }}" id="{{ choice.id }}" value="{{ choice.id }}" class="task_check"><label for="{{ choice.id }}">{{ choice.answer }}</label>
+            <input type="checkbox" name="{{ choice.id }}" id="cb-{{ choice.id }}" value="{{ choice.id }}" class="task_check"><label for="cb-{{ choice.id }}">{{ choice.answer }}</label>
           </div>
         {% endfor %}
       {% elif tasktype == "TEXTFIELD_EXERCISE" %}

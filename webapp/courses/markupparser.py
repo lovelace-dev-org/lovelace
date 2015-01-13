@@ -287,11 +287,10 @@ class EmbeddedPageMarkup(Markup):
         except courses.models.ContentPage.DoesNotExist as e:
             raise EmbeddedObjectNotFoundError("embedded page '%s' couldn't be found" % settings["page_slug"])
         else:
-            # TODO: Change from list to set
             try:
-                state["embedded_pages"].append(settings["page_slug"])
+                state["embedded_pages"].add(settings["page_slug"])
             except KeyError:
-                state["embedded_pages"] = [settings["page_slug"]]
+                state["embedded_pages"] = {settings["page_slug"]}
 
             # TODO: Prevent recursion depth > 2
             embedded_content = embedded_obj.rendered_markup()
@@ -302,15 +301,15 @@ class EmbeddedPageMarkup(Markup):
             choices = None
             question = None
 
+            type_object = embedded_obj.get_type_object()
+
             # TODO: It's possible to do these in the template, now.
             if embedded_obj.content_type == "MULTIPLE_CHOICE_EXERCISE":
-                embedded_obj_mce = courses.models.MultipleChoiceExercise(id=embedded_obj.id)
-                choices = embedded_obj_mce.get_choices()
+                choices = type_object.get_choices()
             elif embedded_obj.content_type == "TEXTFIELD_EXERCISE":
-                embedded_obj_tfe = courses.models.TextfieldExercise(id=embedded_obj.id)
+                pass
             elif embedded_obj.content_type == "CHECKBOX_EXERCISE":
-                embedded_obj_cbe = courses.models.CheckboxExercise(id=embedded_obj.id)
-                choices = embedded_obj_cbe.get_choices()
+                choices = type_object.get_choices()
 
             # TODO: Question must be inline-parsed
             question = embedded_obj.question
