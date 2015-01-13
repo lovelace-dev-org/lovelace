@@ -12,7 +12,7 @@ import datetime
 import json
 from cgi import escape
 
-from django.http import HttpResponse, HttpResponseRedirect, HttpResponseNotFound, HttpResponseForbidden
+from django.http import HttpResponse, JsonResponse, HttpResponseRedirect, HttpResponseNotFound, HttpResponseForbidden
 from django.template import Context, RequestContext, Template, loader
 from django.core.urlresolvers import reverse
 from django.utils import timezone
@@ -472,7 +472,7 @@ def check_progress(request, course_slug, content_slug, task_id):
                                                     "task_id": task_id,}))
     else:
         data = task.state
-        return HttpResponse(json.dumps(data), mimetype='application/json')
+        return JsonResponse(data)
 
 def file_exercise_evaluation(request, course_name, content_name, task_id):
     # TODO: Render the exercise results and send them to the user
