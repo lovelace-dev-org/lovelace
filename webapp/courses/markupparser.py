@@ -340,7 +340,7 @@ class EmbeddedScriptMarkup(Markup):
     description = "An embedded script, contained inside an iframe."
     regexp = r"^\<\!script\=(?P<script_slug>[^\s>]+)\>\s*$"
     markup_class = "embedded item"
-    example = "<!script=djikstra-clickable-demo>"
+    example = "<!script=dijkstra-clickable-demo>"
     states = {}
     inline = False
     allow_inline = False
