@@ -57,7 +57,25 @@
         <div class="input-label-container"><label for="collaborators" class="file">Collaborators:</label><input name="collaborators" type="text" size="60" class="task_file" placeholder="Who did you co-operate with?"></div>
         <div class="input-label-container"><label for="file" class="file">Submit your files here:</label><input name="file" type="file" class="task_file" multiple="multiple"></div>
         {% comment %}Use the accept and multiple properties for the file!{% endcomment %}
+      {% elif tasktype == "CODE_REPLACE_EXERCISE" %}
+        {% for replace_file, lineiter in choices %}
+          <div>
+            <div class="code-replace-filename">{{ replace_file }}</div>
+            {% for _, replace_line, id in lineiter %}
+              <div class="input-label-container code-replace">
+                <label for="cre-{{ id }}" class="code-replace-label"
+                       title="Line {{ replace_line }} in {{ replace_file }}"
+                       onmouseover="highlight_code_line('{{ replace_file }}', {{ replace_line }});"
+                       onmouseout="unhighlight_code_line('{{ replace_file }}', {{ replace_line }});">
+                  {{ replace_line }}
+                </label>
+                <input id="cre-{{ id }}" name="cre-{{ id }}" type="text" class="code-replace-input">
+              </div>
+            {% endfor %}
+          </div>
+        {% endfor %}
       {% endif %}
+      
       <input type="submit" name="submit" value="Send answer">
       {% if not user.is_authenticated %}
         <div class="auth_warning">Warning: You have not logged in. Your answer will not be saved.</div>

@@ -5,6 +5,7 @@ Idea from http://wiki.sheep.art.pl/Wiki%20Markup%20Parser%20in%20Python
 
 import re
 import itertools
+import operator
 import copy
 #from django.utils.html import escape # Escapes ' characters -> prevents inline parsing
 # Possible solution: Import above as strict_escape and below as body_escape
@@ -309,6 +310,8 @@ class EmbeddedPageMarkup(Markup):
             elif embedded_obj.content_type == "TEXTFIELD_EXERCISE":
                 pass
             elif embedded_obj.content_type == "CHECKBOX_EXERCISE":
+                choices = type_object.get_choices()
+            elif embedded_obj.content_type == "CODE_REPLACE_EXERCISE":
                 choices = type_object.get_choices()
 
             # TODO: Question must be inline-parsed

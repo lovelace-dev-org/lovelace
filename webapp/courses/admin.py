@@ -98,6 +98,25 @@ class TextfieldExerciseAdmin(admin.ModelAdmin):
     list_display = ("name", "slug",)
     list_per_page = 500
 
+class CodeReplaceExerciseAnswerInline(admin.StackedInline):
+    model = CodeReplaceExerciseAnswer
+    extra = 1
+
+class CodeReplaceExerciseAdmin(admin.ModelAdmin):
+    def get_queryset(self, request):
+        return self.model.objects.filter(content_type="CODE_REPLACE_EXERCISE")
+
+    fieldsets = [
+        ('Page information',   {'fields': ['name', 'slug', 'content', 'question', 'tags']}),
+        ('Exercise miscellaneous', {'fields': ['default_points'],
+                                'classes': ['wide']}),
+        ('Feedback settings',  {'fields': ['feedback_questions']}),
+    ]
+    inlines = [CodeReplaceExerciseAnswerInline, HintInline]
+    readonly_fields = ("slug",)
+    list_display = ("name", "slug",)
+    list_per_page = 500
+
 class FileExerciseTestCommandAdmin(admin.TabularInline):
     model = FileExerciseTestCommand
     extra = 1
@@ -187,6 +206,7 @@ admin.site.register(Lecture, LectureAdmin)
 admin.site.register(MultipleChoiceExercise, MultipleChoiceExerciseAdmin)
 admin.site.register(CheckboxExercise, CheckboxExerciseAdmin)
 admin.site.register(TextfieldExercise, TextfieldExerciseAdmin)
+admin.site.register(CodeReplaceExercise, CodeReplaceExerciseAdmin)
 admin.site.register(FileUploadExercise, FileExerciseAdmin)
 admin.site.register(FileExerciseTest, FileExerciseTestAdmin)
 

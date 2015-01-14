@@ -466,6 +466,40 @@ section.content {
                 vertical-align: bottom;
             }
 
+            section.content div.question form div.code-replace {
+                margin-top: -5px;
+            }
+            
+            section.content div.question form div.code-replace-filename {
+                font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
+                font-size: 1.0rem;
+                display: block;
+            }
+
+            section.content div.question form label.code-replace-label {
+                font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
+                font-size: 1.0rem;
+                width: 44px;
+                text-align: right;
+                display: inline-block;
+                background: #bbb;
+                border: 1px solid #d0d0d0;
+                margin: 0;
+                margin-right: -6px;
+                padding-right: 4px;
+                line-height: 1.25 !important;
+            }
+
+            section.content div.question form input.code-replace-input {
+                font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
+                font-size: 1.0rem;
+                display: inline-block !important;
+                width: calc(100% - 58px);
+                border: 1px solid #d0d0d0;
+                background: #eee;
+                line-height: 1.25 !important;
+            }
+
             section.content div.question form label {
                 margin-left: 0.5em;
                 line-height: 1.75;

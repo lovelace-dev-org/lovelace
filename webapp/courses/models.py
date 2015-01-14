@@ -4,6 +4,8 @@
 # TODO: Profile the app and add relevant indexes!
 
 import datetime
+import itertools
+import operator
 import re
 import os
 
@@ -391,11 +393,26 @@ class CodeReplaceExercise(ContentPage):
         self.content_type = "CODE_REPLACE_EXERCISE"
         super(CodeReplaceExercise, self).save(*args, **kwargs)
 
+    def get_choices(self):
+        choices = CodeReplaceExerciseAnswer.objects.filter(exercise=self)\
+                                           .values_list('replace_file', 'replace_line', 'id')\
+                                           .order_by('replace_file', 'replace_line')
+        choices = itertools.groupby(choices, operator.itemgetter(0))
+        # Django templates don't like groupby, so evaluate iterators:
+        return [(a, list(b)) for a, b in choices]
+
     class Meta:
         verbose_name = "code replace exercise"
         proxy = True
 
-# TODO: Code exercise that is ranked (against others/by some known scale/etc.)
+# TODO: Code exercise that is ranked
+# 1. against others
+#     * celery runs a tournament of uploaded algorithms
+#     * the results are sorted by performance
+# 2. by some known scale
+#     * celery runs the uploaded algorithm against a reference
+#     * the result is compared to some value (e.g. 94% recognition achieved)
+# - participants can view all the results!
 # Inspiration:
 # - coding competitions (correctness + timing/cpu cycle restrictions)
 # - artificial intelligence course (competing othello AI algorithms)
@@ -591,7 +608,7 @@ class TextfieldExerciseAnswer(models.Model):
             return self.answer
 
     def save(self, *args, **kwargs):
-        self.answer = self.answer.replace("\r\n", "\n").replace("\n\r", "\n")
+        self.answer = self.answer.replace("\r", "")
         super(TextfieldExerciseAnswer, self).save(*args, **kwargs)
  
 class MultipleChoiceExerciseAnswer(models.Model):
@@ -615,6 +632,17 @@ class CheckboxExerciseAnswer(models.Model):
 
     def __str__(self):
         return self.answer
+
+class CodeInputExerciseAnswer(models.Model):
+    exercise = models.ForeignKey(CodeInputExercise)
+    answer = models.TextField()
+
+class CodeReplaceExerciseAnswer(models.Model):
+    exercise = models.ForeignKey(CodeReplaceExercise)
+    answer = models.TextField()
+    #replace_file = models.ForeignKey()
+    replace_file = models.TextField() # DEBUG
+    replace_line = models.PositiveIntegerField()
 
 class Evaluation(models.Model):
     """Evaluation of a student's exercise answer."""
