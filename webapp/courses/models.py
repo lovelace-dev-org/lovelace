@@ -349,6 +349,10 @@ class TextfieldExercise(ContentPage):
         self.content_type = "TEXTFIELD_EXERCISE"
         super(TextfieldExercise, self).save(*args, **kwargs)
 
+    def get_choices(self):
+        choices = TextfieldExerciseAnswer.objects.filter(exercise=content.id)
+        return choices
+
     class Meta:
         verbose_name = "text field exercise"
         proxy = True

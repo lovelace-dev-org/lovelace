@@ -171,25 +171,30 @@ def multiplechoice_exercise_check(content, user, choices, post_data):
     
     return correct, hints, comments
 
-def checkbox_exercise_check(content, user, choices, post_data):
+def checkbox_exercise_check(content, user, choices, post_data, ip):
     points = 0.0
 
     # Determine, if the given answer was correct and which hints to show
+
+    # quick hax:
+    answered = {choice.id: False for choice in choices}
+    answered.update({int(i): True for i, _ in post_data.items() if i.isdigit()})
+
     correct = True
     hints = []
     comments = []
     chosen = []
     for choice in choices:
-        if post_data[str(choice.id)] == "true" and choice.correct == True and correct == True:
+        if answered[choice.id] == True and choice.correct == True and correct == True:
             correct = True
             chosen.append(choice)
             if choice.comment:
                 comments.append(choice.comment)
-        elif post_data[str(choice.id)] == "false" and choice.correct == True:
+        elif answered[choice.id] == False and choice.correct == True:
             correct = False
             if choice.hint:
                 hints.append(choice.hint)
-        elif post_data[str(choice.id)] == "true" and choice.correct == False:
+        elif answered[choice.id] == True and choice.correct == False:
             correct = False
             if choice.hint:
                 hints.append(choice.hint)
@@ -203,8 +208,9 @@ def checkbox_exercise_check(content, user, choices, post_data):
             points = 1.0
         cb_evaluation = Evaluation(points=points,feedback="",correct=correct)
         cb_evaluation.save()
-        cb_answer = UserCheckboxExerciseAnswer(exercise=content.exercisepage.checkboxexercise, evaluation=cb_evaluation,
-                                           user=user, answer_date=timezone.now())
+        cb_answer = UserCheckboxExerciseAnswer(exercise=content.get_type_object(), evaluation=cb_evaluation,
+                                               user=user, answer_date=timezone.now(),
+                                               answerer_ip=ip)
         cb_answer.save()
         cb_answer.chosen_answers.add(*chosen)
         cb_answer.save()
@@ -378,8 +384,7 @@ def file_exercise_check(content, user, files_data, post_data):
     return correct, hints, comments, diff_table
 
 def check_answer(request, course_slug, content_slug, **kwargs):
-    print("Ollaan tehtävän tarkistuksessa")
-    # Validate an answer to question
+    """Validates an answer to an exercise."""
     if request.method == "POST":
         print(request.POST)
         f = request.FILES or None
@@ -393,10 +398,12 @@ def check_answer(request, course_slug, content_slug, **kwargs):
                 print(b"".join(uploaded_file.chunks()))
         pass
     else:
+        # TODO: Return something more descriptive for GETters
         return HttpResponse("")
 
     selected_course = Course.objects.get(slug=course_slug)
     content = ContentPage.objects.get(slug=content_slug)
+    # TODO: Ensure that the content really belongs to the course
 
     # Check if a deadline exists and if we are past it
     try:
@@ -410,7 +417,12 @@ def check_answer(request, course_slug, content_slug, **kwargs):
             # TODO: Use a template!
             return HttpResponse("The deadline for this exercise (%s) has passed. Your answer will not be evaluated!" % (content_graph.deadline))
 
-    content_type, question, choices, answers = get_exercise_info(content)
+    #content_type, question, choices, answers = get_exercise_info(content)
+    content_type = content.content_type
+    question = content.question
+    choices = content.get_type_object().get_choices()
+    answers = choices
+    ip = request.META.get('REMOTE_ADDR')
 
     correct = True
     hints = []
@@ -418,13 +430,13 @@ def check_answer(request, course_slug, content_slug, **kwargs):
     errors = []
     diff_table = ""
 
-    if choices and content_type == "multiplechoice":
+    if choices and content_type == "MULTIPLE_CHOICE_EXERCISE":
         correct, hints, comments = multiplechoice_exercise_check(content, request.user, choices, request.POST)
-    elif choices and content_type == "checkbox":
-        correct, hints, comments = checkbox_exercise_check(content, request.user, choices, request.POST)
-    elif answers and content_type == "textfield":
+    elif choices and content_type == "CHECKBOX_EXERCISE":
+        correct, hints, comments = checkbox_exercise_check(content, request.user, choices, request.POST, ip)
+    elif answers and content_type == "TEXTFIELD_EXERCISE":
         correct, hints, comments, errors = textfield_exercise_check(content, request.user, answers, request.POST)
-    elif content_type == "file":
+    elif content_type == "FILE_UPLOAD_EXERCISE":
         correct, hints, comments, diff_table = file_exercise_check(content, request.user, request.FILES, request.POST)
         return HttpResponseRedirect(reverse('courses:check_progress',
                                             kwargs={"course_slug": training_slug,
