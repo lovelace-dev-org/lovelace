@@ -90,6 +90,8 @@ ui:
         * E.g. when typing <!page=abc, a list of page slugs beginning with abc
           is displayed below the text cursor
         * Perhaps use jQuery-textcomplete
+    - untrusted (http://alexnisnevich.github.io/untrusted/) style text
+      editor exercises
 
 logic:
     - prevent viewing of tasks if not linked to a course
