@@ -125,8 +125,13 @@ def get_exercise_info(content):
 
     return (content_type, question, choices, answers)
 
-def multiplechoice_exercise_check(content, user, choices, post_data):
+def multiplechoice_exercise_check(content, user, choices, post_data, ip):
     points = 0.0
+
+    # quick hax:
+    keys = list(post_data.keys())
+    key = [k for k in keys if k.endswith("-radio")][0]
+    answered = int(post_data[key])
 
     # Determine, if the given answer was correct and which hints to show
     correct = True
@@ -134,24 +139,24 @@ def multiplechoice_exercise_check(content, user, choices, post_data):
     hints = []
     comments = []
     for choice in choices:
-        if post_data[str(choice.id)] == "true":
+        if answered == choice.id:
             chosen = choice
 
-        if post_data[str(choice.id)] == "true" and choice.correct == True and correct == True:
+        if answered == choice.id and choice.correct == True and correct == True:
             correct = True
             correct_found = True
             if choice.comment:
                 comments.append(choice.comment)
-        elif post_data[str(choice.id)] == "true" and choice.correct == True and correct == False:
+        elif answered == choice.id and choice.correct == True and correct == False:
             correct = True
             if choice.comment:
                 comments.append(choice.comment)
-        elif post_data[str(choice.id)] == "false" and choice.correct == True:
+        elif answered == choice.id and choice.correct == True:
             if not correct_found:
                 correct = False
             if choice.hint:
                 hints.append(choice.hint)
-        elif post_data[str(choice.id)] == "true" and choice.correct == False:
+        elif answered == choice.id and choice.correct == False:
             correct = False
             if choice.hint:
                 hints.append(choice.hint)
@@ -165,8 +170,9 @@ def multiplechoice_exercise_check(content, user, choices, post_data):
             points = 1.0
         rb_evaluation = Evaluation(points=points,feedback="",correct=correct)
         rb_evaluation.save()
-        rb_answer = UserMultipleChoiceExerciseAnswer(exercise=content.exercisepage.multiplechoiceexercise, chosen_answer=chosen, evaluation=rb_evaluation,
-                                              user=user, answer_date=timezone.now())
+        rb_answer = UserMultipleChoiceExerciseAnswer(exercise=content.get_type_object(), chosen_answer=chosen,
+                                                     evaluation=rb_evaluation, user=user, answerer_ip=ip,
+                                                     answer_date=timezone.now())
         rb_answer.save()
     
     return correct, hints, comments
@@ -217,7 +223,7 @@ def checkbox_exercise_check(content, user, choices, post_data, ip):
 
     return correct, hints, comments
 
-def textfield_exercise_check(content, user, answers, post_data):
+def textfield_exercise_check(content, user, answers, post_data, ip):
     points = 0.0
 
     # Determine, if the given answer was correct and which hints/comments to show
@@ -271,8 +277,9 @@ def textfield_exercise_check(content, user, answers, post_data):
             points = 1.0
         tf_evaluation = Evaluation(points=points,feedback="",correct=correct)
         tf_evaluation.save()
-        tf_answer = UserTextfieldExerciseAnswer(exercise=content.exercisepage.textfieldexercise, given_answer=given, evaluation=tf_evaluation,
-                                            user=user, answer_date=timezone.now())
+        tf_answer = UserTextfieldExerciseAnswer(exercise=content.get_type_object(), given_answer=given,
+                                                evaluation=tf_evaluation, user=user, answerer_ip=ip,
+                                                answer_date=timezone.now())
         tf_answer.save()
 
     return correct, hints, comments, errors
@@ -417,7 +424,6 @@ def check_answer(request, course_slug, content_slug, **kwargs):
             # TODO: Use a template!
             return HttpResponse("The deadline for this exercise (%s) has passed. Your answer will not be evaluated!" % (content_graph.deadline))
 
-    #content_type, question, choices, answers = get_exercise_info(content)
     content_type = content.content_type
     question = content.question
     choices = content.get_type_object().get_choices()
@@ -431,11 +437,11 @@ def check_answer(request, course_slug, content_slug, **kwargs):
     diff_table = ""
 
     if choices and content_type == "MULTIPLE_CHOICE_EXERCISE":
-        correct, hints, comments = multiplechoice_exercise_check(content, request.user, choices, request.POST)
+        correct, hints, comments = multiplechoice_exercise_check(content, request.user, choices, request.POST, ip)
     elif choices and content_type == "CHECKBOX_EXERCISE":
         correct, hints, comments = checkbox_exercise_check(content, request.user, choices, request.POST, ip)
     elif answers and content_type == "TEXTFIELD_EXERCISE":
-        correct, hints, comments, errors = textfield_exercise_check(content, request.user, answers, request.POST)
+        correct, hints, comments, errors = textfield_exercise_check(content, request.user, answers, request.POST, ip)
     elif content_type == "FILE_UPLOAD_EXERCISE":
         correct, hints, comments, diff_table = file_exercise_check(content, request.user, request.FILES, request.POST)
         return HttpResponseRedirect(reverse('courses:check_progress',
@@ -457,6 +463,8 @@ def check_answer(request, course_slug, content_slug, **kwargs):
         #r_diff_table = unicode(diff_table, "utf-8")
     #except UnicodeDecodeError:
         #r_diff_table = unicode(diff_table, "iso-8859-1")
+
+    # TODO: In case of errors, send a 500
 
     t = loader.get_template("courses/exercise_evaluation.html")
     c = Context({

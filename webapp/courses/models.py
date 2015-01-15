@@ -350,7 +350,7 @@ class TextfieldExercise(ContentPage):
         super(TextfieldExercise, self).save(*args, **kwargs)
 
     def get_choices(self):
-        choices = TextfieldExerciseAnswer.objects.filter(exercise=content.id)
+        choices = TextfieldExerciseAnswer.objects.filter(exercise=self.id)
         return choices
 
     class Meta:
