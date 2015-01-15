@@ -104,6 +104,18 @@ pip install celery
 pip install django-registration
 
 
+Edit the configuration
+----------------------
+
+Edit /path/to/your/lovelace/webapp/raippa/settings.py
+
+Change the database engine to postgresql by following this guide:
+https://docs.djangoproject.com/en/dev/ref/settings/#databases
+
+Also set the user to lovelace, name to lovelace and password to the
+password you entered for postgresql.
+
+
 Initialize the database
 -----------------------
 
