@@ -10,12 +10,16 @@ TODO: General configuration creator for the project:
       - Redis
 """
 import os
+import site
 
 DJANGO_BASE_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "webapp")
 WSGI_DIR = os.path.join(DJANGO_BASE_DIR, "raippa")
-WSGI_PATH = os.path.join(DJANGO_BASE_DIR, "raippa", "wsgi.py")
+WSGI_PY_PATH = os.path.join(DJANGO_BASE_DIR, "raippa", "wsgi.py")
+SITE_PACKAGES_DIR = site.getsitepackages()[0] # for venv
+
 STATIC_DIR = os.path.join(DJANGO_BASE_DIR, "raippa", "static")
 MEDIA_DIR = os.path.join(DJANGO_BASE_DIR, "upload")
+
 
 # TODO: favicon.ico exception (/static/favicon.ico -> /favicon.ico)
 # TODO: robots.txt exception
@@ -23,35 +27,36 @@ MEDIA_DIR = os.path.join(DJANGO_BASE_DIR, "upload")
 
 print("Django base directory: %s" % (DJANGO_BASE_DIR))
 print("wsgi.py directory:     %s" % (WSGI_DIR))
-print("wsgi.py path:          %s" % (WSGI_PATH))
+print("wsgi.py path:          %s" % (WSGI_PY_PATH))
 print()
 
 HTTPD_CONF_STATICMEDIA_TEMPLATE = \
-"""Alias /media/ %s/
+"""
+Alias /media/ %s/
 Alias /static/ %s/
 
 <Directory %s>
-    Order deny,allow
-    Allow from all
+    Require all granted
 </Directory>
 
 <Directory %s>
-    Order deny,allow
-    Allow from all
-</Directory>"""
+    Require all granted
+</Directory>
+""".strip()
 
 HTTPD_CONF_TEMPLATE = \
-"""WSGIScriptAlias / %s
-WSGIPythonPath %s
+"""
+WSGIScriptAlias / %s
+WSGIPythonPath %s:%s
 
 <Directory %s>
     <Files wsgi.py>
-        Order deny,allow
-        Allow from all
+        Require all granted
     </Files>
-</Directory>"""
+</Directory>
+""".strip()
 
 print("Put this to your httpd.conf:")
 print(HTTPD_CONF_STATICMEDIA_TEMPLATE % (MEDIA_DIR, STATIC_DIR, STATIC_DIR, MEDIA_DIR))
-print(HTTPD_CONF_TEMPLATE % (WSGI_PATH, DJANGO_BASE_DIR, WSGI_DIR))
+print(HTTPD_CONF_TEMPLATE % (WSGI_PY_PATH, DJANGO_BASE_DIR, SITE_PACKAGES_DIR, WSGI_DIR))
 
