@@ -128,8 +128,10 @@ Initialize the static & uploaded files
 --------------------------------------
 
 mkdir /path/to/your/lovelace/webapp/static
-mkdir /path/to/your/lovelace/webapp/upload
 python manage.py collectstatic
+
+mkdir -p /path/to/your/lovelace/webapp/upload/images
+sudo chown -R www-data /path/to/your/lovelace/webapp/upload/
 
 
 Apache
