@@ -17,7 +17,7 @@ WSGI_DIR = os.path.join(DJANGO_BASE_DIR, "raippa")
 WSGI_PY_PATH = os.path.join(DJANGO_BASE_DIR, "raippa", "wsgi.py")
 SITE_PACKAGES_DIR = site.getsitepackages()[0] # for venv
 
-STATIC_DIR = os.path.join(DJANGO_BASE_DIR, "raippa", "static")
+STATIC_DIR = os.path.join(DJANGO_BASE_DIR, "static")
 MEDIA_DIR = os.path.join(DJANGO_BASE_DIR, "upload")
 
 

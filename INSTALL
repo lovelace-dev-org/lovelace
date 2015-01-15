@@ -7,17 +7,6 @@ Firstly, update your packages.
 sudo apt-get update && sudo apt-get dist-upgrade
 
 
-Apache
-––––––
-
-Install Apache
-
-sudo apt-get install apache2
-
-Install mod_wsgi for Apache2 and Python 3
-
-sudo apt-get install libapache2-mod-wsgi-py3
-
 Postgresql
 ––––––––––
 
@@ -112,5 +101,50 @@ pip install pygments
 pip install pillow
 pip install django
 pip install celery
+pip install django-registration
 
+
+Initialize the database
+-----------------------
+
+python manage.py makemigrations
+python manage.py migrate
+python manage.py syncdb
+
+
+Initialize the static & uploaded files
+--------------------------------------
+
+mkdir /path/to/your/lovelace/webapp/static
+mkdir /path/to/your/lovelace/webapp/upload
+python manage.py collectstatic
+
+
+Apache
+––––––
+
+Install Apache
+
+sudo apt-get install apache2
+
+Install mod_wsgi for Apache2 and Python 3
+
+sudo apt-get install libapache2-mod-wsgi-py3
+
+
+Configuring Apache
+------------------
+
+Run the automatic configuration generator
+
+cd /path/to/your/lovelace
+python create_apache_conf.py
+
+Copy & paste the settings to your Apache conf
+
+sudo vim /etc/apache2/apache2.conf
+
+Restart apache
+
+sudo service apache2 restart
 
