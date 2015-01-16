@@ -416,12 +416,18 @@ class ImageMarkup(Markup):
 
     @classmethod
     def block(cls, block, settings, state):
-        # TODO: Implement embedded_image template tag
-        # TODO: On the other hand, no (security risk).
+        try:
+            image = courses.models.Image.objects.get(name=settings["image_name"])
+        except courses.models.Image.DoesNotExist as e:
+            # TODO: Modular errors
+            yield '<div>Image %s not found.</div>' % settings["image_name"]
+
+        image_url = image.fileinfo.url
+
         if "alt_text" in settings.keys():
-            yield '<img src="{%% embedded_image \'%s\' %%}" alt="%s">\n' % (settings["image_name"], settings["alt_text"])
+            yield '<img src="%s" alt="%s">\n' % (image_url, settings["alt_text"])
         else:
-            yield '<img src="{%% embedded_image \'%s\' %%}">\n' % settings["image_name"]
+            yield '<img src="%s">\n' % image_url
 
     @classmethod
     def settings(cls, matchobj, state):

@@ -22,12 +22,12 @@ urlpatterns = [
 
     # For serving images
     # TODO: Serve directly from the web server
-    url(r'^media/images/(?P<imagename>.+)$', views.image_download),
+    #url(r'^media/images/(?P<imagename>.+)$', views.image_download),
 
     # For serving uploaded files
     # TODO: Noooo... Do it with the web server conf.
-    url(r'^media/files/(?P<filename>.+)$', views.file_download),
-    url(r'^media/(?P<filename>.+)$', views.file_download),
+    #url(r'^media/files/(?P<filename>.+)$', views.file_download),
+    #url(r'^media/(?P<filename>.+)$', views.file_download),
 
     # For calendar POST requests
     url(r'^calendar/(?P<calendar_id>\d+)/(?P<event_id>\d+)/$', views.calendar_post),
@@ -46,3 +46,9 @@ urlpatterns = [
     url(r'^(?P<course_slug>[^/]+)/(?P<content_slug>[^/]+)/evaluation/(?P<task_id>[^/]+)/$',
         views.file_exercise_evaluation, name='file_exercise_evaluation'),
 ]
+
+# For serving uploaded files on development server only:
+from django.conf import settings
+from django.conf.urls.static import static
+
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

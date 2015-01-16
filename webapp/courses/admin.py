@@ -4,6 +4,8 @@ from django.contrib import admin
 from django.contrib.auth.models import User
 from django.contrib.auth.admin import UserAdmin
 
+from django.core.urlresolvers import reverse
+
 from django.db import models
 from django.forms import TextInput, Textarea
 
@@ -198,9 +200,15 @@ class LectureAdmin(admin.ModelAdmin):
         elif db_field.name == 'tags':
             formfield.widget = Textarea(attrs={'rows':2})
         return formfield
+
+    def view_on_site(self, obj):
+        return reverse('courses:sandbox', kwargs={'content_slug': obj.slug})
+
     readonly_fields = ("slug",)
     list_display = ("name", "slug",)
     list_per_page = 500
+
+# TODO: Use the view_on_site on all content models!
 
 admin.site.register(Lecture, LectureAdmin)
 admin.site.register(MultipleChoiceExercise, MultipleChoiceExerciseAdmin)
@@ -218,9 +226,16 @@ class CalendarDateAdmin(admin.StackedInline):
 class CalendarAdmin(admin.ModelAdmin):
     inlines = [CalendarDateAdmin]
 
+class ImageAdmin(admin.ModelAdmin):
+    def save_model(self, request, obj, form, change):
+        obj.uploader = request.user
+        obj.save()
+
+    readonly_fields = ('uploader',)
+
 admin.site.register(Calendar, CalendarAdmin)
 admin.site.register(File)
-admin.site.register(Image)
+admin.site.register(Image, ImageAdmin)
 admin.site.register(Video)
 
 ## Course related administration
