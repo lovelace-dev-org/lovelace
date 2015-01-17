@@ -1,13 +1,17 @@
 """
-Celery tasks for checking the File Exercise files returned by the student.
+Celery tasks for checking a user's answers to file upload, code input and code
+replace exercises.
 """
+# TODO: Implement tests for ranked code exercises and group code exercises.
 from __future__ import absolute_import
 
 from collections import namedtuple
+from django.contrib.auth.models import User
 
 # Test dependencies
 import tempfile
 import os
+import random
 
 # Command dependencies
 import time
@@ -16,16 +20,28 @@ import subprocess
 
 from celery import shared_task
 
-@shared_task
-def add(x, y):
-    return x + y
+# The test data
+#from courses.models import FileExerciseTest, FileExerciseTestStage,\
+    #FileExerciseTestCommand, FileExerciseTestExpectedOutput,\
+    #FileExerciseTestIncludeFile
+#from courses.models import CodeInputExerciseAnswer # code input exercise models
+#from courses.models import CodeReplaceExerciseAnswer # code replace exercise models
+#from courses.models import # ranked code exercise models
+#from courses.models import # group code exercise models
 
-@shared_task(name="courses.run-filetask-tests")
-def run_tests(tests, test_files, student_files, reference_files):
+# The users' answers
+#from courses.models import UserFileUploadExerciseAnswer,\
+    #FileUploadExerciseReturnFile
+
+import courses.models
+
+@shared_task(name="courses.run-filetask-tests", bind=True)
+def run_tests(self, user_id, exercise_id, answer_id):
     # TODO: Actually, just receive the relevant ids for fetching the Django
     #       models here instead of in the Django view.
     # http://celery.readthedocs.org/en/latest/userguide/tasks.html#database-transactions
 
+    #def run_tests(tests, test_files, student_files, reference_files):
     # tests: the metadata for all the tests
     # test_files: the files that are integral for the tests
     # student_files: the files the student uploaded - these will be tested
@@ -44,6 +60,12 @@ def run_tests(tests, test_files, student_files, reference_files):
     #       - readable file
     #       - as command line parameters!
     #       - in env?
+
+    self.update_state(state="PROGRESS", meta={"current":4, "total":10})
+    user_object = User.objects.get(id=user_id)
+    print("user: %s" % (user_object.username))
+    #x = [i for i in range(10**8) if i % 2 == 1]
+    return
 
     student_results = {}
     reference_results = {}
@@ -173,13 +195,13 @@ def run_command(cmd, env, stdin, stdout, stderr, timeout):
     args = shlex.split(cmd)
     cwd = env["PWD"]
     start_time = time.time()
-    proc = Popen(args=args, bufsize=-1, executable=None,
-                 stdin=stdin, stdout=stdout, stderr=stderr, # Standard fds
-                 preexec_fn=demote_process,                 # Demote before fork
-                 close_fds=True,                            # Don't inherit fds
-                 shell=False,                               # Don't run in shell
-                 cwd=cwd, env=env,
-                 univeral_newlines=False)                   # Binary stdout
+    proc = subprocess.Popen(args=args, bufsize=-1, executable=None,
+                            stdin=stdin, stdout=stdout, stderr=stderr, # Standard fds
+                            preexec_fn=demote_process,                 # Demote before fork
+                            close_fds=True,                            # Don't inherit fds
+                            shell=False,                               # Don't run in shell
+                            cwd=cwd, env=env,
+                            univeral_newlines=False)                   # Binary stdout
     
     proc_retval = None
     proc_timedout = False

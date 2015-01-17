@@ -16,6 +16,8 @@ from django.core.urlresolvers import reverse
 
 import slugify
 
+import courses.tasks as rpc_tasks
+
 from feedback.models import ContentFeedbackQuestion
 
 import courses.markupparser as markupparser
@@ -270,7 +272,7 @@ class ContentPage(models.Model):
             "CODE_INPUT_EXERCISE" : CodeInputExercise,
             "CODE_REPLACE_EXERCISE" : CodeReplaceExercise,
         }                       
-        return type_models[self.content_type](id=self.id)
+        return type_models[self.content_type].objects.get(id=self.id)
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -317,6 +319,63 @@ class MultipleChoiceExercise(ContentPage):
         choices = MultipleChoiceExerciseAnswer.objects.filter(exercise=self.id).order_by('id')
         return choices
 
+    def save_answer(self, user, ip, answer, files):
+        keys = list(answer.keys())
+        key = [k for k in keys if k.endswith("-radio")][0]
+        answered = int(answer[key])
+        try:
+            chosen_answer = MultipleChoiceExerciseAnswer.objects.get(id=answered)
+        except MultipleChoiceExerciseAnswer.DoesNotExist as e:
+            # TODO: Invalid answer
+            raise Exception()
+        answer_object = UserMultipleChoiceExerciseAnswer(
+            exercise=self, chosen_answer=chosen_answer, user=user,
+            answerer_ip=ip
+        )
+        answer_object.save()
+        return answer_object
+
+    def check_answer(self, user, ip, answer, files, answer_object):
+        choices = self.get_choices()
+        
+        # quick hax:
+        keys = list(answer.keys())
+        key = [k for k in keys if k.endswith("-radio")][0]
+        answered = int(answer[key])
+
+        # Determine, if the given answer was correct and which hints to show
+        # TODO: FIX! This is utterly broken...
+        correct = True
+        correct_found = False
+        hints = []
+        comments = []
+        for choice in choices:
+            if answered == choice.id and choice.correct == True and correct == True:
+                correct = True
+                correct_found = True
+                if choice.comment:
+                    comments.append(choice.comment)
+            elif answered == choice.id and choice.correct == True and correct == False:
+                correct = True
+                if choice.comment:
+                    comments.append(choice.comment)
+            elif answered == choice.id and choice.correct == True:
+                if not correct_found:
+                    correct = False
+                if choice.hint:
+                    hints.append(choice.hint)
+            elif answered == choice.id and choice.correct == False:
+                correct = False
+                if choice.hint:
+                    hints.append(choice.hint)
+                if choice.comment:
+                    comments.append(choice.comment)
+            
+        return {"evaluation": correct, "hints": hints, "comments": comments}
+
+    def save_evaluation(self, user, evaluation):
+        pass
+
     class Meta:
         verbose_name = "multiple choice exercise"
         proxy = True
@@ -334,6 +393,58 @@ class CheckboxExercise(ContentPage):
     def get_choices(self):
         choices = CheckboxExerciseAnswer.objects.filter(exercise=self.id).order_by('id')
         return choices
+
+    def save_answer(self, user, ip, answer, files):
+        chosen_answer_ids = [int(i) for i, _ in answer.items() if i.isdigit()]
+        
+        chosen_answers = CheckboxExerciseAnswer.objects.filter(id__in=chosen_answer_ids).\
+                         values_list('id', flat=True)
+        if set(chosen_answer_ids) != set(chosen_answers):
+            # TODO: Invalid answer
+            raise Exception()
+
+        answer_object = UserCheckboxExerciseAnswer(
+            exercise=self, user=user, answerer_ip=ip
+        )
+        answer_object.save()
+        answer_object.chosen_answers.add(*chosen_answers)
+        answer_object.save()
+        return answer_object
+
+    def check_answer(self, user, ip, answer, files, answer_object):
+        # Determine, if the given answer was correct and which hints to show
+        choices = self.get_choices()
+        
+        # quick hax:
+        answered = {choice.id: False for choice in choices}
+        answered.update({int(i): True for i, _ in answer.items() if i.isdigit()})
+        
+        correct = True
+        hints = []
+        comments = []
+        chosen = []
+        for choice in choices:
+            if answered[choice.id] == True and choice.correct == True and correct == True:
+                correct = True
+                chosen.append(choice)
+                if choice.comment:
+                    comments.append(choice.comment)
+            elif answered[choice.id] == False and choice.correct == True:
+                correct = False
+                if choice.hint:
+                    hints.append(choice.hint)
+            elif answered[choice.id] == True and choice.correct == False:
+                correct = False
+                if choice.hint:
+                    hints.append(choice.hint)
+                if choice.comment:
+                    comments.append(choice.comment)
+                chosen.append(choice)
+
+        return {"evaluation": correct, "hints": hints, "comments": comments}
+
+    def save_evaluation(self, user, evaluation):
+        pass
 
     class Meta:
         verbose_name = "checkbox exercise"
@@ -353,6 +464,74 @@ class TextfieldExercise(ContentPage):
         choices = TextfieldExerciseAnswer.objects.filter(exercise=self.id)
         return choices
 
+    def save_answer(self, user, ip, answer, files):
+        if "answer" in answer.keys():
+            given_answer = answer["answer"].replace("\r", "")
+        else:
+            # TODO: Invalid answer
+            raise Exception()
+
+        answer_object = UserTextfieldExerciseAnswer(
+            exercise=self, given_answer=given_answer, user=user,
+            answerer_ip=ip
+        )
+        answer_object.save()
+        return answer_object
+
+    def check_answer(self, user, ip, answer, files, answer_object):
+        answers = self.get_choices()
+
+        # Determine, if the given answer was correct and which hints/comments to show
+        correct = True
+        correct_found = False
+        hints = []
+        comments = []
+        errors = []
+        if "answer" in answer.keys():
+            given_answer = answer["answer"].replace("\r", "")
+        else:
+            return False, [], [], ["No data sent"]
+
+        re_validate = lambda db_ans, given_ans: re.match(db_ans, given_ans) is not None
+        str_validate = lambda db_ans, given_ans: db_ans == given_ans
+
+        for answer in answers:
+            validate = re_validate if answer.regexp else str_validate
+
+            try:
+                match = validate(answer.answer, given_answer)
+            except re.error as e:
+                if user.is_staff:
+                    errors.append("Contact staff, regexp error '%s' from regexp: %s" % (e, answer.answer))
+                else:
+                    errors.append("Contact staff! Regexp error '%s' in exercise '%s'." % (e, content.name))
+                correct = False
+                continue
+
+            if match and answer.correct:
+                correct = True
+                correct_found = True
+                if answer.comment:
+                    comments.append(answer.comment)
+            elif match and not answer.correct:
+                if not correct_found:
+                    correct = False
+                if answer.hint:
+                    hints.append(answer.hint)
+                if answer.comment:
+                    comments.append(answer.comment)
+            elif not match and answer.correct:
+                if not correct_found:
+                    correct = False
+                if answer.hint:
+                    hints.append(answer.hint)
+
+        return {"evaluation": correct, "hints": hints, "comments": comments,
+                "errors": errors}
+
+    def save_evaluation(self, user, evaluation):
+        pass
+
     class Meta:
         verbose_name = "text field exercise"
         proxy = True
@@ -368,6 +547,32 @@ class FileUploadExercise(ContentPage):
         self.content_type = "FILE_UPLOAD_EXERCISE"
         super(FileUploadExercise, self).save(*args, **kwargs)
 
+    def save_answer(self, user, ip, answer, files):
+        answer_object = UserFileUploadExerciseAnswer(
+            exercise=self, user=user, answerer_ip=ip
+        )
+        answer_object.save()
+        
+        if files:
+            filelist = files.getlist('file')
+            for uploaded_file in filelist:
+                return_file = FileUploadExerciseReturnFile(
+                    answer=answer_object, fileinfo=uploaded_file
+                )
+                return_file.save()
+        else:
+            # TODO: Invalid answer
+            raise Exception()
+        return answer_object
+
+    def check_answer(self, user, ip, answer, files, answer_object):
+        result = rpc_tasks.run_tests.delay(user_id=user.id, exercise_id=self.id,
+                                           answer_id=answer_object.id)
+        return {"task_id": result.task_id}
+
+    def save_evaluation(self, user, evaluation):
+        pass
+
     class Meta:
         verbose_name = "file upload exercise"
         proxy = True
@@ -382,6 +587,15 @@ class CodeInputExercise(ContentPage):
 
         self.content_type = "CODE_INPUT_EXERCISE"
         super(CodeInputExercise, self).save(*args, **kwargs)
+
+    def save_answer(self, user, ip, answer, files):
+        pass
+
+    def check_answer(self, user, ip, answer, files, answer_object):
+        return {}
+
+    def save_evaluation(self, user, evaluation):
+        pass
 
     class Meta:
         verbose_name = "code input exercise"
@@ -405,6 +619,15 @@ class CodeReplaceExercise(ContentPage):
         # Django templates don't like groupby, so evaluate iterators:
         return [(a, list(b)) for a, b in choices]
 
+    def save_answer(self, user, ip, answer, files):
+        pass
+
+    def check_answer(self, user, ip, answer, files, answer_object):
+        return {}
+
+    def save_evaluation(self, user, evaluation):
+        pass
+
     class Meta:
         verbose_name = "code replace exercise"
         proxy = True
@@ -422,7 +645,7 @@ class CodeReplaceExercise(ContentPage):
 # - artificial intelligence course (competing othello AI algorithms)
 # - pattern recognition and neural networks course (performance of an pattern
 #   recognition algorithm)
-#class RankedCodeExercise(Exercise):
+#class RankedCodeExercise(ContentPage):
     #def save(self, *args, **kwargs):
         #if not self.slug:
             #self.slug = self.get_url_name()
@@ -431,6 +654,9 @@ class CodeReplaceExercise(ContentPage):
 #
         #self.content_type = "RANKED_CODE_EXERCISE"
         #super(RankedCodeExercise, self).save(*args, **kwargs)
+#
+    #class Meta:
+        #proxy = True
 
 # TODO: Group code exercise. All group members must return their own files!
 # Inspiration:
@@ -662,7 +888,7 @@ class Evaluation(models.Model):
 
 class UserAnswer(models.Model):
     """Parent class for what users have given as their answers to different exercises."""
-    evaluation = models.OneToOneField(Evaluation)
+    evaluation = models.OneToOneField(Evaluation, null=True, blank=True)
     user = models.ForeignKey(User)
     answer_date = models.DateTimeField(verbose_name='Date and time of when the user answered this exercise',
                                        auto_now_add=True)
@@ -725,7 +951,7 @@ class UserCheckboxExerciseAnswer(UserAnswer):
 
     def __str__(self):
         #return "Answer no. %04d: %s" % (self.answer_count, ", ".join(self.chosen_answers))
-        return "Answer by %s: %s" % (self.user.username, ", ".join(self.chosen_answers))
+        return "Answer by %s: TODO" % (self.user.username) #, ", ".join(self.chosen_answers))
 
 class UserLecturePageAnswer(UserAnswer):
     exercise = models.ForeignKey(Lecture)

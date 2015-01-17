@@ -7,7 +7,9 @@ import datetime
 import json
 from cgi import escape
 
-from django.http import HttpResponse, JsonResponse, HttpResponseRedirect, HttpResponseNotFound, HttpResponseForbidden
+from django.http import HttpResponse, JsonResponse, HttpResponseRedirect,\
+    HttpResponseNotFound, HttpResponseForbidden, HttpResponseNotAllowed,\
+    HttpResponseServerError
 from django.template import Context, RequestContext, Template, loader
 from django.core.urlresolvers import reverse
 from django.utils import timezone
@@ -125,294 +127,21 @@ def get_exercise_info(content):
 
     return (content_type, question, choices, answers)
 
-def multiplechoice_exercise_check(content, user, choices, post_data, ip):
-    points = 0.0
-
-    # quick hax:
-    keys = list(post_data.keys())
-    key = [k for k in keys if k.endswith("-radio")][0]
-    answered = int(post_data[key])
-
-    # Determine, if the given answer was correct and which hints to show
-    correct = True
-    correct_found = False
-    hints = []
-    comments = []
-    for choice in choices:
-        if answered == choice.id:
-            chosen = choice
-
-        if answered == choice.id and choice.correct == True and correct == True:
-            correct = True
-            correct_found = True
-            if choice.comment:
-                comments.append(choice.comment)
-        elif answered == choice.id and choice.correct == True and correct == False:
-            correct = True
-            if choice.comment:
-                comments.append(choice.comment)
-        elif answered == choice.id and choice.correct == True:
-            if not correct_found:
-                correct = False
-            if choice.hint:
-                hints.append(choice.hint)
-        elif answered == choice.id and choice.correct == False:
-            correct = False
-            if choice.hint:
-                hints.append(choice.hint)
-            if choice.comment:
-                comments.append(choice.comment)
-    
-    # Save the results to the database, if the question was answered by a non-anonymous user
-    # TODO: Refactor into own function
-    if user.is_authenticated():
-        if correct:
-            points = 1.0
-        rb_evaluation = Evaluation(points=points,feedback="",correct=correct)
-        rb_evaluation.save()
-        rb_answer = UserMultipleChoiceExerciseAnswer(exercise=content.get_type_object(), chosen_answer=chosen,
-                                                     evaluation=rb_evaluation, user=user, answerer_ip=ip,
-                                                     answer_date=timezone.now())
-        rb_answer.save()
-    
-    return correct, hints, comments
-
-def checkbox_exercise_check(content, user, choices, post_data, ip):
-    points = 0.0
-
-    # Determine, if the given answer was correct and which hints to show
-
-    # quick hax:
-    answered = {choice.id: False for choice in choices}
-    answered.update({int(i): True for i, _ in post_data.items() if i.isdigit()})
-
-    correct = True
-    hints = []
-    comments = []
-    chosen = []
-    for choice in choices:
-        if answered[choice.id] == True and choice.correct == True and correct == True:
-            correct = True
-            chosen.append(choice)
-            if choice.comment:
-                comments.append(choice.comment)
-        elif answered[choice.id] == False and choice.correct == True:
-            correct = False
-            if choice.hint:
-                hints.append(choice.hint)
-        elif answered[choice.id] == True and choice.correct == False:
-            correct = False
-            if choice.hint:
-                hints.append(choice.hint)
-            if choice.comment:
-                comments.append(choice.comment)
-            chosen.append(choice)
-
-    # Save the results to the database, if the question was answered by a non-anonymous user
-    if user.is_authenticated():
-        if correct:
-            points = 1.0
-        cb_evaluation = Evaluation(points=points,feedback="",correct=correct)
-        cb_evaluation.save()
-        cb_answer = UserCheckboxExerciseAnswer(exercise=content.get_type_object(), evaluation=cb_evaluation,
-                                               user=user, answer_date=timezone.now(),
-                                               answerer_ip=ip)
-        cb_answer.save()
-        cb_answer.chosen_answers.add(*chosen)
-        cb_answer.save()
-
-    return correct, hints, comments
-
-def textfield_exercise_check(content, user, answers, post_data, ip):
-    points = 0.0
-
-    # Determine, if the given answer was correct and which hints/comments to show
-    correct = True
-    correct_found = False
-    hints = []
-    comments = []
-    errors = []
-    if "answer" in post_data.keys():
-        given = post_data["answer"].replace("\r", "")
-    else:
-        return False, [], [], ["No data sent"]
-
-    re_validate = lambda db_ans, given_ans: re.match(db_ans, given_ans) is not None
-    str_validate = lambda db_ans, given_ans: db_ans == given_ans
-
-    for answer in answers:
-        validate = re_validate if answer.regexp else str_validate
-
-        try:
-            match = validate(answer.answer, given)
-        except re.error as e:
-            if user.is_staff:
-                errors.append("Contact staff, regexp error '%s' from regexp: %s" % (e, answer.answer))
-            else:
-                errors.append("Contact staff! Regexp error '%s' in exercise '%s'." % (e, content.name))
-            correct = False
-            continue
-
-        if match and answer.correct:
-            correct = True
-            correct_found = True
-            if answer.comment:
-                comments.append(answer.comment)
-        elif match and not answer.correct:
-            if not correct_found:
-                correct = False
-            if answer.hint:
-                hints.append(answer.hint)
-            if answer.comment:
-                comments.append(answer.comment)
-        elif not match and answer.correct:
-            if not correct_found:
-                correct = False
-            if answer.hint:
-                hints.append(answer.hint)
-
-    # Save the results to the database, if the question was answered by a non-anonymous user
-    if user.is_authenticated():
-        if correct:
-            points = 1.0
-        tf_evaluation = Evaluation(points=points,feedback="",correct=correct)
-        tf_evaluation.save()
-        tf_answer = UserTextfieldExerciseAnswer(exercise=content.get_type_object(), given_answer=given,
-                                                evaluation=tf_evaluation, user=user, answerer_ip=ip,
-                                                answer_date=timezone.now())
-        tf_answer.save()
-
-    return correct, hints, comments, errors
-
-def file_exercise_check(content, user, files_data, post_data):
-    points = 0.0
-    correct = True
-    hints = []
-    comments = []
-    
-    # TODO: Create a model manager that fetches all relevant information
-    #       for the file exercise in question.
-    # TODO: Fetch all the relevant information using the above manager.
-    # TODO: Cache it to save many complicated db queries and filesystem reads.
-
-    if user.is_authenticated() and points==666.6:
-        # TODO: Fix the information that will be saved
-        f_returnable = FileTaskReturnable(run_time=datetime.time(0,0,1,500), output="filler-output-filler", errors="filler-errors-filler", retval=0)
-        f_returnable.save()
-        f_evaluation = Evaluation(points=points,feedback="",correct=False)
-        f_evaluation.save()
-        if "collaborators" in post_data.keys():
-            collaborators = post_data["collaborators"]
-        else:
-            collaborators = None
-        f_answer = UserFileTaskAnswer(exercise=content.exercisepage.filetask, returnable=f_returnable, evaluation=f_evaluation,
-                                      user=user, answer_date=timezone.now(), collaborators=collaborators)
-        f_answer.save()
-
-        for entry_name, uploaded_file in files_data.items():
-            f_filetaskreturnfile = FileTaskReturnFile(fileinfo=uploaded_file, returnable=f_returnable)
-            f_filetaskreturnfile.save()
-        
-        results = filecheck_client.check_file_answer(exercise=content.exercisepage.filetask, files={}, answer=f_answer)
-
-        # Quickly determine, whether the answer was correct
-        results_zipped = []
-        student_results = []
-        reference_results = []
-        ref = ""
-        if "reference" in results.keys():
-            ref = "reference"
-        elif "expected" in results.keys():
-            ref = "expected"
-
-        for test in results["student"].keys():
-            # TODO: Do the output and stderr comparison here instead of below
-            results_zipped.append(zip(results["student"][test]["outputs"], results[ref][test]["outputs"]))
-            results_zipped.append(zip(results["student"][test]["errors"], results[ref][test]["errors"]))
-
-            for name, content in results[ref][test]["outputfiles"].items():
-                if name not in results["student"][test]["outputfiles"].keys():
-                    correct = False
-                else:
-                    if content != results["student"][test]["outputfiles"][name]:
-                        correct = False
-
-        for test in results_zipped:
-            for resultpair in test:
-                if resultpair[0].replace('\r\n', '\n') != resultpair[1].replace('\r\n', '\n'):
-                    correct = False
-
-        if correct:
-            f_evaluation.points = 1.0
-            f_evaluation.correct = correct
-            f_evaluation.save()
-            f_answer.save()
-    elif points==555.5:
-        files = {}
-        for rf in files_data.values():
-            f = bytes()
-            for chunk in rf.chunks():
-                f += chunk
-            files[rf.name] = f
-        results = filecheck_client.check_file_answer(exercise=content.exercisepage.filetask, files=files)
-
-        # Quickly determine, whether the answer was correct
-        results_zipped = []
-        student_results = []
-        reference_results = []
-        ref = ""
-        if "reference" in results.keys():
-            ref = "reference"
-        elif "expected" in results.keys():
-            ref = "expected"
-
-        for test in results["student"].keys():
-            # TODO: Do the output and stderr comparison here instead of below
-            results_zipped.append(zip(results["student"][test]["outputs"], results[ref][test]["outputs"]))
-            results_zipped.append(zip(results["student"][test]["errors"], results[ref][test]["errors"]))
-
-            for name, content in results[ref][test]["outputfiles"].items():
-                if name not in results["student"][test]["outputfiles"].keys():
-                    correct = False
-                else:
-                    if content != results["student"][test]["outputfiles"][name]:
-                        correct = False
-
-        for test in results_zipped:
-            for resultpair in test:
-                if resultpair[0].replace('\r\n', '\n') != resultpair[1].replace('\r\n', '\n'):
-                    correct = False
-
-    # Get a nice HTML table for the diffs
-    #diff_table = filecheck_client.html(results)
-    results = filecheck_client.check_file_answer(1, 2, 3)
-    diff_table = results
-
-    return correct, hints, comments, diff_table
-
 def check_answer(request, course_slug, content_slug, **kwargs):
     """Validates an answer to an exercise."""
     if request.method == "POST":
+        # <DEBUG>
         print(request.POST)
-        f = request.FILES or None
-        if f:
-            print("FILES object:", request.FILES)
-
-            filelist = request.FILES.getlist('file')
-            
-            for uploaded_file in filelist:
-                print(uploaded_file.name)
-                print(b"".join(uploaded_file.chunks()))
+        # </DEBUG>
         pass
     else:
-        # TODO: Return something more descriptive for GETters
-        return HttpResponse("")
+        return HttpResponseNotAllowed(['POST'])
 
     selected_course = Course.objects.get(slug=course_slug)
     content = ContentPage.objects.get(slug=content_slug)
     # TODO: Ensure that the content really belongs to the course
 
-    # Check if a deadline exists and if we are past it
+    # Check if a deadline exists and if it has already passed
     try:
         content_graph = selected_course.contents.get(content=content)
     except ContentGraph.DoesNotExist as e:
@@ -424,73 +153,47 @@ def check_answer(request, course_slug, content_slug, **kwargs):
             # TODO: Use a template!
             return HttpResponse("The deadline for this exercise (%s) has passed. Your answer will not be evaluated!" % (content_graph.deadline))
 
-    content_type = content.content_type
-    question = content.question
-    choices = content.get_type_object().get_choices()
-    answers = choices
+    user = request.user
     ip = request.META.get('REMOTE_ADDR')
+    answer = request.POST
+    files = request.FILES
 
-    correct = True
-    hints = []
-    comments = []
-    errors = []
-    diff_table = ""
-
-    if choices and content_type == "MULTIPLE_CHOICE_EXERCISE":
-        correct, hints, comments = multiplechoice_exercise_check(content, request.user, choices, request.POST, ip)
-    elif choices and content_type == "CHECKBOX_EXERCISE":
-        correct, hints, comments = checkbox_exercise_check(content, request.user, choices, request.POST, ip)
-    elif answers and content_type == "TEXTFIELD_EXERCISE":
-        correct, hints, comments, errors = textfield_exercise_check(content, request.user, answers, request.POST, ip)
-    elif content_type == "FILE_UPLOAD_EXERCISE":
-        correct, hints, comments, diff_table = file_exercise_check(content, request.user, request.FILES, request.POST)
-        return HttpResponseRedirect(reverse('courses:check_progress',
-                                            kwargs={"course_slug": training_slug,
-                                                    "content_slug": content_slug,
-                                                    "task_id": diff_table}))
-
-    # Compile the information required for the exercise evaluation
-    if correct:
-        evaluation = "Correct!"
-    else:
-        # TODO: Account for the video hints!
-        evaluation = "Incorrect answer."
-        if hints:
-            random.shuffle(hints)
-
-    r_diff_table = diff_table
-    #try:
-        #r_diff_table = unicode(diff_table, "utf-8")
-    #except UnicodeDecodeError:
-        #r_diff_table = unicode(diff_table, "iso-8859-1")
+    exercise = content.get_type_object()
+    answer_object = exercise.save_answer(user, ip, answer, files)
+    evaluation = exercise.check_answer(user, ip, answer, files, answer_object)
+    exercise.save_evaluation(user, evaluation)
 
     # TODO: In case of errors, send a 500
+    if "errors" in evaluation.keys() and evaluation["errors"]:
+        return HttpResponseServerError()
+
+    if exercise.content_type == "FILE_UPLOAD_EXERCISE":
+        task_id = evaluation["task_id"]
+        return HttpResponseRedirect(reverse('courses:check_progress',
+                                            kwargs={"course_slug": course_slug,
+                                                    "content_slug": content_slug,
+                                                    "task_id": task_id}))
 
     t = loader.get_template("courses/exercise_evaluation.html")
     c = Context({
         'evaluation': evaluation,
-        'errors': errors,
-        'hints': hints,
-        'comments': comments,
-        'diff_table': r_diff_table,
     })
-
     return HttpResponse(t.render(c))
 
 def check_progress(request, course_slug, content_slug, task_id):
     # Based on https://djangosnippets.org/snippets/2898/
     # TODO: Check permissions
     task = AsyncResult(task_id)
-    if task.result:
+    if task.ready():
         return HttpResponseRedirect(reverse('courses:file_exercise_evaluation',
                                             kwargs={"course_slug": course_slug,
                                                     "content_slug": content_slug,
                                                     "task_id": task_id,}))
     else:
-        data = task.state
+        data = {"state": task.state, "metadata": task.info}
         return JsonResponse(data)
 
-def file_exercise_evaluation(request, course_name, content_name, task_id):
+def file_exercise_evaluation(request, course_slug, content_slug, task_id):
     # TODO: Render the exercise results and send them to the user
     t = loader.get_template("courses/file_exercise_evaluation.html")
     c = Context({

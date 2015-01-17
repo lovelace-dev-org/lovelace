@@ -46,6 +46,113 @@ def compose_test_object(exercise):
     
     return test_object
 
+def file_exercise_check(content, user, files_data, post_data):
+    # NOTE: Deprecated code moved from views.py to here temporarily.
+    points = 0.0
+    correct = True
+    hints = []
+    comments = []
+    
+    # TODO: Create a model manager that fetches all relevant information
+    #       for the file exercise in question.
+    # TODO: Fetch all the relevant information using the above manager.
+    # TODO: Cache it to save many complicated db queries and filesystem reads.
+
+    if user.is_authenticated() and points==666.6:
+        # TODO: Fix the information that will be saved
+        f_returnable = FileTaskReturnable(run_time=datetime.time(0,0,1,500), output="filler-output-filler", errors="filler-errors-filler", retval=0)
+        f_returnable.save()
+        f_evaluation = Evaluation(points=points,feedback="",correct=False)
+        f_evaluation.save()
+        if "collaborators" in post_data.keys():
+            collaborators = post_data["collaborators"]
+        else:
+            collaborators = None
+        f_answer = UserFileTaskAnswer(exercise=content.exercisepage.filetask, returnable=f_returnable, evaluation=f_evaluation,
+                                      user=user, answer_date=timezone.now(), collaborators=collaborators)
+        f_answer.save()
+
+        for entry_name, uploaded_file in files_data.items():
+            f_filetaskreturnfile = FileTaskReturnFile(fileinfo=uploaded_file, returnable=f_returnable)
+            f_filetaskreturnfile.save()
+        
+        results = filecheck_client.check_file_answer(exercise=content.exercisepage.filetask, files={}, answer=f_answer)
+
+        # Quickly determine, whether the answer was correct
+        results_zipped = []
+        student_results = []
+        reference_results = []
+        ref = ""
+        if "reference" in results.keys():
+            ref = "reference"
+        elif "expected" in results.keys():
+            ref = "expected"
+
+        for test in results["student"].keys():
+            # TODO: Do the output and stderr comparison here instead of below
+            results_zipped.append(zip(results["student"][test]["outputs"], results[ref][test]["outputs"]))
+            results_zipped.append(zip(results["student"][test]["errors"], results[ref][test]["errors"]))
+
+            for name, content in results[ref][test]["outputfiles"].items():
+                if name not in results["student"][test]["outputfiles"].keys():
+                    correct = False
+                else:
+                    if content != results["student"][test]["outputfiles"][name]:
+                        correct = False
+
+        for test in results_zipped:
+            for resultpair in test:
+                if resultpair[0].replace('\r\n', '\n') != resultpair[1].replace('\r\n', '\n'):
+                    correct = False
+
+        if correct:
+            f_evaluation.points = 1.0
+            f_evaluation.correct = correct
+            f_evaluation.save()
+            f_answer.save()
+    elif points==555.5:
+        files = {}
+        for rf in files_data.values():
+            f = bytes()
+            for chunk in rf.chunks():
+                f += chunk
+            files[rf.name] = f
+        results = filecheck_client.check_file_answer(exercise=content.exercisepage.filetask, files=files)
+
+        # Quickly determine, whether the answer was correct
+        results_zipped = []
+        student_results = []
+        reference_results = []
+        ref = ""
+        if "reference" in results.keys():
+            ref = "reference"
+        elif "expected" in results.keys():
+            ref = "expected"
+
+        for test in results["student"].keys():
+            # TODO: Do the output and stderr comparison here instead of below
+            results_zipped.append(zip(results["student"][test]["outputs"], results[ref][test]["outputs"]))
+            results_zipped.append(zip(results["student"][test]["errors"], results[ref][test]["errors"]))
+
+            for name, content in results[ref][test]["outputfiles"].items():
+                if name not in results["student"][test]["outputfiles"].keys():
+                    correct = False
+                else:
+                    if content != results["student"][test]["outputfiles"][name]:
+                        correct = False
+
+        for test in results_zipped:
+            for resultpair in test:
+                if resultpair[0].replace('\r\n', '\n') != resultpair[1].replace('\r\n', '\n'):
+                    correct = False
+
+    # Get a nice HTML table for the diffs
+    #diff_table = filecheck_client.html(results)
+    results = filecheck_client.check_file_answer(1, 2, 3)
+    diff_table = results
+
+    return correct, hints, comments, diff_table
+
 def ex_check_file_answer(task, files={}, answer=None):
     """Iterates through all the tests for a returnable package of user content."""
     print("Checking a file")
