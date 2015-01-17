@@ -14,6 +14,8 @@ function add_exercise_form_callbacks() {
             var error_div = form.parent().children("div.error");
             error_div.css("display", "none");
 
+            // TODO: Use xhr and progressevent to measure upload progress
+
             $.ajax({
                 type: form.attr('method'),
                 url: form.attr('action'),
