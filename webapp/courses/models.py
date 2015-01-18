@@ -73,11 +73,11 @@ class Course(models.Model):
     slug = models.CharField(max_length=255, db_index=True, unique=True)
     prerequisites = models.ManyToManyField('Course',
                                            verbose_name="Prerequisite courses",
-                                           blank=True, null=True)
+                                           blank=True)
 
     # TODO: Move the fields below to instance
-    frontpage = models.ForeignKey('Lecture', blank=True,null=True) # TODO: Create one automatically!
-    contents = models.ManyToManyField('ContentGraph', blank=True,null=True) # TODO: Rethink the content graph system!
+    frontpage = models.ForeignKey('Lecture', blank=True, null=True) # TODO: Create one automatically!
+    contents = models.ManyToManyField('ContentGraph', blank=True)   # TODO: Rethink the content graph system!
 
     def get_url_name(self):
         """Creates a URL and HTML5 ID field friendly version of the name."""
@@ -114,7 +114,7 @@ class ContentGraph(models.Model):
     # TODO: "Allow answering after deadline has passed" flag.
     parentnode = models.ForeignKey('self', null=True, blank=True)
     content = models.ForeignKey('ContentPage', null=True, blank=True)
-    responsible = models.ManyToManyField(User,blank=True,null=True)
+    responsible = models.ManyToManyField(User, blank=True)
     compulsory = models.BooleanField(verbose_name='Must be answered correctly before proceeding to next exercise', default=False)
     deadline = models.DateTimeField(verbose_name='The due date for completing this exercise',blank=True,null=True)
     publish_date = models.DateTimeField(verbose_name='When does this exercise become available',blank=True,null=True)
@@ -227,7 +227,7 @@ class ContentPage(models.Model):
     )
     content_type = models.CharField(max_length=28, default='LECTURE', choices=CONTENT_TYPE_CHOICES)
 
-    feedback_questions = models.ManyToManyField(ContentFeedbackQuestion, blank=True, null=True)
+    feedback_questions = models.ManyToManyField(ContentFeedbackQuestion, blank=True)
 
     # Exercise fields
     question = models.TextField(blank=True, null=True)
