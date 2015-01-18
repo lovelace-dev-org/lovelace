@@ -828,7 +828,6 @@ class TextfieldExerciseAnswer(models.Model):
     regexp = models.BooleanField(default=None)
     answer = models.TextField()
     hint = models.TextField(blank=True)
-    videohint = models.ForeignKey(Video,blank=True,null=True)
     comment = models.TextField(verbose_name='Extra comment given upon entering a matching answer',blank=True)
 
     def __str__(self):
@@ -846,7 +845,6 @@ class MultipleChoiceExerciseAnswer(models.Model):
     correct = models.BooleanField(default=None)
     answer = models.TextField()
     hint = models.TextField(blank=True)
-    videohint = models.ForeignKey(Video,blank=True,null=True)
     comment = models.TextField(verbose_name='Extra comment given upon selection of this answer',blank=True)
 
     def __str__(self):
@@ -857,7 +855,6 @@ class CheckboxExerciseAnswer(models.Model):
     correct = models.BooleanField(default=None)
     answer = models.TextField()
     hint = models.TextField(blank=True)    
-    videohint = models.ForeignKey(Video,blank=True,null=True)  
     comment = models.TextField(verbose_name='Extra comment given upon selection of this answer',blank=True)
 
     def __str__(self):
