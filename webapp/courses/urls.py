@@ -10,8 +10,8 @@ urlpatterns = [
 
     # For the registration module
     # TODO: AllAuth
-    url(r'^accounts/', include('registration.urls')),
-    url(r'^accounts/', views.index),
+    #url(r'^accounts/', include('registration.urls')),
+    #url(r'^accounts/', views.index),
 
     # For viewing and changing user information
     url(r'^answers/(?P<user>[^/]+)/(?P<course>[^/]+)/(?P<exercise>[^/]+)',
