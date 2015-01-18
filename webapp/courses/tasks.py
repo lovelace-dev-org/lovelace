@@ -65,11 +65,16 @@ def run_tests(self, user_id, exercise_id, answer_id):
     user_object = User.objects.get(id=user_id)
     print("user: %s" % (user_object.username))
     #x = [i for i in range(10**8) if i % 2 == 1]
-    return
+    #return
 
-    # Get the returned code
+    answer_object = courses.models.UserFileUploadExerciseAnswer.objects.get(id=answer_id)
     
-
+    # Get the returned code
+    # Note: requires a shared/cloned file system!
+    returned_files = answer_object.get_returned_files()
+    print("".join("%s:\n%s" % (n, c) for n, c in returned_files.items()))
+    return
+    
     # Get the test data
 
 

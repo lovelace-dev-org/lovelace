@@ -927,6 +927,14 @@ class UserFileUploadExerciseAnswer(UserAnswer):
     def __str__(self):
         return "Answer by %s" % (self.user.username)
 
+    def get_returned_files(self):
+        file_objects = FileUploadExerciseReturnFile.objects.filter(answer=self)
+        returned_files = {}
+        for returned_file in file_objects:
+            with open(returned_file.fileinfo.path, 'rb') as f:
+                returned_files[returned_file.filename()] = f.read()
+        return returned_files
+
 class UserTextfieldExerciseAnswer(UserAnswer):
     exercise = models.ForeignKey(TextfieldExercise)
     given_answer = models.TextField()
