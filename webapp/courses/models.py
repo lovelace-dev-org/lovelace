@@ -876,9 +876,12 @@ class CodeReplaceExerciseAnswer(models.Model):
 
 class Evaluation(models.Model):
     """Evaluation of a student's exercise answer."""
-    correct = models.BooleanField(default=None)
+    correct = models.BooleanField(default=False)
     points = models.FloatField(blank=True)
-    feedback = models.TextField(verbose_name='Feedback given by a teacher',blank=True)
+
+    evaluation_date = models.DateTimeField(verbose_name='When was the answer evaluated', auto_now_add=True)
+    evaluator = models.ForeignKey(User, verbose_name='Who evaluated the answer', blank=True, null=True)
+    feedback = models.TextField(verbose_name='Feedback given by a teacher', blank=True)
 
     def __str__(self):
         if self.correct:

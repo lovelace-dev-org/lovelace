@@ -67,25 +67,34 @@ def run_tests(self, user_id, exercise_id, answer_id):
     #x = [i for i in range(10**8) if i % 2 == 1]
     return
 
+    # Get the returned code
+    
+
+    # Get the test data
+
+
     student_results = {}
     reference_results = {}
     
+    # Run all the tests for both the returned and reference code
     for i, test in enumerate(tests):
-        current_task.update_state(state="PROGRESS",
-                                  meta={"current":i, "total":len(tests)})
+        self.update_state(state="PROGRESS",
+                          meta={"current":i, "total":len(tests)})
 
         # TODO: The student's code can be run in parallel with the reference
         student_test_results = run_test(test, test_files, student_files)
         reference_test_results = run_test(test, test_files, reference_files)
 
     exercise_results = ["lol", "FIX", student_results, reference_results]
+
+    # Save the results to database
     
     # TODO: Should we:
     # - return the results? (most probably not)
     # - save the results directly into db? (is this worker contained enough?)
     # - send the results to a more privileged Celery worker for saving into db?
     # DEBUG: As a development stage measure, just return the result:
-    return exercise_results
+    #return exercise_results
 
 @shared_task(name="courses.run-test")
 def run_test(test, test_files, files_to_check):
@@ -209,7 +218,7 @@ def run_command(cmd, env, stdin, stdout, stderr, timeout):
         proc.wait(timeout=timeout)
         proc_runtime = time.time() - start_time
         proc_retval = proc.returncode
-    except TimeoutExpired:
+    except subprocess.TimeoutExpired:
         proc_timedout = True
         proc.terminate() # Try terminating the process nicely
         time.sleep(0.5)
