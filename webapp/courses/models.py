@@ -882,6 +882,7 @@ class Evaluation(models.Model):
     evaluation_date = models.DateTimeField(verbose_name='When was the answer evaluated', auto_now_add=True)
     evaluator = models.ForeignKey(User, verbose_name='Who evaluated the answer', blank=True, null=True)
     feedback = models.TextField(verbose_name='Feedback given by a teacher', blank=True)
+    test_results = models.TextField(verbose_name='Test results in JSON', blank=True) # TODO: JSONField
 
     def __str__(self):
         if self.correct:
