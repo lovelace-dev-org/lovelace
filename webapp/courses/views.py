@@ -104,29 +104,6 @@ def dirtree(tree, node, user):
             dirtree(tree, child, user)
         tree.append((mark_safe('<'), None))
 
-def get_exercise_info(content):
-    # TODO: Refactor into model methods
-    content_type = content.content_type
-    question = None
-    choices = None
-    answers = None
-
-    if content_type == "MULTIPLE_CHOICE_EXERCISE":
-        choices = MultipleChoiceExerciseAnswer.objects.filter(exercise=content.id).order_by('id')
-        question = ContentPage.objects.get(id=content.id).question
-    elif content_type == "CHECKBOX_EXERCISE":
-        choices = CheckboxExerciseAnswer.objects.filter(exercise=content.id).order_by('id')
-        question = ContentPage.objects.get(id=content.id).question
-    elif content_type == "TEXTFIELD_EXERCISE":
-        answers = TextfieldExerciseAnswer.objects.filter(exercise=content.id)
-        question = ContentPage.objects.get(id=content.id).question
-    elif content_type == "FILE_UPLOAD_EXERCISE":
-        question = ContentPage.objects.get(id=content.id).question
-    elif content_type == "LECTURE":
-        pass
-
-    return (content_type, question, choices, answers)
-
 def check_answer(request, course_slug, content_slug, **kwargs):
     """Validates an answer to an exercise."""
     if request.method == "POST":
@@ -243,7 +220,11 @@ def content(request, course_slug, content_slug, **kwargs):
     except ContentGraph.DoesNotExist as e:
         pass
 
-    content_type, question, choices, answers = get_exercise_info(content)
+    exercise = content.get_type_object()
+    content_type = exercise.content_type
+    question = exercise.question
+    choices = answers = exercise.get_choices()
+
     exercise_evaluation = None
     if request.user.is_authenticated():
         if not content_graph or not content_graph.publish_date or content_graph.publish_date < datetime.datetime.now():
@@ -617,11 +598,13 @@ def show_answers(request, user, course, exercise):
         return HttpResponseNotFound("No such course %s" % course)
     
     try:
-        exercise_obj = ContentPage.objects.get(slug=exercise)
+        exercise_obj = ContentPage.objects.get(slug=exercise).get_type_object()
     except ContentPage.DoesNotExist as e:
         return HttpResponseNotFound("No such exercise %s" % exercise)
 
-    content_type, question, choices, answers = get_exercise_info(exercise_obj)
+    content_type = exercise_obj.content_type
+    question = exercise_obj.question
+    choices = exercise_obj.get_choices()
 
     # TODO: Error checking for exercises that don't belong to this course
     
