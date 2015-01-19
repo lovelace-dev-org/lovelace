@@ -9,7 +9,6 @@ from django.utils import timezone
 from django.utils.safestring import mark_safe
 
 from courses.models import *
-from courses.views import get_exercise_info
 
 def textfield_eval(given, answers):
     given = given.replace("\r\n", "\n").replace("\n\r", "\n")
@@ -51,7 +50,11 @@ def single_task(request, task_name):
     file_answers = file_answers_count = file_user_count = file_correctly_by = None
     radiobutton_answers_count = radiobutton_final = None
     content_page = ContentPage.objects.get(slug=task_name)
-    tasktype, question, choices, answers = get_exercise_info(content_page)
+    
+    exercise = content_page.get_type_object()
+    tasktype = content_page.content_type
+    question = content_page.question
+    choices = answers = exercise.get_choices()
 
     if tasktype == "CHECKBOX_EXERCISE":
         checkbox_answers = UserCheckboxTaskAnswer.objects.filter(task=content_page)
@@ -119,7 +122,10 @@ def user_task(request, user_name, task_name):
 
     content = ContentPage.objects.get(slug=task_name)
 
-    tasktype, question, choices, answers = get_exercise_info(content)
+    exercise = content_page.get_type_object()
+    tasktype = content_page.content_type
+    question = content.question
+    choices = answers = exercise.get_choices()
 
     ruser = User.objects.get(username=user_name)
 
@@ -157,7 +163,11 @@ def all_tasks(request, course_name):
     for task in tasks:
         taskname = task.name
         taskurl = "/" + course_name + "/" + task.slug
-        tasktype, question, choices, answers = get_exercise_info(task)
+        
+        exercise = task.get_type_object()
+        tasktype = task.content_type
+        question = task.question
+        choices = answers = exercise.get_choices()
 
         if tasktype == "CHECKBOX_EXERCISE":
             all_evaluations = Evaluation.objects.filter(useranswer__usercheckboxtaskanswer__task=task).exclude(useranswer__user__in=staff)
@@ -221,7 +231,10 @@ def course_users(request, training_name, content_to_search, year, month, day):
         print(username,)
 
         for content in contents:
-            tasktype, question, choices, answers = get_exercise_info(content)
+            exercise = content.get_type_object()
+            tasktype = content.content_type
+            question = content.question
+            choices = answers = exercise.get_choices()
             if tasktype == "CHECKBOX_EXERCISE":
                 db_evaluations = db_user_evaluations.filter(useranswer__usercheckboxtaskanswer__task=content)
             elif tasktype == "MULTIPLE_CHOICE_EXERCISE":

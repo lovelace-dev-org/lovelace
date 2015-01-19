@@ -275,6 +275,10 @@ class ContentPage(models.Model):
         }                       
         return type_models[self.content_type].objects.get(id=self.id)
 
+    def get_choices(self):
+        # Blank function for types that don't require this
+        pass
+
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = self.get_url_name()
