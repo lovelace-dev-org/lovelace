@@ -159,7 +159,7 @@ def get_image_upload_path(instance, filename):
 class Image(models.Model):
     """Image"""
     uploader = models.ForeignKey(User)
-    name = models.CharField(verbose_name='Name for reference in content',max_length=200,unique=True)
+    name = models.CharField(verbose_name='Name for reference in content', max_length=200, unique=True)
     date_uploaded = models.DateTimeField(verbose_name='date uploaded', auto_now_add=True)
     description = models.CharField(max_length=500)
     fileinfo = models.ImageField(upload_to=get_image_upload_path)
@@ -169,9 +169,10 @@ class Image(models.Model):
 
 class Video(models.Model):
     """Youtube link for embedded videos"""
-    name = models.CharField(max_length=200)
-    link = models.URLField()
     uploader = models.ForeignKey(User)
+    name = models.CharField(verbose_name='Name for reference in content', max_length=200, unique=True)
+    link = models.URLField()
+    description = models.CharField(max_length=500)
 
     def __str__(self):
         return self.name
@@ -179,7 +180,7 @@ class Video(models.Model):
 ## Time reservation and event calendar system
 class Calendar(models.Model):
     """A multi purpose calendar for course events markups, time reservations etc."""
-    name = models.CharField(verbose_name='Name for reference in content',max_length=200,unique=True)
+    name = models.CharField(verbose_name='Name for reference in content', max_length=200, unique=True)
 
     def __str__(self):
         return self.name
