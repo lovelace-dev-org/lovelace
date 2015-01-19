@@ -58,6 +58,7 @@ class MultipleChoiceExerciseAdmin(admin.ModelAdmin):
         ('Feedback settings',  {'fields': ['feedback_questions']}),
     ]
     inlines = [MultipleChoiceExerciseAnswerInline, HintInline]
+    search_fields = ("name",)
     readonly_fields = ("slug",)
     list_display = ("name", "slug",)
     list_per_page = 500
@@ -77,6 +78,7 @@ class CheckboxExerciseAdmin(admin.ModelAdmin):
         ('Feedback settings',  {'fields': ['feedback_questions']}),
     ]
     inlines = [CheckboxExerciseAnswerInline, HintInline]
+    search_fields = ("name",)
     readonly_fields = ("slug",)
     list_display = ("name", "slug",)
     list_per_page = 500
@@ -96,6 +98,7 @@ class TextfieldExerciseAdmin(admin.ModelAdmin):
         ('Feedback settings',  {'fields': ['feedback_questions']}),
     ]
     inlines = [TextfieldExerciseAnswerInline, HintInline]
+    search_fields = ("name",)
     readonly_fields = ("slug",)
     list_display = ("name", "slug",)
     list_per_page = 500
@@ -115,6 +118,7 @@ class CodeReplaceExerciseAdmin(admin.ModelAdmin):
         ('Feedback settings',  {'fields': ['feedback_questions']}),
     ]
     inlines = [CodeReplaceExerciseAnswerInline, HintInline]
+    search_fields = ("name",)
     readonly_fields = ("slug",)
     list_display = ("name", "slug",)
     list_per_page = 500
@@ -163,6 +167,7 @@ class FileExerciseTestAdmin(admin.ModelAdmin):
         }),
     )
     inlines = []
+    search_fields = ("name",)
     list_display = ("name", "exercise",)
     list_per_page = 500
     
@@ -185,6 +190,7 @@ class FileExerciseAdmin(admin.ModelAdmin):
         ('Feedback settings',  {'fields': ['feedback_questions']}),
     ]
     inlines = [HintInline]
+    search_fields = ("name",)
     readonly_fields = ("slug",)
     list_display = ("name", "slug",)
     list_per_page = 500
@@ -204,6 +210,7 @@ class LectureAdmin(admin.ModelAdmin):
     def view_on_site(self, obj):
         return reverse('courses:sandbox', kwargs={'content_slug': obj.slug})
 
+    search_fields = ("name",)
     readonly_fields = ("slug",)
     list_display = ("name", "slug",)
     list_per_page = 500
@@ -225,22 +232,40 @@ class CalendarDateAdmin(admin.StackedInline):
 
 class CalendarAdmin(admin.ModelAdmin):
     inlines = [CalendarDateAdmin]
+    search_fields = ("name",)
+
+class FileAdmin(admin.ModelAdmin):
+    def save_model(self, request, obj, form, change):
+        obj.uploader = request.user
+        obj.save()
+
+    search_fields = ("name",)
+    readonly_fields = ('uploader',)
 
 class ImageAdmin(admin.ModelAdmin):
     def save_model(self, request, obj, form, change):
         obj.uploader = request.user
         obj.save()
 
+    search_fields = ("name",)
     readonly_fields = ('uploader',)
 
+class VideoLinkAdmin(admin.ModelAdmin):
+    def save_model(self, request, obj, form, change):
+        obj.added_by = request.user
+        obj.save()
+
+    search_fields = ("name",)
+    readonly_fields = ('added_by',)
+
 admin.site.register(Calendar, CalendarAdmin)
-admin.site.register(File)
+admin.site.register(File, FileAdmin)
 admin.site.register(Image, ImageAdmin)
-admin.site.register(Video)
+admin.site.register(VideoLink, VideoLinkAdmin)
 
 ## Course related administration
 class ContentGraphAdmin(admin.ModelAdmin):
-    pass
+    search_fields = ("content__slug",)
 
 admin.site.register(ContentGraph, ContentGraphAdmin)
 
@@ -251,6 +276,7 @@ class CourseAdmin(admin.ModelAdmin):
         #('Settings for start date and end date of the course', {'fields': ['start_date','end_date'], 'classes': ['collapse']}),
     ]
     #formfield_overrides = {models.ManyToManyField: {'widget':}}
+    search_fields = ("name",)
     readonly_fields = ('slug',)
 
 admin.site.register(Course, CourseAdmin)
