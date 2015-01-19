@@ -167,9 +167,9 @@ class Image(models.Model):
     def __str__(self):
         return self.name
 
-class Video(models.Model):
+class VideoLink(models.Model):
     """Youtube link for embedded videos"""
-    uploader = models.ForeignKey(User)
+    added_by = models.ForeignKey(User)
     name = models.CharField(verbose_name='Name for reference in content', max_length=200, unique=True)
     link = models.URLField()
     description = models.CharField(max_length=500)

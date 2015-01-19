@@ -242,17 +242,26 @@ class FileAdmin(admin.ModelAdmin):
     search_fields = ("name",)
     readonly_fields = ('uploader',)
 
-class ImageAdmin(FileAdmin):
-    pass
+class ImageAdmin(admin.ModelAdmin):
+    def save_model(self, request, obj, form, change):
+        obj.uploader = request.user
+        obj.save()
 
-class VideoAdmin(FileAdmin):
-    pass
-    
+    search_fields = ("name",)
+    readonly_fields = ('uploader',)
+
+class VideoLinkAdmin(admin.ModelAdmin):
+    def save_model(self, request, obj, form, change):
+        obj.added_by = request.user
+        obj.save()
+
+    search_fields = ("name",)
+    readonly_fields = ('added_by',)
 
 admin.site.register(Calendar, CalendarAdmin)
 admin.site.register(File, FileAdmin)
 admin.site.register(Image, ImageAdmin)
-admin.site.register(Video, VideoAdmin)
+admin.site.register(VideoLink, VideoLinkAdmin)
 
 ## Course related administration
 class ContentGraphAdmin(admin.ModelAdmin):
