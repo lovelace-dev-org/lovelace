@@ -15,6 +15,9 @@ import tempfile
 import os
 import random
 
+# Stage dependencies
+import base64
+
 # Command dependencies
 import time
 import shlex
@@ -37,7 +40,7 @@ from celery import shared_task
 
 import courses.models
 
-@shared_task(name="courses.run-filetask-tests", bind=True)
+@shared_task(name="courses.run-fileexercise-tests", bind=True)
 def run_tests(self, user_id, exercise_id, answer_id):
     # TODO: Actually, just receive the relevant ids for fetching the Django
     #       models here instead of in the Django view.
@@ -243,10 +246,10 @@ def run_stage(self, stage_id, test_dir, temp_dir_prefix, files_to_check):
         stage_results[cmd.id].update(proc_results)
 
         stdout.seek(0)
-        stage_results[cmd.id]["stdout"] = stdout.read()
+        stage_results[cmd.id]["stdout"] = base64.standard_b64encode(stdout.read()).decode("ASCII")
         stdout.close()
         stderr.seek(0)
-        stage_results[cmd.id]["stderr"] = stderr.read()
+        stage_results[cmd.id]["stderr"] = base64.standard_b64encode(stderr.read()).decode("ASCII")
         stderr.close()
 
         # If the command failed, abort the stage
