@@ -8,6 +8,8 @@ from __future__ import absolute_import
 from collections import namedtuple
 from django.contrib.auth.models import User
 
+import json
+
 # Test dependencies
 import tempfile
 import os
@@ -61,38 +63,56 @@ def run_tests(self, user_id, exercise_id, answer_id):
     #       - as command line parameters!
     #       - in env?
 
+    try:
+        exercise_object = courses.models.FileUploadExercise.objects.get(id=exercise_id)
+    except courses.models.FileUploadExercise.DoesNotExist as e:
+        # TODO: Log weird request
+        return # TODO: Find a way to signal the failure to the user
+
     self.update_state(state="PROGRESS", meta={"current":4, "total":10})
     user_object = User.objects.get(id=user_id)
     print("user: %s" % (user_object.username))
     #x = [i for i in range(10**8) if i % 2 == 1]
     #return
 
-    answer_object = courses.models.UserFileUploadExerciseAnswer.objects.get(id=answer_id)
-    
-    # Get the returned code
-    # Note: requires a shared/cloned file system!
-    returned_files = answer_object.get_returned_files()
-    print("".join("%s:\n%s" % (n, c) for n, c in returned_files.items()))
-    return
     
     # Get the test data
-
+    # TODO: Use prefetch_related?
+    
+    tests = courses.models.FileExerciseTest.objects.filter(exercise=exercise_id)
 
     student_results = {}
     reference_results = {}
     
     # Run all the tests for both the returned and reference code
     for i, test in enumerate(tests):
-        self.update_state(state="PROGRESS",
-                          meta={"current":i, "total":len(tests)})
+        self.update_state(state="PROGRESS", meta={"current": i, "total": len(tests)})
 
         # TODO: The student's code can be run in parallel with the reference
-        student_test_results = run_test(test, test_files, student_files)
-        reference_test_results = run_test(test, test_files, reference_files)
+        results = run_test(test.id, answer_id, exercise_id, student=True)
+        student_results.update(results)
+        results = run_test(test.id, answer_id, exercise_id)
+        reference_results.update(results)
 
-    exercise_results = ["lol", "FIX", student_results, reference_results]
+    print(student_results.items())
+    print(reference_results.items())
+
+    results = {"student": student_results, "reference": reference_results}
+
+    # Determine the result and generate JSON accordingly
+    # Maybe save to redis?
+    result_string = json.dumps(results)
 
     # Save the results to database
+    evaluation = courses.models.Evaluation(test_results=result_string)
+    evaluation.save()
+    try:
+        answer_object = courses.models.UserFileUploadExerciseAnswer.objects.get(id=answer_id)
+    except courses.models.UserFileUploadExerciseAnswer.DoesNotExist as e:
+        # TODO: Log weird request
+        return # TODO: Find a way to signal the failure to the user
+    answer_object.evalution = evaluation
+    answer_object.save()    
     
     # TODO: Should we:
     # - return the results? (most probably not)
@@ -101,93 +121,143 @@ def run_tests(self, user_id, exercise_id, answer_id):
     # DEBUG: As a development stage measure, just return the result:
     #return exercise_results
 
-@shared_task(name="courses.run-test")
-def run_test(test, test_files, files_to_check):
+@shared_task(name="courses.run-test", bind=True)
+def run_test(self, test_id, answer_id, exercise_id, student=False):
     """
     Runs all the stages of the given test.
     """
-    # Replace with the directory of the ramdisk
+    try:
+        test = courses.models.FileExerciseTest.objects.get(id=test_id)
+    except courses.models.FileExerciseTest.DoesNotExist as e:
+        # TODO: Log weird request
+        return # TODO: Find a way to signal the failure to the user
+
+    try:
+        stages = courses.models.FileExerciseTestStage.objects.filter(test=test_id)
+    except courses.models.FileExerciseTestStage.DoesNotExist as e:
+        # TODO: Log weird request
+        return # TODO: Find a way to signal the failure to the user
+
+    try:
+        exercise_file_objects = courses.models.FileExerciseTestIncludeFile.objects.filter(exercise=exercise_id)
+    except courses.models.FileExerciseTestIncludeFile.DoesNotExist as e:
+        # TODO: Log weird request
+        return # TODO: Find a way to signal the failure to the user
+
+    # Note: requires a shared/cloned file system!
+    if student:
+        try:
+            answer_object = courses.models.UserFileUploadExerciseAnswer.objects.get(id=answer_id)
+        except courses.models.UserFileUploadExerciseAnswer.DoesNotExist as e:
+            # TODO: Log weird request
+            return # TODO: Find a way to signal the failure to the user
+        
+        files_to_check = answer_object.get_returned_files()
+        print("".join("%s:\n%s" % (n, c) for n, c in files_to_check.items()))
+    else:
+        files_to_check = {f.get_filename(): f.get_file_contents()
+                          for f in exercise_file_objects
+                          if f.purpose == "REFERENCE"}
+        print("".join("%s:\n%s" % (n, c) for n, c in files_to_check.items()))
+
+    # TODO: Replace with the directory of the ramdisk
     temp_dir_prefix = os.path.join("/", "tmp")
 
-    test_results = {}
+    test_results = {test_id: {"fail": True}}
     with tempfile.TemporaryDirectory(dir=temp_dir_prefix) as test_dir:
         # Write the files required by this test
-        for fp in (test_files[fp] for fp in test.required_test_files):
-            fpath = os.path.join(test_dir, fp.filename)
+        for name, contents in ((f.get_filename(), f.get_file_contents)
+                               for f in exercise_file_objects
+                               if f in test.required_files.all() and
+                               f.purpose in ("INPUT", "WRAPPER", "TEST")):
+            fpath = os.path.join(test_dir, name)
             with open(fpath, "wb") as fd:
-                fd.write(fp.contents)
+                fd.write(contents)
+            print("Wrote required test file %s" % (fpath))
             # TODO: chmod, chown, chgrp
 
         # Write the files under test
-        for fp in files_to_check:
-            fpath = os.path.join(test_dir, fp.filename)
+        for name, contents in files_to_check.items():
+            fpath = os.path.join(test_dir, name)
             with open(fpath, "wb") as fd:
-                fd.write(fp.contents)
-            # TODO: chmod, chown, chgrp    
+                fd.write(contents)
+            print("Wrote file under test %s" % (fpath))
+            # TODO: chmod, chown, chgrp
 
         # TODO: Replace with chaining
-        for i, stage in enumerate(test.stages):
-            current_task.update_state(state="PROGRESS",
-                                      meta={"current":i,
-                                            "total":len(test.stages)})
+        for i, stage in enumerate(stages):
+            #self.update_state(state="PROGRESS",
+                              #meta={"current": i, "total": len(stages)})
             
-            stage_results = run_stage(stage.cmds)
+            stage_results = run_stage(stage.id, test_dir, temp_dir_prefix,
+                                      list(files_to_check.keys()))
+            test_results[test_id].update(stage_results)
 
             if stage_results["fail"] == True:
                 break
 
             # TODO: Read the directory and save the stage results in cache
-            if stage.cache_results == True:
+            cache_results = False # TODO: Determine this by looking at dependencies
+            if cache_results == True:
                 test_dir_contents = os.listdir(test_dir)
                 for fp in test_dir_contents:
                     with open(fp, "rb") as fd:
                         contents = fd.read()
         else:
-            test_results["fail"] == True
+            test_results[test_id]["fail"] = False
 
-        # TODO: Read the expected output files
+        # TODO: Read the expected output files (check the cache first?)
         test_dir_contents = os.listdir(test_dir)
-        
 
     return test_results
 
-@shared_task(name="courses.run-stage")
-def run_stage(cmds, temp_dir_prefix):
+@shared_task(name="courses.run-stage", bind=True)
+def run_stage(self, stage_id, test_dir, temp_dir_prefix, files_to_check):
     """
     Runs all the commands of this stage and collects the return values and the
     outputs.
     """
 
-    stage_results = {}
+    try:
+        commands = courses.models.FileExerciseTestCommand.objects.filter(stage=stage_id)
+    except courses.models.FileExerciseTestCommand.DoesNotExist as e:
+        # TODO: Log weird request
+        return # TODO: Find a way to signal the failure to the user
+
+    stage_results = {"fail": True}
 
     # TODO: Replace with chaining
-    for i, cmd in enumerate(cmds):
-        current_task.update_state(state="PROGRESS",
-                                  meta={"current":i, "total":len(cmds)})
+    for i, cmd in enumerate(commands):
+        stage_results[cmd.id] = {}
+        #self.update_state(state="PROGRESS",
+                          #meta={"current-stage": i, "total-stage": len(commands)})
         
+        # Create the outputs and inputs outside the test directory, thereby
+        # effectively hiding them from unskilled users.
         stdout = tempfile.TemporaryFile(dir=temp_dir_prefix)
         stderr = tempfile.TemporaryFile(dir=temp_dir_prefix)
         stdin = tempfile.TemporaryFile(dir=temp_dir_prefix)
-        stdin.write(cmd.stdin)
+        stdin.write(bytearray(cmd.input_text, "utf-8"))
 
-        proc_results = run_command(cmd)
+        proc_results = run_command(cmd.id, stdin, stdout, stderr, test_dir, files_to_check)
+        stage_results[cmd.id].update(proc_results)
 
         stdout.seek(0)
-        stage_results[cmd].stdout = stdout.read()
+        stage_results[cmd.id]["stdout"] = stdout.read()
         stdout.close()
         stderr.seek(0)
-        stage_results[cmd].stderr = stderr.read()
+        stage_results[cmd.id]["stderr"] = stderr.read()
         stderr.close()
 
         # If the command failed, abort the stage
-        if cmd.expected.retval != proc_results.retval:
+        if cmd.return_value is not None and cmd.return_value != proc_results["retval"]:
             break
-        if cmd.expected.stdout != stage_results[cmd].stdout:
-            break
-        if cmd.expected.stderr != stage_results[cmd].stderr:
-            break
+        #if cmd.expected.stdout != stage_results[cmd.id]["stdout"]:
+            #break
+        #if cmd.expected.stderr != stage_results[cmd.id]["stderr"]:
+            #break
     else:
-        stage_results["fail"] = True
+        stage_results["fail"] = False
 
     # determine if the stage fails
     # if the stage fails, we can abort the tests/stages dependent on this stage
@@ -201,24 +271,39 @@ def run_stage(cmds, temp_dir_prefix):
     return stage_results
 
 @shared_task(name="courses.run-command")
-def run_command(cmd, env, stdin, stdout, stderr, timeout):
+def run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check):
     """
     Runs the current command of this stage by automated fork & exec.
     """
-    env = {}
+    try:
+        command = courses.models.FileExerciseTestCommand.objects.get(id=cmd_id)
+    except courses.models.FileExerciseTestCommand.DoesNotExist as e:
+        # TODO: Log weird request
+        return # TODO: Find a way to signal the failure to the user
+
+    to_secs = lambda hour, minute, second, µsecond: ((hour * 60 + minute) * 60)\
+              + second + (µsecond * 0.000001)
+
+    cmd = command.command_line.replace("$RETURNABLES", " ".join(files_to_check))
+    timeout = to_secs(command.timeout.hour, command.timeout.minute,
+                      command.timeout.second, command.timeout.microsecond)
+    env = {"PWD": test_dir}
     args = shlex.split(cmd)
-    cwd = env["PWD"]
+
+    print("Running: %s" % (shlex.quote(" ".join(args))))
+
     start_time = time.time()
     proc = subprocess.Popen(args=args, bufsize=-1, executable=None,
                             stdin=stdin, stdout=stdout, stderr=stderr, # Standard fds
-                            preexec_fn=demote_process,                 # Demote before fork
+                            #preexec_fn=demote_process,                 # Demote before fork
                             close_fds=True,                            # Don't inherit fds
                             shell=False,                               # Don't run in shell
-                            cwd=cwd, env=env,
-                            univeral_newlines=False)                   # Binary stdout
+                            cwd=env["PWD"], env=env,
+                            universal_newlines=False)                  # Binary stdout
     
     proc_retval = None
     proc_timedout = False
+    
     try:
         proc.wait(timeout=timeout)
         proc_runtime = time.time() - start_time
@@ -235,7 +320,8 @@ def run_command(cmd, env, stdin, stdout, stderr, timeout):
 
     proc_runtime = proc_runtime or (time.time() - start_time)
     proc_retval = proc_retval or proc.returncode
-    proc_results = (proc_retval, proc_timedout, proc_runtime)
+    proc_results = {"retval": proc_retval, "timedout": proc_timedout,
+                    "runtime": proc_runtime}
 
     return proc_results
 

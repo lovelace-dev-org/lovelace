@@ -688,6 +688,15 @@ def default_timeout(): return datetime.time(0,0,5)
 class FileExerciseTest(models.Model):
     exercise = models.ForeignKey(FileUploadExercise, verbose_name="for file exercise", db_index=True)
     name = models.CharField(verbose_name="Test name", max_length=200)
+
+    # This doesn't work; tweak the admin formfield_for_foreignkey instead
+    #def limit_file_choices(self):
+        #return {'exercise': self.exercise}
+
+    required_files = models.ManyToManyField('FileExerciseTestIncludeFile',
+                                            verbose_name="files required by this test",
+                                            #limit_choices_to=limit_file_choices,
+                                            blank=True, null=True)
     
     def __str__(self):
         return self.name
@@ -703,7 +712,7 @@ class FileExerciseTestStage(models.Model):
     ordinal_number = models.PositiveSmallIntegerField() # TODO: Enforce min=1
 
     def __str__(self):
-        return self.name
+        return "%s: %02d - %s" % (self.test.name, self.ordinal_number, self.name)
 
     class Meta:
         unique_together = ('test', 'ordinal_number')
@@ -738,7 +747,7 @@ class FileExerciseTestCommand(models.Model):
     ordinal_number = models.PositiveSmallIntegerField() # TODO: Enforce min=1
 
     def __str__(self):
-        return "%s" % (self.command_line)
+        return "%02d: %s" % (self.ordinal_number, self.command_line)
 
     class Meta:
         verbose_name = "command to run for the test"
@@ -779,7 +788,7 @@ class FileExerciseTestExpectedStderr(FileExerciseTestExpectedOutput):
 
 def get_testfile_path(instance, filename):
     return os.path.join(
-        "%s_files" % (instance.test.name),
+        "%s_files" % (instance.exercise.name),
         "%s" % (filename)
     )
 
@@ -821,6 +830,15 @@ class FileExerciseTestIncludeFile(models.Model):
 
     def __str__(self):
         return "%s - %s" % (self.purpose, self.name)
+
+    def get_filename(self):
+        return os.path.basename(self.fileinfo.name)
+
+    def get_file_contents(self):
+        file_contents = None
+        with open(self.fileinfo.path, 'rb') as f:
+            file_contents = f.read()
+        return file_contents
 
     class Meta:
         verbose_name = "included file"

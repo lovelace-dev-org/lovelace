@@ -223,7 +223,12 @@ admin.site.register(CheckboxExercise, CheckboxExerciseAdmin)
 admin.site.register(TextfieldExercise, TextfieldExerciseAdmin)
 admin.site.register(CodeReplaceExercise, CodeReplaceExerciseAdmin)
 admin.site.register(FileUploadExercise, FileExerciseAdmin)
-admin.site.register(FileExerciseTest, FileExerciseTestAdmin)
+#admin.site.register(FileExerciseTest, FileExerciseTestAdmin)
+admin.site.register(FileExerciseTest)
+admin.site.register(FileExerciseTestStage)
+admin.site.register(FileExerciseTestCommand)
+admin.site.register(FileExerciseTestExpectedOutput)
+admin.site.register(FileExerciseTestIncludeFile)
 
 ## Page embeddable objects
 class CalendarDateAdmin(admin.StackedInline):
