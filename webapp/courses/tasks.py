@@ -23,7 +23,7 @@ import time
 import shlex
 import subprocess
 
-from celery import shared_task
+from celery import shared_task, chain
 
 # The test data
 #from courses.models import FileExerciseTest, FileExerciseTestStage,\
@@ -115,7 +115,7 @@ def run_tests(self, user_id, exercise_id, answer_id):
         # TODO: Log weird request
         return # TODO: Find a way to signal the failure to the user
     answer_object.evalution = evaluation
-    answer_object.save()    
+    answer_object.save()
     
     # TODO: Should we:
     # - return the results? (most probably not)
@@ -227,9 +227,25 @@ def run_stage(self, stage_id, test_dir, temp_dir_prefix, files_to_check):
         # TODO: Log weird request
         return # TODO: Find a way to signal the failure to the user
 
-    stage_results = {"fail": True}
+    stage_results = {"fail": False}
 
-    # TODO: Replace with chaining
+    if len(commands) == 0:
+        return stage_results
+
+    
+    cmd_chain = chain(run_command_chainable.s(cmd, temp_dir_prefix, test_dir, files_to_check)
+                      for cmd in commands)
+
+    try:
+        results = cmd_chain().get()
+    except:
+        stage_results["fail"] = True
+
+    stage_results.update(results)
+
+    return stage_results
+    
+    """
     for i, cmd in enumerate(commands):
         stage_results[cmd.id] = {}
         #self.update_state(state="PROGRESS",
@@ -261,6 +277,7 @@ def run_stage(self, stage_id, test_dir, temp_dir_prefix, files_to_check):
             #break
     else:
         stage_results["fail"] = False
+    """
 
     # determine if the stage fails
     # if the stage fails, we can abort the tests/stages dependent on this stage
@@ -270,6 +287,33 @@ def run_stage(self, stage_id, test_dir, temp_dir_prefix, files_to_check):
     #         interpreted as "same stage"
     # IDEA: each stage can define a stage they depend on, making a directed
     #       graph of dependent stages
+
+    return stage_results
+
+@shared_task(name="courses.run-command-chain-block")
+def run_command_chainable(cmd, temp_dir_prefix, test_dir, files_to_check, stage_results=None):
+    if stage_results is None:
+        stage_results = {}
+    stage_results[cmd.id] = {}
+
+    stdout = tempfile.TemporaryFile(dir=temp_dir_prefix)
+    stderr = tempfile.TemporaryFile(dir=temp_dir_prefix)
+    stdin = tempfile.TemporaryFile(dir=temp_dir_prefix)
+    stdin.write(bytearray(cmd.input_text, "utf-8"))
+    
+    proc_results = run_command(cmd.id, stdin, stdout, stderr, test_dir, files_to_check)
+    
+    stdout.seek(0)
+    proc_results["stdout"] = base64.standard_b64encode(stdout.read()).decode("ASCII")
+    stdout.close()
+    stderr.seek(0)
+    proc_results["stderr"] = base64.standard_b64encode(stderr.read()).decode("ASCII")
+    stderr.close()
+
+    stage_results[cmd.id].update(proc_results)
+
+    if cmd.return_value is not None and cmd.return_value != proc_results["retval"]:
+        raise Exception()
 
     return stage_results
 
