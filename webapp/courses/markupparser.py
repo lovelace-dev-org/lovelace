@@ -356,7 +356,6 @@ class EmbeddedScriptMarkup(Markup):
             raise StopIteration
 
         script_url = script.fileinfo.url
-        print(settings)
         tag = '<iframe src="%s" sandbox="allow-scripts"' % script_url
         if "width" in settings:
             tag += ' width="%s"' % settings["width"]
@@ -366,7 +365,6 @@ class EmbeddedScriptMarkup(Markup):
             tag += ' frameborder="%s"' % settings["border"]
         tag += "><p>Your browser does not support iframes.</p></iframe>\n"
 
-        print(tag)
         yield tag
 
     @classmethod
