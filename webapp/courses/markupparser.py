@@ -338,19 +338,52 @@ class EmbeddedScriptMarkup(Markup):
     name = "Embedded script"
     shortname = "script"
     description = "An embedded script, contained inside an iframe."
-    regexp = r"^\<\!script\=(?P<script_slug>[^\s>]+)\>\s*$"
+    regexp = (r"^\<\!script\=(?P<script_slug>[^\|>]+)(\|width\=(?P<width>[^>|]+))?"
+              "(\|height\=(?P<height>[^>|]+))?(\|border\=(?P<border>[^>|]+))?\>\s*$")
     markup_class = "embedded item"
     example = "<!script=dijkstra-clickable-demo>"
     states = {}
     inline = False
     allow_inline = False
 
+    @classmethod
     def block(cls, block, settings, state):
-        yield '<iframe src="%s" sandbox="allow-scripts">\n' % settings["script_slug"]
+        try:
+            print(settings)
+            script = courses.models.File.objects.get(name=settings["script_slug"])
+        except courses.models.File.DoesNotExist as e:
+            # TODO: Modular errors
+            yield '<div>Script %s not found.</div>' % settings["script_slug"]
+            raise StopIteration
+
+        script_url = script.fileinfo.url
+        tag = '<iframe src="%s" sandbox="allow-scripts"' % script_url
+        if "width" in settings:
+            tag += ' width="%s"' % settings["width"]
+        if "height" in settings:
+            tag += ' height="%s"' % settings["height"]
+        if "border" in settings:
+            tag += ' border="%s"' % settings["border"]
+        tag += "><p>Your browser does not support iframes.</p></iframe>\n"
+        print(tag)
+        
+        yield tag
 
     @classmethod
     def settings(cls, matchobj, state):
-        settings = {"script_slug" : escape(matchobj.group("script"))}
+        settings = {"script_slug" : escape(matchobj.group("script_slug"))}
+        try:
+            settings["width"] = escape(matchobj.group("width"))
+        except AttributeError:
+            pass
+        try:
+            settings["height"] = escape(matchobj.group("height"))
+        except AttributeError:
+            pass
+        try:
+            settings["border"] = escape(matchobj.group("border"))
+        except AttributeError:
+            pass
         return settings
 
 markups.append(EmbeddedScriptMarkup)
@@ -421,10 +454,11 @@ class ImageMarkup(Markup):
         except courses.models.Image.DoesNotExist as e:
             # TODO: Modular errors
             yield '<div>Image %s not found.</div>' % settings["image_name"]
+            raise StopIteration
 
         image_url = image.fileinfo.url
 
-        if "alt_text" in settings.keys():
+        if "alt_text" in settings:
             yield '<img src="%s" alt="%s">\n' % (image_url, settings["alt_text"])
         else:
             yield '<img src="%s">\n' % image_url
