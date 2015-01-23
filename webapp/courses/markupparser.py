@@ -349,7 +349,6 @@ class EmbeddedScriptMarkup(Markup):
     @classmethod
     def block(cls, block, settings, state):
         try:
-            print(settings)
             script = courses.models.File.objects.get(name=settings["script_slug"])
         except courses.models.File.DoesNotExist as e:
             # TODO: Modular errors
@@ -357,16 +356,17 @@ class EmbeddedScriptMarkup(Markup):
             raise StopIteration
 
         script_url = script.fileinfo.url
+        print(settings)
         tag = '<iframe src="%s" sandbox="allow-scripts"' % script_url
         if "width" in settings:
             tag += ' width="%s"' % settings["width"]
         if "height" in settings:
             tag += ' height="%s"' % settings["height"]
         if "border" in settings:
-            tag += ' border="%s"' % settings["border"]
+            tag += ' frameborder="%s"' % settings["border"]
         tag += "><p>Your browser does not support iframes.</p></iframe>\n"
+
         print(tag)
-        
         yield tag
 
     @classmethod
