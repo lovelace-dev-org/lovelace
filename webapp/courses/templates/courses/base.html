@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
 
     {% load staticfiles %}
-    <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=Open+Sans:400,400italic,700,700italic&subset=latin,latin-ext">
+    <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=Open+Sans:400,400italic,700,700italic%26subset=latin,latin-ext">
     <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=Inconsolata">
-    <link rel="shortcut icon" href="{% static 'courses/favicon.ico' %}">
+    <link rel="icon" href="{% static 'courses/favicon.ico' %}">
     <link rel="stylesheet" href="{% static 'courses/style.css' %}">
     <link rel="stylesheet" href="{% static 'courses/syntax.css' %}">
     <link rel="stylesheet" href="{% static 'courses/blockcode.css' %}">
@@ -79,10 +79,10 @@
     <div id="container">
       <header>
         <div id="container-top">
-          <hgroup>
+          <div class="page-title">
             <h1>BRAND</h1>
             <h2>Something clever and insightful</h2>
-          </hgroup>
+          </div>
           <div class="user-actions">
             {% if user.is_active %}
               <div class="user-name">
