@@ -5,8 +5,6 @@
  
 /* reset */
 * {
-    -moz-box-sizing: border-box;
-    -webkit-box-sizing: border-box;
     box-sizing: border-box;
     margin: 0px;
     padding: 0px;
@@ -28,31 +26,30 @@ div#container {
     width: 1000px;
     position: relative;
     height: 100%;
-    box-shadow: 0 0 2em rgba(0, 0, 0, 0.9);
 }
 
 /* HEADER */
 header {
-    /* background: #052; */
-    /*background: -moz-linear-gradient(top, rgba(46, 134, 46, 0.5), rgba(46, 134, 46, 0.9)),*/
-    background-image: url("noise-200x200-1.png");
-    background-color: #2e862e;
-    /*
-    background: -ms-linear-gradient(top, #242, #576);
-    background: -o-linear-gradient(top, #242, #576);
-    background: -webkit-linear-gradient(top, #242, #576);
-    background: linear-gradient(top, #242, #576);
-    */
+    background: #2e862e;
+    background-image: url(noise-200x200-1.png);
+    background-image: url(noise-200x200-1.png), linear-gradient(to bottom, rgba(0,0,0,0) 70%, rgba(0,0,0,0.06));
 
     top: 0px;
     left: 0px;
     width: 100%;
     height: 2.5em;
+
+    position: fixed;
+    z-index: 2;
+
+    border-bottom: 1px solid #143a14;
+    box-shadow: 0 0 1px rgba(0, 0, 0, 0.4);
 }
 
 div#container-top {
     margin-left: auto;
     margin-right: auto;
+    position: relative;
     width: 1000px;
 }
 
@@ -80,8 +77,10 @@ div#container-top {
 	
     div#container-top div.user-actions {
         color: #eee;
-        font-family: "Arial Black";
-        font-size: 0.9em;
+        font-family: "Verdana";
+        font-weight: bold;
+        font-size: 0.85rem;
+        
         position: absolute;
         top: 0;
         right: 0;
@@ -89,7 +88,7 @@ div#container-top {
         height: 2.5rem;
         
         background: rgba(0, 0, 0, 0.1);
-        z-index: 1;
+        z-index: 2;
         letter-spacing: 0.05em;
         word-spacing: 0.1em;
     }
@@ -127,24 +126,34 @@ div#container-top {
 
 /* NAVIGATION */
 nav.breadcrumb {
-    /*background: #b6ffb6;*/
-    background-image: url("noise-200x200-1.png");
     background-color: #39ad39;
+    background-image: url(noise-200x200-1.png);
+    background-image: url(noise-200x200-1.png), linear-gradient(to bottom, rgba(0,0,0,0) 65%, rgba(0,0,0,0.11));
+
     left: 0px;
-    height: 2em;
+    top: 2.5rem;
+    width: 100%;
+    height: 1.5rem;
+    position: fixed;
+    z-index: 1;
+
+    border-bottom: 1px solid #2e862e; /* #143a14; */
+    box-shadow: 0 0 1px rgba(0, 0, 0, 0.8);
     padding: 4px;
     font-family: "Verdana";
-    font-size: 9pt;
+    font-size: 0.8rem;
     font-weight: bold;
+    color: #222;
 }
+
+    nav.breadcrumb ul {
+        margin-left: auto;
+        margin-right: auto;
+        width: 1000px;
+    }
 
     nav.breadcrumb div {
         display: inline;
-    }
-
-    nav.breadcrumb div.nav-title {
-        color: #666;
-        margin-right: 5px;
     }
 
     nav.breadcrumb div.separator {
@@ -153,16 +162,10 @@ nav.breadcrumb {
         display: inline;
     }
 
-    nav.breadcrumb ul {
-	position: relative;
-	height: 18px;
-        display: inline;
-    }
-
         nav.breadcrumb ul li {
             list-style-type: none;
             display: inline;
-            height: 100%;
+            height: 100%;            
         }
 
             nav.breadcrumb ul li.last {
@@ -170,13 +173,15 @@ nav.breadcrumb {
             }
 
             nav.breadcrumb ul li a {
-                color: #000;
+                color: #222;
                 text-decoration: underline;
+                border: 1px solid rgba(0,0,0,0);
+                border-radius: 3px;
             }
 
             nav.breadcrumb ul li a:hover {
-                color: #da0;
-                background: #040;
+                color: #222;
+                background-color: #59cd59;
                 text-decoration: underline;
             }
 
@@ -184,7 +189,7 @@ nav.breadcrumb {
 nav.toc {
     position: fixed;
     right: 2em;
-    top: 2em;
+    top: 4.5rem;
     width: 360px;
     min-height: 80px;
 
@@ -242,8 +247,9 @@ nav.toc {
 /* MAIN CONTENT */
 section.content {
     position: relative;
-    top: 0px;
+    top: 4rem;
     background: #eee;
+    box-shadow: 0 0 2em rgba(0, 0, 0, 0.9);
     margin-left: auto;
     margin-right: auto;
     margin-top: 0;
@@ -252,7 +258,7 @@ section.content {
     color: #222;
     line-height: 1.5;
     padding: 1em 2em 3em 120px;
-    min-height: calc(100% - 4em); /* Header 6em, breadcrumbs 2em, footer 3em*/
+    min-height: calc(100% - 4rem); /* Header 6em, breadcrumbs 2em, footer 3em*/
     word-wrap: break-word;
 }
 
@@ -743,8 +749,8 @@ footer {
     background-color: #39ad39;
     position: relative;
     bottom: 0;
-    height: 3em;
-    margin-top: -3em;
+    height: 3rem;
+    margin-top: 1rem;
     width: 100%;
     padding: 6px;
 }
