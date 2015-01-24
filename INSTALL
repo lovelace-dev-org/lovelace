@@ -92,6 +92,7 @@ Installing the dependencies
 Install the dependencies' dependencies
 
 sudo apt-get install postgresql-server-dev-all libpq-dev
+sudo apt-get install libjpeg-dev
 
 Install the Python packages
 
