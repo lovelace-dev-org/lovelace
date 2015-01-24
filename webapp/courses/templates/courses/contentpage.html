@@ -1,20 +1,13 @@
 {% extends 'courses/base.html' %}
 {% load staticfiles %}
-{% load parser_directives %}
+{% load content_extra %}
 
 {% block page-title %}RAiPPA - {{ title }}{% endblock %}
 
 {% block page-content %}
-{% if content or tasktype %}
-  {{ content|safe }}
+{% content_meta course_slug content user evaluation %}
+{% if rendered_content or tasktype %}
+  {{ rendered_content|safe }}
   {% include "courses/task.html" %}
-  {% if user.is_active and user.is_staff %}
-    <div class="admin_tools">
-      <h1>Teacher's toolbox for {{ content_name }}</h1>
-      <a href="{% url 'stats:single_task' content_urlname %}">Statistics</a><br/>
-      <a href="{{ admin_url }}">Edit this task</a><br />
-      <span>Url-name: </span><span>{{ content_urlname }}</span>
-    </div>
-  {% endif %}
 {% endif %}
 {% endblock %}

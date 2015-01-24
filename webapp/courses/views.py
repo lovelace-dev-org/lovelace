@@ -399,8 +399,9 @@ def content(request, course_slug, content_slug, **kwargs):
     c = RequestContext(request, {
         'embedded_exercise': False,
         'contains_embedded_exercise': contains_embedded_exercise,
-        'training': selected_course,
-        'content': rc, #rendered_content,
+        'course_slug': course_slug,
+        'content': content,
+        'rendered_content': rc, #rendered_content,
         'content_name': content.name,
         'content_name_id': content.slug,
         'content_urlname': content.slug,
@@ -413,6 +414,7 @@ def content(request, course_slug, content_slug, **kwargs):
         'question': question,
         'choices': choices,
         'evaluation': exercise_evaluation,
+        'user': user,
     })
     if "frontpage" in kwargs:
         return c
