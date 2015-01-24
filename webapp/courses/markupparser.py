@@ -338,8 +338,8 @@ class EmbeddedScriptMarkup(Markup):
     name = "Embedded script"
     shortname = "script"
     description = "An embedded script, contained inside an iframe."
-    regexp = (r"^\<\!script\=(?P<script_slug>[^\|>]+)(\|width\=(?P<width>[^>|]+))?"
-              "(\|height\=(?P<height>[^>|]+))?(\|border\=(?P<border>[^>|]+))?\>\s*$")
+    regexp = r"^\<\!script\=(?P<script_slug>[^\|>]+)(\|width\=(?P<width>[^>|]+))?"\
+              "(\|height\=(?P<height>[^>|]+))?(\|border\=(?P<border>[^>|]+))?\>\s*$"
     markup_class = "embedded item"
     example = "<!script=dijkstra-clickable-demo>"
     states = {}
@@ -439,9 +439,10 @@ class ImageMarkup(Markup):
     name = "Image"
     shortname = "image"
     description = "An image, img tag in HTML."
-    regexp = r"^\<\!image\=(?P<image_name>[^>|]+)(\|alt\=(?P<alt_text>[^>|]+))?\>\s*$"
+    regexp = r"^\<\!image\=(?P<image_name>[^>|]+)(\|alt\=(?P<alt_text>[^>|]+))?"\
+              "(\|caption\=(?P<caption_text>[^>|]+))?\>\s*$"
     markup_class = "embedded item"
-    example = "<!image=name-of-some-image.png|alt=alternative text>"
+    example = "<!image=name-of-some-image.png|alt=alternative text|caption=caption text>"
     inline = False
     allow_inline = False
 
@@ -455,17 +456,36 @@ class ImageMarkup(Markup):
             raise StopIteration
 
         image_url = image.fileinfo.url
+        w = image.fileinfo.width
+        h = image.fileinfo.height
 
+        MAX_IMG_WIDTH = 840
+
+        size_attr = ""
+        if w > MAX_IMG_WIDTH:
+            ratio = h / w
+            new_height = MAX_IMG_WIDTH * ratio
+            size_attr = ' width="%d" height="%d"' % (MAX_IMG_WIDTH, new_height)
+        
+        if "caption_text" in settings:
+            yield '<figure>'
         if "alt_text" in settings:
-            yield '<img src="%s" alt="%s">\n' % (image_url, settings["alt_text"])
+            yield '<img src="%s" alt="%s"%s>\n' % (image_url, settings["alt_text"], size_attr)
         else:
-            yield '<img src="%s">\n' % image_url
+            yield '<img src="%s"%s>\n' % (image_url, size_attr)
+        if "caption_text" in settings:
+            yield '<figcaption>%s</figcaption>' % (settings["caption_text"])
+            yield '</figure>'
 
     @classmethod
     def settings(cls, matchobj, state):
         settings = {"image_name" : escape(matchobj.group("image_name"))}
         try:
             settings["alt_text"] = escape(matchobj.group("alt_text"))
+        except AttributeError:
+            pass
+        try:
+            settings["caption_text"] = escape(matchobj.group("caption_text"))
         except AttributeError:
             pass
         return settings

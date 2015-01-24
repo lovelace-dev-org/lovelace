@@ -15,7 +15,7 @@ html {
 }
 
 body {
-    background-image: url("noise-200x200-1.png");
+    background-image: url(noise-200x200-1.png);
     background-color: #143a14;
     height: 100%;
 }
@@ -197,6 +197,7 @@ nav.toc {
 
     background-color: #39ad39;
     color: #222;
+    z-index: 1;
 
     font-family: "DejaVu Sans", "Lucida Grande", "Verdana", "Ubuntu", "Arial", sans-serif;
     font-size: 0.8em;
@@ -317,6 +318,12 @@ section.content {
         font-size: 1.0em;
         margin-bottom: 0.5em;
         font-weight: bold;
+    }
+
+    section.content > figure {
+        margin-top: 0.5em;
+        margin-left: 0.5em;
+        margin-bottom: 1em;
     }
     
     section.content > img {
