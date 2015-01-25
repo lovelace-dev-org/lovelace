@@ -1,18 +1,23 @@
 {% load staticfiles %}
 <div class="task-meta-container" style="position:relative;width:0px;height:0px;">
   <div class="task-meta">
-    {% if evaluation == "not_answered" %}
-      <img src="{% static 'courses/question_mark.png' %}" width="96" height="96" alt="?" title="You haven't answered this exercise yet">
-    {% elif evaluation == "incorrect" %}
-      <img src="{% static 'courses/incorrect.png' %}" width="96" height="96" alt="✘" title="You have answered this exercise incorrectly">
-    {% elif evaluation == "correct" %}
-      <img src="{% static 'courses/correct.png' %}" width="96" height="96" alt="✔" title="You have answered this exercise correctly">
-    {% endif %}
-    <hr>
-    Deadline: yyyy-mm-dd
-    <hr>
+    {% if content.content_type != "LECTURE" %}
+      {% if evaluation == "not_answered" %}
+        <img src="{% static 'courses/question_mark.png' %}" width="96" height="96" alt="?" title="You haven't answered this exercise yet">
+      {% elif evaluation == "incorrect" %}
+        <img src="{% static 'courses/incorrect.png' %}" width="96" height="96" alt="✘" title="You have answered this exercise incorrectly">
+      {% elif evaluation == "correct" %}
+        <img src="{% static 'courses/correct.png' %}" width="96" height="96" alt="✔" title="You have answered this exercise correctly">
+      {% endif %}
     
-    <div><a href="{% url 'courses:show_answers' user course_slug content.slug %}" title="View your previous answers"><span class="answer-count">538</span> answers</a></div>
+      <hr>
+      Deadline: yyyy-mm-dd
+      <hr>
+    
+      <div><a href="{% url 'courses:show_answers' user course_slug content.slug %}" title="View your previous answers"><span class="answer-count">538</span> answers</a></div>
+    {% endif %}
+
+    {% comment %}TODO: Feedback things{% endcomment %}
 
     {% if user.is_active and user.is_staff %}
     <hr>

@@ -5,7 +5,9 @@
 {% block page-title %}RAiPPA - {{ title }}{% endblock %}
 
 {% block page-content %}
-{% content_meta course_slug content user evaluation %}
+{% if user.is_staff or content.content_type != "LECTURE" %}
+  {% content_meta course_slug content user evaluation %}
+{% endif %}
 {% if rendered_content or tasktype %}
   {{ rendered_content|safe }}
   {% include "courses/task.html" %}
