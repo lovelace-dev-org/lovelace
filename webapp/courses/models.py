@@ -680,9 +680,11 @@ class CodeReplaceExercise(ContentPage):
 # 1. against others
 #     * celery runs a tournament of uploaded algorithms
 #     * the results are sorted by performance
+#     * in content meta, display ranking as evaluation (gold, silver, bronze crowns for places 1-3)
 # 2. by some known scale
 #     * celery runs the uploaded algorithm against a reference
 #     * the result is compared to some value (e.g. 94% recognition achieved)
+#     * in content meta, display achieved performance as evaluation (e.g. 57%, 13857 iterations, 22 min)
 # - participants can view all the results!
 # Inspiration:
 # - coding competitions (correctness + timing/cpu cycle restrictions)
