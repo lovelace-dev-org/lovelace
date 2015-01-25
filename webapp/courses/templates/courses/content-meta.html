@@ -13,8 +13,25 @@
       <hr>
       Deadline: yyyy-mm-dd
       <hr>
-    
+
       <div><a href="{% url 'courses:show_answers' user course_slug content.slug %}" title="View your previous answers"><span class="answer-count">538</span> answers</a></div>
+
+      <hr>
+
+      <div class="give-feedback">
+        <div class="good-or-bad">
+          <a href="#" title="This exercise was good">👍</a>
+          <a href="#" title="This exercise was bad">👎</a>
+        </div>
+        <div class="five-stars">
+          {% for i in "12345" %}
+            <span title"{{ i }}" onmouseover="this.innerHTML='★';" onmouseout="this.innerHTML='☆';">☆</span>
+          {% endfor %}
+        </div>
+        <div class="open-feedback">
+          <input type="text" title="Open feedback">
+        </div>
+      </div>
     {% endif %}
 
     {% comment %}TODO: Feedback things{% endcomment %}
@@ -25,6 +42,7 @@
       <div><b>Teacher's tools</b></div>
       <ul>
       <li><div><a href="{% url 'stats:single_task' content.slug %}">Statistics</a></div></li>
+      <li><div><a href="{% url 'feedback:content' content.slug %}">Feedback</a></div></li>
       <li><div><a href="{{ content.get_admin_change_url }}">Edit this {{ content.get_human_readable_type }}</a></div></li>
       <li><div><a href="TODO">View reference answer</a></div></li>
       <li><div><a href="{% url 'courses:sandbox' content.slug %}">View separately</a></div></li>

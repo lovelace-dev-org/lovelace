@@ -745,6 +745,23 @@ section.content {
         background: #000;
     }
 
+    section.content div.task-meta > div.give-feedback {
+        font-size: 1rem;
+        margin: -4px -4px -9px -4px;
+        padding: 0;
+    }
+
+        section.content div.give-feedback div {
+            margin: -4px -4px -9px -4px;
+            padding: 0;
+        }
+
+        section.content div.give-feedback input[type=text] {
+            border: 1px solid #d0d0d0;
+            background: #eee;
+            width: 108px;
+        }
+
     section.content div.task-meta > div.admin-tools {
         margin: -4px -4px -9px -4px;
         padding: 0;
