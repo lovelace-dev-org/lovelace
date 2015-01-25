@@ -67,6 +67,12 @@
           var anchor = document.createElement("a");
           $(anchor).attr("href", "#" + id)
           $(anchor).text(text);
+          var h_parent = this.parentNode.parentNode;
+          var icon;
+          if (h_parent.className == "embedded-page") {
+            alert(id);
+            var status = $(h_parent)
+          }
           $(li).append(anchor);
 
           toc.append(li);
