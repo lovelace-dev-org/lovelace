@@ -1,0 +1,25 @@
+div#container {
+    margin-left: 0;
+}
+
+div#container-top {
+    margin-left: 0;
+}
+
+nav.breadcrumb ul {
+    margin-left: 0;
+}
+
+nav.toc {
+    right: 0;
+    top: 4rem;
+    width: 262px;
+    font-size: 0.65em;
+}
+
+nav.toc ol {
+    margin-left: 1em;
+}
+nav.toc ol > li {
+    margin-left: -1em;
+}
