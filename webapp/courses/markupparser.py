@@ -440,7 +440,8 @@ class ImageMarkup(Markup):
     shortname = "image"
     description = "An image, img tag in HTML."
     regexp = r"^\<\!image\=(?P<image_name>[^>|]+)(\|alt\=(?P<alt_text>[^>|]+))?"\
-              "(\|caption\=(?P<caption_text>[^>|]+))?\>\s*$"
+              "(\|caption\=(?P<caption_text>[^>|]+))?"\
+              "(\|align\=(?P<align>[^>|]+))?\>\s*$"
     markup_class = "embedded item"
     example = "<!image=name-of-some-image.png|alt=alternative text|caption=caption text>"
     inline = False
@@ -466,13 +467,18 @@ class ImageMarkup(Markup):
             ratio = h / w
             new_height = MAX_IMG_WIDTH * ratio
             size_attr = ' width="%d" height="%d"' % (MAX_IMG_WIDTH, new_height)
+
+        align_attr = ""
+        if "align" in settings:
+            if settings["align"] == "center":
+                align_attr = ' class="centered"'
         
         if "caption_text" in settings:
-            yield '<figure>'
+            yield '<figure%s>' % (align_attr)
         if "alt_text" in settings:
-            yield '<img src="%s" alt="%s"%s>\n' % (image_url, settings["alt_text"], size_attr)
+            yield '<img src="%s" alt="%s"%s%s>\n' % (image_url, settings["alt_text"], size_attr, align_attr)
         else:
-            yield '<img src="%s"%s>\n' % (image_url, size_attr)
+            yield '<img src="%s"%s%s>\n' % (image_url, size_attr, align_attr)
         if "caption_text" in settings:
             yield '<figcaption>%s</figcaption>' % (settings["caption_text"])
             yield '</figure>'
@@ -486,6 +492,10 @@ class ImageMarkup(Markup):
             pass
         try:
             settings["caption_text"] = escape(matchobj.group("caption_text"))
+        except AttributeError:
+            pass
+        try:
+            settings["align"] = escape(matchobj.group("align"))
         except AttributeError:
             pass
         return settings

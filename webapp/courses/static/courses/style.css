@@ -332,6 +332,11 @@ section.content {
         margin-bottom: 1em;
     }
 
+    section.content > img.centered, section.content > figure.centered {
+        margin-left: auto;
+        margin-right: auto;
+    }
+
     section.content hr {
         margin-bottom: 1em;
         border: 0;
