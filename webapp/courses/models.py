@@ -666,14 +666,11 @@ class CodeReplaceExercise(ContentPage):
         pass
 
     def get_user_evaluation(self, user):
-        pass
-        """
         evaluations = Evaluation.objects.filter(useranswer__usercodereplaceexerciseanswer__exercise=self, useranswer__user=user)
         if not evaluations:
             return "unanswered"
         correct = evaluations.filter(correct=True).count() > 0
         return "correct" if correct else "incorrect"
-        """
 
     class Meta:
         verbose_name = "code replace exercise"
@@ -1027,10 +1024,10 @@ class UserCheckboxExerciseAnswer(UserAnswer):
         #return "Answer no. %04d: %s" % (self.answer_count, ", ".join(self.chosen_answers))
         return "Answer by %s: TODO" % (self.user.username) #, ", ".join(self.chosen_answers))
 
-class UserLecturePageAnswer(UserAnswer):
-    exercise = models.ForeignKey(Lecture)
-    answered = models.BooleanField(default=None)
-    
-    def __str__(self):
-        return "Answered by %s." % (self.user.username)
+class CodeReplaceExerciseReplacement(models.Model):
+    answer = models.ForeignKey('UserCodeReplaceExerciseAnswer')
+    target = models.ForeignKey(CodeReplaceExerciseAnswer)
+    replacement = models.TextField()
 
+class UserCodeReplaceExerciseAnswer(UserAnswer):
+    exercise = models.ForeignKey(CodeReplaceExercise)
