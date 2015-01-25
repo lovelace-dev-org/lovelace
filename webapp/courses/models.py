@@ -279,6 +279,10 @@ class ContentPage(models.Model):
         # Blank function for types that don't require this
         pass
 
+    def get_user_evaluation(self, user):
+        # Blank function for types that don't require this
+        pass
+
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = self.get_url_name()
@@ -381,6 +385,13 @@ class MultipleChoiceExercise(ContentPage):
     def save_evaluation(self, user, evaluation):
         pass
 
+    def get_user_evaluation(self, user):
+        evaluations = Evaluation.objects.filter(useranswer__usermultiplechoiceexerciseanswer__exercise=self, useranswer__user=user)
+        if not evaluations:
+            return "unanswered"
+        correct = evaluations.filter(correct=True).count() > 0
+        return "correct" if correct else "incorrect"
+
     class Meta:
         verbose_name = "multiple choice exercise"
         proxy = True
@@ -450,6 +461,13 @@ class CheckboxExercise(ContentPage):
 
     def save_evaluation(self, user, evaluation):
         pass
+
+    def get_user_evaluation(self, user):
+        evaluations = Evaluation.objects.filter(useranswer__usercheckboxexerciseanswer__exercise=self, useranswer__user=user)
+        if not evaluations:
+            return "unanswered"
+        correct = evaluations.filter(correct=True).count() > 0
+        return "correct" if correct else "incorrect"
 
     class Meta:
         verbose_name = "checkbox exercise"
@@ -537,6 +555,13 @@ class TextfieldExercise(ContentPage):
     def save_evaluation(self, user, evaluation):
         pass
 
+    def get_user_evaluation(self, user):
+        evaluations = Evaluation.objects.filter(useranswer__usertextfieldexerciseanswer__exercise=self, useranswer__user=user)
+        if not evaluations:
+            return "unanswered"
+        correct = evaluations.filter(correct=True).count() > 0
+        return "correct" if correct else "incorrect"
+
     class Meta:
         verbose_name = "text field exercise"
         proxy = True
@@ -577,6 +602,13 @@ class FileUploadExercise(ContentPage):
 
     def save_evaluation(self, user, evaluation):
         pass
+
+    def get_user_evaluation(self, user):
+        evaluations = Evaluation.objects.filter(useranswer__userfileuploadexerciseanswer__exercise=self, useranswer__user=user)
+        if not evaluations:
+            return "unanswered"
+        correct = evaluations.filter(correct=True).count() > 0
+        return "correct" if correct else "incorrect"
 
     class Meta:
         verbose_name = "file upload exercise"
@@ -632,6 +664,16 @@ class CodeReplaceExercise(ContentPage):
 
     def save_evaluation(self, user, evaluation):
         pass
+
+    def get_user_evaluation(self, user):
+        pass
+        """
+        evaluations = Evaluation.objects.filter(useranswer__usercodereplaceexerciseanswer__exercise=self, useranswer__user=user)
+        if not evaluations:
+            return "unanswered"
+        correct = evaluations.filter(correct=True).count() > 0
+        return "correct" if correct else "incorrect"
+        """
 
     class Meta:
         verbose_name = "code replace exercise"

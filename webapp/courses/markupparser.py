@@ -321,7 +321,7 @@ class EmbeddedPageMarkup(Markup):
             c["tasktype"] = embedded_obj.content_type
             c["content"] = embedded_obj
             c["content_slug"] = embedded_obj.slug
-            c["evaluation"] = "incorrect"
+            c["evaluation"] = type_object.get_user_evaluation(state["request"].user)
             c["question"] = question
             c["choices"] = choices
             rendered_content = t.render(c)

@@ -67,13 +67,23 @@
           var anchor = document.createElement("a");
           $(anchor).attr("href", "#" + id)
           $(anchor).text(text);
+          
           var h_parent = this.parentNode.parentNode;
-          var icon;
+          var icon, icon_img;
           if (h_parent.className == "embedded-page") {
-            alert(id);
-            var status = $(h_parent)
+            var status = $(h_parent).find("img").first().attr("class");
+            if (status == "correct")
+              icon = "{% static 'courses/correct-16.png' %}";
+            else if (status == "incorrect")
+              icon = "{% static 'courses/incorrect-16.png' %}";
+            else if (status == "unanswered")
+              icon = "{% static 'courses/unanswered-16.png' %}";
+            icon_img = $(document.createElement("img"));
+            icon_img.attr("src", icon);
           }
           $(li).append(anchor);
+          if (icon)
+            $(li).append(icon_img);
 
           toc.append(li);
         });
@@ -142,7 +152,7 @@
         <div>Table of Contents</div>
         <ol>
         </ol>
-        <div>Completed: 7/10 exercises</div>
+        <div>Completed: <span id="completed-exercises">7</span>/<span id="total-exercises">10</span> exercises</div>
         <progress value="7" max="10"></progress>
       </nav>
       {% endblock %}
