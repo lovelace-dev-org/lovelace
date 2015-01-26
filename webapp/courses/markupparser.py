@@ -426,8 +426,9 @@ class HeadingMarkup(Markup):
             heading += escape(line.strip("= \r\n\t"))
         slug = slugify(heading)
         # TODO: Add "-heading" to id
-        yield '<h%d id="%s" class="content-heading">' % (settings["heading_level"], slug)
+        yield '<h%d class="content-heading">' % (settings["heading_level"])
         yield heading
+        yield '<span id="%s" class="anchor-offset"></span>' % (slug)
         yield '<a href="#%s" class="permalink" title="Permalink to %s">&para;</a>' % (slug, heading)
         yield '</h%d>\n' % settings["heading_level"]
     
