@@ -196,7 +196,7 @@ nav.breadcrumb {
         position: absolute;
         right: 0px;
         top: -4px;
-        width: 34px;
+        width: 140px;
         height: 24px;
         margin: 0;
         padding: 0;
@@ -211,6 +211,26 @@ nav.breadcrumb {
     }
     nav.breadcrumb img {
         display: inline-block;
+        position: relative;
+    }
+    nav.breadcrumb form {
+        display: inline-block;
+        position: relative;
+        height: 24px;
+        width: 100px;
+        padding: 0;
+        margin: 0;
+    }
+    nav.breadcrumb form select {
+        border: 1px solid #143a14;
+        background: #39ad39;
+        display: inline-block;
+        position: relative;
+        height: 20px;
+        top: -8px;
+        width: 100px;
+        padding: 0;
+        margin: 0;
     }
 
 /* Table of Contents */
