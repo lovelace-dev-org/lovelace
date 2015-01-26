@@ -32,7 +32,7 @@ class NavURL:
 
 def index(request):
     course_list = Course.objects.all()
-    navurls = [NavURL(reverse('courses:index'), "Available courses")]
+    navurls = [NavURL(reverse('courses:index'), "Courses")]
     t = loader.get_template("courses/index.html")
     c = RequestContext(request, {
         'course_list': course_list,
@@ -42,7 +42,7 @@ def index(request):
  
 def course(request, course_slug, **kwargs):
     selected_course = Course.objects.get(slug=course_slug)
-    navurls = [NavURL(reverse('courses:index'), "Available courses"),
+    navurls = [NavURL(reverse('courses:index'), "Courses"),
                NavURL(reverse('courses:course', kwargs={"course_slug":course_slug}), selected_course.name),]
 
     frontpage = selected_course.frontpage
@@ -242,7 +242,7 @@ def content(request, course_slug, content_slug, **kwargs):
     emb_content_type = None
     contains_embedded_exercise = False
 
-    navurls = [NavURL(reverse('courses:index'), "Available courses"),
+    navurls = [NavURL(reverse('courses:index'), "Courses"),
                NavURL(reverse('courses:course', kwargs={"course_slug":course_slug}), selected_course.name),
                NavURL(reverse('courses:content', kwargs={"course_slug":course_slug, "content_slug":content.slug}), content.name)]
 
