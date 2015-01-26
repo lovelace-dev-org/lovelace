@@ -130,6 +130,7 @@
       
       {% block breadcrumb %}
       <nav class="breadcrumb">
+        <div class="top-nav-container">
         <ul>
           {% for navurl in navurls %}
             {% if forloop.first %}
@@ -144,6 +145,12 @@
             {% endif %}
           {% endfor %}
         </ul>
+        <div class="right-side">
+          <div class="vertical-separator"></div>
+          <a href="#"><img src="{% static 'courses/toc.png' %}" title="Table of Contents"></a>
+          <div class="vertical-separator"></div>
+        </div>
+        </div>
       </nav>
       {% endblock %}
 

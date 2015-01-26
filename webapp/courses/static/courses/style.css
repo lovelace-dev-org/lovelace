@@ -146,17 +146,24 @@ nav.breadcrumb {
     color: #222;
 }
 
-    nav.breadcrumb ul {
+    nav.breadcrumb div.top-nav-container {
         margin-left: auto;
         margin-right: auto;
         width: 1000px;
+        position: relative;
     }
 
-    nav.breadcrumb div {
+    nav.breadcrumb ul {/*
+        margin-left: auto;
+        margin-right: auto;
+        width: 1000px;*/
+    }
+
+    nav.breadcrumb ul div {
         display: inline;
     }
 
-    nav.breadcrumb div.separator {
+    nav.breadcrumb ul div.separator {
         margin-left: 5px;
         margin-right: 5px;
         display: inline;
@@ -184,6 +191,27 @@ nav.breadcrumb {
                 background-color: #59cd59;
                 text-decoration: underline;
             }
+
+    nav.breadcrumb div.right-side {
+        position: absolute;
+        right: 0px;
+        top: -4px;
+        width: 34px;
+        height: 24px;
+        margin: 0;
+        padding: 0;
+    }
+    nav.breadcrumb div.vertical-separator {
+        border-left: 1px solid #143a14;
+        box-shadow: 0 0 2px rgba(0,0,0,0.7);
+        width: 0px;
+        height: 24px;
+        display: inline-block;
+        
+    }
+    nav.breadcrumb img {
+        display: inline-block;
+    }
 
 /* Table of Contents */
 nav.toc {
