@@ -147,7 +147,7 @@
         </ul>
         <div class="right-side">
           <div class="vertical-separator"></div>
-          <a href="#"><img src="{% static 'courses/toc.png' %}" title="Table of Contents"></a>
+          <a onclick="$('#toc').toggle();" style="cursor:pointer;"><img src="{% static 'courses/toc.png' %}" title="Table of Contents"></a>
           <div class="vertical-separator"></div>
         </div>
         </div>
@@ -155,7 +155,7 @@
       {% endblock %}
 
       {% block toc %}{% comment %}TODO: Put inside a container (progress bar inside nav not semantic){% endcomment %}
-      <nav class="toc">
+      <nav class="toc" id="toc">
         <div>Table of Contents</div>
         <ol>
         </ol>
