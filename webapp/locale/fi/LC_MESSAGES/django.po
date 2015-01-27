@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2015-01-27 15:34+0200\n"
+"POT-Creation-Date: 2015-01-27 16:56+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,6 +17,55 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: courses/templates/courses/base.html:169
+msgid "Table of Contents"
+msgstr "Sisällysluettelo"
+
+#: courses/templates/courses/base.html:172
+msgid "Completed:"
+msgstr "Ratkaistu:"
+
+#: courses/templates/courses/base.html:172
+msgid "exercises"
+msgstr "tehtävää"
+
+#: courses/templates/courses/task.html:28
+msgid "Enter your answer here"
+msgstr "Kirjoita vastauksesi tänne"
+
+#: courses/templates/courses/task.html:30
+msgid "Collaborators:"
+msgstr "Yhteistyökumppanit:"
+
+#: courses/templates/courses/task.html:30
+msgid "Who did you co-operate with?"
+msgstr "Kenen kanssa työskentelit?"
+
+#: courses/templates/courses/task.html:31
+msgid "Submit your files here:"
+msgstr "Syötä tiedostosi tänne:"
+
+#: courses/templates/courses/task.html:41
+#, python-format
+msgid "Line %(line)s in %(file)s"
+msgstr "Rivi %(line)s tiedostossa %(file)s"
+
+#: courses/templates/courses/task.html:53
+msgid "Send answer"
+msgstr "Lähetä vastaus"
+
+#: courses/templates/courses/task.html:55
+msgid "Warning: You have not logged in. Your answer will not be saved."
+msgstr "Varoitus: Et ole kirjautunut sisään. Vastaustasi ei tallenneta."
+
+#: courses/templates/courses/task.html:60
+msgid "You have previously answered this task incorrectly."
+msgstr "Olet aiemmin vastannut tähän tehtävään väärin."
+
+#: courses/templates/courses/task.html:62
+msgid "You have already answered this task correctly."
+msgstr "Olet aiemmin vastannut tähän tehtävään oikein."
 
 #: courses/views.py:36 courses/views.py:46 courses/views.py:246
 msgid "Courses"
