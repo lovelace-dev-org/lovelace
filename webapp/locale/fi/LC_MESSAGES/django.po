@@ -1,0 +1,169 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2015-01-27 15:34+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: courses/views.py:36 courses/views.py:46 courses/views.py:246
+msgid "Courses"
+msgstr "Kurssit"
+
+#: templates/admin/bad-index.html:69
+msgid " Content management "
+msgstr ""
+
+#: templates/admin/bad-index.html:73 templates/admin/bad-index.html.py:78
+#: templates/admin/bad-index.html:83 templates/admin/bad-index.html.py:107
+msgid "Add"
+msgstr ""
+
+#: templates/admin/bad-index.html:74 templates/admin/bad-index.html.py:79
+#: templates/admin/bad-index.html:84 templates/admin/bad-index.html.py:113
+msgid "Change"
+msgstr ""
+
+#: templates/admin/bad-index.html:96
+#, python-format
+msgid "Models available in the %(name)s application."
+msgstr ""
+
+#: templates/admin/bad-index.html:97
+#, python-format
+msgid "%(name)s"
+msgstr ""
+
+#: templates/admin/bad-index.html:123
+msgid "You don't have permission to edit anything."
+msgstr ""
+
+#: templates/admin/bad-index.html:131
+msgid "Recent Actions"
+msgstr ""
+
+#: templates/admin/bad-index.html:132
+msgid "My Actions"
+msgstr ""
+
+#: templates/admin/bad-index.html:136
+msgid "None available"
+msgstr ""
+
+#: templates/admin/bad-index.html:150
+msgid "Unknown content"
+msgstr ""
+
+#: templates/admin/base.html:31
+msgid "Welcome,"
+msgstr ""
+
+#: templates/admin/base.html:36
+msgid "Documentation"
+msgstr ""
+
+#: templates/admin/base.html:38
+msgid "Change password"
+msgstr ""
+
+#: templates/admin/base.html:39
+msgid "Log out"
+msgstr ""
+
+#: templates/admin/base.html:40
+msgid "Course list"
+msgstr ""
+
+#: templates/admin/base.html:49
+msgid "Home"
+msgstr ""
+
+#: templates/registration/activate.html:8
+msgid "Account successfully activated"
+msgstr ""
+
+#: templates/registration/activate.html:10 templates/registration/login.html:9
+#: templates/registration/password_reset_complete.html:8
+msgid "Log in"
+msgstr ""
+
+#: templates/registration/activate.html:14
+msgid "Account activation failed"
+msgstr ""
+
+#: templates/registration/activation_email.txt:2
+msgid "Activate account at"
+msgstr ""
+
+#: templates/registration/activation_email.txt:6
+#, python-format
+msgid "Link is valid for %(expiration_days)s days."
+msgstr ""
+
+#: templates/registration/activation_email_subject.txt:1
+msgid "Account activation on"
+msgstr ""
+
+#: templates/registration/login.html:13
+msgid "Forgot password"
+msgstr ""
+
+#: templates/registration/login.html:13
+msgid "Reset it"
+msgstr ""
+
+#: templates/registration/login.html:14
+msgid "Not member"
+msgstr ""
+
+#: templates/registration/login.html:14
+msgid "Register"
+msgstr ""
+
+#: templates/registration/logout.html:5
+msgid "Logged out"
+msgstr ""
+
+#: templates/registration/password_change_done.html:5
+msgid "Password changed"
+msgstr ""
+
+#: templates/registration/password_change_form.html:9
+#: templates/registration/password_reset_confirm.html:12
+#: templates/registration/password_reset_form.html:8
+#: templates/registration/registration_form.html:8
+msgid "Submit"
+msgstr ""
+
+#: templates/registration/password_reset_complete.html:6
+msgid "Password reset successfully"
+msgstr ""
+
+#: templates/registration/password_reset_confirm.html:17
+msgid "Password reset failed"
+msgstr ""
+
+#: templates/registration/password_reset_done.html:5
+msgid "Email with password reset instructions has been sent."
+msgstr ""
+
+#: templates/registration/password_reset_email.html:2
+#, python-format
+msgid "Reset password at %(site_name)s"
+msgstr ""
+
+#: templates/registration/registration_complete.html:5
+msgid "You are now registered. Activation email sent."
+msgstr ""

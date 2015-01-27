@@ -35,6 +35,7 @@ INSTALLED_APPS = (
 
 MIDDLEWARE_CLASSES = ( 
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -68,7 +69,7 @@ TIME_ZONE = 'Europe/Helsinki'
 
 # Language code for this installation. All choices can be found here:
 # http://www.i18nguy.com/unicode/language-identifiers.html
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'en'
 
 # If you set this to False, Django will make some optimizations so as not
 # to load the internationalization machinery.
@@ -80,6 +81,15 @@ USE_L10N = True
 
 # If you set this to False, Django will not use timezone-aware datetimes.
 USE_TZ = False
+
+LANGUAGES = (
+    ('en', 'English'),
+    ('fi', 'suomi'),
+)
+
+LOCALE_PATHS = (
+    os.path.join(BASE_DIR, 'locale'),
+)
 
 # URL prefix for static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/dev/howto/static-files/
