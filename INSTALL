@@ -85,6 +85,9 @@ Activate the virtualenv
 cd /path/to/your/lovelace
 source venv/bin/activate
 
+Note! You shouldn't create the virtualenv root into the 'webapp' directory,
+since this will cause problems with manage.py makemessages.
+
 
 Installing the dependencies
 ---------------------------
