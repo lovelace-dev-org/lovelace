@@ -2,14 +2,12 @@
 """Parser for inline wiki markup tags that appear in paragraphs, tables etc."""
 
 import re
-# TODO: Add more syntax highlighters!
 # TODO: {{{#!python {}}}} breaks up!
 # TODO: |forcedownload or |forceview for links
+import pygments
 from pygments import highlight
-from pygments.lexers import PythonLexer
+from pygments.lexers import get_lexer_by_name, get_all_lexers
 from pygments.formatters import HtmlFormatter
-
-from courses.highlighters import highlighters
 
 class Tag:
     """One markup tag type."""
@@ -50,7 +48,7 @@ class Tag:
 tags = {
     "bold":   Tag("strong", "'''", "'''", re.compile(r"[']{3}(?P<bold_italic>[']{2})?.+?(?P=bold_italic)?[']{3}")),
     "italic": Tag("em", "''", "''", re.compile(r"[']{2}.+?[']{2}")),
-    "pre":    Tag("code", "{{{", "}}}", re.compile(r"[{]{3}(?P<highlight>\#\!(%s) )?.+?[}]{3}" % ("|".join(highlighters.keys())))),
+    "pre":    Tag("code", "{{{", "}}}", re.compile(r"[{]{3}(?P<highlight>\#\![^\s]+ )?.+?[}]{3}")),
     "dfn":    Tag("dfn", "", "", re.compile(r"")),
     "mark":   Tag("mark", "!!!", "!!!", re.compile(r"[\!]{3}.+?[\!]{3}")),
     "anchor": Tag("a", "[[", "]]", re.compile(r"\[\[(?P<address>.+?)([|](?P<link_text>.+?))?\]\]")),
@@ -76,12 +74,19 @@ def parsetag(tagname, unparsed_string):
         except IndexError:
             pass
         if hilite:
+            print(hilite)
             code_string = m.group(0)[tag.lb()+len(hilite):-tag.le()]
             for escaped, unescaped in {"&lt;":"<", "&gt;":">", "&amp;":"&"}.items():
                 code_string = code_string.replace(escaped, unescaped)
             hilite = hilite.strip("#! ")
-            parsed_string += tag.htmlbegin({"class":"highlight-"+hilite.strip("#! ")})
-            parsed_string += highlight(code_string, highlighters[hilite](), HtmlFormatter(nowrap=True)).rstrip("\n")
+            parsed_string += tag.htmlbegin({"class":"highlight " + hilite})
+            try:
+                lexer = get_lexer_by_name(hilite)
+            except pygments.util.ClassNotFound as e:
+                parsed_string += "no such highlighter: %s; " % hilite
+                parsed_string += code_string
+            else:    
+                parsed_string += highlight(code_string, lexer, HtmlFormatter(nowrap=True)).rstrip("\n")
             parsed_string += tag.htmlend()
         elif address:
             contents = link_text or address
