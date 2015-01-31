@@ -270,13 +270,14 @@ nav.toc {
     }
     nav.toc ol > li {
         margin-left: -1.5em;
-        padding: 2px 0;
+        padding: 2px 1px;
         /*margin-bottom: 4px;*/
         list-style-type: none;
         position: relative;
+        border-radius: 2px;
     }
     nav.toc li.toc-visible {
-        background-color: #ccc;
+        background-color: #99cc99;
     }
     nav.toc li.ol-container {
         }
@@ -290,7 +291,7 @@ nav.toc {
         background-color: #59cd59;
     }
     nav.toc a:active {
-        color: #eee;
+        color: #ddd;
     }
     nav.toc li > img {
         padding: 0px;
