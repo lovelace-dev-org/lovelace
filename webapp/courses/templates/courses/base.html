@@ -16,6 +16,7 @@
 
     <script src="{% static 'courses/katex.min.js' %}"></script>
     <script src="{% static 'courses/jquery-2.1.1.min.js' %}"></script>
+    <script src="{% static 'courses/jquery.slimscroll.min.js' %}"></script>
     <script src="{% static 'courses/blockcode.js' %}"></script>
     <script src="{% static 'courses/exercise.js' %}"></script>
     <script src="{% static 'courses/calendar.js' %}"></script>
@@ -34,7 +35,7 @@
         });
 
         // Build the table of contents
-        var toc = $("nav.toc > ol");
+        var toc = $("nav.toc > div.list-div > ol");
         var current_toc_level = 1;
         //var topmost_ol = null;
         var headings = $.map([1, 2, 3, 4, 5, 6], function(i) {
@@ -87,6 +88,11 @@
             $(li).append(icon_img);
 
           toc.append(li);
+        });
+
+        // jQuery slimscroll for ToC
+        $('#toc > div.list-div').slimScroll({
+            height: '400px'
         });
       });
     </script>
@@ -165,8 +171,10 @@
       {% block toc %}{% comment %}TODO: Put inside a container (progress bar inside nav not semantic){% endcomment %}
       <nav class="toc" id="toc">
         <div>{% trans "Table of Contents" %}</div>
-        <ol>
-        </ol>
+        <div class="list-div">
+          <ol>
+          </ol>
+        </div>
         <div>{% trans "Completed:" %} <span id="completed-exercises">7</span>/<span id="total-exercises">10</span> {% trans "exercises" %}</div>
         <progress value="7" max="10"></progress>
       </nav>
