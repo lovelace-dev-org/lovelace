@@ -269,6 +269,9 @@ nav.toc {
         list-style-type: none;
         position: relative;
     }
+    nav.toc li.toc-visible {
+        background-color: #ccc;
+    }
     nav.toc li.ol-container {
         }
     nav.toc a:link {

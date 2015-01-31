@@ -197,12 +197,9 @@
 
         var rect = el.getBoundingClientRect();
 
-        return (
-          rect.top >= 0 &&
-          rect.left >= 0 &&
-          rect.bottom <= $(window).height()
-          rect.right <= $(window).width()
-        );
+        var result = (rect.top >= 0 &&
+          rect.bottom <= $(window).height());
+        return result;
       }
 
       function callback() {
@@ -219,7 +216,18 @@
 
       //var handler = fireIfElementVisible(el, callback);
       var handler = function() {
-        var headings = $("section.content h1, section.content h2, section.content h3, section.content h4, section.content h5, section.content h6");
+        var headings = $(".content-heading");
+        var topmost_found = false;
+        headings.each(function(index) {
+          var id = $(this).find("span.anchor-offset").first().attr("id");
+          var link_in_toc = $("#toc li a[href=#" + id + "]").parent();
+          if (isElementInViewport(this) && topmost_found == false) {
+            $(link_in_toc).attr("class", "toc-visible");
+            topmost_found = true;
+          } else {
+            $(link_in_toc).attr("class", "");
+          }
+        });
       };
 
       // Also use hashchange event to directly highlight the entered section!
