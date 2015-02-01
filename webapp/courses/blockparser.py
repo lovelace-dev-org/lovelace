@@ -90,7 +90,7 @@ def parsetag(tagname, unparsed_string):
             parsed_string += tag.htmlend()
         elif address:
             contents = link_text or address
-            parsed_string += tag.htmlbegin({"href":address})
+            parsed_string += tag.htmlbegin({"href":address, "target":"_blank"})
             parsed_string += contents
             parsed_string += tag.htmlend()
             #print tag.htmlbegin({"href":address}) + contents + tag.htmlend()
