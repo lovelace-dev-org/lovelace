@@ -334,15 +334,12 @@ class EmbeddedPageMarkup(Markup):
 
 markups.append(EmbeddedPageMarkup)
 
-# TODO: Support embeddable JavaScript apps (maybe in iframe?)
-#       - http://www.html5rocks.com/en/tutorials/security/sandboxed-iframes/
-#       - https://developer.mozilla.org/en-US/docs/Web/API/window.postMessage
 class EmbeddedScriptMarkup(Markup):
     name = "Embedded script"
     shortname = "script"
     description = "An embedded script, contained inside an iframe."
-    regexp = r"^\<\!script\=(?P<script_slug>[^\|>]+)(\|width\=(?P<width>[^>|]+))?"\
-              "(\|height\=(?P<height>[^>|]+))?(\|border\=(?P<border>[^>|]+))?\>\s*$"
+    regexp = r"^\<\!script\=(?P<script_slug>[^\|>]+)(\|width\=(?P<script_width>[^>|]+))?"\
+              "(\|height\=(?P<script_height>[^>|]+))?(\|border\=(?P<border>[^>|]+))?\>\s*$"
     markup_class = "embedded item"
     example = "<!script=dijkstra-clickable-demo>"
     states = {}
@@ -374,11 +371,11 @@ class EmbeddedScriptMarkup(Markup):
     def settings(cls, matchobj, state):
         settings = {"script_slug" : escape(matchobj.group("script_slug"))}
         try:
-            settings["width"] = escape(matchobj.group("width"))
+            settings["width"] = escape(matchobj.group("script_width"))
         except AttributeError:
             pass
         try:
-            settings["height"] = escape(matchobj.group("height"))
+            settings["height"] = escape(matchobj.group("script_height"))
         except AttributeError:
             pass
         try:
@@ -388,6 +385,52 @@ class EmbeddedScriptMarkup(Markup):
         return settings
 
 markups.append(EmbeddedScriptMarkup)
+
+class EmbeddedVideoMarkup(Markup):
+    name = "Embedded video"
+    shortname = "video"
+    description = "An embedded video, contained inside an iframe."
+    regexp = r"^\<\!video\=(?P<video_slug>[^\|>]+)(\|width\=(?P<video_width>[^>|]+))?"\
+              "(\|height\=(?P<video_height>[^>|]+))?\>\s*$"
+    markup_class = "embedded item"
+    example = "<!video=my-video-link-name>"
+    states = {}
+    inline = False
+    allow_inline = False
+
+    @classmethod
+    def block(cls, block, settings, state):
+        try:
+            videolink = courses.models.VideoLink.objects.get(name=settings["video_slug"])
+        except courses.models.VideoLink.DoesNotExist as e:
+            # TODO: Modular errors
+            yield '<div>Video link %s not found.</div>' % settings["video_slug"]
+            raise StopIteration
+
+        video_url = videolink.link
+        tag = '<iframe src="%s"' % video_url
+        if "width" in settings:
+            tag += ' width="%s"' % settings["width"]
+        if "height" in settings:
+            tag += ' height="%s"' % settings["height"]
+        tag += "><p>Your browser does not support iframes.</p></iframe>\n"
+        
+        yield tag
+
+    @classmethod
+    def settings(cls, matchobj, state):
+        settings = {"video_slug" : escape(matchobj.group("video_slug"))}
+        try:
+            settings["width"] = escape(matchobj.group("video_width"))
+        except AttributeError:
+            pass
+        try:
+            settings["height"] = escape(matchobj.group("video_height"))
+        except AttributeError:
+            pass
+        return settings
+
+markups.append(EmbeddedVideoMarkup)
 
 class EmptyMarkup(Markup):
     name = "Empty"
