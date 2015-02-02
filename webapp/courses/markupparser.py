@@ -334,6 +334,9 @@ class EmbeddedPageMarkup(Markup):
 
 markups.append(EmbeddedPageMarkup)
 
+# TODO: Support embeddable JavaScript apps (maybe in iframe?)
+# - http://www.html5rocks.com/en/tutorials/security/sandboxed-iframes/
+# - https://developer.mozilla.org/en-US/docs/Web/API/window.postMessage
 class EmbeddedScriptMarkup(Markup):
     name = "Embedded script"
     shortname = "script"
