@@ -29,7 +29,7 @@ div#container {
 }
 
 /* HEADER */
-header {
+header.top-header {
     background: #2e862e;
     background-image: url(noise-200x200-1.png);
     background-image: url(noise-200x200-1.png), linear-gradient(to bottom, rgba(0,0,0,0) 70%, rgba(0,0,0,0.06));
@@ -514,7 +514,7 @@ section.content {
             border: 1px solid #cacaca;
             border-radius: 3px;
             box-shadow: inset 0 0 3px #cacaca;
-            line-height: 1;
+            line-height: 1.25;
 
 	    white-space: pre;
 	    overflow-x: auto;

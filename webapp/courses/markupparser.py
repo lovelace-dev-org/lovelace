@@ -11,7 +11,8 @@ import copy
 # Possible solution: Import above as strict_escape and below as body_escape
 from cgi import escape # Use this instead? Security? HTML injection?
 
-from django.template import loader, RequestContext
+from django.template import loader, Context, RequestContext
+from django.utils.safestring import mark_safe
 
 from slugify import slugify
 
@@ -263,6 +264,54 @@ class CodeMarkup(Markup):
         return settings
 
 markups.append(CodeMarkup)
+
+class EmbeddedFileMarkup(Markup):
+    name = "Embedded file"
+    shortname = "file"
+    description = "An embedded file, syntax highlighted and line numbered."
+    regexp = r"^\<\!file\=(?P<file_slug>[^\|>]+)\>\s*$"
+    markup_class = "embedded item"
+    example = "<!file=my-file-name>"
+    states = {}
+    inline = False
+    allow_inline = False
+
+    @classmethod
+    def block(cls, block, settings, state):
+        try:
+            file_object = courses.models.File.objects.get(name=settings["file_slug"])
+        except courses.models.File.DoesNotExist as e:
+            # TODO: Modular errors
+            yield '<div>File %s not found.</div>' % settings["file_slug"]
+            raise StopIteration
+
+        file_path = file_object.fileinfo.path
+        try:
+            file_contents = open(file_path, mode='r', encoding='utf-8').read()
+        except ValueError as e:
+            # TODO: Modular errors
+            yield "<div>Unable to decode file %s with utf-8.</div>" % settings["file_slug"]
+            raise StopIteration
+
+        lexer = pygments.lexers.guess_lexer_for_filename(file_path, file_contents)
+        highlighted = pygments.highlight(file_contents, lexer, HtmlFormatter(nowrap=True))
+
+        t = loader.get_template("courses/embedded-codefile.html")
+        c = Context({
+            "name": file_object.name,
+            "url": file_object.fileinfo.url,
+            "contents": mark_safe(highlighted),
+        })
+
+        yield t.render(c)
+
+    @classmethod
+    def settings(cls, matchobj, state):
+        settings = {"file_slug" : escape(matchobj.group("file_slug"))}
+        
+        return settings
+
+markups.append(EmbeddedFileMarkup)
 
 class EmbeddedPageMarkup(Markup):
     name = "Embedded page"

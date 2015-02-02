@@ -11,21 +11,19 @@
     <link rel="stylesheet" href="{% static 'courses/style.css' %}">
     <link rel="stylesheet" href="{% static 'courses/small-screens.css' %}" media="(max-width: 1300px)">
     <link rel="stylesheet" href="{% static 'courses/syntax.css' %}">
-    <link rel="stylesheet" href="{% static 'courses/blockcode.css' %}">
+    <link rel="stylesheet" href="{% static 'courses/embedded-file.css' %}">
     <link rel="stylesheet" href="{% static 'courses/katex.min.css' %}">
 
     <script src="{% static 'courses/katex.min.js' %}"></script>
     <script src="{% static 'courses/jquery-2.1.1.min.js' %}"></script>
     <script src="{% static 'courses/jquery.slimscroll.min.js' %}"></script>
-    <script src="{% static 'courses/blockcode.js' %}"></script>
+    <script src="{% static 'courses/embedded-file.js' %}"></script>
     <script src="{% static 'courses/exercise.js' %}"></script>
     <script src="{% static 'courses/calendar.js' %}"></script>
     <script>
       $(document).ready(function() {
-        addLineNumbers();
-        setColumnWidths();
-        setLineWidths();
-        setPreHeights();
+        add_line_numbers();
+        set_line_widths();
 
         add_exercise_form_callbacks();
 
@@ -101,7 +99,7 @@
   </head>
   <body>
     <div id="container">
-      <header>
+      <header class="top-header">
         <div id="container-top">
           <div class="page-title">
             <h1>BRAND</h1>

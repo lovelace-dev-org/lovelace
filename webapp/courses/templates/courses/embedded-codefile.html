@@ -1,13 +1,6 @@
-<div class="blockcode">
-  <section>
-    <div class="heading">
-      <header>
-        <h1 class="codeheading"><a href="{{ fileurl }}" title="Download {{ filename }}">{{ filename }}</a>
-        <span>{{ filetype }}</span></h1>
-      </header>
-    </div>
-    <pre><code class="highlight">
-      {{ code }}
-    </code></pre>
-  </section>
+<div class="embedded-code">
+  <header class="embedded-code-header">
+    <a href="{{ url }}" title="Download {{ name }}">{{ name }}</a>
+  </header>
+  <pre><code class="highlight">{{ contents }}</code></pre>
 </div>
