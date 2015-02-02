@@ -531,6 +531,10 @@ class TextfieldExercise(ContentPage):
                 correct = False
                 continue
 
+            # TODO: Support match.groups() in hints & comments!
+            #       E.g. replace {mygroupname} from a hint with the contents of
+            #       (?P<mygroupname>...)
+
             if match and answer.correct:
                 correct = True
                 correct_found = True
