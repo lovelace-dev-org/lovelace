@@ -1,0 +1,21 @@
+{% extends 'courses/base.html' %}
+{% load staticfiles %}
+
+{% block page-title %}Markup help{% endblock %}
+
+{% block page-content %}
+<h1>Markup help</h1>
+{# TODO: Group by markup class #}
+{% for markup in markups.values %}
+  <div>
+    <h2>{{ markup.name }}</h2>
+    <p>{{ markup.description }}</p>
+    <p>Example</p>
+    <pre class="normal">{{ markup.example }}</pre>
+    <p>Result</p>
+    <div>
+      parsed result here
+    </div>
+  </div>
+{% endfor %}
+{% endblock %}

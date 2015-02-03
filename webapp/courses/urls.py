@@ -35,6 +35,10 @@ urlpatterns = [
     # Sandbox: admin view & answer for content pages without saved results
     url(r'^sandbox/(?P<content_slug>[^/]+)/$', views.content, {'sandbox': True,}, name='sandbox',),
 
+    # Help pages
+    url(r'^help/$', views.help_list, name='help_list',),
+    url(r'^help/markup/$', views.markup_help, name='markup_help',),
+
     # Course front page and content views
     url(r'^(?P<course_slug>[^/]+)/$', views.course, name='course'),
     url(r'^(?P<course_slug>[^/]+)/(?P<content_slug>[^/]+)/$', views.content, name='content'),

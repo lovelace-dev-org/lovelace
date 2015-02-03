@@ -109,6 +109,10 @@ class MarkupParser:
         cls._ready = True
 
     @classmethod
+    def get_markups(cls):
+        return copy.deepcopy(cls._markups)
+
+    @classmethod
     def _get_line_kind(cls, line):
         """
         Key function for itertools.groupby(...)

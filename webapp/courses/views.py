@@ -628,3 +628,14 @@ def show_answers(request, user, course, exercise):
         'answers': answers,
     })
     return HttpResponse(t.render(c))
+
+def help_list(request):
+    return HttpResponse()
+
+def markup_help(request):
+    markups = markupparser.MarkupParser.get_markups()
+    t = loader.get_template("courses/markup-help.html")
+    c = RequestContext(request, {
+        'markups': markups,
+    })
+    return HttpResponse(t.render(c))
