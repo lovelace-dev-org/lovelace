@@ -699,29 +699,6 @@ class SeparatorMarkup(Markup):
 
 markups.append(SeparatorMarkup)
 
-class SourceCodeMarkup(Markup):
-    name = "Source code file"
-    shortname = "sourcecodefile"
-    description = "A listing of uploaded source code."
-    regexp = r"^\<\!sourcecodefile\=(?P<source_filename>[^>]+)\>\s*$"
-    markup_class = "embedded item"
-    example = "<!sourcecodefile=hello_world.py>"
-    inline = False
-    allow_inline = False
-
-    @classmethod
-    def block(cls, block, settings, state):
-        # TODO: embedded_sourcecode custom template tag
-        # TODO: On the other hand, no (security risk).
-        yield '{%% embedded_sourcecode "%s" %%}' % settings["source_filename"]
-
-    @classmethod
-    def settings(cls, matchobj, state):
-        settings = {"source_filename": matchobj.group("source_filename")}
-        return settings
-
-markups.append(SourceCodeMarkup)
-
 class TableMarkup(Markup):
     name = "Table"
     shortname = "table"
