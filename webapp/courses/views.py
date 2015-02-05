@@ -73,28 +73,12 @@ def course(request, course_slug, **kwargs):
     return HttpResponse(t.render(c))
 
 def dirtree(tree, node, user):
-    result = "not_answered"
+    evaluation = "unanswered"
     if user.is_authenticated():
-        evaluations = None
-        if node.content.content_type == "CHECKBOX_EXERCISE":
-            evaluations = Evaluation.objects.filter(useranswer__usercheckboxexerciseanswer__exercise=node.content, useranswer__user=user)
-        elif node.content.content_type == "MULTIPLE_CHOICE_EXERCISE":
-            evaluations = Evaluation.objects.filter(useranswer__usermultiplechoiceexerciseanswer__exercise=node.content, useranswer__user=user)
-        elif node.content.content_type == "TEXTFIELD_EXERCISE":
-            evaluations = Evaluation.objects.filter(useranswer__usertextfieldexerciseanswer__exercise=node.content, useranswer__user=user)
-        elif node.content.content_type == "FILE_UPLOAD_EXERCISE":
-            evaluations = Evaluation.objects.filter(useranswer__userfileuploadexerciseanswer__exercise=node.content, useranswer__user=user)
-        
-        if not evaluations:
-            result = "not_answered"
-        else:
-            correct = evaluations.filter(points__gt=0.0)
-            if correct:
-                result = "correct"
-            else:
-                result = "incorrect"
+        exercise = node.content.get_type_object()
+        evaluation = exercise.get_user_evaluation(user)
 
-    list_item = (node.content, result)
+    list_item = (node.content, evaluation)
     if list_item not in tree:
         tree.append(list_item)
 
@@ -179,34 +163,6 @@ def file_exercise_evaluation(request, course_slug, content_slug, task_id):
     })
     return HttpResponse(t.render(c))
 
-def get_user_exercise_info(user, exercise, exercisetype, pub_date=None):
-    if not pub_date:
-        pub_date = datetime.datetime(2000, 1, 1)
-    evaluations = None
-    if exercisetype == "checkbox":
-        if not evaluations:
-            evaluations = Evaluation.objects.filter(useranswer__usercheckboxexerciseanswer__exercise=exercise, useranswer__user=user, useranswer__answer_date__gte=pub_date)
-    elif exercisetype == "multiplechoice":
-        if not evaluations:
-            evaluations = Evaluation.objects.filter(useranswer__usermultiplechoiceexerciseanswer__exercise=exercise, useranswer__user=user, useranswer__answer_date__gte=pub_date)
-    elif exercisetype == "textfield":
-        if not evaluations:
-            evaluations = Evaluation.objects.filter(useranswer__usertextfieldexerciseanswer__exercise=exercise, useranswer__user=user, useranswer__answer_date__gte=pub_date)
-    elif exercisetype == "file":
-        if not evaluations:
-            evaluations = Evaluation.objects.filter(useranswer__userfileuploadexerciseanswer__exercise=exercise, useranswer__user=user, useranswer__answer_date__gte=pub_date)
-
-    if not evaluations:
-        result = "not_answered"
-    else:
-        correct = evaluations.filter(correct=True)
-        if correct:
-            result = "correct"
-        else:
-            result = "incorrect"
-
-    return result
-
 def content(request, course_slug, content_slug, **kwargs):
     selected_course = Course.objects.get(slug=course_slug)
     # TODO: Ensure content is part of course!
@@ -227,7 +183,7 @@ def content(request, course_slug, content_slug, **kwargs):
     exercise_evaluation = None
     if request.user.is_authenticated():
         if not content_graph or not content_graph.publish_date or content_graph.publish_date < datetime.datetime.now():
-            exercise_evaluation = get_user_exercise_info(request.user, content, content_type)
+            exercise_evaluation = exercise.get_user_evaluation(request.user)
 
     admin_url = content.get_admin_change_url()
 
