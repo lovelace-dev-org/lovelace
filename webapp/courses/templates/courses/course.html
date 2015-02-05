@@ -18,11 +18,12 @@
         <li>
           <a href="{% url 'courses:content' course.slug list_direction.slug %}">{{ list_direction.name }}</a>
           {% if result %}
-            {% if result == 'not_answered' %}
+            {% if result == 'unanswered' %}
+              <img src="{% static 'courses/unanswered-16.png' %}" alt="Unanswered">
             {% elif result == 'correct' %}
-              <img src="{% static 'courses/correct.png' %}" alt="Correctly answered!">
+              <img src="{% static 'courses/correct-16.png' %}" alt="Correctly answered">
             {% elif result == 'incorrect' %}
-              <img src="{% static 'courses/incorrect.png' %}" alt="Incorrectly answered!">
+              <img src="{% static 'courses/incorrect-16.png' %}" alt="Incorrectly answered">
             {% endif %}
           {% endif %}
         </li>
@@ -34,13 +35,5 @@
 {% if content or tasktype %}
   {{ content|safe }}
   {% include "courses/task.html" %}
-  {% if user.is_active and user.is_staff %}
-    <div class="admin_tools">
-      <h1>Teacher's toolbox for {{ content_name }}</h1>
-      <a href="{% url 'stats:single_task' content_urlname %}">Statistics</a><br/>
-      <a href="{{ admin_url }}">Edit this task</a><br />
-      <span>Url-name: </span><span>{{ content_urlname }}</span>
-    </div>
-  {% endif %}
 {% endif %}
 {% endblock %}
