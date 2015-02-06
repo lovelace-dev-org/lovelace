@@ -207,14 +207,13 @@ def content(request, course_slug, content_slug, **kwargs):
     }
                              
     rendered_content = content.rendered_markup(request, context)
-    rc = rendered_content
 
     c = RequestContext(request, {
         'embedded_exercise': False,
         'contains_embedded_exercise': contains_embedded_exercise,
         'course_slug': course_slug,
         'content': content,
-        'rendered_content': rc, #rendered_content,
+        'rendered_content': rendered_content,
         'content_name': content.name,
         'content_name_id': content.slug,
         'content_urlname': content.slug,
