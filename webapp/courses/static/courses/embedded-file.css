@@ -35,7 +35,7 @@ div.embedded-code {
         font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
         background: #e2e2e2;
         font-size: 1rem;
-        line-height: 1.25;
+        line-height: 1.15;
         border-top: 1px solid #cacaca;
 
         white-space: pre;

@@ -514,7 +514,7 @@ section.content {
             border: 1px solid #cacaca;
             border-radius: 3px;
             box-shadow: inset 0 0 3px #cacaca;
-            line-height: 1.25;
+            line-height: 1.15;
 
 	    white-space: pre;
 	    overflow-x: auto;
