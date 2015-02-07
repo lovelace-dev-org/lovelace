@@ -493,15 +493,14 @@ class TextfieldExercise(ContentPage):
         answers = self.get_choices()
 
         # Determine, if the given answer was correct and which hints/comments to show
-        correct = True
-        correct_found = False
+        correct = False
         hints = []
         comments = []
         errors = []
         if "answer" in answer.keys():
             given_answer = answer["answer"].replace("\r", "")
         else:
-            return False, [], [], ["No data sent"]
+            return {"evaluation": False}
 
         re_validate = lambda db_ans, given_ans: re.match(db_ans, given_ans) is not None
         str_validate = lambda db_ans, given_ans: db_ans == given_ans
@@ -525,19 +524,14 @@ class TextfieldExercise(ContentPage):
 
             if match and answer.correct:
                 correct = True
-                correct_found = True
                 if answer.comment:
                     comments.append(answer.comment)
             elif match and not answer.correct:
-                if not correct_found:
-                    correct = False
                 if answer.hint:
                     hints.append(answer.hint)
                 if answer.comment:
                     comments.append(answer.comment)
             elif not match and answer.correct:
-                if not correct_found:
-                    correct = False
                 if answer.hint:
                     hints.append(answer.hint)
 
