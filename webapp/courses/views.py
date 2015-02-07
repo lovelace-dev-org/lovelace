@@ -97,6 +97,9 @@ def check_answer(request, course_slug, content_slug):
     if request.method != "POST":
         return HttpResponseNotAllowed(['POST'])
 
+    if not request.user.is_active:
+        return HttpResponse("You have not logged in.")
+
     selected_course = Course.objects.get(slug=course_slug)
     content = ContentPage.objects.get(slug=content_slug)
     # TODO: Ensure that the content really belongs to the course
@@ -119,6 +122,7 @@ def check_answer(request, course_slug, content_slug):
     files = request.FILES
 
     exercise = content.get_type_object()
+    
     answer_object = exercise.save_answer(user, ip, answer, files)
     evaluation = exercise.check_answer(user, ip, answer, files, answer_object)
     if not exercise.manually_evaluated:
