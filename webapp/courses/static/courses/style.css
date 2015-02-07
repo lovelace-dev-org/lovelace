@@ -196,7 +196,7 @@ nav.breadcrumb {
         position: absolute;
         right: 0px;
         top: -4px;
-        width: 140px;
+        width: 130px;
         height: 24px;
         margin: 0;
         padding: 0;
@@ -204,7 +204,7 @@ nav.breadcrumb {
     nav.breadcrumb div.vertical-separator {
         border-left: 1px solid #143a14;
         box-shadow: 0 0 2px rgba(0,0,0,0.7);
-        width: 0px;
+
         height: 24px;
         display: inline-block;
         
@@ -212,13 +212,14 @@ nav.breadcrumb {
     nav.breadcrumb img {
         display: inline-block;
         position: relative;
+        padding: 0 2px;
     }
     nav.breadcrumb form {
         display: inline-block;
         position: relative;
         height: 24px;
         width: 100px;
-        padding: 0;
+        padding-right: 40px;
         margin: 0;
     }
     nav.breadcrumb form select {
@@ -228,7 +229,7 @@ nav.breadcrumb {
         position: relative;
         height: 20px;
         top: -8px;
-        width: 100px;
+        width: 98px;
         padding: 0;
         margin: 0;
     }
