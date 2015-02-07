@@ -21,13 +21,13 @@
       {# TODO: Feedback things #}
       <div class="give-feedback">
         <div class="good-or-bad">
-          <span title="This exercise was good">👍</span><span title="This exercise was bad">👎</span>
+          <span title="This exercise was good" style="cursor:pointer;">👍</span><span title="This exercise was bad" style="cursor:pointer;">👎</span>
         </div>
         <div class="five-stars">
-          {% for i in "12345" %}<span title="{{ i }}" onmouseover="this.innerHTML='★';" onmouseout="this.innerHTML='☆';">☆</span>{% endfor %}
+          {% for i in "12345" %}<span title="{{ i }}" onmouseover="this.innerHTML='★';" onmouseout="this.innerHTML='☆';" style="cursor:pointer;">☆</span>{% endfor %}
         </div>
         <div class="open-feedback">
-          <input type="text" title="Open feedback">
+          <input type="text" title="Open feedback">{# TODO: onclick opens a bigger textarea for writing #}
         </div>
       </div>
     {% endif %}
