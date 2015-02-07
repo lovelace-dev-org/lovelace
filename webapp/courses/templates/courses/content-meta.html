@@ -18,15 +18,13 @@
 
       <hr>
 
+      {# TODO: Feedback things #}
       <div class="give-feedback">
         <div class="good-or-bad">
-          <a href="#" title="This exercise was good">👍</a>
-          <a href="#" title="This exercise was bad">👎</a>
+          <span title="This exercise was good">👍</span><span title="This exercise was bad">👎</span>
         </div>
         <div class="five-stars">
-          {% for i in "12345" %}
-            <span title"{{ i }}" onmouseover="this.innerHTML='★';" onmouseout="this.innerHTML='☆';">☆</span>
-          {% endfor %}
+          {% for i in "12345" %}<span title="{{ i }}" onmouseover="this.innerHTML='★';" onmouseout="this.innerHTML='☆';">☆</span>{% endfor %}
         </div>
         <div class="open-feedback">
           <input type="text" title="Open feedback">
@@ -34,18 +32,16 @@
       </div>
     {% endif %}
 
-    {% comment %}TODO: Feedback things{% endcomment %}
-
     {% if user.is_active and user.is_staff %}
     <hr>
     <div class="admin-tools">
       <div><b>Teacher's tools</b></div>
       <ul>
-      <li><div><a href="{% url 'stats:single_task' content.slug %}">Statistics</a></div></li>
-      <li><div><a href="{% url 'feedback:content' content.slug %}">Feedback</a></div></li>
-      <li><div><a href="{{ content.get_admin_change_url }}">Edit this {{ content.get_human_readable_type }}</a></div></li>
-      <li><div><a href="TODO">View reference answer</a></div></li>
-      <li><div><a href="{% url 'courses:sandbox' content.slug %}">View separately</a></div></li>
+        <li><div><a href="{% url 'stats:single_task' content.slug %}">Statistics</a></div></li>
+        <li><div><a href="{% url 'feedback:content' content.slug %}">Feedback</a></div></li>
+        <li><div><a href="{{ content.get_admin_change_url }}">Edit this {{ content.get_human_readable_type }}</a></div></li>
+        <li><div><a href="TODO">View reference answer</a></div></li>
+        <li><div><a href="{% url 'courses:sandbox' content.slug %}">View separately</a></div></li>
       </ul>
     </div>
     {% endif %}
