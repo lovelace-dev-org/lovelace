@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2015-01-27 16:56+0200\n"
+"POT-Creation-Date: 2015-02-07 17:30+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,17 +18,85 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: courses/templates/courses/base.html:169
+#: courses/templates/courses/base.html:170
 msgid "Table of Contents"
 msgstr "Sisällysluettelo"
 
-#: courses/templates/courses/base.html:172
+#: courses/templates/courses/base.html:175
 msgid "Completed:"
 msgstr "Ratkaistu:"
 
-#: courses/templates/courses/base.html:172
+#: courses/templates/courses/base.html:175
 msgid "exercises"
 msgstr "tehtävää"
+
+#: courses/templates/courses/content-meta.html:8
+#, fuzzy
+#| msgid "You have already answered this task correctly."
+msgid "You haven't answered this exercise yet"
+msgstr "Et ole vielä vastannut tähän tehtävään."
+
+#: courses/templates/courses/content-meta.html:11
+#, fuzzy
+#| msgid "You have previously answered this task incorrectly."
+msgid "You have answered this exercise incorrectly"
+msgstr "Olet aiemmin vastannut tähän tehtävään väärin."
+
+#: courses/templates/courses/content-meta.html:14
+#, fuzzy
+#| msgid "You have already answered this task correctly."
+msgid "You have answered this exercise correctly"
+msgstr "Olet aiemmin vastannut tähän tehtävään oikein."
+
+#: courses/templates/courses/content-meta.html:22
+msgid "View your previous answers"
+msgstr "Katso edellisiä vastauksiasi"
+
+#: courses/templates/courses/content-meta.html:22
+#, fuzzy
+#| msgid "Send answer"
+msgid "answers"
+msgstr "vastausta"
+
+#: courses/templates/courses/content-meta.html:43
+msgid "Teacher's tools"
+msgstr "Opettajan työkalut"
+
+#: courses/templates/courses/content-meta.html:45
+msgid "Statistics"
+msgstr "Tilastot"
+
+#: courses/templates/courses/content-meta.html:46
+msgid "Feedback"
+msgstr "Palautteet"
+
+#: courses/templates/courses/content-meta.html:48
+msgid "View reference answer"
+msgstr "Katso mallivastausta"
+
+#: courses/templates/courses/content-meta.html:49
+msgid "View separately"
+msgstr "Katso erikseen"
+
+#: courses/templates/courses/exercise_evaluation.html:4
+msgid ""
+"Your answer has been recorded and is currently pending an evaluation by a "
+"teacher."
+msgstr "Vastauksesi on tallennettu ja odottaa opettajan arviointia."
+
+#: courses/templates/courses/exercise_evaluation.html:9
+#, fuzzy
+#| msgid "Send answer"
+msgid "Correct answer!"
+msgstr "Oikea vastaus!"
+
+#: courses/templates/courses/exercise_evaluation.html:11
+msgid "Incorrect answer!"
+msgstr "Väärä vastaus!"
+
+#: courses/templates/courses/exercise_evaluation.html:17
+msgid "Hint: "
+msgstr "Vihje: "
 
 #: courses/templates/courses/task.html:28
 msgid "Enter your answer here"
@@ -67,7 +135,7 @@ msgstr "Olet aiemmin vastannut tähän tehtävään väärin."
 msgid "You have already answered this task correctly."
 msgstr "Olet aiemmin vastannut tähän tehtävään oikein."
 
-#: courses/views.py:36 courses/views.py:46 courses/views.py:246
+#: courses/views.py:36 courses/views.py:46 courses/views.py:198
 msgid "Courses"
 msgstr "Kurssit"
 
