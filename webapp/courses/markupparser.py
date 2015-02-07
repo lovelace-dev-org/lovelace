@@ -376,8 +376,10 @@ class EmbeddedPageMarkup(Markup):
             c["content_slug"] = embedded_obj.slug
             if state["request"].user.is_active:
                 c["evaluation"] = type_object.get_user_evaluation(state["request"].user)
+                c["answer_count"] = type_object.get_user_answers(state["request"].user).count()
             else:
                 c["evaluation"] = "unanswered"
+                c["answer_count"] = 0
             c["question"] = question
             c["choices"] = choices
             rendered_content = t.render(c)

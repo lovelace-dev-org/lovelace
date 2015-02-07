@@ -2,7 +2,7 @@
 {% load i18n %}
 {% load content_extra %}
 {% if tasktype %}
-  {% content_meta course_slug content user evaluation %}
+  {% content_meta course_slug content user evaluation answer_count%}
 
   {% if emb_content %}
     <div>{{ emb_content|safe }}</div>

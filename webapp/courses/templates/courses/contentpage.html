@@ -6,7 +6,7 @@
 
 {% block page-content %}
 {% if user.is_staff or content.content_type != "LECTURE" %}
-  {% content_meta course_slug content user evaluation %}
+  {% content_meta course_slug content user evaluation answer_count %}
 {% endif %}
 {% if rendered_content or tasktype %}
   {{ rendered_content|safe }}

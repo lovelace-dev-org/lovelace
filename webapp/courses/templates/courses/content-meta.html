@@ -1,20 +1,25 @@
 {% load staticfiles %}
+{% load i18n %}
 <div class="task-meta-container" style="position:relative;width:0px;height:0px;">
   <div class="task-meta">
     {% if content.content_type != "LECTURE" %}
       {% if evaluation == "unanswered" %}
-        <img src="{% static 'courses/unanswered.png' %}" width="96" height="96" alt="?" title="You haven't answered this exercise yet" class="unanswered">
+        <img src="{% static 'courses/unanswered.png' %}" width="96" height="96" alt="?"
+             title="{% trans "You haven't answered this exercise yet" %}" class="unanswered">
       {% elif evaluation == "incorrect" %}
-        <img src="{% static 'courses/incorrect.png' %}" width="96" height="96" alt="✘" title="You have answered this exercise incorrectly" class="incorrect">
+        <img src="{% static 'courses/incorrect.png' %}" width="96" height="96" alt="✘"
+             title="{% trans 'You have answered this exercise incorrectly' %}" class="incorrect">
       {% elif evaluation == "correct" %}
-        <img src="{% static 'courses/correct.png' %}" width="96" height="96" alt="✔" title="You have answered this exercise correctly" class="correct">
+        <img src="{% static 'courses/correct.png' %}" width="96" height="96" alt="✔"
+             title="{% trans 'You have answered this exercise correctly' %}" class="correct">
       {% endif %}
 
       <hr>
       Deadline: yyyy-mm-dd
       <hr>
 
-      <div><a href="{% url 'courses:show_answers' user course_slug content.slug %}" title="View your previous answers"><span class="answer-count">538</span> answers</a></div>
+      <div><a href="{% url 'courses:show_answers' user course_slug content.slug %}"
+              title="{% trans 'View your previous answers' %}"><span class="answer-count">{{ answer_count }}</span> {% trans 'answers' %}</a></div>
 
       <hr>
 
@@ -35,13 +40,13 @@
     {% if user.is_active and user.is_staff %}
     <hr>
     <div class="admin-tools">
-      <div><b>Teacher's tools</b></div>
+      <div><b>{% trans "Teacher's tools" %}</b></div>
       <ul>
-        <li><div><a href="{% url 'stats:single_task' content.slug %}">Statistics</a></div></li>
-        <li><div><a href="{% url 'feedback:content' content.slug %}">Feedback</a></div></li>
+        <li><div><a href="{% url 'stats:single_task' content.slug %}">{% trans 'Statistics' %}</a></div></li>
+        <li><div><a href="{% url 'feedback:content' content.slug %}">{% trans 'Feedback' %}</a></div></li>
         <li><div><a href="{{ content.get_admin_change_url }}">Edit this {{ content.get_human_readable_type }}</a></div></li>
-        <li><div><a href="TODO">View reference answer</a></div></li>
-        <li><div><a href="{% url 'courses:sandbox' content.slug %}">View separately</a></div></li>
+        <li><div><a href="TODO">{% trans 'View reference answer' %}</a></div></li>
+        <li><div><a href="{% url 'courses:sandbox' content.slug %}">{% trans 'View separately' %}</a></div></li>
       </ul>
     </div>
     {% endif %}

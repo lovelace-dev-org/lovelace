@@ -295,6 +295,9 @@ class ContentPage(models.Model):
         # Blank function for types that don't require this
         pass
 
+    def get_user_answers(self, user, ignore_drafts=True):
+        pass
+
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = self.get_url_name()
@@ -389,6 +392,10 @@ class MultipleChoiceExercise(ContentPage):
         correct = evaluations.filter(correct=True).count() > 0
         return "correct" if correct else "incorrect"
 
+    def get_user_answers(self, user, ignore_drafts=True):
+        answers = UserMultipleChoiceExerciseAnswer.objects.filter(exercise=self, user=user)
+        return answers
+
     class Meta:
         verbose_name = "multiple choice exercise"
         proxy = True
@@ -462,6 +469,10 @@ class CheckboxExercise(ContentPage):
             return "unanswered"
         correct = evaluations.filter(correct=True).count() > 0
         return "correct" if correct else "incorrect"
+
+    def get_user_answers(self, user, ignore_drafts=True):
+        answers = UserCheckboxExerciseAnswer.objects.filter(exercise=self, user=user)
+        return answers
 
     class Meta:
         verbose_name = "checkbox exercise"
@@ -551,6 +562,10 @@ class TextfieldExercise(ContentPage):
         correct = evaluations.filter(correct=True).count() > 0
         return "correct" if correct else "incorrect"
 
+    def get_user_answers(self, user, ignore_drafts=True):
+        answers = UserTextfieldExerciseAnswer.objects.filter(exercise=self, user=user)
+        return answers
+
     class Meta:
         verbose_name = "text field exercise"
         proxy = True
@@ -595,6 +610,10 @@ class FileUploadExercise(ContentPage):
             return "unanswered"
         correct = evaluations.filter(correct=True).count() > 0
         return "correct" if correct else "incorrect"
+
+    def get_user_answers(self, user, ignore_drafts=True):
+        answers = UserFileUploadExerciseAnswer.objects.filter(exercise=self, user=user)
+        return answers
 
     class Meta:
         verbose_name = "file upload exercise"
@@ -651,6 +670,10 @@ class CodeReplaceExercise(ContentPage):
             return "unanswered"
         correct = evaluations.filter(correct=True).count() > 0
         return "correct" if correct else "incorrect"
+    
+    def get_user_answers(self, user, ignore_drafts=True):
+        answers = UserCodeReplaceExerciseAnswer.objects.filter(exercise=self, user=user)
+        return answers
 
     class Meta:
         verbose_name = "code replace exercise"
