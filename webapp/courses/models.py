@@ -212,7 +212,7 @@ class ContentPage(models.Model):
     name = models.CharField(max_length=255, help_text="The full name of this page")
     slug = models.CharField(max_length=255, db_index=True, unique=True)
     content = models.TextField(verbose_name="Page content body", blank=True, null=True)
-    default_points = models.IntegerField(blank=True, null=True,
+    default_points = models.IntegerField(default=1,
                                          help_text="The default points a user can gain by finishing this exercise correctly")
     access_count = models.PositiveIntegerField(editable=False,blank=True,null=True)
     tags = models.TextField(blank=True,null=True) # TODO: Maybe use an ArrayField (Django 1.8) or manytomany
@@ -278,6 +278,18 @@ class ContentPage(models.Model):
     def get_choices(self):
         # Blank function for types that don't require this
         pass
+
+    def save_evaluation(self, user, evaluation, answer_object):
+        correct = evaluation["evaluation"]
+        if correct == True:
+            points = self.default_points
+        else:
+            points = 0
+            
+        evaluation_object = Evaluation(correct=correct, points=points)
+        evaluation_object.save()
+        answer_object.evaluation = evaluation_object
+        answer_object.save()
 
     def get_user_evaluation(self, user):
         # Blank function for types that don't require this
@@ -370,9 +382,6 @@ class MultipleChoiceExercise(ContentPage):
             
         return {"evaluation": correct, "hints": hints, "comments": comments}
 
-    def save_evaluation(self, user, evaluation):
-        pass
-
     def get_user_evaluation(self, user):
         evaluations = Evaluation.objects.filter(useranswer__usermultiplechoiceexerciseanswer__exercise=self, useranswer__user=user)
         if not evaluations:
@@ -446,9 +455,6 @@ class CheckboxExercise(ContentPage):
                 chosen.append(choice)
 
         return {"evaluation": correct, "hints": hints, "comments": comments}
-
-    def save_evaluation(self, user, evaluation):
-        pass
 
     def get_user_evaluation(self, user):
         evaluations = Evaluation.objects.filter(useranswer__usercheckboxexerciseanswer__exercise=self, useranswer__user=user)
@@ -538,9 +544,6 @@ class TextfieldExercise(ContentPage):
         return {"evaluation": correct, "hints": hints, "comments": comments,
                 "errors": errors}
 
-    def save_evaluation(self, user, evaluation):
-        pass
-
     def get_user_evaluation(self, user):
         evaluations = Evaluation.objects.filter(useranswer__usertextfieldexerciseanswer__exercise=self, useranswer__user=user)
         if not evaluations:
@@ -586,9 +589,6 @@ class FileUploadExercise(ContentPage):
                                            answer_id=answer_object.id)
         return {"task_id": result.task_id}
 
-    def save_evaluation(self, user, evaluation):
-        pass
-
     def get_user_evaluation(self, user):
         evaluations = Evaluation.objects.filter(useranswer__userfileuploadexerciseanswer__exercise=self, useranswer__user=user)
         if not evaluations:
@@ -617,9 +617,6 @@ class CodeInputExercise(ContentPage):
     def check_answer(self, user, ip, answer, files, answer_object):
         return {}
 
-    def save_evaluation(self, user, evaluation):
-        pass
-
     class Meta:
         verbose_name = "code input exercise"
         proxy = True
@@ -647,9 +644,6 @@ class CodeReplaceExercise(ContentPage):
 
     def check_answer(self, user, ip, answer, files, answer_object):
         return {}
-
-    def save_evaluation(self, user, evaluation):
-        pass
 
     def get_user_evaluation(self, user):
         evaluations = Evaluation.objects.filter(useranswer__usercodereplaceexerciseanswer__exercise=self, useranswer__user=user)
@@ -922,7 +916,7 @@ class CodeReplaceExerciseAnswer(models.Model):
     replace_line = models.PositiveIntegerField()
 
 class Evaluation(models.Model):
-    """Evaluation of a student's exercise answer."""
+    """Evaluation of a student's answer to an exercise."""
     correct = models.BooleanField(default=False)
     points = models.IntegerField(default=0)
 
@@ -930,12 +924,6 @@ class Evaluation(models.Model):
     evaluator = models.ForeignKey(User, verbose_name='Who evaluated the answer', blank=True, null=True)
     feedback = models.TextField(verbose_name='Feedback given by a teacher', blank=True)
     test_results = models.TextField(verbose_name='Test results in JSON', blank=True) # TODO: JSONField
-
-    def __str__(self):
-        if self.correct:
-            return "Correct answer to (todo: exercise) by %s with %f points: %s" % (self.useranswer.user.username, self.points, self.feedback)
-        else:
-            return "Incorrect answer to (todo: exercise) by %s with %f points: %s" % (self.useranswer.user.username, self.points, self.feedback)
 
 class UserAnswer(models.Model):
     """Parent class for what users have given as their answers to different exercises."""

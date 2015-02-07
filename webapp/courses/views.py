@@ -128,7 +128,7 @@ def check_answer(request, course_slug, content_slug):
                                                 kwargs={"course_slug": course_slug,
                                                         "content_slug": content_slug,
                                                         "task_id": task_id}))
-        exercise.save_evaluation(user, evaluation)
+        exercise.save_evaluation(user, evaluation, answer_object)
         evaluation["manual"] = False
     else:
         evaluation["manual"] = True
