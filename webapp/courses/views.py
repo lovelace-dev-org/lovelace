@@ -89,14 +89,12 @@ def dirtree(tree, node, user):
             dirtree(tree, child, user)
         tree.append((mark_safe('<'), None))
 
-def check_answer(request, course_slug, content_slug, **kwargs):
-    """Validates an answer to an exercise."""
-    if request.method == "POST":
-        # <DEBUG>
-        print(request.POST)
-        # </DEBUG>
-        pass
-    else:
+def check_answer(request, course_slug, content_slug):
+    """
+    Saves and evaluates a user's answer to an exercise and sends the results
+    back to the user.
+    """
+    if request.method != "POST":
         return HttpResponseNotAllowed(['POST'])
 
     selected_course = Course.objects.get(slug=course_slug)
@@ -123,23 +121,23 @@ def check_answer(request, course_slug, content_slug, **kwargs):
     exercise = content.get_type_object()
     answer_object = exercise.save_answer(user, ip, answer, files)
     evaluation = exercise.check_answer(user, ip, answer, files, answer_object)
-    exercise.save_evaluation(user, evaluation)
+    if not exercise.manually_evaluated:
+        if exercise.content_type == "FILE_UPLOAD_EXERCISE":
+            task_id = evaluation["task_id"]
+            return HttpResponseRedirect(reverse('courses:check_progress',
+                                                kwargs={"course_slug": course_slug,
+                                                        "content_slug": content_slug,
+                                                        "task_id": task_id}))
+        exercise.save_evaluation(user, evaluation)
+        evaluation["manual"] = False
+    else:
+        evaluation["manual"] = True
 
-    # TODO: In case of errors, send a 500
     if "errors" in evaluation.keys() and evaluation["errors"]:
         return HttpResponseServerError()
 
-    if exercise.content_type == "FILE_UPLOAD_EXERCISE":
-        task_id = evaluation["task_id"]
-        return HttpResponseRedirect(reverse('courses:check_progress',
-                                            kwargs={"course_slug": course_slug,
-                                                    "content_slug": content_slug,
-                                                    "task_id": task_id}))
-
     t = loader.get_template("courses/exercise_evaluation.html")
-    c = Context({
-        'evaluation': evaluation,
-    })
+    c = Context(evaluation)
     return HttpResponse(t.render(c))
 
 def check_progress(request, course_slug, content_slug, task_id):

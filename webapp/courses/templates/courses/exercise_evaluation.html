@@ -1,1 +1,28 @@
-lääh
+{% load i18n %}
+{% if manual == True %}
+  <div class="exercise-status">
+    {% trans 'Your answer has been recorded and is currently pending an evaluation by a teacher.' %}
+  </div>
+{% else %}
+  <div class="exercise-evaluation">
+    {% if evaluation == True %}
+      {% trans "Correct answer!" %}
+    {% else %}
+      {% trans "Incorrect answer!" %}
+    {% endif %}
+  </div>
+  {% if hints %}
+    <div class="exercise-hints">
+      {% for hint in hints %}
+        <div class="exercise-hint">{% trans "Hint: " %}{{ hint }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+  {% if comments %}
+    <div class="exercise-comments">
+      {% for comment in comments %}
+        <div class="exercise-comment">{{ comment }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endif %}

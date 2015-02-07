@@ -348,33 +348,21 @@ class MultipleChoiceExercise(ContentPage):
         choices = self.get_choices()
         
         # quick hax:
-        keys = list(answer.keys())
-        key = [k for k in keys if k.endswith("-radio")][0]
-        answered = int(answer[key])
+        answered = int([v for k, v in answer.items() if k.endswith("-radio")][0])
 
         # Determine, if the given answer was correct and which hints to show
-        # TODO: FIX! This is utterly broken...
-        correct = True
-        correct_found = False
+        correct = False
         hints = []
         comments = []
         for choice in choices:
-            if answered == choice.id and choice.correct == True and correct == True:
-                correct = True
-                correct_found = True
-                if choice.comment:
-                    comments.append(choice.comment)
-            elif answered == choice.id and choice.correct == True and correct == False:
+            if answered == choice.id and choice.correct == True:
                 correct = True
                 if choice.comment:
                     comments.append(choice.comment)
-            elif answered == choice.id and choice.correct == True:
-                if not correct_found:
-                    correct = False
+            elif answered != choice.id and choice.correct == True:
                 if choice.hint:
                     hints.append(choice.hint)
             elif answered == choice.id and choice.correct == False:
-                correct = False
                 if choice.hint:
                     hints.append(choice.hint)
                 if choice.comment:
