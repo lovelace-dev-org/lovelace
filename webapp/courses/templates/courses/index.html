@@ -1,7 +1,12 @@
 {% extends 'courses/base.html' %}
 {% load staticfiles %}
+{% load i18n %}
 
 {% block page-title %}RAiPPA - Available courses{% endblock %}
+
+{% block breadcrumb-links %}
+  <li><a href="{% url 'courses:index' %}">{% trans 'Courses' %}</a></li>
+{% endblock %}
 
 {% block page-content %}
 {% if course_list %}

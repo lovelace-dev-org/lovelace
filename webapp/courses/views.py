@@ -23,31 +23,20 @@ from courses.forms import *
 
 import courses.markupparser as markupparser
 import courses.blockparser as blockparser
-import courses.filecheck_client as filecheck_client
-
-# TODO: Deprecated
-class NavURL:
-    def __init__(self, url, name):
-        self.url = url
-        self.name = name
 
 def index(request):
     course_list = Course.objects.all()
-    navurls = [NavURL(reverse('courses:index'), _("Courses"))]
+
     t = loader.get_template("courses/index.html")
     c = RequestContext(request, {
         'course_list': course_list,
-        'navurls': navurls,
     })
     return HttpResponse(t.render(c))
  
 def course(request, course_slug, **kwargs):
     selected_course = Course.objects.get(slug=course_slug)
-    navurls = [NavURL(reverse('courses:index'), _("Courses")),
-               NavURL(reverse('courses:course', kwargs={"course_slug":course_slug}), selected_course.name),]
 
     frontpage = selected_course.frontpage
-
     if frontpage:
         content_slug = frontpage.slug
         kwargs["frontpage"] = True
@@ -56,7 +45,6 @@ def course(request, course_slug, **kwargs):
         contextdict = {}
 
     contextdict["course"] = selected_course 
-    contextdict["navurls"] = navurls 
     contextdict["title"] = '%s' % selected_course.name
 
     contents = selected_course.contents.all().order_by('parentnode', '-id')
@@ -199,10 +187,6 @@ def content(request, course_slug, content_slug, **kwargs):
     emb_content_type = None
     contains_embedded_exercise = False
 
-    navurls = [NavURL(reverse('courses:index'), _("Courses")),
-               NavURL(reverse('courses:course', kwargs={"course_slug":course_slug}), selected_course.name),
-               NavURL(reverse('courses:content', kwargs={"course_slug":course_slug, "content_slug":content.slug}), content.name)]
-
     context = {
         'course': selected_course,
         'course_slug': course_slug,
@@ -214,13 +198,13 @@ def content(request, course_slug, content_slug, **kwargs):
         'embedded_exercise': False,
         'contains_embedded_exercise': contains_embedded_exercise,
         'course_slug': course_slug,
+        'course_name': selected_course.name,
         'content': content,
         'rendered_content': rendered_content,
         'content_name': content.name,
         'content_name_id': content.slug,
         'content_urlname': content.slug,
         'admin_url': admin_url,
-        'navurls': navurls,
         'title': '%s - %s' % (content.name, selected_course.name),
         'answer_check_url': reverse('courses:course', kwargs={"course_slug":course_slug}),
         'emb_content_type': emb_content_type,

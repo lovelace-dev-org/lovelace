@@ -133,22 +133,13 @@
         </div>
       </header>
       
-      {% block breadcrumb %}
+      {% block top-nav-bar %}
       <nav class="breadcrumb">
         <div class="top-nav-container">
         <ul>
-          {% for navurl in navurls %}
-            {% if forloop.first %}
-            {% else %}
-              <div class="separator">»</div>
-            {% endif %}
-
-            {% if forloop.last %}
-              <li class="last">{{ navurl.name }}</li>
-            {% else %}
-              <li><a href="{{ navurl.url }}">{{ navurl.name }}</a></li>
-            {% endif %}
-          {% endfor %}
+          {% block breadcrumb-links %}
+          
+          {% endblock %}
         </ul>
         <div class="right-side">
           {# https://docs.djangoproject.com/en/1.7/topics/i18n/translation/#set-language-redirect-view #}

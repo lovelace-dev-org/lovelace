@@ -1,7 +1,14 @@
 {% extends 'courses/base.html' %}
 {% load staticfiles %}
+{% load i18n %}
 
 {% block page-title %}RAiPPA - {{ title }}{% endblock %}
+
+{% block breadcrumb-links %}
+  <li><a href="{% url 'courses:index' %}">{% trans 'Courses' %}</a></li>
+  <div class="separator">»</div>
+  <li><a href="{% url 'courses:course' course.slug %}">{{ course.name }}</a></li>
+{% endblock %}
 
 {% block page-content %}
 <h1>{{ course.name }}</h1>
