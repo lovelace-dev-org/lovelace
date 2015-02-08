@@ -10,7 +10,7 @@
 
 {% block page-content %}
 {% if course_list %}
-  <h1>Available courses</h1>
+  <h1>{% trans 'Available courses' %}</h1>
   <ul>
     {% for course in course_list %}
       <li>
@@ -26,6 +26,6 @@
     {% endfor %}
   </ul>
 {% else %}
-  No courses available!
+  <p>{% trans 'No courses available!' %}</p>
 {% endif %}
 {% endblock %}
