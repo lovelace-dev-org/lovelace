@@ -337,7 +337,9 @@ class EmbeddedPageMarkup(Markup):
     def settings(cls, matchobj, state):
         settings = {"page_slug" : matchobj.group("page_slug")}
         try:
-            embedded_obj = courses.models.ContentPage.objects.get(slug=settings["page_slug"])
+            page = courses.models.ContentPage.objects\
+                                             .get(slug=settings["page_slug"])\
+                                             .get_type_object()
         except courses.models.ContentPage.DoesNotExist as e:
             raise EmbeddedObjectNotFoundError("embedded page '%s' couldn't be found" % settings["page_slug"])
         else:
@@ -347,36 +349,19 @@ class EmbeddedPageMarkup(Markup):
                 state["embedded_pages"] = {settings["page_slug"]}
 
             # TODO: Prevent recursion depth > 2
-            embedded_content = embedded_obj.rendered_markup()
+            embedded_content = page.rendered_markup()
             t = loader.get_template("courses/task.html") # TODO: Exercise specific templates
             c = RequestContext(state["request"], state["context"])
             
-            # TODO: purkkaa pois :/
-            choices = None
-            question = None
-
-            type_object = embedded_obj.get_type_object()
-
-            # TODO: It's possible to do these in the template, now.
-            if embedded_obj.content_type == "MULTIPLE_CHOICE_EXERCISE":
-                choices = type_object.get_choices()
-            elif embedded_obj.content_type == "TEXTFIELD_EXERCISE":
-                pass
-            elif embedded_obj.content_type == "CHECKBOX_EXERCISE":
-                choices = type_object.get_choices()
-            elif embedded_obj.content_type == "CODE_REPLACE_EXERCISE":
-                choices = type_object.get_choices()
-
-            # TODO: Question must be inline-parsed
-            question = embedded_obj.question
+            choices = page.get_choices()
+            question = blockparser.parseblock(escape(page.question))
             
             c["emb_content"] = embedded_content
-            c["tasktype"] = embedded_obj.content_type
-            c["content"] = embedded_obj
-            c["content_slug"] = embedded_obj.slug
+            c["content"] = page
+            c["content_slug"] = page.slug
             if state["request"].user.is_active:
-                c["evaluation"] = type_object.get_user_evaluation(state["request"].user)
-                c["answer_count"] = type_object.get_user_answers(state["request"].user).count()
+                c["evaluation"] = page.get_user_evaluation(state["request"].user)
+                c["answer_count"] = page.get_user_answers(state["request"].user).count()
             else:
                 c["evaluation"] = "unanswered"
                 c["answer_count"] = 0

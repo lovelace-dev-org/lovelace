@@ -2,7 +2,7 @@
 {% load staticfiles %}
 {% load i18n %}
 
-{% block page-title %}RAiPPA - {{ title }}{% endblock %}
+{% block page-title %}{{ course.name }}{% endblock %}
 
 {% block breadcrumb-links %}
   <li><a href="{% url 'courses:index' %}">{% trans 'Courses' %}</a></li>
@@ -11,11 +11,11 @@
 {% endblock %}
 
 {% block page-content %}
-<h1>{{ course.name }}</h1>
+<h1 class="content-heading">{{ course.name }}<span id="{{ course.slug }}" class="anchor-offset"></span><a href="#{{ course.slug }}" class="permalink" title="Permalink to {{ course.name }}">&para;</a></h1>
 
 {% if content_tree %}
   <div class="course-contents">
-    <h2>Course Contents</h2>
+    <h2 class="content-heading">{% trans 'Course Contents' %}<span id="course-contents" class="anchor-offset"></span><a href="#course-contents" class="permalink" title="Permalink to Course Contents">&para;</a></h2>
     {% for list_direction, result in content_tree %}
       {% if list_direction == '>' %}
         <ul>
@@ -39,8 +39,10 @@
   </div>
 {% endif %}
 
-{% if content or tasktype %}
-  {{ content|safe }}
-  {% include "courses/task.html" %}
+{% if rendered_content %}
+  {{ rendered_content|safe }}
+  {% if content.is_answerable %}
+    {% include "courses/task.html" %}
+  {% endif %}
 {% endif %}
 {% endblock %}

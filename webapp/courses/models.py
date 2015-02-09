@@ -231,7 +231,7 @@ class ContentPage(models.Model):
     feedback_questions = models.ManyToManyField(ContentFeedbackQuestion, blank=True)
 
     # Exercise fields
-    question = models.TextField(blank=True, null=True)
+    question = models.TextField(blank=True)
     manually_evaluated = models.BooleanField(verbose_name="This exercise is evaluated by hand", default=False)
 
     def rendered_markup(self, request=None, context=None):
@@ -278,6 +278,12 @@ class ContentPage(models.Model):
     def get_choices(self):
         # Blank function for types that don't require this
         pass
+
+    def is_answerable(self):
+        if self.content_type == "LECTURE":
+            return False
+        else:
+            return True
 
     def save_evaluation(self, user, evaluation, answer_object):
         correct = evaluation["evaluation"]

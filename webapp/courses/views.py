@@ -34,9 +34,9 @@ def index(request):
     return HttpResponse(t.render(c))
  
 def course(request, course_slug, **kwargs):
-    selected_course = Course.objects.get(slug=course_slug)
+    course = Course.objects.get(slug=course_slug)
 
-    frontpage = selected_course.frontpage
+    frontpage = course.frontpage
     if frontpage:
         content_slug = frontpage.slug
         kwargs["frontpage"] = True
@@ -44,15 +44,14 @@ def course(request, course_slug, **kwargs):
     else:
         contextdict = {}
 
-    contextdict["course"] = selected_course 
-    contextdict["title"] = '%s' % selected_course.name
+    contextdict["course"] = course 
 
-    contents = selected_course.contents.all().order_by('parentnode', '-id')
+    contents = course.contents.all().order_by('parentnode', '-id')
     if len(contents) > 0:
         tree = []    
         tree.append((mark_safe('>'), None))
         for content_ in contents:
-            dirtree(tree, content_, request.user)
+            course_tree(tree, content_, request.user)
         tree.append((mark_safe('<'), None))
         contextdict["content_tree"] = tree
 
@@ -60,7 +59,7 @@ def course(request, course_slug, **kwargs):
     c = RequestContext(request, contextdict)
     return HttpResponse(t.render(c))
 
-def dirtree(tree, node, user):
+def course_tree(tree, node, user):
     evaluation = "unanswered"
     if user.is_authenticated():
         exercise = node.content.get_type_object()
@@ -74,7 +73,7 @@ def dirtree(tree, node, user):
     if len(children) > 0:
         tree.append((mark_safe('>'), None))
         for child in children:
-            dirtree(tree, child, user)
+            course_tree(tree, child, user)
         tree.append((mark_safe('<'), None))
 
 def check_answer(request, course_slug, content_slug):
@@ -88,13 +87,13 @@ def check_answer(request, course_slug, content_slug):
     if not request.user.is_active:
         return HttpResponse("You have not logged in.")
 
-    selected_course = Course.objects.get(slug=course_slug)
+    course = Course.objects.get(slug=course_slug)
     content = ContentPage.objects.get(slug=content_slug)
     # TODO: Ensure that the content really belongs to the course
 
     # Check if a deadline exists and if it has already passed
     try:
-        content_graph = selected_course.contents.get(content=content)
+        content_graph = course.contents.get(content=content)
     except ContentGraph.DoesNotExist as e:
         pass
     else:
@@ -154,64 +153,42 @@ def file_exercise_evaluation(request, course_slug, content_slug, task_id):
     return HttpResponse(t.render(c))
 
 def content(request, course_slug, content_slug, **kwargs):
-    selected_course = Course.objects.get(slug=course_slug)
+    course = Course.objects.get(slug=course_slug)
     # TODO: Ensure content is part of course!
-    content = ContentPage.objects.get(slug=content_slug)
-    pages = [content]
+    content = ContentPage.objects.get(slug=content_slug).get_type_object()
 
     content_graph = None
     try:
-        content_graph = selected_course.contents.get(content=content)
+        content_graph = course.contents.get(content=content)
     except ContentGraph.DoesNotExist as e:
         pass
 
-    exercise = content.get_type_object()
-    content_type = exercise.content_type
-    question = exercise.question
-    choices = answers = exercise.get_choices()
+    content_type = content.content_type
+    question = blockparser.parseblock(escape(content.question))
+    choices = answers = content.get_choices()
 
-    exercise_evaluation = None
+    evaluation = None
     if request.user.is_authenticated():
         if not content_graph or not content_graph.publish_date or content_graph.publish_date < datetime.datetime.now():
-            exercise_evaluation = exercise.get_user_evaluation(request.user)
-
-    admin_url = content.get_admin_change_url()
-
-    try:
-        question = blockparser.parseblock(escape(question))
-    except TypeError: # It was NoneType # TODO: what was?
-        pass
-    except AttributeError: # It was NoneType
-        pass
-
-    emb_content_type = None
-    contains_embedded_exercise = False
+            evaluation = content.get_user_evaluation(request.user)
 
     context = {
-        'course': selected_course,
+        'course': course,
         'course_slug': course_slug,
     }
                              
     rendered_content = content.rendered_markup(request, context)
 
     c = RequestContext(request, {
-        'embedded_exercise': False,
-        'contains_embedded_exercise': contains_embedded_exercise,
         'course_slug': course_slug,
-        'course_name': selected_course.name,
+        'course_name': course.name,
         'content': content,
         'rendered_content': rendered_content,
         'content_name': content.name,
-        'content_name_id': content.slug,
-        'content_urlname': content.slug,
-        'admin_url': admin_url,
-        'title': '%s - %s' % (content.name, selected_course.name),
-        'answer_check_url': reverse('courses:course', kwargs={"course_slug":course_slug}),
-        'emb_content_type': emb_content_type,
         'content_type': content_type,
         'question': question,
         'choices': choices,
-        'evaluation': exercise_evaluation,
+        'evaluation': evaluation,
         'user': user,
     })
     if "frontpage" in kwargs:

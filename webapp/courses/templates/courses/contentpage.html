@@ -3,7 +3,7 @@
 {% load i18n %}
 {% load content_extra %}
 
-{% block page-title %}RAiPPA - {{ title }}{% endblock %}
+{% block page-title %}{{ content.name }} – {{ course_name }}{% endblock %}
 
 {% block breadcrumb-links %}
   <li><a href="{% url 'courses:index' %}">{% trans 'Courses' %}</a></li>
@@ -19,6 +19,8 @@
 {% endif %}
 {% if rendered_content or tasktype %}
   {{ rendered_content|safe }}
-  {% include "courses/task.html" %}
+  {% if content.is_answerable %}
+    {% include "courses/task.html" %}
+  {% endif %}
 {% endif %}
 {% endblock %}

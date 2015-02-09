@@ -2,7 +2,7 @@
 {% load staticfiles %}
 {% load i18n %}
 
-{% block page-title %}RAiPPA - Available courses{% endblock %}
+{% block page-title %}{% trans 'Available courses' %}{% endblock %}
 
 {% block breadcrumb-links %}
   <li><a href="{% url 'courses:index' %}">{% trans 'Courses' %}</a></li>
@@ -18,7 +18,7 @@
           <div>
             <a href="{% url 'courses:course' course.slug %}">{{ course.name }}</a>
             {% if course.code %}– {{ course.code }}{% endif %}
-            {% if course.credits %}/ {{ course.credits }} credits{% endif %}
+            {% if course.credits %}/ {{ course.credits }} {% trans 'credits' %}{% endif %}
           </div>
           {% if course.description %}<div>{{ course.description }}</div>{% endif %}
         </div>
