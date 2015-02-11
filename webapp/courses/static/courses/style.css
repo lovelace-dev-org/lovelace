@@ -139,7 +139,7 @@ nav.breadcrumb {
 
     border-bottom: 1px solid #2e862e; /* #143a14; */
     box-shadow: 0 0 1px rgba(0, 0, 0, 0.8);
-    padding: 4px;
+    padding-top: 4px;
     font-family: "Verdana";
     font-size: 0.8rem;
     font-weight: bold;
