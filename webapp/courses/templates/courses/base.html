@@ -103,22 +103,28 @@
                 </option>
               {% endfor %}
             </select>
-          </form><div class="vertical-separator"></div><a onclick="$('#toc').toggle();" style="cursor:pointer;"><img src="{% static 'courses/toc.png' %}" title="Table of Contents"></a><div class="vertical-separator"></div>
+          </form><div class="vertical-separator"></div><a onclick="$('div.toc-box').toggle();" style="cursor:pointer;"><img src="{% static 'courses/toc.png' %}" title="Table of Contents"></a><div class="vertical-separator"></div>
         </div>
         </div>
       </nav>
       {% endblock %}
 
-      {% block toc %}{% comment %}TODO: Put inside a container (progress bar inside nav not semantic){% endcomment %}
-      <nav class="toc" id="toc">
-        <div>{% trans "Table of Contents" %}</div>
-        <div class="list-div">
-          <ol>
-          </ol>
+      {% block toc %}
+      <div class="toc-box">
+        <nav class="toc" id="toc">
+          <div class="toc-box-heading">{% trans "Table of Contents" %}</div>
+          <div class="list-div">
+            <ol>
+            </ol>
+          </div>
+        </nav>
+        {% block progress %}
+        <div class="progress-container">
+          <div class="toc-box-heading">{% trans "Completed:" %} <span id="completed-exercises">7</span>/<span id="total-exercises">10</span> {% trans "exercises" %}</div>
+          <progress value="7" max="10"></progress>
         </div>
-        <div>{% trans "Completed:" %} <span id="completed-exercises">7</span>/<span id="total-exercises">10</span> {% trans "exercises" %}</div>
-        <progress value="7" max="10"></progress>
-      </nav>
+        {% endblock %}
+      </div>
       {% endblock %}
       
       <section class="content">

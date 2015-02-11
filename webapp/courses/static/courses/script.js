@@ -29,7 +29,7 @@ function isElementInViewport (el) {
 
 // Build the table of contents
 function build_toc(static_root_url) {
-        var toc = $("nav.toc > div.list-div > ol");
+        var toc = $("nav#toc > div.list-div > ol");
         var current_toc_level = 1;
         //var topmost_ol = null;
         var headings = $.map([1, 2, 3, 4, 5, 6], function(i) {

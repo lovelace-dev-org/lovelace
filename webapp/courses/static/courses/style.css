@@ -235,15 +235,13 @@ nav.breadcrumb {
     }
 
 /* Table of Contents */
-nav.toc {
+div.toc-box {
     position: fixed;
     right: 1.5rem;
     top: 5.5rem;
     
     width: 360px;
     min-height: 80px;
-
-    padding: 4px;
 
     background-color: #39ad39;
     color: #222;
@@ -256,7 +254,11 @@ nav.toc {
     border: 1px solid #2e862e;
 }
 
-    nav.toc > div {
+    div.toc-box nav.toc {
+            padding: 4px;
+    }
+
+    div.toc-box div.toc-box-heading {
         font-weight: bold;
         border-bottom: 1px solid #222;
         margin-bottom: 4px;
@@ -302,13 +304,18 @@ nav.toc {
         top: 2px;
     }
 
-    nav.toc > progress {
+    div.toc-box > div.progress-container {
+        border-top: 1px solid #2e862e;
+        padding: 4px;
+    }
+
+    div.toc-box progress {
         width: 100%;
         height: 4px;
         border: 1px solid #333;
         background-color: #eee;
     }
-    nav.toc > progress::-moz-progress-bar {
+    div.toc-box progress::-moz-progress-bar {
         background-color: #ad3939;
     }
 

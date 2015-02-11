@@ -10,7 +10,7 @@ nav.breadcrumb div.top-nav-container {
     margin-left: 0;
 }
 
-nav.toc {
+div.toc-box {
     right: 0;
     top: 4rem;
     width: 262px;
