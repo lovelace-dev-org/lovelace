@@ -35,6 +35,8 @@
 
         build_toc("{% static 'courses/' %}");
 
+        update_progress_bar();
+
         // jQuery slimscroll for ToC
         $('#toc > div.list-div').slimScroll({
             height: '400px'
@@ -120,8 +122,8 @@
         </nav>
         {% block progress %}
         <div class="progress-container">
-          <div class="toc-box-heading">{% trans "Completed:" %} <span id="completed-exercises">7</span>/<span id="total-exercises">10</span> {% trans "exercises" %}</div>
-          <progress value="7" max="10"></progress>
+          <div class="toc-box-heading">{% trans "Completed:" %} <span id="completed-exercises"></span>/<span id="total-exercises"></span> {% trans "exercises" %}</div>
+          <progress id="exercises-progress" value="0" max="0"></progress>
         </div>
         {% endblock %}
       </div>
