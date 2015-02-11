@@ -143,10 +143,16 @@
         </ul>
         <div class="right-side">
           {# https://docs.djangoproject.com/en/1.7/topics/i18n/translation/#set-language-redirect-view #}
-          <form class="language-picker">
-            <select>
-              <option value="fi">fi - suomi</option>
-              <option value="en-UK">en - English (British)</option>
+          <form action="{% url 'set_language' %}" method="post" class="language-picker">
+            {% csrf_token %}
+            <input name="next" type="hidden" value="{{ redirect_to }}">
+            <select name="language" onchange="this.form.submit();">
+              {% get_language_info_list for LANGUAGES as languages %}
+              {% for language in languages %}
+                <option value="{{ language.code }}"{% if language.code == LANGUAGE_CODE %} selected="selected"{% endif %}>
+                  {{ language.name_local }} ({{ language.code }})
+                </option>
+              {% endfor %}
             </select>
           </form><div class="vertical-separator"></div><a onclick="$('#toc').toggle();" style="cursor:pointer;"><img src="{% static 'courses/toc.png' %}" title="Table of Contents"></a><div class="vertical-separator"></div>
         </div>

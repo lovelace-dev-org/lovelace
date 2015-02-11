@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2015-02-07 17:30+0200\n"
+"POT-Creation-Date: 2015-02-11 13:53+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,15 +18,15 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: courses/templates/courses/base.html:170
+#: courses/templates/courses/base.html:167
 msgid "Table of Contents"
 msgstr "Sisällysluettelo"
 
-#: courses/templates/courses/base.html:175
+#: courses/templates/courses/base.html:172
 msgid "Completed:"
 msgstr "Ratkaistu:"
 
-#: courses/templates/courses/base.html:175
+#: courses/templates/courses/base.html:172
 msgid "exercises"
 msgstr "tehtävää"
 
@@ -78,6 +78,16 @@ msgstr "Katso mallivastausta"
 msgid "View separately"
 msgstr "Katso erikseen"
 
+#: courses/templates/courses/contentpage.html:9
+#: courses/templates/courses/course.html:8
+#: courses/templates/courses/index.html:8
+msgid "Courses"
+msgstr "Kurssit"
+
+#: courses/templates/courses/course.html:18
+msgid "Course Contents"
+msgstr "Kurssin sisältö"
+
 #: courses/templates/courses/exercise_evaluation.html:4
 msgid ""
 "Your answer has been recorded and is currently pending an evaluation by a "
@@ -85,8 +95,6 @@ msgid ""
 msgstr "Vastauksesi on tallennettu ja odottaa opettajan arviointia."
 
 #: courses/templates/courses/exercise_evaluation.html:9
-#, fuzzy
-#| msgid "Send answer"
 msgid "Correct answer!"
 msgstr "Oikea vastaus!"
 
@@ -98,46 +106,55 @@ msgstr "Väärä vastaus!"
 msgid "Hint: "
 msgstr "Vihje: "
 
-#: courses/templates/courses/task.html:28
+#: courses/templates/courses/index.html:5
+#: courses/templates/courses/index.html:13
+msgid "Available courses"
+msgstr "Tarjolla olevat kurssit"
+
+#: courses/templates/courses/index.html:21
+msgid "credits"
+msgstr "op"
+
+#: courses/templates/courses/index.html:29
+msgid "No courses available!"
+msgstr "Tarjolla olevia kursseja ei löytynyt!"
+
+#: courses/templates/courses/task.html:30
 msgid "Enter your answer here"
 msgstr "Kirjoita vastauksesi tänne"
 
-#: courses/templates/courses/task.html:30
+#: courses/templates/courses/task.html:32
 msgid "Collaborators:"
 msgstr "Yhteistyökumppanit:"
 
-#: courses/templates/courses/task.html:30
+#: courses/templates/courses/task.html:32
 msgid "Who did you co-operate with?"
 msgstr "Kenen kanssa työskentelit?"
 
-#: courses/templates/courses/task.html:31
+#: courses/templates/courses/task.html:33
 msgid "Submit your files here:"
 msgstr "Syötä tiedostosi tänne:"
 
-#: courses/templates/courses/task.html:41
+#: courses/templates/courses/task.html:43
 #, python-format
 msgid "Line %(line)s in %(file)s"
 msgstr "Rivi %(line)s tiedostossa %(file)s"
 
-#: courses/templates/courses/task.html:53
+#: courses/templates/courses/task.html:55
 msgid "Send answer"
 msgstr "Lähetä vastaus"
 
-#: courses/templates/courses/task.html:55
+#: courses/templates/courses/task.html:57
 msgid "Warning: You have not logged in. Your answer will not be saved."
 msgstr "Varoitus: Et ole kirjautunut sisään. Vastaustasi ei tallenneta."
 
-#: courses/templates/courses/task.html:60
+#: courses/templates/courses/task.html:62
 msgid "You have previously answered this task incorrectly."
 msgstr "Olet aiemmin vastannut tähän tehtävään väärin."
 
-#: courses/templates/courses/task.html:62
+#: courses/templates/courses/task.html:64
 msgid "You have already answered this task correctly."
 msgstr "Olet aiemmin vastannut tähän tehtävään oikein."
-
-#: courses/views.py:36 courses/views.py:46 courses/views.py:198
-msgid "Courses"
-msgstr "Kurssit"
 
 #: templates/admin/bad-index.html:69
 msgid " Content management "
