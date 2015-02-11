@@ -5,9 +5,6 @@ from . import views
 urlpatterns = [
     url(r'^$', views.index, name='index'),
 
-    # TODO: redirect_to doesn't work anymore, serve favicon properly through a web server directive!
-    #url(r'^favicon\.ico$', 'django.views.generic.simple.redirect_to', {'url': '/static/favicon.ico'}),
-
     # For the registration module
     # TODO: AllAuth
     #url(r'^accounts/', include('registration.urls')),
@@ -19,15 +16,6 @@ urlpatterns = [
     url(r'^user/(?P<user_name>[^/]+)/$', views.user),
     url(r'^profile/$', views.user_profile),
     url(r'^profile/save/$', views.user_profile_save),
-
-    # For serving images
-    # TODO: Serve directly from the web server
-    #url(r'^media/images/(?P<imagename>.+)$', views.image_download),
-
-    # For serving uploaded files
-    # TODO: Noooo... Do it with the web server conf.
-    #url(r'^media/files/(?P<filename>.+)$', views.file_download),
-    #url(r'^media/(?P<filename>.+)$', views.file_download),
 
     # For calendar POST requests
     url(r'^calendar/(?P<calendar_id>\d+)/(?P<event_id>\d+)/$', views.calendar_post),

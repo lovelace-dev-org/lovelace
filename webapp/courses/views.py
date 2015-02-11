@@ -1,8 +1,6 @@
 """
 Django views for rendering the course contents and checking exercises.
 """
-import re
-import random
 import datetime
 import json
 from cgi import escape
@@ -33,18 +31,17 @@ def index(request):
     })
     return HttpResponse(t.render(c))
  
-def course(request, course_slug, **kwargs):
+def course(request, course_slug):
     course = Course.objects.get(slug=course_slug)
 
     frontpage = course.frontpage
     if frontpage:
         content_slug = frontpage.slug
-        kwargs["frontpage"] = True
-        contextdict = content(request, course_slug, content_slug, **kwargs)
+        context = content(request, course_slug, content_slug, frontpage=True)
     else:
-        contextdict = {}
+        context = {}
 
-    contextdict["course"] = course 
+    context["course"] = course 
 
     contents = course.contents.all().order_by('parentnode', '-id')
     if len(contents) > 0:
@@ -53,10 +50,10 @@ def course(request, course_slug, **kwargs):
         for content_ in contents:
             course_tree(tree, content_, request.user)
         tree.append((mark_safe('<'), None))
-        contextdict["content_tree"] = tree
+        context["content_tree"] = tree
 
     t = loader.get_template("courses/course.html")
-    c = RequestContext(request, contextdict)
+    c = RequestContext(request, context)
     return HttpResponse(t.render(c))
 
 def course_tree(tree, node, user):
@@ -124,9 +121,7 @@ def check_answer(request, course_slug, content_slug):
     else:
         evaluation["manual"] = True
 
-    if "errors" in evaluation.keys() and evaluation["errors"]:
-        return HttpResponseServerError()
-
+    # TODO: Replace with JSON
     t = loader.get_template("courses/exercise_evaluation.html")
     c = Context(evaluation)
     return HttpResponse(t.render(c))
@@ -274,49 +269,6 @@ def user(request, user_name):
         'fileexercise_answers': fileexercise_answers,
     })
     return HttpResponse(t.render(c))
-
-def image_download(request, imagename, **kwargs):
-    try:
-        file_path = Image.objects.get(name=imagename).fileinfo.path
-    except Image.DoesNotExist:
-        try:
-            file_path = Image.objects.get(fileinfo='images/'+imagename).fileinfo.path
-        except Image.DoesNotExist:
-            file_path = ""
-
-    mimetypes.init()
-    try:
-        fd = open(file_path, "rb")
-        mime_type_guess = mimetypes.guess_type(file_path)
-        response = HttpResponse(fd, mime_type_guess[0])
-        return response
-    except IOError:
-        return HttpResponseNotFound()
-
-def file_download(request, filename, **kwargs):
-    try:
-        file_path = File.objects.get(name=filename).fileinfo.path
-    except File.DoesNotExist:
-        try:
-            file_path = File.objects.get(fileinfo='files/'+filename).fileinfo.path
-        except File.DoesNotExist:
-            try:
-                file_path = FileExerciseTestIncludeFile.objects.get(fileinfo=filename).fileinfo.path
-            except File.DoesNotExist:
-                file_path = ""
-
-    #file_path = os.path.join(kwargs['media_root'], 'files', filename)
-    mimetypes.init()
-    # TODO: Check user rights!
-    try:
-        #file_path = os.path.join(kwargs["media_root"], course_name, filename)
-        fd = open(file_path, "rb")
-        mime_type_guess = mimetypes.guess_type(file_path)
-        response = HttpResponse(fd, mime_type_guess[0])
-        #response['Content-Disposition'] = 'attachment; filename=%s' % (filename) # Force download?
-        return response
-    except IOError:
-        return HttpResponseNotFound()
 
 def calendar_post(request, calendar_id, event_id):
     if not request.user.is_authenticated():
