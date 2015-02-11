@@ -10,6 +10,8 @@
   <li><a href="{% url 'courses:course' course.slug %}">{{ course.name }}</a></li>
 {% endblock %}
 
+{% block toc %}{% endblock %}
+
 {% block page-content %}
 <h1 class="content-heading">{{ course.name }}<span id="{{ course.slug }}" class="anchor-offset"></span><a href="#{{ course.slug }}" class="permalink" title="Permalink to {{ course.name }}">&para;</a></h1>
 

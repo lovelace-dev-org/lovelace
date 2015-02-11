@@ -8,6 +8,8 @@
   <li><a href="{% url 'courses:index' %}">{% trans 'Courses' %}</a></li>
 {% endblock %}
 
+{% block toc %}{% endblock %}
+
 {% block page-content %}
 {% if course_list %}
   <h1>{% trans 'Available courses' %}</h1>
