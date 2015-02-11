@@ -40,11 +40,11 @@
     {% if user.is_active and user.is_staff %}
     <hr>
     <div class="admin-tools">
-      <div><b>{% trans "Teacher's tools" %}</b></div>
+      <div><b>{% trans "Teacher’s tools" %}</b></div>
       <ul>
         <li><div><a href="{% url 'stats:single_task' content.slug %}">{% trans 'Statistics' %}</a></div></li>
         <li><div><a href="{% url 'feedback:content' content.slug %}">{% trans 'Feedback' %}</a></div></li>
-        <li><div><a href="{{ content.get_admin_change_url }}">Edit this {{ content.get_human_readable_type }}</a></div></li>
+        <li><div><a href="{{ content.get_admin_change_url }}">{% blocktrans with type=content.get_human_readable_type %}Edit this {{ type }}{% endblocktrans %}</a></div></li>
         <li><div><a href="TODO">{% trans 'View reference answer' %}</a></div></li>
         <li><div><a href="{% url 'courses:sandbox' content.slug %}">{% trans 'View separately' %}</a></div></li>
       </ul>

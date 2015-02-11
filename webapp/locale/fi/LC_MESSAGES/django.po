@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2015-02-11 13:53+0200\n"
+"POT-Creation-Date: 2015-02-11 21:05+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,15 +18,39 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: courses/templates/courses/base.html:167
+#: courses/templates/courses/base.html:64
+msgid "Settings"
+msgstr "Asetukset"
+
+#: courses/templates/courses/base.html:66 templates/admin/base.html:39
+msgid "Log out"
+msgstr "Kirjaudu ulos"
+
+#: courses/templates/courses/base.html:70
+#: templates/registration/activate.html:10 templates/registration/login.html:9
+#: templates/registration/password_reset_complete.html:8
+msgid "Log in"
+msgstr "Kirjaudu sisään"
+
+#: courses/templates/courses/base.html:72
+msgid "Create account"
+msgstr "Luo tili"
+
+#: courses/templates/courses/base.html:78
+#: courses/templates/courses/content-meta.html:43
+msgid "Teacher’s tools"
+msgstr "Opettajan työkalut"
+
+#: courses/templates/courses/base.html:107
+#: courses/templates/courses/base.html:116
 msgid "Table of Contents"
 msgstr "Sisällysluettelo"
 
-#: courses/templates/courses/base.html:172
+#: courses/templates/courses/base.html:124
 msgid "Completed:"
 msgstr "Ratkaistu:"
 
-#: courses/templates/courses/base.html:172
+#: courses/templates/courses/base.html:124
 msgid "exercises"
 msgstr "tehtävää"
 
@@ -58,10 +82,6 @@ msgstr "Katso edellisiä vastauksiasi"
 msgid "answers"
 msgstr "vastausta"
 
-#: courses/templates/courses/content-meta.html:43
-msgid "Teacher's tools"
-msgstr "Opettajan työkalut"
-
 #: courses/templates/courses/content-meta.html:45
 msgid "Statistics"
 msgstr "Tilastot"
@@ -69,6 +89,11 @@ msgstr "Tilastot"
 #: courses/templates/courses/content-meta.html:46
 msgid "Feedback"
 msgstr "Palautteet"
+
+#: courses/templates/courses/content-meta.html:47
+#, python-format
+msgid "Edit this %(type)s"
+msgstr "Muokkaa tätä %(type)sä"
 
 #: courses/templates/courses/content-meta.html:48
 msgid "View reference answer"
@@ -84,7 +109,7 @@ msgstr "Katso erikseen"
 msgid "Courses"
 msgstr "Kurssit"
 
-#: courses/templates/courses/course.html:18
+#: courses/templates/courses/course.html:20
 msgid "Course Contents"
 msgstr "Kurssin sisältö"
 
@@ -107,15 +132,15 @@ msgid "Hint: "
 msgstr "Vihje: "
 
 #: courses/templates/courses/index.html:5
-#: courses/templates/courses/index.html:13
+#: courses/templates/courses/index.html:15
 msgid "Available courses"
 msgstr "Tarjolla olevat kurssit"
 
-#: courses/templates/courses/index.html:21
+#: courses/templates/courses/index.html:23
 msgid "credits"
 msgstr "op"
 
-#: courses/templates/courses/index.html:29
+#: courses/templates/courses/index.html:31
 msgid "No courses available!"
 msgstr "Tarjolla olevia kursseja ei löytynyt!"
 
@@ -212,10 +237,6 @@ msgstr ""
 msgid "Change password"
 msgstr ""
 
-#: templates/admin/base.html:39
-msgid "Log out"
-msgstr ""
-
 #: templates/admin/base.html:40
 msgid "Course list"
 msgstr ""
@@ -226,11 +247,6 @@ msgstr ""
 
 #: templates/registration/activate.html:8
 msgid "Account successfully activated"
-msgstr ""
-
-#: templates/registration/activate.html:10 templates/registration/login.html:9
-#: templates/registration/password_reset_complete.html:8
-msgid "Log in"
 msgstr ""
 
 #: templates/registration/activate.html:14

@@ -61,21 +61,21 @@
                   {% firstof user.first_name user.username %}
                 {% endfilter %}
               </div><div class="user-settings">
-                <a href="/profile/">Settings</a>
+                <a href="/profile/">{% trans 'Settings' %}</a>
               </div><div class="user-logout">
-                <a href="/accounts/logout/">Log out</a>
+                <a href="/accounts/logout/">{% trans 'Log out' %}</a>
               </div>
             {% else %}
               <div class="user-login">
-                <a href="/accounts/login/">Log in</a>
+                <a href="/accounts/login/">{% trans 'Log in' %}</a>
               </div><div class="user-register">
-                <a href="/accounts/register/">Create account</a>
+                <a href="/accounts/register/">{% trans 'Create account' %}</a>
               </div>
             {% endif %}
             
             {% if user.is_staff and user.is_active %}
               <div class="user-teacherstools">
-                <a href="/admin/">Teacher's tools</a>
+                <a href="/admin/">{% trans 'Teacher’s tools' %}</a>
               </div>
             {% endif %}
           </div>{% comment %}login box{% endcomment %}
@@ -103,7 +103,7 @@
                 </option>
               {% endfor %}
             </select>
-          </form><div class="vertical-separator"></div><a onclick="$('div.toc-box').toggle();" style="cursor:pointer;"><img src="{% static 'courses/toc.png' %}" title="Table of Contents"></a><div class="vertical-separator"></div>
+          </form><div class="vertical-separator"></div><a onclick="$('div.toc-box').toggle();" style="cursor:pointer;"><img src="{% static 'courses/toc.png' %}" title="{% trans 'Table of Contents' %}"></a><div class="vertical-separator"></div>
         </div>
         </div>
       </nav>
