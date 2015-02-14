@@ -14,6 +14,7 @@ function isElementInViewport (el) {
 var handler = function() {
     var headings = $(".content-heading");
     var topmost_found = false;
+    var old;
     headings.each(function(index) {
         var id = $(this).find("span.anchor-offset").first().attr("id");
         var link_in_toc = $("#toc li a[href=#" + id + "]").parent();
@@ -21,9 +22,15 @@ var handler = function() {
             $(link_in_toc).attr("class", "toc-visible");
             topmost_found = true;
         } else {
+            if ($(link_in_toc).attr("class") === "toc-visible") {
+                old = $(link_in_toc);
+            }
             $(link_in_toc).attr("class", "");
         }
     });
+    if (topmost_found == false && typeof old !== "undefined") {
+        old.attr("class", "toc-visible");
+    }
 };
 
 // Build the table of contents
