@@ -23,3 +23,7 @@ nav.toc ol {
 nav.toc ol > li {
     margin-left: -1em;
 }
+nav.toc li > img {
+    top: 0;
+}
+
