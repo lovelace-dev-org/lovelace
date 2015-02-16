@@ -10,6 +10,13 @@ from django.utils.safestring import mark_safe
 
 from courses.models import *
 
+# TODO: A view that displays statistics of a page that has embedded pages.
+#       E.g. the average completion status, how many of total course
+#       participants have done how much etc.
+#       - links to the stats of individual exercises
+#           * sorting by completion rate
+#           * sorting by total tries, average tries before correct etc.
+
 def textfield_eval(given, answers):
     given = given.replace("\r\n", "\n").replace("\n\r", "\n")
     correct = True
