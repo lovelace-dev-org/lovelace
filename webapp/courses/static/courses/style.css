@@ -79,49 +79,71 @@ div#container-top {
         color: #eee;
         font-family: "Verdana";
         font-weight: bold;
-        font-size: 0.85rem;
+        font-size: 0.90rem;
+        text-shadow: 1px 0px 0 rgba(200, 200, 200, 1.0),
+                     2px 0px 1px rgba(0, 0, 0, 1.0);
         
         position: absolute;
         top: 0;
         right: 0;
-        
         height: 2.5rem;
         
-        background: rgba(0, 0, 0, 0.1);
+        background: rgba(0, 0, 0, 0);
         z-index: 2;
         letter-spacing: 0.05em;
         word-spacing: 0.1em;
     }
 
-    div#container-top div.user-actions > div {
-        height: 100%;
-        line-height: 100%;
-        position: relative;
+    div#container-top div.side-by-side-top {
+        height: 2.5rem;
         display: inline-block;
-        padding: 9px 4px;
-        margin: 0 0 0 -1px;
-        border: 1px solid rgba(0, 0, 0, 0.4);
-        text-align: center;
-        vertical-align: middle;
-    }
-    div#container-top div.user-actions > div:hover {
-        background: rgba(255, 255, 255, 0.3);
-    }
-    div#container-top div.user-actions > div:hover > a {
-        color: #333;
+        vertical-align: top;
     }
 
-    div#container-top a {
+    div#container-top div.user-actions div.user-action,
+    div#container-top div.user-actions div.user-inaction {
+        height: 2rem;
+        
+        position: relative;
+        padding: 0.40rem 0.25rem 0 0.25rem;
+        margin: 4px 0;
+        text-align: center;
+        vertical-align: middle;
         text-decoration: none;
+        
+
     }
+    div#container-top div.user-actions div.user-action {
+        border: 2px solid rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+        background: rgba(0, 0, 0, 0.15);
+    }
+    div#container-top div.user-actions div.user-inaction {
+        border: 2px solid rgba(0, 0, 0, 0);
+        border-radius: 8px;
+    }
+
+    div#container-top div.vertical-separator {
+        border-left: 1px solid #143a14;
+        box-shadow: 0 0 2px rgba(0,0,0,0.7);
+        margin: 4px 4px 0 4px;
+        height: 2rem;        
+        position: relative;
+    }
+
     div#container-top a:link {
         color: #ccc;
+        text-decoration: none;
     }
     div#container-top a:visited {
         color: #ccc;
+        text-decoration: none;
     }
-    div#container-top a:hover {
-        color: #333;
+    div#container-top a > div.user-action:hover {
+        color: #ccc;
+        text-shadow: 1px 0px 0 rgba(200, 200, 200, 1.0),
+                     2px 0px 1px rgba(0, 0, 0, 1.0);
+        background: rgba(0, 0, 0, 0.25);
     }
 
 /* NAVIGATION */
@@ -204,10 +226,8 @@ nav.breadcrumb {
     nav.breadcrumb div.vertical-separator {
         border-left: 1px solid #143a14;
         box-shadow: 0 0 2px rgba(0,0,0,0.7);
-
         height: 24px;
         display: inline-block;
-        
     }
     nav.breadcrumb img {
         display: inline-block;

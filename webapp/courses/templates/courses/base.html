@@ -23,6 +23,7 @@
     <script src="{% static 'courses/calendar.js' %}"></script>
     <script>
       $(document).ready(function() {
+        // TODO: Store data in a js object
         add_line_numbers();
         set_line_widths();
 
@@ -58,27 +59,34 @@
           </div>
           <div class="user-actions">
             {% if user.is_active %}
-              <div class="user-name">
-                {% filter force_escape %}
-                  {% firstof user.first_name user.username %}
-                {% endfilter %}
-              </div><div class="user-settings">
+              <div class="side-by-side-top">
+                <div class="user-action">
+                  <span class="score">+45</span>
+                  <span class="user-name">
+                    {% filter force_escape %}
+                      {% firstof user.first_name user.username %}
+                    {% endfilter %}
+                  </span>
+              </div>
+              </div><div class="side-by-side-top">
+                <div class="vertical-separator"></div>
+              </div><div class="side-by-side-top">
+                <img src="{% static 'courses/arrow-down.png' %}">
+              </div>{% comment %}
+              <div class="user-settings">
                 <a href="/profile/">{% trans 'Settings' %}</a>
               </div><div class="user-logout">
                 <a href="/accounts/logout/">{% trans 'Log out' %}</a>
-              </div>
+              </div>{% endcomment %}
             {% else %}
-              <div class="user-login">
-                <a href="/accounts/login/">{% trans 'Log in' %}</a>
-              </div><div class="user-register">
-                <a href="/accounts/register/">{% trans 'Create account' %}</a>
-              </div>
+              <a href="url 'accounts:login'">
+                <div class="user-action">
+                  Log in
+                </div>
+              </a>
             {% endif %}
             
             {% if user.is_staff and user.is_active %}
-              <div class="user-teacherstools">
-                <a href="/admin/">{% trans 'Teacher’s tools' %}</a>
-              </div>
             {% endif %}
           </div>{% comment %}login box{% endcomment %}
         </div>
