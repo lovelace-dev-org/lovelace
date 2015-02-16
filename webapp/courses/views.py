@@ -112,31 +112,32 @@ def check_answer(request, course_slug, content_slug):
     if not exercise.manually_evaluated:
         if exercise.content_type == "FILE_UPLOAD_EXERCISE":
             task_id = evaluation["task_id"]
-            return HttpResponseRedirect(reverse('courses:check_progress',
-                                                kwargs={"course_slug": course_slug,
-                                                        "content_slug": content_slug,
-                                                        "task_id": task_id}))
+            return check_progress(request, course_slug, content_slug, task_id)
         exercise.save_evaluation(user, evaluation, answer_object)
         evaluation["manual"] = False
     else:
         evaluation["manual"] = True
 
-    # TODO: Replace with JSON
+    # TODO: Errors, hints, comments in JSON
     t = loader.get_template("courses/exercise_evaluation.html")
     c = Context(evaluation)
-    return HttpResponse(t.render(c))
+    return JsonResponse({
+        'result': t.render(c),
+    })
+    
 
 def check_progress(request, course_slug, content_slug, task_id):
     # Based on https://djangosnippets.org/snippets/2898/
     # TODO: Check permissions
     task = AsyncResult(task_id)
     if task.ready():
-        return HttpResponseRedirect(reverse('courses:file_exercise_evaluation',
-                                            kwargs={"course_slug": course_slug,
-                                                    "content_slug": content_slug,
-                                                    "task_id": task_id,}))
+        return file_exercise_evaluation(request, course_slug, content_slug, task_id)
     else:
-        data = {"state": task.state, "metadata": task.info}
+        progress_url = reverse('courses:check_progress',
+                               kwargs={"course_slug": course_slug,
+                                       "content_slug": content_slug,
+                                       "task_id": task_id,})
+        data = {"state": task.state, "metadata": task.info, "redirect": progress_url}
         return JsonResponse(data)
 
 def file_exercise_evaluation(request, course_slug, content_slug, task_id):
@@ -145,7 +146,10 @@ def file_exercise_evaluation(request, course_slug, content_slug, task_id):
     c = Context({
         'placeholder': 'placeholder',
     })
-    return HttpResponse(t.render(c))
+    data = {
+        'result': t.render(c),
+    }
+    return JsonResponse(data)
 
 def content(request, course_slug, content_slug, **kwargs):
     course = Course.objects.get(slug=course_slug)
