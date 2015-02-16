@@ -5,15 +5,25 @@ function isElementInViewport (el) {
     }
 
     var rect = el.getBoundingClientRect();
-
     var result = (rect.top >= 0 &&
                   rect.bottom <= $(window).height());
+    return result;
+}
+
+function isElementBelowViewport (el) {
+    if (el instanceof jQuery) {
+        el = el[0];
+    }
+
+    var rect = el.getBoundingClientRect();
+    var result = (rect.bottom > $(window).height());
     return result;
 }
 
 var handler = function() {
     var headings = $(".content-heading");
     var topmost_found = false;
+    var old, previous;
     headings.each(function(index) {
         var id = $(this).find("span.anchor-offset").first().attr("id");
         var link_in_toc = $("#toc li a[href=#" + id + "]").parent();
@@ -21,9 +31,19 @@ var handler = function() {
             $(link_in_toc).attr("class", "toc-visible");
             topmost_found = true;
         } else {
+            if ($(link_in_toc).attr("class") === "toc-visible") {
+                old = $(link_in_toc);
+                if (isElementBelowViewport(this)) {
+                    old = previous || old;
+                }
+            }
             $(link_in_toc).attr("class", "");
         }
+        previous = $(link_in_toc);
     });
+    if (topmost_found == false && typeof old !== "undefined") {
+        old.attr("class", "toc-visible");
+    }
 };
 
 // Build the table of contents

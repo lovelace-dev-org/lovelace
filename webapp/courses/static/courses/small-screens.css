@@ -11,7 +11,7 @@ nav.breadcrumb div.top-nav-container {
 }
 
 div.toc-box {
-    right: 0;
+    left: 1000px;
     top: 4rem;
     width: 262px;
     font-size: 0.65em;
@@ -23,3 +23,7 @@ nav.toc ol {
 nav.toc ol > li {
     margin-left: -1em;
 }
+nav.toc li > img {
+    top: 0;
+}
+
