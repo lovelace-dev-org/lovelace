@@ -351,8 +351,11 @@ class MultipleChoiceExercise(ContentPage):
 
     def save_answer(self, user, ip, answer, files):
         keys = list(answer.keys())
-        key = [k for k in keys if k.endswith("-radio")][0]
-        answered = int(answer[key])
+        key = [k for k in keys if k.endswith("-radio")]
+        if not key:
+            # TODO: Invalid answer
+            raise Exception("Invalid answer")
+        answered = int(answer[key[0]])
         try:
             chosen_answer = MultipleChoiceExerciseAnswer.objects.get(id=answered)
         except MultipleChoiceExerciseAnswer.DoesNotExist as e:

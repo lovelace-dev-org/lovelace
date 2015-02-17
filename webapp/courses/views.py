@@ -15,6 +15,7 @@ from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext as _
 
 from celery.result import AsyncResult
+from courses.tasks import get_celery_worker_status
 
 from courses.models import *
 from courses.forms import *
@@ -133,11 +134,15 @@ def check_progress(request, course_slug, content_slug, task_id):
     if task.ready():
         return file_exercise_evaluation(request, course_slug, content_slug, task_id)
     else:
-        progress_url = reverse('courses:check_progress',
-                               kwargs={"course_slug": course_slug,
-                                       "content_slug": content_slug,
-                                       "task_id": task_id,})
-        data = {"state": task.state, "metadata": task.info, "redirect": progress_url}
+        celery_status = get_celery_worker_status()
+        if "errors" in celery_status:
+            data = celery_status
+        else:
+            progress_url = reverse('courses:check_progress',
+                                   kwargs={"course_slug": course_slug,
+                                           "content_slug": content_slug,
+                                           "task_id": task_id,})
+            data = {"state": task.state, "metadata": task.info, "redirect": progress_url}
         return JsonResponse(data)
 
 def file_exercise_evaluation(request, course_slug, content_slug, task_id):

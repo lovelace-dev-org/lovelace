@@ -2,6 +2,10 @@ function success_function(data, result_div, error_div) {
     if (data.result) {
         result_div.html(data.result);
     }
+    if (data.errors) {
+        error_div.html(data.errors);
+        error_div.css("display", "block");
+    }
     if (data.metadata) {
         var current = data.metadata.current;
         var total = data.metadata.total;

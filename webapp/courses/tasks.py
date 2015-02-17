@@ -102,6 +102,9 @@ def run_tests(self, user_id, exercise_id, answer_id):
 
     results = {"student": student_results, "reference": reference_results}
 
+    # TODO: Make the comparisons to determine correct status
+    # Ultimate encoding: http://en.wikipedia.org/wiki/Code_page_437
+
     # Determine the result and generate JSON accordingly
     # Maybe save to redis?
     result_string = json.dumps(results)
@@ -396,7 +399,7 @@ def run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check):
 # TODO: Celery worker status checking:
 # http://stackoverflow.com/questions/8506914/detect-whether-celery-is-available-running
 def get_celery_worker_status():
-    ERROR_KEY = "ERROR"
+    ERROR_KEY = "errors"
     try:
         from celery.task.control import inspect
         insp = inspect()
