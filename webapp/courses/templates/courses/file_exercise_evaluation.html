@@ -1,1 +1,9 @@
-moi, tässä tulokset, olkaa hyvä:
+{% load i18n %}
+  <div class="exercise-evaluation">
+    {% if evaluation == True %}
+      {% trans "Correct answer!" %}
+    {% else %}
+      {% trans "Incorrect answer!" %}
+    {% endif %}
+  </div>
+

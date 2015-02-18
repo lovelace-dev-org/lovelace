@@ -44,6 +44,8 @@ function poll_progress(url, context) {
                 success_function(data, result_div);
             },
             error: function(xhr, status, type) {
+                var error_div = $(this).children("div.error");
+                error_function(status, type, error_div);
             }
         });
     }, 500);

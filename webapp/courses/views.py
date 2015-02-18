@@ -132,7 +132,7 @@ def check_progress(request, course_slug, content_slug, task_id):
     # TODO: Check permissions
     task = AsyncResult(task_id)
     if task.ready():
-        return file_exercise_evaluation(request, course_slug, content_slug, task_id)
+        return file_exercise_evaluation(request, course_slug, content_slug, task_id, task)
     else:
         celery_status = get_celery_worker_status()
         if "errors" in celery_status:
@@ -145,11 +145,19 @@ def check_progress(request, course_slug, content_slug, task_id):
             data = {"state": task.state, "metadata": task.info, "redirect": progress_url}
         return JsonResponse(data)
 
-def file_exercise_evaluation(request, course_slug, content_slug, task_id):
-    # TODO: Render the exercise results and send them to the user
+def file_exercise_evaluation(request, course_slug, content_slug, task_id, task=None):
+    if task is None:
+        task = AsyncResult(task_id)
+    evaluation_id = task.get()
+    task.forget() # TODO: IMPORTANT! Also forget all the subtask results somehow? in tasks.py?
+    evaluation_obj = Evaluation.objects.get(id=evaluation_id)
+
+    # TODO: Get the rendered results from Redis
+
     t = loader.get_template("courses/file_exercise_evaluation.html")
     c = Context({
-        'placeholder': 'placeholder',
+        'evaluation': evaluation_obj.correct,
+        'points': evaluation_obj.points,
     })
     data = {
         'result': t.render(c),

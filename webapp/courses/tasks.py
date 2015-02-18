@@ -106,7 +106,7 @@ def run_tests(self, user_id, exercise_id, answer_id):
     # Ultimate encoding: http://en.wikipedia.org/wiki/Code_page_437
 
     # Determine the result and generate JSON accordingly
-    # Maybe save to redis?
+    # Save the rendered results into Redis
     result_string = json.dumps(results)
 
     # Save the results to database
@@ -119,13 +119,13 @@ def run_tests(self, user_id, exercise_id, answer_id):
         return # TODO: Find a way to signal the failure to the user
     answer_object.evalution = evaluation
     answer_object.save()
+
+    return evaluation.id
     
     # TODO: Should we:
     # - return the results? (most probably not)
     # - save the results directly into db? (is this worker contained enough?)
     # - send the results to a more privileged Celery worker for saving into db?
-    # DEBUG: As a development stage measure, just return the result:
-    #return exercise_results
 
 @shared_task(name="courses.run-test", bind=True)
 def run_test(self, test_id, answer_id, exercise_id, student=False):
