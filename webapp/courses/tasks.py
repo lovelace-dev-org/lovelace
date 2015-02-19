@@ -40,7 +40,8 @@ from celery import shared_task, chain
 
 import courses.models
 
-@shared_task(name="courses.run-fileexercise-tests", bind=True)
+@shared_task(name="courses.run-fileexercise-tests", bind=True,
+             serializer='json')
 def run_tests(self, user_id, exercise_id, answer_id):
     # TODO: Actually, just receive the relevant ids for fetching the Django
     #       models here instead of in the Django view.
@@ -127,7 +128,7 @@ def run_tests(self, user_id, exercise_id, answer_id):
     # - save the results directly into db? (is this worker contained enough?)
     # - send the results to a more privileged Celery worker for saving into db?
 
-@shared_task(name="courses.run-test", bind=True)
+@shared_task(name="courses.run-test", bind=True, serializer='json')
 def run_test(self, test_id, answer_id, exercise_id, student=False):
     """
     Runs all the stages of the given test.
@@ -217,7 +218,7 @@ def run_test(self, test_id, answer_id, exercise_id, student=False):
 
     return test_results
 
-@shared_task(name="courses.run-stage", bind=True)
+@shared_task(name="courses.run-stage", bind=True, serializer='json')
 def run_stage(self, stage_id, test_dir, temp_dir_prefix, files_to_check):
     """
     Runs all the commands of this stage and collects the return values and the
@@ -236,13 +237,20 @@ def run_stage(self, stage_id, test_dir, temp_dir_prefix, files_to_check):
         return stage_results
 
     
-    cmd_chain = chain(run_command_chainable.s(cmd, temp_dir_prefix, test_dir, files_to_check)
-                      for cmd in commands)
+    cmd_chain = chain(
+        run_command_chainable.s(
+            {"id":cmd.id, "input_text":cmd.input_text, "return_value":cmd.return_value},
+            temp_dir_prefix, test_dir, files_to_check
+        )
+        for cmd in commands
+    )
 
     try:
         results = cmd_chain().get()
     except:
         stage_results["fail"] = True
+        results = {}
+        print("exception at run_stage pokemon exception!")
 
     stage_results.update(results)
 
@@ -293,18 +301,19 @@ def run_stage(self, stage_id, test_dir, temp_dir_prefix, files_to_check):
 
     return stage_results
 
-@shared_task(name="courses.run-command-chain-block")
+@shared_task(name="courses.run-command-chain-block", serializer='json')
 def run_command_chainable(cmd, temp_dir_prefix, test_dir, files_to_check, stage_results=None):
+    cmd_id, cmd_input_text, cmd_return_value = cmd["id"], cmd["input_text"], cmd["return_value"]
     if stage_results is None:
         stage_results = {}
-    stage_results[cmd.id] = {}
+    stage_results[cmd_id] = {}
 
     stdout = tempfile.TemporaryFile(dir=temp_dir_prefix)
     stderr = tempfile.TemporaryFile(dir=temp_dir_prefix)
     stdin = tempfile.TemporaryFile(dir=temp_dir_prefix)
-    stdin.write(bytearray(cmd.input_text, "utf-8"))
+    stdin.write(bytearray(cmd_input_text, "utf-8"))
     
-    proc_results = run_command(cmd.id, stdin, stdout, stderr, test_dir, files_to_check)
+    proc_results = run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check)
     
     stdout.seek(0)
     proc_results["stdout"] = base64.standard_b64encode(stdout.read()).decode("ASCII")
@@ -313,14 +322,14 @@ def run_command_chainable(cmd, temp_dir_prefix, test_dir, files_to_check, stage_
     proc_results["stderr"] = base64.standard_b64encode(stderr.read()).decode("ASCII")
     stderr.close()
 
-    stage_results[cmd.id].update(proc_results)
+    stage_results[cmd_id].update(proc_results)
 
-    if cmd.return_value is not None and cmd.return_value != proc_results["retval"]:
+    if cmd_return_value is not None and cmd_return_value != proc_results["retval"]:
         raise Exception()
 
     return stage_results
 
-@shared_task(name="courses.run-command")
+@shared_task(name="courses.run-command", serializer='json')
 def run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check):
     """
     Runs the current command of this stage by automated fork & exec.
