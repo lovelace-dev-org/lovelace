@@ -96,6 +96,7 @@ Install the dependencies' dependencies
 
 sudo apt-get install postgresql-server-dev-all libpq-dev
 sudo apt-get install libjpeg-dev
+sudo apt-get install redis-server redis-tools
 
 Install the Python packages
 
@@ -104,8 +105,8 @@ pip install psycopg2
 pip install pygments
 pip install pillow
 pip install django
-pip install celery
-pip install django-registration
+pip install django-redis
+pip install celery[redis]
 
 
 Edit the configuration
