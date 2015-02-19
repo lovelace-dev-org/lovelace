@@ -97,6 +97,7 @@ Install the dependencies' dependencies
 sudo apt-get install postgresql-server-dev-all libpq-dev
 sudo apt-get install libjpeg-dev
 sudo apt-get install redis-server redis-tools
+sudo apt-get install rabbitmq-server
 
 Install the Python packages
 
