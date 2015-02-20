@@ -10,6 +10,9 @@ from django.contrib.auth.models import User
 
 import json
 
+# Result generation dependencies
+import difflib
+
 # Test dependencies
 import tempfile
 import os
@@ -76,9 +79,6 @@ def run_tests(self, user_id, exercise_id, answer_id):
     self.update_state(state="PROGRESS", meta={"current":4, "total":10})
     user_object = User.objects.get(id=user_id)
     print("user: %s" % (user_object.username))
-    #x = [i for i in range(10**8) if i % 2 == 1]
-    #return
-
     
     # Get the test data
     # TODO: Use prefetch_related?
@@ -98,35 +98,117 @@ def run_tests(self, user_id, exercise_id, answer_id):
         results = run_test(test.id, answer_id, exercise_id)
         reference_results.update(results)
 
-    print(student_results.items())
-    print(reference_results.items())
+    #print(student_results.items())
+    #print(reference_results.items())
 
     results = {"student": student_results, "reference": reference_results}
 
     # TODO: Make the comparisons to determine correct status
     # Ultimate encoding: http://en.wikipedia.org/wiki/Code_page_437
-
     # Determine the result and generate JSON accordingly
+    # TODO: Do this concurrently, interleaved with the actual test running!
+    evaluation = generate_results(results, exercise_id)
+
     # Save the rendered results into Redis
-    result_string = json.dumps(results)
+    task_id = self.request.id
+
 
     # Save the results to database
-    evaluation = courses.models.Evaluation(test_results=result_string)
-    evaluation.save()
+    result_string = json.dumps(results)
+    evaluation_obj = courses.models.Evaluation(test_results=result_string,
+                                               correct=evaluation["correct"])
+    evaluation_obj.save()
     try:
         answer_object = courses.models.UserFileUploadExerciseAnswer.objects.get(id=answer_id)
     except courses.models.UserFileUploadExerciseAnswer.DoesNotExist as e:
         # TODO: Log weird request
         return # TODO: Find a way to signal the failure to the user
-    answer_object.evalution = evaluation
+    answer_object.evalution = evaluation_obj
     answer_object.save()
 
-    return evaluation.id
+    return evaluation_obj.id
     
     # TODO: Should we:
     # - return the results? (most probably not)
     # - save the results directly into db? (is this worker contained enough?)
     # - send the results to a more privileged Celery worker for saving into db?
+
+def generate_results(results, exercise_id):
+    evaluation = {}
+    correct = True
+
+    student = results["student"]
+    reference = results["reference"]
+
+    # It's possible some of the tests weren't run at all
+    unmatched = set(student.keys()) ^ set(reference.keys())
+    matched = set(student.keys()) & set(reference.keys()) if unmatched else reference.keys()
+
+    b64d = base64.standard_b64decode
+
+    test_tree = {}
+
+    for test_id, student_t, reference_t in ((k, student[k], reference[k]) for k in matched):
+        #print(test_id)
+
+        #print("student:", student_t)
+        #print("reference:", reference_t)
+
+        test_tree[test_id] = {
+            "correct": True,
+            "stages": {},
+        }
+
+        student_stages = student_t["stages"]
+        reference_stages = reference_t["stages"]
+
+        unmatched_stages = set(student_stages.keys()) ^ set(reference_stages.keys())
+        matched_stages = set(student_stages.keys()) & set(reference_stages.keys())
+
+        for stage_id, student_s, reference_s in ((k, student_stages[k], reference_stages[k])
+                                                  for k in matched_stages):
+            test_tree[test_id]["stages"][stage_id] = {"commands": {}}
+            student_cmds = student_s["commands"]
+            reference_cmds = reference_s["commands"]
+
+            for cmd_id, student_c, reference_c in ((k, student_cmds[k], reference_cmds[k])
+                                                    for k in reference_cmds.keys()):
+                cmd_correct = True
+                test_tree[test_id]["stages"][stage_id]["commands"][cmd_id] = {}
+                test_tree[test_id]["stages"][stage_id]["commands"][cmd_id].update(student_c)
+
+                student_stdout = b64d(student_c["stdout"]).decode("utf-8")
+                reference_stdout = b64d(reference_c["stdout"]).decode("utf-8")
+
+                if student_c["significant_stdout"] and student_stdout != reference_stdout:
+                    cmd_correct = False
+                
+                stdout_diff = difflib.HtmlDiff().make_table(
+                    fromlines=student_stdout.split(), tolines=reference_stdout.split(),
+                    fromdesc="Your program's output", todesc="Expected output"
+                )
+
+                student_stderr = b64d(student_c["stderr"]).decode("utf-8")
+                reference_stderr = b64d(reference_c["stderr"]).decode("utf-8")
+
+                if student_c["significant_stderr"] and student_stderr != reference_stderr:
+                    cmd_correct = False
+
+                stderr_diff = difflib.HtmlDiff().make_table(
+                    fromlines=student_stderr.split(), tolines=reference_stderr.split(),
+                    fromdesc="Your program's errors", todesc="Expected errors"
+                )
+
+                test_tree[test_id]["correct"] = cmd_correct
+                if cmd_correct == False: correct = False
+
+                
+
+    evaluation.update({
+        "correct": correct,
+        "test_tree": test_tree,
+    })
+    return evaluation
 
 @shared_task(name="courses.run-test", bind=True, serializer='json')
 def run_test(self, test_id, answer_id, exercise_id, student=False):
@@ -170,7 +252,7 @@ def run_test(self, test_id, answer_id, exercise_id, student=False):
     # TODO: Replace with the directory of the ramdisk
     temp_dir_prefix = os.path.join("/", "tmp")
 
-    test_results = {test_id: {"fail": True}}
+    test_results = {test_id: {"fail": True, "stages": {}}}
     with tempfile.TemporaryDirectory(dir=temp_dir_prefix) as test_dir:
         # Write the files required by this test
         for name, contents in ((f.get_filename(), f.get_file_contents)
@@ -198,7 +280,7 @@ def run_test(self, test_id, answer_id, exercise_id, student=False):
             
             stage_results = run_stage(stage.id, test_dir, temp_dir_prefix,
                                       list(files_to_check.keys()))
-            test_results[test_id].update(stage_results)
+            test_results[test_id]["stages"][stage.id] = stage_results
 
             if stage_results["fail"] == True:
                 break
@@ -231,11 +313,10 @@ def run_stage(self, stage_id, test_dir, temp_dir_prefix, files_to_check):
         # TODO: Log weird request
         return # TODO: Find a way to signal the failure to the user
 
-    stage_results = {"fail": False}
+    stage_results = {"fail": False, "commands": {}}
 
     if len(commands) == 0:
         return stage_results
-
     
     cmd_chain = chain(
         run_command_chainable.s(
@@ -304,9 +385,8 @@ def run_stage(self, stage_id, test_dir, temp_dir_prefix, files_to_check):
 @shared_task(name="courses.run-command-chain-block", serializer='json')
 def run_command_chainable(cmd, temp_dir_prefix, test_dir, files_to_check, stage_results=None):
     cmd_id, cmd_input_text, cmd_return_value = cmd["id"], cmd["input_text"], cmd["return_value"]
-    if stage_results is None:
-        stage_results = {}
-    stage_results[cmd_id] = {}
+    if stage_results is None or "commands" not in stage_results.keys():
+        stage_results = {"commands": {}}
 
     stdout = tempfile.TemporaryFile(dir=temp_dir_prefix)
     stderr = tempfile.TemporaryFile(dir=temp_dir_prefix)
@@ -322,7 +402,8 @@ def run_command_chainable(cmd, temp_dir_prefix, test_dir, files_to_check, stage_
     proc_results["stderr"] = base64.standard_b64encode(stderr.read()).decode("ASCII")
     stderr.close()
 
-    stage_results[cmd_id].update(proc_results)
+    # TODO: Use ordinal number istead of id?
+    stage_results["commands"][cmd_id] = proc_results
 
     if cmd_return_value is not None and cmd_return_value != proc_results["retval"]:
         raise Exception()
@@ -349,7 +430,8 @@ def run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check):
     env = {"PWD": test_dir}
     args = shlex.split(cmd)
 
-    print("Running: %s" % (shlex.quote(" ".join(args))))
+    shell_like_cmd = shlex.quote(" ".join(args))
+    print("Running: %s" % shell_like_cmd)
 
     start_time = time.time()
     proc = subprocess.Popen(args=args, bufsize=-1, executable=None,
@@ -380,7 +462,10 @@ def run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check):
     proc_runtime = proc_runtime or (time.time() - start_time)
     proc_retval = proc_retval or proc.returncode
     proc_results = {"retval": proc_retval, "timedout": proc_timedout,
-                    "runtime": proc_runtime}
+                    "runtime": proc_runtime, "ordinal_number": command.ordinal_number,
+                    "significant_stdout": command.significant_stdout,
+                    "significant_stderr": command.significant_stderr,
+                    "command_line": shell_like_cmd,}
 
     return proc_results
 
