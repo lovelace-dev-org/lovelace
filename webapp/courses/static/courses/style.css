@@ -306,6 +306,7 @@ div.toc-box {
         }
     nav.toc a:link {
         color: #143a14;
+        padding-right: 16px;
     }
     nav.toc a:visited {
         color: #ad3939;
