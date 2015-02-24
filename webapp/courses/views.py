@@ -162,7 +162,7 @@ def file_exercise_evaluation(request, course_slug, content_slug, task_id, task=N
     debug_json = json.dumps(evaluation_tree, indent=4)
 
     t = loader.get_template("courses/file_exercise_evaluation.html")
-    c = Context({
+    c = RequestContext(request, {
         'debug_json': debug_json,
         'evaluation_tree': evaluation_tree["test_tree"],
         'evaluation': evaluation_obj.correct,

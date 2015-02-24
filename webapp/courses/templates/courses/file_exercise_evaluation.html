@@ -1,6 +1,6 @@
 {% load i18n %}
 
-{% if debug_json %}
+{% if debug_json and user.is_staff %}
   <pre style="background-color: #cbb;">
     {{ debug_json }}
   </pre>
