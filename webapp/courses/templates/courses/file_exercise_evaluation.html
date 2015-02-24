@@ -1,9 +1,43 @@
 {% load i18n %}
-  <div class="exercise-evaluation">
-    {% if evaluation == True %}
-      {% trans "Correct answer!" %}
-    {% else %}
-      {% trans "Incorrect answer!" %}
-    {% endif %}
+
+{% if debug_json %}
+  <pre style="background-color: #cbb;">
+    {{ debug_json }}
+  </pre>
+{% endif %}
+
+<div class="file-evaluation-widget">
+  {# Tab selector for tests #}
+  <div class="test-tab-selector-box">
+    {% for test_id, test_info in evaluation_tree.items %}<span class="test-tab-selector {% if test_info.correct %}correct-test{% else %}incorrect-test{% endif %}" onclick="activate_test_tab({{ test_id }});">
+        {{ test_info.name }}
+      </span>{% endfor %}
   </div>
+
+  {% for test_id, test_info in evaluation_tree.items %}
+    {# One tab, named after the test name, for each test #}
+    <div class="test-evaluation-tab" id="file-test-{{ test_id }}" style="display: none;">
+      {% for stage_id, stage_info in test_info.stages.items %}
+        <div>Stage: {{ stage_info.name }}</div>
+        {% for cmd_id, cmd_info in stage_info.commands.items %}
+          <pre>{{ cmd_info.command_line }}</pre>
+          <div>
+            {{ cmd_info.stdout_diff|safe }}
+          </div>
+          <div>
+            {{ cmd_info.stderr_diff|safe }}
+          </div>
+        {% endfor %}
+      {% endfor %}
+    </div>
+  {% endfor %}
+</div>
+
+<div class="exercise-evaluation">
+  {% if evaluation == True %}
+    {% trans "Correct answer!" %}
+  {% else %}
+    {% trans "Incorrect answer!" %}
+  {% endif %}
+</div>
 

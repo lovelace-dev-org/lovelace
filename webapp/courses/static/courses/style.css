@@ -737,6 +737,26 @@ section.content {
             font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
         }
 
+        /* The file upload exercise evaluation tabs */
+        div.file-evaluation-widget {
+            width: 100%;
+            background: #ac8;
+        }
+        div.test-tab-selector-box {
+            color: #333;
+        }
+        .test-tab-selector {
+            display: inline-block;
+            border: 2px solid #999;
+            cursor: pointer;
+        }
+        .correct-test {
+            background: #0f0;
+        }
+        .incorrect-test {
+            background: #f00;
+        }
+
         /* 
          * The results table
          */

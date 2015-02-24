@@ -152,10 +152,19 @@ def file_exercise_evaluation(request, course_slug, content_slug, task_id, task=N
     task.forget() # TODO: IMPORTANT! Also forget all the subtask results somehow? in tasks.py?
     evaluation_obj = Evaluation.objects.get(id=evaluation_id)
 
-    # TODO: Get the rendered results from Redis
+    # TODO: Nicer way to get the proper address!
+    import redis
+    r = redis.StrictRedis(host='localhost', port=6379, db=0)
+    evaluation_json = r.get(task_id).decode("utf-8")
+    evaluation_tree = json.loads(evaluation_json)
+    r.delete(task_id)
+
+    debug_json = json.dumps(evaluation_tree, indent=4)
 
     t = loader.get_template("courses/file_exercise_evaluation.html")
     c = Context({
+        'debug_json': debug_json,
+        'evaluation_tree': evaluation_tree["test_tree"],
         'evaluation': evaluation_obj.correct,
         'points': evaluation_obj.points,
     })

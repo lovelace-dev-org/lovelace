@@ -8,6 +8,8 @@ from __future__ import absolute_import
 from collections import namedtuple
 from django.contrib.auth.models import User
 
+import redis
+
 import json
 
 # Result generation dependencies
@@ -110,20 +112,27 @@ def run_tests(self, user_id, exercise_id, answer_id):
     evaluation = generate_results(results, exercise_id)
 
     # Save the rendered results into Redis
+    # TODO: How to access CELERY_RESULT_BACKEND in settings?
     task_id = self.request.id
-
+    r = redis.StrictRedis(host='localhost', port=6379, db=0)
+    r.set(task_id, json.dumps(evaluation))
 
     # Save the results to database
     result_string = json.dumps(results)
+    correct = evaluation["correct"]
+    points = exercise_object.default_points
+    
     evaluation_obj = courses.models.Evaluation(test_results=result_string,
-                                               correct=evaluation["correct"])
+                                               points=points,
+                                               correct=correct)
     evaluation_obj.save()
+    
     try:
         answer_object = courses.models.UserFileUploadExerciseAnswer.objects.get(id=answer_id)
     except courses.models.UserFileUploadExerciseAnswer.DoesNotExist as e:
         # TODO: Log weird request
         return # TODO: Find a way to signal the failure to the user
-    answer_object.evalution = evaluation_obj
+    answer_object.evaluation = evaluation_obj
     answer_object.save()
 
     return evaluation_obj.id
@@ -156,6 +165,7 @@ def generate_results(results, exercise_id):
 
         test_tree[test_id] = {
             "correct": True,
+            "name": student_t["name"],
             "stages": {},
         }
 
@@ -167,7 +177,10 @@ def generate_results(results, exercise_id):
 
         for stage_id, student_s, reference_s in ((k, student_stages[k], reference_stages[k])
                                                   for k in matched_stages):
-            test_tree[test_id]["stages"][stage_id] = {"commands": {}}
+            test_tree[test_id]["stages"][stage_id] = {
+                "commands": {},
+                "name": student_s["name"],
+            }
             student_cmds = student_s["commands"]
             reference_cmds = reference_s["commands"]
 
@@ -184,9 +197,10 @@ def generate_results(results, exercise_id):
                     cmd_correct = False
                 
                 stdout_diff = difflib.HtmlDiff().make_table(
-                    fromlines=student_stdout.split(), tolines=reference_stdout.split(),
+                    fromlines=student_stdout.split('\n'), tolines=reference_stdout.split('\n'),
                     fromdesc="Your program's output", todesc="Expected output"
                 )
+                test_tree[test_id]["stages"][stage_id]["commands"][cmd_id]["stdout_diff"] = stdout_diff
 
                 student_stderr = b64d(student_c["stderr"]).decode("utf-8")
                 reference_stderr = b64d(reference_c["stderr"]).decode("utf-8")
@@ -195,9 +209,11 @@ def generate_results(results, exercise_id):
                     cmd_correct = False
 
                 stderr_diff = difflib.HtmlDiff().make_table(
-                    fromlines=student_stderr.split(), tolines=reference_stderr.split(),
+                    fromlines=student_stderr.split('\n'), tolines=reference_stderr.split('\n'),
                     fromdesc="Your program's errors", todesc="Expected errors"
                 )
+
+                test_tree[test_id]["stages"][stage_id]["commands"][cmd_id]["stderr_diff"] = stderr_diff
 
                 test_tree[test_id]["correct"] = cmd_correct
                 if cmd_correct == False: correct = False
@@ -252,7 +268,7 @@ def run_test(self, test_id, answer_id, exercise_id, student=False):
     # TODO: Replace with the directory of the ramdisk
     temp_dir_prefix = os.path.join("/", "tmp")
 
-    test_results = {test_id: {"fail": True, "stages": {}}}
+    test_results = {test_id: {"fail": True, "name": test.name, "stages": {}}}
     with tempfile.TemporaryDirectory(dir=temp_dir_prefix) as test_dir:
         # Write the files required by this test
         for name, contents in ((f.get_filename(), f.get_file_contents)
@@ -281,6 +297,7 @@ def run_test(self, test_id, answer_id, exercise_id, student=False):
             stage_results = run_stage(stage.id, test_dir, temp_dir_prefix,
                                       list(files_to_check.keys()))
             test_results[test_id]["stages"][stage.id] = stage_results
+            test_results[test_id]["stages"][stage.id]["name"] = stage.name
 
             if stage_results["fail"] == True:
                 break
@@ -424,13 +441,16 @@ def run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check):
     to_secs = lambda hour, minute, second, µsecond: ((hour * 60 + minute) * 60)\
               + second + (µsecond * 0.000001)
 
-    cmd = command.command_line.replace("$RETURNABLES", " ".join(files_to_check))
+    cmd = command.command_line.replace(
+        "$RETURNABLES",
+        " ".join(shlex.quote(f) for f in files_to_check)
+    )
     timeout = to_secs(command.timeout.hour, command.timeout.minute,
                       command.timeout.second, command.timeout.microsecond)
     env = {"PWD": test_dir}
     args = shlex.split(cmd)
 
-    shell_like_cmd = shlex.quote(" ".join(args))
+    shell_like_cmd = " ".join(shlex.quote(arg) for arg in args)
     print("Running: %s" % shell_like_cmd)
 
     start_time = time.time()

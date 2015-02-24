@@ -120,3 +120,10 @@ function update_progress_bar() {
     total_elem.html(total);
     progress_elem.attr({"value": completed, "max": total});
 }
+
+function activate_test_tab(tab_id) {
+    var item = $('#file-test-' + tab_id);
+    var siblings = item.parent().find('.test-evaluation-tab');
+    siblings.hide();
+    item.show();
+}
