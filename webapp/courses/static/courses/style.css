@@ -745,15 +745,15 @@ section.content {
         div.test-tab-selector-box {
             color: #333;
         }
-        .test-tab-selector {
+        div.test-tab-selector {
             display: inline-block;
             border: 2px solid #999;
             cursor: pointer;
         }
-        .correct-test {
+        div.correct-test {
             background: #0f0;
         }
-        .incorrect-test {
+        div.incorrect-test {
             background: #f00;
         }
 

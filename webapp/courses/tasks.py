@@ -155,19 +155,17 @@ def generate_results(results, exercise_id):
 
     b64d = base64.standard_b64decode
 
-    test_tree = {}
+    test_tree = {"tests": []}
 
     for test_id, student_t, reference_t in ((k, student[k], reference[k]) for k in matched):
-        #print(test_id)
-
-        #print("student:", student_t)
-        #print("reference:", reference_t)
-
-        test_tree[test_id] = {
-            "correct": True,
+        current_test = {
+            "test_id": test_id,
             "name": student_t["name"],
-            "stages": {},
+            "correct": True,
+            "stages": [],
         }
+
+        test_tree["tests"].append(current_test)
 
         student_stages = student_t["stages"]
         reference_stages = reference_t["stages"]
@@ -177,18 +175,25 @@ def generate_results(results, exercise_id):
 
         for stage_id, student_s, reference_s in ((k, student_stages[k], reference_stages[k])
                                                   for k in matched_stages):
-            test_tree[test_id]["stages"][stage_id] = {
-                "commands": {},
+            current_stage = {
+                "stage_id": stage_id,
                 "name": student_s["name"],
+                "ordinal_number": student_s["ordinal_number"],
+                "commands": [],
             }
+            current_test["stages"].append(current_stage)
+
             student_cmds = student_s["commands"]
             reference_cmds = reference_s["commands"]
 
             for cmd_id, student_c, reference_c in ((k, student_cmds[k], reference_cmds[k])
                                                     for k in reference_cmds.keys()):
                 cmd_correct = True
-                test_tree[test_id]["stages"][stage_id]["commands"][cmd_id] = {}
-                test_tree[test_id]["stages"][stage_id]["commands"][cmd_id].update(student_c)
+                current_cmd = {
+                    "cmd_id": cmd_id,
+                }
+                current_cmd.update(student_c)
+                current_stage["commands"].append(current_cmd)
 
                 student_stdout = b64d(student_c["stdout"]).decode("utf-8")
                 reference_stdout = b64d(reference_c["stdout"]).decode("utf-8")
@@ -200,7 +205,7 @@ def generate_results(results, exercise_id):
                     fromlines=student_stdout.split('\n'), tolines=reference_stdout.split('\n'),
                     fromdesc="Your program's output", todesc="Expected output"
                 )
-                test_tree[test_id]["stages"][stage_id]["commands"][cmd_id]["stdout_diff"] = stdout_diff
+                current_cmd["stdout_diff"] = stdout_diff
 
                 student_stderr = b64d(student_c["stderr"]).decode("utf-8")
                 reference_stderr = b64d(reference_c["stderr"]).decode("utf-8")
@@ -212,10 +217,9 @@ def generate_results(results, exercise_id):
                     fromlines=student_stderr.split('\n'), tolines=reference_stderr.split('\n'),
                     fromdesc="Your program's errors", todesc="Expected errors"
                 )
+                current_cmd["stderr_diff"] = stderr_diff
 
-                test_tree[test_id]["stages"][stage_id]["commands"][cmd_id]["stderr_diff"] = stderr_diff
-
-                test_tree[test_id]["correct"] = cmd_correct
+                current_test["correct"] = cmd_correct if current_test["correct"] else False
                 if cmd_correct == False: correct = False
 
                 
@@ -298,6 +302,7 @@ def run_test(self, test_id, answer_id, exercise_id, student=False):
                                       list(files_to_check.keys()))
             test_results[test_id]["stages"][stage.id] = stage_results
             test_results[test_id]["stages"][stage.id]["name"] = stage.name
+            test_results[test_id]["stages"][stage.id]["ordinal_number"] = stage.ordinal_number
 
             if stage_results["fail"] == True:
                 break
@@ -330,7 +335,10 @@ def run_stage(self, stage_id, test_dir, temp_dir_prefix, files_to_check):
         # TODO: Log weird request
         return # TODO: Find a way to signal the failure to the user
 
-    stage_results = {"fail": False, "commands": {}}
+    stage_results = {
+        "fail": False,
+        "commands": {},
+    }
 
     if len(commands) == 0:
         return stage_results
@@ -483,6 +491,8 @@ def run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check):
     proc_retval = proc_retval or proc.returncode
     proc_results = {"retval": proc_retval, "timedout": proc_timedout,
                     "runtime": proc_runtime, "ordinal_number": command.ordinal_number,
+                    "expected_retval": command.return_value,
+                    "input_text": command.input_text,
                     "significant_stdout": command.significant_stdout,
                     "significant_stderr": command.significant_stderr,
                     "command_line": shell_like_cmd,}

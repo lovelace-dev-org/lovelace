@@ -1,25 +1,31 @@
 {% load i18n %}
+{% load staticfiles %}
 
 {% if debug_json and user.is_staff %}
   <pre style="background-color: #cbb;">
-    {{ debug_json }}
+{{ debug_json }}
   </pre>
 {% endif %}
 
 <div class="file-evaluation-widget">
   {# Tab selector for tests #}
   <div class="test-tab-selector-box">
-    {% for test_id, test_info in evaluation_tree.items %}<span class="test-tab-selector {% if test_info.correct %}correct-test{% else %}incorrect-test{% endif %}" onclick="activate_test_tab({{ test_id }});">
+    {% for test_info in evaluation_tree.tests|dictsort:"test_id" %}<div class="test-tab-selector {% if test_info.correct %}correct-test{% else %}incorrect-test{% endif %}" onclick="activate_test_tab({{ test_info.test_id }});">
         {{ test_info.name }}
-      </span>{% endfor %}
+        {% if test_info.correct %}
+          <img src="{% static 'courses/correct-16.png' %}" alt="{% trans 'Correct' %}">
+        {% else %}
+          <img src="{% static 'courses/incorrect-16.png' %}" alt="{% trans 'Incorrect' %}">
+        {% endif %}
+      </div>{% endfor %}
   </div>
 
-  {% for test_id, test_info in evaluation_tree.items %}
+  {% for test_info in evaluation_tree.tests|dictsort:"test_id" %}
     {# One tab, named after the test name, for each test #}
-    <div class="test-evaluation-tab" id="file-test-{{ test_id }}" style="display: none;">
-      {% for stage_id, stage_info in test_info.stages.items %}
+    <div class="test-evaluation-tab" id="file-test-{{ test_info.test_id }}" style="display: none;">
+      {% for stage_info in test_info.stages|dictsort:"ordinal_number" %}
         <div>Stage: {{ stage_info.name }}</div>
-        {% for cmd_id, cmd_info in stage_info.commands.items %}
+        {% for cmd_info in stage_info.commands|dictsort:"ordinal_number" %}
           <pre>{{ cmd_info.command_line }}</pre>
           <div>
             {{ cmd_info.stdout_diff|safe }}
