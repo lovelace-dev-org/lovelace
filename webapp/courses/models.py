@@ -233,6 +233,7 @@ class ContentPage(models.Model):
     # Exercise fields
     question = models.TextField(blank=True)
     manually_evaluated = models.BooleanField(verbose_name="This exercise is evaluated by hand", default=False)
+    ask_collaborators = models.BooleanField(verbose_name="Ask the student to list collaborators", default=False)
 
     def rendered_markup(self, request=None, context=None):
         """
