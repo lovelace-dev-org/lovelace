@@ -750,7 +750,7 @@ class FileExerciseTest(models.Model):
     required_files = models.ManyToManyField('FileExerciseTestIncludeFile',
                                             verbose_name="files required by this test",
                                             #limit_choices_to=limit_file_choices,
-                                            blank=True, null=True)
+                                            blank=True)
     
     def __str__(self):
         return self.name
