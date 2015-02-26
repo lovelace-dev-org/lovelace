@@ -350,24 +350,28 @@ class EmbeddedPageMarkup(Markup):
 
             # TODO: Prevent recursion depth > 2
             embedded_content = page.rendered_markup()
-            t = loader.get_template("courses/task.html") # TODO: Exercise specific templates
-            c = RequestContext(state["request"], state["context"])
-            
+                        
             choices = page.get_choices()
             question = blockparser.parseblock(escape(page.question))
             
-            c["emb_content"] = embedded_content
-            c["content"] = page
-            c["content_slug"] = page.slug
+            c = {
+                "emb_content": embedded_content,
+                "content": page,
+                "content_slug": page.slug,
+                "question": question,
+                "choices": choices,
+            }
             if state["request"].user.is_active:
                 c["evaluation"] = page.get_user_evaluation(state["request"].user)
                 c["answer_count"] = page.get_user_answers(state["request"].user).count()
             else:
                 c["evaluation"] = "unanswered"
                 c["answer_count"] = 0
-            c["question"] = question
-            c["choices"] = choices
-            rendered_content = t.render(c)
+            c.update(state["context"])
+
+            t = loader.get_template("courses/task.html") # TODO: Exercise specific templates
+            ctx = RequestContext(state["request"], c)
+            rendered_content = t.render(ctx)
 
         settings["rendered_content"] = rendered_content or embedded_content
         return settings

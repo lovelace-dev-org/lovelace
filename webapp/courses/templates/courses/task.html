@@ -2,11 +2,13 @@
 {% load i18n %}
 {% load content_extra %}
 
-  {% content_meta course_slug content user evaluation answer_count%}
+{% if user.is_active %}
+  {% content_meta %}
+{% endif %}
 
-  {% if emb_content %}
-    <div>{{ emb_content|safe }}</div>
-  {% endif %}
+{% if emb_content %}
+  <div>{{ emb_content|safe }}</div>
+{% endif %}
 
 {% if content.is_answerable %}
   <div class="question">
