@@ -784,7 +784,8 @@ section.content {
         }
 
         section.content table.diff col.line-number {
-            width: 1.5rem;
+            width: 1.2rem;
+            background: #ccc;
         }
         section.content table.diff colgroup.student,
         section.content table.diff colgroup.reference {
@@ -793,6 +794,8 @@ section.content {
 
         section.content table.diff th {
             background: #ccc;
+            line-height: 1.25;
+            font-weight: normal;
         }
 
         section.content table.diff td {
@@ -801,8 +804,13 @@ section.content {
             word-wrap: break-word;
             font-weight: normal;
             font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
-            padding: 0 2px;
+            font-size: 1.0em;
+            padding: 0 1px;
+            line-height: 1.25;
             height: 1rem;
+        }
+        section.content table.diff td.diff-linenum {
+            font-size: 0.8em;
         }
 
         section.content table.diff span.diff-sub {

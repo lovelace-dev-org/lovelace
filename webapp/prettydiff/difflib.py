@@ -1862,12 +1862,13 @@ class HtmlDiff(object):
             # handle blank lines where linenum is '>' or ''
             id = ''
         # replace those things that would get confused with HTML symbols
-        text=text.replace("&","&amp;").replace(">","&gt;").replace("<","&lt;")
+        text=text.replace("&","&amp;").replace(">","&gt;").replace("<","&lt;")\
+                 .replace("'","&apos;").replace('"',"&quot;")
 
         # make space non-breakable so they don't get compressed or line wrapped
         text = text.replace(' ','&nbsp;').rstrip()
 
-        return '<td>%s</td><td>%s</td>' % (linenum,text)
+        return '<td class="diff-linenum">%s</td><td class="diff-text">%s</td>' % (linenum,text)
 
     def _make_prefix(self):
         """Create unique anchor prefixes"""
@@ -1985,6 +1986,9 @@ class HtmlDiff(object):
                 s.append(fmt % (fromlist[i],tolist[i]))
         
         if fromdesc or todesc:
+            esc = lambda s: s.replace("&","&amp;").replace(">","&gt;").replace("<","&lt;")\
+                        .replace("'","&apos;").replace('"',"&quot;")
+            fromdesc,todesc = esc(fromdesc),esc(todesc)
             header_row = '<thead><tr>%s%s</tr></thead>' % (
                 '<th colspan="2" class="diff-header">%s</th>' % fromdesc,
                 '<th colspan="2" class="diff-header">%s</th>' % todesc)

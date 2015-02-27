@@ -152,9 +152,6 @@ def generate_results(results, exercise_id):
     # It's possible some of the tests weren't run at all
     unmatched = set(student.keys()) ^ set(reference.keys())
     matched = set(student.keys()) & set(reference.keys()) if unmatched else reference.keys()
-
-    b64d = base64.standard_b64decode
-
     test_tree = {"tests": []}
 
     for test_id, student_t, reference_t in ((k, student[k], reference[k]) for k in matched):
@@ -174,7 +171,8 @@ def generate_results(results, exercise_id):
         matched_stages = set(student_stages.keys()) & set(reference_stages.keys())
 
         for stage_id, student_s, reference_s in ((k, student_stages[k], reference_stages[k])
-                                                  for k in matched_stages):
+                                                  for k in sorted(matched_stages,
+                                                                  key=lambda x: student_stages[x]["ordinal_number"])):
             current_stage = {
                 "stage_id": stage_id,
                 "name": student_s["name"],
@@ -187,7 +185,8 @@ def generate_results(results, exercise_id):
             reference_cmds = reference_s["commands"]
 
             for cmd_id, student_c, reference_c in ((k, student_cmds[k], reference_cmds[k])
-                                                    for k in reference_cmds.keys()):
+                                                    for k in sorted(reference_cmds.keys(),
+                                                                    key=lambda x: student_cmds[x]["ordinal_number"])):
                 cmd_correct = True
                 current_cmd = {
                     "cmd_id": cmd_id,
@@ -195,28 +194,38 @@ def generate_results(results, exercise_id):
                 current_cmd.update(student_c)
                 current_stage["commands"].append(current_cmd)
 
-                student_stdout = b64d(student_c["stdout"]).decode("utf-8")
-                reference_stdout = b64d(reference_c["stdout"]).decode("utf-8")
+                # Handle stdout
+
+                student_stdout = student_c["stdout"]
+                reference_stdout = reference_c["stdout"]
 
                 if student_c["significant_stdout"] and student_stdout != reference_stdout:
                     cmd_correct = False
                 
-                stdout_diff = difflib.HtmlDiff().make_table(
-                    fromlines=student_stdout.splitlines(), tolines=reference_stdout.splitlines(),
-                    fromdesc="Your program's output", todesc="Expected output"
-                )
+                if student_stdout or reference_stdout:
+                    stdout_diff = difflib.HtmlDiff().make_table(
+                        fromlines=student_stdout.splitlines(), tolines=reference_stdout.splitlines(),
+                        fromdesc="Your program's output", todesc="Expected output"
+                    )
+                else:
+                    stdout_diff = ""
                 current_cmd["stdout_diff"] = stdout_diff
 
-                student_stderr = b64d(student_c["stderr"]).decode("utf-8")
-                reference_stderr = b64d(reference_c["stderr"]).decode("utf-8")
+                # Handle stderr
+
+                student_stderr = student_c["stderr"]
+                reference_stderr = reference_c["stderr"]
 
                 if student_c["significant_stderr"] and student_stderr != reference_stderr:
                     cmd_correct = False
 
-                stderr_diff = difflib.HtmlDiff().make_table(
-                    fromlines=student_stderr.splitlines(), tolines=reference_stderr.splitlines(),
-                    fromdesc="Your program's errors", todesc="Expected errors"
-                )
+                if student_stderr or reference_stderr:
+                    stderr_diff = difflib.HtmlDiff().make_table(
+                        fromlines=student_stderr.splitlines(), tolines=reference_stderr.splitlines(),
+                        fromdesc="Your program's errors", todesc="Expected errors"
+                    )
+                else:
+                    stderr_diff = ""
                 current_cmd["stderr_diff"] = stderr_diff
 
                 current_test["correct"] = cmd_correct if current_test["correct"] else False
@@ -407,6 +416,28 @@ def run_stage(self, stage_id, test_dir, temp_dir_prefix, files_to_check):
 
     return stage_results
 
+def cp437_decoder(input_bytes):
+    """
+    Reference:
+    - http://en.wikipedia.org/wiki/Code_page_437
+
+    Translation table copied from:
+    - http://stackoverflow.com/a/14553297/2096560
+    """
+    tr_table = str.maketrans({
+        0x01: "\u263A", 0x02: "\u263B", 0x03: "\u2665", 0x04: "\u2666",
+        0x05: "\u2663", 0x06: "\u2660", 0x07: "\u2022", 0x08: "\u25D8",
+        0x09: "\u25CB", 0x0a: "\u25D9", 0x0b: "\u2642", 0x0c: "\u2640",
+        0x0d: "\u266A", 0x0e: "\u266B", 0x0f: "\u263C", 0x10: "\u25BA",
+        0x11: "\u25C4", 0x12: "\u2195", 0x13: "\u203C", 0x14: "\u00B6",
+        0x15: "\u00A7", 0x16: "\u25AC", 0x17: "\u21A8", 0x18: "\u2191",
+        0x19: "\u2193", 0x1a: "\u2192", 0x1b: "\u2190", 0x1c: "\u221F",
+        0x1d: "\u2194", 0x1e: "\u25B2", 0x1f: "\u25BC", 0x7f: "\u2302",
+    })
+    CRLF = b'\x0d\x0a'
+    return "\n".join(byt_ln.decode('ibm437').translate(tr_table)
+                     for byt_ln in input_bytes.split(CRLF))
+
 @shared_task(name="courses.run-command-chain-block", serializer='json')
 def run_command_chainable(cmd, temp_dir_prefix, test_dir, files_to_check, stage_results=None):
     cmd_id, cmd_input_text, cmd_return_value = cmd["id"], cmd["input_text"], cmd["return_value"]
@@ -421,10 +452,25 @@ def run_command_chainable(cmd, temp_dir_prefix, test_dir, files_to_check, stage_
     proc_results = run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check)
     
     stdout.seek(0)
-    proc_results["stdout"] = base64.standard_b64encode(stdout.read()).decode("ASCII")
+    #proc_results["stdout"] = base64.standard_b64encode(stdout.read()).decode("ASCII")
+    read_stdout = stdout.read()
+    try:
+        proc_results["stdout"] = read_stdout.decode("utf-8")
+        proc_results["binary_stdout"] = False
+    except UnicodeDecodeError as e:
+        proc_results["stdout"] = cp437_decoder(read_stdout)
+        proc_results["binary_stdout"] = True
     stdout.close()
+
     stderr.seek(0)
-    proc_results["stderr"] = base64.standard_b64encode(stderr.read()).decode("ASCII")
+    #proc_results["stderr"] = base64.standard_b64encode(stderr.read()).decode("ASCII")
+    read_stderr = stderr.read()
+    try:
+        proc_results["stderr"] = read_stderr.decode("utf-8")
+        proc_results["binary_stderr"] = False
+    except UnicodeDecodeError as e:
+        proc_results["stderr"] = cp437_decoder(read_stderr)
+        proc_results["binary_stderr"] = True
     stderr.close()
 
     # TODO: Use ordinal number istead of id?
@@ -455,7 +501,7 @@ def run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check):
     )
     timeout = to_secs(command.timeout.hour, command.timeout.minute,
                       command.timeout.second, command.timeout.microsecond)
-    env = {"PWD": test_dir}
+    env = {"PWD": test_dir, "LC_CTYPE": "en_US.UTF-8"}
     args = shlex.split(cmd)
 
     shell_like_cmd = " ".join(shlex.quote(arg) for arg in args)
