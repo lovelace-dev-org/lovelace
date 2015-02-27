@@ -12,6 +12,7 @@
 
 {% if content.is_answerable %}
   <div class="question">
+    <div class="hints" style="display: none"></div>
     <form id="{{ content_slug }}-form" class="exercise-form" method="POST" enctype="multipart/form-data"
           action="{% url 'courses:check' course_slug content.slug %}">
       {% csrf_token %}
@@ -67,5 +68,7 @@
     </form>
     <div class="error" style="display: none"></div>
     <div class="result" style="display: none"></div>
+    <div class="comments" style="display: none"></div>
+    <div class="file-result" style="display: none"></div>
   </div>  
 {% endif %}

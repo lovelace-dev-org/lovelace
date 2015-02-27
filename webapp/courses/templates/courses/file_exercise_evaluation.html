@@ -1,7 +1,7 @@
 {% load i18n %}
 {% load staticfiles %}
 
-{% if debug_json and user.is_staff %}
+{% if debug_json_ and user.is_staff %}
   <pre style="background-color: #cbb;">
 {{ debug_json }}
   </pre>
@@ -38,12 +38,3 @@
     </div>
   {% endfor %}
 </div>
-
-<div class="exercise-evaluation">
-  {% if evaluation == True %}
-    {% trans "Correct answer!" %}
-  {% else %}
-    {% trans "Incorrect answer!" %}
-  {% endif %}
-</div>
-

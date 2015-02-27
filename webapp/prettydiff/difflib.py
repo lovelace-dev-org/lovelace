@@ -1622,14 +1622,20 @@ _styles = """
         .diff_chg {background-color:#ffff77}
         .diff_sub {background-color:#ffaaaa}"""
 
-# TODO: See filecheck_client.py
 _table_template = """
-    <table class="diff" id="difflib_chg_%(prefix)s_top">
-        <colgroup></colgroup> <colgroup></colgroup> <colgroup></colgroup>
-        <colgroup></colgroup> <colgroup></colgroup> <colgroup></colgroup>
+    <table class="diff">
+        <colgroup class="student">
+            <col class="line-number">
+            <col class="output-content">
+        </colgroup>
+        <colgroup class="reference">
+            <col class="line-number">
+            <col class="output-content">
+        </colgroup>
         %(header_row)s
         <tbody>
-%(data_rows)s        </tbody>
+        %(data_rows)s
+        </tbody>
     </table>"""
 
 _legend = """
@@ -1861,8 +1867,7 @@ class HtmlDiff(object):
         # make space non-breakable so they don't get compressed or line wrapped
         text = text.replace(' ','&nbsp;').rstrip()
 
-        return '<td class="diff_header"%s>%s</td><td nowrap="nowrap">%s</td>' \
-               % (id,linenum,text)
+        return '<td>%s</td><td>%s</td>' % (linenum,text)
 
     def _make_prefix(self):
         """Create unique anchor prefixes"""
@@ -1913,7 +1918,8 @@ class HtmlDiff(object):
                 fromlist = ['<td></td><td>&nbsp;No Differences Found&nbsp;</td>']
                 tolist = fromlist
             else:
-                fromlist = tolist = ['<td></td><td>&nbsp;Empty File&nbsp;</td>']
+                #fromlist = tolist = ['<td></td><td>&nbsp;Empty File&nbsp;</td>']
+                fromlist = tolist = ['<td></td><td></td>']
         # if not a change on first line, drop a link
         if not flaglist[0]:
             next_href[0] = '<a href="#difflib_chg_%s_0">f</a>' % toprefix
@@ -1968,8 +1974,7 @@ class HtmlDiff(object):
             fromlist,tolist,flaglist,context,numlines)
 
         s = []
-        fmt = '            <tr><td class="diff_next"%s>%s</td>%s' + \
-              '<td class="diff_next">%s</td>%s</tr>\n'
+        fmt = '    <tr>%s%s</tr>\n'
         for i in range(len(flaglist)):
             if flaglist[i] is None:
                 # mdiff yields None on separator lines skip the bogus ones
@@ -1977,15 +1982,12 @@ class HtmlDiff(object):
                 if i > 0:
                     s.append('        </tbody>\n        <tbody>\n')
             else:
-                s.append( fmt % (next_id[i],next_href[i],fromlist[i],
-                                           next_href[i],tolist[i]))
-        # TODO: br???
+                s.append(fmt % (fromlist[i],tolist[i]))
+        
         if fromdesc or todesc:
-            header_row = '<thead><tr>%s%s%s%s</tr></thead>' % (
-                '<th class="diff_next"><br /></th>',
-                '<th colspan="2" class="diff_header">%s</th>' % fromdesc,
-                '<th class="diff_next"><br /></th>',
-                '<th colspan="2" class="diff_header">%s</th>' % todesc)
+            header_row = '<thead><tr>%s%s</tr></thead>' % (
+                '<th colspan="2" class="diff-header">%s</th>' % fromdesc,
+                '<th colspan="2" class="diff-header">%s</th>' % todesc)
         else:
             header_row = ''
 
@@ -1994,9 +1996,9 @@ class HtmlDiff(object):
             header_row=header_row,
             prefix=self._prefix[1])
 
-        return table.replace('\0+','<span class="diff_add">'). \
-                     replace('\0-','<span class="diff_sub">'). \
-                     replace('\0^','<span class="diff_chg">'). \
+        return table.replace('\0+','<span class="diff-add">'). \
+                     replace('\0-','<span class="diff-sub">'). \
+                     replace('\0^','<span class="diff-chg">'). \
                      replace('\1','</span>'). \
                      replace('\t','&nbsp;')
 

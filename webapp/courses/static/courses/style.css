@@ -740,79 +740,81 @@ section.content {
         /* The file upload exercise evaluation tabs */
         div.file-evaluation-widget {
             width: 100%;
-            background: #ac8;
+            background: #ddd;
         }
         div.test-tab-selector-box {
-            color: #333;
+            color: #ccc;
+            background: #daeeda;
         }
         div.test-tab-selector {
             display: inline-block;
-            border: 2px solid #999;
+            border: 2px solid #d0d0d0;
+            border-radius: 2px 20px 0 0/2px 8px 0 0;
             cursor: pointer;
+            padding: 0 2px;
         }
         div.correct-test {
-            background: #0f0;
+            background: #143a14;
         }
         div.incorrect-test {
-            background: #f00;
+            background: #3a1414;
+        }
+        div.test-tab-selector img {
+            right: 2px;
+            top: 4px;
+            padding: 1px;
+            margin-left: 4px;
+            position: relative;
+            border: 1px dotted #aaa;
+            border-radius: 3px;
+        }
+        div.correct-test img {
+            background: #69cd69;
+        }
+        div.incorrect-test img {
+            background: #cd6969;
         }
 
-        /* 
-         * The results table
-         */
+        /* The file upload exercise difference table */
 
-        section.content div#result table {
+        section.content table.diff {
             table-layout: fixed;
             width: 100%;
+            color: #222;
         }
 
-        section.content div#result table colgroup.student col.lnum {
-            width: 38px;
+        section.content table.diff col.line-number {
+            width: 1.5rem;
         }
-        section.content div#result table colgroup.student {
-            width: 50%;
-        }
-        section.content div#result table colgroup.expected col.lnum {
-            width: 38px;
-        }
-        section.content div#result table colgroup.expected {
+        section.content table.diff colgroup.student,
+        section.content table.diff colgroup.reference {
             width: 50%;
         }
 
-        section.content div#result table th {
+        section.content table.diff th {
             background: #ccc;
         }
 
-        section.content div#result table td {
+        section.content table.diff td {
             white-space: pre-wrap;
             overflow-x: hidden;
             word-wrap: break-word;
             font-weight: normal;
             font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
+            padding: 0 2px;
+            height: 1rem;
         }
 
-        section.content div#result table td.diff_next {
-            width: 10px;
+        section.content table.diff span.diff-sub {
+            background: #cd6969;
         }
 
-        section.content div#result table td.diff_header {
-            width: 20px;
+        section.content table.diff span.diff-chg {
+            background: #6969cd;
         }
 
-        section.content div#result table th.diff_header {
-            /*width: 500px;*/
-        }
-
-        section.content div#result table span.diff_sub {
-            background: #f99;
-        }
-
-        section.content div#result table span.diff_chg {
-            background: #99f;
-        }
-
-        section.content div#result table span.diff_add {
-            background: #9f9;
+        section.content table.diff span.diff-add {
+            background: #69cd69;
         }
 
     section.content a.permalink {

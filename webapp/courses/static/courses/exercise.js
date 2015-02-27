@@ -1,4 +1,8 @@
-function success_function(data, result_div, error_div) {
+function success_function(data, result_div, error_div, form_parent) {
+    var hints_div = form_parent.children("div.hints");
+    var comments_div = form_parent.children("div.comments");
+    var file_result_div = form_parent.children("div.file-result");
+
     if (data.result) {
         result_div.html(data.result);
     }
@@ -6,6 +10,20 @@ function success_function(data, result_div, error_div) {
         error_div.html(data.errors);
         error_div.css("display", "block");
     }
+    if (data.hints) {
+        hints_div.html(data.hints);
+        hints_div.css("display", "block");
+    }
+    if (data.comments) {
+        comments_div.html(data.comments);
+        comments_div.css("display", "block");
+    }
+    if (data.file_tabs) {
+        file_result_div.html(data.file_tabs);
+        file_result_div.css("display", "block");
+    }
+
+
     if (data.metadata) {
         var current = data.metadata.current;
         var total = data.metadata.total;
@@ -19,7 +37,7 @@ function success_function(data, result_div, error_div) {
     result_div.css("display", "block");
 }
 
-function error_function(status, type, error_div) {
+function error_function(status, type, error_div, form_parent) {
     var error_str = "An error occured while sending the answer.<br>";
     status = status.charAt(0).toUpperCase() + status.slice(1);
     if (type) {
@@ -41,11 +59,11 @@ function poll_progress(url, context) {
             success: function(data, text_status, jqxhr_obj) {
                 var result_div = $(this).children("div.result");
                 var error_div = $(this).children("div.error");
-                success_function(data, result_div);
+                success_function(data, result_div, error_div, $(this));
             },
             error: function(xhr, status, type) {
                 var error_div = $(this).children("div.error");
-                error_function(status, type, error_div);
+                error_function(status, type, error_div, $(this));
             }
         });
     }, 500);
@@ -64,9 +82,11 @@ function add_exercise_form_callbacks() {
         form.submit(function(event) {
             event.preventDefault();
 
-            var result_div = form.parent().children("div.result");
+            var form_parent = form.parent();
+
+            var result_div = form_parent.children("div.result");
             result_div.css("display", "none");
-            var error_div = form.parent().children("div.error");
+            var error_div = form_parent.children("div.error");
             error_div.css("display", "none");
 
             // TODO: Use xhr and progressevent to measure upload progress
@@ -80,10 +100,10 @@ function add_exercise_form_callbacks() {
                 contentType: false, // And this
                 dataType: 'json',
                 success: function(data, text_status, jqxhr_obj) {
-                    success_function(data, result_div, error_div);
+                    success_function(data, result_div, error_div, form_parent);
                 },
                 error: function(xhr, status, type) {
-                    error_function(status, type, error_div);
+                    error_function(status, type, error_div, form_parent);
                 }
             });
         });

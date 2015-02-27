@@ -13,7 +13,7 @@ import redis
 import json
 
 # Result generation dependencies
-import difflib
+import prettydiff.difflib as difflib
 
 # Test dependencies
 import tempfile
@@ -202,7 +202,7 @@ def generate_results(results, exercise_id):
                     cmd_correct = False
                 
                 stdout_diff = difflib.HtmlDiff().make_table(
-                    fromlines=student_stdout.split('\n'), tolines=reference_stdout.split('\n'),
+                    fromlines=student_stdout.splitlines(), tolines=reference_stdout.splitlines(),
                     fromdesc="Your program's output", todesc="Expected output"
                 )
                 current_cmd["stdout_diff"] = stdout_diff
@@ -214,7 +214,7 @@ def generate_results(results, exercise_id):
                     cmd_correct = False
 
                 stderr_diff = difflib.HtmlDiff().make_table(
-                    fromlines=student_stderr.split('\n'), tolines=reference_stderr.split('\n'),
+                    fromlines=student_stderr.splitlines(), tolines=reference_stderr.splitlines(),
                     fromdesc="Your program's errors", todesc="Expected errors"
                 )
                 current_cmd["stderr_diff"] = stderr_diff
