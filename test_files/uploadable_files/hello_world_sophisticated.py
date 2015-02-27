@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """A very sophisticated Python module that allows the user to print
 'Hello, world!' to the screen (or any other place stdout points to).
@@ -8,19 +9,19 @@ Instructions:
 
 import sys
 
-class HelloWorld(object):
+class HelloWorld():
     """This class allows the user to print 'Hello, world!' to the screen."""
     
     def __init__(self):
         """Initializes the internal values of the object so, that
         'Hello, world!' may be printed to the screen."""
-        self.text = u'Hello, world!\n'
+        self._text = "Hello, world!\n"
     
     def printHelloWorld(self, must_hello_world_be_printed=True):
         """This method prints 'Hello, world!' to the screen, if the user
         really wants to allow that functionality to be accessed."""
         if must_hello_world_be_printed == True:
-            print self.text,
+            print(self._text, end='')
         elif must_hello_world_be_printed == False:
             pass
 
