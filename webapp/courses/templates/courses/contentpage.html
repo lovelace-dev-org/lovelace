@@ -20,7 +20,7 @@
 {% if rendered_content or tasktype %}
   {{ rendered_content|safe }}
   {% if content.is_answerable %}
-    {% include "courses/task.html" %}
+    {% include "courses/exercise.html" %}
   {% endif %}
 {% endif %}
 {% endblock %}

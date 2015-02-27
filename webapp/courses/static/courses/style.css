@@ -653,20 +653,20 @@ section.content {
                 font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;;
             }
 
-            section.content div.question form div.answered_status {
+            section.content div.question form div.answered-status {
                 display: inline;
             }
 
-            div.answered_status span.correct {
-                color: green;
+            div.answered-status span.correct {
+                color: #3a3;
             }
-            div.answered_status span.incorrect {
-                color: red;
+            div.answered-status span.incorrect {
+                color: #a33;
             }
 
-        section.content div.auth_warning {
+        section.content div.auth-warning {
             font-weight: bold;
-            color: red;
+            color: #f33;
         }
 
         section.content div.markup-error {

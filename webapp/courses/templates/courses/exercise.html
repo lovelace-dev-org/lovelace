@@ -1,0 +1,41 @@
+{% load staticfiles %}
+{% load i18n %}
+{% load content_extra %}
+
+{% if user.is_active %}
+  {% content_meta %}
+{% endif %}
+
+{% if emb_content %}
+  <div>{{ emb_content|safe }}</div>
+{% endif %}
+
+{% if content.is_answerable %}
+  <div class="question">
+    <div class="hints" style="display: none"></div>
+    <form id="{{ content_slug }}-form" class="exercise-form" method="POST" enctype="multipart/form-data"
+          action="{% url 'courses:check' course_slug content.slug %}">
+      {% csrf_token %}
+      {% if question %}{{ question|safe }}{% endif %}
+      
+      {% block exercise-form %}
+      {% endblock %}
+            
+      <input type="submit" name="submit" value="{% trans 'Send answer' %}">
+      {% if not user.is_authenticated %}
+        <div class="auth-warning">{% trans "Warning: You have not logged in. Your answer will not be saved." %}</div>
+      {% endif %}
+      {% if evaluation == "unanswered" %}
+        <div class="answered-status"></div>
+      {% elif evaluation == "incorrect" %}
+        <div class="answered-status"><span class="incorrect">{% trans "You have previously answered this task incorrectly." %}</span></div>
+      {% elif evaluation == "correct" %}
+        <div class="answered-status"><span class="correct">{% trans "You have already answered this task correctly." %}</span></div>
+      {% endif %}
+    </form>
+    <div class="error" style="display: none"></div>
+    <div class="result" style="display: none"></div>
+    <div class="comments" style="display: none"></div>
+    <div class="file-result" style="display: none"></div>
+  </div>  
+{% endif %}
