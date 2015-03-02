@@ -894,6 +894,8 @@ section.content {
     }
 
         section.content div.admin-tools li {
+            font-family: "Arial";
+            font-size: 0.6rem;
             margin-left: -4px;
             padding-left: 0;
             margin-bottom: 0;
