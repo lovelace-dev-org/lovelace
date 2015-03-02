@@ -44,7 +44,25 @@
       <ul>
         <li><div><a href="{% url 'stats:single_task' content.slug %}">{% trans 'Statistics' %}</a></div></li>
         <li><div><a href="{% url 'feedback:content' content.slug %}">{% trans 'Feedback' %}</a></div></li>
-        <li><div><a href="{{ content.get_admin_change_url }}">{% blocktrans with type=content.get_human_readable_type %}Edit this {{ type }}{% endblocktrans %}</a></div></li>
+        <li><div><a href="{{ content.get_admin_change_url }}">
+              {% with type=content.get_human_readable_type %}
+                {% if type == "lecture" %}
+                  {% trans 'Edit this lecture' %}
+                {% elif type == "textfield exercise" %}
+                  {% trans 'Edit this textfield exercise' %}
+                {% elif type == "multiple choice exercise" %}
+                  {% trans 'Edit this multiple choice exercise' %}
+                {% elif type == "checkbox exercise" %}
+                  {% trans 'Edit this checkbox exercise' %}
+                {% elif type == "file upload exercise" %}
+                  {% trans 'Edit this file upload exericse' %}
+                {% elif type == "code input exercise" %}
+                  {% trans 'Edit this code input exercise' %}
+                {% elif type == "code replace exercise" %}
+                  {% trans 'Edit this code replace exercise' %}
+                {% endif %}
+              {% endwith %}
+        </a></div></li>
         <li><div><a href="TODO">{% trans 'View reference answer' %}</a></div></li>
         <li><div><a href="{% url 'courses:sandbox' content.slug %}">{% trans 'View separately' %}</a></div></li>
       </ul>

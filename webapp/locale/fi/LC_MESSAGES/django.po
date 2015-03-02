@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2015-02-11 21:05+0200\n"
+"POT-Creation-Date: 2015-03-02 19:56+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,41 +18,23 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: courses/templates/courses/base.html:64
-msgid "Settings"
-msgstr "Asetukset"
-
-#: courses/templates/courses/base.html:66 templates/admin/base.html:39
-msgid "Log out"
-msgstr "Kirjaudu ulos"
-
-#: courses/templates/courses/base.html:70
-#: templates/registration/activate.html:10 templates/registration/login.html:9
-#: templates/registration/password_reset_complete.html:8
-msgid "Log in"
-msgstr "Kirjaudu sisään"
-
-#: courses/templates/courses/base.html:72
-msgid "Create account"
-msgstr "Luo tili"
-
-#: courses/templates/courses/base.html:78
-#: courses/templates/courses/content-meta.html:43
-msgid "Teacher’s tools"
-msgstr "Opettajan työkalut"
-
-#: courses/templates/courses/base.html:107
-#: courses/templates/courses/base.html:116
+#: courses/templates/courses/base.html:118
+#: courses/templates/courses/base.html:127
 msgid "Table of Contents"
 msgstr "Sisällysluettelo"
 
-#: courses/templates/courses/base.html:124
+#: courses/templates/courses/base.html:135
 msgid "Completed:"
 msgstr "Ratkaistu:"
 
-#: courses/templates/courses/base.html:124
+#: courses/templates/courses/base.html:135
 msgid "exercises"
 msgstr "tehtävää"
+
+#: courses/templates/courses/code-replace-exercise.html:11
+#, python-format
+msgid "Line %(line)s in %(file)s"
+msgstr "Rivi %(line)s tiedostossa %(file)s"
 
 #: courses/templates/courses/content-meta.html:8
 #, fuzzy
@@ -82,6 +64,10 @@ msgstr "Katso edellisiä vastauksiasi"
 msgid "answers"
 msgstr "vastausta"
 
+#: courses/templates/courses/content-meta.html:43
+msgid "Teacher’s tools"
+msgstr "Opettajan työkalut"
+
 #: courses/templates/courses/content-meta.html:45
 msgid "Statistics"
 msgstr "Tilastot"
@@ -90,16 +76,35 @@ msgstr "Tilastot"
 msgid "Feedback"
 msgstr "Palautteet"
 
-#: courses/templates/courses/content-meta.html:47
-#, python-format
-msgid "Edit this %(type)s"
-msgstr "Muokkaa tätä %(type)sä"
+#: courses/templates/courses/content-meta.html:52
+msgid "Edit this textfield exercise"
+msgstr "Muokkaa tätä tekstikenttätehtävää"
 
-#: courses/templates/courses/content-meta.html:48
+#: courses/templates/courses/content-meta.html:54
+msgid "Edit this multiple choice exercise"
+msgstr "Muokkaa tätä monivalintatehtävää"
+
+#: courses/templates/courses/content-meta.html:56
+msgid "Edit this checkbox exercise"
+msgstr "Muokkaa tätä valintaruututehtävää"
+
+#: courses/templates/courses/content-meta.html:58
+msgid "Edit this file upload exericse"
+msgstr "Muokkaa tätä tiedoston lähetys -tehtävää"
+
+#: courses/templates/courses/content-meta.html:60
+msgid "Edit this code input exercise"
+msgstr "Muokkaa tätä koodinsyöttötehtävää"
+
+#: courses/templates/courses/content-meta.html:62
+msgid "Edit this code replace exercise"
+msgstr "Muokkaa tätä koodinkorvaustehtävää"
+
+#: courses/templates/courses/content-meta.html:66
 msgid "View reference answer"
 msgstr "Katso mallivastausta"
 
-#: courses/templates/courses/content-meta.html:49
+#: courses/templates/courses/content-meta.html:67
 msgid "View separately"
 msgstr "Katso erikseen"
 
@@ -112,6 +117,22 @@ msgstr "Kurssit"
 #: courses/templates/courses/course.html:20
 msgid "Course Contents"
 msgstr "Kurssin sisältö"
+
+#: courses/templates/courses/exercise.html:24
+msgid "Send answer"
+msgstr "Lähetä vastaus"
+
+#: courses/templates/courses/exercise.html:26
+msgid "Warning: You have not logged in. Your answer will not be saved."
+msgstr "Varoitus: Et ole kirjautunut sisään. Vastaustasi ei tallenneta."
+
+#: courses/templates/courses/exercise.html:31
+msgid "You have previously answered this task incorrectly."
+msgstr "Olet aiemmin vastannut tähän tehtävään väärin."
+
+#: courses/templates/courses/exercise.html:33
+msgid "You have already answered this task correctly."
+msgstr "Olet aiemmin vastannut tähän tehtävään oikein."
 
 #: courses/templates/courses/exercise_evaluation.html:4
 msgid ""
@@ -131,6 +152,30 @@ msgstr "Väärä vastaus!"
 msgid "Hint: "
 msgstr "Vihje: "
 
+#: courses/templates/courses/file-upload-exercise.html:6
+msgid "Collaborators:"
+msgstr "Yhteistyökumppanit:"
+
+#: courses/templates/courses/file-upload-exercise.html:6
+msgid "Who did you co-operate with?"
+msgstr "Kenen kanssa työskentelit?"
+
+#: courses/templates/courses/file-upload-exercise.html:8
+msgid "Submit your files here:"
+msgstr "Syötä tiedostosi tänne:"
+
+#: courses/templates/courses/file_exercise_evaluation.html:16
+#, fuzzy
+#| msgid "Correct answer!"
+msgid "Correct"
+msgstr "Oikein"
+
+#: courses/templates/courses/file_exercise_evaluation.html:18
+#, fuzzy
+#| msgid "Incorrect answer!"
+msgid "Incorrect"
+msgstr "Väärin"
+
 #: courses/templates/courses/index.html:5
 #: courses/templates/courses/index.html:15
 msgid "Available courses"
@@ -144,42 +189,9 @@ msgstr "op"
 msgid "No courses available!"
 msgstr "Tarjolla olevia kursseja ei löytynyt!"
 
-#: courses/templates/courses/task.html:30
+#: courses/templates/courses/textfield-exercise.html:5
 msgid "Enter your answer here"
 msgstr "Kirjoita vastauksesi tänne"
-
-#: courses/templates/courses/task.html:32
-msgid "Collaborators:"
-msgstr "Yhteistyökumppanit:"
-
-#: courses/templates/courses/task.html:32
-msgid "Who did you co-operate with?"
-msgstr "Kenen kanssa työskentelit?"
-
-#: courses/templates/courses/task.html:33
-msgid "Submit your files here:"
-msgstr "Syötä tiedostosi tänne:"
-
-#: courses/templates/courses/task.html:43
-#, python-format
-msgid "Line %(line)s in %(file)s"
-msgstr "Rivi %(line)s tiedostossa %(file)s"
-
-#: courses/templates/courses/task.html:55
-msgid "Send answer"
-msgstr "Lähetä vastaus"
-
-#: courses/templates/courses/task.html:57
-msgid "Warning: You have not logged in. Your answer will not be saved."
-msgstr "Varoitus: Et ole kirjautunut sisään. Vastaustasi ei tallenneta."
-
-#: courses/templates/courses/task.html:62
-msgid "You have previously answered this task incorrectly."
-msgstr "Olet aiemmin vastannut tähän tehtävään väärin."
-
-#: courses/templates/courses/task.html:64
-msgid "You have already answered this task correctly."
-msgstr "Olet aiemmin vastannut tähän tehtävään oikein."
 
 #: templates/admin/bad-index.html:69
 msgid " Content management "
@@ -237,6 +249,10 @@ msgstr ""
 msgid "Change password"
 msgstr ""
 
+#: templates/admin/base.html:39
+msgid "Log out"
+msgstr "Kirjaudu ulos"
+
 #: templates/admin/base.html:40
 msgid "Course list"
 msgstr ""
@@ -248,6 +264,11 @@ msgstr ""
 #: templates/registration/activate.html:8
 msgid "Account successfully activated"
 msgstr ""
+
+#: templates/registration/activate.html:10 templates/registration/login.html:9
+#: templates/registration/password_reset_complete.html:8
+msgid "Log in"
+msgstr "Kirjaudu sisään"
 
 #: templates/registration/activate.html:14
 msgid "Account activation failed"
@@ -317,3 +338,9 @@ msgstr ""
 #: templates/registration/registration_complete.html:5
 msgid "You are now registered. Activation email sent."
 msgstr ""
+
+#~ msgid "Settings"
+#~ msgstr "Asetukset"
+
+#~ msgid "Create account"
+#~ msgstr "Luo tili"
