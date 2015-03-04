@@ -245,7 +245,7 @@ class CodeMarkup(Markup):
                 yield '<div class="warning">%s</div>' % str(e).capitalize()
                 highlight = False
             else:
-                yield '<code class="highlight %s">' % highlight
+                yield '<code class="highlight %s-lang-highlight">' % highlight
 
         try:
             line = next(state["lines"])
