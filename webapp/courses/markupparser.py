@@ -267,6 +267,7 @@ class CodeMarkup(Markup):
         settings = {}
         # TODO: define available settings in class
         # TODO: compile the final regexp from the settings
+        # TODO: highlight single lines with a background colour & a symbol
         for setting in ("highlight", "line_numbers"):
             try:
                 settings[setting] = matchobj.group(setting)
