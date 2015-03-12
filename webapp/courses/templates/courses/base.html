@@ -61,7 +61,7 @@
             {% if user.is_active %}
               <div class="side-by-side-top">
                 <div class="user-action">
-                  <span class="score">+45</span>
+                  <span class="score"></span>
                   <span class="user-name">
                     {% filter force_escape %}
                       {% firstof user.first_name user.username %}
@@ -71,17 +71,25 @@
               </div><div class="side-by-side-top">
                 <div class="vertical-separator"></div>
               </div><div class="side-by-side-top">
-                <img src="{% static 'courses/arrow-down.png' %}">
-              </div>{% comment %}
+                <img src="{% static 'courses/arrow-down.png' %}"
+                     onclick="$('#user-menu').toggle();">
+                <div id="user-menu"><div>
               <div class="user-settings">
                 <a href="/profile/">{% trans 'Settings' %}</a>
-              </div><div class="user-logout">
+              </div>{% if user.is_staff %}<div class="user-tools">
+                <a href="{% url 'admin:index' %}">{% trans 'Teacher’s tools' %}</a>
+              </div>{% endif %}<div class="user-logout">
                 <a href="/accounts/logout/">{% trans 'Log out' %}</a>
-              </div>{% endcomment %}
+              </div></div></div>
+              </div>
             {% else %}
-              <a href="url 'accounts:login'">
+              <a href="/accounts/login">
                 <div class="user-action">
-                  Log in
+                  {% trans 'Log in' %}
+                </div>
+              </a><a href="/accounts/signup">
+                <div class="user-action">
+                  {% trans 'Sign up' %}
                 </div>
               </a>
             {% endif %}

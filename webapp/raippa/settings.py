@@ -24,14 +24,18 @@ INSTALLED_APPS = (
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
-    'django.contrib.sites', # Needed by registration
+    'django.contrib.sites', # allauth
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'allauth',
+    'allauth.account',
     'courses',
     'stats',
     'feedback',
-    #'registration',
 )
+
+SITE_ID = 1
+LOGIN_REDIRECT_URL = '/'
 
 MIDDLEWARE_CLASSES = ( 
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -52,6 +56,14 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     "django.core.context_processors.static",
     "django.core.context_processors.tz",
     "django.contrib.messages.context_processors.messages",
+    "django.core.context_processors.request", # allauth template tags
+    "allauth.account.context_processors.account",
+    #"allauth.socialaccount.context_processors.socialaccount",
+)
+
+AUTHENTICATION_BACKENDS = (
+    "django.contrib.auth.backends.ModelBackend",
+    "allauth.account.auth_backends.AuthenticationBackend",
 )
 
 ROOT_URLCONF = 'raippa.urls'
@@ -108,15 +120,6 @@ STATIC_URL = '/static/'
 # Extended UserProfile settings
 AUTH_PROFILE_MODULE = 'courses.UserProfile'
 
-# For django-registration module configuration:
-# http://devdoodles.wordpress.com/2009/02/16/user-authentication-with-django-registration/
-ACCOUNT_ACTIVATION_DAYS = 7
-EMAIL_HOST = 'mail.virtues.local'
-DEFAULT_FROM_EMAIL = 'raippa-accounts@dev.raippa.fi'
-LOGIN_REDIRECT_URL = '/'
-
-SITE_ID = 1
-
 # Absolute filesystem path to the directory that will hold user-uploaded files.
 # Example: "/home/media/media.lawrence.com/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, 'upload')
@@ -145,8 +148,6 @@ SECRET_KEY = '$34r(o@3yfyr-=v8*ndtqm6^ti0=p%cyt&amp;a*giv-1w%q21r4ae'
 TEMPLATE_DIRS = (
     os.path.join(BASE_DIR, 'templates'),
 )
-
-AUTH_PROFILE_MODULE = 'courses.UserProfile'
 
 # Celery settings
 BROKER_URL = 'amqp://guest:guest@localhost:5672//'

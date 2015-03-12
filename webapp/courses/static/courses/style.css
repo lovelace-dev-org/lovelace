@@ -94,24 +94,25 @@ div#container-top {
         word-spacing: 0.1em;
     }
 
-    div#container-top div.side-by-side-top {
+    div#container-top div.side-by-side-top,
+    div#container-top div.user-actions > a {
         height: 2.5rem;
         display: inline-block;
         vertical-align: top;
+    }
+    div#container-top div.user-actions > a {
+        margin-left: 4px;
     }
 
     div#container-top div.user-actions div.user-action,
     div#container-top div.user-actions div.user-inaction {
         height: 2rem;
-        
         position: relative;
         padding: 0.40rem 0.25rem 0 0.25rem;
         margin: 4px 0;
         text-align: center;
         vertical-align: middle;
         text-decoration: none;
-        
-
     }
     div#container-top div.user-actions div.user-action {
         border: 2px solid rgba(0, 0, 0, 0.1);
@@ -144,6 +145,41 @@ div#container-top {
         text-shadow: 1px 0px 0 rgba(200, 200, 200, 1.0),
                      2px 0px 1px rgba(0, 0, 0, 1.0);
         background: rgba(0, 0, 0, 0.25);
+    }
+
+    div#user-menu {
+        position: relative;
+        display: none;
+        width: 0;
+        height: 0;
+        padding: 0;
+        margin: 0;
+        top: -4px;
+        right: 12.5rem;
+    }
+    div#user-menu > div {
+        position: absolute;
+        width: 15rem;
+        background: #39ad39;
+        border: 1px solid #2e862e;
+        box-shadow: 0 0 1px rgba(0, 0, 0, 0.8);
+    }
+    div#user-menu > div > div {
+        padding: 4px 4px;
+        background: #39ad39;
+        border: 1px solid #39ad39;
+        border-radius: 4px;
+    }
+    div#user-menu > div > div > a {
+        padding: 2px;
+    }
+    div#user-menu > div > div:hover {
+        background: #59cd59;
+        border: 1px solid #59cd59;
+        border-radius: 4px;
+    }
+    div#user-menu > div > div:hover > a {
+        color: #eee;
     }
 
 /* NAVIGATION */
