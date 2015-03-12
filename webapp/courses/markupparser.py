@@ -264,7 +264,14 @@ class CodeMarkup(Markup):
 
     @classmethod
     def settings(cls, matchobj, state):
-        settings = {"highlight" : matchobj.group("highlight")}
+        settings = {}
+        # TODO: define available settings in class
+        # TODO: compile the final regexp from the settings
+        for setting in ("highlight", "line_numbers"):
+            try:
+                settings[setting] = matchobj.group(setting)
+            except IndexError as e:
+                pass
         return settings
 
 markups.append(CodeMarkup)
