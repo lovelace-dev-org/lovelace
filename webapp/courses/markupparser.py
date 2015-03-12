@@ -73,6 +73,8 @@ class MarkupParser:
 
     # TODO: Handle the inline markups and HTML escapes on the same pass
 
+    # TODO: Rework the parser to use a stack based state
+
     _markups = {}
     _block_re = None
     _inline_re = None
