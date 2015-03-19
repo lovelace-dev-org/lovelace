@@ -597,7 +597,7 @@ class ImageMarkup(Markup):
         except AttributeError:
             pass
         try:
-            settings["caption_text"] = escape(matchobj.group("caption_text"))
+            settings["caption_text"] = blockparser.parseblock(escape(matchobj.group("caption_text")))
         except AttributeError:
             pass
         try:
