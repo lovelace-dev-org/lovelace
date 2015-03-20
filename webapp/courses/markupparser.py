@@ -545,8 +545,9 @@ class ImageMarkup(Markup):
     name = "Image"
     shortname = "image"
     description = "An image, img tag in HTML."
-    regexp = r"^\<\!image\=(?P<image_name>[^>|]+)(\|alt\=(?P<alt_text>[^>|]+))?"\
-              "(\|caption\=(?P<caption_text>[^>|]+))?"\
+    regexp = r"^\<\!image\=(?P<image_name>[^>|]+)"\
+              "(\|alt\=(?P<alt_text>[^>|]+))?"\
+              "(\|caption\=(?P<caption_text>(([\[]{2}[^|]+(\|.+)?[\]]{2})|([^|>]))+))?"\
               "(\|align\=(?P<align>[^>|]+))?\>\s*$"
     markup_class = "embedded item"
     example = "<!image=name-of-some-image.png|alt=alternative text|caption=caption text>"
