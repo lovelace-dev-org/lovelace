@@ -351,7 +351,9 @@ def run_stage(self, stage_id, test_dir, temp_dir_prefix, files_to_check):
 
     if len(commands) == 0:
         return stage_results
-    
+
+    # TODO: Use this, but make appropriate changes elsewhere.
+    """
     cmd_chain = chain(
         run_command_chainable.s(
             {"id":cmd.id, "input_text":cmd.input_text, "return_value":cmd.return_value},
@@ -366,12 +368,23 @@ def run_stage(self, stage_id, test_dir, temp_dir_prefix, files_to_check):
         stage_results["fail"] = True
         results = {}
         print("exception at run_stage pokemon exception!")
+    """
+    # DEBUG #
+    for i, cmd in enumerate(commands):
+        results = run_command_chainable(
+            {"id":cmd.id, "input_text":cmd.input_text, "return_value":cmd.return_value},
+            temp_dir_prefix, test_dir, files_to_check
+        )
+        stage_results.update(results)
 
-    stage_results.update(results)
+    # DEBUG #
+
+    #stage_results.update(results)
 
     return stage_results
     
-    """
+    
+    """# Old, blocking version
     for i, cmd in enumerate(commands):
         stage_results[cmd.id] = {}
         #self.update_state(state="PROGRESS",
@@ -403,6 +416,8 @@ def run_stage(self, stage_id, test_dir, temp_dir_prefix, files_to_check):
             #break
     else:
         stage_results["fail"] = False
+
+    return stage_results
     """
 
     # determine if the stage fails
@@ -414,7 +429,6 @@ def run_stage(self, stage_id, test_dir, temp_dir_prefix, files_to_check):
     # IDEA: each stage can define a stage they depend on, making a directed
     #       graph of dependent stages
 
-    return stage_results
 
 def cp437_decoder(input_bytes):
     """
