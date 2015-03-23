@@ -120,6 +120,7 @@ class ContentGraph(models.Model):
     publish_date = models.DateTimeField(verbose_name='When does this exercise become available',blank=True,null=True)
     scored = models.BooleanField(verbose_name='Does this exercise affect scoring', default=True)
     require_correct_embedded = models.BooleanField(verbose_name='Embedded exercises must be answered correctly in order to mark this item as correct',default=True)
+    ordinal_number = models.PositiveSmallIntegerField() # TODO: Enforce min=1
 
     def __str__(self):
         if not self.content:
