@@ -459,19 +459,22 @@ section.content {
         font-weight: bold;
     }
 
-    section.content figure {
+    section.content > figure,
+    div.embedded-page > figure {
         margin-top: 0.5em;
         margin-left: 0.5em;
         margin-bottom: 1em;
     }
     
-    section.content img {
+    section.content > img,
+    div.embedded-page > img {
         margin-top: 0.5em;
         margin-left: 0.5em;
         margin-bottom: 1em;
     }
 
-    section.content img.centered, section.content figure.centered {
+    section.content > img.centered, section.content > figure.centered,
+    div.embedded-page > img.centered, div.embedded-page > figure.centered {
         margin-left: auto;
         margin-right: auto;
     }
