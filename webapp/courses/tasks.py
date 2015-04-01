@@ -273,7 +273,7 @@ def run_test(self, test_id, answer_id, exercise_id, student=False):
         files_to_check = answer_object.get_returned_files()
         print("".join("%s:\n%s" % (n, c) for n, c in files_to_check.items()))
     else:
-        files_to_check = {f.get_filename(): f.get_file_contents()
+        files_to_check = {f.name: f.get_file_contents()
                           for f in exercise_file_objects
                           if f.purpose == "REFERENCE"}
         print("".join("%s:\n%s" % (n, c) for n, c in files_to_check.items()))
@@ -284,7 +284,7 @@ def run_test(self, test_id, answer_id, exercise_id, student=False):
     test_results = {test_id: {"fail": True, "name": test.name, "stages": {}}}
     with tempfile.TemporaryDirectory(dir=temp_dir_prefix) as test_dir:
         # Write the files required by this test
-        for name, contents in ((f.get_filename(), f.get_file_contents)
+        for name, contents in ((f.name, f.get_file_contents())
                                for f in exercise_file_objects
                                if f in test.required_files.all() and
                                f.purpose in ("INPUT", "WRAPPER", "TEST")):
