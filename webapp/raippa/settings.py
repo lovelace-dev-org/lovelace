@@ -80,6 +80,25 @@ DATABASES = {
     }
 }
 
+# E-mail backend settings
+#EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_HOST = 'localhost'
+EMAIL_PORT = 25
+EMAIL_HOST_USER = ''
+EMAIL_HOST_PASSWORD = ''
+
+# E-mail settings
+EMAIL_SUBJECT_PREFIX = '[Lovelace] '
+DEFAULT_FROM_EMAIL = 'lovelace-accounts@' # TODO: Fill!
+#ADMINS = ( # TODO: Fill!
+    #('Admin Name', 'admin@email'),
+    #('Admin 2 Name', 'admin2@email'),
+#)
+
+# Allauth settings
+ACCOUNT_EMAIL_SUBJECT_PREFIX = '[Lovelace] '
+ACCOUNT_PASSWORD_MIN_LENGTH = 8
+
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
 # although not all choices may be available on all operating systems.
