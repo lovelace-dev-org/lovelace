@@ -45,6 +45,9 @@ from celery import shared_task, chain
 
 import courses.models
 
+# TODO: Improve by following the guidelines here:
+#       - https://news.ycombinator.com/item?id=7909201
+
 @shared_task(name="courses.run-fileexercise-tests", bind=True,
              serializer='json')
 def run_tests(self, user_id, exercise_id, answer_id):
