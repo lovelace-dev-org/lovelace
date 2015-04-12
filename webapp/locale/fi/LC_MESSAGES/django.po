@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2015-03-02 19:56+0200\n"
+"POT-Creation-Date: 2015-04-12 18:52+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,16 +18,51 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: courses/templates/courses/base.html:118
-#: courses/templates/courses/base.html:127
+#: courses/templates/courses/base.html:57
+#, python-format
+msgid ""
+"\n"
+"            This site uses cookies. Learn more about our <a href="
+"\"%(terms_url)s\">terms and conditions</a>.\n"
+msgstr "\nTämä sivusto käyttää evästeitä. Lue lisää <a href=\"%(terms_url)s\">käyttöehdoista</a>.\n"
+
+#: courses/templates/courses/base.html:60
+msgid "Accept"
+msgstr "Hyväksy"
+
+#: courses/templates/courses/base.html:89
+msgid "Settings"
+msgstr "Asetukset"
+
+#: courses/templates/courses/base.html:91
+#: courses/templates/courses/content-meta.html:43
+msgid "Teacher’s tools"
+msgstr "Opettajan työkalut"
+
+#: courses/templates/courses/base.html:93 templates/admin/base.html:39
+msgid "Log out"
+msgstr "Kirjaudu ulos"
+
+#: courses/templates/courses/base.html:99
+#: templates/registration/activate.html:10 templates/registration/login.html:9
+#: templates/registration/password_reset_complete.html:8
+msgid "Log in"
+msgstr "Kirjaudu sisään"
+
+#: courses/templates/courses/base.html:103
+msgid "Sign up"
+msgstr "Luo käyttäjä"
+
+#: courses/templates/courses/base.html:136
+#: courses/templates/courses/base.html:145
 msgid "Table of Contents"
 msgstr "Sisällysluettelo"
 
-#: courses/templates/courses/base.html:135
+#: courses/templates/courses/base.html:153
 msgid "Completed:"
 msgstr "Ratkaistu:"
 
-#: courses/templates/courses/base.html:135
+#: courses/templates/courses/base.html:153
 msgid "exercises"
 msgstr "tehtävää"
 
@@ -64,10 +99,6 @@ msgstr "Katso edellisiä vastauksiasi"
 msgid "answers"
 msgstr "vastausta"
 
-#: courses/templates/courses/content-meta.html:43
-msgid "Teacher’s tools"
-msgstr "Opettajan työkalut"
-
 #: courses/templates/courses/content-meta.html:45
 msgid "Statistics"
 msgstr "Tilastot"
@@ -75,6 +106,12 @@ msgstr "Tilastot"
 #: courses/templates/courses/content-meta.html:46
 msgid "Feedback"
 msgstr "Palautteet"
+
+#: courses/templates/courses/content-meta.html:50
+#, fuzzy
+#| msgid "Edit this file upload exericse"
+msgid "Edit this lecture"
+msgstr "Muokkaa tätä tiedoston lähetys -tehtävää"
 
 #: courses/templates/courses/content-meta.html:52
 msgid "Edit this textfield exercise"
@@ -111,6 +148,7 @@ msgstr "Katso erikseen"
 #: courses/templates/courses/contentpage.html:9
 #: courses/templates/courses/course.html:8
 #: courses/templates/courses/index.html:8
+#: courses/templates/courses/terms.html:8
 msgid "Courses"
 msgstr "Kurssit"
 
@@ -189,6 +227,31 @@ msgstr "op"
 msgid "No courses available!"
 msgstr "Tarjolla olevia kursseja ei löytynyt!"
 
+#: courses/templates/courses/terms.html:5
+msgid "Terms and conditions"
+msgstr "Käyttöehdot"
+
+#: courses/templates/courses/terms.html:10
+#: courses/templates/courses/terms.html:15
+msgid "Terms and Conditions"
+msgstr "Käyttöehdot"
+
+#: courses/templates/courses/terms.html:20
+#: courses/templates/courses/terms.html:30
+#: courses/templates/courses/terms.html:40
+msgid ""
+"\n"
+"  \n"
+msgstr ""
+
+#: courses/templates/courses/terms.html:25
+msgid "Cookies"
+msgstr "Evästeet"
+
+#: courses/templates/courses/terms.html:35
+msgid "Registration Document"
+msgstr "Rekisteriseloste"
+
 #: courses/templates/courses/textfield-exercise.html:5
 msgid "Enter your answer here"
 msgstr "Kirjoita vastauksesi tänne"
@@ -249,10 +312,6 @@ msgstr ""
 msgid "Change password"
 msgstr ""
 
-#: templates/admin/base.html:39
-msgid "Log out"
-msgstr "Kirjaudu ulos"
-
 #: templates/admin/base.html:40
 msgid "Course list"
 msgstr ""
@@ -264,11 +323,6 @@ msgstr ""
 #: templates/registration/activate.html:8
 msgid "Account successfully activated"
 msgstr ""
-
-#: templates/registration/activate.html:10 templates/registration/login.html:9
-#: templates/registration/password_reset_complete.html:8
-msgid "Log in"
-msgstr "Kirjaudu sisään"
 
 #: templates/registration/activate.html:14
 msgid "Account activation failed"
@@ -338,9 +392,6 @@ msgstr ""
 #: templates/registration/registration_complete.html:5
 msgid "You are now registered. Activation email sent."
 msgstr ""
-
-#~ msgid "Settings"
-#~ msgstr "Asetukset"
 
 #~ msgid "Create account"
 #~ msgstr "Luo tili"
