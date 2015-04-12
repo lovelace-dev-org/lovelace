@@ -121,6 +121,7 @@ class ContentGraph(models.Model):
     scored = models.BooleanField(verbose_name='Does this exercise affect scoring', default=True)
     require_correct_embedded = models.BooleanField(verbose_name='Embedded exercises must be answered correctly in order to mark this item as correct',default=True)
     ordinal_number = models.PositiveSmallIntegerField() # TODO: Enforce min=1
+    visible = models.BooleanField(verbose_name='Is this content visible to students', default=True)
 
     def __str__(self):
         if not self.content:

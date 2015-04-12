@@ -64,7 +64,7 @@ def course(request, course_slug):
 
     context["course"] = course 
 
-    contents = course.contents.all().order_by('ordinal_number')
+    contents = course.contents.filter(visible=True).order_by('ordinal_number')
     if len(contents) > 0:
         tree = []    
         tree.append((mark_safe('>'), None))
@@ -87,7 +87,7 @@ def course_tree(tree, node, user):
     if list_item not in tree:
         tree.append(list_item)
 
-    children = ContentGraph.objects.filter(parentnode=node).order_by('ordinal_number')
+    children = ContentGraph.objects.filter(parentnode=node, visible=True).order_by('ordinal_number')
     if len(children) > 0:
         tree.append((mark_safe('>'), None))
         for child in children:
