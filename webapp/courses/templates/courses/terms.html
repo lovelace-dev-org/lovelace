@@ -1,0 +1,43 @@
+{% extends 'courses/base.html' %}
+{% load staticfiles %}
+{% load i18n %}
+
+{% block page-title %}{% trans 'Terms and conditions' %}{% endblock %}
+
+{% block breadcrumb-links %}
+  <li><a href="{% url 'courses:index' %}">{% trans 'Courses' %}</a></li>
+  <div class="separator">»</div>
+  <li><a href="{% url 'courses:terms' %}">{% trans 'Terms and Conditions' %}</a></li>
+{% endblock %}
+
+{% block page-content %}
+<h1 class="content-heading">
+  {% trans 'Terms and Conditions' %}
+  <span id="terms-and-conditions" class="anchor-offset"></span>
+  <a href="#terms-and-conditions" class="permalink" title="Permalink to Terms and Conditions">&para;</a>
+</h1>
+
+<p>{% blocktrans %}
+  
+{% endblocktrans %}</p>
+
+<h2 class="content-heading">
+  {% trans 'Cookies' %}
+  <span id="cookies" class="anchor-offset"></span>
+  <a href="#cookies" class="permalink" title="Permalink to Cookies">&para;</a>
+</h2>
+
+<p>{% blocktrans %}
+  
+{% endblocktrans %}</p>
+
+<h2 class="content-heading">
+  {% trans 'Registration Document' %}
+  <span id="registration-document" class="anchor-offset"></span>
+  <a href="#registration-document" class="permalink" title="Permalink to Registration Document">&para;</a>
+</h2>
+
+<p>{% blocktrans %}
+  
+{% endblocktrans %}</p>
+{% endblock %}

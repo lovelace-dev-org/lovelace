@@ -50,6 +50,17 @@
     <title>{% block page-title %}{% endblock %}</title>
   </head>
   <body>
+    {% if not request.session.cookies_accepted %}
+      <div id="cookie-law-message">
+        <div class="cookie-law-container">
+          <p>{% url 'courses:terms' as terms_url %}
+            {% blocktrans %}
+            This site uses cookies. Learn more about our <a href="{{ terms_url }}">terms and conditions</a>.
+            {% endblocktrans %}</p>
+          <button onclick="accept_cookies();">{% trans 'Accept' %}</button>
+        </div>
+      </div>
+    {% endif %}
     <div id="container">
       <header class="top-header">
         <div id="container-top">

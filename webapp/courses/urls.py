@@ -26,6 +26,7 @@ urlpatterns = [
     # Help pages
     url(r'^help/$', views.help_list, name='help_list',),
     url(r'^help/markup/$', views.markup_help, name='markup_help',),
+    url(r'^terms/$', views.terms, name='terms',),
 
     # Course front page and content views
     url(r'^(?P<course_slug>[^/]+)/$', views.course, name='course'),

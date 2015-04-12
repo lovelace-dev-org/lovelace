@@ -13,6 +13,7 @@ from django.core.urlresolvers import reverse
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext as _
+from django.contrib import messages
 
 from celery.result import AsyncResult
 from courses.tasks import get_celery_worker_status
@@ -23,6 +24,24 @@ from courses.forms import *
 import courses.markupparser as markupparser
 import courses.blockparser as blockparser
 
+def cookie_law(view_func):
+    """
+    To comply with the European Union cookie law, display a warning about the
+    site using cookies. When the user accepts cookies, set a session variable to
+    disable the message.
+    """
+    def func_wrapper(request, *args, **kwargs):
+        if "cookies_accepted" in request.COOKIES:
+            if request.COOKIES["cookies_accepted"] == "1":
+                request.session["cookies_accepted"] = True
+        if request.session.get("cookies_accepted"):
+            pass
+        else:
+            request.session["cookies_accepted"] = False
+        return view_func(request, *args, **kwargs)
+    return func_wrapper
+
+@cookie_law
 def index(request):
     course_list = Course.objects.all()
 
@@ -31,7 +50,8 @@ def index(request):
         'course_list': course_list,
     })
     return HttpResponse(t.render(c))
- 
+
+@cookie_law 
 def course(request, course_slug):
     course = Course.objects.get(slug=course_slug)
 
@@ -178,6 +198,7 @@ def file_exercise_evaluation(request, course_slug, content_slug, task_id, task=N
     }
     return JsonResponse(data)
 
+@cookie_law
 def content(request, course_slug, content_slug, **kwargs):
     course = Course.objects.get(slug=course_slug)
     # TODO: Ensure content is part of course!
@@ -394,5 +415,11 @@ def markup_help(request):
     t = loader.get_template("courses/markup-help.html")
     c = RequestContext(request, {
         'markups': markups,
+    })
+    return HttpResponse(t.render(c))
+
+def terms(request):
+    t = loader.get_template("courses/terms.html")
+    c = RequestContext(request, {
     })
     return HttpResponse(t.render(c))

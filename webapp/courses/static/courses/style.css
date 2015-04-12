@@ -28,6 +28,50 @@ div#container {
     height: 100%;
 }
 
+div#cookie-law-message {
+    width: 100%;
+    position: absolute;
+    height: 4rem;
+}
+
+div#cookie-law-message > div {
+    margin-left: auto;
+    margin-right: auto;
+    width: 1000px;
+    position: relative;
+    z-index: 100;
+    background: #39ad39;
+    border: 2px solid #333;
+    height: 100%;
+    padding: 4px;
+}
+div#cookie-law-message > div > p {
+    font-family: "DejaVu Sans", "Lucida Grande", "Verdana", "Ubuntu", "Arial", sans-serif;
+    font-size: 1.0em;
+    font-weight: normal;
+    color: #222;
+}
+div#cookie-law-message > div > button {
+    position: absolute;
+    right: 4px;
+    top: 4px;
+    z-index: 101;
+    font-family: "DejaVu Sans", "Lucida Grande", "Verdana", "Ubuntu", "Arial", sans-serif;
+    font-size: 0.9em;
+    font-weight: normal;
+    color: #222;
+    padding: 1px;
+}
+div#cookie-law-message * a {
+    color: #143a14;
+}
+div#cookie-law-message * a:visited {
+    color: #ad3939;
+}
+div#cookie-law-message * a:hover {
+    color: #eee;
+}
+
 /* HEADER */
 header.top-header {
     background: #2e862e;

@@ -127,3 +127,9 @@ function activate_test_tab(tab_id) {
     siblings.hide();
     item.show();
 }
+
+function accept_cookies() {
+    document.cookie = "cookies_accepted=1";
+    var cookie_law_message = $('#cookie-law-message');
+    cookie_law_message.hide();
+}
