@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2015-04-12 19:51+0300\n"
+"POT-Creation-Date: 2015-04-14 00:45+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -19,62 +19,53 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 #: courses/templates/courses/base.html:58
-#, fuzzy, python-format
-#| msgid ""
-#| "\n"
-#| "            This site uses cookies. Learn more about our <a href="
-#| "\"%(terms_url)s\">terms and conditions</a>.\n"
+#, python-format
 msgid ""
-"\n"
-"            This site uses cookies. Learn more about our <a href="
-"\"%(terms_url)s\">terms and conditions</a>.\n"
-"            "
-msgstr ""
-"\n"
-"Tämä sivusto käyttää evästeitä. Lue lisää <a href=\"%(terms_url)s"
-"\">käyttöehdoista</a>.\n"
+"This site uses cookies. Learn more about our <a href=\"%(terms_url)s\">terms "
+"and conditions</a>."
+msgstr "Tämä sivusto käyttää evästeitä. Lue lisää <a href=\"%(terms_url)s\">käyttöehdoista</a>."
 
-#: courses/templates/courses/base.html:61
+#: courses/templates/courses/base.html:59
 msgid "Accept"
 msgstr "Hyväksy"
 
-#: courses/templates/courses/base.html:90
+#: courses/templates/courses/base.html:88
 msgid "Settings"
 msgstr "Asetukset"
 
-#: courses/templates/courses/base.html:92
+#: courses/templates/courses/base.html:90
 #: courses/templates/courses/content-meta.html:43
 msgid "Teacher’s tools"
 msgstr "Opettajan työkalut"
 
-#: courses/templates/courses/base.html:94 templates/admin/base.html:39
+#: courses/templates/courses/base.html:92 templates/admin/base.html:39
 msgid "Log out"
 msgstr "Kirjaudu ulos"
 
-#: courses/templates/courses/base.html:100
+#: courses/templates/courses/base.html:98
 #: templates/registration/activate.html:10 templates/registration/login.html:9
 #: templates/registration/password_reset_complete.html:8
 msgid "Log in"
 msgstr "Kirjaudu sisään"
 
-#: courses/templates/courses/base.html:104
+#: courses/templates/courses/base.html:102
 msgid "Sign up"
 msgstr "Luo käyttäjä"
 
-#: courses/templates/courses/base.html:137
-#: courses/templates/courses/base.html:146
+#: courses/templates/courses/base.html:135
+#: courses/templates/courses/base.html:144
 msgid "Table of Contents"
 msgstr "Sisällysluettelo"
 
-#: courses/templates/courses/base.html:154
+#: courses/templates/courses/base.html:152
 msgid "Completed:"
 msgstr "Ratkaistu:"
 
-#: courses/templates/courses/base.html:154
+#: courses/templates/courses/base.html:152
 msgid "exercises"
 msgstr "tehtävää"
 
-#: courses/templates/courses/base.html:173
+#: courses/templates/courses/base.html:171
 #: courses/templates/courses/terms.html:10
 #: courses/templates/courses/terms.html:15
 msgid "Terms and Conditions"
@@ -262,8 +253,8 @@ msgid ""
 "certain type of attack called cross site request forgery."
 msgstr ""
 "Tämä sivusto käyttää evästeitä käyttäjätietojen (esimerkiksi sen, onko "
-"käyttäjä kirjautunut sisään vai ei) tallentamiseen. Evästeitä käytetään "
-"myös käyttäjän tietojen suojaamiseksi tietynlaiselta hyökkäykseltä, jota "
+"käyttäjä kirjautunut sisään vai ei) tallentamiseen. Evästeitä käytetään myös "
+"käyttäjän tietojen suojaamiseksi tietynlaiselta hyökkäykseltä, jota "
 "kutsutaan nimellä Cross Site Request Forgery."
 
 #: courses/templates/courses/terms.html:34

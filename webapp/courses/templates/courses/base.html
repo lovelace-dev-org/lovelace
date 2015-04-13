@@ -55,9 +55,7 @@
       <div id="cookie-law-message">
         <div class="cookie-law-container">
           <p>{% url 'courses:terms' as terms_url %}
-            {% blocktrans %}
-            This site uses cookies. Learn more about our <a href="{{ terms_url }}">terms and conditions</a>.
-            {% endblocktrans %}</p>
+            {% blocktrans %}This site uses cookies. Learn more about our <a href="{{ terms_url }}">terms and conditions</a>.{% endblocktrans %}</p>
           <button onclick="accept_cookies();">{% trans 'Accept' %}</button>
         </div>
       </div>
