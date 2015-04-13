@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2015-04-14 00:50+0300\n"
+"POT-Creation-Date: 2015-04-14 01:02+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -45,8 +45,6 @@ msgid "Log out"
 msgstr "Kirjaudu ulos"
 
 #: courses/templates/courses/base.html:98
-#: templates/registration/activate.html:10 templates/registration/login.html:9
-#: templates/registration/password_reset_complete.html:8
 msgid "Log in"
 msgstr "Kirjaudu sisään"
 
