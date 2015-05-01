@@ -144,6 +144,7 @@ def check_answer(request, course_slug, content_slug):
     c = Context(evaluation)
     return JsonResponse({
         'result': t.render(c),
+        'evaluation': evaluation["evaluation"],
     })
     
 

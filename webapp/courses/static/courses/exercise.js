@@ -6,6 +6,38 @@ function success_function(data, result_div, error_div, form_parent) {
     if (data.result) {
         result_div.html(data.result);
     }
+    if (data.evaluation === true || data.evaluation === false) {
+        // Get the symbol in meta
+        var meta_img = form_parent.parent().find("div.task-meta > img");
+
+        // Get the symbol in ToC
+        var exercise_id = form_parent.parent().find("span.anchor-offset").attr("id");
+        var toc_symbol = $('nav#toc li a[href="#' + exercise_id + '"]').next();
+
+        var previous_status = meta_img.attr("class");
+        if (previous_status !== "correct") {
+            if (data.evaluation === false) {
+                meta_img.attr({
+                    "src": "/static/courses/incorrect.png",
+                    "class": "incorrect"
+                });
+                toc_symbol.attr({
+                    "src": "/static/courses/incorrect-16.png",
+                });
+            } else if (data.evaluation === true) {
+                meta_img.attr({
+                    "src": "/static/courses/correct.png",
+                    "class": "correct"
+                });
+                toc_symbol.attr({
+                    "src": "/static/courses/correct-16.png",
+                });
+            }
+        }
+        
+        // Update the progress bar in ToC
+        update_progress_bar();        
+    }
     if (data.errors) {
         error_div.html(data.errors);
         error_div.css("display", "block");
