@@ -16,6 +16,7 @@ function success_function(data, result_div, error_div, form_parent) {
 
         var previous_status = meta_img.attr("class");
         if (previous_status !== "correct") {
+            // TODO: "evaluation pending" icons
             if (data.evaluation === false) {
                 meta_img.attr({
                     "src": "/static/courses/incorrect.png",
