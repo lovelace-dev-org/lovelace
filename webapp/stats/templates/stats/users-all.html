@@ -1,0 +1,61 @@
+<DOCTYPE html>
+  <html>
+    <head>
+      <title></title>
+      <style>
+        table td {
+        border: 1px solid #ccc;
+        width: 32px;
+        }
+        
+        th.rotate {
+          height: 260px;
+          white-space: nowrap;
+        }
+        
+        th.rotate > div {
+          transform: 
+            /* Magic Numbers */
+            translate(18px, 110px)
+            /* 45 is really 360 - 45 */
+            rotate(315deg);
+          width: 32px;
+        }
+        
+        th.rotate > div > span {
+          border-bottom: 1px solid #ccc;
+          padding: 5px 10px;
+        }
+      </style>
+    </head>
+    <body>
+      <h1>All users, all exercises</h1>
+      <table>
+        <tr>
+          <td></td>
+          {% for exercise in exercises %}
+          <th class="rotate">
+            <div><span>{{ exercise.name }}</span></div>
+          </th>
+          {% endfor %}
+        </tr>
+        {% for table_row in table_rows %}
+        <tr>
+          {% for row_cell in table_row %}
+          <td>
+            {% if row_cell == "unanswered" %}
+              ?
+            {% elif row_cell == "incorrect" %}
+              0
+            {% elif row_cell == "correct" %}
+              1
+            {% else %}
+              {{ row_cell }}
+            {% endif %}
+          </td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </table>
+    </body>
+  </html>

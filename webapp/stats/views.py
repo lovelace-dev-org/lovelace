@@ -64,7 +64,7 @@ def single_task(request, task_name):
     choices = answers = exercise.get_choices()
 
     if tasktype == "CHECKBOX_EXERCISE":
-        checkbox_answers = UserCheckboxTaskAnswer.objects.filter(task=content_page)
+        checkbox_answers = UserCheckboxExerciseAnswer.objects.filter(exercise=content_page)
     elif tasktype == "MULTIPLE_CHOICE_EXERCISE":
         radiobutton_answers = UserMultipleChoiceExerciseAnswer.objects.filter(exercise=content_page)
         radiobutton_answers_count = radiobutton_answers.count()
@@ -72,10 +72,10 @@ def single_task(request, task_name):
         radiobutton_set = set(radiobutton_selected_answers)
         radiobutton_final = []
         for answer in radiobutton_set:
-            answer_choice = RadiobuttonTaskAnswer.objects.get(id=answer)
+            answer_choice = RadiobuttonExerciseAnswer.objects.get(id=answer)
             radiobutton_final.append((answer_choice.answer, radiobutton_selected_answers.count(answer), answer_choice.correct))
     elif tasktype == "TEXTFIELD_EXERCISE":
-        textfield_answers1 = UserTextfieldTaskAnswer.objects.filter(task=content_page)
+        textfield_answers1 = UserTextfieldExerciseAnswer.objects.filter(exercise=content_page)
         textfield_answers = list(textfield_answers1.values_list("given_answer", flat=True))
         textfield_answers_count = len(textfield_answers)
         textfield_set = set(textfield_answers)
@@ -87,13 +87,13 @@ def single_task(request, task_name):
             textfield_final.append((answer, textfield_answers.count(answer),) + textfield_eval(answer, answers) + (latest,))
         textfield_final = sorted(textfield_final, key=lambda x: x[1], reverse=True)
     elif tasktype == "FILE_UPLOAD_EXERCISE":
-        file_answers = list(UserFileTaskAnswer.objects.filter(task=content_page).values_list("user", flat=True))
+        file_answers = list(UserFileExerciseAnswer.objects.filter(exercise=content_page).values_list("user", flat=True))
         file_answers_count = len(file_answers) # how many times answered
         file_set = set(file_answers)
         file_user_count = len(file_set) # how many different users have answered
         file_correctly_by = 0
         for user in file_set:
-            evaluations = Evaluation.objects.filter(useranswer__userfiletaskanswer__task=content_page, useranswer__user=user)
+            evaluations = Evaluation.objects.filter(useranswer__userfileexerciseanswer__exercise=content_page, useranswer__user=user)
             correct = evaluations.filter(points__gt=0.0)
             if correct: file_correctly_by += 1
 
@@ -138,13 +138,13 @@ def user_task(request, user_name, task_name):
 
     checkboxanswers = radiobuttonanswers = textfieldanswers = fileanswers = None
     if tasktype == "CHECKBOX_EXERCISE":
-        checkboxanswers = UserCheckboxTaskAnswer.objects.filter(task=content, user=ruser)
+        checkboxanswers = UserCheckboxExerciseAnswer.objects.filter(exercise=content, user=ruser)
     elif tasktype == "MULTIPLE_CHOICE_EXERCISE":
-        radiobuttonanswers = UserRadiobuttonTaskAnswer.objects.filter(task=content, user=ruser)
+        radiobuttonanswers = UserRadiobuttonExerciseAnswer.objects.filter(exercise=content, user=ruser)
     elif tasktype == "TEXTFIELD_EXERCISE":
-        textfieldanswers = UserTextfieldTaskAnswer.objects.filter(task=content, user=ruser)
+        textfieldanswers = UserTextfieldExerciseAnswer.objects.filter(exercise=content, user=ruser)
     elif tasktype == "FILE_UPLOAD_EXERCISE":
-        fileanswers = UserFileTaskAnswer.objects.filter(task=content, user=ruser)
+        fileanswers = UserFileExerciseAnswer.objects.filter(exercise=content, user=ruser)
 
     t = loader.get_template("stats/user_task_stats.html")
     c = RequestContext(request, {
@@ -157,7 +157,7 @@ def user_task(request, user_name, task_name):
     })
     return HttpResponse(t.render(c))
 
-def all_tasks(request, course_name):
+def all_exercises(request, course_name):
     '''Shows statistics for all the tasks.'''
     if not request.user.is_authenticated() and not request.user.is_staff:
         return HttpResponseNotFound()
@@ -177,13 +177,13 @@ def all_tasks(request, course_name):
         choices = answers = exercise.get_choices()
 
         if tasktype == "CHECKBOX_EXERCISE":
-            all_evaluations = Evaluation.objects.filter(useranswer__usercheckboxtaskanswer__task=task).exclude(useranswer__user__in=staff)
+            all_evaluations = Evaluation.objects.filter(useranswer__usercheckboxexerciseanswer__exercise=task).exclude(useranswer__user__in=staff)
         elif tasktype == "MULTIPLE_CHOICE_EXERCISE":
-            all_evaluations = Evaluation.objects.filter(useranswer__userradiobuttontaskanswer__task=task).exclude(useranswer__user__in=staff)
+            all_evaluations = Evaluation.objects.filter(useranswer__usermultiplechoiceexerciseanswer__exercise=task).exclude(useranswer__user__in=staff)
         elif tasktype == "TEXTFIELD_EXERCISE":
-            all_evaluations = Evaluation.objects.filter(useranswer__usertextfieldtaskanswer__task=task).exclude(useranswer__user__in=staff)
+            all_evaluations = Evaluation.objects.filter(useranswer__usertextfieldexerciseanswer__exercise=task).exclude(useranswer__user__in=staff)
         elif tasktype == "FILE_UPLOAD_EXERCISE":
-            all_evaluations = Evaluation.objects.filter(useranswer__userfiletaskanswer__task=task).exclude(useranswer__user__in=staff)
+            all_evaluations = Evaluation.objects.filter(useranswer__userfileuploadexerciseanswer__exercise=task).exclude(useranswer__user__in=staff)
         else:
             continue
 
@@ -208,12 +208,12 @@ def all_tasks(request, course_name):
     })
     return HttpResponse(t.render(c))
 
-def course_users(request, training_name, content_to_search, year, month, day):
+def course_users(request, course_slug, content_to_search, year, month, day):
     '''Admin view that shows a table of all users and the tasks they've done on a particular course.'''
     if not request.user.is_authenticated() and not request.user.is_active and not request.user.is_staff:
         return HttpResponseNotFound()
 
-    selected_course = Training.objects.get(name=training_name)
+    selected_course = Training.objects.get(name=course_slug)
     users = User.objects.all()
     #content_nodes = selected_course.contents.all()
     #contents = [cn.content for cn in content_nodes]
@@ -243,13 +243,13 @@ def course_users(request, training_name, content_to_search, year, month, day):
             question = content.question
             choices = answers = exercise.get_choices()
             if tasktype == "CHECKBOX_EXERCISE":
-                db_evaluations = db_user_evaluations.filter(useranswer__usercheckboxtaskanswer__task=content)
+                db_evaluations = db_user_evaluations.filter(useranswer__usercheckboxexerciseanswer__exercise=content)
             elif tasktype == "MULTIPLE_CHOICE_EXERCISE":
-                db_evaluations = db_user_evaluations.filter(useranswer__userradiobuttontaskanswer__task=content)
+                db_evaluations = db_user_evaluations.filter(useranswer__usermultiplechoiceexerciseanswer__exercise=content)
             elif tasktype == "TEXTFIELD_EXERCISE":
-                db_evaluations = db_user_evaluations.filter(useranswer__usertextfieldtaskanswer__task=content)
+                db_evaluations = db_user_evaluations.filter(useranswer__usertextfieldexerciseanswer__exercise=content)
             elif tasktype == "FILE_UPLOAD_EXERCISE":
-                db_evaluations = db_user_evaluations.filter(useranswer__userfiletaskanswer__task=content)
+                db_evaluations = db_user_evaluations.filter(useranswer__userfileuploadexerciseanswer__exercise=content)
             else:
                 db_evaluations = []
 
@@ -261,9 +261,34 @@ def course_users(request, training_name, content_to_search, year, month, day):
 
     t = loader.get_template("stats/usertable.html")
     c = RequestContext(request, {
-        'training_name':training_name,
+        'course_slug':course_slug,
         'content_count':len(contents),
         'contents':contents,
         'user_evaluations':user_evaluations,
     })
     return HttpResponse(t.render(c))
+
+def users_all(request):
+    if not (request.user.is_authenticated() and request.user.is_active and\
+       request.user.is_staff):
+        return HttpResponseNotFound()
+
+    users = User.objects.all().order_by('username')
+    exercises = ContentPage.objects.all().exclude(content_type='LECTURE')\
+                                         .order_by('name')
+
+    # Argh...
+    table_rows = [
+        [user.username] +
+        [exercise.get_type_object().get_user_evaluation(user) for exercise in exercises]
+        for user in users
+    ]
+
+    t = loader.get_template("stats/users-all.html")
+    c = RequestContext(request, {
+        'users': users,
+        'exercises': exercises,
+        'table_rows': table_rows,
+    })
+    return HttpResponse(t.render(c))
+
