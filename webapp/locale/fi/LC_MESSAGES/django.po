@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2015-04-14 01:02+0300\n"
+"POT-Creation-Date: 2015-05-04 16:48+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -36,7 +36,7 @@ msgid "Settings"
 msgstr "Asetukset"
 
 #: courses/templates/courses/base.html:90
-#: courses/templates/courses/content-meta.html:43
+#: courses/templates/courses/content-meta.html:47
 msgid "Teacher’s tools"
 msgstr "Opettajan työkalut"
 
@@ -77,76 +77,60 @@ msgid "Line %(line)s in %(file)s"
 msgstr "Rivi %(line)s tiedostossa %(file)s"
 
 #: courses/templates/courses/content-meta.html:8
-#, fuzzy
-#| msgid "You have already answered this task correctly."
-msgid "You haven't answered this exercise yet"
+msgid "You haven’t answered this exercise yet"
 msgstr "Et ole vielä vastannut tähän tehtävään."
 
 #: courses/templates/courses/content-meta.html:11
-#, fuzzy
-#| msgid "You have previously answered this task incorrectly."
 msgid "You have answered this exercise incorrectly"
 msgstr "Olet aiemmin vastannut tähän tehtävään väärin."
 
 #: courses/templates/courses/content-meta.html:14
-#, fuzzy
-#| msgid "You have already answered this task correctly."
 msgid "You have answered this exercise correctly"
 msgstr "Olet aiemmin vastannut tähän tehtävään oikein."
 
-#: courses/templates/courses/content-meta.html:22
-msgid "View your previous answers"
-msgstr "Katso edellisiä vastauksiasi"
-
-#: courses/templates/courses/content-meta.html:22
-#, fuzzy
-#| msgid "Send answer"
-msgid "answers"
-msgstr "vastausta"
-
-#: courses/templates/courses/content-meta.html:45
+#: courses/templates/courses/content-meta.html:49
 msgid "Statistics"
 msgstr "Tilastot"
 
-#: courses/templates/courses/content-meta.html:46
+#: courses/templates/courses/content-meta.html:50
 msgid "Feedback"
 msgstr "Palautteet"
 
-#: courses/templates/courses/content-meta.html:50
+#: courses/templates/courses/content-meta.html:54
 #, fuzzy
 #| msgid "Edit this file upload exericse"
 msgid "Edit this lecture"
 msgstr "Muokkaa tätä tiedoston lähetys -tehtävää"
 
-#: courses/templates/courses/content-meta.html:52
+#: courses/templates/courses/content-meta.html:56
 msgid "Edit this textfield exercise"
 msgstr "Muokkaa tätä tekstikenttätehtävää"
 
-#: courses/templates/courses/content-meta.html:54
+#: courses/templates/courses/content-meta.html:58
 msgid "Edit this multiple choice exercise"
 msgstr "Muokkaa tätä monivalintatehtävää"
 
-#: courses/templates/courses/content-meta.html:56
+#: courses/templates/courses/content-meta.html:60
 msgid "Edit this checkbox exercise"
 msgstr "Muokkaa tätä valintaruututehtävää"
 
-#: courses/templates/courses/content-meta.html:58
+#: courses/templates/courses/content-meta.html:62
 msgid "Edit this file upload exericse"
 msgstr "Muokkaa tätä tiedoston lähetys -tehtävää"
 
-#: courses/templates/courses/content-meta.html:60
+#: courses/templates/courses/content-meta.html:64
 msgid "Edit this code input exercise"
 msgstr "Muokkaa tätä koodinsyöttötehtävää"
 
-#: courses/templates/courses/content-meta.html:62
+#: courses/templates/courses/content-meta.html:66
 msgid "Edit this code replace exercise"
 msgstr "Muokkaa tätä koodinkorvaustehtävää"
 
-#: courses/templates/courses/content-meta.html:66
+#: courses/templates/courses/content-meta.html:70
 msgid "View reference answer"
 msgstr "Katso mallivastausta"
 
-#: courses/templates/courses/content-meta.html:67
+#: courses/templates/courses/content-meta.html:71
 msgid "View separately"
 msgstr "Katso erikseen"
 
@@ -297,3 +281,11 @@ msgstr ""
 #: templates/admin/base.html:49
 msgid "Home"
 msgstr ""
+
+#~ msgid "View your previous answers"
+#~ msgstr "Katso edellisiä vastauksiasi"
+
+#, fuzzy
+#~| msgid "Send answer"
+#~ msgid "answers"
+#~ msgstr "vastausta"
