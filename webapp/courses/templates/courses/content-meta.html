@@ -4,13 +4,13 @@
   <div class="task-meta">
     {% if content.content_type != "LECTURE" %}
       {% if evaluation == "unanswered" %}
-        <img src="{% static 'courses/unanswered.png' %}" width="96" height="96" alt="?"
+        <img src="{% static 'courses/unanswered-96.png' %}" width="96" height="96" alt="?"
              title="{% trans "You haven't answered this exercise yet" %}" class="unanswered">
       {% elif evaluation == "incorrect" %}
-        <img src="{% static 'courses/incorrect.png' %}" width="96" height="96" alt="✘"
+        <img src="{% static 'courses/incorrect-96.png' %}" width="96" height="96" alt="✘"
              title="{% trans 'You have answered this exercise incorrectly' %}" class="incorrect">
       {% elif evaluation == "correct" %}
-        <img src="{% static 'courses/correct.png' %}" width="96" height="96" alt="✔"
+        <img src="{% static 'courses/correct-96.png' %}" width="96" height="96" alt="✔"
              title="{% trans 'You have answered this exercise correctly' %}" class="correct">
       {% endif %}
 
