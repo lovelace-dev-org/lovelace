@@ -575,20 +575,24 @@ class ImageMarkup(Markup):
             new_height = MAX_IMG_WIDTH * ratio
             size_attr = ' width="%d" height="%d"' % (MAX_IMG_WIDTH, new_height)
 
-        align_attr = ""
-        if "align" in settings:
-            if settings["align"] == "center":
-                align_attr = ' class="centered"'
+        centered = True if settings.get("align", False) == "center" else False
         
+        if centered:
+            yield '<div class="centered-block-outer"><div class="centered-block-middle"><div class="centered-block-inner">'
+
+        img_cls = "figure-img" if settings.get("caption_text", False) else "content-img"
         if "caption_text" in settings:
-            yield '<figure%s>' % (align_attr)
+            yield '<figure>'
         if "alt_text" in settings:
-            yield '<img src="%s" alt="%s"%s%s>\n' % (image_url, settings["alt_text"], size_attr, align_attr)
+            yield '<img class="%s" src="%s" alt="%s"%s>\n' % (img_cls, image_url, settings["alt_text"], size_attr)
         else:
-            yield '<img src="%s"%s%s>\n' % (image_url, size_attr, align_attr)
+            yield '<img class="%s" src="%s"%s>\n' % (img_cls, image_url, size_attr)
         if "caption_text" in settings:
             yield '<figcaption>%s</figcaption>' % (settings["caption_text"])
             yield '</figure>'
+
+        if centered:
+            yield '</div></div></div>'
 
     @classmethod
     def settings(cls, matchobj, state):

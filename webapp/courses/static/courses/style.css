@@ -503,24 +503,41 @@ section.content {
         font-weight: bold;
     }
 
-    section.content > figure,
-    div.embedded-page > figure {
+    figure {
         margin-top: 0.5em;
         margin-left: 0.5em;
         margin-bottom: 1em;
+        display: table;
+        width: 1px;
     }
     
-    section.content > img,
-    div.embedded-page > img {
+    img.content-img {
         margin-top: 0.5em;
         margin-left: 0.5em;
         margin-bottom: 1em;
+        display: block;
+    }
+    img.figure-img {
+        display: block;
     }
 
-    section.content > img.centered, section.content > figure.centered,
-    div.embedded-page > img.centered, div.embedded-page > figure.centered {
-        margin-left: auto;
-        margin-right: auto;
+    figcaption {
+        display: table-caption;
+        caption-side: bottom;
+    }
+
+    .centered-block-outer {
+        overflow: hidden;
+        position: relative;
+    }
+    .centered-block-middle {
+        float: left;
+        position: relative;
+        left: 50%;
+    }
+    .centered-block-inner {
+        position: relative;
+        left: -50%;
     }
 
     section.content hr {
