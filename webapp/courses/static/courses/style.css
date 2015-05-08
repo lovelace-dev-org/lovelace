@@ -46,7 +46,7 @@ div#cookie-law-message > div {
     padding: 4px;
 }
 div#cookie-law-message > div > p {
-    font-family: "DejaVu Sans", "Lucida Grande", "Verdana", "Ubuntu", "Arial", sans-serif;
+    font-family: "DejaVu Sans", "Open Sans", "Verdana", "Ubuntu", "Arial", sans-serif;
     font-size: 1.0em;
     font-weight: normal;
     color: #222;
@@ -56,7 +56,7 @@ div#cookie-law-message > div > button {
     right: 4px;
     top: 4px;
     z-index: 101;
-    font-family: "DejaVu Sans", "Lucida Grande", "Verdana", "Ubuntu", "Arial", sans-serif;
+    font-family: "DejaVu Sans", "Open Sans", "Verdana", "Ubuntu", "Arial", sans-serif;
     font-size: 0.9em;
     font-weight: normal;
     color: #222;
@@ -242,7 +242,7 @@ nav.breadcrumb {
     border-bottom: 1px solid #2e862e; /* #143a14; */
     box-shadow: 0 0 1px rgba(0, 0, 0, 0.8);
     padding-top: 4px;
-    font-family: "Verdana";
+    font-family: "Open Sans", "Verdana";
     font-size: 0.8rem;
     font-weight: bold;
     color: #222;
@@ -347,7 +347,7 @@ div.toc-box {
     color: #222;
     z-index: 1;
 
-    font-family: "DejaVu Sans", "Lucida Grande", "Verdana", "Ubuntu", "Arial", sans-serif;
+    font-family: "DejaVu Sans", "Open Sans", "Verdana", "Ubuntu", "Arial", sans-serif;
     font-size: 0.8em;
     font-weight: normal;
 
@@ -429,7 +429,7 @@ section.content {
     margin-left: auto;
     margin-right: auto;
     margin-top: 0;
-    font-family: "DejaVu Sans", "Lucida Grande", "Verdana", "Ubuntu", "Arial", sans-serif;
+    font-family: "DejaVu Sans", "Open Sans", "Verdana", "Ubuntu", "Arial", sans-serif;
     font-size: 1.0em;
     color: #222;
     line-height: 1.5;
@@ -988,7 +988,7 @@ section.content {
 
 /* FOOTER */
 footer {
-    font-family: "DejaVu Sans", "Verdana", sans-serif;
+    font-family: "DejaVu Sans", "Open Sans", "Verdana", sans-serif;
     font-size: 0.8rem;
     color: #111;
     background-image: url("noise-200x200-1.png");
