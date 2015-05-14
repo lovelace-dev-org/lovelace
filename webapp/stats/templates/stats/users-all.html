@@ -77,7 +77,9 @@
       <h1>All users, all exercises</h1>
       <table>
         {% for table_row in table_rows %}
-          <col class="col-{{ forloop.counter0 }} {% if forloop.counter0|divisibleby:"2" == 0 %}even-col{% else %}odd-col{% endif %}">
+          {% for row_cell in table_row %}
+            <col class="col-{{ forloop.counter0 }} {% if forloop.counter0|divisibleby:"2" == 0 %}even-col{% else %}odd-col{% endif %}">
+          {% endfor %}
         {% endfor %}
         <tr>
           <th class="empty"></th>
