@@ -1,38 +1,86 @@
+{% load staticfiles %}
 <DOCTYPE html>
   <html>
     <head>
       <title></title>
+      <script src="{% static 'courses/jquery-2.1.1.min.js' %}"></script>
       <style>
+        table {
+          border-collapse: collapse;
+        }
+        
+        table th.empty {
+          border: 0;
+        }
+
+        table tr.even-row {
+          background: rgba(191, 191, 191, 0.5);
+        }
+        table tr.odd-row {
+          background: rgba(255, 255, 255, 0.5);
+        }
+
+        table col.even-col {
+          background: rgba(191, 191, 191, 0.5);
+        }
+        table col.odd-col {
+          background: rgba(255, 255, 255, 0.5);
+        }
+        
         table td {
-        border: 1px solid #ccc;
-        width: 32px;
+          border: 1px solid #aaa;
+          padding: 2px;
+          width: 32px;
+          text-align: center;
+        }
+
+        table th.username {
+          border: 1px solid #aaa;
+          padding: 2px;
         }
         
         th.rotate {
           height: 260px;
           white-space: nowrap;
+          background: #fff;
         }
         
         th.rotate > div {
           transform: 
             /* Magic Numbers */
-            translate(18px, 110px)
+            translate(19.5px, 107.5px)
             /* 45 is really 360 - 45 */
             rotate(315deg);
           width: 32px;
         }
         
         th.rotate > div > span {
-          border-bottom: 1px solid #ccc;
+          border-bottom: 1px solid #aaa;
           padding: 5px 10px;
+          width: 260px;
         }
       </style>
+      <script>
+        function cursor_highlight(cell, state) {
+        var td_cell = $(cell);
+        var row = $(cell).attr("data-row");
+        var col = $(cell).attr("data-col");
+        var tr_elem = $("tr.row-" + row);
+        var col_elem = $("col.col-" + col);
+        var color = state ? "rgba(0, 191, 0, 0.5)" : "";
+        tr_elem.css("background-color", color);
+        col_elem.css("background-color", color);
+        }
+      </script>
     </head>
     <body>
       <h1>All users, all exercises</h1>
       <table>
+        {% for table_row in table_rows %}
+          <col class="col-{{ forloop.counter0 }} {% if forloop.counter0|divisibleby:"2" == 0 %}even-col{% else %}odd-col{% endif %}">
+        {% endfor %}
         <tr>
-          <td></td>
+          <th class="empty"></th>
           {% for exercise in exercises %}
           <th class="rotate">
             <div><span>{{ exercise.name }}</span></div>
@@ -40,19 +88,28 @@
           {% endfor %}
         </tr>
         {% for table_row in table_rows %}
-        <tr>
+        <tr class="row-{{ forloop.counter0 }} {% if forloop.counter0|divisibleby:"2" == 0 %}even-row{% else %}odd-row{% endif %}">
           {% for row_cell in table_row %}
-          <td>
-            {% if row_cell == "unanswered" %}
-              ?
-            {% elif row_cell == "incorrect" %}
-              0
-            {% elif row_cell == "correct" %}
-              1
+            {% if forloop.first %}
+              <th class="username">
+                {{ row_cell }}
+              </th>
             {% else %}
-              {{ row_cell }}
+              <td onMouseOver="cursor_highlight(this, true);"
+                  onMouseOut="cursor_highlight(this, false);"
+                  data-col="{{ forloop.counter0 }}"
+                  data-row="{{ forloop.parentloop.counter0 }}">
+                {% if row_cell == "unanswered" %}
+                  ?
+                {% elif row_cell == "incorrect" %}
+                  0
+                {% elif row_cell == "correct" %}
+                  1
+                {% else %}
+                  {{ row_cell }}
+                {% endif %}
+              </td>
             {% endif %}
-          </td>
           {% endfor %}
         </tr>
         {% endfor %}
