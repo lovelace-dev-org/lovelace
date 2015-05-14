@@ -29,6 +29,7 @@ import courses.forms
 # TODO: Support tags that, when hovered, highlight lines in source code files
 # TODO: Support tags that get highlighted upon receiving hints
 # TODO: Support tags for monospace ASCII art with horizontal and vertical rulers
+# TODO: Support tags that display files as hexdumps
 
 class ParserUninitializedError(Exception):
     def __init__(self, value):
