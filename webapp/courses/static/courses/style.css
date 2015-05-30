@@ -298,7 +298,7 @@ nav.breadcrumb {
         position: absolute;
         right: 0px;
         top: -4px;
-        width: 130px;
+        width: 136px;
         height: 24px;
         margin: 0;
         padding: 0;
@@ -318,7 +318,7 @@ nav.breadcrumb {
         display: inline-block;
         position: relative;
         height: 24px;
-        width: 100px;
+        width: 106px;
         padding-right: 40px;
         margin: 0;
     }
@@ -328,10 +328,12 @@ nav.breadcrumb {
         display: inline-block;
         position: relative;
         height: 20px;
-        top: -8px;
-        width: 98px;
+        top: -7px;
+        width: 104px;
         padding: 0;
         margin: 0;
+        font-size: 0.8rem;
+        font-family: "Verdana";
     }
 
 /* Table of Contents */
@@ -442,6 +444,7 @@ section.content {
         border: 1px solid #ccc;
         background: #cec;
         padding: 4px;
+        margin-bottom: 1em;
     }
 
     section.content h1, section.content h2, section.content h3, section.content h4, section.content h5, section.content h6 {
@@ -600,14 +603,16 @@ section.content {
         }
 
         section.content * a {
+            padding: 0 1px;
             color: #143a14;
         }
         section.content * a:visited {
             color: #ad3939;
         }
         section.content * a:hover {
-            color: #eee;
-            background: #39ad39;
+            color: #222;
+            background-color: #59cd59;
+            border-radius: 3px;
         }
 
         section.content p mark {
@@ -737,7 +742,7 @@ section.content {
                 margin: 0;
                 display: inline-block;
                 clear: both;
-                width: 180px;
+                width: 190px;
             }
 
             section.content div.question form input.task_file {
