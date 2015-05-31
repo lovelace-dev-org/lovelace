@@ -297,7 +297,7 @@ def color_generator(total_colors):
     saturation = 0.35
     value = 1.0
     for hue in range(0, 360, int(360/total_colors)):
-        r, g, b = [255 * result for result in colorsys.hsv_to_rgb(hue, saturation, value)]
+        r, g, b = [255 * result for result in colorsys.hsv_to_rgb(hue/360, saturation, value)]
         #yield '#{:x}{:x}{:x}'.format(int(r), int(g), int(b))
         yield 'rgba({},{},{},0.65)'.format(int(r), int(g), int(b))
 
@@ -313,13 +313,12 @@ def users_course(request, course):
 
     exercises = []
     cg = color_generator(parent_pages.count())
+    
     for p in parent_pages:
         color = next(cg)
         if p.content.embedded_pages.count() > 0:
             all_pages = list(p.content.embedded_pages.all())
             exercises.extend(list(zip(itertools.cycle([color]), all_pages)))
-
-    print(exercises)
 
     # Argh...
     table_rows = [
