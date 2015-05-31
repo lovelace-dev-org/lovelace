@@ -29,6 +29,7 @@ import courses.forms
 # TODO: Support tags that, when hovered, highlight lines in source code files
 # TODO: Support tags that get highlighted upon receiving hints
 # TODO: Support tags for monospace ASCII art with horizontal and vertical rulers
+#       and a grid background (linear-gradients)
 # TODO: Support tags that display files as hexdumps
 
 class ParserUninitializedError(Exception):
@@ -131,7 +132,7 @@ class MarkupParser:
         return getattr(matchobj, "lastgroup", "paragraph"), matchobj
 
     @classmethod
-    def parse(cls, text, request=None, context=None):
+    def parse(cls, text, request=None, context=None, embedded_pages=None):
         """
         A generator that gets the text written in the markup language, splits
         it at newlines and yields the parsed text until the whole text has
@@ -140,7 +141,8 @@ class MarkupParser:
         if not cls._ready:
             raise ParserUninitializedError("compile() not called")
 
-        if not context: context = {}
+        if context is None: context = {}
+        if embedded_pages is None: embedded_pages = []
 
         # TODO: Generator version of splitter to avoid memory & CPU overhead of
         # first creating a complete list and afterwards iterating through it.
@@ -150,7 +152,9 @@ class MarkupParser:
         # Note: stateless single-pass parsing of HTML-like languages is
         # impossible because of the closing tags.
         # TODO: Initialize states from markups
-        state = {"lines": lines, "request": request, "context": context, "list": []}
+        # TODO: State stack for indents, inline markups, pre, etc.
+        state = {"lines": lines, "request": request, "context": context,
+                 "list": [], "embedded_pages": embedded_pages}
 
         for (block_type, matchobj), block in itertools.groupby(lines, cls._get_line_kind):
             block_func = cls._markups[block_type].block
@@ -167,7 +171,7 @@ class MarkupParser:
             except MarkupError as e:
                 yield e.html()
 
-        # Clean up the remaining open tags
+        # Clean up the remaining open tags (pop everything from stack)
         for undent_lvl in reversed(state["list"]):
             yield '</%s>' % undent_lvl
 
@@ -354,14 +358,11 @@ class EmbeddedPageMarkup(Markup):
         except courses.models.ContentPage.DoesNotExist as e:
             raise EmbeddedObjectNotFoundError("embedded page '%s' couldn't be found" % settings["page_slug"])
         else:
-            try:
-                state["embedded_pages"].add(settings["page_slug"])
-            except KeyError:
-                state["embedded_pages"] = {settings["page_slug"]}
+            state["embedded_pages"].append(settings["page_slug"])
 
             # TODO: Prevent recursion depth > 2
             embedded_content = page.rendered_markup()
-                        
+            
             choices = page.get_choices()
             question = blockparser.parseblock(escape(page.question))
             

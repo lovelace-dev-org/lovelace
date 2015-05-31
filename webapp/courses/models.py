@@ -132,15 +132,6 @@ class ContentGraph(models.Model):
         verbose_name = "content to course link"
         verbose_name_plural = "content to course links"
 
-class EmbeddedContentLink(models.Model):
-    """
-    Automatically generated link from content to other content - based on
-    content pages embedded in other content pages.
-    """
-    # TODO: Um... rethink relations
-    page = models.ForeignKey('ContentPage', related_name='embedded_page_link')
-    embedded_pages = models.ManyToManyField('ContentPage', related_name='parent_page_links')
-
 def get_file_upload_path(instance, filename):
     return os.path.join("files", "%s" % (filename))
 
@@ -204,6 +195,11 @@ class CalendarReservation(models.Model):
     calendar_date = models.ForeignKey(CalendarDate)
     user = models.ForeignKey(User)
 
+class EmbeddedLink(models.Model):
+    parent = models.ForeignKey('ContentPage', related_name='emb_parent')
+    embedded_page = models.ForeignKey('ContentPage', related_name='emb_embedded')
+    ordinal_number = models.PositiveSmallIntegerField()
+
 ## Content management
 class ContentPage(models.Model):
     """
@@ -229,6 +225,9 @@ class ContentPage(models.Model):
         ('CODE_REPLACE_EXERCISE', 'Code replace exercise'),
     )
     content_type = models.CharField(max_length=28, default='LECTURE', choices=CONTENT_TYPE_CHOICES)
+    embedded_pages = models.ManyToManyField('self', blank=True,
+                                            through=EmbeddedLink, symmetrical=False,
+                                            through_fields=('parent', 'embedded_page'))
 
     feedback_questions = models.ManyToManyField(ContentFeedbackQuestion, blank=True)
 
@@ -248,8 +247,24 @@ class ContentPage(models.Model):
         # TODO: Take csrf protection into account; use cookies only
         #       - https://docs.djangoproject.com/en/1.7/ref/contrib/csrf/
         rendered = ""
-        for chunk in markupparser.MarkupParser.parse(self.content, request, context):
+        embedded_pages = []
+
+        # Render the page
+        markup_gen = markupparser.MarkupParser.parse(self.content, request, context, embedded_pages)
+        for chunk in markup_gen:
             rendered += chunk
+
+        # Update the embedded pages field
+        embedded_page_objs = ContentPage.objects.filter(slug__in=embedded_pages)
+        self.embedded_pages.clear()
+        for i, embedded_page in enumerate(embedded_pages):
+            page_obj = EmbeddedLink(
+                parent=self,
+                embedded_page=embedded_page_objs.get(slug=embedded_page),
+                ordinal_number=i
+            )
+            page_obj.save()
+        self.save()
 
         return rendered
 
