@@ -8,4 +8,5 @@ urlpatterns = [
     url(r'^all-exercises/(?P<course_name>[^/]+)/$', views.all_exercises, name='all_exercises'),
     url(r'^user-task/(?P<user_name>[^/]+)/(?P<task_name>.+)/$', views.user_task, name='user_task'),
     url(r'^users-all/$', views.users_all, name='users_all'),
+    url(r'^users-course/(?P<course>[^/]+)/$', views.users_course, name='users_course'),
 ]

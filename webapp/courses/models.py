@@ -200,6 +200,9 @@ class EmbeddedLink(models.Model):
     embedded_page = models.ForeignKey('ContentPage', related_name='emb_embedded')
     ordinal_number = models.PositiveSmallIntegerField()
 
+    class Meta:
+        ordering = ['ordinal_number']
+
 ## Content management
 class ContentPage(models.Model):
     """

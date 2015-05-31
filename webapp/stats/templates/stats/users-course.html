@@ -58,7 +58,7 @@
         }
         
         th.rotate > div > span {
-          border-bottom: 1px solid #aaa;
+          border-bottom: 1px solid #999;
           padding: 5px 10px;
           width: 260px;
         }
@@ -77,7 +77,7 @@
       </script>
     </head>
     <body>
-      <h1>All users, all exercises</h1>
+      <h1>All users, course {{ course.name }}</h1>
       <table>
         {% for table_row in table_rows %}
           {% for row_cell in table_row %}
@@ -88,17 +88,17 @@
           <th class="empty"></th>
           {% for exercise in exercises %}
           <th class="rotate">
-            <div><span>{{ exercise.name }}</span></div>
+            <div><span style="background: {{ exercise.0 }};">{{ exercise.1.name }}</span></div>
           </th>
           {% endfor %}
         </tr>
         {% for table_row in table_rows %}
         <tr class="row-{{ forloop.counter0 }} {% if forloop.counter0|divisibleby:"2" == 0 %}even-row{% else %}odd-row{% endif %}">
           {% for row_cell in table_row %}
-          {% if forloop.first %}
+            {% if forloop.first %}
               <th class="username{% if row_cell.is_staff %} staff{% endif %}">
                 {{ row_cell.username }}
-              </th>              
+              </th>
             {% else %}
               <td onMouseOver="cursor_highlight(this, true);"
                   onMouseOut="cursor_highlight(this, false);"
