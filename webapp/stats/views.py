@@ -317,7 +317,7 @@ def users_course(request, course):
     for p in parent_pages:
         color = next(cg)
         if p.content.embedded_pages.count() > 0:
-            all_pages = list(p.content.embedded_pages.all())
+            all_pages = list(p.content.embedded_pages.all().order_by('emb_embedded'))
             exercises.extend(list(zip(itertools.cycle([color]), all_pages)))
 
     # Argh...
