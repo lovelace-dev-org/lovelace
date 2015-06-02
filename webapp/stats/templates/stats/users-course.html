@@ -65,24 +65,22 @@
       </style>
       <script>
         function cursor_highlight(cell, state) {
-        var td_cell = $(cell);
-        var row = $(cell).attr("data-row");
-        var col = $(cell).attr("data-col");
-        var tr_elem = $("tr.row-" + row);
-        var col_elem = $("col.col-" + col);
-        var color = state ? "rgba(0, 191, 0, 0.5)" : "";
-        tr_elem.css("background-color", color);
-        col_elem.css("background-color", color);
+          var td_cell = $(cell);
+          var row = td_cell.attr("data-row");
+          var col = td_cell.attr("data-col");
+          var tr_elem = $("tr.row-" + row);
+          var col_elem = $("col.col-" + col);
+          var color = state ? "rgba(0, 191, 0, 0.5)" : "";
+          tr_elem.css("background-color", color);
+          col_elem.css("background-color", color);
         }
       </script>
     </head>
     <body>
       <h1>All users, course {{ course.name }}</h1>
       <table>
-        {% for table_row in table_rows %}
-          {% for row_cell in table_row %}
-            <col class="col-{{ forloop.counter0 }} {% if forloop.counter0|divisibleby:"2" == 0 %}even-col{% else %}odd-col{% endif %}">
-          {% endfor %}
+        {% for row_cell in table_rows.0 %}
+          <col class="col-{{ forloop.counter0 }} {% if forloop.counter0|divisibleby:"2" == 0 %}even-col{% else %}odd-col{% endif %}">
         {% endfor %}
         <tr>
           <th class="empty"></th>
@@ -109,7 +107,7 @@
                 {% elif row_cell == "incorrect" %}
                   0
                 {% elif row_cell == "correct" %}
-                  1
+                  <b>1</b>
                 {% else %}
                   {{ row_cell }}
                 {% endif %}
