@@ -7,10 +7,12 @@
       <style>
         table {
           border-collapse: collapse;
+          position: relative;
         }
         
         table th.empty {
-          border: 0;
+          border: 1px solid #fff;
+          border-bottom: 1px solid #aaa;
         }
 
         table tr.even-row {
@@ -28,10 +30,11 @@
         }
         
         table td {
-          border: 1px solid #aaa;
-          padding: 2px;
+          padding: 0;
           width: 26px;
           text-align: center;
+          position: relative;
+          height: 100%;
         }
 
         table th.username {
@@ -42,14 +45,36 @@
           color: #f00;
         }
         
+        span.tc {
+          color: #000;
+          border: 1px solid #aaa;
+          vertical-align: middle;
+          width: 100%;
+          height: 100%;
+          top: -1px;
+          display: block;
+          z-index: 0;
+          position: relative;
+        }
+        
         span.light {
           color: #999;
+          z-index: 0;
+          position: relative;
+          display: block;
+        }
+        b {
+          z-index: 0;
+          position: relative;
+          display: block;
         }
         
         th.rotate {
           height: 260px;
           white-space: nowrap;
           background: #fff;
+          border: 1px solid #fff;
+          border-bottom: 1px solid #aaa;
         }
         
         th.rotate > div {
@@ -65,6 +90,12 @@
           border-bottom: 1px solid #999;
           padding: 0px 4px 1px 4px;
           width: 260px;
+        }
+        
+        table colgroup {
+          border-left: 1px solid #000;
+          z-index: 1;
+          position: relative;
         }
 
         tr:hover {
@@ -85,9 +116,13 @@
     <body>
       <h1>All users, course {{ course.name }}</h1>
       <table>
-        {% for row_cell in table_rows.0 %}
-          <col class="col-{{ forloop.counter0 }} {% cycle 'odd-col' 'even-col' %}">
-        {% endfor %}
+        <colgroup>
+          <col class="col-0 odd-col">
+          {% for exercise in exercises %}
+            {% ifchanged exercise.0 %}</colgroup><colgroup>{% endifchanged %}
+            <col class="col-{{ forloop.counter }} {% cycle 'odd-col' 'even-col' %}">
+          {% endfor %}
+        </colgroup>
         <tr>
           <th class="empty"></th>
           {% for exercise in exercises %}
@@ -107,15 +142,17 @@
               <td onMouseOver="cursor_highlight(this);"
                   onMouseOut="cursor_dehighlight(this);"
                   data-col="{{ forloop.counter0 }}">
-                {% if row_cell == "unanswered" %}
-                  <span class="light">?</span>
-                {% elif row_cell == "incorrect" %}
-                  0
-                {% elif row_cell == "correct" %}
-                  <b>1</b>
-                {% else %}
-                  {{ row_cell }}
-                {% endif %}
+                <span class="tc">
+                  {% if row_cell == "unanswered" %}
+                    <span class="light">?</span>
+                  {% elif row_cell == "incorrect" %}
+                    0
+                  {% elif row_cell == "correct" %}
+                    <b>1</b>
+                  {% else %}
+                    {{ row_cell }}
+                  {% endif %}
+                </span>  
               </td>
             {% endif %}
           {% endfor %}
