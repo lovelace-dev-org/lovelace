@@ -30,7 +30,7 @@
         table td {
           border: 1px solid #aaa;
           padding: 2px;
-          width: 32px;
+          width: 26px;
           text-align: center;
         }
 
@@ -42,6 +42,10 @@
           color: #f00;
         }
         
+        span.light {
+          color: #999;
+        }
+        
         th.rotate {
           height: 260px;
           white-space: nowrap;
@@ -51,15 +55,15 @@
         th.rotate > div {
           transform: 
             /* Magic Numbers */
-            translate(19.5px, 107.5px)
+            translate(17.5px, 112.5px)
             /* 45 is really 360 - 45 */
             rotate(315deg);
-          width: 32px;
+          width: 26px;
         }
         
         th.rotate > div > span {
           border-bottom: 1px solid #999;
-          padding: 5px 10px;
+          padding: 0px 4px 1px 4px;
           width: 260px;
         }
 
@@ -68,10 +72,13 @@
         }
       </style>
       <script>
-        function cursor_highlight(cell, state) {
+        function cursor_highlight(cell) {
           var col = cell.getAttribute("data-col");
-          var color = state ? "rgba(0, 191, 0, 0.5)" : "";
-          $("col.col-" + col).css("background-color", color);
+          $("col.col-" + col).css("background-color", "rgba(0, 191, 0, 0.5)");
+        }
+        function cursor_dehighlight(cell) {
+          var col = cell.getAttribute("data-col");
+          $("col.col-" + col).css("background-color", "");
         }
       </script>
     </head>
@@ -79,7 +86,7 @@
       <h1>All users, course {{ course.name }}</h1>
       <table>
         {% for row_cell in table_rows.0 %}
-          <col class="col-{{ forloop.counter0 }} {% if forloop.counter0|divisibleby:"2" == 0 %}even-col{% else %}odd-col{% endif %}">
+          <col class="col-{{ forloop.counter0 }} {% cycle 'odd-col' 'even-col' %}">
         {% endfor %}
         <tr>
           <th class="empty"></th>
@@ -90,19 +97,18 @@
           {% endfor %}
         </tr>
         {% for table_row in table_rows %}
-        <tr class="row-{{ forloop.counter0 }} {% if forloop.counter0|divisibleby:"2" == 0 %}even-row{% else %}odd-row{% endif %}">
+        <tr class="{% cycle 'odd-row' 'even-row' %}">
           {% for row_cell in table_row %}
             {% if forloop.first %}
               <th class="username{% if row_cell.is_staff %} staff{% endif %}">
                 {{ row_cell.username }}
               </th>
             {% else %}
-              <td onMouseOver="cursor_highlight(this, true);"
-                  onMouseOut="cursor_highlight(this, false);"
-                  data-col="{{ forloop.counter0 }}"
-                  data-row="{{ forloop.parentloop.counter0 }}">
+              <td onMouseOver="cursor_highlight(this);"
+                  onMouseOut="cursor_dehighlight(this);"
+                  data-col="{{ forloop.counter0 }}">
                 {% if row_cell == "unanswered" %}
-                  ?
+                  <span class="light">?</span>
                 {% elif row_cell == "incorrect" %}
                   0
                 {% elif row_cell == "correct" %}
