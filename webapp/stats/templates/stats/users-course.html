@@ -65,14 +65,18 @@
       </style>
       <script>
         function cursor_highlight(cell, state) {
-          var td_cell = $(cell);
-          var row = td_cell.attr("data-row");
-          var col = td_cell.attr("data-col");
-          var tr_elem = $("tr.row-" + row);
-          var col_elem = $("col.col-" + col);
+          //var td_cell = $(cell);
+          //var row = td_cell.attr("data-row");
+          //var col = td_cell.attr("data-col");
+          var row = cell.getAttribute("data-row");
+          var col = cell.getAttribute("data-col");
+          //var tr_elem = $("tr.row-" + row);
+          //var col_elem = $("col.col-" + col);
           var color = state ? "rgba(0, 191, 0, 0.5)" : "";
-          tr_elem.css("background-color", color);
-          col_elem.css("background-color", color);
+          $("tr.row-" + row).css("background-color", color);
+          $("col.col-" + col).css("background-color", color);
+          //tr_elem.css("background-color", color);
+          //col_elem.css("background-color", color);
         }
       </script>
     </head>
