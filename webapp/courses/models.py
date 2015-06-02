@@ -29,15 +29,17 @@ class UserProfile(models.Model):
     # https://docs.djangoproject.com/en/dev/topics/auth/#storing-additional-information-about-users
     # http://stackoverflow.com/questions/44109/extending-the-user-model-with-custom-fields-in-django
     user = models.OneToOneField(User)
+    
     student_id = models.IntegerField(verbose_name='Student number', blank=True, null=True)
     study_program = models.CharField(verbose_name='Study program', max_length=80, blank=True, null=True)
+    enrollment_year = models.PositiveSmallIntegerField(verbose_name='Year of enrollment', blank=True, null=True)
 
     def __str__(self):
         return "%s's profile" % self.user
 
     def save(self, *args, **kwargs):
-        # To prevent 'column user_id is not unique' error from creating a new user in admin interface
-        # http://stackoverflow.com/a/2813728
+        # To prevent 'column user_id is not unique' error from creating a new
+        # user in admin interface ( http://stackoverflow.com/a/2813728 )
         try:
             existing = UserProfile.objects.get(user=self.user)
             self.id = existing.id
@@ -96,6 +98,12 @@ class Course(models.Model):
         return self.name
 
 # TODO: Reintroduce the incarnation system and make it transparent to users
+class CourseEnrollment(models.Model):
+    instance = models.ForeignKey('CourseInstance')
+    student = models.ForeignKey(User)
+
+    enrollment_date = models.DateTimeField(auto_now_add=True)
+
 class CourseInstance(models.Model):
     """
     A running instance of a course. Contains details about the start and end
@@ -103,8 +111,15 @@ class CourseInstance(models.Model):
     """
     name = models.CharField(max_length=255)
     course = models.ForeignKey('Course')
+    
     start_date = models.DateTimeField(verbose_name='Date and time on which the course begins',blank=True,null=True)
     end_date = models.DateTimeField(verbose_name='Date and time on which the course ends',blank=True,null=True)
+    active = models.BooleanField(verbose_name='Force this instance active',default=False)
+
+    enrolled_users = models.ManyToManyField(User, blank=True,
+                                            through='CourseEnrollment',
+                                            through_fields=('instance', 'student'))
+
     #link the content graph nodes to this instead
 
 class ContentGraph(models.Model):
