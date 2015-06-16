@@ -1,20 +1,46 @@
+<!DOCTYPE html>
+<html>
+ <head>
 <style>
 table {
-    border: 1px solid #333;
+border: 1px solid #333;
+border-collapse: collapse;
+}
+td {
+border: 1px solid #333;
 }
 caption {}
 td.answer-date {}
 td.answer {}
-td.evaluation {}
-td.correct {}
-td.incorrect {}
-td.permalink {}
-</style>
+td.evaluation {
+text-align: center;
+}
+td.correct {
+color: #3a3;
+}
+td.incorrect {
+color: #a33;
+}
+td.permalink {
+text-align: center;
+}
 
-Answered {{ answers.count }} times.
+ul {
+margin: 0;
+}
+
+div.fileview {
+  display: none;
+}
+div.results-view {
+  display: none;
+}
+</style>
+ </head>
+ <body>
 
 <table>
-<caption>Entered answers for this exercise</caption>
+<caption>{{ answers.count }} entered answers for this exercise</caption>
 <thead>
   <tr>
     <th>Answer date</th>
@@ -27,10 +53,41 @@ Answered {{ answers.count }} times.
   {% for answer in answers %}
   <tr id="{{ answer.id }}">
     <td class="answer-date">{{ answer.answer_date|date:"Y-m-d, H:i:s" }}</td>
-    <td class="answer">{{ answer.given_answer }}</td>
-    <td class="evaluation {% if answer.evaluation.correct %}correct{% else %}incorrect{% endif %}">{% if answer.evaluation.correct %}<span title="Correct">✔</span>{% else %}<span title="Incorrect">✘</span>{% endif %}</td>
+    <td class="answer">
+      {% if answer.given_answer %}
+        {{ answer.given_answer }}
+      {% elif answer.chosen_answer %}
+        {{ answer.chosen_answer }}
+      {% elif answer.chosen_answers %}
+        <ul>
+          {% for chosen_answer in answer.chosen_answers.all %}
+            <li>{{ chosen_answer }}</li>
+          {% endfor %}
+        </ul>
+      {% elif answer.get_returned_files %}
+        <ul>
+        {% for file in answer.get_returned_files.items %}
+          <li>{{ file.0 }}
+            <div class="fileview">{{ file.1 }}</div>
+          </li>
+        {% endfor %}
+        </ul>
+      {% endif %}
+    </td>
+    <td class="evaluation {% if answer.evaluation.correct %}correct{% else %}incorrect{% endif %}">
+      {% if answer.evaluation.correct %}
+        <span title="Correct">✔</span>
+      {% else %}
+        <span title="Incorrect">✘</span>
+      {% endif %}
+      {% if answer.evaluation.test_results %}
+        <div class="results-view">{{ answer.evaluation.test_results }}</div>
+      {% endif %}
+    </td>
     <td class="permalink"><a href="#{{ answer.id }}">&para;</a></td>
   </tr>
   {% endfor %}
 </tbody>
 </table>
+ </body>
+</html>

@@ -400,6 +400,10 @@ def show_answers(request, user, course, exercise):
         answers = UserTextfieldExerciseAnswer.objects.filter(user=user_obj, exercise=exercise_obj)
     elif content_type == "FILE_UPLOAD_EXERCISE":
         answers = UserFileUploadExerciseAnswer.objects.filter(user=user_obj, exercise=exercise_obj)
+    elif content_type == "CODE_REPLACE_EXERCISE":
+        answers = UserCodeReplaceExerciseAnswer.objects.filter(user=user_obj, exercise=exercise_obj)
+
+    answers = answers.order_by('-answer_date')
 
     # TODO: Own subtemplates for each of the exercise types.
     t = loader.get_template("courses/user_exercise_answers.html")

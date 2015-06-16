@@ -18,9 +18,12 @@
       <hr>
       Deadline: yyyy-mm-dd
       <hr>
+      {% endcomment %}
 
       <div><a href="{% url 'courses:show_answers' user.username course_slug content.slug %}"
               title="{% trans 'View your previous answers' %}"><span class="answer-count">{{ answer_count }}</span> {% trans 'answers' %}</a></div>
+
+      {% comment %}
 
       <hr>
 

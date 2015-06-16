@@ -1050,16 +1050,14 @@ class UserTextfieldExerciseAnswer(UserAnswer):
     given_answer = models.TextField()
 
     def __str__(self):
-        #return "Answer no. %04d: %s" % (self.answer_count, self.given_answer)
-        return "Answer by %s: %s" % (self.user.username, self.given_answer)
+        return self.given_answer
 
 class UserMultipleChoiceExerciseAnswer(UserAnswer):
     exercise = models.ForeignKey(MultipleChoiceExercise)
     chosen_answer = models.ForeignKey(MultipleChoiceExerciseAnswer)
 
     def __str__(self):
-        #return "Answer no. %04d by %s: %s" % (self.answer_count, self.user.username, self.chosen_answer)
-        return "Answer by %s: %s" % (self.user.username, self.chosen_answer)
+        return self.chosen_answer
 
     def is_correct(self):
         return chosen_answer.correct
@@ -1069,8 +1067,7 @@ class UserCheckboxExerciseAnswer(UserAnswer):
     chosen_answers = models.ManyToManyField(CheckboxExerciseAnswer)
 
     def __str__(self):
-        #return "Answer no. %04d: %s" % (self.answer_count, ", ".join(self.chosen_answers))
-        return "Answer by %s: TODO" % (self.user.username) #, ", ".join(self.chosen_answers))
+        return ", ".join(self.chosen_answers)
 
 class CodeReplaceExerciseReplacement(models.Model):
     answer = models.ForeignKey('UserCodeReplaceExerciseAnswer')
@@ -1079,3 +1076,7 @@ class CodeReplaceExerciseReplacement(models.Model):
 
 class UserCodeReplaceExerciseAnswer(UserAnswer):
     exercise = models.ForeignKey(CodeReplaceExercise)
+    given_answer = models.TextField()
+
+    def __str__(self):
+        return given_answer
