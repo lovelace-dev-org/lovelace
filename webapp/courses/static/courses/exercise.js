@@ -19,7 +19,7 @@ function success_function(data, result_div, error_div, form_parent) {
             // TODO: "evaluation pending" icons
             if (data.evaluation === false) {
                 meta_img.attr({
-                    "src": "/static/courses/incorrect.png",
+                    "src": "/static/courses/incorrect-96.png",
                     "class": "incorrect"
                 });
                 toc_symbol.attr({
@@ -27,7 +27,7 @@ function success_function(data, result_div, error_div, form_parent) {
                 });
             } else if (data.evaluation === true) {
                 meta_img.attr({
-                    "src": "/static/courses/correct.png",
+                    "src": "/static/courses/correct-96.png",
                     "class": "correct"
                 });
                 toc_symbol.attr({
