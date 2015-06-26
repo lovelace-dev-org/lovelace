@@ -108,7 +108,8 @@ pip install pillow
 pip install django
 pip install django-redis
 pip install celery[redis]
-
+pip install django-allauth
+pip install django-smuggler
 
 Edit the configuration
 ----------------------
