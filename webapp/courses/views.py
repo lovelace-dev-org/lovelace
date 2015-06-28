@@ -103,7 +103,9 @@ def check_answer(request, course_slug, content_slug):
         return HttpResponseNotAllowed(['POST'])
 
     if not request.user.is_active:
-        return HttpResponse("You have not logged in.")
+        return JsonResponse({
+            'result': 'Only logged in users can send their answers for evaluation!'
+        })
 
     course = Course.objects.get(slug=course_slug)
     content = ContentPage.objects.get(slug=content_slug)
@@ -119,7 +121,9 @@ def check_answer(request, course_slug, content_slug):
             pass
         else:
             # TODO: Use a template!
-            return HttpResponse("The deadline for this exercise (%s) has passed. Your answer will not be evaluated!" % (content_graph.deadline))
+            return JsonResponse({
+                'result': 'The deadline for this exercise (%s) has passed. Your answer will not be evaluated!' % (content_graph.deadline)
+            })
 
     user = request.user
     ip = request.META.get('REMOTE_ADDR')
@@ -128,7 +132,12 @@ def check_answer(request, course_slug, content_slug):
 
     exercise = content.get_type_object()
     
-    answer_object = exercise.save_answer(user, ip, answer, files)
+    try:
+        answer_object = exercise.save_answer(user, ip, answer, files)
+    except InvalidAnswerException as e:
+        return JsonResponse({
+            'result': str(e)
+        })
     evaluation = exercise.check_answer(user, ip, answer, files, answer_object)
     if not exercise.manually_evaluated:
         if exercise.content_type == "FILE_UPLOAD_EXERCISE":

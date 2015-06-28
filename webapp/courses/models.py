@@ -393,14 +393,12 @@ class MultipleChoiceExercise(ContentPage):
         keys = list(answer.keys())
         key = [k for k in keys if k.endswith("-radio")]
         if not key:
-            # TODO: Invalid answer
-            raise Exception("Invalid answer")
+            raise InvalidAnswerException("No answer was picked!")
         answered = int(answer[key[0]])
         try:
             chosen_answer = MultipleChoiceExerciseAnswer.objects.get(id=answered)
         except MultipleChoiceExerciseAnswer.DoesNotExist as e:
-            # TODO: Invalid answer
-            raise Exception()
+            raise InvalidAnswerException("The received answer does not exist!")
         answer_object = UserMultipleChoiceExerciseAnswer(
             exercise=self, chosen_answer=chosen_answer, user=user,
             answerer_ip=ip
@@ -469,8 +467,7 @@ class CheckboxExercise(ContentPage):
         chosen_answers = CheckboxExerciseAnswer.objects.filter(id__in=chosen_answer_ids).\
                          values_list('id', flat=True)
         if set(chosen_answer_ids) != set(chosen_answers):
-            # TODO: Invalid answer
-            raise Exception()
+            raise Exception("One or more of the answers do not exist!")
 
         answer_object = UserCheckboxExerciseAnswer(
             exercise=self, user=user, answerer_ip=ip
@@ -545,8 +542,7 @@ class TextfieldExercise(ContentPage):
         if "answer" in answer.keys():
             given_answer = answer["answer"].replace("\r", "")
         else:
-            # TODO: Invalid answer
-            raise Exception()
+            raise InvalidAnswerException("Answer missing!")
 
         answer_object = UserTextfieldExerciseAnswer(
             exercise=self, given_answer=given_answer, user=user,
@@ -644,8 +640,7 @@ class FileUploadExercise(ContentPage):
                 )
                 return_file.save()
         else:
-            # TODO: Invalid answer
-            raise Exception()
+            raise InvalidAnswerException("No file was sent!")
         return answer_object
 
     def check_answer(self, user, ip, answer, files, answer_object):
@@ -1080,3 +1075,9 @@ class UserCodeReplaceExerciseAnswer(UserAnswer):
 
     def __str__(self):
         return given_answer
+
+class InvalidAnswerException(Exception):
+    """
+    This exception is cast when an exercise answer cannot be processed.
+    """
+    pass
