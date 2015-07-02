@@ -467,7 +467,7 @@ class CheckboxExercise(ContentPage):
         chosen_answers = CheckboxExerciseAnswer.objects.filter(id__in=chosen_answer_ids).\
                          values_list('id', flat=True)
         if set(chosen_answer_ids) != set(chosen_answers):
-            raise Exception("One or more of the answers do not exist!")
+            raise InvalidAnswerException("One or more of the answers do not exist!")
 
         answer_object = UserCheckboxExerciseAnswer(
             exercise=self, user=user, answerer_ip=ip
