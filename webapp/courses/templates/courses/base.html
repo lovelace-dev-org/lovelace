@@ -43,6 +43,16 @@
         $('#toc > div.list-div').slimScroll({
             height: '400px'
         });
+
+      $(document).on('click', function(event) {
+        var menu_display = $('#user-menu').css('display');
+        var target = $(event.target);
+        if (menu_display == 'block' && 
+            !target.closest('#user-menu').length &&
+            !target.closest('#user-menu-arrow').length) {
+          $('#user-menu').hide();
+        }
+      });
             
         $(window).on('DOMContentLoaded load resize scroll', handler);
       });
@@ -82,7 +92,8 @@
                 <div class="vertical-separator"></div>
               </div><div class="side-by-side-top">
                 <img src="{% static 'courses/arrow-down.png' %}"
-                     onclick="$('#user-menu').toggle();">
+                     onclick="$('#user-menu').toggle();"
+		     id="user-menu-arrow">
                 <div id="user-menu"><div>
               <div class="user-settings">
                 <a href="/profile/">{% trans 'Settings' %}</a>
