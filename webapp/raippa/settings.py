@@ -32,6 +32,7 @@ INSTALLED_APPS = (
     'courses',
     'stats',
     'feedback',
+    'nested_inline',
 )
 
 SITE_ID = 1
