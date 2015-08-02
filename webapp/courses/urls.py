@@ -21,7 +21,7 @@ urlpatterns = [
     url(r'^calendar/(?P<calendar_id>\d+)/(?P<event_id>\d+)/$', views.calendar_post),
 
     # Sandbox: admin view & answer for content pages without saved results
-    url(r'^sandbox/(?P<content_slug>[^/]+)/$', views.content, {'sandbox': True,}, name='sandbox',),
+    url(r'^sandbox/(?P<course_slug>[^/]+)/(?P<content_slug>[^/]+)/$', views.content, {'sandbox': True,}, name='sandbox',),
 
     # Help pages
     url(r'^help/$', views.help_list, name='help_list',),
