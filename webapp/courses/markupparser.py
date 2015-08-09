@@ -382,7 +382,7 @@ class EmbeddedPageMarkup(Markup):
             user = state["request"].user
             if user.is_active and page.get_user_answers(user):
                 c["evaluation"] = page.get_user_evaluation(user)
-                c["answer_count"] = answers.count()
+                c["answer_count"] = page.get_user_answers(user).count()
             else:
                 c["evaluation"] = "unanswered"
                 c["answer_count"] = 0
