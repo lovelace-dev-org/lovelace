@@ -40,7 +40,10 @@
     {% endif %}
 
     {% if multichoice_answers_count %}
-      The task has been answered {{ multichoice_answers_count }} times.<br />
+      <div>The task has been answered {{ multichoice_answers_count }} times.</div>
+      <div>The task has been answered by {{ multichoice_user_count }} different users.</div>
+      <div>Average attempts per user: {{ multichoice_answers_avg }} </div>
+      <br />
       <table>
         <tr><th>User answer</th><th>Count</th><th>Correct?</th></tr>
         {% for answer, count, correct in multichoice_final %}
@@ -77,6 +80,26 @@
     {% else %}
       It has no answer choices.
     {% endif %}
+    {% if checkbox_answers_count %}
+      <div>The task has been answered {{ checkbox_answers_count }} times.</div>
+      <div>The task has been answered by {{ checkbox_user_count }} different users.</div>
+      <div>Average attempts per user: {{ checkbox_answers_avg }} </div>
+      <br />
+      <table>
+        <tr><th>User answer</th><th>Count</th><th>Correct?</th></tr>
+        {% for answer, count, correct in checkbox_final %}
+          <tr>
+            <td>{{ answer }}</td>
+            <td>{{ count }}</td>
+            {% if correct %}
+              <td class="correct">{{ correct }}</td>
+            {% else %}
+              <td class="incorrect">{{ correct }}</td>
+            {% endif %}
+          </tr>
+        {% endfor %}
+      </table>
+    {% endif %}
   </p>
 {% elif tasktype == "TEXTFIELD_EXERCISE" %}
   <p>
@@ -103,10 +126,11 @@
     {% if textfield_answers %}
       <div>The task has been answered {{ textfield_answers_count }} times.</div>
       <div>The task has been answered by {{ textfield_user_count }} different users.</div>
-      <div>Average attempts per user: </div>
+      <div>Average attempts per user: {{ textfield_answers_avg }}. </div>
       <div>- Standard deviation: </div>
       <div>Median attempts per user: </div>
       <div>Hint coverage for incorrect answers: </div>
+      <br />
       <table>
         <tr><th>User answer</th><th>Count</th><th>Correct?</th><th>Hint given?</th><th>Latest answer</th></tr>
         {% for answer, count, correct, hinted, latest in textfield_final %}
@@ -127,10 +151,11 @@
   </p>
 {% elif tasktype == "FILE_UPLOAD_EXERCISE" %}
   <p>
-    "{{ content.name }}" is a file upload exercise.<br />
-    The task has been answered {{ file_answers_count }} times.<br />
-    The task has been answered by {{ file_user_count }} different users.<br />
-    The task has been answered correctly by {{ file_correctly_by }} different users.<br />
+    <div>"{{ content.name }}" is a file upload exercise.</div>
+    <div>The task has been answered {{ file_answers_count }} times.</div>
+    <div>The task has been answered by {{ file_user_count }} different users.</div>
+    <div>The task has been answered correctly by {{ file_correctly_by }} different users.</div>
+    <div>Average attempts per user: {{ file_answers_avg }} </div>
 
   </p>
 {% endif %}

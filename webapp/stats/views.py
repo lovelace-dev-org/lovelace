@@ -53,9 +53,10 @@ def single_task(request, task_name):
         return HttpResponseNotFound()
 
     checkbox_answers = multichoice_answers = textfield_answers = file_answers = None
-    textfield_answers_count = textfield_final = textfield_user_count = None
-    file_answers = file_answers_count = file_user_count = file_correctly_by = None
-    multichoice_answers_count = multichoice_final = None
+    textfield_answers_count = textfield_final = textfield_user_count = textfield_answers_avg = None
+    file_answers = file_answers_count = file_user_count = file_correctly_by = file_answers_avg = None
+    multichoice_answers_count = multichoice_user_count = multichoice_final = multichoice_answers_avg = None
+    checkbox_answers_count = checkbox_user_count = checkbox_final = checkbox_answers_avg = None
     content_page = ContentPage.objects.get(slug=task_name)
     
     exercise = content_page.get_type_object()
@@ -65,11 +66,26 @@ def single_task(request, task_name):
 
     if tasktype == "CHECKBOX_EXERCISE":
         checkbox_answers = UserCheckboxExerciseAnswer.objects.filter(exercise=content_page)
+        checkbox_answers_count = checkbox_answers.count()
+        checkbox_selected_answers = list(checkbox_answers.values_list("chosen_answers", flat=True))
+        checkbox_set = set(checkbox_selected_answers)
+        
+        checkbox_user_count = len(set(checkbox_answers.values_list("user", flat=True)))
+        checkbox_answers_avg = round(float(checkbox_answers_count) / checkbox_user_count, 2)
+
+        checkbox_final = []
+        for answer in checkbox_set:
+            answer_choice = CheckboxExerciseAnswer.objects.get(id=answer)
+            checkbox_final.append((answer_choice.answer, checkbox_selected_answers.count(answer), answer_choice.correct))
     elif tasktype == "MULTIPLE_CHOICE_EXERCISE":
         multichoice_answers = UserMultipleChoiceExerciseAnswer.objects.filter(exercise=content_page)
         multichoice_answers_count = multichoice_answers.count()
         multichoice_selected_answers = list(multichoice_answers.values_list("chosen_answer", flat=True))
         multichoice_set = set(multichoice_selected_answers)
+
+        multichoice_user_count = len(set(multichoice_answers.values_list("user", flat=True)))
+        multichoice_answers_avg = round(float(multichoice_answers_count) / multichoice_user_count, 2)
+
         multichoice_final = []
         for answer in multichoice_set:
             answer_choice = MultipleChoiceExerciseAnswer.objects.get(id=answer)
@@ -80,7 +96,9 @@ def single_task(request, task_name):
         textfield_answers_count = len(textfield_answers)
         textfield_set = set(textfield_answers)
 
-        textfield_user_count = len(set(list(textfield_answers1.values_list("user", flat=True))))
+        textfield_user_count = len(set(textfield_answers1.values_list("user", flat=True)))
+        textfield_answers_avg = round(float(textfield_answers_count) / textfield_user_count, 2)
+        
         textfield_final = []
         for answer in textfield_set:
             latest = textfield_answers1.filter(given_answer=answer).latest('answer_date').answer_date
@@ -90,7 +108,10 @@ def single_task(request, task_name):
         file_answers = list(UserFileUploadExerciseAnswer.objects.filter(exercise=content_page).values_list("user", flat=True))
         file_answers_count = len(file_answers) # how many times answered
         file_set = set(file_answers)
+
         file_user_count = len(file_set) # how many different users have answered
+        file_answers_avg = round(float(file_answers_count) / file_user_count, 2)
+
         file_correctly_by = 0
         for user in file_set:
             evaluations = Evaluation.objects.filter(useranswer__userfileuploadexerciseanswer__exercise=content_page, useranswer__user=user)
@@ -98,27 +119,35 @@ def single_task(request, task_name):
             if correct: file_correctly_by += 1
 
     t = loader.get_template("stats/task_stats.html")
-    print(tasktype)
     c = RequestContext(request, {
         "content": content_page,
         "question": question,
         "tasktype": tasktype,
         "choices": choices,
         "answers": answers,
+
         "checkbox_answers": checkbox_answers,
+        "checkbox_answers_count": checkbox_answers_count,
+        "checkbox_user_count": checkbox_user_count,
+        "checkbox_final": checkbox_final,
+        "checkbox_answers_avg": checkbox_answers_avg,
 
         "multichoice_answers": multichoice_answers,
         "multichoice_answers_count": multichoice_answers_count,
+        "multichoice_user_count": multichoice_user_count,
         "multichoice_final": multichoice_final,
+        "multichoice_answers_avg": multichoice_answers_avg,
 
         "textfield_answers": textfield_answers,
         "textfield_answers_count": textfield_answers_count,
         "textfield_final": textfield_final,
         "textfield_user_count": textfield_user_count,
+        "textfield_answers_avg": textfield_answers_avg,
 
         "file_answers": file_answers,
         "file_answers_count": file_answers_count,
         "file_user_count": file_user_count,
+        "file_answers_avg": file_answers_avg,
         "file_correctly_by": file_correctly_by,
     })
     return HttpResponse(t.render(c))
