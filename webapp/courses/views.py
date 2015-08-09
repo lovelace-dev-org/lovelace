@@ -100,7 +100,6 @@ def check_answer_sandboxed(request, content_slug):
     back to the user in sanboxed mode.
     """
     
-    print("hep")
     if request.method != "POST":
         return HttpResponseNotAllowed(['POST'])
 
@@ -266,6 +265,7 @@ def sandboxed_content(request, content_slug, **kwargs):
 
     rendered_content = content.rendered_markup(request)
 
+    print("what")
     user = request.user
     if not user.is_staff or not user.is_authenticated():
         return HttpResponseNotFound()

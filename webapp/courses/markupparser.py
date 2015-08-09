@@ -357,6 +357,7 @@ class EmbeddedPageMarkup(Markup):
     @classmethod
     def settings(cls, matchobj, state):
         settings = {"page_slug" : matchobj.group("page_slug")}
+        print("what2")
         try:
             page = courses.models.ContentPage.objects\
                                              .get(slug=settings["page_slug"])\
@@ -384,6 +385,11 @@ class EmbeddedPageMarkup(Markup):
             sandboxed = state["request"].path.startswith("/sandbox/")
             if sandboxed and user.is_active and user.is_staff:
                 c["sandboxed"] = True
+            elif sandboxed and (not user.is_active or not user.is_staff):
+                settings["rendered_content"] = ""
+                return settings
+            else:
+                c["sandboxed"] = False
 
             if user.is_active and page.get_user_answers(user) and not sandboxed:
                 c["evaluation"] = page.get_user_evaluation(user)
