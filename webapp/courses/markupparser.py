@@ -379,8 +379,13 @@ class EmbeddedPageMarkup(Markup):
                 "question": question,
                 "choices": choices,
             }
+            
             user = state["request"].user
-            if user.is_active and page.get_user_answers(user):
+            sandboxed = state["request"].path.startswith("/sandbox/")
+            if sandboxed and user.is_active and user.is_staff:
+                c["sandboxed"] = True
+
+            if user.is_active and page.get_user_answers(user) and not sandboxed:
                 c["evaluation"] = page.get_user_evaluation(user)
                 c["answer_count"] = page.get_user_answers(user).count()
             else:
