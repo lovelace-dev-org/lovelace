@@ -379,9 +379,9 @@ class EmbeddedPageMarkup(Markup):
                 "question": question,
                 "choices": choices,
             }
-            answers = page.get_user_answers(state["request"].user)
-            if state["request"].user.is_active and answers is not None:
-                c["evaluation"] = page.get_user_evaluation(state["request"].user)
+            user = state["request"].user
+            if user.is_active and page.get_user_answers(user):
+                c["evaluation"] = page.get_user_evaluation(user)
                 c["answer_count"] = answers.count()
             else:
                 c["evaluation"] = "unanswered"
