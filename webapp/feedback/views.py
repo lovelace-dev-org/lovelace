@@ -1,2 +1,5 @@
+from django.http import HttpResponseNotFound
+
+
 def content(request, content_slug):
-    pass
+    return HttpResponseNotFound("This page is yet to be implemented")

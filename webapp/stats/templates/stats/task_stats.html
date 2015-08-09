@@ -18,9 +18,9 @@
 </style>
 <h1>Statistics for "{{ content.name }}"</h1>
 <h2>General task information</h2>
-{% if tasktype == "radiobutton" %}
+{% if tasktype == "MULTIPLE_CHOICE_EXERCISE" %}
   <p>
-    "{{ content.name }}" is a radio button task.<br />
+    "{{ content.name }}" is a multiple choice exercise.<br />
     {% if choices %}
       <table>
         <tr><th>Answer choice</th><th>Correct?</th></tr>
@@ -39,11 +39,11 @@
       It has no answer choices.
     {% endif %}
 
-    {% if radiobutton_answers_count %}
-      The task has been answered {{ radiobutton_answers_count }} times.<br />
+    {% if multichoice_answers_count %}
+      The task has been answered {{ multichoice_answers_count }} times.<br />
       <table>
         <tr><th>User answer</th><th>Count</th><th>Correct?</th></tr>
-        {% for answer, count, correct in radiobutton_final %}
+        {% for answer, count, correct in multichoice_final %}
           <tr>
             <td>{{ answer }}</td>
             <td>{{ count }}</td>
@@ -57,9 +57,9 @@
       </table>
     {% endif %}
   </p>
-{% elif tasktype == "checkbox" %}
+{% elif tasktype == "CHECKBOX_EXERCISE" %}
   <p>
-    "{{ content.name }}" is a check box task.<br />
+    "{{ content.name }}" is a checkbox exercise.<br />
     {% if choices %}
       <table>
         <tr><th>Answer choice</th><th>Correct?</th></tr>
@@ -78,9 +78,9 @@
       It has no answer choices.
     {% endif %}
   </p>
-{% elif tasktype == "textfield" %}
+{% elif tasktype == "TEXTFIELD_EXERCISE" %}
   <p>
-    "{{ content.name }}" is a text field task.<br />
+    "{{ content.name }}" is a textfield exercise.<br />
     {% if answers %}
       <table>
         <tr><th>Answer choice</th>
@@ -125,9 +125,9 @@
       </table>
     {% endif %}
   </p>
-{% elif tasktype == "file" %}
+{% elif tasktype == "FILE_UPLOAD_EXERCISE" %}
   <p>
-    "{{ content.name }}" is a file task.<br />
+    "{{ content.name }}" is a file upload exercise.<br />
     The task has been answered {{ file_answers_count }} times.<br />
     The task has been answered by {{ file_user_count }} different users.<br />
     The task has been answered correctly by {{ file_correctly_by }} different users.<br />

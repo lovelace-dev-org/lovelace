@@ -53,7 +53,10 @@ def index(request):
 
 @cookie_law 
 def course(request, course_slug):
-    course = Course.objects.get(slug=course_slug)
+    try:
+        course = Course.objects.get(slug=course_slug)
+    except Course.DoesNotExist:
+        return HttpResponseNotFound("Course {} does not exist!".format(course_slug))
 
     frontpage = course.frontpage
     if frontpage:
@@ -257,7 +260,10 @@ def file_exercise_evaluation(request, content_slug, task_id, task=None):
 
 @cookie_law
 def sandboxed_content(request, content_slug, **kwargs):
-    content = ContentPage.objects.get(slug=content_slug).get_type_object()
+    try:
+        content = ContentPage.objects.get(slug=content_slug).get_type_object()
+    except ContentPage.DoesNotExist:
+        return HttpResponseNotFound("Content {} does not exist!".format(content_slug))
 
     content_type = content.content_type
     question = blockparser.parseblock(escape(content.question))
@@ -265,10 +271,9 @@ def sandboxed_content(request, content_slug, **kwargs):
 
     rendered_content = content.rendered_markup(request)
 
-    print("what")
     user = request.user
     if not user.is_staff or not user.is_authenticated():
-        return HttpResponseNotFound()
+        return HttpResponseNotFound("Only logged in admins can view pages in sandbox!")
 
     d = {'content': content,
          'content_name': content.name,
@@ -307,14 +312,18 @@ def content(request, course_slug, content_slug, **kwargs):
     try:
         course = Course.objects.get(slug=course_slug)
     except Course.DoesNotExist:
-        return HttpResponseNotFound()
-    content = ContentPage.objects.get(slug=content_slug).get_type_object()
+        return HttpResponseNotFound("Course {} does not exist!".format(course_slug))
+
+    try:
+        content = ContentPage.objects.get(slug=content_slug).get_type_object()
+    except ContentPage.DoesNotExist:
+        return HttpResponseNotFound("Content {} does not exist!".format(content_slug))
 
     content_graph = None
     try:
         content_graph = course.contents.get(content=content)
     except ContentGraph.DoesNotExist:
-        return HttpResponseNotFound()
+        return HttpResponseNotFound("Content {} is not linked to course {}!".format(content_slug, course_slug))
 
     content_type = content.content_type
     question = blockparser.parseblock(escape(content.question))

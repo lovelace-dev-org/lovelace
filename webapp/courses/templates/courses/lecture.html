@@ -6,7 +6,7 @@
   <div>{{ emb_content|safe }}</div>
 {% endif %}
 
-{% if user.is_staff and user.is_active and not sandboxed %}
+{% if user.is_staff and user.is_active %}
   {% content_meta %}
 {% endif %}
 

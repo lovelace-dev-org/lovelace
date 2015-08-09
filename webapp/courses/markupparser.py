@@ -357,7 +357,6 @@ class EmbeddedPageMarkup(Markup):
     @classmethod
     def settings(cls, matchobj, state):
         settings = {"page_slug" : matchobj.group("page_slug")}
-        print("what2")
         try:
             page = courses.models.ContentPage.objects\
                                              .get(slug=settings["page_slug"])\

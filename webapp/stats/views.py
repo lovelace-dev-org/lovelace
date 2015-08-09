@@ -52,10 +52,10 @@ def single_task(request, task_name):
     if not request.user.is_authenticated() and not request.user.is_active and not request.user.is_staff:
         return HttpResponseNotFound()
 
-    checkbox_answers = radiobutton_answers = textfield_answers = file_answers = None
+    checkbox_answers = multichoice_answers = textfield_answers = file_answers = None
     textfield_answers_count = textfield_final = textfield_user_count = None
     file_answers = file_answers_count = file_user_count = file_correctly_by = None
-    radiobutton_answers_count = radiobutton_final = None
+    multichoice_answers_count = multichoice_final = None
     content_page = ContentPage.objects.get(slug=task_name)
     
     exercise = content_page.get_type_object()
@@ -66,14 +66,14 @@ def single_task(request, task_name):
     if tasktype == "CHECKBOX_EXERCISE":
         checkbox_answers = UserCheckboxExerciseAnswer.objects.filter(exercise=content_page)
     elif tasktype == "MULTIPLE_CHOICE_EXERCISE":
-        radiobutton_answers = UserMultipleChoiceExerciseAnswer.objects.filter(exercise=content_page)
-        radiobutton_answers_count = radiobutton_answers.count()
-        radiobutton_selected_answers = list(radiobutton_answers.values_list("chosen_answer", flat=True))
-        radiobutton_set = set(radiobutton_selected_answers)
-        radiobutton_final = []
-        for answer in radiobutton_set:
-            answer_choice = RadiobuttonExerciseAnswer.objects.get(id=answer)
-            radiobutton_final.append((answer_choice.answer, radiobutton_selected_answers.count(answer), answer_choice.correct))
+        multichoice_answers = UserMultipleChoiceExerciseAnswer.objects.filter(exercise=content_page)
+        multichoice_answers_count = multichoice_answers.count()
+        multichoice_selected_answers = list(multichoice_answers.values_list("chosen_answer", flat=True))
+        multichoice_set = set(multichoice_selected_answers)
+        multichoice_final = []
+        for answer in multichoice_set:
+            answer_choice = MultipleChoiceExerciseAnswer.objects.get(id=answer)
+            multichoice_final.append((answer_choice.answer, multichoice_selected_answers.count(answer), answer_choice.correct))
     elif tasktype == "TEXTFIELD_EXERCISE":
         textfield_answers1 = UserTextfieldExerciseAnswer.objects.filter(exercise=content_page)
         textfield_answers = list(textfield_answers1.values_list("given_answer", flat=True))
@@ -87,17 +87,18 @@ def single_task(request, task_name):
             textfield_final.append((answer, textfield_answers.count(answer),) + textfield_eval(answer, answers) + (latest,))
         textfield_final = sorted(textfield_final, key=lambda x: x[1], reverse=True)
     elif tasktype == "FILE_UPLOAD_EXERCISE":
-        file_answers = list(UserFileExerciseAnswer.objects.filter(exercise=content_page).values_list("user", flat=True))
+        file_answers = list(UserFileUploadExerciseAnswer.objects.filter(exercise=content_page).values_list("user", flat=True))
         file_answers_count = len(file_answers) # how many times answered
         file_set = set(file_answers)
         file_user_count = len(file_set) # how many different users have answered
         file_correctly_by = 0
         for user in file_set:
-            evaluations = Evaluation.objects.filter(useranswer__userfileexerciseanswer__exercise=content_page, useranswer__user=user)
+            evaluations = Evaluation.objects.filter(useranswer__userfileuploadexerciseanswer__exercise=content_page, useranswer__user=user)
             correct = evaluations.filter(points__gt=0.0)
             if correct: file_correctly_by += 1
 
     t = loader.get_template("stats/task_stats.html")
+    print(tasktype)
     c = RequestContext(request, {
         "content": content_page,
         "question": question,
@@ -106,9 +107,9 @@ def single_task(request, task_name):
         "answers": answers,
         "checkbox_answers": checkbox_answers,
 
-        "radiobutton_answers": radiobutton_answers,
-        "radiobutton_answers_count": radiobutton_answers_count,
-        "radiobutton_final": radiobutton_final,
+        "multichoice_answers": multichoice_answers,
+        "multichoice_answers_count": multichoice_answers_count,
+        "multichoice_final": multichoice_final,
 
         "textfield_answers": textfield_answers,
         "textfield_answers_count": textfield_answers_count,
@@ -136,22 +137,22 @@ def user_task(request, user_name, task_name):
 
     ruser = User.objects.get(username=user_name)
 
-    checkboxanswers = radiobuttonanswers = textfieldanswers = fileanswers = None
+    checkboxanswers = multichoiceanswers = textfieldanswers = fileanswers = None
     if tasktype == "CHECKBOX_EXERCISE":
         checkboxanswers = UserCheckboxExerciseAnswer.objects.filter(exercise=content, user=ruser)
     elif tasktype == "MULTIPLE_CHOICE_EXERCISE":
-        radiobuttonanswers = UserRadiobuttonExerciseAnswer.objects.filter(exercise=content, user=ruser)
+        multichoiceanswers = UserMultipleChoiceExerciseAnswer.objects.filter(exercise=content, user=ruser)
     elif tasktype == "TEXTFIELD_EXERCISE":
         textfieldanswers = UserTextfieldExerciseAnswer.objects.filter(exercise=content, user=ruser)
     elif tasktype == "FILE_UPLOAD_EXERCISE":
-        fileanswers = UserFileExerciseAnswer.objects.filter(exercise=content, user=ruser)
+        fileanswers = UserFileUploadExerciseAnswer.objects.filter(exercise=content, user=ruser)
 
     t = loader.get_template("stats/user_task_stats.html")
     c = RequestContext(request, {
         'username': user_name,
         'taskname': task_name,
         'checkboxanswers': checkboxanswers,
-        'radiobuttonanswers': radiobuttonanswers,
+        'multichoiceanswers': multichoiceanswers,
         'textfieldanswers': textfieldanswers,
         'fileanswers': fileanswers,
     })
