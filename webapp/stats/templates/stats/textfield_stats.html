@@ -1,51 +1,51 @@
 {% extends 'stats/exercise_stats.html' %}
-{% block exercise-stats %}
- <p>
-    "{{ content.name }}" is a textfield exercise.<br />
-    {% if answers %}
-      <table>
-        <tr><th>Answer choice</th>
-        <th>Correct?</th></tr>
-        {% for answer in answers %}
-          <tr>
-            <td>{{ answer }}</td>
-            {% if answer.correct %}
-              <td class="correct">{{ answer.correct }}</td>
-            {% else %}
-              <td class="incorrect">{{ answer.correct }}</td>
-            {% endif %}
-          </tr>
-        {% endfor %}
-      </table>
-    {% else %}
-      It has no answer choices.
-    {% endif %}
 
-    {% if answer_count %}
-      <div>The exercise has been answered {{ answer_count }} times.</div>
-      <div>The exercise has been answered by {{ user_count }} different user(s).</div>
-      <div>The exercise has been answered correctly by {{ correctly_by }} different user(s).</div>
-      <div>Average attempts per user: {{ answers_avg }}. </div>
-      <div>- Standard deviation: </div>
-      <div>Median attempts per user: </div>
-      <div>Hint coverage for incorrect answers: </div>
-      <br />
-      <table>
-        <tr><th>User answer</th><th>Count</th><th>Correct?</th><th>Hint given?</th><th>Latest answer</th></tr>
-        {% for answer, count, correct, hinted, latest in answer_data %}
-          <tr>
-            <td class="answer">{{ answer }}</td>
-            <td>{{ count }}</td>
-            {% if correct %}
-              <td class="correct">{{ correct }}</td>
-            {% else %}
-              <td class="incorrect">{{ correct }}</td>
-            {% endif %}
-            <td>{{ hinted }}</td>
-            <td>{{ latest|date:"Y-m-d, H:i:s" }}</td>
-          </tr>
-        {% endfor %}
-      </table>
-    {% endif %}
+{% block general-info %}
+  <p>"{{ content.name }}" is a textfield exercise.</p>
+  {% if answers %}
+  <table>
+    <tr><th>Answer choice</th>
+      <th>Correct?</th></tr>
+    {% for answer in answers %}
+    <tr>
+      <td>{{ answer }}</td>
+      {% if answer.correct %}
+      <td class="correct">{{ answer.correct }}</td>
+      {% else %}
+      <td class="incorrect">{{ answer.correct }}</td>
+      {% endif %}
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  It has no answer choices.
+  {% endif %}
+{% endblock %}
+
+{% block exercise-stats %}
+  <p>    
+    <div>The exercise has been answered {{ answer_count }} times.</div>
+    <div>The exercise has been answered by {{ user_count }} different user(s).</div>
+    <div>The exercise has been answered correctly by {{ correctly_by }} different user(s).</div>
+    <div>Average attempts per user: {{ answers_avg }}. </div>
+    <div>- Standard deviation: </div>
+    <div>Median attempts per user: </div>
+    <div>Hint coverage for incorrect answers: </div>
   </p>
+  <table>
+    <tr><th>User answer</th><th>Count</th><th>Correct?</th><th>Hint given?</th><th>Latest answer</th></tr>
+    {% for answer, count, correct, hinted, latest in answer_data %}
+    <tr>
+      <td class="answer">{{ answer }}</td>
+      <td>{{ count }}</td>
+      {% if correct %}
+      <td class="correct">{{ correct }}</td>
+      {% else %}
+      <td class="incorrect">{{ correct }}</td>
+      {% endif %}
+      <td>{{ hinted }}</td>
+      <td>{{ latest|date:"Y-m-d, H:i:s" }}</td>
+    </tr>
+    {% endfor %}
+  </table>
 {% endblock %}

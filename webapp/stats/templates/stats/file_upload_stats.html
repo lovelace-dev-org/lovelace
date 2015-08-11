@@ -1,10 +1,12 @@
 {% extends 'stats/exercise_stats.html' %}
+
+{% block general-info %}
+  <div>"{{ content.name }}" is a file upload exercise.</div>
+{% endblock %}
+    
 {% block exercise-stats %}
-  <p>
-    <div>"{{ content.name }}" is a file upload exercise.</div>
-    <div>The task has been answered {{ answer_count }} times.</div>
-    <div>The task has been answered by {{ user_count }} different user(s).</div>
-    <div>The task has been answered correctly by {{ correctly_by }} different user(s).</div>
-    <div>Average attempts per user: {{ answers_avg }} </div>
-  </p>
+  <div>The task has been answered {{ answer_count }} times.</div>
+  <div>The task has been answered by {{ user_count }} different user(s).</div>
+  <div>The task has been answered correctly by {{ correctly_by }} different user(s).</div>
+  <div>Average attempts per user: {{ answers_avg }} </div>
 {% endblock %}

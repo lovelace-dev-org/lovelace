@@ -18,10 +18,24 @@
         word-wrap: break-word;
     }
 </style-->
-{% block page-content %}
-<h1>Statistics for "{{ content.name }}"</h1>
-<h2>General exercise information</h2>
-{% block exercise-stats %}
+{% block page-title %}
+  Statistics – {{ content.name }}
 {% endblock %}
+
+{% block breadcrumb-links %}
+  <li><a href="{% url 'courses:index' %}">Courses</a></li>
+  <div class="separator">»</div>
+  <li><a href="{% url 'courses:sandbox' content.slug %}">{{ content.name }}</a></li>
+{% endblock %}
+
+{% block page-content %}
+  <h1>Statistics for "{{ content.name }}"</h1>
+  <h2>General exercise information</h2>
+  {% block general-info %}{% endblock %}
+  
+  {% if answer_count %}
+  <h2>User answer data</h2>
+  {% block exercise-stats %}{% endblock %}
+  {% endif %}
 {% endblock %}
  

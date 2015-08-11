@@ -273,7 +273,7 @@ def sandboxed_content(request, content_slug, **kwargs):
 
     user = request.user
     if not user.is_authenticated() or not user.is_active or not user.is_staff:
-        return HttpResponseNotFound("Only logged in admins can view pages in sandbox!")
+        return HttpResponseForbidden("Only logged in admins can view pages in sandbox!")
 
     d = {'content': content,
          'content_name': content.name,
