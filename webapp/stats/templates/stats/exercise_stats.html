@@ -1,0 +1,27 @@
+{% extends 'courses/base.html' %}
+<!--style type="text/css">
+    table {
+        white-space: pre-wrap;
+        max-width: 100%;
+    }
+    td {
+        border: 1px solid #666;
+    }
+    .correct {
+        color: #0C0;
+    }
+    .incorrect {
+        color: #F00;
+    }
+
+    td.answer {
+        word-wrap: break-word;
+    }
+</style-->
+{% block page-content %}
+<h1>Statistics for "{{ content.name }}"</h1>
+<h2>General exercise information</h2>
+{% block exercise-stats %}
+{% endblock %}
+{% endblock %}
+ 

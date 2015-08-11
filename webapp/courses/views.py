@@ -107,7 +107,7 @@ def check_answer_sandboxed(request, content_slug):
         return HttpResponseNotAllowed(['POST'])
 
     user = request.user
-    if not user.is_active or not user.is_staff:
+    if not user.is_authenticated() or not user.is_active or not user.is_staff:
         return JsonResponse({
             'result': 'Only logged in admins can send their answers for evaluation!'
         })
@@ -272,7 +272,7 @@ def sandboxed_content(request, content_slug, **kwargs):
     rendered_content = content.rendered_markup(request)
 
     user = request.user
-    if not user.is_staff or not user.is_authenticated():
+    if not user.is_authenticated() or not user.is_active or not user.is_staff:
         return HttpResponseNotFound("Only logged in admins can view pages in sandbox!")
 
     d = {'content': content,
