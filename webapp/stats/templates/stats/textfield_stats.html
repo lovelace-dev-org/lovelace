@@ -28,9 +28,9 @@
     <div>The exercise has been answered by {{ user_count }} different user(s).</div>
     <div>The exercise has been answered correctly by {{ correctly_by }} different user(s).</div>
     <div>Average attempts per user: {{ answers_avg }}. </div>
-    <div>- Standard deviation: </div>
+    <div>Standard deviation of attempts per user: {{ answers_sd }} </div>
     <div>Median attempts per user: </div>
-    <div>Hint coverage for incorrect answers: </div>
+    <div>Hint coverage for incorrect answers: {{ hint_coverage }} </div>
   </p>
   <table>
     <tr><th>User answer</th><th>Count</th><th>Correct?</th><th>Hint given?</th><th>Latest answer</th></tr>

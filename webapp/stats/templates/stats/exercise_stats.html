@@ -31,11 +31,11 @@
 {% block page-content %}
   <h1>Statistics for "{{ content.name }}"</h1>
   <h2>General exercise information</h2>
-  {% block general-info %}{% endblock %}
+  <p>{% block general-info %}{% endblock %}</p>
   
   {% if answer_count %}
   <h2>User answer data</h2>
-  {% block exercise-stats %}{% endblock %}
+  <p>{% block exercise-stats %}{% endblock %}</p>
   {% endif %}
 {% endblock %}
  

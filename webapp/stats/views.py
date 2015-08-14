@@ -1,4 +1,5 @@
 import re
+import math
 
 import django
 from django.http import HttpResponse, HttpResponseRedirect, HttpResponseNotFound
@@ -57,13 +58,22 @@ def checkbox_exercise(content_page, context):
     answer_count = answers.count()
     chosen_answers = list(answers.values_list("chosen_answers", flat=True))
     chosen_answers_set = set(chosen_answers)
-    users_answered = set(answers.values_list("user", flat=True))
+    user_objects = list(answers.values_list("user", flat=True))
+    users_answered = set(user_objects)
     
     user_count = len(users_answered)
     try:
-        answers_avg = round(float(answer_count) / user_count, 2)
+        answers_avg = round(answer_count / user_count, 2)
     except ZeroDivisionError:
         answers_avg = 0
+        
+    user_answer_counts = (user_objects.count(user) for user in users_answered)
+    deviations_squared = ((uac - answers_avg) ** 2 for uac in user_answer_counts)
+    try:
+        answers_var = (1 / user_count) * sum(deviations_squared)
+    except ZeroDivisionError:
+        answers_var = 0
+    answers_sd = round(math.sqrt(answers_var), 2)    
 
     answer_data = []
     for answer in chosen_answers_set:
@@ -82,6 +92,7 @@ def checkbox_exercise(content_page, context):
         "answer_count": answer_count,
         "user_count": user_count,
         "answers_avg": answers_avg,
+        "answers_sd": answers_sd,
         "answer_data": answer_data,
         "correctly_by": correctly_by,
     })
@@ -98,17 +109,34 @@ def multiple_choice_exercise(content_page, context):
     answer_count = answers.count()
     chosen_answers = list(answers.values_list("chosen_answer", flat=True))
     chosen_answers_set = set(chosen_answers)
+    user_objects = list(answers.values_list("user", flat=True))
+    users_answered = set(user_objects)
 
-    user_count = len(set(answers.values_list("user", flat=True)))
+    user_count = len(users_answered)
     try:
-        answers_avg = round(float(answer_count) / user_count, 2)
+        answers_avg = round(answer_count / user_count, 2)
     except ZeroDivisionError:
         answers_avg = 0
+
+    user_answer_counts = (user_objects.count(user) for user in users_answered)
+    deviations_squared = ((uac - answers_avg) ** 2 for uac in user_answer_counts)
+    try:
+        answers_var = (1 / user_count) * sum(deviations_squared)
+    except ZeroDivisionError:
+        answers_var = 0
+    answers_sd = round(math.sqrt(answers_var), 2)
 
     answer_data = []
     for answer in chosen_answers_set:
         choice = MultipleChoiceExerciseAnswer.objects.get(id=answer)
         answer_data.append((choice.answer, chosen_answers.count(answer), choice.correct))
+
+    correctly_by = 0
+    for user in users_answered:
+        evaluations = Evaluation.objects.filter(useranswer__usertextfieldexerciseanswer__exercise=content_page, useranswer__user=user)
+        correct = evaluations.filter(points__gt=0.0)
+        if correct: 
+            correctly_by += 1
 
     context.update({
         "choices": choices,
@@ -116,7 +144,9 @@ def multiple_choice_exercise(content_page, context):
         "answer_count": answer_count,
         "user_count": user_count,
         "answers_avg": answers_avg,
+        "answers_sd": answers_sd,
         "answer_data": answer_data,
+        "correctly_by": correctly_by,
     })
     t = loader.get_template("stats/multiple_choice_stats.html")
     return HttpResponse(t.render(context))
@@ -132,19 +162,41 @@ def textfield_exercise(content_page, context):
     given_answers = list(answer_objects.values_list("given_answer", flat=True))
     answer_count = len(given_answers)
     given_answers_set = set(given_answers)
-    users_answered = set(answer_objects.values_list("user", flat=True))
+    user_objects = list(answer_objects.values_list("user", flat=True))
+    users_answered = set(user_objects)
     
     user_count = len(users_answered)
     try:
-        answers_avg = round(float(answer_count) / user_count, 2)
+        answers_avg = round(answer_count / user_count, 2)
     except ZeroDivisionError:
         answers_avg = 0
         
+    user_answer_counts = (user_objects.count(user) for user in users_answered)
+    deviations_squared = ((uac - answers_avg) ** 2 for uac in user_answer_counts)
+    try:
+        answers_var = (1 / user_count) * sum(deviations_squared)
+    except ZeroDivisionError:
+        answers_var = 0
+    answers_sd = round(math.sqrt(answers_var), 2)
+
     answer_data = []
+    incorrect_sum = 0
+    hinted_incorrect_sum = 0
     for answer in given_answers_set:
-        latest = answer_objects.filter(given_answer=answer).latest('answer_date').answer_date
-        answer_data.append((answer, given_answers.count(answer),) + textfield_eval(answer, answers) + (latest,))
+        count = given_answers.count(answer)
+        correct, hinted = textfield_eval(answer, answers)
+        if not correct:
+            incorrect_sum += 1
+            if hinted:
+                hinted_incorrect_sum += 1
+        latest = answer_objects.filter(given_answer=answer).latest('answer_date')
+        answer_data.append((answer, count, correct, hinted, latest))
     answer_data = sorted(answer_data, key=lambda x: x[1], reverse=True)
+
+    try:
+        hint_coverage = hinted_incorrect_sum / incorrect_sum
+    except ZeroDivisionError:
+        hint_coverage = 1.0
 
     correctly_by = 0
     for user in users_answered:
@@ -158,6 +210,8 @@ def textfield_exercise(content_page, context):
         "answer_count": answer_count,
         "user_count": user_count,
         "answers_avg": answers_avg,
+        "answers_sd": answers_sd,
+        "hint_coverage": hint_coverage,
         "answer_data": answer_data,
         "correctly_by": correctly_by,
     })
@@ -172,12 +226,20 @@ def file_upload_exercise(content_page, context):
     user_objects = list(UserFileUploadExerciseAnswer.objects.filter(exercise=content_page).values_list("user", flat=True))
     answer_count = len(user_objects) # how many times answered
     users_answered = set(user_objects)
-
     user_count = len(users_answered) # how many different users have answered
+
     try:
-        answers_avg = round(float(answer_count) / user_count, 2)
+        answers_avg = round(answer_count / user_count, 2)
     except ZeroDivisionError:
         answers_avg = 0
+    
+    user_answer_counts = (user_objects.count(user) for user in users_answered)
+    deviations_squared = ((uac - answers_avg) ** 2 for uac in user_answer_counts)
+    try:
+        answers_var = (1 / user_count) * sum(deviations_squared)
+    except ZeroDivisionError:
+        answers_var = 0
+    answers_sd = round(math.sqrt(answers_var), 2)
 
     correctly_by = 0
     for user in users_answered:
@@ -190,6 +252,7 @@ def file_upload_exercise(content_page, context):
         "answer_count": answer_count,
         "user_count": user_count,
         "answers_avg": answers_avg,
+        "answers_sd": answers_sd,
         "correctly_by": correctly_by,
     })
     t = loader.get_template("stats/file_upload_stats.html")
@@ -219,7 +282,7 @@ def single_exercise(request, task_name):
     elif tasktype == "FILE_UPLOAD_EXERCISE":
         return file_upload_exercise(content_page, c)
     else:
-        return HttpResponseNotFound("No exercise {} found!".format(task_name))
+        return HttpResponseNotFound("No stats for exercise {} found!".format(task_name))
 
 def user_task(request, user_name, task_name):
     '''Shows a user's answers to a task.'''
