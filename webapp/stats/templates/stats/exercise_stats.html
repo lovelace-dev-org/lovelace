@@ -1,0 +1,41 @@
+{% extends 'courses/base.html' %}
+<!--style type="text/css">
+    table {
+        white-space: pre-wrap;
+        max-width: 100%;
+    }
+    td {
+        border: 1px solid #666;
+    }
+    .correct {
+        color: #0C0;
+    }
+    .incorrect {
+        color: #F00;
+    }
+
+    td.answer {
+        word-wrap: break-word;
+    }
+</style-->
+{% block page-title %}
+  Statistics – {{ content.name }}
+{% endblock %}
+
+{% block breadcrumb-links %}
+  <li><a href="{% url 'courses:index' %}">Courses</a></li>
+  <div class="separator">»</div>
+  <li><a href="{% url 'courses:sandbox' content.slug %}">{{ content.name }}</a></li>
+{% endblock %}
+
+{% block page-content %}
+  <h1>Statistics for "{{ content.name }}"</h1>
+  <h2>General exercise information</h2>
+  <p>{% block general-info %}{% endblock %}</p>
+  
+  {% if answer_count %}
+  <h2>User answer data</h2>
+  <p>{% block exercise-stats %}{% endblock %}</p>
+  {% endif %}
+{% endblock %}
+ 

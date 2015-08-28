@@ -2,19 +2,25 @@
 {% load i18n %}
 {% load content_extra %}
 
-{% if user.is_active %}
-  {% content_meta %}
-{% endif %}
-
 {% if emb_content %}
   <div>{{ emb_content|safe }}</div>
+{% endif %}
+
+{% if user.is_staff and user.is_active %}
+  {% content_meta %}
 {% endif %}
 
 {% if content.is_answerable %}
   <div class="question">
     <div class="hints" style="display: none"></div>
+    {% if sandboxed %}
+    <form id="{{ content_slug }}-form" class="exercise-form" method="POST" enctype="multipart/form-data"
+          action="{% url 'courses:check_sandboxed' content.slug %}">
+    {% else %}
     <form id="{{ content_slug }}-form" class="exercise-form" method="POST" enctype="multipart/form-data"
           action="{% url 'courses:check' course_slug content.slug %}">
+    {% endif %}
+
       {% csrf_token %}
       {% if question %}{{ question|safe }}{% endif %}
       

@@ -21,7 +21,7 @@ urlpatterns = [
     url(r'^calendar/(?P<calendar_id>\d+)/(?P<event_id>\d+)/$', views.calendar_post),
 
     # Sandbox: admin view & answer for content pages without saved results
-    url(r'^sandbox/(?P<content_slug>[^/]+)/$', views.content, {'sandbox': True,}, name='sandbox',),
+    url(r'^sandbox/(?P<content_slug>[^/]+)/$', views.sandboxed_content, name='sandbox',),
 
     # Help pages
     url(r'^help/$', views.help_list, name='help_list',),
@@ -34,7 +34,8 @@ urlpatterns = [
 
     # Exercise sending for checking, progress and evaluation views
     url(r'^(?P<course_slug>[^/]+)/(?P<content_slug>[^/]+)/check/$', views.check_answer, name='check'),
-    url(r'^(?P<course_slug>[^/]+)/(?P<content_slug>[^/]+)/progress/(?P<task_id>[^/]+)/$',
+    url(r'^sandbox/(?P<content_slug>[^/]+)/check_sandboxed/$', views.check_answer_sandboxed, name='check_sandboxed'),
+    url(r'^(?P<content_slug>[^/]+)/progress/(?P<task_id>[^/]+)/$',
         views.check_progress, name='check_progress'),
     url(r'^(?P<course_slug>[^/]+)/(?P<content_slug>[^/]+)/evaluation/(?P<task_id>[^/]+)/$',
         views.file_exercise_evaluation, name='file_exercise_evaluation'),

@@ -53,7 +53,10 @@ def index(request):
 
 @cookie_law 
 def course(request, course_slug):
-    course = Course.objects.get(slug=course_slug)
+    try:
+        course = Course.objects.get(slug=course_slug)
+    except Course.DoesNotExist:
+        return HttpResponseNotFound("Course {} does not exist!".format(course_slug))
 
     frontpage = course.frontpage
     if frontpage:
@@ -94,11 +97,60 @@ def course_tree(tree, node, user):
             course_tree(tree, child, user)
         tree.append((mark_safe('<'), None))
 
+def check_answer_sandboxed(request, content_slug):
+    """
+    Saves and evaluates a user's answer to an exercise and sends the results
+    back to the user in sanboxed mode.
+    """
+    
+    if request.method != "POST":
+        return HttpResponseNotAllowed(['POST'])
+
+    user = request.user
+    if not user.is_authenticated() or not user.is_active or not user.is_staff:
+        return JsonResponse({
+            'result': 'Only logged in admins can send their answers for evaluation!'
+        })
+
+    content = ContentPage.objects.get(slug=content_slug)
+    
+    user = request.user
+    ip = request.META.get('REMOTE_ADDR')
+    answer = request.POST
+    files = request.FILES
+
+    exercise = content.get_type_object()
+    
+    try:
+        answer_object = exercise.save_answer(user, ip, answer, files)
+    except InvalidAnswerException as e:
+        return JsonResponse({
+            'result': str(e)
+        })
+    evaluation = exercise.check_answer(user, ip, answer, files, answer_object)
+    if not exercise.manually_evaluated:
+        if exercise.content_type == "FILE_UPLOAD_EXERCISE":
+            task_id = evaluation["task_id"]
+            return check_progress(request, content_slug, task_id)
+        exercise.save_evaluation(user, evaluation, answer_object)
+        evaluation["manual"] = False
+    else:
+        evaluation["manual"] = True
+
+    # TODO: Errors, hints, comments in JSON
+    t = loader.get_template("courses/exercise_evaluation.html")
+    c = Context(evaluation)
+    return JsonResponse({
+        'result': t.render(c),
+        'evaluation': evaluation["evaluation"],
+    })
+
 def check_answer(request, course_slug, content_slug):
     """
     Saves and evaluates a user's answer to an exercise and sends the results
     back to the user.
     """
+
     if request.method != "POST":
         return HttpResponseNotAllowed(['POST'])
 
@@ -142,7 +194,7 @@ def check_answer(request, course_slug, content_slug):
     if not exercise.manually_evaluated:
         if exercise.content_type == "FILE_UPLOAD_EXERCISE":
             task_id = evaluation["task_id"]
-            return check_progress(request, course_slug, content_slug, task_id)
+            return check_progress(request, content_slug, task_id)
         exercise.save_evaluation(user, evaluation, answer_object)
         evaluation["manual"] = False
     else:
@@ -155,27 +207,25 @@ def check_answer(request, course_slug, content_slug):
         'result': t.render(c),
         'evaluation': evaluation["evaluation"],
     })
-    
 
-def check_progress(request, course_slug, content_slug, task_id):
+def check_progress(request, content_slug, task_id):
     # Based on https://djangosnippets.org/snippets/2898/
     # TODO: Check permissions
     task = AsyncResult(task_id)
     if task.ready():
-        return file_exercise_evaluation(request, course_slug, content_slug, task_id, task)
+        return file_exercise_evaluation(request, content_slug, task_id, task)
     else:
         celery_status = get_celery_worker_status()
         if "errors" in celery_status:
             data = celery_status
         else:
             progress_url = reverse('courses:check_progress',
-                                   kwargs={"course_slug": course_slug,
-                                           "content_slug": content_slug,
+                                   kwargs={"content_slug": content_slug,
                                            "task_id": task_id,})
             data = {"state": task.state, "metadata": task.info, "redirect": progress_url}
         return JsonResponse(data)
 
-def file_exercise_evaluation(request, course_slug, content_slug, task_id, task=None):
+def file_exercise_evaluation(request, content_slug, task_id, task=None):
     if task is None:
         task = AsyncResult(task_id)
     evaluation_id = task.get()
@@ -209,16 +259,71 @@ def file_exercise_evaluation(request, course_slug, content_slug, task_id, task=N
     return JsonResponse(data)
 
 @cookie_law
+def sandboxed_content(request, content_slug, **kwargs):
+    try:
+        content = ContentPage.objects.get(slug=content_slug).get_type_object()
+    except ContentPage.DoesNotExist:
+        return HttpResponseNotFound("Content {} does not exist!".format(content_slug))
+
+    content_type = content.content_type
+    question = blockparser.parseblock(escape(content.question))
+    choices = answers = content.get_choices()
+
+    rendered_content = content.rendered_markup(request)
+
+    user = request.user
+    if not user.is_authenticated() or not user.is_active or not user.is_staff:
+        return HttpResponseForbidden("Only logged in admins can view pages in sandbox!")
+
+    d = {'content': content,
+         'content_name': content.name,
+         'content_type': content_type,
+         'question': question,
+         'choices': choices,
+         'user': user,
+         'sandboxed': True,}
+
+    if content_type == "LECTURE":
+        d['rendered_content'] = rendered_content
+        c = RequestContext(request, d)
+    else:
+        d['emb_content'] = rendered_content
+        exercise_c = RequestContext(request, d)
+        dashed_type = content.get_dashed_type()
+        t = loader.get_template("courses/{dashed_type}.html".format(
+            dashed_type=content.get_dashed_type()
+        ))
+        rendered_content = t.render(exercise_c)
+        c = RequestContext(request, {
+            'rendered_content': rendered_content,
+            'content_name': content.name,
+            'content_type': content_type,
+            'user': user,
+            'sandboxed': True,
+        })
+    if "frontpage" in kwargs:
+        return c
+    else:
+        t = loader.get_template("courses/contentpage.html")
+        return HttpResponse(t.render(c))
+
+@cookie_law
 def content(request, course_slug, content_slug, **kwargs):
-    course = Course.objects.get(slug=course_slug)
-    # TODO: Ensure content is part of course!
-    content = ContentPage.objects.get(slug=content_slug).get_type_object()
+    try:
+        course = Course.objects.get(slug=course_slug)
+    except Course.DoesNotExist:
+        return HttpResponseNotFound("Course {} does not exist!".format(course_slug))
+
+    try:
+        content = ContentPage.objects.get(slug=content_slug).get_type_object()
+    except ContentPage.DoesNotExist:
+        return HttpResponseNotFound("Content {} does not exist!".format(content_slug))
 
     content_graph = None
     try:
         content_graph = course.contents.get(content=content)
-    except ContentGraph.DoesNotExist as e:
-        pass
+    except ContentGraph.DoesNotExist:
+        return HttpResponseNotFound("Content {} is not linked to course {}!".format(content_slug, course_slug))
 
     content_type = content.content_type
     question = blockparser.parseblock(escape(content.question))
@@ -226,7 +331,7 @@ def content(request, course_slug, content_slug, **kwargs):
 
     evaluation = None
     if request.user.is_authenticated():
-        if not content_graph or not content_graph.publish_date or content_graph.publish_date < datetime.datetime.now():
+        if not content_graph.publish_date or content_graph.publish_date < datetime.datetime.now():
             evaluation = content.get_user_evaluation(request.user)
 
     context = {
@@ -247,6 +352,7 @@ def content(request, course_slug, content_slug, **kwargs):
         'choices': choices,
         'evaluation': evaluation,
         'user': user,
+        'sandboxed': False,
     })
     if "frontpage" in kwargs:
         return c

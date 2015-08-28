@@ -43,7 +43,7 @@ function success_function(data, result_div, error_div, form_parent) {
         error_div.html(data.errors);
         error_div.css("display", "block");
     }
-    if (data.hints) {
+    if (data.hints && data.evaluation === false) {
         hints_div.html(data.hints);
         hints_div.css("display", "block");
     }
