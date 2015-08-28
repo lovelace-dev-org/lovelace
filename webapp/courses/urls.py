@@ -5,11 +5,6 @@ from . import views
 urlpatterns = [
     url(r'^$', views.index, name='index'),
 
-    # For the registration module
-    # TODO: AllAuth
-    #url(r'^accounts/', include('registration.urls')),
-    #url(r'^accounts/', views.index),
-
     # For viewing and changing user information
     url(r'^answers/(?P<user>[^/]+)/(?P<course>[^/]+)/(?P<exercise>[^/]+)',
         views.show_answers, name='show_answers'),
@@ -35,7 +30,7 @@ urlpatterns = [
     # Exercise sending for checking, progress and evaluation views
     url(r'^(?P<course_slug>[^/]+)/(?P<content_slug>[^/]+)/check/$', views.check_answer, name='check'),
     url(r'^sandbox/(?P<content_slug>[^/]+)/check_sandboxed/$', views.check_answer_sandboxed, name='check_sandboxed'),
-    url(r'^(?P<content_slug>[^/]+)/progress/(?P<task_id>[^/]+)/$',
+    url(r'^(?P<course_slug>[^/]+)/(?P<content_slug>[^/]+)/progress/(?P<task_id>[^/]+)/$',
         views.check_progress, name='check_progress'),
     url(r'^(?P<course_slug>[^/]+)/(?P<content_slug>[^/]+)/evaluation/(?P<task_id>[^/]+)/$',
         views.file_exercise_evaluation, name='file_exercise_evaluation'),

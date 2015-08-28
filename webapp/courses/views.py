@@ -54,20 +54,20 @@ def index(request):
 @cookie_law 
 def course(request, course_slug):
     try:
-        course = Course.objects.get(slug=course_slug)
+        course_obj = Course.objects.get(slug=course_slug)
     except Course.DoesNotExist:
         return HttpResponseNotFound("Course {} does not exist!".format(course_slug))
 
-    frontpage = course.frontpage
+    frontpage = course_obj.frontpage
     if frontpage:
         content_slug = frontpage.slug
         context = content(request, course_slug, content_slug, frontpage=True)
     else:
         context = {}
 
-    context["course"] = course 
+    context["course"] = course_obj
 
-    contents = course.contents.filter(visible=True).order_by('ordinal_number')
+    contents = course_obj.contents.filter(visible=True).order_by('ordinal_number')
     if len(contents) > 0:
         tree = []    
         tree.append((mark_safe('>'), None))
@@ -102,6 +102,8 @@ def check_answer_sandboxed(request, content_slug):
     Saves and evaluates a user's answer to an exercise and sends the results
     back to the user in sanboxed mode.
     """
+
+    course_slug = "sandbox"
     
     if request.method != "POST":
         return HttpResponseNotAllowed(['POST'])
@@ -131,7 +133,7 @@ def check_answer_sandboxed(request, content_slug):
     if not exercise.manually_evaluated:
         if exercise.content_type == "FILE_UPLOAD_EXERCISE":
             task_id = evaluation["task_id"]
-            return check_progress(request, content_slug, task_id)
+            return check_progress(request, course_slug, content_slug, task_id)
         exercise.save_evaluation(user, evaluation, answer_object)
         evaluation["manual"] = False
     else:
@@ -194,7 +196,7 @@ def check_answer(request, course_slug, content_slug):
     if not exercise.manually_evaluated:
         if exercise.content_type == "FILE_UPLOAD_EXERCISE":
             task_id = evaluation["task_id"]
-            return check_progress(request, content_slug, task_id)
+            return check_progress(request, course_slug, content_slug, task_id)
         exercise.save_evaluation(user, evaluation, answer_object)
         evaluation["manual"] = False
     else:
@@ -208,7 +210,7 @@ def check_answer(request, course_slug, content_slug):
         'evaluation': evaluation["evaluation"],
     })
 
-def check_progress(request, content_slug, task_id):
+def check_progress(request, course_slug, content_slug, task_id):
     # Based on https://djangosnippets.org/snippets/2898/
     # TODO: Check permissions
     task = AsyncResult(task_id)
@@ -220,12 +222,13 @@ def check_progress(request, content_slug, task_id):
             data = celery_status
         else:
             progress_url = reverse('courses:check_progress',
-                                   kwargs={"content_slug": content_slug,
+                                   kwargs={"course_slug": course_slug,
+                                           "content_slug": content_slug,
                                            "task_id": task_id,})
             data = {"state": task.state, "metadata": task.info, "redirect": progress_url}
         return JsonResponse(data)
 
-def file_exercise_evaluation(request, content_slug, task_id, task=None):
+def file_exercise_evaluation(request, course_slug, content_slug, task_id, task=None):
     if task is None:
         task = AsyncResult(task_id)
     evaluation_id = task.get()
@@ -320,10 +323,11 @@ def content(request, course_slug, content_slug, **kwargs):
         return HttpResponseNotFound("Content {} does not exist!".format(content_slug))
 
     content_graph = None
-    try:
-        content_graph = course.contents.get(content=content)
-    except ContentGraph.DoesNotExist:
-        return HttpResponseNotFound("Content {} is not linked to course {}!".format(content_slug, course_slug))
+    # TODO: The content must be part of the course
+    #try:
+        #content_graph = course.contents.get(content=content)
+    #except ContentGraph.DoesNotExist:
+        #return HttpResponseNotFound("Content {} is not linked to course {}!".format(content_slug, course_slug))
 
     content_type = content.content_type
     question = blockparser.parseblock(escape(content.question))
@@ -331,7 +335,7 @@ def content(request, course_slug, content_slug, **kwargs):
 
     evaluation = None
     if request.user.is_authenticated():
-        if not content_graph.publish_date or content_graph.publish_date < datetime.datetime.now():
+        if not content_graph or content_graph.publish_date or content_graph.publish_date < datetime.datetime.now():
             evaluation = content.get_user_evaluation(request.user)
 
     context = {
