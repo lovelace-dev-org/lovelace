@@ -110,6 +110,8 @@ pip install django-redis
 pip install celery[redis]
 pip install django-allauth
 pip install django-smuggler
+pip install django-nested-inline
+
 
 Edit the configuration
 ----------------------

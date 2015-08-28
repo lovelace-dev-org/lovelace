@@ -34,6 +34,7 @@ INSTALLED_APPS = (
     'stats',
     'feedback',
     'smuggler',
+    'nested_inline',
 )
 
 SITE_ID = 1

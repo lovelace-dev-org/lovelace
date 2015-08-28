@@ -8,6 +8,7 @@ from django.core.urlresolvers import reverse
 
 from django.db import models
 from django.forms import TextInput, Textarea
+from nested_inline.admin import NestedStackedInline, NestedTabularInline, NestedModelAdmin
 
 ## User profiles
 # http://stackoverflow.com/questions/4565814/django-user-userprofile-and-admin
@@ -39,13 +40,74 @@ admin.site.register(Evaluation)
 #        return qs.select_subclasses().filter(users=request.user)
 
 # TODO: How to link ContentFeedbackQuestion objects nicely?
-class HintInline(admin.TabularInline):
+class HintInline(NestedTabularInline):
     model = Hint
+    fk_name = 'exercise'
     extra = 0
+    queryset = NestedTabularInline.get_queryset
 
 class MultipleChoiceExerciseAnswerInline(admin.TabularInline):
     model = MultipleChoiceExerciseAnswer
     extra = 1
+
+class FileExerciseTestExpectedOutputInline(NestedStackedInline):
+    model = FileExerciseTestExpectedOutput
+    extra = 0
+    fk_name = 'command'
+    queryset = NestedStackedInline.get_queryset
+
+class FileExerciseTestCommandInline(NestedStackedInline):
+    model = FileExerciseTestCommand
+    extra = 1
+    fk_name = 'stage'
+    queryset = NestedStackedInline.get_queryset
+    fieldsets = (
+        ('', {
+            'fields': ('command_line', 'ordinal_number')
+        }),
+        ('Extra Options', {
+            'classes': ('collapse',),
+            'fields': ('significant_stdout', 'significant_stderr', 'timeout', 
+                       'signal', 'input_text', 'return_value')
+        }),
+    )
+    inlines = [FileExerciseTestExpectedOutputInline]
+
+class FileExerciseTestStageInline(NestedStackedInline):
+    model = FileExerciseTestStage
+    fields = ('name', 'ordinal_number', 'depends_on',)
+    extra = 1
+    fk_name = 'test'
+    inlines = [FileExerciseTestCommandInline]
+    queryset = NestedStackedInline.get_queryset
+
+class FileExerciseTestInline(NestedStackedInline):
+    model = FileExerciseTest
+    fields = ('exercise', 'name', 'required_files')
+    extra = 1
+    fk_name = 'exercise'
+    inlines = [FileExerciseTestStageInline]
+    queryset = NestedStackedInline.get_queryset
+    
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "exercise":
+            kwargs["queryset"] = FileUploadExercise.objects.order_by("name")
+        return super(FileExerciseTestInline, self).formfield_for_foreignkey(db_field, request, **kwargs)
+
+class FileExerciseTestIncludeFileInline(NestedStackedInline):
+    model = FileExerciseTestIncludeFile
+    extra = 0
+    fk_name = 'exercise'
+    queryset = NestedStackedInline.get_queryset
+    fieldsets = (
+        ('General information', {
+            'fields': ('name', 'purpose', 'fileinfo')
+        }),
+        ('UNIX permissions', {
+            'classes': ('collapse',),
+            'fields': ('chown_settings', 'chgrp_settings', 'chmod_settings')
+        }),
+    )
 
 class MultipleChoiceExerciseAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
@@ -143,43 +205,31 @@ class FileExerciseTestExpectedStderrAdmin(admin.StackedInline):
     extra = 0
     fields = (('expected_answer', 'hint'), 'correct', 'regexp', 'videohint')
 
-class FileExerciseTestIncludeFileAdmin(admin.StackedInline):
-    model = FileExerciseTestIncludeFile
-    extra = 0
-    fieldsets = (
-        ('General information', {
-            'fields': ('name', 'purpose', 'fileinfo')
-        }),
-        ('UNIX permissions', {
-            'classes': ('collapse',),
-            'fields': ('chown_settings', 'chgrp_settings', 'chmod_settings')
-        }),
-    )
-
-class FileExerciseTestAdmin(admin.ModelAdmin):
-    fieldsets = (
-        ('General settings', {
-            'fields': ('task', 'name', 'inputs')
-        }),
-        ('Advanced settings', {
-            'classes': ('collapse',),
-            'fields': ('timeout', 'signals', 'retval')
-        }),
-    )
-    inlines = []
-    search_fields = ("name",)
-    list_display = ("name", "exercise",)
-    list_per_page = 500
+# class FileExerciseTestAdmin(admin.ModelAdmin):
+#     fieldsets = (
+#         ('General settings', {
+#             'fields': ('task', 'name', 'inputs')
+#         }),
+#         ('Advanced settings', {
+#             'classes': ('collapse',),
+#             'fields': ('timeout', 'signals', 'retval')
+#         }),
+#     )
+#     inlines = []
+#     search_fields = ("name",)
+#     list_display = ("name", "exercise")
+#     list_per_page = 500
     
-    def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        if db_field.name == "exercise":
-            kwargs["queryset"] = FileUploadExercise.objects.order_by("name")
-        return super(FileExerciseTestAdmin, self).formfield_for_foreignkey(db_field, request, **kwargs)
+#     def formfield_for_foreignkey(self, db_field, request, **kwargs):
+#         if db_field.name == "exercise":
+#             kwargs["queryset"] = FileUploadExercise.objects.order_by("name")
+#         return super(FileExerciseTestAdmin, self).formfield_for_foreignkey(db_field, request, **kwargs)
 
 #class FileExerciseTestAdmin(admin.StackedInline):
 #    inlines = [FileExerciseTestCommandAdmin, FileExerciseTestExpectedOutputAdmin, FileExerciseTestExpectedErrorAdmin, FileExerciseTestIncludeFileAdmin]
 
-class FileExerciseAdmin(admin.ModelAdmin):
+
+class FileExerciseAdmin(NestedModelAdmin):
     def get_queryset(self, request):
         return self.model.objects.filter(content_type="FILE_UPLOAD_EXERCISE")
 
@@ -189,7 +239,7 @@ class FileExerciseAdmin(admin.ModelAdmin):
                                 'classes': ['wide']}),
         ('Feedback settings',  {'fields': ['feedback_questions']}),
     ]
-    inlines = [HintInline]
+    inlines = [HintInline, FileExerciseTestIncludeFileInline, FileExerciseTestInline]
     search_fields = ("name",)
     readonly_fields = ("slug",)
     list_display = ("name", "slug",)
@@ -224,10 +274,10 @@ admin.site.register(TextfieldExercise, TextfieldExerciseAdmin)
 admin.site.register(CodeReplaceExercise, CodeReplaceExerciseAdmin)
 admin.site.register(FileUploadExercise, FileExerciseAdmin)
 #admin.site.register(FileExerciseTest, FileExerciseTestAdmin)
-admin.site.register(FileExerciseTest)
-admin.site.register(FileExerciseTestStage)
-admin.site.register(FileExerciseTestCommand)
-admin.site.register(FileExerciseTestExpectedOutput)
+#admin.site.register(FileExerciseTest)
+#admin.site.register(FileExerciseTestStage)
+#admin.site.register(FileExerciseTestCommand)
+#admin.site.register(FileExerciseTestExpectedOutput)
 admin.site.register(FileExerciseTestIncludeFile)
 
 ## Page embeddable objects

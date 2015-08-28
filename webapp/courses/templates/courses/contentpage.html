@@ -14,10 +14,9 @@
 {% endblock %}
 
 {% block page-content %}
-{% if user.is_staff or content.content_type != "LECTURE" and user.is_active %}
-  {% content_meta %}
-{% endif %}
-{% if rendered_content or tasktype %}
+{% if content.content_type == "LECTURE"%}
+  {% include "courses/lecture.html" %}
+{% elif rendered_content or tasktype %}
   {{ rendered_content|safe }}
   {% if content.is_answerable %}
     {% include "courses/exercise.html" %}
