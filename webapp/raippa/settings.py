@@ -24,11 +24,12 @@ INSTALLED_APPS = (
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
-    'django.contrib.sites', # allauth
+    'django.contrib.sites', # Required by allauth
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'allauth',
     'allauth.account',
+    'allauth.socialaccount',
     'courses',
     'stats',
     'feedback',
@@ -56,9 +57,7 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     "django.core.context_processors.static",
     "django.core.context_processors.tz",
     "django.contrib.messages.context_processors.messages",
-    "django.core.context_processors.request", # allauth template tags
-    "allauth.account.context_processors.account",
-    #"allauth.socialaccount.context_processors.socialaccount",
+    "django.core.context_processors.request", # Required by allauth
 )
 
 AUTHENTICATION_BACKENDS = (
