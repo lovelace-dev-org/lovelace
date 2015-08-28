@@ -33,6 +33,7 @@ INSTALLED_APPS = (
     'courses',
     'stats',
     'feedback',
+    'smuggler',
 )
 
 SITE_ID = 1
@@ -184,3 +185,6 @@ CACHES = {
         }
     }
 }
+
+#Smuggler settings
+SMUGGLER_FIXTURE_DIR = os.path.join(BASE_DIR, 'fixtures')
