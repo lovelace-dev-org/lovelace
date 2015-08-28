@@ -110,11 +110,27 @@ class MarkupParser:
         except re.error as e:
             raise InvalidParserError("invalid regex syntax in a markup: %s" % e)
 
+        try:
+            cls._inline_re = re.compile(
+                r"|".join(
+                    r"(?P<%s>%s)" % (shortname, markup.regexp)
+                    for shortname, markup in sorted(cls._markups.items())
+                    if markup.regexp and markup.inline
+                )
+            )
+        except re.error as e:
+            raise InvalidParserError("invalid regex syntax in a markup: %s" % e)
+        
         cls._ready = True
 
     @classmethod
     def get_markups(cls):
         return copy.deepcopy(cls._markups)
+
+    @classmethod
+    def inline_parse(cls, block):
+        #yield from
+        return block
 
     @classmethod
     def _get_line_kind(cls, line):
@@ -157,13 +173,17 @@ class MarkupParser:
                  "list": [], "embedded_pages": embedded_pages}
 
         for (block_type, matchobj), block in itertools.groupby(lines, cls._get_line_kind):
-            block_func = cls._markups[block_type].block
+            block_markup = cls._markups[block_type]
+            block_func = block_markup.block
             
             # TODO: Modular cleanup of indent, ul, ol, table etc.
             if block_type != "list":
                 for undent_lvl in reversed(state["list"]):
                     yield '</%s>' % undent_lvl
                 state["list"] = []
+
+            block = cls.inline_parse(block) if block_markup.allow_inline\
+                    else block
             
             try:
                 settings = cls._markups[block_type].settings(matchobj, state)
@@ -203,6 +223,28 @@ class Markup:
     @classmethod
     def settings(cls, matchobj, state):
         pass
+
+
+class BoldMarkup(Markup):
+    name = "Bold"
+    shortname = "bold"
+    description = "Bold text"
+    regexp = r"[*]{2}.+[*]{2}"
+    markup_class = "inline"
+    example = ""
+    states = {}
+    inline = True
+    allow_inline = False
+
+    @classmethod
+    def block(cls, block, settings, state):
+        pass
+
+    @classmethod
+    def settings(cls, matchobj, state):
+        pass
+
+markups.append(BoldMarkup)
 
 class CalendarMarkup(Markup):
     name = "Calendar"
