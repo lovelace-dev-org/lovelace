@@ -354,7 +354,13 @@ class EmbeddedFileMarkup(Markup):
             yield "<div>Unable to decode file %s with utf-8.</div>" % settings["file_slug"]
             raise StopIteration
 
-        lexer = pygments.lexers.guess_lexer_for_filename(file_path, file_contents)
+        try:
+             lexer = pygments.lexers.guess_lexer_for_filename(file_path, file_contents)
+         except pygments.util.ClassNotFound:
+             # TODO: Modular errors
+             yield '<div>Unable to find lexer for file %s.</div>' % settings['file_slug']
+             raise StopIteration
+
         highlighted = pygments.highlight(file_contents, lexer, HtmlFormatter(nowrap=True))
 
         t = loader.get_template("courses/embedded-codefile.html")
