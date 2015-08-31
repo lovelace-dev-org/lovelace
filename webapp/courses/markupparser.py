@@ -448,7 +448,8 @@ class EmbeddedScriptMarkup(Markup):
     shortname = "script"
     description = "An embedded script, contained inside an iframe."
     regexp = r"^\<\!script\=(?P<script_slug>[^\|>]+)(\|width\=(?P<script_width>[^>|]+))?"\
-              "(\|height\=(?P<script_height>[^>|]+))?(\|border\=(?P<border>[^>|]+))?\>\s*$"
+              "(\|height\=(?P<script_height>[^>|]+))?(\|border\=(?P<border>[^>|]+))?"\
+              "(\|include\=(?P<include>[^>|]+))?" "\>\s*$"
     markup_class = "embedded item"
     example = "<!script=dijkstra-clickable-demo>"
     states = {}
@@ -464,15 +465,77 @@ class EmbeddedScriptMarkup(Markup):
             yield '<div>Script %s not found.</div>' % settings["script_slug"]
             raise StopIteration
 
-        script_url = script.fileinfo.url
-        tag = '<iframe src="%s" sandbox="allow-scripts"' % script_url
+        includes = []
+        for unparsed_include in settings.get("include") or []:
+            try:
+                where, t_and_n = unparsed_include.split(":")
+                incl_type, incl_name = t_and_n.split("=")
+            except ValueError:
+                # TODO: Modular errors
+                yield '<div>Erroneous form {} in a script markup.</div>'.format(unparsed_include)
+                raise StopIteration
+
+            try:
+                incl_obj = courses.models.File.objects.get(name=incl_name)
+            except courses.models.FileDoesNotExist as e:
+                # TODO: Modular errors
+                yield '<div>{} {} not found.</div>'.format(incl_type.capitalize(), incl_name)
+                raise StopIteration
+
+            incl_addr = escape(incl_obj.fileinfo.url)
+
+            if incl_type == "script":
+                includes.append(
+                    #(where, "<script src='{addr}'><\" + \"/script>".format(addr=escape(incl_addr)))
+                    ("script", incl_name, "type", "text/javascript", "src", incl_addr, where)
+                )
+            elif incl_type == "style":
+                includes.append(
+                    #(where, "<link rel='stylesheet' href='{addr}'>".format(addr=escape(incl_addr)))
+                    ("link", incl_name, "rel", "stylesheet", "href", incl_addr, where)
+                )
+
+        # TODO: Change the include file names into slugs to prevent spaces!
+        tag = '<iframe id="{id}" src="{addr}" sandbox="allow-same-origin allow-scripts"'.format(
+            id=escape(script.name), addr=escape(script.fileinfo.url)
+        )
         if "width" in settings:
             tag += ' width="%s"' % settings["width"]
         if "height" in settings:
             tag += ' height="%s"' % settings["height"]
         if "border" in settings:
             tag += ' frameborder="%s"' % settings["border"]
-        tag += "><p>Your browser does not support iframes.</p></iframe>\n"
+        tag += "></iframe>\n"
+
+        if includes:
+            inject_includes_template = """<script>
+$(document).ready(function() {{
+  var script_iframe = $("#{id}");
+  
+  script_iframe.load(function() {{
+    var cw = script_iframe[0].contentWindow.document;
+{injects}
+  }});
+}});
+</script>
+"""
+
+            #single_inject_template = "    script_iframe.contents().find(\"{elem}\").append(\"{new_tag}\");"
+            single_inject_template = \
+"""    var new_{name} = cw.createElement("{type}");
+    new_{name}.{type_type} = "{type_value}";
+    new_{name}.{src_type} = "{addr}";
+    cw.getElementsByTagName("{where}")[0].appendChild(new_{name});"""
+            rendered_includes = inject_includes_template.format(
+                id=escape(script.name),
+                injects="\n".join(
+                    single_inject_template.format(type=t, name=n, type_type=tt,
+                                                  type_value=tv, src_type=st, addr=a,
+                                                  where=w)
+                    for t, n, tt, tv, st, a, w in includes
+                )
+            )
+            tag += rendered_includes
 
         yield tag
 
@@ -489,6 +552,10 @@ class EmbeddedScriptMarkup(Markup):
             pass
         try:
             settings["border"] = escape(matchobj.group("border"))
+        except AttributeError:
+            pass
+        try:
+            settings["include"] = escape(matchobj.group("include")).split(",")
         except AttributeError:
             pass
         return settings
