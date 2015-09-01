@@ -215,7 +215,7 @@ def check_progress(request, course_slug, content_slug, task_id):
     # TODO: Check permissions
     task = AsyncResult(task_id)
     if task.ready():
-        return file_exercise_evaluation(request, content_slug, task_id, task)
+        return file_exercise_evaluation(request, course_slug, content_slug, task_id, task)
     else:
         celery_status = get_celery_worker_status()
         if "errors" in celery_status:
