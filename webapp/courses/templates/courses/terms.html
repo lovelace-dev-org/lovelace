@@ -10,6 +10,8 @@
   <li><a href="{% url 'courses:terms' %}">{% trans 'Terms and Conditions' %}</a></li>
 {% endblock %}
 
+{# Insert the information required by the law of your country here #}
+
 {% block page-content %}
 <h1 class="content-heading">
   {% trans 'Terms and Conditions' %}
@@ -36,5 +38,5 @@
   <a href="#registration-document" class="permalink" title="Permalink to Registration Document">&para;</a>
 </h2>
 
-<p>{% blocktrans %}You can request a registration document by e-mail from address "mdf %hello% kapsi %hi% fi" without the quotes and spaces and by replacing %hello% with an at character and %hi% with a dot. It may take us 14 working days to reply.{% endblocktrans %}</p>
+<p>{% blocktrans %}You can request a registration document by e-mail from address E-MAIL. It may take us 14 working days to reply.{% endblocktrans %}</p>
 {% endblock %}
