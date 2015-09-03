@@ -533,6 +533,7 @@ $(document).ready(function() {{
 """    var new_{name} = cw.createElement("{type}");
     new_{name}.{type_type} = "{type_value}";
     new_{name}.{src_type} = "{addr}";
+    new_{name}.id = "id-{name}";
     cw.getElementsByTagName("{where}")[0].appendChild(new_{name});
 """
 
@@ -550,13 +551,13 @@ $(document).ready(function() {{
                                                   type_value=tv, src_type=st, addr=a,
                                                   where=w)
                     for t, n, tt, tv, st, a, w in includes
-                ) + (inject_images_template.format(where=image_urls[0][2], # Just take the first
+                ) + ((inject_images_template.format(where=image_urls[0][2], # Just take the first
                         img_addrs="\\\n".join(
                             single_image_inject_template.format(name=n, addr=a)
                             for n, a, _ in image_urls
                         )
                     )
-                ) if image_urls else ""
+                ) if image_urls else "")
             )
             tag += rendered_includes
 
