@@ -466,6 +466,7 @@ class EmbeddedScriptMarkup(Markup):
             raise StopIteration
 
         includes = []
+        image_urls = []
         for unparsed_include in settings.get("include") or []:
             try:
                 where, t_and_n = unparsed_include.split(":")
@@ -476,8 +477,11 @@ class EmbeddedScriptMarkup(Markup):
                 raise StopIteration
 
             try:
-                incl_obj = courses.models.File.objects.get(name=incl_name)
-            except courses.models.FileDoesNotExist as e:
+                if incl_type == "image":
+                    incl_obj = courses.models.Image.objects.get(name=incl_name)
+                else:
+                    incl_obj = courses.models.File.objects.get(name=incl_name)
+            except (courses.models.File.DoesNotExist, courses.models.Image.DoesNotExist) as e:
                 # TODO: Modular errors
                 yield '<div>{} {} not found.</div>'.format(incl_type.capitalize(), incl_name)
                 raise StopIteration
@@ -494,6 +498,10 @@ class EmbeddedScriptMarkup(Markup):
                     #(where, "<link rel='stylesheet' href='{addr}'>".format(addr=escape(incl_addr)))
                     ("link", incl_name, "rel", "stylesheet", "href", incl_addr, where)
                 )
+            elif incl_type == "image":
+                image_urls.append(
+                    (incl_name, incl_addr, where)
+                )
 
         # TODO: Change the include file names into slugs to prevent spaces!
         tag = '<iframe id="{id}" src="{addr}" sandbox="allow-same-origin allow-scripts"'.format(
@@ -507,7 +515,7 @@ class EmbeddedScriptMarkup(Markup):
             tag += ' frameborder="%s"' % settings["border"]
         tag += "></iframe>\n"
 
-        if includes:
+        if includes or image_urls:
             inject_includes_template = """<script>
 $(document).ready(function() {{
   var script_iframe = $("#{id}");
@@ -525,7 +533,16 @@ $(document).ready(function() {{
 """    var new_{name} = cw.createElement("{type}");
     new_{name}.{type_type} = "{type_value}";
     new_{name}.{src_type} = "{addr}";
-    cw.getElementsByTagName("{where}")[0].appendChild(new_{name});"""
+    cw.getElementsByTagName("{where}")[0].appendChild(new_{name});
+"""
+
+            inject_images_template = \
+"""    var new_img_addresses = cw.createElement("script");
+    new_img_addresses.innerHTML = '{img_addrs}';
+    cw.getElementsByTagName("{where}")[0].appendChild(new_img_addresses);
+"""
+            single_image_inject_template = "var src_{name} = \"{addr}\";"
+            
             rendered_includes = inject_includes_template.format(
                 id=escape(script.name),
                 injects="\n".join(
@@ -533,7 +550,13 @@ $(document).ready(function() {{
                                                   type_value=tv, src_type=st, addr=a,
                                                   where=w)
                     for t, n, tt, tv, st, a, w in includes
-                )
+                ) + (inject_images_template.format(where=image_urls[0][2], # Just take the first
+                        img_addrs="\\\n".join(
+                            single_image_inject_template.format(name=n, addr=a)
+                            for n, a, _ in image_urls
+                        )
+                    )
+                ) if image_urls else ""
             )
             tag += rendered_includes
 
