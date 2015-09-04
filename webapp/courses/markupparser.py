@@ -467,7 +467,8 @@ class EmbeddedScriptMarkup(Markup):
 
         includes = []
         image_urls = []
-        for unparsed_include in settings.get("include") or []:
+        unparsed_includes = settings.get("include") or []
+        for unparsed_include in unparsed_includes:
             try:
                 where, t_and_n = unparsed_include.split(":")
                 incl_type, incl_name = t_and_n.split("=")
@@ -503,9 +504,12 @@ class EmbeddedScriptMarkup(Markup):
                     (incl_name, incl_addr, where)
                 )
 
+        import hashlib
+        hash_includes = hashlib.md5("".join(unparsed_includes).encode("utf-8")).hexdigest()
+        iframe_id = escape(script.name + "-" + hash_includes)
         # TODO: Change the include file names into slugs to prevent spaces!
         tag = '<iframe id="{id}" src="{addr}" sandbox="allow-same-origin allow-scripts"'.format(
-            id=escape(script.name), addr=escape(script.fileinfo.url)
+            id=iframe_id, addr=escape(script.fileinfo.url)
         )
         if "width" in settings:
             tag += ' width="%s"' % settings["width"]
@@ -547,7 +551,7 @@ $(document).ready(function() {{
             array_image_injects_template = "var img_srcs = [{var_names}];"
             
             rendered_includes = inject_includes_template.format(
-                id=escape(script.name),
+                id=iframe_id,
                 injects="\n".join(
                     single_inject_template.format(type=t, name=n, type_type=tt,
                                                   type_value=tv, src_type=st, addr=a,
