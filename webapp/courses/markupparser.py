@@ -504,9 +504,12 @@ class EmbeddedScriptMarkup(Markup):
                     (incl_name, incl_addr, where)
                 )
 
+        # TODO: In an edge case, using the same parameters will cause an id clash
+        # TODO: Also the md5 will rarely cause an id clash
         import hashlib
         hash_includes = hashlib.md5("".join(unparsed_includes).encode("utf-8")).hexdigest()
         iframe_id = escape(script.name + "-" + hash_includes)
+        
         # TODO: Change the include file names into slugs to prevent spaces!
         tag = '<iframe id="{id}" src="{addr}" sandbox="allow-same-origin allow-scripts"'.format(
             id=iframe_id, addr=escape(script.fileinfo.url)
