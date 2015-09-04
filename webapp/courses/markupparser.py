@@ -540,6 +540,7 @@ $(document).ready(function() {{
             inject_images_template = \
 """    var new_img_addresses = cw.createElement("script");
     new_img_addresses.innerHTML = '{img_addrs}';
+    new_img_addresses.id = "id-img_addrs";
     cw.getElementsByTagName("{where}")[0].appendChild(new_img_addresses);
 """
             single_image_inject_template = "var src_{name} = \"{addr}\";"
