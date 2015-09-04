@@ -544,6 +544,7 @@ $(document).ready(function() {{
     cw.getElementsByTagName("{where}")[0].appendChild(new_img_addresses);
 """
             single_image_inject_template = "var src_{name} = \"{addr}\";"
+            array_image_injects_template = "var img_srcs = [{var_names}];"
             
             rendered_includes = inject_includes_template.format(
                 id=escape(script.name),
@@ -556,6 +557,11 @@ $(document).ready(function() {{
                         img_addrs="\\\n".join(
                             single_image_inject_template.format(name=n, addr=a)
                             for n, a, _ in image_urls
+                        ) + array_image_injects_template.format(
+                            var_names=", ".join(
+                                "src_" + n
+                                for n, _, _ in image_urls
+                            )
                         )
                     )
                 ) if image_urls else "")
