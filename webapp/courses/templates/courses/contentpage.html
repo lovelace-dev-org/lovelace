@@ -21,6 +21,8 @@
   {% endif %}
 {% endblock %}
 
+{% block course-stats-link %}<a href="{% url 'stats:users_course' course_slug %}">{% trans 'Course statistics' %}</a>{% endblock %}
+
 {% block page-content %}
 {% if content.content_type == "LECTURE"%}
   {% include "courses/lecture.html" %}

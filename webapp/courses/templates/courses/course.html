@@ -12,6 +12,8 @@
 
 {% block toc %}{% endblock %}
 
+{% block course-stats-link %}<a href="{% url 'stats:users_course' course.slug %}">{% trans 'Course statistics' %}</a>{% endblock %}
+
 {% block page-content %}
 <h1 class="content-heading">{{ course.name }}<span id="{{ course.slug }}" class="anchor-offset"></span><a href="#{{ course.slug }}" class="permalink" title="Permalink to {{ course.name }}">&para;</a></h1>
 
