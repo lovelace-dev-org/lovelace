@@ -493,8 +493,8 @@ def run_command_chainable(cmd, temp_dir_prefix, test_dir, files_to_check, stage_
     # TODO: Use ordinal number istead of id?
     stage_results["commands"][cmd_id] = proc_results
 
-    if cmd_return_value is not None and cmd_return_value != proc_results["retval"]:
-        raise Exception()
+    #if cmd_return_value is not None and cmd_return_value != proc_results["retval"]:
+        #raise Exception()
 
     return stage_results
 
