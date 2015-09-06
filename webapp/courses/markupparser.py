@@ -170,7 +170,7 @@ class MarkupParser:
         # TODO: Initialize states from markups
         # TODO: State stack for indents, inline markups, pre, etc.
         state = {"lines": lines, "request": request, "context": context,
-                 "list": [], "embedded_pages": embedded_pages}
+                 "list": [], "embedded_pages": embedded_pages, "table": False}
 
         for (block_type, matchobj), block in itertools.groupby(lines, cls._get_line_kind):
             block_markup = cls._markups[block_type]
@@ -181,6 +181,9 @@ class MarkupParser:
                 for undent_lvl in reversed(state["list"]):
                     yield '</%s>' % undent_lvl
                 state["list"] = []
+            if block_type != "table" and state["table"]:
+                yield '</table>\n'
+                state["table"] = False
 
             block = cls.inline_parse(block) if block_markup.allow_inline\
                     else block
@@ -194,6 +197,8 @@ class MarkupParser:
         # Clean up the remaining open tags (pop everything from stack)
         for undent_lvl in reversed(state["list"]):
             yield '</%s>' % undent_lvl
+        if state["table"]:
+            yield '</table>\n'
 
 markups = []
 
@@ -875,13 +880,17 @@ class TableMarkup(Markup):
 
     @classmethod
     def block(cls, block, settings, state):
-        yield '<table>'
+        if not state["table"]:
+            yield '<table>'
+            state["table"] = True
+        
         for line in block:
             row = line.split("||")[1:-1]
             yield '<tr>'
             yield '\n'.join("<td>%s</td>" % blockparser.parseblock(escape(cell)) for cell in row)
             yield '</tr>'
-        yield '</table>'
+            
+        #yield '</table>'
 
     @classmethod
     def settings(cls, matchobj, state):
