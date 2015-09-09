@@ -99,6 +99,13 @@ DEFAULT_FROM_EMAIL = 'lovelace-accounts@' # TODO: Fill!
 # Allauth settings
 ACCOUNT_EMAIL_SUBJECT_PREFIX = '[Lovelace] '
 ACCOUNT_PASSWORD_MIN_LENGTH = 8
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_SESSION_REMEMBER = True
+
+_FOUR_MONTHS = 10368000
+
+ACCOUNT_SESSION_COOKIE_AGE = _FOUR_MONTHS
+SESSION_COOKIE_AGE = _FOUR_MONTHS
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
