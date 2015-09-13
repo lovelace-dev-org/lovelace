@@ -539,11 +539,11 @@ class EmbeddedScriptMarkup(Markup):
 {injects}
   }};
 
-  if (script_iframe[0].contentWindow.document.readyState == "complete") {{
-    script_iframe_inject_function();
-  }} else {{
+  //if (script_iframe[0].contentWindow.document.readyState == "complete") {{
+//    script_iframe_inject_function();
+//  }} else {{
     script_iframe.load(script_iframe_inject_function);
-  }}
+  //}}
 //}});
 }})();
 </script>
