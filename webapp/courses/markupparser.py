@@ -527,15 +527,22 @@ class EmbeddedScriptMarkup(Markup):
             tag += ' frameborder="%s"' % settings["border"]
         tag += "></iframe>\n"
 
+        # TODO: Could this cause a race condition?
         if includes or image_urls:
             inject_includes_template = """<script>
 $(document).ready(function() {{
   var script_iframe = $("#{id}");
   
-  script_iframe.load(function() {{
+  var script_iframe_inject_function = function() {{
     var cw = script_iframe[0].contentWindow.document;
 {injects}
-  }});
+  }};
+
+  if (script_iframe[0].contentWindow.document.readyState == "complete") {{
+    script_iframe_inject_function();
+  }} else {{
+    script_iframe.load(script_iframe_inject_function);
+  }}
 }});
 </script>
 """
