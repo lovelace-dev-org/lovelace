@@ -530,7 +530,7 @@ class EmbeddedScriptMarkup(Markup):
         # TODO: Could this cause a race condition?
         if includes or image_urls:
             inject_includes_template = """<script>
-$(document).ready(function() {{
+//$(document).ready(function() {{
   var script_iframe = $("#{id}");
   
   var script_iframe_inject_function = function() {{
@@ -543,7 +543,7 @@ $(document).ready(function() {{
   }} else {{
     script_iframe.load(script_iframe_inject_function);
   }}
-}});
+//}});
 </script>
 """
 
