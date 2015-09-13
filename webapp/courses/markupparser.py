@@ -531,6 +531,7 @@ class EmbeddedScriptMarkup(Markup):
         if includes or image_urls:
             inject_includes_template = """<script>
 //$(document).ready(function() {{
+(function() {{
   var script_iframe = $("#{id}");
   
   var script_iframe_inject_function = function() {{
@@ -544,6 +545,7 @@ class EmbeddedScriptMarkup(Markup):
     script_iframe.load(script_iframe_inject_function);
   }}
 //}});
+}})();
 </script>
 """
 
