@@ -133,7 +133,7 @@ def check_answer_sandboxed(request, content_slug):
     if not exercise.manually_evaluated:
         if exercise.content_type == "FILE_UPLOAD_EXERCISE":
             task_id = evaluation["task_id"]
-            return check_progress(request, course_slug, content_slug, task_id)
+            return check_progress(request, None, content_slug, task_id)
         exercise.save_evaluation(user, evaluation, answer_object)
         evaluation["manual"] = False
     else:
