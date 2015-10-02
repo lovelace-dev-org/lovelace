@@ -465,6 +465,7 @@ def run_command_chainable(cmd, temp_dir_prefix, test_dir, files_to_check, stage_
     stderr = tempfile.TemporaryFile(dir=temp_dir_prefix)
     stdin = tempfile.TemporaryFile(dir=temp_dir_prefix)
     stdin.write(bytearray(cmd_input_text, "utf-8"))
+    stdin.seek(0)
     
     proc_results = run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check)
     
@@ -541,6 +542,8 @@ def run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check):
         proc_runtime = time.time() - start_time
         proc_retval = proc.returncode
     except subprocess.TimeoutExpired:
+        proc_runtime = None
+        proc_retval = None
         proc_timedout = True
         proc.terminate() # Try terminating the process nicely
         time.sleep(0.5)
