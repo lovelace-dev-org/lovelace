@@ -197,6 +197,10 @@ def generate_results(results, exercise_id):
                 current_cmd.update(student_c)
                 current_stage["commands"].append(current_cmd)
 
+                # Handle stdin
+
+                current_cmd["input_list"] = current_cmd["input_text"].split("\n")
+
                 # Handle stdout
 
                 student_stdout = student_c["stdout"]
