@@ -11,53 +11,53 @@
   {# Tab selector for tests #}
   <div class="test-tab-selector-box">
     {% for test_info in evaluation_tree.tests|dictsort:"test_id" %}<div class="test-tab-selector {% if test_info.correct %}correct-test{% else %}incorrect-test{% endif %}" onclick="activate_test_tab({{ test_info.test_id }});">
-        {{ test_info.name }}
+        
         {% if test_info.correct %}
           <img src="{% static 'courses/correct-16.png' %}" alt="{% trans 'Correct' %}">
         {% else %}
           <img src="{% static 'courses/incorrect-16.png' %}" alt="{% trans 'Incorrect' %}">
-        {% endif %}
+          {% endif %}
+          {{ test_info.name }}
       </div>{% endfor %}
   </div>
 
   {% for test_info in evaluation_tree.tests|dictsort:"test_id" %}
     {# One tab, named after the test name, for each test #}
-    <div class="test-evaluation-tab" id="file-test-{{ test_info.test_id }}" style="display: none;">
+    <div class="test-evaluation-tab" id="file-test-{{ test_info.test_id }}" style="display: {% if forloop.first %}block{% else %}none{% endif %};">
       {% for stage_info in test_info.stages|dictsort:"ordinal_number" %}
-        <div class="test-evaluation-stage">{{ stage_info.name }}</div>
-        {% for cmd_info in stage_info.commands|dictsort:"ordinal_number" %}
-          <p>
-	  <div class="test-evaluation-commands">Command:</div>
-          <pre>{{ cmd_info.command_line }}</pre>
-	  </p>
-          {% if cmd_info.expected_retval != None %}
-	    <p>
-            <div class="test-evaluation-retval {% if cmd_info.retval == cmd_info.expected_retval %}retval-correct{% else %}retval-incorrect{% endif %}">
-              Exited with return value {{ cmd_info.retval }}, while the expected return
-              value was {{ cmd_info.expected_retval }}.
-            </div>
-	    </p>
-          {% endif %}
-	  {% if cmd_info.input_list %}
-	    <p>
-	    <div>Test inputs:</div>
-	    {% for input in cmd_info.input_list %}
-	      <pre>{{ input }}</pre>
-	    {% endfor %}
-	    </p>
-	  {% endif %}
-          {% if cmd_info.stdout_diff %}
-            <div>
-              {{ cmd_info.stdout_diff|safe }}
-            </div>
-          {% endif %}
-          {% if cmd_info.stderr_diff %}
-            <div>
-              {{ cmd_info.stderr_diff|safe }}
-            </div>
-          {% endif %}
-        {% endfor %}
-      {% endfor %}
+        <div class="test-evaluation-stage">
+          <div class="test-evaluation-stage-name">{{ stage_info.name }}</div>
+        
+          {% for cmd_info in stage_info.commands|dictsort:"ordinal_number" %}
+            <div class="test-evaluation-heading">Command:</div>
+            <pre class="test-evaluation-cmdline">{{ cmd_info.command_line }}</pre>
+
+            {% if cmd_info.expected_retval != None %}
+              <div class="test-evaluation-msg">
+                Exited with return value <span class="retval {% if cmd_info.retval == cmd_info.expected_retval %}retval-correct{% else %}retval-incorrect{% endif %}">{{ cmd_info.retval }}</span>, while the expected return
+                value was <span class="retval">{{ cmd_info.expected_retval }}</span>.
+              </div>
+            {% endif %}
+
+            {% if cmd_info.input_text %}
+              <div class="test-evaluation-heading">Inputs entered for this command:</div>
+              <pre class="test-evaluation-inputs">{{ cmd_info.input_text }}</pre>
+            {% endif %}
+
+            {% if cmd_info.stdout_diff %}
+              <div>
+                {{ cmd_info.stdout_diff|safe }}
+              </div>
+            {% endif %}
+
+            {% if cmd_info.stderr_diff %}
+              <div>
+                {{ cmd_info.stderr_diff|safe }}
+              </div>
+            {% endif %}
+          {% endfor %}{# end for cmd_info in stage_info.commands #}
+        </div>
+      {% endfor %}{# end for stage_info in test_info.stages #}
     </div>
-  {% endfor %}
+  {% endfor %}{# end for test_info in evaluation_tree.tests #}
 </div>

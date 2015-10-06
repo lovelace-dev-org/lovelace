@@ -199,7 +199,7 @@ def generate_results(results, exercise_id):
 
                 # Handle stdin
 
-                current_cmd["input_list"] = current_cmd["input_text"].split("\n")
+                current_cmd["input_text"] = current_cmd["input_text"]
 
                 # Handle stdout
 
@@ -546,7 +546,7 @@ def run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check):
         proc_runtime = time.time() - start_time
         proc_retval = proc.returncode
     except subprocess.TimeoutExpired:
-        proc_runtime = None
+        proc_runtime = time.time() - start_time
         proc_retval = None
         proc_timedout = True
         proc.terminate() # Try terminating the process nicely

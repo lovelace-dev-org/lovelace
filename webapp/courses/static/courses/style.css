@@ -806,18 +806,6 @@ section.content {
             width: auto;
         }
 
-        section.content span.evaluation {
-            font-weight: bold;
-            font-size: 15px;
-            vertical-align: middle;
-        }
-        section.content span.evaluation:before {
-            content: ">>> roskaa";
-            font-size: 19px;
-            color: #aaa;
-            font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
-        }
-
         section.content div#result div.hintbox {
             
         }
@@ -881,6 +869,57 @@ section.content {
         }
         div.incorrect-test img {
             background: #cd6969;
+        }
+
+        /* The file upload exercise items */
+        /* Stage */
+        div.test-evaluation-stage {
+            border-bottom: 2px solid #aaa;
+            padding-bottom: 1rem;
+        }
+        div.test-evaluation-stage:last-child {
+            border-bottom: 0;
+            padding-bottom: 0;
+        }
+        div.test-evaluation-stage-name {
+            font-weight: normal;
+            text-shadow: 0px 0px 4px rgba(63, 63, 63, 0.5);
+            border-bottom: 1px solid rgba(191, 191, 191, 0.5);
+            padding: 4px 4px 4px 8px;
+            font-size: 1.1rem;
+            background: #cacaca;
+        }
+        /* Command */
+        div.test-evaluation-heading {
+            padding: 2px 2px 2px 4px;
+            font-size: 1.0rem;
+        }
+        pre.test-evaluation-cmdline {
+            padding: 2px 2px 2px 4px;
+            margin: 0 6px 6px 6px;
+            font-size: 1.0em;
+            font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
+            background: #d0d0d0;
+        }
+        div.test-evaluation-msg {
+            font-size: 0.8em;
+            padding: 0 2px 0 2px;
+            margin: -8px 6px 6px 6px;
+            background: #d7d7d7;
+            color: #555;
+        }
+        span.retval {
+            font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
+        }
+        span.retval-correct {
+            color: #2e862e;
+        }
+        pre.test-evaluation-inputs {
+            padding: 2px 2px 2px 4px;
+            margin: 0 6px 6px 6px;
+            font-size: 1.0em;
+            font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
+            background: #d0d0d0;
         }
 
         /* The file upload exercise difference table */
