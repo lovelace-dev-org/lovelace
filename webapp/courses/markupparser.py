@@ -426,16 +426,26 @@ class EmbeddedPageMarkup(Markup):
                 "question": question,
                 "choices": choices,
             }
-            if state["request"].user.is_active:
-                c["evaluation"] = page.get_user_evaluation(state["request"].user)
-                c["answer_count"] = page.get_user_answers(state["request"].user).count()
+            user = state["request"].user
+            sandboxed = state["request"].path.startswith("/sandbox/")
+            if sandboxed and user.is_authenticated() and user.is_active and user.is_staff:
+                c["sandboxed"] = True
+            elif sandboxed and (not user.is_authenticated() or not user.is_active or not user.is_staff):
+                settings["rendered_content"] = ""
+                return settings
+            else:
+                c["sandboxed"] = False
+
+            if user.is_active and page.get_user_answers(user) and not sandboxed:
+                c["evaluation"] = page.get_user_evaluation(user)
+                c["answer_count"] = page.get_user_answers(user).count()
             else:
                 c["evaluation"] = "unanswered"
                 c["answer_count"] = 0
             c.update(state["context"])
-
-            t = loader.get_template("courses/{exercise}.html".format(
-                exercise=page.get_dashed_type()
+            
+            t = loader.get_template("courses/{dashed_type}.html".format(
+                dashed_type=page.get_dashed_type()
             ))
             ctx = RequestContext(state["request"], c)
             rendered_content = t.render(ctx)
