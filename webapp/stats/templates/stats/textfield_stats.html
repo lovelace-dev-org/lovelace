@@ -2,17 +2,17 @@
 
 {% block general-info %}
   <p>"{{ content.name }}" is a textfield exercise.</p>
-  {% if answers %}
+  {% if choices %}
   <table>
     <tr><th>Answer choice</th>
       <th>Correct?</th></tr>
-    {% for answer in answers %}
+    {% for choice in choices %}
     <tr>
-      <td>{{ answer }}</td>
-      {% if answer.correct %}
-      <td class="correct">{{ answer.correct }}</td>
+      <td>{{ choice }}</td>
+      {% if choice.correct %}
+      <td class="correct">{{ choice.correct }}</td>
       {% else %}
-      <td class="incorrect">{{ answer.correct }}</td>
+      <td class="incorrect">{{ choice.correct }}</td>
       {% endif %}
     </tr>
     {% endfor %}
@@ -29,7 +29,6 @@
     <div>The exercise has been answered correctly by {{ correctly_by }} different user(s).</div>
     <div>Average attempts per user: {{ answers_avg }}. </div>
     <div>Standard deviation of attempts per user: {{ answers_sd }} </div>
-    <div>Median attempts per user: </div>
     <div>Hint coverage for incorrect answers: {{ hint_coverage }} </div>
   </p>
   <table>

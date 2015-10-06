@@ -35,7 +35,14 @@
   
   {% if answer_count %}
   <h2>User answer data</h2>
-  <p>{% block exercise-stats %}{% endblock %}</p>
+  <p>
+    {% if piechart %}
+    {{ piechart|safe }}
+  </p>
+  <p style="padding-top:120px">
+    {% endif %}
+  {% block exercise-stats %}{% endblock %}
+  </p>
   {% endif %}
 {% endblock %}
  
