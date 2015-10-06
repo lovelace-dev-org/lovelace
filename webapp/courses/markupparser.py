@@ -444,8 +444,8 @@ class EmbeddedPageMarkup(Markup):
                 c["answer_count"] = 0
             c.update(state["context"])
             
-            t = loader.get_template("courses/{dashed_type}.html".format(
-                dashed_type=page.get_dashed_type()
+            t = loader.get_template("courses/{page_type}.html".format(
+                page_type=page.get_dashed_type()
             ))
             ctx = RequestContext(state["request"], c)
             rendered_content = t.render(ctx)
