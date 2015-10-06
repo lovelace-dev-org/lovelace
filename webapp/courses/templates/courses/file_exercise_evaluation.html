@@ -24,39 +24,39 @@
     {# One tab, named after the test name, for each test #}
     <div class="test-evaluation-tab" id="file-test-{{ test_info.test_id }}" style="display: none;">
       {% for stage_info in test_info.stages|dictsort:"ordinal_number" %}
-        <div class="test-evaluation-stage">{{ stage_info.name }}</div>
-        {% for cmd_info in stage_info.commands|dictsort:"ordinal_number" %}
-          <p>
-	  <div class="test-evaluation-commands">Command:</div>
-          <pre>{{ cmd_info.command_line }}</pre>
-	  </p>
-          {% if cmd_info.expected_retval != None %}
-	    <p>
-            <div class="test-evaluation-retval {% if cmd_info.retval == cmd_info.expected_retval %}retval-correct{% else %}retval-incorrect{% endif %}">
-              Exited with return value {{ cmd_info.retval }}, while the expected return
-              value was {{ cmd_info.expected_retval }}.
-            </div>
-	    </p>
-          {% endif %}
-	  {% if cmd_info.input_list %}
-	    <p>
-	    <div>Test inputs:</div>
-	    {% for input in cmd_info.input_list %}
-	      <pre>{{ input }}</pre>
-	    {% endfor %}
-	    </p>
-	  {% endif %}
-          {% if cmd_info.stdout_diff %}
-            <div>
-              {{ cmd_info.stdout_diff|safe }}
-            </div>
-          {% endif %}
-          {% if cmd_info.stderr_diff %}
-            <div>
-              {{ cmd_info.stderr_diff|safe }}
-            </div>
-          {% endif %}
+      <div class="test-evaluation-stage">{{ stage_info.name }}</div>
+      {% for cmd_info in stage_info.commands|dictsort:"ordinal_number" %}
+      <p>
+        <div class="test-evaluation-commands">Command:</div>
+        <pre>{{ cmd_info.command_line }}</pre>
+      </p>
+      {% if cmd_info.expected_retval != None %}
+      <p>
+        <div class="test-evaluation-retval {% if cmd_info.retval == cmd_info.expected_retval %}retval-correct{% else %}retval-incorrect{% endif %}">
+          Exited with return value {{ cmd_info.retval }}, while the expected return
+          value was {{ cmd_info.expected_retval }}.
+        </div>
+      </p>
+      {% endif %}
+      {% if cmd_info.input_list %}
+      <p>
+        <div>Test inputs:</div>
+        {% for input in cmd_info.input_list %}
+        <pre>{{ input }}</pre>
         {% endfor %}
+      </p>
+      {% endif %}
+      {% if cmd_info.stdout_diff %}
+      <div>
+        {{ cmd_info.stdout_diff|safe }}
+      </div>
+      {% endif %}
+      {% if cmd_info.stderr_diff %}
+      <div>
+        {{ cmd_info.stderr_diff|safe }}
+      </div>
+      {% endif %}
+      {% endfor %}
       {% endfor %}
     </div>
   {% endfor %}
