@@ -323,11 +323,11 @@ def content(request, course_slug, content_slug, **kwargs):
         return HttpResponseNotFound("Content {} does not exist!".format(content_slug))
 
     content_graph = None
-    # TODO: The content must be part of the course
-    #try:
-        #content_graph = course.contents.get(content=content)
-    #except ContentGraph.DoesNotExist:
-        #return HttpResponseNotFound("Content {} is not linked to course {}!".format(content_slug, course_slug))
+    if "frontpage" not in kwargs:
+        try:
+            content_graph = course.contents.get(content=content)
+        except ContentGraph.DoesNotExist:
+            return HttpResponseNotFound("Content {} is not linked to course {}!".format(content_slug, course_slug))
 
     content_type = content.content_type
     question = blockparser.parseblock(escape(content.question))
@@ -335,7 +335,7 @@ def content(request, course_slug, content_slug, **kwargs):
 
     evaluation = None
     if request.user.is_authenticated():
-        if not content_graph or content_graph.publish_date or content_graph.publish_date < datetime.datetime.now():
+        if content_graph and (content_graph.publish_date is None or content_graph.publish_date < datetime.datetime.now()):
             evaluation = content.get_user_evaluation(request.user)
 
     context = {
