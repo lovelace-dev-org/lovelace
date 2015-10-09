@@ -893,6 +893,7 @@ section.content {
         div.test-evaluation-heading {
             padding: 2px 2px 2px 4px;
             font-size: 1.0rem;
+            text-decoration: underline;
         }
         pre.test-evaluation-cmdline {
             padding: 2px 2px 2px 4px;
@@ -907,12 +908,32 @@ section.content {
             margin: -8px 6px 6px 6px;
             background: #d7d7d7;
             color: #555;
+            position: relative;
+        }
+        div.test-evaluation-msg-attention:after {
+            content: "!";
+            color: #eee;
+            background: #d33;
+            position: absolute;
+            font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
+            font-size: 0.7em;
+            font-weight: bold;
+            right: 0;
+            top: 0;
+            margin: 2px 0 2px 0;
+            padding: 0 3px 0 3px;
         }
         span.retval {
             font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
         }
         span.retval-correct {
             color: #2e862e;
+        }
+        span.retval-incorrect {
+            color: #862e2e;
+        }
+        span.cmd-runtime {
+            
         }
         pre.test-evaluation-inputs {
             padding: 2px 2px 2px 4px;
@@ -943,6 +964,8 @@ section.content {
             background: #ccc;
             line-height: 1.25;
             font-weight: normal;
+            border: 1px solid #aaa;
+            text-decoration: underline;
         }
 
         section.content table.diff td {
@@ -955,6 +978,7 @@ section.content {
             padding: 0 1px;
             line-height: 1.25;
             height: 1rem;
+            border: 1px solid #aaa;
         }
         section.content table.diff td.diff-linenum {
             font-size: 0.8em;
