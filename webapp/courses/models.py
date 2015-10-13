@@ -14,7 +14,9 @@ from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.core.urlresolvers import reverse
 
+import pygments
 import slugify
+import magic
 
 import courses.tasks as rpc_tasks
 
@@ -1029,6 +1031,22 @@ class FileUploadExerciseReturnFile(models.Model):
     def filename(self):
         return os.path.basename(self.fileinfo.name)
 
+    def get_type(self):
+        try:
+            mimetype = str(magic.from_file(self.fileinfo.path, mime=True), encoding="utf-8")
+        except UnicodeDecodeError as e:
+            # ???
+            # Assume binary
+            binary = True
+        else:
+            text_part, type_part = mimetype.split("/")
+            if text_part == "text":
+                binary = False
+            else:
+                binary = True
+
+        return (mimetype, binary)
+
 class UserFileUploadExerciseAnswer(UserAnswer):
     exercise = models.ForeignKey(FileUploadExercise)
 
@@ -1039,8 +1057,18 @@ class UserFileUploadExerciseAnswer(UserAnswer):
         file_objects = FileUploadExerciseReturnFile.objects.filter(answer=self)
         returned_files = {}
         for returned_file in file_objects:
-            with open(returned_file.fileinfo.path, 'rb') as f:
-                returned_files[returned_file.filename()] = f.read()
+            path = returned_file.fileinfo.path
+            with open(path, 'rb') as f:
+                contents = f.read()
+                type_info = returned_file.get_type()
+                if not type_info[1]:
+                    try:
+                        lexer = pygments.lexers.guess_lexer_for_filename(path, contents)
+                    except pygments.util.ClassNotFound:
+                        pass
+                    else:
+                        contents = pygments.highlight(contents, lexer, pygments.formatters.HtmlFormatter(nowrap=True))
+                returned_files[returned_file.filename()] = type_info + (contents,)
         return returned_files
 
 class UserTextfieldExerciseAnswer(UserAnswer):

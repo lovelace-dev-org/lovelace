@@ -10,7 +10,7 @@
 <div class="file-evaluation-widget">
   {# Tab selector for tests #}
   <div class="test-tab-selector-box">
-    {% for test_info in evaluation_tree.tests|dictsort:"test_id" %}<div class="test-tab-selector {% if test_info.correct %}correct-test{% else %}incorrect-test{% endif %}" onclick="activate_test_tab({{ test_info.test_id }});">
+    {% for test_info in evaluation_tree.tests|dictsort:"test_id" %}<div class="test-tab-selector {% if test_info.correct %}correct-test{% else %}incorrect-test{% endif %}" onclick="activate_test_tab({{ test_info.test_id }}, this);">
         
         {% if test_info.correct %}
           <img src="{% static 'courses/correct-16.png' %}" alt="{% trans 'Correct' %}">

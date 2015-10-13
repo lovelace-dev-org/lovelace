@@ -6,6 +6,8 @@ urlpatterns = [
     url(r'^$', views.index, name='index'),
 
     # For viewing and changing user information
+    url(r'^answers/(?P<user>[^/]+)/(?P<answer_id>\d+)$',
+        views.get_old_file_exercise_evaluation, name='get_old_file_exercise_evaluation'),
     url(r'^answers/(?P<user>[^/]+)/(?P<course>[^/]+)/(?P<exercise>[^/]+)',
         views.show_answers, name='show_answers'),
     url(r'^user/(?P<user_name>[^/]+)/$', views.user),

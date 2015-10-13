@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html>
- <head>
+  <head>
+    {% load staticfiles %}
+    <script src="{% static 'courses/jquery-2.1.4.min.js' %}"></script>
+    <link rel="stylesheet" href="{% static 'courses/syntax.css' %}">
 <style>
 table {
 border: 1px solid #333;
@@ -15,10 +18,13 @@ td.answer {}
 td.evaluation {
 text-align: center;
 }
-td.correct {
+td.evaluation * {
+text-align: left;
+}
+td.correct > span {
 color: #3a3;
 }
-td.incorrect {
+td.incorrect > span {
 color: #a33;
 }
 td.permalink {
@@ -29,13 +35,241 @@ ul {
 margin: 0;
 }
 
-div.fileview {
-  display: none;
+div.popup {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background: rgba(0,0,0,0.8);
+    z-index: 99999;
+    opacity: 0;
+    transition: opacity 200ms ease-in;
+    pointer-events: none;
+}
+div.popup > div, div.popup > pre {
+    width: 1200px;
+    position: relative;
+    margin: 10% auto;
+    padding: 10px;
+    border-radius: 10px;
+    background: #eee;
+}
+pre.fileview {
+  /*display: none;*/
 }
 div.results-view {
-  display: none;
+  /*display: none;*/
+  
 }
+
+/* copypasted from style.css temporarily */
+/* The file upload exercise evaluation tabs */
+        div.file-evaluation-widget {
+            width: 100%;
+            background: #ddd;
+        }
+        div.test-tab-selector-box {
+            color: #ccc;
+            background: #daeeda;
+        }
+        div.test-tab-selector {
+            display: inline-block;
+            border: 2px solid #d0d0d0;
+            border-radius: 2px 20px 0 0/2px 8px 0 0;
+            cursor: pointer;
+            padding: 0 2px;
+        }
+        div.correct-test {
+            background: #143a14;
+        }
+        div.incorrect-test {
+            background: #3a1414;
+        }
+        div.test-tab-selector img {
+            right: 2px;
+            top: 4px;
+            padding: 1px;
+            margin-left: 4px;
+            position: relative;
+            border: 1px dotted #aaa;
+            border-radius: 3px;
+        }
+        div.correct-test img {
+            background: #69cd69;
+        }
+        div.incorrect-test img {
+            background: #cd6969;
+        }
+
+        /* The file upload exercise items */
+        /* Stage */
+        div.test-evaluation-stage {
+            border-bottom: 2px solid #aaa;
+            padding-bottom: 1rem;
+        }
+        div.test-evaluation-stage:last-child {
+            border-bottom: 0;
+            padding-bottom: 0;
+        }
+        div.test-evaluation-stage-name {
+            font-weight: normal;
+            text-shadow: 0px 0px 4px rgba(63, 63, 63, 0.5);
+            border-bottom: 1px solid rgba(191, 191, 191, 0.5);
+            padding: 4px 4px 4px 8px;
+            font-size: 1.1rem;
+            background: #cacaca;
+        }
+        /* Command */
+        div.test-evaluation-heading {
+            padding: 2px 2px 2px 4px;
+            font-size: 1.0rem;
+            text-decoration: underline;
+        }
+        pre.test-evaluation-cmdline {
+            padding: 2px 2px 2px 4px;
+            margin: 0 6px 6px 6px;
+            font-size: 1.0em;
+            font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
+            background: #d0d0d0;
+        }
+        div.test-evaluation-msg {
+            font-size: 0.8em;
+            padding: 0 2px 0 2px;
+            margin: -8px 6px 6px 6px;
+            background: #d7d7d7;
+            color: #555;
+            position: relative;
+        }
+        div.test-evaluation-msg-attention:after {
+            content: "!";
+            color: #eee;
+            background: #d33;
+            position: absolute;
+            font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
+            font-size: 0.7em;
+            font-weight: bold;
+            right: 0;
+            top: 0;
+            margin: 2px 0 2px 0;
+            padding: 0 3px 0 3px;
+        }
+        span.retval {
+            font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
+        }
+        span.retval-correct {
+            color: #2e862e;
+        }
+        span.retval-incorrect {
+            color: #862e2e;
+        }
+        span.cmd-runtime {
+            
+        }
+        pre.test-evaluation-inputs {
+            padding: 2px 2px 2px 4px;
+            margin: 0 6px 6px 6px;
+            font-size: 1.0em;
+            font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
+            background: #d0d0d0;
+        }
+
+        /* The file upload exercise difference table */
+
+        table.diff {
+            table-layout: fixed;
+            width: 100%;
+            color: #222;
+        }
+
+        table.diff col.line-number {
+            width: 1.2rem;
+            background: #ccc;
+        }
+        table.diff colgroup.student,
+        table.diff colgroup.reference {
+            width: 50%;
+        }
+
+        table.diff th {
+            background: #ccc;
+            line-height: 1.25;
+            font-weight: normal;
+            border: 1px solid #aaa;
+            text-decoration: underline;
+        }
+
+        table.diff td {
+            white-space: pre-wrap;
+            overflow-x: hidden;
+            word-wrap: break-word;
+            font-weight: normal;
+            font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
+            font-size: 1.0em;
+            padding: 0 1px;
+            line-height: 1.25;
+            height: 1rem;
+            border: 1px solid #aaa;
+        }
+        table.diff td.diff-linenum {
+            font-size: 0.8em;
+        }
+
+        table.diff span.diff-sub {
+            background: #cd6969;
+        }
+
+        table.diff span.diff-chg {
+            background: #6969cd;
+        }
+
+        table.diff span.diff-add {
+            background: #69cd69;
+        }
+
 </style>
+
+<script>
+  function show_file(e, elem) {
+  e.preventDefault();
+  
+  var popup = $(elem).siblings(".popup");
+  popup.css({"opacity":"1", "pointer-events":"auto"});
+    
+  }
+  function show_results(e, elem, results_div) {
+    e.preventDefault();
+    var url = elem.href;
+  
+    $.get(url, function(data, textStatus, jqXHR) {
+    var r_div = $('#' + results_div);
+      r_div.html(data);
+      //r_div.show();
+      var popup = r_div.parent();
+      popup.css({"opacity":"1", "pointer-events":"auto"});
+    });  
+  }
+
+  $(document).ready(function() {
+    $('.popup').click(function() {
+      $(this).css({"opacity":"0", "pointer-events":"none"});
+    });
+    $('.popup > div').click(function(event) {
+      event.stopPropagation();
+    });
+    $('.popup > pre').click(function(event) {
+      event.stopPropagation();
+    });
+  });
+
+  function activate_test_tab(tab_id, elem) {
+    var item = $(elem).parent().siblings('#file-test-' + tab_id);
+    var siblings = item.parent().find('.test-evaluation-tab');
+    siblings.hide();
+    item.show();
+  }
+</script>
+
  </head>
  <body>
 
@@ -66,11 +300,15 @@ div.results-view {
         </ul>
       {% elif answer.get_returned_files %}
         <ul>
-        {% for file in answer.get_returned_files.items %}
-          <li>{{ file.0 }}
-            <div class="fileview">{{ file.1 }}</div>
-          </li>
-        {% endfor %}
+          {% for file in answer.get_returned_files.items %}
+            {% if file.1.1 == True %}
+              <li>{{ file.0 }}</li>
+            {% else %}
+              <li><a class="fileview-link" href="" onclick="show_file(event, this);">{{ file.0 }}</a>
+                <div class="popup"><pre class="fileview">{{ file.1.2|safe }}</pre></div>
+              </li>
+            {% endif %}
+          {% endfor %}
         </ul>
       {% endif %}
     </td>
@@ -81,7 +319,9 @@ div.results-view {
         <span title="Incorrect">✘</span>
       {% endif %}
       {% if answer.evaluation.test_results %}
-        <div class="results-view">{{ answer.evaluation.test_results }}</div>
+        <a href="{% url 'courses:get_old_file_exercise_evaluation' user answer.id %}"
+           onclick="show_results(event, this, 'results-{{ answer.id }}');">View results</a>
+        <div class="popup"><div class="results-view" id="results-{{ answer.id }}"></div></div>
       {% endif %}
     </td>
     <td class="permalink"><a href="#{{ answer.id }}">&para;</a></td>
