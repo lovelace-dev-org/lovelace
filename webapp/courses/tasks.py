@@ -280,7 +280,7 @@ def run_test(self, test_id, answer_id, exercise_id, student=False):
             # TODO: Log weird request
             return # TODO: Find a way to signal the failure to the user
         
-        files_to_check = answer_object.get_returned_files()
+        files_to_check = answer_object.get_returned_files_raw()
         print("".join("%s:\n%s" % (n, c) for n, c in files_to_check.items()))
     else:
         files_to_check = {f.name: f.get_file_contents()

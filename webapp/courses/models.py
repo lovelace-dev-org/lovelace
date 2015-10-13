@@ -1053,6 +1053,16 @@ class UserFileUploadExerciseAnswer(UserAnswer):
     def __str__(self):
         return "Answer by %s" % (self.user.username)
 
+    def get_returned_files_raw(self):
+        file_objects = FileUploadExerciseReturnFile.objects.filter(answer=self)
+        returned_files = {}
+        for returned_file in file_objects:
+            path = returned_file.fileinfo.path
+            with open(path, 'rb') as f:
+                contents = f.read()
+                returned_files[returned_file.filename()] = contents
+        return returned_files
+
     def get_returned_files(self):
         file_objects = FileUploadExerciseReturnFile.objects.filter(answer=self)
         returned_files = {}
