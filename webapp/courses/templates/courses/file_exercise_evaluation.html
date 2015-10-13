@@ -49,6 +49,12 @@
               </div>
             {% endif %}
 
+            {% if cmd_info.killed %}
+              <div class="test-evaluation-msg test-evaluation-msg-attention">
+                Refused TERM signal and was KILLED after <span class="cmd-runtime">{{ cmd_info.runtime|floatformat:2 }}</span> seconds.
+              </div>
+            {% endif %}
+            
             {% if cmd_info.input_text %}
               <div class="test-evaluation-heading">Inputs entered for this command</div>
               <pre class="test-evaluation-inputs">{{ cmd_info.input_text }}</pre>

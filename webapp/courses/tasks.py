@@ -543,6 +543,7 @@ def run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check):
     
     proc_retval = None
     proc_timedout = False
+    proc_killed = False
     
     try:
         proc.wait(timeout=timeout)
@@ -555,15 +556,19 @@ def run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check):
         proc.terminate() # Try terminating the process nicely
         time.sleep(0.5)
         
-    # Clean up by halting all action (forking etc.) by the student's process
+    # TODO: Clean up by halting all action (forking etc.) by the student's process
     # with SIGSTOP and by killing the frozen processes with SIGKILL
+    #proc_killed = True
 
-    # ...or maybe kill -SIGKILL -1 with the student's credentials? No.
+    # TODO: Collect statistics on CPU time consumed by the student's process
+    #import resource
+    #print(resource.getrusage(resource.RUSAGE_CHILDREN))
 
     proc_runtime = proc_runtime or (time.time() - start_time)
     proc_retval = proc_retval or proc.returncode
     proc_results = {"retval": proc_retval,
                     "timedout": proc_timedout,
+                    "killed": proc_killed,
                     "runtime": proc_runtime,
                     "ordinal_number": command.ordinal_number,
                     "expected_retval": command.return_value,
