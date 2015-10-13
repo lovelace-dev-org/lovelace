@@ -1,23 +1,4 @@
 {% extends 'courses/base.html' %}
-<!--style type="text/css">
-    table {
-        white-space: pre-wrap;
-        max-width: 100%;
-    }
-    td {
-        border: 1px solid #666;
-    }
-    .correct {
-        color: #0C0;
-    }
-    .incorrect {
-        color: #F00;
-    }
-
-    td.answer {
-        word-wrap: break-word;
-    }
-</style-->
 {% block page-title %}
   Statistics – {{ content.name }}
 {% endblock %}
@@ -31,18 +12,34 @@
 {% block page-content %}
   <h1>Statistics for "{{ content.name }}"</h1>
   <h2>General exercise information</h2>
-  <p>{% block general-info %}{% endblock %}</p>
   
-  {% if answer_count %}
+  <p>"{{ content.name }}" is a {{ tasktype }}.</p>
+  {% if choices %}
+  <table>
+    <tr><th>Answer choice</th><th>Correct?</th></tr>
+    {% for choice in choices %}
+    <tr>
+      <td>{{ choice }}</td>
+      {% if choice.correct %}
+      <td class="correct">{{ choice.correct }}</td>
+      {% else %}
+      <td class="incorrect">{{ choice.correct }}</td>
+      {% endif %}
+    </tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+  
   <h2>User answer data</h2>
-  <p>
-    {% if piechart %}
-    {{ piechart|safe }}
-  </p>
-  <p style="padding-top:120px">
-    {% endif %}
-  {% block exercise-stats %}{% endblock %}
-  </p>
+  {% if course_stats %}
+    {% for course, stats in course_stats %}
+    <h3>{{ course }}</h3>
+    {{ stats | safe }}
+    {% endfor %}
+  {% endif %}
+  {% if summary_stats %}
+    <h3>Summary of all courses</h3>
+    {{ summary_stats | safe }}
   {% endif %}
 {% endblock %}
  
