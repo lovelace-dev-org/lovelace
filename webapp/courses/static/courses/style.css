@@ -996,6 +996,45 @@ section.content {
             background: #69cd69;
         }
 
+        /* Calendar */
+        div.calendar {
+            width: 50%;
+        }
+        div.calendar fieldset {
+            padding: 4px;
+        }
+        div.calendar legend {
+            font-size: 1.0rem;
+            font-weight: bold;
+            margin: 0 0 0 25px;
+        }
+        div.calendar fieldset > div {
+            padding: 0 2px;
+        }
+        div.calendar div.datetime {
+            background: #d7d7d7;
+        }
+        div.calendar div.description {
+            background: #e0e0e0;
+            font-style: italic;
+            padding: 4px 12px;
+        }
+        div.calendar li {
+            font-size: 0.8rem;
+            list-style-type: square;
+            background: #e0e0e0;
+        }
+        div.calendar div.reservation-result {
+            border: 1px solid #888;
+            background: #f0f099;
+        }
+        div.calendar input[type=submit] {
+            font-family: "DejaVu Sans";
+            font-size: 0.9em;
+            min-width: 150px;
+            line-height: 1.5;
+        }
+
     section.content a.permalink {
         position: relative;
         top: -1px;

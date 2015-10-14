@@ -15,7 +15,7 @@ urlpatterns = [
     url(r'^profile/save/$', views.user_profile_save),
 
     # For calendar POST requests
-    url(r'^calendar/(?P<calendar_id>\d+)/(?P<event_id>\d+)/$', views.calendar_post),
+    url(r'^calendar/(?P<calendar_id>\d+)/(?P<event_id>\d+)/$', views.calendar_post, name='calendar_post',),
 
     # Sandbox: admin view & answer for content pages without saved results
     url(r'^sandbox/(?P<content_slug>[^/]+)/$', views.sandboxed_content, name='sandbox',),

@@ -491,7 +491,7 @@ def calendar_post(request, calendar_id, event_id):
     except CalendarDate.DoesNotExist:
         return HttpResponseNotFound("Error: the selected calendar does not exist.")
 
-    if "reserve" in form.keys():
+    if "reserve" in form.keys() and int(form["reserve"]) == 1:
         # TODO: How to make this atomic?
         reservations = CalendarReservation.objects.filter(calendar_date_id=event_id)
         if reservations.count() >= calendar_date.reservable_slots:
@@ -504,7 +504,7 @@ def calendar_post(request, calendar_id, event_id):
         new_reservation.save()
         # TODO: Check that we didn't overfill the event
         return HttpResponse("Slot reserved!")
-    elif "cancel" in form.keys():
+    elif "reserve" in form.keys() and int(form["reserve"]) == 0:
         user_reservations = CalendarReservation.objects.filter(calendar_date_id=event_id, user=request.user)
         if user_reservations.count() >= 1:
             user_reservations.delete()
@@ -512,7 +512,7 @@ def calendar_post(request, calendar_id, event_id):
         else:
             return HttpResponse("Reservation already cancelled.")
     else:
-        return HttpResponseNotFound()
+        return HttpResponseForbidden()
 
 def show_answers(request, user, course, exercise):
     """

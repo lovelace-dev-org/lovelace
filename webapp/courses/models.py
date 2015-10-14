@@ -210,8 +210,14 @@ class CalendarDate(models.Model):
     def __str__(self):
         return self.event_name
 
+    def get_users(self):
+        return self.calendarreservation_set.all().values(
+            'user__username', 'user__first_name',
+            'user__last_name', 'user__userprofile__student_id',
+        )
+
 class CalendarReservation(models.Model):
-    """A single user made reservation on a calendar date."""
+    """A single user-made reservation on a calendar date."""
     calendar_date = models.ForeignKey(CalendarDate)
     user = models.ForeignKey(User)
 
