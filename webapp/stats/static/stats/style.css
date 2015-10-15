@@ -1,46 +1,46 @@
 div.pie {
-    position:absolute;
-    width:200px;
-    height:150px;
-    overflow:hidden;
-    margin-top:-50px;
-    left:700px;
+    position: absolute;
+    width: 200px;
+    height: 150px;
+    overflow: hidden;
+    margin-top: -50px;
+    left: 700px;
 }
 
 div.pie-legend {
-    position:relative;
-    width:220px;
+    position: relative;
+    width: 220px;
     word-wrap: break-word;
-    left:-60px;
-    top:110px;
-    padding:3px;
-    font-size:90%;
+    left: -60px;
+    top: 110px;
+    padding: 3px;
+    font-size: 90%;
 }
 
 div.pie-legend.green {
-    background-color:lawngreen;
+    background-color: #87F717;
 }
 
 div.pie-legend.red {
-    background-color:orangered;
+    background-color: #FF4500;
 }
 
 div.pie-legend.blue {
-    background-color:steelblue;;
+    background-color: #4682B4;
 }
 
 div.stat-table {
-    width:100%; 
-    height:210px; 
-    display:table;
+    width: 100%; 
+    height: 210px; 
+    display: table;
 }
 
 div.stat-table.row {
-    display:table-row;
+    display: table-row;
 }
 
 div.stat-table.cell {
-    display:table-cell;
+    display: table-cell;
 }
 
 td.correct {
