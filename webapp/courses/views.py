@@ -261,6 +261,41 @@ def file_exercise_evaluation(request, course_slug, content_slug, task_id, task=N
     }
     return JsonResponse(data)
 
+def get_old_file_exercise_evaluation(request, user, answer_id):
+    if request.user.is_authenticated() and (request.user.username == user or request.user.is_staff):
+        pass
+    else:
+        return HttpResponseForbidden("You're only allowed to view your own answers.")
+
+    try:
+        user_obj = User.objects.get(username=user)
+    except User.DoesNotExist as e:
+        return HttpResponseNotFound("No such user %s" % user)
+
+    try:
+        answer_obj = UserFileUploadExerciseAnswer.objects.get(id=answer_id)
+    except UserFileUploadExerciseAnswer.DoesNotExist as e:
+        return HttpResponseNotFound("No such answer {}".format(answer_id))
+    else:
+        if answer_obj.user != request.user and not request.user.is_staff:
+            return HttpResponseForbidden("You're only allowed to view your own answers.")
+
+    from .tasks import generate_results
+    
+    results_json = answer_obj.evaluation.test_results
+    results_dict = json.loads(results_json)
+
+    evaluation_dict = generate_results(results_dict, 0)
+
+    debug_json = json.dumps(evaluation_dict, indent=4)
+
+    t_file = loader.get_template("courses/file_exercise_evaluation.html")
+    c_file = RequestContext(request, {
+        'debug_json': debug_json,
+        'evaluation_tree': evaluation_dict["test_tree"],
+    })
+    return HttpResponse(t_file.render(c_file))
+
 @cookie_law
 def sandboxed_content(request, content_slug, **kwargs):
     try:
@@ -456,7 +491,7 @@ def calendar_post(request, calendar_id, event_id):
     except CalendarDate.DoesNotExist:
         return HttpResponseNotFound("Error: the selected calendar does not exist.")
 
-    if "reserve" in form.keys():
+    if "reserve" in form.keys() and int(form["reserve"]) == 1:
         # TODO: How to make this atomic?
         reservations = CalendarReservation.objects.filter(calendar_date_id=event_id)
         if reservations.count() >= calendar_date.reservable_slots:
@@ -469,7 +504,7 @@ def calendar_post(request, calendar_id, event_id):
         new_reservation.save()
         # TODO: Check that we didn't overfill the event
         return HttpResponse("Slot reserved!")
-    elif "cancel" in form.keys():
+    elif "reserve" in form.keys() and int(form["reserve"]) == 0:
         user_reservations = CalendarReservation.objects.filter(calendar_date_id=event_id, user=request.user)
         if user_reservations.count() >= 1:
             user_reservations.delete()
@@ -477,7 +512,7 @@ def calendar_post(request, calendar_id, event_id):
         else:
             return HttpResponse("Reservation already cancelled.")
     else:
-        return HttpResponseNotFound()
+        return HttpResponseForbidden()
 
 def show_answers(request, user, course, exercise):
     """

@@ -263,9 +263,41 @@ class CalendarMarkup(Markup):
 
     @classmethod
     def block(cls, block, settings, state):
-        # TODO: embedded_calendar custom template tag
-        # TODO: On the other hand, no (security risk).
-        yield '{%% embedded_calendar "%s" %%}' % settings["calendar_name"]
+        try:
+            calendar = courses.models.Calendar.objects.get(name=settings["calendar_name"])
+        except courses.models.Calendar.DoesNotExist as e:
+            # TODO: Modular errors
+            yield '<div>Calendar {} not found.</div>'.format(settings["calendar_name"])
+            raise StopIteration
+
+        calendar_dates = courses.models.CalendarDate.objects.filter(calendar=calendar)
+
+        calendar_reservations = {
+            cal_date: courses.models.CalendarReservation.objects.filter(calendar_date=cal_date)
+            for cal_date in calendar_dates
+        }
+
+        user_has_slot = False
+        reserved_event_names = []
+        for cal_date, cal_reservations in calendar_reservations.items():
+            try:
+                found = cal_reservations.get(user=state["request"].user)
+            except courses.models.CalendarReservation.DoesNotExist as e:
+                continue
+            user_has_slot = True
+            reserved_event_names.append(found.calendar_date.event_name)
+        
+        c = {
+            "cal_id": calendar.id,
+            "cal_reservations": calendar_reservations,
+            "user_has_slot": user_has_slot,
+            "reserved_event_names": reserved_event_names,
+        }
+        
+        t = loader.get_template("courses/calendar.html")
+        ctx = RequestContext(state["request"], c)
+        rendered_content = t.render(ctx)
+        yield rendered_content
 
     @classmethod
     def settings(cls, matchobj, state):
@@ -444,8 +476,8 @@ class EmbeddedPageMarkup(Markup):
                 c["answer_count"] = 0
             c.update(state["context"])
             
-            t = loader.get_template("courses/{dashed_type}.html".format(
-                dashed_type=page.get_dashed_type()
+            t = loader.get_template("courses/{page_type}.html".format(
+                page_type=page.get_dashed_type()
             ))
             ctx = RequestContext(state["request"], c)
             rendered_content = t.render(ctx)

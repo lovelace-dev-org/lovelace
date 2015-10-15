@@ -157,6 +157,7 @@ def generate_results(results, exercise_id):
     matched = set(student.keys()) & set(reference.keys()) if unmatched else reference.keys()
     test_tree = {"tests": []}
 
+    #### GO THROUGH ALL TESTS
     for test_id, student_t, reference_t in ((k, student[k], reference[k]) for k in matched):
         current_test = {
             "test_id": test_id,
@@ -173,6 +174,7 @@ def generate_results(results, exercise_id):
         unmatched_stages = set(student_stages.keys()) ^ set(reference_stages.keys())
         matched_stages = set(student_stages.keys()) & set(reference_stages.keys())
 
+        #### GO THROUGH ALL STAGES
         for stage_id, student_s, reference_s in ((k, student_stages[k], reference_stages[k])
                                                   for k in sorted(matched_stages,
                                                                   key=lambda x: student_stages[x]["ordinal_number"])):
@@ -187,6 +189,7 @@ def generate_results(results, exercise_id):
             student_cmds = student_s["commands"]
             reference_cmds = reference_s["commands"]
 
+            #### GO THROUGH ALL COMMANDS
             for cmd_id, student_c, reference_c in ((k, student_cmds[k], reference_cmds[k])
                                                     for k in sorted(reference_cmds.keys(),
                                                                     key=lambda x: student_cmds[x]["ordinal_number"])):
@@ -199,7 +202,7 @@ def generate_results(results, exercise_id):
 
                 # Handle stdin
 
-                current_cmd["input_list"] = current_cmd["input_text"].split("\n")
+                current_cmd["input_text"] = current_cmd["input_text"]
 
                 # Handle stdout
 
@@ -277,7 +280,7 @@ def run_test(self, test_id, answer_id, exercise_id, student=False):
             # TODO: Log weird request
             return # TODO: Find a way to signal the failure to the user
         
-        files_to_check = answer_object.get_returned_files()
+        files_to_check = answer_object.get_returned_files_raw()
         print("".join("%s:\n%s" % (n, c) for n, c in files_to_check.items()))
     else:
         files_to_check = {f.name: f.get_file_contents()
@@ -540,27 +543,34 @@ def run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check):
     
     proc_retval = None
     proc_timedout = False
+    proc_killed = False
     
     try:
         proc.wait(timeout=timeout)
         proc_runtime = time.time() - start_time
         proc_retval = proc.returncode
     except subprocess.TimeoutExpired:
-        proc_runtime = None
+        proc_runtime = time.time() - start_time
         proc_retval = None
         proc_timedout = True
         proc.terminate() # Try terminating the process nicely
         time.sleep(0.5)
         
-    # Clean up by halting all action (forking etc.) by the student's process
+    # TODO: Clean up by halting all action (forking etc.) by the student's process
     # with SIGSTOP and by killing the frozen processes with SIGKILL
+    #proc_killed = True
 
-    # ...or maybe kill -SIGKILL -1 with the student's credentials? No.
+    # TODO: Collect statistics on CPU time consumed by the student's process
+    #import resource
+    #print(resource.getrusage(resource.RUSAGE_CHILDREN))
 
     proc_runtime = proc_runtime or (time.time() - start_time)
     proc_retval = proc_retval or proc.returncode
-    proc_results = {"retval": proc_retval, "timedout": proc_timedout,
-                    "runtime": proc_runtime, "ordinal_number": command.ordinal_number,
+    proc_results = {"retval": proc_retval,
+                    "timedout": proc_timedout,
+                    "killed": proc_killed,
+                    "runtime": proc_runtime,
+                    "ordinal_number": command.ordinal_number,
                     "expected_retval": command.return_value,
                     "input_text": command.input_text,
                     "significant_stdout": command.significant_stdout,
