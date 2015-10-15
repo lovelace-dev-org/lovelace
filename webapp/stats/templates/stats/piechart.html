@@ -1,165 +1,51 @@
-<style type="text/css">
-     /*
+<div class="pie">
+  <canvas id="canvas_{{ stat_title }}" width="200" height="150">
+    This text is displayed if your browser does not support HTML5 Canvas.
+  </canvas>
+</div>
+<div class="pie-legend green">Correct answers: {{ correct_n }} ({{ correct_pct }}&#37;)</div>
+<div class="pie-legend red">Incorrect answers: {{ incorrect_n }} ({{ incorrect_pct }}&#37;)</div>
+<div class="pie-legend blue">Not answered: {{ not_answered_n }} ({{ not_answered_pct }}&#37;)</div>
+<script type="text/javascript">
+  /*
+  Modified based on the example from
+  http://html5.litten.com/graphing-data-in-the-html5-canvas-element-part-iv-simple-pie-charts/
+  */
 
-     Copyright (c) 2013 - PATRICK DENNY - http://codepen.io/AtomicNoggin/pen/fEish
+  var myColor = ["lawngreen","orangered","steelblue"];
+  var myData = [{{ correct_n }}, {{ incorrect_n }}, {{ not_answered_n }}];
 
-     Permission is hereby granted, free of charge, to any person 
-     obtaining a copy of this software and associated documentation 
-     files (the "Software"), to deal in the Software without restriction,
-     including without limitation the rights to use, copy, modify, 
-     merge, publish, distribute, sublicense, and/or sell copies of 
-     the Software, and to permit persons to whom the Software is 
-     furnished to do so, subject to the following conditions:
+  function getTotal(){
+    var myTotal = 0;
+    for (var j = 0; j < myData.length; j++) {
+      myTotal += (typeof myData[j] == 'number') ? myData[j] : 0;
+    }
+    return myTotal;
+  }
 
-     The above copyright notice and this permission notice shall 
-     be included in all copies or substantial portions of the Software.
+  function plotData() {
+    var canvas;
+    var ctx;
+    var lastend = 0;
+    var myTotal = getTotal();
 
-     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, 
-     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES 
-     OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND 
-     NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
-     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
-     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
-     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER 
-     DEALINGS IN THE SOFTWARE.
+    canvas = document.getElementById("canvas_{{ stat_title }}");
+    var middle_x = canvas.width / 2;
+    var middle_y = canvas.height / 2;
 
-     */
+    ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-     /* 
-     make each pie piece a rectangle twice as high as it is wide.
-     move the transform origin to the middle of the left side.
-     Also ensure that overflow is set to hidden.
-     */
-     .pie {
-        position:absolute;
-        width:75px;
-        height:150px;
-        overflow:hidden;
-        margin-top:-50px;
-        left:800px;
-        -moz-transform-origin:left center;
-        -ms-transform-origin:left center;
-        -o-transform-origin:left center;
-        -webkit-transform-origin:left center;
-        transform-origin:left center;
-     }
-     /*
-     unless the piece represents more than 50% of the whole chart.
-     then make it a square, and ensure the transform origin is
-     back in the center.
+    for (var i = 0; i < myData.length; i++) {
+      ctx.fillStyle = myColor[i];
+      ctx.beginPath();
+      ctx.moveTo(middle_x, middle_y);
+      ctx.arc(middle_x, middle_y, middle_y, lastend, lastend + Math.PI * 2 * (myData[i] / myTotal), false);
+      ctx.lineTo(middle_x, middle_y);
+      ctx.fill();
+      lastend += Math.PI * 2 * (myData[i] / myTotal);
+    }
+}
 
-     NOTE: since this is only ever a single piece, you could
-     move this to a piece specific rule and remove the extra class
-     */
-    .pie.big {
-        width:150px;
-        height:150px;
-        left:725px;
-        -moz-transform-origin:center center;
-        -ms-transform-origin:center center;
-        -o-transform-origin:center center;
-        -webkit-transform-origin:center center;
-        transform-origin:center center;
-    }
-     /*
-     this is the actual visible part of the pie. 
-     Give it the same dimensions as the regular piece.
-     Use border radius make it a half circle.
-     move transform origin to the middle of the right side.
-     Push it out to the left of the containing box.
-     */
-    .pie:BEFORE {
-        content:"";
-        position:absolute;
-        width:75px;
-        height:150px;
-        left:-75px;
-        border-radius:75px 0 0 75px;
-        -moz-transform-origin:right center;
-        -ms-transform-origin:right center;
-        -o-transform-origin:right center;
-        -webkit-transform-origin:right center;
-        transform-origin:right center;
-        
-    }
-     /* if it's part of a big piece, bring it back into the square */
-    .pie.big:BEFORE {
-        left:0px;
-    }
-     /* 
-     big pieces will also need a second semicircle, pointed in the
-     opposite direction to hide the first part behind.
-     */
-    .pie.big:AFTER {
-        content:"";
-        position:absolute;
-        width:75px;
-        height:150px;
-        left:75px;
-        border-radius:0 75px 77px 0px;
-    }
-     /*
-     add colour to each piece.
-     */
-    .pie:nth-of-type(1):BEFORE,
-    .pie:nth-of-type(1):AFTER {
-        background-color: {{ bgcolor1 }};    
-    }
-    .pie:nth-of-type(2):AFTER,
-    .pie:nth-of-type(2):BEFORE {
-        background-color: {{ bgcolor2 }};    
-    }
-    .pie:nth-of-type(3):AFTER,
-    .pie:nth-of-type(3):BEFORE {
-        background-color: {{ bgcolor3 }};    
-    }
-     /*
-     now rotate each piece based on their cumulative starting
-     position
-     */
-    .pie:nth-of-type(2) {
-        -moz-transform: rotate({{ slice2_start }}deg); /* Firefox */
-        -ms-transform: rotate({{ slice2_start }}deg); /* IE */
-        -webkit-transform: rotate({{ slice2_start }}deg); /* Safari and Chrome */
-        -o-transform: rotate({{ slice2_start }}deg); /* Opera */
-        transform:rotate({{ slice2_start }}deg);
-    }
-    .pie:nth-of-type(3) {
-        -moz-transform: rotate({{ slice3_start }}deg); /* Firefox */
-        -ms-transform: rotate({{ slice3_start }}deg); /* IE */
-        -webkit-transform: rotate({{ slice3_start }}deg); /* Safari and Chrome */
-        -o-transform: rotate({{ slice3_start }}deg); /* Opera */
-        transform:rotate({{ slice3_start }}deg);
-    }
-     /*
-     and rotate the amount of the pie that's showing.
-     
-     NOTE: add an extra degree to all but the final piece, 
-     to fill in unsightly gaps.
-     */
-    .pie:BEFORE {
-        -moz-transform: rotate(180deg); /* Firefox */
-        -ms-transform: rotate(180deg); /* IE */
-        -webkit-transform: rotate(180deg); /* Safari and Chrome */
-        -o-transform: rotate(180deg); /* Opera */
-        transform:rotate(180deg);
-    }
-    .pie:nth-of-type(3):BEFORE {
-        -moz-transform: rotate({{ slice3 }}deg); /* Firefox */
-        -ms-transform: rotate({{ slice3 }}deg); /* IE */
-        -webkit-transform: rotate({{ slice3 }}deg); /* Safari and Chrome */
-        -o-transform: rotate({{ slice3 }}deg); /* Opera */
-        transform:rotate({{ slice3 }}deg);
-    }
-</style>
-<div class="pie"></div>
-<div class="pie"></div>
-{% if slice3 > 180 %}
-<div class="pie big"></div>
-{% else %}
-<div class="pie"></div>
-{% endif %}
-<div class="pie-legend" style="background-color:limegreen;">Correct answers: {{ correct_n }} ({{ correct_pct }}&#37;)</div>
-<div class="pie-legend" style="background-color:orangered;">Incorrect answers: {{ incorrect_n }} ({{ incorrect_pct }}&#37;)</div>
-<div class="pie-legend" style="background-color:steelblue;">Not answered: {{ not_answered_n }} ({{ not_answered_pct }}&#37;)</div>
-
+plotData();
+</script>

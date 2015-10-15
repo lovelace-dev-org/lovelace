@@ -1,3 +1,12 @@
+div.pie {
+    position:absolute;
+    width:200px;
+    height:150px;
+    overflow:hidden;
+    margin-top:-50px;
+    left:700px;
+}
+
 div.pie-legend {
     position:relative;
     width:220px;
@@ -6,6 +15,18 @@ div.pie-legend {
     top:110px;
     padding:3px;
     font-size:90%;
+}
+
+div.pie-legend.green {
+    background-color:lawngreen;
+}
+
+div.pie-legend.red {
+    background-color:orangered;
+}
+
+div.pie-legend.blue {
+    background-color:steelblue;;
 }
 
 div.stat-table {

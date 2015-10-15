@@ -592,13 +592,6 @@ section.content {
         padding: 2px 4px 2px 4px;
     }
 
-    .correct {
-        color: #0C0;
-    }
-    .incorrect {
-        color: #F00;
-    }
-
         section.content p code, section.content table * code,
         section.content ul * code, section.content ol * code {
             font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;

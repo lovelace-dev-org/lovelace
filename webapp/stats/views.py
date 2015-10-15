@@ -118,12 +118,12 @@ def answers_standard_distrib(user_count, answers_avg, answer_counts):
         raise ZeroUsersException("No users to calculate standard deviation!")
     return round(math.sqrt(variance), 2)
 
-def exercise_answer_piechart(request, correct, incorrect, not_answered):
+def exercise_answer_piechart(request, correct, incorrect, not_answered, stat_title):
     """
     Shows statistics of correct and incorrect answers of a single exercise in a pie chart.
     """
     
-    correct = 5
+    correct = 1
     incorrect = 2
     not_answered = 1
     total = correct + incorrect + not_answered
@@ -137,32 +137,18 @@ def exercise_answer_piechart(request, correct, incorrect, not_answered):
     incorrect_deg = round(incorrect_pct * 360)
     not_answered_deg = 360 - correct_deg - incorrect_deg
     
-    slices = sorted([(correct_deg, "limegreen"), 
-                     (incorrect_deg, "orangered"),
-                     (not_answered_deg, "steelblue")])
-    slice1, bg_color1 = slices[0]
-    slice2, bg_color2 = slices[1]
-    slice3, bg_color3 = slices[2]
-    print(slice1, slice2, slice3)
-    print(bg_color1, bg_color2, bg_color3)
-
     t = loader.get_template("stats/piechart.html")
     return t.render(RequestContext(request, {
-        "bgcolor1": bg_color1,
-        "bgcolor2": bg_color2,
-        "bgcolor3": bg_color3,
-        "slice2_start": slice1,
-        "slice3_start": slice1 + slice2,
-        "slice3": slice3,
         "correct_n": correct,
         "incorrect_n": incorrect,
         "not_answered_n": not_answered,
         "correct_pct": round(correct_pct * 100),
         "incorrect_pct": round(incorrect_pct * 100),
         "not_answered_pct": round(not_answered_pct * 100),
+        "stat_title": stat_title.lower().replace(" ", "_"),
     }))
 
-def exercise_basic_answer_stats(request, exercise, users, answers):
+def exercise_basic_answer_stats(request, exercise, users, answers, stat_title):
     answer_count = answers.count()
     users_answered = set(users)
     user_count = len(users_answered)
@@ -189,10 +175,9 @@ def exercise_basic_answer_stats(request, exercise, users, answers):
     
     unanswered = user_count - correctly_by - incorrectly_by
     try:
-        piechart = exercise_answer_piechart(request, correctly_by, incorrectly_by, unanswered)
+        piechart = exercise_answer_piechart(request, correctly_by, incorrectly_by, unanswered, stat_title)
     except ZeroUsersException:
         piechart = "No users to create piechart!"
-
 
     t = loader.get_template("stats/basic_answer_stats.html")
     return t.render(RequestContext(request, {
@@ -202,15 +187,16 @@ def exercise_basic_answer_stats(request, exercise, users, answers):
         "answers_sd": answers_sd,
         "correctly_by": correctly_by,
         "piechart": piechart,
+        "stat_title": stat_title,
     }))
 
-def checkbox_exercise(request, exercise, users):
+def checkbox_exercise(request, exercise, users, stat_title):
     """
     Shows statistics on a single checkbox exercise.
     """
     
     answers = UserCheckboxExerciseAnswer.objects.filter(exercise=exercise, user__in=users)
-    basic_stats = exercise_basic_answer_stats(request, exercise, users, answers)
+    basic_stats = exercise_basic_answer_stats(request, exercise, users, answers, stat_title)
     chosen_answers = list(answers.values_list("chosen_answers", flat=True))
     chosen_answers_set = set(chosen_answers)
     
@@ -226,13 +212,13 @@ def checkbox_exercise(request, exercise, users):
         "answer_data": answer_data,
     }))
 
-def multiple_choice_exercise(request, exercise, users):
+def multiple_choice_exercise(request, exercise, users, stat_title):
     """
     Shows statistics on a single multiple choice exercise.
     """
     
     answers = UserMultipleChoiceExerciseAnswer.objects.filter(exercise=exercise, user__in=users)
-    basic_stats = exercise_basic_answer_stats(request, exercise, users, answers)
+    basic_stats = exercise_basic_answer_stats(request, exercise, users, answers, stat_title)
     chosen_answers = list(answers.values_list("chosen_answer", flat=True))
     chosen_answers_set = set(chosen_answers)
     
@@ -248,13 +234,13 @@ def multiple_choice_exercise(request, exercise, users):
         "answer_data": answer_data,
     }))
 
-def textfield_exercise(request, exercise, users):
+def textfield_exercise(request, exercise, users, stat_title):
     """
     Shows statistics on a single textfield exercise.
     """
 
     answers = UserTextfieldExerciseAnswer.objects.filter(exercise=exercise, user__in=users)
-    basic_stats = exercise_basic_answer_stats(request, exercise, users, answers)
+    basic_stats = exercise_basic_answer_stats(request, exercise, users, answers, stat_title)
     given_answers = list(answer_objects.values_list("given_answer", flat=True))
     given_answers_set = set(given_answers)
 
@@ -285,13 +271,13 @@ def textfield_exercise(request, exercise, users):
         "hint_coverage": hint_coverage,
     }))
 
-def file_upload_exercise(request, exercise, users):
+def file_upload_exercise(request, exercise, users, stat_title):
     """
     Shows statistics on a single file upload exercise.
     """
 
     answers = UserFileUploadExerciseAnswer.objects.filter(exercise=exercise, user__in=users)
-    basic_stats = exercise_basic_answer_stats(request, exercise, users, answers)
+    basic_stats = exercise_basic_answer_stats(request, exercise, users, answers, stat_title)
     
     t = loader.get_template("stats/file_upload_stats.html")
     return t.render(RequestContext(request, {
@@ -306,10 +292,10 @@ def exercise_answer_stats(request, context, exercise, exercise_type_f):
     users = []
     for course in courses:
         users_on_course = filter_users_on_course(all_users, course)
-        course_stats.append([course.slug, exercise_type_f(request, exercise, users_on_course)])
+        course_stats.append(exercise_type_f(request, exercise, users_on_course, course.slug))
         users.extend(users_on_course)
 
-    summary_stats = exercise_type_f(request, exercise, list(set(users)))
+    summary_stats = exercise_type_f(request, exercise, list(set(users)), "Summary of all courses")
     context.update({
         "course_stats": course_stats,
         "summary_stats": summary_stats,

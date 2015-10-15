@@ -39,13 +39,11 @@
   
   <h2>User answer data</h2>
   {% if course_stats %}
-    {% for course, stats in course_stats %}
-    <h3>{{ course }}</h3>
-    {{ stats | safe }}
+    {% for stats in course_stats %}
+      {{ stats | safe }}
     {% endfor %}
   {% endif %}
   {% if summary_stats %}
-    <h3>Summary of all courses</h3>
     {{ summary_stats | safe }}
   {% endif %}
 {% endblock %}
