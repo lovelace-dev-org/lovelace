@@ -102,6 +102,7 @@ sudo apt-get install rabbitmq-server
 Install the Python packages
 
 pip install unicode-slugify
+pip install python-magic
 pip install psycopg2
 pip install pygments
 pip install pillow

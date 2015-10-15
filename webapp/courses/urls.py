@@ -6,6 +6,8 @@ urlpatterns = [
     url(r'^$', views.index, name='index'),
 
     # For viewing and changing user information
+    url(r'^answers/(?P<user>[^/]+)/(?P<answer_id>\d+)$',
+        views.get_old_file_exercise_evaluation, name='get_old_file_exercise_evaluation'),
     url(r'^answers/(?P<user>[^/]+)/(?P<course>[^/]+)/(?P<exercise>[^/]+)',
         views.show_answers, name='show_answers'),
     url(r'^user/(?P<user_name>[^/]+)/$', views.user),
@@ -13,7 +15,7 @@ urlpatterns = [
     url(r'^profile/save/$', views.user_profile_save),
 
     # For calendar POST requests
-    url(r'^calendar/(?P<calendar_id>\d+)/(?P<event_id>\d+)/$', views.calendar_post),
+    url(r'^calendar/(?P<calendar_id>\d+)/(?P<event_id>\d+)/$', views.calendar_post, name='calendar_post',),
 
     # Sandbox: admin view & answer for content pages without saved results
     url(r'^sandbox/(?P<content_slug>[^/]+)/$', views.sandboxed_content, name='sandbox',),

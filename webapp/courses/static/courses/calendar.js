@@ -1,76 +1,36 @@
-function getXHR() {
-    var xhr;
+function reserve_slot(e, elem) {
+    e.preventDefault();
 
-    //Browser Support Code
-    try {
-        // Opera 8.0+, Firefox, Safari
-        xhr = new XMLHttpRequest();
-    } catch (e) {
-        // Internet Explorer Browsers
-        try {
-            xhr = new ActiveXObject("Msxml2.XMLHTTP");
-        } catch (e) {
-            try{
-                xhr = new ActiveXObject("Microsoft.XMLHTTP");
-            } catch (e){
-                // Something went wrong
-                alert("Your browser doesn't support AJAX!");
-                return false;
+    var form = $(elem).closest('form');
+    var reservation_field = form.children('input[name="reserve"]');
+    var submit_button = $(elem);
+    var reservation_result = $(elem).parent().siblings('.reservation-result');
+
+    if (reservation_field.val() == "1") {
+        reservation_result.html("Reservation sent, awaiting for confirmation.");
+    } else {
+        reservation_result.html("Cancellation sent, awaiting for confirmation.");
+    }
+
+    submit_button.attr("disabled", true);
+
+    $.ajax({
+        type: form.attr('method'),
+        url: form.attr('action'),
+        data: form.serialize(),
+        success: function(data, text_status, jqxhr_obj) {
+            reservation_result.html(data);
+            if (reservation_field.val() == "1") {
+                submit_button.val("Cancel reservation");
+                reservation_field.val("0");
+            } else {
+                submit_button.val("Reserve a slot");
+                reservation_field.val("1");
             }
+            submit_button.attr("disabled", false);
+        },
+        error: function(xhr, status, type) {
+            reservation_result.html(type);
         }
-    }
-    return xhr;
-}
-
-function reserveSlot(e, calendar_id, event_id) {
-    e.preventDefault(); // Prevent the form from submitting
-    var xhr = getXHR();
-
-    var csrftoken = $('div#calendar_' + calendar_id + ' form#event_' + event_id + ' input[name="csrfmiddlewaretoken"]').val();
-
-    xhr.onreadystatechange = function() {
-        if(xhr.readyState == 4 && xhr.status == 200) {
-            $('div#calendar_' + calendar_id + ' form#event_' + event_id + ' div.result').html(xhr.responseText);
-            $('div#calendar_' + calendar_id + ' form#event_' + event_id + ' :input').attr("disabled", true);
-        }
-    }
-
-    var data = "csrfmiddlewaretoken=" + csrftoken;
-    data += "&reserve=1"
-    var datalen = data.length;
-    var mimetype = "application/x-www-form-urlencoded";
-
-    xhr.open("POST", "/calendar/" + calendar_id + "/" + event_id + "/", true);
-    xhr.setRequestHeader("Content-type", mimetype);
-    xhr.setRequestHeader("Content-length", datalen);
-    xhr.setRequestHeader("Connection", "close");
-    xhr.setRequestHeader("X_REQUESTED_WITH", "XMLHttpRequest");
-    xhr.send(data);
-    $('div#calendar_' + calendar_id + 'form#event_' + event_id + ' div.result').html("Reservation sent, awaiting for confirmation.");
-}
-
-function cancelSlot(e, calendar_id, event_id) {
-    e.preventDefault(); // Prevent the form from submitting
-    var xhr = getXHR();
-
-    var csrftoken = $('div#calendar_' + calendar_id + ' form#event_' + event_id + ' input[name="csrfmiddlewaretoken"]').val();
-
-    xhr.onreadystatechange = function() {
-        if(xhr.readyState == 4 && xhr.status == 200) {
-            $('div#calendar_' + calendar_id + ' form#event_' + event_id + ' div.result').html(xhr.responseText);
-        }
-    }
-
-    var data = "csrfmiddlewaretoken=" + csrftoken;
-    data += "&cancel=1"
-    var datalen = data.length;
-    var mimetype = "application/x-www-form-urlencoded";
-
-    xhr.open("POST", "/calendar/" + calendar_id + "/" + event_id + "/", true);
-    xhr.setRequestHeader("Content-type", mimetype);
-    xhr.setRequestHeader("Content-length", datalen);
-    xhr.setRequestHeader("Connection", "close");
-    xhr.setRequestHeader("X_REQUESTED_WITH", "XMLHttpRequest");
-    xhr.send(data);
-    $('div#calendar_' + calendar_id + 'form#event_' + event_id + ' div.result').html("Cancellation sent, awaiting for confirmation.");
+    });
 }
