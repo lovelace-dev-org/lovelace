@@ -151,17 +151,6 @@
         -o-transform: rotate({{ slice3 }}deg); /* Opera */
         transform:rotate({{ slice3 }}deg);
     }
-
-    .legend {
-        position:relative;
-        width:220px;
-        word-wrap: break-word;
-        left:-10px;
-        top:110px;
-        padding:3px;
-        font-size:90%;
-    }
-
 </style>
 <div class="pie"></div>
 <div class="pie"></div>
@@ -170,7 +159,7 @@
 {% else %}
 <div class="pie"></div>
 {% endif %}
-<div class="legend" style="background-color:limegreen;">Correct answers: {{ correct_n }} ({{ correct_pct }}&#37;)</div>
-<div class="legend" style="background-color:orangered;">Incorrect answers: {{ incorrect_n }} ({{ incorrect_pct }}&#37;)</div>
-<div class="legend" style="background-color:steelblue;">Not answered: {{ not_answered_n }} ({{ not_answered_pct }}&#37;)</div>
+<div class="pie-legend" style="background-color:limegreen;">Correct answers: {{ correct_n }} ({{ correct_pct }}&#37;)</div>
+<div class="pie-legend" style="background-color:orangered;">Incorrect answers: {{ incorrect_n }} ({{ incorrect_pct }}&#37;)</div>
+<div class="pie-legend" style="background-color:steelblue;">Not answered: {{ not_answered_n }} ({{ not_answered_pct }}&#37;)</div>
 

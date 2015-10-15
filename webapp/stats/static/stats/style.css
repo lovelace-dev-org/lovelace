@@ -1,0 +1,30 @@
+div.pie-legend {
+    position:relative;
+    width:220px;
+    word-wrap: break-word;
+    left:-60px;
+    top:110px;
+    padding:3px;
+    font-size:90%;
+}
+
+div.stat-table {
+    width:100%; 
+    height:210px; 
+    display:table;
+}
+
+div.stat-table.row {
+    display:table-row;
+}
+
+div.stat-table.cell {
+    display:table-cell;
+}
+
+td.correct {
+    color: #0C0;
+}
+td.incorrect {
+    color: #F00;
+}
