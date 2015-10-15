@@ -1,5 +1,5 @@
 <div class="pie">
-  <canvas id="canvas_{{ stat_title }}" width="200" height="150">
+  <canvas id="canvas_{{ canvas_id }}" width="200" height="150">
     This text is displayed if your browser does not support HTML5 Canvas.
   </canvas>
 </div>
@@ -29,7 +29,7 @@
     var lastend = 0;
     var myTotal = getTotal();
 
-    canvas = document.getElementById("canvas_{{ stat_title }}");
+    canvas = document.getElementById("canvas_{{ canvas_id }}");
     var middle_x = canvas.width / 2;
     var middle_y = canvas.height / 2;
 

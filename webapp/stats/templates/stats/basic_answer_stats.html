@@ -1,5 +1,5 @@
 {% block basic-stats %}
-  <h3>{{ stat_title }}</h3>
+  <h3>{{ title }}</h3>
   <div class="stat-table">
     <div class="stat-table row">
       <div class="stat-table cell">
@@ -9,8 +9,10 @@
         <div>Average attempts per user: {{ answers_avg }} </div>
         <div>Standard deviation of attempts per user: {{ answers_sd }} </div>
         <div>Median attempts per user: (To be implemented) </div>
+        {% block extra-stats %}{% endblock %}
       </div>
       <div class="stat-table cell">{{ piechart }}</div>
     </div>
   </div>
 {% endblock %}
+{% block user-answers %}{% endblock %}

@@ -1,4 +1,8 @@
-{{ basic_stats | safe }}
+{% extends 'stats/basic_answer_stats.html' %}
+
+{% block extra-stats %}
+  <div>Hint coverage: {{ hint_coverage }}</div>
+{% endblock %}
 
 {% block user-answers %}  
   <table>
