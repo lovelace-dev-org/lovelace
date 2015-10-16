@@ -1,5 +1,6 @@
 import re
 import math
+import statistics
 
 import django
 from django.http import HttpResponse, HttpResponseRedirect, HttpResponseNotFound
@@ -175,11 +176,16 @@ def exercise_basic_answer_stats(request, exercise, users, answers, course_inst=N
         answers_avg = "Not enough user answers to calculate."
 
     answer_userids = list(answers.values_list("user", flat=True))
-    user_answer_counts = (answer_userids.count(user.id) for user in users_answered)
+    user_answer_counts = [answer_userids.count(user.id) for user in users_answered]
     try:
         answers_sd = answers_standard_distrib(user_count, answers_avg, user_answer_counts)
     except ZeroUsersException:
         answers_sd = "Not enough user answers to calculate."
+
+    try:
+        answers_median = statistics.median(user_answer_counts)
+    except statistics.StatisticsError:
+        answers_median = "Not enough user answers to calculate."
     
     try:
         piechart = exercise_answer_piechart(request, correctly_by, incorrectly_by, unanswered, course_inst)
@@ -194,8 +200,9 @@ def exercise_basic_answer_stats(request, exercise, users, answers, course_inst=N
     return {
         "answer_count": answer_count,
         "user_count": user_count,
-        "answers_avg": answers_avg,
-        "answers_sd": answers_sd,
+        "answers_avg": round(answers_avg, 4),
+        "answers_sd": round(answers_sd, 4),
+        "answers_median": answers_median,
         "correctly_by": correctly_by,
         "piechart": piechart,
         "title": title,
@@ -256,30 +263,40 @@ def textfield_exercise(request, exercise, users, course_inst=None):
     given_answers_set = set(given_answers)
 
     answer_data = []
-    incorrect_sum = 0
-    hinted_incorrect_sum = 0
+    incorrect_given = 0
+    hinted_incorrect_given = 0
+    incorrect_unique = 0
+    hinted_incorrect_unique = 0
     choices = exercise.get_type_object().get_choices()
     for answer in given_answers_set:
         count = given_answers.count(answer)
         correct, hinted = textfield_eval(answer, choices)
         if not correct:
-            incorrect_sum += 1
+            incorrect_unique += 1
+            incorrect_given += count
             if hinted:
-                hinted_incorrect_sum += 1
+                hinted_incorrect_unique += 1
+                hinted_incorrect_given += count
         latest = answers.filter(given_answer=answer).latest('answer_date')
         answer_data.append((answer, count, correct, hinted, latest))
     answer_data = sorted(answer_data, key=lambda x: x[1], reverse=True)
 
     try:
-        hint_coverage = hinted_incorrect_sum / incorrect_sum
+        hint_coverage_unique = hinted_incorrect_unique / incorrect_unique
     except ZeroDivisionError:
-        hint_coverage = 1.0
+        hint_coverage_unique = 1.0
+
+    try:
+        hint_coverage_given = hinted_incorrect_given / incorrect_given
+    except ZeroDivisionError:
+        hint_coverage_given = 1.0        
 
     t = loader.get_template("stats/textfield_stats.html")
     ctx.update({
         "answers": answers,
         "answer_data": answer_data,
-        "hint_coverage": hint_coverage,
+        "hint_coverage_unique": round(hint_coverage_unique, 4),
+        "hint_coverage_given": round(hint_coverage_given, 4),
     })
     return t.render(RequestContext(request, ctx))
 

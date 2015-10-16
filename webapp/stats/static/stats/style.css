@@ -9,9 +9,9 @@ div.pie {
 
 div.pie-legend {
     position: relative;
-    width: 220px;
+    width: 190px;
     word-wrap: break-word;
-    left: -60px;
+    left: -75px;
     top: 110px;
     padding: 3px;
     font-size: 90%;

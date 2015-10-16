@@ -8,7 +8,7 @@
         <div>The task has been answered correctly by {{ correctly_by }} different user(s).</div>
         <div>Average attempts per user: {{ answers_avg }} </div>
         <div>Standard deviation of attempts per user: {{ answers_sd }} </div>
-        <div>Median attempts per user: (To be implemented) </div>
+        <div>Median attempts per user: {{ answers_median }} </div>
         {% block extra-stats %}{% endblock %}
       </div>
       <div class="stat-table cell">{{ piechart }}</div>

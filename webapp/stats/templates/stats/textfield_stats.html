@@ -1,7 +1,8 @@
 {% extends 'stats/basic_answer_stats.html' %}
 
 {% block extra-stats %}
-  <div>Hint coverage: {{ hint_coverage }}</div>
+  <div>Hint coverage of unique incorrect answers: {{ hint_coverage_unique }}</div>
+  <div>Hint coverage of all incorrect answers: {{ hint_coverage_given }}</div>
 {% endblock %}
 
 {% block user-answers %}  
