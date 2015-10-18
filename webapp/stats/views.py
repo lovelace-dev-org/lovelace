@@ -24,7 +24,7 @@ from courses.models import *
 # users and the course instances have been implemented.
 
 
-NO_USERS_MSG = "Not users to calculate!"
+NO_USERS_MSG = "No users to calculate!"
 
 def user_evaluation(user, exercise):
     return exercise.get_type_object().get_user_evaluation(user)
