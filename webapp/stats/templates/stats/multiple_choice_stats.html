@@ -1,34 +1,11 @@
-{% extends 'stats/exercise_stats.html' %}
+{% extends 'stats/basic_answer_stats.html' %}
 
-{% block general-info %} 
-  <p>"{{ content.name }}" is a multiple choice exercise.</p>
-  {% if choices %}
-  <table>
-    <tr><th>Answer choice</th><th>Correct?</th></tr>
-    {% for choice in choices %}
-    <tr>
-      <td>{{ choice }}</td>
-      {% if choice.correct %}
-      <td class="correct">{{ choice.correct }}</td>
-      {% else %}
-      <td class="incorrect">{{ choice.correct }}</td>
-      {% endif %}
-    </tr>
-    {% endfor %}
-  </table>
-  {% else %}
-  It has no answer choices.
-  {% endif %}
+{% block extra-stats %}
+  <div>Removed choices have been picked {{ answers_removed_count }} times.</div>
 {% endblock %}
 
-{% block exercise-stats %}
-  <p>
-    <div>The exercise has been answered {{ answer_count }} times.</div>
-    <div>The exercise has been answered by {{ user_count }} different users.</div>
-    <div>The exercise has been answered correctly by {{ correctly_by }} different user(s).</div>
-    <div>Average attempts per user: {{ answers_avg }} </div>
-    <div>Standard deviation of attempts per user: {{ answers_sd }} </div>
-  </p>
+{% block user-answers %}
+  {% if answer_data %}
   <table>
     <tr><th>User answer</th><th>Count</th><th>Correct?</th></tr>
     {% for answer, count, correct in answer_data %}
@@ -43,4 +20,5 @@
     </tr>
     {% endfor %}
   </table>
+  {% endif %}
 {% endblock %}

@@ -1,5 +1,6 @@
 import re
 import math
+import statistics
 
 import django
 from django.http import HttpResponse, HttpResponseRedirect, HttpResponseNotFound
@@ -17,6 +18,57 @@ from courses.models import *
 #       - links to the stats of individual exercises
 #           * sorting by completion rate
 #           * sorting by total tries, average tries before correct etc.
+
+###########################################################
+# Some helper functions which won't be needed after the course enrollment of 
+# users and the course instances have been implemented.
+
+
+NO_USERS_MSG = "No users to calculate!"
+
+def user_evaluation(user, exercise):
+    return exercise.get_type_object().get_user_evaluation(user)
+
+def user_has_answered(user, exercise):
+    return user_evaluation(user, exercise) != "unanswered"
+
+def course_exercises_with_color(course):
+    exercises = []
+    parent_pages = course.contents.select_related('content').order_by('ordinal_number')
+    cg = color_generator(parent_pages.count())
+    
+    for p in parent_pages:
+        color = next(cg)
+        if p.content.embedded_pages.count() > 0:
+            all_pages = list(p.content.embedded_pages.all().order_by('emb_embedded'))
+            exercises.extend(list(zip(itertools.cycle([color]), all_pages)))
+    return exercises
+
+def course_exercises(course):
+    exercises = []
+    parent_pages = course.contents.select_related('content').order_by('ordinal_number')
+    
+    for p in parent_pages:
+        if p.content.embedded_pages.count() > 0:
+            all_pages = list(p.content.embedded_pages.all().order_by('emb_embedded'))
+            exercises.extend(all_pages)
+    return exercises
+
+def filter_users_on_course(users, course):
+    exercises = course_exercises(course)
+    return [user for user in users 
+            if any(user_has_answered(user, exercise) for exercise in exercises)]
+
+def courses_linked(exercise):
+    linked = []
+    courses = Course.objects.all()
+    
+    for course in courses:
+        if exercise in course_exercises(course):
+            linked.append(course)
+    return linked
+
+########################################################### 
 
 def textfield_eval(given, answers):
     given = given.replace("\r\n", "\n").replace("\n\r", "\n")
@@ -48,241 +100,285 @@ def textfield_eval(given, answers):
                 correct = False
     return (correct, hinted)
 
-def checkbox_exercise(content_page, context):
+def answers_average(answer_count, user_count):
+    """
+    Calculates the average of the number of answers per user.
+    """
+
+    try:
+        return round(answer_count / user_count, 2)
+    except ZeroDivisionError:
+        raise ZeroUsersException("No users to calculate average answer count!") 
+
+def answers_standard_distrib(user_count, answers_avg, answer_counts):
+    """
+    Calculates the standard distribution of the number of answers per user.
+    """
+    
+    deviations_squared = ((ac - answers_avg) ** 2 for ac in answer_counts)
+    try:
+        variance = (1 / user_count) * sum(deviations_squared)
+    except ZeroDivisionError:
+        raise ZeroUsersException("No users to calculate standard deviation!")
+    return round(math.sqrt(variance), 2)
+
+def exercise_answer_piechart(request, correct, incorrect, not_answered, course_inst=None):
+    """
+    Shows statistics of correct and incorrect answers of a single exercise in a pie chart.
+    """
+    
+    total = correct + incorrect + not_answered
+    try:
+        correct_pct = correct / total
+        incorrect_pct = incorrect / total
+        not_answered_pct = not_answered / total
+    except ZeroDivisionError:
+        raise ZeroUsersException("No users to create piechart!") 
+    correct_deg = round(correct_pct * 360)
+    incorrect_deg = round(incorrect_pct * 360)
+    not_answered_deg = 360 - correct_deg - incorrect_deg
+    
+    if course_inst is None:
+        canvas_id = ""
+    else:
+        canvas_id = course_inst.lower().replace(" ", "_")
+
+    t = loader.get_template("stats/piechart.html")
+    return t.render(RequestContext(request, {
+        "correct_n": correct,
+        "incorrect_n": incorrect,
+        "not_answered_n": not_answered,
+        "correct_pct": round(correct_pct * 100),
+        "incorrect_pct": round(incorrect_pct * 100),
+        "not_answered_pct": round(not_answered_pct * 100),
+        "canvas_id": canvas_id,
+    }))
+
+def exercise_basic_answer_stats(request, exercise, users, answers, course_inst=None):
+    answer_count = answers.count()
+    correctly_by = 0
+    incorrectly_by = 0
+    users_answered = set()
+
+    for user in users:
+        evaluation = user_evaluation(user, exercise)
+        if evaluation == "unanswered":
+            continue
+        elif evaluation == "correct": 
+            correctly_by += 1
+        else:
+            incorrectly_by += 1
+        users_answered.add(user)
+    
+    user_count = len(users_answered)
+    unanswered = len(users) - user_count
+    answer_userids = list(answers.values_list("user", flat=True))
+    user_answer_counts = [answer_userids.count(user.id) for user in users_answered]
+
+    try:
+        answers_avg = answers_average(answer_count, user_count)
+    except ZeroUsersException:
+        answers_avg = None
+        answers_sd = None
+    else:
+        answers_sd = answers_standard_distrib(user_count, answers_avg, user_answer_counts)
+        
+    try:
+        answers_median = statistics.median(user_answer_counts)
+    except statistics.StatisticsError:
+        answers_median = None
+    
+    try:
+        piechart = exercise_answer_piechart(request, correctly_by, incorrectly_by, unanswered, course_inst)
+    except ZeroUsersException:
+        piechart = "No users to create piechart!"
+
+    if course_inst is None:
+        title = "Summary of all courses"
+    else:
+        title = course_inst
+
+    return {
+        "answer_count": answer_count,
+        "user_count": user_count,
+        "answers_avg": round(answers_avg, 4) if answers_avg is not None else NO_USERS_MSG,
+        "answers_sd": round(answers_sd, 4) if answers_sd is not None else NO_USERS_MSG,
+        "answers_median": answers_median if answers_median is not None else NO_USERS_MSG,
+        "correctly_by": correctly_by,
+        "piechart": piechart,
+        "title": title,
+    }
+
+def checkbox_exercise(request, exercise, users, course_inst=None):
     """
     Shows statistics on a single checkbox exercise.
     """
     
-    choices = content_page.get_type_object().get_choices()
-    answers = UserCheckboxExerciseAnswer.objects.filter(exercise=content_page)
-    answer_count = answers.count()
+    answers = UserCheckboxExerciseAnswer.objects.filter(exercise=exercise, user__in=users)
+    ctx = exercise_basic_answer_stats(request, exercise, users, answers, course_inst)
     chosen_answers = list(answers.values_list("chosen_answers", flat=True))
     chosen_answers_set = set(chosen_answers)
-    user_objects = list(answers.values_list("user", flat=True))
-    users_answered = set(user_objects)
-    
-    user_count = len(users_answered)
-    try:
-        answers_avg = round(answer_count / user_count, 2)
-    except ZeroDivisionError:
-        answers_avg = 0
-        
-    user_answer_counts = (user_objects.count(user) for user in users_answered)
-    deviations_squared = ((uac - answers_avg) ** 2 for uac in user_answer_counts)
-    try:
-        answers_var = (1 / user_count) * sum(deviations_squared)
-    except ZeroDivisionError:
-        answers_var = 0
-    answers_sd = round(math.sqrt(answers_var), 2)    
-
+    answers_removed_count = 0    
     answer_data = []
+
     for answer in chosen_answers_set:
-        choice = CheckboxExerciseAnswer.objects.get(id=answer)
-        answer_data.append((choice.answer, chosen_answers.count(answer), choice.correct))
-    
-    correctly_by = 0
-    for user in users_answered:
-        evaluations = Evaluation.objects.filter(useranswer__usercheckboxexerciseanswer__exercise=content_page, useranswer__user=user)
-        correct = evaluations.filter(points__gt=0.0)
-        if correct: 
-            correctly_by += 1
+        try:
+            choice = CheckboxExerciseAnswer.objects.get(id=answer)
+        except CheckboxExerciseAnswer.DoesNotExist:
+            answers_removed_count += chosen_answers.count(answer)
+        else:
+            answer_data.append((choice.answer, chosen_answers.count(answer), choice.correct))
 
-    context.update({
-        "choices": choices,
-        "answer_count": answer_count,
-        "user_count": user_count,
-        "answers_avg": answers_avg,
-        "answers_sd": answers_sd,
-        "answer_data": answer_data,
-        "correctly_by": correctly_by,
-    })
     t = loader.get_template("stats/checkbox_stats.html")
-    return HttpResponse(t.render(context))
+    ctx.update({
+        "answers": answers,
+        "answer_data": answer_data,
+        "answers_removed_count": answers_removed_count,
+    })
+    return t.render(RequestContext(request, ctx))
 
-def multiple_choice_exercise(content_page, context):
+def multiple_choice_exercise(request, exercise, users, course_inst=None):
     """
     Shows statistics on a single multiple choice exercise.
     """
     
-    choices = content_page.get_type_object().get_choices()
-    answers = UserMultipleChoiceExerciseAnswer.objects.filter(exercise=content_page)
-    answer_count = answers.count()
+    answers = UserMultipleChoiceExerciseAnswer.objects.filter(exercise=exercise, user__in=users)
+    ctx = exercise_basic_answer_stats(request, exercise, users, answers, course_inst)
     chosen_answers = list(answers.values_list("chosen_answer", flat=True))
     chosen_answers_set = set(chosen_answers)
-    user_objects = list(answers.values_list("user", flat=True))
-    users_answered = set(user_objects)
-
-    user_count = len(users_answered)
-    try:
-        answers_avg = round(answer_count / user_count, 2)
-    except ZeroDivisionError:
-        answers_avg = 0
-
-    user_answer_counts = (user_objects.count(user) for user in users_answered)
-    deviations_squared = ((uac - answers_avg) ** 2 for uac in user_answer_counts)
-    try:
-        answers_var = (1 / user_count) * sum(deviations_squared)
-    except ZeroDivisionError:
-        answers_var = 0
-    answers_sd = round(math.sqrt(answers_var), 2)
-
+    answers_removed_count = 0
     answer_data = []
+
     for answer in chosen_answers_set:
-        choice = MultipleChoiceExerciseAnswer.objects.get(id=answer)
-        answer_data.append((choice.answer, chosen_answers.count(answer), choice.correct))
+        try:
+            choice = MultipleChoiceExerciseAnswer.objects.get(id=answer)
+        except MultipleChoiceExerciseAnswer.DoesNotExist:
+            answers_removed_count += chosen_answers.count(answer)
+        else:
+            answer_data.append((choice.answer, chosen_answers.count(answer), choice.correct))
 
-    correctly_by = 0
-    for user in users_answered:
-        evaluations = Evaluation.objects.filter(useranswer__usertextfieldexerciseanswer__exercise=content_page, useranswer__user=user)
-        correct = evaluations.filter(points__gt=0.0)
-        if correct: 
-            correctly_by += 1
-
-    context.update({
-        "choices": choices,
-        "answers": answers,
-        "answer_count": answer_count,
-        "user_count": user_count,
-        "answers_avg": answers_avg,
-        "answers_sd": answers_sd,
-        "answer_data": answer_data,
-        "correctly_by": correctly_by,
-    })
     t = loader.get_template("stats/multiple_choice_stats.html")
-    return HttpResponse(t.render(context))
+    ctx.update({
+        "answers": answers,
+        "answer_data": answer_data,
+        "answers_removed_count": answers_removed_count,
+    })
+    return t.render(RequestContext(request, ctx))
 
-def textfield_exercise(content_page, context):
+def textfield_exercise(request, exercise, users, course_inst=None):
     """
     Shows statistics on a single textfield exercise.
     """
 
-    answers = content_page.get_type_object().get_choices()
-
-    answer_objects = UserTextfieldExerciseAnswer.objects.filter(exercise=content_page)
-    given_answers = list(answer_objects.values_list("given_answer", flat=True))
-    answer_count = len(given_answers)
+    answers = UserTextfieldExerciseAnswer.objects.filter(exercise=exercise, user__in=users)
+    ctx = exercise_basic_answer_stats(request, exercise, users, answers, course_inst)
+    given_answers = list(answers.values_list("given_answer", flat=True))
     given_answers_set = set(given_answers)
-    user_objects = list(answer_objects.values_list("user", flat=True))
-    users_answered = set(user_objects)
-    
-    user_count = len(users_answered)
-    try:
-        answers_avg = round(answer_count / user_count, 2)
-    except ZeroDivisionError:
-        answers_avg = 0
-        
-    user_answer_counts = (user_objects.count(user) for user in users_answered)
-    deviations_squared = ((uac - answers_avg) ** 2 for uac in user_answer_counts)
-    try:
-        answers_var = (1 / user_count) * sum(deviations_squared)
-    except ZeroDivisionError:
-        answers_var = 0
-    answers_sd = round(math.sqrt(answers_var), 2)
 
     answer_data = []
-    incorrect_sum = 0
-    hinted_incorrect_sum = 0
+    incorrect_given = 0
+    hinted_incorrect_given = 0
+    incorrect_unique = 0
+    hinted_incorrect_unique = 0
+    choices = exercise.get_type_object().get_choices()
     for answer in given_answers_set:
         count = given_answers.count(answer)
-        correct, hinted = textfield_eval(answer, answers)
+        correct, hinted = textfield_eval(answer, choices)
         if not correct:
-            incorrect_sum += 1
+            incorrect_unique += 1
+            incorrect_given += count
             if hinted:
-                hinted_incorrect_sum += 1
-        latest = answer_objects.filter(given_answer=answer).latest('answer_date')
+                hinted_incorrect_unique += 1
+                hinted_incorrect_given += count
+        latest = answers.filter(given_answer=answer).latest('answer_date')
         answer_data.append((answer, count, correct, hinted, latest))
     answer_data = sorted(answer_data, key=lambda x: x[1], reverse=True)
 
     try:
-        hint_coverage = hinted_incorrect_sum / incorrect_sum
+        hint_coverage_unique = hinted_incorrect_unique / incorrect_unique
     except ZeroDivisionError:
-        hint_coverage = 1.0
+        hint_coverage_unique = 1.0
 
-    correctly_by = 0
-    for user in users_answered:
-        evaluations = Evaluation.objects.filter(useranswer__usertextfieldexerciseanswer__exercise=content_page, useranswer__user=user)
-        correct = evaluations.filter(points__gt=0.0)
-        if correct: 
-            correctly_by += 1
+    try:
+        hint_coverage_given = hinted_incorrect_given / incorrect_given
+    except ZeroDivisionError:
+        hint_coverage_given = 1.0        
 
-    context.update({
-        "answers": answers,
-        "answer_count": answer_count,
-        "user_count": user_count,
-        "answers_avg": answers_avg,
-        "answers_sd": answers_sd,
-        "hint_coverage": hint_coverage,
-        "answer_data": answer_data,
-        "correctly_by": correctly_by,
-    })
     t = loader.get_template("stats/textfield_stats.html")
-    return HttpResponse(t.render(context))
+    ctx.update({
+        "answers": answers,
+        "answer_data": answer_data,
+        "hint_coverage_unique": round(hint_coverage_unique, 4),
+        "hint_coverage_given": round(hint_coverage_given, 4),
+    })
+    return t.render(RequestContext(request, ctx))
 
-def file_upload_exercise(content_page, context):
+def file_upload_exercise(request, exercise, users, course_inst=None):
     """
     Shows statistics on a single file upload exercise.
     """
 
-    user_objects = list(UserFileUploadExerciseAnswer.objects.filter(exercise=content_page).values_list("user", flat=True))
-    answer_count = len(user_objects) # how many times answered
-    users_answered = set(user_objects)
-    user_count = len(users_answered) # how many different users have answered
-
-    try:
-        answers_avg = round(answer_count / user_count, 2)
-    except ZeroDivisionError:
-        answers_avg = 0
+    answers = UserFileUploadExerciseAnswer.objects.filter(exercise=exercise, user__in=users)
+    ctx = exercise_basic_answer_stats(request, exercise, users, answers, course_inst)
     
-    user_answer_counts = (user_objects.count(user) for user in users_answered)
-    deviations_squared = ((uac - answers_avg) ** 2 for uac in user_answer_counts)
-    try:
-        answers_var = (1 / user_count) * sum(deviations_squared)
-    except ZeroDivisionError:
-        answers_var = 0
-    answers_sd = round(math.sqrt(answers_var), 2)
-
-    correctly_by = 0
-    for user in users_answered:
-        evaluations = Evaluation.objects.filter(useranswer__userfileuploadexerciseanswer__exercise=content_page, useranswer__user=user)
-        correct = evaluations.filter(points__gt=0.0)
-        if correct: 
-            correctly_by += 1
-
-    context.update({
-        "answer_count": answer_count,
-        "user_count": user_count,
-        "answers_avg": answers_avg,
-        "answers_sd": answers_sd,
-        "correctly_by": correctly_by,
-    })
     t = loader.get_template("stats/file_upload_stats.html")
-    return HttpResponse(t.render(context))
-            
-def single_exercise(request, task_name):
+    return t.render(RequestContext(request, ctx))
+
+def exercise_answer_stats(request, context, exercise, exercise_type_f):
+    all_users = User.objects.all().order_by('username')
+    courses = courses_linked(exercise)
+
+    course_stats = []
+    users = []
+    for course in courses:
+        users_on_course = filter_users_on_course(all_users, course)
+        course_stats.append(exercise_type_f(request, exercise, users_on_course, course.slug))
+        users.extend(users_on_course)
+
+    summary_stats = exercise_type_f(request, exercise, list(set(users)))
+    context.update({
+        "course_stats": course_stats,
+        "summary_stats": summary_stats,
+    })
+    ctx = RequestContext(request, context)
+    t = loader.get_template("stats/exercise_stats.html")
+    return HttpResponse(t.render(ctx))
+    
+def single_exercise(request, content_slug):
     """
     Shows statistics on a single selected task.
     """
     if not request.user.is_authenticated() and not request.user.is_active and not request.user.is_staff:
         return HttpResponseNotFound()
 
-    content_page = ContentPage.objects.get(slug=task_name)
-    tasktype = content_page.content_type
-    
-    c = RequestContext(request, {
-        "content": content_page,
-        "tasktype": tasktype,
+    try:
+        exercise = ContentPage.objects.get(slug=content_slug)
+    except ContentPage.DoesNotExist:
+        return HttpResponseNotFound("No exercise {} found!".format(content_slug))
+    tasktype = exercise.content_type
+
+    tasktype_verbose = "unknown"
+    for choice, verbose in ContentPage.CONTENT_TYPE_CHOICES:
+        if choice == tasktype:
+            tasktype_verbose = verbose
+            break
+
+    ctx = RequestContext(request, {
+        "content": exercise,
+        "tasktype": tasktype_verbose,
+        "choices": exercise.get_type_object().get_choices(),
     })
 
     if tasktype == "CHECKBOX_EXERCISE":
-        return checkbox_exercise(content_page, c)
+        return exercise_answer_stats(request, ctx, exercise, checkbox_exercise)
     elif tasktype == "MULTIPLE_CHOICE_EXERCISE":
-        return multiple_choice_exercise(content_page, c)
+        return exercise_answer_stats(request, ctx, exercise, multiple_choice_exercise)
     elif tasktype == "TEXTFIELD_EXERCISE":
-        return textfield_exercise(content_page, c)
+        return exercise_answer_stats(request, ctx, exercise, textfield_exercise)
     elif tasktype == "FILE_UPLOAD_EXERCISE":
-        return file_upload_exercise(content_page, c)
+        return exercise_answer_stats(request, ctx, exercise, file_upload_exercise)
     else:
-        return HttpResponseNotFound("No stats for exercise {} found!".format(task_name))
+        return HttpResponseNotFound("No stats for exercise {} found!".format(content_slug))
 
 def user_task(request, user_name, task_name):
     '''Shows a user's answers to a task.'''
@@ -465,27 +561,18 @@ def color_generator(total_colors):
 
 def users_course(request, course):
     if not (request.user.is_authenticated() and request.user.is_active and\
-       request.user.is_staff):
+            request.user.is_staff):
         return HttpResponseNotFound()
 
     users = User.objects.all().order_by('username')
     course = Course.objects.get(slug=course)
 
-    parent_pages = course.contents.select_related('content').order_by('ordinal_number')
-
-    exercises = []
-    cg = color_generator(parent_pages.count())
+    exercises = course_exercises_with_color(course)
     
-    for p in parent_pages:
-        color = next(cg)
-        if p.content.embedded_pages.count() > 0:
-            all_pages = list(p.content.embedded_pages.all().order_by('emb_embedded'))
-            exercises.extend(list(zip(itertools.cycle([color]), all_pages)))
-
     # Argh...
     table_rows = [
         [user] +
-        [e[1].get_type_object().get_user_evaluation(user) for e in exercises]
+        [user_evaluation(user, e[1]) for e in exercises]
         for user in users
     ]
 
@@ -497,3 +584,6 @@ def users_course(request, course):
         'table_rows': table_rows,
     })
     return HttpResponse(t.render(c))
+
+class ZeroUsersException(Exception):
+    pass
