@@ -23,6 +23,9 @@ from courses.models import *
 # Some helper functions which won't be needed after the course enrollment of 
 # users and the course instances have been implemented.
 
+
+NO_USERS_MSG = "Not users to calculate!"
+
 def user_evaluation(user, exercise):
     return exercise.get_type_object().get_user_evaluation(user)
 
@@ -169,23 +172,21 @@ def exercise_basic_answer_stats(request, exercise, users, answers, course_inst=N
     
     user_count = len(users_answered)
     unanswered = len(users) - user_count
+    answer_userids = list(answers.values_list("user", flat=True))
+    user_answer_counts = [answer_userids.count(user.id) for user in users_answered]
 
     try:
         answers_avg = answers_average(answer_count, user_count)
     except ZeroUsersException:
-        answers_avg = "Not enough user answers to calculate."
-
-    answer_userids = list(answers.values_list("user", flat=True))
-    user_answer_counts = [answer_userids.count(user.id) for user in users_answered]
-    try:
+        answers_avg = None
+        answers_sd = None
+    else:
         answers_sd = answers_standard_distrib(user_count, answers_avg, user_answer_counts)
-    except ZeroUsersException:
-        answers_sd = "Not enough user answers to calculate."
-
+        
     try:
         answers_median = statistics.median(user_answer_counts)
     except statistics.StatisticsError:
-        answers_median = "Not enough user answers to calculate."
+        answers_median = None
     
     try:
         piechart = exercise_answer_piechart(request, correctly_by, incorrectly_by, unanswered, course_inst)
@@ -200,9 +201,9 @@ def exercise_basic_answer_stats(request, exercise, users, answers, course_inst=N
     return {
         "answer_count": answer_count,
         "user_count": user_count,
-        "answers_avg": round(answers_avg, 4),
-        "answers_sd": round(answers_sd, 4),
-        "answers_median": answers_median,
+        "answers_avg": round(answers_avg, 4) if answers_avg is not None else NO_USERS_MSG,
+        "answers_sd": round(answers_sd, 4) if answers_sd is not None else NO_USERS_MSG,
+        "answers_median": answers_median if answers_median is not None else NO_USERS_MSG,
         "correctly_by": correctly_by,
         "piechart": piechart,
         "title": title,
