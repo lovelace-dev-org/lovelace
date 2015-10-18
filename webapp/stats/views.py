@@ -218,13 +218,14 @@ def checkbox_exercise(request, exercise, users, course_inst=None):
     ctx = exercise_basic_answer_stats(request, exercise, users, answers, course_inst)
     chosen_answers = list(answers.values_list("chosen_answers", flat=True))
     chosen_answers_set = set(chosen_answers)
-    
+    answers_removed_count = 0    
     answer_data = []
+
     for answer in chosen_answers_set:
         try:
             choice = CheckboxExerciseAnswer.objects.get(id=answer)
         except CheckboxExerciseAnswer.DoesNotExist:
-            pass
+            answers_removed_count += chosen_answers.count(answer)
         else:
             answer_data.append((choice.answer, chosen_answers.count(answer), choice.correct))
 
@@ -232,6 +233,7 @@ def checkbox_exercise(request, exercise, users, course_inst=None):
     ctx.update({
         "answers": answers,
         "answer_data": answer_data,
+        "answers_removed_count": answers_removed_count,
     })
     return t.render(RequestContext(request, ctx))
 
@@ -244,13 +246,14 @@ def multiple_choice_exercise(request, exercise, users, course_inst=None):
     ctx = exercise_basic_answer_stats(request, exercise, users, answers, course_inst)
     chosen_answers = list(answers.values_list("chosen_answer", flat=True))
     chosen_answers_set = set(chosen_answers)
-    
+    answers_removed_count = 0
     answer_data = []
+
     for answer in chosen_answers_set:
         try:
             choice = MultipleChoiceExerciseAnswer.objects.get(id=answer)
         except MultipleChoiceExerciseAnswer.DoesNotExist:
-            pass
+            answers_removed_count += chosen_answers.count(answer)
         else:
             answer_data.append((choice.answer, chosen_answers.count(answer), choice.correct))
 
@@ -258,6 +261,7 @@ def multiple_choice_exercise(request, exercise, users, course_inst=None):
     ctx.update({
         "answers": answers,
         "answer_data": answer_data,
+        "answers_removed_count": answers_removed_count,
     })
     return t.render(RequestContext(request, ctx))
 
