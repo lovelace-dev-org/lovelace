@@ -221,8 +221,12 @@ def checkbox_exercise(request, exercise, users, course_inst=None):
     
     answer_data = []
     for answer in chosen_answers_set:
-        choice = CheckboxExerciseAnswer.objects.get(id=answer)
-        answer_data.append((choice.answer, chosen_answers.count(answer), choice.correct))
+        try:
+            choice = CheckboxExerciseAnswer.objects.get(id=answer)
+        except CheckboxExerciseAnswer.DoesNotExist:
+            pass
+        else:
+            answer_data.append((choice.answer, chosen_answers.count(answer), choice.correct))
 
     t = loader.get_template("stats/checkbox_stats.html")
     ctx.update({
@@ -243,8 +247,12 @@ def multiple_choice_exercise(request, exercise, users, course_inst=None):
     
     answer_data = []
     for answer in chosen_answers_set:
-        choice = MultipleChoiceExerciseAnswer.objects.get(id=answer)
-        answer_data.append((choice.answer, chosen_answers.count(answer), choice.correct))
+        try:
+            choice = MultipleChoiceExerciseAnswer.objects.get(id=answer)
+        except MultipleChoiceExerciseAnswer.DoesNotExist:
+            pass
+        else:
+            answer_data.append((choice.answer, chosen_answers.count(answer), choice.correct))
 
     t = loader.get_template("stats/multiple_choice_stats.html")
     ctx.update({
@@ -339,7 +347,10 @@ def single_exercise(request, content_slug):
     if not request.user.is_authenticated() and not request.user.is_active and not request.user.is_staff:
         return HttpResponseNotFound()
 
-    exercise = ContentPage.objects.get(slug=content_slug)
+    try:
+        exercise = ContentPage.objects.get(slug=content_slug)
+    except ContentPage.DoesNotExist:
+        return HttpResponseNotFound("No exercise {} found!".format(content_slug))
     tasktype = exercise.content_type
 
     tasktype_verbose = "unknown"
@@ -363,7 +374,7 @@ def single_exercise(request, content_slug):
     elif tasktype == "FILE_UPLOAD_EXERCISE":
         return exercise_answer_stats(request, ctx, exercise, file_upload_exercise)
     else:
-        return HttpResponseNotFound("No stats for exercise {} found!".format(task_name))
+        return HttpResponseNotFound("No stats for exercise {} found!".format(content_slug))
 
 def user_task(request, user_name, task_name):
     '''Shows a user's answers to a task.'''

@@ -1,6 +1,7 @@
 {% extends 'stats/basic_answer_stats.html' %}
 
 {% block user-answers %}
+  {% if answer_data %}
   <table>
     <tr><th>User answer</th><th>Count</th><th>Correct?</th></tr>
     {% for answer, count, correct in answer_data %}
@@ -15,4 +16,5 @@
     </tr>
     {% endfor %}
   </table>
+  {% endif %}
 {% endblock %}

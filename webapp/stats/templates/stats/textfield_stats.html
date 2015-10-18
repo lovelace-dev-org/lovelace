@@ -6,6 +6,7 @@
 {% endblock %}
 
 {% block user-answers %}  
+  {% if answer_data %}
   <table>
     <tr><th>User answer</th><th>Count</th><th>Correct?</th><th>Hint given?</th><th>Latest answer</th></tr>
     {% for answer, count, correct, hinted, latest in answer_data %}
@@ -22,4 +23,5 @@
     </tr>
     {% endfor %}
   </table>
+  {% endif %}
 {% endblock %}
