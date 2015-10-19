@@ -23,6 +23,9 @@ from courses.models import *
 # Some helper functions which won't be needed after the course enrollment of 
 # users and the course instances have been implemented.
 
+
+NO_USERS_MSG = "No users to calculate!"
+
 def user_evaluation(user, exercise):
     return exercise.get_type_object().get_user_evaluation(user)
 
@@ -176,23 +179,21 @@ def exercise_basic_answer_stats(request, exercise, users, answers, course_inst=N
     
     user_count = len(users_answered)
     unanswered = len(users) - user_count
+    answer_userids = list(answers.values_list("user", flat=True))
+    user_answer_counts = [answer_userids.count(user.id) for user in users_answered]
 
     try:
         answers_avg = answers_average(answer_count, user_count)
     except ZeroUsersException:
-        answers_avg = "Not enough user answers to calculate."
-
-    answer_userids = list(answers.values_list("user", flat=True))
-    user_answer_counts = [answer_userids.count(user.id) for user in users_answered]
-    try:
+        answers_avg = None
+        answers_sd = None
+    else:
         answers_sd = answers_standard_distrib(user_count, answers_avg, user_answer_counts)
-    except ZeroUsersException:
-        answers_sd = "Not enough user answers to calculate."
-
+        
     try:
         answers_median = statistics.median(user_answer_counts)
     except statistics.StatisticsError:
-        answers_median = "Not enough user answers to calculate."
+        answers_median = None
     
     try:
         piechart = exercise_answer_piechart(request, correctly_by, incorrectly_by, unanswered, course_inst)
@@ -207,9 +208,9 @@ def exercise_basic_answer_stats(request, exercise, users, answers, course_inst=N
     return {
         "answer_count": answer_count,
         "user_count": user_count,
-        "answers_avg": round(answers_avg, 4),
-        "answers_sd": round(answers_sd, 4),
-        "answers_median": answers_median,
+        "answers_avg": round(answers_avg, 4) if answers_avg is not None else NO_USERS_MSG,
+        "answers_sd": round(answers_sd, 4) if answers_sd is not None else NO_USERS_MSG,
+        "answers_median": answers_median if answers_median is not None else NO_USERS_MSG,
         "correctly_by": correctly_by,
         "piechart": piechart,
         "title": title,
@@ -224,16 +225,22 @@ def checkbox_exercise(request, exercise, users, course_inst=None):
     ctx = exercise_basic_answer_stats(request, exercise, users, answers, course_inst)
     chosen_answers = list(answers.values_list("chosen_answers", flat=True))
     chosen_answers_set = set(chosen_answers)
-    
+    answers_removed_count = 0    
     answer_data = []
+
     for answer in chosen_answers_set:
-        choice = CheckboxExerciseAnswer.objects.get(id=answer)
-        answer_data.append((choice.answer, chosen_answers.count(answer), choice.correct))
+        try:
+            choice = CheckboxExerciseAnswer.objects.get(id=answer)
+        except CheckboxExerciseAnswer.DoesNotExist:
+            answers_removed_count += chosen_answers.count(answer)
+        else:
+            answer_data.append((choice.answer, chosen_answers.count(answer), choice.correct))
 
     t = loader.get_template("stats/checkbox_stats.html")
     ctx.update({
         "answers": answers,
         "answer_data": answer_data,
+        "answers_removed_count": answers_removed_count,
     })
     return t.render(RequestContext(request, ctx))
 
@@ -246,16 +253,22 @@ def multiple_choice_exercise(request, exercise, users, course_inst=None):
     ctx = exercise_basic_answer_stats(request, exercise, users, answers, course_inst)
     chosen_answers = list(answers.values_list("chosen_answer", flat=True))
     chosen_answers_set = set(chosen_answers)
-    
+    answers_removed_count = 0
     answer_data = []
+
     for answer in chosen_answers_set:
-        choice = MultipleChoiceExerciseAnswer.objects.get(id=answer)
-        answer_data.append((choice.answer, chosen_answers.count(answer), choice.correct))
+        try:
+            choice = MultipleChoiceExerciseAnswer.objects.get(id=answer)
+        except MultipleChoiceExerciseAnswer.DoesNotExist:
+            answers_removed_count += chosen_answers.count(answer)
+        else:
+            answer_data.append((choice.answer, chosen_answers.count(answer), choice.correct))
 
     t = loader.get_template("stats/multiple_choice_stats.html")
     ctx.update({
         "answers": answers,
         "answer_data": answer_data,
+        "answers_removed_count": answers_removed_count,
     })
     return t.render(RequestContext(request, ctx))
 
@@ -345,7 +358,10 @@ def single_exercise(request, content_slug):
     if not request.user.is_authenticated() and not request.user.is_active and not request.user.is_staff:
         return HttpResponseNotFound()
 
-    exercise = ContentPage.objects.get(slug=content_slug)
+    try:
+        exercise = ContentPage.objects.get(slug=content_slug)
+    except ContentPage.DoesNotExist:
+        return HttpResponseNotFound("No exercise {} found!".format(content_slug))
     tasktype = exercise.content_type
 
     tasktype_verbose = "unknown"
@@ -369,7 +385,7 @@ def single_exercise(request, content_slug):
     elif tasktype == "FILE_UPLOAD_EXERCISE":
         return exercise_answer_stats(request, ctx, exercise, file_upload_exercise)
     else:
-        return HttpResponseNotFound("No stats for exercise {} found!".format(task_name))
+        return HttpResponseNotFound("No stats for exercise {} found!".format(content_slug))
 
 def user_task(request, user_name, task_name):
     '''Shows a user's answers to a task.'''

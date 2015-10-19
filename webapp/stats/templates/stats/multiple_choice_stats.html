@@ -1,6 +1,11 @@
 {% extends 'stats/basic_answer_stats.html' %}
 
+{% block extra-stats %}
+  <div>Removed choices have been picked {{ answers_removed_count }} times.</div>
+{% endblock %}
+
 {% block user-answers %}
+  {% if answer_data %}
   <table>
     <tr><th>User answer</th><th>Count</th><th>Correct?</th></tr>
     {% for answer, count, correct in answer_data %}
@@ -15,4 +20,5 @@
     </tr>
     {% endfor %}
   </table>
+  {% endif %}
 {% endblock %}
