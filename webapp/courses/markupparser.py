@@ -277,15 +277,18 @@ class CalendarMarkup(Markup):
             for cal_date in calendar_dates
         }
 
+        user = state["request"].user
         user_has_slot = False
         reserved_event_ids = []
-        for cal_date, cal_reservations in calendar_reservations.items():
-            try:
-                found = cal_reservations.get(user=state["request"].user)
-            except courses.models.CalendarReservation.DoesNotExist as e:
-                continue
-            user_has_slot = True
-            reserved_event_ids.append(found.calendar_date.id)
+
+        if user.is_authenticated():
+            for cal_date, cal_reservations in calendar_reservations.items():
+                try:
+                    found = cal_reservations.get(user=state["request"].user)
+                except courses.models.CalendarReservation.DoesNotExist as e:
+                    continue
+                user_has_slot = True
+                reserved_event_ids.append(found.calendar_date.id)
         
         c = {
             "cal_id": calendar.id,
