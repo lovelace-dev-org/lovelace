@@ -37,14 +37,9 @@
   </table>
   {% endif %}
   
+  {% if stats %}
   <h2>User answer data</h2>
-  {% if course_stats %}
-    {% for stats in course_stats %}
-      {{ stats | safe }}
-    {% endfor %}
-  {% endif %}
-  {% if summary_stats %}
-    {{ summary_stats | safe }}
+  {% block user-answer-data %}{% endblock %}
   {% endif %}
 {% endblock %}
  
