@@ -72,34 +72,41 @@ def courses_linked(exercise):
 ########################################################### 
 
 def textfield_eval(given, answers):
-    given = given.replace("\r\n", "\n").replace("\n\r", "\n")
-    correct = True
+    given_answer = given.replace("\r", "")
+    correct = False
     hinted = False
-    errors = []
+    commented = False
+    matches = []
+
+    re_validate = lambda db_ans, given_ans: re.match(db_ans, given_ans) is not None
+    str_validate = lambda db_ans, given_ans: db_ans == given_ans
+    
     for answer in answers:
-        if answer.regexp:
-            try:
-                if re.match(answer.answer, given) and answer.correct and correct == True:
-                    correct = True
-                    break
-                elif re.match(answer.answer, given) and not answer.correct:
-                    correct = False
-                    if answer.hint: hinted = True
-                elif not re.match(answer.answer, given) and answer.correct:
-                    correct = False
-            except re.error as e_msg:
-                errors.append("Regexp error: " + e_msg)
-                correct = False
-        else:
-            if given == answer.answer and answer.correct and correct == True:
-                correct = True
-                break
-            elif given == answer.answer and not answer.correct:
-                correct = False
-                if answer.hint: hinted = True
-            elif given != answer.answer and answer.correct:
-                correct = False
-    return (correct, hinted)
+        validate = re_validate if answer.regexp else str_validate
+        
+        try:
+            match = validate(answer.answer, given_answer)
+        except re.error as e:
+            matches.append((answer.answer, "{}".format(e)))
+            correct = False
+            continue
+
+        if match and answer.correct:
+            correct = True
+            matches.append((answer.answer, ""))
+            if answer.comment:
+                commented = True
+        elif match and not answer.correct:
+            matches.append((answer.answer, ""))
+            if answer.hint:
+                hinted = True
+            if answer.comment:
+                commented = True
+        elif not match and answer.correct:
+            if answer.hint:
+                hinted = True
+                    
+    return (correct, hinted, matches)
 
 def answers_average(answer_count, user_count):
     """
@@ -274,15 +281,15 @@ def textfield_exercise(exercise, users, course_inst=None):
     choices = exercise.get_type_object().get_choices()
     for answer in given_answers_set:
         count = given_answers.count(answer)
-        correct, hinted = textfield_eval(answer, choices)
+        correct, hinted, matches = textfield_eval(answer, choices)
         if not correct:
             incorrect_unique += 1
             incorrect_given += count
             if hinted:
                 hinted_incorrect_unique += 1
                 hinted_incorrect_given += count
-        latest = answers.filter(given_answer=answer).latest('answer_date')
-        answer_data.append((answer, count, correct, hinted, latest))
+        latest = answers.filter(given_answer=answer).latest('answer_date').answer_date
+        answer_data.append((answer, count, correct, hinted, latest, matches))
     answer_data = sorted(answer_data, key=lambda x: x[1], reverse=True)
 
     try:

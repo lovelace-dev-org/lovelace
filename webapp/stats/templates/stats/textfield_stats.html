@@ -18,16 +18,30 @@
   {% if answer_data %}
   <table>
     <tr><th>User answer</th><th>Count</th><th>Correct?</th><th>Hint given?</th><th>Latest answer</th></tr>
-    {% for answer, count, correct, hinted, latest in answer_data %}
+    {% for answer, count, correct, hinted, latest, matches in answer_data %}
     <tr>
       <td class="answer">{{ answer }}</td>
       <td>{{ count }}</td>
-      {% if correct %}
-      <td class="correct">{{ correct }}</td>
-      {% else %}
-      <td class="incorrect">{{ correct }}</td>
-      {% endif %}
-      <td>{{ hinted }}</td>
+      <td class="{% if correct %}correct{% else %}incorrect{% endif %}">
+        <span {% if matches %}onmouseover="show_matches(this);"
+              onmouseout="hide_matches(this);"{% endif %}>{{ correct }}</span>
+        {% if matches %}
+          <div class="matches-list">
+            Matching answers:
+            <ul>
+              {% for match, error in matches %}
+                <li>
+                  <span class="match">{{ match|escape }}</span>
+                  {% if error %}
+                    <span class="error">{{ error|escape }}</span>
+                  {% endif %}
+                </li>
+              {% endfor %}
+            </ul>  
+          </div>
+        {% endif %}
+      </td>
+      <td class="{% if hinted %}hinted{% else %}unhinted{% endif %}">{{ hinted }}</td>
       <td>{{ latest|date:"Y-m-d, H:i:s" }}</td>
     </tr>
     {% endfor %}

@@ -32,7 +32,7 @@
           {% else %}
             <div><input type="submit" value="Reserve a slot" onClick="reserve_slot(event, this);return false;"></div>
           {% endif %}
-        {% elif user.is_authenticated and user_has_slot and event.event_name in reserved_event_names %}
+        {% elif user.is_authenticated and user_has_slot and event.id in reserved_event_ids %}
           <div class="reservation-result">You have been reserved a slot in {{ event.event_name }}.</div>
           <div><input type="submit" value="Cancel reservation" onClick="reserve_slot(event, this);return false;"></div>
         {% else %}
