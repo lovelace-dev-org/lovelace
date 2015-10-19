@@ -45,6 +45,11 @@ div.stat-table.cell {
 
 td {
     position: relative;
+    text-align: center;
+}
+td.answer {
+    text-align: left;
+    white-space: pre;
 }
 td.correct {
     color: #30bd30;
@@ -64,6 +69,7 @@ div.matches-list {
     position: absolute;
     z-index: 1;
 
+    text-align: left;
     min-width: 280px;
     background: #333;
     color: #ccc;
