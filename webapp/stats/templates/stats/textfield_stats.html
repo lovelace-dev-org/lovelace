@@ -1,11 +1,20 @@
-{% extends 'stats/basic_answer_stats.html' %}
+{% extends 'stats/exercise_stats.html' %}
 
-{% block extra-stats %}
-  <div>Hint coverage of unique incorrect answers: {{ hint_coverage_unique }}</div>
-  <div>Hint coverage of all incorrect answers: {{ hint_coverage_given }}</div>
-{% endblock %}
+{% load stats_tags %}
 
-{% block user-answers %}  
+{% block user-answer-data %}
+  {% for title, basic_stats, piechart, answer_data, hint_coverage_unique, hint_coverage_given in stats %}
+  <h3>{{ title }}</h3>
+  <div class="stat-table">
+    <div class="stat-table row">
+      <div class="stat-table cell">
+        {% show_basic_stats basic_stats %}
+        <div>Hint coverage of unique incorrect answers: {{ hint_coverage_unique }}&#37;</div>
+        <div>Hint coverage of all incorrect answers: {{ hint_coverage_given }}&#37;</div>
+      </div>
+      <div class="stat-table cell">{% show_piechart piechart %}</div>
+    </div>
+  </div>
   {% if answer_data %}
   <table>
     <tr><th>User answer</th><th>Count</th><th>Correct?</th><th>Hint given?</th><th>Latest answer</th></tr>
@@ -38,4 +47,5 @@
     {% endfor %}
   </table>
   {% endif %}
+  {% endfor %}
 {% endblock %}
