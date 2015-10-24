@@ -167,17 +167,18 @@ def check_answer(request, course_slug, content_slug):
 
     # Check if a deadline exists and if it has already passed
     try:
-        content_graph = course.contents.get(content=content)
+        content_graph = course.contents.filter(content=content).first()
     except ContentGraph.DoesNotExist as e:
         pass
     else:
-        if not content_graph.deadline or datetime.datetime.now() < content_graph.deadline:
-            pass
-        else:
-            # TODO: Use a template!
-            return JsonResponse({
-                'result': 'The deadline for this exercise (%s) has passed. Your answer will not be evaluated!' % (content_graph.deadline)
-            })
+        if content_graph is not None:
+            if not content_graph.deadline or datetime.datetime.now() < content_graph.deadline:
+                pass
+            else:
+                # TODO: Use a template!
+                return JsonResponse({
+                    'result': 'The deadline for this exercise (%s) has passed. Your answer will not be evaluated!' % (content_graph.deadline)
+                })
 
     user = request.user
     ip = request.META.get('REMOTE_ADDR')
@@ -360,7 +361,7 @@ def content(request, course_slug, content_slug, **kwargs):
     content_graph = None
     if "frontpage" not in kwargs:
         try:
-            content_graph = course.contents.get(content=content)
+            content_graph = course.contents.filter(content=content).first()
         except ContentGraph.DoesNotExist:
             return HttpResponseNotFound("Content {} is not linked to course {}!".format(content_slug, course_slug))
 

@@ -24,7 +24,7 @@
   {% for test_info in evaluation_tree.tests|dictsort:"test_id" %}
     {# One tab, named after the test name, for each test #}
     <div class="test-evaluation-tab" id="file-test-{{ test_info.test_id }}" style="display: {% if forloop.first %}block{% else %}none{% endif %};">
-      {% for stage_info in test_info.stages|dictsort:"ordinal_number" %} 
+      {% for stage_info in test_info.stages|dictsort:"ordinal_number" %}
         <div class="test-evaluation-stage">
           <div class="test-evaluation-stage-name">{{ stage_info.name }}</div>
         

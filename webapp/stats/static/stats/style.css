@@ -43,9 +43,61 @@ div.stat-table.cell {
     display: table-cell;
 }
 
+td {
+    position: relative;
+    text-align: center;
+}
+td.answer {
+    text-align: left;
+    white-space: pre;
+}
 td.correct {
-    color: #0C0;
+    color: #30bd30;
 }
 td.incorrect {
-    color: #F00;
+    color: #bd3030;
+}
+td.hinted {
+    color: #00D;
+}
+td.unhinted {
+    color: #806848;
+}
+
+div.matches-list {
+    display: none;
+    position: absolute;
+    z-index: 1;
+
+    text-align: left;
+    min-width: 280px;
+    background: #333;
+    color: #ccc;
+    font-size: 0.8rem;
+    padding: 2px 4px;
+}
+div.matches-list > ul {
+    padding: 0;
+}
+div.matches-list > ul > li {
+    position: relative;
+    padding: 2px 0 0 0;
+    margin: 0;
+    list-style-type: square;
+}
+div.matches-list > ul > li > span.error:before {
+    content: 'Regex error';
+    font-size: 0.6rem;
+    position: relative;
+    top: -17px;
+    margin-right: -50px;
+    background: #333;
+}
+div.matches-list > ul > li > span.error {
+    position: absolute;
+    right: -400px;
+    width: 400px;
+    color: #bd3030;
+    border: 1px dotted #bd3030;
+    background: #333;
 }

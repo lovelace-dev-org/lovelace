@@ -1,1 +1,17 @@
-{% extends 'stats/basic_answer_stats.html' %}
+{% extends 'stats/exercise_stats.html' %}
+
+{% load stats_tags %}
+
+{% block user-answer-data %}
+  {% for title, basic_stats, piechart in stats %}
+  <h3>{{ title }}</h3>
+  <div class="stat-table">
+    <div class="stat-table row">
+      <div class="stat-table cell">
+        {% show_basic_stats basic_stats %}
+      </div>
+      <div class="stat-table cell">{% show_piechart piechart %}</div>
+    </div>
+  </div>
+  {% endfor %}
+{% endblock %}
