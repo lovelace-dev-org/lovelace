@@ -58,7 +58,8 @@ def course_exercises(course):
 def filter_users_on_course(users, course):
     exercises = course_exercises(course)
     return [user for user in users 
-            if any(user_has_answered(user, exercise) for exercise in exercises)]
+            if (any(user_has_answered(user, exercise) for exercise in exercises) and
+                not user.is_staff)]
 
 def courses_linked(exercise):
     linked = []
