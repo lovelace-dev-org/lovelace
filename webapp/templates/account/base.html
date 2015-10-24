@@ -19,7 +19,7 @@
   {% block body %}
     {% if messages %}
     <div class="link-box">
-      <h2 class="content-heading">{% trans 'Messages:' %}</h2>
+      <h2>{% trans 'Messages:' %}</h2>
       <ul>
 	{% for message in messages %}
 	<li>{{message}}</li>
@@ -29,7 +29,7 @@
     {% endif %}
 
     <div class="link-box">
-      <h2 class="content-heading">{% trans 'Menu:' %}</h2>
+      <h2>{% trans 'Menu:' %}</h2>
       <ul>
 	{% if user.is_authenticated %}
 	<li><a href="{% url 'account_email' %}">Change E-mail</a></li>
