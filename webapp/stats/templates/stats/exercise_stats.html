@@ -18,8 +18,8 @@
 {% endblock %}
 
 {% block page-content %}
-  <h1>Statistics for "{{ content.name }}"</h1>
-  <h2>General exercise information</h2>
+  <h1 class="content-heading">Statistics for "{{ content.name }}"<span id="statistics" class="anchor-offset"></span></h1>
+  <h2 class="content-heading">General exercise information<span id="general-info" class="anchor-offset"></span></h2>
   
   <p>"{{ content.name }}" is a {{ tasktype }}.</p>
   {% if choices %}
@@ -39,7 +39,7 @@
   {% endif %}
   
   {% if stats %}
-  <h2>User answer data</h2>
+  <h2 class="content-heading">User answer data<span id="user-answer-data" class="anchor-offset"></span></h2>
   {% block user-answer-data %}{% endblock %}
   {% endif %}
 {% endblock %}

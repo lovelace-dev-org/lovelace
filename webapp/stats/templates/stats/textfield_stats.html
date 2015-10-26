@@ -3,8 +3,8 @@
 {% load stats_tags %}
 
 {% block user-answer-data %}
-  {% for title, basic_stats, piechart, answer_data, hint_coverage_unique, hint_coverage_given in stats %}
-  <h3>{{ title }}</h3>
+  {% for course, basic_stats, piechart, answer_data, hint_coverage_unique, hint_coverage_given in stats %}
+  {% user_answers_title course %}
   <div class="stat-table">
     <div class="stat-table row">
       <div class="stat-table cell">
