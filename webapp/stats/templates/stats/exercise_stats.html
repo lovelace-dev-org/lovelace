@@ -27,7 +27,7 @@
     <tr><th>Answer choice</th><th>Correct?</th></tr>
     {% for choice in choices %}
     <tr>
-      <td>{{ choice }}</td>
+      <td class="answer">{{ choice }}</td>
       {% if choice.correct %}
       <td class="correct">{{ choice.correct }}</td>
       {% else %}

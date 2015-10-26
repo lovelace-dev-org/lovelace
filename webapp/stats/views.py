@@ -103,9 +103,6 @@ def textfield_eval(given, answers):
                 hinted = True
             if answer.comment:
                 commented = True
-        elif not match and answer.correct:
-            if answer.hint:
-                hinted = True
                     
     return (correct, hinted, matches)
 
@@ -309,8 +306,8 @@ def textfield_exercise(exercise, users, course_inst=None):
             basic_stats,
             piechart,
             answer_data, 
-            round(hint_coverage_unique * 100, 4),
-            round(hint_coverage_given * 100, 4))
+            round(hint_coverage_unique * 100, 1),
+            round(hint_coverage_given * 100, 1))
     
 def file_upload_exercise(exercise, users, course_inst=None):
     """
