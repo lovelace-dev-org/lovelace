@@ -230,7 +230,8 @@ def checkbox_exercise(exercise, users, course_inst=None):
         except CheckboxExerciseAnswer.DoesNotExist:
             answers_removed_count += chosen_answers.count(answer)
         else:
-            answer_data.append((choice.answer, chosen_answers.count(answer), choice.correct))
+            latest = answers.filter(chosen_answers__id=answer).latest('answer_date').answer_date
+            answer_data.append((choice.answer, chosen_answers.count(answer), choice.correct, latest))
     
     return (course_inst or SUMMARY_TITLE, 
             basic_stats,
@@ -256,7 +257,8 @@ def multiple_choice_exercise(exercise, users, course_inst=None):
         except MultipleChoiceExerciseAnswer.DoesNotExist:
             answers_removed_count += chosen_answers.count(answer)
         else:
-            answer_data.append((choice.answer, chosen_answers.count(answer), choice.correct))
+            latest = answers.filter(chosen_answer=answer).latest('answer_date').answer_date
+            answer_data.append((choice.answer, chosen_answers.count(answer), choice.correct, latest))
             
     return (course_inst or SUMMARY_TITLE,
             basic_stats,

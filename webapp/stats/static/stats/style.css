@@ -43,6 +43,27 @@ div.stat-table.cell {
     display: table-cell;
 }
 
+table.fixed {
+    table-layout: fixed;
+    width: 774px;
+}
+
+col.correct {
+    width: 12%;
+}
+
+col.count {
+    width: 9%;
+}
+
+col.hint-given {
+    width: 10%;
+}
+
+col.latest {
+    width: 24%;
+}
+
 td {
     position: relative;
 }
@@ -57,6 +78,15 @@ td.hinted {
 }
 td.unhinted {
     color: #806848;
+}
+
+pre.overflow-x {
+    word-wrap: normal;
+    overflow-x: auto;
+    font-family: "DejaVu Sans", "Open Sans", "Verdana", "Ubuntu", "Arial", sans-serif;
+    font-size: 1.0em;
+    color: #222;
+    line-height: 1.5;
 }
 
 div.matches-list {

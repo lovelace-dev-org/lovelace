@@ -15,17 +15,24 @@
     </div>
   </div>
   {% if answer_data %}
-  <table>
-    <tr><th>User answer</th><th>Count</th><th>Correct?</th></tr>
-    {% for answer, count, correct in answer_data %}
+  <table class="fixed">
+    <colgroup>
+      <col>
+      <col class="count">
+      <col class="correct">
+      <col class="latest">
+    </colgroup>
+    <tr><th>User answer</th><th>Count</th><th>Correct?</th><th>Latest answer</th></tr>
+    {% for answer, count, correct, latest in answer_data %}
     <tr>
-      <td>{{ answer }}</td>
+      <td><pre class="overflow-x">{{ answer }}</pre></td>
       <td>{{ count }}</td>
       {% if correct %}
       <td class="correct">{{ correct }}</td>
       {% else %}
       <td class="incorrect">{{ correct }}</td>
       {% endif %}
+      <td>{{ latest|date:"Y-m-d, H:i:s" }}</td>
     </tr>
     {% endfor %}
   </table>

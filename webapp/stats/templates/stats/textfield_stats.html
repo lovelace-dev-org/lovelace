@@ -16,11 +16,18 @@
     </div>
   </div>
   {% if answer_data %}
-  <table>
+  <table class="fixed">
+    <colgroup>
+      <col>
+      <col class="count">
+      <col class="correct">
+      <col class="hint-given">
+      <col class="latest">
+    </colgroup>
     <tr><th>User answer</th><th>Count</th><th>Correct?</th><th>Hint given?</th><th>Latest answer</th></tr>
     {% for answer, count, correct, hinted, latest, matches in answer_data %}
     <tr>
-      <td class="answer">{{ answer }}</td>
+      <td class="answer"><pre class="overflow-x">{{ answer }}</pre></td>
       <td>{{ count }}</td>
       <td class="{% if correct %}correct{% else %}incorrect{% endif %}">
         <span {% if matches %}onmouseover="show_matches(this);"
