@@ -204,7 +204,7 @@ def exercise_basic_answer_stats(exercise, users, answers, course_inst=None):
     try:
         piechart = exercise_answer_piechart(correctly_by, incorrectly_by, unanswered, canvas_id)
     except ZeroUsersException:
-        piechart = "No users to create piechart!"
+        piechart = None
 
     return basic_stats, piechart
 

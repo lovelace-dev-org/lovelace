@@ -10,7 +10,9 @@
       <div class="stat-table cell">
         {% show_basic_stats basic_stats %}
       </div>
+      {% if piechart %}
       <div class="stat-table cell">{% show_piechart piechart %}</div>
+      {% endif %}
     </div>
   </div>
   {% endfor %}

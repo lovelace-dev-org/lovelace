@@ -12,7 +12,9 @@
         <div>Hint coverage of unique incorrect answers: {{ hint_coverage_unique|floatformat:"1" }}&#37;</div>
         <div>Hint coverage of all incorrect answers: {{ hint_coverage_given|floatformat:"1" }}&#37;</div>
       </div>
+      {% if piechart %}
       <div class="stat-table cell">{% show_piechart piechart %}</div>
+      {% endif %}
     </div>
   </div>
   {% if answer_data %}

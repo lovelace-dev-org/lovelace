@@ -9,12 +9,12 @@ div.pie {
 
 div.pie-legend {
     position: relative;
-    width: 190px;
+    width: 186px;
     word-wrap: break-word;
     left: -75px;
     top: 110px;
     padding: 3px;
-    font-size: 90%;
+    font-size: 0.8em;
 }
 
 div.pie-legend.green {

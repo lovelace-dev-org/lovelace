@@ -11,7 +11,9 @@
         {% show_basic_stats basic_stats %}
         <div>Removed choices have been picked {{ answers_removed }} times.</div>
       </div>
+      {% if piechart %}
       <div class="stat-table cell">{% show_piechart piechart %}</div>
+      {% endif %}
     </div>
   </div>
   {% if answer_data %}
