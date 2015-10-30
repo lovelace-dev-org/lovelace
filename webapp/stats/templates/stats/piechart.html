@@ -7,45 +7,5 @@
 <div class="pie-legend red">Incorrectly by: {{ incorrect_n }} ({{ incorrect_pct }}&#37;)</div>
 <div class="pie-legend blue">Not answered: {{ not_answered_n }} ({{ not_answered_pct }}&#37;)</div>
 <script type="text/javascript">
-  /*
-  Modified based on the example from
-  http://html5.litten.com/graphing-data-in-the-html5-canvas-element-part-iv-simple-pie-charts/
-  */
-
-  var myColor = ["#87F717", "#FF4500", "#4682B4"];
-  var myData = [{{ correct_n }}, {{ incorrect_n }}, {{ not_answered_n }}];
-
-  function getTotal(){
-    var myTotal = 0;
-    for (var j = 0; j < myData.length; j++) {
-      myTotal += (typeof myData[j] == 'number') ? myData[j] : 0;
-    }
-    return myTotal;
-  }
-
-  function plotData() {
-    var canvas;
-    var ctx;
-    var lastend = 0;
-    var myTotal = getTotal();
-
-    canvas = document.getElementById("canvas_{{ canvas_id }}");
-    var middle_x = canvas.width / 2;
-    var middle_y = canvas.height / 2;
-
-    ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    for (var i = 0; i < myData.length; i++) {
-      ctx.fillStyle = myColor[i];
-      ctx.beginPath();
-      ctx.moveTo(middle_x, middle_y);
-      ctx.arc(middle_x, middle_y, middle_y, lastend, lastend + Math.PI * 2 * (myData[i] / myTotal), false);
-      ctx.lineTo(middle_x, middle_y);
-      ctx.fill();
-      lastend += Math.PI * 2 * (myData[i] / myTotal);
-    }
-}
-
-plotData();
+plotData([{{ correct_n }}, {{ incorrect_n }}, {{ not_answered_n }}], "canvas_{{ canvas_id }}");
 </script>

@@ -4,7 +4,7 @@
 
 {% block user-answer-data %}
   {% for course, basic_stats, piechart, answer_data, answers_removed in stats %}
-  {% user_answers_title course %}
+  <h3 class="content-heading">{{ course|user_answers_title }}<span id="{{ course|heading_id }}" class="anchor-offset"></span></h3> 
   <div class="stat-table">
     <div class="stat-table row">
       <div class="stat-table cell">
@@ -17,14 +17,19 @@
     </div>
   </div>
   {% if answer_data %}
-  <table class="fixed"> 
+  <table id="{{ course|table_id }}" class="fixed">
     <colgroup>
       <col class="answer">
       <col class="count">
       <col class="correct">
       <col class="latest">
     </colgroup>
-    <tr><th>User answer</th><th>Count</th><th>Correct?</th><th>Latest answer</th></tr>
+    <tr>
+      <th>User answer</th>
+      {% sortable_table_header course "Count" "1" %}
+      <th>Correct?</th>
+      {% sortable_table_header course "Latest answer" "3" %}
+    </tr>
     {% for answer, count, correct, latest in answer_data %}
     <tr>
       <td class="answer"><pre class="overflow-x">{{ answer }}</pre></td>

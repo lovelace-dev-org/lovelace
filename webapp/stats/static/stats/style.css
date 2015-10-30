@@ -16,15 +16,12 @@ div.pie-legend {
     padding: 3px;
     font-size: 0.8em;
 }
-
 div.pie-legend.green {
     background-color: #87F717;
 }
-
 div.pie-legend.red {
     background-color: #FF4500;
 }
-
 div.pie-legend.blue {
     background-color: #4682B4;
 }
@@ -34,11 +31,9 @@ div.stat-table {
     height: 210px; 
     display: table;
 }
-
 div.stat-table.row {
     display: table-row;
 }
-
 div.stat-table.cell {
     display: table-cell;
 }
@@ -51,17 +46,23 @@ table.fixed {
 col.correct {
     width: 12%;
 }
-
 col.count {
-    width: 9%;
+    width: 15%;
 }
-
 col.hint-given {
     width: 10%;
 }
-
 col.latest {
-    width: 24%;
+    width: 25%;
+}
+
+span.sortable-header {
+    margin-left: 0px;
+}
+
+button.sort {
+    float: right;
+    width: 22px;
 }
 
 td {
@@ -98,7 +99,6 @@ div.matches-list {
     display: none;
     position: absolute;
     z-index: 1;
-
     text-align: left;
     min-width: 280px;
     background: #333;

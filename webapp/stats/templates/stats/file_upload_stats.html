@@ -4,7 +4,7 @@
 
 {% block user-answer-data %}
   {% for course, basic_stats, piechart in stats %}
-  {% user_answers_title course %} 
+  <h3 class="content-heading">{{ course|user_answers_title }}<span id="{{ course|heading_id }}" class="anchor-offset"></span></h3>  
   <div class="stat-table">
     <div class="stat-table row">
       <div class="stat-table cell">
