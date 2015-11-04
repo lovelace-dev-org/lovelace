@@ -1,0 +1,49 @@
+{% extends "courses/base.html" %}
+
+{% load i18n %}
+{% load staticfiles %}
+
+{% block extra-css %}
+   <link rel="stylesheet" href="{% static 'account/style.css' %}">
+{% endblock %}
+
+{% block page-title %}
+  {% block head_title %}{% endblock %}
+{% endblock %}
+
+{% block breadcrumb-links %}
+  <li><a href="{% url 'courses:index' %}">Courses</a></li>
+{% endblock %}
+
+{% block page-content %}
+  {% block body %}
+    {% if messages %}
+    <div class="link-box">
+      <h2>{% trans 'Messages:' %}</h2>
+      <ul>
+	{% for message in messages %}
+	<li>{{message}}</li>
+	{% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+
+    <div class="link-box">
+      <h2>{% trans 'Menu:' %}</h2>
+      <ul>
+	{% if user.is_authenticated %}
+	<li><a href="{% url 'account_email' %}">Change E-mail</a></li>
+	<li><a href="{% url 'account_logout' %}">Sign Out</a></li>
+	{% else %}
+	<li><a href="{% url 'account_login' %}">Sign In</a></li>
+	<li><a href="{% url 'account_signup' %}">Sign Up</a></li>
+	{% endif %}
+      </ul>
+    </div>
+    {% block content %}
+    {% endblock %}
+  {% endblock %}
+  {% block extra_body %}
+  {% endblock %}
+{% endblock %}
+ 
