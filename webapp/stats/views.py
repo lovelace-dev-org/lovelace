@@ -25,7 +25,6 @@ from courses.models import *
 
 
 NO_USERS_MSG = "No users to calculate!"
-SUMMARY_TITLE = "Summary of all courses"
 
 def user_evaluation(user, exercise):
     return exercise.get_type_object().get_user_evaluation(user)
@@ -58,7 +57,8 @@ def course_exercises(course):
 def filter_users_on_course(users, course):
     exercises = course_exercises(course)
     return [user for user in users 
-            if any(user_has_answered(user, exercise) for exercise in exercises)]
+            if (any(user_has_answered(user, exercise) for exercise in exercises) and
+                not user.is_staff)]
 
 def courses_linked(exercise):
     linked = []
@@ -127,7 +127,7 @@ def answers_standard_distrib(user_count, answers_avg, answer_counts):
         raise ZeroUsersException("No users to calculate standard deviation!")
     return round(math.sqrt(variance), 2)
 
-def exercise_answer_piechart(correct, incorrect, not_answered, course_inst=None):
+def exercise_answer_piechart(correct, incorrect, not_answered, canvas_id):
     """
     Shows statistics of correct and incorrect answers of a single exercise in a pie chart.
     """
@@ -142,11 +142,6 @@ def exercise_answer_piechart(correct, incorrect, not_answered, course_inst=None)
     correct_deg = round(correct_pct * 360)
     incorrect_deg = round(incorrect_pct * 360)
     not_answered_deg = 360 - correct_deg - incorrect_deg
-    
-    if course_inst is None:
-        canvas_id = ""
-    else:
-        canvas_id = course_inst.lower().replace(" ", "_")
 
     return {
         "correct_n": correct,
@@ -201,10 +196,15 @@ def exercise_basic_answer_stats(exercise, users, answers, course_inst=None):
         "correctly_by": correctly_by,
     }
 
+    if course_inst is not None:
+        canvas_id = course_inst.slug
+    else:
+        canvas_id = ""
+
     try:
-        piechart = exercise_answer_piechart(correctly_by, incorrectly_by, unanswered, course_inst)
+        piechart = exercise_answer_piechart(correctly_by, incorrectly_by, unanswered, canvas_id)
     except ZeroUsersException:
-        piechart = "No users to create piechart!"
+        piechart = None
 
     return basic_stats, piechart
 
@@ -226,9 +226,10 @@ def checkbox_exercise(exercise, users, course_inst=None):
         except CheckboxExerciseAnswer.DoesNotExist:
             answers_removed_count += chosen_answers.count(answer)
         else:
-            answer_data.append((choice.answer, chosen_answers.count(answer), choice.correct))
+            latest = answers.filter(chosen_answers__id=answer).latest('answer_date').answer_date
+            answer_data.append((choice.answer, chosen_answers.count(answer), choice.correct, latest))
     
-    return (course_inst or SUMMARY_TITLE, 
+    return (course_inst,
             basic_stats,
             piechart,
             answer_data, 
@@ -252,9 +253,10 @@ def multiple_choice_exercise(exercise, users, course_inst=None):
         except MultipleChoiceExerciseAnswer.DoesNotExist:
             answers_removed_count += chosen_answers.count(answer)
         else:
-            answer_data.append((choice.answer, chosen_answers.count(answer), choice.correct))
+            latest = answers.filter(chosen_answer=answer).latest('answer_date').answer_date
+            answer_data.append((choice.answer, chosen_answers.count(answer), choice.correct, latest))
             
-    return (course_inst or SUMMARY_TITLE,
+    return (course_inst,
             basic_stats,
             piechart,
             answer_data, 
@@ -299,7 +301,7 @@ def textfield_exercise(exercise, users, course_inst=None):
     except ZeroDivisionError:
         hint_coverage_given = 1.0        
 
-    return (course_inst or SUMMARY_TITLE,
+    return (course_inst,
             basic_stats,
             piechart,
             answer_data, 
@@ -314,7 +316,7 @@ def file_upload_exercise(exercise, users, course_inst=None):
     answers = UserFileUploadExerciseAnswer.objects.filter(exercise=exercise, user__in=users)
     basic_stats, piechart = exercise_basic_answer_stats(exercise, users, answers, course_inst)
     
-    return (course_inst or SUMMARY_TITLE,
+    return (course_inst,
             basic_stats,
             piechart)
 
@@ -326,7 +328,7 @@ def exercise_answer_stats(request, ctx, exercise, exercise_type_f, template):
     users = []
     for course in courses:
         users_on_course = filter_users_on_course(all_users, course)
-        stats.append(exercise_type_f(exercise, users_on_course, course.slug))
+        stats.append(exercise_type_f(exercise, users_on_course, course))
         users.extend(users_on_course)
 
     stats.append(exercise_type_f(exercise, list(set(users))))

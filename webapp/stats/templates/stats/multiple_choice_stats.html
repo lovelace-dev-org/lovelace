@@ -3,29 +3,43 @@
 {% load stats_tags %}
 
 {% block user-answer-data %}
-  {% for title, basic_stats, piechart, answer_data, answers_removed in stats %}
-  <h3>{{ title }}</h3>
+  {% for course, basic_stats, piechart, answer_data, answers_removed in stats %}
+  <h3 class="content-heading">{{ course|user_answers_title }}<span id="{{ course|heading_id }}" class="anchor-offset"></span></h3> 
   <div class="stat-table">
     <div class="stat-table row">
       <div class="stat-table cell">
         {% show_basic_stats basic_stats %}
         <div>Removed choices have been picked {{ answers_removed }} times.</div>
       </div>
+      {% if piechart %}
       <div class="stat-table cell">{% show_piechart piechart %}</div>
+      {% endif %}
     </div>
   </div>
   {% if answer_data %}
-  <table>
-    <tr><th>User answer</th><th>Count</th><th>Correct?</th></tr>
-    {% for answer, count, correct in answer_data %}
+  <table id="{{ course|table_id }}" class="fixed">
+    <colgroup>
+      <col class="answer">
+      <col class="count">
+      <col class="correct">
+      <col class="latest">
+    </colgroup>
     <tr>
-      <td>{{ answer }}</td>
+      <th>User answer</th>
+      {% sortable_table_header course "Count" "1" %}
+      <th>Correct?</th>
+      {% sortable_table_header course "Latest answer" "3" %}
+    </tr>
+    {% for answer, count, correct, latest in answer_data %}
+    <tr>
+      <td class="answer"><pre class="overflow-x">{{ answer }}</pre></td>
       <td>{{ count }}</td>
       {% if correct %}
       <td class="correct">{{ correct }}</td>
       {% else %}
       <td class="incorrect">{{ correct }}</td>
       {% endif %}
+      <td>{{ latest|date:"Y-m-d, H:i:s" }}</td>
     </tr>
     {% endfor %}
   </table>

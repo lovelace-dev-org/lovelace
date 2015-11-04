@@ -1,0 +1,7 @@
+{% load stats_tags %}
+
+<th>
+  <span class="sortable-header">{{ header }}</span>
+  <button class="sort" onclick="sortTable('{{ course|table_id }}', {{ column }}, -1)">↑</button>
+  <button class="sort" onclick="sortTable('{{ course|table_id }}', {{ column }}, 1)">↓</button>
+</th>

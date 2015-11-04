@@ -9,22 +9,19 @@ div.pie {
 
 div.pie-legend {
     position: relative;
-    width: 190px;
+    width: 186px;
     word-wrap: break-word;
     left: -75px;
     top: 110px;
     padding: 3px;
-    font-size: 90%;
+    font-size: 0.8em;
 }
-
 div.pie-legend.green {
     background-color: #87F717;
 }
-
 div.pie-legend.red {
     background-color: #FF4500;
 }
-
 div.pie-legend.blue {
     background-color: #4682B4;
 }
@@ -34,13 +31,38 @@ div.stat-table {
     height: 210px; 
     display: table;
 }
-
 div.stat-table.row {
     display: table-row;
 }
-
 div.stat-table.cell {
     display: table-cell;
+}
+
+table.fixed {
+    table-layout: fixed;
+    width: 774px;
+}
+
+col.correct {
+    width: 12%;
+}
+col.count {
+    width: 15%;
+}
+col.hint-given {
+    width: 10%;
+}
+col.latest {
+    width: 25%;
+}
+
+span.sortable-header {
+    margin-left: 0px;
+}
+
+button.sort {
+    float: right;
+    width: 22px;
 }
 
 td {
@@ -64,11 +86,19 @@ td.unhinted {
     color: #806848;
 }
 
+pre.overflow-x {
+    word-wrap: normal;
+    overflow-x: auto;
+    font-family: "DejaVu Sans", "Open Sans", "Verdana", "Ubuntu", "Arial", sans-serif;
+    font-size: 1.0em;
+    color: #222;
+    line-height: 1.5;
+}
+
 div.matches-list {
     display: none;
     position: absolute;
     z-index: 1;
-
     text-align: left;
     min-width: 280px;
     background: #333;
