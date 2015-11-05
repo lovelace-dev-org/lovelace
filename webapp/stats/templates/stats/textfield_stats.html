@@ -29,9 +29,9 @@
     <tr>
       <th>User answer</th>
       {% sortable_table_header course "Count" "1" %}
-      <th>Correct?</th>
-      <th>Hint given?</th>
-      {% sortable_table_header course "Latest answer" "4" %}
+      <th>Correct</th>
+      <th>Hint given</th>
+      {% sortable_table_header course "Latest" "4" %}
     </tr>
     {% for answer, count, correct, hinted, latest, matches in answer_data %}
     <tr>

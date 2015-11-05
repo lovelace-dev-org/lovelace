@@ -27,8 +27,8 @@
     <tr>
       <th>User answer</th>
       {% sortable_table_header course "Count" "1" %}
-      <th>Correct?</th>
-      {% sortable_table_header course "Latest answer" "3" %}
+      <th>Correct</th>
+      {% sortable_table_header course "Latest" "3" %}
     </tr>
     {% for answer, count, correct, latest in answer_data %}
     <tr>

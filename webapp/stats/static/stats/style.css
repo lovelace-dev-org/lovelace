@@ -4,14 +4,14 @@ div.pie {
     height: 150px;
     overflow: hidden;
     margin-top: -50px;
-    left: 700px;
+    left: 775px;
 }
 
 div.pie-legend {
     position: relative;
     width: 186px;
     word-wrap: break-word;
-    left: -75px;
+    left: 0px;
     top: 110px;
     padding: 3px;
     font-size: 0.8em;
@@ -26,6 +26,8 @@ div.pie-legend.blue {
     background-color: #4682B4;
 }
 
+
+
 div.stat-table {
     width: 100%; 
     height: 210px; 
@@ -38,31 +40,35 @@ div.stat-table.cell {
     display: table-cell;
 }
 
-table.fixed {
-    table-layout: fixed;
-    width: 774px;
-}
-
-col.correct {
-    width: 12%;
-}
-col.count {
-    width: 15%;
-}
-col.hint-given {
-    width: 10%;
-}
-col.latest {
-    width: 25%;
-}
-
-span.sortable-header {
+div.sortable-header {
     margin-left: 0px;
 }
 
-button.sort {
-    float: right;
+table.fixed {
+    table-layout: fixed;
+    width: 100%;
+}
+
+col.count {
+    width: 8%;
+}
+col.correct {
+    width: 9%;
+}
+col.hint-given {
+    width: 7%;
+}
+col.latest {
+    width: 13%;
+}
+
+button.sort-desc {
     width: 22px;
+    margin-right: -3px;
+}
+button.sort-asc {
+    width: 22px;
+    margin-left: -3px;
 }
 
 td {
