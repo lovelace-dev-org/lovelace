@@ -857,8 +857,8 @@ class FileExerciseTestCommand(models.Model):
 class FileExerciseTestExpectedOutput(models.Model):
     """What kind of output is expected from the program?"""
     command = models.ForeignKey(FileExerciseTestCommand)
-    correct = models.BooleanField(default=None)
-    regexp = models.BooleanField(default=None)
+    correct = models.BooleanField(default=False)
+    regexp = models.BooleanField(default=False)
     expected_answer = models.TextField(blank=True)
     hint = models.TextField(blank=True)
     OUTPUT_TYPE_CHOICES = (
@@ -946,8 +946,8 @@ class FileExerciseTestIncludeFile(models.Model):
 ## Answer models
 class TextfieldExerciseAnswer(models.Model):
     exercise = models.ForeignKey(TextfieldExercise)
-    correct = models.BooleanField(default=None)
-    regexp = models.BooleanField(default=None)
+    correct = models.BooleanField(default=False)
+    regexp = models.BooleanField(default=True)
     answer = models.TextField()
     hint = models.TextField(blank=True)
     comment = models.TextField(verbose_name='Extra comment given upon entering a matching answer',blank=True)
@@ -964,7 +964,7 @@ class TextfieldExerciseAnswer(models.Model):
  
 class MultipleChoiceExerciseAnswer(models.Model):
     exercise = models.ForeignKey(MultipleChoiceExercise)
-    correct = models.BooleanField(default=None)
+    correct = models.BooleanField(default=False)
     answer = models.TextField()
     hint = models.TextField(blank=True)
     comment = models.TextField(verbose_name='Extra comment given upon selection of this answer',blank=True)
@@ -974,7 +974,7 @@ class MultipleChoiceExerciseAnswer(models.Model):
 
 class CheckboxExerciseAnswer(models.Model):
     exercise = models.ForeignKey(CheckboxExercise)
-    correct = models.BooleanField(default=None)
+    correct = models.BooleanField(default=False)
     answer = models.TextField()
     hint = models.TextField(blank=True)    
     comment = models.TextField(verbose_name='Extra comment given upon selection of this answer',blank=True)

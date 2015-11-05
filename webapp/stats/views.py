@@ -6,7 +6,6 @@ import django
 from django.http import HttpResponse, HttpResponseRedirect, HttpResponseNotFound
 from django.template import Context, RequestContext, loader
 from django.core.urlresolvers import reverse
-from django.core.servers.basehttp import FileWrapper
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 
