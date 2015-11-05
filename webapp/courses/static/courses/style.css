@@ -630,6 +630,7 @@ section.content {
             border: 1px solid #c6c6c6;
             border-radius: 3px;
             box-shadow: 1px 1px 1px rgba(127, 127, 127, 0.2), inset 0 0 6px #fff;
+            background: #eee;
         }
 
 	section.content form.feedback {
