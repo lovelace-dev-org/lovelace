@@ -53,26 +53,38 @@ tags = {
     "mark":   Tag("mark", "!!!", "!!!", re.compile(r"[\!]{3}.+?[\!]{3}")),
     "anchor": Tag("a", "[[", "]]", re.compile(r"\[\[(?P<address>.+?)([|](?P<link_text>.+?))?\]\]")),
     "kbd":    Tag("kbd", "`", "`", re.compile(r"`(?P<kbd>.+?)`")),
+    "hint":   Tag("mark", "[!hint=hint_id!]", "[!hint!]", re.compile(r"\[\!hint\=(?P<hint_id>\w+)\!\](?P<hint_text>.+?)\[\!hint\!\]")),
 }
 
 def parsetag(tagname, unparsed_string):
     """Parses one tag and applies it's settings. Generates the HTML."""
     tag = tags[tagname]
-    hilite = address = link_text = None
+    hilite = address = link_text = hint_id = hint_text = None
     parsed_string = ""
     cursor = 0
     for m in re.finditer(tag.re, unparsed_string):
         parsed_string += unparsed_string[cursor:m.start()]
+
+        # Get code
+        try:
+            hilite = m.group("highlight")
+        except IndexError:
+            pass
+
+        # Get anchor
+        try:
+            address = m.group("address")
+            link_text = m.group("link_text")
+        except IndexError:
+            pass
+
+        # Get hint
+        try:
+            hint_id = m.group("hint_id")
+            hint_text = m.group("hint_text")
+        except IndexError:
+            pass
         
-        try:
-            hilite = m.group("highlight") # Special for code
-        except IndexError:
-            pass
-        try:
-            address = m.group("address") # Special for anchor
-            link_text = m.group("link_text") # Special for anchor
-        except IndexError:
-            pass
         if hilite:
             print(hilite)
             code_string = m.group(0)[tag.lb()+len(hilite):-tag.le()]
@@ -94,8 +106,29 @@ def parsetag(tagname, unparsed_string):
             parsed_string += contents
             parsed_string += tag.htmlend()
             #print tag.htmlbegin({"href":address}) + contents + tag.htmlend()
+        elif hint_id:
+            parsed_string += tag.htmlbegin({"class":"hint", "id":"hint-id-"+hint_id})
+            parsed_string += hint_text
+            parsed_string += tag.htmlend()
         else:
             contents = m.group(0)[tag.lb():-tag.le()]
+
+            if tagname == "kbd":
+                key_mini_lang = {
+                    "{apple}": " Apple",
+                    "{arrowdown}": "↓",
+                    "{arrowleft}": "←",
+                    "{arrowright}": "→",
+                    "{arrowup}": "↑",
+                    "{enter}": "↵ Enter",
+                    "{cmd}": "⌘ Command",
+                    "{meta}": "◆ Meta",
+                    "{option}": "⌥ Option",
+                    "{shift}": "⇧ Shift",
+                    "{win}": "⊞ Win",
+                }
+                contents = key_mini_lang.get(contents, contents)
+            
             parsed_string += tag.htmlbegin()
             parsed_string += contents
             parsed_string += tag.htmlend()
@@ -120,6 +153,7 @@ def parseblock(blockstring):
     parsed_string = parsetag("mark", parsed_string)
     parsed_string = parsetag("kbd", parsed_string)
     parsed_string = parsetag("anchor", parsed_string)
+    parsed_string = parsetag("hint", parsed_string)
 
     return parsed_string
 

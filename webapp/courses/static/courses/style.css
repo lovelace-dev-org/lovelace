@@ -366,6 +366,12 @@ div.toc-box {
         border-bottom: 1px solid #222;
         margin-bottom: 4px;
     }
+    div.toc-box-progress-info {
+        font-weight: bold;
+        font-size: 0.7rem;
+        text-align: center;
+        margin-bottom: -8px;
+    }
     nav.toc div.list-div {
         font-weight: normal;
         border: 0;
@@ -422,6 +428,12 @@ div.toc-box {
     div.toc-box progress::-moz-progress-bar {
         background-color: #ad3939;
     }
+    div.toc-box progress::-webkit-progress-bar {
+        background-color: #eee;
+    }
+    div.toc-box progress::-webkit-progress-value {
+        background-color: #ad3939;
+    }
 
 /* MAIN CONTENT */
 section.content {
@@ -441,11 +453,48 @@ section.content {
     word-wrap: break-word;
 }
 
-    .course-contents {
+    div.course-contents {
         border: 1px solid #ccc;
         background: #cec;
         padding: 4px;
         margin-bottom: 1em;
+    }
+
+    div.course-contents li {
+        position: relative;
+        border: 0;
+        border-top: 1px solid transparent;
+        border-image: linear-gradient(to right, rgba(0, 0, 0, 0.02), rgba(0, 0, 0, 0.04), rgba(31, 31, 31, 0.2)) 1 stretch;
+    }
+
+    div.course-contents progress.course-contents-progress {
+        -moz-appearance: none;
+        -webkit-appearance: none;
+        position: absolute;
+        right: 24px;
+        top: 0.6em;
+        width: 200px;
+        height: 7px;
+        border: 1px solid #ccc;
+        background-color: #eee;
+    }
+    div.course-contents progress.course-contents-progress[value] {
+        -webkit-appearance: none;
+    }
+    div.course-contents progress.course-contents-progress::-moz-progress-bar {
+        background-color: #39ad39;
+    }
+    div.course-contents progress.course-contents-progress::-webkit-progress-bar {
+        background-color: #eee;
+    }
+    div.course-contents progress.course-contents-progress::-webkit-progress-value {
+        background-color: #39ad39;
+    }
+
+    div.course-contents img.course-contents-result {
+        position: absolute;
+        right: 24px;
+        top: 4px;
     }
 
     section.content h1, section.content h2, section.content h3, section.content h4, section.content h5, section.content h6 {

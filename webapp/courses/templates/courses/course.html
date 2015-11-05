@@ -20,7 +20,7 @@
 {% if content_tree %}
   <div class="course-contents">
     <h2 class="content-heading">{% trans 'Course Contents' %}<span id="course-contents" class="anchor-offset"></span><a href="#course-contents" class="permalink" title="Permalink to Course Contents">&para;</a></h2>
-    {% for list_direction, result in content_tree %}
+    {% for list_direction, result, correct_emb, emb_count in content_tree %}
       {% if list_direction == '>' %}
         <ul>
           {% elif list_direction == '<' %}
@@ -28,14 +28,18 @@
       {% else %}
         <li>
           <a href="{% url 'courses:content' course.slug list_direction.slug %}">{{ list_direction.name }}</a>
-          {% if result %}
+          {% if result and emb_count == 0 %}
             {% if result == 'unanswered' %}
-              <img src="{% static 'courses/unanswered-16.png' %}" alt="Unanswered">
+              <img class="course-contents-result" src="{% static 'courses/unanswered-16.png' %}" alt="Unanswered">
             {% elif result == 'correct' %}
-              <img src="{% static 'courses/correct-16.png' %}" alt="Correctly answered">
+              <img class="course-contents-result" src="{% static 'courses/correct-16.png' %}" alt="Correctly answered">
             {% elif result == 'incorrect' %}
-              <img src="{% static 'courses/incorrect-16.png' %}" alt="Incorrectly answered">
+              <img class="course-contents-result" src="{% static 'courses/incorrect-16.png' %}" alt="Incorrectly answered">
             {% endif %}
+          {% endif %}
+          {% if emb_count > 0 %}
+            <progress class="course-contents-progress" value="{{ correct_emb }}" max="{{ emb_count }}"
+                      title="Completed {{ correct_emb }} / {{ emb_count }}">
           {% endif %}
         </li>
       {% endif %}
