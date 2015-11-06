@@ -226,6 +226,9 @@ div#container-top {
     div#user-menu > div > div:hover > a {
         color: #eee;
     }
+    #user-menu-arrow {
+        cursor: pointer;
+    }
 
 /* NAVIGATION */
 nav.breadcrumb {
