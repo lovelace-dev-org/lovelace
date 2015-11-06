@@ -39,7 +39,7 @@ def course_exercises_with_color(course):
     for p in parent_pages:
         color = next(cg)
         if p.content.embedded_pages.count() > 0:
-            all_pages = list(p.content.embedded_pages.all().order_by('emb_embedded'))
+            all_pages = list(p.content.embedded_pages.all().order_by('emb_embedded__ordinal_number'))
             exercises.extend(list(zip(itertools.cycle([color]), all_pages)))
     return exercises
 
@@ -49,7 +49,7 @@ def course_exercises(course):
     
     for p in parent_pages:
         if p.content.embedded_pages.count() > 0:
-            all_pages = list(p.content.embedded_pages.all().order_by('emb_embedded'))
+            all_pages = list(p.content.embedded_pages.all().order_by('emb_embedded__ordinal_number'))
             exercises.extend(all_pages)
     return exercises
 
