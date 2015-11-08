@@ -225,6 +225,7 @@ def checkbox_exercise(exercise, users, course_inst=None):
         else:
             latest = answers.filter(chosen_answers__id=answer).latest('answer_date').answer_date
             answer_data.append((choice.answer, chosen_answers.count(answer), choice.correct, latest))
+    answer_data = sorted(answer_data, key=lambda x: x[1], reverse=True)
     
     return (course_inst,
             basic_stats,
@@ -252,6 +253,7 @@ def multiple_choice_exercise(exercise, users, course_inst=None):
         else:
             latest = answers.filter(chosen_answer=answer).latest('answer_date').answer_date
             answer_data.append((choice.answer, chosen_answers.count(answer), choice.correct, latest))
+    answer_data = sorted(answer_data, key=lambda x: x[1], reverse=True)
             
     return (course_inst,
             basic_stats,

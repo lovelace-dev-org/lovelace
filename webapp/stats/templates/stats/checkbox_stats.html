@@ -39,7 +39,7 @@
       {% else %}
       <td class="incorrect">{{ correct }}</td>
       {% endif %}
-      <td>{{ latest|date:"Y-m-d, H:i:s" }}</td>
+      <td title="{{ latest|date:'Y-m-d, H:i:s' }}">{{ latest|answer_date }}</td>
     </tr>
     {% endfor %}
   </table>

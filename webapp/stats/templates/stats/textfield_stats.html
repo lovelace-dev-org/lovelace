@@ -57,7 +57,7 @@
         {% endif %}
       </td>
       <td class="{% if hinted %}hinted{% else %}unhinted{% endif %}">{{ hinted }}</td>
-      <td>{{ latest|date:"Y-m-d, H:i:s" }}</td>
+      <td title="{{ latest|date:'Y-m-d, H:i:s' }}">{{ latest|answer_date }}</td>
     </tr>
     {% endfor %}
   </table>
