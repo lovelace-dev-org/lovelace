@@ -81,12 +81,22 @@ def course(request, course_slug):
     return HttpResponse(t.render(c))
 
 def course_tree(tree, node, user):
-    evaluation = "unanswered"
+    embedded_links = EmbeddedLink.objects.filter(parent=node.content.id)
+    embedded_count = len(embedded_links)
+    correct_embedded = 0
+    
+    evaluation = ""
     if user.is_authenticated():
         exercise = node.content.get_type_object()
         evaluation = exercise.get_user_evaluation(user)
 
-    list_item = (node.content, evaluation)
+        if embedded_count > 0:
+            for emb_exercise in embedded_links.values_list('embedded_page', flat=True):
+                emb_exercise = ContentPage.objects.get(id=emb_exercise).get_type_object()
+                correct_embedded += 1 if emb_exercise.get_user_evaluation(user) == "correct" else 0
+    
+    list_item = (node.content, evaluation, correct_embedded, embedded_count)
+    
     if list_item not in tree:
         tree.append(list_item)
 

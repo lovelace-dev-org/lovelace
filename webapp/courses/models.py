@@ -570,43 +570,52 @@ class TextfieldExercise(ContentPage):
         hints = []
         comments = []
         errors = []
+        
         if "answer" in answer.keys():
             given_answer = answer["answer"].replace("\r", "")
         else:
             return {"evaluation": False}
 
-        re_validate = lambda db_ans, given_ans: re.match(db_ans, given_ans) is not None
-        str_validate = lambda db_ans, given_ans: db_ans == given_ans
+        def re_validate(db_ans, given_ans):
+            m = re.match(db_ans, given_ans)
+            return (m is not None, m)
+        #re_validate = lambda db_ans, given_ans: re.match(db_ans, given_ans) is not None
+        str_validate = lambda db_ans, given_ans: (db_ans == given_ans, None)
 
         for answer in answers:
             validate = re_validate if answer.regexp else str_validate
 
             try:
-                match = validate(answer.answer, given_answer)
+                match, m = validate(answer.answer, given_answer)
             except re.error as e:
                 if user.is_staff:
-                    errors.append("Contact staff, regexp error '%s' from regexp: %s" % (e, answer.answer))
+                    errors.append("Contact staff, regexp error '{}' from regexp: {}".format(e, answer.answer))
                 else:
-                    errors.append("Contact staff! Regexp error '%s' in exercise '%s'." % (e, content.name))
+                    errors.append("Contact staff! Regexp error '{}' in exercise '{}'.".format(e, content.name))
                 correct = False
                 continue
 
-            # TODO: Support match.groups() in hints & comments!
-            #       E.g. replace {mygroupname} from a hint with the contents of
-            #       (?P<mygroupname>...)
+            groups = {re.escape("{{{k}}}".format(k=k)): v for k, v in m.groupdict().items() if v is not None} if m is not None else {}
+            pattern = re.compile("|".join((re.escape("{{{k}}}".format(k=k)) for k in m.groupdict().keys()) if m is not None else ()))
+            hint = comment = ""
+            sub = lambda text: pattern.sub(lambda mo: groups[re.escape(mo.group(0))], text) if m is not None else text
+            if answer.hint:
+                hint = sub(answer.hint)
+            if answer.comment:
+                comment = sub(answer.comment)
 
             if match and answer.correct:
                 correct = True
-                if answer.comment:
-                    comments.append(answer.comment)
+                if comment:
+                    comments.append(comment)
             elif match and not answer.correct:
-                if answer.hint:
-                    hints.append(answer.hint)
-                if answer.comment:
-                    comments.append(answer.comment)
+                if hint:
+                    hints.append(hint)
+                if comment:
+                    comments.append(comment)
             elif not match and answer.correct:
-                if answer.hint:
-                    hints.append(answer.hint)
+                if hint:
+                    hints.append(hint)
 
         return {"evaluation": correct, "hints": hints, "comments": comments,
                 "errors": errors}
@@ -857,8 +866,8 @@ class FileExerciseTestCommand(models.Model):
 class FileExerciseTestExpectedOutput(models.Model):
     """What kind of output is expected from the program?"""
     command = models.ForeignKey(FileExerciseTestCommand)
-    correct = models.BooleanField(default=None)
-    regexp = models.BooleanField(default=None)
+    correct = models.BooleanField(default=False)
+    regexp = models.BooleanField(default=False)
     expected_answer = models.TextField(blank=True)
     hint = models.TextField(blank=True)
     OUTPUT_TYPE_CHOICES = (
@@ -946,8 +955,8 @@ class FileExerciseTestIncludeFile(models.Model):
 ## Answer models
 class TextfieldExerciseAnswer(models.Model):
     exercise = models.ForeignKey(TextfieldExercise)
-    correct = models.BooleanField(default=None)
-    regexp = models.BooleanField(default=None)
+    correct = models.BooleanField(default=False)
+    regexp = models.BooleanField(default=True)
     answer = models.TextField()
     hint = models.TextField(blank=True)
     comment = models.TextField(verbose_name='Extra comment given upon entering a matching answer',blank=True)
@@ -964,7 +973,7 @@ class TextfieldExerciseAnswer(models.Model):
  
 class MultipleChoiceExerciseAnswer(models.Model):
     exercise = models.ForeignKey(MultipleChoiceExercise)
-    correct = models.BooleanField(default=None)
+    correct = models.BooleanField(default=False)
     answer = models.TextField()
     hint = models.TextField(blank=True)
     comment = models.TextField(verbose_name='Extra comment given upon selection of this answer',blank=True)
@@ -974,7 +983,7 @@ class MultipleChoiceExerciseAnswer(models.Model):
 
 class CheckboxExerciseAnswer(models.Model):
     exercise = models.ForeignKey(CheckboxExercise)
-    correct = models.BooleanField(default=None)
+    correct = models.BooleanField(default=False)
     answer = models.TextField()
     hint = models.TextField(blank=True)    
     comment = models.TextField(verbose_name='Extra comment given upon selection of this answer',blank=True)
