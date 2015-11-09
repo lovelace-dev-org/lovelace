@@ -35,7 +35,7 @@
     </tr>
     {% for answer, count, correct, hinted, latest, matches in answer_data %}
     <tr>
-      <td class="answer"><pre class="overflow-x">{{ answer }}</pre></td>
+      <td class="answer">{{ answer }}</td>
       <td>{{ count }}</td>
       <td class="{% if correct %}correct{% else %}incorrect{% endif %}">
         <span {% if matches %}onmouseover="show_matches(this);"
