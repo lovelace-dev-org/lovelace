@@ -54,7 +54,7 @@ def course_exercises(course):
     return exercises
 
 def filter_users_on_course(users, course):
-    return [user for user in users if not user.is_staff]
+    return users
 
 def courses_linked(exercise):
     linked = []
@@ -319,7 +319,7 @@ def file_upload_exercise(exercise, users, course_inst=None):
             piechart)
 
 def exercise_answer_stats(request, ctx, exercise, exercise_type_f, template):
-    all_users = User.objects.all().order_by('username')
+    all_users = User.objects.filter(is_staff=False).order_by('username')
     courses = courses_linked(exercise)
 
     stats = []
