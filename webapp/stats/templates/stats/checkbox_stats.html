@@ -27,19 +27,19 @@
     <tr>
       <th>User answer</th>
       {% sortable_table_header course "Count" "1" %}
-      <th>Correct?</th>
-      {% sortable_table_header course "Latest answer" "3" %}
+      <th>Correct</th>
+      {% sortable_table_header course "Latest" "3" %}
     </tr>
     {% for answer, count, correct, latest in answer_data %}
     <tr>
-      <td class="answer"><pre class="overflow-x">{{ answer }}</pre></td>
+      <td class="answer">{{ answer }}</td>
       <td>{{ count }}</td>
       {% if correct %}
       <td class="correct">{{ correct }}</td>
       {% else %}
       <td class="incorrect">{{ correct }}</td>
       {% endif %}
-      <td>{{ latest|date:"Y-m-d, H:i:s" }}</td>
+      <td title="{{ latest|date:'Y-m-d, H:i:s' }}">{{ latest|answer_date }}</td>
     </tr>
     {% endfor %}
   </table>

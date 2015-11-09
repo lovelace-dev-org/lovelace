@@ -47,45 +47,50 @@ function plotData(myData, elemId) {
     }
 }
 
-/*
-Modified based on the example from
-http://codereview.stackexchange.com/questions/37632/how-should-i-sort-an-html-table-with-javascript-in-a-more-efficient-manner
-*/
 function sortTable(tableId, col, asc) {
-    var tbody = document.getElementById(tableId);
-    var rows = tbody.rows;
-    var rlen = rows.length;
-    var arr = new Array();
-    var i, j, cells, clen;
+    var trId = "#" + tableId + " tr";
+    var tableCells = new Array();
 
     // fill the array with values from the table
-    for(i = 1; i < rlen; i++) {
-        cells = rows[i].cells;
-        clen = cells.length;
-        arr[i - 1] = new Array();
-        for(j = 0; j < clen; j++) { 
-            arr[i - 1][j] = cells[j].innerHTML;
+    $(trId).each(function(rowId, row) {
+        if (rowId > 0) {
+            tableCells[rowId - 1] = new Array();
+            $(this).children('td').each(function(cellId, cell) {
+                tableCells[rowId - 1][cellId] = this.outerHTML;
+            });
         }
-    }
-    console.log(arr)
+    });
 
+    console.log(tableCells);
     // sort the array by the specified column number (col) and order (asc)
-    arr.sort(function(a, b) {
+    tableCells.sort(function(a, b) {
         var retval = 0;
-        var fA = parseFloat(a[col]);
-        var fB = parseFloat(b[col]);
-        if(a[col] != b[col]) {
-            if((fA == a[col]) && (fB == b[col])) {
+        var valA = $(a[col]).attr("title");
+        var valB = $(b[col]).attr("title");
+
+        if (typeof valA == "undefined" || typeof valB == "undefined") {
+            valA = $(a[col]).text();
+            valB = $(b[col]).text();
+        }
+        
+        var fA = parseFloat(valA);
+        var fB = parseFloat(valB);
+        if (valA != valB) {
+            if ((fA == valA) && (fB == valB)) {
                 retval = (fA > fB) ? asc : -1 * asc; //numerical
             } else {
-                retval=(a[col] > b[col]) ? asc : -1 * asc;
+                retval = (valA > valB) ? asc : -1 * asc;
             }
         }
         return retval;
     });
-    for(var rowidx = 1; rowidx < rlen; rowidx++) {
-        for(var colidx = 0; colidx < arr[rowidx - 1].length; colidx++) { 
-            tbody.rows[rowidx].cells[colidx].innerHTML = arr[rowidx - 1][colidx]; 
+    
+    $(trId).each(function(rowId, row) {
+        if (rowId > 0) {
+            $(this).children('td').each(function(cellId, cell) {
+                this.outerHTML = tableCells[rowId - 1][cellId];
+            });
         }
-    }
+    });
+    
 }

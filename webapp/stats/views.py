@@ -54,10 +54,7 @@ def course_exercises(course):
     return exercises
 
 def filter_users_on_course(users, course):
-    exercises = course_exercises(course)
-    return [user for user in users 
-            if (any(user_has_answered(user, exercise) for exercise in exercises) and
-                not user.is_staff)]
+    return users
 
 def courses_linked(exercise):
     linked = []
@@ -227,6 +224,7 @@ def checkbox_exercise(exercise, users, course_inst=None):
         else:
             latest = answers.filter(chosen_answers__id=answer).latest('answer_date').answer_date
             answer_data.append((choice.answer, chosen_answers.count(answer), choice.correct, latest))
+    answer_data = sorted(answer_data, key=lambda x: x[1], reverse=True)
     
     return (course_inst,
             basic_stats,
@@ -254,6 +252,7 @@ def multiple_choice_exercise(exercise, users, course_inst=None):
         else:
             latest = answers.filter(chosen_answer=answer).latest('answer_date').answer_date
             answer_data.append((choice.answer, chosen_answers.count(answer), choice.correct, latest))
+    answer_data = sorted(answer_data, key=lambda x: x[1], reverse=True)
             
     return (course_inst,
             basic_stats,
@@ -320,7 +319,7 @@ def file_upload_exercise(exercise, users, course_inst=None):
             piechart)
 
 def exercise_answer_stats(request, ctx, exercise, exercise_type_f, template):
-    all_users = User.objects.all().order_by('username')
+    all_users = User.objects.filter(is_staff=False).order_by('username')
     courses = courses_linked(exercise)
 
     stats = []

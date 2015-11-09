@@ -1,4 +1,5 @@
 from django import template
+from datetime import datetime
 
 SUMMARY_TITLE = "Summary for all courses"
 SUMMARY_ID = "summary"
@@ -38,5 +39,13 @@ def heading_id(course):
 @register.filter
 def table_id(course):
     return "table-" + (course.slug if course else SUMMARY_ID)
+
+# {% answer_date %}
+@register.filter
+def answer_date(t):
+    if t.date() == datetime.now().date():
+        return "{:%H:%M:%S}".format(t)
+    else:
+        return "{:%Y-%m-%d}".format(t)
         
         

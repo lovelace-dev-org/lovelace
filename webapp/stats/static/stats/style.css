@@ -4,14 +4,13 @@ div.pie {
     height: 150px;
     overflow: hidden;
     margin-top: -50px;
-    left: 700px;
+    right: 23px;
 }
 
 div.pie-legend {
     position: relative;
     width: 186px;
     word-wrap: break-word;
-    left: -75px;
     top: 110px;
     padding: 3px;
     font-size: 0.8em;
@@ -38,31 +37,35 @@ div.stat-table.cell {
     display: table-cell;
 }
 
-table.fixed {
-    table-layout: fixed;
-    width: 774px;
-}
-
-col.correct {
-    width: 12%;
-}
-col.count {
-    width: 15%;
-}
-col.hint-given {
-    width: 10%;
-}
-col.latest {
-    width: 25%;
-}
-
-span.sortable-header {
+div.sortable-header {
     margin-left: 0px;
 }
 
-button.sort {
-    float: right;
+table.fixed {
+    table-layout: fixed;
+    width: 100%;
+}
+
+col.count {
+    width: 65px;
+}
+col.correct {
+    width: 80px;
+}
+col.hint-given {
+    width: 60px;
+}
+col.latest {
+    width: 110px;
+}
+
+button.sort-desc {
     width: 22px;
+    margin-right: -3px;
+}
+button.sort-asc {
+    width: 22px;
+    margin-left: -3px;
 }
 
 td {
@@ -71,7 +74,9 @@ td {
 }
 td.answer {
     text-align: left;
-    white-space: pre;
+    white-space: pre-wrap;
+    overflow-x: hidden;
+    word-wrap: break-word;
 }
 td.correct {
     color: #30bd30;
@@ -84,15 +89,6 @@ td.hinted {
 }
 td.unhinted {
     color: #806848;
-}
-
-pre.overflow-x {
-    word-wrap: normal;
-    overflow-x: auto;
-    font-family: "DejaVu Sans", "Open Sans", "Verdana", "Ubuntu", "Arial", sans-serif;
-    font-size: 1.0em;
-    color: #222;
-    line-height: 1.5;
 }
 
 div.matches-list {

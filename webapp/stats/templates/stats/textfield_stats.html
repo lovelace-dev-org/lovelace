@@ -29,13 +29,13 @@
     <tr>
       <th>User answer</th>
       {% sortable_table_header course "Count" "1" %}
-      <th>Correct?</th>
-      <th>Hint given?</th>
-      {% sortable_table_header course "Latest answer" "4" %}
+      <th>Correct</th>
+      <th>Hint given</th>
+      {% sortable_table_header course "Latest" "4" %}
     </tr>
     {% for answer, count, correct, hinted, latest, matches in answer_data %}
     <tr>
-      <td class="answer"><pre class="overflow-x">{{ answer }}</pre></td>
+      <td class="answer">{{ answer }}</td>
       <td>{{ count }}</td>
       <td class="{% if correct %}correct{% else %}incorrect{% endif %}">
         <span {% if matches %}onmouseover="show_matches(this);"
@@ -57,7 +57,7 @@
         {% endif %}
       </td>
       <td class="{% if hinted %}hinted{% else %}unhinted{% endif %}">{{ hinted }}</td>
-      <td>{{ latest|date:"Y-m-d, H:i:s" }}</td>
+      <td title="{{ latest|date:'Y-m-d, H:i:s' }}">{{ latest|answer_date }}</td>
     </tr>
     {% endfor %}
   </table>
