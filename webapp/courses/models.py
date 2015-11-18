@@ -595,10 +595,14 @@ class TextfieldExercise(ContentPage):
                 correct = False
                 continue
 
-            groups = {re.escape("{{{k}}}".format(k=k)): v for k, v in m.groupdict().items() if v is not None} if m is not None else {}
-            pattern = re.compile("|".join((re.escape("{{{k}}}".format(k=k)) for k in m.groupdict().keys()) if m is not None else ()))
+            sub = lambda text: text
+            if m is not None and m.groupdict():
+                groups = {re.escape("{{{k}}}".format(k=k)): v for k, v in m.groupdict().items() if v is not None}
+                if groups:
+                    pattern = re.compile("|".join((re.escape("{{{k}}}".format(k=k)) for k in m.groupdict().keys())))
+                    sub = lambda text: pattern.sub(lambda mo: groups[re.escape(mo.group(0))], text)
+
             hint = comment = ""
-            sub = lambda text: pattern.sub(lambda mo: groups[re.escape(mo.group(0))], text) if m is not None else text
             if answer.hint:
                 hint = sub(answer.hint)
             if answer.comment:
