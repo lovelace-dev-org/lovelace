@@ -573,6 +573,9 @@ def show_answers(request, user, course, exercise):
     # TODO: Own subtemplates for each of the exercise types.
     t = loader.get_template("courses/user_exercise_answers.html")
     c = RequestContext(request, {
+        'exercise': exercise,
+        'course_slug': course,
+        'course_name': course_obj.name,
         'answers': answers,
     })
     return HttpResponse(t.render(c))
