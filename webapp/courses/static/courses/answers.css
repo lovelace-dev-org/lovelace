@@ -1,0 +1,63 @@
+
+caption {}
+table.fixed {
+    table-layout: fixed;
+    width: 100%;
+}
+col.answer-date {
+    width: 130px;
+}
+col.answer {}
+col.evaluation {
+    width: 110px;
+}
+col.permalink {
+    width: 100px;
+}
+
+td.answer-date {
+    text-align: center;
+}
+td.answer {}
+td.evaluation {
+    text-align: center;
+}
+td.evaluation * {
+    text-align: left;
+}
+td.correct > span {
+    color: #3a3;
+}
+td.incorrect > span {
+    color: #a33;
+}
+td.permalink {
+    text-align: center;
+}
+
+div.popup {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background: rgba(0,0,0,0.8);
+    z-index: 99999;
+    opacity: 0;
+    transition: opacity 200ms ease-in;
+    pointer-events: none;
+}
+div.popup > div, div.popup > pre {
+    width: 1200px;
+    position: relative;
+    margin: 10% auto;
+    padding: 10px;
+    border-radius: 10px;
+    background: #eee;
+}
+pre.fileview {
+  /*display: none;*/
+}
+div.results-view {
+  /*display: none;*/  
+}
