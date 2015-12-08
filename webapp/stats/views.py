@@ -159,7 +159,7 @@ def exercise_basic_answer_stats(exercise, users, answers, course_inst=None):
         try:
             user_answers.add((user, Evaluation.objects.get(id=evaluation).correct))
         except Evaluation.DoesNotExist:
-            pass
+            user_answers.add((user, False))
             
     for user in users:
         if (user.id, True) in user_answers: 
