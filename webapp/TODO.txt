@@ -67,7 +67,7 @@ ui:
           highlighter
         * plugin: compare two images/graphs/tables
         * plugin: automatic plugin select based on mimetype
-    - How to Use Raippa - tutorial
+    - How to Use Lovelace - tutorial
         * introduces to, e.g., file uploads and reading the test results, hints
           notices etc.
             o user agent detection for showing the proper file dialogs

@@ -1,5 +1,5 @@
 """
-WSGI config for raippa project.
+WSGI config for Lovelace project.
 
 This module contains the WSGI application used by Django's development server
 and any production WSGI deployments. It should expose a module-level variable
@@ -16,7 +16,7 @@ https://docs.djangoproject.com/en/dev/howto/deployment/wsgi/
 """
 
 import os
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "raippa.settings")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "lovelace.settings")
 
 # This application object is used by any WSGI server configured to use this
 # file. This includes Django's development server, if the WSGI_APPLICATION

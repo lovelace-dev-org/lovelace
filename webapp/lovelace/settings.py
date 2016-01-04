@@ -1,5 +1,5 @@
 """
-Django settings for raippa project.
+Django settings for Lovelace project.
 
 For more information on this file, see
 https://docs.djangoproject.com/en/dev/topics/settings/
@@ -52,6 +52,8 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 )
 
+ROOT_URLCONF = 'lovelace.urls'
+
 TEMPLATES = (
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -74,27 +76,15 @@ TEMPLATES = (
         },
     },
 )
-'''
-TEMPLATE_CONTEXT_PROCESSORS = (
-    "django.contrib.auth.context_processors.auth",
-    "django.core.context_processors.debug",
-    "django.core.context_processors.i18n",
-    "django.core.context_processors.media",
-    "django.core.context_processors.static",
-    "django.core.context_processors.tz",
-    "django.contrib.messages.context_processors.messages",
-    "django.core.context_processors.request", # Required by allauth
-)
-'''
+
+# Python dotted path to the WSGI application used by Django's runserver.
+WSGI_APPLICATION = 'lovelace.wsgi.application'
+
 AUTHENTICATION_BACKENDS = (
     "django.contrib.auth.backends.ModelBackend",
     "allauth.account.auth_backends.AuthenticationBackend",
 )
 
-ROOT_URLCONF = 'raippa.urls'
-
-# Python dotted path to the WSGI application used by Django's runserver.
-WSGI_APPLICATION = 'raippa.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/dev/ref/settings/#databases

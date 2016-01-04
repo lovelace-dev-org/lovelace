@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import os
-os.environ['DJANGO_SETTINGS_MODULE'] = 'raippa.settings'
+os.environ['DJANGO_SETTINGS_MODULE'] = 'lovelace.settings'
 
 import datetime
 import codecs
