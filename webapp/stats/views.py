@@ -152,11 +152,15 @@ def exercise_answer_piechart(correct, incorrect, not_answered, canvas_id):
 def exercise_basic_answer_stats(exercise, users, answers, course_inst=None):
     correctly_by = 0
     incorrectly_by = 0
-    user_answers = set((user, Evaluation.objects.get(id=evaluation).correct)
-                       for user, evaluation in answers.values_list("user", "evaluation"))
     users_answered = set()
     answer_count = answers.count()
-
+    user_answers = set()
+    for user, evaluation in answers.values_list("user", "evaluation"):
+        try:
+            user_answers.add((user, Evaluation.objects.get(id=evaluation).correct))
+        except Evaluation.DoesNotExist:
+            user_answers.add((user, False))
+            
     for user in users:
         if (user.id, True) in user_answers: 
             correctly_by += 1

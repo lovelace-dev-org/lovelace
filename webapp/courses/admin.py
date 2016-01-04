@@ -235,7 +235,7 @@ class FileExerciseAdmin(NestedModelAdmin):
 
     fieldsets = [
         ('Page information',   {'fields': ['name', 'slug', 'content', 'question', 'tags']}),
-        ('Exercise miscellaneous', {'fields': ['default_points'],
+        ('Exercise miscellaneous', {'fields': ['default_points', 'manually_evaluated'],
                                 'classes': ['wide']}),
         ('Feedback settings',  {'fields': ['feedback_questions']}),
     ]

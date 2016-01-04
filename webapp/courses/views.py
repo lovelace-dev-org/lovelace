@@ -154,7 +154,7 @@ def check_answer_sandboxed(request, content_slug):
     c = Context(evaluation)
     return JsonResponse({
         'result': t.render(c),
-        'evaluation': evaluation["evaluation"],
+        'evaluation': evaluation.get("evaluation"),
     })
 
 def check_answer(request, course_slug, content_slug):
@@ -218,7 +218,7 @@ def check_answer(request, course_slug, content_slug):
     c = Context(evaluation)
     return JsonResponse({
         'result': t.render(c),
-        'evaluation': evaluation["evaluation"],
+        'evaluation': evaluation.get("evaluation"),
     })
 
 def check_progress(request, course_slug, content_slug, task_id):
