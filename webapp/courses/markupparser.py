@@ -11,7 +11,7 @@ import copy
 # Possible solution: Import above as strict_escape and below as body_escape
 from cgi import escape # Use this instead? Security? HTML injection?
 
-from django.template import loader, Context, RequestContext
+from django.template import loader
 from django.utils.safestring import mark_safe
 
 from slugify import slugify
@@ -298,8 +298,7 @@ class CalendarMarkup(Markup):
         }
         
         t = loader.get_template("courses/calendar.html")
-        ctx = RequestContext(state["request"], c)
-        rendered_content = t.render(ctx)
+        rendered_content = t.render(c, state["request"])
         yield rendered_content
 
     @classmethod
@@ -404,11 +403,11 @@ class EmbeddedFileMarkup(Markup):
         highlighted = pygments.highlight(file_contents, lexer, HtmlFormatter(nowrap=True))
 
         t = loader.get_template("courses/embedded-codefile.html")
-        c = Context({
+        c = {
             "name": file_object.name,
             "url": file_object.fileinfo.url,
             "contents": mark_safe(highlighted),
-        })
+        }
 
         yield t.render(c)
 
@@ -482,8 +481,7 @@ class EmbeddedPageMarkup(Markup):
             t = loader.get_template("courses/{page_type}.html".format(
                 page_type=page.get_dashed_type()
             ))
-            ctx = RequestContext(state["request"], c)
-            rendered_content = t.render(ctx)
+            rendered_content = t.render(c, state["request"])
 
         settings["rendered_content"] = rendered_content or embedded_content
         return settings
