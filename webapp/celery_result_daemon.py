@@ -1,11 +1,11 @@
 import os
 
-import raippa.celery
+import lovelace.celery
 from celery.result import AsyncResult
 
 from time import sleep
 
-os.environ['DJANGO_SETTINGS_MODULE'] = 'raippa.settings'
+os.environ['DJANGO_SETTINGS_MODULE'] = 'lovelace.settings'
 
 from courses.models import UserFileTaskAnswer
 

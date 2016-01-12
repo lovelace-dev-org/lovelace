@@ -53,7 +53,7 @@ Clone the repository
 
 mkdir lovelace
 cd lovelace
-git clone https://github.com/miikkas/raippa_ng.git
+git clone https://github.com/miikkas/lovelace.git
 
 
 Installing pip
@@ -117,7 +117,7 @@ pip install django-nested-inline
 Edit the configuration
 ----------------------
 
-Edit /path/to/your/lovelace/webapp/raippa/settings.py
+Edit /path/to/your/lovelace/webapp/lovelace/settings.py
 
 Change the database engine to postgresql by following this guide:
 https://docs.djangoproject.com/en/dev/ref/settings/#databases

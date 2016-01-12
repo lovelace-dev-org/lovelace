@@ -4,7 +4,7 @@
 # now you can import other django modules
 #from django.template import Template, Context
 import os
-os.environ['DJANGO_SETTINGS_MODULE'] = 'raippa.settings'
+os.environ['DJANGO_SETTINGS_MODULE'] = 'lovelace.settings'
 
 
 from django.db.models import Q

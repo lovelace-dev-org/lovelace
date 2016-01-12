@@ -13,8 +13,8 @@ import os
 import site
 
 DJANGO_BASE_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "webapp")
-WSGI_DIR = os.path.join(DJANGO_BASE_DIR, "raippa")
-WSGI_PY_PATH = os.path.join(DJANGO_BASE_DIR, "raippa", "wsgi.py")
+WSGI_DIR = os.path.join(DJANGO_BASE_DIR, "lovelace")
+WSGI_PY_PATH = os.path.join(DJANGO_BASE_DIR, "lovelace", "wsgi.py")
 SITE_PACKAGES_DIR = site.getsitepackages()[0] # for venv
 
 STATIC_DIR = os.path.join(DJANGO_BASE_DIR, "static")

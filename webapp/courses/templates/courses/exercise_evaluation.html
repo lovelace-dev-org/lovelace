@@ -7,7 +7,7 @@
   <div class="exercise-evaluation">
     {% if evaluation == True %}
       {% trans "Correct answer!" %}
-    {% else %}
+    {% elif evaluation == False %}
       {% trans "Incorrect answer!" %}
     {% endif %}
   </div>

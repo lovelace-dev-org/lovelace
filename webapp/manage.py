@@ -2,10 +2,8 @@
 import os
 import sys
 
-#sys.path.insert(0, '/var/local/raippa/dependencies/')
-
 if __name__ == "__main__":
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "raippa.settings")
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "lovelace.settings")
 
     from django.core.management import execute_from_command_line
 

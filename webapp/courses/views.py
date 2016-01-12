@@ -8,7 +8,7 @@ from cgi import escape
 from django.http import HttpResponse, JsonResponse, HttpResponseRedirect,\
     HttpResponseNotFound, HttpResponseForbidden, HttpResponseNotAllowed,\
     HttpResponseServerError
-from django.template import Context, RequestContext, Template, loader
+from django.template import Template, loader
 from django.core.urlresolvers import reverse
 from django.utils import timezone
 from django.utils.safestring import mark_safe
@@ -46,10 +46,10 @@ def index(request):
     course_list = Course.objects.all()
 
     t = loader.get_template("courses/index.html")
-    c = RequestContext(request, {
+    c = {
         'course_list': course_list,
-    })
-    return HttpResponse(t.render(c))
+    }
+    return HttpResponse(t.render(c, request))
 
 @cookie_law 
 def course(request, course_slug):
@@ -70,15 +70,14 @@ def course(request, course_slug):
     contents = course_obj.contents.filter(visible=True).order_by('ordinal_number')
     if len(contents) > 0:
         tree = []    
-        tree.append((mark_safe('>'), None))
+        tree.append((mark_safe('>'), None, None, None))
         for content_ in contents:
             course_tree(tree, content_, request.user)
-        tree.append((mark_safe('<'), None))
+        tree.append((mark_safe('<'), None, None, None))
         context["content_tree"] = tree
 
     t = loader.get_template("courses/course.html")
-    c = RequestContext(request, context)
-    return HttpResponse(t.render(c))
+    return HttpResponse(t.render(context, request))
 
 def course_tree(tree, node, user):
     embedded_links = EmbeddedLink.objects.filter(parent=node.content.id)
@@ -102,10 +101,10 @@ def course_tree(tree, node, user):
 
     children = ContentGraph.objects.filter(parentnode=node, visible=True).order_by('ordinal_number')
     if len(children) > 0:
-        tree.append((mark_safe('>'), None))
+        tree.append((mark_safe('>'), None, None, None))
         for child in children:
             course_tree(tree, child, user)
-        tree.append((mark_safe('<'), None))
+        tree.append((mark_safe('<'), None, None, None))
 
 def check_answer_sandboxed(request, content_slug):
     """
@@ -151,10 +150,9 @@ def check_answer_sandboxed(request, content_slug):
 
     # TODO: Errors, hints, comments in JSON
     t = loader.get_template("courses/exercise_evaluation.html")
-    c = Context(evaluation)
     return JsonResponse({
-        'result': t.render(c),
-        'evaluation': evaluation["evaluation"],
+        'result': t.render(evaluation),
+        'evaluation': evaluation.get("evaluation"),
     })
 
 def check_answer(request, course_slug, content_slug):
@@ -215,10 +213,9 @@ def check_answer(request, course_slug, content_slug):
 
     # TODO: Errors, hints, comments in JSON
     t = loader.get_template("courses/exercise_evaluation.html")
-    c = Context(evaluation)
     return JsonResponse({
-        'result': t.render(c),
-        'evaluation': evaluation["evaluation"],
+        'result': t.render(evaluation),
+        'evaluation': evaluation.get("evaluation"),
     })
 
 def check_progress(request, course_slug, content_slug, task_id):
@@ -256,16 +253,16 @@ def file_exercise_evaluation(request, course_slug, content_slug, task_id, task=N
     debug_json = json.dumps(evaluation_tree, indent=4)
 
     t_file = loader.get_template("courses/file_exercise_evaluation.html")
-    c_file = RequestContext(request, {
+    c_file = {
         'debug_json': debug_json,
         'evaluation_tree': evaluation_tree["test_tree"],
-    })
+    }
     t_exercise = loader.get_template("courses/exercise_evaluation.html")
-    c_exercise = Context({
+    c_exercise = {
         'evaluation': evaluation_obj.correct,
-    })
+    }
     data = {
-        'file_tabs': t_file.render(c_file),
+        'file_tabs': t_file.render(c_file, request),
         'result': t_exercise.render(c_exercise),
         'evaluation': evaluation_obj.correct,
         'points': evaluation_obj.points,
@@ -301,11 +298,11 @@ def get_old_file_exercise_evaluation(request, user, answer_id):
     debug_json = json.dumps(evaluation_dict, indent=4)
 
     t_file = loader.get_template("courses/file_exercise_evaluation.html")
-    c_file = RequestContext(request, {
+    c_file = {
         'debug_json': debug_json,
         'evaluation_tree': evaluation_dict["test_tree"],
-    })
-    return HttpResponse(t_file.render(c_file))
+    }
+    return HttpResponse(t_file.render(c_file, request))
 
 @cookie_law
 def sandboxed_content(request, content_slug, **kwargs):
@@ -330,31 +327,31 @@ def sandboxed_content(request, content_slug, **kwargs):
          'question': question,
          'choices': choices,
          'user': user,
-         'sandboxed': True,}
+         'sandboxed': True,
+    }
 
     if content_type == "LECTURE":
         d['rendered_content'] = rendered_content
-        c = RequestContext(request, d)
+        c = d
     else:
         d['emb_content'] = rendered_content
-        exercise_c = RequestContext(request, d)
         dashed_type = content.get_dashed_type()
-        t = loader.get_template("courses/{dashed_type}.html".format(
-            dashed_type=content.get_dashed_type()
+        t = loader.get_template("courses/{content_type}.html".format(
+            content_type=content.get_dashed_type()
         ))
-        rendered_content = t.render(exercise_c)
-        c = RequestContext(request, {
+        rendered_content = t.render(d, request)
+        c = {
             'rendered_content': rendered_content,
             'content_name': content.name,
             'content_type': content_type,
             'user': user,
             'sandboxed': True,
-        })
+        }
     if "frontpage" in kwargs:
         return c
     else:
         t = loader.get_template("courses/contentpage.html")
-        return HttpResponse(t.render(c))
+        return HttpResponse(t.render(c, request))
 
 @cookie_law
 def content(request, course_slug, content_slug, **kwargs):
@@ -391,7 +388,7 @@ def content(request, course_slug, content_slug, **kwargs):
                              
     rendered_content = content.rendered_markup(request, context)
 
-    c = RequestContext(request, {
+    c = {
         'course_slug': course_slug,
         'course_name': course.name,
         'content': content,
@@ -401,14 +398,13 @@ def content(request, course_slug, content_slug, **kwargs):
         'question': question,
         'choices': choices,
         'evaluation': evaluation,
-        'user': user,
         'sandboxed': False,
-    })
+    }
     if "frontpage" in kwargs:
         return c
     else:
         t = loader.get_template("courses/contentpage.html")
-        return HttpResponse(t.render(c))
+        return HttpResponse(t.render(c, request))
 
 def user_profile_save(request):
     """
@@ -446,15 +442,15 @@ def user_profile(request):
     profile = UserProfile.objects.get(user=request.user)
 
     t = loader.get_template("courses/userprofile.html")
-    c = RequestContext(request, {
+    c = {
         'username': request.user.username,
         'first_name': request.user.first_name,
         'last_name': request.user.last_name,
         'email': request.user.email,
         'student_id': profile.student_id,
         'study_program': profile.study_program,
-    })
-    return HttpResponse(t.render(c))
+    }
+    return HttpResponse(t.render(c, request))
 
 def user(request, user_name):
     '''Shows user information to the requesting user. The amount of information depends on who the
@@ -480,13 +476,13 @@ def user(request, user_name):
     fileexercise_answers = UserFileUploadExerciseAnswer.objects.filter(user=request.user)
 
     t = loader.get_template("courses/userinfo.html")
-    c = RequestContext(request, {
+    c = {
         'checkboxexercise_answers': checkboxexercise_answers,
         'multiplechoiceexercise_answers': multiplechoiceexercise_answers,
         'textfieldexercise_answers': textfieldexercise_answers,
         'fileexercise_answers': fileexercise_answers,
-    })
-    return HttpResponse(t.render(c))
+    }
+    return HttpResponse(t.render(c, request))
 
 def calendar_post(request, calendar_id, event_id):
     if not request.user.is_authenticated():
@@ -572,10 +568,13 @@ def show_answers(request, user, course, exercise):
 
     # TODO: Own subtemplates for each of the exercise types.
     t = loader.get_template("courses/user_exercise_answers.html")
-    c = RequestContext(request, {
+    c = {
+        'exercise': exercise,
+        'course_slug': course,
+        'course_name': course_obj.name,
         'answers': answers,
-    })
-    return HttpResponse(t.render(c))
+    }
+    return HttpResponse(t.render(c, request))
 
 def help_list(request):
     return HttpResponse()
@@ -583,13 +582,12 @@ def help_list(request):
 def markup_help(request):
     markups = markupparser.MarkupParser.get_markups()
     t = loader.get_template("courses/markup-help.html")
-    c = RequestContext(request, {
+    c = {
         'markups': markups,
-    })
-    return HttpResponse(t.render(c))
+    }
+    return HttpResponse(t.render(c, request))
 
 def terms(request):
     t = loader.get_template("courses/terms.html")
-    c = RequestContext(request, {
-    })
-    return HttpResponse(t.render(c))
+    c = {}
+    return HttpResponse(t.render(c, request))

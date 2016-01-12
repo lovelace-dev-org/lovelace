@@ -4,7 +4,7 @@ import statistics
 
 import django
 from django.http import HttpResponse, HttpResponseRedirect, HttpResponseNotFound
-from django.template import Context, RequestContext, loader
+from django.template import loader
 from django.core.urlresolvers import reverse
 from django.utils import timezone
 from django.utils.safestring import mark_safe
@@ -150,20 +150,24 @@ def exercise_answer_piechart(correct, incorrect, not_answered, canvas_id):
     }
 
 def exercise_basic_answer_stats(exercise, users, answers, course_inst=None):
-    answer_count = answers.count()
     correctly_by = 0
     incorrectly_by = 0
     users_answered = set()
-
+    answer_count = answers.count()
+    user_answers = set()
+    for user, evaluation in answers.values_list("user", "evaluation"):
+        try:
+            user_answers.add((user, Evaluation.objects.get(id=evaluation).correct))
+        except Evaluation.DoesNotExist:
+            user_answers.add((user, False))
+            
     for user in users:
-        evaluation = user_evaluation(user, exercise)
-        if evaluation == "unanswered":
-            continue
-        elif evaluation == "correct": 
+        if (user.id, True) in user_answers: 
             correctly_by += 1
-        else:
+            users_answered.add(user)
+        elif (user.id, False) in user_answers:
             incorrectly_by += 1
-        users_answered.add(user)
+            users_answered.add(user)
     
     user_count = len(users_answered)
     unanswered = len(users) - user_count
@@ -332,7 +336,7 @@ def exercise_answer_stats(request, ctx, exercise, exercise_type_f, template):
     stats.append(exercise_type_f(exercise, list(set(users))))
     ctx.update({"stats": stats})
     t = loader.get_template("stats/" + template)
-    return HttpResponse(t.render(RequestContext(request, ctx)))
+    return HttpResponse(t.render(ctx, request))
     
 def single_exercise(request, content_slug):
     """
@@ -353,11 +357,11 @@ def single_exercise(request, content_slug):
             tasktype_verbose = verbose.lower()
             break
 
-    ctx = RequestContext(request, {
+    ctx = {
         "content": exercise,
         "tasktype": tasktype_verbose,
         "choices": exercise.get_type_object().get_choices(),
-    })
+    }
 
     if tasktype == "CHECKBOX_EXERCISE":
         return exercise_answer_stats(request, ctx, exercise, checkbox_exercise, "checkbox_stats.html")
@@ -395,15 +399,15 @@ def user_task(request, user_name, task_name):
         fileanswers = UserFileUploadExerciseAnswer.objects.filter(exercise=content, user=ruser)
 
     t = loader.get_template("stats/user_task_stats.html")
-    c = RequestContext(request, {
+    c = {
         'username': user_name,
         'taskname': task_name,
         'checkboxanswers': checkboxanswers,
         'multichoiceanswers': multichoiceanswers,
         'textfieldanswers': textfieldanswers,
         'fileanswers': fileanswers,
-    })
-    return HttpResponse(t.render(c))
+    }
+    return HttpResponse(t.render(c, request))
 
 def all_exercises(request, course_name):
     '''Shows statistics for all the tasks.'''
@@ -450,11 +454,11 @@ def all_exercises(request, course_name):
         task_infos.append((taskname, taskurl, total_attempts, unique_users, correct_by, avg))
 
     t = loader.get_template("stats/alltaskstats.html")
-    c = RequestContext(request, {
+    c = {
         'course_name': course_name,
         'task_infos': task_infos,
-    })
-    return HttpResponse(t.render(c))
+    }
+    return HttpResponse(t.render(c, request))
 
 def course_users(request, course_slug, content_to_search, year, month, day):
     '''Admin view that shows a table of all users and the tasks they've done on a particular course.'''
@@ -508,13 +512,13 @@ def course_users(request, course_slug, content_to_search, year, month, day):
         user_evaluations.append((username, evaluations, sum(evaluations)))
 
     t = loader.get_template("stats/usertable.html")
-    c = RequestContext(request, {
+    c = {
         'course_slug':course_slug,
         'content_count':len(contents),
         'contents':contents,
         'user_evaluations':user_evaluations,
-    })
-    return HttpResponse(t.render(c))
+    }
+    return HttpResponse(t.render(c, request))
 
 def users_all(request):
     if not (request.user.is_authenticated() and request.user.is_active and\
@@ -533,12 +537,12 @@ def users_all(request):
     ]
 
     t = loader.get_template("stats/users-all.html")
-    c = RequestContext(request, {
+    c = {
         'users': users,
         'exercises': exercises,
         'table_rows': table_rows,
-    })
-    return HttpResponse(t.render(c))
+    }
+    return HttpResponse(t.render(c, request))
 
 def color_generator(total_colors):
     import colorsys
@@ -567,13 +571,13 @@ def users_course(request, course):
     ]
 
     t = loader.get_template("stats/users-course.html")
-    c = RequestContext(request, {
+    c = {
         'course': course,
         'users': users,
         'exercises': exercises,
         'table_rows': table_rows,
-    })
-    return HttpResponse(t.render(c))
+    }
+    return HttpResponse(t.render(c, request))
 
 class ZeroUsersException(Exception):
     pass

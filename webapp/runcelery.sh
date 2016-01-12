@@ -1,2 +1,2 @@
 #!/bin/bash
-celery -A raippa worker -l info
+celery -A lovelace worker -l info
