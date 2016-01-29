@@ -373,7 +373,7 @@ def content(request, course_slug, content_slug, **kwargs):
             return HttpResponseNotFound("Content {} is not linked to course {}!".format(content_slug, course_slug))
 
     content_type = content.content_type
-    question = blockparser.parseblock(escape(content.question))
+    question = blockparser.parseblock(escape(content.question), {"course": course})
     choices = answers = content.get_choices()
 
     evaluation = None

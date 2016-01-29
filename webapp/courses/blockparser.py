@@ -2,6 +2,7 @@
 """Parser for inline wiki markup tags that appear in paragraphs, tables etc."""
 
 import re
+import courses
 # TODO: {{{#!python {}}}} breaks up!
 # TODO: |forcedownload or |forceview for links
 import pygments
@@ -46,20 +47,21 @@ class Tag:
 
 # A library of different tags supported by the wiki markup
 tags = {
-    "bold":   Tag("strong", "'''", "'''", re.compile(r"[']{3}(?P<bold_italic>[']{2})?.+?(?P=bold_italic)?[']{3}")),
-    "italic": Tag("em", "''", "''", re.compile(r"[']{2}.+?[']{2}")),
-    "pre":    Tag("code", "{{{", "}}}", re.compile(r"[{]{3}(?P<highlight>\#\![^\s]+ )?.+?[}]{3}")),
-    "dfn":    Tag("dfn", "", "", re.compile(r"")),
-    "mark":   Tag("mark", "!!!", "!!!", re.compile(r"[\!]{3}.+?[\!]{3}")),
-    "anchor": Tag("a", "[[", "]]", re.compile(r"\[\[(?P<address>.+?)([|](?P<link_text>.+?))?\]\]")),
-    "kbd":    Tag("kbd", "`", "`", re.compile(r"`(?P<kbd>.+?)`")),
-    "hint":   Tag("mark", "[!hint=hint_id!]", "[!hint!]", re.compile(r"\[\!hint\=(?P<hint_id>\w+)\!\](?P<hint_text>.+?)\[\!hint\!\]")),
+    "bold":     Tag("strong", "'''", "'''", re.compile(r"[']{3}(?P<bold_italic>[']{2})?.+?(?P=bold_italic)?[']{3}")),
+    "italic":   Tag("em", "''", "''", re.compile(r"[']{2}.+?[']{2}")),
+    "pre":      Tag("code", "{{{", "}}}", re.compile(r"[{]{3}(?P<highlight>\#\![^\s]+ )?.+?[}]{3}")),
+    "dfn":      Tag("dfn", "", "", re.compile(r"")),
+    "mark":     Tag("mark", "!!!", "!!!", re.compile(r"[\!]{3}.+?[\!]{3}")),
+    "anchor":   Tag("a", "[[", "]]", re.compile(r"\[\[(?P<address>.+?)([|](?P<link_text>.+?))?\]\]")),
+    "kbd":      Tag("kbd", "`", "`", re.compile(r"`(?P<kbd>.+?)`")),
+    "hint":     Tag("mark", "[!hint=hint_id!]", "[!hint!]", re.compile(r"\[\!hint\=(?P<hint_id>\w+)\!\](?P<hint_text>.+?)\[\!hint\!\]")),
+    "term":     Tag("span", '"""', '"""', re.compile(r"\"{3}(?P<term>.+?)\"{3}")),
 }
 
-def parsetag(tagname, unparsed_string):
+def parsetag(tagname, unparsed_string, context=None):
     """Parses one tag and applies it's settings. Generates the HTML."""
     tag = tags[tagname]
-    hilite = address = link_text = hint_id = hint_text = None
+    hilite = address = link_text = hint_id = hint_text = term = None
     parsed_string = ""
     cursor = 0
     for m in re.finditer(tag.re, unparsed_string):
@@ -84,9 +86,13 @@ def parsetag(tagname, unparsed_string):
             hint_text = m.group("hint_text")
         except IndexError:
             pass
+
+        try:
+            term = m.group("term")
+        except IndexError:
+            pass
         
         if hilite:
-            print(hilite)
             code_string = m.group(0)[tag.lb()+len(hilite):-tag.le()]
             for escaped, unescaped in {"&lt;":"<", "&gt;":">", "&amp;":"&"}.items():
                 code_string = code_string.replace(escaped, unescaped)
@@ -109,6 +115,21 @@ def parsetag(tagname, unparsed_string):
         elif hint_id:
             parsed_string += tag.htmlbegin({"class":"hint", "id":"hint-id-"+hint_id})
             parsed_string += hint_text
+            parsed_string += tag.htmlend()
+        elif term:
+            description = "?"
+            if context is not None:
+                try:
+                    course = context["course"]
+                except KeyError:
+                    pass
+                else:
+                    try:
+                        description = courses.models.Term.objects.get(name=term, instance__course=course).description
+                    except courses.models.Term.DoesNotExist as e:
+                        pass
+            parsed_string += tag.htmlbegin({"class":"term", "title":description})
+            parsed_string += term
             parsed_string += tag.htmlend()
         else:
             contents = m.group(0)[tag.lb():-tag.le()]
@@ -139,7 +160,7 @@ def parsetag(tagname, unparsed_string):
 
     return parsed_string
 
-def parseblock(blockstring):
+def parseblock(blockstring, context=None):
     """A multi-pass parser for inline markup language inside paragraphs."""
     # TODO: Start with pre tags to prevent formatting inside pre
     #       - Perhaps use a state machine to determine, whether inside pre
@@ -154,6 +175,7 @@ def parseblock(blockstring):
     parsed_string = parsetag("kbd", parsed_string)
     parsed_string = parsetag("anchor", parsed_string)
     parsed_string = parsetag("hint", parsed_string)
+    parsed_string = parsetag("term", parsed_string, context)
 
     return parsed_string
 

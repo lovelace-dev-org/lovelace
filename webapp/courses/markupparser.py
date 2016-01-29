@@ -144,7 +144,7 @@ class MarkupParser:
         The match object is returned for use in the settings function of the
         markup.        
         """
-        matchobj = cls._block_re.match(line)
+        matchobj = cls._block_re.match(line) or cls._inline_re.match(line)
         return getattr(matchobj, "lastgroup", "paragraph"), matchobj
 
     @classmethod
@@ -156,7 +156,7 @@ class MarkupParser:
         """
         if not cls._ready:
             raise ParserUninitializedError("compile() not called")
-
+            
         if context is None: context = {}
         if embedded_pages is None: embedded_pages = []
 
@@ -228,7 +228,6 @@ class Markup:
     @classmethod
     def settings(cls, matchobj, state):
         pass
-
 
 class BoldMarkup(Markup):
     name = "Bold"
@@ -451,7 +450,7 @@ class EmbeddedPageMarkup(Markup):
             embedded_content = page.rendered_markup()
             
             choices = page.get_choices()
-            question = blockparser.parseblock(escape(page.question))
+            question = blockparser.parseblock(escape(page.question), state["context"])
             
             c = {
                 "emb_content": embedded_content,
@@ -814,7 +813,7 @@ class ImageMarkup(Markup):
         except AttributeError:
             pass
         try:
-            settings["caption_text"] = blockparser.parseblock(escape(matchobj.group("caption_text")))
+            settings["caption_text"] = blockparser.parseblock(escape(matchobj.group("caption_text")), state["context"])
         except AttributeError:
             pass
         try:
@@ -859,7 +858,7 @@ class ListMarkup(Markup):
                 yield '<%s>' % tag
         
         for line in block:
-            yield '<li>%s</li>' % blockparser.parseblock(escape(line.strip("*#").strip()))
+            yield '<li>%s</li>' % blockparser.parseblock(escape(line.strip("*#").strip()), state["context"])
 
     @classmethod
     def settings(cls, matchobj, state):
@@ -889,7 +888,7 @@ class ParagraphMarkup(Markup):
         for line in block:
             paragraph_lines.append(escape(line))
         paragraph = "<br>\n".join(paragraph_lines)
-        paragraph = blockparser.parseblock(paragraph)
+        paragraph = blockparser.parseblock(paragraph, state["context"])
         yield paragraph
         yield '</p>\n'
 
@@ -939,7 +938,7 @@ class TableMarkup(Markup):
         for line in block:
             row = line.split("||")[1:-1]
             yield '<tr>'
-            yield '\n'.join("<td>%s</td>" % blockparser.parseblock(escape(cell)) for cell in row)
+            yield '\n'.join("<td>%s</td>" % blockparser.parseblock(escape(cell), state["context"]) for cell in row)
             yield '</tr>'
             
         #yield '</table>'

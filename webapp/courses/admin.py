@@ -294,7 +294,7 @@ class FileAdmin(admin.ModelAdmin):
         obj.uploader = request.user
         obj.save()
 
-    search_fields = ("name",)
+    search_fields = ('name',)
     readonly_fields = ('uploader',)
 
 class ImageAdmin(admin.ModelAdmin):
@@ -302,7 +302,7 @@ class ImageAdmin(admin.ModelAdmin):
         obj.uploader = request.user
         obj.save()
 
-    search_fields = ("name",)
+    search_fields = ('name',)
     readonly_fields = ('uploader',)
 
 class VideoLinkAdmin(admin.ModelAdmin):
@@ -310,17 +310,21 @@ class VideoLinkAdmin(admin.ModelAdmin):
         obj.added_by = request.user
         obj.save()
 
-    search_fields = ("name",)
+    search_fields = ('name',)
     readonly_fields = ('added_by',)
+
+class TermAdmin(admin.ModelAdmin):    
+    search_fields = ('name',)
 
 admin.site.register(Calendar, CalendarAdmin)
 admin.site.register(File, FileAdmin)
 admin.site.register(Image, ImageAdmin)
 admin.site.register(VideoLink, VideoLinkAdmin)
+admin.site.register(Term, TermAdmin)
 
 ## Course related administration
 class ContentGraphAdmin(admin.ModelAdmin):
-    search_fields = ("content__slug",)
+    search_fields = ('content__slug',)
 
 admin.site.register(ContentGraph, ContentGraphAdmin)
 
@@ -331,8 +335,17 @@ class CourseAdmin(admin.ModelAdmin):
         #('Settings for start date and end date of the course', {'fields': ['start_date','end_date'], 'classes': ['collapse']}),
     ]
     #formfield_overrides = {models.ManyToManyField: {'widget':}}
-    search_fields = ("name",)
+    search_fields = ('name',)
     readonly_fields = ('slug',)
 
 admin.site.register(Course, CourseAdmin)
 
+class CourseInstanceAdmin(admin.ModelAdmin):
+    fieldsets = [
+        (None,                {'fields': ['name', 'course']}),
+        ('Schedule settings', {'fields': ['start_date', 'end_date', 'active']}),
+    ]
+    search_fields = ('name',)
+    list_display = ('name', 'course')
+
+admin.site.register(CourseInstance, CourseInstanceAdmin)

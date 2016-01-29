@@ -999,6 +999,12 @@ section.content {
         span.cmd-runtime {
             
         }
+        span.term {
+            cursor: help;
+            border-bottom: 2px dashed #000;
+            text-decoration: none;
+        }
+        
         pre.test-evaluation-inputs {
             padding: 2px 2px 2px 4px;
             margin: 0 6px 6px 6px;
