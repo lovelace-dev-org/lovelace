@@ -2,7 +2,7 @@
 """Parser for inline wiki markup tags that appear in paragraphs, tables etc."""
 
 import re
-import courses
+import courses.models
 # TODO: {{{#!python {}}}} breaks up!
 # TODO: |forcedownload or |forceview for links
 import pygments
