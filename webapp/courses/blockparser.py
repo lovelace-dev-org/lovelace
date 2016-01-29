@@ -47,15 +47,15 @@ class Tag:
 
 # A library of different tags supported by the wiki markup
 tags = {
-    "bold":     Tag("strong", "'''", "'''", re.compile(r"[']{3}(?P<bold_italic>[']{2})?.+?(?P=bold_italic)?[']{3}")),
-    "italic":   Tag("em", "''", "''", re.compile(r"[']{2}.+?[']{2}")),
-    "pre":      Tag("code", "{{{", "}}}", re.compile(r"[{]{3}(?P<highlight>\#\![^\s]+ )?.+?[}]{3}")),
-    "dfn":      Tag("dfn", "", "", re.compile(r"")),
-    "mark":     Tag("mark", "!!!", "!!!", re.compile(r"[\!]{3}.+?[\!]{3}")),
-    "anchor":   Tag("a", "[[", "]]", re.compile(r"\[\[(?P<address>.+?)([|](?P<link_text>.+?))?\]\]")),
-    "kbd":      Tag("kbd", "`", "`", re.compile(r"`(?P<kbd>.+?)`")),
-    "hint":     Tag("mark", "[!hint=hint_id!]", "[!hint!]", re.compile(r"\[\!hint\=(?P<hint_id>\w+)\!\](?P<hint_text>.+?)\[\!hint\!\]")),
-    "term":     Tag("span", '"""', '"""', re.compile(r"\"{3}(?P<term>.+?)\"{3}")),
+    "bold":   Tag("strong", "'''", "'''", re.compile(r"[']{3}(?P<bold_italic>[']{2})?.+?(?P=bold_italic)?[']{3}")),
+    "italic": Tag("em", "''", "''", re.compile(r"[']{2}.+?[']{2}")),
+    "pre":    Tag("code", "{{{", "}}}", re.compile(r"[{]{3}(?P<highlight>\#\![^\s]+ )?.+?[}]{3}")),
+    "dfn":    Tag("dfn", "", "", re.compile(r"")),
+    "mark":   Tag("mark", "!!!", "!!!", re.compile(r"[\!]{3}.+?[\!]{3}")),
+    "anchor": Tag("a", "[[", "]]", re.compile(r"\[\[(?P<address>.+?)([|](?P<link_text>.+?))?\]\]")),
+    "kbd":    Tag("kbd", "`", "`", re.compile(r"`(?P<kbd>.+?)`")),
+    "hint":   Tag("mark", "[!hint=hint_id!]", "[!hint!]", re.compile(r"\[\!hint\=(?P<hint_id>\w+)\!\](?P<hint_text>.+?)\[\!hint\!\]")),
+    "term":   Tag("span", '"""', '"""', re.compile(r"\"{3}(?P<term>.+?)\"{3}")),
 }
 
 def parsetag(tagname, unparsed_string, context=None):

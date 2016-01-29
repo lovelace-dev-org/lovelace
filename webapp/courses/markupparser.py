@@ -144,7 +144,7 @@ class MarkupParser:
         The match object is returned for use in the settings function of the
         markup.        
         """
-        matchobj = cls._block_re.match(line) or cls._inline_re.match(line)
+        matchobj = cls._block_re.match(line)
         return getattr(matchobj, "lastgroup", "paragraph"), matchobj
 
     @classmethod
@@ -156,7 +156,7 @@ class MarkupParser:
         """
         if not cls._ready:
             raise ParserUninitializedError("compile() not called")
-            
+
         if context is None: context = {}
         if embedded_pages is None: embedded_pages = []
 
