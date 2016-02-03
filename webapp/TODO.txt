@@ -1,19 +1,18 @@
 allauth to replace django-registration
 silk or django debug toolbar for profiling
 
-rabbitmq:
-    - https://github.com/renshawbay/pika-python3
-
 database:
     - keep track of the average time to run tests, to use with message queuing
     - keep track of whether file upload exercise returnables have been checked or not
     - keep track of which tests (with which files etc.) were used for testing
       each returnable
     - db model translations:
-        * django-hvad vs. django-modeltranslation
-    - exercise revisions
+        * https://www.djangopackages.com/grids/g/model-translation/
+        * django-hvad vs. django-modeltranslation (?)
+    - exercise and content revisions:
+        * https://www.djangopackages.com/grids/g/versioning/
         * stats: switch between revision specific/overall stats; links to revs
-        * try existing django app: 
+        * django-reversion (?)
     - support more complex relations between exercises
         * interchangeable: a student can choose from a set
         * interdependent: exercise 1 must be completed before exercise 2
@@ -96,15 +95,3 @@ ui:
 logic:
     - prevent viewing of tasks if not linked to a course
         * except for admins, by using the sandbox url
-
-apt-get:
-    - postgresql postgresql-server-dev-all libpq-dev (for psycopg2)
-    - rabbitmq-server (for celery)
-
-pip:
-    - django
-    - pillow
-    - pygments
-    - psycopg2
-    - celery
-    - unicode-slugify
