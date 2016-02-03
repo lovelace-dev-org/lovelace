@@ -495,8 +495,8 @@ class EmbeddedScriptMarkup(Markup):
     shortname = "script"
     description = "An embedded script, contained inside an iframe."
     regexp = r"^\<\!script\=(?P<script_slug>[^\|>]+)(\|width\=(?P<script_width>[^>|]+))?"\
-              "(\|height\=(?P<script_height>[^>|]+))?(\|border\=(?P<border>[^>|]+))?"\
-              "(\|include\=(?P<include>[^>|]+))?" "\>\s*$"
+             r"(\|height\=(?P<script_height>[^>|]+))?(\|border\=(?P<border>[^>|]+))?"\
+             r"(\|include\=(?P<include>[^>|]+))?" r"\>\s*$"
     markup_class = "embedded item"
     example = "<!script=dijkstra-clickable-demo>"
     states = {}
@@ -661,7 +661,7 @@ class EmbeddedVideoMarkup(Markup):
     shortname = "video"
     description = "An embedded video, contained inside an iframe."
     regexp = r"^\<\!video\=(?P<video_slug>[^\|>]+)(\|width\=(?P<video_width>[^>|]+))?"\
-              "(\|height\=(?P<video_height>[^>|]+))?\>\s*$"
+             r"(\|height\=(?P<video_height>[^>|]+))?\>\s*$"
     markup_class = "embedded item"
     example = "<!video=my-video-link-name>"
     states = {}
@@ -757,9 +757,9 @@ class ImageMarkup(Markup):
     shortname = "image"
     description = "An image, img tag in HTML."
     regexp = r"^\<\!image\=(?P<image_name>[^>|]+)"\
-              "(\|alt\=(?P<alt_text>[^|]+))?"\
-              "(\|caption\=(?P<caption_text>(([\[]{2}[^|]+(\|.+)?[\]]{2})|([^|]))+))?"\
-              "(\|align\=(?P<align>[^|]+))?\>\s*$"
+             r"(\|alt\=(?P<alt_text>[^|]+))?"\
+             r"(\|caption\=(?P<caption_text>(([\[]{2}[^|]+(\|.+)?[\]]{2})|([^|]))+))?"\
+             r"(\|align\=(?P<align>[^|]+))?\>\s*$"
     markup_class = "embedded item"
     example = "<!image=name-of-some-image.png|alt=alternative text|caption=caption text>"
     inline = False
