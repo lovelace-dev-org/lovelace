@@ -58,6 +58,9 @@ function build_toc(static_root_url) {
         // TODO: http://stackoverflow.com/questions/123999/how-to-tell-if-a-dom-element-is-visible-in-the-current-viewport
         var new_toc_level = parseInt(this.tagName[1]);
         
+        if ($(this).closest("div.term-description").length > 0) {
+            return;
+        }
         // TODO: Fix, ol can only contain li
         if (new_toc_level > current_toc_level) {
             for (var i = current_toc_level; i < new_toc_level; i += 1) { // >
@@ -132,4 +135,17 @@ function accept_cookies() {
     document.cookie = "cookies_accepted=1";
     var cookie_law_message = $('#cookie-law-message');
     cookie_law_message.hide();
+}
+
+function show_description(span_id, div_id) {
+    var span = $(span_id);
+    var desc_div = $(div_id);
+    var pos = span.position();
+    desc_div.css({"left" : pos.left + span.width(), "top" : pos.top - 5});
+    desc_div.show()
+}
+
+function hide_description(div_id) {
+    var desc_div = $(div_id);
+    desc_div.hide();
 }

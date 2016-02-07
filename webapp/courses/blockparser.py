@@ -3,6 +3,7 @@
 
 import re
 import courses.models
+import courses.markupparser
 # TODO: {{{#!python {}}}} breaks up!
 # TODO: |forcedownload or |forceview for links
 import pygments
@@ -55,13 +56,83 @@ tags = {
     "anchor": Tag("a", "[[", "]]", re.compile(r"\[\[(?P<address>.+?)([|](?P<link_text>.+?))?\]\]")),
     "kbd":    Tag("kbd", "`", "`", re.compile(r"`(?P<kbd>.+?)`")),
     "hint":   Tag("mark", "[!hint=hint_id!]", "[!hint!]", re.compile(r"\[\!hint\=(?P<hint_id>\w+)\!\](?P<hint_text>.+?)\[\!hint\!\]")),
-    "term":   Tag("span", '"""', '"""', re.compile(r"\"{3}(?P<term>.+?)\"{3}")),
+    "term":   Tag("span", '[?term=term_id?]', '[?term?]', re.compile(r"\[\?term\=(?P<term_id>\w+)\?\](?P<term_text>.+?)\[\?term\?\]")),
 }
 
-def parsetag(tagname, unparsed_string, context=None):
+def parse_pre_tag(parsed_string, tag, hilite, match):
+    code_string = match.group(0)[tag.lb()+len(hilite):-tag.le()]
+    for escaped, unescaped in {"&lt;":"<", "&gt;":">", "&amp;":"&"}.items():
+        code_string = code_string.replace(escaped, unescaped)
+    hilite = hilite.strip("#! ")
+
+    parsed_string += tag.htmlbegin({"class":"highlight " + hilite})
+    try:
+        lexer = get_lexer_by_name(hilite)
+    except pygments.util.ClassNotFound as e:
+        parsed_string += "no such highlighter: %s; " % hilite
+        parsed_string += code_string
+    else:    
+        parsed_string += highlight(code_string, lexer, HtmlFormatter(nowrap=True)).rstrip("\n")
+    parsed_string += tag.htmlend()
+    
+    return parsed_string
+
+def parse_anchor_tag(parsed_string, tag, address, link_text):
+    contents = link_text or address
+    parsed_string += tag.htmlbegin({"href":address, "target":"_blank"})
+    parsed_string += contents
+    parsed_string += tag.htmlend()
+    #print tag.htmlbegin({"href":address}) + contents + tag.htmlend()
+    return parsed_string
+
+def parse_hint_tag(parsed_string, tag, hint_id, hint_text):
+    parsed_string += tag.htmlbegin({"class":"hint", "id":"hint-id-"+hint_id})
+    parsed_string += hint_text
+    parsed_string += tag.htmlend()
+    return parsed_string
+
+def parse_term_tag(parsed_string, tag, term_id, term_text, extra_div, state):
+    description = "?"
+    request = None
+    context = {}
+    span_id = "{}-term-span".format(term_id)
+    div_id = "{}-term-div".format(term_id)
+
+    if state is not None:
+        try:
+            request = state["request"]
+        except KeyError:
+            pass
+        try:
+            context = state["context"].copy()
+            course = context["course"]
+        except KeyError:
+            pass
+        else:
+            if context["tooltip"]:
+                return parsed_string, extra_div
+            try:
+                description = courses.models.Term.objects.get(name=term_id, instance__course=course).description
+            except courses.models.Term.DoesNotExist as e:
+                pass
+
+    parsed_string += tag.htmlbegin({"class":"term", "id":span_id})
+    parsed_string += term_text
+    parsed_string += tag.htmlend()
+    context["tooltip"] = True
+    parsed_desc = "".join(courses.markupparser.MarkupParser.parse(description, request, context)).strip()
+    extra_div += ('<div class="term-description" id="{div_id}">{description}<script>' \
+                  '$("\#{span_id}, \#{div_id}").mouseenter(function () {{' \
+                  'show_description("\#{span_id}", "\#{div_id}");}})' \
+                  '.mouseleave(function() {{' \
+                  'hide_description("\#{div_id}");}});</script></div>'
+                  .format(div_id=div_id, span_id=span_id, description=parsed_desc))
+    return parsed_string, extra_div
+
+def parsetag(tagname, unparsed_string, extra_div="", state=None):
     """Parses one tag and applies it's settings. Generates the HTML."""
     tag = tags[tagname]
-    hilite = address = link_text = hint_id = hint_text = term = None
+    hilite = address = link_text = hint_id = hint_text = term_id = term_text = None
     parsed_string = ""
     cursor = 0
     for m in re.finditer(tag.re, unparsed_string):
@@ -88,49 +159,19 @@ def parsetag(tagname, unparsed_string, context=None):
             pass
 
         try:
-            term = m.group("term")
+            term_id = m.group("term_id")
+            term_text = m.group("term_text")
         except IndexError:
             pass
         
         if hilite:
-            code_string = m.group(0)[tag.lb()+len(hilite):-tag.le()]
-            for escaped, unescaped in {"&lt;":"<", "&gt;":">", "&amp;":"&"}.items():
-                code_string = code_string.replace(escaped, unescaped)
-            hilite = hilite.strip("#! ")
-            parsed_string += tag.htmlbegin({"class":"highlight " + hilite})
-            try:
-                lexer = get_lexer_by_name(hilite)
-            except pygments.util.ClassNotFound as e:
-                parsed_string += "no such highlighter: %s; " % hilite
-                parsed_string += code_string
-            else:    
-                parsed_string += highlight(code_string, lexer, HtmlFormatter(nowrap=True)).rstrip("\n")
-            parsed_string += tag.htmlend()
+            parsed_string = parse_pre_tag(parsed_string, tag, hilite, m)
         elif address:
-            contents = link_text or address
-            parsed_string += tag.htmlbegin({"href":address, "target":"_blank"})
-            parsed_string += contents
-            parsed_string += tag.htmlend()
-            #print tag.htmlbegin({"href":address}) + contents + tag.htmlend()
+            parsed_string = parse_anchor_tag(parsed_string, tag, address, link_text)
         elif hint_id:
-            parsed_string += tag.htmlbegin({"class":"hint", "id":"hint-id-"+hint_id})
-            parsed_string += hint_text
-            parsed_string += tag.htmlend()
-        elif term:
-            description = "?"
-            if context is not None:
-                try:
-                    course = context["course"]
-                except KeyError:
-                    pass
-                else:
-                    try:
-                        description = courses.models.Term.objects.get(name=term, instance__course=course).description
-                    except courses.models.Term.DoesNotExist as e:
-                        pass
-            parsed_string += tag.htmlbegin({"class":"term", "title":description})
-            parsed_string += term
-            parsed_string += tag.htmlend()
+            parsed_string = parse_hint_tag(parsed_string, tag, hint_id, hint_text)
+        elif term_id:
+            parsed_string, extra_div = parse_term_tag(parsed_string, tag, term_id, term_text, extra_div, state)
         else:
             contents = m.group(0)[tag.lb():-tag.le()]
 
@@ -158,9 +199,9 @@ def parsetag(tagname, unparsed_string, context=None):
         hilite = False
     parsed_string += unparsed_string[cursor:]
 
-    return parsed_string
+    return parsed_string, extra_div
 
-def parseblock(blockstring, context=None):
+def parseblock(blockstring, state):
     """A multi-pass parser for inline markup language inside paragraphs."""
     # TODO: Start with pre tags to prevent formatting inside pre
     #       - Perhaps use a state machine to determine, whether inside pre
@@ -168,16 +209,17 @@ def parseblock(blockstring, context=None):
         # TODO: Raise an exception instead, show the exception at the end of the block in red
         #return blockstring
 
-    parsed_string = parsetag("pre", blockstring)
-    parsed_string = parsetag("bold", parsed_string)
-    parsed_string = parsetag("italic", parsed_string)
-    parsed_string = parsetag("mark", parsed_string)
-    parsed_string = parsetag("kbd", parsed_string)
-    parsed_string = parsetag("anchor", parsed_string)
-    parsed_string = parsetag("hint", parsed_string)
-    parsed_string = parsetag("term", parsed_string, context)
+    extra_div = ""
+    parsed_string, _ = parsetag("pre", blockstring)
+    parsed_string, _ = parsetag("bold", parsed_string)
+    parsed_string, _ = parsetag("italic", parsed_string)
+    parsed_string, _ = parsetag("mark", parsed_string)
+    parsed_string, _ = parsetag("kbd", parsed_string)
+    parsed_string, _ = parsetag("anchor", parsed_string)
+    parsed_string, _ = parsetag("hint", parsed_string)
+    parsed_string, extra_div = parsetag("term", parsed_string, extra_div, state)
 
-    return parsed_string
+    return parsed_string, extra_div
 
 # Some test code
 if __name__ == "__main__":

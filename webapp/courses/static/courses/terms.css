@@ -1,0 +1,286 @@
+span.term {
+        cursor: help;
+        text-decoration-line: underline;
+        text-decoration-style: dashed;
+}
+
+div.term-description {
+    display: none;
+    position: absolute;
+    z-index: 1;
+    text-align: left;
+    font-weight: normal;
+    font-style: normal;
+    background: #39ad39;
+    color: #222;
+    font-size: 0.9rem;
+    padding: 2px 2px;
+    border: 2px solid #333;
+}
+
+div.term-description:before {
+    content: ' ';
+    height: 0;
+    position: absolute;
+    width: 0;
+    left: -24px;
+    top: 0px;
+    border: 12px solid transparent;
+    border-right-color: #333;
+}
+
+div.term-description:after {
+    content: ' ';
+    height: 0;
+    position: absolute;
+    width: 0;
+    left: -18px;
+    top: 3px;
+    border: 9px solid transparent;
+    border-right-color: #39ad39;
+}
+
+div.term-description :last-child {
+    margin-bottom: 0;
+}
+
+/* Copied from style.css */
+
+div.term-description h1, div.term-description h2, div.term-description h3, div.term-description h4, div.term-description h5, div.term-description h6 {
+    font-family: "Trebuchet MS", "Helvetica", sans-serif;
+    font-weight: normal;
+    letter-spacing: 0.05em;
+    word-spacing: 0.1em;
+}
+
+div.term-description span.anchor-offset {
+    width: 0;
+    height: 0;
+    padding-top: 4rem;
+    margin-top: -4rem;
+    display: hidden;        
+}
+
+div.term-description h1:first-child, div.term-description h2:first-child, div.term-description h3:first-child, div.term-description h4:first-child, div.term-description h5:first-child, div.term-description h6:first-child, .task-meta-container + h1, .task-meta-container + h2, .task-meta-container + h3, .task-meta-container + h4, .task-meta-container + h5, .task-meta-container + h6 {
+    margin-top: 0 !important;
+}
+
+div.term-description h1 {
+    margin-top: 1em;
+    font-size: 1.5em;
+    letter-spacing: 0.07em;
+    word-spacing: 0.2em;
+    padding-bottom: 2px;
+    border-bottom: 1px solid #888;
+    margin-bottom: 1em;
+    text-shadow: rgba(63, 63, 63, 0.5) 1px 1px 1px;
+}
+
+div.term-description h2 {
+    font-size: 1.3em;
+    margin-top: 1em;
+    margin-bottom: 0.5em;
+    text-shadow: rgba(63, 63, 63, 0.5) 1px 1px 1px;
+    font-weight: bold;
+}
+
+div.term-description h3 {
+    font-size: 1.25em;
+    margin-top: 1em;
+    margin-bottom: 0.5em;
+    text-shadow: rgba(63, 63, 63, 0.5) 1px 1px 1px;
+}
+
+div.term-description h4 {
+    font-size: 1.2em;
+    letter-spacing: 0.03em;
+    word-spacing: 0.07em;
+    margin-bottom: 0.5em;
+    font-weight: bold;
+}
+
+div.term-description h5 {
+    font-size: 1.1em;
+    margin-bottom: 0.5em;
+}
+
+div.term-description h6 {
+    font-size: 1.0em;
+    margin-bottom: 0.5em;
+    font-weight: bold;
+}
+
+div.term-description figure {
+    margin-top: 0.5em;
+    margin-left: 0.5em;
+    margin-bottom: 1em;
+    display: table;
+    width: 1px;
+}
+    
+div.term-description img.content-img {
+    margin-top: 0.5em;
+    margin-left: 0.5em;
+    margin-bottom: 1em;
+    display: block;
+}
+ 
+div.term-description img.figure-img {
+    display: block;
+}
+
+div.term-description figcaption {
+    display: table-caption;
+    caption-side: bottom;
+}
+
+div.term-description .centered-block-outer {
+    overflow: hidden;
+    position: relative;
+}
+ 
+div.term-description .centered-block-middle {
+    float: left;
+    position: relative;
+    left: 50%;
+}
+ 
+div.term-description .centered-block-inner {
+    position: relative;
+    left: -50%;
+}
+
+div.term-description hr {
+    margin-bottom: 1em;
+    border: 0;
+    height: 1px;
+    background: #666;
+    background-image: -moz-linear-gradient(left, #999, #666, #999);
+}
+
+div.term-description p {
+    margin-bottom: 1em;
+}
+    
+div.term-description div.normal {
+    margin-bottom: 15px;
+    margin-right: 15px;
+}
+
+div.term-description ul, div.term-description ol {
+    margin-left: 1.5em;
+    margin-bottom: 5px;
+}
+
+div.term-description ul > li, div.term-description ol > li {
+    margin-left: 0;
+    margin-bottom: 4px;
+    padding-left: 5px;
+}
+
+div.term-description ul > ul, div.term-description ul > ol, div.term-description ol > ol, div.term-description ol > ul {
+    margin-left: 3em;
+    margin-bottom: 0;
+}
+
+div.term-description div.tex {
+    margin-left: 8em;
+}
+
+div.term-description table {
+    border-collapse: collapse;
+    border: 1px solid #8a8;
+    margin-bottom: 5px;
+}
+
+div.term-description table th, div.term-description table td {
+    border: 1px solid #8a8;
+    padding: 2px 4px 2px 4px;
+}
+
+div.term-description p code, div.term-description table * code,
+div.term-description ul * code, div.term-description ol * code {
+    font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
+    background: #e2e2e2;
+    font-size: 1em;
+    padding: 1px 3px;
+    border: 1px solid #cacaca;
+    border-radius: 3px;
+    box-shadow: inset 0 0 5px #cacaca;
+}
+
+div.term-description * a {
+    padding: 0 1px;
+    margin-left: -1px;
+    margin-right: -1px;
+    color: #143a14;
+}
+
+div.term-description * a:visited {
+    color: #ad3939;
+}
+
+div.term-description * a:hover {
+    color: #222;
+    background-color: #59cd59;
+    border-radius: 3px;
+}
+
+div.term-description p mark {
+    background: #59cd59;
+    border-radius: 7px;
+    padding: 2px 4px;
+}
+
+div.term-description p mark.hint {
+    background: inherit;
+    border-radius: 7px;
+    padding: 2px 4px;
+    animation: hint_background 2s linear infinite;
+}
+
+div.term-description @keyframes hint_background {
+    0% {background: #f33;}
+    50% {background: #fe3;}
+    100% {background: #f33;}
+}
+
+div.term-description kbd { /* .key */
+    padding: 4px 3px;
+    margin-right: 1px;
+    border: 1px solid #c6c6c6;
+    border-radius: 3px;
+    box-shadow: 1px 1px 1px rgba(127, 127, 127, 0.2), inset 0 0 6px #fff;
+    background: #eee;
+}
+
+div.term-description form.feedback {
+}
+
+div.term-description div.question {
+    margin-bottom: 0px;
+}
+
+div.term-description form.task {
+    width: 100%;
+}
+
+div.term-description pre.normal {
+    font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
+    background: #e2e2e2;
+    font-size: 1em;
+    padding: 2px 4px;
+    border: 1px solid #cacaca;
+    border-radius: 3px;
+    box-shadow: inset 0 0 3px #cacaca;
+    line-height: 1.15;
+
+    white-space: pre;
+    overflow-x: auto;
+    width: auto;
+    margin-bottom: 1em;
+}
+
+div.term-description pre.normal code {
+    font-family: inherit;
+}

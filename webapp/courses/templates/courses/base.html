@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=Inconsolata">
     <link rel="icon" href="{% static 'courses/favicon.png' %}">
     <link rel="stylesheet" href="{% static 'courses/style.css' %}">
+    <link rel="stylesheet" href="{% static 'courses/terms.css' %}">
     <link rel="stylesheet" href="{% static 'courses/small-screens.css' %}" media="(max-width: 1768px)">
     <link rel="stylesheet" href="{% static 'courses/syntax.css' %}">
     <link rel="stylesheet" href="{% static 'courses/embedded-file.css' %}">
@@ -151,6 +152,36 @@
         </div>
         </div>
       </nav>
+      {% endblock %}
+
+      {% block termbank %}
+      {% if terms %}
+      <div class="termbank">
+        <div class="termbank-contents">
+          <div class="termbank-heading">{% trans "Termbank" %}</div>
+          <div class="list-div">
+            <ul>
+            {% for term in terms %}
+              <li>
+                <span class="term" id="{{ term.span_id }}">{{ term.name }}</span>
+                <div class="term-description" id="{{ term.div_id }}">
+                  {{ term.description|safe }}
+                  <script>$("#{{ term.span_id }}, #{{ term.div_id }}")
+                           .mouseenter(function () { 
+                                          show_description("#{{ term.span_id }}", "#{{ term.div_id }}");
+                                       })
+                           .mouseleave(function() {
+                                          hide_description("#{{ term.div_id }}");
+                           });
+                 </script>
+                </div>
+              </li>
+            {% endfor %}
+            </ul>
+          </div>
+        </div>
+      </div>
+      {% endif %}
       {% endblock %}
 
       {% block toc %}

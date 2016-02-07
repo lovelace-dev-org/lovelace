@@ -312,10 +312,10 @@ def sandboxed_content(request, content_slug, **kwargs):
         return HttpResponseNotFound("Content {} does not exist!".format(content_slug))
 
     content_type = content.content_type
-    question = blockparser.parseblock(escape(content.question))
+    question, extra_div = blockparser.parseblock(escape(content.question), {"request" : request})
     choices = answers = content.get_choices()
 
-    rendered_content = content.rendered_markup(request)
+    rendered_content = content.rendered_markup(request, context={'tooltip' : False})
 
     user = request.user
     if not user.is_authenticated() or not user.is_active or not user.is_staff:
@@ -324,7 +324,7 @@ def sandboxed_content(request, content_slug, **kwargs):
     d = {'content': content,
          'content_name': content.name,
          'content_type': content_type,
-         'question': question,
+         'question': question + extra_div,
          'choices': choices,
          'user': user,
          'sandboxed': True,
@@ -373,7 +373,7 @@ def content(request, course_slug, content_slug, **kwargs):
             return HttpResponseNotFound("Content {} is not linked to course {}!".format(content_slug, course_slug))
 
     content_type = content.content_type
-    question = blockparser.parseblock(escape(content.question), {"course": course})
+    question, extra_div = blockparser.parseblock(escape(content.question), {"request": request, "context": {"course": course}})
     choices = answers = content.get_choices()
 
     evaluation = None
@@ -384,8 +384,16 @@ def content(request, course_slug, content_slug, **kwargs):
     context = {
         'course': course,
         'course_slug': course_slug,
+        'tooltip' : False,
     }
-                             
+    term_context = context.copy()
+    term_context["tooltip"] = True
+    terms = Term.objects.filter(instance__course=course)
+    terms = [{"name" : term.name, 
+              "description" : "".join(markupparser.MarkupParser.parse(term.description, request, term_context)).strip(),
+              "div_id" : term.name + "-termbank-desc",
+              "span_id" : term.name + "-termbank-span"} 
+             for term in terms]
     rendered_content = content.rendered_markup(request, context)
 
     c = {
@@ -395,9 +403,10 @@ def content(request, course_slug, content_slug, **kwargs):
         'rendered_content': rendered_content,
         'content_name': content.name,
         'content_type': content_type,
-        'question': question,
+        'question': question + extra_div,
         'choices': choices,
         'evaluation': evaluation,
+        'terms': terms,
         'sandboxed': False,
     }
     if "frontpage" in kwargs:
