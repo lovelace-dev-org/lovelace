@@ -4,6 +4,7 @@
 import re
 import courses.models
 import courses.markupparser
+import random
 # TODO: {{{#!python {}}}} breaks up!
 # TODO: |forcedownload or |forceview for links
 import pygments
@@ -92,41 +93,16 @@ def parse_hint_tag(parsed_string, tag, hint_id, hint_text):
     return parsed_string
 
 def parse_term_tag(parsed_string, tag, term_id, term_text, extra_div, state):
-    description = "?"
-    request = None
-    context = {}
-    span_id = "{}-term-span".format(term_id)
-    div_id = "{}-term-div".format(term_id)
+    if (state is None or not "context" in state or 
+        not "tooltip" in state["context"] or state["context"]["tooltip"]):
+        parsed_string += term_text
+        return parsed_string, extra_div
 
-    if state is not None:
-        try:
-            request = state["request"]
-        except KeyError:
-            pass
-        try:
-            context = state["context"].copy()
-            course = context["course"]
-        except KeyError:
-            pass
-        else:
-            if context["tooltip"]:
-                return parsed_string, extra_div
-            try:
-                description = courses.models.Term.objects.get(name=term_id, instance__course=course).description
-            except courses.models.Term.DoesNotExist as e:
-                pass
-
-    parsed_string += tag.htmlbegin({"class":"term", "id":span_id})
+    div_id = "#{}-term-div".format(term_id)
+    parsed_string += tag.htmlbegin({"class":"term", 
+                                    "onmouseover":"show_descr_termtag(this, '{}');".format(div_id)})
     parsed_string += term_text
     parsed_string += tag.htmlend()
-    context["tooltip"] = True
-    parsed_desc = "".join(courses.markupparser.MarkupParser.parse(description, request, context)).strip()
-    extra_div += ('<div class="term-description" id="{div_id}">{description}<script>' \
-                  '$("\#{span_id}, \#{div_id}").mouseenter(function () {{' \
-                  'show_description("\#{span_id}", "\#{div_id}");}})' \
-                  '.mouseleave(function() {{' \
-                  'hide_description("\#{div_id}");}});</script></div>'
-                  .format(div_id=div_id, span_id=span_id, description=parsed_desc))
     return parsed_string, extra_div
 
 def parsetag(tagname, unparsed_string, extra_div="", state=None):

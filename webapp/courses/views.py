@@ -312,7 +312,7 @@ def sandboxed_content(request, content_slug, **kwargs):
         return HttpResponseNotFound("Content {} does not exist!".format(content_slug))
 
     content_type = content.content_type
-    question, extra_div = blockparser.parseblock(escape(content.question), {"request" : request})
+    question, extra_div = blockparser.parseblock(escape(content.question), {"request" : request, "elementCounts" : {}})
     choices = answers = content.get_choices()
 
     rendered_content = content.rendered_markup(request, context={'tooltip' : False})
@@ -391,7 +391,7 @@ def content(request, course_slug, content_slug, **kwargs):
     terms = Term.objects.filter(instance__course=course)
     terms = [{"name" : term.name, 
               "description" : "".join(markupparser.MarkupParser.parse(term.description, request, term_context)).strip(),
-              "div_id" : term.name + "-termbank-desc",
+              "div_id" : term.name + "-termbank-div",
               "span_id" : term.name + "-termbank-span"} 
              for term in terms]
     rendered_content = content.rendered_markup(request, context)

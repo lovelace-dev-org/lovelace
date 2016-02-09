@@ -137,7 +137,7 @@ function accept_cookies() {
     cookie_law_message.hide();
 }
 
-function show_description(span_id, div_id) {
+function show_descr_termbank(span_id, div_id) {
     var span = $(span_id);
     var desc_div = $(div_id);
     var pos = span.position();
@@ -145,7 +145,26 @@ function show_description(span_id, div_id) {
     desc_div.show()
 }
 
+function show_descr_termtag(elem, div_id) {
+    var span = $(elem);
+    var desc_div = $(div_id);
+    var pos = span.position();
+    desc_div.css({"left" : pos.left + span.width(), "top" : pos.top - 5});
+    desc_div.show();
+    var counter = 1;
+    $(elem).add(div_id).hover(function() {
+        counter++;
+        show_descr_termbank(elem, div_id);
+    }, function() { 
+        counter--;
+        if (counter == 0) {
+            hide_description(div_id);
+        }
+    });
+}
+
 function hide_description(div_id) {
     var desc_div = $(div_id);
     desc_div.hide();
 }
+

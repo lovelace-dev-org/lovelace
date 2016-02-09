@@ -167,12 +167,13 @@
                 <div class="term-description" id="{{ term.div_id }}">
                   {{ term.description|safe }}
                   <script>$("#{{ term.span_id }}, #{{ term.div_id }}")
-                           .mouseenter(function () { 
-                                          show_description("#{{ term.span_id }}", "#{{ term.div_id }}");
-                                       })
-                           .mouseleave(function() {
-                                          hide_description("#{{ term.div_id }}");
-                           });
+                           .hover(function () { 
+                                    show_descr_termbank("#{{ term.span_id }}", "#{{ term.div_id }}");
+                                  },
+                                  function() {
+                                    hide_description("#{{ term.div_id }}");
+                                  }
+                            );
                  </script>
                 </div>
               </li>
@@ -203,10 +204,17 @@
       {% endblock %}
       
       <section class="content">
-        {% block page-content %}
-        {% endblock %}
+      {% if terms %}
+        {% for term in terms %}
+        <div class="term-description" id="{{ term.name }}-term-div">
+          {{ term.description|safe }}
+        </div>
+        {% endfor %}
+      {% endif %}
+      {% block page-content %}
+      {% endblock %}
       </section>
-  
+
       <footer>
         <div class="column0">
           <p>Site design &amp; backend by Miikka Salminen</p>
