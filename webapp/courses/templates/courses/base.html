@@ -46,15 +46,19 @@
             height: '400px'
         });
 
-      $(document).on('click', function(event) {
-        var menu_display = $('#user-menu').css('display');
-        var target = $(event.target);
-        if (menu_display == 'block' && 
-            !target.closest('#user-menu').length &&
-            !target.closest('#user-menu-arrow').length) {
-          $('#user-menu').hide();
-        }
-      });
+        $('#termbank-contents > div.list-div').slimScroll({
+            height: '400px'
+        });
+      
+        $(document).on('click', function(event) {
+          var menu_display = $('#user-menu').css('display');
+          var target = $(event.target);
+          if (menu_display == 'block' && 
+              !target.closest('#user-menu').length &&
+              !target.closest('#user-menu-arrow').length) {
+            $('#user-menu').hide();
+          }
+        });
             
         $(window).on('DOMContentLoaded load resize scroll', handler);
       });
@@ -165,17 +169,21 @@
               <li>
                 <span class="term" id="{{ term.span_id }}">{{ term.name }}</span>
                 <div class="term-description" id="{{ term.div_id }}">
-                  {{ term.description|safe }}
-                  <script>$("#{{ term.span_id }}, #{{ term.div_id }}")
+                  <div class="term-desc-contents">
+                    <div class="term-desc-scrollable">
+                      {{ term.description|safe }}
+                    </div>
+                  </div>
+                </div>
+                <script>$("#{{ term.span_id }}, #{{ term.div_id }}")
                            .hover(function () { 
-                                    show_descr_termbank("#{{ term.span_id }}", "#{{ term.div_id }}");
+                                    show_description("#{{ term.span_id }}", "#{{ term.div_id }}", 5, -5);
                                   },
                                   function() {
                                     hide_description("#{{ term.div_id }}");
                                   }
                             );
                  </script>
-                </div>
               </li>
             {% endfor %}
             </ul>
@@ -204,16 +212,29 @@
       {% endblock %}
       
       <section class="content">
-      {% if terms %}
-        {% for term in terms %}
-        <div class="term-description" id="{{ term.name }}-term-div">
-          {{ term.description|safe }}
-        </div>
-        {% endfor %}
-      {% endif %}
       {% block page-content %}
       {% endblock %}
       </section>
+
+      {% block term-descriptions %}
+      <div class="term-descriptions">
+        <div class="term-description" id="term-div-not-found">
+          ?
+        </div>
+      {% if terms %}
+        {% for term in terms %}
+        <div class="term-description" id="{{ term.name }}-term-div">
+          <div class="term-desc-contents">
+            <div class="term-desc-scrollable">
+            {{ term.description|safe }}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+      {% endblock %}
+
 
       <footer>
         <div class="column0">

@@ -312,7 +312,7 @@ def sandboxed_content(request, content_slug, **kwargs):
         return HttpResponseNotFound("Content {} does not exist!".format(content_slug))
 
     content_type = content.content_type
-    question, extra_div = blockparser.parseblock(escape(content.question), {"request" : request, "elementCounts" : {}})
+    question = blockparser.parseblock(escape(content.question), {"request" : request, "elementCounts" : {}})
     choices = answers = content.get_choices()
 
     rendered_content = content.rendered_markup(request, context={'tooltip' : False})
@@ -324,7 +324,7 @@ def sandboxed_content(request, content_slug, **kwargs):
     d = {'content': content,
          'content_name': content.name,
          'content_type': content_type,
-         'question': question + extra_div,
+         'question': question,
          'choices': choices,
          'user': user,
          'sandboxed': True,
@@ -373,7 +373,7 @@ def content(request, course_slug, content_slug, **kwargs):
             return HttpResponseNotFound("Content {} is not linked to course {}!".format(content_slug, course_slug))
 
     content_type = content.content_type
-    question, extra_div = blockparser.parseblock(escape(content.question), {"request": request, "context": {"course": course}})
+    question = blockparser.parseblock(escape(content.question), {"request": request, "context": {"course": course}})
     choices = answers = content.get_choices()
 
     evaluation = None
@@ -403,7 +403,7 @@ def content(request, course_slug, content_slug, **kwargs):
         'rendered_content': rendered_content,
         'content_name': content.name,
         'content_type': content_type,
-        'question': question + extra_div,
+        'question': question,
         'choices': choices,
         'evaluation': evaluation,
         'terms': terms,

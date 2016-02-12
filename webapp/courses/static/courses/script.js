@@ -137,24 +137,30 @@ function accept_cookies() {
     cookie_law_message.hide();
 }
 
-function show_descr_termbank(span_id, div_id) {
-    var span = $(span_id);
-    var desc_div = $(div_id);
+function show_description(span_slct, div_slct, left_offset, top_offset) {
+    var span = $(span_slct);
+    var desc_div = $(div_slct);
+    if (desc_div.length == 0) {
+        desc_div = $("#term-div-not-found");
+    }
     var pos = span.position();
-    desc_div.css({"left" : pos.left + span.width(), "top" : pos.top - 5});
-    desc_div.show()
+    desc_div.css({"left" : pos.left + span.width() + left_offset, 
+                  "top" : pos.top + top_offset});
+    var desc_content_div = desc_div.children("div.term-desc-contents");
+    if (desc_div.height() + "px" === desc_content_div.css('max-height')) {
+        desc_div.find("div.term-desc-scrollable").slimScroll({
+            height: '600px'
+        });
+    }
+    desc_div.show();
 }
 
 function show_descr_termtag(elem, div_id) {
-    var span = $(elem);
-    var desc_div = $(div_id);
-    var pos = span.position();
-    desc_div.css({"left" : pos.left + span.width(), "top" : pos.top - 5});
-    desc_div.show();
+    show_description(elem, div_id, 5, 60);
     var counter = 1;
     $(elem).add(div_id).hover(function() {
         counter++;
-        show_descr_termbank(elem, div_id);
+        show_description(elem, div_id, 5, 60);
     }, function() { 
         counter--;
         if (counter == 0) {
@@ -165,6 +171,9 @@ function show_descr_termtag(elem, div_id) {
 
 function hide_description(div_id) {
     var desc_div = $(div_id);
+    if (desc_div.length == 0) {
+        desc_div = $("#term-div-not-found");
+    }
     desc_div.hide();
 }
 

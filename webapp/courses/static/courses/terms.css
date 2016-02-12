@@ -1,7 +1,7 @@
 span.term {
-        cursor: help;
-        text-decoration-line: underline;
-        text-decoration-style: dashed;
+    cursor: help;
+    text-decoration-line: underline;
+    text-decoration-style: dashed;
 }
 
 div.term-description {
@@ -40,8 +40,17 @@ div.term-description:after {
     border-right-color: #39ad39;
 }
 
-div.term-description :nth-last-child(1) {
+div.term-desc-contents {
+    max-height: 600px;
+    overflow-y: hidden;
+}
+
+div.term-desc-contents :last-child {
     margin-bottom: 0;
+}
+
+div.term-desc-contents :first-child {
+    margin-top: 0;
 }
 
 /* Copied from style.css */

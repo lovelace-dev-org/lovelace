@@ -455,13 +455,13 @@ class EmbeddedPageMarkup(Markup):
             embedded_content = page.rendered_markup()
             
             choices = page.get_choices()
-            question, extra_div = blockparser.parseblock(escape(page.question), state)
+            question = blockparser.parseblock(escape(page.question), state)
             
             c = {
                 "emb_content": embedded_content,
                 "content": page,
                 "content_slug": page.slug,
-                "question": question + extra_div,
+                "question": question,
                 "choices": choices,
             }
             user = state["request"].user
@@ -810,9 +810,7 @@ class ImageMarkup(Markup):
 
         if centered:
             yield '</div></div></div>'
-        if "extra_div" in settings:
-            yield settings["extra_div"]
-
+        
     @classmethod
     def settings(cls, matchobj, state):
         settings = {"image_name" : escape(matchobj.group("image_name"))}
@@ -821,9 +819,8 @@ class ImageMarkup(Markup):
         except AttributeError:
             pass
         try:
-            caption_text, extra_div = blockparser.parseblock(escape(matchobj.group("caption_text")), state)
+            caption_text = blockparser.parseblock(escape(matchobj.group("caption_text")), state)
             settings["caption_text"] = caption_text
-            settings["extra_div"] = extra_div
         except AttributeError:
             pass
         try:
@@ -868,7 +865,7 @@ class ListMarkup(Markup):
                 yield '<%s>' % tag
         
         for line in block:
-            yield '<li>%s%s</li>' % blockparser.parseblock(escape(line.strip("*#").strip()), state)
+            yield '<li>%s</li>' % blockparser.parseblock(escape(line.strip("*#").strip()), state)
 
     @classmethod
     def settings(cls, matchobj, state):
@@ -898,11 +895,9 @@ class ParagraphMarkup(Markup):
         for line in block:
             paragraph_lines.append(escape(line))
         paragraph = "<br>\n".join(paragraph_lines)
-        paragraph, extra_div = blockparser.parseblock(paragraph, state)
+        paragraph = blockparser.parseblock(paragraph, state)
         yield paragraph
         yield '</p>\n'
-        if extra_div:
-            yield extra_div
 
     @classmethod
     def settings(cls, matchobj, state):
@@ -950,7 +945,7 @@ class TableMarkup(Markup):
         for line in block:
             row = line.split("||")[1:-1]
             yield '<tr>'
-            yield '\n'.join("<td>%s%s</td>" % blockparser.parseblock(escape(cell), state) for cell in row)
+            yield '\n'.join("<td>%s</td>" % blockparser.parseblock(escape(cell), state) for cell in row)
             yield '</tr>'            
         #yield '</table>'
 

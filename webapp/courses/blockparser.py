@@ -92,20 +92,20 @@ def parse_hint_tag(parsed_string, tag, hint_id, hint_text):
     parsed_string += tag.htmlend()
     return parsed_string
 
-def parse_term_tag(parsed_string, tag, term_id, term_text, extra_div, state):
+def parse_term_tag(parsed_string, tag, term_id, term_text, state):
     if (state is None or not "context" in state or 
         not "tooltip" in state["context"] or state["context"]["tooltip"]):
         parsed_string += term_text
-        return parsed_string, extra_div
+        return parsed_string
 
     div_id = "#{}-term-div".format(term_id)
     parsed_string += tag.htmlbegin({"class":"term", 
                                     "onmouseover":"show_descr_termtag(this, '{}');".format(div_id)})
     parsed_string += term_text
     parsed_string += tag.htmlend()
-    return parsed_string, extra_div
+    return parsed_string
 
-def parsetag(tagname, unparsed_string, extra_div="", state=None):
+def parsetag(tagname, unparsed_string, state=None):
     """Parses one tag and applies it's settings. Generates the HTML."""
     tag = tags[tagname]
     hilite = address = link_text = hint_id = hint_text = term_id = term_text = None
@@ -147,7 +147,7 @@ def parsetag(tagname, unparsed_string, extra_div="", state=None):
         elif hint_id:
             parsed_string = parse_hint_tag(parsed_string, tag, hint_id, hint_text)
         elif term_id:
-            parsed_string, extra_div = parse_term_tag(parsed_string, tag, term_id, term_text, extra_div, state)
+            parsed_string = parse_term_tag(parsed_string, tag, term_id, term_text, state)
         else:
             contents = m.group(0)[tag.lb():-tag.le()]
 
@@ -175,7 +175,7 @@ def parsetag(tagname, unparsed_string, extra_div="", state=None):
         hilite = False
     parsed_string += unparsed_string[cursor:]
 
-    return parsed_string, extra_div
+    return parsed_string
 
 def parseblock(blockstring, state):
     """A multi-pass parser for inline markup language inside paragraphs."""
@@ -185,17 +185,16 @@ def parseblock(blockstring, state):
         # TODO: Raise an exception instead, show the exception at the end of the block in red
         #return blockstring
 
-    extra_div = ""
-    parsed_string, _ = parsetag("pre", blockstring)
-    parsed_string, _ = parsetag("bold", parsed_string)
-    parsed_string, _ = parsetag("italic", parsed_string)
-    parsed_string, _ = parsetag("mark", parsed_string)
-    parsed_string, _ = parsetag("kbd", parsed_string)
-    parsed_string, _ = parsetag("anchor", parsed_string)
-    parsed_string, _ = parsetag("hint", parsed_string)
-    parsed_string, extra_div = parsetag("term", parsed_string, extra_div, state)
+    parsed_string = parsetag("pre", blockstring)
+    parsed_string = parsetag("bold", parsed_string)
+    parsed_string = parsetag("italic", parsed_string)
+    parsed_string = parsetag("mark", parsed_string)
+    parsed_string = parsetag("kbd", parsed_string)
+    parsed_string = parsetag("anchor", parsed_string)
+    parsed_string = parsetag("hint", parsed_string)
+    parsed_string = parsetag("term", parsed_string, state)
 
-    return parsed_string, extra_div
+    return parsed_string
 
 # Some test code
 if __name__ == "__main__":

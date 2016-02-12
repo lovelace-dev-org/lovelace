@@ -351,7 +351,7 @@ div.termbank {
 
     background-color: #39ad39;
     color: #222;
-    z-index: 1;
+    z-index: 2;
 
     font-family: "DejaVu Sans", "Open Sans", "Verdana", "Ubuntu", "Arial", sans-serif;
     font-size: 0.8em;
@@ -479,6 +479,14 @@ div.toc-box {
     div.toc-box progress::-webkit-progress-value {
         background-color: #ad3939;
     }
+
+div.term-descriptions {
+    font-family: "DejaVu Sans", "Open Sans", "Verdana", "Ubuntu", "Arial", sans-serif;
+    font-size: 1.0em;
+    color: #222;
+    line-height: 1.5;
+    word-wrap: break-word;
+}
 
 /* MAIN CONTENT */
 section.content {
