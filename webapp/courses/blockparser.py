@@ -4,7 +4,6 @@
 import re
 import courses.models
 import courses.markupparser
-import random
 # TODO: {{{#!python {}}}} breaks up!
 # TODO: |forcedownload or |forceview for links
 import pygments

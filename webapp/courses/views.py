@@ -312,7 +312,7 @@ def sandboxed_content(request, content_slug, **kwargs):
         return HttpResponseNotFound("Content {} does not exist!".format(content_slug))
 
     content_type = content.content_type
-    question = blockparser.parseblock(escape(content.question), {"request" : request, "elementCounts" : {}})
+    question = blockparser.parseblock(escape(content.question), {"request" : request})
     choices = answers = content.get_choices()
 
     rendered_content = content.rendered_markup(request, context={'tooltip' : False})
