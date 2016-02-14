@@ -293,3 +293,11 @@ div.term-description pre.normal {
 div.term-description pre.normal code {
     font-family: inherit;
 }
+
+div.term-description div.markup-error {
+    font-weight: bold;
+    color: red;
+    border: 2px dashed red;
+    padding: 4px 8px;
+    margin-bottom: 1rem;
+}

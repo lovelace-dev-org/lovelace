@@ -452,7 +452,7 @@ class EmbeddedPageMarkup(Markup):
                 raise EmbeddedObjectNotAllowedError("embedded pages are not allowed in tooltips")
 
             # TODO: Prevent recursion depth > 2
-            embedded_content = page.rendered_markup()
+            embedded_content = page.rendered_markup(context={"tooltip": False})
             
             choices = page.get_choices()
             question = blockparser.parseblock(escape(page.question), state)
@@ -516,6 +516,9 @@ class EmbeddedScriptMarkup(Markup):
         except courses.models.File.DoesNotExist as e:
             # TODO: Modular errors
             raise EmbeddedObjectNotFoundError("embedded script '{slug}' couldn't be found".format(slug=slug))
+            
+        if "tooltip" in state["context"] and state["context"]["tooltip"]:
+            raise EmbeddedObjectNotAllowedError("embedded scripts are not allowed in tooltips")
             
         includes = []
         image_urls = []
@@ -682,6 +685,9 @@ class EmbeddedVideoMarkup(Markup):
             # TODO: Modular errors
             raise EmbeddedObjectNotFoundError("embedded video '{slug}' couldn't be found".format(slug=slug))
 
+        if "tooltip" in state["context"] and state["context"]["tooltip"]:
+            raise EmbeddedObjectNotAllowedError("embedded videos are not allowed in tooltips")
+                
         video_url = videolink.link
         tag = '<iframe src="%s"' % video_url
         if "width" in settings:

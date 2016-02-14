@@ -156,11 +156,21 @@ function show_description(span_slct, div_slct, left_offset, top_offset) {
 }
 
 function show_descr_termtag(elem, div_id) {
-    show_description(elem, div_id, 5, 60);
+    var left_offset = 5;
+    var top_offset = 60;
+    var span = $(elem);
+    var parent = span.parent();
+    if (parent.hasClass("exercise-form")) {
+        var parent_pos = parent.position();
+        top_offset += parent_pos.top + 8;
+        left_offset += parent_pos.left;
+    }
+    
+    show_description(elem, div_id, left_offset, top_offset);
     var counter = 1;
-    $(elem).add(div_id).hover(function() {
+    span.add(div_id).hover(function() {
         counter++;
-        show_description(elem, div_id, 5, 60);
+        show_description(elem, div_id, left_offset, top_offset);
     }, function() { 
         counter--;
         if (counter == 0) {
