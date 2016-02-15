@@ -56,7 +56,7 @@ tags = {
     "anchor": Tag("a", "[[", "]]", re.compile(r"\[\[(?P<address>.+?)([|](?P<link_text>.+?))?\]\]")),
     "kbd":    Tag("kbd", "`", "`", re.compile(r"`(?P<kbd>.+?)`")),
     "hint":   Tag("mark", "[!hint=hint_id!]", "[!hint!]", re.compile(r"\[\!hint\=(?P<hint_id>\w+)\!\](?P<hint_text>.+?)\[\!hint\!\]")),
-    "term":   Tag("span", '[?term=term_id?]', '[?term?]', re.compile(r"\[\?term\=(?P<term_id>\w+)\?\](?P<term_text>.+?)\[\?term\?\]")),
+    "term":   Tag("span", '[!term=term_name!]', '[!term!]', re.compile(r"\[\!term\=(?P<term_name>\w+)\!\](?P<term_text>.+?)\[\!term\!\]")),
 }
 
 def parse_pre_tag(parsed_string, tag, hilite, match):
@@ -91,13 +91,13 @@ def parse_hint_tag(parsed_string, tag, hint_id, hint_text):
     parsed_string += tag.htmlend()
     return parsed_string
 
-def parse_term_tag(parsed_string, tag, term_id, term_text, state):
+def parse_term_tag(parsed_string, tag, term_name, term_text, state):
     if (state is None or not "context" in state or 
         not "tooltip" in state["context"] or state["context"]["tooltip"]):
         parsed_string += term_text
         return parsed_string
 
-    div_id = "#{}-term-div".format(term_id)
+    div_id = "#{}-term-div".format(term_name)
     parsed_string += tag.htmlbegin({"class":"term", 
                                     "onmouseover":"show_descr_termtag(this, '{}');".format(div_id)})
     parsed_string += term_text
@@ -107,7 +107,7 @@ def parse_term_tag(parsed_string, tag, term_id, term_text, state):
 def parsetag(tagname, unparsed_string, state=None):
     """Parses one tag and applies it's settings. Generates the HTML."""
     tag = tags[tagname]
-    hilite = address = link_text = hint_id = hint_text = term_id = term_text = None
+    hilite = address = link_text = hint_id = hint_text = term_name = term_text = None
     parsed_string = ""
     cursor = 0
     for m in re.finditer(tag.re, unparsed_string):
@@ -134,7 +134,7 @@ def parsetag(tagname, unparsed_string, state=None):
             pass
 
         try:
-            term_id = m.group("term_id")
+            term_name = m.group("term_name")
             term_text = m.group("term_text")
         except IndexError:
             pass
@@ -145,8 +145,8 @@ def parsetag(tagname, unparsed_string, state=None):
             parsed_string = parse_anchor_tag(parsed_string, tag, address, link_text)
         elif hint_id:
             parsed_string = parse_hint_tag(parsed_string, tag, hint_id, hint_text)
-        elif term_id:
-            parsed_string = parse_term_tag(parsed_string, tag, term_id, term_text, state)
+        elif term_name:
+            parsed_string = parse_term_tag(parsed_string, tag, term_name, term_text, state)
         else:
             contents = m.group(0)[tag.lb():-tag.le()]
 
