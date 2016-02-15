@@ -152,7 +152,7 @@ function show_description(span_slct, div_slct, left_offset, top_offset) {
             height: '600px'
         });
     }
-    desc_div.show();
+    desc_div.css({"display" : "block"}); //This works in Jquery3 unlike .show()
 }
 
 function show_descr_termtag(elem, div_id) {
