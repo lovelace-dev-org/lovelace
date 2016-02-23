@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=Inconsolata">
     <link rel="icon" href="{% static 'courses/favicon.png' %}">
     <link rel="stylesheet" href="{% static 'courses/style.css' %}">
+    <link rel="stylesheet" href="{% static 'courses/terms.css' %}">
     <link rel="stylesheet" href="{% static 'courses/small-screens.css' %}" media="(max-width: 1768px)">
     <link rel="stylesheet" href="{% static 'courses/syntax.css' %}">
     <link rel="stylesheet" href="{% static 'courses/embedded-file.css' %}">
@@ -45,15 +46,19 @@
             height: '400px'
         });
 
-      $(document).on('click', function(event) {
-        var menu_display = $('#user-menu').css('display');
-        var target = $(event.target);
-        if (menu_display == 'block' && 
-            !target.closest('#user-menu').length &&
-            !target.closest('#user-menu-arrow').length) {
-          $('#user-menu').hide();
-        }
-      });
+        $('#termbank-contents > div.list-div').slimScroll({
+            height: '400px'
+        });
+      
+        $(document).on('click', function(event) {
+          var menu_display = $('#user-menu').css('display');
+          var target = $(event.target);
+          if (menu_display == 'block' && 
+              !target.closest('#user-menu').length &&
+              !target.closest('#user-menu-arrow').length) {
+            $('#user-menu').hide();
+          }
+        });
             
         $(window).on('DOMContentLoaded load resize scroll', handler);
       });
@@ -153,6 +158,41 @@
       </nav>
       {% endblock %}
 
+      {% block termbank %}
+      {% if terms %}
+      <div class="termbank">
+        <div class="termbank-contents">
+          <div class="termbank-heading">{% trans "Termbank" %}</div>
+          <div class="list-div">
+            <ul>
+            {% for term in terms %}
+              <li>
+                <span class="term" id="{{ term.span_id }}">{{ term.name }}</span>
+                <div class="term-description" id="{{ term.div_id }}">
+                  <div class="term-desc-contents">
+                    <div class="term-desc-scrollable">
+                      {{ term.description|safe }}
+                    </div>
+                  </div>
+                </div>
+                <script>$("#{{ term.span_id }}, #{{ term.div_id }}")
+                           .hover(function () { 
+                                    show_description("#{{ term.span_id }}", "#{{ term.div_id }}", 5, -5);
+                                  },
+                                  function() {
+                                    hide_description("#{{ term.div_id }}");
+                                  }
+                            );
+                 </script>
+              </li>
+            {% endfor %}
+            </ul>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+      {% endblock %}
+
       {% block toc %}
       <div class="toc-box">
         <nav class="toc" id="toc">
@@ -175,7 +215,27 @@
         {% block page-content %}
         {% endblock %}
       </section>
-  
+
+      {% block term-descriptions %}
+      <div class="term-descriptions">
+        <div class="term-description" id="term-div-not-found">
+          ?
+        </div>
+      {% if terms %}
+        {% for term in terms %}
+        <div class="term-description" id="{{ term.name }}-term-div">
+          <div class="term-desc-contents">
+            <div class="term-desc-scrollable">
+            {{ term.description|safe }}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+      {% endblock %}
+
+
       <footer>
         <div class="column0">
           <p>Site design &amp; backend by Miikka Salminen</p>

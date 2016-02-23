@@ -1146,6 +1146,9 @@ class Term(models.Model):
     def __str__(self):
         return self.name
 
+    class Meta:
+        unique_together = ('instance', 'name',)
+
 class InvalidAnswerException(Exception):
     """
     This exception is cast when an exercise answer cannot be processed.

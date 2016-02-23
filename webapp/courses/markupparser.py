@@ -64,6 +64,9 @@ class UnclosedTagError(MarkupError):
 class EmbeddedObjectNotFoundError(MarkupError):
     _type = "embedded object not found"
 
+class EmbeddedObjectNotAllowedError(MarkupError):
+    _type = "embedded object not allowed here"
+
 class MarkupParser:
     """
     Static parser class for generating HTML from the used markup block types.
@@ -445,12 +448,14 @@ class EmbeddedPageMarkup(Markup):
             raise EmbeddedObjectNotFoundError("embedded page '%s' couldn't be found" % settings["page_slug"])
         else:
             state["embedded_pages"].append(settings["page_slug"])
+            if "tooltip" in state["context"] and state["context"]["tooltip"]:
+                raise EmbeddedObjectNotAllowedError("embedded pages are not allowed in tooltips")
 
             # TODO: Prevent recursion depth > 2
-            embedded_content = page.rendered_markup()
+            embedded_content = page.rendered_markup(context={"tooltip": False})
             
             choices = page.get_choices()
-            question = blockparser.parseblock(escape(page.question), state["context"])
+            question = blockparser.parseblock(escape(page.question), state)
             
             c = {
                 "emb_content": embedded_content,
@@ -505,13 +510,16 @@ class EmbeddedScriptMarkup(Markup):
 
     @classmethod
     def block(cls, block, settings, state):
+        slug = settings["script_slug"]
         try:
-            script = courses.models.File.objects.get(name=settings["script_slug"])
+            script = courses.models.File.objects.get(name=slug)
         except courses.models.File.DoesNotExist as e:
             # TODO: Modular errors
-            yield '<div>Script %s not found.</div>' % settings["script_slug"]
-            raise StopIteration
-
+            raise EmbeddedObjectNotFoundError("embedded script '{slug}' couldn't be found".format(slug=slug))
+            
+        if "tooltip" in state["context"] and state["context"]["tooltip"]:
+            raise EmbeddedObjectNotAllowedError("embedded scripts are not allowed in tooltips")
+            
         includes = []
         image_urls = []
         unparsed_includes = settings.get("include") or []
@@ -670,13 +678,16 @@ class EmbeddedVideoMarkup(Markup):
 
     @classmethod
     def block(cls, block, settings, state):
+        slug = settings["video_slug"]
         try:
-            videolink = courses.models.VideoLink.objects.get(name=settings["video_slug"])
+            videolink = courses.models.VideoLink.objects.get(name=slug)
         except courses.models.VideoLink.DoesNotExist as e:
             # TODO: Modular errors
-            yield '<div>Video link %s not found.</div>' % settings["video_slug"]
-            raise StopIteration
+            raise EmbeddedObjectNotFoundError("embedded video '{slug}' couldn't be found".format(slug=slug))
 
+        if "tooltip" in state["context"] and state["context"]["tooltip"]:
+            raise EmbeddedObjectNotAllowedError("embedded videos are not allowed in tooltips")
+                
         video_url = videolink.link
         tag = '<iframe src="%s"' % video_url
         if "width" in settings:
@@ -741,8 +752,9 @@ class HeadingMarkup(Markup):
         # TODO: Add "-heading" to id
         yield '<h%d class="content-heading">' % (settings["heading_level"])
         yield heading
-        yield '<span id="%s" class="anchor-offset"></span>' % (slug)
-        yield '<a href="#%s" class="permalink" title="Permalink to %s">&para;</a>' % (slug, heading)
+        if not "tooltip" in state["context"] or not state["context"]["tooltip"]:
+            yield '<span id="%s" class="anchor-offset"></span>' % (slug)
+            yield '<a href="#%s" class="permalink" title="Permalink to %s">&para;</a>' % (slug, heading)
         yield '</h%d>\n' % settings["heading_level"]
     
     @classmethod
@@ -767,12 +779,12 @@ class ImageMarkup(Markup):
 
     @classmethod
     def block(cls, block, settings, state):
+        name = settings["image_name"]
         try:
-            image = courses.models.Image.objects.get(name=settings["image_name"])
+            image = courses.models.Image.objects.get(name=name)
         except courses.models.Image.DoesNotExist as e:
             # TODO: Modular errors
-            yield '<div>Image %s not found.</div>' % settings["image_name"]
-            raise StopIteration
+            raise EmbeddedObjectNotFoundError("embedded image '{name}' couldn't be found".format(name=name))
 
         image_url = image.fileinfo.url
         w = image.fileinfo.width
@@ -804,7 +816,7 @@ class ImageMarkup(Markup):
 
         if centered:
             yield '</div></div></div>'
-
+        
     @classmethod
     def settings(cls, matchobj, state):
         settings = {"image_name" : escape(matchobj.group("image_name"))}
@@ -813,7 +825,7 @@ class ImageMarkup(Markup):
         except AttributeError:
             pass
         try:
-            settings["caption_text"] = blockparser.parseblock(escape(matchobj.group("caption_text")), state["context"])
+            settings["caption_text"] = blockparser.parseblock(escape(matchobj.group("caption_text")), state)
         except AttributeError:
             pass
         try:
@@ -858,7 +870,7 @@ class ListMarkup(Markup):
                 yield '<%s>' % tag
         
         for line in block:
-            yield '<li>%s</li>' % blockparser.parseblock(escape(line.strip("*#").strip()), state["context"])
+            yield '<li>%s</li>' % blockparser.parseblock(escape(line.strip("*#").strip()), state)
 
     @classmethod
     def settings(cls, matchobj, state):
@@ -888,7 +900,7 @@ class ParagraphMarkup(Markup):
         for line in block:
             paragraph_lines.append(escape(line))
         paragraph = "<br>\n".join(paragraph_lines)
-        paragraph = blockparser.parseblock(paragraph, state["context"])
+        paragraph = blockparser.parseblock(paragraph, state)
         yield paragraph
         yield '</p>\n'
 
@@ -934,13 +946,12 @@ class TableMarkup(Markup):
         if not state["table"]:
             yield '<table>'
             state["table"] = True
-        
+
         for line in block:
             row = line.split("||")[1:-1]
             yield '<tr>'
-            yield '\n'.join("<td>%s</td>" % blockparser.parseblock(escape(cell), state["context"]) for cell in row)
-            yield '</tr>'
-            
+            yield '\n'.join("<td>%s</td>" % blockparser.parseblock(escape(cell), state) for cell in row)
+            yield '</tr>'            
         #yield '</table>'
 
     @classmethod
