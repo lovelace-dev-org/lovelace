@@ -1,0 +1,163 @@
+Deploying Lovelace
+==================
+
+Short guide for minimal deployment on Ubuntu server 15.10.
+
+Firstly, update your packages.
+sudo apt-get update && sudo apt-get dist-upgrade
+
+
+Postgresql
+––––––––––
+
+sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt/ wily-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+sudo apt-get update
+sudo apt-get install postgresql-9.5 pwgen
+
+
+Creating a postgresql database and user
+---------------------------------------
+
+Generate a password for the database user:
+
+    pwgen -c -n -y -s -B 64 | head -1 > secret
+
+The generated password is now stored in the file secret
+
+sudo -u postgres createuser -P lovelace
+<Enter the desired password>
+sudo -u postgres createdb --owner=lovelace lovelace
+
+
+Configuring postgresql
+----------------------
+
+Note! Instead of 10.0.0.1, use your desired LAN accessible IP.
+
+sudo vim /etc/postgresql/9.3/main/postgresql.conf
+listen_addresses = 'localhost,10.0.0.1'
+
+sudo vim /etc/postgresql/9.3/main/pg_hba.conf
+host    lovelace        lovelace        10.0.0.1/24              md5
+
+sudo service postgresql restart
+
+
+Testing postgresql
+------------------
+
+psql --host=10.0.0.1 --dbname=lovelace --username=lovelace --password
+
+
+Python 3.5
+----------
+
+Cloning the repository
+----------------------
+
+Install git
+
+sudo apt-get install git
+
+Clone the repository
+
+mkdir lovelace
+cd lovelace
+git clone https://github.com/miikkas/lovelace.git
+
+
+Installing pip
+--------------
+
+sudo apt-get install python3.5-venv python3.5-dev python3-pip
+
+
+Creating and activating venv
+----------------------------
+
+Create a virtualenv
+
+mkdir /path/to/your/lovelace/venv
+pyvenv-3.5 /path/to/your/lovelace/venv/
+
+Activate the virtualenv
+
+cd /path/to/your/lovelace
+source venv/bin/activate
+
+Note! You shouldn't create the virtualenv root into the 'webapp' directory,
+since this will cause problems with manage.py makemessages.
+
+
+Installing the dependencies
+---------------------------
+
+Install the dependencies' dependencies
+
+sudo apt-get install postgresql-server-dev-9.5
+sudo apt-get install libjpeg-dev
+sudo apt-get install redis-server redis-tools
+sudo apt-get install rabbitmq-server
+
+Install the Python packages
+
+pip install unicode-slugify
+pip install python-magic
+pip install psycopg2
+pip install pygments
+pip install pillow
+pip install django
+pip install django-redis
+pip install celery[redis]
+pip install django-allauth
+pip install django-smuggler
+pip install django-nested-inline
+
+
+Edit the configuration
+----------------------
+
+Edit /path/to/your/lovelace/webapp/lovelace/settings.py
+
+Change the database engine to postgresql by following this guide:
+https://docs.djangoproject.com/en/dev/ref/settings/#databases
+
+Also set the user to lovelace, name to lovelace and password to the
+password you entered for postgresql. Remember to set host and port.
+
+
+Initialize the database
+-----------------------
+
+python manage.py makemigrations
+python manage.py migrate
+python manage.py createsuperuser
+
+
+Initialize the static & uploaded files
+--------------------------------------
+
+mkdir /path/to/your/lovelace/webapp/static
+python manage.py collectstatic
+
+mkdir -p /path/to/your/lovelace/webapp/upload/images
+sudo chown -R www-data /path/to/your/lovelace/webapp/upload/
+
+
+Apache
+––––––
+
+Install Apache
+
+sudo apt-get install apache2 apache2-dev
+
+Install mod_wsgi for Apache2 and Python 3
+
+pip install mod_wsgi
+
+
+Configuring Apache
+------------------
+
+Review: https://pypi.python.org/pypi/mod_wsgi
