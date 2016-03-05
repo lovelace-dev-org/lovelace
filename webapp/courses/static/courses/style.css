@@ -562,7 +562,6 @@ section.content {
         height: 0;
         padding-top: 4rem;
         margin-top: -4rem;
-        display: hidden;        
     }
 
     section.content h1:first-child, section.content h2:first-child, section.content h3:first-child, section.content h4:first-child, section.content h5:first-child, section.content h6:first-child, .task-meta-container + h1, .task-meta-container + h2, .task-meta-container + h3, .task-meta-container + h4, .task-meta-container + h5, .task-meta-container + h6 {

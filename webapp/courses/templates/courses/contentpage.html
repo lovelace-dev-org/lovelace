@@ -28,12 +28,20 @@
 {% endblock %}
 
 {% block page-content %}
-{% if content.content_type == "LECTURE"%}
-  {% include "courses/lecture.html" %}
-{% elif rendered_content or tasktype %}
-  {{ rendered_content|safe }}
-  {% if content.is_answerable %}
-    {% include "courses/exercise.html" %}
+{% if not content.is_answerable %}
+  {% lecture %}
+{% else %}
+  {% if content.content_type == "MULTIPLE_CHOICE_EXERCISE" %}
+    {% multiple_choice_exercise %}
+  {% elif content.content_type == "CHECKBOX_EXERCISE" %}
+    {% checkbox_exercise %}
+  {% elif content.content_type == "TEXTFIELD_EXERCISE" %}
+    {% textfield_exercise %}
+  {% elif content.content_type == "FILE_UPLOAD_EXERCISE" %}
+    {% file_upload_exercise %}
   {% endif %}
 {% endif %}
+
 {% endblock %}
+
+

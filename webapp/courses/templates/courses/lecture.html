@@ -10,12 +10,11 @@
   {% content_meta %}
 {% endif %}
 
-{% block page-content %}
-{% if rendered_content or tasktype %}
+{% if rendered_content %}
   {{ rendered_content|safe }}
-  {% if content.is_answerable %}
-    {% include "courses/exercise.html" %}
-  {% endif %}
 {% endif %}
+
+{% block feedback %}
+  {% feedbacks %}
 {% endblock %}
 

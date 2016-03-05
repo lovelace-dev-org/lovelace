@@ -1,0 +1,34 @@
+{% load staticfiles %}
+{% load i18n %}
+{% load feedback_tags %}
+
+{% with feedback_questions=content.get_feedback_questions %}
+  {% if feedback_questions %}
+  <div class="feedback-container">
+    {% if content.is_answerable %}
+    <div class="feedback-header" onclick="show_feedbacks(this, 
+                                          '{% trans 'Give feedback on this content' %}', 
+                                          '{% trans 'Close feedback' %}', '{% static 'feedback/plus.png' %}', 
+                                          '{% static 'feedback/minus.png' %}');">
+      <img class="img-header" src="{% static 'feedback/plus.png' %}"><span>{% trans 'Give feedback on this content' %}</span>
+    </div> 
+    <div class="exercise-feedback-content">
+    {% else %}
+    <div class="lecture-feedback-content">
+    {% endif %}
+
+    {% for content_feedback_question in feedback_questions %}
+      {% with question=content_feedback_question.get_type_object %}
+        {% if question.question_type == "TEXTFIELD_FEEDBACK" %}
+          {% feedback_textfield question user content %}
+        {% elif question.question_type == "THUMB_FEEDBACK" %}
+          {% feedback_thumb question user content %}
+        {% elif question.question_type == "STAR_FEEDBACK" %}
+          {% feedback_star question user content %}
+        {% endif %}
+      {% endwith %}
+    {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+{% endwith %}

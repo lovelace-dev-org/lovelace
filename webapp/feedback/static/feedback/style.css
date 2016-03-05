@@ -1,0 +1,130 @@
+/* http://jsfiddle.net/hungerpain/eK8X5/7/ */
+
+div.feedback-container {
+    width: 100%;
+    margin-top: 5px;
+    background: #daeeda;
+    width:100%;
+}
+
+div.feedback-container img.img-header {
+    vertical-align: middle;
+}
+
+div.feedback-container div.feedback-header {
+    background-color: #daeeda;
+    padding: 2px;
+    cursor: pointer;
+    border: 2px solid #d0d0d0;
+}
+
+div.feedback-container div.exercise-feedback-content {
+    display: none;
+    padding: 10px;
+    border-bottom: 2px solid #d0d0d0;
+    border-left: 2px solid #d0d0d0;
+    border-right: 2px solid #d0d0d0;
+}
+
+div.feedback-container div.lecture-feedback-content {
+    padding: 10px;
+    border-bottom: 2px solid #d0d0d0;
+    border-left: 2px solid #d0d0d0;
+    border-right: 2px solid #d0d0d0;
+}
+
+div.feedback-container div.feedback {
+    margin-top: 10px;
+}
+
+div.feedback-container div.feedback:first-child {
+    margin-top: 0px;
+}
+
+div.feedback-container div.answered-status {
+    display: inline;
+}
+
+div.feedback-container span.feedback-answered {
+    color: #3a3;
+}
+
+div.feedback-container div.feedback-received {
+    display: none;
+    margin-top: 5px;
+    color: #3a3;
+}
+
+div.feedback-container div.feedback-error {
+    display: none;
+    margin-top: 5px;
+    color: #a33;
+}
+
+div.feedback-container div.rating {
+    unicode-bidi: bidi-override;
+    direction: rtl;
+    display: inline-block;
+}
+
+div.feedback-container input[type=radio] {
+    display: none;
+}
+
+div.feedback-container label.thumb-label > input + img {
+    cursor:pointer;
+}
+
+div.feedback-container label.thumb-label > input + img + img {
+    display: none;
+}
+
+div.feedback-container label.thumb-label > input:checked + img {
+    display: none;
+}
+
+div.feedback-container label.thumb-label > input:checked + img + img {
+    cursor:pointer;
+    display: inline-block;
+}
+
+div.feedback-container div.rating > label.star-outline {
+    font-size: 2.0em;
+    cursor: pointer;
+    border: none;
+    background-color: #daeeda;
+    display: inline-block;
+    position: relative;
+    width: 1.1em;
+}
+
+div.feedback-container div.rating > label.star-filled {
+    font-size: 2.0em;
+    border: none;
+    background-color: #daeeda;
+    cursor: pointer;
+    display: inline-block;
+    position: relative;
+    width: 1.1em;
+}
+
+div.feedback-container div.rating > label.star-filled:before {
+   font-size: 0.85em;
+   border: none;
+   content: "\2605";
+   margin-top: 4px;
+   margin-right: 3px;
+   position: absolute;
+   color: #fdd017;
+}
+
+div.feedback-container textarea.feedback-textfield {
+    width: 100%;
+}
+
+div.feedback-container input[type=submit].send-feedback {
+    font-family: "DejaVu Sans";
+    font-size: 0.9em;
+    min-width: 150px;
+    line-height: 1.5;
+}

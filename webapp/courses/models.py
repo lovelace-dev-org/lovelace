@@ -303,9 +303,9 @@ class ContentPage(models.Model):
         humanized_type = self.content_type.replace("_", " ").lower()
         return humanized_type
 
-    def get_dashed_type(self):
-        dashed_type = self.content_type.replace("_", "-").lower()
-        return dashed_type
+    def get_type_lower(self):
+        type_lower = self.content_type.lower()
+        return type_lower
 
     def get_admin_change_url(self):
         adminized_type = self.content_type.replace("_", "").lower()
@@ -369,6 +369,10 @@ class ContentPage(models.Model):
         #       - Automatically link embedded pages (create/update an
         #         EmbeddedContentLink object)
         super(ContentPage, self).save(*args, **kwargs)
+        
+    def get_feedback_questions(self):
+        return sorted(self.feedback_questions.all(), 
+                      key=lambda q: ContentFeedbackQuestion.QUESTION_TYPE_ORDERING[q.question_type])
 
     def __str__(self):
         return self.name
@@ -406,12 +410,12 @@ class MultipleChoiceExercise(ContentPage):
         keys = list(answer.keys())
         key = [k for k in keys if k.endswith("-radio")]
         if not key:
-            raise InvalidAnswerException("No answer was picked!")
+            raise InvalidExerciseAnswerException("No answer was picked!")
         answered = int(answer[key[0]])
         try:
             chosen_answer = MultipleChoiceExerciseAnswer.objects.get(id=answered)
         except MultipleChoiceExerciseAnswer.DoesNotExist as e:
-            raise InvalidAnswerException("The received answer does not exist!")
+            raise InvalidExerciseAnswerException("The received answer does not exist!")
         answer_object = UserMultipleChoiceExerciseAnswer(
             exercise=self, chosen_answer=chosen_answer, user=user,
             answerer_ip=ip
@@ -480,7 +484,7 @@ class CheckboxExercise(ContentPage):
         chosen_answers = CheckboxExerciseAnswer.objects.filter(id__in=chosen_answer_ids).\
                          values_list('id', flat=True)
         if set(chosen_answer_ids) != set(chosen_answers):
-            raise InvalidAnswerException("One or more of the answers do not exist!")
+            raise InvalidExerciseAnswerException("One or more of the answers do not exist!")
 
         answer_object = UserCheckboxExerciseAnswer(
             exercise=self, user=user, answerer_ip=ip
@@ -555,7 +559,7 @@ class TextfieldExercise(ContentPage):
         if "answer" in answer.keys():
             given_answer = answer["answer"].replace("\r", "")
         else:
-            raise InvalidAnswerException("Answer missing!")
+            raise InvalidExerciseAnswerException("Answer missing!")
 
         answer_object = UserTextfieldExerciseAnswer(
             exercise=self, given_answer=given_answer, user=user,
@@ -666,7 +670,7 @@ class FileUploadExercise(ContentPage):
                 )
                 return_file.save()
         else:
-            raise InvalidAnswerException("No file was sent!")
+            raise InvalidExerciseAnswerException("No file was sent!")
         return answer_object
 
     def check_answer(self, user, ip, answer, files, answer_object):
@@ -1149,7 +1153,7 @@ class Term(models.Model):
     class Meta:
         unique_together = ('instance', 'name',)
 
-class InvalidAnswerException(Exception):
+class InvalidExerciseAnswerException(Exception):
     """
     This exception is cast when an exercise answer cannot be processed.
     """

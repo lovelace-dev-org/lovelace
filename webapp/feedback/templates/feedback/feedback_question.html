@@ -1,0 +1,16 @@
+{% load staticfiles %}
+{% load i18n %}
+
+<div class="feedback">
+  <div class="feedback-question">
+    <span>{{ question }}</span>
+  </div>
+  <form class="feedback-form" method="POST" enctype="multipart/form-data" action="{% url 'feedback:receive' content_slug feedback_slug %}">
+    {% csrf_token %}
+    {% block feedback-input %}
+    {% endblock %}
+  </form>
+  <div class="feedback-received"></div>
+  <div class="feedback-error"></div>
+</div>
+

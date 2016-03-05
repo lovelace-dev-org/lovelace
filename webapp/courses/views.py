@@ -20,6 +20,7 @@ from courses.tasks import get_celery_worker_status
 
 from courses.models import *
 from courses.forms import *
+from feedback.models import *
 
 import courses.markupparser as markupparser
 import courses.blockparser as blockparser
@@ -134,7 +135,7 @@ def check_answer_sandboxed(request, content_slug):
     
     try:
         answer_object = exercise.save_answer(user, ip, answer, files)
-    except InvalidAnswerException as e:
+    except InvalidExerciseAnswerException as e:
         return JsonResponse({
             'result': str(e)
         })
@@ -197,7 +198,7 @@ def check_answer(request, course_slug, content_slug):
     
     try:
         answer_object = exercise.save_answer(user, ip, answer, files)
-    except InvalidAnswerException as e:
+    except InvalidExerciseAnswerException as e:
         return JsonResponse({
             'result': str(e)
         })
@@ -311,42 +312,25 @@ def sandboxed_content(request, content_slug, **kwargs):
     except ContentPage.DoesNotExist:
         return HttpResponseNotFound("Content {} does not exist!".format(content_slug))
 
+    user = request.user
+    if not user.is_authenticated() or not user.is_active or not user.is_staff:
+        return HttpResponseForbidden("Only logged in admins can view pages in sandbox!")
+
     content_type = content.content_type
     question = blockparser.parseblock(escape(content.question), {"request" : request})
     choices = answers = content.get_choices()
 
     rendered_content = content.rendered_markup(request, context={'tooltip' : False})
 
-    user = request.user
-    if not user.is_authenticated() or not user.is_active or not user.is_staff:
-        return HttpResponseForbidden("Only logged in admins can view pages in sandbox!")
-
-    d = {'content': content,
+    c = {'content': content,
          'content_name': content.name,
          'content_type': content_type,
+         'rendered_content': rendered_content,
          'question': question,
          'choices': choices,
          'user': user,
          'sandboxed': True,
     }
-
-    if content_type == "LECTURE":
-        d['rendered_content'] = rendered_content
-        c = d
-    else:
-        d['emb_content'] = rendered_content
-        dashed_type = content.get_dashed_type()
-        t = loader.get_template("courses/{content_type}.html".format(
-            content_type=content.get_dashed_type()
-        ))
-        rendered_content = t.render(d, request)
-        c = {
-            'rendered_content': rendered_content,
-            'content_name': content.name,
-            'content_type': content_type,
-            'user': user,
-            'sandboxed': True,
-        }
     if "frontpage" in kwargs:
         return c
     else:
@@ -394,6 +378,7 @@ def content(request, course_slug, content_slug, **kwargs):
               "div_id" : term.name + "-termbank-div",
               "span_id" : term.name + "-termbank-span"} 
              for term in terms]
+    
     rendered_content = content.rendered_markup(request, context)
 
     c = {
