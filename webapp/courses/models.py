@@ -371,7 +371,7 @@ class ContentPage(models.Model):
         super(ContentPage, self).save(*args, **kwargs)
         
     def get_feedback_questions(self):
-        return sorted(self.feedback_questions.all(), 
+        return sorted([q.get_type_object() for q in self.feedback_questions.all()], 
                       key=lambda q: ContentFeedbackQuestion.QUESTION_TYPE_ORDERING[q.question_type])
 
     def __str__(self):

@@ -343,7 +343,7 @@ def single_exercise(request, content_slug):
     Shows statistics on a single selected task.
     """
     if not request.user.is_authenticated() and not request.user.is_active and not request.user.is_staff:
-        return HttpResponseNotFound()
+        return HttpResponseNotFound("Only logged in admins can view exercise statistics!")
 
     try:
         exercise = ContentPage.objects.get(slug=content_slug)
@@ -351,15 +351,9 @@ def single_exercise(request, content_slug):
         return HttpResponseNotFound("No exercise {} found!".format(content_slug))
     tasktype = exercise.content_type
 
-    tasktype_verbose = "unknown"
-    for choice, verbose in ContentPage.CONTENT_TYPE_CHOICES:
-        if choice == tasktype:
-            tasktype_verbose = verbose.lower()
-            break
-
     ctx = {
         "content": exercise,
-        "tasktype": tasktype_verbose,
+        "tasktype": content.get_human_readable_type(),
         "choices": exercise.get_type_object().get_choices(),
     }
 

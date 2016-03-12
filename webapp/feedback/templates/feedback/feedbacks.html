@@ -17,16 +17,14 @@
     <div class="lecture-feedback-content">
     {% endif %}
 
-    {% for content_feedback_question in feedback_questions %}
-      {% with question=content_feedback_question.get_type_object %}
-        {% if question.question_type == "TEXTFIELD_FEEDBACK" %}
-          {% feedback_textfield question user content %}
-        {% elif question.question_type == "THUMB_FEEDBACK" %}
-          {% feedback_thumb question user content %}
-        {% elif question.question_type == "STAR_FEEDBACK" %}
-          {% feedback_star question user content %}
-        {% endif %}
-      {% endwith %}
+    {% for question in feedback_questions %}
+      {% if question.question_type == "TEXTFIELD_FEEDBACK" %}
+        {% feedback_textfield question user content %}
+      {% elif question.question_type == "THUMB_FEEDBACK" %}
+        {% feedback_thumb question user content %}
+      {% elif question.question_type == "STAR_FEEDBACK" %}
+        {% feedback_star question user content %}
+      {% endif %}
     {% endfor %}
     </div>
   </div>

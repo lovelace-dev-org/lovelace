@@ -2,6 +2,8 @@ import slugify
 
 from django.db import models
 from django.contrib.auth.models import User
+from django.db.models import Max
+from django.db import connection
 
 #from courses.models import ContentPage # prevent circular import
 
@@ -49,16 +51,29 @@ class ContentFeedbackQuestion(models.Model):
     def save_answer(self, content, user, ip, answer):
         pass
 
-    def get_user_answers(self, user, content):
+    def get_human_readable_type(self):
+        humanized_type = self.question_type.replace("_", " ").lower()
+        return humanized_type
+
+    def get_answers_by_content(self, content):
+        return ContentFeedbackUserAnswer.objects.filter(question=self, content=content)
+
+    def get_user_answers_by_content(self, user, content):
         return ContentFeedbackUserAnswer.objects.filter(question=self, user=user, content=content)
     
     def get_latest_answer(self, user, content):
-        print(self.__class__)
-        answers = self.get_user_answers(user, content)
+        answers = self.get_user_answers_by_content(user, content)
         if answers:
-            return answers.latest("answer_date")
+            return answers.latest()
         else:
             return None
+
+    def get_latest_answers_by_content(self, content):
+        if connection.vendor == "postgresql":
+            return self.get_answers_by_content(content).order_by("user", "-answer_date").distinct("user")
+        else:
+            users = User.objects.annotate(latest_date=Max("contentfeedbackuseranswer__answer_date"))
+            return ContentFeedbackUserAnswer.objects.filter(answer_date__in=[user.latest_date for user in users])
 
     def user_answered(self, user, content):
         if ContentFeedbackUserAnswer.objects.filter(question=self, user=user, content=content).count() >= 1:
@@ -95,7 +110,17 @@ class TextfieldFeedbackQuestion(ContentFeedbackQuestion):
         answer_object.save()
         return answer_object
         
-    def get_user_answers(self, user, content):
+    def get_answers_by_content(self, content):
+        return TextfieldFeedbackUserAnswer.objects.filter(question=self, content=content)
+
+    def get_latest_answers_by_content(self, content):
+        if connection.vendor == "postgresql":
+            return self.get_answers_by_content(content).order_by("user", "-answer_date").distinct("user")
+        else:
+            users = User.objects.annotate(latest_date=Max("textfieldfeedbackuseranswer__answer_date"))
+            return TextfieldFeedbackUserAnswer.objects.filter(answer_date__in=[user.latest_date for user in users])
+        
+    def get_user_answers_by_content(self, user, content):
         return TextfieldFeedbackUserAnswer.objects.filter(question=self, user=user, content=content)
 
     def user_answered(self, user, content):
@@ -135,8 +160,18 @@ class ThumbFeedbackQuestion(ContentFeedbackQuestion):
         )
         answer_object.save()
         return answer_object
+        
+    def get_answers_by_content(self, content):
+        return ThumbFeedbackUserAnswer.objects.filter(question=self, content=content)
 
-    def get_user_answers(self, user, content):
+    def get_latest_answers_by_content(self, content):
+        if connection.vendor == "postgresql":
+            return self.get_answers_by_content(content).order_by("user", "-answer_date").distinct("user")
+        else:
+            users = User.objects.annotate(latest_date=Max("thumbfeedbackuseranswer__answer_date"))
+            return ThumbFeedbackUserAnswer.objects.filter(answer_date__in=[user.latest_date for user in users])
+
+    def get_user_answers_by_content(self, user, content):
         return ThumbFeedbackUserAnswer.objects.filter(question=self, user=user, content=content)
 
     def user_answered(self, user, content):
@@ -171,8 +206,18 @@ class StarFeedbackQuestion(ContentFeedbackQuestion):
         )
         answer_object.save()
         return answer_object
+        
+    def get_answers_by_content(self, content):
+        return StarFeedbackUserAnswer.objects.filter(question=self, content=content)
 
-    def get_user_answers(self, user, content):
+    def get_latest_answers_by_content(self, content):
+        if connection.vendor == "postgresql":
+            return self.get_answers_by_content(content).order_by("user", "-answer_date").distinct("user")
+        else:
+            users = User.objects.annotate(latest_date=Max("starfeedbackuseranswer__answer_date"))
+            return StarFeedbackUserAnswer.objects.filter(answer_date__in=[user.latest_date for user in users])
+        
+    def get_user_answers_by_content(self, user, content):
         return StarFeedbackUserAnswer.objects.filter(question=self, user=user, content=content)
     
     def user_answered(self, user, content):
@@ -195,13 +240,21 @@ class ContentFeedbackUserAnswer(models.Model):
    
 class TextfieldFeedbackUserAnswer(ContentFeedbackUserAnswer):
     answer = models.TextField()
+
+    class Meta:
+        get_latest_by = "answer_date"
     
 class ThumbFeedbackUserAnswer(ContentFeedbackUserAnswer):
     thumb_up = models.BooleanField()
+    
+    class Meta:
+        get_latest_by = "answer_date"
 
 class StarFeedbackUserAnswer(ContentFeedbackUserAnswer):
     rating = models.PositiveSmallIntegerField()
-
+    
+    class Meta:
+        get_latest_by = "answer_date"
 
 class InvalidFeedbackAnswerException(Exception):
     """
