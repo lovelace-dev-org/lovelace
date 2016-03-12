@@ -1,20 +1,40 @@
 import feedback.models
 import courses.models
 
-from django.http import HttpResponseNotFound, HttpResponseNotAllowed, JsonResponse
+from django.http import HttpResponse, HttpResponseNotFound, HttpResponseNotAllowed, JsonResponse
+from django.template import loader
+from django.db import connection
 
-def textfield_feedback(question):
-    answers = question.get_answers_by_content(question)
+def textfield_feedback(question, content):
+    answers = question.get_answers_by_content(content)
     return {
         "answers" : set(answers.values_list("answer", flat=True)),
         "answer_count": answers.count()
     }
 
-def thumb_feedback(question):
-    answers = question.get_latest_answers_by_content(question)
-    answer_count = answers.count()
-    thumb_ups = answers.values_list("thumb_up", flat=True).count(True)
-    thumb_downs = answer_count - thumb_ups
+def thumb_feedback(question, content):
+    answers = question.get_answers_by_content(content)
+    try:
+        answers = question.get_latest_answers_by_content(content)
+    except feedback.models.DatabaseBackendException:
+        # For SQLite which does not support DISTINCT ON
+        answers = question.get_answers_by_content(content).order_by("user", "-answer_date")
+        users = set(answers.values_list("user", flat=True))
+        answer_count = len(users)
+        latest_answers = {}
+        thumb_ups = 0
+        thumb_downs = 0
+        for answer in answers:
+            if answer.user not in latest_answers:
+                latest_answers[answer.user] = answer
+                if answer.thumb_up:
+                    thumb_ups += 1
+                else:
+                    thumb_downs += 1
+    else:
+        answer_count = answers.count()
+        thumb_ups = list(answers.values_list("thumb_up", flat=True)).count(True)
+        thumb_downs = answer_count - thumb_ups
 
     try:
         thumb_up_pct = round((thumb_ups / answer_count) * 100, 2)
@@ -31,11 +51,25 @@ def thumb_feedback(question):
         "answer_count": answer_count
     }
 
-def star_feedback(question):
-    answers = question.get_latest_answers_by_content(question)
-    answer_count = answers.count()
-    ratings = answers.values_list("ratings", flat=True)
-    rating_counts = [ratings.count(stars) for stars in range(1, 6)]
+def star_feedback(question, content):
+    try:
+        answers = question.get_latest_answers_by_content(content)
+    except feedback.models.DatabaseBackendException:
+        # For SQLite which does not support DISTINCT ON
+        answers = question.get_answers_by_content(content).order_by("user", "-answer_date")
+        users = set(answers.values_list("user", flat=True))
+        answer_count = len(users)
+        latest_answers = {}
+        rating_counts = [0] * 5
+        for answer in answers:
+            if answer.user not in latest_answers:
+                latest_answers[answer.user] = answer
+                rating_counts[answer.rating - 1] += 1
+    else:
+        answer_count = answers.count()
+        ratings = list(answers.values_list("rating", flat=True))
+        rating_counts = [ratings.count(stars) for stars in range(1, 6)]
+
     try:
         rating_pcts = [round((rcount / answer_count) * 100, 2) for rcount in rating_counts]
     except ZeroDivisionError:
@@ -70,11 +104,15 @@ def content(request, content_slug):
             "question_type": question_type,
         }
         if question_type == "TEXTFIELD_FEEDBACK":
-            question_ctx.update(textfield_feedback(question))
+            question_ctx.update(textfield_feedback(question, content))
         elif question_type == "THUMB_FEEDBACK":
-            question_ctx.update(thumb_feedback(question))
+            question_ctx.update(thumb_feedback(question, content))
         elif question_type == "STAR_FEEDBACK":
-            question_ctx.update(star_feedback(question))
+            question_ctx.update(star_feedback(question, content))
+        feedback_stats.append(question_ctx)
+    ctx["feedback_stats"] = feedback_stats
+    t = loader.get_template("feedback/feedback_stats.html")
+    return HttpResponse(t.render(ctx, request))
 
 def receive(request, content_slug, feedback_slug):
     if request.method != "POST":

@@ -2,6 +2,7 @@ import slugify
 
 from django.db import models
 from django.contrib.auth.models import User
+from django.db.models import F
 from django.db.models import Max
 from django.db import connection
 
@@ -72,8 +73,7 @@ class ContentFeedbackQuestion(models.Model):
         if connection.vendor == "postgresql":
             return self.get_answers_by_content(content).order_by("user", "-answer_date").distinct("user")
         else:
-            users = User.objects.annotate(latest_date=Max("contentfeedbackuseranswer__answer_date"))
-            return ContentFeedbackUserAnswer.objects.filter(answer_date__in=[user.latest_date for user in users])
+            raise DatabaseBackendException("Database backend does not support DISTINCT ON")
 
     def user_answered(self, user, content):
         if ContentFeedbackUserAnswer.objects.filter(question=self, user=user, content=content).count() >= 1:
@@ -117,8 +117,7 @@ class TextfieldFeedbackQuestion(ContentFeedbackQuestion):
         if connection.vendor == "postgresql":
             return self.get_answers_by_content(content).order_by("user", "-answer_date").distinct("user")
         else:
-            users = User.objects.annotate(latest_date=Max("textfieldfeedbackuseranswer__answer_date"))
-            return TextfieldFeedbackUserAnswer.objects.filter(answer_date__in=[user.latest_date for user in users])
+            raise DatabaseBackendException("Database backend does not support DISTINCT ON")
         
     def get_user_answers_by_content(self, user, content):
         return TextfieldFeedbackUserAnswer.objects.filter(question=self, user=user, content=content)
@@ -168,8 +167,7 @@ class ThumbFeedbackQuestion(ContentFeedbackQuestion):
         if connection.vendor == "postgresql":
             return self.get_answers_by_content(content).order_by("user", "-answer_date").distinct("user")
         else:
-            users = User.objects.annotate(latest_date=Max("thumbfeedbackuseranswer__answer_date"))
-            return ThumbFeedbackUserAnswer.objects.filter(answer_date__in=[user.latest_date for user in users])
+            raise DatabaseBackendException("Database backend does not support DISTINCT ON")
 
     def get_user_answers_by_content(self, user, content):
         return ThumbFeedbackUserAnswer.objects.filter(question=self, user=user, content=content)
@@ -214,9 +212,8 @@ class StarFeedbackQuestion(ContentFeedbackQuestion):
         if connection.vendor == "postgresql":
             return self.get_answers_by_content(content).order_by("user", "-answer_date").distinct("user")
         else:
-            users = User.objects.annotate(latest_date=Max("starfeedbackuseranswer__answer_date"))
-            return StarFeedbackUserAnswer.objects.filter(answer_date__in=[user.latest_date for user in users])
-        
+            raise DatabaseBackendException("Database backend does not support DISTINCT ON")
+
     def get_user_answers_by_content(self, user, content):
         return StarFeedbackUserAnswer.objects.filter(question=self, user=user, content=content)
     
@@ -259,5 +256,11 @@ class StarFeedbackUserAnswer(ContentFeedbackUserAnswer):
 class InvalidFeedbackAnswerException(Exception):
     """
     This exception is cast when a feedback answer cannot be processed.
+    """
+    pass
+
+class DatabaseBackendException(Exception):
+    """
+    This exception is cast when the database backend does not support the attempted operation.
     """
     pass
