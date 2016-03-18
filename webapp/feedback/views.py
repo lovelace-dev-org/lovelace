@@ -8,8 +8,9 @@ from django.db import connection
 def textfield_feedback(question, content):
     answers = question.get_answers_by_content(content)
     return {
-        "answers" : set(answers.values_list("answer", flat=True)),
-        "answer_count": answers.count()
+        "answers" : sorted(set(answers.values_list("answer", "answer_date")), key=lambda a: a[1], reverse=True),
+        "answer_count": answers.count(),
+        "user_count": len(set(answers.values_list("user")))
     }
 
 def thumb_feedback(question, content):
@@ -20,35 +21,35 @@ def thumb_feedback(question, content):
         # For SQLite which does not support DISTINCT ON
         answers = question.get_answers_by_content(content).order_by("user", "-answer_date")
         users = set(answers.values_list("user", flat=True))
-        answer_count = len(users)
+        user_count = len(users)
         latest_answers = {}
-        thumb_ups = 0
+        thumbs_up = 0
         thumb_downs = 0
         for answer in answers:
             if answer.user not in latest_answers:
                 latest_answers[answer.user] = answer
                 if answer.thumb_up:
-                    thumb_ups += 1
+                    thumbs_up += 1
                 else:
                     thumb_downs += 1
     else:
-        answer_count = answers.count()
-        thumb_ups = list(answers.values_list("thumb_up", flat=True)).count(True)
-        thumb_downs = answer_count - thumb_ups
+        user_count = answers.count()
+        thumbs_up = list(answers.values_list("thumb_up", flat=True)).count(True)
+        thumbs_down = user_count - thumbs_up
 
     try:
-        thumb_up_pct = round((thumb_ups / answer_count) * 100, 2)
-        thumb_down_pct = round((thumb_downs / answer_count) * 100, 2)
+        thumb_up_pct = round((thumbs_up / user_count) * 100, 2)
+        thumb_down_pct = round((thumb_downs / user_count) * 100, 2)
     except ZeroDivisionError:
         thumb_up_pct = 0
         thumb_down_pct = 0
 
     return {
-        "thumb_ups": thumb_ups, 
-        "thumb_downs": thumb_downs,
+        "thumbs_up": thumbs_up, 
+        "thumbs_down": thumb_downs,
         "thumb_up_pct": thumb_up_pct,
         "thumb_down_pct": thumb_down_pct,
-        "answer_count": answer_count
+        "user_count": user_count
     }
 
 def star_feedback(question, content):
@@ -58,7 +59,7 @@ def star_feedback(question, content):
         # For SQLite which does not support DISTINCT ON
         answers = question.get_answers_by_content(content).order_by("user", "-answer_date")
         users = set(answers.values_list("user", flat=True))
-        answer_count = len(users)
+        user_count = len(users)
         latest_answers = {}
         rating_counts = [0] * 5
         for answer in answers:
@@ -66,19 +67,20 @@ def star_feedback(question, content):
                 latest_answers[answer.user] = answer
                 rating_counts[answer.rating - 1] += 1
     else:
-        answer_count = answers.count()
+        user_count = answers.count()
         ratings = list(answers.values_list("rating", flat=True))
         rating_counts = [ratings.count(stars) for stars in range(1, 6)]
 
-    try:
-        rating_pcts = [round((rcount / answer_count) * 100, 2) for rcount in rating_counts]
-    except ZeroDivisionError:
-        rating_pcts = [0] * 5
+    rating_pcts = []
+    for rcount in rating_counts:
+        try:
+            rating_pcts.append(round((rcount / user_count) * 100, 2))
+        except ZeroDivisionError:
+            rating_pcts.append(0)
 
     return {
-        "rating_counts" : rating_counts,
-        "rating_pcts" : rating_pcts,
-        "answer_count" : answer_count
+        "rating_stats" : zip(rating_counts, rating_pcts),
+        "user_count" : user_count
     }
 
 def content(request, content_slug):
@@ -102,6 +104,7 @@ def content(request, content_slug):
         question_ctx = {
             "question": question.question,
             "question_type": question_type,
+            "question_slug": question.slug,
         }
         if question_type == "TEXTFIELD_FEEDBACK":
             question_ctx.update(textfield_feedback(question, content))

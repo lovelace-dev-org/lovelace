@@ -1,0 +1,82 @@
+{% extends 'courses/base.html' %}
+
+{% load feedback_tags %}
+{% load staticfiles %}
+
+{% block extra-static %}
+    <link rel="stylesheet" href="{% static 'stats/style.css' %}">
+    <script src="{% static 'stats/script.js' %}"></script>
+{% endblock %}
+
+{% block page-title %}
+  Feedback – {{ content.name }}
+{% endblock %}
+
+{% block breadcrumb-links %}
+  <li><a href="{% url 'courses:index' %}">Courses</a></li>
+  <div class="separator">»</div>
+  <li><a href="{% url 'courses:sandbox' content.slug %}">{{ content.name }}</a></li>
+{% endblock %}
+
+{% block page-content %}
+  <h1 class="content-heading">Feedback on "{{ content.name }}"<span id="feedback" class="anchor-offset"></span></h1>
+
+  {% if feedback_stats %}
+  {% for question_stats in feedback_stats %}
+  <h2 class="content-heading">{{ question_stats.question }}<span id="{{ question_stats.question_slug }}_heading" class="anchor-offset"></span></h2>
+  <div>This question has been answered by {{ question_stats.user_count }} user(s).</div>
+  {% if question_stats.question_type == "TEXTFIELD_FEEDBACK" %}
+    <div>This question has been answered {{ question_stats.answer_count }} time(s).</div>
+    {% if question_stats.rating_stats %}
+    <table id="{{ question_stats.question_slug }}_table" class="fixed">
+      <colgroup>
+        <col class="answer">
+        <col class="latest">
+      </colgroup>
+      <tr>
+        <th>User answer</th>
+        {% sortable_table_header question_stats.question_slug "Latest" "1" %}
+      </tr>
+      {% for answer, dtime in question_stats.answers %}
+      <tr>
+        <td class="answer">{{ answer }}</td>          
+        <td title="{{ dtime|date:'Y-m-d, H:i:s' }}">{{ dtime|answer_date }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% endif %}
+  {% elif question_stats.question_type == "THUMB_FEEDBACK" %}
+    <table>
+      <tr>
+        <th>Thumbs up</th>
+        <th>Thumbs down</th>
+          <th>Thumbs up (&#37;)</th>
+        <th>Thumbs down (&#37;)</th>
+      </tr>
+      <tr>
+        <td>{{ question_stats.thumbs_up }}</td>
+        <td>{{ question_stats.thumbs_down }}</td>
+        <td>{{ question_stats.thumb_up_pct }}</td>
+        <td>{{ question_stats.thumb_down_pct }}</td>
+      </tr>
+    </table>
+  {% elif question_stats.question_type == "STAR_FEEDBACK" %}
+    <table>
+      <tr>
+        <th>Rating</th>
+        <th>Count</th>
+        <th>(&#37;)</th>
+      </tr>
+      {% for rating_count, rating_pct in question_stats.rating_stats %}
+      <tr>
+        <td>{{ forloop.counter0|add:"1" }}</td>
+        <td>{{ rating_count }}</td> 
+        <td>{{ rating_pct }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  {% endif %}
+  {% endfor %}
+  {% endif %}
+{% endblock %}
+ 

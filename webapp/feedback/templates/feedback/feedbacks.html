@@ -11,10 +11,11 @@
                                           '{% trans 'Close feedback' %}', '{% static 'feedback/plus.png' %}', 
                                           '{% static 'feedback/minus.png' %}');">
       <img class="img-header" src="{% static 'feedback/plus.png' %}"><span>{% trans 'Give feedback on this content' %}</span>
-    </div> 
+    </div>
     <div class="exercise-feedback-content">
     {% else %}
     <div class="lecture-feedback-content">
+    <h1 class="content-heading">{% trans 'Give feedback on this content' %}<span id="give-feedback" class="anchor-offset"></span></h1>
     {% endif %}
 
     {% for question in feedback_questions %}

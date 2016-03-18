@@ -57,7 +57,7 @@ function build_toc(static_root_url) {
     $(headings).each(function(index) {
         // TODO: http://stackoverflow.com/questions/123999/how-to-tell-if-a-dom-element-is-visible-in-the-current-viewport
         var new_toc_level = parseInt(this.tagName[1]);
-        
+
         if ($(this).closest("div.term-description").length > 0) {
             return;
         }

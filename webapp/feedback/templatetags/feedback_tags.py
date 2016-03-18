@@ -1,4 +1,5 @@
 import hashlib
+from datetime import datetime
 from django import template
 
 ENCODING = "utf-8"
@@ -39,3 +40,21 @@ def feedback_star(question, user, content):
             "content_slug" : content.slug, 
             "feedback_slug" : question.slug,
             "radiobutton_id" : hashlib.md5(bytearray(question.slug + content.slug, "utf-8")).hexdigest()}
+
+# {% sortable_table_header %}
+@register.inclusion_tag("feedback/sortable_table_header.html")
+def sortable_table_header(slug, header, column):
+    return {
+        "slug": slug,
+        "header": header,
+        "column": column,
+    }
+
+# {% answer_date %}
+@register.filter
+def answer_date(t):
+    if t.date() == datetime.now().date():
+        return "{:%H:%M:%S}".format(t)
+    else:
+        return "{:%Y-%m-%d}".format(t)
+
