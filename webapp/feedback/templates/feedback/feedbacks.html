@@ -5,7 +5,7 @@
 {% with feedback_questions=content.get_feedback_questions %}
   {% if feedback_questions %}
   <div class="feedback-container">
-    {% if content.is_answerable %}
+    {% if embedded == True %}
     <div class="feedback-header" onclick="show_feedbacks(this, 
                                           '{% trans 'Give feedback on this content' %}', 
                                           '{% trans 'Close feedback' %}', '{% static 'feedback/plus.png' %}', 

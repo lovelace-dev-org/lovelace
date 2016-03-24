@@ -322,14 +322,16 @@ def sandboxed_content(request, content_slug, **kwargs):
 
     rendered_content = content.rendered_markup(request, context={'tooltip' : False})
 
-    c = {'content': content,
-         'content_name': content.name,
-         'content_type': content_type,
-         'rendered_content': rendered_content,
-         'question': question,
-         'choices': choices,
-         'user': user,
-         'sandboxed': True,
+    c = {
+        'content': content,
+        'content_name': content.name,
+        'content_type': content_type,
+        'rendered_content': rendered_content,
+        'embedded': False,
+        'question': question,
+        'choices': choices,
+        'user': user,
+        'sandboxed': True,
     }
     if "frontpage" in kwargs:
         return c
@@ -386,6 +388,7 @@ def content(request, course_slug, content_slug, **kwargs):
         'course_name': course.name,
         'content': content,
         'rendered_content': rendered_content,
+        'embedded': False,
         'content_name': content.name,
         'content_type': content_type,
         'question': question,

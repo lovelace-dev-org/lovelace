@@ -3,38 +3,38 @@
 {% block feedback-input %}
 <div class="rating">
   <input id="{{ radiobutton_id }}_box_1" name="choice" type="radio" onchange="select_stars(this, 1);" value="5">
-  {% if user_answer < 5 %}
-  <label for="{{ radiobutton_id }}_box_1" class="star-outline">☆</label>
-  {% else %}
+  {% if user_answer == 5 %}
   <label for="{{ radiobutton_id }}_box_1" class="star-filled">☆</label>
+  {% else %}
+  <label for="{{ radiobutton_id }}_box_1" class="star-outline">☆</label>
   {% endif %}
 
   <input id="{{ radiobutton_id }}_box_2" name="choice" type="radio" onchange="select_stars(this, 2);" value="4">
-  {% if user_answer < 4 %}
-  <label for="{{ radiobutton_id }}_box_2" class="star-outline">☆</label>
-  {% else %}
+  {% if user_answer >= 4 %}
   <label for="{{ radiobutton_id }}_box_2" class="star-filled">☆</label>
+  {% else %}
+  <label for="{{ radiobutton_id }}_box_2" class="star-outline">☆</label>
   {% endif %}
 
   <input id="{{ radiobutton_id }}_box_3" name="choice" type="radio" onchange="select_stars(this, 3);" value="3">
-  {% if user_answer < 3 %}
-  <label for="{{ radiobutton_id }}_box_3" class="star-outline">☆</label>
-  {% else %}
+  {% if user_answer >= 3 %}
   <label for="{{ radiobutton_id }}_box_3" class="star-filled">☆</label>
+  {% else %}
+  <label for="{{ radiobutton_id }}_box_3" class="star-outline">☆</label>
   {% endif %}
 
   <input id="{{ radiobutton_id }}_box_4" name="choice" type="radio" onchange="select_stars(this, 4);" value="2">
-  {% if user_answer < 2 %}
-  <label for="{{ radiobutton_id }}_box_4" class="star-outline">☆</label>
-  {% else %}
+  {% if user_answer >= 2 %}
   <label for="{{ radiobutton_id }}_box_4" class="star-filled">☆</label>
+  {% else %}
+  <label for="{{ radiobutton_id }}_box_4" class="star-outline">☆</label>
   {% endif %}
 
   <input id="{{ radiobutton_id }}_box_5" name="choice" type="radio" onchange="select_stars(this, 5);" value="1">
-  {% if user_answer < 1 %}
-  <label for="{{ radiobutton_id }}_box_5" class="star-outline">☆</label>
-  {% else %}
+  {% if user_answer >= 1 %}
   <label for="{{ radiobutton_id }}_box_5" class="star-filled">☆</label>
+  {% else %}
+  <label for="{{ radiobutton_id }}_box_5" class="star-outline">☆</label>
   {% endif %}
 </div>
 {% endblock %}

@@ -353,7 +353,7 @@ def single_exercise(request, content_slug):
 
     ctx = {
         "content": exercise,
-        "tasktype": content.get_human_readable_type(),
+        "tasktype": exercise.get_human_readable_type(),
         "choices": exercise.get_type_object().get_choices(),
     }
 

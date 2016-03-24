@@ -459,6 +459,7 @@ class EmbeddedPageMarkup(Markup):
 
             c = {
                 "emb_content": embedded_content,
+                "embedded": True,
                 "content": page,
                 "content_slug": page.slug,
                 "question": question,

@@ -27,7 +27,7 @@
   <div>This question has been answered by {{ question_stats.user_count }} user(s).</div>
   {% if question_stats.question_type == "TEXTFIELD_FEEDBACK" %}
     <div>This question has been answered {{ question_stats.answer_count }} time(s).</div>
-    {% if question_stats.rating_stats %}
+    {% if question_stats.answers %}
     <table id="{{ question_stats.question_slug }}_table" class="fixed">
       <colgroup>
         <col class="answer">
