@@ -99,7 +99,7 @@ def parse_term_tag(parsed_string, tag, term_name, term_text, state):
 
     div_id = "#{}-term-div".format(term_name)
     parsed_string += tag.htmlbegin({"class":"term", 
-                                    "onmouseover":"show_descr_termtag(this, '{}');".format(div_id)})
+                                    "onmouseover":"show_tooltip_during_hover(this, '{}', 5, 60);".format(div_id)})
     parsed_string += term_text
     parsed_string += tag.htmlend()
     return parsed_string

@@ -170,7 +170,7 @@
             <ul>
             {% for term in terms %}
               <li>
-                <span class="term" id="{{ term.span_id }}">{{ term.name }}</span>
+                <span class="term" id="{{ term.span_id }}" onmouseover="show_tooltip_during_hover(this, '#{{ term.div_id }}', 5, -5);">{{ term.name }}</span>
                 <div class="term-description" id="{{ term.div_id }}">
                   <div class="term-desc-contents">
                     <div class="term-desc-scrollable">
@@ -178,15 +178,6 @@
                     </div>
                   </div>
                 </div>
-                <script>$("#{{ term.span_id }}, #{{ term.div_id }}")
-                           .hover(function () { 
-                                    show_description("#{{ term.span_id }}", "#{{ term.div_id }}", 5, -5);
-                                  },
-                                  function() {
-                                    hide_description("#{{ term.div_id }}");
-                                  }
-                            );
-                 </script>
               </li>
             {% endfor %}
             </ul>

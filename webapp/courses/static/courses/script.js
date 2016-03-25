@@ -137,7 +137,7 @@ function accept_cookies() {
     cookie_law_message.hide();
 }
 
-function show_description(span_slct, div_slct, left_offset, top_offset) {
+function show_tooltip(span_slct, div_slct, left_offset, top_offset) {
     var span = $(span_slct);
     var desc_div = $(div_slct);
     if (desc_div.length == 0) {
@@ -156,9 +156,7 @@ function show_description(span_slct, div_slct, left_offset, top_offset) {
     desc_div.css({"display" : "block"}); //This works in Jquery3 unlike .show()
 }
 
-function show_descr_termtag(span_elem, div_id) {
-    var left_offset = 5;
-    var top_offset = 60;
+function show_tooltip_during_hover(span_elem, div_id, left_offset, top_offset) {
     var span = $(span_elem);
     var parent = span.parent();
     if (parent.hasClass("exercise-form")) {
@@ -167,20 +165,20 @@ function show_descr_termtag(span_elem, div_id) {
         left_offset += parent_pos.left;
     }
     
-    show_description(span_elem, div_id, left_offset, top_offset);
+    show_tooltip(span_elem, div_id, left_offset, top_offset);
     var elems_hovered = true;
     span.add(div_id).hover(function() {
         elems_hovered = true;
-        show_description(span_elem, div_id, left_offset, top_offset);
+        show_tooltip(span_elem, div_id, left_offset, top_offset);
     }, function() {
         elems_hovered = false;
         if (elems_hovered == 0) {
-            hide_description(div_id);
+            hide_tooltip(div_id);
         }
     });
 }
 
-function hide_description(div_id) {
+function hide_tooltip(div_id) {
     var desc_div = $(div_id);
     if (desc_div.length == 0) {
         desc_div = $("#term-div-not-found");
