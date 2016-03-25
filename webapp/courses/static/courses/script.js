@@ -146,7 +146,7 @@ function show_description(span_slct, div_slct, left_offset, top_offset) {
 
     var pos = span.position();
     desc_div.css({"left" : pos.left + span.width() + left_offset + "px", 
-                  "top" : Math.floor(pos.top + top_offset) + "px"});
+                  "top" : pos.top + top_offset + "px"});
     var desc_content_div = desc_div.children("div.term-desc-contents");
     if (desc_div.height() + "px" === desc_content_div.css('max-height')) {
         desc_div.find("div.term-desc-scrollable").slimScroll({

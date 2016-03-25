@@ -38,7 +38,7 @@
       <td class="answer">{{ answer }}</td>
       <td>{{ count }}</td>
       <td class="{% if correct %}correct{% else %}incorrect{% endif %}">
-        <span {% if matches %}onmouseover="show_matches(event, this);"
+        <span {% if matches %}onmouseover="show_matches(this);"
               onmouseout="hide_matches(this);"{% endif %}>{{ correct }}</span>
         {% if matches %}
           <div class="matches-list">
