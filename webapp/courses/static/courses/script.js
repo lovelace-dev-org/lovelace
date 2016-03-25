@@ -168,12 +168,12 @@ function show_descr_termtag(span_elem, div_id) {
     }
     
     show_description(span_elem, div_id, left_offset, top_offset);
-    var elems_hovered = 1;
+    var elems_hovered = true;
     span.add(div_id).hover(function() {
-        elems_hovered++;
+        elems_hovered = true;
         show_description(span_elem, div_id, left_offset, top_offset);
     }, function() {
-        elems_hovered--;
+        elems_hovered = false;
         if (elems_hovered == 0) {
             hide_description(div_id);
         }
