@@ -112,13 +112,11 @@ div.feedback-container div.rating > label.star-filled {
 }
 
 div.feedback-container div.rating > label.star-filled:before {
-   font-size: 0.85em;
-   border: none;
-   content: "\2605";
-   margin-top: 4px;
-   margin-right: 3px;
-   position: absolute;
-   color: #fdd017;
+    border: none;
+    content: "\2605";
+    position: absolute;
+    color: #fdd017;
+    text-shadow: 1px 1px #222;
 }
 
 div.feedback-container textarea.feedback-textfield {
