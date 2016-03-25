@@ -32,7 +32,7 @@ class ContentFeedbackQuestion(models.Model):
     def get_url_name(self):
         """Creates a URL and HTML5 ID field friendly version of the name."""
         return slugify.slugify(self.question)
-
+    
     def get_type_object(self):
         type_models = {
             "TEXTFIELD_FEEDBACK" : TextfieldFeedbackQuestion,
@@ -86,11 +86,7 @@ class ContentFeedbackQuestion(models.Model):
 
 class TextfieldFeedbackQuestion(ContentFeedbackQuestion):
     def save(self, *args, **kwargs):
-        if not self.slug:
-            self.slug = self.get_url_name()
-        else:
-            self.slug = slugify.slugify(self.slug)
-        
+        self.slug = self.get_url_name()
         self.question_type = "TEXTFIELD_FEEDBACK"
         super(TextfieldFeedbackQuestion, self).save(*args, **kwargs)
 
@@ -134,11 +130,7 @@ class TextfieldFeedbackQuestion(ContentFeedbackQuestion):
 
 class ThumbFeedbackQuestion(ContentFeedbackQuestion):
     def save(self, *args, **kwargs):
-        if not self.slug:
-            self.slug = self.get_url_name()
-        else:
-            self.slug = slugify.slugify(self.slug)
-
+        self.slug = self.get_url_name()
         self.question_type = "THUMB_FEEDBACK"
         super(ThumbFeedbackQuestion, self).save(*args, **kwargs)
 
@@ -184,11 +176,7 @@ class ThumbFeedbackQuestion(ContentFeedbackQuestion):
 
 class StarFeedbackQuestion(ContentFeedbackQuestion):
     def save(self, *args, **kwargs):
-        if not self.slug:
-            self.slug = self.get_url_name()
-        else:
-            self.slug = slugify.slugify(self.slug)
-        
+        self.slug = self.get_url_name()
         self.question_type = "STAR_FEEDBACK"
         super(StarFeedbackQuestion, self).save(*args, **kwargs)
     

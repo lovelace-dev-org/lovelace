@@ -10,14 +10,14 @@ register = template.Library()
 @register.inclusion_tag("feedback/textfield_feedback_question.html")
 def feedback_textfield(question, user, content):
     return {"question" : question.question,
-            "answered" : question.user_answered(user, content),
+            "answered" : question.user_answered(user, content) if user.is_authenticated() else None,
             "content_slug" : content.slug, 
             "feedback_slug" : question.slug}
 
 # {% feedback_thumb %}
 @register.inclusion_tag("feedback/thumb_feedback_question.html")
 def feedback_thumb(question, user, content):
-    if question.user_answered(user, content):
+    if user.is_authenticated() and question.user_answered(user, content):
         user_answer = question.get_latest_answer(user, content).thumb_up 
     else:
         user_answer = None
@@ -30,7 +30,7 @@ def feedback_thumb(question, user, content):
 # {% feedback_star %}
 @register.inclusion_tag("feedback/star_feedback_question.html")
 def feedback_star(question, user, content):
-    if question.user_answered(user, content):
+    if user.is_authenticated() and question.user_answered(user, content):
         user_answer = question.get_latest_answer(user, content).rating
     else:
         user_answer = None

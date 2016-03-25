@@ -21,7 +21,9 @@ function select_stars(star_elem, star_num) {
         var star = $(stars[i]);
         if (i >= star_num - 1) {
             star.addClass("star-filled");
+            star.removeClass("star-outline");
         } else {
+            star.addClass("star-outline");
             star.removeClass("star-filled");
         }
     }
