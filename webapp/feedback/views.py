@@ -14,7 +14,6 @@ def textfield_feedback(question, content):
     }
 
 def thumb_feedback(question, content):
-    answers = question.get_answers_by_content(content)
     try:
         answers = question.get_latest_answers_by_content(content)
     except feedback.models.DatabaseBackendException:
@@ -76,10 +75,44 @@ def star_feedback(question, content):
         try:
             rating_pcts.append(round((rcount / user_count) * 100, 2))
         except ZeroDivisionError:
-            rating_pcts.append(0)
+            rating_pcts.append(0.0)
 
     return {
         "rating_stats" : zip(rating_counts, rating_pcts),
+        "user_count" : user_count
+    }
+
+def multiple_choice_feedback(question, content):
+    choices = list(question.get_choices())
+    try:
+        answers = question.get_latest_answers_by_content(content)
+    except feedback.models.DatabaseBackendException:
+        print("what")
+        # For SQLite which does not support DISTINCT ON
+        answers = question.get_answers_by_content(content).order_by("user", "-answer_date")
+        users = set(answers.values_list("user", flat=True))
+        user_count = len(users)
+        latest_answers = {}
+        answer_counts = [0] * len(choices)
+        for answer in answers:
+            if answer.user not in latest_answers:
+                latest_answers[answer.user] = answer
+                answer_counts[choices.index(answer.chosen_answer)] += 1
+    else:
+        user_count = answers.count()
+        chosen_answers = list(answers.values_list("chosen_answers", flat=True))
+        answer_counts = [chosen_answers.count(choice.id) for choice in choices]
+
+    answer_pcts = []
+    for acount in answer_counts:
+        try:
+            answer_pcts.append(round((acount / user_count) * 100, 2))
+        except ZeroDivisionError:
+            answer_pcts.append(0.0)
+
+
+    return {
+        "answer_stats" : zip(choices, answer_counts, answer_pcts),
         "user_count" : user_count
     }
 
@@ -91,7 +124,7 @@ def content(request, content_slug):
         content = courses.models.ContentPage.objects.get(slug=content_slug)
     except courses.models.ContentPage.DoesNotExist:
         return HttpResponseNotFound("No content page {} found!".format(content_slug))
-    
+
     questions = content.get_feedback_questions()
     ctx = {
         "content": content,
@@ -112,6 +145,8 @@ def content(request, content_slug):
             question_ctx.update(thumb_feedback(question, content))
         elif question_type == "STAR_FEEDBACK":
             question_ctx.update(star_feedback(question, content))
+        elif question_type == "MULTIPLE_CHOICE_FEEDBACK":
+            question_ctx.update(multiple_choice_feedback(question, content))            
         feedback_stats.append(question_ctx)
     ctx["feedback_stats"] = feedback_stats
     t = loader.get_template("feedback/feedback_stats.html")

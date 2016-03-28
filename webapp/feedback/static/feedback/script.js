@@ -15,6 +15,10 @@ function show_feedbacks(header_elem, expand_str, collapse_str, expand_img, colla
     });
 }
 
+function select_choice(elem) {
+     $(elem).closest("form").submit();
+}
+
 function select_stars(star_elem, star_num) {
     var stars = $(star_elem).parent().children("label");
     for (var i = 0; i < stars.length; i++) {
@@ -27,11 +31,7 @@ function select_stars(star_elem, star_num) {
             star.removeClass("star-filled");
         }
     }
-    $(star_elem).closest("form").submit();
-}
-
-function select_thumb_icon(thumb_elem) {
-     $(thumb_elem).closest("form").submit();
+    select_choice(star_elem);
 }
 
 function feedback_success(data, result_div, error_div, form_parent) {

@@ -25,6 +25,8 @@
         {% feedback_thumb question user content %}
       {% elif question.question_type == "STAR_FEEDBACK" %}
         {% feedback_star question user content %}
+      {% elif question.question_type == "MULTIPLE_CHOICE_FEEDBACK" %}
+        {% feedback_multiple_choice question user content %}
       {% endif %}
     {% endfor %}
     </div>

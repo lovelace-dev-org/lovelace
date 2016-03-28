@@ -13,14 +13,16 @@ from django.db import connection
 class ContentFeedbackQuestion(models.Model):
     """A feedback that can be linked to any content."""
     QUESTION_TYPE_CHOICES = (
+        ("MULTIPLE_CHOICE_FEEDBACK", "Multiple choice feedback"),
         ("TEXTFIELD_FEEDBACK", "Textfield feedback"),
         ("THUMB_FEEDBACK", "Thumb feedback"),
         ("STAR_FEEDBACK", "Star feedback"),
     )
 
     QUESTION_TYPE_ORDERING = {"THUMB_FEEDBACK" : 1, 
-                              "STAR_FEEDBACK" : 2, 
-                              "TEXTFIELD_FEEDBACK" : 3}
+                              "STAR_FEEDBACK" : 2,
+                              "MULTIPLE_CHOICE_FEEDBACK" : 3,
+                              "TEXTFIELD_FEEDBACK" : 4}
 
     question = models.CharField(verbose_name="Question", max_length=100, unique=True)
     question_type = models.CharField(max_length=28, default="TEXTFIELD_FEEDBACK", choices=QUESTION_TYPE_CHOICES)
@@ -38,6 +40,7 @@ class ContentFeedbackQuestion(models.Model):
             "TEXTFIELD_FEEDBACK" : TextfieldFeedbackQuestion,
             "THUMB_FEEDBACK" : ThumbFeedbackQuestion,
             "STAR_FEEDBACK" : StarFeedbackQuestion,
+            "MULTIPLE_CHOICE_FEEDBACK": MultipleChoiceFeedbackQuestion,
         }                       
         return type_models[self.question_type].objects.get(id=self.id)
 
@@ -215,6 +218,58 @@ class StarFeedbackQuestion(ContentFeedbackQuestion):
         verbose_name = "star feedback question"
         proxy = True
 
+class MultipleChoiceFeedbackQuestion(ContentFeedbackQuestion):
+    def save(self, *args, **kwargs):
+        self.slug = self.get_url_name()
+        self.question_type = "MULTIPLE_CHOICE_FEEDBACK"
+        super(MultipleChoiceFeedbackQuestion, self).save(*args, **kwargs)
+    
+    def save_answer(self, content, user, ip, answer):
+        if "choice" in answer.keys():
+            choice = int(answer["choice"])
+        else:
+            raise InvalidFeedbackAnswerException("Error: failed to read the chosen answer!")
+
+        answer_object = MultipleChoiceFeedbackUserAnswer(
+            question=self, content=content, chosen_answer=MultipleChoiceFeedbackAnswer.objects.get(id=choice), user=user,
+            answerer_ip=ip
+        )
+        answer_object.save()
+        return answer_object
+
+    def get_choices(self):
+        choices = MultipleChoiceFeedbackAnswer.objects.filter(question=self.id).order_by('id')
+        return choices
+        
+    def get_answers_by_content(self, content):
+        return MultipleChoiceFeedbackUserAnswer.objects.filter(question=self, content=content)
+
+    def get_latest_answers_by_content(self, content):
+        if connection.vendor == "postgresql":
+            return self.get_answers_by_content(content).order_by("user", "-answer_date").distinct("user")
+        else:
+            raise DatabaseBackendException("Database backend does not support DISTINCT ON")
+
+    def get_user_answers_by_content(self, user, content):
+        return MultipleChoiceFeedbackUserAnswer.objects.filter(question=self, user=user, content=content)
+    
+    def user_answered(self, user, content):
+        if MultipleChoiceFeedbackUserAnswer.objects.filter(question=self, user=user, content=content).count() >= 1:
+            return True
+        else:
+            return False
+
+    class Meta:
+        verbose_name = "multiple choice feedback question"
+        proxy = True
+
+class MultipleChoiceFeedbackAnswer(models.Model):
+    question = models.ForeignKey(MultipleChoiceFeedbackQuestion)
+    answer = models.TextField()
+
+    def __str__(self):
+        return self.answer
+
 class ContentFeedbackUserAnswer(models.Model):
     user = models.ForeignKey(User)                          # The user who has given this feedback
     content = models.ForeignKey('courses.ContentPage')      # The content on which this feedback was given
@@ -237,6 +292,15 @@ class ThumbFeedbackUserAnswer(ContentFeedbackUserAnswer):
 
 class StarFeedbackUserAnswer(ContentFeedbackUserAnswer):
     rating = models.PositiveSmallIntegerField()
+    
+    class Meta:
+        get_latest_by = "answer_date"
+
+class MultipleChoiceFeedbackUserAnswer(ContentFeedbackUserAnswer):
+    chosen_answer = models.ForeignKey(MultipleChoiceFeedbackAnswer)
+
+    def __str__(self):
+        return self.chosen_answer
     
     class Meta:
         get_latest_by = "answer_date"

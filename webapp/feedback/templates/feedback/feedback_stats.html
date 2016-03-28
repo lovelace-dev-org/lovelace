@@ -75,6 +75,21 @@
       </tr>
       {% endfor %}
     </table>
+  {% elif question_stats.question_type == "MULTIPLE_CHOICE_FEEDBACK" %}
+    <table>
+      <tr>
+        <th>Choice</th>
+        <th>Count</th>
+        <th>(&#37;)</th>
+      </tr>
+      {% for choice, answer_count, answer_pct in question_stats.answer_stats %}
+      <tr>
+        <td>{{ choice }}</td>
+        <td>{{ answer_count }}</td> 
+        <td>{{ answer_pct }}</td>
+      </tr>
+      {% endfor %}
+    </table>
   {% endif %}
   {% endfor %}
   {% endif %}
