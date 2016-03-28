@@ -4,6 +4,10 @@ span.term {
     border-bottom: 2px #222 dotted;
 }
 
+li.term-list-item {
+    margin-bottom: 4px;
+}
+
 div.term-description {
     display: none;
     position: absolute;
@@ -42,6 +46,7 @@ div.term-description:after {
 
 div.term-desc-contents {
     max-height: 600px;
+    max-width: 600px;
     overflow-y: hidden;
 }
 

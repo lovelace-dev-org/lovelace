@@ -163,21 +163,14 @@
 
       {% block termbank %}
       {% if terms %}
-      <div class="termbank">
-        <div class="termbank-contents">
-          <div class="termbank-heading">{% trans "Termbank" %}</div>
-          <div class="list-div">
+      <div class="termbank" id="termbank">
+        <div class="termbank-contents" id="termbank-contents">
+          <div class="termbank-heading" id="termbank-heading">{% trans "Termbank" %}</div>
+          <div id="termbank-list-div" class="list-div">
             <ul>
             {% for term in terms %}
-              <li>
-                <span class="term" id="{{ term.span_id }}" onmouseover="show_tooltip_during_hover(this, '#{{ term.div_id }}', 5, -5);">{{ term.name }}</span>
-                <div class="term-description" id="{{ term.div_id }}">
-                  <div class="term-desc-contents">
-                    <div class="term-desc-scrollable">
-                      {{ term.description|safe }}
-                    </div>
-                  </div>
-                </div>
+              <li class="term-list-item">
+                <span class="term" id="{{ term.span_id }}" onmouseover="show_termbank_tooltip(this, '#{{ term.name }}-term-div');">{{ term.name }}</span>
               </li>
             {% endfor %}
             </ul>
@@ -211,7 +204,7 @@
       </section>
 
       {% block term-descriptions %}
-      <div class="term-descriptions">
+      <div class="term-descriptions" id="term-descriptions">
         <div class="term-description" id="term-div-not-found">
           ?
         </div>

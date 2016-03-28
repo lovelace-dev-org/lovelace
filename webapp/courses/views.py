@@ -377,7 +377,6 @@ def content(request, course_slug, content_slug, **kwargs):
     terms = Term.objects.filter(instance__course=course)
     terms = [{"name" : term.name, 
               "description" : "".join(markupparser.MarkupParser.parse(term.description, request, term_context)).strip(),
-              "div_id" : term.name + "-termbank-div",
               "span_id" : term.name + "-termbank-span"} 
              for term in terms]
     

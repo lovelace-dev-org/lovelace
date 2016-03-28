@@ -44,6 +44,7 @@ var handler = function() {
     if (topmost_found == false && typeof old !== "undefined") {
         old.attr("class", "toc-visible");
     }
+    $("div.term-description").hide();
 };
 
 // Build the table of contents
@@ -176,6 +177,17 @@ function show_tooltip_during_hover(span_elem, div_id, left_offset, top_offset) {
             hide_tooltip(div_id);
         }
     });
+}
+
+function show_termbank_tooltip(span_elem, div_id) {
+    var termbank_elem = $("#termbank");
+    var termbank_heading = $("#termbank-heading");
+    var term_desc_offset = $("#term-descriptions").offset();
+    var termbank_offset = termbank_elem.offset();
+    var termbank_position = termbank_elem.position();
+    var left_offset = termbank_offset.left - term_desc_offset.left + 10;
+    var top_offset = termbank_position.top + termbank_heading.height() + $(span_elem).parent().position().top + 5;
+    show_tooltip_during_hover(span_elem, div_id, left_offset, top_offset + $(div_id).position().top);
 }
 
 function hide_tooltip(div_id) {
