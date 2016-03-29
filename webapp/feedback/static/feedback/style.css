@@ -70,7 +70,7 @@ div.feedback-container div.rating {
     display: inline-block;
 }
 
-div.feedback-container input[type=radio] {
+div.feedback-container input[type=radio].star-radio, div.feedback-container input[type=radio].thumb-radio {
     display: none;
 }
 
