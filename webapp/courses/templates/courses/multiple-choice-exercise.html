@@ -4,7 +4,7 @@
 {% block exercise-form %}
   {% for choice in choices %}
     <div class="input-label-container">
-      <input type="radio" name="{{ content_slug }}-radio" id="mce-{{ choice.id }}" value="{{ choice.id }}" class="task_radio"><label for="mce-{{ choice.id }}">{{ choice.answer }}</label>
+      <input type="radio" name="choice" id="mce-{{ choice.id }}" value="{{ choice.id }}" class="task_radio"><label for="mce-{{ choice.id }}">{{ choice.answer }}</label>
     </div>
   {% endfor %}
 {% endblock %}

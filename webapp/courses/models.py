@@ -303,9 +303,9 @@ class ContentPage(models.Model):
         humanized_type = self.content_type.replace("_", " ").lower()
         return humanized_type
 
-    def get_type_lower(self):
-        type_lower = self.content_type.lower()
-        return type_lower
+    def get_dashed_type(self):
+        dashed_type = self.content_type.replace("_", "-").lower()
+        return dashed_type
 
     def get_admin_change_url(self):
         adminized_type = self.content_type.replace("_", "").lower()

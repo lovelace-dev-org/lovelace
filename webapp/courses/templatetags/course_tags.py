@@ -14,22 +14,22 @@ def lecture(context):
     return context
 
 # {% multiple_choice_exercise %}
-@register.inclusion_tag("courses/multiple_choice_exercise.html", takes_context=True)
+@register.inclusion_tag("courses/multiple-choice-exercise.html", takes_context=True)
 def multiple_choice_exercise(context):
     return context
 
 # {% checkbox_exercise %}
-@register.inclusion_tag("courses/checkbox_exercise.html", takes_context=True)
+@register.inclusion_tag("courses/checkbox-exercise.html", takes_context=True)
 def checkbox_exercise(context):
     return context
 
 # {% textfield_exercise %}
-@register.inclusion_tag("courses/textfield_exercise.html", takes_context=True)
+@register.inclusion_tag("courses/textfield-exercise.html", takes_context=True)
 def textfield_exercise(context):
     return context
 
 # {% file_upload_exercise %}
-@register.inclusion_tag("courses/file_upload_exercise.html", takes_context=True)
+@register.inclusion_tag("courses/file-upload-exercise.html", takes_context=True)
 def file_upload_exercise(context):
     return context
 

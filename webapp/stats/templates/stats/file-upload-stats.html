@@ -1,0 +1,19 @@
+{% extends 'stats/exercise-stats.html' %}
+
+{% load stats_tags %}
+
+{% block user-answer-data %}
+  {% for course, basic_stats, piechart in stats %}
+  <h3 class="content-heading">{{ course|user_answers_title }}<span id="{{ course|heading_id }}" class="anchor-offset"></span></h3>  
+  <div class="stat-table">
+    <div class="stat-table row">
+      <div class="stat-table cell">
+        {% show_basic_stats basic_stats %}
+      </div>
+      {% if piechart %}
+      <div class="stat-table cell">{% show_piechart piechart %}</div>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+{% endblock %}

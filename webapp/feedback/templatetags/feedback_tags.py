@@ -7,7 +7,7 @@ ENCODING = "utf-8"
 register = template.Library()
 
 # {% feedback_textfield %}
-@register.inclusion_tag("feedback/textfield_feedback_question.html")
+@register.inclusion_tag("feedback/textfield-feedback-question.html")
 def feedback_textfield(question, user, content):
     return {
         "question" : question.question,
@@ -17,7 +17,7 @@ def feedback_textfield(question, user, content):
     }
 
 # {% feedback_thumb %}
-@register.inclusion_tag("feedback/thumb_feedback_question.html")
+@register.inclusion_tag("feedback/thumb-feedback-question.html")
 def feedback_thumb(question, user, content):
     if user.is_authenticated() and question.user_answered(user, content):
         user_answer = question.get_latest_answer(user, content).thumb_up 
@@ -32,7 +32,7 @@ def feedback_thumb(question, user, content):
     }
 
 # {% feedback_star %}
-@register.inclusion_tag("feedback/star_feedback_question.html")
+@register.inclusion_tag("feedback/star-feedback-question.html")
 def feedback_star(question, user, content):
     if user.is_authenticated() and question.user_answered(user, content):
         user_answer = question.get_latest_answer(user, content).rating
@@ -48,7 +48,7 @@ def feedback_star(question, user, content):
     }
 
 # {% feedback_multiple_choice %}
-@register.inclusion_tag("feedback/multiple_choice_feedback_question.html")
+@register.inclusion_tag("feedback/multiple-choice-feedback-question.html")
 def feedback_multiple_choice(question, user, content):
     if user.is_authenticated() and question.user_answered(user, content):
         user_answer = question.get_latest_answer(user, content).chosen_answer
@@ -65,7 +65,7 @@ def feedback_multiple_choice(question, user, content):
     }
 
 # {% sortable_table_header %}
-@register.inclusion_tag("feedback/sortable_table_header.html")
+@register.inclusion_tag("feedback/sortable-table-header.html")
 def sortable_table_header(slug, header, column):
     return {
         "slug": slug,

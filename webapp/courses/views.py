@@ -150,7 +150,7 @@ def check_answer_sandboxed(request, content_slug):
         evaluation["manual"] = True
 
     # TODO: Errors, hints, comments in JSON
-    t = loader.get_template("courses/exercise_evaluation.html")
+    t = loader.get_template("courses/exercise-evaluation.html")
     return JsonResponse({
         'result': t.render(evaluation),
         'evaluation': evaluation.get("evaluation"),
@@ -213,7 +213,7 @@ def check_answer(request, course_slug, content_slug):
         evaluation["manual"] = True
 
     # TODO: Errors, hints, comments in JSON
-    t = loader.get_template("courses/exercise_evaluation.html")
+    t = loader.get_template("courses/exercise-evaluation.html")
     return JsonResponse({
         'result': t.render(evaluation),
         'evaluation': evaluation.get("evaluation"),
@@ -253,12 +253,12 @@ def file_exercise_evaluation(request, course_slug, content_slug, task_id, task=N
 
     debug_json = json.dumps(evaluation_tree, indent=4)
 
-    t_file = loader.get_template("courses/file_exercise_evaluation.html")
+    t_file = loader.get_template("courses/file-exercise-evaluation.html")
     c_file = {
         'debug_json': debug_json,
         'evaluation_tree': evaluation_tree["test_tree"],
     }
-    t_exercise = loader.get_template("courses/exercise_evaluation.html")
+    t_exercise = loader.get_template("courses/exercise-evaluation.html")
     c_exercise = {
         'evaluation': evaluation_obj.correct,
     }
@@ -298,7 +298,7 @@ def get_old_file_exercise_evaluation(request, user, answer_id):
 
     debug_json = json.dumps(evaluation_dict, indent=4)
 
-    t_file = loader.get_template("courses/file_exercise_evaluation.html")
+    t_file = loader.get_template("courses/file-exercise-evaluation.html")
     c_file = {
         'debug_json': debug_json,
         'evaluation_tree': evaluation_dict["test_tree"],
@@ -563,7 +563,7 @@ def show_answers(request, user, course, exercise):
     answers = answers.order_by('-answer_date')
 
     # TODO: Own subtemplates for each of the exercise types.
-    t = loader.get_template("courses/user_exercise_answers.html")
+    t = loader.get_template("courses/user-exercise-answers.html")
     c = {
         'exercise': exercise,
         'course_slug': course,

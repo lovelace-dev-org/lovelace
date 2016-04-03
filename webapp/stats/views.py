@@ -358,13 +358,13 @@ def single_exercise(request, content_slug):
     }
 
     if tasktype == "CHECKBOX_EXERCISE":
-        return exercise_answer_stats(request, ctx, exercise, checkbox_exercise, "checkbox_stats.html")
+        return exercise_answer_stats(request, ctx, exercise, checkbox_exercise, "checkbox-stats.html")
     elif tasktype == "MULTIPLE_CHOICE_EXERCISE":
-        return exercise_answer_stats(request, ctx, exercise, multiple_choice_exercise, "multiple_choice_stats.html")
+        return exercise_answer_stats(request, ctx, exercise, multiple_choice_exercise, "multiple-choice-stats.html")
     elif tasktype == "TEXTFIELD_EXERCISE":
-        return exercise_answer_stats(request, ctx, exercise, textfield_exercise, "textfield_stats.html")
+        return exercise_answer_stats(request, ctx, exercise, textfield_exercise, "textfield-stats.html")
     elif tasktype == "FILE_UPLOAD_EXERCISE":
-        return exercise_answer_stats(request, ctx, exercise, file_upload_exercise, "file_upload_stats.html")
+        return exercise_answer_stats(request, ctx, exercise, file_upload_exercise, "file-upload-stats.html")
     else:
         return HttpResponseNotFound("No stats for exercise {} found!".format(content_slug))
 
@@ -392,7 +392,7 @@ def user_task(request, user_name, task_name):
     elif tasktype == "FILE_UPLOAD_EXERCISE":
         fileanswers = UserFileUploadExerciseAnswer.objects.filter(exercise=content, user=ruser)
 
-    t = loader.get_template("stats/user_task_stats.html")
+    t = loader.get_template("stats/user-task-stats.html")
     c = {
         'username': user_name,
         'taskname': task_name,

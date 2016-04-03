@@ -149,7 +149,7 @@ def content(request, content_slug):
             question_ctx.update(multiple_choice_feedback(question, content))            
         feedback_stats.append(question_ctx)
     ctx["feedback_stats"] = feedback_stats
-    t = loader.get_template("feedback/feedback_stats.html")
+    t = loader.get_template("feedback/feedback-stats.html")
     return HttpResponse(t.render(ctx, request))
 
 def receive(request, content_slug, feedback_slug):

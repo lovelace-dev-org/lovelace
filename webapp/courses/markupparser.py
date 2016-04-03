@@ -484,7 +484,7 @@ class EmbeddedPageMarkup(Markup):
             c.update(state["context"])
 
             t = loader.get_template("courses/{page_type}.html".format(
-                page_type=page.get_type_lower()
+                page_type=page.get_dashed_type()
             ))
             rendered_content = t.render(c, state["request"])
 
