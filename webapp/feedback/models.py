@@ -8,22 +8,22 @@ from django.db import connection
 
 #from courses.models import ContentPage # prevent circular import
 
-## Feedback models
+## Feedback models 
+
+QUESTION_TYPE_CHOICES = (
+    ("THUMB_FEEDBACK", "Thumb feedback"),
+    ("STAR_FEEDBACK", "Star feedback"),
+    ("MULTIPLE_CHOICE_FEEDBACK", "Multiple choice feedback"),
+    ("TEXTFIELD_FEEDBACK", "Textfield feedback"),
+)
+
+QUESTION_TYPE_ORDERING = {"THUMB_FEEDBACK" : 1, 
+                          "STAR_FEEDBACK" : 2,
+                          "MULTIPLE_CHOICE_FEEDBACK" : 3,
+                          "TEXTFIELD_FEEDBACK" : 4}
 
 class ContentFeedbackQuestion(models.Model):
     """A feedback that can be linked to any content."""
-    QUESTION_TYPE_CHOICES = (
-        ("MULTIPLE_CHOICE_FEEDBACK", "Multiple choice feedback"),
-        ("TEXTFIELD_FEEDBACK", "Textfield feedback"),
-        ("THUMB_FEEDBACK", "Thumb feedback"),
-        ("STAR_FEEDBACK", "Star feedback"),
-    )
-
-    QUESTION_TYPE_ORDERING = {"THUMB_FEEDBACK" : 1, 
-                              "STAR_FEEDBACK" : 2,
-                              "MULTIPLE_CHOICE_FEEDBACK" : 3,
-                              "TEXTFIELD_FEEDBACK" : 4}
-
     question = models.CharField(verbose_name="Question", max_length=100, unique=True)
     question_type = models.CharField(max_length=28, default="TEXTFIELD_FEEDBACK", choices=QUESTION_TYPE_CHOICES)
     slug = models.CharField(max_length=255, db_index=True, unique=True)
@@ -36,13 +36,23 @@ class ContentFeedbackQuestion(models.Model):
         return slugify.slugify(self.question)
     
     def get_type_object(self):
-        type_models = {
-            "TEXTFIELD_FEEDBACK" : TextfieldFeedbackQuestion,
+        """Returns the actual type object of the question object that is the child of ContentFeedbackQuestion."""
+        TYPE_MODELS = {
             "THUMB_FEEDBACK" : ThumbFeedbackQuestion,
             "STAR_FEEDBACK" : StarFeedbackQuestion,
             "MULTIPLE_CHOICE_FEEDBACK": MultipleChoiceFeedbackQuestion,
-        }                       
-        return type_models[self.question_type].objects.get(id=self.id)
+            "TEXTFIELD_FEEDBACK" : TextfieldFeedbackQuestion,
+        }
+        return TYPE_MODELS[self.question_type].objects.get(id=self.id)
+
+    def get_answer_model(self):
+        ANSWER_MODELS = {
+            "THUMB_FEEDBACK" : ThumbFeedbackUserAnswer,
+            "STAR_FEEDBACK" : StarFeedbackUserAnswer,
+            "MULTIPLE_CHOICE_FEEDBACK": MultipleChoiceFeedbackUserAnswer,
+            "TEXTFIELD_FEEDBACK" : TextfieldFeedbackUserAnswer,
+        }
+        return ANSWER_MODELS[self.question_type]
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -56,14 +66,13 @@ class ContentFeedbackQuestion(models.Model):
         pass
 
     def get_human_readable_type(self):
-        humanized_type = self.question_type.replace("_", " ").lower()
-        return humanized_type
+        return self.question_type.replace("_", " ").lower()
 
     def get_answers_by_content(self, content):
-        return ContentFeedbackUserAnswer.objects.filter(question=self, content=content)
+        return self.get_answer_model().objects.filter(question=self, content=content)
 
     def get_user_answers_by_content(self, user, content):
-        return ContentFeedbackUserAnswer.objects.filter(question=self, user=user, content=content)
+        return self.get_answer_model().objects.filter(question=self, user=user, content=content)
     
     def get_latest_answer(self, user, content):
         answers = self.get_user_answers_by_content(user, content)
@@ -79,10 +88,7 @@ class ContentFeedbackQuestion(models.Model):
             raise DatabaseBackendException("Database backend does not support DISTINCT ON")
 
     def user_answered(self, user, content):
-        if ContentFeedbackUserAnswer.objects.filter(question=self, user=user, content=content).count() >= 1:
-            return True
-        else:
-            return False
+        return self.get_answer_model().objects.filter(question=self, user=user, content=content).count() >= 1
             
     class Meta:
         ordering = ["question_type"]
@@ -108,25 +114,7 @@ class TextfieldFeedbackQuestion(ContentFeedbackQuestion):
         )
         answer_object.save()
         return answer_object
-        
-    def get_answers_by_content(self, content):
-        return TextfieldFeedbackUserAnswer.objects.filter(question=self, content=content)
-
-    def get_latest_answers_by_content(self, content):
-        if connection.vendor == "postgresql":
-            return self.get_answers_by_content(content).order_by("user", "-answer_date").distinct("user")
-        else:
-            raise DatabaseBackendException("Database backend does not support DISTINCT ON")
-        
-    def get_user_answers_by_content(self, user, content):
-        return TextfieldFeedbackUserAnswer.objects.filter(question=self, user=user, content=content)
-
-    def user_answered(self, user, content):
-        if TextfieldFeedbackUserAnswer.objects.filter(question=self, user=user, content=content).count() >= 1:
-            return True
-        else:
-            return False
-
+                
     class Meta:
         verbose_name = "textfield feedback question"
         proxy = True
@@ -155,24 +143,6 @@ class ThumbFeedbackQuestion(ContentFeedbackQuestion):
         answer_object.save()
         return answer_object
         
-    def get_answers_by_content(self, content):
-        return ThumbFeedbackUserAnswer.objects.filter(question=self, content=content)
-
-    def get_latest_answers_by_content(self, content):
-        if connection.vendor == "postgresql":
-            return self.get_answers_by_content(content).order_by("user", "-answer_date").distinct("user")
-        else:
-            raise DatabaseBackendException("Database backend does not support DISTINCT ON")
-
-    def get_user_answers_by_content(self, user, content):
-        return ThumbFeedbackUserAnswer.objects.filter(question=self, user=user, content=content)
-
-    def user_answered(self, user, content):
-        if ThumbFeedbackUserAnswer.objects.filter(question=self, user=user, content=content).count() >= 1:
-            return True
-        else:
-            return False
-
     class Meta:
         verbose_name = "thumb feedback question"
         proxy = True
@@ -196,24 +166,6 @@ class StarFeedbackQuestion(ContentFeedbackQuestion):
         answer_object.save()
         return answer_object
         
-    def get_answers_by_content(self, content):
-        return StarFeedbackUserAnswer.objects.filter(question=self, content=content)
-
-    def get_latest_answers_by_content(self, content):
-        if connection.vendor == "postgresql":
-            return self.get_answers_by_content(content).order_by("user", "-answer_date").distinct("user")
-        else:
-            raise DatabaseBackendException("Database backend does not support DISTINCT ON")
-
-    def get_user_answers_by_content(self, user, content):
-        return StarFeedbackUserAnswer.objects.filter(question=self, user=user, content=content)
-    
-    def user_answered(self, user, content):
-        if StarFeedbackUserAnswer.objects.filter(question=self, user=user, content=content).count() >= 1:
-            return True
-        else:
-            return False
-
     class Meta:
         verbose_name = "star feedback question"
         proxy = True
@@ -241,24 +193,6 @@ class MultipleChoiceFeedbackQuestion(ContentFeedbackQuestion):
         choices = MultipleChoiceFeedbackAnswer.objects.filter(question=self.id).order_by('id')
         return choices
         
-    def get_answers_by_content(self, content):
-        return MultipleChoiceFeedbackUserAnswer.objects.filter(question=self, content=content)
-
-    def get_latest_answers_by_content(self, content):
-        if connection.vendor == "postgresql":
-            return self.get_answers_by_content(content).order_by("user", "-answer_date").distinct("user")
-        else:
-            raise DatabaseBackendException("Database backend does not support DISTINCT ON")
-
-    def get_user_answers_by_content(self, user, content):
-        return MultipleChoiceFeedbackUserAnswer.objects.filter(question=self, user=user, content=content)
-    
-    def user_answered(self, user, content):
-        if MultipleChoiceFeedbackUserAnswer.objects.filter(question=self, user=user, content=content).count() >= 1:
-            return True
-        else:
-            return False
-
     class Meta:
         verbose_name = "multiple choice feedback question"
         proxy = True

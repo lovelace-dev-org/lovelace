@@ -20,7 +20,7 @@ import magic
 
 import courses.tasks as rpc_tasks
 
-from feedback.models import ContentFeedbackQuestion
+import feedback.models
 
 import courses.markupparser as markupparser
 
@@ -260,7 +260,7 @@ class ContentPage(models.Model):
                                             through=EmbeddedLink, symmetrical=False,
                                             through_fields=('parent', 'embedded_page'))
 
-    feedback_questions = models.ManyToManyField(ContentFeedbackQuestion, blank=True)
+    feedback_questions = models.ManyToManyField(feedback.models.ContentFeedbackQuestion, blank=True)
 
     # Exercise fields
     question = models.TextField(blank=True)
@@ -372,7 +372,7 @@ class ContentPage(models.Model):
         
     def get_feedback_questions(self):
         return sorted([q.get_type_object() for q in self.feedback_questions.all()], 
-                      key=lambda q: ContentFeedbackQuestion.QUESTION_TYPE_ORDERING[q.question_type])
+                      key=lambda q: feedback.models.QUESTION_TYPE_ORDERING[q.question_type])
 
     def __str__(self):
         return self.name
