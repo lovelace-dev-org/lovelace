@@ -15,19 +15,29 @@
     <div class="exercise-feedback-content">
     {% else %}
     <div class="lecture-feedback-content">
-    <h1 class="content-heading">{% trans 'Give feedback on this content' %}<span id="give-feedback" class="anchor-offset"></span></h1>
+      <h1 class="content-heading">{% trans 'Give feedback on this content' %}<span id="give-feedback" class="anchor-offset"></span></h1>
     {% endif %}
 
     {% for question in feedback_questions %}
-      {% if question.question_type == "TEXTFIELD_FEEDBACK" %}
-        {% feedback_textfield question user content %}
-      {% elif question.question_type == "THUMB_FEEDBACK" %}
-        {% feedback_thumb question user content %}
-      {% elif question.question_type == "STAR_FEEDBACK" %}
-        {% feedback_star question user content %}
-      {% elif question.question_type == "MULTIPLE_CHOICE_FEEDBACK" %}
-        {% feedback_multiple_choice question user content %}
-      {% endif %}
+      <div class="feedback">
+        <div class="feedback-question">
+          <span>{{ question.question }}</span>
+        </div>
+        <form class="feedback-form" method="POST" enctype="multipart/form-data" action="{% url 'feedback:receive' content.slug question.slug %}">
+        {% csrf_token %}
+        {% if question.question_type == "TEXTFIELD_FEEDBACK" %}
+          {% feedback_textfield question user content %}
+        {% elif question.question_type == "THUMB_FEEDBACK" %}
+          {% feedback_thumb question user content %}
+        {% elif question.question_type == "STAR_FEEDBACK" %}
+          {% feedback_star question user content %}
+        {% elif question.question_type == "MULTIPLE_CHOICE_FEEDBACK" %}
+          {% feedback_multiple_choice question user content %}
+        {% endif %}
+        </form>
+        <div class="feedback-received"></div>
+        <div class="feedback-error"></div>
+      </div>
     {% endfor %}
     </div>
   </div>

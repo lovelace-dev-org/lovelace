@@ -320,7 +320,7 @@ def sandboxed_content(request, content_slug, **kwargs):
     question = blockparser.parseblock(escape(content.question), {"request" : request})
     choices = answers = content.get_choices()
 
-    rendered_content = content.rendered_markup(request, context={'tooltip' : False})
+    rendered_content = content.rendered_markup(request, context={"tooltip" : False})
 
     c = {
         'content': content,

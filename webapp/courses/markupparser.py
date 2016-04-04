@@ -23,6 +23,7 @@ from pygments.formatters import HtmlFormatter
 import courses.blockparser as blockparser
 import courses.models
 import courses.forms
+import feedback.models
 
 # TODO: Support indented blocks (e.g. <pre>) within indents, uls & ols
 # TODO: Support admonitions/warnings/good to know boxes/etc.
@@ -439,7 +440,7 @@ class EmbeddedPageMarkup(Markup):
 
     @classmethod
     def settings(cls, matchobj, state):
-        settings = {"page_slug" : matchobj.group("page_slug")}
+        settings = {"content_slug" : matchobj.group("page_slug")}
         try:
             page = courses.models.ContentPage.objects\
                                              .get(slug=settings["page_slug"])\
@@ -475,7 +476,7 @@ class EmbeddedPageMarkup(Markup):
             else:
                 c["sandboxed"] = False
 
-            if user.is_active and page.get_user_answers(user) and not sandboxed:
+            if not sandboxed and user.is_active and page.get_user_answers(user):
                 c["evaluation"] = page.get_user_evaluation(user)
                 c["answer_count"] = page.get_user_answers(user).count()
             else:
@@ -492,6 +493,63 @@ class EmbeddedPageMarkup(Markup):
         return settings
 
 markups.append(EmbeddedPageMarkup)
+
+class EmbeddedFeedbackQuestionMarkup(Markup):
+    name = "Embedded feedback question"
+    shortname = "embedded_feedback"
+    description = "A feedback question embedded into a content page."
+    regexp = r"^\<\!feedback\=(?P<feedback_slug>[^\s>]+)\>\s*$"
+    markup_class = "embedded item"
+    example = "<!feedback=slug-of-some-feedback-question>"
+    inline = False
+    allow_inline = False
+
+    @classmethod
+    def block(cls, block, settings, state):
+        yield '<div class="embedded-page">\n'
+        yield settings["rendered_content"]
+        yield '</div>\n'
+
+    @classmethod
+    def settings(cls, matchobj, state):
+        slug = matchobj.group("feedback_slug")
+        settings = {"feedback_slug" : slug}
+        try:
+            question = feedback.models.EmbeddedFeedbackQuestion.objects.get(slug=slug).get_type_object()
+        except courses.models.ContentPage.DoesNotExist as e:
+            raise EmbeddedObjectNotFoundError("embedded feedback question {} couldn't be found".format(slug))
+        else:
+            state["embedded_pages"].append(slug)
+            if "tooltip" in state["context"] and state["context"]["tooltip"]:
+                raise EmbeddedObjectNotAllowedError("embedded feedback questions are not allowed in tooltips")
+
+            c = {
+                "question_obj": question,
+                "question": question.question,
+                "question_type": question.question_type,
+                "slug": question.slug,
+                "description": question.description,
+            }
+
+            user = state["request"].user
+            sandboxed = state["request"].path.startswith("/sandbox/")
+            if sandboxed and user.is_authenticated() and user.is_active and user.is_staff:
+                c["sandboxed"] = True
+            elif sandboxed and (not user.is_authenticated() or not user.is_active or not user.is_staff):
+                settings["rendered_content"] = ""
+                return settings
+            else:
+                c["sandboxed"] = False
+                
+            c.update(state["context"])
+
+            t = loader.get_template("feedback/embedded-feedback-question.html")
+            rendered_content = t.render(c, state["request"])
+
+        settings["rendered_content"] = rendered_content
+        return settings
+
+markups.append(EmbeddedFeedbackQuestionMarkup)
 
 # TODO: Support embeddable JavaScript apps (maybe in iframe?)
 # - http://www.html5rocks.com/en/tutorials/security/sandboxed-iframes/
