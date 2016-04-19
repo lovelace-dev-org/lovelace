@@ -71,7 +71,8 @@ div.term-description span.anchor-offset {
     width: 0;
     height: 0;
     padding-top: 4rem;
-    margin-top: -4rem;       
+    margin-top: -4rem;
+    display: none;
 }
 
 div.term-description h1:first-child, div.term-description h2:first-child, div.term-description h3:first-child, div.term-description h4:first-child, div.term-description h5:first-child, div.term-description h6:first-child, .task-meta-container + h1, .task-meta-container + h2, .task-meta-container + h3, .task-meta-container + h4, .task-meta-container + h5, .task-meta-container + h6 {

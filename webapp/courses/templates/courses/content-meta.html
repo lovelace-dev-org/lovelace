@@ -48,7 +48,7 @@
       <div><b>{% trans "Teacher’s tools" %}</b></div>
       <ul>
         <li><div><a href="{% url 'stats:single_exercise' content.slug %}">{% trans 'Statistics' %}</a></div></li>
-        <li><div><a href="{% url 'feedback:content' content.slug %}">{% trans 'Feedback' %}</a></div></li>
+        <li><div><a href="{% url 'feedback:statistics' content.slug %}">{% trans 'Feedback' %}</a></div></li>
         <li><div><a href="{{ content.get_admin_change_url }}">
               {% with type=content.get_human_readable_type %}
                 {% if type == "lecture" %}

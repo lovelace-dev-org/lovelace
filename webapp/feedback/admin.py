@@ -1,11 +1,10 @@
 from django.contrib import admin
-from nested_inline.admin import NestedTabularInline
 
-from .models import TextfieldFeedbackQuestion, ThumbFeedbackQuestion, StarFeedbackQuestion, MultipleChoiceFeedbackQuestion, MultipleChoiceFeedbackAnswer
+from .models import TextfieldFeedbackQuestion, ThumbFeedbackQuestion, \
+    StarFeedbackQuestion, MultipleChoiceFeedbackQuestion, MultipleChoiceFeedbackAnswer
 
 class MultipleChoiceFeedbackAnswerInline(admin.TabularInline):
     model = MultipleChoiceFeedbackAnswer
-    extra = 1
 
 class TextfieldFeedbackQuestionAdmin(admin.ModelAdmin):
     def get_queryset(self, request):

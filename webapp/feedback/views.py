@@ -1,7 +1,8 @@
 import feedback.models
 import courses.models
 
-from django.http import HttpResponse, HttpResponseNotFound, HttpResponseNotAllowed, JsonResponse
+from django.http import HttpResponse, HttpResponseNotFound, HttpResponseNotAllowed, \
+    HttpResponse, JsonResponse
 from django.template import loader
 from django.db import connection
 
@@ -116,9 +117,9 @@ def multiple_choice_feedback(question, content):
         "user_count" : user_count
     }
 
-def content(request, content_slug):
+def content_feedback_stats(request, content_slug):
     if not request.user.is_authenticated() and not request.user.is_active and not request.user.is_staff:
-        return HttpResponseNotFound("Only logged in admins can view feedback statistics!")
+        return HttpResponseForbidden("Only logged in admins can view feedback statistics!")
     
     try:
         content = courses.models.ContentPage.objects.get(slug=content_slug)
@@ -131,7 +132,12 @@ def content(request, content_slug):
         "tasktype": content.get_human_readable_type(),
     }
 
-    feedback_stats = []
+    stats = {
+        "textfield_feedback": [],
+        "thumb_feedback" : [],
+        "star_feedback" : [],
+        "multiple_choice_feedback" : []
+    }
     for question in questions:
         question_type = question.question_type
         question_ctx = {
@@ -146,9 +152,10 @@ def content(request, content_slug):
         elif question_type == "STAR_FEEDBACK":
             question_ctx.update(star_feedback(question, content))
         elif question_type == "MULTIPLE_CHOICE_FEEDBACK":
-            question_ctx.update(multiple_choice_feedback(question, content))            
-        feedback_stats.append(question_ctx)
-    ctx["feedback_stats"] = feedback_stats
+            question_ctx.update(multiple_choice_feedback(question, content))
+        stats[question_type.lower()].append(question_ctx)
+    ctx["feedback_stats"] = stats
+    
     t = loader.get_template("feedback/feedback-stats.html")
     return HttpResponse(t.render(ctx, request))
 

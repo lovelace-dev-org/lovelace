@@ -2,9 +2,9 @@
 {% load i18n %}
 
 {% block feedback-input %}
-<textarea name="text-feedback" class="feedback-textfield" placeholder="{% trans 'Enter your answer here' %}" rows="3"></textarea><br />
-<input class="send-feedback" type="submit" value="{% trans 'Send feedback' %}">
-{% if answered %}
-<div class="answered-status"><span class="feedback-answered">{% trans "You have already answered this feedback." %}</span></div>
-{% endif %}
+  <textarea name="text-feedback" class="feedback-textfield" placeholder="{% trans 'Enter your answer here' %}" rows="3"></textarea><br>
+  <input class="send-feedback" type="submit" value="{% trans 'Send feedback' %}">
+  {% if answered %}
+    <div class="answered-status"><span class="feedback-answered">{% trans "You have already answered this feedback." %}</span></div>
+  {% endif %}
 {% endblock %}
