@@ -67,7 +67,6 @@ def multiple_choice_feedback(question, content):
         except ZeroDivisionError:
             answer_pcts.append(0.0)
 
-
     return {
         "answer_stats" : zip(choices, answer_counts, answer_pcts),
         "user_count" : user_count
