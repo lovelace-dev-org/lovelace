@@ -76,10 +76,7 @@ class ContentFeedbackQuestion(models.Model):
             return None
 
     def get_latest_answers_by_content(self, content):
-        if connection.vendor == "postgresql":
-            return self.get_answers_by_content(content).order_by("user", "-answer_date").distinct("user")
-        else:
-            raise DatabaseBackendException("Database backend does not support DISTINCT ON")
+        return self.get_answers_by_content(content).order_by("user", "-answer_date").distinct("user")
 
     def user_answered(self, user, content):
         return self.get_answer_model().objects.filter(question=self, user=user, content=content).count() >= 1

@@ -15,61 +15,31 @@ def textfield_feedback(question, content):
     }
 
 def thumb_feedback(question, content):
-    try:
-        answers = question.get_latest_answers_by_content(content)
-    except feedback.models.DatabaseBackendException:
-        # For SQLite which does not support DISTINCT ON
-        answers = question.get_answers_by_content(content).order_by("user", "-answer_date")
-        users = set(answers.values_list("user", flat=True))
-        user_count = len(users)
-        latest_answers = {}
-        thumbs_up = 0
-        thumb_downs = 0
-        for answer in answers:
-            if answer.user not in latest_answers:
-                latest_answers[answer.user] = answer
-                if answer.thumb_up:
-                    thumbs_up += 1
-                else:
-                    thumb_downs += 1
-    else:
-        user_count = answers.count()
-        thumbs_up = list(answers.values_list("thumb_up", flat=True)).count(True)
-        thumbs_down = user_count - thumbs_up
+    answers = question.get_latest_answers_by_content(content)
+    user_count = answers.count()
+    thumbs_up = list(answers.values_list("thumb_up", flat=True)).count(True)
+    thumbs_down = user_count - thumbs_up
 
     try:
         thumb_up_pct = round((thumbs_up / user_count) * 100, 2)
-        thumb_down_pct = round((thumb_downs / user_count) * 100, 2)
+        thumb_down_pct = round((thumbs_down / user_count) * 100, 2)
     except ZeroDivisionError:
         thumb_up_pct = 0
         thumb_down_pct = 0
 
     return {
         "thumbs_up": thumbs_up, 
-        "thumbs_down": thumb_downs,
+        "thumbs_down": thumbs_down,
         "thumb_up_pct": thumb_up_pct,
         "thumb_down_pct": thumb_down_pct,
         "user_count": user_count
     }
 
 def star_feedback(question, content):
-    try:
-        answers = question.get_latest_answers_by_content(content)
-    except feedback.models.DatabaseBackendException:
-        # For SQLite which does not support DISTINCT ON
-        answers = question.get_answers_by_content(content).order_by("user", "-answer_date")
-        users = set(answers.values_list("user", flat=True))
-        user_count = len(users)
-        latest_answers = {}
-        rating_counts = [0] * 5
-        for answer in answers:
-            if answer.user not in latest_answers:
-                latest_answers[answer.user] = answer
-                rating_counts[answer.rating - 1] += 1
-    else:
-        user_count = answers.count()
-        ratings = list(answers.values_list("rating", flat=True))
-        rating_counts = [ratings.count(stars) for stars in range(1, 6)]
+    answers = question.get_latest_answers_by_content(content)
+    user_count = answers.count()
+    ratings = list(answers.values_list("rating", flat=True))
+    rating_counts = [ratings.count(stars) for stars in range(1, 6)]
 
     rating_pcts = []
     for rcount in rating_counts:
@@ -85,25 +55,11 @@ def star_feedback(question, content):
 
 def multiple_choice_feedback(question, content):
     choices = list(question.get_choices())
-    try:
-        answers = question.get_latest_answers_by_content(content)
-    except feedback.models.DatabaseBackendException:
-        print("what")
-        # For SQLite which does not support DISTINCT ON
-        answers = question.get_answers_by_content(content).order_by("user", "-answer_date")
-        users = set(answers.values_list("user", flat=True))
-        user_count = len(users)
-        latest_answers = {}
-        answer_counts = [0] * len(choices)
-        for answer in answers:
-            if answer.user not in latest_answers:
-                latest_answers[answer.user] = answer
-                answer_counts[choices.index(answer.chosen_answer)] += 1
-    else:
-        user_count = answers.count()
-        chosen_answers = list(answers.values_list("chosen_answers", flat=True))
-        answer_counts = [chosen_answers.count(choice.id) for choice in choices]
-
+    answers = question.get_latest_answers_by_content(content)
+    user_count = answers.count()
+    chosen_answers = list(answers.values_list("chosen_answer", flat=True))
+    answer_counts = [chosen_answers.count(choice.id) for choice in choices]
+        
     answer_pcts = []
     for acount in answer_counts:
         try:
