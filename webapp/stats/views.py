@@ -358,7 +358,7 @@ def single_exercise(request, content_slug):
     }
 
     if tasktype == "CHECKBOX_EXERCISE":
-        return exercise_answer_stats(request, ctx, exercise, checkbox_exercise, "checkbox-stats.html")
+        return exercise_answer_stats(request, ctx, exercise, checkbox_exercise, "checkbox_stats.html")
     elif tasktype == "MULTIPLE_CHOICE_EXERCISE":
         return exercise_answer_stats(request, ctx, exercise, multiple_choice_exercise, "multiple-choice-stats.html")
     elif tasktype == "TEXTFIELD_EXERCISE":
