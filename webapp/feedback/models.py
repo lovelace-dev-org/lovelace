@@ -1,5 +1,4 @@
-import slugify
-
+from django.utils.text import slugify
 from django.db import models
 from django.contrib.auth.models import User
 from django.db.models import F
@@ -17,23 +16,18 @@ QUESTION_TYPE_CHOICES = (
     ("TEXTFIELD_FEEDBACK", "Textfield feedback"),
 )
 
-QUESTION_TYPE_ORDERING = {"THUMB_FEEDBACK" : 1, 
-                          "STAR_FEEDBACK" : 2,
-                          "MULTIPLE_CHOICE_FEEDBACK" : 3,
-                          "TEXTFIELD_FEEDBACK" : 4}
-
 class ContentFeedbackQuestion(models.Model):
     """A feedback that can be linked to any content."""
     question = models.CharField(verbose_name="Question", max_length=100, unique=True)
     question_type = models.CharField(max_length=28, default="TEXTFIELD_FEEDBACK", choices=QUESTION_TYPE_CHOICES)
-    slug = models.CharField(max_length=255, db_index=True, unique=True)
+    slug = models.SlugField(max_length=255, db_index=True, unique=True)
     
     def __str__(self):
         return self.question
 
     def get_url_name(self):
         """Creates a URL and HTML5 ID field friendly version of the name."""
-        return slugify.slugify(self.question)
+        return slugify(self.question)
     
     def get_type_object(self):
         """Returns the actual type object of the question object that is the child of ContentFeedbackQuestion."""
@@ -59,7 +53,7 @@ class ContentFeedbackQuestion(models.Model):
         if not self.slug:
             self.slug = self.get_url_name()
         else:
-            self.slug = slugify.slugify(self.slug)
+            self.slug = slugify(self.slug)
 
         super(ContentFeedbackQuestion, self).save(*args, **kwargs)
 
@@ -83,10 +77,7 @@ class ContentFeedbackQuestion(models.Model):
             return None
 
     def get_latest_answers_by_content(self, content):
-        if connection.vendor == "postgresql":
-            return self.get_answers_by_content(content).order_by("user", "-answer_date").distinct("user")
-        else:
-            raise DatabaseBackendException("Database backend does not support DISTINCT ON")
+        return self.get_answers_by_content(content).order_by("user", "-answer_date").distinct("user")
 
     def user_answered(self, user, content):
         return self.get_answer_model().objects.filter(question=self, user=user, content=content).count() >= 1

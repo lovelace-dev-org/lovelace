@@ -1,22 +1,22 @@
 {% load staticfiles %}
 
 {% block feedback-input %}
-<label class="thumb-label">
-  {% if user_answer == True %}
-  <input type="radio" name="choice" class="thumb-radio" onchange="select_choice(this);" value="up" checked="checked">
-  {% else %}
-  <input type="radio" name="choice" class="thumb-radio" onchange="select_choice(this);" value="up">
-  {% endif %}
-  <img src="{% static 'feedback/thumbup.png' %}" alt="Thumb up">
-  <img src="{% static 'feedback/thumbup_selected.png' %}" alt="Thumb up selected">
-</label>
-<label class="thumb-label">
-  {% if user_answer == False %}
-  <input type="radio" name="choice" class="thumb-radio" onchange="select_choice(this);" value="down" checked="checked">
-  {% else %}
-  <input type="radio" name="choice" class="thumb-radio" onchange="select_choice(this);" value="down">
-  {% endif %}
-  <img src="{% static 'feedback/thumbdown.png' %}" alt="Thumb down">
-  <img src="{% static 'feedback/thumbdown_selected.png' %}" alt="Thumb down selected">
-</label>
+  <label class="thumb-label">
+    {% if user_answer == True %}
+      <input type="radio" name="choice" class="thumb-radio" onchange="select_choice(this);" value="up" checked="checked">
+    {% else %}
+      <input type="radio" name="choice" class="thumb-radio" onchange="select_choice(this);" value="up">
+    {% endif %}
+    <img src="{% static 'feedback/thumbup.png' %}" alt="Thumb up">
+    <img src="{% static 'feedback/thumbup_selected.png' %}" alt="Thumb up selected">
+  </label>
+  <label class="thumb-label">
+    {% if user_answer == False %}
+      <input type="radio" name="choice" class="thumb-radio" onchange="select_choice(this);" value="down" checked="checked">
+    {% else %}
+      <input type="radio" name="choice" class="thumb-radio" onchange="select_choice(this);" value="down">
+    {% endif %}
+    <img src="{% static 'feedback/thumbdown.png' %}" alt="Thumb down">
+    <img src="{% static 'feedback/thumbdown_selected.png' %}" alt="Thumb down selected">
+  </label>
 {% endblock %}

@@ -170,7 +170,7 @@
             <ul>
             {% for term in terms %}
               <li class="term-list-item">
-                <span class="term" id="{{ term.span_id }}" onmouseover="show_termbank_tooltip(this, '#{{ term.name }}-term-div');">{{ term.name }}</span>
+                <span class="term" id="{{ term.span_id }}" onmouseover="show_termbank_term_description(this, '#{{ term.name }}-term-div');">{{ term.name }}</span>
               </li>
             {% endfor %}
             </ul>

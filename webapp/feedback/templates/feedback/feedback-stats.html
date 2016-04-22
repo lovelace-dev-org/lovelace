@@ -4,8 +4,8 @@
 {% load staticfiles %}
 
 {% block extra-static %}
-    <link rel="stylesheet" href="{% static 'stats/style.css' %}">
-    <script src="{% static 'stats/script.js' %}"></script>
+  <link rel="stylesheet" href="{% static 'stats/style.css' %}">
+  <script src="{% static 'stats/script.js' %}"></script>
 {% endblock %}
 
 {% block page-title %}
@@ -20,37 +20,15 @@
 
 {% block page-content %}
   <h1 class="content-heading">Feedback on "{{ content.name }}"<span id="feedback" class="anchor-offset"></span></h1>
-
-  {% if feedback_stats %}
-  {% for question_stats in feedback_stats %}
-  <h2 class="content-heading">{{ question_stats.question }}<span id="{{ question_stats.question_slug }}_heading" class="anchor-offset"></span></h2>
-  <div>This question has been answered by {{ question_stats.user_count }} user(s).</div>
-  {% if question_stats.question_type == "TEXTFIELD_FEEDBACK" %}
-    <div>This question has been answered {{ question_stats.answer_count }} time(s).</div>
-    {% if question_stats.answers %}
-    <table id="{{ question_stats.question_slug }}_table" class="fixed">
-      <colgroup>
-        <col class="answer">
-        <col class="latest">
-      </colgroup>
-      <tr>
-        <th>User answer</th>
-        {% sortable_table_header question_stats.question_slug "Latest" "1" %}
-      </tr>
-      {% for answer, dtime in question_stats.answers %}
-      <tr>
-        <td class="answer">{{ answer }}</td>          
-        <td title="{{ dtime|date:'Y-m-d, H:i:s' }}">{{ dtime|answer_date }}</td>
-      </tr>
-      {% endfor %}
-    </table>
-    {% endif %}
-  {% elif question_stats.question_type == "THUMB_FEEDBACK" %}
+  
+  {% for question_stats in feedback_stats.thumb_feedback %}
+    <h2 class="content-heading">{{ question_stats.question }}<span id="{{ question_stats.question_slug }}_heading" class="anchor-offset"></span></h2>
+    <div>This question has been answered by {{ question_stats.user_count }} user(s).</div>
     <table>
       <tr>
         <th>Thumbs up</th>
         <th>Thumbs down</th>
-          <th>Thumbs up (&#37;)</th>
+        <th>Thumbs up (&#37;)</th>
         <th>Thumbs down (&#37;)</th>
       </tr>
       <tr>
@@ -60,7 +38,11 @@
         <td>{{ question_stats.thumb_down_pct }}</td>
       </tr>
     </table>
-  {% elif question_stats.question_type == "STAR_FEEDBACK" %}
+  {% endfor %}
+  
+  {% for question_stats in feedback_stats.star_feedback %}
+    <h2 class="content-heading">{{ question_stats.question }}<span id="{{ question_stats.question_slug }}_heading" class="anchor-offset"></span></h2>
+    <div>This question has been answered by {{ question_stats.user_count }} user(s).</div>
     <table>
       <tr>
         <th>Rating</th>
@@ -68,14 +50,18 @@
         <th>(&#37;)</th>
       </tr>
       {% for rating_count, rating_pct in question_stats.rating_stats %}
-      <tr>
-        <td>{{ forloop.counter0|add:"1" }}</td>
-        <td>{{ rating_count }}</td> 
-        <td>{{ rating_pct }}</td>
-      </tr>
+        <tr>
+          <td>{{ forloop.counter0|add:"1" }}</td>
+          <td>{{ rating_count }}</td> 
+          <td>{{ rating_pct }}</td>
+        </tr>
       {% endfor %}
     </table>
-  {% elif question_stats.question_type == "MULTIPLE_CHOICE_FEEDBACK" %}
+  {% endfor %}
+  
+  {% for question_stats in feedback_stats.multiple_choice_feedback %}
+    <h2 class="content-heading">{{ question_stats.question }}<span id="{{ question_stats.question_slug }}_heading" class="anchor-offset"></span></h2>
+    <div>This question has been answered by {{ question_stats.user_count }} user(s).</div>
     <table>
       <tr>
         <th>Choice</th>
@@ -83,15 +69,36 @@
         <th>(&#37;)</th>
       </tr>
       {% for choice, answer_count, answer_pct in question_stats.answer_stats %}
-      <tr>
-        <td>{{ choice }}</td>
-        <td>{{ answer_count }}</td> 
-        <td>{{ answer_pct }}</td>
-      </tr>
+        <tr>
+          <td>{{ choice }}</td>
+          <td>{{ answer_count }}</td> 
+          <td>{{ answer_pct }}</td>
+        </tr>
       {% endfor %}
     </table>
-  {% endif %}
   {% endfor %}
-  {% endif %}
+  
+  {% for question_stats in feedback_stats.textfield_feedback %}
+    <h2 class="content-heading">{{ question_stats.question }}<span id="{{ question_stats.question_slug }}_heading" class="anchor-offset"></span></h2>
+    <div>This question has been answered by {{ question_stats.user_count }} user(s).</div>
+    <div>This question has been answered {{ question_stats.answer_count }} time(s).</div>
+    {% if question_stats.answers %}
+      <table id="{{ question_stats.question_slug }}_table" class="fixed">
+        <colgroup>
+          <col class="answer">
+          <col class="latest">
+        </colgroup>
+        <tr>
+          <th>User answer</th>
+        {% sortable_table_header question_stats.question_slug "Latest" "1" %}
+        </tr>
+        {% for answer, dtime in question_stats.answers %}
+          <tr>
+            <td class="answer">{{ answer }}</td>          
+            <td title="{{ dtime|date:'Y-m-d, H:i:s' }}">{{ dtime|answer_date }}</td>
+          </tr>
+        {% endfor %}
+      </table>
+    {% endif %}
+  {% endfor %}
 {% endblock %}
- 

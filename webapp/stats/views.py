@@ -3,7 +3,7 @@ import math
 import statistics
 
 import django
-from django.http import HttpResponse, HttpResponseRedirect, HttpResponseNotFound
+from django.http import HttpResponse, HttpResponseNotFound, HttpResponseForbidden
 from django.template import loader
 from django.core.urlresolvers import reverse
 from django.utils import timezone
@@ -343,7 +343,7 @@ def single_exercise(request, content_slug):
     Shows statistics on a single selected task.
     """
     if not request.user.is_authenticated() and not request.user.is_active and not request.user.is_staff:
-        return HttpResponseNotFound("Only logged in admins can view exercise statistics!")
+        return HttpResponseForbidden("Only logged in admins can view exercise statistics!")
 
     try:
         exercise = ContentPage.objects.get(slug=content_slug)
@@ -358,7 +358,7 @@ def single_exercise(request, content_slug):
     }
 
     if tasktype == "CHECKBOX_EXERCISE":
-        return exercise_answer_stats(request, ctx, exercise, checkbox_exercise, "checkbox-stats.html")
+        return exercise_answer_stats(request, ctx, exercise, checkbox_exercise, "checkbox_stats.html")
     elif tasktype == "MULTIPLE_CHOICE_EXERCISE":
         return exercise_answer_stats(request, ctx, exercise, multiple_choice_exercise, "multiple-choice-stats.html")
     elif tasktype == "TEXTFIELD_EXERCISE":
