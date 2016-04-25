@@ -1,4 +1,4 @@
-function success_function(data, result_div, error_div, form_parent) {
+function exercise_success(data, result_div, error_div, form_parent) {
     var hints_div = form_parent.children("div.hints");
     var comments_div = form_parent.children("div.comments");
     var file_result_div = form_parent.children("div.file-result");
@@ -70,7 +70,7 @@ function success_function(data, result_div, error_div, form_parent) {
     result_div.css("display", "block");
 }
 
-function error_function(status, type, error_div, form_parent) {
+function exercise_error(status, type, error_div, form_parent) {
     var error_str = "An error occured while sending the answer.<br>";
     status = status.charAt(0).toUpperCase() + status.slice(1);
     if (type) {
@@ -92,11 +92,11 @@ function poll_progress(url, context) {
             success: function(data, text_status, jqxhr_obj) {
                 var result_div = $(this).children("div.result");
                 var error_div = $(this).children("div.error");
-                success_function(data, result_div, error_div, $(this));
+                exercise_success(data, result_div, error_div, $(this));
             },
             error: function(xhr, status, type) {
                 var error_div = $(this).children("div.error");
-                error_function(status, type, error_div, $(this));
+                exercise_error(status, type, error_div, $(this));
             }
         });
     }, 500);
@@ -133,10 +133,10 @@ function add_exercise_form_callbacks() {
                 contentType: false, // And this
                 dataType: 'json',
                 success: function(data, text_status, jqxhr_obj) {
-                    success_function(data, result_div, error_div, form_parent);
+                    exercise_success(data, result_div, error_div, form_parent);
                 },
                 error: function(xhr, status, type) {
-                    error_function(status, type, error_div, form_parent);
+                    exercise_error(status, type, error_div, form_parent);
                 }
             });
         });

@@ -1,0 +1,9 @@
+{% load feedback_tags %}
+
+<th>
+  <div class="sortable-header">{{ header }}</div>
+  <div>
+    <button class="sort-desc" onclick="sortTable('{{ slug }}_table', {{ column }}, -1)">↑</button>
+    <button class="sort-asc" onclick="sortTable('{{ slug }}_table', {{ column }}, 1)">↓</button>
+  </div>
+</th>

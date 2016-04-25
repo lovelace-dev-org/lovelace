@@ -7,7 +7,7 @@ SUMMARY_ID = "summary"
 register = template.Library()
 
 # {% show_basic_stats %}
-@register.inclusion_tag("stats/basic_answer_stats.html")
+@register.inclusion_tag("stats/basic-answer-stats.html")
 def show_basic_stats(basic_stats):
     return basic_stats
 
@@ -17,7 +17,7 @@ def show_piechart(piechart):
     return piechart
 
 # {% sortable_table_header %}
-@register.inclusion_tag("stats/sortable_table_header.html")
+@register.inclusion_tag("stats/sortable-table-header.html")
 def sortable_table_header(course, header, column):
     return {
         "course": course,
@@ -47,5 +47,3 @@ def answer_date(t):
         return "{:%H:%M:%S}".format(t)
     else:
         return "{:%Y-%m-%d}".format(t)
-        
-        

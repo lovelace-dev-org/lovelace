@@ -2,20 +2,19 @@
 {% load i18n %}
 {% load course_tags %}
 
-{% if emb_content %}
-  <div>{{ emb_content|safe }}</div>
-{% endif %}
-
 {% if user.is_staff and user.is_active %}
   {% content_meta %}
 {% endif %}
 
-{% block page-content %}
-{% if rendered_content or tasktype %}
-  {{ rendered_content|safe }}
-  {% if content.is_answerable %}
-    {% include "courses/exercise.html" %}
-  {% endif %}
+{% if emb_content %}
+  <div>{{ emb_content|safe }}</div>
 {% endif %}
+
+{% if rendered_content %}
+  {{ rendered_content|safe }}
+{% endif %}
+
+{% block feedback %}
+  {% feedbacks %}
 {% endblock %}
 

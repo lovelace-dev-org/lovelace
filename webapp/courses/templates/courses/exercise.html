@@ -1,4 +1,3 @@
-{% load staticfiles %}
 {% load i18n %}
 {% load course_tags %}
 
@@ -6,11 +5,14 @@
   {% content_meta %}
 {% endif %}
 
+{% if rendered_content %}
+  {{ rendered_content|safe }}
+{% endif %}
+
 {% if emb_content %}
   <div>{{ emb_content|safe }}</div>
 {% endif %}
 
-{% if content.is_answerable %}
   <div class="question">
     <div class="hints" style="display: none"></div>
     {% if sandboxed %}
@@ -43,5 +45,8 @@
     <div class="result" style="display: none"></div>
     <div class="comments" style="display: none"></div>
     <div class="file-result" style="display: none"></div>
-  </div>  
-{% endif %}
+  </div>
+
+{% block feedback %}
+  {% feedbacks %}
+{% endblock %}
