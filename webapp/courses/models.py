@@ -251,6 +251,9 @@ class Term(models.Model):
     def __str__(self):
         return self.name
 
+    class Meta:
+        unique_together = ('instance', 'name',)
+
 ## Time reservation and event calendar system
 class Calendar(models.Model):
     """A multi purpose calendar for course events markups, time reservations etc."""
@@ -1321,17 +1324,6 @@ class UserCodeReplaceExerciseAnswer(UserAnswer):
 
     def __str__(self):
         return given_answer
-
-class Term(models.Model):
-    instance = models.ForeignKey(CourseInstance, verbose_name="Course instance")
-    name = models.CharField(verbose_name='Term', max_length=200)
-    description = models.TextField()
-    
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        unique_together = ('instance', 'name',)
 
 class InvalidExerciseAnswerException(Exception):
     """
