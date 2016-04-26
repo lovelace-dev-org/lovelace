@@ -45,6 +45,8 @@ def course_exercises_with_color(course):
 
 def course_exercises(course):
     exercises = []
+
+    # TODO: course has no contents, use instance
     parent_pages = course.contents.select_related('content').order_by('ordinal_number')
     
     for p in parent_pages:
@@ -360,7 +362,7 @@ def single_exercise(request, content_slug):
     ctx = {
         "content": exercise,
         "tasktype": tasktype_verbose,
-        "choices": exercise.get_type_object().get_choices(),
+        "choices": exercise.get_choices(exercise),
     }
 
     if tasktype == "CHECKBOX_EXERCISE":
@@ -381,10 +383,10 @@ def user_task(request, user_name, task_name):
 
     content = ContentPage.objects.get(slug=task_name)
 
-    exercise = content_page.get_type_object()
+    exercise = content_page # content_page.get_type_object()
     tasktype = content_page.content_type
     question = content.question
-    choices = answers = exercise.get_choices() 
+    choices = answers = exercise.get_choices(exercise) 
 
     ruser = User.objects.get(username=user_name)
 

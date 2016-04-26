@@ -3,6 +3,9 @@
 {% block exercise-form %}
   {% for choice in choices %}
     <div class="input-label-container">
+      {# TODO: The IDs need the revision info to prevent double IDs! #}
+      {# The other exercise types probably need the same adjustemt -> implement in #}
+      {# tandem with them. #}
       <input type="checkbox" name="{{ choice.id }}" id="cb-{{ choice.id }}" value="{{ choice.id }}" class="task_check"><label for="cb-{{ choice.id }}">{{ choice.answer }}</label>
     </div>
   {% endfor %}

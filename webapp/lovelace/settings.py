@@ -20,6 +20,7 @@ ALLOWED_HOSTS = ["localhost"]
 
 # Applications
 INSTALLED_APPS = (
+    'modeltranslation',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -35,6 +36,8 @@ INSTALLED_APPS = (
     'feedback',
     'smuggler',
     'nested_inline',
+    'reversion',
+    'mod_wsgi.server',
 )
 
 SITE_ID = 1
@@ -90,8 +93,12 @@ AUTHENTICATION_BACKENDS = (
 # https://docs.djangoproject.com/en/dev/ref/settings/#databases
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'lovelace',
+        'USER': 'lovelace',
+        'PASSWORD': 'E<%bYn3M',
+        'HOST': '10.0.2.15',
+        'PORT': '5432',
     }
 }
 
@@ -153,6 +160,8 @@ LANGUAGES = (
 LOCALE_PATHS = (
     os.path.join(BASE_DIR, 'locale'),
 )
+
+MODELTRANSLATION_DEFAULT_LANGUAGE = 'fi'
 
 # URL prefix for static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/dev/howto/static-files/

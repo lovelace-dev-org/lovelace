@@ -58,9 +58,6 @@ function build_toc(static_root_url) {
         // TODO: http://stackoverflow.com/questions/123999/how-to-tell-if-a-dom-element-is-visible-in-the-current-viewport
         var new_toc_level = parseInt(this.tagName[1]);
         
-        if ($(this).closest("div.term-description").length > 0) {
-            return;
-        }
         // TODO: Fix, ol can only contain li
         if (new_toc_level > current_toc_level) {
             for (var i = current_toc_level; i < new_toc_level; i += 1) { // >
@@ -136,54 +133,3 @@ function accept_cookies() {
     var cookie_law_message = $('#cookie-law-message');
     cookie_law_message.hide();
 }
-
-function show_description(span_slct, div_slct, left_offset, top_offset) {
-    var span = $(span_slct);
-    var desc_div = $(div_slct);
-    if (desc_div.length == 0) {
-        desc_div = $("#term-div-not-found");
-    }
-    var pos = span.position();
-    desc_div.css({"left" : pos.left + span.width() + left_offset, 
-                  "top" : pos.top + top_offset});
-    var desc_content_div = desc_div.children("div.term-desc-contents");
-    if (desc_div.height() + "px" === desc_content_div.css('max-height')) {
-        desc_div.find("div.term-desc-scrollable").slimScroll({
-            height: '600px'
-        });
-    }
-    desc_div.css({"display" : "block"}); //This works in Jquery3 unlike .show()
-}
-
-function show_descr_termtag(elem, div_id) {
-    var left_offset = 5;
-    var top_offset = 60;
-    var span = $(elem);
-    var parent = span.parent();
-    if (parent.hasClass("exercise-form")) {
-        var parent_pos = parent.position();
-        top_offset += parent_pos.top + 8;
-        left_offset += parent_pos.left;
-    }
-    
-    show_description(elem, div_id, left_offset, top_offset);
-    var counter = 1;
-    span.add(div_id).hover(function() {
-        counter++;
-        show_description(elem, div_id, left_offset, top_offset);
-    }, function() { 
-        counter--;
-        if (counter == 0) {
-            hide_description(div_id);
-        }
-    });
-}
-
-function hide_description(div_id) {
-    var desc_div = $(div_id);
-    if (desc_div.length == 0) {
-        desc_div = $("#term-div-not-found");
-    }
-    desc_div.hide();
-}
-

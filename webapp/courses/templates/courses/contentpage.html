@@ -15,15 +15,21 @@
   <li><a href="{% url 'courses:index' %}">{% trans 'Courses' %}</a></li>
   {% if not sandboxed %}
   <div class="separator">»</div>
-  <li><a href="{% url 'courses:course' course_slug %}">{{ course_name }}</a></li>
+  <li><a href="{% url 'courses:course' course_slug instance_slug %}">{{ course_name }}&nbsp;/&nbsp;{{ instance_name }}</a></li>
   <div class="separator">»</div>
-  <li><a href="{% url 'courses:content' course_slug content.slug %}">{{ content.name }}</a></li>
+  <li><a href="{% url 'courses:content' course_slug instance_slug content.slug %}">{{ content.name }}</a></li>
   {% endif %}
 {% endblock %}
 
 {% block course-stats-link %}
   {% if not sandboxed %}
   <a href="{% url 'stats:users_course' course_slug %}">{% trans 'Course statistics' %}</a>
+  {% endif %}
+{% endblock %}
+
+{% block revision-info %}
+  {% if revision and revision > 0 and user.is_superuser %}
+    <div class="revision-info">This is an old revision № {{ revision }} of this page!</div>
   {% endif %}
 {% endblock %}
 

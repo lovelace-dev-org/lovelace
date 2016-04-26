@@ -3,7 +3,6 @@
 
 import re
 import courses.models
-import courses.markupparser
 # TODO: {{{#!python {}}}} breaks up!
 # TODO: |forcedownload or |forceview for links
 import pygments
@@ -56,58 +55,13 @@ tags = {
     "anchor": Tag("a", "[[", "]]", re.compile(r"\[\[(?P<address>.+?)([|](?P<link_text>.+?))?\]\]")),
     "kbd":    Tag("kbd", "`", "`", re.compile(r"`(?P<kbd>.+?)`")),
     "hint":   Tag("mark", "[!hint=hint_id!]", "[!hint!]", re.compile(r"\[\!hint\=(?P<hint_id>\w+)\!\](?P<hint_text>.+?)\[\!hint\!\]")),
-    "term":   Tag("span", '[!term=term_name!]', '[!term!]', re.compile(r"\[\!term\=(?P<term_name>\w+)\!\](?P<term_text>.+?)\[\!term\!\]")),
+    "term":   Tag("span", '"""', '"""', re.compile(r"\"{3}(?P<term>.+?)\"{3}")),
 }
 
-def parse_pre_tag(parsed_string, tag, hilite, match):
-    code_string = match.group(0)[tag.lb()+len(hilite):-tag.le()]
-    for escaped, unescaped in {"&lt;":"<", "&gt;":">", "&amp;":"&"}.items():
-        code_string = code_string.replace(escaped, unescaped)
-    hilite = hilite.strip("#! ")
-
-    parsed_string += tag.htmlbegin({"class":"highlight " + hilite})
-    try:
-        lexer = get_lexer_by_name(hilite)
-    except pygments.util.ClassNotFound as e:
-        parsed_string += "no such highlighter: %s; " % hilite
-        parsed_string += code_string
-    else:    
-        parsed_string += highlight(code_string, lexer, HtmlFormatter(nowrap=True)).rstrip("\n")
-    parsed_string += tag.htmlend()
-    
-    return parsed_string
-
-def parse_anchor_tag(parsed_string, tag, address, link_text):
-    contents = link_text or address
-    parsed_string += tag.htmlbegin({"href":address, "target":"_blank"})
-    parsed_string += contents
-    parsed_string += tag.htmlend()
-    #print tag.htmlbegin({"href":address}) + contents + tag.htmlend()
-    return parsed_string
-
-def parse_hint_tag(parsed_string, tag, hint_id, hint_text):
-    parsed_string += tag.htmlbegin({"class":"hint", "id":"hint-id-"+hint_id})
-    parsed_string += hint_text
-    parsed_string += tag.htmlend()
-    return parsed_string
-
-def parse_term_tag(parsed_string, tag, term_name, term_text, state):
-    if (state is None or not "context" in state or 
-        not "tooltip" in state["context"] or state["context"]["tooltip"]):
-        parsed_string += term_text
-        return parsed_string
-
-    div_id = "#{}-term-div".format(term_name)
-    parsed_string += tag.htmlbegin({"class":"term", 
-                                    "onmouseover":"show_descr_termtag(this, '{}');".format(div_id)})
-    parsed_string += term_text
-    parsed_string += tag.htmlend()
-    return parsed_string
-
-def parsetag(tagname, unparsed_string, state=None):
+def parsetag(tagname, unparsed_string, context=None):
     """Parses one tag and applies it's settings. Generates the HTML."""
     tag = tags[tagname]
-    hilite = address = link_text = hint_id = hint_text = term_name = term_text = None
+    hilite = address = link_text = hint_id = hint_text = term = None
     parsed_string = ""
     cursor = 0
     for m in re.finditer(tag.re, unparsed_string):
@@ -134,19 +88,49 @@ def parsetag(tagname, unparsed_string, state=None):
             pass
 
         try:
-            term_name = m.group("term_name")
-            term_text = m.group("term_text")
+            term = m.group("term")
         except IndexError:
             pass
         
         if hilite:
-            parsed_string = parse_pre_tag(parsed_string, tag, hilite, m)
+            code_string = m.group(0)[tag.lb()+len(hilite):-tag.le()]
+            for escaped, unescaped in {"&lt;":"<", "&gt;":">", "&amp;":"&"}.items():
+                code_string = code_string.replace(escaped, unescaped)
+            hilite = hilite.strip("#! ")
+            parsed_string += tag.htmlbegin({"class":"highlight " + hilite})
+            try:
+                lexer = get_lexer_by_name(hilite)
+            except pygments.util.ClassNotFound as e:
+                parsed_string += "no such highlighter: %s; " % hilite
+                parsed_string += code_string
+            else:    
+                parsed_string += highlight(code_string, lexer, HtmlFormatter(nowrap=True)).rstrip("\n")
+            parsed_string += tag.htmlend()
         elif address:
-            parsed_string = parse_anchor_tag(parsed_string, tag, address, link_text)
+            contents = link_text or address
+            parsed_string += tag.htmlbegin({"href":address, "target":"_blank"})
+            parsed_string += contents
+            parsed_string += tag.htmlend()
+            #print tag.htmlbegin({"href":address}) + contents + tag.htmlend()
         elif hint_id:
-            parsed_string = parse_hint_tag(parsed_string, tag, hint_id, hint_text)
-        elif term_name:
-            parsed_string = parse_term_tag(parsed_string, tag, term_name, term_text, state)
+            parsed_string += tag.htmlbegin({"class":"hint", "id":"hint-id-"+hint_id})
+            parsed_string += hint_text
+            parsed_string += tag.htmlend()
+        elif term:
+            description = "?"
+            if context is not None:
+                try:
+                    course = context["course"]
+                except KeyError:
+                    pass
+                else:
+                    try:
+                        description = courses.models.Term.objects.get(name=term, instance__course=course).description
+                    except courses.models.Term.DoesNotExist as e:
+                        pass
+            parsed_string += tag.htmlbegin({"class":"term", "title":description})
+            parsed_string += term
+            parsed_string += tag.htmlend()
         else:
             contents = m.group(0)[tag.lb():-tag.le()]
 
@@ -176,7 +160,7 @@ def parsetag(tagname, unparsed_string, state=None):
 
     return parsed_string
 
-def parseblock(blockstring, state):
+def parseblock(blockstring, context=None):
     """A multi-pass parser for inline markup language inside paragraphs."""
     # TODO: Start with pre tags to prevent formatting inside pre
     #       - Perhaps use a state machine to determine, whether inside pre
@@ -191,7 +175,7 @@ def parseblock(blockstring, state):
     parsed_string = parsetag("kbd", parsed_string)
     parsed_string = parsetag("anchor", parsed_string)
     parsed_string = parsetag("hint", parsed_string)
-    parsed_string = parsetag("term", parsed_string, state)
+    parsed_string = parsetag("term", parsed_string, context)
 
     return parsed_string
 
