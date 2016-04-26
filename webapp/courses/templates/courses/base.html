@@ -15,6 +15,7 @@
     <link rel="stylesheet" href="{% static 'courses/embedded-file.css' %}">
     <link rel="stylesheet" href="{% static 'courses/katex.min.css' %}">
     <link rel="stylesheet" href="{% static 'courses/latofonts.css' %}">
+    <link rel="stylesheet" href="{% static 'feedback/style.css' %}">
 
     <script src="{% static 'courses/katex.min.js' %}"></script>
     <script src="{% static 'courses/jquery-2.1.4.min.js' %}"></script>
@@ -23,6 +24,7 @@
     <script src="{% static 'courses/embedded-file.js' %}"></script>
     <script src="{% static 'courses/exercise.js' %}"></script>
     <script src="{% static 'courses/calendar.js' %}"></script>
+    <script src="{% static 'feedback/script.js' %}"></script>
     <script>
       $(document).ready(function() {
         // TODO: Store data in a js object
@@ -30,6 +32,7 @@
         set_line_widths();
 
         add_exercise_form_callbacks();
+        add_feedback_form_callbacks();
 
         // Apply KaTeX to render all the math blocks
         $("div.tex").each(function(index) {
@@ -155,6 +158,25 @@
       </nav>
       {% endblock %}
 
+      {% block termbank %}
+        {% if terms %}
+          <div class="termbank" id="termbank">
+            <div class="termbank-contents" id="termbank-contents">
+              <div class="termbank-heading" id="termbank-heading">{% trans "Termbank" %}</div>
+              <div id="termbank-list-div" class="list-div">
+                <ul>
+                  {% for term in terms %}
+                    <li class="term-list-item">
+                      <span class="term" id="{{ term.span_id }}" onmouseover="show_termbank_term_description(this, '#{{ term.name }}-term-div');">{{ term.name }}</span>
+                    </li>
+                  {% endfor %}
+                </ul>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+      {% endblock %}
+
       {% block toc %}
       <div class="toc-box">
         <nav class="toc" id="toc">
@@ -179,7 +201,26 @@
         {% block page-content %}
         {% endblock %}
       </section>
-  
+
+      {% block term-descriptions %}
+        <div class="term-descriptions" id="term-descriptions">
+          <div class="term-description" id="term-div-not-found">
+            ?
+          </div>
+          {% if terms %}
+            {% for term in terms %}
+              <div class="term-description" id="{{ term.name }}-term-div">
+                <div class="term-desc-contents">
+                  <div class="term-desc-scrollable">
+                    {{ term.description|safe }}
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          {% endif %}
+        </div>
+      {% endblock %}
+
       <footer>
         <div class="column0">
           <p>Site design &amp; backend by Miikka Salminen</p>

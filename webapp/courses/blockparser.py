@@ -58,7 +58,59 @@ tags = {
     "term":   Tag("span", '"""', '"""', re.compile(r"\"{3}(?P<term>.+?)\"{3}")),
 }
 
-def parsetag(tagname, unparsed_string, context=None):
+def parse_pre_tag(parsed_string, tag, hilite, match):
+    code_string = match.group(0)[tag.lb()+len(hilite):-tag.le()]
+    for escaped, unescaped in {"&lt;":"<", "&gt;":">", "&amp;":"&"}.items():
+        code_string = code_string.replace(escaped, unescaped)
+    hilite = hilite.strip("#! ")
+
+    parsed_string += tag.htmlbegin({"class":"highlight " + hilite})
+    try:
+        lexer = get_lexer_by_name(hilite)
+    except pygments.util.ClassNotFound as e:
+        parsed_string += "no such highlighter: %s; " % hilite
+        parsed_string += code_string
+    else:    
+        parsed_string += highlight(code_string, lexer, HtmlFormatter(nowrap=True)).rstrip("\n")
+    parsed_string += tag.htmlend()
+    
+    return parsed_string
+
+def parse_anchor_tag(parsed_string, tag, address, link_text):
+    contents = link_text or address
+    parsed_string += tag.htmlbegin({"href":address, "target":"_blank"})
+    parsed_string += contents
+    parsed_string += tag.htmlend()
+    #print tag.htmlbegin({"href":address}) + contents + tag.htmlend()
+    return parsed_string
+
+def parse_hint_tag(parsed_string, tag, hint_id, hint_text):
+    parsed_string += tag.htmlbegin({"class":"hint", "id":"hint-id-"+hint_id})
+    parsed_string += hint_text
+    parsed_string += tag.htmlend()
+    return parsed_string
+
+def parse_term_tag(parsed_string, tag, term_name, term_text, state):
+    if (state is None or not "context" in state or 
+        not "tooltip" in state["context"] or state["context"]["tooltip"]):
+        parsed_string += term_text
+        return parsed_string
+    
+    div_id = "#{}-term-div".format(term_name)
+    # LEFT_POS_CORRECTION: Corrects the position of the tooltip in horizontal direction to point to the end of the term.
+    # TOP_POS_CORRECTION: Corrects the position of the tooltip in vertical direction to point to the term.
+    on_mouse_over = (
+        "var LEFT_POS_CORRECTION = 5;" \
+        "var TOP_POS_CORRECTION = 60;" \
+        "show_term_description_during_hover(this, '{}', LEFT_POS_CORRECTION, TOP_POS_CORRECTION);".format(div_id)
+    )
+    parsed_string += tag.htmlbegin({"class":"term",
+                                    "onmouseover": on_mouse_over})
+    parsed_string += term_text
+    parsed_string += tag.htmlend()
+    return parsed_string
+
+def parsetag(tagname, unparsed_string, state=None):
     """Parses one tag and applies it's settings. Generates the HTML."""
     tag = tags[tagname]
     hilite = address = link_text = hint_id = hint_text = term = None

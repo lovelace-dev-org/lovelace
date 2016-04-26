@@ -3,7 +3,7 @@ import math
 import statistics
 
 import django
-from django.http import HttpResponse, HttpResponseRedirect, HttpResponseNotFound
+from django.http import HttpResponse, HttpResponseNotFound, HttpResponseForbidden
 from django.template import loader
 from django.core.urlresolvers import reverse
 from django.utils import timezone
@@ -344,8 +344,8 @@ def single_exercise(request, content_slug):
     """
     Shows statistics on a single selected task.
     """
-    if not request.user.is_authenticated() and not request.user.is_active and not request.user.is_staff:
-        return HttpResponseNotFound()
+    if not request.user.is_authenticated() or not request.user.is_active or not request.user.is_staff:
+        return HttpResponseForbidden("Only logged in admins can view exercise statistics!")
 
     try:
         exercise = ContentPage.objects.get(slug=content_slug)
@@ -353,26 +353,20 @@ def single_exercise(request, content_slug):
         return HttpResponseNotFound("No exercise {} found!".format(content_slug))
     tasktype = exercise.content_type
 
-    tasktype_verbose = "unknown"
-    for choice, verbose in ContentPage.CONTENT_TYPE_CHOICES:
-        if choice == tasktype:
-            tasktype_verbose = verbose.lower()
-            break
-
     ctx = {
         "content": exercise,
-        "tasktype": tasktype_verbose,
+        "tasktype": exercise.get_human_readable_type(),
         "choices": exercise.get_choices(exercise),
     }
 
     if tasktype == "CHECKBOX_EXERCISE":
-        return exercise_answer_stats(request, ctx, exercise, checkbox_exercise, "checkbox_stats.html")
+        return exercise_answer_stats(request, ctx, exercise, checkbox_exercise, "checkbox-stats.html")
     elif tasktype == "MULTIPLE_CHOICE_EXERCISE":
-        return exercise_answer_stats(request, ctx, exercise, multiple_choice_exercise, "multiple_choice_stats.html")
+        return exercise_answer_stats(request, ctx, exercise, multiple_choice_exercise, "multiple-choice-stats.html")
     elif tasktype == "TEXTFIELD_EXERCISE":
-        return exercise_answer_stats(request, ctx, exercise, textfield_exercise, "textfield_stats.html")
+        return exercise_answer_stats(request, ctx, exercise, textfield_exercise, "textfield-stats.html")
     elif tasktype == "FILE_UPLOAD_EXERCISE":
-        return exercise_answer_stats(request, ctx, exercise, file_upload_exercise, "file_upload_stats.html")
+        return exercise_answer_stats(request, ctx, exercise, file_upload_exercise, "file-upload-stats.html")
     else:
         return HttpResponseNotFound("No stats for exercise {} found!".format(content_slug))
 
@@ -400,7 +394,7 @@ def user_task(request, user_name, task_name):
     elif tasktype == "FILE_UPLOAD_EXERCISE":
         fileanswers = UserFileUploadExerciseAnswer.objects.filter(exercise=content, user=ruser)
 
-    t = loader.get_template("stats/user_task_stats.html")
+    t = loader.get_template("stats/user-task-stats.html")
     c = {
         'username': user_name,
         'taskname': task_name,

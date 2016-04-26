@@ -477,10 +477,11 @@ class EmbeddedPageMarkup(Markup):
                 embedded_content += chunk
             
             choices = page.get_choices(page, revision=revision)
-            question = blockparser.parseblock(escape(page.question), state["context"])
-            
+            question = blockparser.parseblock(escape(page.question), state)
+
             c = {
                 "emb_content": embedded_content,
+                "embedded": True,
                 "content": page,
                 "content_slug": page.slug,
                 "question": question,
@@ -504,7 +505,7 @@ class EmbeddedPageMarkup(Markup):
                 c["evaluation"] = "unanswered"
                 c["answer_count"] = 0
             c.update(state["context"])
-            
+
             t = loader.get_template("courses/{page_type}.html".format(
                 page_type=page.get_dashed_type()
             ))

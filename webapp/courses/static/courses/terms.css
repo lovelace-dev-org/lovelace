@@ -4,6 +4,10 @@ span.term {
     border-bottom: 2px #222 dotted;
 }
 
+li.term-list-item {
+    margin-bottom: 4px;
+}
+
 div.term-description {
     display: none;
     position: absolute;
@@ -42,6 +46,7 @@ div.term-description:after {
 
 div.term-desc-contents {
     max-height: 600px;
+    max-width: 600px;
     overflow-y: hidden;
 }
 
@@ -67,7 +72,7 @@ div.term-description span.anchor-offset {
     height: 0;
     padding-top: 4rem;
     margin-top: -4rem;
-    display: hidden;        
+    display: none;
 }
 
 div.term-description h1:first-child, div.term-description h2:first-child, div.term-description h3:first-child, div.term-description h4:first-child, div.term-description h5:first-child, div.term-description h6:first-child, .task-meta-container + h1, .task-meta-container + h2, .task-meta-container + h3, .task-meta-container + h4, .task-meta-container + h5, .task-meta-container + h6 {
@@ -248,7 +253,7 @@ div.term-description p mark.hint {
     animation: hint_background 2s linear infinite;
 }
 
-div.term-description @keyframes hint_background {
+@keyframes hint_background {
     0% {background: #f33;}
     50% {background: #fe3;}
     100% {background: #f33;}

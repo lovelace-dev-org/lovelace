@@ -24,7 +24,7 @@ import magic
 
 import courses.tasks as rpc_tasks
 
-from feedback.models import ContentFeedbackQuestion
+import feedback.models
 
 import courses.markupparser as markupparser
 
@@ -326,7 +326,7 @@ class ContentPage(models.Model):
                                             through=EmbeddedLink, symmetrical=False,
                                             through_fields=('parent', 'embedded_page'))
 
-    feedback_questions = models.ManyToManyField(ContentFeedbackQuestion, blank=True)
+    feedback_questions = models.ManyToManyField(feedback.models.ContentFeedbackQuestion, blank=True)
 
     # Exercise fields
     question = models.TextField(blank=True) # Translate
@@ -455,6 +455,9 @@ class ContentPage(models.Model):
         #       - Automatically link embedded pages (create/update an
         #         EmbeddedContentLink object)
         super(ContentPage, self).save(*args, **kwargs)
+        
+    def get_feedback_questions(self):
+        return [q.get_type_object() for q in self.feedback_questions.all()]
 
     def __str__(self):
         return self.name
@@ -526,7 +529,7 @@ class MultipleChoiceExercise(ContentPage):
         keys = list(answer.keys())
         key = [k for k in keys if k.endswith("-radio")]
         if not key:
-            raise InvalidAnswerException("No answer was picked!")
+            raise InvalidExerciseAnswerException("No answer was picked!")
         answered = int(answer[key[0]])
 
         
@@ -538,7 +541,7 @@ class MultipleChoiceExercise(ContentPage):
         try:
             chosen_answer = MultipleChoiceExerciseAnswer.objects.get(id=answered)
         except MultipleChoiceExerciseAnswer.DoesNotExist as e:
-            raise InvalidAnswerException("The received answer does not exist!")
+            raise InvalidExerciseAnswerException("The received answer does not exist!")
         answer_object = UserMultipleChoiceExerciseAnswer(
             exercise_id=self.id, chosen_answer=chosen_answer, user=user,
             answerer_ip=ip, instance=instance, revision=revision,
@@ -622,7 +625,7 @@ class CheckboxExercise(ContentPage):
         chosen_answers = CheckboxExerciseAnswer.objects.filter(id__in=chosen_answer_ids).\
                          values_list('id', flat=True)
         if set(chosen_answer_ids) != set(chosen_answers):
-            raise InvalidAnswerException("One or more of the answers do not exist!")
+            raise InvalidExerciseAnswerException("One or more of the answers do not exist!")
 
         # FIX: DEBUG DEBUG DEBUG DEBUG
         if revision == "head": revision = 0
@@ -711,7 +714,7 @@ class TextfieldExercise(ContentPage):
         if "answer" in answer.keys():
             given_answer = answer["answer"].replace("\r", "")
         else:
-            raise InvalidAnswerException("Answer missing!")
+            raise InvalidExerciseAnswerException("Answer missing!")
 
 
         # FIX: DEBUG DEBUG DEBUG DEBUG
@@ -829,7 +832,7 @@ class FileUploadExercise(ContentPage):
                 )
                 return_file.save()
         else:
-            raise InvalidAnswerException("No file was sent!")
+            raise InvalidExerciseAnswerException("No file was sent!")
         return answer_object
 
     def check_answer(self, user, ip, answer, files, answer_object, revision):
@@ -1319,7 +1322,18 @@ class UserCodeReplaceExerciseAnswer(UserAnswer):
     def __str__(self):
         return given_answer
 
-class InvalidAnswerException(Exception):
+class Term(models.Model):
+    instance = models.ForeignKey(CourseInstance, verbose_name="Course instance")
+    name = models.CharField(verbose_name='Term', max_length=200)
+    description = models.TextField()
+    
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        unique_together = ('instance', 'name',)
+
+class InvalidExerciseAnswerException(Exception):
     """
     This exception is cast when an exercise answer cannot be processed.
     """

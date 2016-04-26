@@ -1,0 +1,14 @@
+{% extends 'feedback/feedback-question.html' %}
+
+{% block feedback-input %}
+  {% for choice in choices %}
+    <div class="input-label-container">
+      {% if user_answer.id == choice.id %}
+        <input id="{{ radiobutton_id }}_box_{{ forloop.counter0 }}" name="choice" type="radio" value="{{ choice.id }}" onchange="select_choice(this);" checked="checked">
+      {% else %}
+        <input id="{{ radiobutton_id }}_box_{{ forloop.counter0 }}" name="choice" type="radio" value="{{ choice.id }}" onchange="select_choice(this);">
+      {% endif %}
+      <label for="{{ radiobutton_id }}_box_{{ forloop.counter0 }}">{{ choice.answer }}</label>
+    </div>
+  {% endfor %}
+{% endblock %}

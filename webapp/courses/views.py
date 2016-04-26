@@ -22,6 +22,7 @@ from courses.tasks import get_celery_worker_status
 
 from courses.models import *
 from courses.forms import *
+from feedback.models import *
 
 import courses.markupparser as markupparser
 import courses.blockparser as blockparser
@@ -151,7 +152,7 @@ def check_answer_sandboxed(request, content_slug):
     
     try:
         answer_object = exercise.save_answer(user, ip, answer, files)
-    except InvalidAnswerException as e:
+    except InvalidExerciseAnswerException as e:
         return JsonResponse({
             'result': str(e)
         })
@@ -166,7 +167,7 @@ def check_answer_sandboxed(request, content_slug):
         evaluation["manual"] = True
 
     # TODO: Errors, hints, comments in JSON
-    t = loader.get_template("courses/exercise_evaluation.html")
+    t = loader.get_template("courses/exercise-evaluation.html")
     return JsonResponse({
         'result': t.render(evaluation),
         'evaluation': evaluation.get("evaluation"),
@@ -221,7 +222,7 @@ def check_answer(request, course_slug, instance_slug, content_slug, revision):
     
     try:
         answer_object = exercise.save_answer(content, user, ip, answer, files, instance, revision)
-    except InvalidAnswerException as e:
+    except InvalidExerciseAnswerException as e:
         return JsonResponse({
             'result': str(e)
         })
@@ -236,7 +237,7 @@ def check_answer(request, course_slug, instance_slug, content_slug, revision):
         evaluation["manual"] = True
 
     # TODO: Errors, hints, comments in JSON
-    t = loader.get_template("courses/exercise_evaluation.html")
+    t = loader.get_template("courses/exercise-evaluation.html")
     return JsonResponse({
         'result': t.render(evaluation),
         'evaluation': evaluation.get("evaluation"),
@@ -276,12 +277,12 @@ def file_exercise_evaluation(request, course_slug, instance_slug, content_slug, 
 
     debug_json = json.dumps(evaluation_tree, indent=4)
 
-    t_file = loader.get_template("courses/file_exercise_evaluation.html")
+    t_file = loader.get_template("courses/file-exercise-evaluation.html")
     c_file = {
         'debug_json': debug_json,
         'evaluation_tree': evaluation_tree["test_tree"],
     }
-    t_exercise = loader.get_template("courses/exercise_evaluation.html")
+    t_exercise = loader.get_template("courses/exercise-evaluation.html")
     c_exercise = {
         'evaluation': evaluation_obj.correct,
     }
@@ -321,7 +322,7 @@ def get_old_file_exercise_evaluation(request, user, answer_id):
 
     debug_json = json.dumps(evaluation_dict, indent=4)
 
-    t_file = loader.get_template("courses/file_exercise_evaluation.html")
+    t_file = loader.get_template("courses/file-exercise-evaluation.html")
     c_file = {
         'debug_json': debug_json,
         'evaluation_tree': evaluation_dict["test_tree"],
@@ -335,42 +336,27 @@ def sandboxed_content(request, content_slug, **kwargs):
     except ContentPage.DoesNotExist:
         return HttpResponseNotFound("Content {} does not exist!".format(content_slug))
 
+    user = request.user
+    if not user.is_authenticated() or not user.is_active or not user.is_staff:
+        return HttpResponseForbidden("Only logged in admins can view pages in sandbox!")
+
     content_type = content.content_type
     question = blockparser.parseblock(escape(content.question))
     choices = answers = content.get_choices(content)
 
     rendered_content = content.rendered_markup(request)
 
-    user = request.user
-    if not user.is_authenticated() or not user.is_active or not user.is_staff:
-        return HttpResponseForbidden("Only logged in admins can view pages in sandbox!")
-
-    d = {'content': content,
-         'content_name': content.name,
-         'content_type': content_type,
-         'question': question,
-         'choices': choices,
-         'user': user,
-         'sandboxed': True,
+    c = {
+        'content': content,
+        'content_name': content.name,
+        'content_type': content_type,
+        'rendered_content': rendered_content,
+        'embedded': False,
+        'question': question,
+        'choices': choices,
+        'user': user,
+        'sandboxed': True,
     }
-
-    if content_type == "LECTURE":
-        d['rendered_content'] = rendered_content
-        c = d
-    else:
-        d['emb_content'] = rendered_content
-        dashed_type = content.get_dashed_type()
-        t = loader.get_template("courses/{content_type}.html".format(
-            content_type=content.get_dashed_type()
-        ))
-        rendered_content = t.render(d, request)
-        c = {
-            'rendered_content': rendered_content,
-            'content_name': content.name,
-            'content_type': content_type,
-            'user': user,
-            'sandboxed': True,
-        }
     if "frontpage" in kwargs:
         return c
     else:
@@ -412,6 +398,14 @@ def content(request, course_slug, instance_slug, content_slug, **kwargs):
         'instance': instance,
         'instance_slug': instance.slug,
     }
+
+    term_context = context.copy()
+    term_context["tooltip"] = True
+    terms = Term.objects.filter(instance__course=course)
+    terms = [{"name" : term.name, 
+              "description" : "".join(markupparser.MarkupParser.parse(term.description, request, term_context)).strip(),
+              "span_id" : term.name + "-termbank-span"} 
+             for term in terms]
 
     rendered_content = ""
 
@@ -455,6 +449,7 @@ def content(request, course_slug, instance_slug, content_slug, **kwargs):
         'instance_slug': instance_slug,
         'content': content,
         'rendered_content': rendered_content,
+        'embedded': False,
         'content_name': content.name,
         'content_type': content_type,
         'question': question,
@@ -630,7 +625,7 @@ def show_answers(request, user, course, instance, exercise):
     answers = answers.order_by('-answer_date')
 
     # TODO: Own subtemplates for each of the exercise types.
-    t = loader.get_template("courses/user_exercise_answers.html")
+    t = loader.get_template("courses/user-exercise-answers.html")
     c = {
         'exercise': exercise,
         'course_slug': course,
