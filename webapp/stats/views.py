@@ -342,7 +342,7 @@ def single_exercise(request, content_slug):
     """
     Shows statistics on a single selected task.
     """
-    if not request.user.is_authenticated() and not request.user.is_active and not request.user.is_staff:
+    if not request.user.is_authenticated() or not request.user.is_active or not request.user.is_staff:
         return HttpResponseForbidden("Only logged in admins can view exercise statistics!")
 
     try:
