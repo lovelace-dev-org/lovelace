@@ -1,7 +1,7 @@
 Deploying Lovelace
 ==================
 
-Short guide for minimal deployment on Ubuntu server 14.04.
+Short guide for minimal deployment on Ubuntu server 15.10.
 
 Firstly, update your packages.
 sudo apt-get update && sudo apt-get dist-upgrade
@@ -10,11 +10,20 @@ sudo apt-get update && sudo apt-get dist-upgrade
 Postgresql
 ––––––––––
 
-sudo apt-get install postgresql
+sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt/ wily-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+sudo apt-get update
+sudo apt-get install postgresql-9.5 pwgen
 
 
 Creating a postgresql database and user
 ---------------------------------------
+
+Generate a password for the database user:
+
+    pwgen -c -n -y -s -B 64 | head -1 > secret
+
+The generated password is now stored in the file secret
 
 sudo -u postgres createuser -P lovelace
 <Enter the desired password>
@@ -32,6 +41,8 @@ listen_addresses = 'localhost,10.0.0.1'
 sudo vim /etc/postgresql/9.3/main/pg_hba.conf
 host    lovelace        lovelace        10.0.0.1/24              md5
 
+sudo service postgresql restart
+
 
 Testing postgresql
 ------------------
@@ -39,8 +50,8 @@ Testing postgresql
 psql --host=10.0.0.1 --dbname=lovelace --username=lovelace --password
 
 
-Python 3.4
-––––––––––
+Python 3.5
+----------
 
 Cloning the repository
 ----------------------
@@ -59,17 +70,7 @@ git clone https://github.com/miikkas/lovelace.git
 Installing pip
 --------------
 
-sudo apt-get install python3-pip
-
-
-Fixing Python 3.4 venv in Ubuntu
---------------------------------
-
-- Download python 3.4 sources from http://www.python.org
-- Unpack them
-  * tar -Jxf sources.tar.xz
-- Copy ensurepip module to distribution's Python library
-  * sudo cp -r Lib/ensurepip /usr/lib/python3.4/
+sudo apt-get install python3.5-venv python3.5-dev python3-pip
 
 
 Creating and activating venv
@@ -78,7 +79,7 @@ Creating and activating venv
 Create a virtualenv
 
 mkdir /path/to/your/lovelace/venv
-pyvenv-3.4 /path/to/your/lovelace/venv/
+pyvenv-3.5 /path/to/your/lovelace/venv/
 
 Activate the virtualenv
 
@@ -94,13 +95,14 @@ Installing the dependencies
 
 Install the dependencies' dependencies
 
-sudo apt-get install postgresql-server-dev-all libpq-dev
+sudo apt-get install postgresql-server-dev-9.5
 sudo apt-get install libjpeg-dev
 sudo apt-get install redis-server redis-tools
 sudo apt-get install rabbitmq-server
 
 Install the Python packages
 
+pip install unicode-slugify
 pip install python-magic
 pip install psycopg2
 pip install pygments
@@ -109,10 +111,8 @@ pip install django
 pip install django-redis
 pip install celery[redis]
 pip install django-allauth
-pip install django-modeltranslation
-pip install django-reversion
-#pip install django-smuggler
-#pip install django-nested-inline
+pip install django-smuggler
+pip install django-nested-inline
 
 
 Edit the configuration
@@ -124,7 +124,7 @@ Change the database engine to postgresql by following this guide:
 https://docs.djangoproject.com/en/dev/ref/settings/#databases
 
 Also set the user to lovelace, name to lovelace and password to the
-password you entered for postgresql.
+password you entered for postgresql. Remember to set host and port.
 
 
 Initialize the database
@@ -132,7 +132,7 @@ Initialize the database
 
 python manage.py makemigrations
 python manage.py migrate
-python manage.py syncdb
+python manage.py createsuperuser
 
 
 Initialize the static & uploaded files
@@ -150,26 +150,14 @@ Apache
 
 Install Apache
 
-sudo apt-get install apache2
+sudo apt-get install apache2 apache2-dev
 
 Install mod_wsgi for Apache2 and Python 3
 
-sudo apt-get install libapache2-mod-wsgi-py3
+pip install mod_wsgi
 
 
 Configuring Apache
 ------------------
 
-Run the automatic configuration generator
-
-cd /path/to/your/lovelace
-python create_apache_conf.py
-
-Copy & paste the settings to your Apache conf
-
-sudo vim /etc/apache2/apache2.conf
-
-Restart apache
-
-sudo service apache2 restart
-
+Review: https://pypi.python.org/pypi/mod_wsgi

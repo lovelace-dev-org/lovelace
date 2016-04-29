@@ -10,6 +10,9 @@
 {% endif %}
 
 {% if emb_content %}
+  {% if revision and revision > 0 and user.is_superuser %}
+    <div class="revision-info-embedded">This is an old revision № {{ revision }} of this embedded page!</div>
+  {% endif %}
   <div>{{ emb_content|safe }}</div>
 {% endif %}
 
@@ -20,7 +23,8 @@
           action="{% url 'courses:check_sandboxed' content.slug %}">
     {% else %}
     <form id="{{ content_slug }}-form" class="exercise-form" method="POST" enctype="multipart/form-data"
-          action="{% url 'courses:check' course_slug content.slug %}">
+          {% if revision %}action="{% url 'courses:check' course_slug instance_slug content.slug revision %}">
+          {% else %}action="{% url 'courses:check' course_slug instance_slug content.slug "head" %}">{% endif %}
     {% endif %}
 
       {% csrf_token %}

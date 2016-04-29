@@ -62,6 +62,7 @@ function build_toc(static_root_url) {
         if ($(this).closest("div.term-description").length > 0) {
             return;
         }
+
         // TODO: Fix, ol can only contain li
         if (new_toc_level > current_toc_level) {
             for (var i = current_toc_level; i < new_toc_level; i += 1) { // >
@@ -201,4 +202,3 @@ function hide_tooltip(div_id) {
     }
     desc_div.hide();
 }
-

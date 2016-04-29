@@ -3,7 +3,7 @@ from django.contrib import admin
 
 # TODO: Design the url hierarchy from scratch
 urlpatterns = [
-    url(r'^admin/', include('smuggler.urls')),
+    #url(r'^admin/', include('smuggler.urls')),
     url(r'^admin/', include(admin.site.urls)),
     url(r'^stats/', include('stats.urls', namespace='stats')),
     url(r'^feedback/', include('feedback.urls', namespace='feedback')),

@@ -18,11 +18,22 @@
       <li>
         <div>
           <div>
-            <a href="{% url 'courses:course' course.slug %}">{{ course.name }}</a>
+            <a href="{% url 'courses:course_instances' course.slug %}">{{ course.name }}</a>
             {% if course.code %}– {{ course.code }}{% endif %}
             {% if course.credits %}/ {{ course.credits }} {% trans 'credits' %}{% endif %}
           </div>
           {% if course.description %}<div>{{ course.description }}</div>{% endif %}
+          <div>
+            <ul>
+              {% for instance in course.get_instances %}
+                <li>
+                  <a href="{% url 'courses:course' course.slug instance.slug %}">{{ instance.name }}</a>
+                  <button>enroll</button> or text <span>'enrolled on this course' etc.</span>
+                  <progress max="5" value="3" title="3/5 completed">
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
         </div>
       </li>
     {% endfor %}

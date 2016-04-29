@@ -8,7 +8,14 @@ from django.core.urlresolvers import reverse
 
 from django.db import models
 from django.forms import TextInput, Textarea
-from nested_inline.admin import NestedStackedInline, NestedTabularInline, NestedModelAdmin
+
+from modeltranslation.admin import TranslationAdmin, TranslationTabularInline, \
+    TranslationStackedInline
+
+from reversion.admin import VersionAdmin
+
+from nested_inline.admin import NestedStackedInline, NestedTabularInline, \
+    NestedModelAdmin
 
 ## User profiles
 # http://stackoverflow.com/questions/4565814/django-user-userprofile-and-admin
@@ -45,10 +52,6 @@ class HintInline(NestedTabularInline):
     fk_name = 'exercise'
     extra = 0
     queryset = NestedTabularInline.get_queryset
-
-class MultipleChoiceExerciseAnswerInline(admin.TabularInline):
-    model = MultipleChoiceExerciseAnswer
-    extra = 1
 
 class FileExerciseTestExpectedOutputInline(NestedStackedInline):
     model = FileExerciseTestExpectedOutput
@@ -109,7 +112,11 @@ class FileExerciseTestIncludeFileInline(NestedStackedInline):
         }),
     )
 
-class MultipleChoiceExerciseAdmin(admin.ModelAdmin):
+class MultipleChoiceExerciseAnswerInline(TranslationTabularInline):
+    model = MultipleChoiceExerciseAnswer
+    extra = 1
+
+class MultipleChoiceExerciseAdmin(TranslationAdmin, VersionAdmin):
     def get_queryset(self, request):
         return self.model.objects.filter(content_type="MULTIPLE_CHOICE_EXERCISE")
 
@@ -125,11 +132,11 @@ class MultipleChoiceExerciseAdmin(admin.ModelAdmin):
     list_display = ("name", "slug",)
     list_per_page = 500
 
-class CheckboxExerciseAnswerInline(admin.TabularInline):
+class CheckboxExerciseAnswerInline(TranslationTabularInline):
     model = CheckboxExerciseAnswer
     extra = 1
 
-class CheckboxExerciseAdmin(admin.ModelAdmin):
+class CheckboxExerciseAdmin(TranslationAdmin, VersionAdmin):
     def get_queryset(self, request):
         return self.model.objects.filter(content_type="CHECKBOX_EXERCISE")
 
@@ -145,11 +152,11 @@ class CheckboxExerciseAdmin(admin.ModelAdmin):
     list_display = ("name", "slug",)
     list_per_page = 500
 
-class TextfieldExerciseAnswerInline(admin.StackedInline):
+class TextfieldExerciseAnswerInline(TranslationStackedInline):
     model = TextfieldExerciseAnswer
     extra = 1
 
-class TextfieldExerciseAdmin(admin.ModelAdmin):
+class TextfieldExerciseAdmin(TranslationAdmin, VersionAdmin):
     def get_queryset(self, request):
         return self.model.objects.filter(content_type="TEXTFIELD_EXERCISE")
 
@@ -169,7 +176,7 @@ class CodeReplaceExerciseAnswerInline(admin.StackedInline):
     model = CodeReplaceExerciseAnswer
     extra = 1
 
-class CodeReplaceExerciseAdmin(admin.ModelAdmin):
+class CodeReplaceExerciseAdmin(TranslationAdmin, VersionAdmin):
     def get_queryset(self, request):
         return self.model.objects.filter(content_type="CODE_REPLACE_EXERCISE")
 
@@ -245,7 +252,7 @@ class FileExerciseAdmin(NestedModelAdmin):
     list_display = ("name", "slug",)
     list_per_page = 500
 
-class LectureAdmin(admin.ModelAdmin):
+class LectureAdmin(TranslationAdmin, VersionAdmin):
     def get_queryset(self, request):
         return self.model.objects.filter(content_type="LECTURE")
 
@@ -264,6 +271,7 @@ class LectureAdmin(admin.ModelAdmin):
     readonly_fields = ("slug",)
     list_display = ("name", "slug",)
     list_per_page = 500
+
 
 # TODO: Use the view_on_site on all content models!
 
@@ -328,10 +336,10 @@ class ContentGraphAdmin(admin.ModelAdmin):
 
 admin.site.register(ContentGraph, ContentGraphAdmin)
 
-class CourseAdmin(admin.ModelAdmin):
+class CourseAdmin(TranslationAdmin, VersionAdmin):
     fieldsets = [
-        (None,             {'fields': ['name', 'slug', 'frontpage']}),
-        ('Course outline', {'fields': ['description', 'code', 'credits', 'contents']}),
+        (None,             {'fields': ['name', 'slug',]}),
+        ('Course outline', {'fields': ['description', 'code', 'credits']}),
         #('Settings for start date and end date of the course', {'fields': ['start_date','end_date'], 'classes': ['collapse']}),
     ]
     #formfield_overrides = {models.ManyToManyField: {'widget':}}
@@ -340,10 +348,11 @@ class CourseAdmin(admin.ModelAdmin):
 
 admin.site.register(Course, CourseAdmin)
 
-class CourseInstanceAdmin(admin.ModelAdmin):
+class CourseInstanceAdmin(TranslationAdmin, VersionAdmin):
     fieldsets = [
-        (None,                {'fields': ['name', 'course']}),
-        ('Schedule settings', {'fields': ['start_date', 'end_date', 'active']}),
+        (None,                {'fields': ['name', 'course', 'frontpage',]}),
+        ('Schedule settings', {'fields': ['start_date', 'end_date', 'active',]}),
+        ('Instance outline',  {'fields': ['contents',]}),
     ]
     search_fields = ('name',)
     list_display = ('name', 'course')
