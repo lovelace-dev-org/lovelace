@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    {% load staticfiles %}
+    {% load i18n %}
+    <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=Inconsolata">
+
+    <link rel="stylesheet" href="{% static 'courses/jquery-ui.css' %}">
+    <link rel="stylesheet" href="{% static 'courses/jquery-ui.structure.css' %}">
+    <link rel="stylesheet" href="{% static 'courses/jquery-ui.theme.css' %}">
+    <link rel="stylesheet" href="{% static 'courses/latofonts.css' %}">
+    <link rel="stylesheet" href="{% static 'courses/file-upload-exercise-admin.css' %}">
+
+    <script src="{% static 'courses/jquery-3.0.0-beta1.min.js' %}"></script>
+    <script src="{% static 'courses/jquery-ui.min.js' %}"></script>
+    <script src="{% static 'courses/file-upload-exercise-admin.js' %}"></script>
+    
+    <script>
+      $(function() {
+        $("#test-tabs").tabs();
+        
+        $("#stages-sortable").sortable();
+        $("#stages-sortable").disableSelection();
+        $("#commands-sortable-1").sortable();
+        $("#commands-sortable-1").disableSelection();
+        $("#commands-sortable-2").sortable();
+        $("#commands-sortable-2").disableSelection();
+      });
+    </script>
+  </head>
+  <body>
+    <h1>Here be file upload exercise admin</h1>
+    
+    <p>a mockup</p>
+    
+    <div id="test-tabs">
+      <ul>
+        <li><a href="#test-tabs-1">test 1</a></li>
+        <li><a href="#test-tabs-2">test 2</a></li>
+      </ul>
+      
+      <div id="test-tabs-1">
+        <ul id="stages-sortable">
+          <li class="ui-state-default">
+            <h2>stage 1</h2>
+            <div>
+              <ul id="commands-sortable-1{{ stage_id }}">
+                <li class="ui-state-default">
+                  command 1
+                </li>
+                <li class="ui-state-default">
+                  command 2
+                </li>
+              </ul>
+            </div>
+          </li>
+          <li class="ui-state-default">
+            <h2>stage 2</h2>
+            <div>
+              <ul id="commands-sortable-2{{ stage_id }}">
+                <li class="ui-state-default">
+                  command 1
+                </li>
+                <li class="ui-state-default">
+                  command 2
+                </li>
+                <li class="ui-state-default">
+                  command 3
+                </li>
+                <li class="ui-state-default">
+                  command 4
+                </li>
+              </ul>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <div id="test-tabs-2">
+        asdf
+      </div>
+    </div>
+  </body>
+</html>
+    

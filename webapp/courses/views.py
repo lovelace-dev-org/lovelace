@@ -650,3 +650,17 @@ def terms(request):
     t = loader.get_template("courses/terms.html")
     c = {}
     return HttpResponse(t.render(c, request))
+
+def file_upload_exercise_admin(request, exercise_id):
+    #exercise = FileUploadExercise.objects.get(id=exercise_id)
+    #tests = FileExerciseTest.objects.filter(exercise=exercise_id)
+    #include_files = FileExerciseTestIncludeFile.objects.filter(exercise=...)
+    #stages = FileExerciseTestStage.objects.filter(test=...)
+    #commands = FileExerciseTestCommand.objects.filter(stage=...)
+    #expected_outputs = FileExerciseTestExpectedOutput.objects.filter(command=...)
+    
+    t = loader.get_template("courses/file-exercise-admin.html")
+    c = {
+        'asdf': 1,
+    }
+    return HttpResponse(t.render(c, request))

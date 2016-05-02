@@ -1,0 +1,19 @@
+* {
+    font-family: "LatoWeb";
+}
+
+h1, h2 {
+    font-family: "LatoWebHairLine";
+}
+
+ul {
+    list-style-type: none;
+}
+
+li {
+    cursor: grab;
+}
+
+ul#stages-sortable > li {
+    border: 2px solid #333;
+}

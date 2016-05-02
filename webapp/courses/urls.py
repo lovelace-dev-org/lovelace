@@ -5,6 +5,10 @@ from . import views
 urlpatterns = [
     url(r'^$', views.index, name='index'),
 
+    # For administration of file upload exercises
+    url(r'^file-upload-exercise-admin/(?P<exercise_id>\d+)$',
+        views.file_upload_exercise_admin, name='file_upload_exercise_admin'),
+
     # For viewing and changing user information
     url(r'^answers/(?P<user>[^/]+)/(?P<answer_id>\d+)$',
         views.get_old_file_exercise_evaluation, name='get_old_file_exercise_evaluation'),
