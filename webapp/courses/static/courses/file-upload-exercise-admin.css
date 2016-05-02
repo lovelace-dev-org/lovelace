@@ -1,5 +1,6 @@
 * {
     font-family: "LatoWeb";
+    margin: 0;
 }
 
 h1, h2 {
@@ -16,4 +17,19 @@ li {
 
 ul#stages-sortable > li {
     border: 2px solid #333;
+}
+
+div.flex-container {
+    display: flex;
+}
+
+div.left-side {
+    flex: 0 0 50%;
+    margin: 2px;
+}
+
+div.right-side {
+    flex: 1;
+    border: 2px solid #333;
+    margin: 2px;
 }

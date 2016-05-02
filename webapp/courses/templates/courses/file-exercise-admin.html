@@ -32,7 +32,17 @@
   <body>
     <h1>Here be file upload exercise admin</h1>
     
-    <p>a mockup</p>
+    <p>general exercise related stuff goes here</p>
+
+    <textarea>for example, the content</textarea>
+
+    <div>
+      also, the included files. the exercise specific and those selected from the instance specific pool.
+      <ul>
+        <li>included file 1.py / REFERENCE</li>
+        <li>included file 2.py / UNIT TEST</li>
+      </ul>
+    </div>
     
     <div id="test-tabs">
       <ul>
@@ -41,45 +51,62 @@
       </ul>
       
       <div id="test-tabs-1">
-        <ul id="stages-sortable">
-          <li class="ui-state-default">
-            <h2>stage 1</h2>
-            <div>
-              <ul id="commands-sortable-1{{ stage_id }}">
-                <li class="ui-state-default">
-                  command 1
-                </li>
-                <li class="ui-state-default">
-                  command 2
-                </li>
-              </ul>
-            </div>
-          </li>
-          <li class="ui-state-default">
-            <h2>stage 2</h2>
-            <div>
-              <ul id="commands-sortable-2{{ stage_id }}">
-                <li class="ui-state-default">
-                  command 1
-                </li>
-                <li class="ui-state-default">
-                  command 2
-                </li>
-                <li class="ui-state-default">
-                  command 3
-                </li>
-                <li class="ui-state-default">
-                  command 4
-                </li>
-              </ul>
-            </div>
-          </li>
-        </ul>
+
+        <p>test stuff that is unrelated to stages & commands goes here.</p>
+
+        <div class="flex-container">
+          <div class="left-side"><!-- left side, stages and commands -->
+            <ul id="stages-sortable">
+              <li class="ui-state-default">
+                <h2>stage 1</h2>
+                <div>
+                  <ul id="commands-sortable-1{{ stage_id }}">
+                    <li class="ui-state-default">
+                      command 1
+                    </li>
+                    <li class="ui-state-default">
+                      command 2
+                    </li>
+                  </ul>
+                </div>
+              </li>
+              <li class="ui-state-default">
+                <h2>stage 2</h2>
+                <div>
+                  <ul id="commands-sortable-2{{ stage_id }}">
+                    <li class="ui-state-default">
+                      command 1
+                    </li>
+                    <li class="ui-state-default">
+                      command 2
+                    </li>
+                    <li class="ui-state-default">
+                      command 3
+                    </li>
+                    <li class="ui-state-default">
+                      command 4
+                    </li>
+                  </ul>
+                </div>
+              </li>
+            </ul>
+          </div>
+          <div class="right-side"><!-- right side, information -->
+            <h2>more information</h2>
+            <p>
+              information that is shown when a command is clicked. 
+            </p>
+          </div>
+        </div>
       </div>
 
       <div id="test-tabs-2">
         asdf
       </div>
+    </div>
+
+    <div>
+      maybe use d3.js to generate a nice graph of how the tests will be run?
     </div>
   </body>
 </html>
