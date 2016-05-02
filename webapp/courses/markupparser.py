@@ -6,6 +6,13 @@ Idea from http://wiki.sheep.art.pl/Wiki%20Markup%20Parser%20in%20Python
 # TODO: Rework the registering of the different markups. Allow plugins to register
 # additional markups from their own files.
 
+# TODO: When the markup has been fully parsed, provide an object with an interface
+# which allows the user to get iterators/lists of embedded objects (names and options)
+# in the parsed document. This will make it easier to get and update the graph of
+# embedded pages.
+
+# TODO: Rework the parser into a plugin-extensible general Python library.
+
 import re
 import itertools
 import operator
