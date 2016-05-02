@@ -652,12 +652,34 @@ def terms(request):
     return HttpResponse(t.render(c, request))
 
 def file_upload_exercise_admin(request, exercise_id):
+    # GET = show the page
+    # POST = validate & save the submitted form
+
+    # TODO: Admin-view only!
+
+    # TODO: ”Create” buttons for new tests, stages, commands etc.
+
+    # TODO: All that stuff in admin which allows the user to upload new things etc.
+
+    # TODO: Rethink models.py.
+    
     #exercise = FileUploadExercise.objects.get(id=exercise_id)
     #tests = FileExerciseTest.objects.filter(exercise=exercise_id)
     #include_files = FileExerciseTestIncludeFile.objects.filter(exercise=...)
     #stages = FileExerciseTestStage.objects.filter(test=...)
     #commands = FileExerciseTestCommand.objects.filter(stage=...)
     #expected_outputs = FileExerciseTestExpectedOutput.objects.filter(command=...)
+
+    # TODO: Remember the manual versioning!
+    # Save creates new versions, but the version history can also be browsed read-only.
+    # https://django-reversion.readthedocs.io/en/latest/api.html#creating-revisions
+
+    # TODO: Remember the translations!
+    # http://django-modeltranslation.readthedocs.io/en/latest/usage.html
+
+    # TODO: Modify the admin site to direct file upload exercise edit urls here instead.
+    # ...or maybe modify the urls?
+    
     
     t = loader.get_template("courses/file-exercise-admin.html")
     c = {
