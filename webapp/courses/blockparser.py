@@ -110,7 +110,7 @@ def parse_term_tag(parsed_string, tag, term_name, term_text, context):
     parsed_string += tag.htmlend()
     return parsed_string
 
-def parsetag(tagname, unparsed_string, state=None):
+def parsetag(tagname, unparsed_string, context=None):
     """Parses one tag and applies it's settings. Generates the HTML."""
     tag = tags[tagname]
     hilite = address = link_text = hint_id = hint_text = term_name = term_text = None
@@ -152,7 +152,7 @@ def parsetag(tagname, unparsed_string, state=None):
         elif hint_id:
             parsed_string = parse_hint_tag(parsed_string, tag, hint_id, hint_text)
         elif term_name:
-            parsed_string = parse_term_tag(parsed_string, tag, term_name, term_text, state)
+            parsed_string = parse_term_tag(parsed_string, tag, term_name, term_text, context)
         else:
             contents = m.group(0)[tag.lb():-tag.le()]
 

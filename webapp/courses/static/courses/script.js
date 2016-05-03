@@ -143,12 +143,10 @@ function show_term_description(span_slct, div_slct, left_offset, top_offset) {
     var span = $(span_slct);
     var desc_div = $(div_slct);
     if (desc_div.length == 0) {
-        console.log("hei");
         desc_div = $("#term-div-not-found");
     }
 
     var pos = span.position();
-    console.log(pos.top);
     desc_div.css({"left" : pos.left + span.width() + left_offset + "px", 
                   "top" : pos.top + top_offset + "px"});
     var desc_content_div = desc_div.children("div.term-desc-contents");
