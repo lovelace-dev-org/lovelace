@@ -31,6 +31,14 @@ section.meta > div.breadcrumb {
     display: inline-block;
     float: left;
 }
+div.breadcrumb a {
+    color: #480;
+    text-decoration: none;
+}
+div.breadcrumb a:hover {
+    color: #666;
+    transition: all 0.2s ease-in-out;
+}
 
 section.meta > div.top-button {
     display: inline-block;
@@ -65,8 +73,42 @@ div.generalinfo-left-side {
     margin-right: 1rem;
 }
 
+textarea {
+    background: #eee;
+    color: #333;
+    border: 2px solid #ddd;
+    padding: 4px;
+    font-family: Inconsolata;
+}
+
 div.generalinfo-right-side {
     flex: 1;
+}
+
+div.separator {
+    margin: 1rem 2rem 1rem 0;
+    border: 0;
+    border-bottom: 4px dotted #ddd;
+}
+
+ul.exercise-tags {
+    padding: 0;
+    list-style-type: none;
+    display: flex;
+}
+
+li.exercise-tag {
+    padding: 6px;
+    margin: 4px;
+    border-radius: 10px;
+    background: #ddd;
+    cursor: grab;
+    flex: 0 0;
+    font-weight: bold;
+}
+li.exercise-tag:hover {
+    background: #cec;
+    transition: all 0.2s ease-in-out;
 }
 
 /* Included files */

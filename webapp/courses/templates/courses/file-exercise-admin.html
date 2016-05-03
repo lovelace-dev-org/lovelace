@@ -34,9 +34,10 @@
     <h1>Edit file upload exercise</h1>
 
     <section class="meta">
-      <div class="breadcrumb"><a href="">Home</a> › <a href="">Courses</a> › <a href="">File upload exercises</a> › Some file upload exercise</div>
-      <div class="top-button"><a href="">view in sandbox</a></div>
-      <div class="top-button"><a href="">view history</a></div>
+      {% load admin_urls %}
+      <div class="breadcrumb"><a href="{% url 'admin:index' %}">Home</a> › <a href="{% url 'admin:app_list' 'courses' %}">Courses</a> › <a href="{% url 'admin:courses_fileuploadexercise_changelist' %}">File upload exercises</a> › {{ exercise.name }}</div>
+      <div class="top-button"><a href="{% url 'courses:sandbox' exercise.slug %}">View in sandbox</a></div>
+      <div class="top-button"><a href="{% url 'admin:courses_fileuploadexercise_history' exercise.id %}">View history</a></div>
     </section>
 
     <section class="general-information">
@@ -47,9 +48,9 @@
         <div>Slug: {{ exercise.slug }}</div>
 
         <div>Page contents in <a href="{% url 'courses:markup_help' %}">the markup language</a></div>
-        <textarea cols="80" rows="5">{{ exercise.content }}</textarea>
+        <textarea cols="100" rows="6">{{ exercise.content }}</textarea>
         <div>The exercise question</div>
-        <textarea cols="80" rows="2">{{ exercise.question }}</textarea>
+        <textarea cols="100" rows="3">{{ exercise.question }}</textarea>
 
         <div>Default points: {{ exercise.default_points }}</div>
 
@@ -68,8 +69,14 @@
         <h2>Feedback questions</h2>
         <div>Feedback questions: {{ exercise.feedback_questions }}</div>
 
+        <div class="separator"></div>
+
         <h2>Tags</h2>
-        <div>Tags: {{ exercise.tags }}</div>
+        <ul class="exercise-tags">
+          {% for ex_tag in exercise.tags %}
+            <li class="exercise-tag">{{ ex_tag }}</li>
+          {% endfor %}
+        </ul>
       </div>
 
     </section>
@@ -86,9 +93,9 @@
       <div>
         A pool of files available only for this exercise:
         <ol>
-          <li>included file 1.py / REFERENCE</li>
-          <li>included file 2.py / UNIT TEST</li>
-          <li>weird input.txt / INPUT FILE</li>
+          {% for include_file in include_files %}
+            <li>{{ include_file.name }}</li>
+          {% endfor %}
         </ol>
       </div>
 
@@ -106,66 +113,68 @@
       
       <div id="test-tabs">
         <ol>
-          <li><a href="#test-tabs-1">test 1</a></li>
-          <li><a href="#test-tabs-2">test 2</a></li>
+          {% for test in tests %}
+            <li><a href="#test-tabs-{{ test.id }}">{{ test.name }}</a></li>
+          {% endfor %}
           <li><button>create a new test</button></li>
         </ol>
-        
-        <div id="test-tabs-1">
 
-          <div>Test name: hömppätesti{{ test.name }}</div>
+        {% for test in tests %}
+          <div id="test-tabs-{{ test.id }}">
 
-          <div>Included files this test requires: &lt;a picker for selecting the files made available above; updates realtime&gt;{{ test.required_files }}</div>
-
-          <div class="flex-container">
-            <div class="left-side"><!-- left side, stages and commands -->
-              <ol id="stages-sortable">
-                <li class="ui-state-default">
-                  <h2>stage 1</h2>
-                  <div>
-                    <ol id="commands-sortable-1{{ stage_id }}">
-                      <li class="ui-state-default">
-                        command 1
-                      </li>
-                      <li class="ui-state-default">
-                        command 2
-                      </li>
-                    </ol>
-                  </div>
-                </li>
-                <li class="ui-state-default">
-                  <h2>stage 2</h2>
-                  <div>
-                    <ol id="commands-sortable-2{{ stage_id }}">
-                      <li class="ui-state-default">
-                        command 1
-                      </li>
-                      <li class="ui-state-default">
-                        command 2
-                      </li>
-                      <li class="ui-state-default">
-                        command 3
-                      </li>
-                      <li class="ui-state-default">
-                        command 4
-                      </li>
-                    </ol>
-                  </div>
-                </li>
-              </ol>
+            <div>
+              <label for="test-{{ test.id }}-name">Test name:</label>
+              <input type="text" id="test-{{ test.id }}-name" value="{{ test.name }}">
             </div>
-            <div class="right-side"><!-- right side, information -->
-              <h2>more information</h2>
-              <p>
-                information that is shown when a command is clicked. 
-              </p>
+
+            <div>Included files this test requires: &lt;a picker for selecting the files made available above; updates realtime&gt;{{ test.required_files }}</div>
+
+            <div class="flex-container">
+              <div class="left-side"><!-- left side, stages and commands -->
+                <ol id="stages-sortable">
+                  <li class="ui-state-default">
+                    <h2>stage 1</h2>
+                    <div>
+                      <ol id="commands-sortable-1{{ stage_id }}">
+                        <li class="ui-state-default">
+                          command 1
+                        </li>
+                        <li class="ui-state-default">
+                          command 2
+                        </li>
+                      </ol>
+                    </div>
+                  </li>
+                  <li class="ui-state-default">
+                    <h2>stage 2</h2>
+                    <div>
+                      <ol id="commands-sortable-2{{ stage_id }}">
+                        <li class="ui-state-default">
+                          command 1
+                        </li>
+                        <li class="ui-state-default">
+                          command 2
+                        </li>
+                        <li class="ui-state-default">
+                          command 3
+                        </li>
+                        <li class="ui-state-default">
+                          command 4
+                        </li>
+                      </ol>
+                    </div>
+                  </li>
+                </ol>
+              </div>
+              <div class="right-side"><!-- right side, information -->
+                <h2>more information</h2>
+                <p>
+                  information that is shown when a command is clicked. 
+                </p>
+              </div>
             </div>
           </div>
-        </div>
-
-        <div id="test-tabs-2">
-          asdf
-        </div>
+        {% endfor %}
       </div>
 
       
