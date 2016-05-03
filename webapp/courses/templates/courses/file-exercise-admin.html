@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     {% load staticfiles %}
     {% load i18n %}
+    <title>Edit | {{ exercise.name }}</title>
     <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=Inconsolata">
 
     <link rel="stylesheet" href="{% static 'courses/jquery-ui.css' %}">
@@ -30,84 +31,153 @@
     </script>
   </head>
   <body>
-    <h1>Here be file upload exercise admin</h1>
-    
-    <p>general exercise related stuff goes here</p>
+    <h1>Edit file upload exercise</h1>
 
-    <textarea>for example, the content</textarea>
+    <section class="meta">
+      <div class="breadcrumb"><a href="">Home</a> › <a href="">Courses</a> › <a href="">File upload exercises</a> › Some file upload exercise</div>
+      <div class="top-button"><a href="">view in sandbox</a></div>
+      <div class="top-button"><a href="">view history</a></div>
+    </section>
 
-    <div>
-      also, the included files. the exercise specific and those selected from the instance specific pool.
-      <ul>
-        <li>included file 1.py / REFERENCE</li>
-        <li>included file 2.py / UNIT TEST</li>
-      </ul>
-    </div>
-    
-    <div id="test-tabs">
-      <ul>
-        <li><a href="#test-tabs-1">test 1</a></li>
-        <li><a href="#test-tabs-2">test 2</a></li>
-      </ul>
+    <section class="general-information">
+      <div class="generalinfo-left-side">
+        <h2>General information</h2>
+
+        <div>Name: <input type="text" value="{{ exercise.name }}"></div><!-- add onChange input->title&breadcrumb -->
+        <div>Slug: {{ exercise.slug }}</div>
+
+        <div>Page contents in <a href="{% url 'courses:markup_help' %}">the markup language</a></div>
+        <textarea cols="80" rows="5">{{ exercise.content }}</textarea>
+        <div>The exercise question</div>
+        <textarea cols="80" rows="2">{{ exercise.question }}</textarea>
+
+        <div>Default points: {{ exercise.default_points }}</div>
+
+        <div>
+          <input type="checkbox" id="manually_evaluated">
+          <label for="manually_evaluated">This exercise is evaluated by hand</label>
+        </div>
+
+        <div>
+          <input type="checkbox" id="ask_collaborators">
+          <label for="ask_collaborators">Ask the answerer to list collaborators</label>
+        </div>
+      </div>
       
-      <div id="test-tabs-1">
+      <div class="generalinfo-right-side">
+        <h2>Feedback questions</h2>
+        <div>Feedback questions: {{ exercise.feedback_questions }}</div>
 
-        <p>test stuff that is unrelated to stages & commands goes here.</p>
+        <h2>Tags</h2>
+        <div>Tags: {{ exercise.tags }}</div>
+      </div>
 
-        <div class="flex-container">
-          <div class="left-side"><!-- left side, stages and commands -->
-            <ul id="stages-sortable">
-              <li class="ui-state-default">
-                <h2>stage 1</h2>
-                <div>
-                  <ul id="commands-sortable-1{{ stage_id }}">
-                    <li class="ui-state-default">
-                      command 1
-                    </li>
-                    <li class="ui-state-default">
-                      command 2
-                    </li>
-                  </ul>
-                </div>
-              </li>
-              <li class="ui-state-default">
-                <h2>stage 2</h2>
-                <div>
-                  <ul id="commands-sortable-2{{ stage_id }}">
-                    <li class="ui-state-default">
-                      command 1
-                    </li>
-                    <li class="ui-state-default">
-                      command 2
-                    </li>
-                    <li class="ui-state-default">
-                      command 3
-                    </li>
-                    <li class="ui-state-default">
-                      command 4
-                    </li>
-                  </ul>
-                </div>
-              </li>
-            </ul>
+    </section>
+
+    <section class="configurable-hints">
+      <h2>Configurable hints</h2>
+
+      <div>{{ exercise.hints_set }}</div>
+    </section>
+
+    <section class="included-files">
+      <h2>Included files</h2>
+      
+      <div>
+        A pool of files available only for this exercise:
+        <ol>
+          <li>included file 1.py / REFERENCE</li>
+          <li>included file 2.py / UNIT TEST</li>
+          <li>weird input.txt / INPUT FILE</li>
+        </ol>
+      </div>
+
+      <div>
+        A pool of files specific to a course instance:
+        <ol>
+          <li>some library.py / LIBRARY</li>
+          <li>core testing routines.py / LIBRARY</li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="tests">
+      <h2>Tests</h2>
+      
+      <div id="test-tabs">
+        <ol>
+          <li><a href="#test-tabs-1">test 1</a></li>
+          <li><a href="#test-tabs-2">test 2</a></li>
+          <li><button>create a new test</button></li>
+        </ol>
+        
+        <div id="test-tabs-1">
+
+          <div>Test name: hömppätesti{{ test.name }}</div>
+
+          <div>Included files this test requires: &lt;a picker for selecting the files made available above; updates realtime&gt;{{ test.required_files }}</div>
+
+          <div class="flex-container">
+            <div class="left-side"><!-- left side, stages and commands -->
+              <ol id="stages-sortable">
+                <li class="ui-state-default">
+                  <h2>stage 1</h2>
+                  <div>
+                    <ol id="commands-sortable-1{{ stage_id }}">
+                      <li class="ui-state-default">
+                        command 1
+                      </li>
+                      <li class="ui-state-default">
+                        command 2
+                      </li>
+                    </ol>
+                  </div>
+                </li>
+                <li class="ui-state-default">
+                  <h2>stage 2</h2>
+                  <div>
+                    <ol id="commands-sortable-2{{ stage_id }}">
+                      <li class="ui-state-default">
+                        command 1
+                      </li>
+                      <li class="ui-state-default">
+                        command 2
+                      </li>
+                      <li class="ui-state-default">
+                        command 3
+                      </li>
+                      <li class="ui-state-default">
+                        command 4
+                      </li>
+                    </ol>
+                  </div>
+                </li>
+              </ol>
+            </div>
+            <div class="right-side"><!-- right side, information -->
+              <h2>more information</h2>
+              <p>
+                information that is shown when a command is clicked. 
+              </p>
+            </div>
           </div>
-          <div class="right-side"><!-- right side, information -->
-            <h2>more information</h2>
-            <p>
-              information that is shown when a command is clicked. 
-            </p>
-          </div>
+        </div>
+
+        <div id="test-tabs-2">
+          asdf
         </div>
       </div>
 
-      <div id="test-tabs-2">
-        asdf
+      
+      <div>
+        maybe use d3.js to generate a nice graph of how the tests will be run?
       </div>
-    </div>
+    </section>
 
-    <div>
-      maybe use d3.js to generate a nice graph of how the tests will be run?
-    </div>
+    <section class="form-controls">
+      <div><a href="blaah/delete" id="delete-exercise">delete</a></div>
+      <button id="save-exercise">save</button>
+    </section>
   </body>
 </html>
     

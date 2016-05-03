@@ -651,21 +651,48 @@ def terms(request):
     c = {}
     return HttpResponse(t.render(c, request))
 
+# We need the following urls, at least:
+# fileuploadexercise/add
+# fileuploadexercise/{id}/change
+# fileuploadexercise/{id}/delete
 def file_upload_exercise_admin(request, exercise_id):
+    # Admins only, consider @staff_member_required
+    if not (request.user.is_staff and request.user.is_authenticated() and request.user.is_active):
+        return HttpResponseForbidden("Only admins are allowed to edit file upload exercises.")
+
     # GET = show the page
     # POST = validate & save the submitted form
 
-    # TODO: Admin-view only!
 
     # TODO: ”Create” buttons for new tests, stages, commands etc.
 
     # TODO: All that stuff in admin which allows the user to upload new things etc.
 
     # TODO: Rethink models.py.
+
+    # TODO: How to handle the creation of new exercises? 
+
+    # Get the exercise
+    try:
+        exercise = FileUploadExercise.objects.get(id=exercise_id)
+    except FileUploadExercise.DoesNotExist as e:
+        #pass # DEBUG
+        return HttpResponseNotFound("File upload exercise with id={} not found.".format(exercise_id))
+
+    # Get the configurable hints linked to this exercise
+    hints = Hint.objects.filter(exercise=exercise)
+
+    # Get the exercise specific files
+    include_files = FileExerciseTestIncludeFile.objects.filter(exercise=exercise)
+
+    # TODO: Get the instance specific files
+    # 1. scan the content graphs and embedded links to find out, if this exercise is linked
+    #    to an instance. we need a manytomany relation here, that is instance specific
+    # 2. get the files and show a pool of them
+
     
-    #exercise = FileUploadExercise.objects.get(id=exercise_id)
-    #tests = FileExerciseTest.objects.filter(exercise=exercise_id)
-    #include_files = FileExerciseTestIncludeFile.objects.filter(exercise=...)
+    tests = FileExerciseTest.objects.filter(exercise=exercise_id)
+    
     #stages = FileExerciseTestStage.objects.filter(test=...)
     #commands = FileExerciseTestCommand.objects.filter(stage=...)
     #expected_outputs = FileExerciseTestExpectedOutput.objects.filter(command=...)
@@ -683,6 +710,10 @@ def file_upload_exercise_admin(request, exercise_id):
     
     t = loader.get_template("courses/file-exercise-admin.html")
     c = {
-        'asdf': 1,
+        'exercise': exercise,
+        'hints': hints,
+        'include_files': include_files,
+        'tests': tests,
+        
     }
     return HttpResponse(t.render(c, request))
