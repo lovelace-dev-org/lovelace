@@ -37,6 +37,7 @@ class ContentFeedbackQuestion(models.Model):
         return TYPE_MODELS[self.question_type].objects.get(id=self.id)
 
     def get_answer_model(self):
+        """Returns the corresponding answer model of the question object that is the child of ContentFeedbackQuestion."""
         ANSWER_MODELS = {
             "THUMB_FEEDBACK" : ThumbFeedbackUserAnswer,
             "STAR_FEEDBACK" : StarFeedbackUserAnswer,
@@ -104,7 +105,7 @@ class TextfieldFeedbackQuestion(ContentFeedbackQuestion):
         return answer_object
                 
     class Meta:
-        verbose_name = "textfield feedback question"
+        verbose_name = "content textfield feedback question"
         proxy = True
 
 class ThumbFeedbackQuestion(ContentFeedbackQuestion):
@@ -132,7 +133,7 @@ class ThumbFeedbackQuestion(ContentFeedbackQuestion):
         return answer_object
         
     class Meta:
-        verbose_name = "thumb feedback question"
+        verbose_name = "content thumb feedback question"
         proxy = True
 
 class StarFeedbackQuestion(ContentFeedbackQuestion):
@@ -155,7 +156,7 @@ class StarFeedbackQuestion(ContentFeedbackQuestion):
         return answer_object
         
     class Meta:
-        verbose_name = "star feedback question"
+        verbose_name = "content star feedback question"
         proxy = True
 
 class MultipleChoiceFeedbackQuestion(ContentFeedbackQuestion):
@@ -182,7 +183,7 @@ class MultipleChoiceFeedbackQuestion(ContentFeedbackQuestion):
         return choices
         
     class Meta:
-        verbose_name = "multiple choice feedback question"
+        verbose_name = "content multiple choice feedback question"
         proxy = True
 
 class MultipleChoiceFeedbackAnswer(models.Model):
@@ -222,7 +223,7 @@ class MultipleChoiceFeedbackUserAnswer(ContentFeedbackUserAnswer):
     chosen_answer = models.ForeignKey(MultipleChoiceFeedbackAnswer)
 
     def __str__(self):
-        return self.chosen_answer
+        return self.chosen_answer.answer
     
     class Meta:
         get_latest_by = "answer_date"

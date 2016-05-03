@@ -35,6 +35,7 @@ from reversion import revisions as reversion
 import courses.blockparser as blockparser
 import courses.models
 import courses.forms
+import feedback.models
 
 # TODO: Support indented blocks (e.g. <pre>) within indents, uls & ols
 # TODO: Support admonitions/warnings/good to know boxes/etc.
@@ -484,7 +485,7 @@ class EmbeddedPageMarkup(Markup):
                 embedded_content += chunk
             
             choices = page.get_choices(page, revision=revision)
-            question = blockparser.parseblock(escape(page.question), state)
+            question = blockparser.parseblock(escape(page.question), state["context"])
 
             c = {
                 "emb_content": embedded_content,
@@ -505,7 +506,7 @@ class EmbeddedPageMarkup(Markup):
             else:
                 c["sandboxed"] = False
 
-            if user.is_active and page.get_user_answers(page, user) and not sandboxed:
+            if user.is_active and page.is_answerable() and page.get_user_answers(page, user) and not sandboxed:
                 c["evaluation"] = page.get_user_evaluation(page, user)
                 c["answer_count"] = page.get_user_answers(page, user).count()
             else:
@@ -777,8 +778,9 @@ class HeadingMarkup(Markup):
         # TODO: Add "-heading" to id
         yield '<h%d class="content-heading">' % (settings["heading_level"])
         yield heading
-        yield '<span id="%s" class="anchor-offset"></span>' % (slug)
-        yield '<a href="#%s" class="permalink" title="Permalink to %s">&para;</a>' % (slug, heading)
+        if not "tooltip" in state["context"]:
+            yield '<span id="%s" class="anchor-offset"></span>' % (slug)
+            yield '<a href="#%s" class="permalink" title="Permalink to %s">&para;</a>' % (slug, heading)
         yield '</h%d>\n' % settings["heading_level"]
     
     @classmethod

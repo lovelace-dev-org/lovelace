@@ -3,8 +3,8 @@
 {% load stats_tags %}
 
 {% block user-answer-data %}
-  {% for course, basic_stats, piechart in stats %}
-  <h3 class="content-heading">{{ course|user_answers_title }}<span id="{{ course|heading_id }}" class="anchor-offset"></span></h3>  
+  {% for course_inst, basic_stats, piechart in stats %}
+  <h3 class="content-heading">{{ course_inst|user_answers_title }}<span id="{{ course_inst|heading_id }}" class="anchor-offset"></span></h3>  
   <div class="stat-table">
     <div class="stat-table row">
       <div class="stat-table cell">

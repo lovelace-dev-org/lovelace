@@ -10,6 +10,7 @@
                                           '{% trans 'Give feedback on this content' %}', 
                                           '{% trans 'Close feedback' %}', '{% static 'feedback/plus.png' %}', 
                                           '{% static 'feedback/minus.png' %}');">
+
           <img class="img-header" src="{% static 'feedback/plus.png' %}"><span>{% trans 'Give feedback on this content' %}</span>
         </div>
         <div class="exercise-feedback-content">
@@ -17,7 +18,7 @@
           <div class="lecture-feedback-content">
             <h1 class="content-heading">{% trans 'Give feedback on this content' %}<span id="give-feedback" class="anchor-offset"></span></h1>
       {% endif %}
-
+      
       {% for question in feedback_questions %}
         {% if question.question_type == "THUMB_FEEDBACK" %}
           {% feedback_thumb question user content %}

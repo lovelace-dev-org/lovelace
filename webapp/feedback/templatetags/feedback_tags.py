@@ -80,4 +80,3 @@ def answer_date(t):
         return "{:%H:%M:%S}".format(t)
     else:
         return "{:%Y-%m-%d}".format(t)
-
