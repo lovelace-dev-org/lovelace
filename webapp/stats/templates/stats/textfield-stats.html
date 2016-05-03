@@ -3,8 +3,8 @@
 {% load stats_tags %}
 
 {% block user-answer-data %}
-  {% for course, basic_stats, piechart, answer_data, hint_coverage_unique, hint_coverage_given in stats %}
-  <h3 class="content-heading">{{ course|user_answers_title }}<span id="{{ course|heading_id }}" class="anchor-offset"></span></h3>
+  {% for course_inst, basic_stats, piechart, answer_data, hint_coverage_unique, hint_coverage_given in stats %}
+  <h3 class="content-heading">{{ course_inst|user_answers_title }}<span id="{{ course_inst|heading_id }}" class="anchor-offset"></span></h3>
   <div class="stat-table">
     <div class="stat-table row">
       <div class="stat-table cell">
@@ -18,7 +18,7 @@
     </div>
   </div>
   {% if answer_data %}
-  <table id="{{ course|table_id }}" class="fixed">
+  <table id="{{ course_inst|table_id }}" class="fixed">
     <colgroup>
       <col>
       <col class="count">
@@ -28,10 +28,10 @@
     </colgroup>
     <tr>
       <th>User answer</th>
-      {% sortable_table_header course "Count" "1" %}
+      {% sortable_table_header course_inst "Count" "1" %}
       <th>Correct</th>
       <th>Hint given</th>
-      {% sortable_table_header course "Latest" "4" %}
+      {% sortable_table_header course_inst "Latest" "4" %}
     </tr>
     {% for answer, count, correct, hinted, latest, matches in answer_data %}
     <tr>

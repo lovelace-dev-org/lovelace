@@ -94,10 +94,10 @@ AUTHENTICATION_BACKENDS = (
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'lovelace',
-        'USER': 'lovelace',
-        'PASSWORD': 'E<%bYn3M',
-        'HOST': '10.0.2.15',
+        'NAME': 'mydatabase',
+        'USER': 'mydatabaseuser',
+        'PASSWORD': 'mypassword',
+        'HOST': '127.0.0.1',
         'PORT': '5432',
     }
 }

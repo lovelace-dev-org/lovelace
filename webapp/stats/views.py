@@ -43,11 +43,11 @@ def course_exercises_with_color(course):
             exercises.extend(list(zip(itertools.cycle([color]), all_pages)))
     return exercises
 
-def course_exercises(course):
+def course_instance_exercises(course_inst):
     exercises = []
 
     # TODO: course has no contents, use instance
-    parent_pages = course.contents.select_related('content').order_by('ordinal_number')
+    parent_pages = course_inst.contents.select_related('content').order_by('ordinal_number')
     
     for p in parent_pages:
         if p.content.embedded_pages.count() > 0:
@@ -55,16 +55,16 @@ def course_exercises(course):
             exercises.extend(all_pages)
     return exercises
 
-def filter_users_on_course(users, course):
-    return users
+def filter_users_enrolled(users, course_inst):
+    return [user for user in users if user in course_inst.enrolled_users.all()]
 
-def courses_linked(exercise):
+def course_instances_linked(exercise):
     linked = []
-    courses = Course.objects.all()
+    course_instances = CourseInstance.objects.all()
     
-    for course in courses:
-        if exercise in course_exercises(course):
-            linked.append(course)
+    for course_inst in course_instances:
+        if exercise in course_instance_exercises(course_inst):
+            linked.append(course_inst)
     return linked
 
 ########################################################### 
@@ -326,14 +326,14 @@ def file_upload_exercise(exercise, users, course_inst=None):
 
 def exercise_answer_stats(request, ctx, exercise, exercise_type_f, template):
     all_users = User.objects.filter(is_staff=False).order_by('username')
-    courses = courses_linked(exercise)
+    course_instances = course_instances_linked(exercise)
 
     stats = []
     users = []
-    for course in courses:
-        users_on_course = filter_users_on_course(all_users, course)
-        stats.append(exercise_type_f(exercise, users_on_course, course))
-        users.extend(users_on_course)
+    for course_inst in course_instances:
+        users_enrolled = filter_users_enrolled(all_users, course_inst)
+        stats.append(exercise_type_f(exercise, users_enrolled, course_inst))
+        users.extend(users_enrolled)
 
     stats.append(exercise_type_f(exercise, list(set(users))))
     ctx.update({"stats": stats})

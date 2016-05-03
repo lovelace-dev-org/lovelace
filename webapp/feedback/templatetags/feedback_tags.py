@@ -10,7 +10,10 @@ register = template.Library()
 @register.inclusion_tag("feedback/textfield-feedback-question.html")
 def feedback_textfield(question, user, content):
     return {
+        "question" : question.question,
         "answered" : question.user_answered(user, content) if user.is_authenticated() else None,
+        "content_slug" : content.slug, 
+        "feedback_slug" : question.slug
     }
 
 # {% feedback_thumb %}
@@ -22,7 +25,10 @@ def feedback_thumb(question, user, content):
         user_answer = None
 
     return {
+        "question" : question.question,
         "user_answer" : user_answer, 
+        "content_slug" : content.slug, 
+        "feedback_slug" : question.slug
     }
 
 # {% feedback_star %}
@@ -34,7 +40,10 @@ def feedback_star(question, user, content):
         user_answer = None
 
     return {
+        "question" : question.question,
         "user_answer" : user_answer,
+        "content_slug" : content.slug, 
+        "feedback_slug" : question.slug,
         "radiobutton_id" : hashlib.md5(bytearray(question.slug + content.slug, "utf-8")).hexdigest()
     }
 
@@ -49,6 +58,8 @@ def feedback_multiple_choice(question, user, content):
     return {
         "question" : question.question,
         "user_answer" : user_answer,
+        "content_slug" : content.slug, 
+        "feedback_slug" : question.slug,
         "choices" : question.get_choices(),
         "radiobutton_id" : hashlib.md5(bytearray(question.slug + content.slug, "utf-8")).hexdigest()
     }
@@ -69,4 +80,3 @@ def answer_date(t):
         return "{:%H:%M:%S}".format(t)
     else:
         return "{:%Y-%m-%d}".format(t)
-

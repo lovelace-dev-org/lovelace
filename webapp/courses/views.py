@@ -456,6 +456,7 @@ def content(request, course_slug, instance_slug, content_slug, **kwargs):
         'choices': choices,
         'evaluation': evaluation,
         'sandboxed': False,
+        'terms': terms,
         'revision': revision,
     }
     if "frontpage" in kwargs:
