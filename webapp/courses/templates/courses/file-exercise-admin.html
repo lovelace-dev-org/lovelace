@@ -113,7 +113,7 @@
       
       <div id="test-tabs">
         <ol>
-          {% for test, _ in tests %}
+          {% for test, stages in tests %}
             <li><a href="#test-tabs-{{ test.id }}">{{ test.name }}</a></li>
           {% endfor %}
           <li><button>create a new test</button></li>
@@ -128,7 +128,7 @@
             </div>
 
             <div>Included files this test requires: &lt;a picker for selecting the files made available above; updates realtime&gt;{{ test.required_files }}</div>
-            
+
             <div class="flex-container">
               <div class="left-side"><!-- left side, stages and commands -->
                 <ol id="stages-sortable-{{ test.id }}">
