@@ -20,13 +20,14 @@
     <script>
       $(function() {
         $("#test-tabs").tabs();
-        
-        $("#stages-sortable").sortable();
-        $("#stages-sortable").disableSelection();
-        $("#commands-sortable-1").sortable();
-        $("#commands-sortable-1").disableSelection();
-        $("#commands-sortable-2").sortable();
-        $("#commands-sortable-2").disableSelection();
+        {% for test, stages in tests %}
+        $("#stages-sortable-{{ test.id }}").sortable();
+        $("#stages-sortable-{{ test.id }}").disableSelection();
+        {% for stage, commands in stages %}
+        $("#commands-sortable-{{ test.id }}-{{ stage.id }}").sortable();
+        $("#commands-sortable-{{ test.id }}-{{ stage.id }}").disableSelection();
+        {% endfor %}
+        {% endfor %}
       });
     </script>
   </head>
