@@ -19,6 +19,10 @@ h1 {
     border-bottom: 4px solid #ccc;
 }
 
+h2 {
+    margin-bottom: 1rem;
+}
+
 /* Meta */
 
 section.meta {
@@ -95,12 +99,18 @@ ul.exercise-tags {
     padding: 0;
     list-style-type: none;
     display: flex;
+    flex-wrap: wrap;
 }
 
 li.exercise-tag {
+    display: flex;
     padding: 6px;
     margin: 4px;
     border-radius: 10px;
+    text-align: center;
+    justify-content: center;
+    align-content: center;
+    align-items: center;
     background: #ddd;
     cursor: grab;
     flex: 0 0;
