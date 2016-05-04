@@ -692,12 +692,20 @@ def file_upload_exercise_admin(request, exercise_id):
     # 2. get the files and show a pool of them
 
     
-    tests = FileExerciseTest.objects.filter(exercise=exercise_id)
+    tests = FileExerciseTest.objects.filter(exercise=exercise_id).order_by("name")
+    test_list = []
+    for test in tests:
+        stages = FileExerciseTestStage.objects.filter(test=test).order_by("ordinal_number")
+        stage_list = []
+        for stage in stages:
+            cmd_list = []
+            commands = FileExerciseTestCommand.objects.filter(stage=stage).order_by("ordinal_number")
+            for cmd in commands:
+                expected_outputs = FileExerciseTestExpectedOutput.objects.filter(command=cmd).order_by("ordinal_number")
+                cmd_list.append((cmd, expected_outputs))
+            stage_list.append((stage, cmd_list))
+        test_list.append((test, stage_list))
     
-    #stages = FileExerciseTestStage.objects.filter(test=...)
-    #commands = FileExerciseTestCommand.objects.filter(stage=...)
-    #expected_outputs = FileExerciseTestExpectedOutput.objects.filter(command=...)
-
     # TODO: Remember the manual versioning!
     # Save creates new versions, but the version history can also be browsed read-only.
     # https://django-reversion.readthedocs.io/en/latest/api.html#creating-revisions
@@ -714,7 +722,6 @@ def file_upload_exercise_admin(request, exercise_id):
         'exercise': exercise,
         'hints': hints,
         'include_files': include_files,
-        'tests': tests,
-        
+        'tests': test_list,
     }
     return HttpResponse(t.render(c, request))

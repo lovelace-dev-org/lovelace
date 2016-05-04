@@ -113,13 +113,13 @@
       
       <div id="test-tabs">
         <ol>
-          {% for test in tests %}
+          {% for test, _ in tests %}
             <li><a href="#test-tabs-{{ test.id }}">{{ test.name }}</a></li>
           {% endfor %}
           <li><button>create a new test</button></li>
         </ol>
 
-        {% for test in tests %}
+        {% for test, stages in tests %}
           <div id="test-tabs-{{ test.id }}">
 
             <div>
@@ -128,43 +128,24 @@
             </div>
 
             <div>Included files this test requires: &lt;a picker for selecting the files made available above; updates realtime&gt;{{ test.required_files }}</div>
-
+            
             <div class="flex-container">
               <div class="left-side"><!-- left side, stages and commands -->
-                <ol id="stages-sortable">
-                  <li class="ui-state-default">
-                    <h2>stage 1</h2>
-                    <div>
-                      <ol id="commands-sortable-1{{ stage_id }}">
-                        <li class="ui-state-default">
-                          command 1
-                        </li>
-                        <li class="ui-state-default">
-                          command 2
-                        </li>
-                      </ol>
-                    </div>
-                  </li>
-                  <li class="ui-state-default">
-                    <h2>stage 2</h2>
-                    <div>
-                      <ol id="commands-sortable-2{{ stage_id }}">
-                        <li class="ui-state-default">
-                          command 1
-                        </li>
-                        <li class="ui-state-default">
-                          command 2
-                        </li>
-                        <li class="ui-state-default">
-                          command 3
-                        </li>
-                        <li class="ui-state-default">
-                          command 4
-                        </li>
-                      </ol>
-                    </div>
-                  </li>
-                </ol>
+                <ol id="stages-sortable-{{ test.id }}">
+                  {% for stage, commands in stages %}
+                    <li class="ui-state-default">
+                      <h2>{{ stage.name }}</h2>
+                      <div>
+                        <ol id="commands-sortable-{{ test.id }}-{{ stage.id }}">
+                          {% for cmd, expected_outputs in commands %}
+                            <li class="ui-state-default">
+                              {{ cmd.command_line }}
+                            </li>
+                          {% endfor %}
+                        </ol>
+                      </div>
+                    </li>
+                  {% endfor %}
               </div>
               <div class="right-side"><!-- right side, information -->
                 <h2>more information</h2>
