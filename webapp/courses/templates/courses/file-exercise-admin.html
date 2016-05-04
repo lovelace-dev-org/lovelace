@@ -21,12 +21,12 @@
       $(function() {
         $("#test-tabs").tabs();
         {% for test, stages in tests %}
-        $("#stages-sortable-{{ test.id }}").sortable();
-        $("#stages-sortable-{{ test.id }}").disableSelection();
-        {% for stage, commands in stages %}
-        $("#commands-sortable-{{ test.id }}-{{ stage.id }}").sortable();
-        $("#commands-sortable-{{ test.id }}-{{ stage.id }}").disableSelection();
-        {% endfor %}
+          $("#stages-sortable-{{ test.id }}").sortable();
+          $("#stages-sortable-{{ test.id }}").disableSelection();
+          {% for stage, commands in stages %}
+            $("#commands-sortable-{{ test.id }}-{{ stage.id }}").sortable();
+            $("#commands-sortable-{{ test.id }}-{{ stage.id }}").disableSelection();
+          {% endfor %}
         {% endfor %}
       });
     </script>
