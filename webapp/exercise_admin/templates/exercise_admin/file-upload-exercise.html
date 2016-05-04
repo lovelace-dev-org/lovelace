@@ -66,6 +66,7 @@
 
       {% for test, stages in tests %}
         <div id="test-tabs-{{ test.id }}">
+          <h3>Test specific settings</h3>
 
           <div>
             <label for="test-{{ test.id }}-name">Test name:</label>
@@ -74,12 +75,14 @@
 
           <div>Included files this test requires: &lt;a picker for selecting the files made available above; updates realtime&gt;{{ test.required_files }}</div>
 
+          <h3>Test stage progression</h3>
+          
           <div class="flex-container">
             <div class="left-side"><!-- left side, stages and commands -->
               <ol id="stages-sortable-{{ test.id }}">
                 {% for stage, commands in stages %}
                   <li class="ui-state-default">
-                    <h2>{{ stage.name }}</h2>
+                    {{ stage.name }}
                     <div>
                       <ol id="commands-sortable-{{ test.id }}-{{ stage.id }}">
                         {% for cmd, expected_outputs in commands %}
@@ -93,7 +96,7 @@
                 {% endfor %}
             </div>
             <div class="right-side"><!-- right side, information -->
-              <h2>more information</h2>
+              <h4>Stage/Command information</h4>
               <p>
                 information that is shown when a command is clicked. 
               </p>

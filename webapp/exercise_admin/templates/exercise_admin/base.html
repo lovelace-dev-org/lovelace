@@ -70,7 +70,11 @@
     <section class="configurable-hints">
       <h2>Configurable hints</h2>
 
-      <div>{{ exercise.hints_set }}</div>
+      <ul>
+      {% for hint in hints %}
+        <li>{{ hint.hint }}</li>
+      {% endfor %}
+      </ul>
     </section>
 
     {% block exercise-type-specific %}
