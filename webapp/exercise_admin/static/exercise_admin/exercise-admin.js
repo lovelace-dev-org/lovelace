@@ -11,10 +11,12 @@ $(document).ready(function() {
 
 function exercise_name_changed(e) {
     var page_title_elem = $('title');
+    var breadcrumb_elem = $('#exercise-name-breadcrumb');
     var new_name = e.target.value;
 
     /* TODO: 'Add' instead of 'Edit' when adding a new page */
     page_title_elem.html('Edit | ' + new_name);
+    breadcrumb_elem.html(new_name);
 
     if (content_untouched === true) {
         var content_input = $('#exercise-page-content');
