@@ -5,6 +5,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "lovelace.settings")
 
 import django
 django.setup()
+from django.core.files import File
 
 import courses.models as c_models
 import feedback.models as fb_models
@@ -21,6 +22,7 @@ def create_exercise(args):
     ask_collab = args.ask_collab
     hint_count = args.hint_count
     test_count = args.test_count
+    file_count = args.file_count
     stage_count = args.stage_count
     command_count = args.command_count
     tag_count = args.tag_count
@@ -32,6 +34,7 @@ def create_exercise(args):
         count_all = args.count_all
         hint_count = count_all
         test_count = count_all
+        file_count = count_all
         stage_count = count_all
         command_count = count_all
         tag_count = count_all
@@ -74,6 +77,19 @@ def create_exercise(args):
         test = c_models.FileExerciseTest(exercise=exercise, name="test{}".format(i))
         test.save()
         if randomize_tests:
+            file_range = range(random.randrange(file_count + 1))
+        else:
+            file_range = range(file_count)
+        inc_files = []
+        for j in file_range:
+            with open('../test_files/test1.txt', 'r') as f:
+                f_obj = File(f)
+                inc_file = c_models.FileExerciseTestIncludeFile(name="test{}file{}".format(i, j), exercise=exercise, fileinfo=f_obj)
+                inc_file.save()
+                inc_files.append(inc_file)
+        test.required_files.add(*inc_files)
+            
+        if randomize_tests:
             stage_range = range(random.randrange(stage_count + 1))
         else:
             stage_range = range(stage_count)
@@ -90,8 +106,8 @@ def create_exercise(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("--name", dest="name", help="The name of the exercise", type=str, required=True)
-    parser.add_argument("--randomized-tests", dest="randomize_tests", action="store_true", help="The number of stages and commands in tests are randomized", default=True)
+    parser.add_argument("name", metavar="name", help="The name of the exercise", type=str)
+    parser.add_argument("--randomized-tests", dest="randomize_tests", action="store_true", help="The number of files, stages and commands in tests are randomized", default=True)
     parser.add_argument("--no-randomized-tests", dest="randomize_tests", action="store_false", help="The number of stages and commands in tests are not randomized")
     parser.add_argument("--content", dest="content", help="The contents of the exercise", type=str, default="Some content here...")
     parser.add_argument("--question", dest="question", help="The question of the exercise", type=str, default="Some question here...")
@@ -101,12 +117,13 @@ if __name__ == '__main__':
     parser.add_argument("--tags", dest="tag_count", help="Number of tags the exercise includes", type=int, default=DEFAULT_OBJ_COUNT)
     parser.add_argument("--hints", dest="hint_count", help="Number of hints the exercise includes", type=int, default=DEFAULT_OBJ_COUNT)
     parser.add_argument("--tests", dest="test_count", help="Number of tests the exercise includes", type=int, default=DEFAULT_OBJ_COUNT)
+    parser.add_argument("--files", dest="file_count", help="Number of files each exercise test requires", type=int, default=DEFAULT_OBJ_COUNT)
     parser.add_argument("--stages", dest="stage_count", help="Number of stages each exercise test includes", type=int, default=DEFAULT_OBJ_COUNT)
     parser.add_argument("--commands", dest="command_count", help="Number of commands each test stage includes", type=int, default=DEFAULT_OBJ_COUNT)
     parser.add_argument("--star-feedback", dest="star_fb_count", help="Number of star feedback questions included to the exercise", type=int, default=DEFAULT_OBJ_COUNT)
     parser.add_argument("--thumb-feedback", dest="thumb_fb_count", help="Number of thumb feedback questions included to the exercise", type=int, default=DEFAULT_OBJ_COUNT)
     parser.add_argument("--multichoice-feedback", dest="mc_fb_count", help="Number of multiple choice feedback questions included to the exercise", type=int, default=DEFAULT_OBJ_COUNT)
     parser.add_argument("--textfield-feedback", dest="tf_fb_count", help="Number of textfield feedback questions included to the exercise", type=int, default=DEFAULT_OBJ_COUNT)
-    parser.add_argument("--count-all", dest="count_all", help="Creates a certain number of each item that the exercise contains", type=int, default=None)
+    parser.add_argument("--count-all", dest="count_all", help="Creates a certain number of each object that the exercise contains", type=int, default=None)
     args = parser.parse_args()
     create_exercise(args)
