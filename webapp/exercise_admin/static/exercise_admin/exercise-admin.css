@@ -238,7 +238,7 @@ section.form-controls {
 
 section.form-controls > div {
     display: inline-block;
-        float: left;
+    float: left;
 }
 
 a#delete-exercise {
@@ -259,4 +259,50 @@ button#save-exercise {
     text-decoration: none;
     text-transform: uppercase;
     border: 2px solid #ccc;
+}
+
+button.add-item {
+    display: inline-block;
+    outline: 0;
+    padding: 2px 4px;
+    margin-top: 6px;
+    margin-bottom: 5px;
+    vertical-align: middle;
+    overflow: hidden;
+    color: #4CAF50;
+    background-color: #fff;
+    text-align: center;
+    cursor: pointer;
+    border: 0px solid #42860e;
+    border-radius: 8px;
+}
+
+div.generalinfo-right-side button.add-item {
+    box-shadow: 1px 1px 2px #285c00;
+}
+
+div#test-tabs > ol > li > button.add-item {
+    margin-left: 5px;
+}
+
+table.feedback-question-table {
+    table-layout: fixed;
+    width: 100%;
+    margin-top: 5px;
+}
+
+table.feedback-question-table th {
+    text-align: left;
+}
+
+table.feedback-question-table td {
+    vertical-align: top;
+}
+
+table.feedback-question-table col.feedback-question {
+    width: 65%;
+}
+
+table.feedback-question-table col.feedback-type {
+    width: 35%;
 }

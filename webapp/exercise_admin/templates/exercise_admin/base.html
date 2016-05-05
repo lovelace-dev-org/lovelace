@@ -69,7 +69,25 @@
       
       <div class="generalinfo-right-side">
         <h2>Feedback questions</h2>
-        <div>Feedback questions: {{ exercise.feedback_questions }}</div>
+        {% if exercise.feedback_questions.count > 0 %}
+          <table class="feedback-question-table">
+            <colgroup>
+              <col class="feedback-question">
+              <col class="feedback-type">
+            </colgroup>
+            <tr>
+              <th>Question</th>
+              <th>Type</th>
+            </tr>
+            {% for question in exercise.feedback_questions.all %}
+              <tr>
+                <td>{{ question }}</td>
+                <td>{{ question.get_human_readable_type }}
+              </tr>
+            {% endfor %}
+          </table>
+        {% endif %}
+        <button class="add-item" title="Adds a new feedback question">+</button>
 
         <div class="separator"></div>
 
@@ -79,6 +97,7 @@
             <li class="exercise-tag">{{ ex_tag }}</li>
           {% endfor %}
         </ul>
+        <button class="add-item">+</button>
       </div>
     </section>
 

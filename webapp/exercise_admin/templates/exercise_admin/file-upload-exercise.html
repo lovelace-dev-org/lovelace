@@ -61,7 +61,7 @@
         {% for test, stages in tests %}
           <li><a href="#test-tabs-{{ test.id }}">{{ test.name }}</a></li>
         {% endfor %}
-        <li><button>create a new test</button></li>
+        <li><button class="add-item" title="Adds a new test">+</button></li>
       </ol>
 
       {% for test, stages in tests %}
@@ -91,9 +91,12 @@
                           </li>
                         {% endfor %}
                       </ol>
+                      <ol><li><button class="add-item" title="Adds a new test command">+</button></li></ol>
                     </div>
                   </li>
                 {% endfor %}
+              </ol>
+              <ol><li><button class="add-item" title="Adds a new test stage">+</button></li></ol>
             </div>
             <div class="right-side"><!-- right side, information -->
               <h4>Stage/Command information</h4>
