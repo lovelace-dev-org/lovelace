@@ -1,0 +1,124 @@
+{% extends 'exercise_admin/base.html' %}
+{% load staticfiles %}
+{% load i18n %}
+
+{% block head-script %}
+  <script>
+    $(function() {
+      $("#test-tabs").tabs();
+      {% for test, stages in tests %}
+        $("#stages-sortable-{{ test.id }}").sortable();
+        $("#stages-sortable-{{ test.id }}").disableSelection();
+        {% for stage, commands in stages %}
+          $("#commands-sortable-{{ test.id }}-{{ stage.id }}").sortable();
+          $("#commands-sortable-{{ test.id }}-{{ stage.id }}").disableSelection();
+        {% endfor %}
+      {% endfor %}
+    });
+  </script>
+{% endblock %}
+
+{% block heading %}
+  <h1>Edit file upload exercise</h1>
+{% endblock %}
+
+{% block meta %}
+  <section class="meta">
+    <div class="breadcrumb"><a href="{% url 'admin:index' %}">Home</a> › <a href="{% url 'admin:app_list' 'courses' %}">Courses</a> › <a href="{% url 'admin:courses_fileuploadexercise_changelist' %}">File upload exercises</a> › <span id="exercise-name-breadcrumb">{{ exercise.name }}</span></div>
+    <div class="top-button"><a href="{% url 'courses:sandbox' exercise.slug %}">View in sandbox</a></div>
+    <div class="top-button"><a href="{% url 'admin:courses_fileuploadexercise_history' exercise.id %}">View history</a></div>
+  </section>
+{% endblock %}
+
+{% block exercise-type-specific %}
+  <section class="included-files">
+    <h2>Included files</h2>
+    
+    <div>
+      A pool of files available only for this exercise:
+      <ol>
+        {% for include_file in include_files %}
+          <li>{{ include_file.name }}</li>
+        {% endfor %}
+      </ol>
+    </div>
+
+    <div>
+      A pool of files specific to a course instance:
+      <ol>
+        <li>some library.py / LIBRARY</li>
+        <li>core testing routines.py / LIBRARY</li>
+      </ol>
+    </div>
+  </section>
+
+  
+  <section class="tests">
+    <h2>Tests</h2>
+    
+    <div id="test-tabs">
+      <ol>
+        {% for test, stages in tests %}
+          <li><a href="#test-tabs-{{ test.id }}">{{ test.name }}</a></li>
+        {% endfor %}
+        <li><button class="add-item" title="Adds a new test">+</button></li>
+      </ol>
+
+      {% for test, stages in tests %}
+        <div id="test-tabs-{{ test.id }}">
+          <h3>Test specific settings</h3>
+
+          <div>
+            <label for="test-{{ test.id }}-name">Test name:</label>
+            <input type="text" id="test-{{ test.id }}-name" value="{{ test.name }}">
+          </div>
+
+          <div>Included files this test requires: &lt;a picker for selecting the files made available above; updates realtime&gt;{{ test.required_files }}</div>
+
+          <h3>Test stage progression</h3>
+          
+          <div class="flex-container">
+            <div class="left-side"><!-- left side, stages and commands -->
+              <ol id="stages-sortable-{{ test.id }}">
+                {% for stage, commands in stages %}
+                  <li class="ui-state-default">
+                    {{ stage.name }}
+                    <div>
+                      <ol id="commands-sortable-{{ test.id }}-{{ stage.id }}">
+                        {% for cmd, expected_outputs in commands %}
+                          <li class="ui-state-default">
+                            {{ cmd.command_line }}
+                          </li>
+                        {% endfor %}
+                      </ol>
+                      <ol><li><button class="add-item" title="Adds a new test command">+</button></li></ol>
+                    </div>
+                  </li>
+                {% endfor %}
+              </ol>
+              <ol><li><button class="add-item" title="Adds a new test stage">+</button></li></ol>
+            </div>
+            <div class="right-side"><!-- right side, information -->
+              <h4>Stage/Command information</h4>
+              <p>
+                information that is shown when a command is clicked. 
+              </p>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    
+    <div>
+      maybe use d3.js to generate a nice graph of how the tests will be run?
+    </div>
+  </section>
+{% endblock %}
+
+{% block form-controls %}
+  <section class="form-controls">
+    <div><a href="blaah/delete" id="delete-exercise">delete</a></div>
+    <button id="save-exercise">save</button>
+  </section>
+{% endblock %}

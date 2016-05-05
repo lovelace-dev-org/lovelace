@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    {% load staticfiles %}
+    {% load i18n %}
+    <title>Edit | {{ exercise.name }}</title>
+    <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=Inconsolata">
+
+    <link rel="stylesheet" href="{% static 'courses/jquery-ui.css' %}">
+    <link rel="stylesheet" href="{% static 'courses/jquery-ui.structure.css' %}">
+    <link rel="stylesheet" href="{% static 'courses/jquery-ui.theme.css' %}">
+    <link rel="stylesheet" href="{% static 'courses/latofonts.css' %}">
+    <link rel="stylesheet" href="{% static 'exercise_admin/exercise-admin.css' %}">
+
+    <script src="{% static 'courses/jquery-3.0.0-beta1.min.js' %}"></script>
+    <script src="{% static 'courses/jquery-ui.min.js' %}"></script>
+    <script src="{% static 'exercise_admin/exercise-admin.js' %}"></script>
+
+    {% block head-script %}
+    {% endblock %}
+  </head>
+  <body>
+    {% block heading %}
+    {% endblock %}
+
+    {% block meta %}
+    {% endblock %}
+
+    <section class="general-information">
+      <div class="generalinfo-left-side">
+        <h2>General information</h2>
+
+        <div class="form-row">
+          <label for="exercise-name">Name:</label>
+          <input type="text" id="exercise-name" value="{{ exercise.name }}" onInput="exercise_name_changed(event);" autofocus>
+        </div>
+
+        <div class="form-row">
+          <label for="exercise-slug">Slug:</label>
+          <span id="exercise-slug">{{ exercise.slug }}</span>
+        </div>
+
+        <div class="form-bigrow">
+          <label for="exercise-page-content">Page contents in <a href="{% url 'courses:markup_help' %}" class="help-link" title="Help on how to edit with the markup language" target="_new">the markup language</a>:</label>
+          <textarea id="exercise-page-content" cols="100" rows="8" onInput="exercise_page_content_changed(event);">{{ exercise.content }}</textarea>
+        </div>
+        
+        <div class="form-bigrow">
+          <label for="exercise-question">The exercise question:</label>
+          <textarea id="exercise-question" cols="100" rows="3">{{ exercise.question }}</textarea>
+        </div>
+
+        <div class="form-row">
+          <label for="exercise-points">Default points:</label>
+          <input type="text" id="exercise-points" value="{{ exercise.default_points }}">
+        </div>
+
+        <div class="form-cb-row">
+          <input type="checkbox" id="manually_evaluated">
+          <label for="manually_evaluated">This exercise is evaluated by hand</label>
+        </div>
+
+        <div class="form-cb-row">
+          <input type="checkbox" id="ask_collaborators">
+          <label for="ask_collaborators">Ask the answerer to list collaborators</label>
+        </div>
+      </div>
+      
+      <div class="generalinfo-right-side">
+        <h2>Feedback questions</h2>
+        {% if exercise.feedback_questions.count > 0 %}
+          <table class="feedback-question-table">
+            <colgroup>
+              <col class="feedback-question">
+              <col class="feedback-type">
+            </colgroup>
+            <tr>
+              <th>Question</th>
+              <th>Type</th>
+            </tr>
+            {% for question in exercise.feedback_questions.all %}
+              <tr>
+                <td>{{ question }}</td>
+                <td>{{ question.get_human_readable_type }}
+              </tr>
+            {% endfor %}
+          </table>
+        {% endif %}
+        <button class="add-item" title="Adds a new feedback question">+</button>
+
+        <div class="separator"></div>
+
+        <h2>Tags</h2>
+        <ul class="exercise-tags">
+          {% for ex_tag in exercise.tags %}
+            <li class="exercise-tag">{{ ex_tag }}</li>
+          {% endfor %}
+        </ul>
+        <button class="add-item">+</button>
+      </div>
+    </section>
+
+    <section class="configurable-hints">
+      <h2>Configurable hints</h2>
+
+      <ul>
+      {% for hint in hints %}
+        <li>{{ hint.hint }}</li>
+      {% endfor %}
+      </ul>
+    </section>
+
+    {% block exercise-type-specific %}
+    {% endblock %}
+
+    {% block form-controls %}
+    {% endblock %}
+  </body>
+</html>
+    

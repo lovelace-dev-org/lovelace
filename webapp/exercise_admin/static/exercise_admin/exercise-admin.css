@@ -8,8 +8,12 @@ body {
     color: #333;
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1, h2 {
     font-family: "LatoWebHairLine";
+}
+
+h3, h4, h5, h6 {
+    font-family: "LatoWebThin";
 }
 
 h1 {
@@ -17,6 +21,25 @@ h1 {
     color: #333;
     padding: 1.5rem 0 1.5rem 2rem;
     border-bottom: 4px solid #ccc;
+}
+
+h2 {
+    margin-bottom: 1rem;
+}
+
+h3, h4 {
+    margin-bottom: 0.6rem;
+}
+
+a.help-link {
+    color: #480;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    cursor: help;
+}
+a.help-link:hover {
+    color: #666;
+    transition: all 0.25s ease-in-out;
 }
 
 /* Meta */
@@ -73,6 +96,46 @@ div.generalinfo-left-side {
     margin-right: 1rem;
 }
 
+div.form-row {
+    margin: 0.35rem 0;
+    display: flex;
+    align-content: center;
+    align-items: center;
+}
+div.form-row > label {
+    width: 140px;
+}
+div.form-cb-row {
+    margin: 0.35rem 0;
+    display: flex;
+    align-content: center;
+    align-items: center;
+}
+div.form-cb-row > label {
+    margin-left: 0.25rem;
+    width: 660px;
+}
+input#exercise-name {
+    width: 660px;
+}
+input#exercise-points {
+    width: 40px;
+}
+div.form-bigrow {
+    margin: 0.35rem 0;
+}
+div.form-bigrow > label {
+    display: block;
+}
+
+input[type=text] {
+    background: #eee;
+    color: #333;
+    border: 2px solid #ddd;
+    padding: 4px;
+    font-family: Inconsolata;
+}
+
 textarea {
     background: #eee;
     color: #333;
@@ -95,12 +158,18 @@ ul.exercise-tags {
     padding: 0;
     list-style-type: none;
     display: flex;
+    flex-wrap: wrap;
 }
 
 li.exercise-tag {
+    display: flex;
     padding: 6px;
     margin: 4px;
     border-radius: 10px;
+    text-align: center;
+    justify-content: center;
+    align-content: center;
+    align-items: center;
     background: #ddd;
     cursor: grab;
     flex: 0 0;
@@ -212,7 +281,7 @@ div.generalinfo-right-side button.add-item {
     box-shadow: 1px 1px 2px #285c00;
 }
 
-div#test-tabs li > button.add-item {
+div#test-tabs > ol > li > button.add-item {
     margin-left: 5px;
 }
 
