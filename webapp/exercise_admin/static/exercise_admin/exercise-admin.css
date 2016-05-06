@@ -300,6 +300,14 @@ div#test-tabs > ol > li > button.add-item {
     margin-left: 5px;
 }
 
+div.bordered-editable-area {
+    background: #eeeeee;
+    border: 3px solid #dddddd;
+    width: 95%;
+    max-height: 250px;
+    overflow-y: hidden;
+}
+
 table.feedback-question-table {
     table-layout: fixed;
     width: 100%;
@@ -308,16 +316,39 @@ table.feedback-question-table {
 
 table.feedback-question-table th {
     text-align: left;
+    height: 25px;
+    vertical-align: top;
 }
 
 table.feedback-question-table td {
     vertical-align: top;
+    height: 25px;
 }
 
 table.feedback-question-table col.feedback-question {
-    width: 65%;
+    width: 64%;
 }
 
 table.feedback-question-table col.feedback-type {
-    width: 35%;
+    width: 30%;
+}
+
+table.feedback-question-table col.delete-feedback {
+    width: 6%;
+}
+
+button.delete-feedback-button {
+    color: #ff0000;
+    display: inline-block;
+    outline: 0;
+    padding: 0px 4px;
+    vertical-align: top;
+    margin-top: -1px;
+    overflow: hidden;
+    background-color: #fff;
+    text-align: center;
+    cursor: pointer;
+    border: 0px solid #42860e;
+    border-radius: 8px;
+    box-shadow: 1px 1px 2px #ff2000;
 }
