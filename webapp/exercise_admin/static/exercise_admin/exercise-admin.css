@@ -10,6 +10,7 @@ body {
 
 h1, h2 {
     font-family: "LatoWebHairLine";
+    color: #111;
 }
 
 h3, h4, h5, h6 {
@@ -126,6 +127,8 @@ div.form-bigrow {
 }
 div.form-bigrow > label {
     display: block;
+    width: 820px;
+    margin-bottom: 0.25rem;
 }
 
 input[type=text] {
@@ -135,6 +138,12 @@ input[type=text] {
     padding: 4px;
     font-family: Inconsolata;
 }
+input[type=text]:hover {
+    background: #f2f2f2;
+    color: #383838;
+    border: 2px solid #dde4dd;
+    box-shadow: 0 0 0 1px #9b8;
+}
 
 textarea {
     background: #eee;
@@ -142,6 +151,12 @@ textarea {
     border: 2px solid #ddd;
     padding: 4px;
     font-family: Inconsolata;
+}
+textarea:hover {
+    background: #f2f2f2;
+    color: #383838;
+    border: 2px solid #dde4dd;
+    box-shadow: 0 0 0 1px #9b8;
 }
 
 div.generalinfo-right-side {

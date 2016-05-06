@@ -18,7 +18,7 @@ def index(request):
 # fileuploadexercise/add
 # fileuploadexercise/{id}/change
 # fileuploadexercise/{id}/delete
-def file_upload_exercise(request, exercise_id):
+def file_upload_exercise(request, exercise_id=None, action=None):
     # Admins only, consider @staff_member_required
     if not (request.user.is_staff and request.user.is_authenticated() and request.user.is_active):
         return HttpResponseForbidden("Only admins are allowed to edit file upload exercises.")
@@ -79,7 +79,7 @@ def file_upload_exercise(request, exercise_id):
     # ...or maybe modify the urls?
     
     
-    t = loader.get_template("exercise_admin/file-upload-exercise.html")
+    t = loader.get_template("exercise_admin/file-upload-exercise-{action}.html".format(action=action))
     c = {
         'exercise': exercise,
         'hints': hints,
