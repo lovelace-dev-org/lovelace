@@ -73,7 +73,12 @@
             <input type="text" id="test-{{ test.id }}-name" value="{{ test.name }}">
           </div>
 
-          <div>Included files this test requires: &lt;a picker for selecting the files made available above; updates realtime&gt;{{ test.required_files }}</div>
+          <div>Included files this test requires: &lt;a picker for selecting the files made available above; updates realtime&gt;</div>
+            {% if test.required_files.count > 0 %}
+              {% for req_file in test.required_files.all %}
+                <div>{{ req_file }}</div>
+              {% endfor%}
+            {% endif %}
 
           <h3>Test stage progression</h3>
           
