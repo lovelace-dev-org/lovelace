@@ -4,7 +4,6 @@ var content_untouched = false;
 var content_input;
 var page_title_elem;
 var breadcrumb_elem;
-var feedback_questions = [];
 
 $(document).ready(function() {
     content_input = $('#exercise-page-content');

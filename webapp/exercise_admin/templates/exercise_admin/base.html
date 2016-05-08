@@ -95,7 +95,7 @@
                 onclick="show_add_feedback_question_view(event, 'http://{{ request.get_host }}{% url 'exercise_admin:add_feedback_question' %}');">+</button>
         <div class="popup"><div id="add-feedback-question-view"></div></div>
         <div class="separator"></div>
-        
+
         <h2>Tags</h2>
         <ul class="exercise-tags">
           {% for ex_tag in exercise.tags %}
@@ -110,9 +110,9 @@
       <h2>Configurable hints</h2>
 
       <ul>
-      {% for hint in hints %}
-        <li>{{ hint.hint }}</li>
-      {% endfor %}
+        {% for hint in hints %}
+          <li>{{ hint.hint }}</li>
+        {% endfor %}
       </ul>
     </section>
 
