@@ -17,13 +17,6 @@
     <script src="{% static 'courses/jquery-ui.min.js' %}"></script>
     <script src="{% static 'courses/jquery.slimscroll.min.js' %}"></script>
     <script src="{% static 'exercise_admin/exercise-admin.js' %}"></script>
-    <script>
-      $(document).ready(function() {
-        $('div#feedback-div').slimScroll({
-          height: '225px'
-        });
-      });
-    </script>
     {% block head-script %}
     {% endblock %}
   </head>
@@ -76,32 +69,33 @@
       
       <div class="generalinfo-right-side">
         <h2>Feedback questions</h2>
-          <div class="bordered-editable-area">
-            <div id="feedback-div">
-              <table class="feedback-question-table">
-                <colgroup>
-                  <col class="feedback-question">
-                  <col class="feedback-type">
-                  <col class="delete-feedback">
-                </colgroup>
+        <div class="bordered-editable-area">
+          <div id="feedback-table-div">
+            <table class="feedback-question-table">
+              <colgroup>
+                <col class="feedback-question">
+                <col class="feedback-type">
+                <col class="delete-feedback">
+              </colgroup>
+              <tr>
+                <th>Question</th>
+                <th>Type</th>
+              </tr>
+              {% for question in exercise.feedback_questions.all %}
                 <tr>
-                  <th>Question</th>
-                  <th>Type</th>
+                  <td>{{ question }}</td>
+                  <td>{{ question.get_human_readable_type }}</td>
+                  <td><button class="delete-feedback-button" title="Deletes the relation between the feedback question and the exercise">x</button></td>
                 </tr>
-                {% for question in exercise.feedback_questions.all %}
-                  <tr>
-                    <td>{{ question }}</td>
-                    <td>{{ question.get_human_readable_type }}</td>
-                    <td><button class="delete-feedback-button" title="Deletes the relation between the feedback question and the exercise">x</button></td>
-                  </tr>
-                {% endfor %}
-              </table>
-            </div>
+              {% endfor %}
+            </table>
           </div>
-        <button class="add-item" title="Adds a new feedback question">+</button>
-
+        </div>
+        <button class="add-item" title="Adds a new feedback question"
+                onclick="show_add_feedback_question_view(event, 'http://{{ request.get_host }}{% url 'exercise_admin:add_feedback_question' %}');">+</button>
+        <div class="popup"><div id="add-feedback-question-view"></div></div>
         <div class="separator"></div>
-
+        
         <h2>Tags</h2>
         <ul class="exercise-tags">
           {% for ex_tag in exercise.tags %}

@@ -8,8 +8,9 @@ from courses.models import FileUploadExercise, FileExerciseTest, FileExerciseTes
     FileExerciseTestCommand, FileExerciseTestExpectedOutput, FileExerciseTestExpectedStdout,\
     FileExerciseTestExpectedStderr, FileExerciseTestIncludeFile
 from courses.models import Hint
-from feedback.models import TextfieldFeedbackQuestion, ThumbFeedbackQuestion,\
-    StarFeedbackQuestion, MultipleChoiceFeedbackQuestion, MultipleChoiceFeedbackAnswer
+from feedback.models import ContentFeedbackQuestion, TextfieldFeedbackQuestion, \
+    ThumbFeedbackQuestion, StarFeedbackQuestion, MultipleChoiceFeedbackQuestion, \
+    MultipleChoiceFeedbackAnswer
 
 def index(request):
     return HttpResponse('to be created')
@@ -81,9 +82,21 @@ def file_upload_exercise(request, exercise_id=None, action=None):
     
     t = loader.get_template("exercise_admin/file-upload-exercise-{action}.html".format(action=action))
     c = {
+        'request': request,
         'exercise': exercise,
         'hints': hints,
         'include_files': include_files,
         'tests': test_list,
+    }
+    return HttpResponse(t.render(c, request))
+
+def add_feedback_question(request):
+    if not (request.user.is_staff and request.user.is_authenticated() and request.user.is_active):
+        return HttpResponseForbidden("Only admins are allowed to edit file upload exercises.")
+
+    feedback_questions = ContentFeedbackQuestion.objects.all()
+    t = loader.get_template("exercise_admin/add-feedback-question.html")
+    c = {
+        'feedback_questions': [q.get_type_object() for q in feedback_questions]
     }
     return HttpResponse(t.render(c, request))
