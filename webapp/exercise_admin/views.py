@@ -1,5 +1,5 @@
 from django.http import HttpResponse, HttpResponseNotFound, HttpResponseForbidden,\
-    HttpResponseNotAllowed
+    HttpResponseNotAllowed, JsonResponse
 from django.template import loader
 
 from reversion import revisions as reversion
@@ -90,13 +90,25 @@ def file_upload_exercise(request, exercise_id=None, action=None):
     }
     return HttpResponse(t.render(c, request))
 
-def add_feedback_question(request):
+def get_feedback_questions(request):
     if not (request.user.is_staff and request.user.is_authenticated() and request.user.is_active):
-        return HttpResponseForbidden("Only admins are allowed to edit file upload exercises.")
+        return JsonResponse({
+            "error": "Only logged in admins can query feedback questions!"
+        })
 
     feedback_questions = ContentFeedbackQuestion.objects.all()
-    t = loader.get_template("exercise_admin/add-feedback-question.html")
-    c = {
-        'feedback_questions': [q.get_type_object() for q in feedback_questions]
-    }
-    return HttpResponse(t.render(c, request))
+    result = []
+    for question in feedback_questions:
+        question_json = {
+            "id": question.id,
+            "question" : question.question,
+            "type": question.get_human_readable_type(),
+            "answers": [],
+        }
+        if question.question_type == "MULTIPLE_CHOICE_FEEDBACK":
+            question_json["answers"] = [choice.answer for choice in question.get_type_object().get_choices()]
+        result.append(question_json)
+    
+    return JsonResponse({
+        "result": result
+    })

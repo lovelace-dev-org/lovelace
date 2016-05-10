@@ -12,8 +12,8 @@ urlpatterns = [
         {'action': 'change'}, name='file_upload_change'),
     url(r'^file-upload/(?P<exercise_id>\d+)/delete$', views.file_upload_exercise,
         name='file_upload_delete'),
-    url(r'^file-upload/add-feedback-question$', views.add_feedback_question,
-        name='add_feedback_question'),
+    url(r'^file-upload/get-feedback-questions$', views.get_feedback_questions,
+        name='get_feedback_questions'),
 
 
     # TODO: For administration of other exercise types

@@ -353,6 +353,12 @@ button.delete-feedback-button {
     box-shadow: 1px 1px 2px #ff2000;
 }
 
+span.popup-error {
+    display: none;
+    color: #f00;
+    margin-left: 5px;
+}
+
 div.popup {
     position: fixed;
     top: 0;
@@ -375,7 +381,7 @@ div.popup > div, div.popup > pre {
     background: #f2f2f2;;
 }
 
-div.popup div.add-feedback-div > div.bordered-editable-area {
+div.popup div.bordered-editable-area {
     width: 1185px;
     margin-left: 5px;
 }
@@ -384,13 +390,17 @@ div.popup div.create-feedback-div {
     margin-top: 30px;
 }
 
-div.popup div.add-feedback-div col.feedback-question {
+div.popup col.feedback-question {
     width: 90%;
 }
 
 div.popup input[type=checkbox].feedback-question-checkbox {
     vertical-align: middle;
     margin-bottom: 5px;
+}
+
+div.popup td label.feedback-question-label {
+    margin-left: 5px;
 }
 
 div.popup span.feedback-question-span {
@@ -408,25 +418,33 @@ div.popup select.feedback-type-select {
     margin-top: 5px;
 }
 
-div.popup div.multichoice-feedback-answers {
+div.popup div.multichoice-feedback-choices {
     display: none;
 }
 
-div.popup span.feedback-answer-span {
+div.popup span.feedback-choice-span {
     display: inline-block;
     margin-left: 5px;
     margin-top: 5px;
     width: 80px;
 }
 
-div.popup input[type=text].multichoice-feedback-answer {
+div.popup input[type=text].multichoice-feedback-choice {
     margin-left: 5px;
     margin-top: 5px;
-    width: 1085px;
+    width: 1090px;
 }
 
-button#add-feedback-answer {
+button#add-feedback-choice {
     display: none;
+}
+
+button#add-feedback-choice:disabled {
+    color: #bbb;
+    border: 0px solid #aaa;
+    border-radius: 8px;
+    box-shadow: 1px 1px 2px #aaa;
+    cursor: default;
 }
 
 div.popup button.add-item {
