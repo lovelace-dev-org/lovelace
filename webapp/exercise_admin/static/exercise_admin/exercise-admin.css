@@ -456,6 +456,7 @@ button#add-feedback-choice:disabled {
 div.popup button.add-item {
     margin-top: 0px;
     margin-left: 5px;
+    box-shadow: 1px 1px 2px #285c00;
 }
 
 div.popup div.popup-buttons {

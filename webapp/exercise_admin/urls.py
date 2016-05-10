@@ -12,7 +12,7 @@ urlpatterns = [
         {'action': 'change'}, name='file_upload_change'),
     url(r'^file-upload/(?P<exercise_id>\d+)/delete$', views.file_upload_exercise,
         name='file_upload_delete'),
-    url(r'^file-upload/feedback-questions$', views.get_feedback_questions,
+    url(r'^feedback-questions$', views.get_feedback_questions,
         name='get_feedback_questions'),
 
 

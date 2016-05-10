@@ -86,7 +86,6 @@ def file_upload_exercise(request, exercise_id=None, action=None):
     
     t = loader.get_template("exercise_admin/file-upload-exercise-{action}.html".format(action=action))
     c = {
-        'request': request,
         'exercise': exercise,
         'hints': hints,
         'include_files': include_files,
