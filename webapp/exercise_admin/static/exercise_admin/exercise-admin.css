@@ -120,7 +120,8 @@ input#exercise-name {
     width: 660px;
 }
 input#exercise-points {
-    width: 40px;
+    width: 45px;
+    text-align: right;
 }
 div.form-bigrow {
     margin: 0.35rem 0;
@@ -131,14 +132,14 @@ div.form-bigrow > label {
     margin-bottom: 0.25rem;
 }
 
-input[type=text] {
+input[type=text], input[type=number] {
     background: #eee;
     color: #333;
     border: 2px solid #ddd;
     padding: 4px;
     font-family: Inconsolata;
 }
-input[type=text]:hover {
+input[type=text]:hover, input[type=number]:hover {
     background: #f2f2f2;
     color: #383838;
     border: 2px solid #dde4dd;

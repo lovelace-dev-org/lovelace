@@ -97,19 +97,31 @@ class FileExerciseTestInline(NestedStackedInline):
             kwargs["queryset"] = FileUploadExercise.objects.order_by("name")
         return super(FileExerciseTestInline, self).formfield_for_foreignkey(db_field, request, **kwargs)
 
-class FileExerciseTestIncludeFileInline(NestedStackedInline):
-    model = FileExerciseTestIncludeFile
-    extra = 0
-    fk_name = 'exercise'
+class FileExerciseTestIncludeFileSettingsInline(NestedStackedInline):
+    model = IncludeFileSettings
     queryset = NestedStackedInline.get_queryset
+    fk_name = 'fileexercisetestincludefile'
     fieldsets = (
         ('General information', {
-            'fields': ('name', 'purpose', 'fileinfo')
+            'fields': ('name', 'purpose',)
         }),
         ('UNIX permissions', {
             'classes': ('collapse',),
             'fields': ('chown_settings', 'chgrp_settings', 'chmod_settings')
         }),
+    )
+
+class FileExerciseTestIncludeFileInline(NestedStackedInline):
+    model = FileExerciseTestIncludeFile
+    extra = 0
+    fk_name = 'exercise'
+    inlines = [FileExerciseTestIncludeFileSettingsInline]
+    queryset = NestedStackedInline.get_queryset
+    fieldsets = (
+        ('General information', {
+            'fields': ('default_name', 'fileinfo')
+        }),
+        
     )
 
 class MultipleChoiceExerciseAnswerInline(TranslationTabularInline):

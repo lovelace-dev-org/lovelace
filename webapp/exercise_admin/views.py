@@ -4,10 +4,14 @@ from django.template import loader
 
 from reversion import revisions as reversion
 
+# Other needed models
+from courses.models import ContentGraph, EmbeddedLink
+
+# The editable models
 from courses.models import FileUploadExercise, FileExerciseTest, FileExerciseTestStage,\
     FileExerciseTestCommand, FileExerciseTestExpectedOutput, FileExerciseTestExpectedStdout,\
     FileExerciseTestExpectedStderr, FileExerciseTestIncludeFile
-from courses.models import Hint
+from courses.models import Hint, InstanceIncludeFile
 from feedback.models import ContentFeedbackQuestion, TextfieldFeedbackQuestion, \
     ThumbFeedbackQuestion, StarFeedbackQuestion, MultipleChoiceFeedbackQuestion, \
     MultipleChoiceFeedbackAnswer
@@ -48,12 +52,12 @@ def file_upload_exercise(request, exercise_id=None, action=None):
 
     # Get the exercise specific files
     include_files = FileExerciseTestIncludeFile.objects.filter(exercise=exercise)
-
+    
     # TODO: Get the instance specific files
     # 1. scan the content graphs and embedded links to find out, if this exercise is linked
     #    to an instance. we need a manytomany relation here, that is instance specific
     # 2. get the files and show a pool of them
-
+    instance_files = InstanceIncludeFile.objects.all() # TODO: This is debug code
     
     tests = FileExerciseTest.objects.filter(exercise=exercise_id).order_by("name")
     test_list = []
@@ -86,6 +90,7 @@ def file_upload_exercise(request, exercise_id=None, action=None):
         'exercise': exercise,
         'hints': hints,
         'include_files': include_files,
+        'instance_files': instance_files,
         'tests': test_list,
     }
     return HttpResponse(t.render(c, request))

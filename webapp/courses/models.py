@@ -1072,10 +1072,37 @@ class FileExerciseTestExpectedStderr(FileExerciseTestExpectedOutput):
         self.output_type = "STDERR"
         super(FileExerciseTestExpectedStderr, self).save(*args, **kwargs)
 
+# Include files
+class InstanceIncludeFileToExerciseLink(models.Model):
+    include_file = models.ForeignKey('InstanceIncludeFile')
+    exercise = models.ForeignKey('ContentPage')
+
+    # The settings are determined per exercise basis
+    file_settings = models.OneToOneField('IncludeFileSettings')
+
+def get_instancefile_path(instance, filename):
+    return os.path.join(
+        "{course_instance}_files".format(course_instance=instance.instance),
+        "{filename}".format(filename=filename), # TODO: Versioning?
+    )
+    
+class InstanceIncludeFile(models.Model):
+    """
+    A file that's linked to an instance and can be included in any exercise
+    that needs it. (File upload, code input, code replace, ...)
+    """
+    instance = models.ForeignKey(CourseInstance)
+    exercises = models.ManyToManyField(ContentPage, blank=True,
+                                       through='InstanceIncludeFileToExerciseLink',
+                                       through_fields=('include_file', 'exercise'))
+    default_name = models.CharField(verbose_name='Default name', max_length=255)
+    description = models.TextField(blank=True, null=True)
+    fileinfo = models.FileField(max_length=255, upload_to=get_instancefile_path)
+
 def get_testfile_path(instance, filename):
     return os.path.join(
-        "%s_files" % (instance.exercise.name),
-        "%s" % (filename)
+        "{exercise_name}_files".format(exercise_name=instance.exercise.name),
+        "{filename}".format(filename=filename), # TODO: Versioning?
     )
 
 class FileExerciseTestIncludeFile(models.Model):
@@ -1085,7 +1112,28 @@ class FileExerciseTestIncludeFile(models.Model):
     for the program.
     """
     exercise = models.ForeignKey(FileUploadExercise)
-    name = models.CharField(verbose_name='File name during test',max_length=255)
+    file_settings = models.OneToOneField('IncludeFileSettings')
+    default_name = models.CharField(verbose_name='Default name', max_length=255)
+    description = models.TextField(blank=True, null=True)
+    fileinfo = models.FileField(max_length=255, upload_to=get_testfile_path)
+
+    def __str__(self):
+        return "%s - %s" % (self.file_settings.purpose, self.default_name)
+
+    def get_filename(self):
+        return os.path.basename(self.fileinfo.name)
+
+    def get_file_contents(self):
+        file_contents = None
+        with open(self.fileinfo.path, 'rb') as f:
+            file_contents = f.read()
+        return file_contents
+
+    class Meta:
+        verbose_name = "included file"
+
+class IncludeFileSettings(models.Model):
+    name = models.CharField(verbose_name='File name during test', max_length=255)
 
     FILE_PURPOSE_CHOICES = (
         ('Files written into the test directory for reading', (
@@ -1111,23 +1159,7 @@ class FileExerciseTestIncludeFile(models.Model):
     chown_settings = models.CharField(verbose_name='File user ownership',max_length=10,default="OWNED",choices=FILE_OWNERSHIP_CHOICES)
     chgrp_settings = models.CharField(verbose_name='File group ownership',max_length=10,default="OWNED",choices=FILE_OWNERSHIP_CHOICES)
     chmod_settings = models.CharField(verbose_name='File access mode',max_length=10,default="rw-rw-rw-") # TODO: Create validator and own field type
-
-    fileinfo = models.FileField(max_length=255, upload_to=get_testfile_path)
-
-    def __str__(self):
-        return "%s - %s" % (self.purpose, self.name)
-
-    def get_filename(self):
-        return os.path.basename(self.fileinfo.name)
-
-    def get_file_contents(self):
-        file_contents = None
-        with open(self.fileinfo.path, 'rb') as f:
-            file_contents = f.read()
-        return file_contents
-
-    class Meta:
-        verbose_name = "included file"
+    
 
 # TODO: Create a superclass for exercise answer choices
 ## Answer models

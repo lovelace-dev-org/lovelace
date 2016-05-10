@@ -38,7 +38,7 @@
       A pool of files available only for this exercise:
       <ol>
         {% for include_file in include_files %}
-          <li>{{ include_file.name }}</li>
+          <li>{{ include_file.default_name }} / {{ include_file.file_settings.purpose }}</li>
         {% endfor %}
       </ol>
     </div>
@@ -46,13 +46,13 @@
     <div>
       A pool of files specific to a course instance:
       <ol>
-        <li>some library.py / LIBRARY</li>
-        <li>core testing routines.py / LIBRARY</li>
+        {% for instance_file in instance_files %}
+          <li>{{ instance_file.default_name }}</li>
+        {% endfor %}
       </ol>
     </div>
   </section>
 
-  
   <section class="tests">
     <h2>Tests</h2>
     
@@ -76,7 +76,7 @@
           <div>Included files this test requires: &lt;a picker for selecting the files made available above; updates realtime&gt;</div>
             {% if test.required_files.count > 0 %}
               {% for req_file in test.required_files.all %}
-                <div>{{ req_file }}</div>
+                <div>{{ req_file.file_settings.name }}</div>
               {% endfor%}
             {% endif %}
 

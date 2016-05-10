@@ -272,6 +272,8 @@ def run_test(self, test_id, answer_id, exercise_id, student=False):
         # TODO: Log weird request
         return # TODO: Find a way to signal the failure to the user
 
+    # TODO: Get the instance include files: InstanceIncludeFile
+
     # Note: requires a shared/cloned file system!
     if student:
         try:
@@ -285,7 +287,7 @@ def run_test(self, test_id, answer_id, exercise_id, student=False):
     else:
         files_to_check = {f.name: f.get_file_contents()
                           for f in exercise_file_objects
-                          if f.purpose == "REFERENCE"}
+                          if f.file_settings.purpose == "REFERENCE"}
         print("".join("%s:\n%s" % (n, c) for n, c in files_to_check.items()))
 
     # TODO: Replace with the directory of the ramdisk
@@ -297,7 +299,7 @@ def run_test(self, test_id, answer_id, exercise_id, student=False):
         for name, contents in ((f.name, f.get_file_contents())
                                for f in exercise_file_objects
                                if f in test.required_files.all() and
-                               f.purpose in ("INPUT", "WRAPPER", "TEST")):
+                               f.file_settings.purpose in ("INPUT", "WRAPPER", "TEST")):
             fpath = os.path.join(test_dir, name)
             with open(fpath, "wb") as fd:
                 fd.write(contents)
