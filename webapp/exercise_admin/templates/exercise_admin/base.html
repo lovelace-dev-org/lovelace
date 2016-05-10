@@ -88,7 +88,7 @@
                   <tr>
                     <td>{{ question }}</td>
                     <td>{{ question.get_human_readable_type }}</td>
-                    <td><button class="delete-feedback-button" title="Deletes the relation between the feedback question and the exercise">x</button></td>
+                    <td><button class="delete-button" title="Deletes the relation between the feedback question and the exercise">x</button></td>
                   </tr>
                 {% endfor %}
               </tbody>
@@ -140,10 +140,10 @@
                   <option value="multichoice">Multiple choice feedback question</option>
                   <option value="textfield">Textfield feedback question</option>
                 </select>
-                <div id="multichoice-feedback-choices" class="multichoice-feedback-choices">
+                <div id="feedback-choices" class="feedback-choices">
                 </div>
-                <button id="add-feedback-choice" class="add-item" onclick="add_multichoice_feedback_choice();">Add choice</button>
-                <button class="add-item">Create feedback</button>
+                <button id="add-feedback-choice" class="add-item" title="Adds a new answer choice for the feedback question" onclick="add_feedback_choice();">Add choice</button>
+                <button class="add-item" title="Creates a new feedback question to the database">Create feedback</button>
               </div>
             </div>
             <div class="popup-buttons">

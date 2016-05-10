@@ -1,0 +1,59 @@
+{% load i18n %}
+{% load staticfiles %}
+<script>
+  $('div#add-feedback-table-div').slimScroll({
+    height: '300px'
+  });
+</script>
+
+<div class="add-feedback-div">
+  <h2>Add feedback question</h2>
+  <div class="bordered-editable-area">
+    <div id="add-feedback-table-div">
+      <table class="feedback-question-table">
+        <colgroup>
+          <col class="feedback-question">
+          <col class="feedback-type">
+        </colgroup>
+        <tr>
+          <th>
+            <input type="checkbox" id="fb-question-checkbox-all" class="feedback-question-checkbox">
+            <label for="fb-question-checkbox-all" class="feedback-question-label">Question</label></th>
+          <th>Type</th>
+        </tr>
+        {% for question in feedback_questions %}
+          <tr>
+            <td>
+              <input type="checkbox" id="fb-question-checkbox-{{ question.id }}" class="feedback-question-checkbox">
+              <label for="fb-question-checkbox-{{ question.id }}" class="feedback-question-label">{{ question }}</label>
+            </td>
+            <td>{{ question.get_human_readable_type }}</td>
+          </tr>
+        {% endfor %}
+      </table>
+    </div>
+  </div>
+</div>
+<div class="create-feedback-div">
+  <h2>Create new feedback question</h2>
+  <div>
+    <label for="feedback-question-new">
+      <span>Feedback question:</span>
+      <input type="text" id="feedback-question-new" class="feedback-question-new-input" name="feedback-question">
+    </label>
+  </div>
+  <div>
+    <select>
+      <option value="thumb">Thumb feedback question</option>
+      <option value="star">Star feedback question</option>
+      <option value="multiple">Multiple choice feedback question</option>
+      <option value="textfield">Textfield feedback question</option>
+    </select> 
+    <button class="add-item">Create feedback</button>
+  </div>
+</div>
+<div class="popup-buttons">
+  <button class="popup-button">Ok</button>
+  <button class="popup-button">Cancel</button>
+</div>
+  

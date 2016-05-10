@@ -40,22 +40,25 @@ function exercise_page_content_changed(e) {
     content_untouched = false;
 }
 
-function add_multichoice_feedback_choice() {
+function add_feedback_choice() {
     var MAX_CHOICES = 99;
-    var choices_div = $('#multichoice-feedback-choices');
+    var choices_div = $('#feedback-choices');
     var label_n = choices_div.children().length + 1;
-    choices_div.append('<label class="feedback-choice-label" for="multichoice-feedback-choice-' + label_n + '">');
+    choices_div.append('<label class="feedback-choice-label" for="feedback-choice-' + label_n + '">');
     var new_label = choices_div.children().last();
     new_label.append('<span class="feedback-choice-span">Choice ' + label_n + ':</span>');
-    new_label.append('<input type="text" id="multichoice-feedback-choice-' + label_n + '" class="multichoice-feedback-choice">');
+    new_label.append('<input type="text" id="feedback-choice-' + label_n + '" class="feedback-choice">');
+    new_label.append('<button class="delete-button" title="Deletes an answer choice of a feedback question">x</button>');
     if (label_n === MAX_CHOICES) {
         $("#add-feedback-choice").attr("disabled", true);
+    } else {
+        $("#add-feedback-choice").attr("disabled", false);
     }
 }
 
 function handle_feedback_type_selection(select) {
     var option = select.options[select.selectedIndex];
-    var choices_div = $('#multichoice-feedback-choices');
+    var choices_div = $('#feedback-choices');
     var add_choice_button = $('#add-feedback-choice');
     var add_item_buttons = $('div.popup button.add-item');
     
@@ -63,7 +66,7 @@ function handle_feedback_type_selection(select) {
         choices_div.css({"display": "block"});
         add_choice_button.css({"display": "inline-block"});
         add_item_buttons.css({"margin-top": "10px"});
-        add_multichoice_feedback_choice();
+        add_feedback_choice();
     } else {
         choices_div.hide();
         choices_div.empty();

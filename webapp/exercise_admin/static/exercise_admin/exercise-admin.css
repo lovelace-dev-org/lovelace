@@ -337,7 +337,7 @@ table.feedback-question-table col.delete-feedback {
     width: 6%;
 }
 
-button.delete-feedback-button {
+button.delete-button {
     color: #ff0000;
     display: inline-block;
     outline: 0;
@@ -418,7 +418,7 @@ div.popup select.feedback-type-select {
     margin-top: 5px;
 }
 
-div.popup div.multichoice-feedback-choices {
+div.popup div.feedback-choices {
     display: none;
 }
 
@@ -429,10 +429,15 @@ div.popup span.feedback-choice-span {
     width: 80px;
 }
 
-div.popup input[type=text].multichoice-feedback-choice {
+div.popup input[type=text].feedback-choice {
     margin-left: 5px;
     margin-top: 5px;
-    width: 1090px;
+    width: 1065px;
+}
+
+div.popup input[type=text].feedback-choice + button{
+    margin-left: 5px;
+    margin-top: 7px;
 }
 
 button#add-feedback-choice {
