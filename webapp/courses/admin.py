@@ -100,6 +100,7 @@ class FileExerciseTestInline(NestedStackedInline):
 class FileExerciseTestIncludeFileSettingsInline(NestedStackedInline):
     model = IncludeFileSettings
     queryset = NestedStackedInline.get_queryset
+    fk_name = 'fileexercisetestincludefile'
     fieldsets = (
         ('General information', {
             'fields': ('name', 'purpose',)

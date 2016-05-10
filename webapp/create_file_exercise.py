@@ -5,7 +5,9 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "lovelace.settings")
 
 import django
 django.setup()
+
 from django.core.files import File
+from django.db import transaction
 
 import courses.models as c_models
 import feedback.models as fb_models
@@ -63,6 +65,20 @@ def create_exercise(args):
         tf_fb.save()
         feedbacks.append(tf_fb)
     cfqs = [fb_models.ContentFeedbackQuestion.objects.get(question=fb.question) for fb in feedbacks]
+
+    course = c_models.Course(
+        name="An example course",
+        code="1234567890",
+        credits=10,
+        description="A thorough description of this course.",
+    )
+    course.save()
+
+    instance = c_models.CourseInstance(
+        name="A running instance of the example course",
+        course=course,
+    )
+    instance.save()
     
     exercise = c_models.FileUploadExercise(name=name, slug="", content=content, question=question, default_points=def_points,
                                            manually_evaluated=man_evaluated, ask_collaborators=ask_collab, tags=tags)
@@ -72,6 +88,35 @@ def create_exercise(args):
     for i in range(hint_count):
         hint = c_models.Hint(exercise=exercise, hint="Here's hint number {}".format(i))
         hint.save()
+
+    for i in range(4):
+        file_settings = c_models.IncludeFileSettings(
+            name="actual-instancefile{}".format(i),
+            purpose=random.choice(('REFERENCE', 'INPUT', 'WRAPPER', 'TEST')),
+            chown_settings=random.choice(('OWNED', 'NOT_OWNED')),
+            chgrp_settings=random.choice(('OWNED', 'NOT_OWNED')),
+            chmod_settings="".join(
+                "rwx"[k % 3] if bool(random.getrandbits(1)) == True else "-"
+                for k in range(9)
+            ),
+        )
+        file_settings.save()
+        with open('../test_files/uploadable_files/hello_world_sophisticated.py', 'r') as f:
+            f_obj = File(f)
+            inc_file = c_models.InstanceIncludeFile(
+                instance=instance,
+                default_name="default-instancefile{}".format(i),
+                description="Some file that is used in all or some of the exercises in this instance.",
+                fileinfo=f_obj,
+            )
+            inc_file.save()
+            f2elink = c_models.InstanceIncludeFileToExerciseLink(
+                include_file=inc_file,
+                exercise=exercise,
+                file_settings=file_settings,
+            )
+            f2elink.save()
+            inc_file.save()
         
     for i in range(test_count):
         test = c_models.FileExerciseTest(exercise=exercise, name="test{}".format(i))
@@ -82,9 +127,25 @@ def create_exercise(args):
             file_range = range(file_count)
         inc_files = []
         for j in file_range:
+            file_settings = c_models.IncludeFileSettings(
+                name="actual-test{}file{}".format(i, j),
+                purpose=random.choice(('REFERENCE', 'INPUT', 'WRAPPER', 'TEST')),
+                chown_settings=random.choice(('OWNED', 'NOT_OWNED')),
+                chgrp_settings=random.choice(('OWNED', 'NOT_OWNED')),
+                chmod_settings="".join(
+                    "rwx"[k % 3] if bool(random.getrandbits(1)) == True else "-"
+                    for k in range(9)
+                ),
+            )
+            file_settings.save()
             with open('../test_files/test1.txt', 'r') as f:
                 f_obj = File(f)
-                inc_file = c_models.FileExerciseTestIncludeFile(name="test{}file{}".format(i, j), exercise=exercise, fileinfo=f_obj)
+                inc_file = c_models.FileExerciseTestIncludeFile(
+                    default_name="default-test{}file{}".format(i, j),
+                    exercise=exercise,
+                    fileinfo=f_obj,
+                    file_settings=file_settings,
+                )
                 inc_file.save()
                 inc_files.append(inc_file)
         test.required_files.add(*inc_files)
@@ -126,4 +187,6 @@ if __name__ == '__main__':
     parser.add_argument("--textfield-feedback", dest="tf_fb_count", help="Number of textfield feedback questions included to the exercise", type=int, default=DEFAULT_OBJ_COUNT)
     parser.add_argument("--count-all", dest="count_all", help="Creates a certain number of each object that the exercise contains", type=int, default=None)
     args = parser.parse_args()
-    create_exercise(args)
+
+    with transaction.atomic():
+        create_exercise(args)

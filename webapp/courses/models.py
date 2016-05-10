@@ -1118,7 +1118,7 @@ class FileExerciseTestIncludeFile(models.Model):
     fileinfo = models.FileField(max_length=255, upload_to=get_testfile_path)
 
     def __str__(self):
-        return "%s - %s" % (self.file_settings.purpose, self.name)
+        return "%s - %s" % (self.file_settings.purpose, self.default_name)
 
     def get_filename(self):
         return os.path.basename(self.fileinfo.name)
