@@ -59,7 +59,7 @@
     <div id="test-tabs">
       <ol>
         {% for test, stages in tests %}
-          <li><a href="#test-tabs-{{ test.id }}">{{ test.name }}</a></li>
+          <li><a href="#test-tabs-{{ test.id }}" id="test-{{ test.id }}">{{ test.name }}</a></li>
         {% endfor %}
         <li><button class="add-item" title="Adds a new test">+</button></li>
       </ol>
@@ -70,7 +70,7 @@
 
           <div>
             <label for="test-{{ test.id }}-name">Test name:</label>
-            <input type="text" id="test-{{ test.id }}-name" value="{{ test.name }}">
+            <input type="text" id="test-{{ test.id }}-name" value="{{ test.name }}" onInput="test_name_changed(event);">
           </div>
 
           <div>Included files this test requires: &lt;a picker for selecting the files made available above; updates realtime&gt;</div>
@@ -87,12 +87,12 @@
               <ol id="stages-sortable-{{ test.id }}">
                 {% for stage, commands in stages %}
                   <li class="ui-state-default">
-                    {{ stage.name }}
+                    <span onClick="show_stagecmd_information(event);" id="stage-{{ stage.id }}">{{ stage.name }}</span>
                     <div>
                       <ol id="commands-sortable-{{ test.id }}-{{ stage.id }}">
                         {% for cmd, expected_outputs in commands %}
                           <li class="ui-state-default">
-                            {{ cmd.command_line }}
+                            <span onClick="show_stagecmd_information(event);" id="command-{{ cmd.id }}" class="clickable-commandline">{{ cmd.command_line }}</span>
                           </li>
                         {% endfor %}
                       </ol>
@@ -104,10 +104,69 @@
               <ol><li><button class="add-item" title="Adds a new test stage">+</button></li></ol>
             </div>
             <div class="right-side"><!-- right side, information -->
-              <h4>Stage/Command information</h4>
-              <p>
-                information that is shown when a command is clicked. 
-              </p>
+              <div id="selection-information-container">
+                <div class="selection-information" style="display: block;">
+                  <h4>Stage/Command information</h4>
+                  <p>Click a stage or command to select it and see the associated information.</p> 
+                </div>
+                
+                {% for stage, commands in stages %}
+                  <div id="stage-information-{{ stage.id }}" class="selection-information">
+                    <h4>Stage {{ stage.ordinal_number }} information</h4>
+                    <div class="form-row">
+                      <label for="">Stage name: </label>
+                      <input type="text" id="stage-{{ stage.id }}-name" value="{{ stage.name }}" onInput="stage_name_changed(event);">
+                    </div>
+
+                    <div class="form-row">
+                      <label for="">Depends on: </label>
+                      <select>
+                        <optgroup>
+                          <option>Only preceding</option>
+                        </optgroup>
+                        <optgroup>
+                          <option>some stage</option>
+                          <option>some other stage</option>
+                        </optgroup>
+                      </select>
+                    </div>
+                  </div>
+                  
+                  {% for command, expected_outputs in commands %}
+                    <div id="command-information-{{ command.id }}" class="selection-information">
+                      <h4>Stage {{ stage.ordinal_number }}, command {{ command.ordinal_number }} information</h4>
+                      <div class="form-row">
+                        <label for="command-{{ command.id }}-cmdline">Command line: </label>
+                        <input type="text" id="command-{{ command.id }}-cmdline" value="{{ command.command_line }}" onInput="command_name_changed(event);">
+                      </div>
+
+                      <div class="form-cb-row">
+                        <input type="checkbox" id="" value="{{ command.significant_stdout }}">
+                        <label for="">Compare the generated stdout to reference</label>
+                      </div>
+                      <div class="form-cb-row">
+                        <input type="checkbox" id="" value="{{ command.significant_stderr }}">
+                        <label for="">Compare the generated stderr to reference</label>
+                      </div>
+
+                      <div class="form-row">
+                        <label for="">Timeout: </label>
+                        <input type="text" value="{{ command.timeout }}">
+                      </div>
+
+                      <div class="form-bigrow">
+                        <label for="">STDIN</label>
+                        <textarea id="" cols="40" rows="4">{{ command.input_text }}</textarea>
+                      </div>
+
+                      <div class="form-row">
+                        <label for="">Expected return value: </label>
+                        <input type="text" value="{{ command.return_value }}">
+                      </div>
+                    </div>
+                  {% endfor %}
+                {% endfor %}
+              </div>
             </div>
           </div>
         </div>

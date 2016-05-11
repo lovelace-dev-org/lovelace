@@ -40,6 +40,30 @@ function exercise_page_content_changed(e) {
     content_untouched = false;
 }
 
+function test_name_changed(e) {
+    var input_id = e.target.id;
+    var split_id = input_id.split("-");
+    var new_name = e.target.value;
+
+    $('#test-' + split_id[1]).html(new_name);
+}
+
+function stage_name_changed(e) {
+    var input_id = e.target.id;
+    var split_id = input_id.split("-");
+    var new_name = e.target.value;
+
+    $('#stage-' + split_id[1]).html(new_name);
+}
+
+function command_name_changed(e) {
+    var input_id = e.target.id;
+    var split_id = input_id.split("-");
+    var new_name = e.target.value;
+
+    $('#command-' + split_id[1]).html(new_name);
+}
+
 function add_feedback_choice() {
     var MAX_CHOICES = 99;
     var choices_div = $('#feedback-choices');
@@ -119,4 +143,13 @@ function show_add_feedback_question_popup(event, url) {
         handle_feedback_type_selection($("#feedback-type-select")[0]);
         popup.css({"opacity": "1", "pointer-events": "auto"});
     });
+}
+
+function show_stagecmd_information(event) {
+    var clicked_id = event.target.id;
+    var split_id = clicked_id.split("-");
+    var clicked_type = split_id[0];
+    var clicked_number = split_id[1];
+    $('div.selection-information').hide();
+    $('#' + clicked_type + '-information-' + clicked_number).show() 
 }
