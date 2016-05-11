@@ -285,7 +285,7 @@ a#delete-exercise {
     border: 2px solid #ccc;
 }
 
-button#save-exercise {
+input#save-exercise {
     background: #888;
     padding: 0.5rem 1rem;
     color: #eee;
