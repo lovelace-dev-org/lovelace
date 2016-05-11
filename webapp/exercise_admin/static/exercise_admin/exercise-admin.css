@@ -301,6 +301,14 @@ div#test-tabs > ol > li > button.add-item {
     margin-left: 5px;
 }
 
+div.bordered-editable-area {
+    background: #eeeeee;
+    border: 3px solid #dddddd;
+    width: 95%;
+    max-height: 250px;
+    overflow-y: hidden;
+}
+
 table.feedback-question-table {
     table-layout: fixed;
     width: 100%;
@@ -309,16 +317,161 @@ table.feedback-question-table {
 
 table.feedback-question-table th {
     text-align: left;
+    height: 25px;
+    vertical-align: top;
 }
 
 table.feedback-question-table td {
     vertical-align: top;
+    height: 25px;
 }
 
 table.feedback-question-table col.feedback-question {
-    width: 65%;
+    width: 64%;
 }
 
 table.feedback-question-table col.feedback-type {
-    width: 35%;
+    width: 30%;
+}
+
+table.feedback-question-table col.delete-feedback {
+    width: 6%;
+}
+
+button.delete-button {
+    color: #ff0000;
+    display: inline-block;
+    outline: 0;
+    padding: 0px 4px;
+    vertical-align: top;
+    margin-top: -1px;
+    overflow: hidden;
+    background-color: #fff;
+    text-align: center;
+    cursor: pointer;
+    border: 0px solid #42860e;
+    border-radius: 8px;
+    box-shadow: 1px 1px 2px #ff2000;
+}
+
+span.popup-error {
+    display: none;
+    color: #f00;
+    margin-left: 5px;
+}
+
+div.popup {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background: rgba(0,0,0,0.8);
+    z-index: 99999;
+    opacity: 0;
+    transition: opacity 200ms ease-in;
+    pointer-events: none;
+}
+
+div.popup > div, div.popup > pre {
+    width: 1200px;
+    position: relative;
+    margin: 10% auto;
+    padding: 10px;
+    border-radius: 10px;
+    background: #f2f2f2;;
+}
+
+div.popup div.bordered-editable-area {
+    width: 1185px;
+    margin-left: 5px;
+}
+
+div.popup div.create-feedback-div {
+    margin-top: 30px;
+}
+
+div.popup col.feedback-question {
+    width: 90%;
+}
+
+div.popup input[type=checkbox].feedback-question-checkbox {
+    vertical-align: middle;
+    margin-bottom: 5px;
+}
+
+div.popup td label.feedback-question-label {
+    margin-left: 5px;
+}
+
+div.popup span.feedback-question-span {
+    display: inline-block;
+    margin-left: 5px;
+    width: 135px;
+}
+
+div.popup input[type=text].feedback-question-new-input {
+    margin-left: 5px;
+    width: 1030px;
+}
+
+div.popup select.feedback-type-select {
+    margin-top: 5px;
+}
+
+div.popup div.feedback-choices {
+    display: none;
+}
+
+div.popup span.feedback-choice-span {
+    display: inline-block;
+    margin-left: 5px;
+    margin-top: 5px;
+    width: 80px;
+}
+
+div.popup input[type=text].feedback-choice {
+    margin-left: 5px;
+    margin-top: 5px;
+    width: 1065px;
+}
+
+div.popup input[type=text].feedback-choice + button{
+    margin-left: 5px;
+    margin-top: 7px;
+}
+
+button#add-feedback-choice {
+    display: none;
+}
+
+button#add-feedback-choice:disabled {
+    color: #bbb;
+    border: 0px solid #aaa;
+    border-radius: 8px;
+    box-shadow: 1px 1px 2px #aaa;
+    cursor: default;
+}
+
+div.popup button.add-item {
+    margin-top: 0px;
+    margin-left: 5px;
+    box-shadow: 1px 1px 2px #285c00;
+}
+
+div.popup div.popup-buttons {
+    margin-top: 5px;
+    width: 100%;
+    text-align: right;
+}
+
+div.popup div.popup-buttons > button.popup-button {
+    display: inline-block;
+    background: #888;
+    padding: 0.5rem 1rem;
+    color: #eee;
+    font-family: "LatoWeb";
+    text-decoration: none;
+    text-transform: uppercase;
+    border: 2px solid #ccc;
 }

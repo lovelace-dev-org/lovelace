@@ -1,5 +1,5 @@
 from django.http import HttpResponse, HttpResponseNotFound, HttpResponseForbidden,\
-    HttpResponseNotAllowed
+    HttpResponseNotAllowed, JsonResponse
 from django.template import loader
 
 from reversion import revisions as reversion
@@ -12,8 +12,9 @@ from courses.models import FileUploadExercise, FileExerciseTest, FileExerciseTes
     FileExerciseTestCommand, FileExerciseTestExpectedOutput, FileExerciseTestExpectedStdout,\
     FileExerciseTestExpectedStderr, FileExerciseTestIncludeFile
 from courses.models import Hint, InstanceIncludeFile
-from feedback.models import TextfieldFeedbackQuestion, ThumbFeedbackQuestion,\
-    StarFeedbackQuestion, MultipleChoiceFeedbackQuestion, MultipleChoiceFeedbackAnswer
+from feedback.models import ContentFeedbackQuestion, TextfieldFeedbackQuestion, \
+    ThumbFeedbackQuestion, StarFeedbackQuestion, MultipleChoiceFeedbackQuestion, \
+    MultipleChoiceFeedbackAnswer
 
 def index(request):
     return HttpResponse('to be created')
@@ -92,3 +93,26 @@ def file_upload_exercise(request, exercise_id=None, action=None):
         'tests': test_list,
     }
     return HttpResponse(t.render(c, request))
+
+def get_feedback_questions(request):
+    if not (request.user.is_staff and request.user.is_authenticated() and request.user.is_active):
+        return JsonResponse({
+            "error": "Only logged in admins can query feedback questions!"
+        })
+
+    feedback_questions = ContentFeedbackQuestion.objects.all()
+    result = []
+    for question in feedback_questions:
+        question_json = {
+            "id": question.id,
+            "question" : question.question,
+            "type": question.get_human_readable_type(),
+            "answers": [],
+        }
+        if question.question_type == "MULTIPLE_CHOICE_FEEDBACK":
+            question_json["answers"] = [choice.answer for choice in question.get_type_object().get_choices()]
+        result.append(question_json)
+    
+    return JsonResponse({
+        "result": result
+    })

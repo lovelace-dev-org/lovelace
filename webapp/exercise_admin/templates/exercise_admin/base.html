@@ -15,8 +15,8 @@
 
     <script src="{% static 'courses/jquery-3.0.0-beta1.min.js' %}"></script>
     <script src="{% static 'courses/jquery-ui.min.js' %}"></script>
+    <script src="{% static 'courses/jquery.slimscroll.min.js' %}"></script>
     <script src="{% static 'exercise_admin/exercise-admin.js' %}"></script>
-
     {% block head-script %}
     {% endblock %}
   </head>
@@ -26,6 +26,60 @@
 
     {% block meta %}
     {% endblock %}
+
+    <div id="add-feedback-popup" class="popup">
+      <div>
+        <div class="add-feedback-div">
+          <h2>Add feedback question</h2>
+          <div class="bordered-editable-area">
+            <div class="feedback-table-div">
+              <table id="add-feedback-table" class="feedback-question-table">
+                <colgroup>
+                  <col class="feedback-question">
+                  <col class="feedback-type">
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th>
+                      <input type="checkbox" id="fb-question-checkbox-all" class="feedback-question-checkbox">
+                      <label for="fb-question-checkbox-all" class="feedback-question-label">Question</label>
+                    </th>
+                    <th>Type</th>
+                  </tr>
+                </thead>
+                <tbody>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="create-feedback-div">
+          <h2>Create new feedback question</h2>
+          <div>
+            <label for="feedback-question-new">
+              <span class="feedback-question-span">Feedback question:</span>
+              <input type="text" id="feedback-question-new" class="feedback-question-new-input" name="feedback-question">
+            </label>
+          </div>
+          <div>
+            <select id="feedback-type-select" class="feedback-type-select" onchange="handle_feedback_type_selection(this);">
+              <option value="thumb">Thumb feedback question</option>
+              <option value="star">Star feedback question</option>
+              <option value="multichoice">Multiple choice feedback question</option>
+              <option value="textfield">Textfield feedback question</option>
+            </select>
+            <div id="feedback-choices" class="feedback-choices">
+            </div>
+            <button id="add-feedback-choice" class="add-item" title="Adds a new answer choice for the feedback question" onclick="add_feedback_choice();">Add choice</button>
+            <button class="add-item" title="Creates a new feedback question to the database">Create feedback</button>
+          </div>
+        </div>
+        <div class="popup-buttons">
+          <button class="popup-button">Ok</button>
+          <button class="popup-button">Cancel</button>
+        </div>
+      </div>
+    </div>
 
     <section class="general-information">
       <div class="generalinfo-left-side">
@@ -69,25 +123,35 @@
       
       <div class="generalinfo-right-side">
         <h2>Feedback questions</h2>
-        {% if exercise.feedback_questions.count > 0 %}
-          <table class="feedback-question-table">
-            <colgroup>
-              <col class="feedback-question">
-              <col class="feedback-type">
-            </colgroup>
-            <tr>
-              <th>Question</th>
-              <th>Type</th>
-            </tr>
-            {% for question in exercise.feedback_questions.all %}
-              <tr>
-                <td>{{ question }}</td>
-                <td>{{ question.get_human_readable_type }}
-              </tr>
-            {% endfor %}
-          </table>
-        {% endif %}
-        <button class="add-item" title="Adds a new feedback question">+</button>
+        <div class="bordered-editable-area">
+          <div id="feedback-question-table" class="feedback-table-div">
+            <table class="feedback-question-table">
+              <colgroup>
+                <col class="feedback-question">
+                <col class="feedback-type">
+                <col class="delete-feedback">
+              </colgroup>
+              <thead>
+                <tr>
+                  <th>Question</th>
+                  <th>Type</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for question in exercise.feedback_questions.all %}
+                  <tr>
+                    <td>{{ question }}</td>
+                    <td>{{ question.get_human_readable_type }}</td>
+                    <td><button class="delete-button" title="Deletes the relation between the feedback question and the exercise">x</button></td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <button class="add-item" title="Adds a new feedback question"
+                onclick="show_add_feedback_question_popup(event, '{% url 'exercise_admin:get_feedback_questions' %}');">+</button>
+        <span id="add-feedback-popup-error" class="popup-error"></span>
 
         <div class="separator"></div>
 
@@ -105,9 +169,9 @@
       <h2>Configurable hints</h2>
 
       <ul>
-      {% for hint in hints %}
-        <li>{{ hint.hint }}</li>
-      {% endfor %}
+        {% for hint in hints %}
+          <li>{{ hint.hint }}</li>
+        {% endfor %}
       </ul>
     </section>
 
