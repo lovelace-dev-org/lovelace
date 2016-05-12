@@ -86,7 +86,9 @@ def file_upload_exercise(request, exercise_id=None, action=None):
         form_contents = request.POST
         uploaded_files = request.FILES
 
-        print(form_contents)
+        #print(form_contents)
+        for k, v in sorted(form_contents.items()):
+            print("{}: '{}'".format(k, v))
         print(uploaded_files)
         
         with transaction.atomic():

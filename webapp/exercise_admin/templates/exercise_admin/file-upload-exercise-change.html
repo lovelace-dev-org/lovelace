@@ -72,15 +72,15 @@
 
           <div>
             <label for="test-{{ test.id }}-name">Test name:</label>
-            <input type="text" id="test-{{ test.id }}-name" value="{{ test.name }}" onInput="test_name_changed(event);">
+            <input type="text" id="test-{{ test.id }}-name" name="test-{{ test.id }}-name" value="{{ test.name }}" onInput="test_name_changed(event);">
           </div>
 
           <div>Included files this test requires: &lt;a picker for selecting the files made available above; updates realtime&gt;</div>
-            {% if test.required_files.count > 0 %}
-              {% for req_file in test.required_files.all %}
-                <div>{{ req_file.file_settings.name }}</div>
-              {% endfor%}
-            {% endif %}
+          {% if test.required_files.count > 0 %}
+            {% for req_file in test.required_files.all %}
+              <div>{{ req_file.file_settings.name }}</div>
+            {% endfor%}
+          {% endif %}
 
           <h3>Test stage progression</h3>
           
@@ -116,19 +116,19 @@
                   <div id="stage-information-{{ stage.id }}" class="selection-information">
                     <h4>Stage {{ stage.ordinal_number }} information</h4>
                     <div class="form-row">
-                      <label for="">Stage name: </label>
-                      <input type="text" id="stage-{{ stage.id }}-name" value="{{ stage.name }}" onInput="stage_name_changed(event);">
+                      <label for="stage-{{ stage.id }}-name">Stage name: </label>
+                      <input type="text" id="stage-{{ stage.id }}-name" name="stage-{{ stage.id }}-name" value="{{ stage.name }}" onInput="stage_name_changed(event);">
                     </div>
 
                     <div class="form-row">
-                      <label for="">Depends on: </label>
-                      <select>
-                        <optgroup>
-                          <option>Only preceding</option>
+                      <label for="stage-{{ stage.id }}-depends">Depends on: </label>
+                      <select id="stage-{{ stage.id }}-depends" name="stage-{{ stage.id }}-depends">
+                        <optgroup label="No external dependencies">
+                          <option value="">Only preceding stages</option>
                         </optgroup>
-                        <optgroup>
-                          <option>some stage</option>
-                          <option>some other stage</option>
+                        <optgroup label="Other stages">
+                          <option value="id-of-some-stage">some stage</option>
+                          <option value="id-of-some-other-stage">some other stage</option>
                         </optgroup>
                       </select>
                     </div>
@@ -139,31 +139,31 @@
                       <h4>Stage {{ stage.ordinal_number }}, command {{ command.ordinal_number }} information</h4>
                       <div class="form-row">
                         <label for="command-{{ command.id }}-cmdline">Command line: </label>
-                        <input type="text" id="command-{{ command.id }}-cmdline" value="{{ command.command_line }}" onInput="command_name_changed(event);">
+                        <input type="text" id="command-{{ command.id }}-cmdline" name="command-{{ command.id }}-cmdline" value="{{ command.command_line }}" onInput="command_name_changed(event);">
                       </div>
 
                       <div class="form-cb-row">
-                        <input type="checkbox" id="" value="{{ command.significant_stdout }}">
-                        <label for="">Compare the generated stdout to reference</label>
+                        <input type="checkbox" id="command-{{ command.id }}-significant_stdout" name="command-{{ command.id }}-significant_stdout" value="{{ command.significant_stdout }}">
+                        <label for="command-{{ command.id }}-significant_stdout">Compare the generated stdout to reference</label>
                       </div>
                       <div class="form-cb-row">
-                        <input type="checkbox" id="" value="{{ command.significant_stderr }}">
-                        <label for="">Compare the generated stderr to reference</label>
+                        <input type="checkbox" id="command-{{ command.id }}-significant_stderr" name="command-{{ command.id }}-significant_stderr" value="{{ command.significant_stderr }}">
+                        <label for="command-{{ command.id }}-significant_stderr">Compare the generated stderr to reference</label>
                       </div>
 
                       <div class="form-row">
-                        <label for="">Timeout: </label>
-                        <input type="text" value="{{ command.timeout }}">
+                        <label for="command-{{ command.id }}-timeout">Timeout: </label>
+                        <input type="text" id="command-{{ command.id }}-timeout" name="command-{{ command.id }}-timeout" value="{{ command.timeout }}">
                       </div>
 
                       <div class="form-bigrow">
-                        <label for="">STDIN</label>
-                        <textarea id="" cols="40" rows="4">{{ command.input_text }}</textarea>
+                        <label for="command-{{ command.id }}-input_text">STDIN</label>
+                        <textarea id="command-{{ command.id }}-input_text" name="command-{{ command.id }}-input_text" cols="40" rows="4">{{ command.input_text }}</textarea>
                       </div>
 
                       <div class="form-row">
-                        <label for="">Expected return value: </label>
-                        <input type="text" value="{{ command.return_value }}">
+                        <label for="command-{{ command.id }}-return_value">Expected return value: </label>
+                        <input type="text" id="command-{{ command.id }}-return_value" name="command-{{ command.id }}-return_value" value="{{ command.return_value }}">
                       </div>
                     </div>
                   {% endfor %}
