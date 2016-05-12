@@ -137,7 +137,7 @@ input[type=text], input[type=number] {
     color: #333;
     border: 2px solid #ddd;
     padding: 4px;
-    font-family: Inconsolata;
+    font-family: "Inconsolata", monospace;
 }
 input[type=text]:hover, input[type=number]:hover {
     background: #f2f2f2;
@@ -151,7 +151,7 @@ textarea {
     color: #333;
     border: 2px solid #ddd;
     padding: 4px;
-    font-family: Inconsolata;
+    font-family: "Inconsolata", monospace;
 }
 textarea:hover {
     background: #f2f2f2;
@@ -162,6 +162,10 @@ textarea:hover {
 
 div.generalinfo-right-side {
     flex: 1;
+}
+
+div.selection-information {
+    display: none;
 }
 
 div.separator {
@@ -229,6 +233,19 @@ ol#stages-sortable > li {
     border: 2px solid #333;
 }
 
+span.clickable-commandline {
+    position: relative;
+    font-family: "Inconsolata", monospace;
+}
+
+span.clickable-commandline::before {
+    position: relative;
+    content: "$";
+    color: #bbb;
+    left: -1rem;
+    font-family: "Inconsolata", monospace;
+}
+
 div.flex-container {
     display: flex;
 }
@@ -242,6 +259,7 @@ div.right-side {
     flex: 1;
     border: 2px solid #333;
     margin: 2px;
+    padding: 4px;
 }
 
 /* The form control buttons */
@@ -267,7 +285,7 @@ a#delete-exercise {
     border: 2px solid #ccc;
 }
 
-button#save-exercise {
+input#save-exercise {
     background: #888;
     padding: 0.5rem 1rem;
     color: #eee;

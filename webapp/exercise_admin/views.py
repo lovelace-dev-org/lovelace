@@ -1,6 +1,7 @@
 from django.http import HttpResponse, HttpResponseNotFound, HttpResponseForbidden,\
     HttpResponseNotAllowed, JsonResponse
 from django.template import loader
+from django.db import transaction
 
 from reversion import revisions as reversion
 
@@ -79,6 +80,18 @@ def file_upload_exercise(request, exercise_id=None, action=None):
 
     # TODO: Remember the translations!
     # http://django-modeltranslation.readthedocs.io/en/latest/usage.html
+
+    # TODO: Save the additions, removals and editions sent by the user 
+    if request.method == "POST":
+        form_contents = request.POST
+        uploaded_files = request.FILES
+
+        print(form_contents)
+        print(uploaded_files)
+        
+        with transaction.atomic():
+            pass
+        # Save the POST result here
 
     # TODO: Modify the admin site to direct file upload exercise edit urls here instead.
     # ...or maybe modify the urls?
