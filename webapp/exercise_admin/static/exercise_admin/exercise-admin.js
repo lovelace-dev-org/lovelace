@@ -171,6 +171,11 @@ function delete_feedback_from_table(button) {
     $(button).parent().parent().remove();
 }
 
+function submit_create_feedback_form(e) {
+    e.preventDefault();
+    console.log("User requested create feedback form submit.");
+}
+
 function show_stagecmd_information(event) {
     var clicked_id = event.target.id;
     var split_id = clicked_id.split("-");
@@ -182,7 +187,7 @@ function show_stagecmd_information(event) {
 
 function submit_main_form(e) {
     e.preventDefault();
-    console.log("User requested form submit.");
+    console.log("User requested main form submit.");
     
     var form = $('#main-form');
     var form_type = form.attr('method');
