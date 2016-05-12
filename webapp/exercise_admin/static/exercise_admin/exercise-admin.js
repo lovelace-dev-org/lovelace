@@ -15,10 +15,13 @@ function close_popup_and_add_questions() {
         if ($(this).find("input.feedback-question-checkbox:checked").length > 0) {
             var question = $(this).find("label.feedback-question-label").text();
             var type = $(this).children("td.type-cell").text();
-            var tr = $("<tr>");
+            var tr = $('<tr>');
+            var td_delete = $('<td class="delete-cell">');
+            var title_text = "Deletes the relation between the feedback question and the exercise";
             tr.append('<td class="question-cell">' + question + '</td>');
-            tr.append('<td class="type-cell">' + type + '</td>')
-            tr.append('<td class="delete-cell"><button class="delete-button" title="Deletes the relation between the feedback question and the exercise">x</button></td>')
+            tr.append('<td class="type-cell">' + type + '</td>');
+            td_delete.append('<button class="delete-button" title="' + title_text + '" onclick="delete_feedback_from_table(this);">x</button>');
+            tr.append(td_delete);
             target_tbody.append(tr);
         }
     });
@@ -162,6 +165,10 @@ function show_add_feedback_question_popup(event, url) {
         handle_feedback_type_selection($("#feedback-type-select")[0]);
         popup.css({"opacity": "1", "pointer-events": "auto"});
     });
+}
+
+function delete_feedback_from_table(button) {
+    $(button).parent().parent().remove();
 }
 
 function show_stagecmd_information(event) {
