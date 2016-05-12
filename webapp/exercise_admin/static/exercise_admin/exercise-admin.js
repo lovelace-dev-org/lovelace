@@ -190,6 +190,10 @@ function submit_main_form(e) {
     console.log("User requested main form submit.");
     
     var form = $('#main-form');
+
+    // TODO: Calculate the implicit ordinal_numbers for stages and commands
+
+    
     var form_type = form.attr('method');
     var form_url = form.attr('action');
 
