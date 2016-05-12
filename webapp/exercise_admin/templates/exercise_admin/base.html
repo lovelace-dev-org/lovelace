@@ -75,8 +75,8 @@
           </div>
         </div>
         <div class="popup-buttons">
-          <button class="popup-button">Ok</button>
-          <button class="popup-button">Cancel</button>
+          <button class="popup-button" onclick="close_popup_and_add_questions();">Ok</button>
+          <button class="popup-button" onclick="close_popup($('#add-feedback-popup'))">Cancel</button>
         </div>
       </div>
     </div>
@@ -142,9 +142,9 @@
                 <tbody>
                   {% for question in exercise.feedback_questions.all %}
                     <tr>
-                      <td>{{ question }}</td>
-                      <td>{{ question.get_human_readable_type }}</td>
-                      <td><button class="delete-button" title="Deletes the relation between the feedback question and the exercise">x</button></td>
+                      <td class="question-cell">{{ question }}</td>
+                      <td class="type-cell">{{ question.get_human_readable_type }}</td>
+                      <td class="delete-cell"><button class="delete-button" title="Deletes the relation between the feedback question and the exercise">x</button></td>
                     </tr>
                   {% endfor %}
                 </tbody>

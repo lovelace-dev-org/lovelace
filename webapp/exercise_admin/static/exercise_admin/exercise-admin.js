@@ -5,6 +5,26 @@ var content_input;
 var page_title_elem;
 var breadcrumb_elem;
 
+function close_popup(popup) {
+    popup.css({"opacity":"0", "pointer-events":"none"});
+}
+
+function close_popup_and_add_questions() {
+    var target_tbody = $("#feedback-question-table tbody");
+    $("#add-feedback-table > tbody > tr").each(function(index) {
+        if ($(this).find("input.feedback-question-checkbox:checked").length > 0) {
+            var question = $(this).find("label.feedback-question-label").text();
+            var type = $(this).children("td.type-cell").text();
+            var tr = $("<tr>");
+            tr.append('<td class="question-cell">' + question + '</td>');
+            tr.append('<td class="type-cell">' + type + '</td>')
+            tr.append('<td class="delete-cell"><button class="delete-button" title="Deletes the relation between the feedback question and the exercise">x</button></td>')
+            target_tbody.append(tr);
+        }
+    });
+    close_popup($("#add-feedback-popup"));
+}
+
 $(document).ready(function() {
     content_input = $('#exercise-page-content');
     page_title_elem = $('title');
@@ -17,7 +37,7 @@ $(document).ready(function() {
         height: '225px'
     });
     $('.popup').click(function() {
-        $(this).css({"opacity":"0", "pointer-events":"none"});
+        close_popup($(this));
     });
     $('.popup > div').click(function(event) {
         event.stopPropagation();
@@ -113,8 +133,6 @@ function show_add_feedback_question_popup(event, url) {
         var result = data.result;
         var error = data.error;
 
-        console.log(data);
-        console.log(data.error);
         if (error) {
             error_span.text(error);
             error_span.css({"display" : "inline-block"});
@@ -124,7 +142,7 @@ function show_add_feedback_question_popup(event, url) {
             error_span.hide();
         }   
         
-        tbody.empty();        
+        tbody.empty();
         $.each(result, function() {
             var question = this.question;
             if ($.inArray(question, questions) > -1) {
@@ -133,13 +151,14 @@ function show_add_feedback_question_popup(event, url) {
             var id = this.id;
             var type = this.type;
             var tr = $('<tr>');
-            var td_question = $('<td>');
+            var td_question = $('<td class="question-cell">');
             td_question.append('<input type="checkbox" id="fb-question-checkbox-' + id + '" class="feedback-question-checkbox">');
             td_question.append('<label for="fb-question-checkbox-' + id + '" class="feedback-question-label">' + question + '</label>');
             tr.append(td_question);
-            tr.append('<td>' + type + '</td>');
+            tr.append('<td class="type-cell">' + type + '</td>');
             tbody.append(tr)
         });
+        $('#feedback-choices').empty();
         handle_feedback_type_selection($("#feedback-type-select")[0]);
         popup.css({"opacity": "1", "pointer-events": "auto"});
     });
