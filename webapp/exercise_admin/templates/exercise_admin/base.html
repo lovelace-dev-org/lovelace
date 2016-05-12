@@ -144,7 +144,10 @@
                     <tr>
                       <td class="question-cell">{{ question }}</td>
                       <td class="type-cell">{{ question.get_human_readable_type }}</td>
-                      <td class="delete-cell"><button class="delete-button" title="Deletes the relation between the feedback question and the exercise">x</button></td>
+                      <td class="delete-cell">
+                        <button class="delete-button" title="Deletes the relation between the feedback question and the exercise"
+                                onclick="delete_feedback_from_table($(this).parent().parent());">x</button>
+                      </td>
                     </tr>
                   {% endfor %}
                 </tbody>
