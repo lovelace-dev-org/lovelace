@@ -32,6 +32,13 @@
 
 {% block form-action-url %}{% url 'exercise_admin:file_upload_change' exercise.id %}{% endblock %}
 
+{% block exercise-type-extra %}
+  <div class="form-row">
+    <label for="exercise-allowed_filenames">Allowed file names: </label>
+    <input type="text" id="exercise-allowed_filenames" name="exercise-allowed_filenames" value="{{ exercise.allowed_filenames }}">
+  </div>
+{% endblock %}
+
 {% block exercise-type-specific %}
   <section class="included-files">
     <h2>Included files</h2>
@@ -88,12 +95,12 @@
             <div class="left-side"><!-- left side, stages and commands -->
               <ol id="stages-sortable-{{ test.id }}">
                 {% for stage, commands in stages %}
-                  <li class="ui-state-default">
+                  <li class="ui-state-default" data-stage-id="{{ stage.id }}">
                     <span onClick="show_stagecmd_information(event);" id="stage-{{ stage.id }}">{{ stage.name }}</span>
                     <div>
                       <ol id="commands-sortable-{{ test.id }}-{{ stage.id }}">
                         {% for cmd, expected_outputs in commands %}
-                          <li class="ui-state-default">
+                          <li class="ui-state-default" data-command-id="{{ cmd.id }}">
                             <span onClick="show_stagecmd_information(event);" id="command-{{ cmd.id }}" class="clickable-commandline">{{ cmd.command_line }}</span>
                           </li>
                         {% endfor %}

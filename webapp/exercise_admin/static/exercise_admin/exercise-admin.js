@@ -186,8 +186,34 @@ function submit_main_form(e) {
     
     var form = $('#main-form');
 
-    // TODO: Calculate the implicit ordinal_numbers for stages and commands
-
+    // Get the hierarchy of stages and commands for the calculation of implicit
+    // ordinal_numbers at the form validation
+    var tests = [];
+    $('#test-tabs > ol > li').each(function(x) {
+        var current_href = $(this).children('a').attr('href');
+        if (current_href !== undefined) {
+            var current_id = current_href.split('-')[2];
+            tests.push(current_id);
+        }
+    });
+    var order_hierarchy = {stages_of_tests: {}, commands_of_stages: {}};
+    for (let test_id of tests) {
+        var stage_order;
+        
+        $('#stages-sortable-' + test_id).each(function(x) {
+            stage_order = $(this).sortable("toArray", options={attribute: 'data-stage-id'});
+            order_hierarchy.stages_of_tests[test_id] = stage_order;
+            
+            for (let stage_id of stage_order) {
+                var command_order;
+                $('#commands-sortable-' + test_id + '-' + stage_id).each(function(y) {
+                    command_order = $(this).sortable("toArray", options={attribute: 'data-command-id'});
+                });
+                order_hierarchy.commands_of_stages[stage_id] = command_order;
+            }
+        });
+    }
+    console.log(order_hierarchy);
     
     var form_type = form.attr('method');
     var form_url = form.attr('action');
@@ -195,6 +221,7 @@ function submit_main_form(e) {
     console.log("Method: " + form_type + ", URL: " + form_url);
     
     var form_data = new FormData(form[0]);
+    form_data.append("order_hierarchy", JSON.stringify(order_hierarchy));
 
     console.log("Serialized form data:");
     console.log(form_data);

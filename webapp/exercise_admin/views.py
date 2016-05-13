@@ -1,3 +1,5 @@
+import json
+
 from django.http import HttpResponse, HttpResponseNotFound, HttpResponseForbidden,\
     HttpResponseNotAllowed, JsonResponse
 from django.template import loader
@@ -87,8 +89,15 @@ def file_upload_exercise(request, exercise_id=None, action=None):
         uploaded_files = request.FILES
 
         #print(form_contents)
+        print("POST key-value pairs:")
         for k, v in sorted(form_contents.items()):
-            print("{}: '{}'".format(k, v))
+            if k == "order_hierarchy":
+                order_hierarchy_json = json.loads(v)
+                print("order_hierarchy:")
+                print(json.dumps(order_hierarchy_json, indent=4))
+            else:
+                print("{}: '{}'".format(k, v))
+
         print(uploaded_files)
         
         with transaction.atomic():
