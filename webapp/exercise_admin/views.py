@@ -17,6 +17,9 @@ from feedback.models import ContentFeedbackQuestion, TextfieldFeedbackQuestion, 
     ThumbFeedbackQuestion, StarFeedbackQuestion, MultipleChoiceFeedbackQuestion, \
     MultipleChoiceFeedbackAnswer
 
+# Forms
+from .forms import CreateFeedbackQuestionForm
+
 def index(request):
     return HttpResponse('to be created')
 
@@ -131,3 +134,51 @@ def get_feedback_questions(request):
     return JsonResponse({
         "result": result
     })
+
+def create_feedback_question(request):
+    if request.method != "POST":
+        return HttpResponseNotAllowed(["POST"])
+
+    if not (request.user.is_staff and request.user.is_authenticated() and request.user.is_active):
+        return JsonResponse({
+            "error": {
+                "message" : "Only logged in users can send feedback!"
+            }
+        })
+
+    data = request.POST.dict()
+    data.pop("csrfmiddlewaretoken")
+    choice_count = len([k for k in data.keys() if k.startswith("choice_field")])
+    
+    form = CreateFeedbackQuestionForm(choice_count, data)
+    
+    if form.is_valid():
+        question = form.cleaned_data["question_field"]
+        question_type = form.cleaned_data["type_field"]
+        choices = [k for k in form.cleaned_data if k.startswith("choice_field")]
+
+        if question_type == "THUMB_FEEDBACK":
+            ThumbFeedbackQuestion(question=question, slug="").save()
+        elif question_type == "STAR_FEEDBACK":
+            StarFeedbackQuestion(question=question, slug="").save()
+        elif question_type == "MULTIPLE_CHOICE_FEEDBACK":
+            question_obj = MultipleChoiceFeedbackQuestion(question=question, slug="")
+            question_obj.save()
+            for choice in choices:
+                MultipleChoiceFeedbackAnswer(question=question_obj, answer=choice).save()
+        elif question_type == "TEXTFIELD_FEEDBACK":
+            TextfieldFeedbackQuestion(question=question, slug="").save()
+        else:
+            return JsonResponse({
+                "error": {
+                    "message" : "Feedback question type {} does not exist!".format(question_type)
+                }
+            })
+        print("jippii")
+    else:
+        print(form.errors.as_json())
+        return JsonResponse({
+            "error": form.errors.as_json()
+        })
+    
+    return JsonResponse({})

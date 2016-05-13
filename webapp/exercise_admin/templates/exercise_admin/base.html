@@ -52,27 +52,30 @@
               </table>
             </div>
           </div>
-        </div>
+        </div>  
         <div class="create-feedback-div">
-          <h2>Create new feedback question</h2>
-          <div>
-            <label for="feedback-question-new">
-              <span class="feedback-question-span">Feedback question:</span>
-              <input type="text" id="feedback-question-new" class="feedback-question-new-input" name="feedback-question">
-            </label>
-          </div>
-          <div>
-            <select id="feedback-type-select" class="feedback-type-select" onchange="handle_feedback_type_selection(this);">
-              <option value="thumb">Thumb feedback question</option>
-              <option value="star">Star feedback question</option>
-              <option value="multichoice">Multiple choice feedback question</option>
-              <option value="textfield">Textfield feedback question</option>
-            </select>
-            <div id="feedback-choices" class="feedback-choices">
+          <form method="POST" action="{% url 'exercise_admin:create_feedback_question' %}" id="create-feedback-form" onsubmit="submit_create_feedback_form(event);">
+            {% csrf_token %}
+            <h2>Create new feedback question</h2>
+            <div>
+              <label for="feedback-question-new">
+                <span class="feedback-question-span">Feedback question:</span>
+                <input type="text" id="feedback-question-new" class="feedback-question-new-input" name="question_field" required>
+              </label>
             </div>
-            <button id="add-feedback-choice" class="add-item" title="Adds a new answer choice for the feedback question" onclick="add_feedback_choice();">Add choice</button>
-            <button class="add-item" title="Creates a new feedback question to the database">Create feedback</button>
-          </div>
+            <div>
+              <select id="feedback-type-select" class="feedback-type-select" onchange="handle_feedback_type_selection(this);" form="create-feedback-form" name="type_field" required>
+                <option value="THUMB_FEEDBACK">Thumb feedback question</option>
+                <option value="STAR_FEEDBACK">Star feedback question</option>
+                <option value="MULTIPLE_CHOICE_FEEDBACK">Multiple choice feedback question</option>
+                <option value="TEXTFIELD_FEEDBACK">Textfield feedback question</option>
+              </select>
+              <div id="feedback-choices" class="feedback-choices">
+              </div>
+              <button id="add-feedback-choice" class="add-item" title="Adds a new answer choice for the feedback question" onclick="add_feedback_choice();">Add choice</button>
+              <input type="submit" class="add-item" value="Create feedback" title="Creates a new feedback question to the database">
+            </div>
+          </form>
         </div>
         <div class="popup-buttons">
           <button class="popup-button" onclick="close_popup_and_add_questions();">Ok</button>

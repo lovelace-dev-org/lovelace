@@ -94,7 +94,7 @@ function add_feedback_choice() {
     choices_div.append('<label class="feedback-choice-label" for="feedback-choice-' + label_n + '">');
     var new_label = choices_div.children().last();
     new_label.append('<span class="feedback-choice-span">Choice ' + label_n + ':</span>');
-    new_label.append('<input type="text" id="feedback-choice-' + label_n + '" class="feedback-choice">');
+    new_label.append('<input type="text" id="feedback-choice-' + label_n + '" class="feedback-choice" name="choice_field_' + label_n + '">');
     new_label.append('<button class="delete-button" title="Deletes an answer choice of a feedback question">x</button>');
     if (label_n === MAX_CHOICES) {
         $("#add-feedback-choice").attr("disabled", true);
@@ -107,18 +107,18 @@ function handle_feedback_type_selection(select) {
     var option = select.options[select.selectedIndex];
     var choices_div = $('#feedback-choices');
     var add_choice_button = $('#add-feedback-choice');
-    var add_item_buttons = $('div.popup button.add-item');
+    var add_item_widgets = $('div.popup button.add-item, div.popup input[type=submit].add-item');
     
-    if (option.value === "multichoice") {
+    if (option.value === "MULTIPLE_CHOICE_FEEDBACK") {
         choices_div.css({"display": "block"});
         add_choice_button.css({"display": "inline-block"});
-        add_item_buttons.css({"margin-top": "10px"});
+        add_item_widgets.css({"margin-top": "10px"});
         add_feedback_choice();
     } else {
         choices_div.hide();
         choices_div.empty();
         add_choice_button.hide();
-        add_item_buttons.css({"margin-top": "0px"});
+        add_item_widgets.css({"margin-top": "0px"});
     }
 }
 
@@ -171,11 +171,6 @@ function delete_feedback_from_table(button) {
     $(button).parent().parent().remove();
 }
 
-function submit_create_feedback_form(e) {
-    e.preventDefault();
-    console.log("User requested create feedback form submit.");
-}
-
 function show_stagecmd_information(event) {
     var clicked_id = event.target.id;
     var split_id = clicked_id.split("-");
@@ -185,24 +180,18 @@ function show_stagecmd_information(event) {
     $('#' + clicked_type + '-information-' + clicked_number).show() 
 }
 
-function submit_main_form(e) {
-    e.preventDefault();
-    console.log("User requested main form submit.");
-    
-    var form = $('#main-form');
-
-    // TODO: Calculate the implicit ordinal_numbers for stages and commands
-
-    
+function submit_form(e, form) {
     var form_type = form.attr('method');
     var form_url = form.attr('action');
 
     console.log("Method: " + form_type + ", URL: " + form_url);
-    
+
     var form_data = new FormData(form[0]);
 
     console.log("Serialized form data:");
-    console.log(form_data);
+    for (var [key, value] of form_data.entries()) { 
+        console.log(key, value);
+    }
 
     console.log("Submitting the form...");
     $.ajax({
@@ -215,4 +204,19 @@ function submit_main_form(e) {
         success: function(data, text_status, jqxhr_obj) {},
         error: function(xhr, status, type) {}
     });
+}
+
+function submit_create_feedback_form(e) {
+    e.preventDefault();
+    console.log("User requested create feedback form submit.");
+
+    submit_form(e, $('#create-feedback-form'));    
+}
+
+function submit_main_form(e) {
+    e.preventDefault();
+    console.log("User requested main form submit.");
+    
+    // TODO: Calculate the implicit ordinal_numbers for stages and commands
+    submit_form(e, $('#main-form'));
 }

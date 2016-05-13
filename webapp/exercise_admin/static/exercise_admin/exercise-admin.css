@@ -295,7 +295,7 @@ input#save-exercise {
     border: 2px solid #ccc;
 }
 
-button.add-item {
+button.add-item, input[type=submit].add-item {
     display: inline-block;
     outline: 0;
     padding: 2px 4px;
@@ -311,7 +311,7 @@ button.add-item {
     border-radius: 8px;
 }
 
-div.generalinfo-right-side button.add-item {
+div.generalinfo-right-side button.add-item, div.generalinfo-right-side button.add-item {
     box-shadow: 1px 1px 2px #285c00;
 }
 
@@ -471,7 +471,7 @@ button#add-feedback-choice:disabled {
     cursor: default;
 }
 
-div.popup button.add-item {
+div.popup button.add-item, div.popup input[type=submit].add-item {
     margin-top: 0px;
     margin-left: 5px;
     box-shadow: 1px 1px 2px #285c00;
