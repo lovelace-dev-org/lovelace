@@ -180,13 +180,55 @@ function show_stagecmd_information(event) {
     $('#' + clicked_type + '-information-' + clicked_number).show() 
 }
 
-function submit_form(e, form) {
+function submit_main_form(e) {
+    e.preventDefault();
+    console.log("User requested form submit.");
+    
+    var form = $('#main-form');
+
+    // Get the hierarchy of stages and commands for the calculation of implicit
+    // ordinal_numbers at the form validation
+    var tests = [];
+    $('#test-tabs > ol > li').each(function(x) {
+        var current_href = $(this).children('a').attr('href');
+        if (current_href !== undefined) {
+            var current_id = current_href.split('-')[2];
+            tests.push(current_id);
+        }
+    });
+    var order_hierarchy = {stages_of_tests: {}, commands_of_stages: {}};
+    for (let test_id of tests) {
+        var stage_order;
+        
+        $('#stages-sortable-' + test_id).each(function(x) {
+            stage_order = $(this).sortable("toArray", options={attribute: 'data-stage-id'});
+            order_hierarchy.stages_of_tests[test_id] = stage_order;
+            
+            for (let stage_id of stage_order) {
+                var command_order;
+                $('#commands-sortable-' + test_id + '-' + stage_id).each(function(y) {
+                    command_order = $(this).sortable("toArray", options={attribute: 'data-command-id'});
+                });
+                order_hierarchy.commands_of_stages[stage_id] = command_order;
+            }
+        });
+    }
+    console.log(order_hierarchy);
+}
+
+function submit_create_feedback_form(e) {
+    e.preventDefault();
+    console.log("User requested create feedback form submit.");
+
+    var form = $('#create-feedback-form');
+
     var form_type = form.attr('method');
     var form_url = form.attr('action');
 
     console.log("Method: " + form_type + ", URL: " + form_url);
 
     var form_data = new FormData(form[0]);
+    form_data.append("order_hierarchy", JSON.stringify(order_hierarchy));
 
     console.log("Serialized form data:");
     for (var [key, value] of form_data.entries()) { 
@@ -204,19 +246,5 @@ function submit_form(e, form) {
         success: function(data, text_status, jqxhr_obj) {},
         error: function(xhr, status, type) {}
     });
-}
 
-function submit_create_feedback_form(e) {
-    e.preventDefault();
-    console.log("User requested create feedback form submit.");
-
-    submit_form(e, $('#create-feedback-form'));    
-}
-
-function submit_main_form(e) {
-    e.preventDefault();
-    console.log("User requested main form submit.");
-    
-    // TODO: Calculate the implicit ordinal_numbers for stages and commands
-    submit_form(e, $('#main-form'));
 }

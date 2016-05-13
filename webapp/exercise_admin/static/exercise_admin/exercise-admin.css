@@ -104,7 +104,7 @@ div.form-row {
     align-items: center;
 }
 div.form-row > label {
-    width: 140px;
+    width: 150px;
 }
 div.form-cb-row {
     margin: 0.35rem 0;
@@ -122,6 +122,9 @@ input#exercise-name {
 input#exercise-points {
     width: 45px;
     text-align: right;
+}
+input#exercise-allowed_filenames {
+    width: 660px;
 }
 div.form-bigrow {
     margin: 0.35rem 0;
