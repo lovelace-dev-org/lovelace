@@ -182,7 +182,7 @@ function show_stagecmd_information(event) {
 
 function submit_main_form(e) {
     e.preventDefault();
-    console.log("User requested form submit.");
+    console.log("User requested main form submit.");
     
     var form = $('#main-form');
 
@@ -214,14 +214,7 @@ function submit_main_form(e) {
         });
     }
     console.log(order_hierarchy);
-}
-
-function submit_create_feedback_form(e) {
-    e.preventDefault();
-    console.log("User requested create feedback form submit.");
-
-    var form = $('#create-feedback-form');
-
+    
     var form_type = form.attr('method');
     var form_url = form.attr('action');
 
@@ -246,5 +239,34 @@ function submit_create_feedback_form(e) {
         success: function(data, text_status, jqxhr_obj) {},
         error: function(xhr, status, type) {}
     });
+}
 
+function submit_create_feedback_form(e) {
+    e.preventDefault();
+    console.log("User requested create feedback form submit.");
+
+    var form = $('#create-feedback-form');
+    var form_type = form.attr('method');
+    var form_url = form.attr('action');
+
+    console.log("Method: " + form_type + ", URL: " + form_url);
+
+    var form_data = new FormData(form[0]);
+
+    console.log("Serialized form data:");
+    for (var [key, value] of form_data.entries()) { 
+        console.log(key, value);
+    }
+
+    console.log("Submitting the form...");
+    $.ajax({
+        type: form_type,
+        url: form_url,
+        data: form_data,
+        processData: false,
+        contentType: false,
+        dataType: 'json',
+        success: function(data, text_status, jqxhr_obj) {},
+        error: function(xhr, status, type) {}
+    });
 }
