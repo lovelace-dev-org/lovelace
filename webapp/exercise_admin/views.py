@@ -183,9 +183,7 @@ def create_feedback_question(request):
                     "message" : "Feedback question type {} does not exist!".format(question_type)
                 }
             })
-        print("jippii")
     else:
-        print(form.errors.as_json())
         return JsonResponse({
             "error": form.errors.as_json()
         })
