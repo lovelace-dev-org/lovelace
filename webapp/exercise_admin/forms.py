@@ -34,7 +34,7 @@ class CreateFeedbackQuestionForm(forms.Form):
         
         choice_fields = [k for k in cleaned_data if k.startswith("choice_field")]
         if type_field != "MULTIPLE_CHOICE_FEEDBACK" and len(choice_fields) > 0:
-            type_error = forms.ValidationError("Only multiple choice feedback accepts choices!", code="choices_with_incorrect_type")
+            type_error = forms.ValidationError("Only multiple choice feedback accepts choice!", code="choices_with_incorrect_type")
             self.add_error("type_field", type_error)
     
         if len(choice_fields) > 99:
