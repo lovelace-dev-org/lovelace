@@ -24,13 +24,12 @@ class CreateFeedbackQuestionForm(forms.Form):
             except feedback.models.ContentFeedbackQuestion.DoesNotExist:
                 pass
             else:
-                question_error = forms.ValidationError("Feedback question {} already exists!".format(question_field),
-                                                        code="duplicate_question")
+                question_error = forms.ValidationError("This feedback question already exists!", code="duplicate_question")
                 self.add_error("question_field", question_error)
                 
         type_field = cleaned_data.get("type_field")
         if type_field not in [choice[0] for choice in feedback.models.QUESTION_TYPE_CHOICES]:
-            type_error = forms.ValidationError("Feedback question type {} does not exist!".format(type_field), code="invalid_type")
+            type_error = forms.ValidationError("This feedback question type does not exist!", code="invalid_type")
             self.add_error("type_field", type_error)
         
         choice_fields = [k for k in cleaned_data if k.startswith("choice_field")]
