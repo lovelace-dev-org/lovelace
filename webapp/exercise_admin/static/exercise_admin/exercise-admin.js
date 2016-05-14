@@ -94,7 +94,11 @@ function add_feedback_choice() {
     choices_div.append('<label class="feedback-choice-label" for="feedback-choice-' + label_n + '">');
     var new_label = choices_div.children().last();
     new_label.append('<span class="feedback-choice-span">Choice ' + label_n + ':</span>');
-    new_label.append('<input type="text" id="feedback-choice-' + label_n + '" class="feedback-choice" name="choice_field_' + label_n + '">');
+    if (label_n == 1) {
+        new_label.append('<input type="text" id="feedback-choice-' + label_n + '" class="feedback-choice" name="choice_field_' + label_n + '" required>');
+    } else {
+        new_label.append('<input type="text" id="feedback-choice-' + label_n + '" class="feedback-choice" name="choice_field_' + label_n + '">');
+    }
     new_label.append('<button class="delete-button" title="Deletes an answer choice of a feedback question">x</button>');
     if (label_n === MAX_CHOICES) {
         $("#add-feedback-choice").attr("disabled", true);
@@ -122,6 +126,20 @@ function handle_feedback_type_selection(select) {
     }
 }
 
+function select_all_feedback_questions(select) {
+    $("td.question-cell > input[type=checkbox].feedback-question-checkbox").prop("checked", select);
+}
+
+function add_feedback_question_to_popup_table(question, id, type) {
+    var tr = $('<tr>');
+    var td_question = $('<td class="question-cell">');
+    td_question.append('<input type="checkbox" id="fb-question-checkbox-' + id + '" class="feedback-question-checkbox">');
+    td_question.append('<label for="fb-question-checkbox-' + id + '" class="feedback-question-label">' + question + '</label>');
+    tr.append(td_question);
+    tr.append('<td class="type-cell">' + type + '</td>');
+    $("#add-feedback-table > tbody").append(tr);
+}
+
 function show_add_feedback_question_popup(event, url) {
     event.preventDefault();
 
@@ -130,7 +148,6 @@ function show_add_feedback_question_popup(event, url) {
         $('#feedback-question-table tbody tr').each(function() {
             questions.push($(this).find("td:first").html());   
         });
-        var tbody = $("#add-feedback-table > tbody");
         var popup = $("#add-feedback-popup");
         var error_span = $("#add-feedback-popup-error");
         var result = data.result;
@@ -144,22 +161,17 @@ function show_add_feedback_question_popup(event, url) {
             error_span.empty();
             error_span.hide();
         }   
+
+        $("div.popup div.admin-error").hide();
+        $("#add-feedback-table > tbody").empty();
+        $("#fb-question-checkbox-all").prop("checked", false);
         
-        tbody.empty();
         $.each(result, function() {
             var question = this.question;
             if ($.inArray(question, questions) > -1) {
                 return;
             }
-            var id = this.id;
-            var type = this.type;
-            var tr = $('<tr>');
-            var td_question = $('<td class="question-cell">');
-            td_question.append('<input type="checkbox" id="fb-question-checkbox-' + id + '" class="feedback-question-checkbox">');
-            td_question.append('<label for="fb-question-checkbox-' + id + '" class="feedback-question-label">' + question + '</label>');
-            tr.append(td_question);
-            tr.append('<td class="type-cell">' + type + '</td>');
-            tbody.append(tr)
+            add_feedback_question_to_popup_table(question, this.id, this.type);
         });
         $('#feedback-choices').empty();
         handle_feedback_type_selection($("#feedback-type-select")[0]);
@@ -241,6 +253,46 @@ function submit_main_form(e) {
     });
 }
 
+function create_feedback_form_success(data, text_status, jqxhr_obj) {
+    if (data.error) {
+        var sep = "<br>";
+        if (data.error.__all__) {
+            var error_span = $("#create-feedback-error");
+            error_span.html(data.error.__all__.join(sep));
+            error_span.css("display", "block");
+        }
+        if (data.error.question_field) {
+            var error_span = $("#feedback-question-new-error");
+            error_span.html(data.error.question_field.join(sep));
+            error_span.css("display", "block");
+        }
+        if (data.error.type_field) {
+            var error_span = $("#feedback-type-select-error");
+            error_span.html(data.error.type_field.join(sep));
+            error_span.css("display", "block");
+        }
+    } else if (data.result) {
+        add_feedback_question_to_popup_table(data.result.question, data.result.id, data.result.type);
+        $("div.popup div.admin-error").hide();
+        $("#feedback-question-new").val("");
+        $('#feedback-choices').empty();
+        handle_feedback_type_selection($("#feedback-type-select")[0]);
+    }
+}
+
+function create_feedback_form_error(xhr, status, type) {
+    var error_span = $("#create-feedback-error");
+    var error_str = "An error occured while sending the form:";
+    status = status.charAt(0).toUpperCase() + status.slice(1);
+    if (type) {
+        error_str += status + ": " + type;
+    } else {
+        error_str += status;
+    }
+    error_span.html(error_str);
+    error_span.css("display", "block");
+}
+
 function submit_create_feedback_form(e) {
     e.preventDefault();
     console.log("User requested create feedback form submit.");
@@ -266,7 +318,7 @@ function submit_create_feedback_form(e) {
         processData: false,
         contentType: false,
         dataType: 'json',
-        success: function(data, text_status, jqxhr_obj) {},
-        error: function(xhr, status, type) {}
+        success: create_feedback_form_success,
+        error: create_feedback_form_error
     });
 }

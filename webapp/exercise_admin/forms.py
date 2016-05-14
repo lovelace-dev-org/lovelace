@@ -9,7 +9,10 @@ class CreateFeedbackQuestionForm(forms.Form):
     def __init__(self, choice_count, *args, **kwargs):
         super(CreateFeedbackQuestionForm, self).__init__(*args, **kwargs)
         for i in range(choice_count):
-            self.fields["choice_field_{}".format(i + 1)] = forms.CharField()
+            if i == 0:
+                self.fields["choice_field_{}".format(i + 1)] = forms.CharField(required=True)
+            else:
+                self.fields["choice_field_{}".format(i + 1)] = forms.CharField(required=False)
 
     def clean(self):
         MAX_CHOICE_COUNT = 99
@@ -21,15 +24,19 @@ class CreateFeedbackQuestionForm(forms.Form):
             except feedback.models.ContentFeedbackQuestion.DoesNotExist:
                 pass
             else:
-                raise forms.ValidationError("Feedback question {} already exists!".format(question_field), code="duplicate_question")
+                question_error = forms.ValidationError("Feedback question {} already exists!".format(question_field),
+                                                        code="duplicate_question")
+                self.add_error("question_field", question_error)
                 
         type_field = cleaned_data.get("type_field")
-        choice_fields = [k for k in cleaned_data if k.startswith("choice_field")]
-        if len(choice_fields) > 99:
-            raise forms.ValidationError("Maximum choice count exceeded!")
+        if type_field not in [choice[0] for choice in feedback.models.QUESTION_TYPE_CHOICES]:
+            type_error = forms.ValidationError("Feedback question type {} does not exist!".format(type_field), code="invalid_type")
+            self.add_error("type_field", type_error)
         
-        if type_field == "MULTIPLE_CHOICE_FEEDBACK" and len(choice_fields) == 0:
-            raise forms.ValidationError("If multiple choice feedback is chosen, at least one choice must be provided!", code="no_choices")
-        elif type_field != "MULTIPLE_CHOICE_FEEDBACK" and len(choice_fields) > 0:
-            raise forms.ValidationError("Only multiple choice feedback accepts choices!", code="choices_with_invalid_type")
-            
+        choice_fields = [k for k in cleaned_data if k.startswith("choice_field")]
+        if type_field != "MULTIPLE_CHOICE_FEEDBACK" and len(choice_fields) > 0:
+            type_error = forms.ValidationError("Only multiple choice feedback accepts choices!", code="choices_with_incorrect_type")
+            self.add_error("type_field", type_error)
+    
+        if len(choice_fields) > 99:
+            raise forms.ValidationError("Maximum choice count exceeded!", code="max_choices_exceeded")            

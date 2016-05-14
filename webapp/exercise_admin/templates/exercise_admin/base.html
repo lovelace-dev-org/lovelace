@@ -41,7 +41,7 @@
                 <thead>
                   <tr>
                     <th>
-                      <input type="checkbox" id="fb-question-checkbox-all" class="feedback-question-checkbox">
+                      <input type="checkbox" id="fb-question-checkbox-all" class="feedback-question-checkbox" onclick="select_all_feedback_questions(this.checked);">
                       <label for="fb-question-checkbox-all" class="feedback-question-label">Question</label>
                     </th>
                     <th>Type</th>
@@ -63,6 +63,7 @@
                 <input type="text" id="feedback-question-new" class="feedback-question-new-input" name="question_field" required>
               </label>
             </div>
+            <div id="feedback-question-new-error" class="admin-error"></div>
             <div>
               <select id="feedback-type-select" class="feedback-type-select" onchange="handle_feedback_type_selection(this);" form="create-feedback-form" name="type_field" required>
                 <option value="THUMB_FEEDBACK">Thumb feedback question</option>
@@ -70,10 +71,12 @@
                 <option value="MULTIPLE_CHOICE_FEEDBACK">Multiple choice feedback question</option>
                 <option value="TEXTFIELD_FEEDBACK">Textfield feedback question</option>
               </select>
+              <div id="feedback-type-select-error" class="admin-error"></div>
               <div id="feedback-choices" class="feedback-choices">
               </div>
-              <button id="add-feedback-choice" class="add-item" title="Adds a new answer choice for the feedback question" onclick="add_feedback_choice();">Add choice</button>
+              <button type="button" id="add-feedback-choice" class="add-item" title="Adds a new answer choice for the feedback question" onclick="add_feedback_choice();">Add choice</button>
               <input type="submit" class="add-item" value="Create feedback" title="Creates a new feedback question to the database">
+              <div id="create-feedback-error" class="admin-error"></div>
             </div>
           </form>
         </div>
@@ -162,7 +165,7 @@
           </div>
           <button class="add-item" title="Adds a new feedback question"
                   onclick="show_add_feedback_question_popup(event, '{% url 'exercise_admin:get_feedback_questions' %}');">+</button>
-          <span id="add-feedback-popup-error" class="popup-error"></span>
+          <span id="add-feedback-popup-error" class="admin-error"></span>
 
           <div class="separator"></div>
 

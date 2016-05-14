@@ -150,8 +150,11 @@ def create_feedback_question(request):
 
     if not (request.user.is_staff and request.user.is_authenticated() and request.user.is_active):
         return JsonResponse({
-            "error": {
-                "message" : "Only logged in users can send feedback!"
+            "error" : {
+                "__all__" : {
+                    "message" : "Only logged in users can send feedback!",
+                    "code" : "authentication"
+                }
             }
         })
 
@@ -165,27 +168,30 @@ def create_feedback_question(request):
         question = form.cleaned_data["question_field"]
         question_type = form.cleaned_data["type_field"]
         choices = [k for k in form.cleaned_data if k.startswith("choice_field")]
-
+        
         if question_type == "THUMB_FEEDBACK":
-            ThumbFeedbackQuestion(question=question, slug="").save()
+            q_obj = ThumbFeedbackQuestion(question=question, slug="")
+            q_obj.save()
         elif question_type == "STAR_FEEDBACK":
-            StarFeedbackQuestion(question=question, slug="").save()
+            q_obj = StarFeedbackQuestion(question=question, slug="")
+            q_obj.save()
         elif question_type == "MULTIPLE_CHOICE_FEEDBACK":
-            question_obj = MultipleChoiceFeedbackQuestion(question=question, slug="")
-            question_obj.save()
+            q_obj = MultipleChoiceFeedbackQuestion(question=question, slug="")
+            q_obj.save()
             for choice in choices:
-                MultipleChoiceFeedbackAnswer(question=question_obj, answer=choice).save()
+                MultipleChoiceFeedbackAnswer(question=q_obj, answer=choice).save()
         elif question_type == "TEXTFIELD_FEEDBACK":
-            TextfieldFeedbackQuestion(question=question, slug="").save()
-        else:
-            return JsonResponse({
-                "error": {
-                    "message" : "Feedback question type {} does not exist!".format(question_type)
-                }
-            })
+            q_obj = TextfieldFeedbackQuestion(question=question, slug="")
+            q_obj.save()
     else:
         return JsonResponse({
-            "error": form.errors.as_json()
+            "error" : form.errors
         })
     
-    return JsonResponse({})
+    return JsonResponse({
+        "result" : {
+            "question" : question,
+            "id" : q_obj.id,
+            "type" : q_obj.get_human_readable_type(),
+        }
+    })
