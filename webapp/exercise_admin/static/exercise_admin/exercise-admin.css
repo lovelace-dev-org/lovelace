@@ -437,15 +437,23 @@ div.popup span.feedback-question-span {
 
 div.popup input[type=text].feedback-question-new-input {
     margin-left: 5px;
-    width: 1030px;
+    width: 1035px;
 }
 
 div.popup select.feedback-type-select {
     margin-top: 5px;
 }
 
-div.popup div.feedback-choices {
+div#feedback-choice-container {
     display: none;
+    margin-top: 5px;
+    padding-bottom: 5px;
+    height: auto;
+}
+
+div.popup div.feedback-choices {
+    height: auto;
+    max-height: 200px;
 }
 
 div.popup span.feedback-choice-span {
@@ -458,7 +466,7 @@ div.popup span.feedback-choice-span {
 div.popup input[type=text].feedback-choice {
     margin-left: 5px;
     margin-top: 5px;
-    width: 1065px;
+    width: 1045px;
 }
 
 div.popup input[type=text].feedback-choice + button{

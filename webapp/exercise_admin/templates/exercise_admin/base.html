@@ -72,7 +72,9 @@
                 <option value="TEXTFIELD_FEEDBACK">Textfield feedback question</option>
               </select>
               <div id="feedback-type-select-error" class="admin-error"></div>
-              <div id="feedback-choices" class="feedback-choices">
+              <div id="feedback-choice-container" class="bordered-editable-area">
+                <div id="feedback-choices" class="feedback-choices">
+                </div>
               </div>
               <button type="button" id="add-feedback-choice" class="add-item" title="Adds a new answer choice for the feedback question" onclick="add_feedback_choice();">Add choice</button>
               <input type="submit" class="add-item" value="Create feedback" title="Creates a new feedback question to the database">

@@ -10,6 +10,7 @@ function close_popup(popup) {
 }
 
 function close_popup_and_add_questions() {
+    var TITLE_TEXT = "Deletes the relation between the feedback question and the exercise";
     var target_tbody = $("#feedback-question-table tbody");
     $("#add-feedback-table > tbody > tr").each(function(index) {
         if ($(this).find("input.feedback-question-checkbox:checked").length > 0) {
@@ -17,10 +18,9 @@ function close_popup_and_add_questions() {
             var type = $(this).children("td.type-cell").text();
             var tr = $('<tr>');
             var td_delete = $('<td class="delete-cell">');
-            var title_text = "Deletes the relation between the feedback question and the exercise";
             tr.append('<td class="question-cell">' + question + '</td>');
             tr.append('<td class="type-cell">' + type + '</td>');
-            td_delete.append('<button class="delete-button" title="' + title_text + '" onclick="delete_feedback_from_table(this);">x</button>');
+            td_delete.append('<button class="delete-button" title="' + TITLE_TEXT + '" onclick="delete_feedback_from_table(this);">x</button>');
             tr.append(td_delete);
             target_tbody.append(tr);
         }
@@ -87,19 +87,59 @@ function command_name_changed(e) {
     $('#command-' + split_id[1]).html(new_name);
 }
 
+function delete_feedback_choice(label_n) {
+    var choice_container_div = $('#feedback-choice-container');
+    var choices_div = $('#feedback-choices');
+    var choice_div = $('#feedback-choice-div-' + label_n);
+    var total_height = 0;
+    var max_height = parseFloat(choices_div.css('max-height').replace("px", ""));
+    var next_choices = choice_div.nextAll();
+    var choice_values = [];
+
+    next_choices.each(function() {
+        choice_values.push($(this).find("input[type=text].feedback-choice").val());
+    });
+
+    choice_div.remove();
+    next_choices.remove();
+    console.log(choice_values);
+    $.each(choice_values, function(index, value) {
+        add_feedback_choice();
+        console.log(choices_div.last());
+        choices_div.children().last().find("input[type=text].feedback-choice").val(value);
+    });
+    
+    $("div.feedback-choice-div").each(function() {
+        total_height += $(this).height();
+    });
+    if (total_height < max_height) {
+        choices_div.slimScroll({
+            destroy: true
+        });
+        choice_container_div.height(total_height);
+        choices_div.height(total_height);
+        choice_container_div.css({"height" : "auto"});
+        choices_div.css({"height" : "auto"});
+    }
+}
+
 function add_feedback_choice() {
     var MAX_CHOICES = 99;
+    var TITLE_TEXT = "Deletes an answer choice of a feedback question";
+    
+    var choice_container_div = $('#feedback-choice-container');
     var choices_div = $('#feedback-choices');
     var label_n = choices_div.children().length + 1;
-    var choice_div = $('<div>');
+    var choice_div = $('<div id="feedback-choice-div-' + label_n + '" class="feedback-choice-div">');
     var new_label = $('<label class="feedback-choice-label" for="feedback-choice-' + label_n + '">');
+    
     new_label.append('<span class="feedback-choice-span">Choice ' + label_n + ':</span>');
     if (label_n <= 2) {
         new_label.append('<input type="text" id="feedback-choice-' + label_n + '" class="feedback-choice" name="choice_field_' + label_n + '" required>');
     } else {
         new_label.append('<input type="text" id="feedback-choice-' + label_n + '" class="feedback-choice" name="choice_field_' + label_n + '">');
+        new_label.append('<button type="button" class="delete-button" title="' + TITLE_TEXT + '" onclick="delete_feedback_choice(' + label_n + ');">x</button>');
     }
-    new_label.append('<button class="delete-button" title="Deletes an answer choice of a feedback question">x</button>');
     if (label_n === MAX_CHOICES) {
         $("#add-feedback-choice").attr("disabled", true);
     } else {
@@ -108,22 +148,34 @@ function add_feedback_choice() {
     choice_div.append(new_label);
     choice_div.append('<div id="choice-field-' + label_n + '-error" class="admin-error"></div>');
     choices_div.append(choice_div);
+
+    var max_height = choices_div.css('max-height');
+    if (choice_container_div.height() + 'px' === max_height) {
+        choices_div.slimScroll({
+            height: max_height
+        });
+    } else {
+        choices_div.slimScroll({
+            destroy: true
+        });
+    }
 }
 
 function handle_feedback_type_selection(select) {
     var option = select.options[select.selectedIndex];
+    var choice_container_div = $('#feedback-choice-container');
     var choices_div = $('#feedback-choices');
     var add_choice_button = $('#add-feedback-choice');
     var add_item_widgets = $('div.popup button.add-item, div.popup input[type=submit].add-item');
     
     if (option.value === "MULTIPLE_CHOICE_FEEDBACK") {
-        choices_div.css({"display": "block"});
+        choice_container_div.css({"display": "block"});
         add_choice_button.css({"display": "inline-block"});
         add_item_widgets.css({"margin-top": "10px"});
         add_feedback_choice();
         add_feedback_choice();
     } else {
-        choices_div.hide();
+        choice_container_div.hide();
         choices_div.empty();
         add_choice_button.hide();
         add_item_widgets.css({"margin-top": "0px"});
