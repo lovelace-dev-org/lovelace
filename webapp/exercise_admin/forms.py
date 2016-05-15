@@ -9,7 +9,7 @@ class CreateFeedbackQuestionForm(forms.Form):
     def __init__(self, choice_count, *args, **kwargs):
         super(CreateFeedbackQuestionForm, self).__init__(*args, **kwargs)
         for i in range(choice_count):
-            if i == 0:
+            if i <= 1:
                 self.fields["choice_field_{}".format(i + 1)] = forms.CharField(required=True)
             else:
                 self.fields["choice_field_{}".format(i + 1)] = forms.CharField(required=False)
@@ -38,4 +38,5 @@ class CreateFeedbackQuestionForm(forms.Form):
             self.add_error("type_field", type_error)
     
         if len(choice_fields) > 99:
-            raise forms.ValidationError("Maximum choice count exceeded!", code="max_choices_exceeded")            
+            choice_error = forms.ValidationError("Maximum choice count exceeded!", code="max_choices_exceeded")
+            self.add_error("choice_field_{}".format(len(choice_fields)), choice_error)

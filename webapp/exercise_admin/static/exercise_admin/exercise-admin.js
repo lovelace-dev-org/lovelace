@@ -91,10 +91,10 @@ function add_feedback_choice() {
     var MAX_CHOICES = 99;
     var choices_div = $('#feedback-choices');
     var label_n = choices_div.children().length + 1;
-    choices_div.append('<label class="feedback-choice-label" for="feedback-choice-' + label_n + '">');
-    var new_label = choices_div.children().last();
+    var choice_div = $('<div>');
+    var new_label = $('<label class="feedback-choice-label" for="feedback-choice-' + label_n + '">');
     new_label.append('<span class="feedback-choice-span">Choice ' + label_n + ':</span>');
-    if (label_n == 1) {
+    if (label_n <= 2) {
         new_label.append('<input type="text" id="feedback-choice-' + label_n + '" class="feedback-choice" name="choice_field_' + label_n + '" required>');
     } else {
         new_label.append('<input type="text" id="feedback-choice-' + label_n + '" class="feedback-choice" name="choice_field_' + label_n + '">');
@@ -105,6 +105,9 @@ function add_feedback_choice() {
     } else {
         $("#add-feedback-choice").attr("disabled", false);
     }
+    choice_div.append(new_label);
+    choice_div.append('<div id="choice-field-' + label_n + '-error" class="admin-error"></div>');
+    choices_div.append(choice_div);
 }
 
 function handle_feedback_type_selection(select) {
@@ -117,6 +120,7 @@ function handle_feedback_type_selection(select) {
         choices_div.css({"display": "block"});
         add_choice_button.css({"display": "inline-block"});
         add_item_widgets.css({"margin-top": "10px"});
+        add_feedback_choice();
         add_feedback_choice();
     } else {
         choices_div.hide();
@@ -256,21 +260,20 @@ function submit_main_form(e) {
 function create_feedback_form_success(data, text_status, jqxhr_obj) {
     if (data.error) {
         var sep = "<br>";
-        if (data.error.__all__) {
-            var error_span = $("#create-feedback-error");
-            error_span.html(data.error.__all__.join(sep));
-            error_span.css("display", "block");
-        }
-        if (data.error.question_field) {
-            var error_span = $("#feedback-question-new-error");
-            error_span.html(data.error.question_field.join(sep));
-            error_span.css("display", "block");
-        }
-        if (data.error.type_field) {
-            var error_span = $("#feedback-type-select-error");
-            error_span.html(data.error.type_field.join(sep));
-            error_span.css("display", "block");
-        }
+        $.each(data.error, function(err_source, err_msg) { 
+            if (err_source === "question_field") {
+                var error_div = $("#feedback-question-new-error");
+            } else if (err_source === "type_field") {
+                var error_div = $("#feedback-type-select-error");
+            } else if (err_source.startsWith("choice_field")) {
+                console.log("#" + err_source.replace("_", "-") + "-error");
+                var error_div = $("#" + err_source.replace(new RegExp("_", "g"), "-") + "-error");
+            } else {
+                var error_div = $("#create-feedback-error");
+            }
+            error_div.html(err_msg.join(sep));
+            error_div.css("display", "block");
+        });
     } else if (data.result) {
         add_feedback_question_to_popup_table(data.result.question, data.result.id, data.result.type);
         $("div.popup div.admin-error").hide();
