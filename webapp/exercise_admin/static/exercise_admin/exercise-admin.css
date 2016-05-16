@@ -324,7 +324,7 @@ input#save-exercise {
 button.add-item, input[type=submit].add-item {
     display: inline-block;
     outline: 0;
-    padding: 2px 4px;
+    padding: 2px 6px;
     margin-top: 6px;
     margin-bottom: 5px;
     vertical-align: middle;
@@ -455,12 +455,12 @@ div.popup td label.feedback-question-label {
 div.popup span.feedback-question-span {
     display: inline-block;
     margin-left: 5px;
-    width: 135px;
+    width: 140px;
 }
 
 div.popup input[type=text].feedback-question-new-input {
     margin-left: 5px;
-    width: 1035px;
+    width: 1030px;
 }
 
 div.popup select.feedback-type-select {
