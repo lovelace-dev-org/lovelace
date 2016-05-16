@@ -48,7 +48,7 @@ $(document).ready(function() {
     $('input[type=text].exercise-tag-input').each(function () {
         change_tag_width(this);
         if (this.value === "") {
-            $(this).parent().remove();
+            remove_tag(this);
         }
     });
 });
@@ -59,7 +59,7 @@ function highlight_parent_li(input_elem) {
     parent.css({'background' : '#cec'});
     input.focusout(function() {
         if (input.val() === '') {
-            parent.remove();
+            remove_tag(input[0]);
         } else if (!parent.is(':hover')) {
             parent.css({'background' : '#ddd'});
         }
@@ -105,6 +105,24 @@ function add_tag() {
               '" value="?" maxlength="32" onfocus="highlight_parent_li(this);" oninput="change_tag_width(this);">');
     li.append('<button type="button" class="delete-button" onclick="$(this).parent().remove();">x</button>');
     ul.append(li);
+}
+
+function remove_tag(tag_elem) {
+    var tag_values = [];
+    var li = $(tag_elem).parent();
+    var ul = li.parent();
+    var next_lis = li.nextAll();
+
+    next_lis.each(function() {
+        tag_values.push($(this).find("input[type=text].exercise-tag-input").val());
+    });
+
+    li.remove();
+    next_lis.remove();
+    $.each(tag_values, function(index, value) {
+        add_tag();
+        ul.children().last().find("input[type=text].exercise-tag-input").val(value);
+    });
 }
 
 function exercise_name_changed(e) {
@@ -162,10 +180,8 @@ function delete_feedback_choice(label_n) {
 
     choice_div.remove();
     next_choices.remove();
-    console.log(choice_values);
     $.each(choice_values, function(index, value) {
         add_feedback_choice();
-        console.log(choices_div.last());
         choices_div.children().last().find("input[type=text].feedback-choice").val(value);
     });
     

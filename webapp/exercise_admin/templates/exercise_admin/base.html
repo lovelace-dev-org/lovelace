@@ -177,7 +177,7 @@
               <li class="exercise-tag">
                 <input type="text" id="exercise-tag-{{ forloop.counter0|add:"1" }}" class="exercise-tag-input" name="exercise_tag_{{ forloop.counter0|add:"1" }}"
                        value="{{ ex_tag }}" maxlength="32" onfocus="highlight_parent_li(this);" oninput="change_tag_width(this);">
-                <button type="button" class="delete-button" onclick="$(this).parent().remove();">x</button>
+                <button type="button" class="delete-button" onclick="remove_tag(this);">x</button>
               </li>
             {% endfor %}
           </ul>
