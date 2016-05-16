@@ -47,6 +47,9 @@ $(document).ready(function() {
     });
     $('input[type=text].exercise-tag-input').each(function () {
         change_tag_width(this);
+        if (this.value === "") {
+            $(this).parent().remove();
+        }
     });
 });
 
