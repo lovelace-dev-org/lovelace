@@ -109,7 +109,20 @@ def file_upload_exercise(request, exercise_id=None, action=None):
 
     # TODO: Modify the admin site to direct file upload exercise edit urls here instead.
     # ...or maybe modify the urls?
-    
+
+    feedback_questions = []
+    for question in exercise.feedback_questions.all():
+        q_type_obj = question.get_type_object()
+        if q_type_obj.question_type == "MULTIPLE_CHOICE_FEEDBACK":
+            choices = [choice.answer for choice in q_type_obj.get_choices()]
+        else:
+            choices = []
+        feedback_questions.append({
+            'id' : q_type_obj.id,
+            'question' : q_type_obj,
+            'type' : q_type_obj.get_human_readable_type(),
+            'choices' : choices,
+        })
     
     t = loader.get_template("exercise_admin/file-upload-exercise-{action}.html".format(action=action))
     c = {
@@ -118,6 +131,7 @@ def file_upload_exercise(request, exercise_id=None, action=None):
         'include_files': include_files,
         'instance_files': instance_files,
         'tests': test_list,
+        'feedback_questions': feedback_questions,
     }
     return HttpResponse(t.render(c, request))
 
@@ -167,7 +181,7 @@ def create_feedback_question(request):
     if form.is_valid():
         question = form.cleaned_data["question_field"]
         question_type = form.cleaned_data["type_field"]
-        choices = [k for k in form.cleaned_data if k.startswith("choice_field")]
+        choices = [v for (k, v) in form.cleaned_data.items() if k.startswith("choice_field")]
         
         if question_type == "THUMB_FEEDBACK":
             q_obj = ThumbFeedbackQuestion(question=question, slug="")
