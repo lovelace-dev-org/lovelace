@@ -60,7 +60,7 @@
             <div>
               <label for="feedback-question-new">
                 <span class="feedback-question-span">Feedback question:</span>
-                <input type="text" id="feedback-question-new" class="feedback-question-new-input" name="question_field" required>
+                <input type="text" id="feedback-question-new" class="feedback-question-new-input" name="question_field" maxlength="100", required>
               </label>
             </div>
             <div id="feedback-question-new-error" class="admin-error"></div>
@@ -174,10 +174,15 @@
           <h2>Tags</h2>
           <ul class="exercise-tags">
             {% for ex_tag in exercise.tags %}
-              <li class="exercise-tag">{{ ex_tag }}</li>
+              <li class="exercise-tag">
+                <input type="text" id="exercise-tag-{{ forloop.counter0|add:"1" }}" class="exercise-tag-input" name="exercise_tag_{{ forloop.counter0|add:"1" }}"
+                       value="{{ ex_tag }}" maxlength="32" onfocus="highlight_parent_li(this);" oninput="change_tag_width(this);">
+                <button type="button" class="delete-button" onclick="$(this).parent().remove();">x</button>
+              </li>
             {% endfor %}
           </ul>
-          <button class="add-item">+</button>
+          <button type="button" class="add-item" onclick="add_tag();">+</button>
+          <span id="tag-error" class="admin-error"></span>
         </div>
       </section>
 

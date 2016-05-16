@@ -189,18 +189,41 @@ li.exercise-tag {
     padding: 6px;
     margin: 4px;
     border-radius: 10px;
-    text-align: center;
     justify-content: center;
     align-content: center;
     align-items: center;
     background: #ddd;
-    cursor: grab;
     flex: 0 0;
-    font-weight: bold;
 }
 li.exercise-tag:hover {
     background: #cec;
     transition: all 0.2s ease-in-out;
+}
+
+input[type=text].exercise-tag-input {
+    background: #ddd;
+    width: 36px;
+    min-width: 36px;
+    font-family: "Inconsolata", monospace;
+    font-weight: bold;
+    text-align: center;
+}
+
+li.exercise-tag:hover > input[type=text].exercise-tag-input {
+    background: #cec;
+    transition: all 0.2s ease-in-out;
+    outline: none;
+    border-color: #cec;;
+    -webkit-box-shadow: none;
+    box-shadow: none;
+}
+
+input[type=text].exercise-tag-input:focus {
+    background: #cec;
+    outline: none;
+    border-color: #cec;;
+    -webkit-box-shadow: none;
+    box-shadow: none;
 }
 
 /* Included files */

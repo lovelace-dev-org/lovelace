@@ -45,7 +45,64 @@ $(document).ready(function() {
     $('.popup > div').click(function(event) {
         event.stopPropagation();
     });
+    $('input[type=text].exercise-tag-input').each(function () {
+        change_tag_width(this);
+    });
 });
+
+function highlight_parent_li(input_elem) {
+    var input = $(input_elem);
+    var parent = input.parent();
+    parent.css({'background' : '#cec'});
+    input.focusout(function() {
+        if (input.val() === '') {
+            parent.remove();
+        } else if (!parent.is(':hover')) {
+            parent.css({'background' : '#ddd'});
+        }
+    });
+    parent.hover(function() {
+        parent.css({'background' : '#cec'});
+    }, function() {
+        if (!input.is(':focus')) {
+            parent.css({'background' : '#ddd'});
+        }
+    });
+}
+
+function change_tag_width(input_elem) {
+    var CHAR_WIDTH = 9;
+    var MAX_FITTING_LENGTH = 4;
+    var input = $(input_elem);
+    var val_len = input.val().length;
+    
+    if (val_len > MAX_FITTING_LENGTH) {
+        input.width((input_elem.value.length * CHAR_WIDTH) + 'px');
+    } else {
+        input.width(input.css('min-width'));
+    }
+}
+
+function add_tag() {
+    var MAX_COUNT = 20;
+    var ul = $('ul.exercise-tags');
+    var li = $('<li class="exercise-tag">');
+    var tag_n = ul.children().length + 1;
+
+    var tag_error_span = $("#tag-error");
+    if (tag_n > 20) {
+        tag_error_span.text("Maximum tag count exceeded!");
+        tag_error_span.css({"display" : "inline-block"});
+        return;
+    } else {
+        tag_error_span.hide();
+    }
+
+    li.append('<input type="text" id="' + tag_n + '-tag" class="exercise-tag-input" name="exercise_tag_' + tag_n +
+              '" value="?" maxlength="32" onfocus="highlight_parent_li(this);" oninput="change_tag_width(this);">');
+    li.append('<button type="button" class="delete-button" onclick="$(this).parent().remove();">x</button>');
+    ul.append(li);
+}
 
 function exercise_name_changed(e) {
     var new_name = e.target.value;
@@ -135,10 +192,13 @@ function add_feedback_choice() {
     
     new_label.append('<span class="feedback-choice-span">Choice ' + label_n + ':</span>');
     if (label_n <= 2) {
-        new_label.append('<input type="text" id="feedback-choice-' + label_n + '" class="feedback-choice" name="choice_field_' + label_n + '" required>');
+        new_label.append('<input type="text" id="feedback-choice-' + label_n + '" class="feedback-choice"' +
+                         'name="choice_field_' + label_n + '" required>');
     } else {
-        new_label.append('<input type="text" id="feedback-choice-' + label_n + '" class="feedback-choice" name="choice_field_' + label_n + '">');
-        new_label.append('<button type="button" class="delete-button" title="' + TITLE_TEXT + '" onclick="delete_feedback_choice(' + label_n + ');">x</button>');
+        new_label.append('<input type="text" id="feedback-choice-' + label_n + '" class="feedback-choice"' +
+                         'name="choice_field_' + label_n + '">');
+        new_label.append('<button type="button" class="delete-button" title="' + TITLE_TEXT +
+                         '" onclick="delete_feedback_choice(' + label_n + ');">x</button>');
     }
     if (label_n === MAX_CHOICES) {
         $("#add-feedback-choice").attr("disabled", true);
