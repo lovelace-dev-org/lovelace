@@ -36,3 +36,16 @@ class CreateFeedbackQuestionForm(forms.Form):
         if type_field != "MULTIPLE_CHOICE_FEEDBACK" and len(choice_fields) > 0:
             type_error = forms.ValidationError("Only multiple choice feedback accepts choice!", code="choices_with_incorrect_type")
             self.add_error("type_field", type_error)
+
+class CreateFileUploadExerciseForm(forms.Form):
+    exercise_name = forms.CharField(max_length=255, required=True, strip=True)
+    exercise_content = forms.CharField()
+    exercise_default_points = forms.IntegerField(required=True)
+    # handle tags as forms.Charfield(min_length=1, max_length=28, strip=True)
+    # feedback questions
+    exercise_question = forms.CharField()
+    exercise_manually_evaluated = forms.BooleanField()
+    exercise_ask_collaborators = forms.BooleanField()
+    exercise_allowed_filenames = forms.CharField()
+    
+
