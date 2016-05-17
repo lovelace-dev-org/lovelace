@@ -192,7 +192,6 @@ function delete_feedback_choice(label_n) {
 }
 
 function add_feedback_choice() {
-    var MAX_CHOICES = 99;
     var TITLE_TEXT = "Deletes an answer choice of a feedback question";
     
     var choice_container_div = $('#new-feedback-choice-container');
@@ -211,11 +210,7 @@ function add_feedback_choice() {
         new_label.append('<button type="button" class="delete-button" title="' + TITLE_TEXT +
                          '" onclick="delete_feedback_choice(' + label_n + ');">x</button>');
     }
-    if (label_n === MAX_CHOICES) {
-        $("#add-new-feedback-choice").attr("disabled", true);
-    } else {
-        $("#add-new-feedback-choice").attr("disabled", false);
-    }
+    
     choice_div.append(new_label);
     choice_div.append('<div id="choice-field-' + label_n + '-error" class="admin-error"></div>');
     choices_div.append(choice_div);
@@ -230,10 +225,6 @@ function add_feedback_choice() {
             destroy: true
         });
     }
-}
-
-function show_choices_if_exist(fb_question_id) {
-    
 }
 
 function handle_feedback_type_selection(select) {
@@ -259,6 +250,14 @@ function handle_feedback_type_selection(select) {
 
 function select_all_feedback_questions(select) {
     $("td.question-cell > input[type=checkbox].feedback-question-checkbox").prop("checked", select);
+}
+
+function show_choices_if_exist(fb_question_id) {
+    
+}
+
+function add_feedback_choice_to_popup(question, id) {
+
 }
 
 function add_feedback_question_to_popup_table(question, id, type) {

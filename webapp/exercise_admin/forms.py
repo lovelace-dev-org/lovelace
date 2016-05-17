@@ -36,7 +36,3 @@ class CreateFeedbackQuestionForm(forms.Form):
         if type_field != "MULTIPLE_CHOICE_FEEDBACK" and len(choice_fields) > 0:
             type_error = forms.ValidationError("Only multiple choice feedback accepts choice!", code="choices_with_incorrect_type")
             self.add_error("type_field", type_error)
-    
-        if len(choice_fields) > 99:
-            choice_error = forms.ValidationError("Maximum choice count exceeded!", code="max_choices_exceeded")
-            self.add_error("choice_field_{}".format(len(choice_fields)), choice_error)
