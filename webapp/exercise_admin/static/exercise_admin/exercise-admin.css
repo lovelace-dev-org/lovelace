@@ -209,11 +209,20 @@ input[type=text].exercise-tag-input {
     text-align: center;
 }
 
+input[type=text].exercise-tag-input-hilighted {
+    background: #ddd;
+    width: 36px;
+    min-width: 36px;
+    font-family: "Inconsolata", monospace;
+    font-weight: bold;
+    text-align: center;
+}
+
 li.exercise-tag:hover > input[type=text].exercise-tag-input {
     background: #cec;
     transition: all 0.2s ease-in-out;
     outline: none;
-    border-color: #cec;;
+    border-color: #cec;
     -webkit-box-shadow: none;
     box-shadow: none;
 }
@@ -221,7 +230,7 @@ li.exercise-tag:hover > input[type=text].exercise-tag-input {
 input[type=text].exercise-tag-input:focus {
     background: #cec;
     outline: none;
-    border-color: #cec;;
+    border-color: #cec;
     -webkit-box-shadow: none;
     box-shadow: none;
 }
@@ -382,6 +391,11 @@ table.feedback-question-table col.delete-feedback {
     width: 6%;
 }
 
+input[type=text].feedback-question-input {
+    padding: 1px;
+    width: 97%;
+}
+
 button.delete-button {
     color: #ff0000;
     display: inline-block;
@@ -408,6 +422,48 @@ div.admin-error {
     margin-top: 5px;
 }
 
+div#feedback-choice-container {
+    display: none;
+    margin-top: 5px;
+    padding-bottom: 5px;
+    height: auto;
+}
+
+div.feedback-choices {
+    height: auto;
+    max-height: 200px;
+}
+
+span.feedback-choice-span {
+    display: inline-block;
+    margin-left: 5px;
+    margin-top: 5px;
+    width: 80px;
+}
+
+input[type=text].feedback-choice {
+    margin-left: 5px;
+    margin-top: 5px;
+    width: 1045px;
+}
+
+input[type=text].feedback-choice + button{
+    margin-left: 5px;
+    margin-top: 7px;
+}
+
+button#add-feedback-choice {
+    display: none;
+}
+
+button#add-feedback-choice:disabled {
+    color: #bbb;
+    border: 0px solid #aaa;
+    border-radius: 8px;
+    box-shadow: 1px 1px 2px #aaa;
+    cursor: default;
+}
+
 div.popup {
     position: fixed;
     top: 0;
@@ -427,7 +483,7 @@ div.popup > div, div.popup > pre {
     margin: 10% auto;
     padding: 10px;
     border-radius: 10px;
-    background: #f2f2f2;;
+    background: #f2f2f2;
 }
 
 div.popup div.bordered-editable-area {
@@ -467,7 +523,7 @@ div.popup select.feedback-type-select {
     margin-top: 5px;
 }
 
-div#feedback-choice-container {
+div#new-feedback-choice-container {
     display: none;
     margin-top: 5px;
     padding-bottom: 5px;
@@ -497,11 +553,11 @@ div.popup input[type=text].feedback-choice + button{
     margin-top: 7px;
 }
 
-button#add-feedback-choice {
+button#add-new-feedback-choice {
     display: none;
 }
 
-button#add-feedback-choice:disabled {
+button#add-new-feedback-choice:disabled {
     color: #bbb;
     border: 0px solid #aaa;
     border-radius: 8px;

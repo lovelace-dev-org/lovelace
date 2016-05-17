@@ -117,6 +117,7 @@ def file_upload_exercise(request, exercise_id=None, action=None):
         'include_files': include_files,
         'instance_files': instance_files,
         'tests': test_list,
+
     }
     return HttpResponse(t.render(c, request))
 
@@ -151,7 +152,7 @@ def create_feedback_question(request):
         return JsonResponse({
             "error" : {
                 "__all__" : {
-                    "message" : "Only logged in users can send feedback!",
+                    "message" : "Only logged in users can create feedback questions!",
                     "code" : "authentication"
                 }
             }
@@ -169,18 +170,18 @@ def create_feedback_question(request):
         choices = [v for (k, v) in form.cleaned_data.items() if k.startswith("choice_field")]
         
         if question_type == "THUMB_FEEDBACK":
-            q_obj = ThumbFeedbackQuestion(question=question, slug="")
+            q_obj = ThumbFeedbackQuestion(question=question)
             q_obj.save()
         elif question_type == "STAR_FEEDBACK":
-            q_obj = StarFeedbackQuestion(question=question, slug="")
+            q_obj = StarFeedbackQuestion(question=question)
             q_obj.save()
         elif question_type == "MULTIPLE_CHOICE_FEEDBACK":
-            q_obj = MultipleChoiceFeedbackQuestion(question=question, slug="")
+            q_obj = MultipleChoiceFeedbackQuestion(question=question)
             q_obj.save()
             for choice in choices:
                 MultipleChoiceFeedbackAnswer(question=q_obj, answer=choice).save()
         elif question_type == "TEXTFIELD_FEEDBACK":
-            q_obj = TextfieldFeedbackQuestion(question=question, slug="")
+            q_obj = TextfieldFeedbackQuestion(question=question)
             q_obj.save()
     else:
         return JsonResponse({

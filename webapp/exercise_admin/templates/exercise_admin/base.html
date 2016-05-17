@@ -52,6 +52,8 @@
               </table>
             </div>
           </div>
+          <div id="feedback-choice-container" class="bordered-editable-area">
+          </div>
         </div>  
         <div class="create-feedback-div">
           <form method="POST" action="{% url 'exercise_admin:create_feedback_question' %}" id="create-feedback-form" onsubmit="submit_create_feedback_form(event);">
@@ -72,11 +74,11 @@
                 <option value="TEXTFIELD_FEEDBACK">Textfield feedback question</option>
               </select>
               <div id="feedback-type-select-error" class="admin-error"></div>
-              <div id="feedback-choice-container" class="bordered-editable-area">
-                <div id="feedback-choices" class="feedback-choices">
+              <div id="new-feedback-choice-container" class="bordered-editable-area">
+                <div id="new-feedback-choices" class="feedback-choices">
                 </div>
               </div>
-              <button type="button" id="add-feedback-choice" class="add-item" title="Adds a new answer choice for the feedback question" onclick="add_feedback_choice();">Add choice</button>
+              <button type="button" id="add-new-feedback-choice" class="add-item" title="Adds a new answer choice for the feedback question" onclick="add_feedback_choice();">Add choice</button>
               <input type="submit" class="add-item" value="Create feedback" title="Creates a new feedback question to the database">
               <div id="create-feedback-error" class="admin-error"></div>
             </div>
@@ -182,7 +184,6 @@
             {% endfor %}
           </ul>
           <button type="button" class="add-item" onclick="add_tag();">+</button>
-          <span id="tag-error" class="admin-error"></span>
         </div>
       </section>
 

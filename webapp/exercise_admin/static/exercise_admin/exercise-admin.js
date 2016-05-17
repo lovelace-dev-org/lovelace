@@ -56,19 +56,21 @@ $(document).ready(function() {
 function highlight_parent_li(input_elem) {
     var input = $(input_elem);
     var parent = input.parent();
-    parent.css({'background' : '#cec'});
+    var hilight_class = 'exercise-tag-input-hilighted';
+    
+    parent.toggleClass(hilight_class, true);
     input.focusout(function() {
         if (input.val() === '') {
             remove_tag(input[0]);
         } else if (!parent.is(':hover')) {
-            parent.css({'background' : '#ddd'});
+            parent.toggleClass(hilight_class, false);
         }
     });
     parent.hover(function() {
-        parent.css({'background' : '#cec'});
+        parent.toggleClass(hilight_class, true);
     }, function() {
         if (!input.is(':focus')) {
-            parent.css({'background' : '#ddd'});
+            parent.toggleClass(hilight_class, false);
         }
     });
 }
@@ -87,19 +89,9 @@ function change_tag_width(input_elem) {
 }
 
 function add_tag() {
-    var MAX_COUNT = 20;
     var ul = $('ul.exercise-tags');
     var li = $('<li class="exercise-tag">');
     var tag_n = ul.children().length + 1;
-
-    var tag_error_span = $("#tag-error");
-    if (tag_n > 20) {
-        tag_error_span.text("Maximum tag count exceeded!");
-        tag_error_span.css({"display" : "inline-block"});
-        return;
-    } else {
-        tag_error_span.hide();
-    }
 
     li.append('<input type="text" id="' + tag_n + '-tag" class="exercise-tag-input" name="exercise_tag_' + tag_n +
               '" value="?" maxlength="32" onfocus="highlight_parent_li(this);" oninput="change_tag_width(this);">');
@@ -166,9 +158,9 @@ function command_name_changed(e) {
 }
 
 function delete_feedback_choice(label_n) {
-    var choice_container_div = $('#feedback-choice-container');
-    var choices_div = $('#feedback-choices');
-    var choice_div = $('#feedback-choice-div-' + label_n);
+    var choice_container_div = $('#new-feedback-choice-container');
+    var choices_div = $('#new-feedback-choices');
+    var choice_div = $('#new-feedback-choice-div-' + label_n);
     var total_height = 0;
     var max_height = parseFloat(choices_div.css('max-height').replace("px", ""));
     var next_choices = choice_div.nextAll();
@@ -203,26 +195,26 @@ function add_feedback_choice() {
     var MAX_CHOICES = 99;
     var TITLE_TEXT = "Deletes an answer choice of a feedback question";
     
-    var choice_container_div = $('#feedback-choice-container');
-    var choices_div = $('#feedback-choices');
+    var choice_container_div = $('#new-feedback-choice-container');
+    var choices_div = $('#new-feedback-choices');
     var label_n = choices_div.children().length + 1;
-    var choice_div = $('<div id="feedback-choice-div-' + label_n + '" class="feedback-choice-div">');
-    var new_label = $('<label class="feedback-choice-label" for="feedback-choice-' + label_n + '">');
+    var choice_div = $('<div id="new-feedback-choice-div-' + label_n + '" class="feedback-choice-div">');
+    var new_label = $('<label class="feedback-choice-label" for="new-feedback-choice-' + label_n + '">');
     
     new_label.append('<span class="feedback-choice-span">Choice ' + label_n + ':</span>');
     if (label_n <= 2) {
-        new_label.append('<input type="text" id="feedback-choice-' + label_n + '" class="feedback-choice"' +
+        new_label.append('<input type="text" id="new-feedback-choice-' + label_n + '" class="feedback-choice"' +
                          'name="choice_field_' + label_n + '" required>');
     } else {
-        new_label.append('<input type="text" id="feedback-choice-' + label_n + '" class="feedback-choice"' +
+        new_label.append('<input type="text" id="new-feedback-choice-' + label_n + '" class="feedback-choice"' +
                          'name="choice_field_' + label_n + '">');
         new_label.append('<button type="button" class="delete-button" title="' + TITLE_TEXT +
                          '" onclick="delete_feedback_choice(' + label_n + ');">x</button>');
     }
     if (label_n === MAX_CHOICES) {
-        $("#add-feedback-choice").attr("disabled", true);
+        $("#add-new-feedback-choice").attr("disabled", true);
     } else {
-        $("#add-feedback-choice").attr("disabled", false);
+        $("#add-new-feedback-choice").attr("disabled", false);
     }
     choice_div.append(new_label);
     choice_div.append('<div id="choice-field-' + label_n + '-error" class="admin-error"></div>');
@@ -240,11 +232,15 @@ function add_feedback_choice() {
     }
 }
 
+function show_choices_if_exist(fb_question_id) {
+    
+}
+
 function handle_feedback_type_selection(select) {
     var option = select.options[select.selectedIndex];
-    var choice_container_div = $('#feedback-choice-container');
-    var choices_div = $('#feedback-choices');
-    var add_choice_button = $('#add-feedback-choice');
+    var choice_container_div = $('#new-feedback-choice-container');
+    var choices_div = $('#new-feedback-choices');
+    var add_choice_button = $('#add-new-feedback-choice');
     var add_item_widgets = $('div.popup button.add-item, div.popup input[type=submit].add-item');
     
     if (option.value === "MULTIPLE_CHOICE_FEEDBACK") {
@@ -308,7 +304,7 @@ function show_add_feedback_question_popup(event, url) {
             }
             add_feedback_question_to_popup_table(question, this.id, this.type);
         });
-        $('#feedback-choices').empty();
+        $('#new-feedback-choices').empty();
         handle_feedback_type_selection($("#feedback-type-select")[0]);
         popup.css({"opacity": "1", "pointer-events": "auto"});
     });
@@ -409,7 +405,7 @@ function create_feedback_form_success(data, text_status, jqxhr_obj) {
         add_feedback_question_to_popup_table(data.result.question, data.result.id, data.result.type);
         $("div.popup div.admin-error").hide();
         $("#feedback-question-new").val("");
-        $('#feedback-choices').empty();
+        $('#new-feedback-choices').empty();
         handle_feedback_type_selection($("#feedback-type-select")[0]);
     }
 }
