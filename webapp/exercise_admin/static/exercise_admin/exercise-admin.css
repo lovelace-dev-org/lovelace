@@ -189,18 +189,50 @@ li.exercise-tag {
     padding: 6px;
     margin: 4px;
     border-radius: 10px;
-    text-align: center;
     justify-content: center;
     align-content: center;
     align-items: center;
     background: #ddd;
-    cursor: grab;
     flex: 0 0;
-    font-weight: bold;
 }
 li.exercise-tag:hover {
     background: #cec;
     transition: all 0.2s ease-in-out;
+}
+
+input[type=text].exercise-tag-input {
+    background: #ddd;
+    width: 36px;
+    min-width: 36px;
+    font-family: "Inconsolata", monospace;
+    font-weight: bold;
+    text-align: center;
+}
+
+input[type=text].exercise-tag-input-hilighted {
+    background: #ddd;
+    width: 36px;
+    min-width: 36px;
+    font-family: "Inconsolata", monospace;
+    font-weight: bold;
+    text-align: center;
+}
+
+li.exercise-tag:hover > input[type=text].exercise-tag-input {
+    background: #cec;
+    transition: all 0.2s ease-in-out;
+    outline: none;
+    border-color: #cec;
+    -webkit-box-shadow: none;
+    box-shadow: none;
+}
+
+input[type=text].exercise-tag-input:focus {
+    background: #cec;
+    outline: none;
+    border-color: #cec;
+    -webkit-box-shadow: none;
+    box-shadow: none;
 }
 
 /* Included files */
@@ -298,10 +330,10 @@ input#save-exercise {
     border: 2px solid #ccc;
 }
 
-button.add-item {
+button.add-item, input[type=submit].add-item {
     display: inline-block;
     outline: 0;
-    padding: 2px 4px;
+    padding: 2px 6px;
     margin-top: 6px;
     margin-bottom: 5px;
     vertical-align: middle;
@@ -314,7 +346,7 @@ button.add-item {
     border-radius: 8px;
 }
 
-div.generalinfo-right-side button.add-item {
+div.generalinfo-right-side button.add-item, div.generalinfo-right-side button.add-item {
     box-shadow: 1px 1px 2px #285c00;
 }
 
@@ -359,6 +391,11 @@ table.feedback-question-table col.delete-feedback {
     width: 6%;
 }
 
+input[type=text].feedback-question-input {
+    padding: 1px;
+    width: 97%;
+}
+
 button.delete-button {
     color: #ff0000;
     display: inline-block;
@@ -375,10 +412,48 @@ button.delete-button {
     box-shadow: 1px 1px 2px #ff2000;
 }
 
-span.popup-error {
+span.admin-error, div.admin-error {
     display: none;
     color: #f00;
     margin-left: 5px;
+}
+
+div.admin-error {
+    margin-top: 5px;
+}
+
+div#feedback-choice-container {
+    display: none;
+    margin-top: 5px;
+    padding-bottom: 5px;
+    height: auto;
+}
+
+div.feedback-choices {
+    height: auto;
+    max-height: 200px;
+}
+
+span.feedback-choice-span {
+    display: inline-block;
+    margin-left: 5px;
+    margin-top: 5px;
+    width: 80px;
+}
+
+input[type=text].feedback-choice {
+    margin-left: 5px;
+    margin-top: 5px;
+    width: 1045px;
+}
+
+input[type=text].feedback-choice + button{
+    margin-left: 5px;
+    margin-top: 7px;
+}
+
+button#add-feedback-choice {
+    display: none;
 }
 
 div.popup {
@@ -400,7 +475,7 @@ div.popup > div, div.popup > pre {
     margin: 10% auto;
     padding: 10px;
     border-radius: 10px;
-    background: #f2f2f2;;
+    background: #f2f2f2;
 }
 
 div.popup div.bordered-editable-area {
@@ -428,7 +503,7 @@ div.popup td label.feedback-question-label {
 div.popup span.feedback-question-span {
     display: inline-block;
     margin-left: 5px;
-    width: 135px;
+    width: 140px;
 }
 
 div.popup input[type=text].feedback-question-new-input {
@@ -440,8 +515,16 @@ div.popup select.feedback-type-select {
     margin-top: 5px;
 }
 
-div.popup div.feedback-choices {
+div#new-feedback-choice-container {
     display: none;
+    margin-top: 5px;
+    padding-bottom: 5px;
+    height: auto;
+}
+
+div.popup div.feedback-choices {
+    height: auto;
+    max-height: 200px;
 }
 
 div.popup span.feedback-choice-span {
@@ -454,7 +537,7 @@ div.popup span.feedback-choice-span {
 div.popup input[type=text].feedback-choice {
     margin-left: 5px;
     margin-top: 5px;
-    width: 1065px;
+    width: 1045px;
 }
 
 div.popup input[type=text].feedback-choice + button{
@@ -462,11 +545,11 @@ div.popup input[type=text].feedback-choice + button{
     margin-top: 7px;
 }
 
-button#add-feedback-choice {
+button#add-new-feedback-choice {
     display: none;
 }
 
-button#add-feedback-choice:disabled {
+button#add-new-feedback-choice:disabled {
     color: #bbb;
     border: 0px solid #aaa;
     border-radius: 8px;
@@ -474,7 +557,7 @@ button#add-feedback-choice:disabled {
     cursor: default;
 }
 
-div.popup button.add-item {
+div.popup button.add-item, div.popup input[type=submit].add-item {
     margin-top: 0px;
     margin-left: 5px;
     box-shadow: 1px 1px 2px #285c00;

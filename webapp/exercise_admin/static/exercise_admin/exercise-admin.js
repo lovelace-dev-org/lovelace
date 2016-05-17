@@ -10,6 +10,7 @@ function close_popup(popup) {
 }
 
 function close_popup_and_add_questions() {
+    var TITLE_TEXT = "Deletes the relation between the feedback question and the exercise";
     var target_tbody = $("#feedback-question-table tbody");
     $("#add-feedback-table > tbody > tr").each(function(index) {
         if ($(this).find("input.feedback-question-checkbox:checked").length > 0) {
@@ -17,10 +18,9 @@ function close_popup_and_add_questions() {
             var type = $(this).children("td.type-cell").text();
             var tr = $('<tr>');
             var td_delete = $('<td class="delete-cell">');
-            var title_text = "Deletes the relation between the feedback question and the exercise";
             tr.append('<td class="question-cell">' + question + '</td>');
             tr.append('<td class="type-cell">' + type + '</td>');
-            td_delete.append('<button class="delete-button" title="' + title_text + '" onclick="delete_feedback_from_table(this);">x</button>');
+            td_delete.append('<button class="delete-button" title="' + TITLE_TEXT + '" onclick="delete_feedback_from_table(this);">x</button>');
             tr.append(td_delete);
             target_tbody.append(tr);
         }
@@ -45,7 +45,77 @@ $(document).ready(function() {
     $('.popup > div').click(function(event) {
         event.stopPropagation();
     });
+    $('input[type=text].exercise-tag-input').each(function () {
+        change_tag_width(this);
+        if (this.value === "") {
+            remove_tag(this);
+        }
+    });
 });
+
+function highlight_parent_li(input_elem) {
+    var input = $(input_elem);
+    var parent = input.parent();
+    var hilight_class = 'exercise-tag-input-hilighted';
+    
+    parent.toggleClass(hilight_class, true);
+    input.focusout(function() {
+        if (input.val() === '') {
+            remove_tag(input[0]);
+        } else if (!parent.is(':hover')) {
+            parent.toggleClass(hilight_class, false);
+        }
+    });
+    parent.hover(function() {
+        parent.toggleClass(hilight_class, true);
+    }, function() {
+        if (!input.is(':focus')) {
+            parent.toggleClass(hilight_class, false);
+        }
+    });
+}
+
+function change_tag_width(input_elem) {
+    var CHAR_WIDTH = 9;
+    var MAX_FITTING_LENGTH = 4;
+    var input = $(input_elem);
+    var val_len = input.val().length;
+    
+    if (val_len > MAX_FITTING_LENGTH) {
+        input.width((input_elem.value.length * CHAR_WIDTH) + 'px');
+    } else {
+        input.width(input.css('min-width'));
+    }
+}
+
+function add_tag() {
+    var ul = $('ul.exercise-tags');
+    var li = $('<li class="exercise-tag">');
+    var tag_n = ul.children().length + 1;
+
+    li.append('<input type="text" id="' + tag_n + '-tag" class="exercise-tag-input" name="exercise_tag_' + tag_n +
+              '" value="?" maxlength="32" onfocus="highlight_parent_li(this);" oninput="change_tag_width(this);">');
+    li.append('<button type="button" class="delete-button" onclick="$(this).parent().remove();">x</button>');
+    ul.append(li);
+}
+
+function remove_tag(tag_elem) {
+    var tag_values = [];
+    var li = $(tag_elem).parent();
+    var ul = li.parent();
+    var next_lis = li.nextAll();
+
+    next_lis.each(function() {
+        tag_values.push($(this).find("input[type=text].exercise-tag-input").val());
+    });
+
+    li.remove();
+    next_lis.remove();
+    $.each(tag_values, function(index, value) {
+        add_tag();
+        ul.children().last().find("input[type=text].exercise-tag-input").val(value);
+    });
+}
 
 function exercise_name_changed(e) {
     var new_name = e.target.value;
@@ -87,39 +157,117 @@ function command_name_changed(e) {
     $('#command-' + split_id[1]).html(new_name);
 }
 
+function delete_feedback_choice(label_n) {
+    var choice_container_div = $('#new-feedback-choice-container');
+    var choices_div = $('#new-feedback-choices');
+    var choice_div = $('#new-feedback-choice-div-' + label_n);
+    var total_height = 0;
+    var max_height = parseFloat(choices_div.css('max-height').replace("px", ""));
+    var next_choices = choice_div.nextAll();
+    var choice_values = [];
+
+    next_choices.each(function() {
+        choice_values.push($(this).find("input[type=text].feedback-choice").val());
+    });
+
+    choice_div.remove();
+    next_choices.remove();
+    $.each(choice_values, function(index, value) {
+        add_feedback_choice();
+        choices_div.children().last().find("input[type=text].feedback-choice").val(value);
+    });
+    
+    $("div.feedback-choice-div").each(function() {
+        total_height += $(this).height();
+    });
+    if (total_height < max_height) {
+        choices_div.slimScroll({
+            destroy: true
+        });
+        choice_container_div.height(total_height);
+        choices_div.height(total_height);
+        choice_container_div.css({"height" : "auto"});
+        choices_div.css({"height" : "auto"});
+    }
+}
+
 function add_feedback_choice() {
-    var MAX_CHOICES = 99;
-    var choices_div = $('#feedback-choices');
+    var TITLE_TEXT = "Deletes an answer choice of a feedback question";
+    
+    var choice_container_div = $('#new-feedback-choice-container');
+    var choices_div = $('#new-feedback-choices');
     var label_n = choices_div.children().length + 1;
-    choices_div.append('<label class="feedback-choice-label" for="feedback-choice-' + label_n + '">');
-    var new_label = choices_div.children().last();
+    var choice_div = $('<div id="new-feedback-choice-div-' + label_n + '" class="feedback-choice-div">');
+    var new_label = $('<label class="feedback-choice-label" for="new-feedback-choice-' + label_n + '">');
+    
     new_label.append('<span class="feedback-choice-span">Choice ' + label_n + ':</span>');
-    new_label.append('<input type="text" id="feedback-choice-' + label_n + '" class="feedback-choice">');
-    new_label.append('<button class="delete-button" title="Deletes an answer choice of a feedback question">x</button>');
-    if (label_n === MAX_CHOICES) {
-        $("#add-feedback-choice").attr("disabled", true);
+    if (label_n <= 2) {
+        new_label.append('<input type="text" id="new-feedback-choice-' + label_n + '" class="feedback-choice"' +
+                         'name="choice_field_' + label_n + '" required>');
     } else {
-        $("#add-feedback-choice").attr("disabled", false);
+        new_label.append('<input type="text" id="new-feedback-choice-' + label_n + '" class="feedback-choice"' +
+                         'name="choice_field_' + label_n + '">');
+        new_label.append('<button type="button" class="delete-button" title="' + TITLE_TEXT +
+                         '" onclick="delete_feedback_choice(' + label_n + ');">x</button>');
+    }
+    
+    choice_div.append(new_label);
+    choice_div.append('<div id="choice-field-' + label_n + '-error" class="admin-error"></div>');
+    choices_div.append(choice_div);
+
+    var max_height = choices_div.css('max-height');
+    if (choice_container_div.height() + 'px' === max_height) {
+        choices_div.slimScroll({
+            height: max_height
+        });
+    } else {
+        choices_div.slimScroll({
+            destroy: true
+        });
     }
 }
 
 function handle_feedback_type_selection(select) {
     var option = select.options[select.selectedIndex];
-    var choices_div = $('#feedback-choices');
-    var add_choice_button = $('#add-feedback-choice');
-    var add_item_buttons = $('div.popup button.add-item');
+    var choice_container_div = $('#new-feedback-choice-container');
+    var choices_div = $('#new-feedback-choices');
+    var add_choice_button = $('#add-new-feedback-choice');
+    var add_item_widgets = $('div.popup button.add-item, div.popup input[type=submit].add-item');
     
-    if (option.value === "multichoice") {
-        choices_div.css({"display": "block"});
+    if (option.value === "MULTIPLE_CHOICE_FEEDBACK") {
+        choice_container_div.css({"display": "block"});
         add_choice_button.css({"display": "inline-block"});
-        add_item_buttons.css({"margin-top": "10px"});
+        add_item_widgets.css({"margin-top": "10px"});
+        add_feedback_choice();
         add_feedback_choice();
     } else {
-        choices_div.hide();
+        choice_container_div.hide();
         choices_div.empty();
         add_choice_button.hide();
-        add_item_buttons.css({"margin-top": "0px"});
+        add_item_widgets.css({"margin-top": "0px"});
     }
+}
+
+function select_all_feedback_questions(select) {
+    $("td.question-cell > input[type=checkbox].feedback-question-checkbox").prop("checked", select);
+}
+
+function show_choices_if_exist(fb_question_id) {
+    
+}
+
+function add_feedback_choice_to_popup(question, id) {
+
+}
+
+function add_feedback_question_to_popup_table(question, id, type) {
+    var tr = $('<tr>');
+    var td_question = $('<td class="question-cell">');
+    td_question.append('<input type="checkbox" id="fb-question-checkbox-' + id + '" class="feedback-question-checkbox">');
+    td_question.append('<label for="fb-question-checkbox-' + id + '" class="feedback-question-label">' + question + '</label>');
+    tr.append(td_question);
+    tr.append('<td class="type-cell">' + type + '</td>');
+    $("#add-feedback-table > tbody").append(tr);
 }
 
 function show_add_feedback_question_popup(event, url) {
@@ -130,7 +278,6 @@ function show_add_feedback_question_popup(event, url) {
         $('#feedback-question-table tbody tr').each(function() {
             questions.push($(this).find("td:first").html());   
         });
-        var tbody = $("#add-feedback-table > tbody");
         var popup = $("#add-feedback-popup");
         var error_span = $("#add-feedback-popup-error");
         var result = data.result;
@@ -144,24 +291,19 @@ function show_add_feedback_question_popup(event, url) {
             error_span.empty();
             error_span.hide();
         }   
+
+        $("div.popup div.admin-error").hide();
+        $("#add-feedback-table > tbody").empty();
+        $("#fb-question-checkbox-all").prop("checked", false);
         
-        tbody.empty();
         $.each(result, function() {
             var question = this.question;
             if ($.inArray(question, questions) > -1) {
                 return;
             }
-            var id = this.id;
-            var type = this.type;
-            var tr = $('<tr>');
-            var td_question = $('<td class="question-cell">');
-            td_question.append('<input type="checkbox" id="fb-question-checkbox-' + id + '" class="feedback-question-checkbox">');
-            td_question.append('<label for="fb-question-checkbox-' + id + '" class="feedback-question-label">' + question + '</label>');
-            tr.append(td_question);
-            tr.append('<td class="type-cell">' + type + '</td>');
-            tbody.append(tr)
+            add_feedback_question_to_popup_table(question, this.id, this.type);
         });
-        $('#feedback-choices').empty();
+        $('#new-feedback-choices').empty();
         handle_feedback_type_selection($("#feedback-type-select")[0]);
         popup.css({"opacity": "1", "pointer-events": "auto"});
     });
@@ -182,7 +324,7 @@ function show_stagecmd_information(event) {
 
 function submit_main_form(e) {
     e.preventDefault();
-    console.log("User requested form submit.");
+    console.log("User requested main form submit.");
     
     var form = $('#main-form');
 
@@ -219,12 +361,14 @@ function submit_main_form(e) {
     var form_url = form.attr('action');
 
     console.log("Method: " + form_type + ", URL: " + form_url);
-    
+
     var form_data = new FormData(form[0]);
     form_data.append("order_hierarchy", JSON.stringify(order_hierarchy));
 
     console.log("Serialized form data:");
-    console.log(form_data);
+    for (var [key, value] of form_data.entries()) { 
+        console.log(key, value);
+    }
 
     console.log("Submitting the form...");
     $.ajax({
@@ -236,5 +380,74 @@ function submit_main_form(e) {
         dataType: 'json',
         success: function(data, text_status, jqxhr_obj) {},
         error: function(xhr, status, type) {}
+    });
+}
+
+function create_feedback_form_success(data, text_status, jqxhr_obj) {
+    if (data.error) {
+        var sep = "<br>";
+        $.each(data.error, function(err_source, err_msg) { 
+            if (err_source === "question_field") {
+                var error_div = $("#feedback-question-new-error");
+            } else if (err_source === "type_field") {
+                var error_div = $("#feedback-type-select-error");
+            } else if (err_source.startsWith("choice_field")) {
+                console.log("#" + err_source.replace("_", "-") + "-error");
+                var error_div = $("#" + err_source.replace(new RegExp("_", "g"), "-") + "-error");
+            } else {
+                var error_div = $("#create-feedback-error");
+            }
+            error_div.html(err_msg.join(sep));
+            error_div.css("display", "block");
+        });
+    } else if (data.result) {
+        add_feedback_question_to_popup_table(data.result.question, data.result.id, data.result.type);
+        $("div.popup div.admin-error").hide();
+        $("#feedback-question-new").val("");
+        $('#new-feedback-choices').empty();
+        handle_feedback_type_selection($("#feedback-type-select")[0]);
+    }
+}
+
+function create_feedback_form_error(xhr, status, type) {
+    var error_span = $("#create-feedback-error");
+    var error_str = "An error occured while sending the form:";
+    status = status.charAt(0).toUpperCase() + status.slice(1);
+    if (type) {
+        error_str += status + ": " + type;
+    } else {
+        error_str += status;
+    }
+    error_span.html(error_str);
+    error_span.css("display", "block");
+}
+
+function submit_create_feedback_form(e) {
+    e.preventDefault();
+    console.log("User requested create feedback form submit.");
+
+    var form = $('#create-feedback-form');
+    var form_type = form.attr('method');
+    var form_url = form.attr('action');
+
+    console.log("Method: " + form_type + ", URL: " + form_url);
+
+    var form_data = new FormData(form[0]);
+
+    console.log("Serialized form data:");
+    for (var [key, value] of form_data.entries()) { 
+        console.log(key, value);
+    }
+
+    console.log("Submitting the form...");
+    $.ajax({
+        type: form_type,
+        url: form_url,
+        data: form_data,
+        processData: false,
+        contentType: false,
+        dataType: 'json',
+        success: create_feedback_form_success,
+        error: create_feedback_form_error
     });
 }

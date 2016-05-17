@@ -19,6 +19,9 @@ from feedback.models import ContentFeedbackQuestion, TextfieldFeedbackQuestion, 
     ThumbFeedbackQuestion, StarFeedbackQuestion, MultipleChoiceFeedbackQuestion, \
     MultipleChoiceFeedbackAnswer
 
+# Forms
+from .forms import CreateFeedbackQuestionForm
+
 def index(request):
     return HttpResponse('to be created')
 
@@ -107,7 +110,6 @@ def file_upload_exercise(request, exercise_id=None, action=None):
     # TODO: Modify the admin site to direct file upload exercise edit urls here instead.
     # ...or maybe modify the urls?
     
-    
     t = loader.get_template("exercise_admin/file-upload-exercise-{action}.html".format(action=action))
     c = {
         'exercise': exercise,
@@ -115,6 +117,7 @@ def file_upload_exercise(request, exercise_id=None, action=None):
         'include_files': include_files,
         'instance_files': instance_files,
         'tests': test_list,
+
     }
     return HttpResponse(t.render(c, request))
 
@@ -139,4 +142,56 @@ def get_feedback_questions(request):
     
     return JsonResponse({
         "result": result
+    })
+
+def create_feedback_question(request):
+    if request.method != "POST":
+        return HttpResponseNotAllowed(["POST"])
+
+    if not (request.user.is_staff and request.user.is_authenticated() and request.user.is_active):
+        return JsonResponse({
+            "error" : {
+                "__all__" : {
+                    "message" : "Only logged in users can create feedback questions!",
+                    "code" : "authentication"
+                }
+            }
+        })
+
+    data = request.POST.dict()
+    data.pop("csrfmiddlewaretoken")
+    choice_count = len([k for k in data.keys() if k.startswith("choice_field")])
+    
+    form = CreateFeedbackQuestionForm(choice_count, data)
+    
+    if form.is_valid():
+        question = form.cleaned_data["question_field"]
+        question_type = form.cleaned_data["type_field"]
+        choices = [v for (k, v) in form.cleaned_data.items() if k.startswith("choice_field")]
+        
+        if question_type == "THUMB_FEEDBACK":
+            q_obj = ThumbFeedbackQuestion(question=question)
+            q_obj.save()
+        elif question_type == "STAR_FEEDBACK":
+            q_obj = StarFeedbackQuestion(question=question)
+            q_obj.save()
+        elif question_type == "MULTIPLE_CHOICE_FEEDBACK":
+            q_obj = MultipleChoiceFeedbackQuestion(question=question)
+            q_obj.save()
+            for choice in choices:
+                MultipleChoiceFeedbackAnswer(question=q_obj, answer=choice).save()
+        elif question_type == "TEXTFIELD_FEEDBACK":
+            q_obj = TextfieldFeedbackQuestion(question=question)
+            q_obj.save()
+    else:
+        return JsonResponse({
+            "error" : form.errors
+        })
+    
+    return JsonResponse({
+        "result" : {
+            "question" : question,
+            "id" : q_obj.id,
+            "type" : q_obj.get_human_readable_type(),
+        }
     })
