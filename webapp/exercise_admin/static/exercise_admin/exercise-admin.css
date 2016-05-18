@@ -43,6 +43,10 @@ a.help-link:hover {
     transition: all 0.25s ease-in-out;
 }
 
+button::-moz-focus-inner {
+    border: 0;
+}
+
 /* Meta */
 
 section.meta {
@@ -391,11 +395,6 @@ table.feedback-question-table col.delete-feedback {
     width: 6%;
 }
 
-input[type=text].feedback-question-input {
-    padding: 1px;
-    width: 97%;
-}
-
 button.delete-button {
     color: #ff0000;
     display: inline-block;
@@ -425,6 +424,7 @@ div.admin-error {
 div#feedback-choice-container {
     display: none;
     margin-top: 5px;
+    margin-bottom: 10px;
     padding-bottom: 5px;
     height: auto;
 }
@@ -452,7 +452,7 @@ input[type=text].feedback-choice + button{
     margin-top: 7px;
 }
 
-button#add-feedback-choice {
+button#add-feedback-choice, button#add-new-feedback-choice {
     display: none;
 }
 
@@ -483,12 +483,29 @@ div.popup div.bordered-editable-area {
     margin-left: 5px;
 }
 
-div.popup div.create-feedback-div {
+div#edit-feedback-div {
+    margin-top: 30px;
+    display: none;
+}
+
+div#create-feedback-div {
     margin-top: 30px;
 }
 
 div.popup col.feedback-question {
-    width: 90%;
+    width: 76%;
+}
+
+div.popup col.feedback-type {
+    width: 20%;
+}
+
+div.popup col.edit-feedback {
+    width: 4%;
+}
+
+div.popup td.question-cell {
+    vertical-align: middle;
 }
 
 div.popup input[type=checkbox].feedback-question-checkbox {
@@ -500,15 +517,44 @@ div.popup td label.feedback-question-label {
     margin-left: 5px;
 }
 
+div.popup td.type-cell {
+    vertical-align: middle;
+}
+
+div.popup table.feedback-question-table td {
+    height: 28px;
+}
+
+div.popup button.edit-button {
+    background: url("edit.png");
+    width: 25px;
+    height: 25px;
+    outline: 0;
+    vertical-align: middle;
+    overflow: hidden;
+    color: #4CAF50;
+    background-color: #fff;
+    text-align: center;
+    cursor: pointer;
+    border: 0px solid #42860e;
+    border-radius: 8px;
+    box-shadow: 1px 1px 2px #285c00;
+}
+
 div.popup span.feedback-question-span {
     display: inline-block;
     margin-left: 5px;
     width: 140px;
 }
 
-div.popup input[type=text].feedback-question-new-input {
+div.popup input[type=text].feedback-question-input {
+    height: 24px;
     margin-left: 5px;
     width: 1030px;
+}
+
+div#edit-feedback-div input[type=text].feedback-question-input {
+    width: 1034px;
 }
 
 div.popup select.feedback-type-select {
@@ -518,6 +564,7 @@ div.popup select.feedback-type-select {
 div#new-feedback-choice-container {
     display: none;
     margin-top: 5px;
+    margin-bottom: 10px;
     padding-bottom: 5px;
     height: auto;
 }
@@ -525,6 +572,10 @@ div#new-feedback-choice-container {
 div.popup div.feedback-choices {
     height: auto;
     max-height: 200px;
+}
+
+div#feedback-choice-container > div.feedback-choices {
+    display: none;
 }
 
 div.popup span.feedback-choice-span {
@@ -540,7 +591,7 @@ div.popup input[type=text].feedback-choice {
     width: 1045px;
 }
 
-div.popup input[type=text].feedback-choice + button{
+div.popup input[type=text].feedback-choice + button {
     margin-left: 5px;
     margin-top: 7px;
 }

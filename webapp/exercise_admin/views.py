@@ -132,14 +132,15 @@ def get_feedback_questions(request):
     feedback_questions = ContentFeedbackQuestion.objects.all()
     result = []
     for question in feedback_questions:
+        question = question.get_type_object()
         question_json = {
             "id": question.id,
             "question" : question.question,
             "type": question.get_human_readable_type(),
-            "answers": [],
+            "choices": [],
         }
         if question.question_type == "MULTIPLE_CHOICE_FEEDBACK":
-            question_json["answers"] = [choice.answer for choice in question.get_type_object().get_choices()]
+            question_json["choices"] = [choice.answer for choice in question.get_choices()]
         result.append(question_json)
     
     return JsonResponse({
@@ -195,5 +196,6 @@ def create_feedback_question(request):
             "question" : question,
             "id" : q_obj.id,
             "type" : q_obj.get_human_readable_type(),
+            "choices" : choices,
         }
     })
