@@ -103,12 +103,27 @@ def file_upload_exercise(request, exercise_id=None, action=None):
 
         print(uploaded_files)
 
-        form = CreateFileUploadExerciseForm()
-        
-        with transaction.atomic():
-            pass
-        # Save the POST result here
+        data = request.POST.dict()
+        data.pop("csrfmiddlewaretoken")
+        tag_count = len([k for k in data.keys() if k.startswith("exercise_tag")])
 
+        form = CreateFileUploadExerciseForm(tag_count, order_hierarchy_json, data)
+
+        if form.is_valid():
+            print("DEBUG: the form is valid")
+            # create/update the form
+            with transaction.atomic():
+                pass
+
+            return JsonResponse({
+                "yeah!": "everything went ok",
+            })
+        else:
+            print("DEBUG: the form is not valid")
+            return JsonResponse({
+                "error": form.errors,
+            })
+    
     # TODO: Modify the admin site to direct file upload exercise edit urls here instead.
     # ...or maybe modify the urls?
     

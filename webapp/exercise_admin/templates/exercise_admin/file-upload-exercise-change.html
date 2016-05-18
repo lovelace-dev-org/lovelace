@@ -35,7 +35,7 @@
 {% block exercise-type-extra %}
   <div class="form-row">
     <label for="exercise-allowed_filenames">Allowed file names: </label>
-    <input type="text" id="exercise-allowed_filenames" name="exercise-allowed_filenames" value="{{ exercise.allowed_filenames }}">
+    <input type="text" id="exercise-allowed_filenames" name="exercise_allowed_filenames" value="{{ exercise.allowed_filenames }}">
   </div>
 {% endblock %}
 
@@ -70,7 +70,7 @@
         {% for test, stages in tests %}
           <li><a href="#test-tabs-{{ test.id }}" id="test-{{ test.id }}">{{ test.name }}</a></li>
         {% endfor %}
-        <li><button class="add-item" title="Adds a new test">+</button></li>
+        <li><button type="button" class="add-item" title="Adds a new test">+</button></li>
       </ol>
 
       {% for test, stages in tests %}
@@ -79,7 +79,7 @@
 
           <div>
             <label for="test-{{ test.id }}-name">Test name:</label>
-            <input type="text" id="test-{{ test.id }}-name" name="test-{{ test.id }}-name" value="{{ test.name }}" onInput="test_name_changed(event);">
+            <input type="text" id="test-{{ test.id }}-name" name="test_{{ test.id }}_name" value="{{ test.name }}" onInput="test_name_changed(event);">
           </div>
 
           <div>Included files this test requires: &lt;a picker for selecting the files made available above; updates realtime&gt;</div>
@@ -105,12 +105,12 @@
                           </li>
                         {% endfor %}
                       </ol>
-                      <ol><li><button class="add-item" title="Adds a new test command">+</button></li></ol>
+                      <ol><li><button type="button" class="add-item" title="Adds a new test command">+</button></li></ol>
                     </div>
                   </li>
                 {% endfor %}
               </ol>
-              <ol><li><button class="add-item" title="Adds a new test stage">+</button></li></ol>
+              <ol><li><button type="button" class="add-item" title="Adds a new test stage">+</button></li></ol>
             </div>
             <div class="right-side"><!-- right side, information -->
               <div id="selection-information-container">
@@ -124,12 +124,12 @@
                     <h4>Stage {{ stage.ordinal_number }} information</h4>
                     <div class="form-row">
                       <label for="stage-{{ stage.id }}-name">Stage name: </label>
-                      <input type="text" id="stage-{{ stage.id }}-name" name="stage-{{ stage.id }}-name" value="{{ stage.name }}" onInput="stage_name_changed(event);">
+                      <input type="text" id="stage-{{ stage.id }}-name" name="stage_{{ stage.id }}_name" value="{{ stage.name }}" onInput="stage_name_changed(event);">
                     </div>
 
                     <div class="form-row">
                       <label for="stage-{{ stage.id }}-depends">Depends on: </label>
-                      <select id="stage-{{ stage.id }}-depends" name="stage-{{ stage.id }}-depends">
+                      <select id="stage-{{ stage.id }}-depends" name="stage_{{ stage.id }}_depends_on">
                         <optgroup label="No external dependencies">
                           <option value="">Only preceding stages</option>
                         </optgroup>
@@ -146,31 +146,31 @@
                       <h4>Stage {{ stage.ordinal_number }}, command {{ command.ordinal_number }} information</h4>
                       <div class="form-row">
                         <label for="command-{{ command.id }}-cmdline">Command line: </label>
-                        <input type="text" id="command-{{ command.id }}-cmdline" name="command-{{ command.id }}-cmdline" value="{{ command.command_line }}" onInput="command_name_changed(event);">
+                        <input type="text" id="command-{{ command.id }}-cmdline" name="command_{{ command.id }}_command_line" value="{{ command.command_line }}" onInput="command_name_changed(event);">
                       </div>
 
                       <div class="form-cb-row">
-                        <input type="checkbox" id="command-{{ command.id }}-significant_stdout" name="command-{{ command.id }}-significant_stdout" value="{{ command.significant_stdout }}">
+                        <input type="checkbox" id="command-{{ command.id }}-significant_stdout" name="command_{{ command.id }}_significant_stdout" {% if command.significant_stdout %}checked{% endif %}>
                         <label for="command-{{ command.id }}-significant_stdout">Compare the generated stdout to reference</label>
                       </div>
                       <div class="form-cb-row">
-                        <input type="checkbox" id="command-{{ command.id }}-significant_stderr" name="command-{{ command.id }}-significant_stderr" value="{{ command.significant_stderr }}">
+                        <input type="checkbox" id="command-{{ command.id }}-significant_stderr" name="command_{{ command.id }}_significant_stderr" {% if command.significant_stderr %}checked{% endif %}>
                         <label for="command-{{ command.id }}-significant_stderr">Compare the generated stderr to reference</label>
                       </div>
 
                       <div class="form-row">
                         <label for="command-{{ command.id }}-timeout">Timeout: </label>
-                        <input type="text" id="command-{{ command.id }}-timeout" name="command-{{ command.id }}-timeout" value="{{ command.timeout }}">
+                        <input type="text" id="command-{{ command.id }}-timeout" name="command_{{ command.id }}_timeout" value="{{ command.timeout }}">
                       </div>
 
                       <div class="form-bigrow">
                         <label for="command-{{ command.id }}-input_text">STDIN</label>
-                        <textarea id="command-{{ command.id }}-input_text" name="command-{{ command.id }}-input_text" cols="40" rows="4">{{ command.input_text }}</textarea>
+                        <textarea id="command-{{ command.id }}-input_text" name="command_{{ command.id }}_input_text" cols="40" rows="4">{{ command.input_text }}</textarea>
                       </div>
 
                       <div class="form-row">
                         <label for="command-{{ command.id }}-return_value">Expected return value: </label>
-                        <input type="text" id="command-{{ command.id }}-return_value" name="command-{{ command.id }}-return_value" value="{{ command.return_value }}">
+                        <input type="text" id="command-{{ command.id }}-return_value" name="command_{{ command.id }}_return_value" value="{{ command.return_value }}">
                       </div>
                     </div>
                   {% endfor %}
