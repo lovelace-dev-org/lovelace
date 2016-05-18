@@ -20,7 +20,7 @@ from feedback.models import ContentFeedbackQuestion, TextfieldFeedbackQuestion, 
     MultipleChoiceFeedbackAnswer
 
 # Forms
-from .forms import CreateFeedbackQuestionForm
+from .forms import CreateFeedbackQuestionForm, CreateFileUploadExerciseForm
 
 def index(request):
     return HttpResponse('to be created')
@@ -102,6 +102,8 @@ def file_upload_exercise(request, exercise_id=None, action=None):
                 print("{}: '{}'".format(k, v))
 
         print(uploaded_files)
+
+        form = CreateFileUploadExerciseForm()
         
         with transaction.atomic():
             pass
