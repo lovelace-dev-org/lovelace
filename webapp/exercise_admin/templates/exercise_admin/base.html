@@ -29,7 +29,7 @@
 
     <div id="add-feedback-popup" class="popup">
       <div>
-        <div class="add-feedback-div">
+        <div id="add-feedback-div">
           <h2>Add feedback question</h2>
           <div class="bordered-editable-area">
             <div class="feedback-table-div">
@@ -37,6 +37,7 @@
                 <colgroup>
                   <col class="feedback-question">
                   <col class="feedback-type">
+                  <col class="feedback-edit-button">
                 </colgroup>
                 <thead>
                   <tr>
@@ -52,20 +53,32 @@
               </table>
             </div>
           </div>
+        </div>
+
+        <div id="edit-feedback-div">
+          <h2>Edit feedback question</h2>
+          <div id="edit-feedback-question-inputs">
+          </div>
+          <div id="feedback-question-error" class="admin-error"></div>
           <div id="feedback-choice-container" class="bordered-editable-area">
           </div>
-        </div>  
-        <div class="create-feedback-div">
+          <button type="button" id="add-feedback-choice" class="add-item" title="Adds a new answer choice for the feedback question"
+                  onclick="add_choice_to_selected_feedback();">Add choice</button>
+          <button type="button" class="add-item" value="Done editing" title="Closes edit feedback menu" onclick="close_edit_feedback_menu();">Done editing</button>
+          <div id="feedback-error" class="admin-error"></div>
+        </div>
+
+        <div id="create-feedback-div">
           <form method="POST" action="{% url 'exercise_admin:create_feedback_question' %}" id="create-feedback-form" onsubmit="submit_create_feedback_form(event);">
             {% csrf_token %}
             <h2>Create new feedback question</h2>
             <div>
-              <label for="feedback-question-new">
+              <label class="feedback-question-input-label" for="feedback-question-new">
                 <span class="feedback-question-span">Feedback question:</span>
-                <input type="text" id="feedback-question-new" class="feedback-question-new-input" name="question_field" maxlength="100", required>
+                <input type="text" id="feedback-question-new" class="feedback-question-input" name="question_field" maxlength="100" required>
               </label>
             </div>
-            <div id="feedback-question-new-error" class="admin-error"></div>
+            <div id="new-feedback-question-error" class="admin-error"></div>
             <div>
               <select id="feedback-type-select" class="feedback-type-select" onchange="handle_feedback_type_selection(this);" form="create-feedback-form" name="type_field" required>
                 <option value="THUMB_FEEDBACK">Thumb feedback question</option>
@@ -78,14 +91,15 @@
                 <div id="new-feedback-choices" class="feedback-choices">
                 </div>
               </div>
-              <button type="button" id="add-new-feedback-choice" class="add-item" title="Adds a new answer choice for the feedback question" onclick="add_feedback_choice();">Add choice</button>
-              <input type="submit" class="add-item" value="Create feedback" title="Creates a new feedback question to the database">
+              <button type="button" id="add-new-feedback-choice" class="add-item" title="Adds a new answer choice for the feedback question"
+                      onclick="add_feedback_choice('new-feedback-choice', 'new-feedback-choice-container', 'new-feedback-choices');">Add choice</button>
+              <input type="submit" class="add-item" value="Create feedback" title="Creates a new feedback question">
               <div id="create-feedback-error" class="admin-error"></div>
             </div>
           </form>
         </div>
         <div class="popup-buttons">
-          <button type="button" class="popup-button" onclick="close_popup_and_add_questions();">Ok</button>
+          <button type="button" class="popup-button" onclick="close_popup_and_add_questions();">Save changes & Confirm selection</button>
           <button type="button" class="popup-button" onclick="close_popup($('#add-feedback-popup'))">Cancel</button>
         </div>
       </div>
@@ -158,7 +172,7 @@
                       <td class="question-cell">{{ question }}</td>
                       <td class="type-cell">{{ question.get_human_readable_type }}</td>
                       <td class="delete-cell">
-                        <button class="delete-button" title="Deletes the relation between the feedback question and the exercise"
+                        <button type="button" class="delete-button" title="Deletes the relation between the feedback question and the exercise"
                                 onclick="delete_feedback_from_table(this);">x</button>
                       </td>
                     </tr>
