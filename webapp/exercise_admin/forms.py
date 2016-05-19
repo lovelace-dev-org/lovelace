@@ -41,20 +41,20 @@ class CreateFeedbackQuestionForm(forms.Form):
 
 class CreateFileUploadExerciseForm(forms.Form):
     exercise_name = forms.CharField(max_length=255, required=True, strip=True)
-    exercise_content = forms.CharField()
+    exercise_content = forms.CharField(required=False)
     exercise_default_points = forms.IntegerField(required=True)
     # tags handled at __init__
     # feedback questions
-    exercise_question = forms.CharField()
-    exercise_manually_evaluated = forms.BooleanField()
-    exercise_ask_collaborators = forms.BooleanField()
-    exercise_allowed_filenames = forms.CharField()
+    exercise_question = forms.CharField(required=False)
+    exercise_manually_evaluated = forms.BooleanField(required=False)
+    exercise_ask_collaborators = forms.BooleanField(required=False)
+    exercise_allowed_filenames = forms.CharField(required=False)
 
     def __init__(self, tag_count, order_hierarchy, *args, **kwargs):
         super(CreateFileUploadExerciseForm, self).__init__(*args, **kwargs)
 
         for i in range(tag_count):
-            self.fields["exercise_tag_{}".format(i)] = forms.CharField(min_length=1, max_length=28, strip=True)
+            self.fields["exercise_tag_{}".format(i + 1)] = forms.CharField(min_length=1, max_length=28, strip=True)
 
         test_template = "test_{}_{}"
         test_ids = order_hierarchy["stages_of_tests"].keys()
@@ -83,10 +83,10 @@ class CreateFileUploadExerciseForm(forms.Form):
             command_return_value_field = command_template.format(command_id, "return_value")
             command_timeout_field = command_template.format(command_id, "timeout")
             self.fields[command_command_line_field] = forms.CharField(min_length=1, max_length=255, strip=True)
-            self.fields[command_significant_stdout_field] = forms.BooleanField()
-            self.fields[command_significant_stderr_field] = forms.BooleanField()
-            self.fields[command_input_text_field] = forms.CharField(strip=False)
-            self.fields[command_return_value_field] = forms.IntegerField()
+            self.fields[command_significant_stdout_field] = forms.BooleanField(required=False)
+            self.fields[command_significant_stderr_field] = forms.BooleanField(required=False)
+            self.fields[command_input_text_field] = forms.CharField(required=False, strip=False)
+            self.fields[command_return_value_field] = forms.IntegerField(required=False)
             self.fields[command_timeout_field] = forms.DurationField()
         
         def clean(self):

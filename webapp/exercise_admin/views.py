@@ -120,6 +120,7 @@ def file_upload_exercise(request, exercise_id=None, action=None):
             })
         else:
             print("DEBUG: the form is not valid")
+            print(form.errors)
             return JsonResponse({
                 "error": form.errors,
             })
