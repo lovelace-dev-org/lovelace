@@ -105,12 +105,12 @@
                           </li>
                         {% endfor %}
                       </ol>
-                      <ol><li><button type="button" class="add-item" title="Adds a new test command">+</button></li></ol>
+                      <button type="button" class="add-item" title="Adds a new test command" onClick="add_command({{ test.id }}, {{ stage.id }});">+</button>
                     </div>
                   </li>
                 {% endfor %}
               </ol>
-              <ol><li><button type="button" class="add-item" title="Adds a new test stage">+</button></li></ol>
+              <button type="button" class="add-item" title="Adds a new test stage">+</button>
             </div>
             <div class="right-side"><!-- right side, information -->
               <div id="selection-information-container">
@@ -193,4 +193,40 @@
     <div><a href="blaah/delete" id="delete-exercise">delete</a></div>
     <input type="submit" id="save-exercise" value="save">
   </section>
+{% endblock %}
+
+{% block templates %}
+  <div display="none">
+    <div id="command-information-SAMPLE_COMMAND_ID" class="selection-information">
+      <h4>Stage SAMPLE_STAGE_ORDINAL_NUMBER, command SAMPLE_COMMAND_ORDINAL_NUMBER information</h4>
+      <div class="form-row">
+        <label for="command-SAMPLE_COMMAND_ID-cmdline">Command line: </label>
+        <input type="text" id="command-SAMPLE_COMMAND_ID-cmdline" name="command_SAMPLE_COMMAND_ID_command_line" onInput="command_name_changed(event);">
+      </div>
+
+      <div class="form-cb-row">
+        <input type="checkbox" id="command-SAMPLE_COMMAND_ID-significant_stdout" name="command_SAMPLE_COMMAND_ID_significant_stdout">
+        <label for="command-SAMPLE_COMMAND_ID-significant_stdout">Compare the generated stdout to reference</label>
+      </div>
+      <div class="form-cb-row">
+        <input type="checkbox" id="command-SAMPLE_COMMAND_ID-significant_stderr" name="command_SAMPLE_COMMAND_ID_significant_stderr">
+        <label for="command-SAMPLE_COMMAND_ID-significant_stderr">Compare the generated stderr to reference</label>
+      </div>
+
+      <div class="form-row">
+        <label for="command-SAMPLE_COMMAND_ID-timeout">Timeout: </label>
+        <input type="text" id="command-SAMPLE_COMMAND_ID-timeout" name="command_SAMPLE_COMMAND_ID_timeout" value="00:00:05">
+      </div>
+
+      <div class="form-bigrow">
+        <label for="command-SAMPLE_COMMAND_ID-input_text">STDIN</label>
+        <textarea id="command-SAMPLE_COMMAND_ID-input_text" name="command_SAMPLE_COMMAND_ID_input_text" cols="40" rows="4"></textarea>
+      </div>
+
+      <div class="form-row">
+        <label for="command-SAMPLE_COMMAND_ID-return_value">Expected return value: </label>
+        <input type="number" id="command-SAMPLE_COMMAND_ID-return_value" name="command_SAMPLE_COMMAND_ID_return_value">
+      </div>
+    </div>
+  </div>
 {% endblock %}

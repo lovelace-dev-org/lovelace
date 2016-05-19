@@ -456,6 +456,32 @@ function submit_main_form(e) {
     });
 }
 
+var cmd_enum = 1;
+
+function add_command(test_id, stage_id) {
+    var new_id = 'new' + cmd_enum;
+    var cmd_list = $("#commands-sortable-" + test_id + "-" + stage_id);
+    var cmd_ordnum = cmd_list.children().length + 1;
+    var stage_ordnum = 666;
+    
+    // Create the new command to the list
+    cmd_list.append(
+        $('<li class="ui-state-default" data-command-id="' + new_id + '">' +
+              '<span onClick="show_stagecmd_information(event);" id="command-' + new_id + '" class="clickable-commandline"></span>' +
+          '</li>')
+    );
+
+    // Create the information box to the right side of the list
+    var new_cmd_info = $('#command-information-SAMPLE_COMMAND_ID').clone().attr('id', 'command-information-' + new_id);
+    new_cmd_info.html(function(index, html) {
+        return html.replace(/SAMPLE_COMMAND_ID/g, 'new'+cmd_enum).replace(/SAMPLE_STAGE_ORDINAL_NUMBER/g, stage_ordnum).
+            replace(/SAMPLE_COMMAND_ORDINAL_NUMBER/g, cmd_ordnum);
+    });
+    $("#selection-information-container").append(new_cmd_info);
+    
+    cmd_enum++;
+}
+
 function create_feedback_form_success(data, text_status, jqxhr_obj) {
     if (data.error) {
         var sep = "<br>";
