@@ -111,7 +111,7 @@
 
           <div class="form-row">
             <label for="exercise-name">Name:</label>
-            <input type="text" id="exercise-name" name="exercise-name" value="{{ exercise.name }}" onInput="exercise_name_changed(event);" autofocus>
+            <input type="text" id="exercise-name" name="exercise_name" value="{{ exercise.name }}" onInput="exercise_name_changed(event);" autofocus>
           </div>
 
           <div class="form-row">
@@ -121,26 +121,26 @@
 
           <div class="form-bigrow">
             <label for="exercise-page-content">Page contents in <a href="{% url 'courses:markup_help' %}" class="help-link" title="Help on how to edit with the markup language" target="_new">the markup language</a>:</label>
-            <textarea id="exercise-page-content" name="exercise-page-content" cols="100" rows="8" onInput="exercise_page_content_changed(event);">{{ exercise.content }}</textarea>
+            <textarea id="exercise-page-content" name="exercise_content" cols="100" rows="8" onInput="exercise_page_content_changed(event);">{{ exercise.content }}</textarea>
           </div>
           
           <div class="form-bigrow">
             <label for="exercise-question">The exercise question:</label>
-            <textarea id="exercise-question" name="exercise-question" cols="100" rows="3">{{ exercise.question }}</textarea>
+            <textarea id="exercise-question" name="exercise_question" cols="100" rows="3">{{ exercise.question }}</textarea>
           </div>
 
           <div class="form-row">
             <label for="exercise-points">Default points:</label>
-            <input type="number" step="1" id="exercise-points" name="exercise-points" value="{{ exercise.default_points }}">
+            <input type="number" step="1" id="exercise-points" name="exercise_default_points" value="{{ exercise.default_points }}">
           </div>
 
           <div class="form-cb-row">
-            <input type="checkbox" id="manually_evaluated" name="manually_evaluated">
+            <input type="checkbox" id="manually_evaluated" name="exercise_manually_evaluated" {% if exercise.manually_evaluated %}checked{% endif %}>
             <label for="manually_evaluated">This exercise is evaluated by hand</label>
           </div>
 
           <div class="form-cb-row">
-            <input type="checkbox" id="ask_collaborators" name="ask_collaborators">
+            <input type="checkbox" id="ask_collaborators" name="exercise_ask_collaborators" {% if exercise.ask_collaborators %}checked{% endif %}>
             <label for="ask_collaborators">Ask the answerer to list collaborators</label>
           </div>
 
@@ -215,6 +215,9 @@
       {% block form-controls %}
       {% endblock %}
     </form>
+
+    {% block templates %}
+    {% endblock %}
   </body>
 </html>
     
