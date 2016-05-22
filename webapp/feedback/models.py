@@ -187,11 +187,16 @@ class MultipleChoiceFeedbackQuestion(ContentFeedbackQuestion):
         proxy = True
 
 class MultipleChoiceFeedbackAnswer(models.Model):
+    #TODO: is there a need for setting maximum count of answer choices per feedback question?
+    
     question = models.ForeignKey(MultipleChoiceFeedbackQuestion)
-    answer = models.TextField()
+    answer = models.TextField(blank=False)
 
     def __str__(self):
         return self.answer
+
+    class Meta:
+        unique_together = ('question', 'answer',)
 
 class ContentFeedbackUserAnswer(models.Model):
     user = models.ForeignKey(User)                          # The user who has given this feedback

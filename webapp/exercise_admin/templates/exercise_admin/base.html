@@ -27,83 +27,81 @@
     {% block meta %}
     {% endblock %}
 
-    <div id="add-feedback-popup" class="popup">
-      <div>
-        <div id="add-feedback-div">
-          <h2>Add feedback question</h2>
-          <div class="bordered-editable-area">
-            <div class="feedback-table-div">
-              <table id="add-feedback-table" class="feedback-question-table">
-                <colgroup>
-                  <col class="feedback-question">
-                  <col class="feedback-type">
-                  <col class="feedback-edit-button">
-                </colgroup>
-                <thead>
-                  <tr>
-                    <th>
-                      <input type="checkbox" id="fb-question-checkbox-all" class="feedback-question-checkbox" onclick="select_all_feedback_questions(this.checked);">
-                      <label for="fb-question-checkbox-all" class="feedback-question-label">Question</label>
-                    </th>
-                    <th>Type</th>
-                  </tr>
-                </thead>
-                <tbody>
-                </tbody>
-              </table>
+    <form method="POST" action="{% url 'exercise_admin:edit_feedback_questions' %}" id="edit-feedback-form" onsubmit="submit_edit_feedback_form(event);">
+      {% csrf_token %}
+      <div id="edit-feedback-popup" class="popup">
+        <div>
+          <div id="add-feedback-div">
+            <h2>Add feedback question</h2>
+            <div class="bordered-editable-area">
+              <div class="feedback-table-div">
+                <table id="add-feedback-table" class="feedback-question-table">
+                  <colgroup>
+                    <col class="feedback-question">
+                    <col class="feedback-type">
+                    <col class="feedback-edit-button">
+                  </colgroup>
+                  <thead>
+                    <tr>
+                      <th>
+                        <input type="checkbox" id="fb-question-checkbox-all" class="feedback-question-checkbox" onclick="select_all_feedback_questions(this.checked);">
+                        <label for="fb-question-checkbox-all" class="feedback-question-label">Question</label>
+                      </th>
+                      <th>Type</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div id="edit-feedback-div">
-          <h2>Edit feedback question</h2>
-          <div id="edit-feedback-question-inputs">
+          <div id="edit-feedback-div">
+            <h2 id="edit-feedback-div-title">Edit feedback question:</h2>
+            <div id="edit-feedback-question-inputs">
+            </div>
+            <div id="feedback-choice-container" class="bordered-editable-area">
+            </div>
+            <button type="button" id="add-feedback-choice" class="add-item" title="Adds a new answer choice for the feedback question"
+                    onclick="add_choice_to_selected_feedback();">Add choice</button>
+            <button type="button" class="add-item" value="Done editing" title="Closes edit feedback menu" onclick="close_edit_feedback_menu();">Done editing</button>
+            <div id="feedback-error" class="admin-error"></div>
           </div>
-          <div id="feedback-question-error" class="admin-error"></div>
-          <div id="feedback-choice-container" class="bordered-editable-area">
-          </div>
-          <button type="button" id="add-feedback-choice" class="add-item" title="Adds a new answer choice for the feedback question"
-                  onclick="add_choice_to_selected_feedback();">Add choice</button>
-          <button type="button" class="add-item" value="Done editing" title="Closes edit feedback menu" onclick="close_edit_feedback_menu();">Done editing</button>
-          <div id="feedback-error" class="admin-error"></div>
-        </div>
 
-        <div id="create-feedback-div">
-          <form method="POST" action="{% url 'exercise_admin:create_feedback_question' %}" id="create-feedback-form" onsubmit="submit_create_feedback_form(event);">
-            {% csrf_token %}
+          <div id="create-feedback-div">
             <h2>Create new feedback question</h2>
             <div>
               <label class="feedback-question-input-label" for="feedback-question-new">
                 <span class="feedback-question-span">Feedback question:</span>
-                <input type="text" id="feedback-question-new" class="feedback-question-input" name="question_field" maxlength="100" required>
+                <input type="text" id="feedback-question-new" class="feedback-question-input" maxlength="100" oninput="update_create_feedback_button_state();">
               </label>
             </div>
             <div id="new-feedback-question-error" class="admin-error"></div>
             <div>
-              <select id="feedback-type-select" class="feedback-type-select" onchange="handle_feedback_type_selection(this);" form="create-feedback-form" name="type_field" required>
+              <select id="feedback-type-select" class="feedback-type-select" onchange="handle_feedback_type_selection(this);" form="create-feedback-form">
                 <option value="THUMB_FEEDBACK">Thumb feedback question</option>
                 <option value="STAR_FEEDBACK">Star feedback question</option>
                 <option value="MULTIPLE_CHOICE_FEEDBACK">Multiple choice feedback question</option>
                 <option value="TEXTFIELD_FEEDBACK">Textfield feedback question</option>
               </select>
-              <div id="feedback-type-select-error" class="admin-error"></div>
               <div id="new-feedback-choice-container" class="bordered-editable-area">
                 <div id="new-feedback-choices" class="feedback-choices">
                 </div>
               </div>
               <button type="button" id="add-new-feedback-choice" class="add-item" title="Adds a new answer choice for the feedback question"
-                      onclick="add_feedback_choice('new-feedback-choice', 'new-feedback-choice-container', 'new-feedback-choices');">Add choice</button>
-              <input type="submit" class="add-item" value="Create feedback" title="Creates a new feedback question">
-              <div id="create-feedback-error" class="admin-error"></div>
+                      onclick="add_feedback_choice('new-feedback-choice', 'choice_field', 'new-feedback-choice-container', 'new-feedback-choices', false);">Add choice</button>
+              <button type="button" id="create-feedback-button" class="add-item" title="Creates a new feedback question"
+                      onclick="create_new_feedback_question_entry();" disabled>Create feedback</button>
             </div>
-          </form>
-        </div>
-        <div class="popup-buttons">
-          <button type="button" class="popup-button" onclick="close_popup_and_add_questions();">Save changes & Confirm selection</button>
-          <button type="button" class="popup-button" onclick="close_popup($('#add-feedback-popup'))">Cancel</button>
+          </div>
+          <div class="popup-buttons">
+            <input type="submit" class="popup-button" value="Save changes & Confirm selection" name="save_and_confirm">
+            <button type="button" class="popup-button" onclick="close_popup($('#edit-feedback-popup'))">Cancel</button>
+          </div>
         </div>
       </div>
-    </div>
+    </form>
 
     <form method="POST" action="{% block form-action-url %}{% endblock %}" id="main-form" onSubmit="submit_main_form(event);">
       {% csrf_token %}
@@ -181,9 +179,9 @@
               </table>
             </div>
           </div>
-          <button type="button" class="add-item" title="Adds a new feedback question"
-                  onclick="show_add_feedback_question_popup(event, '{% url 'exercise_admin:get_feedback_questions' %}');">+</button>
-          <span id="add-feedback-popup-error" class="admin-error"></span>
+          <button type="button" class="add-item" title="Add and edit feedback questions"
+                  onclick="show_edit_feedback_questions_popup(event, '{% url 'exercise_admin:get_feedback_questions' %}');">Add and Edit</button>
+          <span id="edit-feedback-popup-error" class="admin-error"></span>
 
           <div class="separator"></div>
 
@@ -197,7 +195,7 @@
               </li>
             {% endfor %}
           </ul>
-          <button type="button" class="add-item" onclick="add_tag();">+</button>
+          <button type="button" class="add-item" onclick="add_tag();">Add</button>
         </div>
       </section>
 

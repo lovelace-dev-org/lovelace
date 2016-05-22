@@ -600,7 +600,7 @@ button#add-new-feedback-choice {
     display: none;
 }
 
-button#add-new-feedback-choice:disabled {
+button#create-feedback-button:disabled {
     color: #bbb;
     border: 0px solid #aaa;
     border-radius: 8px;
@@ -620,7 +620,8 @@ div.popup div.popup-buttons {
     text-align: right;
 }
 
-div.popup div.popup-buttons > button.popup-button {
+div.popup div.popup-buttons > button.popup-button,
+div.popup div.popup-buttons > input[type=submit].popup-button {
     display: inline-block;
     background: #888;
     padding: 0.5rem 1rem;
