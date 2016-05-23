@@ -363,7 +363,6 @@ div.bordered-editable-area {
     background: #eeeeee;
     border: 3px solid #dddddd;
     width: 95%;
-    max-height: 250px;
     overflow-y: hidden;
 }
 
@@ -422,7 +421,7 @@ div.admin-error {
     margin-top: 5px;
 }
 
-div#feedback-choice-container {
+div#feedback-choices {
     display: none;
     margin-top: 5px;
     margin-bottom: 10px;
@@ -432,7 +431,6 @@ div#feedback-choice-container {
 
 div.feedback-choices {
     height: auto;
-    max-height: 200px;
 }
 
 span.feedback-choice-span {
@@ -572,7 +570,6 @@ div#new-feedback-choice-container {
 
 div.popup div.feedback-choices {
     height: auto;
-    max-height: 200px;
 }
 
 div#feedback-choice-container > div.feedback-choices {
