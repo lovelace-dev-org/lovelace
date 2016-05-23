@@ -152,7 +152,8 @@ def get_feedback_questions(request):
         question_json = {
             "id": question.id,
             "question" : question.question,
-            "type": question.get_human_readable_type(),
+            "type" : question.question_type,
+            "readable_type": question.get_human_readable_type(),
             "choices": [],
         }
         if question.question_type == "MULTIPLE_CHOICE_FEEDBACK":
@@ -163,7 +164,7 @@ def get_feedback_questions(request):
         "result": result
     })
 
-def create_feedback_question(request):
+def edit_feedback_questions(request):
     if request.method != "POST":
         return HttpResponseNotAllowed(["POST"])
 
@@ -179,29 +180,56 @@ def create_feedback_question(request):
 
     data = request.POST.dict()
     data.pop("csrfmiddlewaretoken")
-    choice_count = len([k for k in data.keys() if k.startswith("choice_field")])
-    
-    form = CreateFeedbackQuestionForm(choice_count, data)
+
+    feedback_questions = ContentFeedbackQuestion.objects.all()
+    form = CreateFeedbackQuestionForm(feedback_questions, data)
     
     if form.is_valid():
-        question = form.cleaned_data["question_field"]
-        question_type = form.cleaned_data["type_field"]
-        choices = [v for (k, v) in form.cleaned_data.items() if k.startswith("choice_field")]
-        
-        if question_type == "THUMB_FEEDBACK":
-            q_obj = ThumbFeedbackQuestion(question=question)
-            q_obj.save()
-        elif question_type == "STAR_FEEDBACK":
-            q_obj = StarFeedbackQuestion(question=question)
-            q_obj.save()
-        elif question_type == "MULTIPLE_CHOICE_FEEDBACK":
-            q_obj = MultipleChoiceFeedbackQuestion(question=question)
-            q_obj.save()
-            for choice in choices:
-                MultipleChoiceFeedbackAnswer(question=q_obj, answer=choice).save()
-        elif question_type == "TEXTFIELD_FEEDBACK":
-            q_obj = TextfieldFeedbackQuestion(question=question)
-            q_obj.save()
+        # Edit existing feedback questions if necessary
+        cleaned_data = form.cleaned_data
+        for q_obj in feedback_questions:
+            q_obj = q_obj.get_type_object()
+            question = cleaned_data["question_field_[{}]".format(q_obj.id)]
+            choice_prefix = "choice_field_[{}]".format(q_obj.id)
+            choices = [v for (k, v) in cleaned_data.items() if k.startswith(choice_prefix) and v]
+
+            if q_obj.question != question:
+                q_obj.question = question
+                q_obj.save()
+            if q_obj.question_type == "MULTIPLE_CHOICE_FEEDBACK":
+                existing_choices = q_obj.get_choices()
+                existing_choices_len = len(existing_choices)
+                for i, choice in enumerate(choices):
+                    if existing_choices_len <= i:
+                        MultipleChoiceFeedbackAnswer(question=q_obj, answer=choice).save()                        
+                    elif existing_choices[i] != choice:
+                        choice_obj = existing_choices[i]
+                        choice_obj.answer = choice
+                        choice_obj.save()
+                        
+        # Add new feedback questions
+        new_feedback_count = len([k for k in cleaned_data if k.startswith("question_field_[new")])
+        for i in range(new_feedback_count):
+            id_new = "new-{}".format(i + 1)
+            question = cleaned_data["question_field_[{}]".format(id_new)]
+            question_type = cleaned_data["type_field_[{}]".format(id_new)]
+            choice_prefix = "choice_field_[{}]".format(id_new)
+            choices = [v for (k, v) in cleaned_data.items() if k.startswith(choice_prefix) and v]
+            
+            if question_type == "THUMB_FEEDBACK":
+                q_obj = ThumbFeedbackQuestion(question=question)
+                q_obj.save()
+            elif question_type == "STAR_FEEDBACK":
+                q_obj = StarFeedbackQuestion(question=question)
+                q_obj.save()
+            elif question_type == "MULTIPLE_CHOICE_FEEDBACK":
+                q_obj = MultipleChoiceFeedbackQuestion(question=question)
+                q_obj.save()
+                for choice in choices:
+                    MultipleChoiceFeedbackAnswer(question=q_obj, answer=choice).save()
+            elif question_type == "TEXTFIELD_FEEDBACK":
+                q_obj = TextfieldFeedbackQuestion(question=question)
+                q_obj.save()
     else:
         return JsonResponse({
             "error" : form.errors

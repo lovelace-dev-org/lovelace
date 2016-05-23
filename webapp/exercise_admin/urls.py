@@ -14,8 +14,8 @@ urlpatterns = [
         name='file_upload_delete'),
     url(r'^feedback-questions$', views.get_feedback_questions,
         name='get_feedback_questions'),
-    url(r'^feedback-questions/add$', views.create_feedback_question,
-        name='create_feedback_question'),
+    url(r'^feedback-questions/edit$', views.edit_feedback_questions,
+        name='edit_feedback_questions'),
 
 
     # TODO: For administration of other exercise types
