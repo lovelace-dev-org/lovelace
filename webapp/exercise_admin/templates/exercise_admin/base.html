@@ -204,11 +204,31 @@
       <section class="configurable-hints">
         <h2>Configurable hints</h2>
 
-        <ul>
+        <table id="hint-table">
+          <colgroup>
+            <col class="hint-tries-to-unlock">
+            <col class="hint-content">
+          </colgroup>
+          <thead>
+            <tr>
+              <th>Tries to unlock</th>
+              <th>Hint</th>
+            </tr>
+          </thead>
+          <tbody>
           {% for hint in hints %}
-            <li>{{ hint.hint }}</li>
+            <tr>
+              <td>
+                <input type="number" step="1" class="hint-tries-to-unlock-input" name="hint_tries_[{{ hint.id }}]" value="{{ hint.tries_to_unlock }}">
+              </td>
+              <td>
+                <input type="text" class="hint-content-input" name="hint_content_[{{ hint.id }}]" value="{{ hint.hint }}">
+              </td>
+            </tr>
           {% endfor %}
-        </ul>
+          </tbody>
+        </table>
+        <button type="button" class="add-item" onclick="add_hint();">Add</button>
       </section>
 
       {% block exercise-type-specific %}

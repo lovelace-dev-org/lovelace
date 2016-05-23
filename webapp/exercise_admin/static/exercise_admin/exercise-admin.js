@@ -458,6 +458,21 @@ function show_stagecmd_information(event) {
     $('#' + clicked_type + '-information-' + clicked_number).show() 
 }
 
+function add_hint() {
+    var hint_n = $("#hint-table tbody tr").length + 1;
+    var tries_to_unlock = $('<input type="number" step="1" class="hint-tries-to-unlock-input" name="hint_tries_[new-' + hint_n +
+                            ']" value="0">');
+    var hint_content = $('<input type="text" class="hint-content-input" name="hint_content_[new-' + hint_n + ']" value="">');
+    var td_tries_to_unlock = $('<td>');
+    var td_hint_content = $('<td>');
+    var tr = $('<tr>');
+    td_tries_to_unlock.append(tries_to_unlock);
+    td_hint_content.append(hint_content);
+    tr.append(td_tries_to_unlock);
+    tr.append(td_hint_content);
+    $("#hint-table tbody").append(tr);
+}
+
 function submit_main_form(e) {
     e.preventDefault();
     console.log("User requested main form submit.");
