@@ -473,6 +473,26 @@ function add_hint() {
     $("#hint-table tbody").append(tr);
 }
 
+function show_edit_included_file_popup(file_id) {
+
+}
+
+function delete_include_file() {
+
+}
+
+function show_add_included_file_popup() {
+
+}
+
+function show_edit_instance_file_popup(file_id) {
+
+}
+
+function show_add_instance_file_popup() {
+
+}
+
 function submit_main_form(e) {
     e.preventDefault();
     console.log("User requested main form submit.");

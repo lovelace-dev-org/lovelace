@@ -246,11 +246,45 @@ section.included-files {
     border-bottom: 4px solid #ddd;
 }
 
+table.files-table {
+    width: 23%;
+}
+
+table.files-table col.file-default-name {
+    width: 86%;
+}
+
+div#instance-files {
+    margin-top: 20px;
+}
+
 /* Configurable hints */
 
 section.configurable-hints {
     padding: 1.5rem 0 1.5rem 2rem;
     border-bottom: 4px solid #ddd;
+}
+
+table#hint-table {
+    width: 98%;
+}
+
+table#hint-table col.hint-tries-to-unlock {
+    width: 3%;
+}
+
+table#hint-table col.hint-content {
+    width: 97%;
+}
+
+input[type=number].hint-tries-to-unlock-input {
+    width: 60px;
+    text-align: right;
+}
+
+input[type=text].hint-content-input {
+    width: 100%; 
+    box-sizing: border-box;
 }
 
 /* The test tabs & sortable stages and commands */
@@ -352,7 +386,8 @@ button.add-item, input[type=submit].add-item {
 }
 
 section.general-information button.add-item,
-section.configurable-hints button.add-item {
+section.configurable-hints button.add-item,
+section.included-files button.add-item {
     box-shadow: 1px 1px 2px #285c00;
 }
 
@@ -412,6 +447,12 @@ button.delete-button {
     box-shadow: 1px 1px 2px #ff2000;
 }
 
+table.files-table button.delete-button {
+    width: 25px;
+    height: 25px;
+    font-weight: bold;
+}
+
 span.admin-error, div.admin-error {
     display: none;
     color: #f00;
@@ -422,28 +463,20 @@ div.admin-error {
     margin-top: 5px;
 }
 
-table#hint-table {
-    width: 98%;
-}
-
-col.hint-tries-to-unlock {
-    width: 3%;
-}
-
-col.hint-content {
-    width: 97%;
-}
-
-input[type=number].hint-tries-to-unlock-input {
-    width: 60px;
-    text-align: right;
-}
-
-input[type=text].hint-content-input {
-    width: 100%; 
-    box-sizing: border-box;
-    -webkit-box-sizing: border-box;
-    -moz-box-sizing: border-box;
+button.edit-button {
+    background: url("edit.png");
+    width: 25px;
+    height: 25px;
+    outline: 0;
+    vertical-align: middle;
+    overflow: hidden;
+    color: #4CAF50;
+    background-color: #fff;
+    text-align: center;
+    cursor: pointer;
+    border: 0px solid #42860e;
+    border-radius: 8px;
+    box-shadow: 1px 1px 2px #285c00;
 }
 
 div#feedback-choices {
@@ -479,6 +512,8 @@ div.popup input[type=text].feedback-choice + button{
 button#add-feedback-choice, button#add-new-feedback-choice {
     display: none;
 }
+
+/* Popups */
 
 div.popup {
     position: fixed;
@@ -547,22 +582,6 @@ div.popup td.type-cell {
 
 div.popup table.feedback-question-table td {
     height: 28px;
-}
-
-div.popup button.edit-button {
-    background: url("edit.png");
-    width: 25px;
-    height: 25px;
-    outline: 0;
-    vertical-align: middle;
-    overflow: hidden;
-    color: #4CAF50;
-    background-color: #fff;
-    text-align: center;
-    cursor: pointer;
-    border: 0px solid #42860e;
-    border-radius: 8px;
-    box-shadow: 1px 1px 2px #285c00;
 }
 
 div.popup span.feedback-question-span {

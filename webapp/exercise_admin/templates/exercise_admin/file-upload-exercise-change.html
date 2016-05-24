@@ -43,22 +43,54 @@
   <section class="included-files">
     <h2>Included files</h2>
     
-    <div>
+    <div id="included-files">
       A pool of files available only for this exercise:
-      <ol>
-        {% for include_file in include_files %}
-          <li>{{ include_file.default_name }} / {{ include_file.file_settings.purpose }}</li>
-        {% endfor %}
-      </ol>
+      <table id="included-files-table" class="files-table">
+        <colgroup>
+          <col class="file-default-name">
+          <col class="edit-file">
+          <col class="delete-file">
+        </colgroup>
+        <tbody>
+          {% for include_file in include_files %}
+            <tr>
+              <td>
+                {{ include_file.default_name }} / {{ include_file.file_settings.purpose }}
+              </td>
+              <td>
+                <button type="button" class="edit-button" onclick="show_edit_included_file_popup('{{ include_file.id }}');"></button>
+              </td>
+              <td>
+                <button type="button" class="delete-button" onclick="delete_include_file('{{ include_file.id }}');">x</button>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <button type="button" class="add-item" onclick="show_add_included_file_popup();">Add</button>
     </div>
 
-    <div>
+    <div id="instance-files">
       A pool of files specific to a course instance:
-      <ol>
-        {% for instance_file in instance_files %}
-          <li>{{ instance_file.default_name }}</li>
-        {% endfor %}
-      </ol>
+      <table id="instance-files-table" class="files-table">
+        <colgroup>
+          <col class="file-default-name">
+          <col class="edit-file">
+        </colgroup>
+        <tbody>
+          {% for instance_file in instance_files %}
+            <tr>
+              <td>
+                {{ instance_file.default_name }}
+              </td>
+              <td>
+                <button type="button" class="edit-button" onclick="show_edit_instance_file_popup('{{ instance_file.id }}');"></button>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <button type="button" class="add-item" onclick="show_add_instance_file_popup();">Add</button>
     </div>
   </section>
 
