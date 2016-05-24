@@ -549,11 +549,12 @@ var test_enum = 1;
 
 function add_test() {
     var new_id = 'newt' + test_enum;
-    var new_name = "New test"
+    var new_name = "New test";
     var new_stage_id = 'news' + stage_enum;
     var new_cmd_id = 'newc' + cmd_enum;
 
     var test_tablist = $("#test-tabs > ol:first-child");
+    // TODO: The new test tab item should be included in the template section and cloned.
     var new_test_tab_item = $('<li><a href="#test-tabs-' + new_id + '" id="test-' + new_id + '">' + new_name + '</a></li>');
     new_test_tab_item.insertBefore("li.test-tab-button-container");
 
