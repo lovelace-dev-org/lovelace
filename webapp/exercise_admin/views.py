@@ -1,9 +1,9 @@
-import json
+import collections, json
 
 from django.http import HttpResponse, HttpResponseNotFound, HttpResponseForbidden,\
     HttpResponseNotAllowed, JsonResponse
 from django.template import loader
-from django.db import transaction
+from django.db import transaction, IntegrityError
 
 from reversion import revisions as reversion
 
@@ -23,7 +23,120 @@ from feedback.models import ContentFeedbackQuestion, TextfieldFeedbackQuestion, 
 from .forms import CreateFeedbackQuestionForm, CreateFileUploadExerciseForm
 
 def index(request):
-    return HttpResponse('to be created')
+    return HttpResponseNotFound()
+
+def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_test_ids,
+                              old_stage_ids, old_cmd_ids, new_stages, new_commands):
+    # Collect the content page data
+    e_name = form_data['exercise_name']
+    e_content = form_data['exercise_content']
+    e_default_points = form_data['exercise_default_points']
+    e_tags = [tag for key, tag in sorted(form_data.items()) if key.startswith('exercise_tag')]
+    #e_feedback_questions = ???
+    e_question = form_data['exercise_question']
+    e_manually_evaluated = form_data['exercise_manually_evaluated']
+    e_ask_collaborators = form_data['exercise_ask_collaborators']
+    e_allowed_filenames = form_data['exercise_allowed_filenames'].split(',') # DEBUG
+
+    exercise.name = e_name
+    exercise.content = e_content
+    exercise.default_points = e_default_points
+    exercise.tags = e_tags
+    exercise.question = e_question
+    exercise.manually_evaluated = e_manually_evaluated
+    exercise.ask_collaborators = e_ask_collaborators
+    exercise.allowed_filenames = e_allowed_filenames
+    exercise.save()
+    
+    # Collect the test data
+    edited_tests = {}
+    test_ids = sorted(order_hierarchy_json["stages_of_tests"].keys())
+    for test_id in test_ids:
+        t_name = form_data['test_{}_name'.format(test_id)]
+        
+        # Check for new tests
+        if test_id.startswith('newt'):
+            current_test = FileExerciseTest()
+        else:
+            # Check for existing tests that are part of this exercise's suite
+            current_test = FileExerciseTest.objects.get(id=int(test_id))
+
+        # Set the test values
+        current_test.name = t_name
+
+        # Save the test and store a reference
+        current_test.save()
+        edited_tests[test_id] = current_test
+
+    # Check for removed tests (existed before, but not in form data)
+    for removed_test_id in sorted(old_test_ids - {int(test_id) for test_id in test_ids if not test_id.startswith('newt')}):
+        print("Test with id={} was removed!".format(removed_test_id))
+        removed_test = FileExerciseTest.objects.get(id=removed_test_id)
+        # TODO: Reversion magic!
+        removed_test.delete()
+
+    # Collect the stage data
+    edited_stages = {}
+    for stage_id, stage_info in new_stages.items():
+        s_name = form_data['stage_{}_name'.format(stage_id)]
+        s_depends_on = form_data['stage_{}_depends_on'.format(stage_id)]
+
+        if stage_id.startswith('news'):
+            current_stage = FileExerciseTestStage()
+        else:
+            current_stage = FileExerciseTestStage.objects.get(id=int(stage_id))
+
+        current_stage.test = edited_tests[stage_info.test]
+        current_stage.name = s_name
+        current_stage.depends_on = s_depends_on
+        current_stage.ordinal_number = stage_info.ordinal_number
+
+        current_stage.save()
+        edited_stages[stage_id] = current_stage
+
+    for removed_stage_id in sorted(old_stage_ids - {int(stage_id) for stage_id in new_stages.keys() if not stage_id.startswith('news')}):
+        print("Stage with id={} was removed!".format(removed_stage_id))
+        removed_stage = FileExerciseTestStage.objects.get(id=removed_stage_id)
+        # TODO: Reversion magic!
+        removed_stage.delete()
+
+    # Collect the command data
+    edited_commands = {}
+    for command_id, command_info in new_commands.items():
+        c_command_line = form_data['command_{}_command_line'.format(command_id)]
+        c_significant_stdout = form_data['command_{}_significant_stdout'.format(command_id)]
+        c_significant_stderr = form_data['command_{}_significant_stderr'.format(command_id)]
+        c_input_text = form_data['command_{}_input_text'.format(command_id)]
+        c_return_value = form_data['command_{}_return_value'.format(command_id)]
+        c_timeout = form_data['command_{}_timeout'.format(command_id)]
+
+        if command_id.startswith('newc'):
+            current_command = FileExerciseTestCommand()
+        else:
+            current_command = FileExerciseTestCommand.objects.get(id=int(command_id))
+
+        current_command.stage = edited_stages[command_info.stage]
+        current_command.command_line = c_command_line
+        current_command.significant_stdout = c_significant_stdout
+        current_command.significant_stderr = c_significant_stderr
+        current_command.input_text = c_input_text
+        current_command.return_value = c_return_value
+        current_command.timeout = c_timeout
+        current_command.ordinal_number = command_info.ordinal_number
+
+        current_command.save()
+        edited_commands[command_id] = current_command
+
+    for removed_command_id in sorted(old_cmd_ids - {int(command_id) for command_id in new_commands.keys() if not command_id.startswith('newc')}):
+        print("Command with id={} was removed!".format(removed_command_id))
+        removed_command = FileExerciseTestCommand.objects.get(id=removed_command_id)
+        # TODO: Reversion magic!
+        removed_command.delete()
+            
+    
+        
+Stage = collections.namedtuple('Stage', ['test', 'ordinal_number'])
+Command = collections.namedtuple('Command', ['stage', 'ordinal_number'])
 
 # We need the following urls, at least:
 # fileuploadexercise/add
@@ -102,6 +215,19 @@ def file_upload_exercise(request, exercise_id=None, action=None):
                 print("{}: '{}'".format(k, v))
 
         print(uploaded_files)
+        new_stages = {}
+        for test_id, stage_list in order_hierarchy_json['stages_of_tests'].items():
+            for i, stage_id in enumerate(stage_list):
+                new_stages[stage_id] = Stage(test=test_id, ordinal_number=i+1)
+
+        new_commands = {}
+        for stage_id, command_list in order_hierarchy_json['commands_of_stages'].items():
+            for i, command_id in enumerate(command_list):
+                new_commands[command_id] = Command(stage=stage_id, ordinal_number=i+1)
+
+        old_test_ids = set(tests.values_list('id', flat=True))
+        old_stage_ids = set(stages.values_list('id', flat=True))
+        old_cmd_ids = set(commands.values_list('id', flat=True))
 
         data = request.POST.dict()
         data.pop("csrfmiddlewaretoken")
@@ -111,10 +237,18 @@ def file_upload_exercise(request, exercise_id=None, action=None):
 
         if form.is_valid():
             print("DEBUG: the form is valid")
-            # create/update the form
-            with transaction.atomic():
-                pass
+            cleaned_data = form.cleaned_data
 
+            # create/update the form
+            try:
+                with transaction.atomic():
+                    save_file_upload_exercise(exercise, cleaned_data, order_hierarchy_json,
+                                              old_test_ids, old_stage_ids, old_cmd_ids,
+                                              new_stages, new_commands)
+            except IntegrityError as e:
+                # TODO: Do something useful
+                raise e
+            
             return JsonResponse({
                 "yeah!": "everything went ok",
             })

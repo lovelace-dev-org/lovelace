@@ -102,7 +102,7 @@ class CreateFileUploadExerciseForm(forms.Form):
             stage_name_field = stage_template.format(stage_id, "name")
             stage_depends_on_field = stage_template.format(stage_id, "depends_on")
             self.fields[stage_name_field] = forms.CharField(min_length=1, max_length=64, strip=True)
-            #self.fields[stage_depends_on_field] = ??? #
+            self.fields[stage_depends_on_field] = forms.IntegerField(required=False)
 
         command_template = "command_{}_{}"
         command_ids = itertools.chain.from_iterable(command_ids)
