@@ -14,7 +14,7 @@ from courses.models import ContentGraph, EmbeddedLink
 from courses.models import FileUploadExercise, FileExerciseTest, FileExerciseTestStage,\
     FileExerciseTestCommand, FileExerciseTestExpectedOutput, FileExerciseTestExpectedStdout,\
     FileExerciseTestExpectedStderr, FileExerciseTestIncludeFile
-from courses.models import Hint, InstanceIncludeFile
+from courses.models import Hint, InstanceIncludeFile, InstanceIncludeFileToExerciseLink
 from feedback.models import ContentFeedbackQuestion, TextfieldFeedbackQuestion, \
     ThumbFeedbackQuestion, StarFeedbackQuestion, MultipleChoiceFeedbackQuestion, \
     MultipleChoiceFeedbackAnswer
@@ -64,6 +64,7 @@ def file_upload_exercise(request, exercise_id=None, action=None):
     #    to an instance. we need a manytomany relation here, that is instance specific
     # 2. get the files and show a pool of them
     instance_files = InstanceIncludeFile.objects.all() # TODO: This is debug code
+    instance_file_links = InstanceIncludeFileToExerciseLink.objects.filter(exercise=exercise)
     
     tests = FileExerciseTest.objects.filter(exercise=exercise_id).order_by("name")
     test_list = []
@@ -134,6 +135,7 @@ def file_upload_exercise(request, exercise_id=None, action=None):
         'hints': hints,
         'include_files': include_files,
         'instance_files': instance_files,
+        'instance_file_links': instance_file_links,
         'tests': test_list,
 
     }

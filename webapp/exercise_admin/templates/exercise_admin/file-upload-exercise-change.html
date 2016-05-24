@@ -45,52 +45,90 @@
     
     <div id="included-files">
       A pool of files available only for this exercise:
-      <table id="included-files-table" class="files-table">
+      <table id="included-files-table" class="files-table bordered-editable-area">
         <colgroup>
           <col class="file-default-name">
+          <col class="file-name">
+          <col class="file-purpose">
+          <col class="file-description">
           <col class="edit-file">
           <col class="delete-file">
         </colgroup>
+        <thead>
+          <tr>
+            <th>Default name</th>
+            <th>File name during test</th>
+            <th>Used as</th>
+            <th>Description</th>
+          </tr>
+        </thead>
         <tbody>
           {% for include_file in include_files %}
             <tr>
               <td>
-                {{ include_file.default_name }} / {{ include_file.file_settings.purpose }}
+                {{ include_file.default_name }}
               </td>
               <td>
-                <button type="button" class="edit-button" onclick="show_edit_included_file_popup('{{ include_file.id }}');"></button>
+                {{ include_file.file_settings.name }}
               </td>
               <td>
-                <button type="button" class="delete-button" onclick="delete_include_file('{{ include_file.id }}');">x</button>
+                {{ include_file.file_settings.purpose }}
+              </td>
+              <td>
+                {{ include_file.description }}
+              </td>
+              <td>
+                <button type="button" class="edit-button" title="Opens a popup window to edit an included file"
+                        onclick="show_edit_included_file_popup('{{ include_file.id }}');"></button>
+              </td>
+              <td>
+                <button type="button" class="delete-button" title="Removes the included file from the list of included files belonging to this exercise"
+                        onclick="delete_table_row(this);">x</button>
               </td>
             </tr>
           {% endfor %}
         </tbody>
       </table>
-      <button type="button" class="add-item" onclick="show_add_included_file_popup();">Add</button>
+      <button type="button" class="add-item" title="Opens a popup window to add an included file" onclick="show_add_included_file_popup();">Add</button>
     </div>
 
     <div id="instance-files">
-      A pool of files specific to a course instance:
-      <table id="instance-files-table" class="files-table">
+      A pool of files specific to a course instance, linked to this exercise:
+      <table id="instance-files-table" class="files-table bordered-editable-area">
         <colgroup>
           <col class="file-default-name">
-          <col class="edit-file">
+          <col class="file-name">
+          <col class="file-purpose">
+          <col class="file-description">
         </colgroup>
+        <thead>
+          <tr>
+            <th>Default name</th>
+            <th>File name during test</th>
+            <th>Used as</th>
+            <th>Description</th>
+          </tr>
+        </thead>
         <tbody>
-          {% for instance_file in instance_files %}
+          {% for instance_file_link in instance_files_links %}
             <tr>
               <td>
-                {{ instance_file.default_name }}
+                {{ instance_file_link.include_file.default_name }}
               </td>
               <td>
-                <button type="button" class="edit-button" onclick="show_edit_instance_file_popup('{{ instance_file.id }}');"></button>
+                {{ instance_file_link.file_settings.purpose }}
+              </td>
+              <td>
+                {{ instance_file_link.file_settings.name }}
+              </td>
+              <td>
+                {{ instance_file_link.include_file.description }}
               </td>
             </tr>
           {% endfor %}
         </tbody>
       </table>
-      <button type="button" class="add-item" onclick="show_add_instance_file_popup();">Add</button>
+      <button type="button" class="add-item" title="Opens a popup window to add and edit instance files" onclick="show_edit_instance_file_popup();">Add and edit</button>
     </div>
   </section>
 

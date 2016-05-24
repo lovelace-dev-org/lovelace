@@ -247,11 +247,39 @@ section.included-files {
 }
 
 table.files-table {
-    width: 23%;
+    width: 98%;
+    margin-top: 10px;
+    padding-top: 5px;
+    height: 80px;
+}
+
+table.files-table th {
+    text-align: left;
+    vertical-align: top;
+}
+
+table.files-table td {
+    height: 27px;
 }
 
 table.files-table col.file-default-name {
-    width: 86%;
+    width: 25%;
+}
+
+table.files-table col.file-name {
+    width: 25%;
+}
+
+table.files-table col.file-purpose {
+    width: 10%;
+}
+
+table.files-table col.edit-file {
+    width: 2%;
+}
+
+table.files-table col.delete-file {
+    width: 2%;
 }
 
 div#instance-files {
@@ -395,7 +423,7 @@ div#test-tabs button.add-item {
     margin-left: 15px;
 }
 
-div.bordered-editable-area {
+.bordered-editable-area {
     background: #eeeeee;
     border: 3px solid #dddddd;
     width: 95%;

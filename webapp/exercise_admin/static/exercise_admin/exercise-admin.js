@@ -445,7 +445,7 @@ function show_edit_feedback_questions_popup(event, url) {
     });
 }
 
-function delete_feedback_from_table(button) {
+function delete_table_row(button) {
     $(button).parent().parent().remove();
 }
 
@@ -477,19 +477,11 @@ function show_edit_included_file_popup(file_id) {
 
 }
 
-function delete_include_file() {
-
-}
-
 function show_add_included_file_popup() {
 
 }
 
-function show_edit_instance_file_popup(file_id) {
-
-}
-
-function show_add_instance_file_popup() {
+function show_edit_instance_files_popup() {
 
 }
 
