@@ -103,27 +103,23 @@ function add_tag() {
     var li = $('<li class="exercise-tag">');
     var tag_n = ul.children().length + 1;
 
-    li.append('<input type="text" id="' + tag_n + '-tag" class="exercise-tag-input" name="exercise_tag_' + tag_n +
-              '" value="?" maxlength="32" onfocus="highlight_parent_li(this);" oninput="change_tag_width(this);">');
-    li.append('<button type="button" class="delete-button" onclick="$(this).parent().remove();">x</button>');
+    var new_tag = $('<input type="text" id="exercise-tag-' + tag_n + '" class="exercise-tag-input" name="exercise_tag_' + tag_n + '" value="?" maxlength="32" onfocus="highlight_parent_li(this);" oninput="change_tag_width(this);">');
+    var new_button = $('<button type="button" class="delete-button" onclick="remove_tag(this);">x</button>');
+    li.append(new_tag);
+    li.append(new_button);
     ul.append(li);
 }
 
 function remove_tag(tag_elem) {
-    var tag_values = [];
     var li = $(tag_elem).parent();
-    var ul = li.parent();
-    var next_lis = li.nextAll();
-
-    next_lis.each(function() {
-        tag_values.push($(this).find("input[type=text].exercise-tag-input").val());
-    });
-
     li.remove();
-    next_lis.remove();
-    $.each(tag_values, function(index, value) {
-        add_tag();
-        ul.children().last().find("input[type=text].exercise-tag-input").val(value);
+    
+    var ul = $('ul.exercise-tags');
+    ul.children().each(function(index, element) {
+        $(element).find("input[type=text].exercise-tag-input").attr({
+            id: 'exercise-tag-' + (index + 1),
+            name: 'exercise_tag_' + (index + 1)
+        });
     });
 }
 
