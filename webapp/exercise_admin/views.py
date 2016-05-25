@@ -49,8 +49,16 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_tes
     exercise.save()
     
     # Collect the test data
-    edited_tests = {}
     test_ids = sorted(order_hierarchy_json["stages_of_tests"].keys())
+    
+    # Check for removed tests (existed before, but not in form data)
+    for removed_test_id in sorted(old_test_ids - {int(test_id) for test_id in test_ids if not test_id.startswith('newt')}):
+        print("Test with id={} was removed!".format(removed_test_id))
+        removed_test = FileExerciseTest.objects.get(id=removed_test_id)
+        # TODO: Reversion magic!
+        removed_test.delete()
+    
+    edited_tests = {}
     for test_id in test_ids:
         t_name = form_data['test_{}_name'.format(test_id)]
         
@@ -68,14 +76,15 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_tes
         current_test.save()
         edited_tests[test_id] = current_test
 
-    # Check for removed tests (existed before, but not in form data)
-    for removed_test_id in sorted(old_test_ids - {int(test_id) for test_id in test_ids if not test_id.startswith('newt')}):
-        print("Test with id={} was removed!".format(removed_test_id))
-        removed_test = FileExerciseTest.objects.get(id=removed_test_id)
-        # TODO: Reversion magic!
-        removed_test.delete()
-
     # Collect the stage data
+    # Deferred constraints: https://code.djangoproject.com/ticket/20581
+    for removed_stage_id in sorted(old_stage_ids - {int(stage_id) for stage_id in new_stages.keys() if not stage_id.startswith('news')}):
+        print("Stage with id={} was removed!".format(removed_stage_id))
+        removed_stage = FileExerciseTestStage.objects.get(id=removed_stage_id)
+        # TODO: Reversion magic!
+        removed_stage.delete()
+
+    stage_count = len(new_stages)
     edited_stages = {}
     for stage_id, stage_info in new_stages.items():
         s_name = form_data['stage_{}_name'.format(stage_id)]
@@ -89,18 +98,24 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_tes
         current_stage.test = edited_tests[stage_info.test]
         current_stage.name = s_name
         current_stage.depends_on = s_depends_on
-        current_stage.ordinal_number = stage_info.ordinal_number
+        current_stage.ordinal_number = stage_info.ordinal_number + stage_count + 1 # Note
 
         current_stage.save()
         edited_stages[stage_id] = current_stage
 
-    for removed_stage_id in sorted(old_stage_ids - {int(stage_id) for stage_id in new_stages.keys() if not stage_id.startswith('news')}):
-        print("Stage with id={} was removed!".format(removed_stage_id))
-        removed_stage = FileExerciseTestStage.objects.get(id=removed_stage_id)
-        # TODO: Reversion magic!
-        removed_stage.delete()
-
+    # HACK: Workaround for lack of deferred constraints on unique_together
+    for stage_id, stage_obj in edited_stages.items():
+        stage_obj.ordinal_number -= stage_count + 1
+        stage_obj.save()
+        
     # Collect the command data
+    for removed_command_id in sorted(old_cmd_ids - {int(command_id) for command_id in new_commands.keys() if not command_id.startswith('newc')}):
+        print("Command with id={} was removed!".format(removed_command_id))
+        removed_command = FileExerciseTestCommand.objects.get(id=removed_command_id)
+        # TODO: Reversion magic!
+        removed_command.delete()
+
+    command_count = len(new_commands)
     edited_commands = {}
     for command_id, command_info in new_commands.items():
         c_command_line = form_data['command_{}_command_line'.format(command_id)]
@@ -122,16 +137,15 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_tes
         current_command.input_text = c_input_text
         current_command.return_value = c_return_value
         current_command.timeout = c_timeout
-        current_command.ordinal_number = command_info.ordinal_number
+        current_command.ordinal_number = command_info.ordinal_number + command_count + 1 # Note
 
         current_command.save()
         edited_commands[command_id] = current_command
 
-    for removed_command_id in sorted(old_cmd_ids - {int(command_id) for command_id in new_commands.keys() if not command_id.startswith('newc')}):
-        print("Command with id={} was removed!".format(removed_command_id))
-        removed_command = FileExerciseTestCommand.objects.get(id=removed_command_id)
-        # TODO: Reversion magic!
-        removed_command.delete()
+    # HACK: Workaround for lack of deferred constraints on unique_together
+    for command_id, command_obj in edited_commands.items():
+        command_obj.ordinal_number -= command_count + 1
+        command_obj.save()
             
     
         
