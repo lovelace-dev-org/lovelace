@@ -65,6 +65,7 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_tes
         # Check for new tests
         if test_id.startswith('newt'):
             current_test = FileExerciseTest()
+            current_test.exercise = exercise
         else:
             # Check for existing tests that are part of this exercise's suite
             current_test = FileExerciseTest.objects.get(id=int(test_id))
