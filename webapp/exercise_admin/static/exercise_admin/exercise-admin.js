@@ -30,7 +30,7 @@ function close_popup_and_add_questions() {
             var td_delete = $('<td class="delete-cell">');
             tr.append('<td class="question-cell">' + question + '</td>');
             tr.append('<td class="type-cell">' + type + '</td>');
-            td_delete.append('<button class="delete-button" title="' + TITLE_TEXT + '" onclick="delete_feedback_from_table(this);">x</button>');
+            td_delete.append('<button class="delete-button" title="' + TITLE_TEXT + '" onclick="delete_table_row(this);">x</button>');
             tr.append(td_delete);
             target_tbody.append(tr);
         }
