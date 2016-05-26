@@ -247,7 +247,7 @@ section.included-files {
 }
 
 table.files-table {
-    width: 98%;
+    width: 70%;
     margin-top: 10px;
     padding-top: 5px;
     height: 80px;
@@ -262,16 +262,12 @@ table.files-table td {
     height: 27px;
 }
 
-table.files-table col.file-default-name {
-    width: 25%;
-}
-
 table.files-table col.file-name {
-    width: 25%;
+    width: 30%;
 }
 
 table.files-table col.file-purpose {
-    width: 10%;
+    width: 18%;
 }
 
 table.files-table col.edit-file {
@@ -700,4 +696,39 @@ div.popup div.popup-buttons > input[type=submit].popup-button {
     text-decoration: none;
     text-transform: uppercase;
     border: 2px solid #ccc;
+}
+
+div.popup div.popup-buttons > button.popup-button:disabled {
+    background: #ccc;
+}
+
+div.popup input[type=text].file-default-name-input {
+    margin-left: 5px;
+    width: 1076px;
+}
+
+div.popup input[type=text].file-name-input {
+    width: 1025px;
+    margin-left: 5px;
+}
+
+div.popup label.file-label {
+    margin-top: 5px;
+    display: inline-block;
+}
+
+div.popup textarea.file-description-area {
+    margin-top: 5px;
+    resize: none;
+    width: 1183px;
+}
+
+div.popup input[type=select].file-purpose-input {
+    margin-left: 5px;
+}
+
+div.popup input[type=text].file-chown-input {
+    width: 100px;
+    margin-top: 5px;
+    margin-left: 5px;
 }

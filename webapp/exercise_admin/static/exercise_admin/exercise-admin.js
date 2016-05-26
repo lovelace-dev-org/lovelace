@@ -473,12 +473,42 @@ function add_hint() {
     $("#hint-table tbody").append(tr);
 }
 
-function show_edit_included_file_popup(file_id) {
+function show_edit_included_file_popup(file_id, purpose, chown, chgrp) {
+    var popup = $("#edit-included-file-" + file_id);
+    update_included_file_ok_button_state(file_id);
+    $("#included-file-purpose-" + file_id).val(purpose);
+    $("#included-file-chown-" + file_id).val(chown);
+    $("#included-file-chgrp-" + file_id).val(chgrp);
+    popup.css({"opacity": "1", "pointer-events": "auto"});
+}
 
+function update_included_file_ok_button_state(file_id) {
+    var button = $("#included-file-ok-button-" + file_id);
+    if ($("#included-file-default-name-" + file_id).val().length > 0 &&
+        $("#included-file-name-" + file_id).val().length > 0 &&
+        $("#included-file-chmod-" + file_id).val().length > 0 &&
+        $("#included-file-description-" + file_id).val().length > 0) {
+        button.prop("disabled", false);
+    } else {
+        button.prop("disabled", true);
+    }
+}
+
+function close_popup_and_edit_included_file(file_id) {
+    var td_name = $("#included-file-td-name-" + file_id);
+    var td_purpose = $("#included-file-td-purpose-" + file_id);
+    var td_description = $("#included-file-td-description-" + file_id);
+    
+    td_name.html($("#included-file-name-" + file_id).val());
+    console.log($("#included-file-purpose-" + file_id + " option:selected"));
+    td_purpose.html($("#included-file-purpose-" + file_id + " option:selected").text());
+    td_description.html($("#included-file-description-" + file_id).val());
+
+    close_popup($("#edit-included-file-" + file_id));
 }
 
 function show_add_included_file_popup() {
-
+    
 }
 
 function show_edit_instance_files_popup() {
