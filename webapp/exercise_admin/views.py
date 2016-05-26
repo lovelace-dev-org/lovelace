@@ -32,7 +32,7 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_tes
     e_content = form_data['exercise_content']
     e_default_points = form_data['exercise_default_points']
     e_tags = [tag for key, tag in sorted(form_data.items()) if key.startswith('exercise_tag')]
-    #e_feedback_questions = ???
+    e_feedback_questions = form_data['exercise_feedback_questions']
     e_question = form_data['exercise_question']
     e_manually_evaluated = form_data['exercise_manually_evaluated']
     e_ask_collaborators = form_data['exercise_ask_collaborators']
@@ -42,6 +42,7 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_tes
     exercise.content = e_content
     exercise.default_points = e_default_points
     exercise.tags = e_tags
+    exercise.feedback_questions = e_feedback_questions
     exercise.question = e_question
     exercise.manually_evaluated = e_manually_evaluated
     exercise.ask_collaborators = e_ask_collaborators

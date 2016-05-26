@@ -514,6 +514,13 @@ function submit_main_form(e) {
         });
     }
     console.log(order_hierarchy);
+
+    // Get the linked feedback questions
+    var question_ids = $('#feedback-question-table > table > tbody > tr').map(function() {
+        return this.getAttribute('data-question-id');
+    }).get().join(',');
+    console.log("Question ids: ");
+    console.log(question_ids);
     
     var form_type = form.attr('method');
     var form_url = form.attr('action');
@@ -521,10 +528,11 @@ function submit_main_form(e) {
     console.log("Method: " + form_type + ", URL: " + form_url);
 
     var form_data = new FormData(form[0]);
-    form_data.append("order_hierarchy", JSON.stringify(order_hierarchy));
+    form_data.append('order_hierarchy', JSON.stringify(order_hierarchy));
+    form_data.append('exercise_feedback_questions', question_ids);
 
     console.log("Serialized form data:");
-    for (var [key, value] of form_data.entries()) { 
+    for (var [key, value] of form_data.entries()) {
         console.log(key, value);
     }
 

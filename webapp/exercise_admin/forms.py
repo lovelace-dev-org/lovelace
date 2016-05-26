@@ -1,6 +1,7 @@
 import re
 import itertools
 
+from django.contrib.postgres.forms import SimpleArrayField
 from django import forms
 
 import feedback.models
@@ -76,7 +77,7 @@ class CreateFileUploadExerciseForm(forms.Form):
     exercise_content = forms.CharField(required=False)
     exercise_default_points = forms.IntegerField(required=True)
     # tags handled at __init__
-    # feedback questions
+    exercise_feedback_questions = SimpleArrayField(forms.IntegerField())
     exercise_question = forms.CharField(required=False)
     exercise_manually_evaluated = forms.BooleanField(required=False)
     exercise_ask_collaborators = forms.BooleanField(required=False)

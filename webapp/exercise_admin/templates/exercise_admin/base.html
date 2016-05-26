@@ -166,7 +166,7 @@
                 </thead>
                 <tbody>
                   {% for question in exercise.feedback_questions.all %}
-                    <tr>
+                    <tr data-question-id="{{ question.id }}">
                       <td class="question-cell">{{ question }}</td>
                       <td class="type-cell">{{ question.get_human_readable_type }}</td>
                       <td class="delete-cell">
