@@ -633,3 +633,24 @@ div.popup div.popup-buttons > input[type=submit].popup-button {
     text-transform: uppercase;
     border: 2px solid #ccc;
 }
+
+div#language-picker-container {
+    position: fixed;
+    right: 1rem;
+    bottom: 2rem;
+    width: 360px;
+    height: 60px;
+    padding: 4px;
+    border: 2px solid #aaa;
+    background: #272;
+    font-size: 0.9rem;
+    color: #eee;
+}
+
+div#language-picker-container > div {
+    font-size: 0.9rem;
+}
+span#language-info-code {
+    font-family: "LatoWebBold";
+    font-weight: bold;
+}

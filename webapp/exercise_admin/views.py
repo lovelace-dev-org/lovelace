@@ -4,6 +4,7 @@ from django.http import HttpResponse, HttpResponseNotFound, HttpResponseForbidde
     HttpResponseNotAllowed, JsonResponse
 from django.template import loader
 from django.db import transaction, IntegrityError
+from django.conf import settings
 
 from reversion import revisions as reversion
 

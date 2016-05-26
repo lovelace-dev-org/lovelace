@@ -220,6 +220,21 @@
       {% block templates %}
       {% endblock %}
     </div>
+
+    <div id="language-picker-container">
+      {% get_current_language as CURRENT_LANGUAGE %}
+      {% get_available_languages as AVAILABLE_LANGUAGES %}
+      {% get_language_info_list for AVAILABLE_LANGUAGES as LANGUAGES_VERBOSE %}
+      <div title="You are currently editing the translated version of this exercise in the following language">Language of the current translation: <span id="language-info-code">{{ CURRENT_LANGUAGE }}</span></div>
+      <label for="language-selector">Change </label>
+      <select id="language-selector">
+        {% for language in LANGUAGES_VERBOSE %}
+          <option value="{{ language.code }}"{% if language.code == CURRENT_LANGUAGE %} selected{% endif %}>
+            {{ language.name_local }} ({{ language.code }})
+          </option>
+        {% endfor %}
+      </select>
+    </div>
   </body>
 </html>
     

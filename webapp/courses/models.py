@@ -381,18 +381,22 @@ class ContentPage(models.Model):
 
         return rendered
 
+    # TODO: -> @property human_readable_type
     def get_human_readable_type(self):
         humanized_type = self.content_type.replace("_", " ").lower()
         return humanized_type
 
+    # TODO: -> @property dashed_type
     def get_dashed_type(self):
         dashed_type = self.content_type.replace("_", "-").lower()
         return dashed_type
 
+    # TODO: -> @property admin_change_url
     def get_admin_change_url(self):
         adminized_type = self.content_type.replace("_", "").lower()
         return reverse("admin:courses_%s_change" % (adminized_type), args=(self.id,))
 
+    # TODO: -> @property url_name
     def get_url_name(self):
         """Creates a URL and HTML5 ID field friendly version of the name."""
         # TODO: Ensure uniqueness!
@@ -1009,7 +1013,7 @@ class FileExerciseTestStage(models.Model):
 class FileExerciseTestCommand(models.Model):
     """A command that shall be executed on the test machine."""
     stage = models.ForeignKey(FileExerciseTestStage)
-    command_line = models.CharField(max_length=255)
+    command_line = models.CharField(max_length=255) # Translate
     significant_stdout = models.BooleanField(verbose_name="Compare the generated stdout to reference",
                                              default=False,
                                              help_text="Determines whether the"\
@@ -1029,7 +1033,7 @@ class FileExerciseTestCommand(models.Model):
     )
     signal = models.CharField(max_length=8,default="None",choices=POSIX_SIGNALS_CHOICES,
                               help_text="Which POSIX signal shall be fired at the program?")
-    input_text = models.TextField(verbose_name="Input fed to the command through STDIN",blank=True,
+    input_text = models.TextField(verbose_name="Input fed to the command through STDIN",blank=True, # Translate
                                   help_text="What input shall be entered to the program's stdin upon execution?")
     return_value = models.IntegerField(verbose_name='Expected return value',blank=True,null=True)
     ordinal_number = models.PositiveSmallIntegerField() # TODO: Enforce min=1
@@ -1087,6 +1091,7 @@ def get_instancefile_path(instance, filename):
     return os.path.join(
         "{course_instance}_files".format(course_instance=instance.instance),
         "{filename}".format(filename=filename), # TODO: Versioning?
+        # TODO: Language?
     )
     
 class InstanceIncludeFile(models.Model):
@@ -1098,14 +1103,15 @@ class InstanceIncludeFile(models.Model):
     exercises = models.ManyToManyField(ContentPage, blank=True,
                                        through='InstanceIncludeFileToExerciseLink',
                                        through_fields=('include_file', 'exercise'))
-    default_name = models.CharField(verbose_name='Default name', max_length=255)
-    description = models.TextField(blank=True, null=True)
-    fileinfo = models.FileField(max_length=255, upload_to=get_instancefile_path)
+    default_name = models.CharField(verbose_name='Default name', max_length=255) # Translate
+    description = models.TextField(blank=True, null=True) # Translate
+    fileinfo = models.FileField(max_length=255, upload_to=get_instancefile_path) # Translate
 
 def get_testfile_path(instance, filename):
     return os.path.join(
         "{exercise_name}_files".format(exercise_name=instance.exercise.name),
         "{filename}".format(filename=filename), # TODO: Versioning?
+        # TODO: Language?
     )
 
 class FileExerciseTestIncludeFile(models.Model):
@@ -1116,9 +1122,9 @@ class FileExerciseTestIncludeFile(models.Model):
     """
     exercise = models.ForeignKey(FileUploadExercise)
     file_settings = models.OneToOneField('IncludeFileSettings')
-    default_name = models.CharField(verbose_name='Default name', max_length=255)
-    description = models.TextField(blank=True, null=True)
-    fileinfo = models.FileField(max_length=255, upload_to=get_testfile_path)
+    default_name = models.CharField(verbose_name='Default name', max_length=255) # Translate
+    description = models.TextField(blank=True, null=True) # Translate
+    fileinfo = models.FileField(max_length=255, upload_to=get_testfile_path) # Translate
 
     def __str__(self):
         return "%s - %s" % (self.file_settings.purpose, self.default_name)
@@ -1136,7 +1142,7 @@ class FileExerciseTestIncludeFile(models.Model):
         verbose_name = "included file"
 
 class IncludeFileSettings(models.Model):
-    name = models.CharField(verbose_name='File name during test', max_length=255)
+    name = models.CharField(verbose_name='File name during test', max_length=255) # Translate
 
     FILE_PURPOSE_CHOICES = (
         ('Files written into the test directory for reading', (
@@ -1239,6 +1245,7 @@ class UserAnswer(models.Model):
     instance = models.ForeignKey(CourseInstance)
     evaluation = models.OneToOneField(Evaluation, null=True, blank=True)
     revision = models.PositiveIntegerField() # The revision info is always required!
+    language_code = models.CharField(max_length=7) # TODO: choices=all language codes
     user = models.ForeignKey(User)
     answer_date = models.DateTimeField(verbose_name='Date and time of when the user answered this exercise',
                                        auto_now_add=True)
@@ -1257,7 +1264,7 @@ def get_version(instance):
     return UserFileUploadExerciseAnswer.objects.filter(user=instance.answer.user,
                                                        exercise=instance.answer.exercise).count()
 
-def get_answerfile_path(instance, filename):
+def get_answerfile_path(instance, filename): # TODO: Versioning?
     return os.path.join(
         "returnables",
         "%s" % (instance.answer.user.username),
