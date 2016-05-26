@@ -364,7 +364,7 @@ div.right-side {
 /* The form control buttons */
 
 section.form-controls {
-    padding: 1.5rem 2rem 1.5rem 2rem;
+    padding: 1.5rem 2rem 6rem 2rem;
     background: #ddd;
     text-align: right;
 }
@@ -738,10 +738,10 @@ div.popup input[type=text].file-chown-input {
 div#language-picker-container {
     position: fixed;
     right: 1rem;
-    bottom: 2rem;
-    width: 360px;
-    height: 60px;
-    padding: 4px;
+    bottom: 1rem;
+    width: 280px;
+    height: 50px;
+    padding: 6px;
     border: 2px solid #aaa;
     background: #272;
     font-size: 0.9rem;
@@ -749,9 +749,25 @@ div#language-picker-container {
 }
 
 div#language-picker-container > div {
-    font-size: 0.9rem;
+    margin: 0 0 0.3rem 0;
 }
 span#language-info-code {
     font-family: "LatoWebBold";
     font-weight: bold;
+}
+select#language-selector {
+    border: 1px solid #333;
+    margin: 2px;
+    padding: 2px;
+    width: 200px;
+}
+
+.language-code-reminder {
+    color: #888;
+}
+.language-code-reminder:before {
+    content: '[';
+}
+.language-code-reminder:after {
+    content: ']';
 }

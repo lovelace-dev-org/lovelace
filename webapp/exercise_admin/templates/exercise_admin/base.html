@@ -4,8 +4,12 @@
     <meta charset="UTF-8">
     {% load staticfiles %}
     {% load i18n %}
+    {% load exercise_admin_extras %}
+    {% get_current_language as CURRENT_LANGUAGE %}
+    {% get_available_languages as AVAILABLE_LANGUAGES %}
+    {% get_language_info_list for AVAILABLE_LANGUAGES as LANGUAGES_VERBOSE %}
     <title>Edit | {{ exercise.name }}</title>
-    <!--<link rel="stylesheet" href="http://fonts.googleapis.com/css?family=Inconsolata">-->
+    <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=Inconsolata">
 
     <link rel="stylesheet" href="{% static 'courses/jquery-ui.css' %}">
     <link rel="stylesheet" href="{% static 'courses/jquery-ui.structure.css' %}">
@@ -115,7 +119,7 @@
           <h2>General information</h2>
 
           <div class="form-row">
-            <label for="exercise-name">Name:</label>
+            <label for="exercise-name">Name {% lang_reminder CURRENT_LANGUAGE %}:</label>
             <input type="text" id="exercise-name" name="exercise_name" value="{{ exercise.name }}" onInput="exercise_name_changed(event);" autofocus>
           </div>
 
@@ -125,12 +129,12 @@
           </div>
 
           <div class="form-bigrow">
-            <label for="exercise-page-content">Page contents in <a href="{% url 'courses:markup_help' %}" class="help-link" title="Help on how to edit with the markup language" target="_new">the markup language</a>:</label>
+            <label for="exercise-page-content">Page contents in <a href="{% url 'courses:markup_help' %}" class="help-link" title="Help on how to edit with the markup language" target="_new">the markup language</a> {% lang_reminder CURRENT_LANGUAGE %}:</label>
             <textarea id="exercise-page-content" name="exercise_content" cols="100" rows="8" onInput="exercise_page_content_changed(event);">{{ exercise.content }}</textarea>
           </div>
           
           <div class="form-bigrow">
-            <label for="exercise-question">The exercise question:</label>
+            <label for="exercise-question">The exercise question {% lang_reminder CURRENT_LANGUAGE %}:</label>
             <textarea id="exercise-question" name="exercise_question" cols="100" rows="3">{{ exercise.question }}</textarea>
           </div>
 
@@ -247,12 +251,9 @@
     </div>
 
     <div id="language-picker-container">
-      {% get_current_language as CURRENT_LANGUAGE %}
-      {% get_available_languages as AVAILABLE_LANGUAGES %}
-      {% get_language_info_list for AVAILABLE_LANGUAGES as LANGUAGES_VERBOSE %}
-      <div title="You are currently editing the translated version of this exercise in the following language">Language of the current translation: <span id="language-info-code">{{ CURRENT_LANGUAGE }}</span></div>
-      <label for="language-selector">Change </label>
-      <select id="language-selector">
+      <div title="You are currently editing the translated version of this exercise in this language">Language of the current translation: <span id="language-info-code">{{ CURRENT_LANGUAGE }}</span></div>
+      <label for="language-selector">Change to </label>
+      <select id="language-selector" onChange="change_current_language(event);">
         {% for language in LANGUAGES_VERBOSE %}
           <option value="{{ language.code }}"{% if language.code == CURRENT_LANGUAGE %} selected{% endif %}>
             {{ language.name_local }} ({{ language.code }})

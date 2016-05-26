@@ -759,3 +759,13 @@ function submit_edit_feedback_form(e) {
         error: edit_feedback_form_error
     });
 }
+
+function change_current_language(e) {
+    e.preventDefault();
+
+    var new_code = e.target.value;
+
+    $('#language-info-code').text(new_code);
+
+    // TODO: Swap the visible input elements into the corresponding language coded ones
+}
