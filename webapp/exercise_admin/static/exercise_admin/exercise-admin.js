@@ -106,27 +106,23 @@ function add_tag() {
     var li = $('<li class="exercise-tag">');
     var tag_n = ul.children().length + 1;
 
-    li.append('<input type="text" id="' + tag_n + '-tag" class="exercise-tag-input" name="exercise_tag_' + tag_n +
-              '" value="?" maxlength="32" onfocus="highlight_parent_li(this);" oninput="change_tag_width(this);">');
-    li.append('<button type="button" class="delete-button" onclick="$(this).parent().remove();">x</button>');
+    var new_tag = $('<input type="text" id="exercise-tag-' + tag_n + '" class="exercise-tag-input" name="exercise_tag_' + tag_n + '" value="?" maxlength="32" onfocus="highlight_parent_li(this);" oninput="change_tag_width(this);">');
+    var new_button = $('<button type="button" class="delete-button" onclick="remove_tag(this);">x</button>');
+    li.append(new_tag);
+    li.append(new_button);
     ul.append(li);
 }
 
 function remove_tag(tag_elem) {
-    var tag_values = [];
     var li = $(tag_elem).parent();
-    var ul = li.parent();
-    var next_lis = li.nextAll();
-
-    next_lis.each(function() {
-        tag_values.push($(this).find("input[type=text].exercise-tag-input").val());
-    });
-
     li.remove();
-    next_lis.remove();
-    $.each(tag_values, function(index, value) {
-        add_tag();
-        ul.children().last().find("input[type=text].exercise-tag-input").val(value);
+    
+    var ul = $('ul.exercise-tags');
+    ul.children().each(function(index, element) {
+        $(element).find("input[type=text].exercise-tag-input").attr({
+            id: 'exercise-tag-' + (index + 1),
+            name: 'exercise_tag_' + (index + 1)
+        });
     });
 }
 
@@ -549,6 +545,13 @@ function submit_main_form(e) {
         });
     }
     console.log(order_hierarchy);
+
+    // Get the linked feedback questions
+    var question_ids = $('#feedback-question-table > table > tbody > tr').map(function() {
+        return this.getAttribute('data-question-id');
+    }).get().join(',');
+    console.log("Question ids: ");
+    console.log(question_ids);
     
     var form_type = form.attr('method');
     var form_url = form.attr('action');
@@ -556,10 +559,11 @@ function submit_main_form(e) {
     console.log("Method: " + form_type + ", URL: " + form_url);
 
     var form_data = new FormData(form[0]);
-    form_data.append("order_hierarchy", JSON.stringify(order_hierarchy));
+    form_data.append('order_hierarchy', JSON.stringify(order_hierarchy));
+    form_data.append('exercise_feedback_questions', question_ids);
 
     console.log("Serialized form data:");
-    for (var [key, value] of form_data.entries()) { 
+    for (var [key, value] of form_data.entries()) {
         console.log(key, value);
     }
 
@@ -576,29 +580,108 @@ function submit_main_form(e) {
     });
 }
 
+var test_enum = 1;
+
+function add_test() {
+    var new_id = 'newt' + test_enum;
+    var new_name = "New test";
+    var new_stage_id = 'news' + stage_enum;
+    var new_cmd_id = 'newc' + cmd_enum;
+
+    var test_tablist = $("#test-tabs > ol:first-child");
+    // TODO: The new test tab item should be included in the template section and cloned.
+    var new_test_tab_item = $('<li><a href="#test-tabs-' + new_id + '" id="test-' + new_id + '">' + new_name + '</a></li>');
+    new_test_tab_item.insertBefore("li.test-tab-button-container");
+
+    // Create the new test tab
+    var new_test_tab = $("#test-tabs-SAMPLE_TEST_ID").clone().attr('id', 'test-tabs-' + new_id);
+    new_test_tab.html(function(index, html) {
+        return html.replace(/SAMPLE_TEST_ID/g, new_id).replace(/SAMPLE_STAGE_ID/g, new_stage_id).
+            replace(/SAMPLE_COMMAND_ID/g, new_cmd_id).replace(/SAMPLE_STAGE_ORDINAL_NUMBER/g, '1').
+            replace(/SAMPLE_COMMAND_ORDINAL_NUMBER/g, '1');
+    });
+    $("#test-tabs").append(new_test_tab);
+
+    $("#test-tabs").tabs('refresh');
+    $("#stages-sortable-" + new_id).sortable();
+    $("#stages-sortable-" + new_id).disableSelection();
+    $("#commands-sortable-" + new_id + "-" + new_stage_id).sortable();
+    $("#commands-sortable-" + new_id + "-" + new_stage_id).disableSelection();
+    
+    test_enum++;
+    stage_enum++;
+    cmd_enum++;
+}
+
+var stage_enum = 1;
+
+function add_stage(test_id) {
+    var new_id = 'news' + stage_enum;
+    var stage_list = $("#stages-sortable-" + test_id);
+    var stage_ordnum = stage_list.children().length + 1;
+    var cmd_ordnum = 1;
+    
+    // Create the new stage and a command to the list
+    //<li class="ui-state-default" data-stage-id="SAMPLE_STAGE_ID">
+    var new_cmd_id = 'newc' + cmd_enum;
+    var new_stage_list_item = $('li[data-stage-id="SAMPLE_STAGE_ID"]').clone().attr('data-stage-id', new_id);
+    new_stage_list_item.html(function(index, html) {
+        return html.replace(/SAMPLE_TEST_ID/g, test_id).replace(/SAMPLE_STAGE_ID/g, new_id).
+            replace(/SAMPLE_COMMAND_ID/g, new_cmd_id);
+    });
+    stage_list.append(new_stage_list_item);
+
+    var new_cmd_list = $("#commands-sortable-" + test_id + "-" + new_id);
+
+    // Create the information box to the right side of the list for the new command
+    var new_cmd_info = $('#command-information-SAMPLE_COMMAND_ID').clone().attr('id', 'command-information-' + new_cmd_id);
+    new_cmd_info.html(function(index, html) {
+        return html.replace(/SAMPLE_COMMAND_ID/g, new_cmd_id).replace(/SAMPLE_STAGE_ORDINAL_NUMBER/g, stage_ordnum).
+            replace(/SAMPLE_COMMAND_ORDINAL_NUMBER/g, cmd_ordnum);
+    });
+    $("#selection-information-container-" + test_id).append(new_cmd_info);
+
+    // Create the information box to the right side of the list for the new stage
+    var new_stage_info = $('#stage-information-SAMPLE_STAGE_ID').clone().attr('id', 'stage-information-' + new_id);
+    new_stage_info.html(function(index, html) {
+        return html.replace(/SAMPLE_STAGE_ID/g, new_id).replace(/SAMPLE_STAGE_ORDINAL_NUMBER/g, stage_ordnum);
+    });
+    $("#selection-information-container-" + test_id).append(new_stage_info);
+
+    new_cmd_list.sortable();
+    new_cmd_list.disableSelection();
+    cmd_enum++;
+
+    stage_list.sortable("refresh");
+    stage_enum++;
+}
+
 var cmd_enum = 1;
 
 function add_command(test_id, stage_id) {
-    var new_id = 'new' + cmd_enum;
+    var new_id = 'newc' + cmd_enum;
     var cmd_list = $("#commands-sortable-" + test_id + "-" + stage_id);
     var cmd_ordnum = cmd_list.children().length + 1;
-    var stage_ordnum = 666;
+    var stage_list = $("#stages-sortable-" + test_id);
+    var stage_ordnum = stage_list.children("li[data-stage-id=" + stage_id + "]").index() + 1;
     
     // Create the new command to the list
-    cmd_list.append(
-        $('<li class="ui-state-default" data-command-id="' + new_id + '">' +
-              '<span onClick="show_stagecmd_information(event);" id="command-' + new_id + '" class="clickable-commandline"></span>' +
-          '</li>')
-    );
+    var new_cmd_list_item = $('li[data-command-id="SAMPLE_COMMAND_ID"]').clone().attr('data-command-id', new_id);
+    new_cmd_list_item.html(function(index, html) {
+        return html.replace(/SAMPLE_COMMAND_ID/g, new_id);
+    });
+    cmd_list.append(new_cmd_list_item);
 
     // Create the information box to the right side of the list
     var new_cmd_info = $('#command-information-SAMPLE_COMMAND_ID').clone().attr('id', 'command-information-' + new_id);
     new_cmd_info.html(function(index, html) {
-        return html.replace(/SAMPLE_COMMAND_ID/g, 'new'+cmd_enum).replace(/SAMPLE_STAGE_ORDINAL_NUMBER/g, stage_ordnum).
+        return html.replace(/SAMPLE_COMMAND_ID/g, new_id).replace(/SAMPLE_STAGE_ORDINAL_NUMBER/g, stage_ordnum).
             replace(/SAMPLE_COMMAND_ORDINAL_NUMBER/g, cmd_ordnum);
     });
-    $("#selection-information-container").append(new_cmd_info);
-    
+    $("#selection-information-container-" + test_id).append(new_cmd_info);
+
+    stage_list.sortable("refresh");
+    cmd_list.sortable("refresh");
     cmd_enum++;
 }
 

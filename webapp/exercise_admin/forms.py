@@ -1,6 +1,7 @@
 import re
 import itertools
 
+from django.contrib.postgres.forms import SimpleArrayField
 from django import forms
 
 import feedback.models
@@ -77,7 +78,7 @@ class CreateFileUploadExerciseForm(forms.Form):
     exercise_content = forms.CharField(required=False)
     exercise_default_points = forms.IntegerField(required=True)
     # tags handled at __init__
-    # feedback questions
+    exercise_feedback_questions = SimpleArrayField(forms.IntegerField())
     exercise_question = forms.CharField(required=False)
     exercise_manually_evaluated = forms.BooleanField(required=False)
     exercise_ask_collaborators = forms.BooleanField(required=False)
@@ -103,7 +104,7 @@ class CreateFileUploadExerciseForm(forms.Form):
             stage_name_field = stage_template.format(stage_id, "name")
             stage_depends_on_field = stage_template.format(stage_id, "depends_on")
             self.fields[stage_name_field] = forms.CharField(min_length=1, max_length=64, strip=True)
-            #self.fields[stage_depends_on_field] = ??? #
+            self.fields[stage_depends_on_field] = forms.IntegerField(required=False)
 
         command_template = "command_{}_{}"
         command_ids = itertools.chain.from_iterable(command_ids)

@@ -1002,6 +1002,7 @@ class FileExerciseTestStage(models.Model):
         return "%s: %02d - %s" % (self.test.name, self.ordinal_number, self.name)
 
     class Meta:
+        # Deferred constraints: https://code.djangoproject.com/ticket/20581
         unique_together = ('test', 'ordinal_number')
         ordering = ['ordinal_number']
 
@@ -1039,6 +1040,7 @@ class FileExerciseTestCommand(models.Model):
     class Meta:
         verbose_name = "command to run for the test"
         verbose_name_plural = "commands to run for the test"
+        # Deferred constraints: https://code.djangoproject.com/ticket/20581
         unique_together = ('stage', 'ordinal_number')
         ordering = ['ordinal_number']
 

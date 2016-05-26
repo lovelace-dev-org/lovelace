@@ -333,6 +333,7 @@ ol#stages-sortable > li {
 span.clickable-commandline {
     position: relative;
     width: 100%;
+    display: inline-block;
     font-family: "Inconsolata", monospace;
 }
 
