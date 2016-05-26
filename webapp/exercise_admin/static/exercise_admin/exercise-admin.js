@@ -30,7 +30,7 @@ function close_popup_and_add_questions() {
             var td_delete = $('<td class="delete-cell">');
             tr.append('<td class="question-cell">' + question + '</td>');
             tr.append('<td class="type-cell">' + type + '</td>');
-            td_delete.append('<button class="delete-button" title="' + TITLE_TEXT + '" onclick="delete_feedback_from_table(this);">x</button>');
+            td_delete.append('<button class="delete-button" title="' + TITLE_TEXT + '" onclick="delete_table_row(this);">x</button>');
             tr.append(td_delete);
             target_tbody.append(tr);
         }
@@ -48,6 +48,9 @@ $(document).ready(function() {
     }
     $('div.feedback-table-div').slimScroll({
         height: '225px'
+    });
+    $('div.feedback-choices').slimScroll({
+        height: '150px'
     });
     $('.popup').click(function() {
         close_popup($(this));
@@ -163,28 +166,6 @@ function command_name_changed(e) {
     $('#command-' + split_id[1]).html(new_name);
 }
 
-function add_scrolling_to_choices_if_overflow(choices_div, choice_container_div) {
-    var max_height = choices_div.css('max-height');
-    if (choice_container_div.height() + 'px' === max_height) {
-        choices_div.slimScroll({
-            height: max_height
-        });
-        return true;
-    } else {
-        return false;
-    }
-}
-
-function remove_scrolling_from_choices(choices_div, choice_container_div) {
-    choices_div.slimScroll({
-        destroy: true
-    });
-    choice_container_div.height(0);
-    choices_div.height(0);
-    choice_container_div.css({"height" : "auto"});
-    choices_div.css({"height" : "auto"});
-}
-
 function add_feedback_choice(id_prefix, name_prefix, container_div_id, choices_div_id, named, choice_val) {
     var TITLE_TEXT = "Deletes an answer choice of a feedback question";
 
@@ -214,10 +195,6 @@ function add_feedback_choice(id_prefix, name_prefix, container_div_id, choices_d
     choice_div.append(new_label);
     choice_div.append('<div id="' + id_prefix + "-" + label_n + '-error" class="admin-error"></div>');
     choices_div.append(choice_div);
-    
-    if (!add_scrolling_to_choices_if_overflow(choices_div, choice_container_div)) {
-        remove_scrolling_from_choices(choices_div, choice_container_div);
-    }
 }
 
 function add_choice_to_selected_feedback() {
@@ -232,8 +209,6 @@ function delete_feedback_choice(id_prefix, name_prefix, container_div_id, choice
     var choice_container_div = $('#' + container_div_id);
     var choices_div = $('#' + choices_div_id);
     var choice_div = $('#' + id_prefix + '-div-' + label_n);
-    var total_height = 0;
-    var max_height = parseFloat(choices_div.css('max-height').replace("px", ""));
     var next_choices = choice_div.nextAll();
     var choice_values = [];
 
@@ -247,13 +222,6 @@ function delete_feedback_choice(id_prefix, name_prefix, container_div_id, choice
         add_feedback_choice(id_prefix, name_prefix, container_div_id, choices_div_id, named);
         choices_div.children().last().find("input[type=text].feedback-choice").val(value);
     });
-    
-    $("div.feedback-choice-div").each(function() {
-        total_height += $(this).height();
-    });
-    if (total_height < max_height) {
-        remove_scrolling_from_choices(choices_div, choice_container_div);
-    }
 }
 
 function handle_feedback_type_selection(select) {
@@ -286,7 +254,7 @@ function select_all_feedback_questions(select) {
 function show_feedback_question_edit_menu(question_id) {
     var MENU_TITLE = "Edit feedback question: "
 
-    var choice_container_div = $("#feedback-choice-container");
+    var feedback_choices_div = $("#feedback-choices");
     var add_choice_button = $("#add-feedback-choice");
     var choices_div = $("#feedback-choices-" + question_id);
 
@@ -298,14 +266,12 @@ function show_feedback_question_edit_menu(question_id) {
     
     if (choices_div.length > 0) {
         var all_choices_divs = $("#feedback-choice-container div.feedback-choices");
-        choice_container_div.css({"display" : "block"});
+        feedback_choices_div.css({"display" : "block"});
         all_choices_divs.hide();
         choices_div.css({"display" : "block"});
-        remove_scrolling_from_choices(all_choices_divs, choice_container_div);
-        add_scrolling_to_choices_if_overflow(choices_div, choice_container_div);
         add_choice_button.css({"display" : "inline-block"});
     } else {
-        choice_container_div.hide();
+        feedback_choices_div.hide();
         add_choice_button.hide();
     }
 }
@@ -376,9 +342,18 @@ function create_new_feedback_question_entry() {
     var choices = [];
     var choices_div = $("#new-feedback-choices");
     var choice_container_div = $("#new-feedback-choice-container");
+
+    $("div.popup div.admin-error").hide();
     
-    $("#create-feedback-div input[type=text].feedback-choice").each(function() {
-        choices.push(this.value); 
+    var duplicates = false;
+    $("#create-feedback-div input[type=text].feedback-choice").each(function(index) {
+        if (this.value != "" && choices.indexOf(this.value) > -1) {
+            var choice_error_div = $("#new-feedback-choice-" + index + "-error");
+            choice_error_div.text("Duplicate choice!");
+            choice_error_div.css({"display" : "block"});
+            duplicates = true;
+        }
+        choices.push(this.value);
     });
 
     var new_count = 0;
@@ -398,13 +373,12 @@ function create_new_feedback_question_entry() {
         feedback_error_div.css({"display" : "block"});
         return;
     }
-
-    //TODO: Check duplicate choices here, too.
-
-    $("div.popup div.admin-error").hide();
+    if (duplicates) {
+        return;
+    }
+    
     $("#feedback-question-new").val("");
     choices_div.empty();
-    remove_scrolling_from_choices(choices_div, choice_container_div);
     handle_feedback_type_selection($("#feedback-type-select")[0]);
     add_feedback_question_to_popup(question, "new-" + (new_count + 1), type, readable_type, choices, true);
 }
@@ -467,7 +441,7 @@ function show_edit_feedback_questions_popup(event, url) {
     });
 }
 
-function delete_feedback_from_table(button) {
+function delete_table_row(button) {
     $(button).parent().parent().remove();
 }
 
@@ -478,6 +452,63 @@ function show_stagecmd_information(event) {
     var clicked_number = split_id[1];
     $('div.selection-information').hide();
     $('#' + clicked_type + '-information-' + clicked_number).show() 
+}
+
+function add_hint() {
+    var hint_n = $("#hint-table tbody tr").length + 1;
+    var tries_to_unlock = $('<input type="number" step="1" class="hint-tries-to-unlock-input" name="hint_tries_[new-' + hint_n +
+                            ']" value="0">');
+    var hint_content = $('<input type="text" class="hint-content-input" name="hint_content_[new-' + hint_n + ']" value="">');
+    var td_tries_to_unlock = $('<td>');
+    var td_hint_content = $('<td>');
+    var tr = $('<tr>');
+    td_tries_to_unlock.append(tries_to_unlock);
+    td_hint_content.append(hint_content);
+    tr.append(td_tries_to_unlock);
+    tr.append(td_hint_content);
+    $("#hint-table tbody").append(tr);
+}
+
+function show_edit_included_file_popup(file_id, purpose, chown, chgrp) {
+    var popup = $("#edit-included-file-" + file_id);
+    update_included_file_ok_button_state(file_id);
+    $("#included-file-purpose-" + file_id).val(purpose);
+    $("#included-file-chown-" + file_id).val(chown);
+    $("#included-file-chgrp-" + file_id).val(chgrp);
+    popup.css({"opacity": "1", "pointer-events": "auto"});
+}
+
+function update_included_file_ok_button_state(file_id) {
+    var button = $("#included-file-ok-button-" + file_id);
+    if ($("#included-file-default-name-" + file_id).val().length > 0 &&
+        $("#included-file-name-" + file_id).val().length > 0 &&
+        $("#included-file-chmod-" + file_id).val().length > 0 &&
+        $("#included-file-description-" + file_id).val().length > 0) {
+        button.prop("disabled", false);
+    } else {
+        button.prop("disabled", true);
+    }
+}
+
+function close_popup_and_edit_included_file(file_id) {
+    var td_name = $("#included-file-td-name-" + file_id);
+    var td_purpose = $("#included-file-td-purpose-" + file_id);
+    var td_description = $("#included-file-td-description-" + file_id);
+    
+    td_name.html($("#included-file-name-" + file_id).val());
+    console.log($("#included-file-purpose-" + file_id + " option:selected"));
+    td_purpose.html($("#included-file-purpose-" + file_id + " option:selected").text());
+    td_description.html($("#included-file-description-" + file_id).val());
+
+    close_popup($("#edit-included-file-" + file_id));
+}
+
+function show_add_included_file_popup() {
+    
+}
+
+function show_edit_instance_files_popup() {
+
 }
 
 function submit_main_form(e) {
