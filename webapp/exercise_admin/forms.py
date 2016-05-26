@@ -52,6 +52,7 @@ class CreateFeedbackQuestionForm(forms.Form):
                 else:
                     question_id = re.findall("\[(.*?)\]", k1)[0]
                     if str(feedback_question.get_type_object().id) != question_id:
+                        #TODO: handle swapping of names
                         question_error = forms.ValidationError("A feedback question with this name already exists! Remove the duplicate first!",
                                                                code="question_exists")
                         self.add_error(k1, question_error)

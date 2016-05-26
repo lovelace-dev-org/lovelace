@@ -61,7 +61,9 @@
             <h2 id="edit-feedback-div-title">Edit feedback question:</h2>
             <div id="edit-feedback-question-inputs">
             </div>
-            <div id="feedback-choice-container" class="bordered-editable-area">
+            <div id="feedback-choices" class="bordered-editable-area">
+              <div id="feedback-choice-container" class="feedback-choices">
+              </div>
             </div>
             <button type="button" id="add-feedback-choice" class="add-item" title="Adds a new answer choice for the feedback question"
                     onclick="add_choice_to_selected_feedback();">Add choice</button>
@@ -102,6 +104,9 @@
         </div>
       </div>
     </form>
+
+    {% block exercise-type-specific-popups %}
+    {% endblock %}
 
     <form method="POST" action="{% block form-action-url %}{% endblock %}" id="main-form" onSubmit="submit_main_form(event);">
       {% csrf_token %}
@@ -170,8 +175,8 @@
                       <td class="question-cell">{{ question }}</td>
                       <td class="type-cell">{{ question.get_human_readable_type }}</td>
                       <td class="delete-cell">
-                        <button type="button" class="delete-button" title="Deletes the relation between the feedback question and the exercise"
-                                onclick="delete_feedback_from_table(this);">x</button>
+                        <button type="button" class="delete-button" title="Removes the feedback question from the list of feedback questions belonging to this exercise"
+                                onclick="delete_table_row(this);">x</button>
                       </td>
                     </tr>
                   {% endfor %}
@@ -202,11 +207,31 @@
       <section class="configurable-hints">
         <h2>Configurable hints</h2>
 
-        <ul>
+        <table id="hint-table">
+          <colgroup>
+            <col class="hint-tries-to-unlock">
+            <col class="hint-content">
+          </colgroup>
+          <thead>
+            <tr>
+              <th>Tries to unlock</th>
+              <th>Hint</th>
+            </tr>
+          </thead>
+          <tbody>
           {% for hint in hints %}
-            <li>{{ hint.hint }}</li>
+            <tr>
+              <td>
+                <input type="number" step="1" class="hint-tries-to-unlock-input" name="hint_tries_[{{ hint.id }}]" value="{{ hint.tries_to_unlock }}">
+              </td>
+              <td>
+                <input type="text" class="hint-content-input" name="hint_content_[{{ hint.id }}]" value="{{ hint.hint }}">
+              </td>
+            </tr>
           {% endfor %}
-        </ul>
+          </tbody>
+        </table>
+        <button type="button" class="add-item" onclick="add_hint();">Add</button>
       </section>
 
       {% block exercise-type-specific %}

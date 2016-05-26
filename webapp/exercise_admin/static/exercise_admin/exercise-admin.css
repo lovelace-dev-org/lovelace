@@ -246,11 +246,69 @@ section.included-files {
     border-bottom: 4px solid #ddd;
 }
 
+table.files-table {
+    width: 70%;
+    margin-top: 10px;
+    padding-top: 5px;
+    height: 80px;
+}
+
+table.files-table th {
+    text-align: left;
+    vertical-align: top;
+}
+
+table.files-table td {
+    height: 27px;
+}
+
+table.files-table col.file-name {
+    width: 30%;
+}
+
+table.files-table col.file-purpose {
+    width: 18%;
+}
+
+table.files-table col.edit-file {
+    width: 2%;
+}
+
+table.files-table col.delete-file {
+    width: 2%;
+}
+
+div#instance-files {
+    margin-top: 20px;
+}
+
 /* Configurable hints */
 
 section.configurable-hints {
     padding: 1.5rem 0 1.5rem 2rem;
     border-bottom: 4px solid #ddd;
+}
+
+table#hint-table {
+    width: 98%;
+}
+
+table#hint-table col.hint-tries-to-unlock {
+    width: 3%;
+}
+
+table#hint-table col.hint-content {
+    width: 97%;
+}
+
+input[type=number].hint-tries-to-unlock-input {
+    width: 60px;
+    text-align: right;
+}
+
+input[type=text].hint-content-input {
+    width: 100%; 
+    box-sizing: border-box;
 }
 
 /* The test tabs & sortable stages and commands */
@@ -352,7 +410,9 @@ button.add-item, input[type=submit].add-item {
     border-radius: 8px;
 }
 
-div.generalinfo-right-side button.add-item, div.generalinfo-right-side button.add-item {
+section.general-information button.add-item,
+section.configurable-hints button.add-item,
+section.included-files button.add-item {
     box-shadow: 1px 1px 2px #285c00;
 }
 
@@ -360,11 +420,10 @@ div#test-tabs button.add-item {
     margin-left: 15px;
 }
 
-div.bordered-editable-area {
+.bordered-editable-area {
     background: #eeeeee;
     border: 3px solid #dddddd;
     width: 95%;
-    max-height: 250px;
     overflow-y: hidden;
 }
 
@@ -413,6 +472,12 @@ button.delete-button {
     box-shadow: 1px 1px 2px #ff2000;
 }
 
+table.files-table button.delete-button {
+    width: 25px;
+    height: 25px;
+    font-weight: bold;
+}
+
 span.admin-error, div.admin-error {
     display: none;
     color: #f00;
@@ -423,7 +488,23 @@ div.admin-error {
     margin-top: 5px;
 }
 
-div#feedback-choice-container {
+button.edit-button {
+    background: url("edit.png");
+    width: 25px;
+    height: 25px;
+    outline: 0;
+    vertical-align: middle;
+    overflow: hidden;
+    color: #4CAF50;
+    background-color: #fff;
+    text-align: center;
+    cursor: pointer;
+    border: 0px solid #42860e;
+    border-radius: 8px;
+    box-shadow: 1px 1px 2px #285c00;
+}
+
+div#feedback-choices {
     display: none;
     margin-top: 5px;
     margin-bottom: 10px;
@@ -431,25 +512,24 @@ div#feedback-choice-container {
     height: auto;
 }
 
-div.feedback-choices {
+div.popup div.feedback-choices {
     height: auto;
-    max-height: 200px;
 }
 
-span.feedback-choice-span {
+div.popup span.feedback-choice-span {
     display: inline-block;
     margin-left: 5px;
     margin-top: 5px;
     width: 80px;
 }
 
-input[type=text].feedback-choice {
+div.popup input[type=text].feedback-choice {
     margin-left: 5px;
     margin-top: 5px;
     width: 1045px;
 }
 
-input[type=text].feedback-choice + button{
+div.popup input[type=text].feedback-choice + button{
     margin-left: 5px;
     margin-top: 7px;
 }
@@ -457,6 +537,8 @@ input[type=text].feedback-choice + button{
 button#add-feedback-choice, button#add-new-feedback-choice {
     display: none;
 }
+
+/* Popups */
 
 div.popup {
     position: fixed;
@@ -527,22 +609,6 @@ div.popup table.feedback-question-table td {
     height: 28px;
 }
 
-div.popup button.edit-button {
-    background: url("edit.png");
-    width: 25px;
-    height: 25px;
-    outline: 0;
-    vertical-align: middle;
-    overflow: hidden;
-    color: #4CAF50;
-    background-color: #fff;
-    text-align: center;
-    cursor: pointer;
-    border: 0px solid #42860e;
-    border-radius: 8px;
-    box-shadow: 1px 1px 2px #285c00;
-}
-
 div.popup span.feedback-question-span {
     display: inline-block;
     margin-left: 5px;
@@ -573,7 +639,6 @@ div#new-feedback-choice-container {
 
 div.popup div.feedback-choices {
     height: auto;
-    max-height: 200px;
 }
 
 div#feedback-choice-container > div.feedback-choices {
@@ -634,6 +699,42 @@ div.popup div.popup-buttons > input[type=submit].popup-button {
     border: 2px solid #ccc;
 }
 
+div.popup div.popup-buttons > button.popup-button:disabled {
+    background: #ccc;
+}
+
+div.popup input[type=text].file-default-name-input {
+    margin-left: 5px;
+    width: 1076px;
+}
+
+div.popup input[type=text].file-name-input {
+    width: 1025px;
+    margin-left: 5px;
+}
+
+div.popup label.file-label {
+    margin-top: 5px;
+    display: inline-block;
+}
+
+div.popup textarea.file-description-area {
+    margin-top: 5px;
+    resize: none;
+    width: 1183px;
+}
+
+div.popup input[type=select].file-purpose-input {
+    margin-left: 5px;
+}
+
+div.popup input[type=text].file-chown-input {
+    width: 100px;
+    margin-top: 5px;
+    margin-left: 5px;
+}
+
+/* Language picker */
 div#language-picker-container {
     position: fixed;
     right: 1rem;

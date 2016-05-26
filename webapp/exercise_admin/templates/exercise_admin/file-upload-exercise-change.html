@@ -31,6 +31,9 @@
   </section>
 {% endblock %}
 
+{% block exercise-type-specific-popups %}
+{% endblock %}
+
 {% block form-action-url %}{% url 'exercise_admin:file_upload_change' exercise.id %}{% endblock %}
 
 {% block exercise-type-extra %}
@@ -44,22 +47,164 @@
   <section class="included-files">
     <h2>Included files</h2>
     
-    <div>
+    <div id="included-files">
       A pool of files available only for this exercise:
-      <ol>
-        {% for include_file in include_files %}
-          <li>{{ include_file.default_name }} / {{ include_file.file_settings.purpose }}</li>
-        {% endfor %}
-      </ol>
+      <table id="included-files-table" class="files-table bordered-editable-area">
+        <colgroup>
+          <col class="file-name">
+          <col class="file-purpose">
+          <col class="file-description">
+          <col class="edit-file">
+          <col class="delete-file">
+        </colgroup>
+        <thead>
+          <tr>
+            <th>File name during test</th>
+            <th>Used as</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for include_file in include_files %}
+            <tr>
+              <td id="included-file-td-name-{{ include_file.id }}">
+                {{ include_file.file_settings.name }}
+              </td>
+              <td id="included-file-td-purpose-{{ include_file.id }}">
+                {{ include_file.file_settings.get_purpose_display }}
+              </td>
+              <td id="included-file-td-description-{{ include_file.id }}">
+                {{ include_file.description }}
+              </td>
+              <td>
+                <button type="button" class="edit-button" title="Opens a popup window to edit an included file"
+                        onclick="show_edit_included_file_popup('{{ include_file.id }}', '{{ include_file.file_settings.purpose }}', 
+                                                               '{{ include_file.file_settings.chown_settings }}', 
+                                                               '{{ include_file.file_settings.chgrp_settings }}');"></button>
+              </td>
+              <td>
+                <button type="button" class="delete-button" title="Removes the included file from the list of included files belonging to this exercise"
+                        onclick="delete_table_row(this);">x</button>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <button type="button" class="add-item" title="Opens a popup window to add an included file" onclick="show_add_included_file_popup();">Add</button>
+      {% for include_file in include_files %}
+        <div id="edit-included-file-{{ include_file.id }}" class="popup">
+          <div>
+            <h2>Edit included file: {{ include_file.default_name }}</h2>
+            <div>
+              <label for="included-file-default-name-{{ include_file.id }}">
+                <span class="file-default-name-span">Default name:</span>
+                <input type="text" id="included-file-default-name-{{ include_file.id }}" class="file-default-name-input" maxlength="225"
+                       name="included_file_default_name_[{{ include_file.id }}]" value="{{ include_file.default_name }}"
+                       oninput="update_included_file_ok_button_state('{{ include_file.id }}');">
+              </label>              
+            </div>
+            <div>
+              <label class="file-label" for="included-file-name-{{ include_file.id }}">
+                <span class="file-name-span">File name during test:</span>
+                <input type="text" id="included-file-name-{{ include_file.id }}" class="file-name-input" maxlength="225"
+                       name="included_file_name_[{{ include_file.id }}]" value="{{ include_file.file_settings.name }}"
+                       oninput="update_included_file_ok_button_state('{{ include_file.id }}');">
+              </label>
+            </div>
+            <div>
+              <label class="file-label" for="file-purpose-{{ include_file.id }}">
+                <span class="file-purpose-span">Used as:</span>
+                <select id="included-file-purpose-{{ include_file.id }}" class="file-purpose-select" name="included_file_purpose_[{{ include_file.id }}]" form="main-form">
+                  <optgroup label="Files written into the test directory for reading">
+                    <option value="INPUT">Input file</option>
+                  </optgroup>
+                  <optgroup label="Files the program is expected to generate">
+                    <option value="OUTPUT">Expected output file</option>
+                  </optgroup>
+                  <optgroup label="Executable files">
+                    <option value="REFERENCE">Reference implementation</option>
+                    <option value="INPUTGEN">Input generator</option>
+                    <option value="WRAPPER">Wrapper for uploaded code</option>
+                    <option value="TEST">Unit test</option>
+                  </optgroup>
+                </select>
+              </label>
+            </div>
+            <div>
+              <label class="file-label" for="included-file-description-{{ include_file.id }}">
+                <div>File description:</div>
+                <textarea id="included-file-description-{{ include_file.id }}" name="included_file_description_[{{ include_file.id }}]" class="file-description-area"
+                          cols="117" rows="5" oninput="update_included_file_ok_button_state('{{ include_file.id }}');">{{ include_file.description }}</textarea>
+              </label>
+            </div>
+            <div>
+              <label class="file-label" for="included-file-chown-{{ include_file.id }}">
+                <span class="file-chown-span">File user ownership:</span>
+                <select id="included-file-chown-{{ include_file.id }}" class="file-chown-select" name="included_file_chown_[{{ include_file.id }}]" form="main-form">
+                  <option value="OWNED">Owned by the tested program</option>
+                  <option value="NOT_OWNED">Not owned by the tested program</option>
+                </select>
+              </label>
+            </div>
+            <div>
+              <label class="file-label" for="included-file-chgrp-{{ include_file.id }}">
+                <span class="file-chgrp-span">File group ownership:</span>
+                <select id="included-file-chgrp-{{ include_file.id }}" class="file-chgrp-select" name="included_file_chgrp_[{{ include_file.id }}]" form="main-form">
+                  <option value="OWNED">Owned by the tested program</option>
+                  <option value="NOT_OWNED">Not owned by the tested program</option>
+                </select>
+              </label>
+            </div>
+            <div>
+              <label class="file-label" for="included-file-chmod-{{ include_file.id }}">
+                <span class="file-chmod-span">File access mode:</span>
+                <input type="text" id="included-file-chmod-{{ include_file.id }}" class="file-chmod-input" maxlength="9"
+                       name="included_file_chmod_[{{ include_file.id }}]" value="{{ include_file.file_settings.chmod_settings }}"
+                       oninput="update_included_file_ok_button_state('{{ include_file.id }}');">
+              </label>
+            </div>
+            <div class="popup-buttons">
+              <button type="button" id="included-file-ok-button-{{ include_file.id }}" class="popup-button"
+                      onclick="close_popup_and_edit_included_file('{{ include_file.id }}')">Ok</button>
+              <button type="button" class="popup-button" onclick="close_popup($('#edit-included-file-{{ include_file.id }}'))">Cancel</button>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
     </div>
 
-    <div>
-      A pool of files specific to a course instance:
-      <ol>
-        {% for instance_file in instance_files %}
-          <li>{{ instance_file.default_name }}</li>
-        {% endfor %}
-      </ol>
+    <div id="instance-files">
+      A pool of files specific to a course instance, linked to this exercise:
+      <table id="instance-files-table" class="files-table bordered-editable-area">
+        <colgroup>
+          <col class="file-name">
+          <col class="file-purpose">
+          <col class="file-description">
+        </colgroup>
+        <thead>
+          <tr>
+            <th>File name during test</th>
+            <th>Used as</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for instance_file_link in instance_files_links %}
+            <tr>
+              <td>
+                {{ instance_file_link.file_settings.purpose }}
+              </td>
+              <td>
+                {{ instance_file_link.file_settings.name }}
+              </td>
+              <td>
+                {{ instance_file_link.include_file.description }}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <button type="button" class="add-item" title="Opens a popup window to add and edit instance files" onclick="show_edit_instance_file_popup();">Add and edit</button>
     </div>
   </section>
 
