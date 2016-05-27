@@ -1,0 +1,21 @@
+<tr id="included-file-tr-{{ include_file.id }}">
+  <td id="included-file-td-name-{{ include_file.id }}">
+    {{ include_file.file_settings.name }}
+  </td>
+  <td id="included-file-td-purpose-{{ include_file.id }}">
+    {{ include_file.file_settings.get_purpose_display }}
+  </td>
+  <td id="included-file-td-description-{{ include_file.id }}">
+    {{ include_file.description }}
+  </td>
+  <td>
+    <button type="button" class="edit-button" title="Opens a popup window to edit an included file"
+            onclick="show_edit_included_file_popup('{{ include_file.id }}', '{{ include_file.file_settings.purpose }}', 
+                                                               '{{ include_file.file_settings.chown_settings }}', 
+                                                               '{{ include_file.file_settings.chgrp_settings }}');"></button>
+  </td>
+  <td>
+    <button type="button" class="delete-button" title="Removes the included file from the list of included files belonging to this exercise"
+            onclick="delete_table_row(this);">x</button>
+  </td>
+</tr>

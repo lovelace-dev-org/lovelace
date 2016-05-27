@@ -27,6 +27,40 @@ def test_tab(test_obj, stages_list, jstemplate=False):
 
     return {'test': TemplateTest, 'stages': [(TemplateStage, [(TemplateCommand, [])])]}
 
+@register.inclusion_tag('exercise_admin/file-upload-exercise-include-file-tr.html')
+def include_file_tr(include_file, jstemplate=False):
+    if not jstemplate:
+        return {'include_file': include_file,}
+
+    class IncludeFile:
+        id = "SAMPLE_ID"
+        description = "SAMPLE_DESCRIPTION"
+        file_settings = {
+            "name" : "SAMPLE_NAME",
+            "purpose" : "SAMPLE_PURPOSE",
+            "get_purpose_display" : "SAMPLE_GET_PURPOSE_DISPLAY",
+            "chown_settings" : "SAMPLE_CHOWN_SETTINGS",
+            "chgrp_settings" : "SAMPLE_CHGRP_SETTINGS",
+        }            
+
+    return {'include_file' : IncludeFile}
+
+@register.inclusion_tag('exercise_admin/file-upload-exercise-include-file-popup.html')
+def include_file_popup(include_file, jstemplate=False):
+    if not jstemplate:
+        return {'include_file': include_file,}
+
+    class IncludeFile:
+        id = "SAMPLE_ID"
+        default_name = "SAMPLE_DEFAULT_NAME"
+        description = "SAMPLE_DESCRIPTION"
+        file_settings = {
+            "name" : "SAMPLE_NAME",
+            "chmod_settings" : "SAMPLE_CHMOD_SETTINGS"
+        }
+
+    return {'include_file' : IncludeFile}
+
 @register.simple_tag()
 def lang_reminder(lang_code):
     s = '<span class="language-code-reminder" title="The currently selected translation">{}</span>'.format(lang_code)
