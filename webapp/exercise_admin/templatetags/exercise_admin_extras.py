@@ -65,3 +65,10 @@ def include_file_popup(include_file, jstemplate=False):
 def lang_reminder(lang_code):
     s = '<span class="language-code-reminder" title="The currently selected translation">{}</span>'.format(lang_code)
     return mark_safe(s)
+
+@register.simple_tag()
+def get_translated_field(model, variable, lang_code):
+    if model:
+        return getattr(model, '{}_{}'.format(variable, lang_code))
+    else:
+        return ''
