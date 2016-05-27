@@ -24,13 +24,12 @@ class CreateFeedbackQuestionForm(forms.Form):
         self.fields["question_field_[{}]".format(prefix_id)] = forms.CharField(max_length=100, required=True)
         self.fields["type_field_[{}]".format(prefix_id)] = forms.ChoiceField(choices=feedback.models.QUESTION_TYPE_CHOICES, required=True)
         choice_field_prefix = "choice_field_[{}]_".format(prefix_id)
-        choice_count = len([k for k in data.keys() if k.startswith(choice_field_prefix)])
-        for i in range(choice_count):
-            choice_field_name = "{prefix}{{{n}}}".format(prefix=choice_field_prefix, n=i + 1)
+        choice_fields = sorted([k for k in data.keys() if k.startswith(choice_field_prefix)])
+        for i, choice_field in enumerate(choice_fields):
             if i < 2:
-                self.fields[choice_field_name] = forms.CharField(required=True)
+                self.fields[choice_field] = forms.CharField(required=True)
             else:
-                self.fields[choice_field_name] = forms.CharField(required=False)
+                self.fields[choice_field] = forms.CharField(required=False)
             
     def clean(self):
         cleaned_data = super(CreateFeedbackQuestionForm, self).clean()
@@ -84,11 +83,11 @@ class CreateFileUploadExerciseForm(forms.Form):
     exercise_ask_collaborators = forms.BooleanField(required=False)
     exercise_allowed_filenames = forms.CharField(required=False)
 
-    def __init__(self, tag_count, order_hierarchy, *args, **kwargs):
+    def __init__(self, tag_fields, order_hierarchy, *args, **kwargs):
         super(CreateFileUploadExerciseForm, self).__init__(*args, **kwargs)
 
-        for i in range(tag_count):
-            self.fields["exercise_tag_{}".format(i + 1)] = forms.CharField(min_length=1, max_length=28, strip=True)
+        for tag_field in tag_fields:
+            self.fields[tag_field] = forms.CharField(min_length=1, max_length=28, strip=True)
 
         test_template = "test_{}_{}"
         test_ids = order_hierarchy["stages_of_tests"].keys()
