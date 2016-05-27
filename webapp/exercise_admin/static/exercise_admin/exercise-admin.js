@@ -22,7 +22,7 @@ function close_popup_and_add_questions(questions) {
         $.each(questions, function(index, db_question) {
             console.log(questions);
             if (db_question.question === question) {
-                id = db_question.id;
+                id = "" + db_question.id;
                 type = db_question.readable_type;
                 not_saved = false;
                 return false;
@@ -117,29 +117,24 @@ function change_tag_width(input_elem) {
     }
 }
 
+var tag_enum = 1;
+
 function add_tag() {
     var ul = $('ul.exercise-tags');
     var li = $('<li class="exercise-tag">');
-    var tag_n = ul.children().length + 1;
 
-    var new_tag = $('<input type="text" id="exercise-tag-' + tag_n + '" class="exercise-tag-input" name="exercise_tag_' + tag_n + '" value="?" maxlength="32" onfocus="highlight_parent_li(this);" oninput="change_tag_width(this);">');
+    var new_tag = $('<input type="text" id="exercise-tag-new-' + tag_enum + '" class="exercise-tag-input" name="exercise_tag_' + tag_enum +
+                    '" value="?" maxlength="32" onfocus="highlight_parent_li(this);" oninput="change_tag_width(this);">');
     var new_button = $('<button type="button" class="delete-button" onclick="remove_tag(this);">x</button>');
     li.append(new_tag);
     li.append(new_button);
     ul.append(li);
+    tag_enum++;
 }
 
 function remove_tag(tag_elem) {
     var li = $(tag_elem).parent();
     li.remove();
-    
-    var ul = $('ul.exercise-tags');
-    ul.children().each(function(index, element) {
-        $(element).find("input[type=text].exercise-tag-input").attr({
-            id: 'exercise-tag-' + (index + 1),
-            name: 'exercise_tag_' + (index + 1)
-        });
-    });
 }
 
 function exercise_name_changed(e) {
@@ -182,35 +177,38 @@ function command_name_changed(e) {
     $('#command-' + split_id[1]).html(new_name);
 }
 
+var fb_choice_enum = 1;
+
 function add_feedback_choice(id_prefix, name_prefix, container_div_id, choices_div_id, named, choice_val) {
     var TITLE_TEXT = "Deletes an answer choice of a feedback question";
 
     var choice_container_div = $('#' + container_div_id);
     var choices_div = $('#' + choices_div_id);
     var label_n = choices_div.children().length + 1;
-    var choice_div = $('<div id="' + id_prefix + '-div-' + label_n + '" class="feedback-choice-div">');
-    var new_label = $('<label class="feedback-choice-label" for="' + id_prefix + '-' + label_n + '">');
-    var delete_params = [id_prefix, name_prefix, container_div_id, choices_div_id, label_n, named].join("', '")
-    var input = $('<input type="text" id="' + id_prefix + '-' + label_n + '" class="feedback-choice">');
+    var choice_div = $('<div id="' + id_prefix + '-div-' + fb_choice_enum + '" class="feedback-choice-div">');
+    var new_label = $('<label class="feedback-choice-label" for="' + id_prefix + '-' + fb_choice_enum + '">');
+    var input = $('<input type="text" id="' + id_prefix + '-' + fb_choice_enum + '" class="feedback-choice">');
 
     new_label.append('<span class="feedback-choice-span">Choice ' + label_n + ':</span>');
     if (typeof choice_val !== "undefined") {
         input.val(choice_val);
     }
     if (named) {  
-        input.attr("name", name_prefix + "_{" + label_n + "}");
+        input.attr("name", name_prefix + "_{" + fb_choice_enum + "}");
     } else if (label_n <= 2) {
         input.attr("oninput", "update_create_feedback_button_state();");
     }
     new_label.append(input);
     if (label_n > 2) {
+        var delete_params = [id_prefix, fb_choice_enum].join("', '")
         new_label.append('<button type="button" class="delete-button" title="' + TITLE_TEXT +
                          '" onclick="delete_feedback_choice(\'' + delete_params + '\');">x</button>');
     }
     
     choice_div.append(new_label);
-    choice_div.append('<div id="' + id_prefix + "-" + label_n + '-error" class="admin-error"></div>');
+    choice_div.append('<div id="' + id_prefix + "-" + fb_choice_enum + '-error" class="admin-error"></div>');
     choices_div.append(choice_div);
+    fb_choice_enum++;
 }
 
 function add_choice_to_selected_feedback() {
@@ -221,23 +219,8 @@ function add_choice_to_selected_feedback() {
     add_feedback_choice("feedback-choice-" + question_id, "choice_field_[" + question_id + "]", "feedback-choice-container", choices_div_id, true);
 }
 
-function delete_feedback_choice(id_prefix, name_prefix, container_div_id, choices_div_id, label_n, named) {
-    var choice_container_div = $('#' + container_div_id);
-    var choices_div = $('#' + choices_div_id);
-    var choice_div = $('#' + id_prefix + '-div-' + label_n);
-    var next_choices = choice_div.nextAll();
-    var choice_values = [];
-
-    next_choices.each(function() {
-        choice_values.push($(this).find("input[type=text].feedback-choice").val());
-    });
-
-    choice_div.remove();
-    next_choices.remove();
-    $.each(choice_values, function(index, value) {
-        add_feedback_choice(id_prefix, name_prefix, container_div_id, choices_div_id, named);
-        choices_div.children().last().find("input[type=text].feedback-choice").val(value);
-    });
+function delete_feedback_choice(id_prefix, choice_enum) {
+    $('#' + id_prefix + '-div-' + choice_enum).remove();
 }
 
 function handle_feedback_type_selection(select) {
@@ -721,7 +704,7 @@ function add_command(test_id, stage_id) {
 
 function edit_feedback_form_success(data, text_status, jqxhr_obj) {
     var ID_PATTERN = /\[(.*?)\]/;
-    var CHOICE_N_PATTERN = /\{(.*?)\}/;
+    var CHOICE_ENUM_PATTERN = /\{(.*?)\}/;
     if (data.error) {
         var sep = "<br>";
         $.each(data.error, function(err_source, err_msg) {
@@ -734,8 +717,8 @@ function edit_feedback_form_success(data, text_status, jqxhr_obj) {
                 } else if (err_source.startsWith("type_field")) {
                     var error_div = $("#feedback-error");
                 } else if (err_source.startsWith("choice_field")) {
-                    var choice_n = err_source.match(CHOICE_N_PATTERN)[1];
-                    var error_div = $("#feedback-choice-" + question_id + "-" + choice_n + "-error");
+                    var choice_enum = err_source.match(CHOICE_ENUM_PATTERN)[1];
+                    var error_div = $("#feedback-choice-" + question_id + "-" + choice_enum + "-error");
                 }
             }
             error_div.html(err_msg.join(sep));
