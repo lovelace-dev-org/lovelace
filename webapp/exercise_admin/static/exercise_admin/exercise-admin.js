@@ -9,24 +9,40 @@ function close_popup(popup) {
     popup.css({"opacity":"0", "pointer-events":"none"});
 }
 
-function close_popup_and_add_questions() {
+function close_popup_and_add_questions(questions) {
     var TITLE_TEXT = "Deletes the relation between the feedback question and the exercise";
     var target_tbody = $("#feedback-question-table tbody");
-    $("#add-feedback-table > tbody > tr").each(function(index) {
-        if ($(this).find("input.feedback-question-checkbox:checked").length > 0) {
-            var question = $(this).find("label.feedback-question-label").text();
-            var in_table = false;
-            target_tbody.find("td.question-cell").each(function() {
-                if ($(this).html() === question) {
-                    in_table = true;
-                    return false;
-                }
-            });
-            if (in_table) {
-                return;
+    $("#add-feedback-table > tbody input.feedback-question-checkbox:checked").each(function(index) {
+        var id = $(this).attr("data-question-id");
+        var question = $("#feedback-question-" + id).val();
+        var type = "";
+        var in_table = false;
+        var not_saved = true;
+        
+        $.each(questions, function(index, db_question) {
+            console.log(questions);
+            if (db_question.question === question) {
+                id = db_question.id;
+                type = db_question.readable_type;
+                not_saved = false;
+                return false;
             }
-            var type = $(this).children("td.type-cell").text();
-            var tr = $('<tr>');
+        });
+        if (not_saved) {
+            return;
+        }
+
+        var tr = $('<tr data-question-id="' + id + '">');
+        target_tbody.find("tr").each(function() {
+            if ($(this).attr("data-question-id") === id) {
+                tr = $(this);
+                in_table = true;
+                return false;
+            }
+        });
+        if (in_table) {
+            tr.children("td.question-cell").html(question);
+        } else {
             var td_delete = $('<td class="delete-cell">');
             tr.append('<td class="question-cell">' + question + '</td>');
             tr.append('<td class="type-cell">' + type + '</td>');
@@ -309,7 +325,8 @@ function add_feedback_question_to_popup(question, id, type, readable_type, choic
     var inputs_div = $("#edit-feedback-question-inputs");
     var input_div = $('<div id="feedback-question-input-div-' + id + '">');
     var label = $('<label class="feedback-question-input-label" for="feedback-question-' + id + '">');
-    var checkbox = $('<input type="checkbox" id="fb-question-checkbox-' + id + '" class="feedback-question-checkbox">');
+    var checkbox = $('<input type="checkbox" id="fb-question-checkbox-' + id +
+                     '" class="feedback-question-checkbox" data-question-id="' + id + '">');
     if (checked) {
         checkbox.prop("checked", true);
     }
@@ -475,15 +492,23 @@ function show_edit_included_file_popup(file_id, purpose, chown, chgrp) {
     $("#included-file-purpose-" + file_id).val(purpose);
     $("#included-file-chown-" + file_id).val(chown);
     $("#included-file-chgrp-" + file_id).val(chgrp);
+    $("#file-chmod-error-" + file_id).hide();
     popup.css({"opacity": "1", "pointer-events": "auto"});
 }
 
 function update_included_file_ok_button_state(file_id) {
-    var button = $("#included-file-ok-button-" + file_id);
-    if ($("#included-file-default-name-" + file_id).val().length > 0 &&
-        $("#included-file-name-" + file_id).val().length > 0 &&
-        $("#included-file-chmod-" + file_id).val().length > 0 &&
-        $("#included-file-description-" + file_id).val().length > 0) {
+    if (typeof file_id !== "undefined") {
+        file_id = "-" + file_id;
+    } else {
+        file_id = "";
+    }
+    
+    var button = $("#included-file-ok-button" + file_id);
+    if ($("#included-file" + file_id).val().length > 0 &&
+        $("#included-file-default-name" + file_id).val().length > 0 &&
+        $("#included-file-name" + file_id).val().length > 0 &&
+        $("#included-file-chmod" + file_id).val().length > 0 &&
+        $("#included-file-description" + file_id).val().length > 0) {
         button.prop("disabled", false);
     } else {
         button.prop("disabled", true);
@@ -494,21 +519,30 @@ function close_popup_and_edit_included_file(file_id) {
     var td_name = $("#included-file-td-name-" + file_id);
     var td_purpose = $("#included-file-td-purpose-" + file_id);
     var td_description = $("#included-file-td-description-" + file_id);
+    var chmod_str = $("#included-file-chmod-" + file_id).val();
+    var found = chmod_str.match(/^((r|-)(w|-)(x|-)){3}$/);
+
+    if (found === null || found[0] != chmod_str) {
+        var chmod_error_div = $("#file-chmod-error-" + file_id);
+        chmod_error_div.text("File access mode was of incorrect format! Give 9 character, each either r, w, x or -!");
+        chmod_error_div.css({"display": "block"});
+        return;
+    }
     
     td_name.html($("#included-file-name-" + file_id).val());
-    console.log($("#included-file-purpose-" + file_id + " option:selected"));
     td_purpose.html($("#included-file-purpose-" + file_id + " option:selected").text());
     td_description.html($("#included-file-description-" + file_id).val());
-
     close_popup($("#edit-included-file-" + file_id));
 }
 
 function show_add_included_file_popup() {
-    
+    var popup = $("#add-included-file");
+    update_included_file_ok_button_state();
+    popup.css({"opacity": "1", "pointer-events": "auto"});
 }
 
 function show_edit_instance_files_popup() {
-
+    
 }
 
 function submit_main_form(e) {
@@ -710,8 +744,8 @@ function edit_feedback_form_success(data, text_status, jqxhr_obj) {
             //TODO: Scroll to the choice that caused the error
         });
     } else if (data.result) {
-        console.log("Feedback questions edited successfully!");
-        close_popup_and_add_questions();
+        console.log("Feedback questions edited successfully!");    
+        close_popup_and_add_questions(data.result);
     }
 }
 
