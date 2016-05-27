@@ -312,7 +312,8 @@ def get_feedback_questions(request):
         if question.question_type == "MULTIPLE_CHOICE_FEEDBACK":
             question_json["choices"] = [choice.answer for choice in question.get_choices()]
         result.append(question_json)
-    
+
+    print(result)
     return JsonResponse({
         "result": result
     })
@@ -388,11 +389,4 @@ def edit_feedback_questions(request):
             "error" : form.errors
         })
     
-    return JsonResponse({
-        "result" : {
-            "question" : question,
-            "id" : q_obj.id,
-            "type" : q_obj.get_human_readable_type(),
-            "choices" : choices,
-        }
-    })
+    return get_feedback_questions(request)
