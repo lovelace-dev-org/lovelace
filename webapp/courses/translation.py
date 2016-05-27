@@ -1,16 +1,18 @@
 from modeltranslation.translator import register, TranslationOptions
 
-from courses.models import Course, CourseInstance, \
+from courses.models import Course, CourseInstance,\
     \
-    File, Image, VideoLink, CalendarDate, Term, \
+    File, Image, VideoLink, CalendarDate, Term,\
     \
-    ContentPage, Lecture, MultipleChoiceExercise, CheckboxExercise, \
-    TextfieldExercise, CodeReplaceExercise, CodeInputExercise, \
-    FileUploadExercise, \
+    ContentPage, Lecture, MultipleChoiceExercise, CheckboxExercise,\
+    TextfieldExercise, CodeReplaceExercise, CodeInputExercise,\
+    FileUploadExercise,\
     \
-    Hint, FileExerciseTestStage, \
-    TextfieldExerciseAnswer, MultipleChoiceExerciseAnswer, \
-    CheckboxExerciseAnswer, CodeInputExerciseAnswer, \
+    Hint, FileExerciseTestStage, FileExerciseTestCommand,\
+    InstanceIncludeFile, FileExerciseTestIncludeFile,\
+    FileExerciseTestIncludeFile, IncludeFileSettings,\
+    TextfieldExerciseAnswer, MultipleChoiceExerciseAnswer,\
+    CheckboxExerciseAnswer, CodeInputExerciseAnswer,\
     CodeReplaceExerciseAnswer
 
 
@@ -95,7 +97,21 @@ class HintTranslationOptions(TranslationOptions):
 class FileExerciseTestStageTranslationOptions(TranslationOptions):
     fields = ('name',)
 
-# TODO: Other file exercise stuff: deter until pipeline overhaul done.
+@register(FileExerciseTestCommand)
+class FileExerciseTestCommandTranslationOptions(TranslationOptions):
+    fields = ('command_line', 'input_text',)
+
+@register(InstanceIncludeFile)
+class InstanceIncludeFileTranslationOptions(TranslationOptions):
+    fields = ('default_name', 'description', 'fileinfo',)
+
+@register(FileExerciseTestIncludeFile)
+class FileExerciseTestIncludeFileTranslationOptions(TranslationOptions):
+    fields = ('default_name', 'description', 'fileinfo',)
+
+@register(IncludeFileSettings)
+class IncludeFileSettingsTranslationOptions(TranslationOptions):
+    fields = ('name',)
 
 @register(TextfieldExerciseAnswer)
 class TextfieldExerciseAnswerTranslationOptions(TranslationOptions):

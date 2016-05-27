@@ -1,4 +1,5 @@
 from django import template
+from django.utils.safestring import mark_safe
 
 from courses.models import default_fue_timeout
 
@@ -25,3 +26,8 @@ def test_tab(test_obj, stages_list, jstemplate=False):
         name = "New test"
 
     return {'test': TemplateTest, 'stages': [(TemplateStage, [(TemplateCommand, [])])]}
+
+@register.simple_tag()
+def lang_reminder(lang_code):
+    s = '<span class="language-code-reminder" title="The currently selected translation">{}</span>'.format(lang_code)
+    return mark_safe(s)
