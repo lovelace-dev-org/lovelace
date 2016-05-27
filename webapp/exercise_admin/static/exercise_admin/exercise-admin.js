@@ -799,7 +799,13 @@ function change_current_language(e) {
 
     var new_code = e.target.value;
 
+    // Change the visible code in the language picker
     $('#language-info-code').text(new_code);
+
+    // Change the visible input elements to the correponding language coded ones
+    var translated_elements = $('.translated');
+    translated_elements.removeClass('translated-visible');
+    translated_elements.filter('[data-language-code=' + new_code + ']').addClass('translated-visible');
 
     // TODO: Swap the visible input elements into the corresponding language coded ones
 }

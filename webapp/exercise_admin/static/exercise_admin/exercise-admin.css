@@ -771,3 +771,10 @@ select#language-selector {
 .language-code-reminder:after {
     content: ']';
 }
+
+.translated {
+    display: none;
+}
+.translated-visible {
+    display: block;
+}
