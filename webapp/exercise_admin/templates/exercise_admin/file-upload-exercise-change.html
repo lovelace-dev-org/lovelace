@@ -74,7 +74,7 @@
 
       <div id="include-file-popups">
         {% for include_file in include_files %}
-          {% include_file_popup include_file %}
+          {% include_file_popup include_file "Edit included file: "|add:include_file.file_settings.name  %}
         {% endfor %}
       </div>
     </div>
@@ -153,6 +153,6 @@
     </table>
   </div>
   <div display="none">
-    {% include_file_popup True True %}
+    {% include_file_popup True True True %}
   </div>
 {% endblock %}

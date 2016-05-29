@@ -529,6 +529,7 @@ function confirm_included_file_popup(file_id) {
                 replace(/SAMPLE_PURPOSE/g, purpose).replace(/SAMPLE_GET_PURPOSE_DISPLAY/g, purpose_display).
                 replace(/SAMPLE_CHOWN_SETTINGS/g, chown).replace(/SAMPLE_CHGRP_SETTINGS/g, chgrp);
         });
+        $("#edit-included-file-title-" + file_id).text("Edit included file: " + name);
         $("#included-files-table tbody").append(tr);
     }
     close_popup($("#edit-included-file-" + file_id));
@@ -550,17 +551,17 @@ function create_included_file_popup() {
     var id = "new-" + include_file_enum;
     var popup = $("#edit-included-file-SAMPLE_ID").clone().attr('id', 'edit-included-file-' + id);
     popup.html(function(index, html) {
-        return html.replace(/SAMPLE_ID/g, id).replace(/SAMPLE_DEFAULT_NAME/g, "").
-            replace(/SAMPLE_DESCRIPTION/g, "").replace(/SAMPLE_NAME/g, "").
-            replace(/SAMPLE_CHMOD_SETTINGS/g, "rw-rw-rw-");
+        return html.replace(/SAMPLE_ID/g, id).replace(/SAMPLE_POPUP_TITLE/g, "Add included file").
+            replace(/SAMPLE_DEFAULT_NAME/g, "").replace(/SAMPLE_DESCRIPTION/g, "").
+            replace(/SAMPLE_NAME/g, "").replace(/SAMPLE_CHMOD_SETTINGS/g, "rw-rw-rw-");
     });
     popup.attr("data-file-id", id);
     $("#include-file-popups").append(popup);
     update_included_file_ok_button_state(id);
-    popup.click(function() {
+    $("#edit-included-file-" + id).click(function() {
         cancel_included_file_popup(popup, popup.attr("data-file-id"));
     });
-    popup.click(function(event) {
+    $("#edit-included-file-" + id + " > div").click(function(event) {
         event.stopPropagation();
     });
     popup.css({"opacity": "1", "pointer-events": "auto"});
