@@ -1,6 +1,9 @@
 <div id="edit-included-file-{{ include_file.id }}" class="popup" data-file-id="{{ include_file.id }}">
   <div>
-    <h2 id="edit-included-file-title-{{ include_file.id }}">{{ popup_title }}</h2>
+    <h2 id="edit-included-file-title-{{ include_file.id }}" class="edit-included-file-title">{{ popup_title }}</h2>
+    {% if include_file.fileinfo.url  %}
+      <a href="{{ include_file.fileinfo.url }}" class="file-url">Uploaded file</a>
+    {% endif %}
     <div>
       <label for="included-file-{{ include_file.id }}">
         <span class="file-chmod-span">Choose file:</span>

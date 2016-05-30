@@ -313,7 +313,6 @@ def get_feedback_questions(request):
             question_json["choices"] = [choice.answer for choice in question.get_choices()]
         result.append(question_json)
 
-    print(result)
     return JsonResponse({
         "result": result
     })
@@ -391,3 +390,28 @@ def edit_feedback_questions(request):
         })
     
     return get_feedback_questions(request)
+
+def get_instance_files(request, exercise):
+    if not (request.user.is_staff and request.user.is_authenticated() and request.user.is_active):
+        return JsonResponse({
+            "error": "Only logged in admins can query feedback questions!"
+        })
+    
+    instance_files = InstanceIncludeFile.objects.all()
+    result = []
+    
+    for instance_file in instance_files:
+        try:
+            link = InstanceIncludeFileToExerciseLink.objects.get(include_file=instance_file, exercise=exercise)
+        except InstanceIncludeFileToExerciseLink.DoesNotExist:
+            link = None
+        instance_file_json = {
+            "default_name": instance_file.default_name,
+            "description" : instance_file.description,
+            "link" : link,
+        }
+        result_append(instance_file_json)
+
+    return JsonResponse({
+        "result": result
+    })

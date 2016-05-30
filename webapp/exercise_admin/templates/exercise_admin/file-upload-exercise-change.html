@@ -95,13 +95,13 @@
           </tr>
         </thead>
         <tbody>
-          {% for instance_file_link in instance_files_links %}
+          {% for instance_file_link in instance_file_links %}
             <tr>
               <td>
-                {{ instance_file_link.file_settings.purpose }}
+                {{ instance_file_link.file_settings.name }}
               </td>
               <td>
-                {{ instance_file_link.file_settings.name }}
+                {{ instance_file_link.file_settings.get_purpose_display }}
               </td>
               <td>
                 {{ instance_file_link.include_file.description }}
