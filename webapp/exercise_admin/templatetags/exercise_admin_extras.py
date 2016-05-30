@@ -46,9 +46,12 @@ def include_file_tr(include_file, jstemplate=False):
     return {'include_file' : IncludeFile}
 
 @register.inclusion_tag('exercise_admin/file-upload-exercise-include-file-popup.html')
-def include_file_popup(include_file, jstemplate=False):
+def include_file_popup(include_file, popup_title, jstemplate=False):
     if not jstemplate:
-        return {'include_file': include_file,}
+        return {
+            'include_file': include_file,
+            'popup_title' : popup_title,
+        }
 
     class IncludeFile:
         id = "SAMPLE_ID"
@@ -58,8 +61,14 @@ def include_file_popup(include_file, jstemplate=False):
             "name" : "SAMPLE_NAME",
             "chmod_settings" : "SAMPLE_CHMOD_SETTINGS"
         }
+        fileinfo = {
+            "url" : None,
+        }
 
-    return {'include_file' : IncludeFile}
+    return {
+        'include_file' : IncludeFile,
+        'popup_title' : 'SAMPLE_POPUP_TITLE',
+    }
 
 @register.simple_tag()
 def lang_reminder(lang_code):
