@@ -40,7 +40,8 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_tes
     e_ask_collaborators = form_data['exercise_ask_collaborators']
     e_allowed_filenames = form_data['exercise_allowed_filenames'].split(',') # TODO: Do this in clean
 
-    for lang_code, _ in get_lang_list():
+    lang_list = get_lang_list()
+    for lang_code, _ in lang_list:
         e_name = form_data['exercise_name_{}'.format(lang_code)]
         setattr(exercise, 'name_{}'.format(lang_code), e_name)
 
@@ -101,7 +102,6 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_tes
     stage_count = len(new_stages)
     edited_stages = {}
     for stage_id, stage_info in new_stages.items():
-        s_name = form_data['stage_{}_name'.format(stage_id)]
         s_depends_on = form_data['stage_{}_depends_on'.format(stage_id)]
 
         if stage_id.startswith('news'):
@@ -109,8 +109,11 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_tes
         else:
             current_stage = FileExerciseTestStage.objects.get(id=int(stage_id))
 
+        for lang_code, _ in lang_list:
+            s_name = form_data['stage_{}_name_{}'.format(stage_id, lang_code)]
+            setattr(current_stage, 'name_{}'.format(lang_code), s_name)
+
         current_stage.test = edited_tests[stage_info.test]
-        current_stage.name = s_name
         current_stage.depends_on = s_depends_on
         current_stage.ordinal_number = stage_info.ordinal_number + stage_count + 1 # Note
 
@@ -132,10 +135,8 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_tes
     command_count = len(new_commands)
     edited_commands = {}
     for command_id, command_info in new_commands.items():
-        c_command_line = form_data['command_{}_command_line'.format(command_id)]
         c_significant_stdout = form_data['command_{}_significant_stdout'.format(command_id)]
         c_significant_stderr = form_data['command_{}_significant_stderr'.format(command_id)]
-        c_input_text = form_data['command_{}_input_text'.format(command_id)]
         c_return_value = form_data['command_{}_return_value'.format(command_id)]
         c_timeout = form_data['command_{}_timeout'.format(command_id)]
 
@@ -144,11 +145,15 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_tes
         else:
             current_command = FileExerciseTestCommand.objects.get(id=int(command_id))
 
+        for lang_code, _ in lang_list:
+            c_command_line = form_data['command_{}_command_line_{}'.format(command_id, lang_code)]
+            c_input_text = form_data['command_{}_input_text_{}'.format(command_id, lang_code)]
+            setattr(current_command, 'command_line_{}'.format(lang_code), c_command_line)
+            setattr(current_command, 'input_text_{}'.format(lang_code), c_input_text)
+
         current_command.stage = edited_stages[command_info.stage]
-        current_command.command_line = c_command_line
         current_command.significant_stdout = c_significant_stdout
         current_command.significant_stderr = c_significant_stderr
-        current_command.input_text = c_input_text
         current_command.return_value = c_return_value
         current_command.timeout = c_timeout
         current_command.ordinal_number = command_info.ordinal_number + command_count + 1 # Note

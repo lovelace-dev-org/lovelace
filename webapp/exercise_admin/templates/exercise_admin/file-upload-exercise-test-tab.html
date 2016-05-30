@@ -1,3 +1,8 @@
+{% load i18n %}
+{% load exercise_admin_extras %}
+{% get_current_language as CURRENT_LANGUAGE %}
+{% get_available_languages as AVAILABLE_LANGUAGES %}
+{% get_language_info_list for AVAILABLE_LANGUAGES as LANGUAGES_VERBOSE %}
 <div id="test-tabs-{{ test.id }}">
   <h3>Test specific settings</h3>
 
@@ -20,12 +25,16 @@
       <ol id="stages-sortable-{{ test.id }}">
         {% for stage, commands in stages %}
           <li class="ui-state-default" data-stage-id="{{ stage.id }}">
-            <span onClick="show_stagecmd_information(event);" id="stage-{{ stage.id }}">{{ stage.name }}</span>
+            {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
+              <span class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}" onClick="show_stagecmd_information(event);" id="stage-{{ stage.id }}">{% get_translated_field stage "name" language_choice %}</span>
+            {% endfor %}
             <div>
               <ol id="commands-sortable-{{ test.id }}-{{ stage.id }}">
                 {% for cmd, expected_outputs in commands %}
                   <li class="ui-state-default" data-command-id="{{ cmd.id }}">
-                    <span onClick="show_stagecmd_information(event);" id="command-{{ cmd.id }}" class="clickable-commandline">{{ cmd.command_line }}</span>
+                    {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
+                      <span class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}" onClick="show_stagecmd_information(event);" id="command-{{ cmd.id }}" class="clickable-commandline">{% get_translated_field cmd 'command_line' language_choice %}</span>
+                    {% endfor %}
                   </li>
                 {% endfor %}
               </ol>
@@ -46,10 +55,14 @@
         {% for stage, commands in stages %}
           <div id="stage-information-{{ stage.id }}" class="selection-information">
             <h4>Stage {{ stage.ordinal_number }} information</h4>
-            <div class="form-row">
-              <label for="stage-{{ stage.id }}-name">Stage name: </label>
-              <input type="text" id="stage-{{ stage.id }}-name" name="stage_{{ stage.id }}_name" value="{{ stage.name }}" onInput="stage_name_changed(event);">
-            </div>
+            {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
+              <div class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}">
+                <div class="form-row">
+                  <label for="stage-{{ stage.id }}-name-{{ language_choice }}">Stage name {% lang_reminder language_choice %}: </label>
+                  <input type="text" id="stage-{{ stage.id }}-name-{{ language_choice }}" name="stage_{{ stage.id }}_name_{{ language_choice }}" value="{% get_translated_field stage "name" language_choice %}" onInput="stage_name_changed(event);">
+                </div>
+              </div>
+            {% endfor %}
 
             <div class="form-row">
               <label for="stage-{{ stage.id }}-depends">Depends on: </label>
@@ -71,10 +84,14 @@
           {% for command, expected_outputs in commands %}
             <div id="command-information-{{ command.id }}" class="selection-information">
               <h4>Stage {{ stage.ordinal_number }}, command {{ command.ordinal_number }} information</h4>
-              <div class="form-row">
-                <label for="command-{{ command.id }}-cmdline">Command line: </label>
-                <input type="text" id="command-{{ command.id }}-cmdline" name="command_{{ command.id }}_command_line" value="{{ command.command_line }}" onInput="command_name_changed(event);">
-              </div>
+              {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
+                <div class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}">
+                  <div class="form-row">
+                    <label for="command-{{ command.id }}-cmdline-{{ language_choice }}">Command line {% lang_reminder language_choice %}: </label>
+                    <input type="text" id="command-{{ command.id }}-cmdline-{{ language_choice }}" name="command_{{ command.id }}_command_line_{{ language_choice }}" value="{% get_translated_field command 'command_line' language_choice %}" onInput="command_name_changed(event);">
+                  </div>
+                </div>
+              {% endfor %}
 
               <div class="form-cb-row">
                 <input type="checkbox" id="command-{{ command.id }}-significant_stdout" name="command_{{ command.id }}_significant_stdout" {% if command.significant_stdout %}checked{% endif %}>
@@ -90,10 +107,14 @@
                 <input type="text" id="command-{{ command.id }}-timeout" name="command_{{ command.id }}_timeout" value="{{ command.timeout }}">
               </div>
 
-              <div class="form-bigrow">
-                <label for="command-{{ command.id }}-input_text">STDIN</label>
-                <textarea id="command-{{ command.id }}-input_text" name="command_{{ command.id }}_input_text" cols="40" rows="4">{{ command.input_text }}</textarea>
-              </div>
+              {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
+                <div class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}">
+                  <div class="form-bigrow">
+                    <label for="command-{{ command.id }}-input_text-{{ language_choice }}">Text that is input to this command (STDIN) {% lang_reminder language_choice %}: </label>
+                    <textarea id="command-{{ command.id }}-input_text-{{ language_choice }}" name="command_{{ command.id }}_input_text_{{ language_choice }}" cols="60" rows="5">{% get_translated_field command 'input_text' language_choice %}</textarea>
+                  </div>
+                </div>
+              {% endfor %}
 
               <div class="form-row">
                 <label for="command-{{ command.id }}-return_value">Expected return value: </label>

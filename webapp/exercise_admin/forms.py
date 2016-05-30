@@ -124,25 +124,35 @@ class CreateFileUploadExerciseForm(forms.Form):
         stage_ids, command_ids = order_hierarchy["commands_of_stages"].keys(), order_hierarchy["commands_of_stages"].values()
 
         for stage_id in stage_ids:
-            stage_name_field = stage_template.format(stage_id, "name")
+            for lang_code, _ in lang_list:
+                stage_name_kwargs = {}
+                stage_name_field = stage_template.format(stage_id, 'name_{}'.format(lang_code))
+                if lang_code != default_lang:
+                    stage_name_kwargs['required'] = False
+                self.fields[stage_name_field] = forms.CharField(min_length=1, max_length=64, strip=True, **stage_name_kwargs)
             stage_depends_on_field = stage_template.format(stage_id, "depends_on")
-            self.fields[stage_name_field] = forms.CharField(min_length=1, max_length=64, strip=True)
             self.fields[stage_depends_on_field] = forms.IntegerField(required=False)
 
         command_template = "command_{}_{}"
         command_ids = itertools.chain.from_iterable(command_ids)
 
         for command_id in command_ids:
-            command_command_line_field = command_template.format(command_id, "command_line")
+            for lang_code, _ in lang_list:
+                command_line_kwargs = {}
+                command_command_line_field = command_template.format(command_id, 'command_line_{}'.format(lang_code))
+                if lang_code != default_lang:
+                    command_line_kwargs['required'] = False
+                self.fields[command_command_line_field] = forms.CharField(min_length=1, max_length=255, strip=True)
+            
+                command_input_text_field = command_template.format(command_id, 'input_text_{}'.format(lang_code))
+                self.fields[command_input_text_field] = forms.CharField(required=False, strip=False)
+                
             command_significant_stdout_field = command_template.format(command_id, "significant_stdout")
             command_significant_stderr_field = command_template.format(command_id, "significant_stderr")
-            command_input_text_field = command_template.format(command_id, "input_text")
             command_return_value_field = command_template.format(command_id, "return_value")
             command_timeout_field = command_template.format(command_id, "timeout")
-            self.fields[command_command_line_field] = forms.CharField(min_length=1, max_length=255, strip=True)
             self.fields[command_significant_stdout_field] = forms.BooleanField(required=False)
             self.fields[command_significant_stderr_field] = forms.BooleanField(required=False)
-            self.fields[command_input_text_field] = forms.CharField(required=False, strip=False)
             self.fields[command_return_value_field] = forms.IntegerField(required=False)
             self.fields[command_timeout_field] = forms.DurationField()
         

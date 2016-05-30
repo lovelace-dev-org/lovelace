@@ -172,14 +172,26 @@ def create_exercise(args):
         else:
             stage_range = range(stage_count)
         for j in stage_range:
-            stage = c_models.FileExerciseTestStage(test=test, name="test{}stage{}".format(i, j),  ordinal_number=j + 1)
+            stage = c_models.FileExerciseTestStage(
+                test=test,
+                name_en="test{}stage{}".format(i, j),
+                name_fi="testi{}vaihe{}".format(i, j),
+                ordinal_number=j + 1
+            )
             stage.save()
             if randomize_tests:
                 cmd_range = range(random.randrange(command_count + 1))
             else:
                 cmd_range = range(command_count)
             for k in cmd_range:
-                cmd = c_models.FileExerciseTestCommand(stage=stage, command_line="python testiskripta.py {} {} {}".format(i, j, k), ordinal_number=k + 1)
+                cmd = c_models.FileExerciseTestCommand(
+                    stage=stage,
+                    command_line_en="python testscript.py english {} {} {}".format(i, j, k),
+                    command_line_fi="python testiskripta.py finnish {} {} {}".format(i, j, k),
+                    ordinal_number=k + 1,
+                    input_text_en="text\nthat\ngoes\nline\nby\nline\n{}\n".format((k + 1) * 100),
+                    input_text_fi="tekstiä\njoka\nsyötetään\nrivi\riviltä\n{}\n".format((k + 1) * 100),
+                )
                 cmd.save()
 
 if __name__ == '__main__':
