@@ -260,9 +260,9 @@ def file_upload_exercise(request, exercise_id=None, action=None):
 
         data = request.POST.dict()
         data.pop("csrfmiddlewaretoken")
-        tag_count = len([k for k in data.keys() if k.startswith("exercise_tag")])
+        tag_fields = [k for k in data.keys() if k.startswith("exercise_tag")]
 
-        form = CreateFileUploadExerciseForm(tag_count, order_hierarchy_json, data)
+        form = CreateFileUploadExerciseForm(tag_fields, order_hierarchy_json, data)
 
         if form.is_valid():
             print("DEBUG: the form is valid")
@@ -356,7 +356,7 @@ def edit_feedback_questions(request):
             q_obj = q_obj.get_type_object()
             question = cleaned_data["question_field_[{}]".format(q_obj.id)]
             choice_prefix = "choice_field_[{}]".format(q_obj.id)
-            choices = sorted([v for (k, v) in cleaned_data.items() if k.startswith(choice_prefix) and v])
+            choice_keys = sorted([k for (k, v) in cleaned_data.items() if k.startswith(choice_prefix) and v])
 
             if q_obj.question != question:
                 q_obj.question = question
@@ -364,7 +364,8 @@ def edit_feedback_questions(request):
             if q_obj.question_type == "MULTIPLE_CHOICE_FEEDBACK":
                 existing_choices = q_obj.get_choices()
                 existing_choices_len = len(existing_choices)
-                for i, choice in enumerate(choices):
+                for i, k in enumerate(choice_keys):
+                    choice = cleaned_data[k]
                     if existing_choices_len <= i:
                         MultipleChoiceFeedbackAnswer(question=q_obj, answer=choice).save()
                     elif choice not in [choice.answer for choice in existing_choices]:
