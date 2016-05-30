@@ -232,7 +232,13 @@
           <thead>
             <tr>
               <th>Tries to unlock</th>
-              <th>Hint</th>
+              <th>
+                {% for language_choice, _ in AVAILABLE_LANGUAGES %}
+                  <span class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}">
+                    Hint {% lang_reminder language_choice %}
+                  </span>
+                {% endfor %}
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -242,7 +248,11 @@
                 <input type="number" step="1" class="hint-tries-to-unlock-input" name="hint_tries_[{{ hint.id }}]" value="{{ hint.tries_to_unlock }}">
               </td>
               <td>
-                <input type="text" class="hint-content-input" name="hint_content_[{{ hint.id }}]" value="{{ hint.hint }}">
+                {% for language_choice, _ in AVAILABLE_LANGUAGES %}
+                  <div class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}">
+                    <input type="text" class="hint-content-input" name="hint_content_[{{ hint.id }}]_{{ language_choice }}" value="{% get_translated_field hint 'hint' language_choice %}">
+                  </div>
+                {% endfor %}
               </td>
             </tr>
           {% endfor %}

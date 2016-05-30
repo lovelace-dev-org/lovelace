@@ -103,12 +103,17 @@ def create_exercise(args):
     exercise.feedback_questions.add(*cfqs)
     
     for i in range(hint_count):
-        hint = c_models.Hint(exercise=exercise, hint="Here's hint number {}".format(i))
+        hint = c_models.Hint(
+            exercise=exercise,
+            hint_en="Here's hint number {}".format(i),
+            hint_fi="Tässäpä vihje numero {}".format(i),
+        )
         hint.save()
 
     for i in range(4):
         file_settings = c_models.IncludeFileSettings(
-            name="actual-instancefile{}".format(i),
+            name_en="actual-instancefile{}".format(i),
+            name_fi="varsinainen-instanssitiedosto{}".format(i),
             purpose=random.choice(('REFERENCE', 'INPUT', 'WRAPPER', 'TEST')),
             chown_settings=random.choice(('OWNED', 'NOT_OWNED')),
             chgrp_settings=random.choice(('OWNED', 'NOT_OWNED')),
@@ -122,9 +127,12 @@ def create_exercise(args):
             f_obj = File(f)
             inc_file = c_models.InstanceIncludeFile(
                 instance=instance,
-                default_name="default-instancefile{}".format(i),
-                description="Some file that is used in all or some of the exercises in this instance.",
-                fileinfo=f_obj,
+                default_name_en="default-instancefile{}".format(i),
+                default_name_fi="oletus-instanssitiedosto{}".format(i),
+                description_en="Some file that is used in all or some of the exercises in this instance.",
+                description_fi="Joku tiedosto, jota käytetään kaikissa tai joissain tämän instanssin harjoituksissa.",
+                fileinfo_en=f_obj,
+                fileinfo_fi=f_obj,
             )
             inc_file.save()
             f2elink = c_models.InstanceIncludeFileToExerciseLink(
@@ -145,7 +153,8 @@ def create_exercise(args):
         inc_files = []
         for j in file_range:
             file_settings = c_models.IncludeFileSettings(
-                name="actual-test{}file{}".format(i, j),
+                name_en="actual-test{}file{}".format(i, j),
+                name_fi="varsinainen-testi{}tiedosto{}".format(i, j),
                 purpose=random.choice(('REFERENCE', 'INPUT', 'WRAPPER', 'TEST')),
                 chown_settings=random.choice(('OWNED', 'NOT_OWNED')),
                 chgrp_settings=random.choice(('OWNED', 'NOT_OWNED')),
@@ -158,9 +167,13 @@ def create_exercise(args):
             with open('../test_files/test1.txt', 'r') as f:
                 f_obj = File(f)
                 inc_file = c_models.FileExerciseTestIncludeFile(
-                    default_name="default-test{}file{}".format(i, j),
+                    default_name_en="default-test{}file{}".format(i, j),
+                    default_name_fi="oletus-testi{}tiedosto{}".format(i, j),
+                    description_en="A file used in this exercise.",
+                    description_fi="Tässä tehtävässä käytetty tiedosto.",
                     exercise=exercise,
-                    fileinfo=f_obj,
+                    fileinfo_en=f_obj,
+                    fileinfo_fi=f_obj,
                     file_settings=file_settings,
                 )
                 inc_file.save()
