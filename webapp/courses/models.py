@@ -305,10 +305,10 @@ class ContentPage(models.Model):
     name = models.CharField(max_length=255, help_text="The full name of this page") # Translate
     slug = models.SlugField(max_length=255, db_index=True, unique=True,
                             allow_unicode=True)
-    content = models.TextField(verbose_name="Page content body", blank=True, null=True) # Translate
+    content = models.TextField(verbose_name="Page content body", blank=True, default="") # Translate
     default_points = models.IntegerField(default=1,
                                          help_text="The default points a user can gain by finishing this exercise correctly")
-    access_count = models.PositiveIntegerField(editable=False,blank=True,null=True)
+    access_count = models.PositiveIntegerField(editable=False, default=0)
     tags = ArrayField( # consider: https://github.com/funkybob/django-array-tags
         base_field=models.CharField(max_length=32, blank=True), # TODO: Should tags be like slugs?
         default=list,
@@ -332,7 +332,7 @@ class ContentPage(models.Model):
     feedback_questions = models.ManyToManyField(feedback.models.ContentFeedbackQuestion, blank=True)
 
     # Exercise fields
-    question = models.TextField(blank=True) # Translate
+    question = models.TextField(blank=True, default="") # Translate
     manually_evaluated = models.BooleanField(verbose_name="This exercise is evaluated by hand", default=False)
     ask_collaborators = models.BooleanField(verbose_name="Ask the student to list collaborators", default=False)
     allowed_filenames = ArrayField( # File upload exercise specific

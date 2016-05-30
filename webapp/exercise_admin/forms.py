@@ -3,6 +3,7 @@ import itertools
 
 from django.contrib.postgres.forms import SimpleArrayField
 from django import forms
+from .utils import get_default_lang, get_lang_list
 
 import feedback.models
 
@@ -72,20 +73,42 @@ class CreateFeedbackQuestionForm(forms.Form):
                     if k2.startswith("choice_field_[{}]".format(question_id)) and v == field_val and k1 != k2:
                         choice_error = forms.ValidationError("Duplicate choice!", code="duplicate_choice")
                         self.add_error(k1, choice_error)
-                        
+
+# Only have required fields for the default language, i.e. LANGUAGE_CODE in
+# django.conf.settings.
+
+# The translations for other languages (in django.conf.settings['LANGUAGES'])
+# are optional.
+
 class CreateFileUploadExerciseForm(forms.Form):
-    exercise_name = forms.CharField(max_length=255, required=True, strip=True)
-    exercise_content = forms.CharField(required=False)
+    #exercise_name = forms.CharField(max_length=255, required=True, strip=True) # Translate
+    #exercise_content = forms.CharField(required=False) # Translate
     exercise_default_points = forms.IntegerField(required=True)
     # tags handled at __init__
     exercise_feedback_questions = SimpleArrayField(forms.IntegerField())
-    exercise_question = forms.CharField(required=False)
+    #exercise_question = forms.CharField(required=False) # Translate
     exercise_manually_evaluated = forms.BooleanField(required=False)
     exercise_ask_collaborators = forms.BooleanField(required=False)
     exercise_allowed_filenames = forms.CharField(required=False)
 
     def __init__(self, tag_count, order_hierarchy, *args, **kwargs):
         super(CreateFileUploadExerciseForm, self).__init__(*args, **kwargs)
+
+        # Translated fields
+        # TODO: How to get these dynamically?
+        default_lang = get_default_lang()
+        for lang_code, _ in get_lang_list():
+            # For required fields
+            if lang_code == default_lang:
+                self.fields['exercise_name_{}'.format(lang_code)] = forms.CharField(max_length=255, required=True, strip=True)
+            else:
+                self.fields['exercise_name_{}'.format(lang_code)] = forms.CharField(max_length=255, required=False, strip=True)
+
+            # For other fields
+            self.fields['exercise_content_{}'.format(lang_code)] = forms.CharField(required=False)
+            self.fields['exercise_question_{}'.format(lang_code)] = forms.CharField(required=False)
+
+        # Other dynamic fields
 
         for i in range(tag_count):
             self.fields["exercise_tag_{}".format(i + 1)] = forms.CharField(min_length=1, max_length=28, strip=True)
@@ -123,6 +146,8 @@ class CreateFileUploadExerciseForm(forms.Form):
             self.fields[command_return_value_field] = forms.IntegerField(required=False)
             self.fields[command_timeout_field] = forms.DurationField()
         
-        def clean(self):
-            cleaned_data = super(CreateFileUploadExerciseForm, self).clean()
+    def clean(self):
+        cleaned_data = super(CreateFileUploadExerciseForm, self).clean()
+
+        return cleaned_data
             

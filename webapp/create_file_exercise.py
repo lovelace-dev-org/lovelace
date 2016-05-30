@@ -67,21 +67,38 @@ def create_exercise(args):
     cfqs = [fb_models.ContentFeedbackQuestion.objects.get(question=fb.question) for fb in feedbacks]
 
     course = c_models.Course(
-        name="An example course",
+        name_en="An example course",
+        name_fi="Esimerkkikurssi",
         code="1234567890",
         credits=10,
-        description="A thorough description of this course.",
+        description_en="A thorough description of this course.",
+        description_fi="Täytelälinen kuvaelma kurssituksesta.",
     )
     course.save()
 
     instance = c_models.CourseInstance(
-        name="A running instance of the example course",
+        name_en="A running instance of the example course",
+        name_fi="Juokseva ilmentymä esimerkkikurssista",
         course=course,
     )
     instance.save()
+
+    # TODO: Clean up to use the args
+
+    name_en = "Example file upload exercise"
+    name_fi = "Esimerkillinen tiedostotehtävä"
+    content_en = "= " + name_en + " =\n\nPage contents go here."
+    content_fi = "= " + name_fi + " =\n\nSivun sisältö kuuluu tänne."
+    question_en = "What is the answer to this question?"
+    question_fi = "Mikä on tämän kysymyksen vastaus?"
+    allowed_filenames = ['*.py', 'the_name_of_this_exercise.py', 'kitten.jpg']
     
-    exercise = c_models.FileUploadExercise(name=name, slug="", content=content, question=question, default_points=def_points,
-                                           manually_evaluated=man_evaluated, ask_collaborators=ask_collab, tags=tags)
+    exercise = c_models.FileUploadExercise(
+        name_en=name_en, slug="", content_en=content_en, question_en=question_en,
+        name_fi=name_fi,          content_fi=content_fi, question_fi=question_fi,
+        default_points=def_points, manually_evaluated=man_evaluated, ask_collaborators=ask_collab,
+        tags=tags, allowed_filenames=allowed_filenames,
+    )
     exercise.save()
     exercise.feedback_questions.add(*cfqs)
     
