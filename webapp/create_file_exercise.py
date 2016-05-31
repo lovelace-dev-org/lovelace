@@ -8,6 +8,7 @@ django.setup()
 
 from django.core.files import File
 from django.db import transaction
+from reversion import revisions as reversion
 
 import courses.models as c_models
 import feedback.models as fb_models
@@ -239,5 +240,5 @@ if __name__ == '__main__':
     parser.add_argument("--count-all", dest="count_all", help="Creates a certain number of each object that the exercise contains", type=int, default=None)
     args = parser.parse_args()
 
-    with transaction.atomic():
+    with transaction.atomic(), reversion.create_revision():
         create_exercise(args)

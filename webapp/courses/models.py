@@ -819,7 +819,7 @@ class TextfieldExercise(ContentPage):
         verbose_name = "text field exercise"
         proxy = True
 
-@reversion.register()
+@reversion.register(follow=['fileexercisetest_set', 'fileexercisetestincludefile_set'])
 class FileUploadExercise(ContentPage):
     # TODO: A field for restricting uploadable file names (e.g. by extension, like .py)
     def save(self, *args, **kwargs):
@@ -994,6 +994,7 @@ class Hint(models.Model):
 # TODO: whitelist for allowed file name extensions (e.g. only allow files that end ".py")
 def default_fue_timeout(): return datetime.timedelta(seconds=5)
 
+@reversion.register(follow=['fileexerciseteststage_set'])
 class FileExerciseTest(models.Model):
     exercise = models.ForeignKey(FileUploadExercise, verbose_name="for file exercise", db_index=True)
     name = models.CharField(verbose_name="Test name", max_length=200)
@@ -1009,6 +1010,7 @@ class FileExerciseTest(models.Model):
     class Meta:
         verbose_name = "file exercise test"
 
+@reversion.register(follow=['fileexercisetestcommand_set'])
 class FileExerciseTestStage(models.Model):
     """A stage – a named sequence of commands to run in a file exercise test."""
     test = models.ForeignKey(FileExerciseTest)
@@ -1024,6 +1026,7 @@ class FileExerciseTestStage(models.Model):
         unique_together = ('test', 'ordinal_number')
         ordering = ['ordinal_number']
 
+@reversion.register(follow=['fileexercisetestexpectedoutput_set'])
 class FileExerciseTestCommand(models.Model):
     """A command that shall be executed on the test machine."""
     stage = models.ForeignKey(FileExerciseTestStage)
@@ -1062,6 +1065,7 @@ class FileExerciseTestCommand(models.Model):
         unique_together = ('stage', 'ordinal_number')
         ordering = ['ordinal_number']
 
+@reversion.register()
 class FileExerciseTestExpectedOutput(models.Model):
     """What kind of output is expected from the program?"""
     command = models.ForeignKey(FileExerciseTestCommand)
@@ -1075,6 +1079,7 @@ class FileExerciseTestExpectedOutput(models.Model):
     )
     output_type = models.CharField(max_length=7, default='STDOUT', choices=OUTPUT_TYPE_CHOICES)
 
+@reversion.register()
 class FileExerciseTestExpectedStdout(FileExerciseTestExpectedOutput):
     class Meta:
         verbose_name = "expected output"
@@ -1084,6 +1089,7 @@ class FileExerciseTestExpectedStdout(FileExerciseTestExpectedOutput):
         self.output_type = "STDOUT"
         super(FileExerciseTestExpectedStdout, self).save(*args, **kwargs)
 
+@reversion.register()
 class FileExerciseTestExpectedStderr(FileExerciseTestExpectedOutput):
     class Meta:
         verbose_name = "expected error"
@@ -1094,6 +1100,7 @@ class FileExerciseTestExpectedStderr(FileExerciseTestExpectedOutput):
         super(FileExerciseTestExpectedStderr, self).save(*args, **kwargs)
 
 # Include files
+@reversion.register()
 class InstanceIncludeFileToExerciseLink(models.Model):
     include_file = models.ForeignKey('InstanceIncludeFile')
     exercise = models.ForeignKey('ContentPage')
@@ -1107,7 +1114,8 @@ def get_instancefile_path(instance, filename):
         "{filename}".format(filename=filename), # TODO: Versioning?
         # TODO: Language?
     )
-    
+
+@reversion.register()
 class InstanceIncludeFile(models.Model):
     """
     A file that's linked to an instance and can be included in any exercise
@@ -1128,6 +1136,7 @@ def get_testfile_path(instance, filename):
         # TODO: Language?
     )
 
+@reversion.register()
 class FileExerciseTestIncludeFile(models.Model):
     """
     A file which an admin can include in an exercise's file pool for use in
@@ -1155,6 +1164,7 @@ class FileExerciseTestIncludeFile(models.Model):
     class Meta:
         verbose_name = "included file"
 
+@reversion.register()
 class IncludeFileSettings(models.Model):
     name = models.CharField(verbose_name='File name during test', max_length=255) # Translate
 

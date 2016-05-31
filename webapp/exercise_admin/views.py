@@ -275,10 +275,12 @@ def file_upload_exercise(request, exercise_id=None, action=None):
 
             # create/update the form
             try:
-                with transaction.atomic():
+                with transaction.atomic(), reversion.create_revision():
                     save_file_upload_exercise(exercise, cleaned_data, order_hierarchy_json,
                                               old_test_ids, old_stage_ids, old_cmd_ids,
                                               new_stages, new_commands)
+                    reversion.set_user(request.user)
+                    # TODO: reversion.set_comment(cleaned_data['version_comment'])
             except IntegrityError as e:
                 # TODO: Do something useful
                 raise e
