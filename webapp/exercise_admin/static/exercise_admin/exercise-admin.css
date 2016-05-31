@@ -567,6 +567,8 @@ div.popup div.bordered-editable-area {
     margin-left: 5px;
 }
 
+/* Feedback popup elements */
+
 div#edit-feedback-div {
     margin-top: 30px;
     display: none;
@@ -701,6 +703,16 @@ div.popup div.popup-buttons > input[type=submit].popup-button {
 
 div.popup div.popup-buttons > button.popup-button:disabled {
     background: #ccc;
+}
+
+/* Include file popup elements */
+
+h2.edit-included-file-title {
+    display: inline-block;
+}
+
+div.popup a.file-url {
+    margin-left: 10px;
 }
 
 div.popup input[type=text].file-default-name-input {
