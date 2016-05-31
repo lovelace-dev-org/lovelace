@@ -285,7 +285,7 @@ def run_test(self, test_id, answer_id, exercise_id, student=False):
         files_to_check = answer_object.get_returned_files_raw()
         print("".join("%s:\n%s" % (n, c) for n, c in files_to_check.items()))
     else:
-        files_to_check = {f.name: f.get_file_contents()
+        files_to_check = {f.file_settings.name: f.get_file_contents()
                           for f in exercise_file_objects
                           if f.file_settings.purpose == "REFERENCE"}
         print("".join("%s:\n%s" % (n, c) for n, c in files_to_check.items()))
@@ -296,7 +296,7 @@ def run_test(self, test_id, answer_id, exercise_id, student=False):
     test_results = {test_id: {"fail": True, "name": test.name, "stages": {}}}
     with tempfile.TemporaryDirectory(dir=temp_dir_prefix) as test_dir:
         # Write the files required by this test
-        for name, contents in ((f.name, f.get_file_contents())
+        for name, contents in ((f.file_settings.name, f.get_file_contents())
                                for f in exercise_file_objects
                                if f in test.required_files.all() and
                                f.file_settings.purpose in ("INPUT", "WRAPPER", "TEST")):
@@ -525,23 +525,50 @@ def run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check):
     cmd = command.command_line.replace(
         "$RETURNABLES",
         " ".join(shlex.quote(f) for f in files_to_check)
-    )
-    timeout = to_secs(command.timeout.hour, command.timeout.minute,
-                      command.timeout.second, command.timeout.microsecond)
-    env = {"PWD": test_dir, "LC_CTYPE": "en_US.UTF-8"}
+    ).replace('python', 'python3') # TODO: DEBUG!
+    #timeout = to_secs(command.timeout.hour, command.timeout.minute,
+                      #command.timeout.second, command.timeout.microsecond)
+    timeout = command.timeout.total_seconds()
+    env = {
+        'PWD': test_dir,
+        #'PATH': '/bin:/usr/bin',
+        'LC_CTYPE': 'en_US.UTF-8',
+    }
     args = shlex.split(cmd)
 
     shell_like_cmd = " ".join(shlex.quote(arg) for arg in args)
     print("Running: %s" % shell_like_cmd)
+    
 
     start_time = time.time()
-    proc = subprocess.Popen(args=args, bufsize=-1, executable=None,
-                            stdin=stdin, stdout=stdout, stderr=stderr, # Standard fds
-                            #preexec_fn=demote_process,                 # Demote before fork
-                            close_fds=True,                            # Don't inherit fds
-                            shell=False,                               # Don't run in shell
-                            cwd=env["PWD"], env=env,
-                            universal_newlines=False)                  # Binary stdout
+    try:
+        proc = subprocess.Popen(
+            args=args, bufsize=-1, executable=None,
+            stdin=stdin, stdout=stdout, stderr=stderr, # Standard fds
+            #preexec_fn=demote_process,                 # Demote before fork
+            close_fds=True,                            # Don't inherit fds
+            shell=False,                               # Don't run in shell
+            cwd=env["PWD"], env=env,
+            universal_newlines=False                   # Binary stdout
+        )
+    except FileNotFoundError as e:
+        # In case the executable is not found
+        # TODO: Skip the rest and provide something useful
+        # TODO: Use the proper way to deal with exceptions in Celery tasks
+        proc_results = {
+            'retval': -1, 'timedout': False, 'killed': False, 'runtime': 0,
+            'ordinal_number': command.ordinal_number,
+            'expected_retval': command.return_value,
+            'input_text': command.input_text,
+            'significant_stdout': command.significant_stdout,
+            'significant_stderr': command.significant_stderr,
+            'command_line': shell_like_cmd,
+            'error': str(e),
+        }
+        raise e # DEBUG
+        return proc_results
+    # TODO: Prepare for other errors subprocess.Popen might cause, e.g. permission
+    # related etc.
     
     proc_retval = None
     proc_timedout = False

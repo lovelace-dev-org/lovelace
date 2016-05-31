@@ -230,7 +230,7 @@ def check_answer(request, course_slug, instance_slug, content_slug, revision):
     if not exercise.manually_evaluated:
         if exercise.content_type == "FILE_UPLOAD_EXERCISE":
             task_id = evaluation["task_id"]
-            return check_progress(request, course_slug, content_slug, task_id)
+            return check_progress(request, course_slug, instance_slug, content_slug, revision, task_id)
         exercise.save_evaluation(content, user, evaluation, answer_object)
         evaluation["manual"] = False
     else:
@@ -248,16 +248,18 @@ def check_progress(request, course_slug, instance_slug, content_slug, revision, 
     # TODO: Check permissions
     task = AsyncResult(task_id)
     if task.ready():
-        return file_exercise_evaluation(request, course_slug, content_slug, task_id, task)
+        return file_exercise_evaluation(request, course_slug, instance_slug, content_slug, revision, task_id, task)
     else:
         celery_status = get_celery_worker_status()
         if "errors" in celery_status:
             data = celery_status
         else:
             progress_url = reverse('courses:check_progress',
-                                   kwargs={"course_slug": course_slug,
-                                           "content_slug": content_slug,
-                                           "task_id": task_id,})
+                                   kwargs={'course_slug': course_slug,
+                                           'instance_slug': instance_slug,
+                                           'content_slug': content_slug,
+                                           'revision': revision,
+                                           'task_id': task_id,})
             data = {"state": task.state, "metadata": task.info, "redirect": progress_url}
         return JsonResponse(data)
 

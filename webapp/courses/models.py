@@ -831,8 +831,16 @@ class FileUploadExercise(ContentPage):
         super(FileUploadExercise, self).save(*args, **kwargs)
 
     def save_answer(self, user, ip, answer, files, instance, revision):
+        
+
+        # FIX: DEBUG DEBUG DEBUG DEBUG
+        if revision == "head": revision = 0
+        # FIX: DEBUG DEBUG DEBUG DEBUG
+        
+
         answer_object = UserFileUploadExerciseAnswer(
-            exercise=self, user=user, answerer_ip=ip
+            exercise_id=self.id, user=user, answerer_ip=ip,
+            instance=instance, revision=revision,
         )
         answer_object.save()
         
@@ -847,6 +855,9 @@ class FileUploadExercise(ContentPage):
             raise InvalidExerciseAnswerException("No file was sent!")
         return answer_object
 
+    def get_choices(self, revision=None):
+        return
+    
     def check_answer(self, user, ip, answer, files, answer_object, revision):
         result = rpc_tasks.run_tests.delay(user_id=user.id, exercise_id=self.id,
                                            answer_id=answer_object.id)

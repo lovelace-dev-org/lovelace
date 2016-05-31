@@ -199,8 +199,8 @@ def create_exercise(args):
             for k in cmd_range:
                 cmd = c_models.FileExerciseTestCommand(
                     stage=stage,
-                    command_line_en="python testscript.py english {} {} {}".format(i, j, k),
-                    command_line_fi="python testiskripta.py finnish {} {} {}".format(i, j, k),
+                    command_line_en="python3 testscript.py english {} {} {}".format(i, j, k),
+                    command_line_fi="python3 testiskripta.py finnish {} {} {}".format(i, j, k),
                     ordinal_number=k + 1,
                     input_text_en="text\nthat\ngoes\nline\nby\nline\n{}\n".format((k + 1) * 100),
                     input_text_fi="tekstiä\njoka\nsyötetään\nrivi\riviltä\n{}\n".format((k + 1) * 100),
