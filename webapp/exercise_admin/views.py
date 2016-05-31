@@ -325,7 +325,7 @@ def edit_feedback_questions(request):
         return JsonResponse({
             "error" : {
                 "__all__" : {
-                    "message" : "Only logged in users can create feedback questions!",
+                    "message" : "Only logged in users can edit feedback questions!",
                     "code" : "authentication"
                 }
             }
@@ -394,7 +394,7 @@ def edit_feedback_questions(request):
 def get_instance_files(request, exercise):
     if not (request.user.is_staff and request.user.is_authenticated() and request.user.is_active):
         return JsonResponse({
-            "error": "Only logged in admins can query feedback questions!"
+            "error": "Only logged in admins can query instance files!"
         })
     
     instance_files = InstanceIncludeFile.objects.all()
@@ -415,3 +415,4 @@ def get_instance_files(request, exercise):
     return JsonResponse({
         "result": result
     })
+
