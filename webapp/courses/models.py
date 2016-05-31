@@ -14,6 +14,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.core.urlresolvers import reverse
+from django.utils import translation
 from django.utils.text import slugify as slugify
 from django.contrib.postgres.fields import ArrayField
 
@@ -859,8 +860,10 @@ class FileUploadExercise(ContentPage):
         return
     
     def check_answer(self, user, ip, answer, files, answer_object, revision):
+        lang_code = translation.get_language()
         result = rpc_tasks.run_tests.delay(user_id=user.id, exercise_id=self.id,
-                                           answer_id=answer_object.id)
+                                           answer_id=answer_object.id,
+                                           lang_code=lang_code, revision=revision)
         return {"task_id": result.task_id}
 
     def get_user_evaluation(self, user):

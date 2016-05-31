@@ -101,6 +101,15 @@ def create_exercise(args):
     )
     exercise.save()
     exercise.feedback_questions.add(*cfqs)
+
+    link = c_models.ContentGraph(
+        content=exercise,
+        ordinal_number=1,
+    )
+    link.save()
+    
+    instance.contents.add(link)
+    instance.save()
     
     for i in range(hint_count):
         hint = c_models.Hint(

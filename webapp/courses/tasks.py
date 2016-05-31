@@ -6,6 +6,7 @@ replace exercises.
 from __future__ import absolute_import
 
 from collections import namedtuple
+from django.utils import translation
 from django.contrib.auth.models import User
 
 import redis
@@ -50,7 +51,7 @@ import courses.models
 
 @shared_task(name="courses.run-fileexercise-tests", bind=True,
              serializer='json')
-def run_tests(self, user_id, exercise_id, answer_id):
+def run_tests(self, user_id, exercise_id, answer_id, lang_code, revision):
     # TODO: Actually, just receive the relevant ids for fetching the Django
     #       models here instead of in the Django view.
     # http://celery.readthedocs.org/en/latest/userguide/tasks.html#database-transactions
@@ -74,6 +75,7 @@ def run_tests(self, user_id, exercise_id, answer_id):
     #       - readable file
     #       - as command line parameters!
     #       - in env?
+    translation.activate(lang_code)
 
     try:
         exercise_object = courses.models.FileUploadExercise.objects.get(id=exercise_id)
@@ -519,17 +521,12 @@ def run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check):
         # TODO: Log weird request
         return # TODO: Find a way to signal the failure to the user
 
-    to_secs = lambda hour, minute, second, µsecond: ((hour * 60 + minute) * 60)\
-              + second + (µsecond * 0.000001)
-
     cmd = command.command_line.replace(
         "$RETURNABLES",
         " ".join(shlex.quote(f) for f in files_to_check)
-    ).replace('python', 'python3') # TODO: DEBUG!
-    #timeout = to_secs(command.timeout.hour, command.timeout.minute,
-                      #command.timeout.second, command.timeout.microsecond)
+    )
     timeout = command.timeout.total_seconds()
-    env = {
+    env = { # Remember that some information (like PATH) may come from other sources
         'PWD': test_dir,
         #'PATH': '/bin:/usr/bin',
         'LC_CTYPE': 'en_US.UTF-8',
@@ -556,7 +553,7 @@ def run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check):
         # TODO: Skip the rest and provide something useful
         # TODO: Use the proper way to deal with exceptions in Celery tasks
         proc_results = {
-            'retval': -1, 'timedout': False, 'killed': False, 'runtime': 0,
+            'retval': None, 'timedout': False, 'killed': False, 'runtime': 0,
             'ordinal_number': command.ordinal_number,
             'expected_retval': command.return_value,
             'input_text': command.input_text,
@@ -565,8 +562,10 @@ def run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check):
             'command_line': shell_like_cmd,
             'error': str(e),
         }
-        raise e # DEBUG
+        raise e # TODO: DEBUG! Defer until proper reporting in view.
         return proc_results
+    except PermissionError as e:
+        raise e # TODO: DEBUG! Defer until proper reporting in view.
     # TODO: Prepare for other errors subprocess.Popen might cause, e.g. permission
     # related etc.
     
