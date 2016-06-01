@@ -69,7 +69,7 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_tes
     for removed_test_id in sorted(old_test_ids - {int(test_id) for test_id in test_ids if not test_id.startswith('newt')}):
         print("Test with id={} was removed!".format(removed_test_id))
         removed_test = FileExerciseTest.objects.get(id=removed_test_id)
-        # TODO: Reversion magic!
+        # TODO: Reversion magic! Seems like it's taken care of automatically? Test.
         removed_test.delete()
     
     edited_tests = {}
