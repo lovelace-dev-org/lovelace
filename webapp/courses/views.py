@@ -434,7 +434,10 @@ def content(request, course_slug, instance_slug, content_slug, **kwargs):
     choices = answers = content.get_choices(content, revision=revision)
 
     evaluation = None
+    answer_count = None
     if request.user.is_authenticated():
+        if request.user.is_active and content.is_answerable() and content.get_user_answers(content, request.user):
+            answer_count = content.get_user_answers(content, request.user).count()
         if content_graph and (content_graph.publish_date is None or content_graph.publish_date < datetime.datetime.now()):
             try:
                 evaluation = content.get_user_evaluation(content, request.user)
@@ -457,6 +460,7 @@ def content(request, course_slug, instance_slug, content_slug, **kwargs):
         'question': question,
         'choices': choices,
         'evaluation': evaluation,
+        'answer_count': answer_count,
         'sandboxed': False,
         'terms': terms,
         'revision': revision,
