@@ -264,6 +264,14 @@
       {% block exercise-type-specific %}
       {% endblock %}
 
+      <section class="edit-meta">
+        <h2>Version information</h2>
+        <div class="form-bigrow">
+          <label for="version-comment">Describe the changes you made: </label>
+          <textarea id="version-comment" name="version_comment" rows="3" cols="100" placeholder="E.g. Added a hint. Fixed grammar in the assignment text."></textarea>
+        </div>
+      </section>
+      
       {% block form-controls %}
       {% endblock %}
     </form>

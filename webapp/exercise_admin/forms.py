@@ -89,6 +89,7 @@ class CreateFileUploadExerciseForm(forms.Form):
     exercise_manually_evaluated = forms.BooleanField(required=False)
     exercise_ask_collaborators = forms.BooleanField(required=False)
     exercise_allowed_filenames = forms.CharField(required=False)
+    version_comment = forms.CharField(required=False, strip=True)
 
     def __init__(self, tag_fields, order_hierarchy, *args, **kwargs):
         super(CreateFileUploadExerciseForm, self).__init__(*args, **kwargs)

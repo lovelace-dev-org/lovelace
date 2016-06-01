@@ -183,12 +183,7 @@ def file_upload_exercise(request, exercise_id=None, action=None):
     # GET = show the page
     # POST = validate & save the submitted form
 
-
-    # TODO: ”Create” buttons for new tests, stages, commands etc.
-
     # TODO: All that stuff in admin which allows the user to upload new things etc.
-
-    # TODO: Rethink models.py.
 
     # TODO: How to handle the creation of new exercises? 
 
@@ -225,13 +220,6 @@ def file_upload_exercise(request, exercise_id=None, action=None):
                 cmd_list.append((cmd, expected_outputs))
             stage_list.append((stage, cmd_list))
         test_list.append((test, stage_list))
-    
-    # TODO: Remember the manual versioning!
-    # Save creates new versions, but the version history can also be browsed read-only.
-    # https://django-reversion.readthedocs.io/en/latest/api.html#creating-revisions
-
-    # TODO: Remember the translations!
-    # http://django-modeltranslation.readthedocs.io/en/latest/usage.html
 
     # TODO: Save the additions, removals and editions sent by the user 
     if request.method == "POST":
@@ -280,7 +268,7 @@ def file_upload_exercise(request, exercise_id=None, action=None):
                                               old_test_ids, old_stage_ids, old_cmd_ids,
                                               new_stages, new_commands)
                     reversion.set_user(request.user)
-                    # TODO: reversion.set_comment(cleaned_data['version_comment'])
+                    reversion.set_comment(cleaned_data['version_comment'])
             except IntegrityError as e:
                 # TODO: Do something useful
                 raise e
@@ -294,9 +282,6 @@ def file_upload_exercise(request, exercise_id=None, action=None):
             return JsonResponse({
                 "error": form.errors,
             })
-    
-    # TODO: Modify the admin site to direct file upload exercise edit urls here instead.
-    # ...or maybe modify the urls?
     
     t = loader.get_template("exercise_admin/file-upload-exercise-{action}.html".format(action=action))
     c = {
