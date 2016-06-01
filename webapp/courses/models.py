@@ -480,6 +480,10 @@ class ContentPage(models.Model):
         if name == "get_choices":
             type_model = self.get_type_model()
             func = type_model.get_choices
+        elif name == "get_admin_change_url":
+            type_model = self.get_type_model()
+            # Can be called from a template (without parameter)
+            func = lambda: type_model.get_admin_change_url(self)
         elif name == "save_answer":
             type_model = self.get_type_model()
             func = type_model.save_answer
@@ -858,6 +862,9 @@ class FileUploadExercise(ContentPage):
 
     def get_choices(self, revision=None):
         return
+
+    def get_admin_change_url(self):
+        return reverse("exercise_admin:file_upload_change", args=(self.id,))
     
     def check_answer(self, user, ip, answer, files, answer_object, revision):
         lang_code = translation.get_language()
