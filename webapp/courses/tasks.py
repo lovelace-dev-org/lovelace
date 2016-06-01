@@ -521,6 +521,7 @@ def run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check):
         # TODO: Log weird request
         return # TODO: Find a way to signal the failure to the user
 
+    # TODO: More codes (e.g., $TRANSLATION)
     cmd = command.command_line.replace(
         "$RETURNABLES",
         " ".join(shlex.quote(f) for f in files_to_check)
