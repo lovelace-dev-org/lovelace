@@ -852,6 +852,7 @@ class FileUploadExercise(ContentPage):
         if files:
             filelist = files.getlist('file')
             for uploaded_file in filelist:
+                # TODO: Use stdlib glob or fnmatch to see if file name is allowed
                 return_file = FileUploadExerciseReturnFile(
                     answer=answer_object, fileinfo=uploaded_file
                 )
