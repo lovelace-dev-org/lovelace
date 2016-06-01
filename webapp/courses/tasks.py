@@ -9,6 +9,8 @@ from collections import namedtuple
 from django.utils import translation
 from django.contrib.auth.models import User
 
+from reversion import revisions as reversion
+
 import redis
 
 import json
@@ -44,7 +46,7 @@ from celery import shared_task, chain
 #from courses.models import UserFileUploadExerciseAnswer,\
     #FileUploadExerciseReturnFile
 
-import courses.models
+from courses import models as cm
 
 # TODO: Improve by following the guidelines here:
 #       - https://news.ycombinator.com/item?id=7909201
@@ -78,8 +80,12 @@ def run_tests(self, user_id, exercise_id, answer_id, lang_code, revision):
     translation.activate(lang_code)
 
     try:
-        exercise_object = courses.models.FileUploadExercise.objects.get(id=exercise_id)
-    except courses.models.FileUploadExercise.DoesNotExist as e:
+        exercise_object = cm.FileUploadExercise.objects.get(id=exercise_id)
+
+        if revision is not None:
+            old_exercise_object = reversion.get_for_object(exercise_object).get(revision=revision).object_version.object
+            exercise_object = old_exercise_object
+    except cm.FileUploadExercise.DoesNotExist as e:
         # TODO: Log weird request
         return # TODO: Find a way to signal the failure to the user
 
@@ -90,7 +96,8 @@ def run_tests(self, user_id, exercise_id, answer_id, lang_code, revision):
     # Get the test data
     # TODO: Use prefetch_related?
     
-    tests = courses.models.FileExerciseTest.objects.filter(exercise=exercise_id)
+    #tests = cm.FileExerciseTest.objects.filter(exercise=exercise_id)
+    tests = exercise_object.fileexercisetest_set.all()
 
     student_results = {}
     reference_results = {}
@@ -100,9 +107,9 @@ def run_tests(self, user_id, exercise_id, answer_id, lang_code, revision):
         self.update_state(state="PROGRESS", meta={"current": i, "total": len(tests)})
 
         # TODO: The student's code can be run in parallel with the reference
-        results = run_test(test.id, answer_id, exercise_id, student=True)
+        results = run_test(test.id, answer_id, exercise_id, student=True, revision=revision)
         student_results.update(results)
-        results = run_test(test.id, answer_id, exercise_id)
+        results = run_test(test.id, answer_id, exercise_id, revision=revision)
         reference_results.update(results)
 
     #print(student_results.items())
@@ -127,14 +134,14 @@ def run_tests(self, user_id, exercise_id, answer_id, lang_code, revision):
     correct = evaluation["correct"]
     points = exercise_object.default_points
     
-    evaluation_obj = courses.models.Evaluation(test_results=result_string,
+    evaluation_obj = cm.Evaluation(test_results=result_string,
                                                points=points,
                                                correct=correct)
     evaluation_obj.save()
     
     try:
-        answer_object = courses.models.UserFileUploadExerciseAnswer.objects.get(id=answer_id)
-    except courses.models.UserFileUploadExerciseAnswer.DoesNotExist as e:
+        answer_object = cm.UserFileUploadExerciseAnswer.objects.get(id=answer_id)
+    except cm.UserFileUploadExerciseAnswer.DoesNotExist as e:
         # TODO: Log weird request
         return # TODO: Find a way to signal the failure to the user
     answer_object.evaluation = evaluation_obj
@@ -252,25 +259,38 @@ def generate_results(results, exercise_id):
     return evaluation
 
 @shared_task(name="courses.run-test", bind=True, serializer='json')
-def run_test(self, test_id, answer_id, exercise_id, student=False):
+def run_test(self, test_id, answer_id, exercise_id, student=False, revision=None):
     """
     Runs all the stages of the given test.
     """
     try:
-        test = courses.models.FileExerciseTest.objects.get(id=test_id)
-    except courses.models.FileExerciseTest.DoesNotExist as e:
+        test = cm.FileExerciseTest.objects.get(id=test_id)
+
+        if revision is not None:
+            old_test = reversion.get_for_object(test).get(revision=revision).object_version.object
+            test = old_test
+    except cm.FileExerciseTest.DoesNotExist as e:
         # TODO: Log weird request
         return # TODO: Find a way to signal the failure to the user
 
     try:
-        stages = courses.models.FileExerciseTestStage.objects.filter(test=test_id)
-    except courses.models.FileExerciseTestStage.DoesNotExist as e:
+        #stages = cm.FileExerciseTestStage.objects.filter(test=test_id)
+        stages = test.fileexerciseteststage_set.all()
+    except cm.FileExerciseTestStage.DoesNotExist as e:
         # TODO: Log weird request
         return # TODO: Find a way to signal the failure to the user
 
     try:
-        exercise_file_objects = courses.models.FileExerciseTestIncludeFile.objects.filter(exercise=exercise_id)
-    except courses.models.FileExerciseTestIncludeFile.DoesNotExist as e:
+        exercise_file_objects = cm.FileExerciseTestIncludeFile.objects.filter(exercise=exercise_id)
+        #exercise_file_objects = test.fileexercisetestincludefile_set.all()
+
+        if revision is not None:
+            old_exercise_file_objects = [
+                reversion.get_for_object(exercise_file_object).get(revision=revision).object_version.object
+                for exercise_file_object in exercise_file_objects
+            ]
+            exercise_file_objects = old_exercise_file_objects
+    except cm.FileExerciseTestIncludeFile.DoesNotExist as e:
         # TODO: Log weird request
         return # TODO: Find a way to signal the failure to the user
 
@@ -279,8 +299,8 @@ def run_test(self, test_id, answer_id, exercise_id, student=False):
     # Note: requires a shared/cloned file system!
     if student:
         try:
-            answer_object = courses.models.UserFileUploadExerciseAnswer.objects.get(id=answer_id)
-        except courses.models.UserFileUploadExerciseAnswer.DoesNotExist as e:
+            answer_object = cm.UserFileUploadExerciseAnswer.objects.get(id=answer_id)
+        except cm.UserFileUploadExerciseAnswer.DoesNotExist as e:
             # TODO: Log weird request
             return # TODO: Find a way to signal the failure to the user
         
@@ -320,9 +340,12 @@ def run_test(self, test_id, answer_id, exercise_id, student=False):
         for i, stage in enumerate(stages):
             #self.update_state(state="PROGRESS",
                               #meta={"current": i, "total": len(stages)})
+            if revision is not None:
+                old_stage = reversion.get_for_object(stage).get(revision=revision).object_version.object
+                stage = old_stage
             
             stage_results = run_stage(stage.id, test_dir, temp_dir_prefix,
-                                      list(files_to_check.keys()))
+                                      list(files_to_check.keys()), revision=revision)
             test_results[test_id]["stages"][stage.id] = stage_results
             test_results[test_id]["stages"][stage.id]["name"] = stage.name
             test_results[test_id]["stages"][stage.id]["ordinal_number"] = stage.ordinal_number
@@ -346,15 +369,15 @@ def run_test(self, test_id, answer_id, exercise_id, student=False):
     return test_results
 
 @shared_task(name="courses.run-stage", bind=True, serializer='json')
-def run_stage(self, stage_id, test_dir, temp_dir_prefix, files_to_check):
+def run_stage(self, stage_id, test_dir, temp_dir_prefix, files_to_check, revision=None):
     """
     Runs all the commands of this stage and collects the return values and the
     outputs.
     """
 
     try:
-        commands = courses.models.FileExerciseTestCommand.objects.filter(stage=stage_id)
-    except courses.models.FileExerciseTestCommand.DoesNotExist as e:
+        commands = cm.FileExerciseTestCommand.objects.filter(stage=stage_id)
+    except cm.FileExerciseTestCommand.DoesNotExist as e:
         # TODO: Log weird request
         return # TODO: Find a way to signal the failure to the user
 
@@ -385,9 +408,13 @@ def run_stage(self, stage_id, test_dir, temp_dir_prefix, files_to_check):
     """
     # DEBUG #
     for i, cmd in enumerate(commands):
+        if revision is not None:
+            old_cmd = reversion.get_for_object(cmd).get(revision=revision).object_version.object
+            cmd = old_cmd
+        
         results = run_command_chainable(
             {"id":cmd.id, "input_text":cmd.input_text, "return_value":cmd.return_value},
-            temp_dir_prefix, test_dir, files_to_check
+            temp_dir_prefix, test_dir, files_to_check, revision=revision
         )
         stage_results.update(results)
 
@@ -467,7 +494,7 @@ def cp437_decoder(input_bytes):
                      for byt_ln in input_bytes.split(CRLF))
 
 @shared_task(name="courses.run-command-chain-block", serializer='json')
-def run_command_chainable(cmd, temp_dir_prefix, test_dir, files_to_check, stage_results=None):
+def run_command_chainable(cmd, temp_dir_prefix, test_dir, files_to_check, stage_results=None, revision=None):
     cmd_id, cmd_input_text, cmd_return_value = cmd["id"], cmd["input_text"], cmd["return_value"]
     if stage_results is None or "commands" not in stage_results.keys():
         stage_results = {"commands": {}}
@@ -478,7 +505,7 @@ def run_command_chainable(cmd, temp_dir_prefix, test_dir, files_to_check, stage_
     stdin.write(bytearray(cmd_input_text, "utf-8"))
     stdin.seek(0)
     
-    proc_results = run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check)
+    proc_results = run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check, revision=revision)
     
     stdout.seek(0)
     #proc_results["stdout"] = base64.standard_b64encode(stdout.read()).decode("ASCII")
@@ -511,13 +538,17 @@ def run_command_chainable(cmd, temp_dir_prefix, test_dir, files_to_check, stage_
     return stage_results
 
 @shared_task(name="courses.run-command", serializer='json')
-def run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check):
+def run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check, revision=None):
     """
     Runs the current command of this stage by automated fork & exec.
     """
     try:
-        command = courses.models.FileExerciseTestCommand.objects.get(id=cmd_id)
-    except courses.models.FileExerciseTestCommand.DoesNotExist as e:
+        command = cm.FileExerciseTestCommand.objects.get(id=cmd_id)
+
+        if revision is not None:
+            old_command = reversion.get_for_object(command).get(revision=revision).object_version.object
+            command = old_command
+    except cm.FileExerciseTestCommand.DoesNotExist as e:
         # TODO: Log weird request
         return # TODO: Find a way to signal the failure to the user
 

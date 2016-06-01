@@ -624,7 +624,7 @@ class CheckboxExercise(ContentPage):
         else:
             # We need an old version of _which_ answer choices pointed to this exercise
             old_version = reversion.get_for_object(self).get(revision=revision).object_version.object
-            old_choices = old_version.get_type_object().checkboxexerciseanswer_set
+            old_choices = old_version.get_type_object().checkboxexerciseanswer_set # TODO: Remove get_type_object dependency?
             print(old_choices.all())
             choices = []
             for choice in old_choices.all():
