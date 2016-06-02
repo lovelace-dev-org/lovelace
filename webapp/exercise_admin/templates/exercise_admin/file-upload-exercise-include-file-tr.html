@@ -1,12 +1,25 @@
+{% load i18n %}
+{% load exercise_admin_extras %}
+{% get_current_language as CURRENT_LANGUAGE %}
+{% get_available_languages as AVAILABLE_LANGUAGES %}
+{% get_language_info_list for AVAILABLE_LANGUAGES as LANGUAGES_VERBOSE %}
 <tr id="included-file-tr-{{ include_file.id }}">
   <td id="included-file-td-name-{{ include_file.id }}">
-    {{ include_file.file_settings.name }}
+    {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
+      <span class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}">
+        {% get_translated_field include_file.file_settings "name" language_choice %}
+      </span>
+    {% endfor %}
   </td>
   <td id="included-file-td-purpose-{{ include_file.id }}">
     {{ include_file.file_settings.get_purpose_display }}
   </td>
   <td id="included-file-td-description-{{ include_file.id }}">
-    {{ include_file.description }}
+    {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
+      <span class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}">
+        {% get_translated_field include_file "description" language_choice %}
+      </span>
+    {% endfor %}
   </td>
   <td>
     <button type="button" class="edit-button" title="Opens a popup window to edit an included file"
