@@ -21,6 +21,7 @@
     <script src="{% static 'courses/jquery-ui.min.js' %}"></script>
     <script src="{% static 'courses/jquery.slimscroll.min.js' %}"></script>
     <script src="{% static 'exercise_admin/exercise-admin.js' %}"></script>
+    
     {% block head-script %}
     {% endblock %}
   </head>
@@ -121,7 +122,7 @@
           {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
             <div class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}">
               <div class="form-row">
-                <label for="exercise-name-{{ language_choice }}">Name {% lang_reminder language_choice %}:</label>
+                <label for="exercise-name-{{ language_choice }}">Name {% lang_reminder language_choice %}: </label>
                 <input type="text" id="exercise-name-{{ language_choice }}" name="exercise_name_{{ language_choice }}" value="{% get_translated_field exercise "name" language_choice %}" onInput="exercise_name_changed(event);" autofocus>
               </div>
             </div>
@@ -144,8 +145,8 @@
           {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
             <div class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}">
               <div class="form-bigrow">
-                <label for="exercise-question-{{ language_choice }}">The exercise question {% lang_reminder CURRENT_LANGUAGE %}:</label>
-                <textarea id="exercise-question-{{ language_choice }}" name="exercise_question" cols="100" rows="3">{% get_translated_field exercise "question" language_choice %}</textarea>
+                <label for="exercise-question-{{ language_choice }}">The exercise question {% lang_reminder language_choice %}:</label>
+                <textarea id="exercise-question-{{ language_choice }}" name="exercise_question_{{ language_choice }}" cols="100" rows="3">{% get_translated_field exercise "question" language_choice %}</textarea>
               </div>
             </div>
           {% endfor %}
@@ -231,7 +232,13 @@
           <thead>
             <tr>
               <th>Tries to unlock</th>
-              <th>Hint</th>
+              <th>
+                {% for language_choice, _ in AVAILABLE_LANGUAGES %}
+                  <span class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}">
+                    Hint {% lang_reminder language_choice %}
+                  </span>
+                {% endfor %}
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -241,7 +248,11 @@
                 <input type="number" step="1" class="hint-tries-to-unlock-input" name="hint_tries_[{{ hint.id }}]" value="{{ hint.tries_to_unlock }}">
               </td>
               <td>
-                <input type="text" class="hint-content-input" name="hint_content_[{{ hint.id }}]" value="{{ hint.hint }}">
+                {% for language_choice, _ in AVAILABLE_LANGUAGES %}
+                  <div class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}">
+                    <input type="text" class="hint-content-input" name="hint_content_[{{ hint.id }}]_{{ language_choice }}" value="{% get_translated_field hint 'hint' language_choice %}">
+                  </div>
+                {% endfor %}
               </td>
             </tr>
           {% endfor %}
@@ -253,6 +264,14 @@
       {% block exercise-type-specific %}
       {% endblock %}
 
+      <section class="edit-meta">
+        <h2>Version information</h2>
+        <div class="form-bigrow">
+          <label for="version-comment">Describe the changes you made: </label>
+          <textarea id="version-comment" name="version_comment" rows="3" cols="100" placeholder="E.g. Added a hint. Fixed grammar in the assignment text."></textarea>
+        </div>
+      </section>
+      
       {% block form-controls %}
       {% endblock %}
     </form>
@@ -267,7 +286,7 @@
       <label for="language-selector">Change to </label>
       <select id="language-selector" onChange="change_current_language(event);">
         {% for language in LANGUAGES_VERBOSE %}
-          <option value="{{ language.code }}"{% if language.code == CURRENT_LANGUAGE %} selected{% endif %}>
+          <option value="{{ language.code }}"{% if language.code == CURRENT_LANGUAGE %} selected="selected"{% endif %}>
             {{ language.name_local }} ({{ language.code }})
           </option>
         {% endfor %}

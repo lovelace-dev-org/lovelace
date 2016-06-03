@@ -22,6 +22,7 @@ from feedback.models import ContentFeedbackQuestion, TextfieldFeedbackQuestion, 
 
 # Forms
 from .forms import CreateFeedbackQuestionForm, CreateFileUploadExerciseForm
+from .utils import get_default_lang, get_lang_list
 
 def index(request):
     return HttpResponseNotFound()
@@ -29,22 +30,33 @@ def index(request):
 def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_test_ids,
                               old_stage_ids, old_cmd_ids, new_stages, new_commands):
     # Collect the content page data
-    e_name = form_data['exercise_name']
-    e_content = form_data['exercise_content']
+    #e_name = form_data['exercise_name']
+    #e_content = form_data['exercise_content']
     e_default_points = form_data['exercise_default_points']
-    e_tags = [tag for key, tag in sorted(form_data.items()) if key.startswith('exercise_tag')]
+    e_tags = [tag for key, tag in sorted(form_data.items()) if key.startswith('exercise_tag')] # TODO: Do this in clean
     e_feedback_questions = form_data['exercise_feedback_questions']
-    e_question = form_data['exercise_question']
+    #e_question = form_data['exercise_question']
     e_manually_evaluated = form_data['exercise_manually_evaluated']
     e_ask_collaborators = form_data['exercise_ask_collaborators']
-    e_allowed_filenames = form_data['exercise_allowed_filenames'].split(',') # DEBUG
+    e_allowed_filenames = form_data['exercise_allowed_filenames'].split(',') # TODO: Do this in clean
 
-    exercise.name = e_name
-    exercise.content = e_content
+    lang_list = get_lang_list()
+    for lang_code, _ in lang_list:
+        e_name = form_data['exercise_name_{}'.format(lang_code)]
+        setattr(exercise, 'name_{}'.format(lang_code), e_name)
+
+        e_content = form_data['exercise_content_{}'.format(lang_code)]
+        setattr(exercise, 'content_{}'.format(lang_code), e_content)
+
+        e_question = form_data['exercise_question_{}'.format(lang_code)]
+        setattr(exercise, 'question_{}'.format(lang_code), e_question)
+
+    #exercise.name = e_name
+    #exercise.content = e_content
     exercise.default_points = e_default_points
     exercise.tags = e_tags
     exercise.feedback_questions = e_feedback_questions
-    exercise.question = e_question
+    #exercise.question = e_question
     exercise.manually_evaluated = e_manually_evaluated
     exercise.ask_collaborators = e_ask_collaborators
     exercise.allowed_filenames = e_allowed_filenames
@@ -57,7 +69,7 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_tes
     for removed_test_id in sorted(old_test_ids - {int(test_id) for test_id in test_ids if not test_id.startswith('newt')}):
         print("Test with id={} was removed!".format(removed_test_id))
         removed_test = FileExerciseTest.objects.get(id=removed_test_id)
-        # TODO: Reversion magic!
+        # TODO: Reversion magic! Seems like it's taken care of automatically? Test.
         removed_test.delete()
     
     edited_tests = {}
@@ -90,7 +102,6 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_tes
     stage_count = len(new_stages)
     edited_stages = {}
     for stage_id, stage_info in new_stages.items():
-        s_name = form_data['stage_{}_name'.format(stage_id)]
         s_depends_on = form_data['stage_{}_depends_on'.format(stage_id)]
 
         if stage_id.startswith('news'):
@@ -98,8 +109,11 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_tes
         else:
             current_stage = FileExerciseTestStage.objects.get(id=int(stage_id))
 
+        for lang_code, _ in lang_list:
+            s_name = form_data['stage_{}_name_{}'.format(stage_id, lang_code)]
+            setattr(current_stage, 'name_{}'.format(lang_code), s_name)
+
         current_stage.test = edited_tests[stage_info.test]
-        current_stage.name = s_name
         current_stage.depends_on = s_depends_on
         current_stage.ordinal_number = stage_info.ordinal_number + stage_count + 1 # Note
 
@@ -121,10 +135,8 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_tes
     command_count = len(new_commands)
     edited_commands = {}
     for command_id, command_info in new_commands.items():
-        c_command_line = form_data['command_{}_command_line'.format(command_id)]
         c_significant_stdout = form_data['command_{}_significant_stdout'.format(command_id)]
         c_significant_stderr = form_data['command_{}_significant_stderr'.format(command_id)]
-        c_input_text = form_data['command_{}_input_text'.format(command_id)]
         c_return_value = form_data['command_{}_return_value'.format(command_id)]
         c_timeout = form_data['command_{}_timeout'.format(command_id)]
 
@@ -133,11 +145,15 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_tes
         else:
             current_command = FileExerciseTestCommand.objects.get(id=int(command_id))
 
+        for lang_code, _ in lang_list:
+            c_command_line = form_data['command_{}_command_line_{}'.format(command_id, lang_code)]
+            c_input_text = form_data['command_{}_input_text_{}'.format(command_id, lang_code)]
+            setattr(current_command, 'command_line_{}'.format(lang_code), c_command_line)
+            setattr(current_command, 'input_text_{}'.format(lang_code), c_input_text)
+
         current_command.stage = edited_stages[command_info.stage]
-        current_command.command_line = c_command_line
         current_command.significant_stdout = c_significant_stdout
         current_command.significant_stderr = c_significant_stderr
-        current_command.input_text = c_input_text
         current_command.return_value = c_return_value
         current_command.timeout = c_timeout
         current_command.ordinal_number = command_info.ordinal_number + command_count + 1 # Note
@@ -167,12 +183,7 @@ def file_upload_exercise(request, exercise_id=None, action=None):
     # GET = show the page
     # POST = validate & save the submitted form
 
-
-    # TODO: ”Create” buttons for new tests, stages, commands etc.
-
     # TODO: All that stuff in admin which allows the user to upload new things etc.
-
-    # TODO: Rethink models.py.
 
     # TODO: How to handle the creation of new exercises? 
 
@@ -209,13 +220,6 @@ def file_upload_exercise(request, exercise_id=None, action=None):
                 cmd_list.append((cmd, expected_outputs))
             stage_list.append((stage, cmd_list))
         test_list.append((test, stage_list))
-    
-    # TODO: Remember the manual versioning!
-    # Save creates new versions, but the version history can also be browsed read-only.
-    # https://django-reversion.readthedocs.io/en/latest/api.html#creating-revisions
-
-    # TODO: Remember the translations!
-    # http://django-modeltranslation.readthedocs.io/en/latest/usage.html
 
     # TODO: Save the additions, removals and editions sent by the user 
     if request.method == "POST":
@@ -259,10 +263,12 @@ def file_upload_exercise(request, exercise_id=None, action=None):
 
             # create/update the form
             try:
-                with transaction.atomic():
+                with transaction.atomic(), reversion.create_revision():
                     save_file_upload_exercise(exercise, cleaned_data, order_hierarchy_json,
                                               old_test_ids, old_stage_ids, old_cmd_ids,
                                               new_stages, new_commands)
+                    reversion.set_user(request.user)
+                    reversion.set_comment(cleaned_data['version_comment'])
             except IntegrityError as e:
                 # TODO: Do something useful
                 raise e
@@ -276,9 +282,6 @@ def file_upload_exercise(request, exercise_id=None, action=None):
             return JsonResponse({
                 "error": form.errors,
             })
-    
-    # TODO: Modify the admin site to direct file upload exercise edit urls here instead.
-    # ...or maybe modify the urls?
     
     t = loader.get_template("exercise_admin/file-upload-exercise-{action}.html".format(action=action))
     c = {

@@ -14,6 +14,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.core.urlresolvers import reverse
+from django.utils import translation
 from django.utils.text import slugify as slugify
 from django.contrib.postgres.fields import ArrayField
 
@@ -305,10 +306,10 @@ class ContentPage(models.Model):
     name = models.CharField(max_length=255, help_text="The full name of this page") # Translate
     slug = models.SlugField(max_length=255, db_index=True, unique=True,
                             allow_unicode=True)
-    content = models.TextField(verbose_name="Page content body", blank=True, null=True) # Translate
+    content = models.TextField(verbose_name="Page content body", blank=True, default="") # Translate
     default_points = models.IntegerField(default=1,
                                          help_text="The default points a user can gain by finishing this exercise correctly")
-    access_count = models.PositiveIntegerField(editable=False,blank=True,null=True)
+    access_count = models.PositiveIntegerField(editable=False, default=0)
     tags = ArrayField( # consider: https://github.com/funkybob/django-array-tags
         base_field=models.CharField(max_length=32, blank=True), # TODO: Should tags be like slugs?
         default=list,
@@ -332,7 +333,7 @@ class ContentPage(models.Model):
     feedback_questions = models.ManyToManyField(feedback.models.ContentFeedbackQuestion, blank=True)
 
     # Exercise fields
-    question = models.TextField(blank=True) # Translate
+    question = models.TextField(blank=True, default="") # Translate
     manually_evaluated = models.BooleanField(verbose_name="This exercise is evaluated by hand", default=False)
     ask_collaborators = models.BooleanField(verbose_name="Ask the student to list collaborators", default=False)
     allowed_filenames = ArrayField( # File upload exercise specific
@@ -479,6 +480,10 @@ class ContentPage(models.Model):
         if name == "get_choices":
             type_model = self.get_type_model()
             func = type_model.get_choices
+        elif name == "get_admin_change_url":
+            type_model = self.get_type_model()
+            # Can be called from a template (without parameter)
+            func = lambda: type_model.get_admin_change_url(self)
         elif name == "save_answer":
             type_model = self.get_type_model()
             func = type_model.save_answer
@@ -619,7 +624,7 @@ class CheckboxExercise(ContentPage):
         else:
             # We need an old version of _which_ answer choices pointed to this exercise
             old_version = reversion.get_for_object(self).get(revision=revision).object_version.object
-            old_choices = old_version.get_type_object().checkboxexerciseanswer_set
+            old_choices = old_version.get_type_object().checkboxexerciseanswer_set # TODO: Remove get_type_object dependency?
             print(old_choices.all())
             choices = []
             for choice in old_choices.all():
@@ -818,7 +823,7 @@ class TextfieldExercise(ContentPage):
         verbose_name = "text field exercise"
         proxy = True
 
-@reversion.register()
+@reversion.register(follow=['fileexercisetest_set', 'fileexercisetestincludefile_set'])
 class FileUploadExercise(ContentPage):
     # TODO: A field for restricting uploadable file names (e.g. by extension, like .py)
     def save(self, *args, **kwargs):
@@ -831,14 +836,23 @@ class FileUploadExercise(ContentPage):
         super(FileUploadExercise, self).save(*args, **kwargs)
 
     def save_answer(self, user, ip, answer, files, instance, revision):
+        
+
+        # FIX: DEBUG DEBUG DEBUG DEBUG
+        if revision == "head": revision = 0
+        # FIX: DEBUG DEBUG DEBUG DEBUG
+        
+
         answer_object = UserFileUploadExerciseAnswer(
-            exercise=self, user=user, answerer_ip=ip
+            exercise_id=self.id, user=user, answerer_ip=ip,
+            instance=instance, revision=revision,
         )
         answer_object.save()
         
         if files:
             filelist = files.getlist('file')
             for uploaded_file in filelist:
+                # TODO: Use stdlib glob or fnmatch to see if file name is allowed
                 return_file = FileUploadExerciseReturnFile(
                     answer=answer_object, fileinfo=uploaded_file
                 )
@@ -847,9 +861,17 @@ class FileUploadExercise(ContentPage):
             raise InvalidExerciseAnswerException("No file was sent!")
         return answer_object
 
+    def get_choices(self, revision=None):
+        return
+
+    def get_admin_change_url(self):
+        return reverse("exercise_admin:file_upload_change", args=(self.id,))
+    
     def check_answer(self, user, ip, answer, files, answer_object, revision):
+        lang_code = translation.get_language()
         result = rpc_tasks.run_tests.delay(user_id=user.id, exercise_id=self.id,
-                                           answer_id=answer_object.id)
+                                           answer_id=answer_object.id,
+                                           lang_code=lang_code, revision=revision)
         return {"task_id": result.task_id}
 
     def get_user_evaluation(self, user):
@@ -980,6 +1002,7 @@ class Hint(models.Model):
 # TODO: whitelist for allowed file name extensions (e.g. only allow files that end ".py")
 def default_fue_timeout(): return datetime.timedelta(seconds=5)
 
+@reversion.register(follow=['fileexerciseteststage_set'])
 class FileExerciseTest(models.Model):
     exercise = models.ForeignKey(FileUploadExercise, verbose_name="for file exercise", db_index=True)
     name = models.CharField(verbose_name="Test name", max_length=200)
@@ -995,6 +1018,7 @@ class FileExerciseTest(models.Model):
     class Meta:
         verbose_name = "file exercise test"
 
+@reversion.register(follow=['fileexercisetestcommand_set'])
 class FileExerciseTestStage(models.Model):
     """A stage – a named sequence of commands to run in a file exercise test."""
     test = models.ForeignKey(FileExerciseTest)
@@ -1010,6 +1034,7 @@ class FileExerciseTestStage(models.Model):
         unique_together = ('test', 'ordinal_number')
         ordering = ['ordinal_number']
 
+@reversion.register(follow=['fileexercisetestexpectedoutput_set'])
 class FileExerciseTestCommand(models.Model):
     """A command that shall be executed on the test machine."""
     stage = models.ForeignKey(FileExerciseTestStage)
@@ -1048,6 +1073,7 @@ class FileExerciseTestCommand(models.Model):
         unique_together = ('stage', 'ordinal_number')
         ordering = ['ordinal_number']
 
+@reversion.register()
 class FileExerciseTestExpectedOutput(models.Model):
     """What kind of output is expected from the program?"""
     command = models.ForeignKey(FileExerciseTestCommand)
@@ -1061,6 +1087,7 @@ class FileExerciseTestExpectedOutput(models.Model):
     )
     output_type = models.CharField(max_length=7, default='STDOUT', choices=OUTPUT_TYPE_CHOICES)
 
+@reversion.register()
 class FileExerciseTestExpectedStdout(FileExerciseTestExpectedOutput):
     class Meta:
         verbose_name = "expected output"
@@ -1070,6 +1097,7 @@ class FileExerciseTestExpectedStdout(FileExerciseTestExpectedOutput):
         self.output_type = "STDOUT"
         super(FileExerciseTestExpectedStdout, self).save(*args, **kwargs)
 
+@reversion.register()
 class FileExerciseTestExpectedStderr(FileExerciseTestExpectedOutput):
     class Meta:
         verbose_name = "expected error"
@@ -1080,6 +1108,7 @@ class FileExerciseTestExpectedStderr(FileExerciseTestExpectedOutput):
         super(FileExerciseTestExpectedStderr, self).save(*args, **kwargs)
 
 # Include files
+@reversion.register()
 class InstanceIncludeFileToExerciseLink(models.Model):
     include_file = models.ForeignKey('InstanceIncludeFile')
     exercise = models.ForeignKey('ContentPage')
@@ -1093,7 +1122,8 @@ def get_instancefile_path(instance, filename):
         "{filename}".format(filename=filename), # TODO: Versioning?
         # TODO: Language?
     )
-    
+
+@reversion.register()
 class InstanceIncludeFile(models.Model):
     """
     A file that's linked to an instance and can be included in any exercise
@@ -1114,6 +1144,7 @@ def get_testfile_path(instance, filename):
         # TODO: Language?
     )
 
+@reversion.register()
 class FileExerciseTestIncludeFile(models.Model):
     """
     A file which an admin can include in an exercise's file pool for use in
@@ -1141,6 +1172,7 @@ class FileExerciseTestIncludeFile(models.Model):
     class Meta:
         verbose_name = "included file"
 
+@reversion.register()
 class IncludeFileSettings(models.Model):
     name = models.CharField(verbose_name='File name during test', max_length=255) # Translate
 

@@ -76,7 +76,7 @@
 
 {% block exercise-type-extra %}
   <div class="form-row">
-    <label for="exercise-allowed_filenames">Allowed file names: </label>
+    <label for="exercise-allowed_filenames">Accepted file names: </label>
     <input type="text" id="exercise-allowed_filenames" name="exercise_allowed_filenames" value="{{ exercise.allowed_filenames|join:"," }}">
   </div>
 {% endblock %}
@@ -97,9 +97,21 @@
         </colgroup>
         <thead>
           <tr>
-            <th>File name during test</th>
+            <th>
+              {% for language_choice, _ in AVAILABLE_LANGUAGES %}
+                <span class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}">
+                  File name during test {% lang_reminder language_choice %}
+                </span>
+              {% endfor %}
+            </th>
             <th>Used as</th>
-            <th>Description</th>
+            <th>
+              {% for language_choice, _ in AVAILABLE_LANGUAGES %}
+                <span class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}">
+                  Description {% lang_reminder language_choice %}
+                </span>
+              {% endfor %}
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -127,22 +139,42 @@
         </colgroup>
         <thead>
           <tr>
-            <th>File name during test</th>
+            <th>
+              {% for language_choice, _ in AVAILABLE_LANGUAGES %}
+                <span class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}">
+                  File name during test {% lang_reminder language_choice %}
+                </span>
+              {% endfor %}
+            </th>
             <th>Used as</th>
-            <th>Description</th>
+            <th>
+              {% for language_choice, _ in AVAILABLE_LANGUAGES %}
+                <span class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}">
+                  Description {% lang_reminder language_choice %}
+                </span>
+              {% endfor %}
+            </th>
           </tr>
         </thead>
         <tbody>
           {% for instance_file_link in instance_file_links %}
             <tr data-file-id="{{ instance_file_link.include_file.id }}">
               <td>
-                {{ instance_file_link.file_settings.name }}
+                {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
+                  <span class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}">
+                    {% get_translated_field instance_file_link.file_settings "name" language_choice %}
+                  </span>
+                {% endfor %}
               </td>
               <td>
                 {{ instance_file_link.file_settings.get_purpose_display }}
               </td>
               <td>
-                {{ instance_file_link.include_file.description }}
+                {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
+                  <span class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}">
+                    {% get_translated_field instance_file_link.include_file "description" language_choice %}
+                  </span>
+                {% endfor %}
               </td>
             </tr>
           {% endfor %}

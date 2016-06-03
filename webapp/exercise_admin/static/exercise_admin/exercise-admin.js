@@ -83,6 +83,13 @@ $(document).ready(function() {
             remove_tag(this);
         }
     });
+    // Reset the translation selector
+    $('#language-selector > option').each(function() {
+        if (this.defaultSelected) {
+            this.selected = true;
+            return false;
+        }
+    });
 });
 
 function highlight_parent_li(input_elem) {

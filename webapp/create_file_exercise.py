@@ -8,6 +8,7 @@ django.setup()
 
 from django.core.files import File
 from django.db import transaction
+from reversion import revisions as reversion
 
 import courses.models as c_models
 import feedback.models as fb_models
@@ -67,31 +68,62 @@ def create_exercise(args):
     cfqs = [fb_models.ContentFeedbackQuestion.objects.get(question=fb.question) for fb in feedbacks]
 
     course = c_models.Course(
-        name="An example course",
+        name_en="An example course",
+        name_fi="Esimerkkikurssi",
         code="1234567890",
         credits=10,
-        description="A thorough description of this course.",
+        description_en="A thorough description of this course.",
+        description_fi="Täytelälinen kuvaelma kurssituksesta.",
     )
     course.save()
 
     instance = c_models.CourseInstance(
-        name="A running instance of the example course",
+        name_en="A running instance of the example course",
+        name_fi="Juokseva ilmentymä esimerkkikurssista",
         course=course,
     )
     instance.save()
+
+    # TODO: Clean up to use the args
+
+    name_en = "Example file upload exercise"
+    name_fi = "Esimerkillinen tiedostotehtävä"
+    content_en = "= " + name_en + " =\n\nPage contents go here."
+    content_fi = "= " + name_fi + " =\n\nSivun sisältö kuuluu tänne."
+    question_en = "What is the answer to this question?"
+    question_fi = "Mikä on tämän kysymyksen vastaus?"
+    allowed_filenames = ['*.py', 'the_name_of_this_exercise.py', 'kitten.jpg']
     
-    exercise = c_models.FileUploadExercise(name=name, slug="", content=content, question=question, default_points=def_points,
-                                           manually_evaluated=man_evaluated, ask_collaborators=ask_collab, tags=tags)
+    exercise = c_models.FileUploadExercise(
+        name_en=name_en, slug="", content_en=content_en, question_en=question_en,
+        name_fi=name_fi,          content_fi=content_fi, question_fi=question_fi,
+        default_points=def_points, manually_evaluated=man_evaluated, ask_collaborators=ask_collab,
+        tags=tags, allowed_filenames=allowed_filenames,
+    )
     exercise.save()
     exercise.feedback_questions.add(*cfqs)
+
+    link = c_models.ContentGraph(
+        content=exercise,
+        ordinal_number=1,
+    )
+    link.save()
+    
+    instance.contents.add(link)
+    instance.save()
     
     for i in range(hint_count):
-        hint = c_models.Hint(exercise=exercise, hint="Here's hint number {}".format(i))
+        hint = c_models.Hint(
+            exercise=exercise,
+            hint_en="Here's hint number {}".format(i),
+            hint_fi="Tässäpä vihje numero {}".format(i),
+        )
         hint.save()
 
     for i in range(4):
         file_settings = c_models.IncludeFileSettings(
-            name="actual-instancefile{}".format(i),
+            name_en="actual-instancefile{}".format(i),
+            name_fi="varsinainen-instanssitiedosto{}".format(i),
             purpose=random.choice(('REFERENCE', 'INPUT', 'WRAPPER', 'TEST')),
             chown_settings=random.choice(('OWNED', 'NOT_OWNED')),
             chgrp_settings=random.choice(('OWNED', 'NOT_OWNED')),
@@ -105,9 +137,12 @@ def create_exercise(args):
             f_obj = File(f)
             inc_file = c_models.InstanceIncludeFile(
                 instance=instance,
-                default_name="default-instancefile{}".format(i),
-                description="Some file that is used in all or some of the exercises in this instance.",
-                fileinfo=f_obj,
+                default_name_en="default-instancefile{}".format(i),
+                default_name_fi="oletus-instanssitiedosto{}".format(i),
+                description_en="Some file that is used in all or some of the exercises in this instance.",
+                description_fi="Joku tiedosto, jota käytetään kaikissa tai joissain tämän instanssin harjoituksissa.",
+                fileinfo_en=f_obj,
+                fileinfo_fi=f_obj,
             )
             inc_file.save()
             f2elink = c_models.InstanceIncludeFileToExerciseLink(
@@ -128,7 +163,8 @@ def create_exercise(args):
         inc_files = []
         for j in file_range:
             file_settings = c_models.IncludeFileSettings(
-                name="actual-test{}file{}".format(i, j),
+                name_en="actual-test{}file{}".format(i, j),
+                name_fi="varsinainen-testi{}tiedosto{}".format(i, j),
                 purpose=random.choice(('REFERENCE', 'INPUT', 'WRAPPER', 'TEST')),
                 chown_settings=random.choice(('OWNED', 'NOT_OWNED')),
                 chgrp_settings=random.choice(('OWNED', 'NOT_OWNED')),
@@ -141,9 +177,13 @@ def create_exercise(args):
             with open('../test_files/test1.txt', 'r') as f:
                 f_obj = File(f)
                 inc_file = c_models.FileExerciseTestIncludeFile(
-                    default_name="default-test{}file{}".format(i, j),
+                    default_name_en="default-test{}file{}".format(i, j),
+                    default_name_fi="oletus-testi{}tiedosto{}".format(i, j),
+                    description_en="A file used in this exercise.",
+                    description_fi="Tässä tehtävässä käytetty tiedosto.",
                     exercise=exercise,
-                    fileinfo=f_obj,
+                    fileinfo_en=f_obj,
+                    fileinfo_fi=f_obj,
                     file_settings=file_settings,
                 )
                 inc_file.save()
@@ -155,14 +195,26 @@ def create_exercise(args):
         else:
             stage_range = range(stage_count)
         for j in stage_range:
-            stage = c_models.FileExerciseTestStage(test=test, name="test{}stage{}".format(i, j),  ordinal_number=j + 1)
+            stage = c_models.FileExerciseTestStage(
+                test=test,
+                name_en="test{}stage{}".format(i, j),
+                name_fi="testi{}vaihe{}".format(i, j),
+                ordinal_number=j + 1
+            )
             stage.save()
             if randomize_tests:
                 cmd_range = range(random.randrange(command_count + 1))
             else:
                 cmd_range = range(command_count)
             for k in cmd_range:
-                cmd = c_models.FileExerciseTestCommand(stage=stage, command_line="python testiskripta.py {} {} {}".format(i, j, k), ordinal_number=k + 1)
+                cmd = c_models.FileExerciseTestCommand(
+                    stage=stage,
+                    command_line_en="python3 testscript.py english {} {} {}".format(i, j, k),
+                    command_line_fi="python3 testiskripta.py finnish {} {} {}".format(i, j, k),
+                    ordinal_number=k + 1,
+                    input_text_en="text\nthat\ngoes\nline\nby\nline\n{}\n".format((k + 1) * 100),
+                    input_text_fi="tekstiä\njoka\nsyötetään\nrivi\riviltä\n{}\n".format((k + 1) * 100),
+                )
                 cmd.save()
 
 if __name__ == '__main__':
@@ -188,5 +240,5 @@ if __name__ == '__main__':
     parser.add_argument("--count-all", dest="count_all", help="Creates a certain number of each object that the exercise contains", type=int, default=None)
     args = parser.parse_args()
 
-    with transaction.atomic():
+    with transaction.atomic(), reversion.create_revision():
         create_exercise(args)

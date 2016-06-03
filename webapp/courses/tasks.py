@@ -6,7 +6,10 @@ replace exercises.
 from __future__ import absolute_import
 
 from collections import namedtuple
+from django.utils import translation
 from django.contrib.auth.models import User
+
+from reversion import revisions as reversion
 
 import redis
 
@@ -43,14 +46,14 @@ from celery import shared_task, chain
 #from courses.models import UserFileUploadExerciseAnswer,\
     #FileUploadExerciseReturnFile
 
-import courses.models
+from courses import models as cm
 
 # TODO: Improve by following the guidelines here:
 #       - https://news.ycombinator.com/item?id=7909201
 
 @shared_task(name="courses.run-fileexercise-tests", bind=True,
              serializer='json')
-def run_tests(self, user_id, exercise_id, answer_id):
+def run_tests(self, user_id, exercise_id, answer_id, lang_code, revision):
     # TODO: Actually, just receive the relevant ids for fetching the Django
     #       models here instead of in the Django view.
     # http://celery.readthedocs.org/en/latest/userguide/tasks.html#database-transactions
@@ -74,10 +77,15 @@ def run_tests(self, user_id, exercise_id, answer_id):
     #       - readable file
     #       - as command line parameters!
     #       - in env?
+    translation.activate(lang_code)
 
     try:
-        exercise_object = courses.models.FileUploadExercise.objects.get(id=exercise_id)
-    except courses.models.FileUploadExercise.DoesNotExist as e:
+        exercise_object = cm.FileUploadExercise.objects.get(id=exercise_id)
+
+        if revision is not None:
+            old_exercise_object = reversion.get_for_object(exercise_object).get(revision=revision).object_version.object
+            exercise_object = old_exercise_object
+    except cm.FileUploadExercise.DoesNotExist as e:
         # TODO: Log weird request
         return # TODO: Find a way to signal the failure to the user
 
@@ -88,7 +96,8 @@ def run_tests(self, user_id, exercise_id, answer_id):
     # Get the test data
     # TODO: Use prefetch_related?
     
-    tests = courses.models.FileExerciseTest.objects.filter(exercise=exercise_id)
+    #tests = cm.FileExerciseTest.objects.filter(exercise=exercise_id)
+    tests = exercise_object.fileexercisetest_set.all()
 
     student_results = {}
     reference_results = {}
@@ -98,9 +107,9 @@ def run_tests(self, user_id, exercise_id, answer_id):
         self.update_state(state="PROGRESS", meta={"current": i, "total": len(tests)})
 
         # TODO: The student's code can be run in parallel with the reference
-        results = run_test(test.id, answer_id, exercise_id, student=True)
+        results = run_test(test.id, answer_id, exercise_id, student=True, revision=revision)
         student_results.update(results)
-        results = run_test(test.id, answer_id, exercise_id)
+        results = run_test(test.id, answer_id, exercise_id, revision=revision)
         reference_results.update(results)
 
     #print(student_results.items())
@@ -125,14 +134,14 @@ def run_tests(self, user_id, exercise_id, answer_id):
     correct = evaluation["correct"]
     points = exercise_object.default_points
     
-    evaluation_obj = courses.models.Evaluation(test_results=result_string,
+    evaluation_obj = cm.Evaluation(test_results=result_string,
                                                points=points,
                                                correct=correct)
     evaluation_obj.save()
     
     try:
-        answer_object = courses.models.UserFileUploadExerciseAnswer.objects.get(id=answer_id)
-    except courses.models.UserFileUploadExerciseAnswer.DoesNotExist as e:
+        answer_object = cm.UserFileUploadExerciseAnswer.objects.get(id=answer_id)
+    except cm.UserFileUploadExerciseAnswer.DoesNotExist as e:
         # TODO: Log weird request
         return # TODO: Find a way to signal the failure to the user
     answer_object.evaluation = evaluation_obj
@@ -250,25 +259,38 @@ def generate_results(results, exercise_id):
     return evaluation
 
 @shared_task(name="courses.run-test", bind=True, serializer='json')
-def run_test(self, test_id, answer_id, exercise_id, student=False):
+def run_test(self, test_id, answer_id, exercise_id, student=False, revision=None):
     """
     Runs all the stages of the given test.
     """
     try:
-        test = courses.models.FileExerciseTest.objects.get(id=test_id)
-    except courses.models.FileExerciseTest.DoesNotExist as e:
+        test = cm.FileExerciseTest.objects.get(id=test_id)
+
+        if revision is not None:
+            old_test = reversion.get_for_object(test).get(revision=revision).object_version.object
+            test = old_test
+    except cm.FileExerciseTest.DoesNotExist as e:
         # TODO: Log weird request
         return # TODO: Find a way to signal the failure to the user
 
     try:
-        stages = courses.models.FileExerciseTestStage.objects.filter(test=test_id)
-    except courses.models.FileExerciseTestStage.DoesNotExist as e:
+        #stages = cm.FileExerciseTestStage.objects.filter(test=test_id)
+        stages = test.fileexerciseteststage_set.all()
+    except cm.FileExerciseTestStage.DoesNotExist as e:
         # TODO: Log weird request
         return # TODO: Find a way to signal the failure to the user
 
     try:
-        exercise_file_objects = courses.models.FileExerciseTestIncludeFile.objects.filter(exercise=exercise_id)
-    except courses.models.FileExerciseTestIncludeFile.DoesNotExist as e:
+        exercise_file_objects = cm.FileExerciseTestIncludeFile.objects.filter(exercise=exercise_id)
+        #exercise_file_objects = test.fileexercisetestincludefile_set.all()
+
+        if revision is not None:
+            old_exercise_file_objects = [
+                reversion.get_for_object(exercise_file_object).get(revision=revision).object_version.object
+                for exercise_file_object in exercise_file_objects
+            ]
+            exercise_file_objects = old_exercise_file_objects
+    except cm.FileExerciseTestIncludeFile.DoesNotExist as e:
         # TODO: Log weird request
         return # TODO: Find a way to signal the failure to the user
 
@@ -277,15 +299,15 @@ def run_test(self, test_id, answer_id, exercise_id, student=False):
     # Note: requires a shared/cloned file system!
     if student:
         try:
-            answer_object = courses.models.UserFileUploadExerciseAnswer.objects.get(id=answer_id)
-        except courses.models.UserFileUploadExerciseAnswer.DoesNotExist as e:
+            answer_object = cm.UserFileUploadExerciseAnswer.objects.get(id=answer_id)
+        except cm.UserFileUploadExerciseAnswer.DoesNotExist as e:
             # TODO: Log weird request
             return # TODO: Find a way to signal the failure to the user
         
         files_to_check = answer_object.get_returned_files_raw()
         print("".join("%s:\n%s" % (n, c) for n, c in files_to_check.items()))
     else:
-        files_to_check = {f.name: f.get_file_contents()
+        files_to_check = {f.file_settings.name: f.get_file_contents()
                           for f in exercise_file_objects
                           if f.file_settings.purpose == "REFERENCE"}
         print("".join("%s:\n%s" % (n, c) for n, c in files_to_check.items()))
@@ -296,7 +318,7 @@ def run_test(self, test_id, answer_id, exercise_id, student=False):
     test_results = {test_id: {"fail": True, "name": test.name, "stages": {}}}
     with tempfile.TemporaryDirectory(dir=temp_dir_prefix) as test_dir:
         # Write the files required by this test
-        for name, contents in ((f.name, f.get_file_contents())
+        for name, contents in ((f.file_settings.name, f.get_file_contents())
                                for f in exercise_file_objects
                                if f in test.required_files.all() and
                                f.file_settings.purpose in ("INPUT", "WRAPPER", "TEST")):
@@ -318,9 +340,12 @@ def run_test(self, test_id, answer_id, exercise_id, student=False):
         for i, stage in enumerate(stages):
             #self.update_state(state="PROGRESS",
                               #meta={"current": i, "total": len(stages)})
+            if revision is not None:
+                old_stage = reversion.get_for_object(stage).get(revision=revision).object_version.object
+                stage = old_stage
             
             stage_results = run_stage(stage.id, test_dir, temp_dir_prefix,
-                                      list(files_to_check.keys()))
+                                      list(files_to_check.keys()), revision=revision)
             test_results[test_id]["stages"][stage.id] = stage_results
             test_results[test_id]["stages"][stage.id]["name"] = stage.name
             test_results[test_id]["stages"][stage.id]["ordinal_number"] = stage.ordinal_number
@@ -344,15 +369,15 @@ def run_test(self, test_id, answer_id, exercise_id, student=False):
     return test_results
 
 @shared_task(name="courses.run-stage", bind=True, serializer='json')
-def run_stage(self, stage_id, test_dir, temp_dir_prefix, files_to_check):
+def run_stage(self, stage_id, test_dir, temp_dir_prefix, files_to_check, revision=None):
     """
     Runs all the commands of this stage and collects the return values and the
     outputs.
     """
 
     try:
-        commands = courses.models.FileExerciseTestCommand.objects.filter(stage=stage_id)
-    except courses.models.FileExerciseTestCommand.DoesNotExist as e:
+        commands = cm.FileExerciseTestCommand.objects.filter(stage=stage_id)
+    except cm.FileExerciseTestCommand.DoesNotExist as e:
         # TODO: Log weird request
         return # TODO: Find a way to signal the failure to the user
 
@@ -383,9 +408,13 @@ def run_stage(self, stage_id, test_dir, temp_dir_prefix, files_to_check):
     """
     # DEBUG #
     for i, cmd in enumerate(commands):
+        if revision is not None:
+            old_cmd = reversion.get_for_object(cmd).get(revision=revision).object_version.object
+            cmd = old_cmd
+        
         results = run_command_chainable(
             {"id":cmd.id, "input_text":cmd.input_text, "return_value":cmd.return_value},
-            temp_dir_prefix, test_dir, files_to_check
+            temp_dir_prefix, test_dir, files_to_check, revision=revision
         )
         stage_results.update(results)
 
@@ -465,7 +494,7 @@ def cp437_decoder(input_bytes):
                      for byt_ln in input_bytes.split(CRLF))
 
 @shared_task(name="courses.run-command-chain-block", serializer='json')
-def run_command_chainable(cmd, temp_dir_prefix, test_dir, files_to_check, stage_results=None):
+def run_command_chainable(cmd, temp_dir_prefix, test_dir, files_to_check, stage_results=None, revision=None):
     cmd_id, cmd_input_text, cmd_return_value = cmd["id"], cmd["input_text"], cmd["return_value"]
     if stage_results is None or "commands" not in stage_results.keys():
         stage_results = {"commands": {}}
@@ -476,7 +505,7 @@ def run_command_chainable(cmd, temp_dir_prefix, test_dir, files_to_check, stage_
     stdin.write(bytearray(cmd_input_text, "utf-8"))
     stdin.seek(0)
     
-    proc_results = run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check)
+    proc_results = run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check, revision=revision)
     
     stdout.seek(0)
     #proc_results["stdout"] = base64.standard_b64encode(stdout.read()).decode("ASCII")
@@ -509,39 +538,68 @@ def run_command_chainable(cmd, temp_dir_prefix, test_dir, files_to_check, stage_
     return stage_results
 
 @shared_task(name="courses.run-command", serializer='json')
-def run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check):
+def run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check, revision=None):
     """
     Runs the current command of this stage by automated fork & exec.
     """
     try:
-        command = courses.models.FileExerciseTestCommand.objects.get(id=cmd_id)
-    except courses.models.FileExerciseTestCommand.DoesNotExist as e:
+        command = cm.FileExerciseTestCommand.objects.get(id=cmd_id)
+
+        if revision is not None:
+            old_command = reversion.get_for_object(command).get(revision=revision).object_version.object
+            command = old_command
+    except cm.FileExerciseTestCommand.DoesNotExist as e:
         # TODO: Log weird request
         return # TODO: Find a way to signal the failure to the user
 
-    to_secs = lambda hour, minute, second, µsecond: ((hour * 60 + minute) * 60)\
-              + second + (µsecond * 0.000001)
-
+    # TODO: More codes (e.g., $TRANSLATION)
     cmd = command.command_line.replace(
         "$RETURNABLES",
         " ".join(shlex.quote(f) for f in files_to_check)
     )
-    timeout = to_secs(command.timeout.hour, command.timeout.minute,
-                      command.timeout.second, command.timeout.microsecond)
-    env = {"PWD": test_dir, "LC_CTYPE": "en_US.UTF-8"}
+    timeout = command.timeout.total_seconds()
+    env = { # Remember that some information (like PATH) may come from other sources
+        'PWD': test_dir,
+        #'PATH': '/bin:/usr/bin',
+        'LC_CTYPE': 'en_US.UTF-8',
+    }
     args = shlex.split(cmd)
 
     shell_like_cmd = " ".join(shlex.quote(arg) for arg in args)
     print("Running: %s" % shell_like_cmd)
+    
 
     start_time = time.time()
-    proc = subprocess.Popen(args=args, bufsize=-1, executable=None,
-                            stdin=stdin, stdout=stdout, stderr=stderr, # Standard fds
-                            #preexec_fn=demote_process,                 # Demote before fork
-                            close_fds=True,                            # Don't inherit fds
-                            shell=False,                               # Don't run in shell
-                            cwd=env["PWD"], env=env,
-                            universal_newlines=False)                  # Binary stdout
+    try:
+        proc = subprocess.Popen(
+            args=args, bufsize=-1, executable=None,
+            stdin=stdin, stdout=stdout, stderr=stderr, # Standard fds
+            #preexec_fn=demote_process,                 # Demote before fork
+            close_fds=True,                            # Don't inherit fds
+            shell=False,                               # Don't run in shell
+            cwd=env["PWD"], env=env,
+            universal_newlines=False                   # Binary stdout
+        )
+    except FileNotFoundError as e:
+        # In case the executable is not found
+        # TODO: Skip the rest and provide something useful
+        # TODO: Use the proper way to deal with exceptions in Celery tasks
+        proc_results = {
+            'retval': None, 'timedout': False, 'killed': False, 'runtime': 0,
+            'ordinal_number': command.ordinal_number,
+            'expected_retval': command.return_value,
+            'input_text': command.input_text,
+            'significant_stdout': command.significant_stdout,
+            'significant_stderr': command.significant_stderr,
+            'command_line': shell_like_cmd,
+            'error': str(e),
+        }
+        raise e # TODO: DEBUG! Defer until proper reporting in view.
+        return proc_results
+    except PermissionError as e:
+        raise e # TODO: DEBUG! Defer until proper reporting in view.
+    # TODO: Prepare for other errors subprocess.Popen might cause, e.g. permission
+    # related etc.
     
     proc_retval = None
     proc_timedout = False
