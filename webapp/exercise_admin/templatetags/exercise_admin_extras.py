@@ -70,6 +70,48 @@ def include_file_popup(include_file, popup_title, jstemplate=False):
         'popup_title' : 'SAMPLE_POPUP_TITLE',
     }
 
+@register.inclusion_tag('exercise_admin/file-upload-exercise-edit-instance-file.html')
+def edit_instance_file(create):
+    if create:
+        file_id = "SAMPLE_ID_CREATE"
+    else:
+        file_id = "SAMPLE_ID"
+    return {
+        "file_id" : file_id,
+        "file_default_name" : "SAMPLE_DEFAULT_NAME",
+        "file_description" : "SAMPLE_DESCRIPTION",
+        "create" : create
+    }
+
+@register.inclusion_tag('exercise_admin/file-upload-exercise-edit-file-link.html')
+def edit_instance_file_link(linked):
+    if linked:
+        file_id = "SAMPLE_ID_LINKED"
+    else:
+        file_id = "SAMPLE_ID"
+    return {
+        "file_id" : file_id,
+        "file_name" : "SAMPLE_NAME",
+        "file_purpose" : "SAMPLE_PURPOSE",
+        "file_chown_settings" : "SAMPLE_CHOWN_SETTINGS",
+        "file_chgrp_settings" : "SAMPLE_CHGRP_SETTINGS",
+        "file_chmod_settings" : "SAMPLE_CHMOD_SETTINGS",
+        "linked" : linked
+    }
+
+@register.inclusion_tag('exercise_admin/file-upload-exercise-instance-file-popup-tr.html')
+def instance_file_popup_tr(linked):
+    if linked:
+        file_id = "SAMPLE_ID_LINKED"
+    else:
+        file_id = "SAMPLE_ID"
+    return {
+        "file_id" : file_id,
+        "file_default_name" : "SAMPLE_DEFAULT_NAME",
+        "file_description" : "SAMPLE_DESCRIPTION",
+        "linked" : linked,
+    }
+
 @register.simple_tag()
 def lang_reminder(lang_code):
     s = '<span class="language-code-reminder" title="The currently selected translation">{}</span>'.format(lang_code)

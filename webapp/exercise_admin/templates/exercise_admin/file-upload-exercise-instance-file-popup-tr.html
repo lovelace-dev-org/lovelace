@@ -1,0 +1,22 @@
+<tr id="instance-file-popup-tr-{{ file_id }}">
+  <td class="default-name-cell">
+    <input type="checkbox" id="instance-file-checkbox-{{ file_id }}" class="instance-file-checkbox" data-file-id="{{ file_id }}"{% if linked %} checked{% endif %}>
+    <label id="instance-file-{{ file_id }}-label" for="instance-file-checkbox-{{ file_id }}" class="instance-file-label">
+      {{ file_default_name }}
+    </label>
+  </td>
+  <td class="description-cell">
+    {{ file_description }}
+  </td>
+  <td class="uploaded-file-cell">
+    <a href="{{ file_url }}" class="file-url" download></a>
+  </td>
+  <td class="edit-link-button-cell">
+    <button type="button" class="edit-link-button" title="Opens a menu to {% if linked %}edit the{% else %}add a{% endif %} link between the instance file and the exercise"
+            onclick="show_instance_file_edit_link_menu('{{ file_id }}');"></button>
+  </td>
+  <td class="edit-button-cell">
+    <button type="button" class="edit-button" title="Opens a menu to edit an instance file"
+            onclick="show_instance_file_edit_menu('{{ file_id }}');"></button>
+  </td>
+</tr>

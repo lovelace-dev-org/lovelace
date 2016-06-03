@@ -1,0 +1,66 @@
+<div id="link-instance-file-{{ file_id }}" class="link-instance-file">
+  {% if not linked %}
+    <h2 id="link-instance-file-title-{{ file_id }}">Link instance file to the exercise:</h2>
+  {% else %}
+    <h2 id="link-instance-file-title-{{ file_id }}">Edit exercise link of the instance file: {{ file_default_name }}</h2>
+  {% endif %}  
+  <div>
+    <label class="file-label" for="instance-file-name-{{ file_id }}">
+      <span class="file-name-span">File name during test:</span>
+      <input type="text" id="instance-file-name-{{ file_id }}" class="file-name-input" maxlength="225" value="{{ file_name }}"
+             oninput="update_link_done_button_state('{{ file_id }}');">
+    </label>
+  </div>
+  <div>
+    <label class="file-label" for="instance-file-purpose-{{ file_id }}">
+      <span class="file-purpose-span">Used as:</span>
+      <select id="instance-file-purpose-{{ file_id }}" class="file-purpose-select">
+        <optgroup label="Files written into the test directory for reading">
+          <option value="INPUT">Input file</option>
+        </optgroup>
+        <optgroup label="Files the program is expected to generate">
+          <option value="OUTPUT">Expected output file</option>
+        </optgroup>
+        <optgroup label="Executable files">
+          <option value="REFERENCE">Reference implementation</option>
+          <option value="INPUTGEN">Input generator</option>
+          <option value="WRAPPER">Wrapper for uploaded code</option>
+          <option value="TEST">Unit test</option>
+        </optgroup>
+      </select>
+    </label>
+  </div>
+  <div>
+    <label class="file-label" for="instace-file-chown-{{ file_id }}">
+      <span class="file-chown-span">File user ownership:</span>
+      <select id="instance-file-chown-{{ file_id }}" class="file-chown-select">
+        <option value="OWNED">Owned by the tested program</option>
+        <option value="NOT_OWNED">Not owned by the tested program</option>
+      </select>
+    </label>
+  </div>
+  <div>
+    <label class="file-label" for="instance-file-chgrp-{{ file_id }}">
+      <span class="file-chgrp-span">File group ownership:</span>
+      <select id="instance-file-chgrp-{{ file_id }}" class="file-chgrp-select">
+        <option value="OWNED">Owned by the tested program</option>
+        <option value="NOT_OWNED">Not owned by the tested program</option>
+      </select>
+    </label>
+  </div>
+  <div>
+    <label class="file-label" for="instance-file-chmod-{{ file_id }}">
+      <span class="file-chmod-span">File access mode:</span>
+      <input type="text" id="instance-file-chmod-{{ file_id }}" class="file-chmod-input" maxlength="9" value="{{ file_chmod_settings }}"
+             oninput="update_link_done_button_state('{{ file_id }}');">
+    </label>
+    <div id="file-chmod-error-{{ file_id }}" class="admin-error"></div>
+  </div>
+  {% if not linked %}
+    <button id="link-done-button-{{ file_id }}" type="button" class="add-item" title=""
+            onclick="add_instance_file_to_exercise();" disabled data-button-mode="create">Add link</button>
+  {% else %}
+    <button id="link-done-button-{{ file_id }}" type="button" class="add-item" title="Closes edit exercise link menu"
+            onclick="close_instance_file_menu();" data-button-mode="done">Done editing</button>
+  {% endif %}    
+</div>

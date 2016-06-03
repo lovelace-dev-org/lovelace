@@ -391,7 +391,7 @@ def edit_feedback_questions(request):
     
     return get_feedback_questions(request)
 
-def get_instance_files(request, exercise):
+def get_instance_files(request, exercise_id):
     if not (request.user.is_staff and request.user.is_authenticated() and request.user.is_active):
         return JsonResponse({
             "error": "Only logged in admins can query instance files!"
@@ -402,17 +402,44 @@ def get_instance_files(request, exercise):
     
     for instance_file in instance_files:
         try:
-            link = InstanceIncludeFileToExerciseLink.objects.get(include_file=instance_file, exercise=exercise)
+            link = InstanceIncludeFileToExerciseLink.objects.get(include_file=instance_file, exercise=exercise_id)
         except InstanceIncludeFileToExerciseLink.DoesNotExist:
             link = None
         instance_file_json = {
+            "id" : instance_file.id,
             "default_name": instance_file.default_name,
             "description" : instance_file.description,
-            "link" : link,
+            "link" : {
+                "id" : link.id,
+                "name" : link.file_settings.name,
+                "purpose" : link.file_settings.purpose,
+                "chown_settings" : link.file_settings.chown_settings,
+                "chgrp_settings" : link.file_settings.chgrp_settings,
+                "chmod_settings" : link.file_settings.chmod_settings,
+            }
         }
-        result_append(instance_file_json)
+        result.append(instance_file_json)
 
     return JsonResponse({
         "result": result
     })
 
+def edit_instance_files(request, exercise):
+    if request.method != "POST":
+        return HttpResponseNotAllowed(["POST"])
+
+    if not (request.user.is_staff and request.user.is_authenticated() and request.user.is_active):
+        return JsonResponse({
+            "error" : {
+                "__all__" : {
+                    "message" : "Only logged in users can edit instance files!",
+                    "code" : "authentication"
+                }
+            }
+        })
+
+    
+    data = request.POST.dict()
+    data.pop("csrfmiddlewaretoken")
+
+    return get_instance_files(request, exercise)

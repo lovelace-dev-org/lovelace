@@ -2,7 +2,7 @@
   <div>
     <h2 id="edit-included-file-title-{{ include_file.id }}" class="edit-included-file-title">{{ popup_title }}</h2>
     {% if include_file.fileinfo.url  %}
-      <a href="{{ include_file.fileinfo.url }}" class="file-url">Uploaded file</a>
+      <a href="{{ include_file.fileinfo.url }}" class="file-url" download></a>
     {% endif %}
     <div>
       <label for="included-file-{{ include_file.id }}">
