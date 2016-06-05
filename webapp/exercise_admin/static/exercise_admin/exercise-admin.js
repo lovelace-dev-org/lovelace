@@ -68,7 +68,7 @@ $(document).ready(function() {
     $('div.feedback-choices').slimScroll({
         height: '150px'
     });
-    $('#edit-feedback-popup').click(function() {
+    $('#edit-feedback-popup, #edit-instance-files-popup').click(function() {
         close_popup($(this));
     });
     $('section.included-files div.popup').click(function() {
