@@ -31,7 +31,7 @@
   </div>
   {% if create %}
     <button id="done-button-{{ file_id }}" type="button" class="add-item" title="Closes create instance file menu"
-            onclick="create_new_instance_file_entry();" disabled data-button-mode="add">Create file</button>
+            onclick="create_new_instance_file_entry('{{ file_id }}');" disabled data-button-mode="add">Create file</button>
   {% else %}
     <button id="done-button-{{ file_id }}" type="button" class="add-item" title="Closes edit instance file menu"
             onclick="close_instance_file_menu();" data-button-mode="done">Done editing</button>
