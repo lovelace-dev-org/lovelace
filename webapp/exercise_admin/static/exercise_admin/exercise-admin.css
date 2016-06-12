@@ -696,8 +696,8 @@ div.popup div.popup-buttons {
     text-align: right;
 }
 
-div.popup div.popup-buttons > button.popup-button,
-div.popup div.popup-buttons > input[type=submit].popup-button {
+div.popup div.popup-buttons button.popup-button,
+div.popup div.popup-buttons input[type=submit].popup-button {
     display: inline-block;
     background: #888;
     padding: 0.5rem 1rem;
@@ -708,13 +708,14 @@ div.popup div.popup-buttons > input[type=submit].popup-button {
     border: 2px solid #ccc;
 }
 
-div.popup div.popup-buttons > button.popup-button:disabled {
+div.popup div.popup-buttons button.popup-button:disabled {
     background: #ccc;
 }
 
 /* Include file popup elements */
 
-div.popup h2.edit-included-file-title {
+div.popup h2.edit-included-file-title,
+div.popup h2.create-included-file-title {
     display: inline-block;
 }
 
@@ -725,6 +726,7 @@ div.popup a.file-url {
     height: 25px;
     outline: 0;
     vertical-align: top;
+    margin-left: 10px;
     overflow: hidden;
     color: #4CAF50;
     background-color: #fff;
@@ -741,11 +743,11 @@ div.popup h2.edit-included-file-title + a.file-url {
 
 div.popup input[type=text].file-default-name-input {
     margin-left: 5px;
-    width: 1076px;
+    width: 1047px;
 }
 
 div.popup input[type=text].file-name-input {
-    width: 1025px;
+    width: 994px;
     margin-left: 5px;
 }
 
@@ -756,8 +758,9 @@ div.popup label.file-label {
 
 div.popup textarea.file-description-area {
     margin-top: 5px;
+    margin-left: 5px;
     resize: none;
-    width: 1183px;
+    width: 1180px;
 }
 
 div.popup input[type=select].file-purpose-input {
@@ -893,4 +896,7 @@ select#language-selector {
 }
 .translated-visible {
     display: block;
+}
+span.translated-visible {
+    display: inline-block;
 }

@@ -482,22 +482,23 @@ function add_hint() {
     $("#hint-table tbody").append(tr);
 }
 
-function update_included_file_ok_button_state(file_id) {
-    var button = $("#included-file-ok-button-" + file_id);
-    if ($("#included-file-" + file_id).val().length > 0 &&
-        $("#included-file-default-name-" + file_id).val().length > 0 &&
-        $("#included-file-name-" + file_id).val().length > 0 &&
+function update_included_file_ok_button_state(file_id, lang) {
+    var button = $("#included-file-ok-button-" + file_id + "-" + lang);
+    if ($("#included-file-" + file_id + "-" + lang).val().length > 0 &&
+        $("#included-file-default-name-" + file_id + "-" + lang).val().length > 0 &&
+        $("#included-file-name-" + file_id + "-" + lang).val().length > 0 &&
         $("#included-file-chmod-" + file_id).val().length > 0 &&
-        $("#included-file-description-" + file_id).val().length > 0) {
+        $("#included-file-description-" + file_id  + "-" + lang).val().length > 0) {
         button.prop("disabled", false);
     } else {
         button.prop("disabled", true);
     }
 }
 
-function show_edit_included_file_popup(file_id, purpose, chown, chgrp) {
+function show_edit_included_file_popup(file_id, purpose, chown, chgrp, lang) {
+    console.log(file_id);
     var popup = $("#edit-included-file-" + file_id);
-    update_included_file_ok_button_state(file_id);
+    update_included_file_ok_button_state(file_id, lang);
     $("#included-file-purpose-" + file_id).val(purpose);
     $("#included-file-chown-" + file_id).val(chown);
     $("#included-file-chgrp-" + file_id).val(chgrp);
@@ -505,9 +506,9 @@ function show_edit_included_file_popup(file_id, purpose, chown, chgrp) {
     popup.css({"opacity": "1", "pointer-events": "auto"});
 }
 
-function confirm_included_file_popup(file_id) {
-    var name = $("#included-file-name-" + file_id).val();
-    var description = $("#included-file-description-" + file_id).val();
+function confirm_included_file_popup(file_id, lang) {
+    var popup = $("#edit-included-file-" + file_id);
+    var name = $("#included-file-name-" + file_id + "-" + lang).val();
     var chmod = $("#included-file-chmod-" + file_id).val();
     var found = chmod.match(/^((r|-)(w|-)(x|-)){3}$/);
 
@@ -519,15 +520,17 @@ function confirm_included_file_popup(file_id) {
     }
 
     if ($("#included-files-table tbody").find("#included-file-tr-" + file_id).length > 0) {
-        var td_name = $("#included-file-td-name-" + file_id);
-        var td_purpose = $("#included-file-td-purpose-" + file_id);
-        var td_description = $("#included-file-td-description-" + file_id);
+        var description = $("#included-file-description-" + file_id + "-" + lang).val();
+        var name_span = $("#included-file-td-name-" + file_id + " > span[data-language-code=" + lang + "].translated");
+        var purpose_td = $("#included-file-td-purpose-" + file_id);
+        var description_span = $("#included-file-td-description-" + file_id + " > span[data-language-code=" + lang + "].translated");
         
-        td_name.html(name);
-        td_purpose.html($("#included-file-purpose-" + file_id + " option:selected").text());
-        td_description.html(description);
+        name_span.text(name);
+        purpose_td.text($("#included-file-purpose-" + file_id + " option:selected").text());
+        description_span.text(description);
     } else {
-        var default_name = $("#included-file-default-name-" + file_id).val();
+        var name_inputs = popup.find("input.file-name-input");
+        var description_areas = popup.find("textarea.file-description-area");
         var purpose = $("#included-file-purpose-" + file_id).val();
         var purpose_display = $("#included-file-purpose-" + file_id + " option:selected").text();
         var chown = $("#included-file-chown-" + file_id).val();
@@ -535,13 +538,31 @@ function confirm_included_file_popup(file_id) {
         
         var tr = $("#included-file-tr-SAMPLE_ID").clone().attr('id', 'included-file-tr-' + file_id);
         tr.html(function(index, html) {
-            return html.replace(/SAMPLE_ID/g, file_id).replace(/SAMPLE_NAME/g, name).replace(/SAMPLE_DESCRIPTION/g, description).
-                replace(/SAMPLE_PURPOSE/g, purpose).replace(/SAMPLE_GET_PURPOSE_DISPLAY/g, purpose_display).
-                replace(/SAMPLE_CHOWN_SETTINGS/g, chown).replace(/SAMPLE_CHGRP_SETTINGS/g, chgrp);
+            html =  html.replace(/SAMPLE_ID/g, file_id). replace(/SAMPLE_PURPOSE/g, purpose).
+                replace(/SAMPLE_GET_PURPOSE_DISPLAY/g, purpose_display).replace(/SAMPLE_CHOWN_SETTINGS/g, chown).
+                replace(/SAMPLE_CHGRP_SETTINGS/g, chgrp);
+            name_inputs.each(function() {
+                sample_id = "SAMPLE_NAME_" + $(this).attr("data-language-code");
+                val = $(this).val();
+                html = html.replace(new RegExp(sample_id, "g"), val);
+            });
+            description_areas.each(function() {
+                sample_id = "SAMPLE_DESCRIPTION_" + $(this).attr("data-language-code");
+                val = $(this).val();
+                console.log(val);
+                html = html.replace(new RegExp(sample_id, "g"), val);
+            });
+            return html;
         });
-        $("#edit-included-file-title-" + file_id).text("Edit included file: " + name);
+        popup.find("div.edit-included-file-title-div span[data-language-code=" + lang + "]").addClass("translated-visible");
+        $("#create-included-file-title-" + file_id).hide();
         $("#included-files-table tbody").append(tr);
     }
+    popup.find("h2.edit-included-file-title").each(function() {
+        var lang = $(this).parent().attr("data-language-code");
+        console.log("input[data-language-code=" + lang + "].file-name-input");
+        $(this).text("Edit included file: " + popup.find("input[data-language-code=" + lang + "].file-name-input").val());
+    });
     close_popup($("#edit-included-file-" + file_id));
 }
 
@@ -555,24 +576,22 @@ function cancel_included_file_popup(popup, file_id) {
 
 include_file_enum = 1;
 
-function create_included_file_popup() {
+function create_included_file_popup(lang) {
     var id = "new-" + include_file_enum;
     var popup = $("#edit-included-file-SAMPLE_ID").clone().attr('id', 'edit-included-file-' + id);
     popup.html(function(index, html) {
-        return html.replace(/SAMPLE_ID/g, id).replace(/SAMPLE_POPUP_TITLE/g, "Add included file").
-            replace(/SAMPLE_DEFAULT_NAME/g, "").replace(/SAMPLE_DESCRIPTION/g, "").
-            replace(/SAMPLE_NAME/g, "").replace(/SAMPLE_CHMOD_SETTINGS/g, "rw-rw-rw-");
+        return html.replace(/SAMPLE_ID/g, id);
     });
+    popup.css({"opacity": "1", "pointer-events": "auto"});
     popup.attr("data-file-id", id);
     $("#include-file-popups").append(popup);
-    update_included_file_ok_button_state(id);
+    update_included_file_ok_button_state(id, lang);
     $("#edit-included-file-" + id).click(function() {
         cancel_included_file_popup(popup, popup.attr("data-file-id"));
     });
     $("#edit-included-file-" + id + " > div").click(function(event) {
         event.stopPropagation();
     });
-    popup.css({"opacity": "1", "pointer-events": "auto"});
     include_file_enum++;
 }
 

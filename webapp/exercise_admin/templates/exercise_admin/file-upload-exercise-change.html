@@ -120,11 +120,15 @@
           {% endfor %}
         </tbody>
       </table>
-      <button type="button" class="add-item" title="Opens a popup window to add an included file" onclick="create_included_file_popup();">Add</button>
+      {% for language_choice, _ in AVAILABLE_LANGUAGES %}
+        <span class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}">
+          <button type="button" class="add-item" title="Opens a popup window to add an included file" onclick="create_included_file_popup('{{ language_choice }}');">Add</button>
+        </span>
+      {% endfor %}
 
       <div id="include-file-popups">
         {% for include_file in include_files %}
-          {% include_file_popup include_file "Edit included file: "|add:include_file.file_settings.name  %}
+          {% include_file_popup include_file %}
         {% endfor %}
       </div>
     </div>

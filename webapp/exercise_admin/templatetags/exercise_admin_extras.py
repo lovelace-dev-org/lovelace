@@ -49,7 +49,6 @@ def include_file_tr(include_file, jstemplate=False):
     lang_list = get_lang_list()
 
     class FileSettings:
-        #name = "SAMPLE_NAME"
         purpose = "SAMPLE_PURPOSE"
         get_purpose_display = "SAMPLE_GET_PURPOSE_DISPLAY"
         chown_settings = "SAMPLE_CHOWN_SETTINGS"
@@ -57,58 +56,50 @@ def include_file_tr(include_file, jstemplate=False):
         
         def __init__(self):
             for lang_code, _ in lang_list:
-                setattr(self, 'name_{}'.format(lang_code), "SAMPLE_NAME")
+                setattr(self, 'name_{}'.format(lang_code), "SAMPLE_NAME_{}".format(lang_code))
 
     class IncludeFile:
         id = "SAMPLE_ID"
-        #description = "SAMPLE_DESCRIPTION"
         file_settings = FileSettings()
 
         def __init__(self):
             for lang_code, _ in lang_list:
-                setattr(self, 'description_{}'.format(lang_code), "SAMPLE_DESCRIPTION")
+                setattr(self, 'description_{}'.format(lang_code), "SAMPLE_DESCRIPTION_{}".format(lang_code))
 
     return {'include_file' : IncludeFile()}
 
 @register.inclusion_tag('exercise_admin/file-upload-exercise-include-file-popup.html')
-def include_file_popup(include_file, popup_title, jstemplate=False):
+def include_file_popup(include_file, create=False, jstemplate=False):
     if not jstemplate:
         return {
             'include_file': include_file,
-            'popup_title' : popup_title,
+            'create' : create,
         }
-
     lang_list = get_lang_list()
 
     class FileSettings:
-        #name = "SAMPLE_NAME"
-        purpose = "SAMPLE_PURPOSE"
-        get_purpose_display = "SAMPLE_GET_PURPOSE_DISPLAY"
-        chown_settings = "SAMPLE_CHOWN_SETTINGS"
-        chgrp_settings = "SAMPLE_CHGRP_SETTINGS"
+        chmod_settings = "rw-rw-rw-"
         
         def __init__(self):
             for lang_code, _ in lang_list:
-                setattr(self, 'name_{}'.format(lang_code), "SAMPLE_NAME")
+                setattr(self, 'name_{}'.format(lang_code), "")
 
     class FileInfo:
         url = None
     
     class IncludeFile:
         id = "SAMPLE_ID"
-        #default_name = "SAMPLE_DEFAULT_NAME"
-        #description = "SAMPLE_DESCRIPTION"
         file_settings = FileSettings()
         
         def __init__(self):
             for lang_code, _ in lang_list:
-                setattr(self, 'default_name_{}'.format(lang_code), "SAMPLE_DEFAULT_NAME")
-                setattr(self, 'description_{}'.format(lang_code), "SAMPLE_DESCRIPTION")
+                setattr(self, 'default_name_{}'.format(lang_code), "")
+                setattr(self, 'description_{}'.format(lang_code), "")
                 setattr(self, 'fileinfo_{}'.format(lang_code), FileInfo())
 
     return {
         'include_file' : IncludeFile(),
-        'popup_title' : 'SAMPLE_POPUP_TITLE',
+        'create' : create,
     }
 
 @register.inclusion_tag('exercise_admin/file-upload-exercise-edit-instance-file.html')
