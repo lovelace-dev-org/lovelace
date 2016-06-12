@@ -8,6 +8,23 @@ from ..utils import get_lang_list
 
 register = template.Library()
 
+@register.inclusion_tag('exercise_admin/hint.html')
+def hint_tr(hint, jstemplate=False):
+    if not jstemplate:
+        return {'hint' : hint,}
+
+    lang_list = get_lang_list()
+    
+    class TemplateHint:
+        id = "SAMPLE_ID"
+        tries_to_unlock = 0
+
+        def __init__(self):
+            for lang_code, _ in lang_list:
+                setattr(self, 'hint_{}'.format(lang_code), "")
+
+    return {"hint" : TemplateHint()}
+
 @register.inclusion_tag('exercise_admin/file-upload-exercise-test-tab.html')
 def test_tab(test_obj, stages_list, jstemplate=False):
     if not jstemplate:
@@ -48,7 +65,7 @@ def include_file_tr(include_file, jstemplate=False):
 
     lang_list = get_lang_list()
 
-    class FileSettings:
+    class TemplateFileSettings:
         purpose = "SAMPLE_PURPOSE"
         get_purpose_display = "SAMPLE_GET_PURPOSE_DISPLAY"
         chown_settings = "SAMPLE_CHOWN_SETTINGS"
@@ -58,15 +75,15 @@ def include_file_tr(include_file, jstemplate=False):
             for lang_code, _ in lang_list:
                 setattr(self, 'name_{}'.format(lang_code), "SAMPLE_NAME_{}".format(lang_code))
 
-    class IncludeFile:
+    class TemplateIncludeFile:
         id = "SAMPLE_ID"
-        file_settings = FileSettings()
+        file_settings = TemplateFileSettings()
 
         def __init__(self):
             for lang_code, _ in lang_list:
                 setattr(self, 'description_{}'.format(lang_code), "SAMPLE_DESCRIPTION_{}".format(lang_code))
 
-    return {'include_file' : IncludeFile()}
+    return {'include_file' : TemplateIncludeFile()}
 
 @register.inclusion_tag('exercise_admin/file-upload-exercise-include-file-popup.html')
 def include_file_popup(include_file, create=False, jstemplate=False):
@@ -77,28 +94,28 @@ def include_file_popup(include_file, create=False, jstemplate=False):
         }
     lang_list = get_lang_list()
 
-    class FileSettings:
+    class TemplateFileSettings:
         chmod_settings = "rw-rw-rw-"
         
         def __init__(self):
             for lang_code, _ in lang_list:
                 setattr(self, 'name_{}'.format(lang_code), "")
 
-    class FileInfo:
+    class TemplateFileInfo:
         url = None
     
-    class IncludeFile:
+    class TemplateIncludeFile:
         id = "SAMPLE_ID"
-        file_settings = FileSettings()
+        file_settings = TemplateFileSettings()
         
         def __init__(self):
             for lang_code, _ in lang_list:
                 setattr(self, 'default_name_{}'.format(lang_code), "")
                 setattr(self, 'description_{}'.format(lang_code), "")
-                setattr(self, 'fileinfo_{}'.format(lang_code), FileInfo())
+                setattr(self, 'fileinfo_{}'.format(lang_code), TemplateFileInfo())
 
     return {
-        'include_file' : IncludeFile(),
+        'include_file' : TemplateIncludeFile(),
         'create' : create,
     }
 
@@ -153,5 +170,12 @@ def lang_reminder(lang_code):
 def get_translated_field(model, variable, lang_code):
     if model:
         return getattr(model, '{}_{}'.format(variable, lang_code))
+    else:
+        return ''
+
+@register.assignment_tag()
+def get_translated_fileinfo(model, lang_code):
+    if model:
+        return getattr(model, 'fileinfo_{}'.format(lang_code))
     else:
         return ''

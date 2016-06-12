@@ -467,19 +467,19 @@ function show_stagecmd_information(event) {
     $('#' + clicked_type + '-information-' + clicked_number).show() 
 }
 
+hint_enum = 1;
+
 function add_hint() {
-    var hint_n = $("#hint-table tbody tr").length + 1;
-    var tries_to_unlock = $('<input type="number" step="1" class="hint-tries-to-unlock-input" name="hint_tries_[new-' + hint_n +
-                            ']" value="0">');
-    var hint_content = $('<input type="text" class="hint-content-input" name="hint_content_[new-' + hint_n + ']" value="">');
-    var td_tries_to_unlock = $('<td>');
-    var td_hint_content = $('<td>');
-    var tr = $('<tr>');
-    td_tries_to_unlock.append(tries_to_unlock);
-    td_hint_content.append(hint_content);
-    tr.append(td_tries_to_unlock);
-    tr.append(td_hint_content);
+    console.log("add hint");
+    var hint_id = "new-" + hint_enum;
+    var tr = $("#hint-SAMPLE_ID").clone().attr("id", "hint-" + hint_id);
+    tr.html(function(index, html) {
+        html =  html.replace(/SAMPLE_ID/g, hint_id);
+        return html;
+    });
+    console.log(tr);
     $("#hint-table tbody").append(tr);
+    hint_enum++;
 }
 
 function update_included_file_ok_button_state(file_id, lang) {
@@ -496,7 +496,6 @@ function update_included_file_ok_button_state(file_id, lang) {
 }
 
 function show_edit_included_file_popup(file_id, purpose, chown, chgrp, lang) {
-    console.log(file_id);
     var popup = $("#edit-included-file-" + file_id);
     update_included_file_ok_button_state(file_id, lang);
     $("#included-file-purpose-" + file_id).val(purpose);
@@ -506,9 +505,7 @@ function show_edit_included_file_popup(file_id, purpose, chown, chgrp, lang) {
     popup.css({"opacity": "1", "pointer-events": "auto"});
 }
 
-function confirm_included_file_popup(file_id, lang) {
-    var popup = $("#edit-included-file-" + file_id);
-    var name = $("#included-file-name-" + file_id + "-" + lang).val();
+function check_chmod_input_validity(file_id) {
     var chmod = $("#included-file-chmod-" + file_id).val();
     var found = chmod.match(/^((r|-)(w|-)(x|-)){3}$/);
 
@@ -516,54 +513,76 @@ function confirm_included_file_popup(file_id, lang) {
         var chmod_error_div = $("#file-chmod-error-" + file_id);
         chmod_error_div.text("File access mode was of incorrect format! Give 9 character, each either r, w, x or -!");
         chmod_error_div.css({"display": "block"});
+        return false;
+    } else {
+        return true;
+    }
+}
+
+function update_included_file_tr(file_id, lang) {
+    var name = $("#included-file-name-" + file_id + "-" + lang).val();
+    var description = $("#included-file-description-" + file_id + "-" + lang).val();
+    var name_span = $("#included-file-td-name-" + file_id + " > span[data-language-code=" + lang + "].translated");
+    var purpose_td = $("#included-file-td-purpose-" + file_id);
+    var description_span = $("#included-file-td-description-" + file_id + " > span[data-language-code=" + lang + "].translated");
+        
+    name_span.text(name);
+    purpose_td.text($("#included-file-purpose-" + file_id + " option:selected").text());
+    description_span.text(description);
+}
+
+function create_new_incuded_file_tr(file_id) {
+    var popup = $("#edit-included-file-" + file_id);
+    var purpose = $("#included-file-purpose-" + file_id).val();
+    var purpose_display = $("#included-file-purpose-" + file_id + " option:selected").text();
+    var chown = $("#included-file-chown-" + file_id).val();
+    var chgrp = $("#included-file-chgrp-" + file_id).val();
+    var name_inputs = popup.find("input.file-name-input");
+    var description_areas = popup.find("textarea.file-description-area");
+        
+    var tr = $("#included-file-tr-SAMPLE_ID").clone().attr('id', 'included-file-tr-' + file_id);
+    tr.html(function(index, html) {
+        html =  html.replace(/SAMPLE_ID/g, file_id). replace(/SAMPLE_PURPOSE/g, purpose).
+            replace(/SAMPLE_GET_PURPOSE_DISPLAY/g, purpose_display).replace(/SAMPLE_CHOWN_SETTINGS/g, chown).
+            replace(/SAMPLE_CHGRP_SETTINGS/g, chgrp);
+        name_inputs.each(function() {
+            sample_id = "SAMPLE_NAME_" + $(this).attr("data-language-code");
+            val = $(this).val();
+            html = html.replace(new RegExp(sample_id, "g"), val);
+        });
+        description_areas.each(function() {
+            sample_id = "SAMPLE_DESCRIPTION_" + $(this).attr("data-language-code");
+            val = $(this).val();
+            html = html.replace(new RegExp(sample_id, "g"), val);
+        });
+        return html;
+    });
+    $("#included-files-table tbody").append(tr);
+}
+
+function update_edit_included_file_popup_titles(popup, lang) {
+    popup.find("h2.edit-included-file-title").each(function() {
+        var lang = $(this).parent().attr("data-language-code");
+        $(this).text("Edit included file: " + popup.find("input[data-language-code=" + lang + "].file-name-input").val());
+    });
+}
+
+function confirm_included_file_popup(file_id, lang) {
+    if (!check_chmod_input_validity(file_id)) {
         return;
     }
 
-    if ($("#included-files-table tbody").find("#included-file-tr-" + file_id).length > 0) {
-        var description = $("#included-file-description-" + file_id + "-" + lang).val();
-        var name_span = $("#included-file-td-name-" + file_id + " > span[data-language-code=" + lang + "].translated");
-        var purpose_td = $("#included-file-td-purpose-" + file_id);
-        var description_span = $("#included-file-td-description-" + file_id + " > span[data-language-code=" + lang + "].translated");
-        
-        name_span.text(name);
-        purpose_td.text($("#included-file-purpose-" + file_id + " option:selected").text());
-        description_span.text(description);
+    var popup = $("#edit-included-file-" + file_id);
+    var existing_file = $("#included-files-table tbody").find("#included-file-tr-" + file_id).length > 0;
+    if (existing_file) {
+        update_included_file_tr(file_id, lang);
     } else {
-        var name_inputs = popup.find("input.file-name-input");
-        var description_areas = popup.find("textarea.file-description-area");
-        var purpose = $("#included-file-purpose-" + file_id).val();
-        var purpose_display = $("#included-file-purpose-" + file_id + " option:selected").text();
-        var chown = $("#included-file-chown-" + file_id).val();
-        var chgrp = $("#included-file-chgrp-" + file_id).val();
-        
-        var tr = $("#included-file-tr-SAMPLE_ID").clone().attr('id', 'included-file-tr-' + file_id);
-        tr.html(function(index, html) {
-            html =  html.replace(/SAMPLE_ID/g, file_id). replace(/SAMPLE_PURPOSE/g, purpose).
-                replace(/SAMPLE_GET_PURPOSE_DISPLAY/g, purpose_display).replace(/SAMPLE_CHOWN_SETTINGS/g, chown).
-                replace(/SAMPLE_CHGRP_SETTINGS/g, chgrp);
-            name_inputs.each(function() {
-                sample_id = "SAMPLE_NAME_" + $(this).attr("data-language-code");
-                val = $(this).val();
-                html = html.replace(new RegExp(sample_id, "g"), val);
-            });
-            description_areas.each(function() {
-                sample_id = "SAMPLE_DESCRIPTION_" + $(this).attr("data-language-code");
-                val = $(this).val();
-                console.log(val);
-                html = html.replace(new RegExp(sample_id, "g"), val);
-            });
-            return html;
-        });
+        create_new_incuded_file_tr(file_id);
         popup.find("div.edit-included-file-title-div span[data-language-code=" + lang + "]").addClass("translated-visible");
         $("#create-included-file-title-" + file_id).hide();
-        $("#included-files-table tbody").append(tr);
     }
-    popup.find("h2.edit-included-file-title").each(function() {
-        var lang = $(this).parent().attr("data-language-code");
-        console.log("input[data-language-code=" + lang + "].file-name-input");
-        $(this).text("Edit included file: " + popup.find("input[data-language-code=" + lang + "].file-name-input").val());
-    });
-    close_popup($("#edit-included-file-" + file_id));
+    update_edit_included_file_popup_titles(popup, lang);
+    close_popup(popup);
 }
 
 function cancel_included_file_popup(popup, file_id) {
@@ -583,6 +602,7 @@ function create_included_file_popup(lang) {
         return html.replace(/SAMPLE_ID/g, id);
     });
     popup.css({"opacity": "1", "pointer-events": "auto"});
+    popup.find("div.edit-included-file-title-div span").removeClass("translated-visible");
     popup.attr("data-file-id", id);
     $("#include-file-popups").append(popup);
     update_included_file_ok_button_state(id, lang);

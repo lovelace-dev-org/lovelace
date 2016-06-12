@@ -15,10 +15,17 @@
         </span>
       {% endfor %}
       {% if create %}
-        <h2 id="create-included-file-title-{{ include_file.id }}" class="create-included-file-title">Create include file</h2>
+          <h2 id="create-included-file-title-{{ include_file.id }}" class="create-included-file-title">Create include file</h2>
       {% endif %}
-      {% if include_file.fileinfo.url  %}
-        <a href="{{ include_file.fileinfo.url }}" class="file-url" download></a>
+      {% if include_file.fileinfo.url %}
+        {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
+          <span class="translated {% if language_choice == CURRENT_LANGUAGE and not create %}translated-visible{% endif %}" data-language-code="{{ language_choice }}">
+            {% get_translated_fileinfo include_file language_choice as fileinfo %}
+            {% if fileinfo %}
+              <a href="{{ fileinfo }}" class="file-url" download></a>
+            {% endif %}
+          </span>
+        {% endfor %}
       {% endif %}
     </div>
     <div>

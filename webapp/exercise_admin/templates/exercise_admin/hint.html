@@ -1,0 +1,20 @@
+{% load i18n %}
+{% load exercise_admin_extras %}
+{% get_current_language as CURRENT_LANGUAGE %}
+{% get_available_languages as AVAILABLE_LANGUAGES %}
+{% get_language_info_list for AVAILABLE_LANGUAGES as LANGUAGES_VERBOSE %}
+<tr id="hint-{{ hint.id }}">
+  <td>
+    <input type="number" step="1" class="hint-tries-to-unlock-input" name="hint_tries_[{{ hint.id }}]" value="{{ hint.tries_to_unlock }}">
+  </td>
+  <td>
+    {% for language_choice, _ in AVAILABLE_LANGUAGES %}
+      <div class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}">
+        <input type="text" class="hint-content-input" name="hint_content_[{{ hint.id }}]_{{ language_choice }}" value="{% get_translated_field hint 'hint' language_choice %}">
+      </div>
+    {% endfor %}
+  </td>
+  <td>
+    <button type="button" class="delete-button" title="Removes the hint from the list of hints belonging to this exercise" onclick="delete_table_row(this);">x</button>
+  </td>
+</tr>

@@ -243,18 +243,7 @@
           </thead>
           <tbody>
           {% for hint in hints %}
-            <tr>
-              <td>
-                <input type="number" step="1" class="hint-tries-to-unlock-input" name="hint_tries_[{{ hint.id }}]" value="{{ hint.tries_to_unlock }}">
-              </td>
-              <td>
-                {% for language_choice, _ in AVAILABLE_LANGUAGES %}
-                  <div class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}">
-                    <input type="text" class="hint-content-input" name="hint_content_[{{ hint.id }}]_{{ language_choice }}" value="{% get_translated_field hint 'hint' language_choice %}">
-                  </div>
-                {% endfor %}
-              </td>
-            </tr>
+            {% hint_tr hint %}
           {% endfor %}
           </tbody>
         </table>
@@ -279,6 +268,11 @@
     <div style="display: none;">
       {% block templates %}
       {% endblock %}
+      <div style="display: none;">
+        <table>
+          {% hint_tr True True %}
+        </table>
+      </div>
     </div>
 
     <div id="language-picker-container">

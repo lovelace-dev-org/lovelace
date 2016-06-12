@@ -479,6 +479,7 @@ button.delete-button {
     box-shadow: 1px 1px 2px #ff2000;
 }
 
+table#hint-table button.delete-button,
 table.files-table button.delete-button {
     width: 25px;
     height: 25px;
