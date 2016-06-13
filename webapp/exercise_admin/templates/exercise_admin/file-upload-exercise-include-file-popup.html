@@ -7,24 +7,24 @@
   <div>
     <div class="edit-included-file-title-div">
       {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
-        <span class="translated {% if language_choice == CURRENT_LANGUAGE and not create %}translated-visible{% endif %}" data-language-code="{{ language_choice }}">
+        <div class="translated {% if language_choice == CURRENT_LANGUAGE and not create %}translated-visible{% endif %} inline-block-elem" data-language-code="{{ language_choice }}">
           <h2 id="edit-included-file-title-{{ include_file.id }}-{{ language_choice }}" class="edit-included-file-title">
             Edit included file: {% get_translated_field include_file.file_settings "name" language_choice %}
           </h2>
           {% lang_reminder language_choice %}
-        </span>
+        </div>
       {% endfor %}
       {% if create %}
           <h2 id="create-included-file-title-{{ include_file.id }}" class="create-included-file-title">Create include file</h2>
       {% endif %}
       {% if include_file.fileinfo.url %}
         {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
-          <span class="translated {% if language_choice == CURRENT_LANGUAGE and not create %}translated-visible{% endif %}" data-language-code="{{ language_choice }}">
+          <div class="translated {% if language_choice == CURRENT_LANGUAGE and not create %}translated-visible{% endif %} inline-block-elem" data-language-code="{{ language_choice }}">
             {% get_translated_fileinfo include_file language_choice as fileinfo %}
             {% if fileinfo %}
               <a href="{{ fileinfo }}" class="file-url" download></a>
             {% endif %}
-          </span>
+          </div>
         {% endfor %}
       {% endif %}
     </div>
@@ -123,7 +123,7 @@
     </div>
     <div class="popup-buttons">
       {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
-        <span class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}">
+        <span class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %} inline-block-elem" data-language-code="{{ language_choice }}">
           <button type="button" id="included-file-ok-button-{{ include_file.id }}-{{ language_choice }}" class="popup-button"
                   onclick="confirm_included_file_popup('{{ include_file.id }}', '{{ language_choice }}')">Ok</button>
         </span>

@@ -578,7 +578,7 @@ function confirm_included_file_popup(file_id, lang) {
         update_included_file_tr(file_id, lang);
     } else {
         create_new_incuded_file_tr(file_id);
-        popup.find("div.edit-included-file-title-div span[data-language-code=" + lang + "]").addClass("translated-visible");
+        popup.find("div.edit-included-file-title-div div[data-language-code=" + lang + "]").addClass("translated-visible");
         $("#create-included-file-title-" + file_id).hide();
     }
     update_edit_included_file_popup_titles(popup, lang);
@@ -602,7 +602,7 @@ function create_included_file_popup(lang) {
         return html.replace(/SAMPLE_ID/g, id);
     });
     popup.css({"opacity": "1", "pointer-events": "auto"});
-    popup.find("div.edit-included-file-title-div span").removeClass("translated-visible");
+    popup.find("div.edit-included-file-title-div div").removeClass("translated-visible");
     popup.attr("data-file-id", id);
     $("#include-file-popups").append(popup);
     update_included_file_ok_button_state(id, lang);
@@ -686,7 +686,7 @@ function add_instance_file_to_popup(file_id, default_name, description, link, ch
     if (checked) {
         var sample_id = "SAMPLE_ID_LINKED";
         var chmod = link.chmod_settings;
-        var name = link.name
+        var name = link.name;
         var edit_link_div = $("#link-instance-file-" + sample_id).clone().attr('id', 'link-instance-file-' + file_id);
         edit_link_div.find("#instance-file-purpose-" + sample_id).val(link.purpose);
         edit_link_div.find("#instance-file-chown-" + sample_id).val(link.chown_settings);
@@ -724,7 +724,7 @@ function add_new_instance_file_to_popup(file_id, default_name, description) {
 }
 
 function add_existing_instance_file_to_popup(file_id, default_name, description, link, checked) {
-    add_instance_file_to_popup(file_id, default_name, description, link, checked)
+    add_instance_file_to_popup(file_id, default_name, description, link, checked);
     
     var edit_div = $("#edit-instance-file-SAMPLE_ID").clone().attr('id', 'edit-instance-file-' + file_id);
     edit_div.html(function(index, html) {

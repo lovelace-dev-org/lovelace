@@ -898,6 +898,9 @@ select#language-selector {
 .translated-visible {
     display: block;
 }
-span.translated-visible {
+.inline-block-elem.translated {
+    display: none;
+}
+.inline-block-elem.translated-visible {
     display: inline-block;
 }
