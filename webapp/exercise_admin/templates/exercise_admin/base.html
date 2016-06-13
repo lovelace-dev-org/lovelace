@@ -72,7 +72,7 @@
             </div>
             <button type="button" id="add-feedback-choice" class="add-item" title="Adds a new answer choice for the feedback question"
                     onclick="add_choice_to_selected_feedback();">Add choice</button>
-            <button type="button" class="add-item" value="Done editing" title="Closes edit feedback menu" onclick="close_edit_feedback_menu();">Done editing</button>
+            <button type="button" class="add-item" title="Closes edit feedback menu" onclick="close_edit_feedback_menu();">Done editing</button>
             <div id="feedback-error" class="admin-error"></div>
           </div>
 
@@ -103,7 +103,7 @@
             </div>
           </div>
           <div class="popup-buttons">
-            <input type="submit" class="popup-button" value="Save changes & Confirm selection" name="save_and_confirm">
+            <input type="submit" class="popup-button" value="Save changes &amp; Confirm selection" name="save_and_confirm">
             <button type="button" class="popup-button" onclick="close_popup($('#edit-feedback-popup'))">Cancel</button>
           </div>
         </div>
@@ -243,18 +243,7 @@
           </thead>
           <tbody>
           {% for hint in hints %}
-            <tr>
-              <td>
-                <input type="number" step="1" class="hint-tries-to-unlock-input" name="hint_tries_[{{ hint.id }}]" value="{{ hint.tries_to_unlock }}">
-              </td>
-              <td>
-                {% for language_choice, _ in AVAILABLE_LANGUAGES %}
-                  <div class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}">
-                    <input type="text" class="hint-content-input" name="hint_content_[{{ hint.id }}]_{{ language_choice }}" value="{% get_translated_field hint 'hint' language_choice %}">
-                  </div>
-                {% endfor %}
-              </td>
-            </tr>
+            {% hint_tr hint %}
           {% endfor %}
           </tbody>
         </table>
@@ -279,6 +268,11 @@
     <div style="display: none;">
       {% block templates %}
       {% endblock %}
+      <div style="display: none;">
+        <table>
+          {% hint_tr True True %}
+        </table>
+      </div>
     </div>
 
     <div id="language-picker-container">

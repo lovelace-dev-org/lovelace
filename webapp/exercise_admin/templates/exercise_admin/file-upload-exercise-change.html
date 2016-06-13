@@ -32,6 +32,44 @@
 {% endblock %}
 
 {% block exercise-type-specific-popups %}
+  <form method="POST" action="{% url 'exercise_admin:edit_instance_files' exercise.id %}" id="edit-instance-files-form" onsubmit="submit_edit_instance_files_form(event);">
+    {% csrf_token %}
+    <div id="edit-instance-files-popup" class="popup">
+      <div>
+        <div id="instance-files-div">
+          <h2>Add instance file</h2>
+          <div class="bordered-editable-area">
+            <div class="add-instance-file-table-div">
+              <table id="add-instance-file-table" class="instance-file-table">
+                <colgroup>
+                  <col class="file-default-name">
+                  <col class="file-description">
+                  <col class="uploaded-file">
+                  <col class="file-edit-link">
+                  <col class="file-edit-button">
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th>Default file name</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div id="edit-instance-file-divs"></div>
+        <div id="link-instance-file-divs"></div>
+        <div id="instance-file-error" class="admin-error"></div>
+        <div class="popup-buttons">
+          <input type="submit" class="popup-button" value="Save changes &amp; Confirm links" name="save_and_confirm">
+          <button type="button" class="popup-button" onclick="close_popup($('#edit-instance-files-popup'))">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </form>
 {% endblock %}
 
 {% block form-action-url %}{% url 'exercise_admin:file_upload_change' exercise.id %}{% endblock %}
@@ -82,15 +120,19 @@
           {% endfor %}
         </tbody>
       </table>
-      <button type="button" class="add-item" title="Opens a popup window to add an included file" onclick="create_included_file_popup();">Add</button>
+      {% for language_choice, _ in AVAILABLE_LANGUAGES %}
+        <span class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}">
+          <button type="button" class="add-item" title="Opens a popup window to add an included file" onclick="create_included_file_popup('{{ language_choice }}');">Add</button>
+        </span>
+      {% endfor %}
 
       <div id="include-file-popups">
         {% for include_file in include_files %}
-          {% include_file_popup include_file "Edit included file: "|add:include_file.file_settings.name  %}
+          {% include_file_popup include_file %}
         {% endfor %}
       </div>
     </div>
-
+    
     <div id="instance-files">
       A pool of files specific to a course instance, linked to this exercise:
       <table id="instance-files-table" class="files-table bordered-editable-area">
@@ -120,7 +162,7 @@
         </thead>
         <tbody>
           {% for instance_file_link in instance_file_links %}
-            <tr>
+            <tr data-file-id="{{ instance_file_link.include_file.id }}">
               <td>
                 {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
                   <span class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}">
@@ -142,7 +184,9 @@
           {% endfor %}
         </tbody>
       </table>
-      <button type="button" class="add-item" title="Opens a popup window to add and edit instance files" onclick="show_edit_instance_file_popup();">Add and edit</button>
+      <button type="button" class="add-item" title="Opens a popup window to add and edit instance files"
+              onclick="show_edit_instance_files_popup(event, '{% url 'exercise_admin:get_instance_files' exercise.id %}');">Add and edit</button>
+      <div id="edit-instance-files-popup-error" class="admin-error"></div>
     </div>
   </section>
 
@@ -186,5 +230,27 @@
   </div>
   <div style="display: none;">
     {% include_file_popup True True True %}
+  </div>
+  <div style="display: none;">
+    {% edit_instance_file False %}
+  </div>
+  <div style="display: none;">
+    {% edit_instance_file True %}
+  </div>
+  <div style="display: none;">
+    {% edit_instance_file_link False %}
+  </div>
+  <div style="display: none;">
+    {% edit_instance_file_link True %}
+  </div>
+  <div style="display: none;">
+    <table>
+      {% instance_file_popup_tr False %}
+    </table>
+  </div>
+  <div style="display: none;">
+    <table>
+      {% instance_file_popup_tr True %}
+    </table>
   </div>
 {% endblock %}

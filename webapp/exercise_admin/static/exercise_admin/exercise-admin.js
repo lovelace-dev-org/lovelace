@@ -68,7 +68,10 @@ $(document).ready(function() {
     $('div.feedback-choices').slimScroll({
         height: '150px'
     });
-    $('#edit-feedback-popup').click(function() {
+    $('div.add-instance-file-table-div').slimScroll({
+        height: '225px'
+    });
+    $('#edit-feedback-popup, #edit-instance-files-popup').click(function() {
         close_popup($(this));
     });
     $('section.included-files div.popup').click(function() {
@@ -464,37 +467,37 @@ function show_stagecmd_information(event) {
     $('#' + clicked_type + '-information-' + clicked_number).show() 
 }
 
+hint_enum = 1;
+
 function add_hint() {
-    var hint_n = $("#hint-table tbody tr").length + 1;
-    var tries_to_unlock = $('<input type="number" step="1" class="hint-tries-to-unlock-input" name="hint_tries_[new-' + hint_n +
-                            ']" value="0">');
-    var hint_content = $('<input type="text" class="hint-content-input" name="hint_content_[new-' + hint_n + ']" value="">');
-    var td_tries_to_unlock = $('<td>');
-    var td_hint_content = $('<td>');
-    var tr = $('<tr>');
-    td_tries_to_unlock.append(tries_to_unlock);
-    td_hint_content.append(hint_content);
-    tr.append(td_tries_to_unlock);
-    tr.append(td_hint_content);
+    console.log("add hint");
+    var hint_id = "new-" + hint_enum;
+    var tr = $("#hint-SAMPLE_ID").clone().attr("id", "hint-" + hint_id);
+    tr.html(function(index, html) {
+        html =  html.replace(/SAMPLE_ID/g, hint_id);
+        return html;
+    });
+    console.log(tr);
     $("#hint-table tbody").append(tr);
+    hint_enum++;
 }
 
-function update_included_file_ok_button_state(file_id) {
-    var button = $("#included-file-ok-button-" + file_id);
-    if ($("#included-file-" + file_id).val().length > 0 &&
-        $("#included-file-default-name-" + file_id).val().length > 0 &&
-        $("#included-file-name-" + file_id).val().length > 0 &&
+function update_included_file_ok_button_state(file_id, lang) {
+    var button = $("#included-file-ok-button-" + file_id + "-" + lang);
+    if ($("#included-file-" + file_id + "-" + lang).val().length > 0 &&
+        $("#included-file-default-name-" + file_id + "-" + lang).val().length > 0 &&
+        $("#included-file-name-" + file_id + "-" + lang).val().length > 0 &&
         $("#included-file-chmod-" + file_id).val().length > 0 &&
-        $("#included-file-description-" + file_id).val().length > 0) {
+        $("#included-file-description-" + file_id  + "-" + lang).val().length > 0) {
         button.prop("disabled", false);
     } else {
         button.prop("disabled", true);
     }
 }
 
-function show_edit_included_file_popup(file_id, purpose, chown, chgrp) {
+function show_edit_included_file_popup(file_id, purpose, chown, chgrp, lang) {
     var popup = $("#edit-included-file-" + file_id);
-    update_included_file_ok_button_state(file_id);
+    update_included_file_ok_button_state(file_id, lang);
     $("#included-file-purpose-" + file_id).val(purpose);
     $("#included-file-chown-" + file_id).val(chown);
     $("#included-file-chgrp-" + file_id).val(chgrp);
@@ -502,9 +505,7 @@ function show_edit_included_file_popup(file_id, purpose, chown, chgrp) {
     popup.css({"opacity": "1", "pointer-events": "auto"});
 }
 
-function confirm_included_file_popup(file_id) {
-    var name = $("#included-file-name-" + file_id).val();
-    var description = $("#included-file-description-" + file_id).val();
+function check_chmod_input_validity(file_id) {
     var chmod = $("#included-file-chmod-" + file_id).val();
     var found = chmod.match(/^((r|-)(w|-)(x|-)){3}$/);
 
@@ -512,39 +513,79 @@ function confirm_included_file_popup(file_id) {
         var chmod_error_div = $("#file-chmod-error-" + file_id);
         chmod_error_div.text("File access mode was of incorrect format! Give 9 character, each either r, w, x or -!");
         chmod_error_div.css({"display": "block"});
+        return false;
+    } else {
+        return true;
+    }
+}
+
+function update_included_file_tr(file_id, lang) {
+    var name = $("#included-file-name-" + file_id + "-" + lang).val();
+    var description = $("#included-file-description-" + file_id + "-" + lang).val();
+    var name_span = $("#included-file-td-name-" + file_id + " > span[data-language-code=" + lang + "].translated");
+    var purpose_td = $("#included-file-td-purpose-" + file_id);
+    var description_span = $("#included-file-td-description-" + file_id + " > span[data-language-code=" + lang + "].translated");
+        
+    name_span.text(name);
+    purpose_td.text($("#included-file-purpose-" + file_id + " option:selected").text());
+    description_span.text(description);
+}
+
+function create_new_incuded_file_tr(file_id) {
+    var popup = $("#edit-included-file-" + file_id);
+    var purpose = $("#included-file-purpose-" + file_id).val();
+    var purpose_display = $("#included-file-purpose-" + file_id + " option:selected").text();
+    var chown = $("#included-file-chown-" + file_id).val();
+    var chgrp = $("#included-file-chgrp-" + file_id).val();
+    var name_inputs = popup.find("input.file-name-input");
+    var description_areas = popup.find("textarea.file-description-area");
+        
+    var tr = $("#included-file-tr-SAMPLE_ID").clone().attr('id', 'included-file-tr-' + file_id);
+    tr.html(function(index, html) {
+        html =  html.replace(/SAMPLE_ID/g, file_id). replace(/SAMPLE_PURPOSE/g, purpose).
+            replace(/SAMPLE_GET_PURPOSE_DISPLAY/g, purpose_display).replace(/SAMPLE_CHOWN_SETTINGS/g, chown).
+            replace(/SAMPLE_CHGRP_SETTINGS/g, chgrp);
+        name_inputs.each(function() {
+            sample_id = "SAMPLE_NAME_" + $(this).attr("data-language-code");
+            val = $(this).val();
+            html = html.replace(new RegExp(sample_id, "g"), val);
+        });
+        description_areas.each(function() {
+            sample_id = "SAMPLE_DESCRIPTION_" + $(this).attr("data-language-code");
+            val = $(this).val();
+            html = html.replace(new RegExp(sample_id, "g"), val);
+        });
+        return html;
+    });
+    $("#included-files-table tbody").append(tr);
+}
+
+function update_edit_included_file_popup_titles(popup, lang) {
+    popup.find("h2.edit-included-file-title").each(function() {
+        var lang = $(this).parent().attr("data-language-code");
+        $(this).text("Edit included file: " + popup.find("input[data-language-code=" + lang + "].file-name-input").val());
+    });
+}
+
+function confirm_included_file_popup(file_id, lang) {
+    if (!check_chmod_input_validity(file_id)) {
         return;
     }
 
-    if ($("#included-files-table tbody").find("#included-file-tr-" + file_id).length > 0) {
-        var td_name = $("#included-file-td-name-" + file_id);
-        var td_purpose = $("#included-file-td-purpose-" + file_id);
-        var td_description = $("#included-file-td-description-" + file_id);
-        
-        td_name.html(name);
-        td_purpose.html($("#included-file-purpose-" + file_id + " option:selected").text());
-        td_description.html(description);
+    var popup = $("#edit-included-file-" + file_id);
+    var existing_file = $("#included-files-table tbody").find("#included-file-tr-" + file_id).length > 0;
+    if (existing_file) {
+        update_included_file_tr(file_id, lang);
     } else {
-        var default_name = $("#included-file-default-name-" + file_id).val();
-        var purpose = $("#included-file-purpose-" + file_id).val();
-        var purpose_display = $("#included-file-purpose-" + file_id + " option:selected").text();
-        var chown = $("#included-file-chown-" + file_id).val();
-        var chgrp = $("#included-file-chgrp-" + file_id).val();
-        
-        var tr = $("#included-file-tr-SAMPLE_ID").clone().attr('id', 'included-file-tr-' + file_id);
-        tr.html(function(index, html) {
-            return html.replace(/SAMPLE_ID/g, file_id).replace(/SAMPLE_NAME/g, name).replace(/SAMPLE_DESCRIPTION/g, description).
-                replace(/SAMPLE_PURPOSE/g, purpose).replace(/SAMPLE_GET_PURPOSE_DISPLAY/g, purpose_display).
-                replace(/SAMPLE_CHOWN_SETTINGS/g, chown).replace(/SAMPLE_CHGRP_SETTINGS/g, chgrp);
-        });
-        $("#edit-included-file-title-" + file_id).text("Edit included file: " + name);
-        $("#included-files-table tbody").append(tr);
+        create_new_incuded_file_tr(file_id);
+        popup.find("div.edit-included-file-title-div div[data-language-code=" + lang + "]").addClass("translated-visible");
+        $("#create-included-file-title-" + file_id).hide();
     }
-    close_popup($("#edit-included-file-" + file_id));
+    update_edit_included_file_popup_titles(popup, lang);
+    close_popup(popup);
 }
 
 function cancel_included_file_popup(popup, file_id) {
-    console.log(popup);
-    console.log(file_id);
     if ($("#included-files-table tbody").find("#included-file-tr-" + file_id).length > 0) {
         close_popup(popup);
     } else {
@@ -554,29 +595,208 @@ function cancel_included_file_popup(popup, file_id) {
 
 include_file_enum = 1;
 
-function create_included_file_popup() {
+function create_included_file_popup(lang) {
     var id = "new-" + include_file_enum;
     var popup = $("#edit-included-file-SAMPLE_ID").clone().attr('id', 'edit-included-file-' + id);
     popup.html(function(index, html) {
-        return html.replace(/SAMPLE_ID/g, id).replace(/SAMPLE_POPUP_TITLE/g, "Add included file").
-            replace(/SAMPLE_DEFAULT_NAME/g, "").replace(/SAMPLE_DESCRIPTION/g, "").
-            replace(/SAMPLE_NAME/g, "").replace(/SAMPLE_CHMOD_SETTINGS/g, "rw-rw-rw-");
+        return html.replace(/SAMPLE_ID/g, id);
     });
+    popup.css({"opacity": "1", "pointer-events": "auto"});
+    popup.find("div.edit-included-file-title-div div").removeClass("translated-visible");
     popup.attr("data-file-id", id);
     $("#include-file-popups").append(popup);
-    update_included_file_ok_button_state(id);
+    update_included_file_ok_button_state(id, lang);
     $("#edit-included-file-" + id).click(function() {
         cancel_included_file_popup(popup, popup.attr("data-file-id"));
     });
     $("#edit-included-file-" + id + " > div").click(function(event) {
         event.stopPropagation();
     });
-    popup.css({"opacity": "1", "pointer-events": "auto"});
     include_file_enum++;
 }
 
-function show_edit_instance_files_popup() {
+function show_instance_file_edit_menu(file_id) {
+    $("div.edit-instance-file").hide();
+    $("div.link-instance-file").hide();
+    $("#link-instance-file-divs").hide();
+    $("#edit-instance-file-" + file_id).css({"display" : "block"});
+    $("#edit-instance-file-divs").css({"display" : "block"});
+}
+
+function show_instance_file_edit_link_menu(file_id) {
+    $("div.link-instance-file").hide();
+    $("div.edit-instance-file").hide();
+    $("#edit-instance-file-divs").hide();
+    $("#link-instance-file-" + file_id).css({"display" : "block"});
+    $("#link-instance-file-divs").css({"display" : "block"});
+}
+
+function close_instance_file_menu(file_id) {
+    $("div.link-instance-file").hide();
+    $("div.edit-instance-file").hide();
+    $("#link-instance-file-divs").hide();
+    $("#edit-instance-file-new-" + (instance_file_enum - 1)).css({"display" : "block"});
+    $("#edit-instance-file-divs").css({"display" : "block"});
+}
+
+function update_instance_file_done_button_state(file_id) {
+    var button = $("#done-button-" + file_id);
+    if (button.attr("data-button-mode") === "done") {
+        return;
+    }
     
+    if ($("#instance-file-" + file_id).val().length > 0 &&
+        $("#instance-file-default-name-" + file_id).val().length > 0 &&
+        $("#instance-file-description-" + file_id).val().length > 0) {
+        button.prop("disabled", false);
+    } else {
+        button.prop("disabled", true);
+    }
+}
+
+function update_link_done_button_state(file_id) {
+    var button = $("#link-done-button-" + file_id);
+    if (button.attr("data-button-mode") === "done") {
+        return;
+    }
+    
+    if ($("#instance-file-name-" + file_id).val().length > 0 &&
+        $("#instance-file-chmod-" + file_id).val().length > 0) {
+        button.prop("disabled", false);
+    } else {
+        button.prop("disabled", true);
+    }
+}
+
+instance_file_enum = 1;
+
+function add_create_instance_file_div() {
+    var file_id = "new-" + instance_file_enum;
+    var create_div = $("#edit-instance-file-SAMPLE_ID_CREATE").clone().attr('id', 'edit-instance-file-' + file_id);
+    create_div.html(function(index, html) {
+        return html.replace(/SAMPLE_ID_CREATE/g, file_id).replace(/SAMPLE_DEFAULT_NAME/g, "").
+            replace(/SAMPLE_DESCRIPTION/g, "");
+    });
+    create_div.css({"display" : "block"});
+    $("#edit-instance-file-divs").append(create_div);
+    instance_file_enum++;
+}
+
+function add_instance_file_to_popup(file_id, default_name, description, link, checked) {
+    if (checked) {
+        var sample_id = "SAMPLE_ID_LINKED";
+        var chmod = link.chmod_settings;
+        var name = link.name;
+        var edit_link_div = $("#link-instance-file-" + sample_id).clone().attr('id', 'link-instance-file-' + file_id);
+        edit_link_div.find("#instance-file-purpose-" + sample_id).val(link.purpose);
+        edit_link_div.find("#instance-file-chown-" + sample_id).val(link.chown_settings);
+        edit_link_div.find("#instance-file-chgrp-" + sample_id).val(link.chgrp_settings);
+    } else {
+        var sample_id = "SAMPLE_ID";
+        var name = "";
+        var chmod = "rw-rw-rw-";
+        var edit_link_div = $("#link-instance-file-" + sample_id).clone().attr('id', 'link-instance-file-' + file_id);
+    }
+    
+    edit_link_div.html(function(index, html) {
+        return html.replace(new RegExp(sample_id, 'g'), file_id).replace(/SAMPLE_NAME/g, name).
+            replace(/SAMPLE_CHMOD_SETTINGS/g, chmod);
+    });
+    $("#link-instance-file-divs").append(edit_link_div);
+    
+    var tr = $("#instance-file-popup-tr-" + sample_id).clone().attr('id', 'instance-file-popup-tr-' + file_id);
+    tr.html(function(index, html) {
+        return html.replace(new RegExp(sample_id, 'g'), file_id).replace(/SAMPLE_DEFAULT_NAME/g, default_name).
+            replace(/SAMPLE_DESCRIPTION/g, description);
+    });
+    $("#add-instance-file-table > tbody").append(tr);
+}
+
+function add_new_instance_file_to_popup(file_id, default_name, description) {
+    var done_button = $("#done-button-" + file_id);
+
+    add_instance_file_to_popup(file_id, default_name, description, null, false);
+    $("#edit-instance-file-title-" + file_id).text("Edit instance file: " + default_name);
+    done_button.attr("title", "Closes edit instance file menu");
+    done_button.attr("onclick", "close_instance_file_menu();");
+    done_button.attr("data-button-mode", "done");
+    done_button.text("Done editing");
+}
+
+function add_existing_instance_file_to_popup(file_id, default_name, description, link, checked) {
+    add_instance_file_to_popup(file_id, default_name, description, link, checked);
+    
+    var edit_div = $("#edit-instance-file-SAMPLE_ID").clone().attr('id', 'edit-instance-file-' + file_id);
+    edit_div.html(function(index, html) {
+        return html.replace(/SAMPLE_ID/, file_id).replace(/SAMPLE_DEFAULT_NAME/g, default_name).
+            replace(/SAMPLE_DESCRIPTION/g, description);
+    });
+    $("#edit-instance-file-divs").append(edit_div);
+}
+
+function create_new_instance_file_entry(file_id) {
+    var default_name = $("#instance-file-default-name-" + file_id).val();
+    var already_exists = false;
+
+    $("div.popup div.admin-error").hide();
+    $("#add-instance-file-table label.instance-file-label").each(function() {
+        if ($(this).text() === default_name) {
+            already_exists = true;
+            return false;
+        }
+    });
+    if (already_exists) {
+        var file_error_div = $("#instance-file-error-" + file_id);
+        file_error_div.text("This instance file already exists");
+        file_error_div.css({"display" : "block"});
+        return;
+    }
+
+    add_new_instance_file_to_popup(file_id, default_name, $("instance-file-description-" + file_id).val());
+    $("div.edit-instance-file").hide();
+    add_create_instance_file_div();
+}
+
+function show_edit_instance_files_popup(event, url) {
+    event.preventDefault();
+
+    $.get(url, function(data, textStatus, jqXHR) {
+        var file_ids = [];
+        $('#instance-files-table tbody tr').each(function() {
+            file_ids.push($(this).attr("data-file-id"));   
+        });
+        var popup = $("#edit-instance-files-popup");
+        var error_span = $("#edit-instance-files-popup-error");
+        var result = data.result;
+        var error = data.error;
+
+        if (error) {
+            error_span.text(error);
+            error_span.css({"display" : "inline-block"});
+            return;
+        } else {
+            error_span.empty();
+            error_span.hide();
+        }   
+
+        $("div.popup div.admin-error").hide();
+        $("#instance-file-table > tbody").empty();
+        $("#edit-instance-file-divs").empty();
+        $("#edit-instance-file-divs").css({"display" : "block"});
+        $("#link-instance-file-divs").empty();
+        $("#link-instance-file-divs").hide();
+        add_create_instance_file_div();
+        
+        $.each(result, function() {
+            var file_id = "" + this.id;
+            if ($.inArray(file_id, file_ids) > -1) {
+                add_existing_instance_file_to_popup(file_id, this.default_name, this.description, this.link, true);
+            } else {
+                add_existing_instance_file_to_popup(file_id, this.default_name, this.description, this.link, false);
+            }
+        });
+        popup.css({"opacity": "1", "pointer-events": "auto"});
+    });
 }
 
 function submit_main_form(e) {

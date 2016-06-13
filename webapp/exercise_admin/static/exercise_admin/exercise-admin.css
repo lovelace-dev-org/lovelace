@@ -479,6 +479,7 @@ button.delete-button {
     box-shadow: 1px 1px 2px #ff2000;
 }
 
+table#hint-table button.delete-button,
 table.files-table button.delete-button {
     width: 25px;
     height: 25px;
@@ -676,7 +677,7 @@ button#add-new-feedback-choice {
     display: none;
 }
 
-button#create-feedback-button:disabled {
+div.popup button.add-item:disabled {
     color: #bbb;
     border: 0px solid #aaa;
     border-radius: 8px;
@@ -696,8 +697,8 @@ div.popup div.popup-buttons {
     text-align: right;
 }
 
-div.popup div.popup-buttons > button.popup-button,
-div.popup div.popup-buttons > input[type=submit].popup-button {
+div.popup div.popup-buttons button.popup-button,
+div.popup div.popup-buttons input[type=submit].popup-button {
     display: inline-block;
     background: #888;
     padding: 0.5rem 1rem;
@@ -708,27 +709,46 @@ div.popup div.popup-buttons > input[type=submit].popup-button {
     border: 2px solid #ccc;
 }
 
-div.popup div.popup-buttons > button.popup-button:disabled {
+div.popup div.popup-buttons button.popup-button:disabled {
     background: #ccc;
 }
 
 /* Include file popup elements */
 
-h2.edit-included-file-title {
+div.popup h2.edit-included-file-title,
+div.popup h2.create-included-file-title {
     display: inline-block;
 }
 
 div.popup a.file-url {
+    display: inline-block;
+    background: url("download.png");
+    width: 25px;
+    height: 25px;
+    outline: 0;
+    vertical-align: top;
     margin-left: 10px;
+    overflow: hidden;
+    color: #4CAF50;
+    background-color: #fff;
+    text-align: center;
+    cursor: pointer;
+    border: 0px solid #42860e;
+    border-radius: 8px;
+    box-shadow: 1px 1px 2px #285c00;
+}
+
+div.popup h2.edit-included-file-title + a.file-url {
+    margin-left: 5px;
 }
 
 div.popup input[type=text].file-default-name-input {
     margin-left: 5px;
-    width: 1076px;
+    width: 1047px;
 }
 
 div.popup input[type=text].file-name-input {
-    width: 1025px;
+    width: 994px;
     margin-left: 5px;
 }
 
@@ -739,8 +759,9 @@ div.popup label.file-label {
 
 div.popup textarea.file-description-area {
     margin-top: 5px;
+    margin-left: 5px;
     resize: none;
-    width: 1183px;
+    width: 1180px;
 }
 
 div.popup input[type=select].file-purpose-input {
@@ -751,6 +772,86 @@ div.popup input[type=text].file-chown-input {
     width: 100px;
     margin-top: 5px;
     margin-left: 5px;
+}
+
+/* Instance file popup elements */
+
+div.popup table.instance-file-table {
+    table-layout: fixed;
+    width: 100%;
+    margin-top: 5px;
+}
+
+div.popup table.instance-file-table th {
+    text-align: left;
+    height: 25px;
+    vertical-align: top;
+}
+
+div.popup table.instance.file-table td {
+    vertical-align: top;
+    height: 25px;
+}
+
+div.popup table.instance-file-table col.file-default-name {
+    width: 25%;
+}
+
+div.popup table.instance-file-table col.file-description {
+    width: 66%;
+}
+
+div.popup table.instance-file-table col.uploaded-file {
+    width: 3%;
+}
+
+div.popup table.instance-file-table col.edit-file-link {
+    width: 3%;
+}
+
+div.popup table.instance-file-table col.edit-file {
+    width: 3%;
+}
+
+div.popup button.edit-link-button {
+    background: url("link.png");
+    width: 25px;
+    height: 25px;
+    outline: 0;
+    vertical-align: middle;
+    overflow: hidden;
+    color: #4CAF50;
+    background-color: #fff;
+    text-align: center;
+    cursor: pointer;
+    border: 0px solid #42860e;
+    border-radius: 8px;
+    box-shadow: 1px 1px 2px #a6855b;
+}
+
+div#edit-instance-file-divs {
+    margin-top: 30px;
+}
+
+div#link-instance-file-divs {
+    margin-top: 30px;
+    display: none;
+}
+
+div.popup div.edit-instance-file {
+    display: none;
+}
+
+div.popup div.edit-instance-file button.add-item {
+    margin-top: 7px;
+}
+
+div.popup div.link-instance-file {
+    display: none;
+}
+
+div.popup div.link-instance-file button.add-item {
+    margin-top: 7px;
 }
 
 /* Language picker */
@@ -796,4 +897,10 @@ select#language-selector {
 }
 .translated-visible {
     display: block;
+}
+.inline-block-elem.translated {
+    display: none;
+}
+.inline-block-elem.translated-visible {
+    display: inline-block;
 }
