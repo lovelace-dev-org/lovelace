@@ -1,58 +1,14 @@
-/* If the exercise page content is empty when the script loads, add a title
-   automatically. */
-var content_untouched = false;
-var content_input;
-var page_title_elem;
-var breadcrumb_elem;
+/********************************************
+* Exercise admin form general functionality *
+********************************************/
 
-function close_popup(popup) {
-    popup.css({"opacity":"0", "pointer-events":"none"});
-}
-
-function close_popup_and_add_questions(questions) {
-    var TITLE_TEXT = "Deletes the relation between the feedback question and the exercise";
-    var target_tbody = $("#feedback-question-table tbody");
-    $("#add-feedback-table > tbody input.feedback-question-checkbox:checked").each(function(index) {
-        var id = $(this).attr("data-question-id");
-        var question = $("#feedback-question-" + id).val();
-        var type = "";
-        var in_table = false;
-        var not_saved = true;
-        
-        $.each(questions, function(index, db_question) {
-            console.log(questions);
-            if (db_question.question === question) {
-                id = "" + db_question.id;
-                type = db_question.readable_type;
-                not_saved = false;
-                return false;
-            }
-        });
-        if (not_saved) {
-            return;
-        }
-
-        var tr = $('<tr data-question-id="' + id + '">');
-        target_tbody.find("tr").each(function() {
-            if ($(this).attr("data-question-id") === id) {
-                tr = $(this);
-                in_table = true;
-                return false;
-            }
-        });
-        if (in_table) {
-            tr.children("td.question-cell").html(question);
-        } else {
-            var td_delete = $('<td class="delete-cell">');
-            tr.append('<td class="question-cell">' + question + '</td>');
-            tr.append('<td class="type-cell">' + type + '</td>');
-            td_delete.append('<button class="delete-button" title="' + TITLE_TEXT + '" onclick="delete_table_row(this);">x</button>');
-            tr.append(td_delete);
-            target_tbody.append(tr);
-        }
-    });
-    close_popup($("#edit-feedback-popup"));
-}
+// TODO: Extendability and usability as a more general form for all lecture and
+//       exercise types.
+//         - Research ways to separate the exercise specific stuff by using, e.g.
+//           registration methods for the code (in document ready and main form
+//           submit for instance)
+//         - Evaluate possibilities for implementing more general functionality
+//           for stuff like popups, adding, deleting etc.
 
 $(document).ready(function() {
     content_input = $('#exercise-page-content');
@@ -95,27 +51,140 @@ $(document).ready(function() {
     });
 });
 
-function highlight_parent_li(input_elem) {
-    var input = $(input_elem);
-    var parent = input.parent();
-    var hilight_class = 'exercise-tag-input-hilighted';
+function submit_main_form(e) {
+    e.preventDefault();
+    console.log("User requested main form submit.");
     
-    parent.toggleClass(hilight_class, true);
-    input.focusout(function() {
-        if (input.val() === '') {
-            remove_tag(input[0]);
-        } else if (!parent.is(':hover')) {
-            parent.toggleClass(hilight_class, false);
+    var form = $('#main-form');
+
+    // Get the hierarchy of stages and commands for the calculation of implicit
+    // ordinal_numbers at the form validation
+    var tests = [];
+    $('#test-tabs > ol > li').each(function(x) {
+        var current_href = $(this).children('a').attr('href');
+        if (current_href !== undefined) {
+            var current_id = current_href.split('-')[2];
+            tests.push(current_id);
         }
     });
-    parent.hover(function() {
-        parent.toggleClass(hilight_class, true);
-    }, function() {
-        if (!input.is(':focus')) {
-            parent.toggleClass(hilight_class, false);
-        }
+    var order_hierarchy = {stages_of_tests: {}, commands_of_stages: {}};
+    for (let test_id of tests) {
+        var stage_order;
+        
+        $('#stages-sortable-' + test_id).each(function(x) {
+            stage_order = $(this).sortable("toArray", options={attribute: 'data-stage-id'});
+            order_hierarchy.stages_of_tests[test_id] = stage_order;
+            
+            for (let stage_id of stage_order) {
+                var command_order;
+                $('#commands-sortable-' + test_id + '-' + stage_id).each(function(y) {
+                    command_order = $(this).sortable("toArray", options={attribute: 'data-command-id'});
+                });
+                order_hierarchy.commands_of_stages[stage_id] = command_order;
+            }
+        });
+    }
+    console.log(order_hierarchy);
+
+    // Get the linked feedback questions
+    var question_ids = $('#feedback-question-table > table > tbody > tr').map(function() {
+        return this.getAttribute('data-question-id');
+    }).get().join(',');
+    console.log("Question ids: ");
+    console.log(question_ids);
+    
+    var form_type = form.attr('method');
+    var form_url = form.attr('action');
+
+    console.log("Method: " + form_type + ", URL: " + form_url);
+
+    var form_data = new FormData(form[0]);
+    form_data.append('order_hierarchy', JSON.stringify(order_hierarchy));
+    form_data.append('exercise_feedback_questions', question_ids);
+
+    console.log("Serialized form data:");
+    for (var [key, value] of form_data.entries()) {
+        console.log(key, value);
+    }
+
+    console.log("Submitting the form...");
+    $.ajax({
+        type: form_type,
+        url: form_url,
+        data: form_data,
+        processData: false,
+        contentType: false,
+        dataType: 'json',
+        success: function(data, text_status, jqxhr_obj) {},
+        error: function(xhr, status, type) {}
     });
 }
+
+function close_popup(popup) {
+    popup.css({"opacity":"0", "pointer-events":"none"});
+}
+
+
+/*********************
+* Language selection *
+*********************/
+
+
+function change_current_language(e) {
+    e.preventDefault();
+
+    var new_code = e.target.value;
+
+    // Change the visible code in the language picker
+    $('#language-info-code').text(new_code);
+
+    // Change the visible input elements to the correponding language coded ones
+    var translated_elements = $('.translated');
+    translated_elements.removeClass('translated-visible');
+    translated_elements.filter('[data-language-code=' + new_code + ']').addClass('translated-visible');
+
+    // TODO: Swap the visible input elements into the corresponding language coded ones
+}
+
+
+/***********************************************************
+* General information (name, page contents, question etc.) *
+***********************************************************/
+
+
+function exercise_name_changed(e) {
+    /* If the exercise page content is empty when the script loads, add a title
+       automatically. */
+    var new_name = e.target.value;
+
+    /* TODO: 'Add' instead of 'Edit' when adding a new page */
+    page_title_elem.html('Edit | ' + new_name);
+    breadcrumb_elem.html(new_name);
+
+    // Same for the content input box
+    if (content_untouched === true) {
+        content_input.html('== ' + new_name + ' ==\n\n')
+    }
+}
+
+function exercise_page_content_changed(e) {
+    content_untouched = false;
+}
+
+function delete_table_row(button) {
+    $(button).parent().parent().remove();
+}
+
+var content_untouched = false;
+var content_input;
+var page_title_elem;
+var breadcrumb_elem;
+
+
+/*******
+* Tags *
+*******/
+
 
 function change_tag_width(input_elem) {
     var CHAR_WIDTH = 9;
@@ -150,45 +219,33 @@ function remove_tag(tag_elem) {
     li.remove();
 }
 
-function exercise_name_changed(e) {
-    var new_name = e.target.value;
-
-    /* TODO: 'Add' instead of 'Edit' when adding a new page */
-    page_title_elem.html('Edit | ' + new_name);
-    breadcrumb_elem.html(new_name);
-
-    if (content_untouched === true) {
-        content_input.html('== ' + new_name + ' ==\n\n')
-    }
+function highlight_parent_li(input_elem) {
+    var input = $(input_elem);
+    var parent = input.parent();
+    var hilight_class = 'exercise-tag-input-hilighted';
+    
+    parent.toggleClass(hilight_class, true);
+    input.focusout(function() {
+        if (input.val() === '') {
+            remove_tag(input[0]);
+        } else if (!parent.is(':hover')) {
+            parent.toggleClass(hilight_class, false);
+        }
+    });
+    parent.hover(function() {
+        parent.toggleClass(hilight_class, true);
+    }, function() {
+        if (!input.is(':focus')) {
+            parent.toggleClass(hilight_class, false);
+        }
+    });
 }
 
-function exercise_page_content_changed(e) {
-    content_untouched = false;
-}
 
-function test_name_changed(e) {
-    var input_id = e.target.id;
-    var split_id = input_id.split("-");
-    var new_name = e.target.value;
+/********************
+* Feedback settings *
+********************/
 
-    $('#test-' + split_id[1]).html(new_name);
-}
-
-function stage_name_changed(e) {
-    var input_id = e.target.id;
-    var split_id = input_id.split("-");
-    var new_name = e.target.value;
-
-    $('#stage-' + split_id[1]).html(new_name);
-}
-
-function command_name_changed(e) {
-    var input_id = e.target.id;
-    var split_id = input_id.split("-");
-    var new_name = e.target.value;
-
-    $('#command-' + split_id[1]).html(new_name);
-}
 
 var fb_choice_enum = 1;
 
@@ -454,18 +511,131 @@ function show_edit_feedback_questions_popup(event, url) {
     });
 }
 
-function delete_table_row(button) {
-    $(button).parent().parent().remove();
+function edit_feedback_form_success(data, text_status, jqxhr_obj) {
+    var ID_PATTERN = /\[(.*?)\]/;
+    var CHOICE_ENUM_PATTERN = /\{(.*?)\}/;
+    if (data.error) {
+        var sep = "<br>";
+        $.each(data.error, function(err_source, err_msg) {
+            if (err_source === "__all__") {
+                var error_div = $("#feedback-error");
+            } else {
+                var question_id = err_source.match(ID_PATTERN)[1];
+                if (err_source.startsWith("question_field")) {
+                    var error_div = $("#feedback-question-" + question_id + "-error");
+                } else if (err_source.startsWith("type_field")) {
+                    var error_div = $("#feedback-error");
+                } else if (err_source.startsWith("choice_field")) {
+                    var choice_enum = err_source.match(CHOICE_ENUM_PATTERN)[1];
+                    var error_div = $("#feedback-choice-" + question_id + "-" + choice_enum + "-error");
+                }
+            }
+            error_div.html(err_msg.join(sep));
+            error_div.css("display", "block");
+            show_feedback_question_edit_menu(question_id);
+            //TODO: Scroll to the choice that caused the error
+        });
+    } else if (data.result) {
+        console.log("Feedback questions edited successfully!");    
+        close_popup_and_add_questions(data.result);
+    }
 }
 
-function show_stagecmd_information(event) {
-    var clicked_id = event.target.id;
-    var split_id = clicked_id.split("-");
-    var clicked_type = split_id[0];
-    var clicked_number = split_id[1];
-    $('div.selection-information').hide();
-    $('#' + clicked_type + '-information-' + clicked_number).show() 
+function edit_feedback_form_error(xhr, status, type) {
+    var error_span = $("#feedback-error");
+    var error_str = "An error occured while sending the form:";
+    status = status.charAt(0).toUpperCase() + status.slice(1);
+    if (type) {
+        error_str += status + ": " + type;
+    } else {
+        error_str += status;
+    }
+    error_span.html(error_str);
+    error_span.css("display", "block");
 }
+
+function submit_edit_feedback_form(e) {
+    e.preventDefault();
+    console.log("User requested create feedback form submit.");
+
+    $("div.popup div.admin-error").hide();
+
+    var form = $('#edit-feedback-form');
+    var form_type = form.attr('method');
+    var form_url = form.attr('action');
+
+    console.log("Method: " + form_type + ", URL: " + form_url);
+
+    var form_data = new FormData(form[0]);
+
+    console.log("Serialized form data:");
+    for (var [key, value] of form_data.entries()) { 
+        console.log(key, value);
+    }
+    
+    console.log("Submitting the form...");
+    $.ajax({
+        type: form_type,
+        url: form_url,
+        data: form_data,
+        processData: false,
+        contentType: false,
+        dataType: 'json',
+        success: edit_feedback_form_success,
+        error: edit_feedback_form_error
+    });
+}
+
+function close_popup_and_add_questions(questions) {
+    var TITLE_TEXT = "Deletes the relation between the feedback question and the exercise";
+    var target_tbody = $("#feedback-question-table tbody");
+    $("#add-feedback-table > tbody input.feedback-question-checkbox:checked").each(function(index) {
+        var id = $(this).attr("data-question-id");
+        var question = $("#feedback-question-" + id).val();
+        var type = "";
+        var in_table = false;
+        var not_saved = true;
+        
+        $.each(questions, function(index, db_question) {
+            console.log(questions);
+            if (db_question.question === question) {
+                id = "" + db_question.id;
+                type = db_question.readable_type;
+                not_saved = false;
+                return false;
+            }
+        });
+        if (not_saved) {
+            return;
+        }
+
+        var tr = $('<tr data-question-id="' + id + '">');
+        target_tbody.find("tr").each(function() {
+            if ($(this).attr("data-question-id") === id) {
+                tr = $(this);
+                in_table = true;
+                return false;
+            }
+        });
+        if (in_table) {
+            tr.children("td.question-cell").html(question);
+        } else {
+            var td_delete = $('<td class="delete-cell">');
+            tr.append('<td class="question-cell">' + question + '</td>');
+            tr.append('<td class="type-cell">' + type + '</td>');
+            td_delete.append('<button class="delete-button" title="' + TITLE_TEXT + '" onclick="delete_table_row(this);">x</button>');
+            tr.append(td_delete);
+            target_tbody.append(tr);
+        }
+    });
+    close_popup($("#edit-feedback-popup"));
+}
+
+
+/********
+* Hints *
+********/
+
 
 hint_enum = 1;
 
@@ -481,6 +651,12 @@ function add_hint() {
     $("#hint-table tbody").append(tr);
     hint_enum++;
 }
+
+
+/******************************************************************
+* File upload exercise included files and included instance files *
+******************************************************************/
+
 
 function update_included_file_ok_button_state(file_id, lang) {
     var button = $("#included-file-ok-button-" + file_id + "-" + lang);
@@ -799,73 +975,43 @@ function show_edit_instance_files_popup(event, url) {
     });
 }
 
-function submit_main_form(e) {
-    e.preventDefault();
-    console.log("User requested main form submit.");
-    
-    var form = $('#main-form');
 
-    // Get the hierarchy of stages and commands for the calculation of implicit
-    // ordinal_numbers at the form validation
-    var tests = [];
-    $('#test-tabs > ol > li').each(function(x) {
-        var current_href = $(this).children('a').attr('href');
-        if (current_href !== undefined) {
-            var current_id = current_href.split('-')[2];
-            tests.push(current_id);
-        }
-    });
-    var order_hierarchy = {stages_of_tests: {}, commands_of_stages: {}};
-    for (let test_id of tests) {
-        var stage_order;
-        
-        $('#stages-sortable-' + test_id).each(function(x) {
-            stage_order = $(this).sortable("toArray", options={attribute: 'data-stage-id'});
-            order_hierarchy.stages_of_tests[test_id] = stage_order;
-            
-            for (let stage_id of stage_order) {
-                var command_order;
-                $('#commands-sortable-' + test_id + '-' + stage_id).each(function(y) {
-                    command_order = $(this).sortable("toArray", options={attribute: 'data-command-id'});
-                });
-                order_hierarchy.commands_of_stages[stage_id] = command_order;
-            }
-        });
-    }
-    console.log(order_hierarchy);
+/**************************************************
+* File upload exercise tests, stages and commands *
+**************************************************/
 
-    // Get the linked feedback questions
-    var question_ids = $('#feedback-question-table > table > tbody > tr').map(function() {
-        return this.getAttribute('data-question-id');
-    }).get().join(',');
-    console.log("Question ids: ");
-    console.log(question_ids);
-    
-    var form_type = form.attr('method');
-    var form_url = form.attr('action');
 
-    console.log("Method: " + form_type + ", URL: " + form_url);
+function test_name_changed(e) {
+    var input_id = e.target.id;
+    var split_id = input_id.split("-");
+    var new_name = e.target.value;
 
-    var form_data = new FormData(form[0]);
-    form_data.append('order_hierarchy', JSON.stringify(order_hierarchy));
-    form_data.append('exercise_feedback_questions', question_ids);
+    $('#test-' + split_id[1]).html(new_name);
+}
 
-    console.log("Serialized form data:");
-    for (var [key, value] of form_data.entries()) {
-        console.log(key, value);
-    }
+function stage_name_changed(e) {
+    var input_id = e.target.id;
+    var split_id = input_id.split("-");
+    var new_name = e.target.value;
 
-    console.log("Submitting the form...");
-    $.ajax({
-        type: form_type,
-        url: form_url,
-        data: form_data,
-        processData: false,
-        contentType: false,
-        dataType: 'json',
-        success: function(data, text_status, jqxhr_obj) {},
-        error: function(xhr, status, type) {}
-    });
+    $('#stage-' + split_id[1]).html(new_name);
+}
+
+function command_name_changed(e) {
+    var input_id = e.target.id;
+    var split_id = input_id.split("-");
+    var new_name = e.target.value;
+
+    $('#command-' + split_id[1]).html(new_name);
+}
+
+function show_stagecmd_information(event) {
+    var clicked_id = event.target.id;
+    var split_id = clicked_id.split("-");
+    var clicked_type = split_id[0];
+    var clicked_number = split_id[1];
+    $('div.selection-information').hide();
+    $('#' + clicked_type + '-information-' + clicked_number).show() 
 }
 
 var test_enum = 1;
@@ -971,95 +1117,4 @@ function add_command(test_id, stage_id) {
     stage_list.sortable("refresh");
     cmd_list.sortable("refresh");
     cmd_enum++;
-}
-
-function edit_feedback_form_success(data, text_status, jqxhr_obj) {
-    var ID_PATTERN = /\[(.*?)\]/;
-    var CHOICE_ENUM_PATTERN = /\{(.*?)\}/;
-    if (data.error) {
-        var sep = "<br>";
-        $.each(data.error, function(err_source, err_msg) {
-            if (err_source === "__all__") {
-                var error_div = $("#feedback-error");
-            } else {
-                var question_id = err_source.match(ID_PATTERN)[1];
-                if (err_source.startsWith("question_field")) {
-                    var error_div = $("#feedback-question-" + question_id + "-error");
-                } else if (err_source.startsWith("type_field")) {
-                    var error_div = $("#feedback-error");
-                } else if (err_source.startsWith("choice_field")) {
-                    var choice_enum = err_source.match(CHOICE_ENUM_PATTERN)[1];
-                    var error_div = $("#feedback-choice-" + question_id + "-" + choice_enum + "-error");
-                }
-            }
-            error_div.html(err_msg.join(sep));
-            error_div.css("display", "block");
-            show_feedback_question_edit_menu(question_id);
-            //TODO: Scroll to the choice that caused the error
-        });
-    } else if (data.result) {
-        console.log("Feedback questions edited successfully!");    
-        close_popup_and_add_questions(data.result);
-    }
-}
-
-function edit_feedback_form_error(xhr, status, type) {
-    var error_span = $("#feedback-error");
-    var error_str = "An error occured while sending the form:";
-    status = status.charAt(0).toUpperCase() + status.slice(1);
-    if (type) {
-        error_str += status + ": " + type;
-    } else {
-        error_str += status;
-    }
-    error_span.html(error_str);
-    error_span.css("display", "block");
-}
-
-function submit_edit_feedback_form(e) {
-    e.preventDefault();
-    console.log("User requested create feedback form submit.");
-
-    $("div.popup div.admin-error").hide();
-
-    var form = $('#edit-feedback-form');
-    var form_type = form.attr('method');
-    var form_url = form.attr('action');
-
-    console.log("Method: " + form_type + ", URL: " + form_url);
-
-    var form_data = new FormData(form[0]);
-
-    console.log("Serialized form data:");
-    for (var [key, value] of form_data.entries()) { 
-        console.log(key, value);
-    }
-    
-    console.log("Submitting the form...");
-    $.ajax({
-        type: form_type,
-        url: form_url,
-        data: form_data,
-        processData: false,
-        contentType: false,
-        dataType: 'json',
-        success: edit_feedback_form_success,
-        error: edit_feedback_form_error
-    });
-}
-
-function change_current_language(e) {
-    e.preventDefault();
-
-    var new_code = e.target.value;
-
-    // Change the visible code in the language picker
-    $('#language-info-code').text(new_code);
-
-    // Change the visible input elements to the correponding language coded ones
-    var translated_elements = $('.translated');
-    translated_elements.removeClass('translated-visible');
-    translated_elements.filter('[data-language-code=' + new_code + ']').addClass('translated-visible');
-
-    // TODO: Swap the visible input elements into the corresponding language coded ones
 }
