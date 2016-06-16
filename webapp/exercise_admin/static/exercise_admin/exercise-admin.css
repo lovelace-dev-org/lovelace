@@ -497,7 +497,7 @@ div.admin-error {
 }
 
 button.edit-button {
-    background: url("edit.png");
+    background: no-repeat url("edit_icon_pencil.svg") center/18px;
     width: 25px;
     height: 25px;
     outline: 0;
