@@ -28,6 +28,8 @@
             {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
               <span class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}" onClick="show_stagecmd_information(event);" id="stage-{{ stage.id }}">{% get_translated_field stage "name" language_choice %}</span>
             {% endfor %}
+            <button class="delete-button" type="button" title="Delete this stage"
+                    onclick="delete_stage('{{ test.id }}', '{{ stage.id }}');">x</button>
             <div>
               <ol id="commands-sortable-{{ test.id }}-{{ stage.id }}">
                 {% for cmd, expected_outputs in commands %}
@@ -35,6 +37,8 @@
                     {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
                       <span class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}" onClick="show_stagecmd_information(event);" id="command-{{ cmd.id }}" class="clickable-commandline">{% get_translated_field cmd 'command_line' language_choice %}</span>
                     {% endfor %}
+                    <button class="delete-button" type="button" title="Delete this command"
+                            onclick="delete_command('{{ test.id }}', '{{ stage.id }}', '{{ cmd.id }}');">x</button>
                   </li>
                 {% endfor %}
               </ol>
