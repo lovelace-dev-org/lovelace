@@ -199,7 +199,7 @@
           <li>
             <a href="#test-tabs-{{ test.id }}" id="test-{{ test.id }}">{{ test.name }}</a>
             <button class="delete-button" type="button" title="Delete this test"
-                    onclick="delete_test({{ test.id }});">x</button>
+                    onclick="delete_test('{{ test.id }}');">x</button>
           </li>
         {% endfor %}
         <li class="test-tab-button-container"><button type="button" class="add-item" title="Adds a new test" onClick="add_test();">+</button></li>
