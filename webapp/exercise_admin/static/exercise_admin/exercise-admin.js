@@ -120,6 +120,12 @@ function submit_main_form(e) {
     });
 }
 
+function delete_exercise() {
+    // TODO: A popup asking whether the user really wants to delete the
+    // exercise and all its associated include files, tests, stages,
+    // commands, links to feedbacks and links to instance include files.
+}
+
 function close_popup(popup) {
     popup.css({"opacity":"0", "pointer-events":"none"});
 }
@@ -152,6 +158,7 @@ function change_current_language(e) {
 ***********************************************************/
 
 
+// TODO: Support translation
 function exercise_name_changed(e) {
     /* If the exercise page content is empty when the script loads, add a title
        automatically. */
@@ -981,6 +988,8 @@ function show_edit_instance_files_popup(event, url) {
 **************************************************/
 
 
+// TODO: Translation support for the *_name_changed
+// TODO: Generalise the *_name_changed - they're pretty similar
 function test_name_changed(e) {
     var input_id = e.target.id;
     var split_id = input_id.split("-");
@@ -1005,15 +1014,7 @@ function command_name_changed(e) {
     $('#command-' + split_id[1]).html(new_name);
 }
 
-function show_stagecmd_information(event) {
-    var clicked_id = event.target.id;
-    var split_id = clicked_id.split("-");
-    var clicked_type = split_id[0];
-    var clicked_number = split_id[1];
-    $('div.selection-information').hide();
-    $('#' + clicked_type + '-information-' + clicked_number).show() 
-}
-
+// TODO: Generalise the add_(test|stage|command)? Use the latter functions in the former
 var test_enum = 1;
 
 function add_test() {
@@ -1024,7 +1025,14 @@ function add_test() {
 
     var test_tablist = $("#test-tabs > ol:first-child");
     // TODO: The new test tab item should be included in the template section and cloned.
-    var new_test_tab_item = $('<li><a href="#test-tabs-' + new_id + '" id="test-' + new_id + '">' + new_name + '</a></li>');
+
+    var new_test_tab_item = $(
+        '<li>'
+          + '<a href="#test-tabs-' + new_id + '" id="test-' + new_id + '">' + new_name + '</a>'
+          + '<button class="delete-button" type="button" title="Delete this test"'
+                  + 'onclick="delete_test(\'' + new_id + '\');">x</button>'
+      + '</li>'
+    );
     new_test_tab_item.insertBefore("li.test-tab-button-container");
 
     // Create the new test tab
@@ -1117,4 +1125,60 @@ function add_command(test_id, stage_id) {
     stage_list.sortable("refresh");
     cmd_list.sortable("refresh");
     cmd_enum++;
+}
+
+function show_stagecmd_information(event) {
+    var clicked_id = event.target.id;
+    var split_id = clicked_id.split("-");
+    var clicked_type = split_id[0];
+    var clicked_number = split_id[1];
+    $('div.selection-information').hide();
+    $('#' + clicked_type + '-information-' + clicked_number).show() 
+}
+
+// TODO: Use the latter function in the former when applicable in delete_(test|stage|command)
+function delete_test(test_id) {
+    // TODO: A popup asking, if the user really wants to delete the test
+    //       and its stages and commands.
+    // TODO: Must not be able to delete tests that contain stages, that are
+    //       dependencies for stages in other tests.
+
+    // Delete the test tab selector and refresh the tabs
+    $('#test-' + test_id).parent().remove();
+    $('#test-tabs').tabs('refresh');
+
+    // Delete the test tab contents
+    $('#test-tabs-' + test_id).remove();
+}
+
+function delete_stage(test_id, stage_id) {
+    // Same TODO as with test deletion
+
+    // Get the associated commands ids
+    let command_ids = $('#commands-sortable-' + test_id + '-' + stage_id + ' > li').map(
+        function() {return $(this).attr('data-command-id');}
+    ).get();
+    
+    // Delete the stage from the stage list and refresh the sortable
+    $('li[data-stage-id="' + stage_id + '"]').remove();
+    $('#stages-sortable-' + test_id).sortable('refresh');
+
+    // Delete the stage info from the right side
+    $('#stage-information-' + stage_id).remove();
+
+    // Delete the associated commands' infos from the right side
+    for (let i=0; i < command_ids.length; i++) {
+        $('#command-information-' + command_ids[i]).remove();
+    }
+}
+
+function delete_command(test_id, stage_id, command_id) {
+    // Same TODO as with the stage deletion
+
+    // Delete the command from the command list and refresh the sortable
+    $('li[data-command-id="' + command_id + '"]').remove();
+    $('#commands-sortable-' + test_id + '-' + stage_id).sortable('refresh');
+
+    // Delete the command info from the right side
+    $('#command-information-' + command_id).remove();
 }
