@@ -122,7 +122,7 @@
       </table>
       {% for language_choice, _ in AVAILABLE_LANGUAGES %}
         <span class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}">
-          <button type="button" class="add-item" title="Opens a popup window to add an included file" onclick="create_included_file_popup('{{ language_choice }}');">Add</button>
+          <button type="button" class="add-item" title="Opens a popup window to add an included file" onclick="create_included_file_popup();">Add</button>
         </span>
       {% endfor %}
 

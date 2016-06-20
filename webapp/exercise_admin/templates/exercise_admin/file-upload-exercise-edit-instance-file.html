@@ -1,39 +1,65 @@
-<div id="edit-instance-file-{{ file_id }}" class="edit-instance-file">
+{% load i18n %}
+{% load exercise_admin_extras %}
+{% get_current_language as CURRENT_LANGUAGE %}
+{% get_available_languages as AVAILABLE_LANGUAGES %}
+{% get_language_info_list for AVAILABLE_LANGUAGES as LANGUAGES_VERBOSE %}
+<div id="edit-instance-file-{{ instance_file.id }}" class="edit-instance-file">
+  <div class="edit-instance-file-title-div">
+    {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
+      <div class="translated {% if language_choice == CURRENT_LANGUAGE and not create %}translated-visible{% endif %} inline-block-elem" data-language-code="{{ language_choice }}">
+        <h2 id="edit-instance-file-title-{{ instance_file.id }}-{{ language_choice }}" class="edit-instance-file-title">
+          Edit instance file: {% get_translated_field instance_file "default_name" language_choice %}
+        </h2>
+        {% lang_reminder language_choice %}
+      </div>
+    {% endfor %}
+    {% if create %}
+      <h2 id="create-instance-file-title-{{ instance_file.id }}">Create new instance file</h2>
+    {% endif %}
+  </div>
+  <div>
+    {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
+      <div class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}">
+        <label for="instance-file-{{ instance_file.id }}-{{ language_choice }}">
+          <span class="choose-file-span">Choose file {% lang_reminder language_choice %}: </span>
+          <input type="file" id="instance-file-{{ instance_file.id }}-{{ language_choice }}" name="instance_file_[{{ instance_file.id }}]_{{ language_choice }}" class="file-input"
+                 onchange="update_instance_file_done_button_state('{{ instance_file.id }}');" data-language-code="{{ language_choice }}">
+        </label>
+      </div>
+    {% endfor %}
+    <div id="instance-file-error-{{ instance_file.id }}" class="admin-error"></div>
+  </div>
+  <div>
+    {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
+      <div class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}">
+        <label class="file-label" for="instance-file-default-name-{{ instance_file.id }}-{{ language_choice }}">
+          <span class="file-default-name-span">Default name {% lang_reminder language_choice %}: </span>
+          <input type="text" id="instance-file-default-name-{{ instance_file.id }}-{{ language_choice }}" class="file-default-name-input" maxlength="225"
+                 name="instance_file_default_name_[{{ instance_file.id }}]_{{ language_choice }}" value="{% get_translated_field instance_file "default_name" language_choice %}"
+                 oninput="update_instance_file_done_button_state('{{ instance_file.id }}');" data-language-code="{{ language_choice }}">
+        </label>
+      </div>
+    {% endfor %}
+    <div id="instance-file-default-name-error-{{ instance_file.id }}" class="admin-error"></div>
+  </div>
+  <div>
+    {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
+      <div class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}">
+        <label class="file-label" for="instance-file-description-{{ instance_file.id }}-{{ language_choice }}">
+          <div>File description:</div>
+          <textarea id="instance-file-description-{{ instance_file.id }}-{{ language_choice }}" name="instance_file_description_[{{ instance_file.id }}]_{{ language_choice }}"
+                    class="file-description-area" cols="117" rows="5" oninput="update_instance_file_done_button_state('{{ instance_file.id }}');"
+                    data-language-code="{{ language_choice }}">{% get_translated_field instance_file "description" language_choice %}</textarea>
+        </label>
+      </div>
+    {% endfor %}
+    <div id="instance-file-description-{{ instance_file.id }}" class="admin-error"></div>
+  </div>
   {% if create %}
-    <h2 id="edit-instance-file-title-{{ file_id }}">Create new instance file</h2>
+    <button id="done-button-{{ instance_file.id }}" type="button" class="add-item" title="Closes create instance file menu"
+            onclick="create_new_instance_file_entry('{{ instance_file.id }}');" disabled data-button-mode="add">Create file</button>
   {% else %}
-    <h2 id="edit-instance-file-title-{{ file_id }}">Edit instance file: {{ file_default_name }}</h2>
-  {% endif %}
-  <div>
-    <label for="instance-file-{{ file_id }}">
-      <span class="file-chmod-span">Choose file:</span>
-      <input type="file" id="instance-file-{{ file_id }}" name="instance_file_[{{ file_id }}]"
-             onchange="update_instance_file_done_button_state('{{ file_id }}');">
-    </label>
-    <div id="instance-file-error-{{ file_id }}" class="admin-error"></div>
-  </div>
-  <div>
-    <label class="file-label" for="instance-file-default-name-{{ file_id }}">
-      <span class="file-default-name-span">Default name:</span>
-      <input type="text" id="instance-file-default-name-{{ file_id }}" class="file-default-name-input" maxlength="225"
-             name="instance_file_default_name_[{{ file_id }}]" value="{{ file_default_name }}"
-             oninput="update_instance_file_done_button_state('{{ file_id }}');">
-    </label>
-    <div id="instance-file-default-name-error-{{ file_id }}" class="admin-error"></div>    
-  </div>
-  <div>
-    <label class="file-label" for="instance-file-description-{{ file_id }}">
-      <div>File description:</div>
-      <textarea id="instance-file-description-{{ file_id }}" name="instance_file_description_[{{ file_id }}]" class="file-description-area"
-                cols="117" rows="5" oninput="update_instance_file_done_button_state('{{ file_id }}');">{{ file_description }}</textarea>
-    </label>
-    <div id="instance-file-description-{{ file_id }}" class="admin-error"></div>
-  </div>
-  {% if create %}
-    <button id="done-button-{{ file_id }}" type="button" class="add-item" title="Closes create instance file menu"
-            onclick="create_new_instance_file_entry('{{ file_id }}');" disabled data-button-mode="add">Create file</button>
-  {% else %}
-    <button id="done-button-{{ file_id }}" type="button" class="add-item" title="Closes edit instance file menu"
+    <button id="done-button-{{ instance_file.id }}" type="button" class="add-item" title="Closes edit instance file menu"
             onclick="close_instance_file_menu();" data-button-mode="done">Done editing</button>
   {% endif %}  
   

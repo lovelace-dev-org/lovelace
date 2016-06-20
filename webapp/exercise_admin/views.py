@@ -410,17 +410,32 @@ def get_instance_files(request, exercise_id):
             link = None
         instance_file_json = {
             "id" : instance_file.id,
-            "default_name": instance_file.default_name,
-            "description" : instance_file.description,
+            "default_names" : {},
+            "descriptions" : {},
+            "urls" : {},
             "link" : {
                 "id" : link.id,
-                "name" : link.file_settings.name,
+                "names" : {},
                 "purpose" : link.file_settings.purpose,
                 "chown_settings" : link.file_settings.chown_settings,
                 "chgrp_settings" : link.file_settings.chgrp_settings,
                 "chmod_settings" : link.file_settings.chmod_settings,
             }
         }
+        lang_list = get_lang_list()
+        for lang_code, _ in lang_list:
+            default_name_attr = "default_name_{}".format(lang_code)
+            description_attr = "description_{}".format(lang_code)
+            fileinfo_attr = "fileinfo_{}".format(lang_code)
+            name_attr = "name_{}".format(lang_code)
+            try:
+                url = getattr(instance_file, fileinfo_attr).url
+            except ValueError:
+                url = ""
+            instance_file_json["urls"][lang_code] = url
+            instance_file_json["default_names"][lang_code] = getattr(instance_file, default_name_attr)
+            instance_file_json["descriptions"][lang_code] = getattr(instance_file, description_attr)
+            instance_file_json["link"]["names"][lang_code] = getattr(link.file_settings, name_attr)
         result.append(instance_file_json)
 
     return JsonResponse({
