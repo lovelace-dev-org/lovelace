@@ -815,10 +815,13 @@ function show_instance_file_edit_menu(file_id) {
 
 function show_instance_file_edit_link_menu(file_id) {
     var link_div = $("#link-instance-file-" + file_id);
+    var remove_button = $("#remove-link-button-" + file_id);
     if (!$("#instance-file-checkbox-" + file_id).prop("checked")) {
         link_div.find("div.edit-instance-file-link-title-div div").removeClass("translated-visible");
+        remove_button.hide();
     } else {
         link_div.find("div.create-instance-file-link-title-div div").removeClass("translated-visible");
+        remove_button.css({"display" : "inline-block"});
     }
     
     $("div.link-instance-file").hide();
@@ -956,12 +959,12 @@ function add_existing_instance_file_to_popup(file_id, default_names, description
     $("#edit-instance-file-divs").append(edit_div);
 }
 
-function switch_done_button_mode(button_id) {
-    var done_button = $(button_id);
-    done_button.attr("title", "Closes edit exercise link menu");
-    done_button.attr("onclick", "close_instance_file_menu();");
-    done_button.attr("data-button-mode", "done");
-    done_button.text("Done editing");
+function switch_button_mode_to_done(button_id) {
+    var button = $(button_id);
+    button.attr("title", "Closes edit exercise link menu");
+    button.attr("onclick", "close_instance_file_menu();");
+    button.attr("data-button-mode", "done");
+    button.text("Done editing");
 }
 
 function add_new_instance_file_to_popup(file_id) {
@@ -988,7 +991,7 @@ function add_new_instance_file_to_popup(file_id) {
         $(this).text("Edit instance file: " + edit_div.find("input[data-language-code=" + lang + "].file-default-name-input").val());
     });
     $("#create-instance-file-title-" + file_id).hide();
-    switch_done_button_mode("#done-button-" + file_id);
+    switch_button_mode_to_done("#done-button-" + file_id);
 }
 
 function add_instance_file_to_exercise(file_id) {
@@ -996,9 +999,37 @@ function add_instance_file_to_exercise(file_id) {
     var lang = link_div.find("div.translated-visible input.file-name-input").attr("data-language-code");
 
     $("#instance-file-checkbox-" + file_id).prop("checked", true);
+    link_div.find("div.edit-instance-file-link-title-div").css({"display" : "block"});
     link_div.find("div.edit-instance-file-link-title-div div[data-language-code=" + lang + "]").addClass("translated-visible");
     link_div.find("div.create-instance-file-link-title-div").hide();
-    switch_done_button_mode("#link-done-button-" + file_id);
+    switch_button_mode_to_done("#link-done-button-" + file_id);
+    $("#remove-link-button-" + file_id).css({"display" : "inline-block"});
+}
+
+function switch_link_button_mode_to_add(file_id) {
+    var button = $("#link-done-button-" + file_id);
+    button.attr("title", "Includes the file to the linked files of the exercise");
+    button.attr("onclick", "add_instance_file_to_exercise('" + file_id + "');");
+    button.attr("data-button-mode", "add");
+    button.text("Add link");
+    button.prop("disabled", true);
+}
+
+function remove_instance_file_from_exercise(file_id) {
+    var link_div = $("#link-instance-file-" + file_id);
+    var lang = link_div.find("div.translated-visible input.file-name-input").attr("data-language-code");
+
+    $("#instance-file-checkbox-" + file_id).prop("checked", false);
+    link_div.find("div.edit-instance-file-link-title-div").hide();
+    link_div.find("div.create-instance-file-link-title-div").css({"display" : "block"});
+    link_div.find("div.create-instance-file-link-title-div div[data-language-code=" + lang + "]").addClass("translated-visible");
+    link_div.find("input.file-name-input").val("");
+    link_div.find("select.file-purpose-select").val("INPUT");
+    link_div.find("select.file-chown-select").val("OWNED");
+    link_div.find("select.file-chgrp-select").val("OWNED");
+    link_div.find("input.file-chmod-input").val("rw-rw-rw-");
+    switch_link_button_mode_to_add(file_id);
+    $("#remove-link-button-" + file_id).hide();
 }
 
 function create_new_instance_file_entry(file_id) {

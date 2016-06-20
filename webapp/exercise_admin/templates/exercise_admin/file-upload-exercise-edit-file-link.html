@@ -15,16 +15,14 @@
     {% endfor %}
   </div>
   <div class="create-instance-file-link-title-div">
-    {% if not linked %}
-      {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
-        <div class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %} inline-block-elem" data-language-code="{{ language_choice }}">
-          <h2 id="link-instance-file-title-{{ instance_file.id }}-{{ language_choice }}" class="link-instance-file-title">
-            Link instance file {% get_translated_field instance_file "default_name" language_choice %} to the exercise
-          </h2>
-          {% lang_reminder language_choice %}
-        </div>
-      {% endfor %}
-    {% endif %}
+    {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
+      <div class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %} inline-block-elem" data-language-code="{{ language_choice }}">
+        <h2 id="link-instance-file-title-{{ instance_file.id }}-{{ language_choice }}" class="link-instance-file-title">
+          Link instance file {% get_translated_field instance_file "default_name" language_choice %} to the exercise
+        </h2>
+        {% lang_reminder language_choice %}
+      </div>
+    {% endfor %}
   </div>
   <div>
     {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
@@ -85,10 +83,12 @@
     <div id="file-chmod-error-{{ instance_file.id }}" class="admin-error"></div>
   </div>
   {% if not linked %}
-    <button id="link-done-button-{{ instance_file.id }}" type="button" class="add-item" title="Includes the instance file to the linked files of the exercise"
-            onclick="add_instance_file_to_exercise('{{ instance_file.id }}');" disabled data-button-mode="create">Add link</button>
+    <button id="link-done-button-{{ instance_file.id }}" type="button" class="add-item" title="Includes the file to the linked files of the exercise"
+            onclick="add_instance_file_to_exercise('{{ instance_file.id }}');" disabled data-button-mode="add">Add link</button>
   {% else %}
     <button id="link-done-button-{{ instance_file.id }}" type="button" class="add-item" title="Closes edit exercise link menu"
             onclick="close_instance_file_menu();" data-button-mode="done">Done editing</button>
-  {% endif %}    
+  {% endif %}
+  <button id="remove-link-button-{{ instance_file.id }}" type="button" class="add-item" title="Removes the file from the linked files of the exercise"
+          onclick="remove_instance_file_from_exercise('{{ instance_file.id }}');">Remove link</button>
 </div>
