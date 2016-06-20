@@ -218,7 +218,7 @@
 
 {% block form-controls %}
   <section class="form-controls">
-    <div><a href="blaah/delete" id="delete-exercise">delete</a></div>
+    <div><a href="{% url 'admin:courses_fileuploadexercise_delete' exercise.id %}" id="delete-exercise">delete</a></div>
     <input type="submit" id="save-exercise" value="save">
   </section>
 {% endblock %}

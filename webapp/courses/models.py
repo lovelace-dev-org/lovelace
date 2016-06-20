@@ -1273,7 +1273,11 @@ class Evaluation(models.Model):
 
 ## TODO: Should these actually be proxied like the exercise types?
 class UserAnswer(models.Model):
-    """Parent class for what users have given as their answers to different exercises."""
+    """Parent class for what users have given as their answers to different exercises.
+
+    SET_NULL should be used as the on_delete behaviour for foreignkeys pointing to the
+    exercises. The answers will then be kept even when the exercise is deleted.
+    """
     instance = models.ForeignKey(CourseInstance)
     evaluation = models.OneToOneField(Evaluation, null=True, blank=True)
     revision = models.PositiveIntegerField() # The revision info is always required!
@@ -1330,7 +1334,7 @@ class FileUploadExerciseReturnFile(models.Model):
         return (mimetype, binary)
 
 class UserFileUploadExerciseAnswer(UserAnswer):
-    exercise = models.ForeignKey(FileUploadExercise)
+    exercise = models.ForeignKey(FileUploadExercise, models.SET_NULL, blank=True, null=True)
 
     def __str__(self):
         return "Answer by %s" % (self.user.username)
