@@ -196,7 +196,11 @@
     <div id="test-tabs">
       <ol>
         {% for test, stages in tests %}
-          <li><a href="#test-tabs-{{ test.id }}" id="test-{{ test.id }}">{{ test.name }}</a></li>
+          <li>
+            <a href="#test-tabs-{{ test.id }}" id="test-{{ test.id }}">{{ test.name }}</a>
+            <button class="delete-button" type="button" title="Delete this test"
+                    onclick="delete_test('{{ test.id }}');">x</button>
+          </li>
         {% endfor %}
         <li class="test-tab-button-container"><button type="button" class="add-item" title="Adds a new test" onClick="add_test();">+</button></li>
       </ol>
@@ -214,7 +218,7 @@
 
 {% block form-controls %}
   <section class="form-controls">
-    <div><a href="blaah/delete" id="delete-exercise">delete</a></div>
+    <div><a href="{% url 'admin:courses_fileuploadexercise_delete' exercise.id %}" id="delete-exercise">delete</a></div>
     <input type="submit" id="save-exercise" value="save">
   </section>
 {% endblock %}

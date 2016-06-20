@@ -29,6 +29,7 @@ def index(request):
 
 def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_test_ids,
                               old_stage_ids, old_cmd_ids, new_stages, new_commands):
+    deletions = []
     # Collect the content page data
     #e_name = form_data['exercise_name']
     #e_content = form_data['exercise_content']
@@ -67,10 +68,11 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_tes
     
     # Check for removed tests (existed before, but not in form data)
     for removed_test_id in sorted(old_test_ids - {int(test_id) for test_id in test_ids if not test_id.startswith('newt')}):
-        print("Test with id={} was removed!".format(removed_test_id))
+        print("Test with id={} was removed!".format(removed_test_id)) # TODO: Some kind of real admin logging
         removed_test = FileExerciseTest.objects.get(id=removed_test_id)
         # TODO: Reversion magic! Seems like it's taken care of automatically? Test.
-        removed_test.delete()
+        deletion = removed_test.delete()
+        deletions.append(deletion)
     
     edited_tests = {}
     for test_id in test_ids:
@@ -95,9 +97,14 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_tes
     # Deferred constraints: https://code.djangoproject.com/ticket/20581
     for removed_stage_id in sorted(old_stage_ids - {int(stage_id) for stage_id in new_stages.keys() if not stage_id.startswith('news')}):
         print("Stage with id={} was removed!".format(removed_stage_id))
-        removed_stage = FileExerciseTestStage.objects.get(id=removed_stage_id)
+        try:
+            removed_stage = FileExerciseTestStage.objects.get(id=removed_stage_id)
+        except FileExerciseTestStage.DoesNotExist:
+            pass # Probably taken care of by test deletion cascade
         # TODO: Reversion magic!
-        removed_stage.delete()
+        else:
+            deletion = removed_stage.delete()
+            deletions.append(deletion)
 
     stage_count = len(new_stages)
     edited_stages = {}
@@ -128,9 +135,16 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_tes
     # Collect the command data
     for removed_command_id in sorted(old_cmd_ids - {int(command_id) for command_id in new_commands.keys() if not command_id.startswith('newc')}):
         print("Command with id={} was removed!".format(removed_command_id))
-        removed_command = FileExerciseTestCommand.objects.get(id=removed_command_id)
-        # TODO: Reversion magic!
-        removed_command.delete()
+        try:
+            removed_command = FileExerciseTestCommand.objects.get(id=removed_command_id)
+        except FileExerciseTestCommand.DoesNotExist:
+            pass # Probably taken care of by test or stage deletion cascade
+            # TODO: Reversion magic!
+        else:
+            deletion = removed_command.delete()
+            deletions.append(deletion)
+
+    print("Total deletions: {}".format(repr(deletions)))
 
     command_count = len(new_commands)
     edited_commands = {}
@@ -209,6 +223,8 @@ def file_upload_exercise(request, exercise_id=None, action=None):
     
     tests = FileExerciseTest.objects.filter(exercise=exercise_id).order_by("name")
     test_list = []
+    stages = None
+    commands = None
     for test in tests:
         stages = FileExerciseTestStage.objects.filter(test=test).order_by("ordinal_number")
         stage_list = []
@@ -248,8 +264,14 @@ def file_upload_exercise(request, exercise_id=None, action=None):
                 new_commands[command_id] = Command(stage=stage_id, ordinal_number=i+1)
 
         old_test_ids = set(tests.values_list('id', flat=True))
-        old_stage_ids = set(stages.values_list('id', flat=True))
-        old_cmd_ids = set(commands.values_list('id', flat=True))
+        if stages is not None:
+            old_stage_ids = set(stages.values_list('id', flat=True))
+        else:
+            old_stage_ids = set()
+        if commands is not None:
+            old_cmd_ids = set(commands.values_list('id', flat=True))
+        else:
+            old_cmd_ids = set()
 
         data = request.POST.dict()
         data.pop("csrfmiddlewaretoken")
