@@ -657,6 +657,7 @@ function add_hint() {
     hint_enum++;
 }
 
+
 /******************************************************************
 * File upload exercise included files and included instance files *
 ******************************************************************/
