@@ -32,8 +32,8 @@
         <label class="file-label" for="instance-file-name-{{ instance_file.id }}-{{ language_choice }}">
           <span class="file-name-span">File name during test {% lang_reminder language_choice %}: </span>
           <input type="text" id="instance-file-name-{{ instance_file.id }}-{{ language_choice }}" class="file-name-input" maxlength="225"
-                 value="{% get_translated_field instance_file_link "name" language_choice %}"
-                 oninput="update_link_done_button_state('{{ instance_file.id }}');">
+                 value="{% get_translated_field instance_file_link "name" language_choice %}" oninput="update_link_done_button_state('{{ instance_file.id }}');"
+                 data-language-code="{{ language_choice }}">
         </label>
       </div>
     {% endfor%}

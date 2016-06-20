@@ -658,9 +658,9 @@ function add_hint() {
 }
 
 
-/******************************************************************
-* File upload exercise included files and included instance files *
-******************************************************************/
+/**************************************
+* File upload exercise included files *
+**************************************/
 
 
 function update_included_file_ok_button_state(file_id) {
@@ -798,6 +798,12 @@ function create_included_file_popup() {
     });
     include_file_enum++;
 }
+
+
+/**************************************
+* File upload exercise instance files *
+**************************************/
+
 
 function show_instance_file_edit_menu(file_id) {
     $("div.edit-instance-file").hide();
@@ -950,8 +956,8 @@ function add_existing_instance_file_to_popup(file_id, default_names, description
     $("#edit-instance-file-divs").append(edit_div);
 }
 
-function switch_done_button_mode(file_id) {
-    var done_button = $("#done-button-" + file_id);
+function switch_done_button_mode(button_id) {
+    var done_button = $(button_id);
     done_button.attr("title", "Closes edit exercise link menu");
     done_button.attr("onclick", "close_instance_file_menu();");
     done_button.attr("data-button-mode", "done");
@@ -982,16 +988,17 @@ function add_new_instance_file_to_popup(file_id) {
         $(this).text("Edit instance file: " + edit_div.find("input[data-language-code=" + lang + "].file-default-name-input").val());
     });
     $("#create-instance-file-title-" + file_id).hide();
-    switch_done_button_mode(file_id);
+    switch_done_button_mode("#done-button-" + file_id);
 }
 
 function add_instance_file_to_exercise(file_id) {
     var link_div = $("#link-instance-file-" + file_id);
-    var lang = edit_div.find("div.translated-visible input.file-default-name-input").attr("data-language-code");
-    
+    var lang = link_div.find("div.translated-visible input.file-name-input").attr("data-language-code");
+
+    $("#instance-file-checkbox-" + file_id).prop("checked", true);
     link_div.find("div.edit-instance-file-link-title-div div[data-language-code=" + lang + "]").addClass("translated-visible");
-    link_div.find("div.create-instance-file-title.div").hide();
-    switch_done_button_mode(file_id);
+    link_div.find("div.create-instance-file-link-title-div").hide();
+    switch_done_button_mode("#link-done-button-" + file_id);
 }
 
 function create_new_instance_file_entry(file_id) {
