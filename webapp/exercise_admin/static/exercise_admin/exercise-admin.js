@@ -875,10 +875,10 @@ instance_file_enum = 1;
 
 function add_create_instance_file_div() {
     var file_id = "new-" + instance_file_enum;
-    var create_div = $("#edit-instance-file-SAMPLE_ID_CREATE").clone().attr('id', 'edit-instance-file-' + file_id);
+    var create_div = $("#edit-instance-file-SAMPLE_CREATE_ID").clone().attr('id', 'edit-instance-file-' + file_id);
     create_div.find("div.edit-instance-file-title-div div").removeClass("translated-visible");
     create_div.html(function(index, html) {
-        return html.replace(/SAMPLE_ID_CREATE/g, file_id);
+        return html.replace(/SAMPLE_CREATE_ID/g, file_id);
     });
     create_div.css({"display" : "block"});
     $("#edit-instance-file-divs").append(create_div);
@@ -910,7 +910,7 @@ function add_instance_file_popup_tr(sample_id, file_id, default_names, descripti
 
 function add_instance_file_to_popup(file_id, default_names, descriptions, urls, link, checked) {
     if (checked) {
-        var sample_id = "SAMPLE_ID_LINKED";
+        var sample_id = "SAMPLE_LINKED_ID";
         var chmod = link.chmod_settings;
         var names = link.names;
         var edit_link_div = $("#link-instance-file-" + sample_id).clone().attr('id', 'link-instance-file-' + file_id);
@@ -947,7 +947,7 @@ function add_existing_instance_file_to_popup(file_id, default_names, description
     
     var edit_div = $("#edit-instance-file-SAMPLE_ID").clone().attr('id', 'edit-instance-file-' + file_id);
     edit_div.html(function(index, html) {
-        html = html.replace(/SAMPLE_ID/, file_id);
+        html = html.replace(/SAMPLE_ID/g, file_id);
         $.each(default_names, function(key, val) {
             html = html.replace(new RegExp("SAMPLE_DEFAULT_NAME_" + key, 'g'), val);
         });
@@ -1097,6 +1097,38 @@ function show_edit_instance_files_popup(event, url) {
             }
         });
         popup.css({"opacity": "1", "pointer-events": "auto"});
+    });
+}
+
+function submit_edit_instance_files_form(e) {
+    e.preventDefault();
+    console.log("User requested instance file form submit.");
+
+    $("div.popup div.admin-error").hide();
+
+    var form = $('#edit-instance-files-form');
+    var form_type = form.attr('method');
+    var form_url = form.attr('action');
+
+    console.log("Method: " + form_type + ", URL: " + form_url);
+
+    var form_data = new FormData(form[0]);
+
+    console.log("Serialized form data:");
+    for (var [key, value] of form_data.entries()) { 
+        console.log(key, value);
+    }
+    
+    console.log("Submitting the form...");
+    $.ajax({
+        type: form_type,
+        url: form_url,
+        data: form_data,
+        processData: false,
+        contentType: false,
+        dataType: 'json',
+        success: function() {},
+        error: function() {},
     });
 }
 

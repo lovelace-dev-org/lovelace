@@ -7,9 +7,9 @@ from .utils import get_default_lang, get_lang_list
 
 import feedback.models
 
-class CreateFeedbackQuestionForm(forms.Form):
+class CreateFeedbackQuestionsForm(forms.Form):
     def __init__(self, feedback_questions, data, *args, **kwargs):
-        super(CreateFeedbackQuestionForm, self).__init__(data, *args, **kwargs)
+        super(CreateFeedbackQuestionsForm, self).__init__(data, *args, **kwargs)
 
         # Possibly edited existing feedback questions
         for question in feedback_questions:
@@ -33,7 +33,7 @@ class CreateFeedbackQuestionForm(forms.Form):
                 self.fields[choice_field] = forms.CharField(required=False)
             
     def clean(self):
-        cleaned_data = super(CreateFeedbackQuestionForm, self).clean()
+        cleaned_data = super(CreateFeedbackQuestionsForm, self).clean()
 
         for k1 in self.fields.keys():
             field_val = cleaned_data.get(k1)
@@ -73,6 +73,14 @@ class CreateFeedbackQuestionForm(forms.Form):
                         choice_error = forms.ValidationError("Duplicate choice!", code="duplicate_choice")
                         self.add_error(k1, choice_error)
 
+
+class CreateInstanceIncludeFilesForm(forms.Form):
+    def __init__(self, feedback_questions, data, *args, **kwargs):
+        super(CreateInstanceIncludeFilesForm, self).__init__(data, *args, **kwargs)
+
+    def clean(self):
+        cleaned_data = super(CreateFeedbackQuestionsForm, self).clean()
+    
 # Only have required fields for the default language, i.e. LANGUAGE_CODE in
 # django.conf.settings.
 

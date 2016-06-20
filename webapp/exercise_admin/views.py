@@ -21,7 +21,7 @@ from feedback.models import ContentFeedbackQuestion, TextfieldFeedbackQuestion, 
     MultipleChoiceFeedbackAnswer
 
 # Forms
-from .forms import CreateFeedbackQuestionForm, CreateFileUploadExerciseForm
+from .forms import CreateFeedbackQuestionsForm, CreateFileUploadExerciseForm
 from .utils import get_default_lang, get_lang_list
 
 def index(request):
@@ -360,7 +360,7 @@ def edit_feedback_questions(request):
     data.pop("csrfmiddlewaretoken")
 
     feedback_questions = ContentFeedbackQuestion.objects.all()
-    form = CreateFeedbackQuestionForm(feedback_questions, data)
+    form = CreateFeedbackQuestionsForm(feedback_questions, data)
     
     if form.is_valid():
         # Edit existing feedback questions if necessary
@@ -464,7 +464,7 @@ def get_instance_files(request, exercise_id):
         "result": result
     })
 
-def edit_instance_files(request, exercise):
+def edit_instance_files(request, exercise_id):
     if request.method != "POST":
         return HttpResponseNotAllowed(["POST"])
 
@@ -482,4 +482,4 @@ def edit_instance_files(request, exercise):
     data = request.POST.dict()
     data.pop("csrfmiddlewaretoken")
 
-    return get_instance_files(request, exercise)
+    return get_instance_files(request, exercise_id)

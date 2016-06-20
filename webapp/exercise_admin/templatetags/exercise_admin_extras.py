@@ -126,7 +126,7 @@ def edit_instance_file(create):
     class TemplateInstanceFile:
         def __init__(self, create):
             if create:
-                self.id = "SAMPLE_ID_CREATE"
+                self.id = "SAMPLE_CREATE_ID"
                 for lang_code, _ in lang_list:
                     setattr(self, 'default_name_{}'.format(lang_code), "")
                     setattr(self, 'description_{}'.format(lang_code), "")
@@ -148,7 +148,7 @@ def edit_instance_file_link(linked):
     class TemplateInstanceFile:
         def __init__(self, linked):
             if linked:
-                self.id = "SAMPLE_ID_LINKED"
+                self.id = "SAMPLE_LINKED_ID"
                 for lang_code, _ in lang_list:
                     setattr(self, 'default_name_{}'.format(lang_code), "SAMPLE_DEFAULT_NAME_{}".format(lang_code))
             else:
@@ -185,7 +185,7 @@ def instance_file_popup_tr(linked):
     class TemplateInstanceFile:
         def __init__(self, linked):
             if linked:
-                self.id = "SAMPLE_ID_LINKED"
+                self.id = "SAMPLE_LINKED_ID"
             else:
                 self.id = "SAMPLE_ID"
             for lang_code, _ in lang_list:
