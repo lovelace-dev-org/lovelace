@@ -211,14 +211,5 @@ def get_translated_field(model, variable, lang_code):
         return ''
 
 @register.assignment_tag()
-def get_translated_fileinfo_field(model, variable, lang_code):
-    if model:
-        fileinfo = getattr(model, 'fileinfo_{}'.format(lang_code))
-        if fileinfo:
-            return getattr(fileinfo, variable)
-    else:
-        return ''
-
-@register.assignment_tag()
 def get_default_language():
     return get_default_lang()
