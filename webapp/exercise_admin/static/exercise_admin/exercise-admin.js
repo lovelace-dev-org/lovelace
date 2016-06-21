@@ -1113,10 +1113,15 @@ function submit_edit_instance_files_form(e) {
     console.log("Method: " + form_type + ", URL: " + form_url);
 
     var form_data = new FormData(form[0]);
-
+    
     console.log("Serialized form data:");
-    for (var [key, value] of form_data.entries()) { 
-        console.log(key, value);
+    console.log(instance_file_enum);
+    for (var [key, value] of form_data.entries()) {
+        if (key.indexOf("[new-" + (instance_file_enum - 1) + "]") > - 1) {
+            form_data.delete(key);
+        } else {
+            console.log(key, value);
+        }
     }
     
     console.log("Submitting the form...");

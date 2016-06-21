@@ -75,7 +75,7 @@ class CreateFeedbackQuestionsForm(forms.Form):
 
 
 class CreateInstanceIncludeFilesForm(forms.Form):
-    def __init__(self, feedback_questions, data, *args, **kwargs):
+    def __init__(self, instance_files, instance_file_links, data, *args, **kwargs):
         super(CreateInstanceIncludeFilesForm, self).__init__(data, *args, **kwargs)
 
     def clean(self):

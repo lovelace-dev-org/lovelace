@@ -482,4 +482,8 @@ def edit_instance_files(request, exercise_id):
     data = request.POST.dict()
     data.pop("csrfmiddlewaretoken")
 
+    instance_files = InstanceIncludeFile.objects.all()
+    instance_file_links = InstanceIncludeFileToExerciseLink.objects.filter(exercise=exercise_id)
+    form = CreateInstanceIncludeFilesForm(instance_files, instance_file_links, data)
+
     return get_instance_files(request, exercise_id)
