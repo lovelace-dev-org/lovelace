@@ -79,7 +79,7 @@ class CreateInstanceIncludeFilesForm(forms.Form):
         super(CreateInstanceIncludeFilesForm, self).__init__(data, *args, **kwargs)
 
     def clean(self):
-        cleaned_data = super(CreateFeedbackQuestionsForm, self).clean()
+        cleaned_data = super(CreateInstanceIncludeFilesForm, self).clean()
     
 # Only have required fields for the default language, i.e. LANGUAGE_CODE in
 # django.conf.settings.

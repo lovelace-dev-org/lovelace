@@ -21,7 +21,7 @@ from feedback.models import ContentFeedbackQuestion, TextfieldFeedbackQuestion, 
     MultipleChoiceFeedbackAnswer
 
 # Forms
-from .forms import CreateFeedbackQuestionsForm, CreateFileUploadExerciseForm
+from .forms import CreateFeedbackQuestionsForm, CreateInstanceIncludeFilesForm, CreateFileUploadExerciseForm
 from .utils import get_default_lang, get_lang_list
 
 def index(request):
