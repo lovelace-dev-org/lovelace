@@ -555,7 +555,7 @@ div.popup {
     bottom: 0;
     left: 0;
     background: rgba(0,0,0,0.8);
-    z-index: 99999;
+    z-index: 99998;
     opacity: 0;
     transition: opacity 200ms ease-in;
     pointer-events: none;
@@ -714,8 +714,7 @@ div.popup div.popup-buttons button.popup-button:disabled {
 
 /* Include file popup elements */
 
-div.popup h2.edit-included-file-title,
-div.popup h2.create-included-file-title {
+div.popup h2.popup-file-title {
     display: inline-block;
 }
 
@@ -781,13 +780,6 @@ div.popup input[type=text].file-chown-input {
 }
 
 /* Instance file popup elements */
-
-div.popup h2.edit-instance-file-title,
-div.popup h2.create-instance-file-title,
-div.popup h2.linked-instance-file-title,
-div.popup h2.link-instance-file-title {
-    display: inline-block;
-}
 
 div.popup table.instance-file-table {
     table-layout: fixed;
@@ -884,6 +876,7 @@ div#language-picker-container {
     background: #272;
     font-size: 0.9rem;
     color: #eee;
+    z-index: 99999;
 }
 
 div#language-picker-container > div {

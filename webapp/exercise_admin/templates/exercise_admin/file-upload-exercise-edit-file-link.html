@@ -1,13 +1,14 @@
 {% load i18n %}
 {% load exercise_admin_extras %}
+{% get_default_language as DEFAULT_LANGUAGE %}
 {% get_current_language as CURRENT_LANGUAGE %}
 {% get_available_languages as AVAILABLE_LANGUAGES %}
 {% get_language_info_list for AVAILABLE_LANGUAGES as LANGUAGES_VERBOSE %}
 <div id="link-instance-file-{{ instance_file.id }}" class="link-instance-file">
   <div class="edit-instance-file-link-title-div">
     {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
-      <div class="translated {% if language_choice == CURRENT_LANGUAGE and linked %}translated-visible{% endif %} inline-block-elem" data-language-code="{{ language_choice }}">
-        <h2 id="linked-instance-file-title-{{ instance_file.id }}-{{ language_choice }}" class="linked-instance-file-title">
+      <div class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %} inline-block-elem" data-language-code="{{ language_choice }}">
+        <h2 id="linked-instance-file-title-{{ instance_file.id }}-{{ language_choice }}" class="popup-file-title">
           Edit exercise link of the instance file: {% get_translated_field instance_file "default_name" language_choice %}
         </h2>
         {% lang_reminder language_choice %}
@@ -17,7 +18,7 @@
   <div class="create-instance-file-link-title-div">
     {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
       <div class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %} inline-block-elem" data-language-code="{{ language_choice }}">
-        <h2 id="link-instance-file-title-{{ instance_file.id }}-{{ language_choice }}" class="link-instance-file-title">
+        <h2 id="link-instance-file-title-{{ instance_file.id }}-{{ language_choice }}" class="popup-file-title">
           Link instance file {% get_translated_field instance_file "default_name" language_choice %} to the exercise
         </h2>
         {% lang_reminder language_choice %}
@@ -30,7 +31,7 @@
         <label class="file-label" for="instance-file-name-{{ instance_file.id }}-{{ language_choice }}">
           <span class="file-name-span">File name during test {% lang_reminder language_choice %}: </span>
           <input type="text" id="instance-file-name-{{ instance_file.id }}-{{ language_choice }}" class="file-name-input" maxlength="225"
-                 value="{% get_translated_field instance_file_link "name" language_choice %}" oninput="update_link_done_button_state('{{ instance_file.id }}');"
+                 value="{% get_translated_field instance_file_link "name" language_choice %}" oninput="update_link_done_button_state('{{ instance_file.id }}', '{{ DEFAULT_LANGUAGE }}');"
                  data-language-code="{{ language_choice }}">
         </label>
       </div>
@@ -78,9 +79,9 @@
     <label class="file-label" for="instance-file-chmod-{{ instance_file.id }}">
       <span class="file-chmod-span">File access mode:</span>
       <input type="text" id="instance-file-chmod-{{ instance_file.id }}" class="file-chmod-input" maxlength="9" value="{{ instance_file_link.chmod_settings }}"
-             oninput="update_link_done_button_state('{{ instance_file.id }}');">
+             oninput="update_link_done_button_state('{{ instance_file.id }}', '{{ DEFAULT_LANGUAGE }}');">
     </label>
-    <div id="file-chmod-error-{{ instance_file.id }}" class="admin-error"></div>
+    <div id="instance-file-chmod-error-{{ instance_file.id }}" class="admin-error"></div>
   </div>
   {% if not linked %}
     <button id="link-done-button-{{ instance_file.id }}" type="button" class="add-item" title="Includes the file to the linked files of the exercise"

@@ -4,7 +4,7 @@ from django.utils.translation import ugettext as _
 
 from courses.models import default_fue_timeout
 
-from ..utils import get_lang_list
+from ..utils import get_default_lang, get_lang_list
 
 register = template.Library()
 
@@ -218,3 +218,7 @@ def get_translated_fileinfo_field(model, variable, lang_code):
             return getattr(fileinfo, variable)
     else:
         return ''
+
+@register.assignment_tag()
+def get_default_language():
+    return get_default_lang()
