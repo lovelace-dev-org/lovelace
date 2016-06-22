@@ -4,7 +4,7 @@ from django.utils.translation import ugettext as _
 
 from courses.models import default_fue_timeout
 
-from ..utils import get_lang_list
+from ..utils import get_default_lang, get_lang_list
 
 register = template.Library()
 
@@ -121,46 +121,83 @@ def include_file_popup(include_file, create=False, jstemplate=False):
 
 @register.inclusion_tag('exercise_admin/file-upload-exercise-edit-instance-file.html')
 def edit_instance_file(create):
-    if create:
-        file_id = "SAMPLE_ID_CREATE"
-    else:
-        file_id = "SAMPLE_ID"
+    lang_list = get_lang_list()
+    
+    class TemplateInstanceFile:
+        def __init__(self, create):
+            if create:
+                self.id = "SAMPLE_CREATE_ID"
+                for lang_code, _ in lang_list:
+                    setattr(self, 'default_name_{}'.format(lang_code), "")
+                    setattr(self, 'description_{}'.format(lang_code), "")
+            else:
+                self.id = "SAMPLE_ID"
+                for lang_code, _ in lang_list:
+                    setattr(self, 'default_name_{}'.format(lang_code), "SAMPLE_DEFAULT_NAME_{}".format(lang_code))
+                    setattr(self, 'description_{}'.format(lang_code), "SAMPLE_DESCRIPTION_{}".format(lang_code))
+    
     return {
-        "file_id" : file_id,
-        "file_default_name" : "SAMPLE_DEFAULT_NAME",
-        "file_description" : "SAMPLE_DESCRIPTION",
-        "create" : create
+        'instance_file' : TemplateInstanceFile(create),
+        'create' : create,
     }
 
 @register.inclusion_tag('exercise_admin/file-upload-exercise-edit-file-link.html')
 def edit_instance_file_link(linked):
-    if linked:
-        file_id = "SAMPLE_ID_LINKED"
-    else:
-        file_id = "SAMPLE_ID"
+    lang_list = get_lang_list()
+
+    class TemplateInstanceFile:
+        def __init__(self, linked):
+            if linked:
+                self.id = "SAMPLE_LINKED_ID"
+                for lang_code, _ in lang_list:
+                    setattr(self, 'default_name_{}'.format(lang_code), "SAMPLE_DEFAULT_NAME_{}".format(lang_code))
+            else:
+                self.id = "SAMPLE_ID"
+                for lang_code, _ in lang_list:
+                    setattr(self, 'default_name_{}'.format(lang_code), "SAMPLE_DEFAULT_NAME_{}".format(lang_code))
+    
+    class TemplateInstanceFileLink:
+        def __init__(self, linked):
+            if linked:
+                self.chmod_settings = "SAMPLE_CHMOD_SETTINGS"
+                for lang_code, _ in lang_list:
+                    setattr(self, 'name_{}'.format(lang_code), "SAMPLE_NAME_{}".format(lang_code))
+            else:
+                self.chmod_settings = "rw-rw-rw-"
+                for lang_code, _ in lang_list:
+                    setattr(self, 'name_{}'.format(lang_code), "")
+
     return {
-        "file_id" : file_id,
-        "file_name" : "SAMPLE_NAME",
-        "file_purpose" : "SAMPLE_PURPOSE",
-        "file_chown_settings" : "SAMPLE_CHOWN_SETTINGS",
-        "file_chgrp_settings" : "SAMPLE_CHGRP_SETTINGS",
-        "file_chmod_settings" : "SAMPLE_CHMOD_SETTINGS",
+        "instance_file" : TemplateInstanceFile(linked),
+        "instance_file_link" : TemplateInstanceFileLink(linked),
         "linked" : linked
     }
 
 @register.inclusion_tag('exercise_admin/file-upload-exercise-instance-file-popup-tr.html')
-def instance_file_popup_tr(linked):
-    if linked:
-        file_id = "SAMPLE_ID_LINKED"
-    else:
-        file_id = "SAMPLE_ID"
+def instance_file_popup_tr(linked):    
+    lang_list = get_lang_list()
+    
+    class TemplateFileInfo:
+        def __init__(self, linked, lang_code):
+            self.url = "SAMPLE_URL_{}".format(lang_code)
+            self.url_css_class = "SAMPLE_URL_CSS_CLASS_{}".format(lang_code)
+    
+    class TemplateInstanceFile:
+        def __init__(self, linked):
+            if linked:
+                self.id = "SAMPLE_LINKED_ID"
+            else:
+                self.id = "SAMPLE_ID"
+            for lang_code, _ in lang_list:
+                setattr(self, 'default_name_{}'.format(lang_code), "SAMPLE_DEFAULT_NAME_{}".format(lang_code))
+                setattr(self, 'description_{}'.format(lang_code), "SAMPLE_DESCRIPTION_{}".format(lang_code))
+                setattr(self, 'fileinfo_{}'.format(lang_code), TemplateFileInfo(linked, lang_code))
+                
     return {
-        "file_id" : file_id,
-        "file_default_name" : "SAMPLE_DEFAULT_NAME",
-        "file_description" : "SAMPLE_DESCRIPTION",
-        "linked" : linked,
+        'instance_file' : TemplateInstanceFile(linked),
+        'linked' : linked,
     }
-
+                
 @register.simple_tag()
 def lang_reminder(lang_code):
     s = '<span class="language-code-reminder" title="The currently selected translation">{}</span>'.format(lang_code)
@@ -174,8 +211,5 @@ def get_translated_field(model, variable, lang_code):
         return ''
 
 @register.assignment_tag()
-def get_translated_fileinfo(model, lang_code):
-    if model:
-        return getattr(model, 'fileinfo_{}'.format(lang_code))
-    else:
-        return ''
+def get_default_language():
+    return get_default_lang()

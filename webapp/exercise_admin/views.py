@@ -21,7 +21,7 @@ from feedback.models import ContentFeedbackQuestion, TextfieldFeedbackQuestion, 
     MultipleChoiceFeedbackAnswer
 
 # Forms
-from .forms import CreateFeedbackQuestionForm, CreateFileUploadExerciseForm
+from .forms import CreateFeedbackQuestionsForm, CreateInstanceIncludeFilesForm, CreateFileUploadExerciseForm
 from .utils import get_default_lang, get_lang_list
 
 def index(request):
@@ -360,7 +360,7 @@ def edit_feedback_questions(request):
     data.pop("csrfmiddlewaretoken")
 
     feedback_questions = ContentFeedbackQuestion.objects.all()
-    form = CreateFeedbackQuestionForm(feedback_questions, data)
+    form = CreateFeedbackQuestionsForm(feedback_questions, data)
     
     if form.is_valid():
         # Edit existing feedback questions if necessary
@@ -432,24 +432,39 @@ def get_instance_files(request, exercise_id):
             link = None
         instance_file_json = {
             "id" : instance_file.id,
-            "default_name": instance_file.default_name,
-            "description" : instance_file.description,
+            "default_names" : {},
+            "descriptions" : {},
+            "urls" : {},
             "link" : {
                 "id" : link.id,
-                "name" : link.file_settings.name,
+                "names" : {},
                 "purpose" : link.file_settings.purpose,
                 "chown_settings" : link.file_settings.chown_settings,
                 "chgrp_settings" : link.file_settings.chgrp_settings,
                 "chmod_settings" : link.file_settings.chmod_settings,
             }
         }
+        lang_list = get_lang_list()
+        for lang_code, _ in lang_list:
+            default_name_attr = "default_name_{}".format(lang_code)
+            description_attr = "description_{}".format(lang_code)
+            fileinfo_attr = "fileinfo_{}".format(lang_code)
+            name_attr = "name_{}".format(lang_code)
+            try:
+                url = getattr(instance_file, fileinfo_attr).url
+            except ValueError:
+                url = ""
+            instance_file_json["urls"][lang_code] = url
+            instance_file_json["default_names"][lang_code] = getattr(instance_file, default_name_attr)
+            instance_file_json["descriptions"][lang_code] = getattr(instance_file, description_attr)
+            instance_file_json["link"]["names"][lang_code] = getattr(link.file_settings, name_attr)
         result.append(instance_file_json)
 
     return JsonResponse({
         "result": result
     })
 
-def edit_instance_files(request, exercise):
+def edit_instance_files(request, exercise_id):
     if request.method != "POST":
         return HttpResponseNotAllowed(["POST"])
 
@@ -467,4 +482,8 @@ def edit_instance_files(request, exercise):
     data = request.POST.dict()
     data.pop("csrfmiddlewaretoken")
 
-    return get_instance_files(request, exercise)
+    instance_files = InstanceIncludeFile.objects.all()
+    instance_file_links = InstanceIncludeFileToExerciseLink.objects.filter(exercise=exercise_id)
+    form = CreateInstanceIncludeFilesForm(instance_files, instance_file_links, data)
+
+    return get_instance_files(request, exercise_id)

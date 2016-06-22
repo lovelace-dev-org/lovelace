@@ -555,7 +555,7 @@ div.popup {
     bottom: 0;
     left: 0;
     background: rgba(0,0,0,0.8);
-    z-index: 99999;
+    z-index: 99998;
     opacity: 0;
     transition: opacity 200ms ease-in;
     pointer-events: none;
@@ -687,7 +687,6 @@ div.popup button.add-item:disabled {
 
 div.popup button.add-item, div.popup input[type=submit].add-item {
     margin-top: 0px;
-    margin-left: 5px;
     box-shadow: 1px 1px 2px #285c00;
 }
 
@@ -715,8 +714,7 @@ div.popup div.popup-buttons button.popup-button:disabled {
 
 /* Include file popup elements */
 
-div.popup h2.edit-included-file-title,
-div.popup h2.create-included-file-title {
+div.popup h2.popup-file-title {
     display: inline-block;
 }
 
@@ -727,7 +725,6 @@ div.popup a.file-url {
     height: 25px;
     outline: 0;
     vertical-align: top;
-    margin-left: 10px;
     overflow: hidden;
     color: #4CAF50;
     background-color: #fff;
@@ -738,8 +735,16 @@ div.popup a.file-url {
     box-shadow: 1px 1px 2px #285c00;
 }
 
-div.popup h2.edit-included-file-title + a.file-url {
-    margin-left: 5px;
+div.popup div.edit-included-file-title-div a.file-url {
+    margin-left: 10px;
+}
+
+div.popup a.file-url-empty {
+    display: none;
+}
+
+div.popup div.edit-included-file-title-div div {
+    vertical-align: top;
 }
 
 div.popup input[type=text].file-default-name-input {
@@ -813,6 +818,11 @@ div.popup table.instance-file-table col.edit-file {
     width: 3%;
 }
 
+div.popup input[type=checkbox].instance-file-checkbox {
+    vertical-align: middle;
+    margin-bottom: 5px;
+}
+
 div.popup button.edit-link-button {
     background: url("link.png");
     width: 25px;
@@ -866,6 +876,7 @@ div#language-picker-container {
     background: #272;
     font-size: 0.9rem;
     color: #eee;
+    z-index: 99999;
 }
 
 div#language-picker-container > div {

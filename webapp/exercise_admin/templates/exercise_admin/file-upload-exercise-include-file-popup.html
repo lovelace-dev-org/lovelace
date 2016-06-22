@@ -1,5 +1,6 @@
 {% load i18n %}
 {% load exercise_admin_extras %}
+{% get_default_language as DEFAULT_LANGUAGE %}
 {% get_current_language as CURRENT_LANGUAGE %}
 {% get_available_languages as AVAILABLE_LANGUAGES %}
 {% get_language_info_list for AVAILABLE_LANGUAGES as LANGUAGES_VERBOSE %}
@@ -7,34 +8,34 @@
   <div>
     <div class="edit-included-file-title-div">
       {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
-        <div class="translated {% if language_choice == CURRENT_LANGUAGE and not create %}translated-visible{% endif %} inline-block-elem" data-language-code="{{ language_choice }}">
-          <h2 id="edit-included-file-title-{{ include_file.id }}-{{ language_choice }}" class="edit-included-file-title">
+        <div class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %} inline-block-elem" data-language-code="{{ language_choice }}">
+          <h2 id="edit-included-file-title-{{ include_file.id }}-{{ language_choice }}" class="popup-file-title">
             Edit included file: {% get_translated_field include_file.file_settings "name" language_choice %}
           </h2>
           {% lang_reminder language_choice %}
         </div>
       {% endfor %}
-      {% if create %}
-          <h2 id="create-included-file-title-{{ include_file.id }}" class="create-included-file-title">Create include file</h2>
-      {% endif %}
-      {% if include_file.fileinfo.url %}
-        {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
-          <div class="translated {% if language_choice == CURRENT_LANGUAGE and not create %}translated-visible{% endif %} inline-block-elem" data-language-code="{{ language_choice }}">
-            {% get_translated_fileinfo include_file language_choice as fileinfo %}
-            {% if fileinfo %}
-              <a href="{{ fileinfo }}" class="file-url" download></a>
-            {% endif %}
-          </div>
-        {% endfor %}
-      {% endif %}
+      {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
+        <div class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %} inline-block-elem" data-language-code="{{ language_choice }}">
+          {% get_translated_field include_file "fileinfo" language_choice as fileinfo %}
+          {% if fileinfo and fileinfo.url %}
+            <a href="{{ fileinfo.url }}" class="file-url" download></a>
+          {% endif %}
+        </div>
+      {% endfor %}
     </div>
+    {% if create %}
+      <div class="create-included-file-title-div">
+        <h2 id="create-included-file-title-{{ include_file.id }}" class="popup-file-title">Create include file</h2>
+      </div>
+    {% endif %}
     <div>
       {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
         <div class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}">
           <label for="included-file-{{ include_file.id }}-{{ language_choice }}">
-            <span class="choose-file"-span">Choose file {% lang_reminder language_choice %}: </span>
+            <span class="choose-file-span">Choose file {% lang_reminder language_choice %}: </span>
             <input type="file" id="included-file-{{ include_file.id }}-{{ language_choice }}" name="included_file_[{{ include_file.id }}]_{{ language_choice }}" class="file-input"
-                   onchange="update_included_file_ok_button_state('{{ include_file.id }}', '{{ language_choice }}');" data-language-code="{{ language_choice }}">
+                   onchange="update_included_file_ok_button_state('{{ include_file.id }}', '{{ DEFAULT_LANGUAGE }}');" data-language-code="{{ language_choice }}">
           </label>
         </div>
       {% endfor %}
@@ -46,7 +47,7 @@
             <span class="file-default-name-span">Default name {% lang_reminder language_choice %}: </span>
             <input type="text" id="included-file-default-name-{{ include_file.id }}-{{ language_choice }}" class="file-default-name-input" maxlength="255"
                    name="included_file_default_name_[{{ include_file.id }}]_{{ language_choice }}" value="{% get_translated_field include_file "default_name" language_choice %}"
-                   oninput="update_included_file_ok_button_state('{{ include_file.id }}', '{{ language_choice }}');" data-language-code="{{ language_choice }}">
+                   oninput="update_included_file_ok_button_state('{{ include_file.id }}', '{{ DEFAULT_LANGUAGE }}');" data-language-code="{{ language_choice }}">
           </label>
         </div>
       {% endfor %}
@@ -58,7 +59,7 @@
             <span class="file-name-span">File name during test {% lang_reminder language_choice %}: </span>
             <input type="text" id="included-file-name-{{ include_file.id }}-{{ language_choice }}" class="file-name-input" maxlength="255"
                    name="included_file_name_[{{ include_file.id }}]_{{ language_choice }}" value="{% get_translated_field include_file.file_settings "name" language_choice %}"
-                   oninput="update_included_file_ok_button_state('{{ include_file.id }}', '{{ language_choice }}');" data-language-code="{{ language_choice }}">
+                   oninput="update_included_file_ok_button_state('{{ include_file.id }}', '{{ DEFAULT_LANGUAGE }}');" data-language-code="{{ language_choice }}">
           </label>
         </div>
       {% endfor %}
@@ -69,7 +70,7 @@
           <label class="file-label" for="included-file-description-{{ include_file.id }}-{{ language_choice }}">
             <div>File description {% lang_reminder language_choice %}: </div>
             <textarea id="included-file-description-{{ include_file.id }}-{{ language_choice }}" name="included_file_description_[{{ include_file.id }}]_{{ language_choice }}"
-                      class="file-description-area" cols="117" rows="5" oninput="update_included_file_ok_button_state('{{ include_file.id }}', '{{ language_choice }}');"
+                      class="file-description-area" cols="117" rows="5" oninput="update_included_file_ok_button_state('{{ include_file.id }}', '{{ DEFAULT_LANGUAGE }}');"
                       data-language-code="{{ language_choice }}">{% get_translated_field include_file "description" language_choice %}</textarea>
           </label>
         </div>
@@ -117,17 +118,13 @@
         <span class="file-chmod-span">File access mode:</span>
         <input type="text" id="included-file-chmod-{{ include_file.id }}" class="file-chmod-input" maxlength="9"
                name="included_file_chmod_[{{ include_file.id }}]" value="{{ include_file.file_settings.chmod_settings }}"
-               oninput="update_included_file_ok_button_state('{{ include_file.id }}');">
+               oninput="update_included_file_ok_button_state('{{ include_file.id }}', '{{ DEFAULT_LANGUAGE }}');">
       </label>
       <div id="file-chmod-error-{{ include_file.id }}" class="admin-error"></div>
     </div>
     <div class="popup-buttons">
-      {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
-        <span class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %} inline-block-elem" data-language-code="{{ language_choice }}">
-          <button type="button" id="included-file-ok-button-{{ include_file.id }}-{{ language_choice }}" class="popup-button"
-                  onclick="confirm_included_file_popup('{{ include_file.id }}', '{{ language_choice }}')">Ok</button>
-        </span>
-      {% endfor %}
+      <button type="button" id="included-file-ok-button-{{ include_file.id }}" class="popup-button" onclick="confirm_included_file_popup('{{ include_file.id }}')"
+              data-button-mode="{% if create %}add{% else %}done{% endif %}">Ok</button>
       <button type="button" class="popup-button" onclick="cancel_included_file_popup($('#edit-included-file-{{ include_file.id }}'), '{{ include_file.id }}')">Cancel</button>
     </div>
   </div>

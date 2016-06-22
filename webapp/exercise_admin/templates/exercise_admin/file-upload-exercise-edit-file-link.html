@@ -1,20 +1,47 @@
-<div id="link-instance-file-{{ file_id }}" class="link-instance-file">
-  {% if not linked %}
-    <h2 id="link-instance-file-title-{{ file_id }}">Link instance file to the exercise:</h2>
-  {% else %}
-    <h2 id="link-instance-file-title-{{ file_id }}">Edit exercise link of the instance file: {{ file_default_name }}</h2>
-  {% endif %}  
-  <div>
-    <label class="file-label" for="instance-file-name-{{ file_id }}">
-      <span class="file-name-span">File name during test:</span>
-      <input type="text" id="instance-file-name-{{ file_id }}" class="file-name-input" maxlength="225" value="{{ file_name }}"
-             oninput="update_link_done_button_state('{{ file_id }}');">
-    </label>
+{% load i18n %}
+{% load exercise_admin_extras %}
+{% get_default_language as DEFAULT_LANGUAGE %}
+{% get_current_language as CURRENT_LANGUAGE %}
+{% get_available_languages as AVAILABLE_LANGUAGES %}
+{% get_language_info_list for AVAILABLE_LANGUAGES as LANGUAGES_VERBOSE %}
+<div id="link-instance-file-{{ instance_file.id }}" class="link-instance-file">
+  <div class="edit-instance-file-link-title-div">
+    {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
+      <div class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %} inline-block-elem" data-language-code="{{ language_choice }}">
+        <h2 id="linked-instance-file-title-{{ instance_file.id }}-{{ language_choice }}" class="popup-file-title">
+          Edit exercise link of the instance file: {% get_translated_field instance_file "default_name" language_choice %}
+        </h2>
+        {% lang_reminder language_choice %}
+      </div>
+    {% endfor %}
+  </div>
+  <div class="create-instance-file-link-title-div">
+    {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
+      <div class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %} inline-block-elem" data-language-code="{{ language_choice }}">
+        <h2 id="link-instance-file-title-{{ instance_file.id }}-{{ language_choice }}" class="popup-file-title">
+          Link instance file {% get_translated_field instance_file "default_name" language_choice %} to the exercise
+        </h2>
+        {% lang_reminder language_choice %}
+      </div>
+    {% endfor %}
   </div>
   <div>
-    <label class="file-label" for="instance-file-purpose-{{ file_id }}">
+    {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
+      <div class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}">
+        <label class="file-label" for="instance-file-name-{{ instance_file.id }}-{{ language_choice }}">
+          <span class="file-name-span">File name during test {% lang_reminder language_choice %}: </span>
+          <input type="text" id="instance-file-name-{{ instance_file.id }}-{{ language_choice }}" class="file-name-input" maxlength="225"
+                 value="{% get_translated_field instance_file_link "name" language_choice %}" oninput="update_link_done_button_state('{{ instance_file.id }}', '{{ DEFAULT_LANGUAGE }}');"
+                 data-language-code="{{ language_choice }}">
+        </label>
+      </div>
+    {% endfor%}
+    <div id="instance-file-name-error-{{ instance_file.id }}" class="admin-error"></div>    
+  </div>
+  <div>
+    <label class="file-label" for="instance-file-purpose-{{ instance_file.id }}">
       <span class="file-purpose-span">Used as:</span>
-      <select id="instance-file-purpose-{{ file_id }}" class="file-purpose-select">
+      <select id="instance-file-purpose-{{ instance_file.id }}" class="file-purpose-select">
         <optgroup label="Files written into the test directory for reading">
           <option value="INPUT">Input file</option>
         </optgroup>
@@ -31,36 +58,38 @@
     </label>
   </div>
   <div>
-    <label class="file-label" for="instace-file-chown-{{ file_id }}">
+    <label class="file-label" for="instace-file-chown-{{ instance_file.id }}">
       <span class="file-chown-span">File user ownership:</span>
-      <select id="instance-file-chown-{{ file_id }}" class="file-chown-select">
+      <select id="instance-file-chown-{{ instance_file.id }}" class="file-chown-select">
         <option value="OWNED">Owned by the tested program</option>
         <option value="NOT_OWNED">Not owned by the tested program</option>
       </select>
     </label>
   </div>
   <div>
-    <label class="file-label" for="instance-file-chgrp-{{ file_id }}">
+    <label class="file-label" for="instance-file-chgrp-{{ instance_file.id }}">
       <span class="file-chgrp-span">File group ownership:</span>
-      <select id="instance-file-chgrp-{{ file_id }}" class="file-chgrp-select">
+      <select id="instance-file-chgrp-{{ instance_file.id }}" class="file-chgrp-select">
         <option value="OWNED">Owned by the tested program</option>
         <option value="NOT_OWNED">Not owned by the tested program</option>
       </select>
     </label>
   </div>
   <div>
-    <label class="file-label" for="instance-file-chmod-{{ file_id }}">
+    <label class="file-label" for="instance-file-chmod-{{ instance_file.id }}">
       <span class="file-chmod-span">File access mode:</span>
-      <input type="text" id="instance-file-chmod-{{ file_id }}" class="file-chmod-input" maxlength="9" value="{{ file_chmod_settings }}"
-             oninput="update_link_done_button_state('{{ file_id }}');">
+      <input type="text" id="instance-file-chmod-{{ instance_file.id }}" class="file-chmod-input" maxlength="9" value="{{ instance_file_link.chmod_settings }}"
+             oninput="update_link_done_button_state('{{ instance_file.id }}', '{{ DEFAULT_LANGUAGE }}');">
     </label>
-    <div id="file-chmod-error-{{ file_id }}" class="admin-error"></div>
+    <div id="instance-file-chmod-error-{{ instance_file.id }}" class="admin-error"></div>
   </div>
   {% if not linked %}
-    <button id="link-done-button-{{ file_id }}" type="button" class="add-item" title=""
-            onclick="add_instance_file_to_exercise();" disabled data-button-mode="create">Add link</button>
+    <button id="link-done-button-{{ instance_file.id }}" type="button" class="add-item" title="Includes the file to the linked files of the exercise"
+            onclick="add_instance_file_to_exercise('{{ instance_file.id }}');" disabled data-button-mode="add">Add link</button>
   {% else %}
-    <button id="link-done-button-{{ file_id }}" type="button" class="add-item" title="Closes edit exercise link menu"
+    <button id="link-done-button-{{ instance_file.id }}" type="button" class="add-item" title="Closes edit exercise link menu"
             onclick="close_instance_file_menu();" data-button-mode="done">Done editing</button>
-  {% endif %}    
+  {% endif %}
+  <button id="remove-link-button-{{ instance_file.id }}" type="button" class="add-item" title="Removes the file from the linked files of the exercise"
+          onclick="remove_instance_file_from_exercise('{{ instance_file.id }}');">Remove link</button>
 </div>
