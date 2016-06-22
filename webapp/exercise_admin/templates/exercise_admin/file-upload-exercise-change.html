@@ -203,7 +203,7 @@
       </ol>
 
       {% for test, stages in tests %}
-        {% test_tab test stages %}
+        {% test_tab test stages instance_file_links include_files %}
       {% endfor %}
     </div>
     
@@ -222,7 +222,7 @@
 
 {% block templates %}
   <div style="display: none;">
-    {% test_tab True True True %}
+    {% test_tab True True True True True %}
   </div>
   <div style="display: none;">
     <table>

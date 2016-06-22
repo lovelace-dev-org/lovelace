@@ -26,9 +26,10 @@ def hint_tr(hint, jstemplate=False):
     return {"hint" : TemplateHint()}
 
 @register.inclusion_tag('exercise_admin/file-upload-exercise-test-tab.html')
-def test_tab(test_obj, stages_list, jstemplate=False):
+def test_tab(test_obj, stages_list, instance_files, exercise_files, jstemplate=False):
     if not jstemplate:
-        return {'test': test_obj, 'stages': stages_list,}
+        return {'test': test_obj, 'stages': stages_list, 'instance_files': instance_files,
+                'exercise_files': exercise_files}
 
     lang_list = get_lang_list()
 
@@ -56,7 +57,20 @@ def test_tab(test_obj, stages_list, jstemplate=False):
         id = "SAMPLE_TEST_ID"
         name = "New test"
 
-    return {'test': TemplateTest(), 'stages': [(TemplateStage(), [(TemplateCommand(), [])])]}
+    return {'test': TemplateTest(), 'stages': [(TemplateStage(), [(TemplateCommand(), [])])],
+            'instance_files': [], 'exercise_files': []}
+
+@register.filter
+def has_instance_file(test, instance_file):
+    if instance_file.include_file.id in test.required_instance_files.all().values_list('id', flat=True):
+        return True
+    return False
+
+@register.filter
+def has_exercise_file(test, exercise_file):
+    if exercise_file.id in test.required_files.all().values_list('id', flat=True):
+        return True
+    return False
 
 @register.inclusion_tag('exercise_admin/file-upload-exercise-include-file-tr.html')
 def include_file_tr(include_file, jstemplate=False):
