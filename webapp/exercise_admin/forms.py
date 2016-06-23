@@ -87,6 +87,37 @@ class CreateInstanceIncludeFilesForm(forms.Form):
 # The translations for other languages (in django.conf.settings['LANGUAGES'])
 # are optional.
 
+def get_sanitized_choices(data, field_name):
+    '''An ugly hack to deal with a <select multiple> element with dynamic entries.
+    '''
+    choices = data.getlist(field_name)
+    erroneous = set()
+    for choice in choices:
+        try:
+            f_type, f_id = choice.split('_')
+            f_id = int(f_id)
+        except ValueError as e:
+            erroneous.add(choice)
+        else:
+            if f_type == 'ef':
+                # Check if an exercise file with this id exists
+                # - Use current form data
+                # Check that it's linked to the exercise
+                # - Use current form data
+                pass
+            elif f_type == 'if':
+                # Check if an exercise file with this id exists
+                # - Use current form data
+                # Check that it's linked to the exercise
+                # - Use current form data
+                pass
+            else:
+                erroneous.add(choice)
+
+    if len(erroneous) > 0:
+        return [] # HACK
+    return itertools.zip_longest(choices, [], fillvalue='')
+
 class CreateFileUploadExerciseForm(forms.Form):
     #exercise_name = forms.CharField(max_length=255, required=True, strip=True) # Translate
     #exercise_content = forms.CharField(required=False) # Translate
@@ -99,8 +130,8 @@ class CreateFileUploadExerciseForm(forms.Form):
     exercise_allowed_filenames = forms.CharField(required=False)
     version_comment = forms.CharField(required=False, strip=True)
 
-    def __init__(self, tag_fields, order_hierarchy, *args, **kwargs):
-        super(CreateFileUploadExerciseForm, self).__init__(*args, **kwargs)
+    def __init__(self, tag_fields, order_hierarchy, data, *args, **kwargs):
+        super(CreateFileUploadExerciseForm, self).__init__(data, *args, **kwargs)
 
         # Translated fields
         # TODO: How to get these dynamically?
@@ -127,7 +158,10 @@ class CreateFileUploadExerciseForm(forms.Form):
         
         for test_id in test_ids:
             test_name_field = test_template.format(test_id, "name")
+            test_required_files_field = test_template.format(test_id, 'required_files')
+            choices = get_sanitized_choices(data, test_required_files_field)
             self.fields[test_name_field] = forms.CharField(min_length=1, max_length=200, strip=True)
+            self.fields[test_required_files_field] = forms.MultipleChoiceField(choices=choices, required=False)
 
         stage_template = "stage_{}_{}"
         stage_ids, command_ids = order_hierarchy["commands_of_stages"].keys(), order_hierarchy["commands_of_stages"].values()
