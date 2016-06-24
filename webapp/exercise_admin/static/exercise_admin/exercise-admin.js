@@ -670,7 +670,6 @@ function update_included_file_ok_button_state(file_id, default_lang) {
          $("#included-file" + suffix).val().length > 0) &&
         $("#included-file-default-name" + suffix).val().length > 0 &&
         $("#included-file-name" + suffix).val().length > 0 &&
-        $("#included-file-description" + suffix).val().length > 0 &&
         $("#included-file-chmod-" + file_id).val().length > 0) {
         button.prop("disabled", false);
     } else {
@@ -850,8 +849,7 @@ function update_instance_file_done_button_state(file_id, default_lang) {
 
     var suffix = "-" + file_id + "-" + default_lang;
     if ($("#instance-file" + suffix).val().length > 0 &&
-        $("#instance-file-default-name" + suffix).val().length > 0 &&
-        $("#instance-file-description" + suffix).val().length > 0) {
+        $("#instance-file-default-name" + suffix).val().length > 0) {
         button.prop("disabled", false);
     } else {
         button.prop("disabled", true);
@@ -953,7 +951,7 @@ function add_instance_file_popup_tr(file_id, default_names, descriptions, urls, 
     $("#add-instance-file-table > tbody").append(tr);
 }
 
-function add_existing_instance_file_to_popup(file_id, default_names, descriptions, urls, link, checked) {
+function add_existing_instance_file_to_popup(file_id, instance, default_names, descriptions, urls, link, checked) {
     if (checked) {
         add_checked_instance_file_link_div(file_id, default_names, link);
     } else {
@@ -970,6 +968,7 @@ function add_existing_instance_file_to_popup(file_id, default_names, description
         $.each(descriptions, function(key, val) {
             html = html.replace(new RegExp("SAMPLE_DESCRIPTION_" + key, 'g'), val);
         });
+        edit_div.find("select.file-instance-select").val(instance);
         return html;
     });
     $("#edit-instance-file-divs").append(edit_div);
@@ -1003,7 +1002,7 @@ function add_new_instance_file_to_popup(file_id) {
     add_instance_file_popup_tr(file_id, default_names, descriptions, urls, false);
     edit_div.find("div.edit-instance-file-title-div").css({"display" : "block"});
     edit_div.find("div.create-instance-file-title-div").hide()
-    edit_div.find("h2.edit-instance-file-title").each(function() {
+    edit_div.find("div.edit-instance-file-title-div h2").each(function() {
         var lang = $(this).parent().attr("data-language-code");
         $(this).text("Edit instance file: " + edit_div.find("input[data-language-code=" + lang + "].file-default-name-input").val());
     });
@@ -1061,11 +1060,13 @@ function create_new_instance_file_entry(file_id) {
             return false;
         }
     });
+    var file_error_div = $("#instance-file-error-" + file_id);
     if (already_exists) {
-        var file_error_div = $("#instance-file-error-" + file_id);
         file_error_div.text("Instance file by this name already exists");
         file_error_div.css({"display" : "block"});
         return;
+    } else {
+        file_error_div.hide();
     }
     
     add_new_instance_file_to_popup(file_id);
@@ -1106,10 +1107,10 @@ function show_edit_instance_files_popup(event, url) {
         $.each(result, function() {
             var file_id = "" + this.id;
             if ($.inArray(file_id, file_ids) > -1) {
-                add_existing_instance_file_to_popup(file_id, this.default_names, this.descriptions,
+                add_existing_instance_file_to_popup(file_id, this.instance, this.default_names, this.descriptions,
                                                     this.urls, this.link, true);
             } else {
-                add_existing_instance_file_to_popup(file_id, this.default_names, this.descriptions,
+                add_existing_instance_file_to_popup(file_id, this.instance, this.default_names, this.descriptions,
                                                     this.urls, this.link, false);
             }
         });
@@ -1130,16 +1131,56 @@ function submit_edit_instance_files_form(e) {
     console.log("Method: " + form_type + ", URL: " + form_url);
 
     var form_data = new FormData(form[0]);
-    
-    console.log("Serialized form data:");
-    console.log(instance_file_enum);
-    for (var [key, value] of form_data.entries()) {
-        if (key.indexOf("[new-" + (instance_file_enum - 1) + "]") > - 1) {
-            form_data.delete(key);
-        } else {
-            console.log(key, value);
+    var new_file_ids = [];
+    var linked_file_ids = [];
+    $("div.popup input[type=checkbox].instance-file-checkbox").each(function() {
+        var id = $(this).attr("data-file-id");
+        if (id.startsWith("new")) {
+            new_file_ids.push(id);
         }
+        if ($(this).prop("checked")) {
+            linked_file_ids.push(id);
+        }
+    });
+    console.log("Serialized form data:");
+
+    var create_id = "[new-" + (instance_file_enum - 1) + "]";
+    var LINK_FIELDS = ["name", "purpose", "chown", "chgrp", "chmod"];
+    var form_keys = [];
+    for (var key of form_data.keys()) {
+        form_keys.push(key);
     }
+
+    for (var key of form_keys) {
+        var linked = false;
+        if (key.indexOf(create_id) > - 1) {
+            form_data.delete(key);
+            continue;
+        }
+        for (var id of linked_file_ids) {
+            if (key.indexOf(id) > -1) {
+                linked = true;
+                break;
+            }
+        };
+        if (linked) {
+            continue;
+        }
+        for (var field_name of LINK_FIELDS) {
+            if (key.startsWith("instance_file_" + field_name)) {
+                form_data.delete(key);
+                break;
+            }
+        }
+    };
+
+    for (var [key, value] of form_data.entries()) {
+        console.log(key, value);
+    }
+
+    form_data.append("new_instance_files", new_file_ids.join(","));
+    form_data.append("linked_files", linked_file_ids.join(","));
+    console.log(new_file_ids);
     
     console.log("Submitting the form...");
     $.ajax({

@@ -120,7 +120,7 @@ def include_file_popup(include_file, create=False, jstemplate=False):
     }
 
 @register.inclusion_tag('exercise_admin/file-upload-exercise-edit-instance-file.html')
-def edit_instance_file(create):
+def edit_instance_file(create, instances):
     lang_list = get_lang_list()
     
     class TemplateInstanceFile:
@@ -139,6 +139,7 @@ def edit_instance_file(create):
     return {
         'instance_file' : TemplateInstanceFile(create),
         'create' : create,
+        'instances' : instances,
     }
 
 @register.inclusion_tag('exercise_admin/file-upload-exercise-edit-file-link.html')

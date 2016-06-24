@@ -33,6 +33,16 @@
     <div id="instance-file-error-{{ instance_file.id }}" class="admin-error"></div>
   </div>
   <div>
+    <label class="file-label" for="instance-file-instance-{{ instance_file.id }}">
+      <span class="file-instance-span">Course instance:</span>
+      <select id="instance-file-instance-{{ instance_file.id }}" class="file-instance-select" name="instance_file_instance_[{{ instance_file.id }}]">
+        {% for instance in instances %}
+          <option value="{{ instance.id }}">{{ instance.name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+  </div>
+  <div>
     {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
       <div class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}">
         <label class="file-label" for="instance-file-default-name-{{ instance_file.id }}-{{ language_choice }}">
