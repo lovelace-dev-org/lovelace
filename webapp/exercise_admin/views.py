@@ -80,7 +80,12 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_tes
     edited_tests = {}
     for test_id in test_ids:
         t_name = form_data['test_{}_name'.format(test_id)]
-        
+
+        # TODO: Handle the actual files first to get proper ids for new ones!
+        required_files = [i.split('_') for i in form_data['test_{}_required_files'.format(test_id)]]
+        t_required_ef = [int(i[1]) for i in required_files if i[0] == 'ef']
+        t_required_if = [int(i[1]) for i in required_files if i[0] == 'if']
+                
         # Check for new tests
         if test_id.startswith('newt'):
             current_test = FileExerciseTest()
@@ -91,6 +96,8 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_tes
 
         # Set the test values
         current_test.name = t_name
+        current_test.required_files = t_required_ef
+        current_test.required_instance_files = t_required_if
 
         # Save the test and store a reference
         current_test.save()
@@ -248,9 +255,9 @@ def file_upload_exercise(request, exercise_id=None, action=None):
 
         #print(form_contents)
         print("POST key-value pairs:")
-        for k, v in sorted(form_contents.items()):
+        for k, v in sorted(form_contents.lists()):
             if k == "order_hierarchy":
-                order_hierarchy_json = json.loads(v)
+                order_hierarchy_json = json.loads(v[0])
                 print("order_hierarchy:")
                 print(json.dumps(order_hierarchy_json, indent=4))
             else:
@@ -277,7 +284,7 @@ def file_upload_exercise(request, exercise_id=None, action=None):
         else:
             old_cmd_ids = set()
 
-        data = request.POST.dict()
+        data = request.POST.copy()
         data.pop("csrfmiddlewaretoken")
         tag_fields = [k for k in data.keys() if k.startswith("exercise_tag")]
 

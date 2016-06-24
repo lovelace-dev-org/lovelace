@@ -712,6 +712,9 @@ class CheckboxExercise(ContentPage):
         verbose_name = "checkbox exercise"
         proxy = True
 
+# TODO: Enforce allowed line count for text field exercises
+#         - in answer choices?
+#         - also reflect this in the size of the answer box
 @reversion.register(follow=["textfieldexerciseanswer_set"])
 class TextfieldExercise(ContentPage):
     def save(self, *args, **kwargs):
@@ -869,6 +872,7 @@ class FileUploadExercise(ContentPage):
     
     def check_answer(self, user, ip, answer, files, answer_object, revision):
         lang_code = translation.get_language()
+        if revision == "head": revision = None
         result = rpc_tasks.run_tests.delay(user_id=user.id, exercise_id=self.id,
                                            answer_id=answer_object.id,
                                            lang_code=lang_code, revision=revision)
@@ -1011,6 +1015,9 @@ class FileExerciseTest(models.Model):
     required_files = models.ManyToManyField('FileExerciseTestIncludeFile',
                                             verbose_name="files required by this test",
                                             blank=True)
+    required_instance_files = models.ManyToManyField('InstanceIncludeFile',
+                                                     verbose_name="instance files required by this test",
+                                                     blank=True)
     
     def __str__(self):
         return self.name

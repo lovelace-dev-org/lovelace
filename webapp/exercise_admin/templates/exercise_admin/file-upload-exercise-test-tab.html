@@ -7,16 +7,27 @@
   <h3>Test specific settings</h3>
 
   <div>
-    <label for="test-{{ test.id }}-name">Test name:</label>
+    <label for="test-{{ test.id }}-name">Test name: </label>
     <input type="text" id="test-{{ test.id }}-name" name="test_{{ test.id }}_name" value="{{ test.name }}" onInput="test_name_changed(event);">
   </div>
 
-  <div>Included files this test requires: &lt;a picker for selecting the files made available above; updates realtime&gt;</div>
-  {% if test.required_files.count > 0 %}
-    {% for req_file in test.required_files.all %}
-      <div>{{ req_file.file_settings.name }}</div>
-    {% endfor%}
-  {% endif %}
+  <div>
+    <label for="test-{{ test.id }}-required_files">Included files this test requires: </label>
+    <select id="test-{{ test.id }}-required_files" name="test_{{ test.id }}_required_files" class="test-filepicker" multiple>
+      <optgroup class="filepicker-instance-options" label="Instance files">
+        {% for instance_file in instance_files %}
+          <option value="if_{{ instance_file.include_file.id }}"{% if test|has_instance_file:instance_file %} selected{% endif %}>{{ instance_file.file_settings.name }}</option>
+        {% endfor %}
+      </optgroup>
+      <optgroup class="filepicker-exercise-options" label="Exercise files">
+        {% for exercise_file in exercise_files %}
+          <option value="ef_{{ exercise_file.id }}"{% if test|has_exercise_file:exercise_file %} selected{% endif %}>{{ exercise_file.file_settings.name }}</option>
+        {% endfor%}
+      </optgroup>
+    </select>
+  </div>
+
+  <div class="separator"></div>
 
   <h3>Test stage progression</h3>
   
@@ -35,7 +46,7 @@
                 {% for cmd, expected_outputs in commands %}
                   <li class="ui-state-default" data-command-id="{{ cmd.id }}">
                     {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
-                      <span class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}" onClick="show_stagecmd_information(event);" id="command-{{ cmd.id }}" class="clickable-commandline">{% get_translated_field cmd 'command_line' language_choice %}</span>
+                      <span class="clickable-commandline translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}" onClick="show_stagecmd_information(event);" id="command-{{ cmd.id }}">{% get_translated_field cmd 'command_line' language_choice %}</span>
                     {% endfor %}
                     <button class="delete-button" type="button" title="Delete this command"
                             onclick="delete_command('{{ test.id }}', '{{ stage.id }}', '{{ cmd.id }}');">x</button>
