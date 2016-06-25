@@ -536,7 +536,7 @@ def edit_instance_files(request, exercise_id):
         for instance_file in instance_files:
             file_changed = False
             for lang_code, _ in lang_list:
-                fileinfo = cleaned_data.get("instance_file_[{id}]_{lang}".format(id=instance_file.id, lang=lang_code))
+                fileinfo = cleaned_data.get("instance_file_file_[{id}]_{lang}".format(id=instance_file.id, lang=lang_code))
                 default_name = cleaned_data.get("instance_file_default_name_[{id}]_{lang}".format(id=instance_file.id, lang=lang_code))
                 description = cleaned_data.get("instance_file_description_[{id}]_{lang}".format(id=instance_file.id, lang=lang_code))
 
@@ -656,7 +656,6 @@ def edit_instance_files(request, exercise_id):
             instance_file_link.save()
 
     else:
-        print(repr(form.errors))
         return JsonResponse({
             "error" : form.errors
         })

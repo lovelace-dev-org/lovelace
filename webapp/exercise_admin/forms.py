@@ -94,7 +94,7 @@ class CreateInstanceIncludeFilesForm(forms.Form):
 
     def _add_file_fields(self, file_id, default_lang, lang_list):
         for lang_code, _ in lang_list:
-            file_field = "instance_file_[{id}]_{lang}".format(id=file_id, lang=lang_code)
+            file_field = "instance_file_file_[{id}]_{lang}".format(id=file_id, lang=lang_code)
             default_name_field = "instance_file_default_name_[{id}]_{lang}".format(id=file_id, lang=lang_code)
             description_field = "instance_file_description_[{id}]_{lang}".format(id=file_id, lang=lang_code)
 

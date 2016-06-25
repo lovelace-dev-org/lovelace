@@ -818,19 +818,11 @@ function show_instance_file_edit_menu(file_id) {
 }
 
 function show_instance_file_edit_link_menu(file_id) {
-    var link_div = $("#link-instance-file-" + file_id);
-    var remove_button = $("#remove-link-button-" + file_id);
-    if (!$("#instance-file-checkbox-" + file_id).prop("checked")) {
-        remove_button.hide();
-    } else {
-        remove_button.css({"display" : "inline-block"});
-    }
-    
     $("div.link-instance-file").hide();
     $("div.edit-instance-file").hide();
     $("#edit-instance-file-divs").hide();
+    $("#link-instance-file-" + file_id).css({"display" : "block"});
     $("#link-instance-file-divs").css({"display" : "block"});
-    link_div.css({"display" : "block"});
 }
 
 function close_instance_file_menu(file_id) {
@@ -947,10 +939,6 @@ function add_instance_file_popup_tr(file_id, default_names, instance, urls, chec
         if (checked) {
             $.each(link.names, function(key, val) {
                 html = html.replace(new RegExp("SAMPLE_NAME_" + key, 'g'), val);
-            });
-        } else {
-            $.each(default_names, function(key, val) {
-                html = html.replace(new RegExp("SAMPLE_NAME_" + key, 'g'), "");
             });
         }
         return html;
@@ -1131,6 +1119,57 @@ function show_edit_instance_files_popup(event, url) {
     });
 }
 
+function edit_instance_file_form_success(data, text_status, jqxhr_obj) {
+    var ID_PATTERN = /\[(.*?)\]/;
+    if (data.error) {
+        var sep = "<br>";
+        $.each(data.error, function(err_source, err_msg) {
+            if (err_source === "__all__") {
+                var error_div = $("#instance-file-error");
+            } else {
+                var file_id = err_source.match(ID_PATTERN)[1];
+                var error_in_link = false;
+                if (err_source.startsWith("instance_file_file")) {
+                    var error_div = $("#instance-file-file-error-" + file_id);
+                } else if (err_source.startsWith("instance_file_default_name")) {
+                    var error_div = $("#instance-file-default-name-error-" + file_id);
+                } else if (err_source.startsWith("instance_file_description")) {
+                    var error_div = $("#instance-file-description-error-" + file_id);
+                } else if (err_source.startsWith("instance_file_name")) {
+                    var error_div = $("#instance-file-name-error-" + file_id);
+                    error_in_link = true;
+                } else if (err_source.startsWith("instance_file_chmod")) {
+                    var error_div = $("#instance-file-chmod-error-" + file_id);
+                    error_in_link = true;
+                }
+            }
+            error_div.html(err_msg.join(sep));
+            error_div.css("display", "block");
+            if (error_in_link) {
+                show_instance_file_edit_link_menu(file_id);
+            } else {
+                show_instance_file_edit_menu(file_id);
+            }
+        });
+    } else if (data.result) {
+        console.log("Feedback questions edited successfully!");    
+        close_popup_and_add_questions(data.result);
+    }
+}
+
+function edit_instance_file_form_error(xhr, status, type) {
+    var error_span = $("#instance-file-error");
+    var error_str = "An error occured while sending the form:";
+    status = status.charAt(0).toUpperCase() + status.slice(1);
+    if (type) {
+        error_str += status + ": " + type;
+    } else {
+        error_str += status;
+    }
+    error_span.html(error_str);
+    error_span.css("display", "block");
+}
+
 function submit_edit_instance_files_form(e) {
     e.preventDefault();
     console.log("User requested instance file form submit.");
@@ -1203,8 +1242,8 @@ function submit_edit_instance_files_form(e) {
         processData: false,
         contentType: false,
         dataType: 'json',
-        success: function() {},
-        error: function() {},
+        success: edit_instance_file_form_success,
+        error: edit_instance_file_form_error,
     });
 }
 
