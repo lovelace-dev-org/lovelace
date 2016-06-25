@@ -31,7 +31,7 @@
         <label class="file-label" for="instance-file-name-{{ instance_file.id }}-{{ language_choice }}">
           <span class="file-name-span">File name during test {% lang_reminder language_choice %}: </span>
           <input type="text" id="instance-file-name-{{ instance_file.id }}-{{ language_choice }}" class="file-name-input" maxlength="225"
-                 value="{% get_translated_field instance_file_link "name" language_choice %}" oninput="update_link_done_button_state('{{ instance_file.id }}', '{{ DEFAULT_LANGUAGE }}');"
+                 value="{% get_translated_field instance_file_link "name" language_choice %}" oninput="update_link_edit_button_state('{{ instance_file.id }}', '{{ DEFAULT_LANGUAGE }}');"
                  name="instance_file_name_[{{ instance_file.id }}]_{{ language_choice }}" data-language-code="{{ language_choice }}">
         </label>
       </div>
@@ -79,17 +79,17 @@
     <label class="file-label" for="instance-file-chmod-{{ instance_file.id }}">
       <span class="file-chmod-span">File access mode:</span>
       <input type="text" id="instance-file-chmod-{{ instance_file.id }}" class="file-chmod-input" maxlength="9" value="{{ instance_file_link.chmod_settings }}"
-             name="instance_file_chmod_[{{ instance_file.id }}]" oninput="update_link_done_button_state('{{ instance_file.id }}', '{{ DEFAULT_LANGUAGE }}');">
+             name="instance_file_chmod_[{{ instance_file.id }}]" oninput="update_link_edit_button_state('{{ instance_file.id }}', '{{ DEFAULT_LANGUAGE }}');">
     </label>
     <div id="instance-file-chmod-error-{{ instance_file.id }}" class="admin-error"></div>
   </div>
   {% if not linked %}
-    <button id="link-done-button-{{ instance_file.id }}" type="button" class="add-item" title="Includes the file to the linked files of the exercise"
+    <button id="link-edit-button-{{ instance_file.id }}" type="button" class="add-item" title="Includes the file to the linked files of the exercise"
             onclick="add_instance_file_to_exercise('{{ instance_file.id }}');" disabled data-button-mode="add">Add link</button>
   {% else %}
-    <button id="link-done-button-{{ instance_file.id }}" type="button" class="add-item" title="Closes edit exercise link menu"
-            onclick="close_instance_file_menu();" data-button-mode="done">Done editing</button>
+    <button id="link-edit-button-{{ instance_file.id }}" type="button" class="add-item" title="Removes the file from the linked files of the exercise"
+            onclick="remove_instance_file_from_exercise('{{ instance_file.id }}');" data-button-mode="remove">Remove link</button>
   {% endif %}
-  <button id="remove-link-button-{{ instance_file.id }}" type="button" class="add-item" title="Removes the file from the linked files of the exercise"
-          onclick="remove_instance_file_from_exercise('{{ instance_file.id }}');">Remove link</button>
+  <button id="link-done-button-{{ instance_file.id }}" type="button" class="add-item" title="Closes edit exercise link menu"
+          onclick="close_instance_file_menu();">Done editing</button>
 </div>

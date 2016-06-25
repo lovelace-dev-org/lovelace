@@ -856,9 +856,9 @@ function update_instance_file_done_button_state(file_id, default_lang) {
     }
 }
 
-function update_link_done_button_state(file_id, default_lang) {
-    var button = $("#link-done-button-" + file_id);
-    if (button.attr("data-button-mode") === "done") {
+function update_link_edit_button_state(file_id, default_lang) {
+    var button = $("#link-edit-button-" + file_id);
+    if (button.attr("data-button-mode") === "remove") {
         return;
     }
 
@@ -1016,6 +1016,23 @@ function add_new_instance_file_to_popup(file_id) {
     switch_button_mode_to_done("#done-button-" + file_id);
 }
 
+function switch_link_edit_button_mode(file_id) {
+    var button = $("#link-edit-button-" + file_id);
+    if (button.attr("data-button-mode") === "remove") {
+        button.attr("title", "Includes the file to the linked files of the exercise");
+        button.attr("onclick", "add_instance_file_to_exercise('" + file_id + "');");
+        button.attr("data-button-mode", "add");
+        button.text("Add link");
+        button.prop("disabled", true);
+    } else if (button.attr("data-button-mode") === "add") {
+        button.attr("title", "Removes the file from the linked files of the exercise");
+        button.attr("onclick", "remove_instance_file_from_exercise('" + file_id + "');");
+        button.attr("data-button-mode", "remove");
+        button.text("Remove link");
+        button.prop("disabled", false);
+    }
+}
+
 function add_instance_file_to_exercise(file_id) {
     if (!check_chmod_input_validity("#instance-file-chmod-" + file_id, "#instance-file-chmod-error-" + file_id)) {
         return;
@@ -1027,17 +1044,7 @@ function add_instance_file_to_exercise(file_id) {
     $("#instance-file-checkbox-" + file_id).prop("checked", true);
     link_div.find("div.edit-instance-file-link-title-div").css({"display" : "block"});
     link_div.find("div.create-instance-file-link-title-div").hide();
-    switch_button_mode_to_done("#link-done-button-" + file_id);
-    $("#remove-link-button-" + file_id).css({"display" : "inline-block"});
-}
-
-function switch_link_button_mode_to_add(file_id) {
-    var button = $("#link-done-button-" + file_id);
-    button.attr("title", "Includes the file to the linked files of the exercise");
-    button.attr("onclick", "add_instance_file_to_exercise('" + file_id + "');");
-    button.attr("data-button-mode", "add");
-    button.text("Add link");
-    button.prop("disabled", true);
+    switch_link_edit_button_mode(file_id);
 }
 
 function remove_instance_file_from_exercise(file_id) {
@@ -1051,8 +1058,7 @@ function remove_instance_file_from_exercise(file_id) {
     link_div.find("select.file-chown-select").val("OWNED");
     link_div.find("select.file-chgrp-select").val("OWNED");
     link_div.find("input.file-chmod-input").val("rw-rw-rw-");
-    switch_link_button_mode_to_add(file_id);
-    $("#remove-link-button-" + file_id).hide();
+    switch_link_edit_button_mode(file_id);
 }
 
 function create_new_instance_file_entry(file_id) {
