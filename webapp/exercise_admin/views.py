@@ -453,7 +453,7 @@ def get_instance_files(request, exercise_id):
             link_json = {}
         instance_file_json = {
             "id" : instance_file.id,
-            "instance" : instance_file.instance.id,
+            "instance" : instance_file.instance.name,
             "default_names" : {},
             "descriptions" : {},
             "urls" : {},

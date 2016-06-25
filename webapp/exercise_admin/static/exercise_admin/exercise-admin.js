@@ -890,9 +890,6 @@ function add_checked_instance_file_link_div(file_id, default_names, link) {
     var chmod = link.chmod_settings;
     var names = link.names;
     var link_div = $("#link-instance-file-" + sample_id).clone().attr('id', 'link-instance-file-' + file_id);
-    link_div.find("#instance-file-purpose-" + sample_id).val(link.purpose);
-    link_div.find("#instance-file-chown-" + sample_id).val(link.chown_settings);
-    link_div.find("#instance-file-chgrp-" + sample_id).val(link.chgrp_settings);
     link_div.html(function(index, html) {
         html = html.replace(new RegExp(sample_id, 'g'), file_id).replace(/SAMPLE_CHMOD_SETTINGS/g, chmod);
         $.each(names, function(key, val) {
@@ -903,6 +900,10 @@ function add_checked_instance_file_link_div(file_id, default_names, link) {
         });
         return html;
     });
+    link_div.find("#instance-file-purpose-" + file_id).val(link.purpose);
+    link_div.find("#instance-file-chown-" + file_id).val(link.chown_settings);
+    link_div.find("#instance-file-chown-" + file_id).val(link.chown_settings);
+    link_div.find("#instance-file-chgrp-" + file_id).val(link.chgrp_settings);
     link_div.find("div.edit-instance-file-link-title-div").css({"display" : "block"});
     link_div.find("div.create-instance-file-link-title-div").hide();
     $("#link-instance-file-divs").append(link_div);
@@ -923,7 +924,7 @@ function add_unchecked_instance_file_link_div(file_id, default_names) {
     $("#link-instance-file-divs").append(link_div);
 }
 
-function add_instance_file_popup_tr(file_id, default_names, descriptions, urls, checked) {
+function add_instance_file_popup_tr(file_id, default_names, instance, urls, checked, link) {
     if (checked) {
         var sample_id = "SAMPLE_LINKED_ID";
     } else {
@@ -931,12 +932,9 @@ function add_instance_file_popup_tr(file_id, default_names, descriptions, urls, 
     }
     var tr = $("#instance-file-popup-tr-" + sample_id).clone().attr('id', 'instance-file-popup-tr-' + file_id);
     tr.html(function(index, html) {
-        html = html.replace(new RegExp(sample_id, 'g'), file_id);
+        html = html.replace(new RegExp(sample_id, 'g'), file_id).replace("SAMPLE_INSTANCE", instance);
         $.each(default_names, function(key, val) {
             html = html.replace(new RegExp("SAMPLE_DEFAULT_NAME_" + key, 'g'), val);
-        });
-        $.each(descriptions, function(key, val) {
-            html = html.replace(new RegExp("SAMPLE_DESCRIPTION_" + key, 'g'), val);
         });
         $.each(urls, function(key, val) {
             html = html.replace(new RegExp("SAMPLE_URL_" + key, 'g'), val);
@@ -946,6 +944,15 @@ function add_instance_file_popup_tr(file_id, default_names, descriptions, urls, 
                 html = html.replace(new RegExp("SAMPLE_URL_CSS_CLASS_" + key, 'g'), "file-url");
             }
         });
+        if (checked) {
+            $.each(link.names, function(key, val) {
+                html = html.replace(new RegExp("SAMPLE_NAME_" + key, 'g'), val);
+            });
+        } else {
+            $.each(default_names, function(key, val) {
+                html = html.replace(new RegExp("SAMPLE_NAME_" + key, 'g'), "");
+            });
+        }
         return html;
     });
     $("#add-instance-file-table > tbody").append(tr);
@@ -954,10 +961,11 @@ function add_instance_file_popup_tr(file_id, default_names, descriptions, urls, 
 function add_existing_instance_file_to_popup(file_id, instance, default_names, descriptions, urls, link, checked) {
     if (checked) {
         add_checked_instance_file_link_div(file_id, default_names, link);
+        add_instance_file_popup_tr(file_id, default_names, instance, urls, true, link);
     } else {
         add_unchecked_instance_file_link_div(file_id, default_names);
+        add_instance_file_popup_tr(file_id, default_names, instance, urls, false, link);
     }
-    add_instance_file_popup_tr(file_id, default_names, descriptions, urls, checked);
     
     var edit_div = $("#edit-instance-file-SAMPLE_ID").clone().attr('id', 'edit-instance-file-' + file_id);
     edit_div.html(function(index, html) {
@@ -968,9 +976,11 @@ function add_existing_instance_file_to_popup(file_id, instance, default_names, d
         $.each(descriptions, function(key, val) {
             html = html.replace(new RegExp("SAMPLE_DESCRIPTION_" + key, 'g'), val);
         });
-        edit_div.find("select.file-instance-select").val(instance);
         return html;
     });
+    
+    var instance_option = edit_div.find("select.file-instance-select option:contains('" + instance + "')");
+    instance_option.prop("selected", true)
     $("#edit-instance-file-divs").append(edit_div);
 }
 
@@ -984,8 +994,8 @@ function switch_button_mode_to_done(button_id) {
 
 function add_new_instance_file_to_popup(file_id) {
     var default_names = {};
-    var descriptions = {};
     var urls = {};
+    var instance = $("#instance-file-instance-" + file_id + " option:selected").text();
     var edit_div = $("#edit-instance-file-" + file_id);
     var default_name_inputs = edit_div.find("input.file-default-name-input");
     var description_areas = edit_div.find("textarea.file-description-area");
@@ -994,12 +1004,9 @@ function add_new_instance_file_to_popup(file_id) {
         default_names[$(this).attr("data-language-code")] = $(this).val();
         urls[$(this).attr("data-language-code")] = "";
     });
-    description_areas.each(function() {
-        descriptions[$(this).attr("data-language-code")] = $(this).val();
-    });
-
+    
     add_unchecked_instance_file_link_div(file_id, default_names);
-    add_instance_file_popup_tr(file_id, default_names, descriptions, urls, false);
+    add_instance_file_popup_tr(file_id, default_names, instance, urls, false);
     edit_div.find("div.edit-instance-file-title-div").css({"display" : "block"});
     edit_div.find("div.create-instance-file-title-div").hide()
     edit_div.find("div.edit-instance-file-title-div h2").each(function() {

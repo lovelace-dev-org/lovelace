@@ -43,7 +43,8 @@
               <table id="add-instance-file-table" class="instance-file-table">
                 <colgroup>
                   <col class="file-default-name">
-                  <col class="file-description">
+                  <col class="file-name">
+                  <col class="file-instance">
                   <col class="uploaded-file">
                   <col class="file-edit-link">
                   <col class="file-edit-button">
@@ -51,7 +52,8 @@
                 <thead>
                   <tr>
                     <th>Default file name</th>
-                    <th>Description</th>
+                    <th>File name during test</th>
+                    <th>Course instance</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -135,6 +137,7 @@
       <table id="instance-files-table" class="files-table bordered-editable-area">
         <colgroup>
           <col class="file-name">
+          <col class="file-instance">
           <col class="file-purpose">
           <col class="file-description">
         </colgroup>
@@ -147,6 +150,7 @@
                 </span>
               {% endfor %}
             </th>
+            <th>Course instance</th>
             <th>Used as</th>
             <th>
               {% for language_choice, _ in AVAILABLE_LANGUAGES %}
@@ -166,6 +170,9 @@
                     {% get_translated_field instance_file_link.file_settings "name" language_choice %}
                   </span>
                 {% endfor %}
+              </td>
+              <td>
+                {{ instance_file_link.include_file.instance.name }}
               </td>
               <td>
                 {{ instance_file_link.file_settings.get_purpose_display }}

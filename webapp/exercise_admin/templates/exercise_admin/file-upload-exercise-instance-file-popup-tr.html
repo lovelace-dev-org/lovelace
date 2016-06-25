@@ -14,12 +14,15 @@
       </div>
     {% endfor %}
   </td>
-  <td class="description-cell">
+  <td class="name-cell">
     {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
       <div class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %} inline-block-elem" data-language-code="{{ language_choice }}">
-        {% get_translated_field instance_file "description" language_choice %}
+        {% get_translated_field file_settings "name" language_choice %}
       </div>
     {% endfor %}
+  </td>
+  <td class="instance-cell">
+    {{ instance_file.instance }}
   </td>
   <td class="uploaded-file-cell">
     {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}

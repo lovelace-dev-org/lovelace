@@ -205,11 +205,17 @@ def instance_file_popup_tr(linked):
                 self.id = "SAMPLE_ID"
             for lang_code, _ in lang_list:
                 setattr(self, 'default_name_{}'.format(lang_code), "SAMPLE_DEFAULT_NAME_{}".format(lang_code))
-                setattr(self, 'description_{}'.format(lang_code), "SAMPLE_DESCRIPTION_{}".format(lang_code))
                 setattr(self, 'fileinfo_{}'.format(lang_code), TemplateFileInfo(linked, lang_code))
+            self.instance = "SAMPLE_INSTANCE"
+
+    class TemplateFileSettings:
+        def __init__(self):
+            for lang_code, _ in lang_list:
+                setattr(self, 'name_{}'.format(lang_code), "SAMPLE_NAME_{}".format(lang_code))
                 
     return {
         'instance_file' : TemplateInstanceFile(linked),
+        'file_settings' : TemplateFileSettings(),
         'linked' : linked,
     }
                 

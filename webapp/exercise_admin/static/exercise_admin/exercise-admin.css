@@ -262,20 +262,36 @@ table.files-table td {
     height: 27px;
 }
 
-table.files-table col.file-name {
-    width: 30%;
+table#included-files-table col.file-name {
+    width: 26%;
 }
 
-table.files-table col.file-purpose {
-    width: 18%;
+table#included-files-table col.file-purpose {
+    width: 20%;
 }
 
-table.files-table col.edit-file {
+table#included-files-table col.edit-file {
     width: 2%;
 }
 
-table.files-table col.delete-file {
+table#included-files-table col.delete-file {
     width: 2%;
+}
+
+table#instance-files-table {
+    width: 82%;
+}
+
+table#instance-files-table col.file-name {
+    width: 22%;
+}
+
+table#instance-files-table col.file-purpose {
+    width: 15%;
+}
+
+table#instance-files-table col.file-instance {
+    width: 22%;
 }
 
 div#instance-files {
@@ -814,11 +830,15 @@ div.popup table.instance.file-table td {
 }
 
 div.popup table.instance-file-table col.file-default-name {
-    width: 25%;
+    width: 30%;
 }
 
-div.popup table.instance-file-table col.file-description {
-    width: 66%;
+div.popup table.instance-file-table col.file-name {
+    width: 30%;
+}
+
+div.popup table.instance-file-table col.file-instance {
+    width: 31%;
 }
 
 div.popup table.instance-file-table col.uploaded-file {
