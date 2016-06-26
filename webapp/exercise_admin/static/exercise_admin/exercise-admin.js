@@ -596,7 +596,8 @@ function submit_edit_feedback_form(e) {
 function close_popup_and_add_questions(questions) {
     var TITLE_TEXT = "Deletes the relation between the feedback question and the exercise";
     var target_tbody = $("#feedback-question-table tbody");
-    $("#add-feedback-table > tbody input.feedback-question-checkbox:checked").each(function(index) {
+    $("#add-feedback-table > tbody input.feedback-question-checkbox").each(function(index) {
+        var checked = $(this).prop("checked");
         var id = $(this).attr("data-question-id");
         var question = $("#feedback-question-" + id).val();
         var type = "";
@@ -604,7 +605,6 @@ function close_popup_and_add_questions(questions) {
         var not_saved = true;
         
         $.each(questions, function(index, db_question) {
-            console.log(questions);
             if (db_question.question === question) {
                 id = "" + db_question.id;
                 type = db_question.readable_type;
@@ -624,9 +624,11 @@ function close_popup_and_add_questions(questions) {
                 return false;
             }
         });
-        if (in_table) {
+        if (in_table && !checked) {
+            tr.remove();
+        } else if (in_table) {
             tr.children("td.question-cell").html(question);
-        } else {
+        } else if (checked) {
             var td_delete = $('<td class="delete-cell">');
             tr.append('<td class="question-cell">' + question + '</td>');
             tr.append('<td class="type-cell">' + type + '</td>');
@@ -733,14 +735,14 @@ function create_new_incuded_file_tr(file_id) {
             replace(/SAMPLE_GET_PURPOSE_DISPLAY/g, purpose_display).replace(/SAMPLE_CHOWN_SETTINGS/g, chown).
             replace(/SAMPLE_CHGRP_SETTINGS/g, chgrp);
         name_inputs.each(function() {
-            sample_id = "SAMPLE_NAME_" + $(this).attr("data-language-code");
+            sample_str = "SAMPLE_NAME_" + $(this).attr("data-language-code");
             val = $(this).val();
-            html = html.replace(new RegExp(sample_id, "g"), val);
+            html = html.replace(new RegExp(sample_str, "g"), val);
         });
         description_areas.each(function() {
-            sample_id = "SAMPLE_DESCRIPTION_" + $(this).attr("data-language-code");
+            sample_str = "SAMPLE_DESCRIPTION_" + $(this).attr("data-language-code");
             val = $(this).val();
-            html = html.replace(new RegExp(sample_id, "g"), val);
+            html = html.replace(new RegExp(sample_str, "g"), val);
         });
         return html;
     });
@@ -1119,7 +1121,81 @@ function show_edit_instance_files_popup(event, url) {
     });
 }
 
-function edit_instance_file_form_success(data, text_status, jqxhr_obj) {
+function close_popup_and_add_instance_files(instance_files, default_lang) {
+    var target_tbody = $("#instance-files-table tbody");
+    $("#add-instance-file-table > tbody input.instance-file-checkbox").each(function(index) {
+        var checked = $(this).prop("checked");
+        var file_id = $(this).attr("data-file-id");
+        var default_name = $("#instance-file-label-" + file_id + "-" + default_lang).text();
+        var db_id = "";
+        var db_instance = "";
+        var db_purpose_display = "";
+        var db_names = [];
+        var db_description = [];
+        var in_table = false;
+        var saved = false;
+
+        $.each(instance_files, function(index, db_file) {
+            if (db_file.default_names[default_lang] === default_name) {
+                db_id = "" + db_file.id;
+                db_instance = db_file.instance;
+                db_purpose_display = db_file.link.purpose_display;
+                db_names = db_file.link.names;
+                db_descriptions = db_file.descriptions;
+                saved = true;
+                return false;
+            }
+        });
+        if (!saved) {
+            return;
+        }
+
+        var tr = null;
+        target_tbody.find("tr").each(function() {
+            if ($(this).attr("data-file-id") === db_id) {
+                tr = $(this);
+                in_table = true;
+                return false;
+            }
+        });
+
+        if (in_table && !checked) {
+            tr.remove();
+        } else if (in_table) {
+            tr.find("td.name-cell span").each(function() {
+                var span = $(this);
+                span.text(db_names[span.attr("data-language-code")]);
+            });
+            tr.find("td.instance-cell").text(db_instance);
+            tr.find("td.purpose-cell").text(db_purpose_display);
+            tr.find("td.description-cell span").each(function() {
+                var span = $(this);
+                span.text(db_descriptions[span.attr("data-language-code")]);
+            });
+        } else if (checked) {
+            tr = $("#instance-file-tr-" + "SAMPLE_ID").clone().attr("id", "instance-file-tr-" + db_id);
+            tr.attr("data-file-id", db_id)
+            tr.html(function(index, html) {
+                html = html.replace(/SAMPLE_ID/g, db_id).replace(/SAMPLE_INSTANCE_NAME/g, db_instance)
+                    .replace(/SAMPLE_GET_PURPOSE_DISPLAY/g, db_purpose_display);
+                $.each(db_names, function(key, val) {
+                    sample_str = "SAMPLE_NAME_" + key;
+                    html = html.replace(new RegExp(sample_str, "g"), val);
+                });
+                $.each(db_descriptions, function(key, val) {
+                    sample_str = "SAMPLE_DESCRIPTION_" + key;
+                    html = html.replace(new RegExp(sample_str, "g"), val);
+                });
+                return html;
+            });
+                
+            target_tbody.append(tr);
+        }
+    });
+    close_popup($("#edit-instance-files-popup"));
+}
+
+function edit_instance_file_form_success(data, text_status, jqxhr_obj, default_lang) {
     var ID_PATTERN = /\[(.*?)\]/;
     if (data.error) {
         var sep = "<br>";
@@ -1152,8 +1228,8 @@ function edit_instance_file_form_success(data, text_status, jqxhr_obj) {
             }
         });
     } else if (data.result) {
-        console.log("Feedback questions edited successfully!");    
-        close_popup_and_add_questions(data.result);
+        console.log("Instance files edited successfully!");
+        close_popup_and_add_instance_files(data.result, default_lang);
     }
 }
 
@@ -1170,7 +1246,7 @@ function edit_instance_file_form_error(xhr, status, type) {
     error_span.css("display", "block");
 }
 
-function submit_edit_instance_files_form(e) {
+function submit_edit_instance_files_form(e, default_lang) {
     e.preventDefault();
     console.log("User requested instance file form submit.");
 
@@ -1232,7 +1308,6 @@ function submit_edit_instance_files_form(e) {
 
     form_data.append("new_instance_files", new_file_ids.join(","));
     form_data.append("linked_files", linked_file_ids.join(","));
-    console.log(new_file_ids);
     
     console.log("Submitting the form...");
     $.ajax({
@@ -1242,7 +1317,9 @@ function submit_edit_instance_files_form(e) {
         processData: false,
         contentType: false,
         dataType: 'json',
-        success: edit_instance_file_form_success,
+        success: function(data, textStatus, jqXHR) {
+            edit_instance_file_form_success(data, textStatus, jqXHR, default_lang)
+        },
         error: edit_instance_file_form_error,
     });
 }

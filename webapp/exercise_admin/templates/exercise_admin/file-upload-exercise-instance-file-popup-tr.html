@@ -8,9 +8,8 @@
     <input type="checkbox" id="instance-file-checkbox-{{ instance_file.id }}" class="instance-file-checkbox" data-file-id="{{ instance_file.id }}"{% if linked %} checked{% endif %} disabled>
     {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
       <div class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %} inline-block-elem" data-language-code="{{ language_choice }}">
-        <label id="instance-file-label-{{ instance_file.id }}-{{ language_choice }}" for="instance-file-checkbox-{{ instance_file.id }}" class="instance-file-label">
-          {% get_translated_field instance_file "default_name" language_choice %}
-        </label>
+        <label id="instance-file-label-{{ instance_file.id }}-{{ language_choice }}" for="instance-file-checkbox-{{ instance_file.id }}"
+               class="instance-file-label">{% get_translated_field instance_file "default_name" language_choice %}</label>
       </div>
     {% endfor %}
   </td>

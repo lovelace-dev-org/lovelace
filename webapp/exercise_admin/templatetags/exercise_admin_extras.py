@@ -133,6 +133,39 @@ def include_file_popup(include_file, create=False, jstemplate=False):
         'create' : create,
     }
 
+@register.inclusion_tag('exercise_admin/file-upload-exercise-instance-file-tr.html')
+def instance_file_tr(instance_file_link, jstemplate=False):
+    if not jstemplate:
+        return {'instance_file_link': instance_file_link,}
+    
+    lang_list = get_lang_list()
+    
+    class TemplateFileSettings:
+        def __init__(self):
+            self.get_purpose_display = "SAMPLE_GET_PURPOSE_DISPLAY"
+            for lang_code, _ in lang_list:
+                setattr(self, 'name_{}'.format(lang_code), "SAMPLE_NAME_{}".format(lang_code))
+
+    class TemplateCourseInstance:
+        def __init__(self):
+            self.name = "SAMPLE_INSTANCE_NAME"
+                    
+    class TemplateInstanceFile:
+        def __init__(self):
+            self.id = "SAMPLE_ID"
+            self.instance = TemplateCourseInstance()
+            for lang_code, _ in lang_list:
+                setattr(self, 'description_{}'.format(lang_code), "SAMPLE_DESCRIPTION_{}".format(lang_code))
+
+    class TemplateInstanceIncludeFileToExerciseLink:
+        def __init__(self):
+            self.file_settings = TemplateFileSettings()
+            self.include_file = TemplateInstanceFile()
+                
+    return {
+        'instance_file_link' : TemplateInstanceIncludeFileToExerciseLink(),
+    }
+
 @register.inclusion_tag('exercise_admin/file-upload-exercise-edit-instance-file.html')
 def edit_instance_file(create, instances):
     lang_list = get_lang_list()
@@ -189,7 +222,7 @@ def edit_instance_file_link(linked):
     }
 
 @register.inclusion_tag('exercise_admin/file-upload-exercise-instance-file-popup-tr.html')
-def instance_file_popup_tr(linked):    
+def instance_file_popup_tr(linked):
     lang_list = get_lang_list()
     
     class TemplateFileInfo:

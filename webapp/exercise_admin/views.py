@@ -444,6 +444,7 @@ def get_instance_files(request, exercise_id):
                 "id" : link.id,
                 "names" : {},
                 "purpose" : link.file_settings.purpose,
+                "purpose_display" : link.file_settings.get_purpose_display(),
                 "chown_settings" : link.file_settings.chown_settings,
                 "chgrp_settings" : link.file_settings.chgrp_settings,
                 "chmod_settings" : link.file_settings.chmod_settings,
