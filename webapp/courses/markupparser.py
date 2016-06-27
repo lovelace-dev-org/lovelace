@@ -75,6 +75,9 @@ class MarkupError(Exception):
 class UnclosedTagError(MarkupError):
     _type = "unclosed tag"
 
+class EmbeddedObjectNotAllowedError(MarkupError):
+    _type = "embedded object not allowed"
+    
 class EmbeddedObjectNotFoundError(MarkupError):
     _type = "embedded object not found"
 
@@ -446,6 +449,9 @@ class EmbeddedPageMarkup(Markup):
 
     @classmethod
     def block(cls, block, settings, state):
+        if "tooltip" in state["context"] and state["context"]["tooltip"]:
+            raise EmbeddedObjectNotAllowedError("embedded pages are not allowed in tooltips")
+        
         yield '<div class="embedded-page">\n'
         yield settings["rendered_content"]
         yield '</div>\n'
@@ -542,6 +548,9 @@ class EmbeddedScriptMarkup(Markup):
 
     @classmethod
     def block(cls, block, settings, state):
+        if "tooltip" in state["context"] and state["context"]["tooltip"]:
+            raise EmbeddedObjectNotAllowedError("embedded scripts are not allowed in tooltips")
+        
         try:
             script = courses.models.File.objects.get(name=settings["script_slug"])
         except courses.models.File.DoesNotExist as e:
@@ -707,6 +716,9 @@ class EmbeddedVideoMarkup(Markup):
 
     @classmethod
     def block(cls, block, settings, state):
+        if "tooltip" in state["context"] and state["context"]["tooltip"]:
+            raise EmbeddedObjectNotAllowedError("embedded videos are not allowed in tooltips")
+        
         try:
             videolink = courses.models.VideoLink.objects.get(name=settings["video_slug"])
         except courses.models.VideoLink.DoesNotExist as e:
