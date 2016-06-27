@@ -596,7 +596,8 @@ function submit_edit_feedback_form(e) {
 function close_popup_and_add_questions(questions) {
     var TITLE_TEXT = "Deletes the relation between the feedback question and the exercise";
     var target_tbody = $("#feedback-question-table tbody");
-    $("#add-feedback-table > tbody input.feedback-question-checkbox:checked").each(function(index) {
+    $("#add-feedback-table > tbody input.feedback-question-checkbox").each(function(index) {
+        var checked = $(this).prop("checked");
         var id = $(this).attr("data-question-id");
         var question = $("#feedback-question-" + id).val();
         var type = "";
@@ -604,7 +605,6 @@ function close_popup_and_add_questions(questions) {
         var not_saved = true;
         
         $.each(questions, function(index, db_question) {
-            console.log(questions);
             if (db_question.question === question) {
                 id = "" + db_question.id;
                 type = db_question.readable_type;
@@ -624,9 +624,11 @@ function close_popup_and_add_questions(questions) {
                 return false;
             }
         });
-        if (in_table) {
+        if (in_table && !checked) {
+            tr.remove();
+        } else if (in_table) {
             tr.children("td.question-cell").html(question);
-        } else {
+        } else if (checked) {
             var td_delete = $('<td class="delete-cell">');
             tr.append('<td class="question-cell">' + question + '</td>');
             tr.append('<td class="type-cell">' + type + '</td>');
@@ -670,7 +672,6 @@ function update_included_file_ok_button_state(file_id, default_lang) {
          $("#included-file" + suffix).val().length > 0) &&
         $("#included-file-default-name" + suffix).val().length > 0 &&
         $("#included-file-name" + suffix).val().length > 0 &&
-        $("#included-file-description" + suffix).val().length > 0 &&
         $("#included-file-chmod-" + file_id).val().length > 0) {
         button.prop("disabled", false);
     } else {
@@ -734,14 +735,14 @@ function create_new_incuded_file_tr(file_id) {
             replace(/SAMPLE_GET_PURPOSE_DISPLAY/g, purpose_display).replace(/SAMPLE_CHOWN_SETTINGS/g, chown).
             replace(/SAMPLE_CHGRP_SETTINGS/g, chgrp);
         name_inputs.each(function() {
-            sample_id = "SAMPLE_NAME_" + $(this).attr("data-language-code");
+            sample_str = "SAMPLE_NAME_" + $(this).attr("data-language-code");
             val = $(this).val();
-            html = html.replace(new RegExp(sample_id, "g"), val);
+            html = html.replace(new RegExp(sample_str, "g"), val);
         });
         description_areas.each(function() {
-            sample_id = "SAMPLE_DESCRIPTION_" + $(this).attr("data-language-code");
+            sample_str = "SAMPLE_DESCRIPTION_" + $(this).attr("data-language-code");
             val = $(this).val();
-            html = html.replace(new RegExp(sample_id, "g"), val);
+            html = html.replace(new RegExp(sample_str, "g"), val);
         });
         return html;
     });
@@ -819,19 +820,11 @@ function show_instance_file_edit_menu(file_id) {
 }
 
 function show_instance_file_edit_link_menu(file_id) {
-    var link_div = $("#link-instance-file-" + file_id);
-    var remove_button = $("#remove-link-button-" + file_id);
-    if (!$("#instance-file-checkbox-" + file_id).prop("checked")) {
-        remove_button.hide();
-    } else {
-        remove_button.css({"display" : "inline-block"});
-    }
-    
     $("div.link-instance-file").hide();
     $("div.edit-instance-file").hide();
     $("#edit-instance-file-divs").hide();
+    $("#link-instance-file-" + file_id).css({"display" : "block"});
     $("#link-instance-file-divs").css({"display" : "block"});
-    link_div.css({"display" : "block"});
 }
 
 function close_instance_file_menu(file_id) {
@@ -850,17 +843,16 @@ function update_instance_file_done_button_state(file_id, default_lang) {
 
     var suffix = "-" + file_id + "-" + default_lang;
     if ($("#instance-file" + suffix).val().length > 0 &&
-        $("#instance-file-default-name" + suffix).val().length > 0 &&
-        $("#instance-file-description" + suffix).val().length > 0) {
+        $("#instance-file-default-name" + suffix).val().length > 0) {
         button.prop("disabled", false);
     } else {
         button.prop("disabled", true);
     }
 }
 
-function update_link_done_button_state(file_id, default_lang) {
-    var button = $("#link-done-button-" + file_id);
-    if (button.attr("data-button-mode") === "done") {
+function update_link_edit_button_state(file_id, default_lang) {
+    var button = $("#link-edit-button-" + file_id);
+    if (button.attr("data-button-mode") === "remove") {
         return;
     }
 
@@ -892,9 +884,6 @@ function add_checked_instance_file_link_div(file_id, default_names, link) {
     var chmod = link.chmod_settings;
     var names = link.names;
     var link_div = $("#link-instance-file-" + sample_id).clone().attr('id', 'link-instance-file-' + file_id);
-    link_div.find("#instance-file-purpose-" + sample_id).val(link.purpose);
-    link_div.find("#instance-file-chown-" + sample_id).val(link.chown_settings);
-    link_div.find("#instance-file-chgrp-" + sample_id).val(link.chgrp_settings);
     link_div.html(function(index, html) {
         html = html.replace(new RegExp(sample_id, 'g'), file_id).replace(/SAMPLE_CHMOD_SETTINGS/g, chmod);
         $.each(names, function(key, val) {
@@ -905,6 +894,10 @@ function add_checked_instance_file_link_div(file_id, default_names, link) {
         });
         return html;
     });
+    link_div.find("#instance-file-purpose-" + file_id).val(link.purpose);
+    link_div.find("#instance-file-chown-" + file_id).val(link.chown_settings);
+    link_div.find("#instance-file-chown-" + file_id).val(link.chown_settings);
+    link_div.find("#instance-file-chgrp-" + file_id).val(link.chgrp_settings);
     link_div.find("div.edit-instance-file-link-title-div").css({"display" : "block"});
     link_div.find("div.create-instance-file-link-title-div").hide();
     $("#link-instance-file-divs").append(link_div);
@@ -925,7 +918,7 @@ function add_unchecked_instance_file_link_div(file_id, default_names) {
     $("#link-instance-file-divs").append(link_div);
 }
 
-function add_instance_file_popup_tr(file_id, default_names, descriptions, urls, checked) {
+function add_instance_file_popup_tr(file_id, default_names, instance, urls, checked, link) {
     if (checked) {
         var sample_id = "SAMPLE_LINKED_ID";
     } else {
@@ -933,12 +926,9 @@ function add_instance_file_popup_tr(file_id, default_names, descriptions, urls, 
     }
     var tr = $("#instance-file-popup-tr-" + sample_id).clone().attr('id', 'instance-file-popup-tr-' + file_id);
     tr.html(function(index, html) {
-        html = html.replace(new RegExp(sample_id, 'g'), file_id);
+        html = html.replace(new RegExp(sample_id, 'g'), file_id).replace("SAMPLE_INSTANCE", instance);
         $.each(default_names, function(key, val) {
             html = html.replace(new RegExp("SAMPLE_DEFAULT_NAME_" + key, 'g'), val);
-        });
-        $.each(descriptions, function(key, val) {
-            html = html.replace(new RegExp("SAMPLE_DESCRIPTION_" + key, 'g'), val);
         });
         $.each(urls, function(key, val) {
             html = html.replace(new RegExp("SAMPLE_URL_" + key, 'g'), val);
@@ -948,18 +938,24 @@ function add_instance_file_popup_tr(file_id, default_names, descriptions, urls, 
                 html = html.replace(new RegExp("SAMPLE_URL_CSS_CLASS_" + key, 'g'), "file-url");
             }
         });
+        if (checked) {
+            $.each(link.names, function(key, val) {
+                html = html.replace(new RegExp("SAMPLE_NAME_" + key, 'g'), val);
+            });
+        }
         return html;
     });
     $("#add-instance-file-table > tbody").append(tr);
 }
 
-function add_existing_instance_file_to_popup(file_id, default_names, descriptions, urls, link, checked) {
+function add_existing_instance_file_to_popup(file_id, instance, default_names, descriptions, urls, link, checked) {
     if (checked) {
         add_checked_instance_file_link_div(file_id, default_names, link);
+        add_instance_file_popup_tr(file_id, default_names, instance, urls, true, link);
     } else {
         add_unchecked_instance_file_link_div(file_id, default_names);
+        add_instance_file_popup_tr(file_id, default_names, instance, urls, false, link);
     }
-    add_instance_file_popup_tr(file_id, default_names, descriptions, urls, checked);
     
     var edit_div = $("#edit-instance-file-SAMPLE_ID").clone().attr('id', 'edit-instance-file-' + file_id);
     edit_div.html(function(index, html) {
@@ -972,6 +968,9 @@ function add_existing_instance_file_to_popup(file_id, default_names, description
         });
         return html;
     });
+    
+    var instance_option = edit_div.find("select.file-instance-select option:contains('" + instance + "')");
+    instance_option.prop("selected", true)
     $("#edit-instance-file-divs").append(edit_div);
 }
 
@@ -985,8 +984,8 @@ function switch_button_mode_to_done(button_id) {
 
 function add_new_instance_file_to_popup(file_id) {
     var default_names = {};
-    var descriptions = {};
     var urls = {};
+    var instance = $("#instance-file-instance-" + file_id + " option:selected").text();
     var edit_div = $("#edit-instance-file-" + file_id);
     var default_name_inputs = edit_div.find("input.file-default-name-input");
     var description_areas = edit_div.find("textarea.file-description-area");
@@ -995,19 +994,33 @@ function add_new_instance_file_to_popup(file_id) {
         default_names[$(this).attr("data-language-code")] = $(this).val();
         urls[$(this).attr("data-language-code")] = "";
     });
-    description_areas.each(function() {
-        descriptions[$(this).attr("data-language-code")] = $(this).val();
-    });
-
+    
     add_unchecked_instance_file_link_div(file_id, default_names);
-    add_instance_file_popup_tr(file_id, default_names, descriptions, urls, false);
+    add_instance_file_popup_tr(file_id, default_names, instance, urls, false);
     edit_div.find("div.edit-instance-file-title-div").css({"display" : "block"});
     edit_div.find("div.create-instance-file-title-div").hide()
-    edit_div.find("h2.edit-instance-file-title").each(function() {
+    edit_div.find("div.edit-instance-file-title-div h2").each(function() {
         var lang = $(this).parent().attr("data-language-code");
         $(this).text("Edit instance file: " + edit_div.find("input[data-language-code=" + lang + "].file-default-name-input").val());
     });
     switch_button_mode_to_done("#done-button-" + file_id);
+}
+
+function switch_link_edit_button_mode(file_id) {
+    var button = $("#link-edit-button-" + file_id);
+    if (button.attr("data-button-mode") === "remove") {
+        button.attr("title", "Includes the file to the linked files of the exercise");
+        button.attr("onclick", "add_instance_file_to_exercise('" + file_id + "');");
+        button.attr("data-button-mode", "add");
+        button.text("Add link");
+        button.prop("disabled", true);
+    } else if (button.attr("data-button-mode") === "add") {
+        button.attr("title", "Removes the file from the linked files of the exercise");
+        button.attr("onclick", "remove_instance_file_from_exercise('" + file_id + "');");
+        button.attr("data-button-mode", "remove");
+        button.text("Remove link");
+        button.prop("disabled", false);
+    }
 }
 
 function add_instance_file_to_exercise(file_id) {
@@ -1021,17 +1034,7 @@ function add_instance_file_to_exercise(file_id) {
     $("#instance-file-checkbox-" + file_id).prop("checked", true);
     link_div.find("div.edit-instance-file-link-title-div").css({"display" : "block"});
     link_div.find("div.create-instance-file-link-title-div").hide();
-    switch_button_mode_to_done("#link-done-button-" + file_id);
-    $("#remove-link-button-" + file_id).css({"display" : "inline-block"});
-}
-
-function switch_link_button_mode_to_add(file_id) {
-    var button = $("#link-done-button-" + file_id);
-    button.attr("title", "Includes the file to the linked files of the exercise");
-    button.attr("onclick", "add_instance_file_to_exercise('" + file_id + "');");
-    button.attr("data-button-mode", "add");
-    button.text("Add link");
-    button.prop("disabled", true);
+    switch_link_edit_button_mode(file_id);
 }
 
 function remove_instance_file_from_exercise(file_id) {
@@ -1045,8 +1048,7 @@ function remove_instance_file_from_exercise(file_id) {
     link_div.find("select.file-chown-select").val("OWNED");
     link_div.find("select.file-chgrp-select").val("OWNED");
     link_div.find("input.file-chmod-input").val("rw-rw-rw-");
-    switch_link_button_mode_to_add(file_id);
-    $("#remove-link-button-" + file_id).hide();
+    switch_link_edit_button_mode(file_id);
 }
 
 function create_new_instance_file_entry(file_id) {
@@ -1061,11 +1063,13 @@ function create_new_instance_file_entry(file_id) {
             return false;
         }
     });
+    var file_error_div = $("#instance-file-error-" + file_id);
     if (already_exists) {
-        var file_error_div = $("#instance-file-error-" + file_id);
         file_error_div.text("Instance file by this name already exists");
         file_error_div.css({"display" : "block"});
         return;
+    } else {
+        file_error_div.hide();
     }
     
     add_new_instance_file_to_popup(file_id);
@@ -1106,10 +1110,10 @@ function show_edit_instance_files_popup(event, url) {
         $.each(result, function() {
             var file_id = "" + this.id;
             if ($.inArray(file_id, file_ids) > -1) {
-                add_existing_instance_file_to_popup(file_id, this.default_names, this.descriptions,
+                add_existing_instance_file_to_popup(file_id, this.instance, this.default_names, this.descriptions,
                                                     this.urls, this.link, true);
             } else {
-                add_existing_instance_file_to_popup(file_id, this.default_names, this.descriptions,
+                add_existing_instance_file_to_popup(file_id, this.instance, this.default_names, this.descriptions,
                                                     this.urls, this.link, false);
             }
         });
@@ -1117,7 +1121,132 @@ function show_edit_instance_files_popup(event, url) {
     });
 }
 
-function submit_edit_instance_files_form(e) {
+function close_popup_and_add_instance_files(instance_files, default_lang) {
+    var target_tbody = $("#instance-files-table tbody");
+    $("#add-instance-file-table > tbody input.instance-file-checkbox").each(function(index) {
+        var checked = $(this).prop("checked");
+        var file_id = $(this).attr("data-file-id");
+        var default_name = $("#instance-file-label-" + file_id + "-" + default_lang).text();
+        var db_id = "";
+        var db_instance = "";
+        var db_purpose_display = "";
+        var db_names = [];
+        var db_description = [];
+        var in_table = false;
+        var saved = false;
+
+        $.each(instance_files, function(index, db_file) {
+            if (db_file.default_names[default_lang] === default_name) {
+                db_id = "" + db_file.id;
+                db_instance = db_file.instance;
+                db_purpose_display = db_file.link.purpose_display;
+                db_names = db_file.link.names;
+                db_descriptions = db_file.descriptions;
+                saved = true;
+                return false;
+            }
+        });
+        if (!saved) {
+            return;
+        }
+
+        var tr = null;
+        target_tbody.find("tr").each(function() {
+            if ($(this).attr("data-file-id") === db_id) {
+                tr = $(this);
+                in_table = true;
+                return false;
+            }
+        });
+
+        if (in_table && !checked) {
+            tr.remove();
+        } else if (in_table) {
+            tr.find("td.name-cell span").each(function() {
+                var span = $(this);
+                span.text(db_names[span.attr("data-language-code")]);
+            });
+            tr.find("td.instance-cell").text(db_instance);
+            tr.find("td.purpose-cell").text(db_purpose_display);
+            tr.find("td.description-cell span").each(function() {
+                var span = $(this);
+                span.text(db_descriptions[span.attr("data-language-code")]);
+            });
+        } else if (checked) {
+            tr = $("#instance-file-tr-" + "SAMPLE_ID").clone().attr("id", "instance-file-tr-" + db_id);
+            tr.attr("data-file-id", db_id)
+            tr.html(function(index, html) {
+                html = html.replace(/SAMPLE_ID/g, db_id).replace(/SAMPLE_INSTANCE_NAME/g, db_instance)
+                    .replace(/SAMPLE_GET_PURPOSE_DISPLAY/g, db_purpose_display);
+                $.each(db_names, function(key, val) {
+                    sample_str = "SAMPLE_NAME_" + key;
+                    html = html.replace(new RegExp(sample_str, "g"), val);
+                });
+                $.each(db_descriptions, function(key, val) {
+                    sample_str = "SAMPLE_DESCRIPTION_" + key;
+                    html = html.replace(new RegExp(sample_str, "g"), val);
+                });
+                return html;
+            });
+                
+            target_tbody.append(tr);
+        }
+    });
+    close_popup($("#edit-instance-files-popup"));
+}
+
+function edit_instance_file_form_success(data, text_status, jqxhr_obj, default_lang) {
+    var ID_PATTERN = /\[(.*?)\]/;
+    if (data.error) {
+        var sep = "<br>";
+        $.each(data.error, function(err_source, err_msg) {
+            if (err_source === "__all__") {
+                var error_div = $("#instance-file-error");
+            } else {
+                var file_id = err_source.match(ID_PATTERN)[1];
+                var error_in_link = false;
+                if (err_source.startsWith("instance_file_file")) {
+                    var error_div = $("#instance-file-file-error-" + file_id);
+                } else if (err_source.startsWith("instance_file_default_name")) {
+                    var error_div = $("#instance-file-default-name-error-" + file_id);
+                } else if (err_source.startsWith("instance_file_description")) {
+                    var error_div = $("#instance-file-description-error-" + file_id);
+                } else if (err_source.startsWith("instance_file_name")) {
+                    var error_div = $("#instance-file-name-error-" + file_id);
+                    error_in_link = true;
+                } else if (err_source.startsWith("instance_file_chmod")) {
+                    var error_div = $("#instance-file-chmod-error-" + file_id);
+                    error_in_link = true;
+                }
+            }
+            error_div.html(err_msg.join(sep));
+            error_div.css("display", "block");
+            if (error_in_link) {
+                show_instance_file_edit_link_menu(file_id);
+            } else {
+                show_instance_file_edit_menu(file_id);
+            }
+        });
+    } else if (data.result) {
+        console.log("Instance files edited successfully!");
+        close_popup_and_add_instance_files(data.result, default_lang);
+    }
+}
+
+function edit_instance_file_form_error(xhr, status, type) {
+    var error_span = $("#instance-file-error");
+    var error_str = "An error occured while sending the form:";
+    status = status.charAt(0).toUpperCase() + status.slice(1);
+    if (type) {
+        error_str += status + ": " + type;
+    } else {
+        error_str += status;
+    }
+    error_span.html(error_str);
+    error_span.css("display", "block");
+}
+
+function submit_edit_instance_files_form(e, default_lang) {
     e.preventDefault();
     console.log("User requested instance file form submit.");
 
@@ -1130,16 +1259,55 @@ function submit_edit_instance_files_form(e) {
     console.log("Method: " + form_type + ", URL: " + form_url);
 
     var form_data = new FormData(form[0]);
-    
-    console.log("Serialized form data:");
-    console.log(instance_file_enum);
-    for (var [key, value] of form_data.entries()) {
-        if (key.indexOf("[new-" + (instance_file_enum - 1) + "]") > - 1) {
-            form_data.delete(key);
-        } else {
-            console.log(key, value);
+    var new_file_ids = [];
+    var linked_file_ids = [];
+    $("div.popup input[type=checkbox].instance-file-checkbox").each(function() {
+        var id = $(this).attr("data-file-id");
+        if (id.startsWith("new")) {
+            new_file_ids.push(id);
         }
+        if ($(this).prop("checked")) {
+            linked_file_ids.push(id);
+        }
+    });
+    console.log("Serialized form data:");
+
+    var create_id = "[new-" + (instance_file_enum - 1) + "]";
+    var LINK_FIELDS = ["name", "purpose", "chown", "chgrp", "chmod"];
+    var form_keys = [];
+    for (var key of form_data.keys()) {
+        form_keys.push(key);
     }
+
+    for (var key of form_keys) {
+        var linked = false;
+        if (key.indexOf(create_id) > - 1) {
+            form_data.delete(key);
+            continue;
+        }
+        for (var id of linked_file_ids) {
+            if (key.indexOf(id) > -1) {
+                linked = true;
+                break;
+            }
+        };
+        if (linked) {
+            continue;
+        }
+        for (var field_name of LINK_FIELDS) {
+            if (key.startsWith("instance_file_" + field_name)) {
+                form_data.delete(key);
+                break;
+            }
+        }
+    };
+
+    for (var [key, value] of form_data.entries()) {
+        console.log(key, value);
+    }
+
+    form_data.append("new_instance_files", new_file_ids.join(","));
+    form_data.append("linked_files", linked_file_ids.join(","));
     
     console.log("Submitting the form...");
     $.ajax({
@@ -1149,8 +1317,10 @@ function submit_edit_instance_files_form(e) {
         processData: false,
         contentType: false,
         dataType: 'json',
-        success: function() {},
-        error: function() {},
+        success: function(data, textStatus, jqXHR) {
+            edit_instance_file_form_success(data, textStatus, jqXHR, default_lang)
+        },
+        error: edit_instance_file_form_error,
     });
 }
 

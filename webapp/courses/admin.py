@@ -299,6 +299,8 @@ admin.site.register(FileUploadExercise, FileExerciseAdmin)
 #admin.site.register(FileExerciseTestCommand)
 #admin.site.register(FileExerciseTestExpectedOutput)
 admin.site.register(FileExerciseTestIncludeFile)
+admin.site.register(InstanceIncludeFile)
+admin.site.register(IncludeFileSettings)
 
 ## Page embeddable objects
 class CalendarDateAdmin(admin.StackedInline):

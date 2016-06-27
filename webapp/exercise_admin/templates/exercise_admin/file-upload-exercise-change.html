@@ -32,7 +32,10 @@
 {% endblock %}
 
 {% block exercise-type-specific-popups %}
-  <form method="POST" action="{% url 'exercise_admin:edit_instance_files' exercise.id %}" id="edit-instance-files-form" onsubmit="submit_edit_instance_files_form(event);">
+  {% get_current_language as CURRENT_LANGUAGE %}
+  {% get_available_languages as AVAILABLE_LANGUAGES %}
+  {% get_default_language as DEFAULT_LANGUAGE %}
+  <form method="POST" action="{% url 'exercise_admin:edit_instance_files' exercise.id %}" id="edit-instance-files-form" onsubmit="submit_edit_instance_files_form(event, '{{ DEFAULT_LANGUAGE }}');">
     {% csrf_token %}
     <div id="edit-instance-files-popup" class="popup">
       <div>
@@ -43,15 +46,29 @@
               <table id="add-instance-file-table" class="instance-file-table">
                 <colgroup>
                   <col class="file-default-name">
-                  <col class="file-description">
+                  <col class="file-name">
+                  <col class="file-instance">
                   <col class="uploaded-file">
                   <col class="file-edit-link">
                   <col class="file-edit-button">
                 </colgroup>
                 <thead>
                   <tr>
-                    <th>Default file name</th>
-                    <th>Description</th>
+                    <th>
+                      {% for language_choice, _ in AVAILABLE_LANGUAGES %}
+                        <span class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}">
+                          Default name {% lang_reminder language_choice %}
+                        </span>
+                      {% endfor %}
+                    </th>
+                    <th>
+                      {% for language_choice, _ in AVAILABLE_LANGUAGES %}
+                        <span class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}">
+                          File name during test {% lang_reminder language_choice %}
+                        </span>
+                      {% endfor %}
+                    </th>
+                    <th>Course instance</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -135,6 +152,7 @@
       <table id="instance-files-table" class="files-table bordered-editable-area">
         <colgroup>
           <col class="file-name">
+          <col class="file-instance">
           <col class="file-purpose">
           <col class="file-description">
         </colgroup>
@@ -147,6 +165,7 @@
                 </span>
               {% endfor %}
             </th>
+            <th>Course instance</th>
             <th>Used as</th>
             <th>
               {% for language_choice, _ in AVAILABLE_LANGUAGES %}
@@ -159,25 +178,7 @@
         </thead>
         <tbody>
           {% for instance_file_link in instance_file_links %}
-            <tr data-file-id="{{ instance_file_link.include_file.id }}">
-              <td>
-                {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
-                  <span class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}">
-                    {% get_translated_field instance_file_link.file_settings "name" language_choice %}
-                  </span>
-                {% endfor %}
-              </td>
-              <td>
-                {{ instance_file_link.file_settings.get_purpose_display }}
-              </td>
-              <td>
-                {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
-                  <span class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}">
-                    {% get_translated_field instance_file_link.include_file "description" language_choice %}
-                  </span>
-                {% endfor %}
-              </td>
-            </tr>
+            {% instance_file_tr instance_file_link %}
           {% endfor %}
         </tbody>
       </table>
@@ -233,10 +234,15 @@
     {% include_file_popup True True True %}
   </div>
   <div style="display: none;">
-    {% edit_instance_file False %}
+    <table>
+      {% instance_file_tr True True %}
+    </table>
   </div>
   <div style="display: none;">
-    {% edit_instance_file True %}
+    {% edit_instance_file False instances %}
+  </div>
+  <div style="display: none;">
+    {% edit_instance_file True instances %}
   </div>
   <div style="display: none;">
     {% edit_instance_file_link False %}

@@ -25,12 +25,22 @@
       <div class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}">
         <label for="instance-file-{{ instance_file.id }}-{{ language_choice }}">
           <span class="choose-file-span">Choose file {% lang_reminder language_choice %}: </span>
-          <input type="file" id="instance-file-{{ instance_file.id }}-{{ language_choice }}" name="instance_file_[{{ instance_file.id }}]_{{ language_choice }}" class="file-input"
+          <input type="file" id="instance-file-{{ instance_file.id }}-{{ language_choice }}" name="instance_file_file_[{{ instance_file.id }}]_{{ language_choice }}" class="file-input"
                  onchange="update_instance_file_done_button_state('{{ instance_file.id }}', '{{ DEFAULT_LANGUAGE }}');" data-language-code="{{ language_choice }}">
         </label>
       </div>
     {% endfor %}
-    <div id="instance-file-error-{{ instance_file.id }}" class="admin-error"></div>
+    <div id="instance-file-file-error-{{ instance_file.id }}" class="admin-error"></div>
+  </div>
+  <div>
+    <label class="file-label" for="instance-file-instance-{{ instance_file.id }}">
+      <span class="file-instance-span">Course instance:</span>
+      <select id="instance-file-instance-{{ instance_file.id }}" class="file-instance-select" name="instance_file_instance_[{{ instance_file.id }}]">
+        {% for instance in instances %}
+          <option value="{{ instance.id }}">{{ instance.name }}</option>
+        {% endfor %}
+      </select>
+    </label>
   </div>
   <div>
     {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
@@ -56,7 +66,7 @@
         </label>
       </div>
     {% endfor %}
-    <div id="instance-file-description-{{ instance_file.id }}" class="admin-error"></div>
+    <div id="instance-file-description-error-{{ instance_file.id }}" class="admin-error"></div>
   </div>
   {% if create %}
     <button id="done-button-{{ instance_file.id }}" type="button" class="add-item" title="Closes create instance file menu"

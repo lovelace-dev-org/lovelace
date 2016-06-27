@@ -6,6 +6,7 @@ from django import forms
 from .utils import get_default_lang, get_lang_list
 
 import feedback.models
+import courses.models as c_models
 
 class CreateFeedbackQuestionsForm(forms.Form):
     def __init__(self, feedback_questions, data, *args, **kwargs):
@@ -22,15 +23,15 @@ class CreateFeedbackQuestionsForm(forms.Form):
             self._add_fields("new-{}".format(i + 1), data)
 
     def _add_fields(self, prefix_id, data):
-        self.fields["question_field_[{}]".format(prefix_id)] = forms.CharField(max_length=100, required=True)
+        self.fields["question_field_[{}]".format(prefix_id)] = forms.CharField(max_length=100, required=True, strip=True)
         self.fields["type_field_[{}]".format(prefix_id)] = forms.ChoiceField(choices=feedback.models.QUESTION_TYPE_CHOICES, required=True)
         choice_field_prefix = "choice_field_[{}]_".format(prefix_id)
         choice_fields = sorted([k for k in data.keys() if k.startswith(choice_field_prefix)])
         for i, choice_field in enumerate(choice_fields):
             if i < 2:
-                self.fields[choice_field] = forms.CharField(required=True)
+                self.fields[choice_field] = forms.CharField(required=True, strip=True)
             else:
-                self.fields[choice_field] = forms.CharField(required=False)
+                self.fields[choice_field] = forms.CharField(required=False, strip=True)
             
     def clean(self):
         cleaned_data = super(CreateFeedbackQuestionsForm, self).clean()
@@ -75,12 +76,93 @@ class CreateFeedbackQuestionsForm(forms.Form):
 
 
 class CreateInstanceIncludeFilesForm(forms.Form):
-    def __init__(self, instance_files, instance_file_links, data, *args, **kwargs):
-        super(CreateInstanceIncludeFilesForm, self).__init__(data, *args, **kwargs)
+    def __init__(self, instance_files, new_file_ids, linked_file_ids, data, files, *args, **kwargs):
+        super(CreateInstanceIncludeFilesForm, self).__init__(data, files, *args, **kwargs)
 
+        default_lang = get_default_lang()
+        lang_list = get_lang_list()
+
+        # Possibly edited existing instance files
+        for instance_file in instance_files:
+            self._add_file_fields(str(instance_file.id), default_lang, lang_list)
+
+        for file_id in new_file_ids:
+            self._add_file_fields(file_id, default_lang, lang_list)
+
+        for file_id in linked_file_ids:
+            self._add_link_fields(file_id, default_lang, lang_list)
+
+    def _add_file_fields(self, file_id, default_lang, lang_list):
+        for lang_code, _ in lang_list:
+            file_field = "instance_file_file_[{id}]_{lang}".format(id=file_id, lang=lang_code)
+            default_name_field = "instance_file_default_name_[{id}]_{lang}".format(id=file_id, lang=lang_code)
+            description_field = "instance_file_description_[{id}]_{lang}".format(id=file_id, lang=lang_code)
+
+            if lang_code == default_lang and file_id.startswith("new"):
+                self.fields[file_field] = forms.FileField(max_length=255, required=True)
+            else:
+                self.fields[file_field] = forms.FileField(max_length=255, required=False)
+                
+            if lang_code == default_lang:
+                self.fields[default_name_field] = forms.CharField(max_length=255, required=True, strip=True)
+            else:
+                self.fields[default_name_field] = forms.CharField(max_length=255, required=False, strip=True)
+
+            self.fields[description_field] = forms.CharField(required=False, strip=True)
+
+        instance_field = "instance_file_instance_[{}]".format(file_id)
+        instance_choices = [(instance.id, instance.name) for instance in c_models.CourseInstance.objects.all()]
+        self.fields[instance_field] = forms.ChoiceField(choices=instance_choices, required=True)
+
+    def _add_link_fields(self, file_id, default_lang, lang_list):
+        for lang_code, _ in lang_list:
+            name_field = "instance_file_name_[{id}]_{lang}".format(id=file_id, lang=lang_code)
+            if lang_code == default_lang:
+                self.fields[name_field] = forms.CharField(max_length=255, required=True, strip=True)
+            else:
+                self.fields[name_field] = forms.CharField(max_length=255, required=False, strip=True)
+
+        purpose_field = "instance_file_purpose_[{id}]".format(id=file_id)
+        chown_field = "instance_file_chown_[{id}]".format(id=file_id)
+        chgrp_field = "instance_file_chgrp_[{id}]".format(id=file_id)
+        chmod_field = "instance_file_chmod_[{id}]".format(id=file_id)
+        self.fields[purpose_field] = forms.ChoiceField(choices=c_models.IncludeFileSettings.FILE_PURPOSE_CHOICES, required=False)
+        self.fields[chown_field] = forms.ChoiceField(choices=c_models.IncludeFileSettings.FILE_OWNERSHIP_CHOICES, required=False)
+        self.fields[chgrp_field] = forms.ChoiceField(choices=c_models.IncludeFileSettings.FILE_OWNERSHIP_CHOICES, required=False)
+        self.fields[chmod_field] = forms.CharField(max_length=10, required=False, strip=True) 
+
+    def _clean_duplicates_of_field(self, field_name, field_val, model_field, cleaned_data, lang_list):
+        field_prefix = "instance_file_{}".format(model_field)
+        model_field_readable = model_field.replace("_", " ")
+        
+        for lang_code, _ in lang_list:
+            if field_name.startswith(field_prefix) and field_name.endswith(lang_code) and field_val != "":
+                for k, v in cleaned_data.copy().items():
+                    if k.startswith(field_prefix) and k.endswith(lang_code) and v == field_val and k != field_name:
+                        error_msg = "Duplicate {field} in language {lang}!".format(field=model_field_readable, lang=lang_code)
+                        error_code = "duplicate_{}".format(model_field)
+                        field_error = forms.ValidationError(error_msg, code=error_code)
+                        self.add_error(field_name, field_error)
+        
     def clean(self):
         cleaned_data = super(CreateInstanceIncludeFilesForm, self).clean()
-    
+        lang_list = get_lang_list()
+
+        for field_name in self.fields.keys():
+            field_val = cleaned_data.get(field_name)
+            if field_val is None:
+                continue
+
+            self._clean_duplicates_of_field(field_name, field_val, "default_name", cleaned_data, lang_list)
+            self._clean_duplicates_of_field(field_name, field_val, "name", cleaned_data, lang_list)
+
+            chmod_pattern = "^((r|-)(w|-)(x|-)){3}$"
+            if field_name.startswith("instance_file_chmod") and not re.match(chmod_pattern, field_val):
+                error_msg = "File access mode was of incorrect format! Give 9 character, each either r, w, x or -!"
+                error_code = "invalid_chmod"
+                field_error = forms.ValidationError(error_msg, code=error_code)
+                self.add_error(field_name, field_error)
+
 # Only have required fields for the default language, i.e. LANGUAGE_CODE in
 # django.conf.settings.
 
