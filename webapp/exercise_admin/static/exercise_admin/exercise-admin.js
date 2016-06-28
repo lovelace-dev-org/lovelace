@@ -773,6 +773,7 @@ function confirm_included_file_popup(file_id) {
     }
     update_edit_included_file_popup_titles(popup);
     close_popup(popup);
+    refresh_required_files_all();
 }
 
 function cancel_included_file_popup(popup, file_id) {
@@ -1193,6 +1194,7 @@ function close_popup_and_add_instance_files(instance_files, default_lang) {
         }
     });
     close_popup($("#edit-instance-files-popup"));
+    refresh_required_files_all();
 }
 
 function edit_instance_file_form_success(data, text_status, jqxhr_obj, default_lang) {
@@ -1356,6 +1358,51 @@ function command_name_changed(e) {
     $('#command-' + split_id[1]).html(new_name);
 }
 
+function refresh_required_files_all() {
+    $('#test-tabs > ol > li').each(function(x) {
+        var current_href = $(this).children('a').attr('href');
+        if (current_href !== undefined) {
+            var current_id = current_href.split('-')[2];
+            refresh_required_files(current_id);
+        }
+    });
+}
+
+function refresh_required_files(test_id) {
+    // Destinations
+    let ins_optgrp = $('#test-' + test_id + '-required_files > optgroup.filepicker-instance-options');
+    let exe_optgrp = $('#test-' + test_id + '-required_files > optgroup.filepicker-exercise-options');
+
+    let lang = 'en'; // TODO: Language support
+
+    // Sources
+    $('#instance-files-table tbody > tr').map(function() {
+        let current_row = $(this);
+        let if_id = current_row.attr('data-file-id');
+        let if_name = current_row.find('td.name-cell > span[data-language-code="' + lang + '"]').html();
+
+        // Add this file if it doesn't already exist
+        let existing_if = ins_optgrp.find('option[value="if_' + if_id + '"]');
+        if (existing_if.length === 0) {
+            let new_opt = $('<option value="if_">' + if_name + '</option>');
+            ins_optgrp.append(new_opt);
+        }
+    });
+
+    $('#include-file-popups > div.popup').map(function() {
+        let current_div = $(this);
+        let ef_id = current_div.attr('data-file-id');
+        let ef_name = current_div.find('#included-file-name-' + ef_id + '-' + lang).val();
+
+        // Add this file if it doesn't already exist
+        let existing_ef = exe_optgrp.find('option[value="ef_' + ef_id + '"]');
+        if (existing_ef.length === 0) {
+            let new_opt = $('<option value="ef_">' + ef_name + '</option>');
+            exe_optgrp.append(new_opt);
+        }
+    });    
+}
+
 // TODO: Generalise the add_(test|stage|command)? Use the latter functions in the former
 var test_enum = 1;
 
@@ -1386,6 +1433,7 @@ function add_test() {
     });
     $("#test-tabs").append(new_test_tab);
 
+    refresh_required_files(new_id);
     $("#test-tabs").tabs('refresh');
     $("#stages-sortable-" + new_id).sortable();
     $("#stages-sortable-" + new_id).disableSelection();

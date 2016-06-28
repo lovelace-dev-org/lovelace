@@ -96,6 +96,7 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_tes
 
         # Set the test values
         current_test.name = t_name
+        current_test.save() # Needed for the required files
         current_test.required_files = t_required_ef
         current_test.required_instance_files = t_required_if
 
