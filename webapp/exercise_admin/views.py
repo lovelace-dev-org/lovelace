@@ -55,6 +55,9 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_tes
         e_question = form_data['exercise_question_{}'.format(lang_code)]
         setattr(exercise, 'question_{}'.format(lang_code), e_question)
 
+    # TODO: Hints
+    # TODO: Included files
+
     #exercise.name = e_name
     #exercise.content = e_content
     exercise.default_points = e_default_points

@@ -179,7 +179,10 @@ def get_sanitized_choices(data, field_name):
             f_type, f_id = choice.split('_')
             f_id = int(f_id)
         except ValueError as e:
-            erroneous.add(choice)
+            if f_id[0:3] == 'new' and f_id[3:].isdigit():
+                pass # It was a new one
+            else:
+                erroneous.add(choice)
         else:
             if f_type == 'ef':
                 # Check if an exercise file with this id exists
