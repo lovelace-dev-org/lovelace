@@ -787,7 +787,7 @@ function cancel_included_file_popup(popup, file_id) {
 include_file_enum = 1;
 
 function create_included_file_popup(default_lang) {
-    var id = "new-" + include_file_enum;
+    var id = "new" + include_file_enum;
     var popup = $("#edit-included-file-SAMPLE_ID").clone().attr('id', 'edit-included-file-' + id);
     popup.html(function(index, html) {
         return html.replace(/SAMPLE_ID/g, id);
@@ -805,6 +805,20 @@ function create_included_file_popup(default_lang) {
     });
     include_file_enum++;
 }
+
+function remove_included_file(button) {
+    // Remove the dangling popup
+    let popup_id_split = $(button).parent().parent().attr('id').split('-');
+    let popup_id = popup_id_split[popup_id_split.length - 1];
+    $('#edit-included-file-' + popup_id).remove();
+
+    // Delete the table row
+    delete_table_row(button);
+
+    // Refresh the included file options
+    refresh_required_files_all();
+}
+
 
 
 /**************************************
@@ -1359,6 +1373,7 @@ function command_name_changed(e) {
 }
 
 function refresh_required_files_all() {
+    // For each test ...
     $('#test-tabs > ol > li').each(function(x) {
         var current_href = $(this).children('a').attr('href');
         if (current_href !== undefined) {
@@ -1369,26 +1384,36 @@ function refresh_required_files_all() {
 }
 
 function refresh_required_files(test_id) {
-    // Destinations
+    let lang = 'en'; // TODO: Proper language support
+
     let ins_optgrp = $('#test-' + test_id + '-required_files > optgroup.filepicker-instance-options');
-    let exe_optgrp = $('#test-' + test_id + '-required_files > optgroup.filepicker-exercise-options');
-
-    let lang = 'en'; // TODO: Language support
-
-    // Sources
+    let new_ins_options = [];
     $('#instance-files-table tbody > tr').map(function() {
         let current_row = $(this);
         let if_id = current_row.attr('data-file-id');
         let if_name = current_row.find('td.name-cell > span[data-language-code="' + lang + '"]').html();
 
-        // Add this file if it doesn't already exist
         let existing_if = ins_optgrp.find('option[value="if_' + if_id + '"]');
         if (existing_if.length === 0) {
-            let new_opt = $('<option value="if_">' + if_name + '</option>');
+            // Add this file option if it doesn't already exist
+            let new_opt = $('<option value="if_' + if_id + '">' + if_name + '</option>');
             ins_optgrp.append(new_opt);
+        } else if (existing_if.length === 1) {
+            // Update the name
+            existing_if.html(if_name);
+        }
+
+        new_ins_options.push('if_' + if_id);
+    });
+    ins_optgrp.children('option').each(function() {
+        let current = $(this);
+        if (new_ins_options.indexOf(current.val()) === -1) {
+            current.remove();
         }
     });
-
+    
+    let exe_optgrp = $('#test-' + test_id + '-required_files > optgroup.filepicker-exercise-options');
+    let new_exe_options = [];
     $('#include-file-popups > div.popup').map(function() {
         let current_div = $(this);
         let ef_id = current_div.attr('data-file-id');
@@ -1397,10 +1422,24 @@ function refresh_required_files(test_id) {
         // Add this file if it doesn't already exist
         let existing_ef = exe_optgrp.find('option[value="ef_' + ef_id + '"]');
         if (existing_ef.length === 0) {
-            let new_opt = $('<option value="ef_">' + ef_name + '</option>');
+            let new_opt = $('<option value="ef_' + ef_id + '">' + ef_name + '</option>');
             exe_optgrp.append(new_opt);
+        } else if (existing_ef.length === 1) {
+            // Update the name
+            existing_ef.html(ef_name);
         }
-    });    
+
+        new_exe_options.push('ef_' + ef_id);
+    });
+    console.log(new_exe_options);
+    exe_optgrp.children('option').each(function() {
+        let current = $(this);
+        console.log(current.val());
+        console.log(new_exe_options.indexOf(current.val()));
+        if (new_exe_options.indexOf(current.val()) === -1) {
+            current.remove();
+        }
+    });
 }
 
 // TODO: Generalise the add_(test|stage|command)? Use the latter functions in the former
