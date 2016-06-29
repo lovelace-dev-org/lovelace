@@ -49,6 +49,8 @@ $(document).ready(function() {
             return false;
         }
     });
+    // Display the required files with the currently selected translation
+    refresh_required_files_all();
 });
 
 function submit_main_form(e) {
@@ -149,7 +151,8 @@ function change_current_language(e) {
     translated_elements.removeClass('translated-visible');
     translated_elements.filter('[data-language-code=' + new_code + ']').addClass('translated-visible');
 
-    // TODO: Swap the visible input elements into the corresponding language coded ones
+    // Display the required files with the currently selected translation
+    refresh_required_files_all();
 }
 
 
@@ -1384,7 +1387,8 @@ function refresh_required_files_all() {
 }
 
 function refresh_required_files(test_id) {
-    let lang = 'en'; // TODO: Proper language support
+    //let lang = 'en'; // TODO: Proper language support
+    let lang = $('#language-info-code').text();
 
     let ins_optgrp = $('#test-' + test_id + '-required_files > optgroup.filepicker-instance-options');
     let new_ins_options = [];
