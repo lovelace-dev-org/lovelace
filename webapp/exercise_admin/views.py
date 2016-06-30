@@ -230,7 +230,7 @@ def file_upload_exercise(request, exercise_id=None, action=None):
     # 2. get the files and show a pool of them
     instance_files = InstanceIncludeFile.objects.all() # TODO: This is debug code
     instance_file_links = InstanceIncludeFileToExerciseLink.objects.filter(exercise=exercise)
-    instances = [{"id" : instance.id, "name" : instance.name} for instance in CourseInstance.objects.all()]
+    instances = CourseInstance.objects.all()
     
     tests = FileExerciseTest.objects.filter(exercise=exercise_id).order_by("name")
     test_list = []
@@ -336,18 +336,29 @@ def get_feedback_questions(request):
         })
 
     feedback_questions = ContentFeedbackQuestion.objects.all()
+    lang_list = get_lang_list()
     result = []
+    
     for question in feedback_questions:
         question = question.get_type_object()
         question_json = {
             "id": question.id,
-            "question" : question.question,
+            "questions" : {},
             "type" : question.question_type,
             "readable_type": question.get_human_readable_type(),
             "choices": [],
         }
+        for lang_code, _ in lang_list:
+            question_attr = "question_{}".format(lang_code)
+            question_json["questions"][lang_code] = getattr(question, question_attr) or ""
         if question.question_type == "MULTIPLE_CHOICE_FEEDBACK":
-            question_json["choices"] = [choice.answer for choice in question.get_choices()]
+            choices = question.get_choices()
+            for choice in choices:
+                choice_json = {}
+                for lang_code, _ in lang_list:
+                    answer_attr = "answer_{}".format(lang_code)
+                    choice_json[lang_code] = getattr(choice, answer_attr) or ""
+                question_json["choices"].append(choice_json)
         result.append(question_json)
 
     return JsonResponse({
@@ -435,8 +446,9 @@ def get_instance_files(request, exercise_id):
         })
     
     instance_files = InstanceIncludeFile.objects.all()
-
+    lang_list = get_lang_list()
     result = []
+    
     for instance_file in instance_files:
         try:
             link = InstanceIncludeFileToExerciseLink.objects.get(include_file=instance_file, exercise=exercise_id)
@@ -454,13 +466,13 @@ def get_instance_files(request, exercise_id):
             link_json = {}
         instance_file_json = {
             "id" : instance_file.id,
-            "instance" : instance_file.instance.name,
+            "instances" : {},
             "default_names" : {},
             "descriptions" : {},
             "urls" : {},
             "link" : link_json,
         }
-        lang_list = get_lang_list()
+        
         for lang_code, _ in lang_list:
             default_name_attr = "default_name_{}".format(lang_code)
             description_attr = "description_{}".format(lang_code)
@@ -471,6 +483,7 @@ def get_instance_files(request, exercise_id):
             except ValueError:
                 url = ""
             instance_file_json["urls"][lang_code] = url
+            instance_file_json["instances"][lang_code] = getattr(instance_file.instance, name_attr) or ""
             instance_file_json["default_names"][lang_code] = getattr(instance_file, default_name_attr) or ""
             instance_file_json["descriptions"][lang_code] = getattr(instance_file, description_attr) or ""
             if link is not None:

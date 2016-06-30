@@ -8,6 +8,7 @@
     {% get_current_language as CURRENT_LANGUAGE %}
     {% get_available_languages as AVAILABLE_LANGUAGES %}
     {% get_language_info_list for AVAILABLE_LANGUAGES as LANGUAGES_VERBOSE %}
+    {% get_default_language as DEFAULT_LANGUAGE %}
     <title>Edit | {{ exercise.name }}</title>
     <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=Inconsolata">
 
@@ -50,7 +51,11 @@
                     <tr>
                       <th>
                         <input type="checkbox" id="fb-question-checkbox-all" class="feedback-question-checkbox" onclick="select_all_feedback_questions(this.checked);">
-                        <label for="fb-question-checkbox-all" class="feedback-question-label">Question</label>
+                        {% for language_choice, _ in AVAILABLE_LANGUAGES %}
+                          <div class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %} inline-block-elem" data-language-code="{{ language_choice }}">
+                            <label for="fb-question-checkbox-all" class="feedback-question-label">Question</label> {% lang_reminder language_choice %}
+                          </div>
+                        {% endfor %}
                       </th>
                       <th>Type</th>
                     </tr>
@@ -62,51 +67,54 @@
             </div>
           </div>
 
-          <div id="edit-feedback-div">
-            <h2 id="edit-feedback-div-title">Edit feedback question:</h2>
-            <div id="edit-feedback-question-inputs">
-            </div>
-            <div id="feedback-choices" class="bordered-editable-area">
-              <div id="feedback-choice-container" class="feedback-choices">
-              </div>
-            </div>
-            <button type="button" id="add-feedback-choice" class="add-item" title="Adds a new answer choice for the feedback question"
-                    onclick="add_choice_to_selected_feedback();">Add choice</button>
-            <button type="button" class="add-item" title="Closes edit feedback menu" onclick="close_edit_feedback_menu();">Done editing</button>
-            <div id="feedback-error" class="admin-error"></div>
+          <div id="edit-feedback-divs">
           </div>
 
           <div id="create-feedback-div">
             <h2>Create new feedback question</h2>
             <div>
-              <label class="feedback-question-input-label" for="feedback-question-new">
-                <span class="feedback-question-span">Feedback question:</span>
-                <input type="text" id="feedback-question-new" class="feedback-question-input" maxlength="100" oninput="update_create_feedback_button_state();">
-              </label>
+              {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
+                <div class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %} inline-block-elem" data-language-code="{{ language_choice }}">
+                  <label class="feedback-question-input-label" for="feedback-question-create-{{ language_choice }}">
+                    <span class="feedback-question-span">Feedback question {% lang_reminder language_choice %}:</span>
+                    <input type="text" id="feedback-question-create-{{ language_choice }}" class="feedback-question-input" maxlength="100" value=""
+                           oninput="update_create_feedback_button_state('{{ DEFAULT_LANGUAGE }}')" data-language-code="{{ language_choice }}">
+                  </div>
+                </span>
+              {% endfor %}
             </div>
-            <div id="new-feedback-question-error" class="admin-error"></div>
+            <div id="feedback-question-create-error" class="admin-error"></div>
             <div>
-              <select id="feedback-type-select" class="feedback-type-select" onchange="handle_feedback_type_selection(this);" form="create-feedback-form">
+              <span class="feedback-type-span">Feedback question type:</span>
+              <select id="feedback-type-select-create" class="feedback-type-select" onchange="handle_feedback_type_selection(this, '{{ DEFAULT_LANGUAGE }}');" form="create-feedback-form">
                 <option value="THUMB_FEEDBACK">Thumb feedback question</option>
                 <option value="STAR_FEEDBACK">Star feedback question</option>
                 <option value="MULTIPLE_CHOICE_FEEDBACK">Multiple choice feedback question</option>
                 <option value="TEXTFIELD_FEEDBACK">Textfield feedback question</option>
               </select>
-              <div id="new-feedback-choice-container" class="bordered-editable-area">
-                <div id="new-feedback-choices" class="feedback-choices">
+            </div>
+            <div id="feedback-choices-div-create" class="feedback-choices">
+              {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
+                <div class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}">
+                  <span class="feedback-choice-container-span">Feedback answer choices {% lang_reminder language_choice %}:</span>
+                </div>
+              {% endfor %}
+              <div id="feedback-choices-container-create" class="bordered-editable-area feedback-choice-container">
+                <div id="feedback-choice-list-div-create" class="feedback-choice-list-create" data-question-id="create">
                 </div>
               </div>
-              <button type="button" id="add-new-feedback-choice" class="add-item" title="Adds a new answer choice for the feedback question"
-                      onclick="add_feedback_choice('new-feedback-choice', 'choice_field', 'new-feedback-choice-container', 'new-feedback-choices', false);">Add choice</button>
-              <button type="button" id="create-feedback-button" class="add-item" title="Creates a new feedback question"
-                      onclick="create_new_feedback_question_entry();" disabled>Create feedback</button>
             </div>
+            <button type="button" id="add-new-feedback-choice" class="add-item" title="Adds a new answer choice for the feedback question"
+                    onclick="add_feedback_choice('create');">Add choice</button>
+            <button type="button" id="create-feedback-button" class="add-item" title="Creates a new feedback question"
+                    onclick="create_new_feedback_question_entry('{{ DEFAULT_LANGUAGE }}');" disabled>Create feedback</button>
           </div>
           <div class="popup-buttons">
             <input type="submit" class="popup-button" value="Save changes &amp; Confirm selection" name="save_and_confirm">
-            <button type="button" class="popup-button" onclick="close_popup($('#edit-feedback-popup'))">Cancel</button>
+            <button type="button" class="popup-button" onclick="close_feedback_popup();">Cancel</button>
           </div>
         </div>
+        <div id="feedback-error" class="admin-error"></div>
       </div>
     </form>
 
@@ -182,27 +190,26 @@
                 </colgroup>
                 <thead>
                   <tr>
-                    <th>Question</th>
+                    <th>
+                      {% for language_choice, _ in AVAILABLE_LANGUAGES %}
+                        <span class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}">
+                          Question {% lang_reminder language_choice %}
+                        </span>
+                      {% endfor %}
+                    </th>
                     <th>Type</th>
                   </tr>
                 </thead>
                 <tbody>
                   {% for question in exercise.feedback_questions.all %}
-                    <tr data-question-id="{{ question.id }}">
-                      <td class="question-cell">{{ question }}</td>
-                      <td class="type-cell">{{ question.get_human_readable_type }}</td>
-                      <td class="delete-cell">
-                        <button type="button" class="delete-button" title="Removes the feedback question from the list of feedback questions belonging to this exercise"
-                                onclick="delete_table_row(this);">x</button>
-                      </td>
-                    </tr>
+                    {% feedback_question_tr question %}
                   {% endfor %}
                 </tbody>
               </table>
             </div>
           </div>
           <button type="button" class="add-item" title="Add and edit feedback questions"
-                  onclick="show_edit_feedback_questions_popup(event, '{% url 'exercise_admin:get_feedback_questions' %}');">Add and Edit</button>
+                  onclick="show_edit_feedback_questions_popup(event, '{% url 'exercise_admin:get_feedback_questions' %}', '{{ DEFAULT_LANGUAGE }}');">Add and Edit</button>
           <span id="edit-feedback-popup-error" class="admin-error"></span>
 
           <div class="separator"></div>
@@ -268,6 +275,30 @@
     <div style="display: none;">
       {% block templates %}
       {% endblock %}
+      <div style="display: none;">
+        <table>
+          {% feedback_question_tr True True %}
+        </table>
+      </div>
+      <div style="display: none;">
+        <table>
+          {% feedback_question_popup_tr True %}
+        </table>
+      </div>
+      <div style="display: none;">
+        <table>
+          {% feedback_question_popup_tr False %}
+        </table>
+      </div>
+      <div style="display: none;">
+        {% feedback_choice_div True %}
+      </div>
+      <div style="display: none;">
+        {% feedback_choice_div False %}
+      </div>
+      <div style="display: none;">
+        {% feedback_edit_div %}
+      </div>
       <div style="display: none;">
         <table>
           {% hint_tr True True %}

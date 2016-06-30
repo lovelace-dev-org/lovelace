@@ -12,7 +12,11 @@
     {% endfor %}
   </td>
   <td class="instance-cell">
-    {{ instance_file_link.include_file.instance.name }}
+    {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
+      <div class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %} inline-block-elem" data-language-code="{{ language_choice }}">
+        {% get_translated_field instance_file_link.include_file.instance "name" language_choice %}
+      </div>
+    {% endfor %}
   </td>
   <td class="purpose-cell">
     {{ instance_file_link.file_settings.get_purpose_display }}

@@ -1,0 +1,47 @@
+{% load i18n %}
+{% load exercise_admin_extras %}
+{% get_default_language as DEFAULT_LANGUAGE %}
+{% get_current_language as CURRENT_LANGUAGE %}
+{% get_available_languages as AVAILABLE_LANGUAGES %}
+{% get_language_info_list for AVAILABLE_LANGUAGES as LANGUAGES_VERBOSE %}
+<div id="edit-feedback-div-{{ question.id }}" class="edit-feedback-div">
+  <div class="feedback-question-title-div">
+    {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
+      <div class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %} inline-block-elem" data-language-code="{{ language_choice }}">
+        <h2 id="edit-feedback-question-{{ question.id }}-{{ language_choice }}" class="edit-feedback-popup-title">
+          Edit feedback question: {% get_translated_field question "question" language_choice %}
+        </h2>
+        {% lang_reminder language_choice %}
+      </div>
+    {% endfor %}
+  </div>
+  <div>
+    {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
+      <div class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %} inline-block-elem" data-language-code="{{ language_choice }}">
+        <label class="feedback-question-input-label" for="feedback-question-{{ question.id }}-{{ language_choice }}">
+          <span class="feedback-question-span">Feedback question {% lang_reminder language_choice %}:</span>
+          <input type="text" id="feedback-question-{{ question.id }}-{{ language_choice }}" class="feedback-question-input"
+                 name="question_field_[{{ question.id }}]_{{ language_choice }}" maxlength="100" value="{%  get_translated_field question "question" language_choice %}">
+        </label>
+      </div>
+    {% endfor %}
+    <div id="feedback-question-error-{{ question.id }}" class="admin-error"></div>
+  </div>
+  <div>
+    <input type="text" id="feedback-type-{{ question.id }}" name="type_field_[{{ question.id }}]" value="{{ question.type }}" hidden readonly>
+  </div>
+  <div id="feedback-choices-div-{{ question.id }}" class="feedback-choices">
+    {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
+      <div class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}">
+        <span class="feedback-choice-container-span">Feedback answer choices {% lang_reminder language_choice %}:</span>
+      </div>
+    {% endfor %}
+    <div id="feedback-choices-container-{{ question.id }}" class="bordered-editable-area feedback-choice-container">
+      <div id="feedback-choice-list-div-{{ question.id }}" class="feedback-choice-list" data-question-id="{{ question.id }}">
+      </div>
+    </div>
+  </div>
+  <button type="button" id="add-feedback-choice-{{ question.id }}" class="add-item" title="Adds a new answer choice for the feedback question"
+          onclick="add_feedback_choice('{{ question.id }}');">Add choice</button>
+  <button type="button" class="add-item" title="Closes edit feedback menu" onclick="close_edit_feedback_menu();">Done editing</button>
+</div>
