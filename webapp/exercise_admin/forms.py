@@ -156,7 +156,8 @@ class CreateInstanceIncludeFilesForm(forms.Form):
             self._clean_duplicates_of_field(field_name, field_val, "default_name", cleaned_data, lang_list)
             self._clean_duplicates_of_field(field_name, field_val, "name", cleaned_data, lang_list)
 
-            chmod_pattern = "^((r|-)(w|-)(x|-)){3}$"
+            # TODO: Replace with a parser that just compares character at current index to '-' or ('rwx')[current index % 3]
+            chmod_pattern = r"^((r|-)(w|-)(x|-)){3}$"
             if field_name.startswith("instance_file_chmod") and not re.match(chmod_pattern, field_val):
                 error_msg = "File access mode was of incorrect format! Give 9 character, each either r, w, x or -!"
                 error_code = "invalid_chmod"
@@ -215,7 +216,7 @@ class CreateFileUploadExerciseForm(forms.Form):
     exercise_allowed_filenames = forms.CharField(required=False)
     version_comment = forms.CharField(required=False, strip=True)
 
-    def __init__(self, tag_fields, order_hierarchy, data, *args, **kwargs):
+    def __init__(self, tag_fields, hint_ids, order_hierarchy, data, *args, **kwargs):
         super(CreateFileUploadExerciseForm, self).__init__(data, *args, **kwargs)
 
         # Translated fields
@@ -238,6 +239,19 @@ class CreateFileUploadExerciseForm(forms.Form):
         for tag_field in tag_fields:
             self.fields[tag_field] = forms.CharField(min_length=1, max_length=28, strip=True)
 
+        # Hints
+
+        for hint_id in hint_ids:
+            for lang_code, _ in lang_list:
+                if lang_code == default_lang:
+                    self.fields['hint_content_[{}]_{}'.format(hint_id, lang_code)] = forms.CharField(required=True, strip=True)
+                else:
+                    self.fields['hint_content_[{}]_{}'.format(hint_id, lang_code)] = forms.CharField(required=False, strip=True)
+                    
+            self.fields['hint_tries_[{}]'.format(hint_id)] = forms.IntegerField(min_value=0, required=True)
+
+        # Tests, stages and commands
+        
         test_template = "test_{}_{}"
         test_ids = order_hierarchy["stages_of_tests"].keys()
         

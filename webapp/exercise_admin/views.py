@@ -30,8 +30,8 @@ from .utils import get_default_lang, get_lang_list
 def index(request):
     return HttpResponseNotFound()
 
-def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_test_ids,
-                              old_stage_ids, old_cmd_ids, new_stages, new_commands):
+def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_hint_ids, old_test_ids,
+                              old_stage_ids, old_cmd_ids, new_stages, new_commands, hint_ids):
     deletions = []
     # Collect the content page data
     #e_name = form_data['exercise_name']
@@ -55,7 +55,6 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_tes
         e_question = form_data['exercise_question_{}'.format(lang_code)]
         setattr(exercise, 'question_{}'.format(lang_code), e_question)
 
-    # TODO: Hints
     # TODO: Included files
 
     #exercise.name = e_name
@@ -68,6 +67,29 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_tes
     exercise.ask_collaborators = e_ask_collaborators
     exercise.allowed_filenames = e_allowed_filenames
     exercise.save()
+
+    # Hints
+
+    for removed_hint_id in sorted(old_hint_ids - {int(hint_id) for hint_id in hint_ids if not hint_id.startswith('new-')}):
+        removed_hint = Hint.objects.get(id=removed_hint_id)
+        deletion = removed_hint.delete()
+        deletions.append(deletion)
+        
+    edited_hints = {}
+    for hint_id in hint_ids:
+        if hint_id.startswith('new-'):
+            current_hint = Hint()
+            current_hint.exercise = exercise
+        else:
+            current_hint = Hint.objects.get(id=int(hint_id))
+
+        for lang_code, _ in lang_list:
+            h_content = form_data['hint_content_[{}]_{}'.format(hint_id, lang_code)]
+            setattr(current_hint, 'hint_{}'.format(lang_code), h_content)
+
+        current_hint.tries_to_unlock = form_data['hint_tries_[{}]'.format(hint_id)]
+        current_hint.save()
+        edited_hints[hint_id] = current_hint        
     
     # Collect the test data
     test_ids = sorted(order_hierarchy_json["stages_of_tests"].keys())
@@ -278,6 +300,7 @@ def file_upload_exercise(request, exercise_id=None, action=None):
             for i, command_id in enumerate(command_list):
                 new_commands[command_id] = Command(stage=stage_id, ordinal_number=i+1)
 
+        old_hint_ids = set(hints.values_list('id', flat=True))
         old_test_ids = set(tests.values_list('id', flat=True))
         if stages is not None:
             old_stage_ids = set(stages.values_list('id', flat=True))
@@ -291,8 +314,9 @@ def file_upload_exercise(request, exercise_id=None, action=None):
         data = request.POST.copy()
         data.pop("csrfmiddlewaretoken")
         tag_fields = [k for k in data.keys() if k.startswith("exercise_tag")]
+        hint_ids = [k.split('_')[2][1:-1] for k in data.keys() if k.startswith('hint_tries')]
 
-        form = CreateFileUploadExerciseForm(tag_fields, order_hierarchy_json, data)
+        form = CreateFileUploadExerciseForm(tag_fields, hint_ids, order_hierarchy_json, data)
 
         if form.is_valid():
             print("DEBUG: the form is valid")
@@ -302,8 +326,8 @@ def file_upload_exercise(request, exercise_id=None, action=None):
             try:
                 with transaction.atomic(), reversion.create_revision():
                     save_file_upload_exercise(exercise, cleaned_data, order_hierarchy_json,
-                                              old_test_ids, old_stage_ids, old_cmd_ids,
-                                              new_stages, new_commands)
+                                              old_hint_ids, old_test_ids, old_stage_ids,
+                                              old_cmd_ids, new_stages, new_commands, hint_ids)
                     reversion.set_user(request.user)
                     reversion.set_comment(cleaned_data['version_comment'])
             except IntegrityError as e:
