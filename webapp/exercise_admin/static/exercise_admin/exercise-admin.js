@@ -49,6 +49,8 @@ $(document).ready(function() {
             return false;
         }
     });
+    // Display the required files with the currently selected translation
+    refresh_required_files_all();
 });
 
 function submit_main_form(e) {
@@ -149,7 +151,8 @@ function change_current_language(e) {
     translated_elements.removeClass('translated-visible');
     translated_elements.filter('[data-language-code=' + new_code + ']').addClass('translated-visible');
 
-    // TODO: Swap the visible input elements into the corresponding language coded ones
+    // Display the required files with the currently selected translation
+    refresh_required_files_all();
 }
 
 
@@ -814,6 +817,7 @@ function confirm_included_file_popup(file_id) {
     }
     update_edit_included_file_popup_titles(popup);
     close_popup(popup);
+    refresh_required_files_all();
 }
 
 function cancel_included_file_popup(popup, file_id) {
@@ -827,7 +831,7 @@ function cancel_included_file_popup(popup, file_id) {
 include_file_enum = 1;
 
 function create_included_file_popup(default_lang) {
-    var id = "new-" + include_file_enum;
+    var id = "new" + include_file_enum;
     var popup = $("#edit-included-file-SAMPLE_ID").clone().attr('id', 'edit-included-file-' + id);
     popup.html(function(index, html) {
         return html.replace(/SAMPLE_ID/g, id);
@@ -845,6 +849,20 @@ function create_included_file_popup(default_lang) {
     });
     include_file_enum++;
 }
+
+function remove_included_file(button) {
+    // Remove the dangling popup
+    let popup_id_split = $(button).parent().parent().attr('id').split('-');
+    let popup_id = popup_id_split[popup_id_split.length - 1];
+    $('#edit-included-file-' + popup_id).remove();
+
+    // Delete the table row
+    delete_table_row(button);
+
+    // Refresh the included file options
+    refresh_required_files_all();
+}
+
 
 
 /**************************************
@@ -1245,6 +1263,7 @@ function close_popup_and_add_instance_files(instance_files, default_lang) {
         }
     });
     close_popup($("#edit-instance-files-popup"));
+    refresh_required_files_all();
 }
 
 function edit_instance_file_form_success(data, text_status, jqxhr_obj, default_lang) {
@@ -1408,6 +1427,77 @@ function command_name_changed(e) {
     $('#command-' + split_id[1]).html(new_name);
 }
 
+function refresh_required_files_all() {
+    // For each test ...
+    $('#test-tabs > ol > li').each(function(x) {
+        var current_href = $(this).children('a').attr('href');
+        if (current_href !== undefined) {
+            var current_id = current_href.split('-')[2];
+            refresh_required_files(current_id);
+        }
+    });
+}
+
+function refresh_required_files(test_id) {
+    //let lang = 'en'; // TODO: Proper language support
+    let lang = $('#language-info-code').text();
+
+    let ins_optgrp = $('#test-' + test_id + '-required_files > optgroup.filepicker-instance-options');
+    let new_ins_options = [];
+    $('#instance-files-table tbody > tr').map(function() {
+        let current_row = $(this);
+        let if_id = current_row.attr('data-file-id');
+        let if_name = current_row.find('td.name-cell > span[data-language-code="' + lang + '"]').html();
+
+        let existing_if = ins_optgrp.find('option[value="if_' + if_id + '"]');
+        if (existing_if.length === 0) {
+            // Add this file option if it doesn't already exist
+            let new_opt = $('<option value="if_' + if_id + '">' + if_name + '</option>');
+            ins_optgrp.append(new_opt);
+        } else if (existing_if.length === 1) {
+            // Update the name
+            existing_if.html(if_name);
+        }
+
+        new_ins_options.push('if_' + if_id);
+    });
+    ins_optgrp.children('option').each(function() {
+        let current = $(this);
+        if (new_ins_options.indexOf(current.val()) === -1) {
+            current.remove();
+        }
+    });
+    
+    let exe_optgrp = $('#test-' + test_id + '-required_files > optgroup.filepicker-exercise-options');
+    let new_exe_options = [];
+    $('#include-file-popups > div.popup').map(function() {
+        let current_div = $(this);
+        let ef_id = current_div.attr('data-file-id');
+        let ef_name = current_div.find('#included-file-name-' + ef_id + '-' + lang).val();
+
+        // Add this file if it doesn't already exist
+        let existing_ef = exe_optgrp.find('option[value="ef_' + ef_id + '"]');
+        if (existing_ef.length === 0) {
+            let new_opt = $('<option value="ef_' + ef_id + '">' + ef_name + '</option>');
+            exe_optgrp.append(new_opt);
+        } else if (existing_ef.length === 1) {
+            // Update the name
+            existing_ef.html(ef_name);
+        }
+
+        new_exe_options.push('ef_' + ef_id);
+    });
+    console.log(new_exe_options);
+    exe_optgrp.children('option').each(function() {
+        let current = $(this);
+        console.log(current.val());
+        console.log(new_exe_options.indexOf(current.val()));
+        if (new_exe_options.indexOf(current.val()) === -1) {
+            current.remove();
+        }
+    });
+}
+
 // TODO: Generalise the add_(test|stage|command)? Use the latter functions in the former
 var test_enum = 1;
 
@@ -1438,6 +1528,7 @@ function add_test() {
     });
     $("#test-tabs").append(new_test_tab);
 
+    refresh_required_files(new_id);
     $("#test-tabs").tabs('refresh');
     $("#stages-sortable-" + new_id).sortable();
     $("#stages-sortable-" + new_id).disableSelection();
