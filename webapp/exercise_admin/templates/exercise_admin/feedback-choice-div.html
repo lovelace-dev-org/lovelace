@@ -10,7 +10,7 @@
       <label class="feedback-choice-label" for="feedback-choice-input-{{ choice.id }}-{{ language_choice }}">
         <span class="feedback-choice-span">Choice {{ choice.n }}:</span>
         <input type="text" id="feedback-choice-input-{{ choice.id }}-{{ language_choice }}" class="feedback-choice" value="{% get_translated_field choice "answer" language_choice %}"
-               name="feedback_choice_[{{ question.id }}]_({{ choice.id }})-{{ language_choice }}" data-language-code="{{ language_choice }}">
+               name="feedback_choice_[{{ question.id }}]_{{ language_choice }}_({{ choice.id }})" data-language-code="{{ language_choice }}">
       </label>
     </div>
   {% endfor%}

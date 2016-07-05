@@ -2,6 +2,7 @@ import collections
 import json
 import string
 import random
+import re
 
 from django.http import HttpResponse, HttpResponseNotFound, HttpResponseForbidden,\
     HttpResponseNotAllowed, JsonResponse
@@ -365,6 +366,50 @@ def get_feedback_questions(request):
         "result": result
     })
 
+# HACK: Workaround for lack of deferred constraints on unique_together
+def create_placeholder_value(placeholder_values, existing_values):
+    PLACEHOLDER_VAL_LEN = 10
+    PLACEHOLDER_VAL_CHARS = string.ascii_uppercase + string.digits
+    while True:
+        placeholder_val = "".join(random.choice(PLACEHOLDER_VAL_CHARS) for _ in range(PLACEHOLDER_VAL_LEN))
+        if placeholder_val not in placeholder_values and placeholder_val not in existing_values:
+            return placeholder_val
+
+def edit_choices(q_obj, choice_val_dict, lang_list):
+    existing_choices = q_obj.get_choices()
+    existing_choice_count= len(existing_choices)
+    edited_choices = {}
+    answers = {lang_code : [getattr(choice, "answer_{}".format(lang_code))
+                            for choice in existing_choices]
+               for lang_code, _ in lang_list}
+    
+    for i, (choice_id, choice_values) in enumerate(sorted(choice_val_dict.items())):
+        if existing_choice_count <= i:
+            # New choices
+            choice_obj = MultipleChoiceFeedbackAnswer(question=q_obj)
+            for lang_code, _ in lang_list:
+                if lang_code in choice_values:
+                    answer = choice_values[lang_code]
+                    setattr(choice_obj, "answer_{}".format(lang_code), answer)
+                    choice_obj.save()
+        else:
+            # Existing choices
+            choice_obj = existing_choices[i]
+            for lang_code, _ in lang_list:
+                if lang_code in choice_values:
+                    answer = choice_values[lang_code]
+                else:
+                    continue
+                if getattr(choice_obj, "answer_{}".format(lang_code)) != answer:
+                    placeholder_answer = create_placeholder_value(edited_choices.keys(), answers[lang_code])
+                    setattr(choice_obj, "answer_{}".format(lang_code), placeholder_answer)
+                    edited_choices[placeholder_answer] = (answer, choice_obj, lang_code)
+                    choice_obj.save()
+                        
+    for answer, choice_obj, lang_code in edited_choices.values():
+        setattr(choice_obj, "answer_{}".format(lang_code), answer)
+        choice_obj.save()
+        
 def edit_feedback_questions(request):
     if request.method != "POST":
         return HttpResponseNotAllowed(["POST"])
@@ -381,57 +426,97 @@ def edit_feedback_questions(request):
 
     data = request.POST.dict()
     data.pop("csrfmiddlewaretoken")
+    print(data)
 
     feedback_questions = ContentFeedbackQuestion.objects.all()
-    form = CreateFeedbackQuestionsForm(feedback_questions, data)
-    
+    new_question_str = data.pop("new_questions")
+    if new_question_str:
+        new_question_ids = new_question_str.split(",")
+    else:
+        new_question_ids = []
+    linked_question_str = data.pop("linked_questions")
+    if linked_question_str:
+        linked_question_ids = linked_question_str.split(",")
+    else:
+        linked_question_ids = []
+
+    form = CreateFeedbackQuestionsForm(feedback_questions, new_question_ids, data)
+        
     if form.is_valid():
-        # Edit existing feedback questions if necessary
         cleaned_data = form.cleaned_data
+        lang_list = get_lang_list()
+        default_lang = get_default_lang()
+
+        edited_questions = {}
+        question_values = {lang_code : [getattr(question, "question_{}".format(lang_code))
+                                  for question in feedback_questions]
+                     for lang_code, _ in lang_list}
+
+        # Edit existing feedback questions if necessary
         for q_obj in feedback_questions:
             q_obj = q_obj.get_type_object()
-            question = cleaned_data["question_field_[{}]".format(q_obj.id)]
-            choice_prefix = "choice_field_[{}]".format(q_obj.id)
-            choice_keys = sorted([k for (k, v) in cleaned_data.items() if k.startswith(choice_prefix) and v])
+            choice_val_dict = {}
+            for lang_code, _ in lang_list:
+                question = cleaned_data["feedback_question_[{id}]_{lang}".format(id=q_obj.id, lang=lang_code)]
+                choice_prefix = "feedback_choice_[{id}]_{lang}".format(id=q_obj.id, lang=lang_code)
+                for field, val in cleaned_data.items():
+                    if field.startswith(choice_prefix) and val:
+                        choice_id = re.findall("\((.*?)\)", field)[0]
+                        if choice_id in choice_val_dict:
+                            choice_val_dict[choice_id][lang_code] = val
+                        else:
+                            choice_val_dict[choice_id] = {lang_code : val}
 
-            if q_obj.question != question:
-                q_obj.question = question
+                if q_obj.question != question:
+                    placeholder_name = create_placeholder_value(edited_questions.keys(), question_values[lang_code])
+                    setattr(q_obj, "question_{}".format(lang_code), placeholder_name)
+                    edited_questions[placeholder_name] = (question, q_obj, lang_code)
+                    q_obj.save()
+
+            for question, q_obj, lang_code in edited_questions.values():
+                setattr(q_obj, "question_{}".format(lang_code), question)
                 q_obj.save()
+                    
             if q_obj.question_type == "MULTIPLE_CHOICE_FEEDBACK":
-                existing_choices = q_obj.get_choices()
-                existing_choices_len = len(existing_choices)
-                for i, k in enumerate(choice_keys):
-                    choice = cleaned_data[k]
-                    if existing_choices_len <= i:
-                        MultipleChoiceFeedbackAnswer(question=q_obj, answer=choice).save()
-                    elif choice not in [choice.answer for choice in existing_choices]:
-                        choice_obj = existing_choices[i]
-                        choice_obj.answer = choice
-                        choice_obj.save()
+                edit_choices(q_obj, choice_val_dict, lang_list)
                         
         # Add new feedback questions
-        new_feedback_count = len([k for k in cleaned_data if k.startswith("question_field_[new")])
-        for i in range(new_feedback_count):
-            id_new = "new-{}".format(i + 1)
-            question = cleaned_data["question_field_[{}]".format(id_new)]
-            question_type = cleaned_data["type_field_[{}]".format(id_new)]
-            choice_prefix = "choice_field_[{}]".format(id_new)
-            choices = [v for (k, v) in cleaned_data.items() if k.startswith(choice_prefix) and v]
+        new_feedbacks = [field for field in cleaned_data.keys()
+                         if field.startswith("feedback_question_[new") and default_lang in field]
+        for question_field in new_feedbacks:
+            question_id = re.findall("\[(.*?)\]", question_field)[0]
+            choices = {}
+            question_type = cleaned_data["feedback_type_[{}]".format(question_id)]
             
             if question_type == "THUMB_FEEDBACK":
-                q_obj = ThumbFeedbackQuestion(question=question)
-                q_obj.save()
+                q_obj = ThumbFeedbackQuestion()
             elif question_type == "STAR_FEEDBACK":
-                q_obj = StarFeedbackQuestion(question=question)
-                q_obj.save()
+                q_obj = StarFeedbackQuestion()
             elif question_type == "MULTIPLE_CHOICE_FEEDBACK":
-                q_obj = MultipleChoiceFeedbackQuestion(question=question)
-                q_obj.save()
-                for choice in choices:
-                    MultipleChoiceFeedbackAnswer(question=q_obj, answer=choice).save()
+                q_obj = MultipleChoiceFeedbackQuestion()
+                choice_fields = [field for field in cleaned_data.keys()
+                                 if field.startswith("feedback_choice_[new") and default_lang in field]
+                for choice_field in choice_fields:
+                    choice_id = re.findall("\((.*?)\)", choice_field)[0]
+                    choices[choice_id] = MultipleChoiceFeedbackAnswer()
             elif question_type == "TEXTFIELD_FEEDBACK":
                 q_obj = TextfieldFeedbackQuestion(question=question)
-                q_obj.save()
+            else:
+                continue
+            
+            for lang_code, _ in lang_list:
+                question = cleaned_data["feedback_question_[{id}]_{lang}".format(id=question_id, lang=lang_code)]
+                setattr(q_obj, "question_{}".format(lang_code), question)
+                for choice_id, choice_obj in choices.items():
+                    choice_field = "feedback_choice_[{q_id}]_{lang}_({c_id})".format(q_id=question_id, lang=lang_code, c_id=choice_id)
+                    if choice_field in cleaned_data:
+                        answer = cleaned_data[choice_field]
+                        setattr(choice_obj, "answer_{}".format(lang_code), answer)
+            q_obj.save()
+            for choice_obj in choices.values():
+                choice_obj.question = q_obj
+                choice_obj.save()
+            
     else:
         return JsonResponse({
             "error" : form.errors
@@ -466,7 +551,8 @@ def get_instance_files(request, exercise_id):
             link_json = {}
         instance_file_json = {
             "id" : instance_file.id,
-            "instances" : {},
+            "instance_id" : instance_file.instance.id,
+            "instance_names" : {},
             "default_names" : {},
             "descriptions" : {},
             "urls" : {},
@@ -483,7 +569,7 @@ def get_instance_files(request, exercise_id):
             except ValueError:
                 url = ""
             instance_file_json["urls"][lang_code] = url
-            instance_file_json["instances"][lang_code] = getattr(instance_file.instance, name_attr) or ""
+            instance_file_json["instance_names"][lang_code] = getattr(instance_file.instance, name_attr) or ""
             instance_file_json["default_names"][lang_code] = getattr(instance_file, default_name_attr) or ""
             instance_file_json["descriptions"][lang_code] = getattr(instance_file, description_attr) or ""
             if link is not None:
@@ -494,15 +580,6 @@ def get_instance_files(request, exercise_id):
     return JsonResponse({
         "result": sorted(result, key=lambda f: f["default_names"][default_lang])
     })
-
-# HACK: Workaround for lack of deferred constraints on unique_together
-def create_placeholder_name(placeholder_names, existing_names):
-    PLACEHOLDER_NAME_LEN = 10
-    PLACEHOLDER_NAME_CHARS = string.ascii_uppercase + string.digits
-    while True:
-        placeholder_name = "".join(random.choice(PLACEHOLDER_NAME_CHARS) for _ in range(PLACEHOLDER_NAME_LEN))
-        if placeholder_name not in placeholder_names and placeholder_name not in existing_names:
-            return placeholder_name
 
 def edit_instance_files(request, exercise_id):
     if request.method != "POST":
@@ -540,6 +617,7 @@ def edit_instance_files(request, exercise_id):
     if form.is_valid():
         cleaned_data = form.cleaned_data
         lang_list = get_lang_list()
+        default_lang = get_default_lang()
         
         edited_default_names = {}
         default_names = {lang_code : [getattr(instance_file, "default_name_{}".format(lang_code))
@@ -554,7 +632,7 @@ def edit_instance_files(request, exercise_id):
                 default_name = cleaned_data.get("instance_file_default_name_[{id}]_{lang}".format(id=instance_file.id, lang=lang_code))
                 description = cleaned_data.get("instance_file_description_[{id}]_{lang}".format(id=instance_file.id, lang=lang_code))
 
-                if instance_file.default_name != default_name:
+                if getattr(instance_file, "default_name_{}".format(lang_code)) != default_name:
                     placeholder_name = create_placeholder_name(edited_default_names.keys(), default_names[lang_code])
                     setattr(instance_file, "default_name_{}".format(lang_code), placeholder_name)
                     edited_default_names[placeholder_name] = (default_name, instance_file, lang_code)
@@ -562,11 +640,11 @@ def edit_instance_files(request, exercise_id):
                 if fileinfo is not None:
                     setattr(instance_file, "fileinfo_{}".format(lang_code), fileinfo)
                     file_changed = True
-                if description is not None and instance_file.description != description:
+                if description is not None and getattr(instance_file, "description_{}".format(lang_code)) != description:
                     setattr(instance_file, "description_{}".format(lang_code), description)
                     file_changed = True
 
-            instance_id = cleaned_data.get("instance_file_instance_[{id}]".format(id=instance_file.id))
+            instance_id = cleaned_data.get("instance_file_instance_[{id}]_{lang}".format(id=instance_file.id, lang=default_lang))
             if str(instance_file.instance.id) != instance_id:
                 instance_file.instance_id = instance_id
                 file_changed = True
@@ -596,8 +674,8 @@ def edit_instance_files(request, exercise_id):
                 
                 for lang_code, _ in lang_list:
                     name = cleaned_data.get("instance_file_name_[{id}]_{lang}".format(id=file_id, lang=lang_code))
-                    if instance_file_link.file_settings.name != name:
-                        placeholder_name = create_placeholder_name(edited_names.keys(), names[lang_code])
+                    if getattr(instance_file_link.file_settings, "name_{}".format(lang_code)) != name:
+                        placeholder_name = create_placeholder_value(edited_names.keys(), names[lang_code])
                         setattr(instance_file_link.file_settings, "name_{}".format(lang_code), placeholder_name)
                         edited_names[placeholder_name] = (name, instance_file_link, lang_code)
                         file_changed = True

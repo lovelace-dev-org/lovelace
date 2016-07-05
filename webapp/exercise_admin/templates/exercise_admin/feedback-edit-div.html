@@ -21,14 +21,14 @@
         <label class="feedback-question-input-label" for="feedback-question-{{ question.id }}-{{ language_choice }}">
           <span class="feedback-question-span">Feedback question {% lang_reminder language_choice %}:</span>
           <input type="text" id="feedback-question-{{ question.id }}-{{ language_choice }}" class="feedback-question-input"
-                 name="question_field_[{{ question.id }}]_{{ language_choice }}" maxlength="100" value="{%  get_translated_field question "question" language_choice %}">
+                 name="feedback_question_[{{ question.id }}]_{{ language_choice }}" maxlength="100" value="{%  get_translated_field question "question" language_choice %}">
         </label>
       </div>
     {% endfor %}
     <div id="feedback-question-error-{{ question.id }}" class="admin-error"></div>
   </div>
   <div>
-    <input type="text" id="feedback-type-{{ question.id }}" name="type_field_[{{ question.id }}]" value="{{ question.type }}" hidden readonly>
+    <input type="text" id="feedback-type-{{ question.id }}" name="feedback_type_[{{ question.id }}]" value="{{ question.type }}" hidden readonly>
   </div>
   <div id="feedback-choices-div-{{ question.id }}" class="feedback-choices">
     {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}

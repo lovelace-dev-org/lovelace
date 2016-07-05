@@ -595,13 +595,35 @@ function submit_edit_feedback_form(e) {
 
     console.log("Method: " + form_type + ", URL: " + form_url);
 
+    var new_question_ids = [];
+    var linked_question_ids = [];
+    $("#edit-feedback-popup tbody input[type=checkbox].feedback-question-checkbox").each(function() {
+        var id = $(this).attr("data-question-id");
+        if (id.startsWith("new")) {
+            new_question_ids.push(id);
+        }
+        if ($(this).prop("checked")) {
+            linked_question_ids.push(id);
+        }
+    });
+    
     var form_data = new FormData(form[0]);
 
+    var create_keys = []
     console.log("Serialized form data:");
     for (var [key, value] of form_data.entries()) { 
         console.log(key, value);
+        if (key.indexOf("create") > -1) {
+            create_keys.push(key);
+        }
     }
-    
+
+    form_data.append("new_questions", new_question_ids.join(","));
+    form_data.append("linked_questions", linked_question_ids.join(","));
+    for (var key of create_keys) {
+        form_data.delete(key);
+    }
+
     console.log("Submitting the form...");
     $.ajax({
         type: form_type,
@@ -701,12 +723,9 @@ function update_included_file_ok_button_state(file_id, default_lang) {
     }
 }
 
-function show_edit_included_file_popup(file_id, purpose, chown, chgrp, default_lang) {
+function show_edit_included_file_popup(file_id, default_lang) {
     var popup = $("#edit-included-file-" + file_id);
     update_included_file_ok_button_state(file_id, default_lang);
-    $("#included-file-purpose-" + file_id).val(purpose);
-    $("#included-file-chown-" + file_id).val(chown);
-    $("#included-file-chgrp-" + file_id).val(chgrp);
     $("#file-chmod-error-" + file_id).hide();
     popup.css({"opacity": "1", "pointer-events": "auto"});
 }
@@ -974,13 +993,13 @@ function add_instance_file_popup_tr(file_id, default_names, instances, urls, che
     $("#add-instance-file-table > tbody").append(tr);
 }
 
-function add_existing_instance_file_to_popup(file_id, instances, default_names, descriptions, urls, link, checked) {
+function add_existing_instance_file_to_popup(file_id, instance_id, instance_names, default_names, descriptions, urls, link, checked) {
     if (checked) {
         add_checked_instance_file_link_div(file_id, default_names, link);
-        add_instance_file_popup_tr(file_id, default_names, instances, urls, true, link);
+        add_instance_file_popup_tr(file_id, default_names, instance_names, urls, true, link);
     } else {
         add_unchecked_instance_file_link_div(file_id, default_names);
-        add_instance_file_popup_tr(file_id, default_names, instances, urls, false, link);
+        add_instance_file_popup_tr(file_id, default_names, instance_names, urls, false, link);
     }
     
     var edit_div = $("#edit-instance-file-SAMPLE_ID").clone().attr('id', 'edit-instance-file-' + file_id);
@@ -994,10 +1013,9 @@ function add_existing_instance_file_to_popup(file_id, instances, default_names, 
         });
         return html;
     });
-    $.each(instances, function(key, val) {
+    $.each(instance_names, function(key, val) {
         var select = edit_div.find("#instance-file-instance-" + file_id + "-" + key);
-        var instance_option = select.find("option:contains('" + val + "')");
-        instance_option.prop("selected", true)
+        select.val(instance_id);
     });
     $("#edit-instance-file-divs").append(edit_div);
 }
@@ -1138,10 +1156,10 @@ function show_edit_instance_files_popup(event, url) {
         $.each(result, function() {
             var file_id = "" + this.id;
             if ($.inArray(file_id, file_ids) > -1) {
-                add_existing_instance_file_to_popup(file_id, this.instances, this.default_names, this.descriptions,
+                add_existing_instance_file_to_popup(file_id, this.instance_id, this.instance_names, this.default_names, this.descriptions,
                                                     this.urls, this.link, true);
             } else {
-                add_existing_instance_file_to_popup(file_id, this.instances, this.default_names, this.descriptions,
+                add_existing_instance_file_to_popup(file_id, this.instance_id, this.instance_names, this.default_names, this.descriptions,
                                                     this.urls, this.link, false);
             }
         });
@@ -1166,7 +1184,7 @@ function close_popup_and_add_instance_files(instance_files, default_lang) {
         $.each(instance_files, function(index, db_file) {
             if (db_file.default_names[default_lang] === default_name) {
                 db_id = "" + db_file.id;
-                db_instances = db_file.instances;
+                db_instances = db_file.instance_names;
                 db_purpose_display = db_file.link.purpose_display;
                 db_names = db_file.link.names;
                 db_descriptions = db_file.descriptions;
@@ -1194,7 +1212,10 @@ function close_popup_and_add_instance_files(instance_files, default_lang) {
                 var span = $(this);
                 span.text(db_names[span.attr("data-language-code")]);
             });
-            tr.find("td.instance-cell").text(db_instance);
+            tr.find("td.instance-cell span").each(function() {
+                var span = $(this);
+                span.text(db_instances[span.attr("data-language-code")]);
+            });
             tr.find("td.purpose-cell").text(db_purpose_display);
             tr.find("td.description-cell span").each(function() {
                 var span = $(this);

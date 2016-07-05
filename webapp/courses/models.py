@@ -17,6 +17,7 @@ from django.core.urlresolvers import reverse
 from django.utils import translation
 from django.utils.text import slugify as slugify
 from django.contrib.postgres.fields import ArrayField
+import django.conf
 
 from reversion import revisions as reversion
 
@@ -401,7 +402,8 @@ class ContentPage(models.Model):
     def get_url_name(self):
         """Creates a URL and HTML5 ID field friendly version of the name."""
         # TODO: Ensure uniqueness!
-        return slugify(self.name, allow_unicode=True)
+        default_lang = django.conf.settings.LANGUAGE_CODE
+        return slugify(getattr(self, "name_{}".format(default_lang)), allow_unicode=True)
 
     def get_type_object(self):
         # this seems to lose the revision info?

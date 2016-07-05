@@ -113,8 +113,8 @@
             <input type="submit" class="popup-button" value="Save changes &amp; Confirm selection" name="save_and_confirm">
             <button type="button" class="popup-button" onclick="close_feedback_popup();">Cancel</button>
           </div>
+          <div id="feedback-error" class="admin-error"></div>
         </div>
-        <div id="feedback-error" class="admin-error"></div>
       </div>
     </form>
 
@@ -218,7 +218,7 @@
           <ul class="exercise-tags">
             {% for ex_tag in exercise.tags %}
               <li class="exercise-tag">
-                <input type="text" id="exercise-tag-{{ forloop.counter0|add:"1" }}" class="exercise-tag-input" name="exercise_tag_{{ forloop.counter0|add:"1" }}"
+                <input type="text" id="exercise-tag-{{ forloop.counter }}" class="exercise-tag-input" name="exercise_tag_{{ forloop.counter }}"
                        value="{{ ex_tag }}" maxlength="32" onfocus="highlight_parent_li(this);" oninput="change_tag_width(this);">
                 <button type="button" class="delete-button" onclick="remove_tag(this);">x</button>
               </li>

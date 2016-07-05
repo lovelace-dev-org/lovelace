@@ -79,18 +79,18 @@
     <div>
       <label class="file-label" for="included-file-purpose-{{ include_file.id }}">
         <span class="file-purpose-span">Used as:</span>
-        <select id="included-file-purpose-{{ include_file.id }}" class="file-purpose-select" name="included_file_purpose_[{{ include_file.id }}]" form="main-form">
+        <select id="included-file-purpose-{{ include_file.id }}" class="file-purpose-select" name="included_file_purpose_[{{ include_file.id }}]">
           <optgroup label="Files written into the test directory for reading">
-            <option value="INPUT">Input file</option>
+            <option value="INPUT"{% if include_file.file_settings.purpose == "INPUT" %} selected="selected"{% endif %}>Input file</option>
           </optgroup>
           <optgroup label="Files the program is expected to generate">
-            <option value="OUTPUT">Expected output file</option>
+            <option value="OUTPUT"{% if include_file.file_settings.purpose == "OUTPUT" %} selected="selected"{% endif %}>Expected output file</option>
           </optgroup>
           <optgroup label="Executable files">
-            <option value="REFERENCE">Reference implementation</option>
-            <option value="INPUTGEN">Input generator</option>
-            <option value="WRAPPER">Wrapper for uploaded code</option>
-            <option value="TEST">Unit test</option>
+            <option value="REFERENCE"{% if include_file.file_settings.purpose == "REFERENCE" %} selected="selected"{% endif %}>Reference implementation</option>
+            <option value="INPUTGEN"{% if include_file.file_settings.purpose == "INPUTGEN" %} selected="selected"{% endif %}>Input generator</option>
+            <option value="WRAPPER"{% if include_file.file_settings.purpose == "WRAPPER" %} selected="selected"{% endif %}>Wrapper for uploaded code</option>
+            <option value="TEST"{% if include_file.file_settings.purpose == "TEST" %} selected="selected"{% endif %}>Unit test</option>
           </optgroup>
         </select>
       </label>
@@ -98,18 +98,18 @@
     <div>
       <label class="file-label" for="included-file-chown-{{ include_file.id }}">
         <span class="file-chown-span">File user ownership:</span>
-        <select id="included-file-chown-{{ include_file.id }}" class="file-chown-select" name="included_file_chown_[{{ include_file.id }}]" form="main-form">
-          <option value="OWNED">Owned by the tested program</option>
-          <option value="NOT_OWNED">Not owned by the tested program</option>
+        <select id="included-file-chown-{{ include_file.id }}" class="file-chown-select" name="included_file_chown_[{{ include_file.id }}]">
+          <option value="OWNED"{% if include_file.file_settings.chown_settings == "OWNED" %} selected="selected"{% endif %}>Owned by the tested program</option>
+          <option value="NOT_OWNED"{% if include_file.file_settings.chown_settings == "NOT_OWNED" %} selected="selected"{% endif %}>Not owned by the tested program</option>
         </select>
       </label>
     </div>
     <div>
       <label class="file-label" for="included-file-chgrp-{{ include_file.id }}">
         <span class="file-chgrp-span">File group ownership:</span>
-        <select id="included-file-chgrp-{{ include_file.id }}" class="file-chgrp-select" name="included_file_chgrp_[{{ include_file.id }}]" form="main-form">
-          <option value="OWNED">Owned by the tested program</option>
-          <option value="NOT_OWNED">Not owned by the tested program</option>
+        <select id="included-file-chgrp-{{ include_file.id }}" class="file-chgrp-select" name="included_file_chgrp_[{{ include_file.id }}]">
+          <option value="OWNED"{% if include_file.file_settings.chgrp_settings == "OWNED" %} selected="selected"{% endif %}>Owned by the tested program</option>
+          <option value="NOT_OWNED"{% if include_file.file_settings.chgrp_settings == "NOT_OWNED" %} selected="selected"{% endif %}>Not owned by the tested program</option>
         </select>
       </label>
     </div>
@@ -125,7 +125,6 @@
     <div class="popup-buttons">
       <button type="button" id="included-file-ok-button-{{ include_file.id }}" class="popup-button" onclick="confirm_included_file_popup('{{ include_file.id }}')"
               data-button-mode="{% if create %}add{% else %}done{% endif %}">Ok</button>
-      <button type="button" class="popup-button" onclick="cancel_included_file_popup($('#edit-included-file-{{ include_file.id }}'), '{{ include_file.id }}')">Cancel</button>
     </div>
   </div>
 </div>
