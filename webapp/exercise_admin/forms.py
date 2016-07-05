@@ -216,8 +216,8 @@ class CreateFileUploadExerciseForm(forms.Form):
     exercise_allowed_filenames = forms.CharField(required=False)
     version_comment = forms.CharField(required=False, strip=True)
 
-    def __init__(self, tag_fields, hint_ids, order_hierarchy, data, *args, **kwargs):
-        super(CreateFileUploadExerciseForm, self).__init__(data, *args, **kwargs)
+    def __init__(self, tag_fields, hint_ids, ef_ids, order_hierarchy, data, files, *args, **kwargs):
+        super(CreateFileUploadExerciseForm, self).__init__(data, files, *args, **kwargs)
 
         # Translated fields
         # TODO: How to get these dynamically?
@@ -250,6 +250,32 @@ class CreateFileUploadExerciseForm(forms.Form):
                     
             self.fields['hint_tries_[{}]'.format(hint_id)] = forms.IntegerField(min_value=0, required=True)
 
+        # Exercise included files
+
+        # TODO: Rework the names to the form exercise_file_{id}_{subitem}_{lang}
+        ef_template = 'included_file_{}_[{}]'
+
+        for ef_id in ef_ids:
+            for lang_code, _ in lang_list:
+                if lang_code == default_lang:
+                    self.fields[ef_template.format('default_name', ef_id) + '_{}'.format(lang_code)] = forms.CharField(required=True)
+                    self.fields[ef_template.format('description', ef_id) + '_{}'.format(lang_code)] = forms.CharField(required=False)
+                    self.fields[ef_template.format('name', ef_id) + '_{}'.format(lang_code)] = forms.CharField(required=True)
+                    if ef_id.startswith('new'):
+                        self.fields['included_file_[{}]_{}'.format(ef_id, lang_code)] = forms.FileField(required=True)
+                    else:
+                        self.fields['included_file_[{}]_{}'.format(ef_id, lang_code)] = forms.FileField(required=False)
+                else:
+                    self.fields[ef_template.format('default_name', ef_id) + '_{}'.format(lang_code)] = forms.CharField(required=False)
+                    self.fields[ef_template.format('description', ef_id) + '_{}'.format(lang_code)] = forms.CharField(required=False)
+                    self.fields[ef_template.format('name', ef_id) + '_{}'.format(lang_code)] = forms.CharField(required=False)
+                    self.fields['included_file_[{}]_{}'.format(ef_id, lang_code)] = forms.FileField(required=False)
+
+            self.fields[ef_template.format('chgrp', ef_id)] = forms.CharField(required=True)
+            self.fields[ef_template.format('chmod', ef_id)] = forms.CharField(required=True)
+            self.fields[ef_template.format('chown', ef_id)] = forms.CharField(required=True)
+            self.fields[ef_template.format('purpose', ef_id)] = forms.CharField(required=True)
+        
         # Tests, stages and commands
         
         test_template = "test_{}_{}"
