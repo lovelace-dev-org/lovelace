@@ -679,13 +679,9 @@ function update_included_file_ok_button_state(file_id, default_lang) {
     }
 }
 
-function show_edit_included_file_popup(file_id, purpose, chown, chgrp, default_lang) {
+function show_edit_included_file_popup(file_id, default_lang) {
     var popup = $("#edit-included-file-" + file_id);
     update_included_file_ok_button_state(file_id, default_lang);
-    $("#included-file-purpose-" + file_id).val(purpose);
-    $("#included-file-chown-" + file_id).val(chown);
-    $("#included-file-chgrp-" + file_id).val(chgrp);
-    $("#file-chmod-error-" + file_id).hide();
     popup.css({"opacity": "1", "pointer-events": "auto"});
 }
 
