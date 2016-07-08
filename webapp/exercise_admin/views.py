@@ -129,6 +129,8 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_hin
         current_ef.save()
         
         edited_exercise_files[ef_id] = current_ef
+
+    # TODO: Instance include file links
             
     # Collect the test data
     test_ids = sorted(order_hierarchy_json["stages_of_tests"].keys())
@@ -356,9 +358,10 @@ def file_upload_exercise(request, exercise_id=None, action=None):
         tag_fields = [k for k in data.keys() if k.startswith("exercise_tag")]
         hint_ids = [k.split('_')[2][1:-1] for k in data.keys() if k.startswith('hint_tries')]
         # TODO: included_file-fields to included_file_file-fields
-        ef_ids = [k.split('_')[3][1:-1] for k in data.keys() if k.startswith('included_file_name')]
+        ef_ids = [k.split('_')[3][1:-1] for k in data.keys() if k.startswith('included_file_name')] # does this have to be set()?
+        if_ids = set([k.split('_')[3][1:-1] for k in data.keys() if k.startswith('instance_file_purpose')])
 
-        form = CreateFileUploadExerciseForm(tag_fields, hint_ids, ef_ids, order_hierarchy_json, data, files)
+        form = CreateFileUploadExerciseForm(tag_fields, hint_ids, ef_ids, if_ids, order_hierarchy_json, data, files)
 
         if form.is_valid():
             print("DEBUG: the form is valid")

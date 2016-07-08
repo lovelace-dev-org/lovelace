@@ -116,21 +116,7 @@ class CreateInstanceIncludeFilesForm(forms.Form):
 
     #TODO: Move to main form!
     def _add_link_fields(self, file_id, default_lang, lang_list):
-        for lang_code, _ in lang_list:
-            name_field = "instance_file_name_[{id}]_{lang}".format(id=file_id, lang=lang_code)
-            if lang_code == default_lang:
-                self.fields[name_field] = forms.CharField(max_length=255, required=True, strip=True)
-            else:
-                self.fields[name_field] = forms.CharField(max_length=255, required=False, strip=True)
-
-        purpose_field = "instance_file_purpose_[{id}]".format(id=file_id)
-        chown_field = "instance_file_chown_[{id}]".format(id=file_id)
-        chgrp_field = "instance_file_chgrp_[{id}]".format(id=file_id)
-        chmod_field = "instance_file_chmod_[{id}]".format(id=file_id)
-        self.fields[purpose_field] = forms.ChoiceField(choices=c_models.IncludeFileSettings.FILE_PURPOSE_CHOICES, required=False)
-        self.fields[chown_field] = forms.ChoiceField(choices=c_models.IncludeFileSettings.FILE_OWNERSHIP_CHOICES, required=False)
-        self.fields[chgrp_field] = forms.ChoiceField(choices=c_models.IncludeFileSettings.FILE_OWNERSHIP_CHOICES, required=False)
-        self.fields[chmod_field] = forms.CharField(max_length=10, required=False, strip=True) 
+        return
 
     def _clean_duplicates_of_field(self, field_name, field_val, model_field, cleaned_data, lang_list):
         field_prefix = "instance_file_{}".format(model_field)
@@ -217,7 +203,7 @@ class CreateFileUploadExerciseForm(forms.Form):
     exercise_allowed_filenames = forms.CharField(required=False)
     version_comment = forms.CharField(required=False, strip=True)
 
-    def __init__(self, tag_fields, hint_ids, ef_ids, order_hierarchy, data, files, *args, **kwargs):
+    def __init__(self, tag_fields, hint_ids, ef_ids, if_ids, order_hierarchy, data, files, *args, **kwargs):
         super(CreateFileUploadExerciseForm, self).__init__(data, files, *args, **kwargs)
 
         # Translated fields
@@ -276,6 +262,25 @@ class CreateFileUploadExerciseForm(forms.Form):
             self.fields[ef_template.format('chmod', ef_id)] = forms.CharField(required=True)
             self.fields[ef_template.format('chown', ef_id)] = forms.CharField(required=True)
             self.fields[ef_template.format('purpose', ef_id)] = forms.CharField(required=True)
+
+        # Instance included files (moved from instance file form)
+
+        for if_id in if_ids:
+            for lang_code, _ in lang_list:
+                name_field = "instance_file_name_[{id}]_{lang}".format(id=if_id, lang=lang_code)
+                if lang_code == default_lang:
+                    self.fields[name_field] = forms.CharField(max_length=255, required=True, strip=True)
+                else:
+                    self.fields[name_field] = forms.CharField(max_length=255, required=False, strip=True)
+
+            purpose_field = "instance_file_purpose_[{id}]".format(id=if_id)
+            chown_field = "instance_file_chown_[{id}]".format(id=if_id)
+            chgrp_field = "instance_file_chgrp_[{id}]".format(id=if_id)
+            chmod_field = "instance_file_chmod_[{id}]".format(id=if_id)
+            self.fields[purpose_field] = forms.ChoiceField(choices=c_models.IncludeFileSettings.FILE_PURPOSE_CHOICES, required=False)
+            self.fields[chown_field] = forms.ChoiceField(choices=c_models.IncludeFileSettings.FILE_OWNERSHIP_CHOICES, required=False)
+            self.fields[chgrp_field] = forms.ChoiceField(choices=c_models.IncludeFileSettings.FILE_OWNERSHIP_CHOICES, required=False)
+            self.fields[chmod_field] = forms.CharField(max_length=10, required=False, strip=True) 
         
         # Tests, stages and commands
         

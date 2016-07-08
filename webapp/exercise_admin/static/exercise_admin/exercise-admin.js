@@ -94,6 +94,9 @@ function submit_main_form(e) {
     }).get().join(',');
     console.log("Question ids: ");
     console.log(question_ids);
+
+    // Get the linked instance files
+    
     
     var form_type = form.attr('method');
     var form_url = form.attr('action');
@@ -899,7 +902,8 @@ function add_checked_instance_file_link_div(file_id, default_names, link) {
     var names = link.names;
     var link_div = $("#link-instance-file-" + sample_id).clone().attr('id', 'link-instance-file-' + file_id);
     link_div.html(function(index, html) {
-        html = html.replace(new RegExp(sample_id, 'g'), file_id).replace(/SAMPLE_CHMOD_SETTINGS/g, chmod);
+        html = html.replace(new RegExp(sample_id, 'g'), file_id).replace(/SAMPLE_CHMOD_SETTINGS/g, chmod)
+            .replace(/SAMPLE_FORM/g, 'main-form');
         $.each(names, function(key, val) {
             html = html.replace(new RegExp("SAMPLE_NAME_" + key, 'g'), val);
         });
@@ -973,7 +977,7 @@ function add_existing_instance_file_to_popup(file_id, instance, default_names, d
     
     var edit_div = $("#edit-instance-file-SAMPLE_ID").clone().attr('id', 'edit-instance-file-' + file_id);
     edit_div.html(function(index, html) {
-        html = html.replace(/SAMPLE_ID/g, file_id);
+        html = html.replace(/SAMPLE_ID/g, file_id).replace(/SAMPLE_FORM/g, 'main-form');
         $.each(default_names, function(key, val) {
             html = html.replace(new RegExp("SAMPLE_DEFAULT_NAME_" + key, 'g'), val);
         });

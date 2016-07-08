@@ -30,7 +30,8 @@
       <div class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}">
         <label class="file-label" for="instance-file-name-{{ instance_file.id }}-{{ language_choice }}">
           <span class="file-name-span">File name during test {% lang_reminder language_choice %}: </span>
-          <input type="text" id="instance-file-name-{{ instance_file.id }}-{{ language_choice }}" class="file-name-input" maxlength="225"
+          <input type="text" id="instance-file-name-{{ instance_file.id }}-{{ language_choice }}"
+                 class="file-name-input" maxlength="225" form="SAMPLE_FORM"
                  value="{% get_translated_field instance_file_link "name" language_choice %}" oninput="update_link_edit_button_state('{{ instance_file.id }}', '{{ DEFAULT_LANGUAGE }}');"
                  name="instance_file_name_[{{ instance_file.id }}]_{{ language_choice }}" data-language-code="{{ language_choice }}">
         </label>
@@ -41,7 +42,8 @@
   <div>
     <label class="file-label" for="instance-file-purpose-{{ instance_file.id }}">
       <span class="file-purpose-span">Used as:</span>
-      <select id="instance-file-purpose-{{ instance_file.id }}" class="file-purpose-select" name="instance_file_purpose_[{{ instance_file.id }}]">
+      <select id="instance-file-purpose-{{ instance_file.id }}" class="file-purpose-select"
+              name="instance_file_purpose_[{{ instance_file.id }}]" form="SAMPLE_FORM">
         <optgroup label="Files written into the test directory for reading">
           <option value="INPUT">Input file</option>
         </optgroup>
@@ -60,7 +62,8 @@
   <div>
     <label class="file-label" for="instace-file-chown-{{ instance_file.id }}">
       <span class="file-chown-span">File user ownership:</span>
-      <select id="instance-file-chown-{{ instance_file.id }}" class="file-chown-select" name="instance_file_chown_[{{ instance_file.id }}]">
+      <select id="instance-file-chown-{{ instance_file.id }}" class="file-chown-select"
+              name="instance_file_chown_[{{ instance_file.id }}]" form="SAMPLE_FORM">
         <option value="OWNED">Owned by the tested program</option>
         <option value="NOT_OWNED">Not owned by the tested program</option>
       </select>
@@ -69,7 +72,8 @@
   <div>
     <label class="file-label" for="instance-file-chgrp-{{ instance_file.id }}">
       <span class="file-chgrp-span">File group ownership:</span>
-      <select id="instance-file-chgrp-{{ instance_file.id }}" class="file-chgrp-select" name="instance_file_chgrp_[{{ instance_file.id }}]">
+      <select id="instance-file-chgrp-{{ instance_file.id }}" class="file-chgrp-select"
+              name="instance_file_chgrp_[{{ instance_file.id }}]" form="SAMPLE_FORM">
         <option value="OWNED">Owned by the tested program</option>
         <option value="NOT_OWNED">Not owned by the tested program</option>
       </select>
@@ -78,8 +82,10 @@
   <div>
     <label class="file-label" for="instance-file-chmod-{{ instance_file.id }}">
       <span class="file-chmod-span">File access mode:</span>
-      <input type="text" id="instance-file-chmod-{{ instance_file.id }}" class="file-chmod-input" maxlength="9" value="{{ instance_file_link.chmod_settings }}"
-             name="instance_file_chmod_[{{ instance_file.id }}]" oninput="update_link_edit_button_state('{{ instance_file.id }}', '{{ DEFAULT_LANGUAGE }}');">
+      <input type="text" id="instance-file-chmod-{{ instance_file.id }}" class="file-chmod-input" maxlength="9"
+             value="{{ instance_file_link.chmod_settings }}" form="SAMPLE_FORM"
+             name="instance_file_chmod_[{{ instance_file.id }}]"
+             oninput="update_link_edit_button_state('{{ instance_file.id }}', '{{ DEFAULT_LANGUAGE }}');">
     </label>
     <div id="instance-file-chmod-error-{{ instance_file.id }}" class="admin-error"></div>
   </div>
