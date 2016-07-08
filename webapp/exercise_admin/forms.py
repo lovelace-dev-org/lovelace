@@ -114,6 +114,7 @@ class CreateInstanceIncludeFilesForm(forms.Form):
         instance_choices = [(instance.id, instance.name) for instance in c_models.CourseInstance.objects.all()]
         self.fields[instance_field] = forms.ChoiceField(choices=instance_choices, required=True)
 
+    #TODO: Move to main form!
     def _add_link_fields(self, file_id, default_lang, lang_list):
         for lang_code, _ in lang_list:
             name_field = "instance_file_name_[{id}]_{lang}".format(id=file_id, lang=lang_code)
