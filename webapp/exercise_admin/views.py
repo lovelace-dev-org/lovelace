@@ -30,8 +30,8 @@ from .utils import get_default_lang, get_lang_list
 def index(request):
     return HttpResponseNotFound()
 
-def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_test_ids,
-                              old_stage_ids, old_cmd_ids, new_stages, new_commands):
+def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_hint_ids, old_ef_ids, old_test_ids,
+                              old_stage_ids, old_cmd_ids, new_stages, new_commands, hint_ids, ef_ids):
     deletions = []
     # Collect the content page data
     #e_name = form_data['exercise_name']
@@ -55,6 +55,8 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_tes
         e_question = form_data['exercise_question_{}'.format(lang_code)]
         setattr(exercise, 'question_{}'.format(lang_code), e_question)
 
+    # TODO: Included files
+
     #exercise.name = e_name
     #exercise.content = e_content
     exercise.default_points = e_default_points
@@ -65,7 +67,69 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_tes
     exercise.ask_collaborators = e_ask_collaborators
     exercise.allowed_filenames = e_allowed_filenames
     exercise.save()
-    
+
+    # Hints
+
+    for removed_hint_id in sorted(old_hint_ids - {int(hint_id) for hint_id in hint_ids if not hint_id.startswith('new-')}):
+        removed_hint = Hint.objects.get(id=removed_hint_id)
+        deletion = removed_hint.delete()
+        deletions.append(deletion)
+        
+    edited_hints = {}
+    for hint_id in hint_ids:
+        if hint_id.startswith('new-'):
+            current_hint = Hint()
+            current_hint.exercise = exercise
+        else:
+            current_hint = Hint.objects.get(id=int(hint_id))
+
+        for lang_code, _ in lang_list:
+            h_content = form_data['hint_content_[{}]_{}'.format(hint_id, lang_code)]
+            setattr(current_hint, 'hint_{}'.format(lang_code), h_content)
+
+        current_hint.tries_to_unlock = form_data['hint_tries_[{}]'.format(hint_id)]
+        current_hint.save()
+        edited_hints[hint_id] = current_hint
+
+    # Exercise included files
+
+    for removed_ef_id in sorted(old_ef_ids - {int(ef_id) for ef_id in ef_ids if not ef_id.startswith('new')}):
+        removed_ef = FileExerciseTestIncludeFile.objects.filter(id=removed_ef_id)
+        deletion = removed_ef.delete()
+        deletions.append(deletion)
+
+    edited_exercise_files = {}
+    for ef_id in ef_ids:
+        if ef_id.startswith('new'):
+            current_ef = FileExerciseTestIncludeFile()
+            current_ef.exercise = exercise
+            ef_settings = IncludeFileSettings()
+            current_ef.file_settings = ef_settings
+        else:
+            current_ef = FileExerciseTestIncludeFile.objects.get(id=int(ef_id))
+
+        for lang_code, _ in lang_list:
+            ef_default_name = form_data['included_file_default_name_[{}]_{}'.format(ef_id, lang_code)]
+            ef_description = form_data['included_file_description_[{}]_{}'.format(ef_id, lang_code)]
+            ef_name = form_data['included_file_name_[{}]_{}'.format(ef_id, lang_code)]
+            ef_fileinfo = form_data['included_file_[{}]_{}'.format(ef_id, lang_code)]
+            setattr(current_ef, 'default_name_{}'.format(lang_code), ef_default_name)
+            setattr(current_ef, 'description_{}'.format(lang_code), ef_description)
+            setattr(current_ef.file_settings, 'name_{}'.format(lang_code), ef_name)
+            if ef_fileinfo is not None:
+                setattr(current_ef, 'fileinfo_{}'.format(lang_code), ef_fileinfo)
+
+        current_ef.file_settings.purpose = form_data['included_file_purpose_[{}]'.format(ef_id)]
+        current_ef.file_settings.chown_settings = form_data['included_file_chown_[{}]'.format(ef_id)]
+        current_ef.file_settings.chgrp_settings = form_data['included_file_chgrp_[{}]'.format(ef_id)]
+        current_ef.file_settings.chmod_settings = form_data['included_file_chmod_[{}]'.format(ef_id)]
+
+        current_ef.file_settings.save()
+        current_ef.file_settings = current_ef.file_settings # Otherwise 'file_settings_id' doesn't exist :P
+        current_ef.save()
+        
+        edited_exercise_files[ef_id] = current_ef
+            
     # Collect the test data
     test_ids = sorted(order_hierarchy_json["stages_of_tests"].keys())
     
@@ -83,7 +147,7 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_tes
 
         # TODO: Handle the actual files first to get proper ids for new ones!
         required_files = [i.split('_') for i in form_data['test_{}_required_files'.format(test_id)]]
-        t_required_ef = [int(i[1]) for i in required_files if i[0] == 'ef']
+        t_required_ef = [edited_exercise_files[i[1]] for i in required_files if i[0] == 'ef']
         t_required_if = [int(i[1]) for i in required_files if i[0] == 'if']
                 
         # Check for new tests
@@ -96,6 +160,7 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_tes
 
         # Set the test values
         current_test.name = t_name
+        current_test.save() # Needed for the required files
         current_test.required_files = t_required_ef
         current_test.required_instance_files = t_required_if
 
@@ -251,7 +316,7 @@ def file_upload_exercise(request, exercise_id=None, action=None):
     # TODO: Save the additions, removals and editions sent by the user 
     if request.method == "POST":
         form_contents = request.POST
-        uploaded_files = request.FILES
+        files = request.FILES
 
         #print(form_contents)
         print("POST key-value pairs:")
@@ -263,7 +328,7 @@ def file_upload_exercise(request, exercise_id=None, action=None):
             else:
                 print("{}: '{}'".format(k, v))
 
-        print(uploaded_files)
+        print(files)
         new_stages = {}
         for test_id, stage_list in order_hierarchy_json['stages_of_tests'].items():
             for i, stage_id in enumerate(stage_list):
@@ -274,6 +339,8 @@ def file_upload_exercise(request, exercise_id=None, action=None):
             for i, command_id in enumerate(command_list):
                 new_commands[command_id] = Command(stage=stage_id, ordinal_number=i+1)
 
+        old_hint_ids = set(hints.values_list('id', flat=True))
+        old_ef_ids = set(include_files.values_list('id', flat=True))
         old_test_ids = set(tests.values_list('id', flat=True))
         if stages is not None:
             old_stage_ids = set(stages.values_list('id', flat=True))
@@ -287,8 +354,11 @@ def file_upload_exercise(request, exercise_id=None, action=None):
         data = request.POST.copy()
         data.pop("csrfmiddlewaretoken")
         tag_fields = [k for k in data.keys() if k.startswith("exercise_tag")]
+        hint_ids = [k.split('_')[2][1:-1] for k in data.keys() if k.startswith('hint_tries')]
+        # TODO: included_file-fields to included_file_file-fields
+        ef_ids = [k.split('_')[3][1:-1] for k in data.keys() if k.startswith('included_file_name')]
 
-        form = CreateFileUploadExerciseForm(tag_fields, order_hierarchy_json, data)
+        form = CreateFileUploadExerciseForm(tag_fields, hint_ids, ef_ids, order_hierarchy_json, data, files)
 
         if form.is_valid():
             print("DEBUG: the form is valid")
@@ -298,14 +368,18 @@ def file_upload_exercise(request, exercise_id=None, action=None):
             try:
                 with transaction.atomic(), reversion.create_revision():
                     save_file_upload_exercise(exercise, cleaned_data, order_hierarchy_json,
-                                              old_test_ids, old_stage_ids, old_cmd_ids,
-                                              new_stages, new_commands)
+                                              old_hint_ids, old_ef_ids, old_test_ids, old_stage_ids,
+                                              old_cmd_ids, new_stages, new_commands, hint_ids, ef_ids)
                     reversion.set_user(request.user)
                     reversion.set_comment(cleaned_data['version_comment'])
             except IntegrityError as e:
                 # TODO: Do something useful
                 raise e
-            
+
+            # TODO ########################################################
+            # TODO: Send the proper ids and replace the 'new...'-starting ids in javascript
+            # TODO: to prevent addition of _even newer_ files, tests, stages, commands etc.!
+            # TODO ########################################################
             return JsonResponse({
                 "yeah!": "everything went ok",
             })
