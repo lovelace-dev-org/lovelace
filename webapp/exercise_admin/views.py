@@ -647,6 +647,7 @@ def edit_instance_files(request, exercise_id):
         already_linked_file_ids = []
 
         # Remove or edit existing instance file links
+        # TODO: Move to main form!
         for instance_file_link in instance_file_links:
             file_id = str(instance_file_link.include_file.id)
             if file_id not in linked_file_ids:
@@ -707,6 +708,7 @@ def edit_instance_files(request, exercise_id):
             new_instance_files[file_id] = instance_file.id
 
         # Create new instance file links
+        # TODO: Move to main form!
         new_linked_file_ids = [file_id for file_id in linked_file_ids if file_id not in already_linked_file_ids]
         for file_id in new_linked_file_ids:
             file_settings = IncludeFileSettings()

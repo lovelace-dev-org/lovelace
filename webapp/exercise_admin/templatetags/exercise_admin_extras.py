@@ -109,6 +109,9 @@ def include_file_popup(include_file, create=False, jstemplate=False):
     lang_list = get_lang_list()
 
     class TemplateFileSettings:
+        purpose = "INPUT"
+        chown_settings = "OWNED"
+        chgrp_settings = "OWNED"
         chmod_settings = "rw-rw-rw-"
         
         def __init__(self):
