@@ -30,8 +30,8 @@ from .utils import get_default_lang, get_lang_list
 def index(request):
     return HttpResponseNotFound()
 
-def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_hint_ids, old_ef_ids, old_test_ids,
-                              old_stage_ids, old_cmd_ids, new_stages, new_commands, hint_ids, ef_ids):
+def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_hint_ids, old_ef_ids, old_if_ids, old_test_ids,
+                              old_stage_ids, old_cmd_ids, new_stages, new_commands, hint_ids, ef_ids, if_ids):
     deletions = []
     # Collect the content page data
     #e_name = form_data['exercise_name']
@@ -131,6 +131,40 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_hin
         edited_exercise_files[ef_id] = current_ef
 
     # TODO: Instance include file links
+    
+    for removed_if_link_id in sorted(old_if_ids - {int(if_id) for if_id in if_ids if not if_id.startswith('new')}):
+        #removed_if_link = InstanceIncludeFileToExerciseLink.objects.f
+        removed_if_link = InstanceIncludeFileToExerciseLink.objects.get(include_file=removed_if_link_id, exercise=exercise)
+        deletion = removed_if_link.delete()
+        deletions.append(deletion)
+
+    edited_instance_file_links = {}
+    for if_id in if_ids:
+        #if if_id.startswith('new'):
+            #current_if_link =
+        if if_id not in old_if_ids:
+            current_if_link = InstanceIncludeFileToExerciseLink()
+            current_if_link.exercise = exercise
+            current_if_link.instance_file = InstanceIncludeFile.objects.get(id=if_id)
+            if_settings = IncludeFileSettings()
+            current_if_link.file_settings = if_settings
+        else:
+            current_if_link = InstanceIncludeFiletoExerciseLink.objects.get(include_file=if_id, exercise=exercise)
+
+        for lang_code, _ in lang_list:
+            if_name = form_data['instance_file_name_[{id}]_{lang}'.format(if_id, lang_code)]
+            setattr(current_if_link.file_settings, 'name_{}'.format(lang_code), if_name)
+
+        current_if_link.file_settings.purpose = form_data['instance_file_purpose_[{id}]'.format(if_id)]
+        current_if_link.file_settings.chown_settings = form_data['instance_file_chown_[{id}]'.format(if_id)]
+        current_if_link.file_settings.chgrp_settings = form_data['instance_file_chgrp_[{id}]'.format(if_id)]
+        current_if_link.file_settings.chmod_settings = form_data['instance_file_chmod_[{id}]'.format(if_id)]
+
+        current_if_link.file_settings.save()
+        current_if_link.file_settings = current_if_link.file_settings
+        current_if_link.save()
+
+        edited_instance_file_links[if_id] = current_if_link
             
     # Collect the test data
     test_ids = sorted(order_hierarchy_json["stages_of_tests"].keys())
@@ -343,6 +377,7 @@ def file_upload_exercise(request, exercise_id=None, action=None):
 
         old_hint_ids = set(hints.values_list('id', flat=True))
         old_ef_ids = set(include_files.values_list('id', flat=True))
+        old_if_ids = set(instance_file_links.values_list('include_file', flat=True))
         old_test_ids = set(tests.values_list('id', flat=True))
         if stages is not None:
             old_stage_ids = set(stages.values_list('id', flat=True))
@@ -371,8 +406,8 @@ def file_upload_exercise(request, exercise_id=None, action=None):
             try:
                 with transaction.atomic(), reversion.create_revision():
                     save_file_upload_exercise(exercise, cleaned_data, order_hierarchy_json,
-                                              old_hint_ids, old_ef_ids, old_test_ids, old_stage_ids,
-                                              old_cmd_ids, new_stages, new_commands, hint_ids, ef_ids)
+                                              old_hint_ids, old_ef_ids, old_if_ids, old_test_ids, old_stage_ids,
+                                              old_cmd_ids, new_stages, new_commands, hint_ids, ef_ids, if_ids)
                     reversion.set_user(request.user)
                     reversion.set_comment(cleaned_data['version_comment'])
             except IntegrityError as e:
@@ -651,6 +686,7 @@ def edit_instance_files(request, exercise_id):
 
         # Remove or edit existing instance file links
         # TODO: Move to main form!
+        """
         for instance_file_link in instance_file_links:
             file_id = str(instance_file_link.include_file.id)
             if file_id not in linked_file_ids:
@@ -687,7 +723,7 @@ def edit_instance_files(request, exercise_id):
 
             if file_changed:
                 instance_file_link.file_settings.save()
-
+        """
         # Replace placeholder names with actual names
         for name, instance_file_link, lang_code in edited_names.values():
             setattr(instance_file_link.file_settings, "name_{}".format(lang_code), name)
@@ -712,6 +748,7 @@ def edit_instance_files(request, exercise_id):
 
         # Create new instance file links
         # TODO: Move to main form!
+        """
         new_linked_file_ids = [file_id for file_id in linked_file_ids if file_id not in already_linked_file_ids]
         for file_id in new_linked_file_ids:
             file_settings = IncludeFileSettings()
@@ -734,6 +771,7 @@ def edit_instance_files(request, exercise_id):
             instance_file_link.include_file_id = int(file_id)
             instance_file_link.file_settings = file_settings
             instance_file_link.save()
+        """
 
     else:
         return JsonResponse({
