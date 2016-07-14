@@ -145,20 +145,20 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_hin
         if if_id not in old_if_ids:
             current_if_link = InstanceIncludeFileToExerciseLink()
             current_if_link.exercise = exercise
-            current_if_link.instance_file = InstanceIncludeFile.objects.get(id=if_id)
+            current_if_link.include_file = InstanceIncludeFile.objects.get(id=if_id)
             if_settings = IncludeFileSettings()
             current_if_link.file_settings = if_settings
         else:
             current_if_link = InstanceIncludeFiletoExerciseLink.objects.get(include_file=if_id, exercise=exercise)
 
         for lang_code, _ in lang_list:
-            if_name = form_data['instance_file_name_[{id}]_{lang}'.format(if_id, lang_code)]
+            if_name = form_data['instance_file_name_[{}]_{}'.format(if_id, lang_code)]
             setattr(current_if_link.file_settings, 'name_{}'.format(lang_code), if_name)
 
-        current_if_link.file_settings.purpose = form_data['instance_file_purpose_[{id}]'.format(if_id)]
-        current_if_link.file_settings.chown_settings = form_data['instance_file_chown_[{id}]'.format(if_id)]
-        current_if_link.file_settings.chgrp_settings = form_data['instance_file_chgrp_[{id}]'.format(if_id)]
-        current_if_link.file_settings.chmod_settings = form_data['instance_file_chmod_[{id}]'.format(if_id)]
+        current_if_link.file_settings.purpose = form_data['instance_file_purpose_[{}]'.format(if_id)]
+        current_if_link.file_settings.chown_settings = form_data['instance_file_chown_[{}]'.format(if_id)]
+        current_if_link.file_settings.chgrp_settings = form_data['instance_file_chgrp_[{}]'.format(if_id)]
+        current_if_link.file_settings.chmod_settings = form_data['instance_file_chmod_[{}]'.format(if_id)]
 
         current_if_link.file_settings.save()
         current_if_link.file_settings = current_if_link.file_settings
