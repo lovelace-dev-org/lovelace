@@ -134,7 +134,7 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_hin
     
     for removed_if_link_id in sorted(old_if_ids - {int(if_id) for if_id in if_ids if not if_id.startswith('new')}):
         #removed_if_link = InstanceIncludeFileToExerciseLink.objects.f
-        removed_if_link = InstanceIncludeFileToExerciseLink.objects.get(include_file=removed_if_link_id, exercise=exercise)
+        removed_if_link = InstanceIncludeFileToExerciseLink.objects.filter(include_file=removed_if_link_id, exercise=exercise)
         deletion = removed_if_link.delete()
         deletions.append(deletion)
 
