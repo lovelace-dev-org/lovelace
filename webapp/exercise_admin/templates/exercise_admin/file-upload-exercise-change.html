@@ -94,7 +94,8 @@
 {% block exercise-type-extra %}
   <div class="form-row">
     <label for="exercise-allowed_filenames">Accepted file names: </label>
-    <input type="text" id="exercise-allowed_filenames" name="exercise_allowed_filenames" value="{{ exercise.allowed_filenames|join:"," }}">
+    <input type="text" id="exercise-allowed_filenames" name="exercise_allowed_filenames" class="general-text-input"
+           value="{{ exercise.allowed_filenames|join:"," }}">
   </div>
 {% endblock %}
 

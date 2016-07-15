@@ -123,7 +123,9 @@
             <div class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}">
               <div class="form-row">
                 <label for="exercise-name-{{ language_choice }}">Name {% lang_reminder language_choice %}: </label>
-                <input type="text" id="exercise-name-{{ language_choice }}" name="exercise_name_{{ language_choice }}" value="{% get_translated_field exercise "name" language_choice %}" onInput="exercise_name_changed(event);" autofocus>
+                <input type="text" id="exercise-name-{{ language_choice }}" name="exercise_name_{{ language_choice }}"
+                       value="{% get_translated_field exercise "name" language_choice %}" class="general-text-input"
+                       onInput="exercise_name_changed(event);" autofocus>
               </div>
             </div>
           {% endfor %}
@@ -153,7 +155,8 @@
 
           <div class="form-row">
             <label for="exercise-points">Default points:</label>
-            <input type="number" step="1" id="exercise-points" name="exercise_default_points" value="{{ exercise.default_points }}">
+            <input type="number" step="1" id="exercise-points" name="exercise_default_points"
+                   value="{{ exercise.default_points }}">
           </div>
 
           <div class="form-cb-row">

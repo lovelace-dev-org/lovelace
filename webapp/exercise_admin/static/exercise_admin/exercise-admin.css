@@ -120,14 +120,11 @@ div.form-cb-row > label {
     margin-left: 0.25rem;
     width: 660px;
 }
-input#exercise-name {
-    width: 660px;
-}
 input#exercise-points {
     width: 45px;
     text-align: right;
 }
-input#exercise-allowed_filenames {
+input.general-text-input {
     width: 660px;
 }
 div.form-bigrow {
