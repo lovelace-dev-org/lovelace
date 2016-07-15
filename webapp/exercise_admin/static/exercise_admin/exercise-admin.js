@@ -11,13 +11,17 @@
 //           for stuff like popups, adding, deleting etc.
 
 $(document).ready(function() {
-    content_input = $('#exercise-page-content');
+    let content_inputs = $('textarea.exercise-content-input');
     page_title_elem = $('title');
     breadcrumb_elem = $('#exercise-name-breadcrumb');
-    var content_html = content_input.html();
-    if (content_html === '' || content_html === undefined) {
-        content_untouched = true;
-    }
+    content_inputs.each(function() {
+        var content_html = $(this).html();
+        var content_lang = $(this).attr('name').split('_')[2];
+        if (content_html === '' || content_html === undefined) {
+            content_untouched[content_lang] = true;
+        }
+        content_input[content_lang] = $(this);
+    });
     $('div.feedback-table-div').slimScroll({
         height: '225px'
     });
@@ -164,8 +168,7 @@ function change_current_language(e) {
 ***********************************************************/
 
 
-// TODO: Support translation
-function exercise_name_changed(e) {
+function exercise_name_changed(e, lang_code) {
     /* If the exercise page content is empty when the script loads, add a title
        automatically. */
     var new_name = e.target.value;
@@ -175,21 +178,21 @@ function exercise_name_changed(e) {
     breadcrumb_elem.html(new_name);
 
     // Same for the content input box
-    if (content_untouched === true) {
-        content_input.html('== ' + new_name + ' ==\n\n')
+    if (content_untouched[lang_code] === true) {
+        content_input[lang_code].html('== ' + new_name + ' ==\n\n')
     }
 }
 
-function exercise_page_content_changed(e) {
-    content_untouched = false;
+function exercise_page_content_changed(e, lang_code) {
+    content_untouched[lang_code] = false;
 }
 
 function delete_table_row(button) {
     $(button).parent().parent().remove();
 }
 
-var content_untouched = false;
-var content_input;
+var content_untouched = {};
+var content_input = {};
 var page_title_elem;
 var breadcrumb_elem;
 
