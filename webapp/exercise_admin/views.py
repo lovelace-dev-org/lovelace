@@ -180,11 +180,9 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_hin
     edited_tests = {}
     for test_id in test_ids:
         t_name = form_data['test_{}_name'.format(test_id)]
-
-        # TODO: Handle the actual files first to get proper ids for new ones!
         required_files = [i.split('_') for i in form_data['test_{}_required_files'.format(test_id)]]
         t_required_ef = [edited_exercise_files[i[1]] for i in required_files if i[0] == 'ef']
-        t_required_if = [int(i[1]) for i in required_files if i[0] == 'if']
+        t_required_if = [int(i[1]) for i in required_files if i[0] == 'if' and i[1] in if_ids]
                 
         # Check for new tests
         if test_id.startswith('newt'):
