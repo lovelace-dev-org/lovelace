@@ -26,23 +26,23 @@ def feedback_question_tr(question, jstemplate=False):
     return {"question" : TemplateFeedbackQuestion()}
 
 @register.inclusion_tag('exercise_admin/feedback-question-popup-tr.html')
-def feedback_question_popup_tr(create):
+def feedback_question_popup_tr(checked):
     lang_list = get_lang_list()
 
     class TemplateFeedbackQuestion:
         get_human_readable_type = "SAMPLE_HUMAN_READABLE_TYPE"
         
-        def __init__(self, create):
-            if create:
-                self.id = "SAMPLE_CREATE_ID"
+        def __init__(self, checked):
+            if checked:
+                self.id = "SAMPLE_CHECKED_ID"
             else:
                 self.id = "SAMPLE_ID"
             for lang_code, _ in lang_list:
                 setattr(self, 'question_{}'.format(lang_code), "SAMPLE_QUESTION_{}".format(lang_code))
 
     return {
-        "question" : TemplateFeedbackQuestion(create),
-        "create" : create
+        "question" : TemplateFeedbackQuestion(checked),
+        "checked" : checked
     }
 
 @register.inclusion_tag('exercise_admin/feedback-edit-div.html')

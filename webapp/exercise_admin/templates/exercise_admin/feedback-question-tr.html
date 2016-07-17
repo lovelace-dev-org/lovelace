@@ -4,7 +4,7 @@
 {% get_current_language as CURRENT_LANGUAGE %}
 {% get_available_languages as AVAILABLE_LANGUAGES %}
 {% get_language_info_list for AVAILABLE_LANGUAGES as LANGUAGES_VERBOSE %}
-<tr data-question-id="{{ question.id }}">
+<tr id="feedback-question-tr-{{ question.id }}" data-question-id="{{ question.id }}">
   <td class="question-cell">
     {% for language_choice, _ in AVAILABLE_LANGUAGES %}
       <span class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}"

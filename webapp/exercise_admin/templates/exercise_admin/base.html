@@ -33,7 +33,7 @@
     {% block meta %}
     {% endblock %}
 
-    <form method="POST" action="{% url 'exercise_admin:edit_feedback_questions' %}" id="edit-feedback-form" onsubmit="submit_edit_feedback_form(event);">
+    <form method="POST" action="{% url 'exercise_admin:edit_feedback_questions' %}" id="edit-feedback-form" onsubmit="submit_edit_feedback_form(event, '{{ DEFAULT_LANGUAGE }}');">
       {% csrf_token %}
       <div id="edit-feedback-popup" class="popup">
         <div>
@@ -181,8 +181,8 @@
         <div class="generalinfo-right-side">
           <h2>Feedback questions</h2>
           <div class="bordered-editable-area">
-            <div id="feedback-question-table" class="feedback-table-div">
-              <table class="feedback-question-table">
+            <div id="feedback-question-table-div" class="feedback-table-div">
+              <table id="feedback-question-table" class="feedback-question-table">
                 <colgroup>
                   <col class="feedback-question">
                   <col class="feedback-type">

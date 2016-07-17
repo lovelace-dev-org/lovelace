@@ -248,7 +248,7 @@ function highlight_parent_li(input_elem) {
         if (!input.is(':focus')) {
             parent.toggleClass(hilight_class, false);
         }
-    });
+   });
 }
 
 
@@ -370,7 +370,7 @@ function add_feedback_choices_to_popup(question_id, choices) {
 
 function add_feedback_question_to_popup(id, questions, type, readable_type, choices, checked) {
     if (checked) {
-        var sample_id = "SAMPLE_CREATE_ID";
+        var sample_id = "SAMPLE_CHECKED_ID";
     } else {
         var sample_id = "SAMPLE_ID";
     }
@@ -513,7 +513,7 @@ function show_edit_feedback_questions_popup(event, url, default_lang) {
         init_create_feedback_choice_list(default_lang);
         
         $.each(result, function() {
-            var question_id = this.id;
+            var question_id = "" + this.id;
             if ($.inArray(question_id, question_ids) > -1) {
                 add_feedback_question_to_popup(this.id, this.questions, this.type, this.readable_type, this.choices, true);
             } else {
@@ -524,6 +524,71 @@ function show_edit_feedback_questions_popup(event, url, default_lang) {
         update_create_feedback_button_state(default_lang)
         popup.css({"opacity": "1", "pointer-events": "auto"});
     });
+}
+
+function close_popup_and_add_questions(questions, default_lang) {
+    console.log("close");
+    var target_tbody = $("#feedback-question-table tbody");
+    $("#add-feedback-table > tbody input.feedback-question-checkbox").each(function(index) {
+        console.log(this);
+        var checked = $(this).prop("checked");
+        var question_id = $(this).attr("data-question-id");
+        var question = $("#feedback-question-label-" + question_id + "-" + default_lang).text();
+        var db_id = "";
+        var db_readable_type = "";
+        var db_questions = [];
+        var in_table = false;
+        var saved = false;
+
+        $.each(questions, function(index, db_question) {
+            if (db_question.questions[default_lang] === question) {
+                db_id = "" + db_question.id;
+                db_readable_type = db_question.readable_type;
+                db_questions = db_question.questions;
+                saved = true;
+                return false;
+            }
+        });
+        if (!saved) {
+            console.log("not saved");
+            return;
+        }
+
+        var tr = null;
+        target_tbody.find("tr").each(function() {
+            if ($(this).attr("data-question-id") === db_id) {
+                tr = $(this);
+                in_table = true;
+                return false;
+            }
+        });
+
+        if (in_table && !checked) {
+            tr.remove();
+            console.log("in table and not checked");
+        } else if (in_table) {
+            tr.find("td.question-cell span").each(function() {
+                var span = $(this);
+                span.text(db_questions[span.attr("data-language-code")]);
+            });
+            tr.find("td.type-cell").text(db_readable_type);
+            console.log("in table");
+        } else if (checked) {
+            tr = $("#feedback-question-tr-" + "SAMPLE_ID").clone().attr("id", "feedback-question-tr-" + db_id);
+            tr.attr("data-question-id", db_id)
+            tr.html(function(index, html) {
+                html = html.replace(/SAMPLE_ID/g, db_id).replace(/SAMPLE_HUMAN_READABLE_TYPE/g, db_readable_type);
+                $.each(db_questions, function(key, val) {
+                    sample_str = "SAMPLE_QUESTION_" + key;
+                    html = html.replace(new RegExp(sample_str, "g"), val);
+                });
+                return html;
+            });
+            console.log("not in table");
+            target_tbody.append(tr);
+        }
+    });
+    close_popup($("#edit-feedback-popup"));
 }
 
 function close_feedback_popup() {
@@ -543,23 +608,20 @@ function close_feedback_popup() {
     close_popup($("#edit-feedback-popup"));
 }
 
-function edit_feedback_form_success(data, text_status, jqxhr_obj) {
+function edit_feedback_form_success(data, text_status, jqxhr_obj, default_lang) {
     var ID_PATTERN = /\[(.*?)\]/;
-    var CHOICE_ENUM_PATTERN = /\{(.*?)\}/;
+    var CHOICE_ENUM_PATTERN = /\((.*?)\)/;
     if (data.error) {
         var sep = "<br>";
         $.each(data.error, function(err_source, err_msg) {
-            if (err_source === "__all__") {
-                var error_div = $("#feedback-error");
-            } else {
+            var error_div = $("#feedback-error");
+            if (err_source != "__all__") {
                 var question_id = err_source.match(ID_PATTERN)[1];
-                if (err_source.startsWith("question_field")) {
-                    var error_div = $("#feedback-question-" + question_id + "-error");
-                } else if (err_source.startsWith("type_field")) {
-                    var error_div = $("#feedback-error");
-                } else if (err_source.startsWith("choice_field")) {
+                if (err_source.startsWith("feedback_question")) {
+                    var error_div = $("#feedback-question-error-" + question_id);
+                } else if (err_source.startsWith("feedback_choice")) {
                     var choice_enum = err_source.match(CHOICE_ENUM_PATTERN)[1];
-                    var error_div = $("#feedback-choice-" + question_id + "-" + choice_enum + "-error");
+                    var error_div = $("#feedback-choice-error-" + choice_enum);
                 }
             }
             error_div.html(err_msg.join(sep));
@@ -569,7 +631,7 @@ function edit_feedback_form_success(data, text_status, jqxhr_obj) {
         });
     } else if (data.result) {
         console.log("Feedback questions edited successfully!");    
-        close_popup_and_add_questions(data.result);
+        close_popup_and_add_questions(data.result, default_lang);
     }
 }
 
@@ -586,7 +648,7 @@ function edit_feedback_form_error(xhr, status, type) {
     error_span.css("display", "block");
 }
 
-function submit_edit_feedback_form(e) {
+function submit_edit_feedback_form(e, default_lang) {
     e.preventDefault();
     console.log("User requested create feedback form submit.");
 
@@ -635,58 +697,12 @@ function submit_edit_feedback_form(e) {
         processData: false,
         contentType: false,
         dataType: 'json',
-        success: edit_feedback_form_success,
+        success: function(data, textStatus, jqXHR) {
+            edit_feedback_form_success(data, textStatus, jqXHR, default_lang)
+        },
         error: edit_feedback_form_error
     });
 }
-
-function close_popup_and_add_questions(questions) {
-    var TITLE_TEXT = "Deletes the relation between the feedback question and the exercise";
-    var target_tbody = $("#feedback-question-table tbody");
-    $("#add-feedback-table > tbody input.feedback-question-checkbox").each(function(index) {
-        var checked = $(this).prop("checked");
-        var id = $(this).attr("data-question-id");
-        var question = $("#feedback-question-" + id).val();
-        var type = "";
-        var in_table = false;
-        var not_saved = true;
-        
-        $.each(questions, function(index, db_question) {
-            if (db_question.question === question) {
-                id = "" + db_question.id;
-                type = db_question.readable_type;
-                not_saved = false;
-                return false;
-            }
-        });
-        if (not_saved) {
-            return;
-        }
-
-        var tr = $('<tr data-question-id="' + id + '">');
-        target_tbody.find("tr").each(function() {
-            if ($(this).attr("data-question-id") === id) {
-                tr = $(this);
-                in_table = true;
-                return false;
-            }
-        });
-        if (in_table && !checked) {
-            tr.remove();
-        } else if (in_table) {
-            tr.children("td.question-cell").html(question);
-        } else if (checked) {
-            var td_delete = $('<td class="delete-cell">');
-            tr.append('<td class="question-cell">' + question + '</td>');
-            tr.append('<td class="type-cell">' + type + '</td>');
-            td_delete.append('<button class="delete-button" title="' + TITLE_TEXT + '" onclick="delete_table_row(this);">x</button>');
-            tr.append(td_delete);
-            target_tbody.append(tr);
-        }
-    });
-    close_popup($("#edit-feedback-popup"));
-}
-
 
 /********
 * Hints *
@@ -1271,9 +1287,8 @@ function edit_instance_file_form_success(data, text_status, jqxhr_obj, default_l
     if (data.error) {
         var sep = "<br>";
         $.each(data.error, function(err_source, err_msg) {
-            if (err_source === "__all__") {
-                var error_div = $("#instance-file-error");
-            } else {
+            var error_div = $("#instance-file-error");
+            if (err_source != "__all__") {
                 var file_id = err_source.match(ID_PATTERN)[1];
                 var error_in_link = false;
                 if (err_source.startsWith("instance_file_file")) {

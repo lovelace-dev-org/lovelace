@@ -22,18 +22,19 @@ class CreateFeedbackQuestionsForm(forms.Form):
         for question_id in new_question_ids:
             self._add_fields(question_id, data, default_lang, lang_list)
 
-    def _clean_duplicates_of_field(self, field_name, field_val, model_field, cleaned_data, lang_list):
-        field_prefix = "feedback_{}".format(model_field)
+    def _clean_duplicates_of_field(self, field_name, field_val, field_prefix, model_field, cleaned_data, lang_list):
         model_field_readable = model_field.replace("_", " ")
-        
+
         for lang_code, _ in lang_list:
-            if field_name.startswith(field_prefix) and lang_code in field_name and field_val:
-                for k, v in cleaned_data.copy().items():
-                    if k.startswith(field_prefix) and lang_code in k and v == field_val and k != field_name:
-                        error_msg = "Duplicate {field} in language {lang}!".format(field=model_field_readable, lang=lang_code)
-                        error_code = "duplicate_{}".format(model_field)
-                        field_error = forms.ValidationError(error_msg, code=error_code)
-                        self.add_error(field_name, field_error)
+            if lang_code in field_name:
+                break
+
+        for k, v in cleaned_data.copy().items():
+            if k.startswith(field_prefix) and lang_code in k and v == field_val and k != field_name:
+                error_msg = "Duplicate {field} in language {lang}!".format(field=model_field_readable, lang=lang_code)
+                error_code = "duplicate_{}".format(model_field)
+                field_error = forms.ValidationError(error_msg, code=error_code)
+                self.add_error(field_name, field_error)
             
     def _add_fields(self, question_id, data, default_lang, lang_list):
         for lang_code, _ in lang_list:
@@ -63,12 +64,14 @@ class CreateFeedbackQuestionsForm(forms.Form):
             field_val = cleaned_data.get(field_name)
             if field_val is None:
                 continue
-            
-            self._clean_duplicates_of_field(field_name, field_val, "question", cleaned_data, lang_list)
-            self._clean_duplicates_of_field(field_name, field_val, "choice", cleaned_data, lang_list)
+            question_id = re.findall("\[(.*?)\]", field_name)[0]
+
+            if field_name.startswith("feedback_question") and field_val:
+                self._clean_duplicates_of_field(field_name, field_val, "feedback_question", "question", cleaned_data, lang_list)
+            elif field_name.startswith("feedback_choice") and field_val:
+                self._clean_duplicates_of_field(field_name, field_val, "feedback_choice_[{}]".format(question_id), "choice", cleaned_data, lang_list)
 
             if field_name.startswith("choice_field"):
-                question_id = re.findall("\[(.*?)\]", field_name)[0]
                 type_field_name = "type_field_[{}]".format(question_id)
                 if type_field_name in cleaned_data and cleaned_data[type_field_name] != "MULTIPLE_CHOICE_FEEDBACK":
                     type_error = forms.ValidationError("Only multiple choice feedback accepts choice!", code="choices_with_incorrect_type")
@@ -113,8 +116,7 @@ class CreateInstanceIncludeFilesForm(forms.Form):
 
             self.fields[description_field] = forms.CharField(required=False, strip=True)
 
-        instance_field = "instance_file_instance_[{}]".format(file_id)
-        
+        instance_field = "instance_file_instance_[{}]".format(file_id)        
 
     def _add_link_fields(self, file_id, default_lang, lang_list):
         for lang_code, _ in lang_list:

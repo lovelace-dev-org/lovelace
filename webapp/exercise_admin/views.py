@@ -592,6 +592,7 @@ def edit_feedback_questions(request):
                 choice_obj.save()
             
     else:
+        print(repr(form.errors))
         return JsonResponse({
             "error" : form.errors
         })
