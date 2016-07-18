@@ -108,7 +108,7 @@ div.form-row {
     align-items: center;
 }
 div.form-row > label {
-    width: 150px;
+    width: 160px;
 }
 div.form-cb-row {
     margin: 0.35rem 0;
@@ -331,10 +331,14 @@ section.tests {
     border-bottom: 4px solid #ccc;
 }
 
+input.test-name {
+    width: 660px;
+}
+
 select.test-filepicker {
     display: block;
-    width: 500px;
-    height: 150px;
+    width: 820px;
+    height: 160px;
 }
 select.test-filepicker optgroup {
     background: #888;
@@ -353,8 +357,23 @@ li.ui-sortable-handle {
     cursor: grab;
 }
 
-ol#stages-sortable > li {
+ol.stages-sortable {
+    padding: 0;
+}
+
+ol.stages-sortable > li {
     border: 2px solid #333;
+    padding: 2px 4px;
+}
+ol.stages-sortable > li,
+ol.commands-sortable > li {
+    position: relative;
+}
+ol.stages-sortable > li > button.delete-button,
+ol.commands-sortable > li > button.delete-button {
+    position: absolute;
+    right: 0;
+    top: 0;
 }
 
 span.clickable-commandline {
@@ -384,9 +403,14 @@ div.left-side {
 
 div.right-side {
     flex: 1;
-    border: 2px solid #333;
-    margin: 2px;
-    padding: 4px;
+    border: 0;
+    border-left: 4px dotted #ddd;
+    margin: 0 16px;
+    padding-left: 16px;
+}
+
+.stage-name-input, .command-name-input {
+    width: 400px;
 }
 
 /* The edit metadata */
