@@ -158,6 +158,11 @@ function change_current_language(e) {
     translated_elements.removeClass('translated-visible');
     translated_elements.filter('[data-language-code=' + new_code + ']').addClass('translated-visible');
 
+    // Display the page title and breadcrumb in the correct language
+    var name = $('#exercise-name-' + new_code).val();
+    page_title_elem.html(title_prefix + name);
+    breadcrumb_elem.html(name);
+
     // Display the required files with the currently selected translation
     refresh_required_files_all();
 }
@@ -174,7 +179,7 @@ function exercise_name_changed(e, lang_code) {
     var new_name = e.target.value;
 
     /* TODO: 'Add' instead of 'Edit' when adding a new page */
-    page_title_elem.html('Edit | ' + new_name);
+    page_title_elem.html(title_prefix + new_name);
     breadcrumb_elem.html(new_name);
 
     // Same for the content input box
@@ -195,6 +200,7 @@ var content_untouched = {};
 var content_input = {};
 var page_title_elem;
 var breadcrumb_elem;
+var title_prefix = "Edit | "; // TODO: Determine the correct one (Add or Edit)!
 
 
 /*******
