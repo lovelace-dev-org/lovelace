@@ -131,8 +131,8 @@
           {% endfor %}
 
           <div class="form-row">
-            <label for="exercise-slug">Slug:</label>
-            <span id="exercise-slug">{{ exercise.slug }}</span>
+            <label for="exercise-slug">Slug: </label>
+            <span id="exercise-slug">{% if add_or_edit == 'Edit' %}{{ exercise.slug }}{% else %}(no slug yet){% endif %}</span>
           </div>
 
           {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}

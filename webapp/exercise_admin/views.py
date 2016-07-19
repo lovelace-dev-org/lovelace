@@ -309,6 +309,27 @@ def file_upload_exercise(request, exercise_id=None, action=None):
     # TODO: How to handle the creation of new exercises?
     if action == "add":
         add_or_edit = "Add"
+        lang_list = get_lang_list()
+        class FakeExercise:
+            id = 'new-exercise'
+            slug = None
+
+            def __init__(self):
+                for lang_code, _ in lang_list:
+                    setattr(self, 'name_{}'.format(lang_code), '')
+                    setattr(self, 'content_{}'.format(lang_code), '')
+                    setattr(self, 'question_{}'.format(lang_code), '')
+        
+        exercise = FakeExercise()
+        hints = []
+        include_files = []
+        instance_file_links = []
+        tests = []
+        test_list = []
+        stages = None
+        commands = None
+        stage_list = []
+        cmd_list = []        
     elif action == "change":
         add_or_edit = "Edit"
         # Get the exercise
@@ -317,45 +338,41 @@ def file_upload_exercise(request, exercise_id=None, action=None):
         except FileUploadExercise.DoesNotExist as e:
             #pass # DEBUG
             return HttpResponseNotFound("File upload exercise with id={} not found.".format(exercise_id))
+            # Get the configurable hints linked to this exercise
+        hints = Hint.objects.filter(exercise=exercise)
+
+        # Get the exercise specific files
+        include_files = FileExerciseTestIncludeFile.objects.filter(exercise=exercise)
+
+        # Get the instance specific files
+        instance_file_links = InstanceIncludeFileToExerciseLink.objects.filter(exercise=exercise)
+
+        tests = FileExerciseTest.objects.filter(exercise=exercise_id).order_by("name")
+        test_list = []
+        stages = None
+        commands = None
+        for test in tests:
+            stages = FileExerciseTestStage.objects.filter(test=test).order_by("ordinal_number")
+            stage_list = []
+            for stage in stages:
+                cmd_list = []
+                commands = FileExerciseTestCommand.objects.filter(stage=stage).order_by("ordinal_number")
+                for cmd in commands:
+                    expected_outputs = FileExerciseTestExpectedOutput.objects.filter(command=cmd).order_by("ordinal_number")
+                    cmd_list.append((cmd, expected_outputs))
+                stage_list.append((stage, cmd_list))
+            test_list.append((test, stage_list))
     else:
         return HttpResponse(content="400 Bad request", status=400)
 
-    # Get the configurable hints linked to this exercise
-    hints = Hint.objects.filter(exercise=exercise)
-
-    # Get the exercise specific files
-    include_files = FileExerciseTestIncludeFile.objects.filter(exercise=exercise)
-    
-    # TODO: Get the instance specific files
-    # 1. scan the content graphs and embedded links to find out, if this exercise is linked
-    #    to an instance. we need a manytomany relation here, that is instance specific
-    # 2. get the files and show a pool of them
-    instance_files = InstanceIncludeFile.objects.all() # TODO: This is debug code
-    instance_file_links = InstanceIncludeFileToExerciseLink.objects.filter(exercise=exercise)
+    instance_files = InstanceIncludeFile.objects.all()
     instances = [{"id" : instance.id, "name" : instance.name} for instance in CourseInstance.objects.all()]
-    
-    tests = FileExerciseTest.objects.filter(exercise=exercise_id).order_by("name")
-    test_list = []
-    stages = None
-    commands = None
-    for test in tests:
-        stages = FileExerciseTestStage.objects.filter(test=test).order_by("ordinal_number")
-        stage_list = []
-        for stage in stages:
-            cmd_list = []
-            commands = FileExerciseTestCommand.objects.filter(stage=stage).order_by("ordinal_number")
-            for cmd in commands:
-                expected_outputs = FileExerciseTestExpectedOutput.objects.filter(command=cmd).order_by("ordinal_number")
-                cmd_list.append((cmd, expected_outputs))
-            stage_list.append((stage, cmd_list))
-        test_list.append((test, stage_list))
 
-    # TODO: Save the additions, removals and editions sent by the user 
+    # Save the additions, removals and editions sent by the user 
     if request.method == "POST":
         form_contents = request.POST
         files = request.FILES
 
-        #print(form_contents)
         print("POST key-value pairs:")
         for k, v in sorted(form_contents.lists()):
             if k == "order_hierarchy":
@@ -376,16 +393,16 @@ def file_upload_exercise(request, exercise_id=None, action=None):
             for i, command_id in enumerate(command_list):
                 new_commands[command_id] = Command(stage=stage_id, ordinal_number=i+1)
 
-        old_hint_ids = set(hints.values_list('id', flat=True))
-        old_ef_ids = set(include_files.values_list('id', flat=True))
-        old_if_ids = set(instance_file_links.values_list('include_file', flat=True))
-        old_test_ids = set(tests.values_list('id', flat=True))
+        old_hint_ids = set(hints.values_list('id', flat=True)) if action == 'change' else set()
+        old_ef_ids = set(include_files.values_list('id', flat=True)) if action == 'change' else set()
+        old_if_ids = set(instance_file_links.values_list('include_file', flat=True)) if action == 'change' else set()
+        old_test_ids = set(tests.values_list('id', flat=True)) if action == 'change' else set()
         if stages is not None:
-            old_stage_ids = set(stages.values_list('id', flat=True))
+            old_stage_ids = set(stages.values_list('id', flat=True)) if action == 'change' else set()
         else:
             old_stage_ids = set()
         if commands is not None:
-            old_cmd_ids = set(commands.values_list('id', flat=True))
+            old_cmd_ids = set(commands.values_list('id', flat=True)) if action == 'change' else set()
         else:
             old_cmd_ids = set()
 
@@ -429,7 +446,7 @@ def file_upload_exercise(request, exercise_id=None, action=None):
                 "error": form.errors,
             })
     
-    t = loader.get_template("exercise_admin/file-upload-exercise-{action}.html".format(action=action))
+    t = loader.get_template('exercise_admin/file-upload-exercise-change.html')
     c = {
         'add_or_edit': add_or_edit,
         'exercise': exercise,

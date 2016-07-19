@@ -52,12 +52,12 @@ button::-moz-focus-inner {
 section.meta {
     padding: 1rem 2rem 1rem 2rem;
     background: #e8e8e8;
-    text-align: right;
+    /*text-align: right;*/
 }
 
 section.meta > div.breadcrumb {
     display: inline-block;
-    float: left;
+    /*float: left;*/
 }
 div.breadcrumb a {
     color: #480;
@@ -70,6 +70,7 @@ div.breadcrumb a:hover {
 
 section.meta > div.top-button {
     display: inline-block;
+    float: right;
 }
 
 section.meta > div.top-button > a {
