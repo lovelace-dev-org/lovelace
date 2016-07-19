@@ -55,8 +55,6 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_hin
         e_question = form_data['exercise_question_{}'.format(lang_code)]
         setattr(exercise, 'question_{}'.format(lang_code), e_question)
 
-    # TODO: Included files
-
     #exercise.name = e_name
     #exercise.content = e_content
     exercise.default_points = e_default_points
@@ -67,6 +65,8 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_hin
     exercise.ask_collaborators = e_ask_collaborators
     exercise.allowed_filenames = e_allowed_filenames
     exercise.save()
+
+    # TODO! Check for all existing foreignkey relations: must not be linked to a different exercise previously! 
 
     # Hints
 
@@ -305,17 +305,20 @@ def file_upload_exercise(request, exercise_id=None, action=None):
 
     # GET = show the page
     # POST = validate & save the submitted form
-
-    # TODO: All that stuff in admin which allows the user to upload new things etc.
-
-    # TODO: How to handle the creation of new exercises? 
-
-    # Get the exercise
-    try:
-        exercise = FileUploadExercise.objects.get(id=exercise_id)
-    except FileUploadExercise.DoesNotExist as e:
-        #pass # DEBUG
-        return HttpResponseNotFound("File upload exercise with id={} not found.".format(exercise_id))
+    
+    # TODO: How to handle the creation of new exercises?
+    if action == "add":
+        add_or_edit = "Add"
+    elif action == "change":
+        add_or_edit = "Edit"
+        # Get the exercise
+        try:
+            exercise = FileUploadExercise.objects.get(id=exercise_id)
+        except FileUploadExercise.DoesNotExist as e:
+            #pass # DEBUG
+            return HttpResponseNotFound("File upload exercise with id={} not found.".format(exercise_id))
+    else:
+        return HttpResponse(content="400 Bad request", status=400)
 
     # Get the configurable hints linked to this exercise
     hints = Hint.objects.filter(exercise=exercise)
@@ -428,6 +431,7 @@ def file_upload_exercise(request, exercise_id=None, action=None):
     
     t = loader.get_template("exercise_admin/file-upload-exercise-{action}.html".format(action=action))
     c = {
+        'add_or_edit': add_or_edit,
         'exercise': exercise,
         'hints': hints,
         'instances': instances,

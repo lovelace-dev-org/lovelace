@@ -200,7 +200,7 @@ var content_untouched = {};
 var content_input = {};
 var page_title_elem;
 var breadcrumb_elem;
-var title_prefix = "Edit | "; // TODO: Determine the correct one (Add or Edit)!
+var title_prefix = $('title').html().split('|')[0].trim() + ' | ';
 
 
 /*******
