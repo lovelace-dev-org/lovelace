@@ -38,7 +38,9 @@
         {% for stage, commands in stages %}
           <li class="ui-state-default" data-stage-id="{{ stage.id }}">
             {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
-              <span class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}" onClick="show_stagecmd_information(event);" id="stage-{{ stage.id }}">{% get_translated_field stage "name" language_choice %}</span>
+              <span class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}"
+                    data-language-code="{{ language_choice }}" onClick="show_stagecmd_information(event);"
+                    id="stage-{{ stage.id }}">{% get_translated_field stage "name" language_choice %}</span>
             {% endfor %}
             <button class="delete-button" type="button" title="Delete this stage"
                     onclick="delete_stage('{{ test.id }}', '{{ stage.id }}');">x</button>
@@ -47,7 +49,9 @@
                 {% for cmd, expected_outputs in commands %}
                   <li class="ui-state-default" data-command-id="{{ cmd.id }}">
                     {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
-                      <span class="clickable-commandline translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}" onClick="show_stagecmd_information(event);" id="command-{{ cmd.id }}">{% get_translated_field cmd 'command_line' language_choice %}</span>
+                      <span class="clickable-commandline translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}"
+                            data-language-code="{{ language_choice }}" onClick="show_stagecmd_information(event);"
+                            id="command-{{ cmd.id }}">{% get_translated_field cmd 'command_line' language_choice %}</span>
                     {% endfor %}
                     <button class="delete-button" type="button" title="Delete this command"
                             onclick="delete_command('{{ test.id }}', '{{ stage.id }}', '{{ cmd.id }}');">x</button>
@@ -78,7 +82,7 @@
                   <input type="text" id="stage-{{ stage.id }}-name-{{ language_choice }}"
                          name="stage_{{ stage.id }}_name_{{ language_choice }}"
                          value="{% get_translated_field stage "name" language_choice %}"
-                         onInput="stage_name_changed(event);" class="stage-name-input">
+                         onInput="stage_name_changed(event, '{{ language_choice }}');" class="stage-name-input">
                 </div>
               </div>
             {% endfor %}
@@ -110,7 +114,7 @@
                     <input type="text" id="command-{{ command.id }}-cmdline-{{ language_choice }}"
                            name="command_{{ command.id }}_command_line_{{ language_choice }}"
                            value="{% get_translated_field command 'command_line' language_choice %}"
-                           onInput="command_name_changed(event);" class="command-name-input">
+                           onInput="command_name_changed(event, '{{ language_choice }}');" class="command-name-input">
                   </div>
                 </div>
               {% endfor %}

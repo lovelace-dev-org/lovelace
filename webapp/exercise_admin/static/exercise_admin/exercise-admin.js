@@ -1358,7 +1358,6 @@ function submit_edit_instance_files_form(e, default_lang) {
 **************************************************/
 
 
-// TODO: Translation support for the *_name_changed
 // TODO: Generalise the *_name_changed - they're pretty similar
 function test_name_changed(e) {
     var input_id = e.target.id;
@@ -1368,20 +1367,20 @@ function test_name_changed(e) {
     $('#test-' + split_id[1]).html(new_name);
 }
 
-function stage_name_changed(e) {
+function stage_name_changed(e, lang_choice) {
     var input_id = e.target.id;
     var split_id = input_id.split("-");
     var new_name = e.target.value;
 
-    $('#stage-' + split_id[1]).html(new_name);
+    $('#stage-' + split_id[1] + '[data-language-code="' + lang_choice + '"]').html(new_name);
 }
 
-function command_name_changed(e) {
+function command_name_changed(e, lang_choice) {
     var input_id = e.target.id;
     var split_id = input_id.split("-");
     var new_name = e.target.value;
 
-    $('#command-' + split_id[1]).html(new_name);
+    $('#command-' + split_id[1] + '[data-language-code="' + lang_choice + '"]').html(new_name);
 }
 
 function refresh_required_files_all() {
@@ -1396,9 +1395,7 @@ function refresh_required_files_all() {
 }
 
 function refresh_required_files(test_id) {
-    //let lang = 'en'; // TODO: Proper language support
     let lang = $('#language-info-code').text();
-
     let ins_optgrp = $('#test-' + test_id + '-required_files > optgroup.filepicker-instance-options');
     let new_ins_options = [];
     $('#instance-files-table tbody > tr').map(function() {
