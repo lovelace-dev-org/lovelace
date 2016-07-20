@@ -297,7 +297,6 @@ Command = collections.namedtuple('Command', ['stage', 'ordinal_number'])
 # We need the following urls, at least:
 # fileuploadexercise/add
 # fileuploadexercise/{id}/change
-# fileuploadexercise/{id}/delete
 def file_upload_exercise(request, exercise_id=None, action=None):
     # Admins only, consider @staff_member_required
     if not (request.user.is_staff and request.user.is_authenticated() and request.user.is_active):
@@ -306,8 +305,8 @@ def file_upload_exercise(request, exercise_id=None, action=None):
     # GET = show the page
     # POST = validate & save the submitted form
     
-    # TODO: How to handle the creation of new exercises?
     if action == "add":
+        # Handle the creation of new exercises
         add_or_edit = "Add"
         lang_list = get_lang_list()
         class FakeExercise:
@@ -336,15 +335,15 @@ def file_upload_exercise(request, exercise_id=None, action=None):
         try:
             exercise = FileUploadExercise.objects.get(id=exercise_id)
         except FileUploadExercise.DoesNotExist as e:
-            #pass # DEBUG
             return HttpResponseNotFound("File upload exercise with id={} not found.".format(exercise_id))
-            # Get the configurable hints linked to this exercise
+
+        # Get the configurable hints linked to this exercise
         hints = Hint.objects.filter(exercise=exercise)
 
         # Get the exercise specific files
         include_files = FileExerciseTestIncludeFile.objects.filter(exercise=exercise)
 
-        # Get the instance specific files
+        # Get the instance specific file links
         instance_file_links = InstanceIncludeFileToExerciseLink.objects.filter(exercise=exercise)
 
         tests = FileExerciseTest.objects.filter(exercise=exercise_id).order_by("name")
