@@ -1,4 +1,4 @@
-/*! jQuery UI - v1.12.0-rc.2 - 2016-06-23
+/*! jQuery UI - v1.12.0 - 2016-07-21
 * http://jqueryui.com
 * Includes: draggable.css, core.css, resizable.css, selectable.css, sortable.css, accordion.css, autocomplete.css, menu.css, button.css, controlgroup.css, checkboxradio.css, datepicker.css, dialog.css, progressbar.css, selectmenu.css, slider.css, spinner.css, tabs.css, tooltip.css, theme.css
 * To view and modify this theme, visit http://jqueryui.com/themeroller/?scope=&folderName=black-tie&cornerRadiusShadow=8px&offsetLeftShadow=-8px&offsetTopShadow=-8px&thicknessShadow=8px&opacityShadow=20&bgImgOpacityShadow=50&bgTextureShadow=highlight_soft&bgColorShadow=aaaaaa&opacityOverlay=30&bgImgOpacityOverlay=40&bgTextureOverlay=highlight_hard&bgColorOverlay=aaaaaa&iconColorError=ffcf29&fcError=ffffff&borderColorError=9e0505&bgImgOpacityError=45&bgTextureError=inset_hard&bgColorError=cd0a0a&iconColorHighlight=4ca300&fcHighlight=363636&borderColorHighlight=ffde2e&bgImgOpacityHighlight=55&bgTextureHighlight=inset_hard&bgColorHighlight=ffeb80&iconColorActive=222222&fcActive=222222&borderColorActive=cccccc&bgImgOpacityActive=65&bgTextureActive=flat&bgColorActive=ffffff&iconColorHover=ffffff&fcHover=ffffff&borderColorHover=000000&bgImgOpacityHover=55&bgTextureHover=glass&bgColorHover=1c1c1c&iconColorDefault=ededed&fcDefault=e3e3e3&borderColorDefault=777777&bgImgOpacityDefault=40&bgTextureDefault=glass&bgColorDefault=111111&iconColorContent=222222&fcContent=222222&borderColorContent=cccccc&bgImgOpacityContent=100&bgTextureContent=highlight_hard&bgColorContent=f9f9f9&iconColorHeader=bbbbbb&fcHeader=eeeeee&borderColorHeader=a3a3a3&bgImgOpacityHeader=8&bgTextureHeader=diagonals_thick&bgColorHeader=333333&cornerRadius=4px&fsDefault=1.1em&fwDefault=normal&ffDefault=Verdana%2CArial%2Csans-serif
@@ -1005,6 +1005,10 @@ a.ui-button:active,
 	border: 1px solid #ffde2e;
 	background: #ffeb80 url("images/ui-bg_inset-hard_55_ffeb80_1x100.png") 50% bottom repeat-x;
 	color: #363636;
+}
+.ui-state-checked {
+	border: 1px solid #ffde2e;
+	background: #ffeb80;
 }
 .ui-state-highlight a,
 .ui-widget-content .ui-state-highlight a,
