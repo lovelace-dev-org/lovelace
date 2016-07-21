@@ -1,6 +1,7 @@
 {% extends 'courses/base.html' %}
 {% load staticfiles %}
 {% load i18n %}
+{% load course_tags %}
 
 {% block page-title %}{% trans 'Available courses' %}{% endblock %}
 
@@ -27,9 +28,17 @@
             <ul>
               {% for instance in course.get_instances %}
                 <li>
-                  <a href="{% url 'courses:course' course.slug instance.slug %}">{{ instance.name }}</a>
-                  <button>enroll</button> or text <span>'enrolled on this course' etc.</span>
-                  <progress max="5" value="3" title="3/5 completed">
+                  <div><a href="{% url 'courses:course' course.slug instance.slug %}">{{ instance.name }}</a></div>
+                  <div>
+                    {% with request.user|enrolled:instance as enroll_status %}
+                      {% if enroll_status == None %}
+                        <button>Enroll</button>
+                      {% else %}
+                        <span>Enroll status: {{ enroll_status }}</span>                        
+                      {% endif %}
+                    {% endwith %}
+                  </div>
+                  <div><progress max="5" value="3" title="3/5 completed"></progress></div>
                 </li>
               {% endfor %}
             </ul>

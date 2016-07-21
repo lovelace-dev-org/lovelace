@@ -3,6 +3,10 @@ from datetime import datetime
 
 register = template.Library()
 
+@register.filter
+def enrolled(user, instance):
+    return instance.user_enroll_status(user)
+
 # {% content_meta %}
 @register.inclusion_tag("courses/content-meta.html", takes_context=True)
 def content_meta(context):
