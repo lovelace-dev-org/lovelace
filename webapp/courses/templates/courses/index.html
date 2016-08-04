@@ -32,13 +32,16 @@
                   <div>
                     {% with request.user|enrolled:instance as enroll_status %}
                       {% if enroll_status == None %}
-                        <button>Enroll</button>
+                        <span class="instance-userinfo">You are not enrolled.</span><button>Enroll</button>
                       {% else %}
-                        <span>Enroll status: {{ enroll_status }}</span>                        
+                        <span class="instance-userinfo">Enroll status: {{ enroll_status }}</span>
                       {% endif %}
                     {% endwith %}
                   </div>
-                  <div><progress max="5" value="3" title="3/5 completed"></progress></div>
+                  <div>
+                    <span class="instance-userifno">Your progress: </span>
+                    <progress max="5" value="3" title="3/5 completed"></progress>
+                  </div>
                 </li>
               {% endfor %}
             </ul>

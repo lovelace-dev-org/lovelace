@@ -162,8 +162,7 @@ class CourseInstance(models.Model):
         return slugify(self.name, allow_unicode=True)
 
     def user_enroll_status(self, user):
-        print(user)
-        print(self.enrolled_users)
+        if not user.is_active: return None
         try:
             return self.courseenrollment_set.get(student=user).enrollment_state
         except CourseEnrollment.DoesNotExist as e:
