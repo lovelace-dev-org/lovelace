@@ -11,13 +11,17 @@
 //           for stuff like popups, adding, deleting etc.
 
 $(document).ready(function() {
-    content_input = $('#exercise-page-content');
+    let content_inputs = $('textarea.exercise-content-input');
     page_title_elem = $('title');
     breadcrumb_elem = $('#exercise-name-breadcrumb');
-    var content_html = content_input.html();
-    if (content_html === '' || content_html === undefined) {
-        content_untouched = true;
-    }
+    content_inputs.each(function() {
+        var content_html = $(this).html();
+        var content_lang = $(this).attr('name').split('_')[2];
+        if (content_html === '' || content_html === undefined) {
+            content_untouched[content_lang] = true;
+        }
+        content_input[content_lang] = $(this);
+    });
     $('div.feedback-table-div').slimScroll({
         height: '225px'
     });
@@ -94,6 +98,9 @@ function submit_main_form(e) {
     }).get().join(',');
     console.log("Question ids: ");
     console.log(question_ids);
+
+    // Get the linked instance files
+    
     
     var form_type = form.attr('method');
     var form_url = form.attr('action');
@@ -151,6 +158,11 @@ function change_current_language(e) {
     translated_elements.removeClass('translated-visible');
     translated_elements.filter('[data-language-code=' + new_code + ']').addClass('translated-visible');
 
+    // Display the page title and breadcrumb in the correct language
+    var name = $('#exercise-name-' + new_code).val();
+    page_title_elem.html(title_prefix + name);
+    breadcrumb_elem.html(name);
+
     // Display the required files with the currently selected translation
     refresh_required_files_all();
 }
@@ -161,34 +173,34 @@ function change_current_language(e) {
 ***********************************************************/
 
 
-// TODO: Support translation
-function exercise_name_changed(e) {
+function exercise_name_changed(e, lang_code) {
     /* If the exercise page content is empty when the script loads, add a title
        automatically. */
     var new_name = e.target.value;
 
     /* TODO: 'Add' instead of 'Edit' when adding a new page */
-    page_title_elem.html('Edit | ' + new_name);
+    page_title_elem.html(title_prefix + new_name);
     breadcrumb_elem.html(new_name);
 
     // Same for the content input box
-    if (content_untouched === true) {
-        content_input.html('== ' + new_name + ' ==\n\n')
+    if (content_untouched[lang_code] === true) {
+        content_input[lang_code].html('== ' + new_name + ' ==\n\n')
     }
 }
 
-function exercise_page_content_changed(e) {
-    content_untouched = false;
+function exercise_page_content_changed(e, lang_code) {
+    content_untouched[lang_code] = false;
 }
 
 function delete_table_row(button) {
     $(button).parent().parent().remove();
 }
 
-var content_untouched = false;
-var content_input;
+var content_untouched = {};
+var content_input = {};
 var page_title_elem;
 var breadcrumb_elem;
+var title_prefix = $('title').html().split('|')[0].trim() + ' | ';
 
 
 /*******
@@ -960,7 +972,8 @@ function add_checked_instance_file_link_div(file_id, default_names, link) {
     var names = link.names;
     var link_div = $("#link-instance-file-" + sample_id).clone().attr('id', 'link-instance-file-' + file_id);
     link_div.html(function(index, html) {
-        html = html.replace(new RegExp(sample_id, 'g'), file_id).replace(/SAMPLE_CHMOD_SETTINGS/g, chmod);
+        html = html.replace(new RegExp(sample_id, 'g'), file_id).replace(/SAMPLE_CHMOD_SETTINGS/g, chmod)
+            .replace(/SAMPLE_FORM/g, 'main-form');
         $.each(names, function(key, val) {
             html = html.replace(new RegExp("SAMPLE_NAME_" + key, 'g'), val);
         });
@@ -1038,7 +1051,7 @@ function add_existing_instance_file_to_popup(file_id, instance_id, instance_name
     
     var edit_div = $("#edit-instance-file-SAMPLE_ID").clone().attr('id', 'edit-instance-file-' + file_id);
     edit_div.html(function(index, html) {
-        html = html.replace(/SAMPLE_ID/g, file_id);
+        html = html.replace(/SAMPLE_ID/g, file_id).replace(/SAMPLE_FORM/g, 'main-form');
         $.each(default_names, function(key, val) {
             html = html.replace(new RegExp("SAMPLE_DEFAULT_NAME_" + key, 'g'), val);
         });
@@ -1416,7 +1429,6 @@ function submit_edit_instance_files_form(e, default_lang) {
 **************************************************/
 
 
-// TODO: Translation support for the *_name_changed
 // TODO: Generalise the *_name_changed - they're pretty similar
 function test_name_changed(e) {
     var input_id = e.target.id;
@@ -1426,20 +1438,20 @@ function test_name_changed(e) {
     $('#test-' + split_id[1]).html(new_name);
 }
 
-function stage_name_changed(e) {
+function stage_name_changed(e, lang_choice) {
     var input_id = e.target.id;
     var split_id = input_id.split("-");
     var new_name = e.target.value;
 
-    $('#stage-' + split_id[1]).html(new_name);
+    $('#stage-' + split_id[1] + '[data-language-code="' + lang_choice + '"]').html(new_name);
 }
 
-function command_name_changed(e) {
+function command_name_changed(e, lang_choice) {
     var input_id = e.target.id;
     var split_id = input_id.split("-");
     var new_name = e.target.value;
 
-    $('#command-' + split_id[1]).html(new_name);
+    $('#command-' + split_id[1] + '[data-language-code="' + lang_choice + '"]').html(new_name);
 }
 
 function refresh_required_files_all() {
@@ -1454,9 +1466,7 @@ function refresh_required_files_all() {
 }
 
 function refresh_required_files(test_id) {
-    //let lang = 'en'; // TODO: Proper language support
     let lang = $('#language-info-code').text();
-
     let ins_optgrp = $('#test-' + test_id + '-required_files > optgroup.filepicker-instance-options');
     let new_ins_options = [];
     $('#instance-files-table tbody > tr').map(function() {

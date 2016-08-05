@@ -20,14 +20,16 @@
 {% endblock %}
 
 {% block heading %}
-  <h1>Edit file upload exercise</h1>
+  <h1>{{ add_or_edit }} file upload exercise</h1>
 {% endblock %}
 
 {% block meta %}
   <section class="meta">
     <div class="breadcrumb"><a href="{% url 'admin:index' %}">Home</a> › <a href="{% url 'admin:app_list' 'courses' %}">Courses</a> › <a href="{% url 'admin:courses_fileuploadexercise_changelist' %}">File upload exercises</a> › <span id="exercise-name-breadcrumb">{{ exercise.name }}</span></div>
-    <div class="top-button"><a href="{% url 'courses:sandbox' exercise.slug %}">View in sandbox</a></div>
-    <div class="top-button"><a href="{% url 'admin:courses_fileuploadexercise_history' exercise.id %}">View history</a></div>
+    {% if add_or_edit == 'Edit' %}
+      <div class="top-button"><a href="{% url 'courses:sandbox' exercise.slug %}">View in sandbox</a></div>
+      <div class="top-button"><a href="{% url 'admin:courses_fileuploadexercise_history' exercise.id %}">View history</a></div>
+    {% endif %}
   </section>
 {% endblock %}
 
@@ -35,7 +37,8 @@
   {% get_current_language as CURRENT_LANGUAGE %}
   {% get_available_languages as AVAILABLE_LANGUAGES %}
   {% get_default_language as DEFAULT_LANGUAGE %}
-  <form method="POST" action="{% url 'exercise_admin:edit_instance_files' exercise.id %}" id="edit-instance-files-form" onsubmit="submit_edit_instance_files_form(event, '{{ DEFAULT_LANGUAGE }}');">
+  <form method="POST" action="{% url 'exercise_admin:edit_instance_files' exercise.id %}" id="edit-instance-files-form"
+        onsubmit="submit_edit_instance_files_form(event, '{{ DEFAULT_LANGUAGE }}');">{# TODO: Can't use id here if adding a new exercise #}
     {% csrf_token %}
     <div id="edit-instance-files-popup" class="popup">
       <div>
@@ -89,12 +92,13 @@
   </form>
 {% endblock %}
 
-{% block form-action-url %}{% url 'exercise_admin:file_upload_change' exercise.id %}{% endblock %}
+{% block form-action-url %}{% if add_or_edit == 'Edit' %}{% url 'exercise_admin:file_upload_change' exercise.id %}{% else %}{% url 'exercise_admin:file_upload_add' %}{% endif %}{% endblock %}
 
 {% block exercise-type-extra %}
   <div class="form-row">
     <label for="exercise-allowed_filenames">Accepted file names: </label>
-    <input type="text" id="exercise-allowed_filenames" name="exercise_allowed_filenames" value="{{ exercise.allowed_filenames|join:"," }}">
+    <input type="text" id="exercise-allowed_filenames" name="exercise_allowed_filenames" class="general-text-input"
+           value="{{ exercise.allowed_filenames|join:"," }}">
   </div>
 {% endblock %}
 
@@ -206,10 +210,6 @@
       {% for test, stages in tests %}
         {% test_tab test stages instance_file_links include_files %}
       {% endfor %}
-    </div>
-    
-    <div>
-      maybe use d3.js to generate a nice graph of how the tests will be run?
     </div>
   </section>
 {% endblock %}

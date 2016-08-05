@@ -1,5 +1,5 @@
 /*!
- * jQuery UI CSS Framework 1.12.0-rc.2
+ * jQuery UI CSS Framework 1.12.0
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -136,6 +136,10 @@ a.ui-button:active,
 	border: 1px solid #ffde2e;
 	background: #ffeb80 url("images/ui-bg_inset-hard_55_ffeb80_1x100.png") 50% bottom repeat-x;
 	color: #363636;
+}
+.ui-state-checked {
+	border: 1px solid #ffde2e;
+	background: #ffeb80;
 }
 .ui-state-highlight a,
 .ui-widget-content .ui-state-highlight a,

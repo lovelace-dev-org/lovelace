@@ -31,8 +31,8 @@ from .utils import get_default_lang, get_lang_list
 def index(request):
     return HttpResponseNotFound()
 
-def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_hint_ids, old_ef_ids, old_test_ids,
-                              old_stage_ids, old_cmd_ids, new_stages, new_commands, hint_ids, ef_ids):
+def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_hint_ids, old_ef_ids, old_if_ids, old_test_ids,
+                              old_stage_ids, old_cmd_ids, new_stages, new_commands, hint_ids, ef_ids, if_ids):
     deletions = []
     # Collect the content page data
     #e_name = form_data['exercise_name']
@@ -56,8 +56,6 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_hin
         e_question = form_data['exercise_question_{}'.format(lang_code)]
         setattr(exercise, 'question_{}'.format(lang_code), e_question)
 
-    # TODO: Included files
-
     #exercise.name = e_name
     #exercise.content = e_content
     exercise.default_points = e_default_points
@@ -68,6 +66,8 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_hin
     exercise.ask_collaborators = e_ask_collaborators
     exercise.allowed_filenames = e_allowed_filenames
     exercise.save()
+
+    # TODO! Check for all existing foreignkey relations: must not be linked to a different exercise previously! 
 
     # Hints
 
@@ -130,6 +130,42 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_hin
         current_ef.save()
         
         edited_exercise_files[ef_id] = current_ef
+
+    # TODO: Instance include file links
+    
+    for removed_if_link_id in sorted(old_if_ids - {int(if_id) for if_id in if_ids if not if_id.startswith('new')}):
+        #removed_if_link = InstanceIncludeFileToExerciseLink.objects.f
+        removed_if_link = InstanceIncludeFileToExerciseLink.objects.filter(include_file=removed_if_link_id, exercise=exercise)
+        deletion = removed_if_link.delete()
+        deletions.append(deletion)
+
+    edited_instance_file_links = {}
+    for if_id in if_ids:
+        #if if_id.startswith('new'):
+            #current_if_link =
+        if if_id not in old_if_ids:
+            current_if_link = InstanceIncludeFileToExerciseLink()
+            current_if_link.exercise = exercise
+            current_if_link.include_file = InstanceIncludeFile.objects.get(id=if_id)
+            if_settings = IncludeFileSettings()
+            current_if_link.file_settings = if_settings
+        else:
+            current_if_link = InstanceIncludeFiletoExerciseLink.objects.get(include_file=if_id, exercise=exercise)
+
+        for lang_code, _ in lang_list:
+            if_name = form_data['instance_file_name_[{}]_{}'.format(if_id, lang_code)]
+            setattr(current_if_link.file_settings, 'name_{}'.format(lang_code), if_name)
+
+        current_if_link.file_settings.purpose = form_data['instance_file_purpose_[{}]'.format(if_id)]
+        current_if_link.file_settings.chown_settings = form_data['instance_file_chown_[{}]'.format(if_id)]
+        current_if_link.file_settings.chgrp_settings = form_data['instance_file_chgrp_[{}]'.format(if_id)]
+        current_if_link.file_settings.chmod_settings = form_data['instance_file_chmod_[{}]'.format(if_id)]
+
+        current_if_link.file_settings.save()
+        current_if_link.file_settings = current_if_link.file_settings
+        current_if_link.save()
+
+        edited_instance_file_links[if_id] = current_if_link
             
     # Collect the test data
     test_ids = sorted(order_hierarchy_json["stages_of_tests"].keys())
@@ -145,11 +181,9 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_hin
     edited_tests = {}
     for test_id in test_ids:
         t_name = form_data['test_{}_name'.format(test_id)]
-
-        # TODO: Handle the actual files first to get proper ids for new ones!
         required_files = [i.split('_') for i in form_data['test_{}_required_files'.format(test_id)]]
         t_required_ef = [edited_exercise_files[i[1]] for i in required_files if i[0] == 'ef']
-        t_required_if = [int(i[1]) for i in required_files if i[0] == 'if']
+        t_required_if = [int(i[1]) for i in required_files if i[0] == 'if' and i[1] in if_ids]
                 
         # Check for new tests
         if test_id.startswith('newt'):
@@ -264,7 +298,6 @@ Command = collections.namedtuple('Command', ['stage', 'ordinal_number'])
 # We need the following urls, at least:
 # fileuploadexercise/add
 # fileuploadexercise/{id}/change
-# fileuploadexercise/{id}/delete
 def file_upload_exercise(request, exercise_id=None, action=None):
     # Admins only, consider @staff_member_required
     if not (request.user.is_staff and request.user.is_authenticated() and request.user.is_active):
@@ -272,54 +305,73 @@ def file_upload_exercise(request, exercise_id=None, action=None):
 
     # GET = show the page
     # POST = validate & save the submitted form
-
-    # TODO: All that stuff in admin which allows the user to upload new things etc.
-
-    # TODO: How to handle the creation of new exercises? 
-
-    # Get the exercise
-    try:
-        exercise = FileUploadExercise.objects.get(id=exercise_id)
-    except FileUploadExercise.DoesNotExist as e:
-        #pass # DEBUG
-        return HttpResponseNotFound("File upload exercise with id={} not found.".format(exercise_id))
-
-    # Get the configurable hints linked to this exercise
-    hints = Hint.objects.filter(exercise=exercise)
-
-    # Get the exercise specific files
-    include_files = FileExerciseTestIncludeFile.objects.filter(exercise=exercise)
     
-    # TODO: Get the instance specific files
-    # 1. scan the content graphs and embedded links to find out, if this exercise is linked
-    #    to an instance. we need a manytomany relation here, that is instance specific
-    # 2. get the files and show a pool of them
-    instance_files = InstanceIncludeFile.objects.all() # TODO: This is debug code
-    instance_file_links = InstanceIncludeFileToExerciseLink.objects.filter(exercise=exercise)
-    instances = CourseInstance.objects.all()
-    
-    tests = FileExerciseTest.objects.filter(exercise=exercise_id).order_by("name")
-    test_list = []
-    stages = None
-    commands = None
-    for test in tests:
-        stages = FileExerciseTestStage.objects.filter(test=test).order_by("ordinal_number")
+    if action == "add":
+        # Handle the creation of new exercises
+        add_or_edit = "Add"
+        lang_list = get_lang_list()
+        class FakeExercise:
+            id = 'new-exercise'
+            slug = None
+
+            def __init__(self):
+                for lang_code, _ in lang_list:
+                    setattr(self, 'name_{}'.format(lang_code), '')
+                    setattr(self, 'content_{}'.format(lang_code), '')
+                    setattr(self, 'question_{}'.format(lang_code), '')
+        
+        exercise = FakeExercise()
+        hints = []
+        include_files = []
+        instance_file_links = []
+        tests = []
+        test_list = []
+        stages = None
+        commands = None
         stage_list = []
-        for stage in stages:
-            cmd_list = []
-            commands = FileExerciseTestCommand.objects.filter(stage=stage).order_by("ordinal_number")
-            for cmd in commands:
-                expected_outputs = FileExerciseTestExpectedOutput.objects.filter(command=cmd).order_by("ordinal_number")
-                cmd_list.append((cmd, expected_outputs))
-            stage_list.append((stage, cmd_list))
-        test_list.append((test, stage_list))
+        cmd_list = []        
+    elif action == "change":
+        add_or_edit = "Edit"
+        # Get the exercise
+        try:
+            exercise = FileUploadExercise.objects.get(id=exercise_id)
+        except FileUploadExercise.DoesNotExist as e:
+            return HttpResponseNotFound("File upload exercise with id={} not found.".format(exercise_id))
 
-    # TODO: Save the additions, removals and editions sent by the user 
+        # Get the configurable hints linked to this exercise
+        hints = Hint.objects.filter(exercise=exercise)
+
+        # Get the exercise specific files
+        include_files = FileExerciseTestIncludeFile.objects.filter(exercise=exercise)
+
+        # Get the instance specific file links
+        instance_file_links = InstanceIncludeFileToExerciseLink.objects.filter(exercise=exercise)
+
+        tests = FileExerciseTest.objects.filter(exercise=exercise_id).order_by("name")
+        test_list = []
+        stages = None
+        commands = None
+        for test in tests:
+            stages = FileExerciseTestStage.objects.filter(test=test).order_by("ordinal_number")
+            stage_list = []
+            for stage in stages:
+                cmd_list = []
+                commands = FileExerciseTestCommand.objects.filter(stage=stage).order_by("ordinal_number")
+                for cmd in commands:
+                    expected_outputs = FileExerciseTestExpectedOutput.objects.filter(command=cmd).order_by("ordinal_number")
+                    cmd_list.append((cmd, expected_outputs))
+                stage_list.append((stage, cmd_list))
+            test_list.append((test, stage_list))
+    else:
+        return HttpResponse(content="400 Bad request", status=400)
+
+    instance_files = InstanceIncludeFile.objects.all()
+    instances = CourseInstance.objects.all()
+
     if request.method == "POST":
         form_contents = request.POST
         files = request.FILES
 
-        #print(form_contents)
         print("POST key-value pairs:")
         for k, v in sorted(form_contents.lists()):
             if k == "order_hierarchy":
@@ -340,15 +392,16 @@ def file_upload_exercise(request, exercise_id=None, action=None):
             for i, command_id in enumerate(command_list):
                 new_commands[command_id] = Command(stage=stage_id, ordinal_number=i+1)
 
-        old_hint_ids = set(hints.values_list('id', flat=True))
-        old_ef_ids = set(include_files.values_list('id', flat=True))
-        old_test_ids = set(tests.values_list('id', flat=True))
+        old_hint_ids = set(hints.values_list('id', flat=True)) if action == 'change' else set()
+        old_ef_ids = set(include_files.values_list('id', flat=True)) if action == 'change' else set()
+        old_if_ids = set(instance_file_links.values_list('include_file', flat=True)) if action == 'change' else set()
+        old_test_ids = set(tests.values_list('id', flat=True)) if action == 'change' else set()
         if stages is not None:
-            old_stage_ids = set(stages.values_list('id', flat=True))
+            old_stage_ids = set(stages.values_list('id', flat=True)) if action == 'change' else set()
         else:
             old_stage_ids = set()
         if commands is not None:
-            old_cmd_ids = set(commands.values_list('id', flat=True))
+            old_cmd_ids = set(commands.values_list('id', flat=True)) if action == 'change' else set()
         else:
             old_cmd_ids = set()
 
@@ -357,9 +410,10 @@ def file_upload_exercise(request, exercise_id=None, action=None):
         tag_fields = [k for k in data.keys() if k.startswith("exercise_tag")]
         hint_ids = [k.split('_')[2][1:-1] for k in data.keys() if k.startswith('hint_tries')]
         # TODO: included_file-fields to included_file_file-fields
-        ef_ids = [k.split('_')[3][1:-1] for k in data.keys() if k.startswith('included_file_name')]
+        ef_ids = [k.split('_')[3][1:-1] for k in data.keys() if k.startswith('included_file_name')] # does this have to be set()?
+        if_ids = set([k.split('_')[3][1:-1] for k in data.keys() if k.startswith('instance_file_purpose')])
 
-        form = CreateFileUploadExerciseForm(tag_fields, hint_ids, ef_ids, order_hierarchy_json, data, files)
+        form = CreateFileUploadExerciseForm(tag_fields, hint_ids, ef_ids, if_ids, order_hierarchy_json, data, files)
 
         if form.is_valid():
             print("DEBUG: the form is valid")
@@ -369,8 +423,8 @@ def file_upload_exercise(request, exercise_id=None, action=None):
             try:
                 with transaction.atomic(), reversion.create_revision():
                     save_file_upload_exercise(exercise, cleaned_data, order_hierarchy_json,
-                                              old_hint_ids, old_ef_ids, old_test_ids, old_stage_ids,
-                                              old_cmd_ids, new_stages, new_commands, hint_ids, ef_ids)
+                                              old_hint_ids, old_ef_ids, old_if_ids, old_test_ids, old_stage_ids,
+                                              old_cmd_ids, new_stages, new_commands, hint_ids, ef_ids, if_ids)
                     reversion.set_user(request.user)
                     reversion.set_comment(cleaned_data['version_comment'])
             except IntegrityError as e:
@@ -391,8 +445,9 @@ def file_upload_exercise(request, exercise_id=None, action=None):
                 "error": form.errors,
             })
     
-    t = loader.get_template("exercise_admin/file-upload-exercise-{action}.html".format(action=action))
+    t = loader.get_template('exercise_admin/file-upload-exercise-change.html')
     c = {
+        'add_or_edit': add_or_edit,
         'exercise': exercise,
         'hints': hints,
         'instances': instances,
@@ -739,6 +794,8 @@ def edit_instance_files(request, exercise_id):
         already_linked_file_ids = []
 
         # Remove or edit existing instance file links
+        # TODO: Move to main form!
+        """
         for instance_file_link in instance_file_links:
             file_id = str(instance_file_link.include_file.id)
             if file_id not in linked_file_ids:
@@ -775,7 +832,7 @@ def edit_instance_files(request, exercise_id):
 
             if file_changed:
                 instance_file_link.file_settings.save()
-
+        """
         # Replace placeholder names with actual names
         for name, instance_file_link, lang_code in edited_names.values():
             setattr(instance_file_link.file_settings, "name_{}".format(lang_code), name)
@@ -799,6 +856,8 @@ def edit_instance_files(request, exercise_id):
             new_instance_files[file_id] = instance_file.id
 
         # Create new instance file links
+        # TODO: Move to main form!
+        """
         new_linked_file_ids = [file_id for file_id in linked_file_ids if file_id not in already_linked_file_ids]
         for file_id in new_linked_file_ids:
             file_settings = IncludeFileSettings()
@@ -821,6 +880,7 @@ def edit_instance_files(request, exercise_id):
             instance_file_link.include_file_id = int(file_id)
             instance_file_link.file_settings = file_settings
             instance_file_link.save()
+        """
 
     else:
         return JsonResponse({

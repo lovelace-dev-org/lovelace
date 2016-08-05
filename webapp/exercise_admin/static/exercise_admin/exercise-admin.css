@@ -52,12 +52,12 @@ button::-moz-focus-inner {
 section.meta {
     padding: 1rem 2rem 1rem 2rem;
     background: #e8e8e8;
-    text-align: right;
+    /*text-align: right;*/
 }
 
 section.meta > div.breadcrumb {
     display: inline-block;
-    float: left;
+    /*float: left;*/
 }
 div.breadcrumb a {
     color: #480;
@@ -70,6 +70,7 @@ div.breadcrumb a:hover {
 
 section.meta > div.top-button {
     display: inline-block;
+    float: right;
 }
 
 section.meta > div.top-button > a {
@@ -108,7 +109,7 @@ div.form-row {
     align-items: center;
 }
 div.form-row > label {
-    width: 150px;
+    width: 160px;
 }
 div.form-cb-row {
     margin: 0.35rem 0;
@@ -120,14 +121,11 @@ div.form-cb-row > label {
     margin-left: 0.25rem;
     width: 660px;
 }
-input#exercise-name {
-    width: 660px;
-}
 input#exercise-points {
     width: 45px;
     text-align: right;
 }
-input#exercise-allowed_filenames {
+input.general-text-input {
     width: 660px;
 }
 div.form-bigrow {
@@ -334,10 +332,14 @@ section.tests {
     border-bottom: 4px solid #ccc;
 }
 
+input.test-name {
+    width: 660px;
+}
+
 select.test-filepicker {
     display: block;
-    width: 500px;
-    height: 150px;
+    width: 820px;
+    height: 160px;
 }
 select.test-filepicker optgroup {
     background: #888;
@@ -356,8 +358,23 @@ li.ui-sortable-handle {
     cursor: grab;
 }
 
-ol#stages-sortable > li {
+ol.stages-sortable {
+    padding: 0;
+}
+
+ol.stages-sortable > li {
     border: 2px solid #333;
+    padding: 2px 4px;
+}
+ol.stages-sortable > li,
+ol.commands-sortable > li {
+    position: relative;
+}
+ol.stages-sortable > li > button.delete-button,
+ol.commands-sortable > li > button.delete-button {
+    position: absolute;
+    right: 0;
+    top: 0;
 }
 
 span.clickable-commandline {
@@ -387,9 +404,14 @@ div.left-side {
 
 div.right-side {
     flex: 1;
-    border: 2px solid #333;
-    margin: 2px;
-    padding: 4px;
+    border: 0;
+    border-left: 4px dotted #ddd;
+    margin: 0 16px;
+    padding-left: 16px;
+}
+
+.stage-name-input, .command-name-input {
+    width: 400px;
 }
 
 /* The edit metadata */

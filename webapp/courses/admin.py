@@ -335,7 +335,7 @@ class VideoLinkAdmin(admin.ModelAdmin):
     search_fields = ('name',)
     readonly_fields = ('added_by',)
 
-class TermAdmin(admin.ModelAdmin):    
+class TermAdmin(TranslationAdmin):
     search_fields = ('name',)
 
 admin.site.register(Calendar, CalendarAdmin)

@@ -162,6 +162,13 @@ class CourseInstance(models.Model):
         # "Programming_Course").
         return slugify(self.name, allow_unicode=True)
 
+    def user_enroll_status(self, user):
+        if not user.is_active: return None
+        try:
+            return self.courseenrollment_set.get(student=user).enrollment_state
+        except CourseEnrollment.DoesNotExist as e:
+            return None
+
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = self.get_url_name()

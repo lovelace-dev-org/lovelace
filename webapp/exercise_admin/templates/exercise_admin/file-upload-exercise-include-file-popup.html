@@ -98,7 +98,7 @@
     <div>
       <label class="file-label" for="included-file-chown-{{ include_file.id }}">
         <span class="file-chown-span">File user ownership:</span>
-        <select id="included-file-chown-{{ include_file.id }}" class="file-chown-select" name="included_file_chown_[{{ include_file.id }}]">
+        <select id="included-file-chown-{{ include_file.id }}" class="file-chown-select" name="included_file_chown_[{{ include_file.id }}]" form="main-form">
           <option value="OWNED"{% if include_file.file_settings.chown_settings == "OWNED" %} selected="selected"{% endif %}>Owned by the tested program</option>
           <option value="NOT_OWNED"{% if include_file.file_settings.chown_settings == "NOT_OWNED" %} selected="selected"{% endif %}>Not owned by the tested program</option>
         </select>
@@ -107,7 +107,7 @@
     <div>
       <label class="file-label" for="included-file-chgrp-{{ include_file.id }}">
         <span class="file-chgrp-span">File group ownership:</span>
-        <select id="included-file-chgrp-{{ include_file.id }}" class="file-chgrp-select" name="included_file_chgrp_[{{ include_file.id }}]">
+        <select id="included-file-chgrp-{{ include_file.id }}" class="file-chgrp-select" name="included_file_chgrp_[{{ include_file.id }}]" form="main-form">
           <option value="OWNED"{% if include_file.file_settings.chgrp_settings == "OWNED" %} selected="selected"{% endif %}>Owned by the tested program</option>
           <option value="NOT_OWNED"{% if include_file.file_settings.chgrp_settings == "NOT_OWNED" %} selected="selected"{% endif %}>Not owned by the tested program</option>
         </select>

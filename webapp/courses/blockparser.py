@@ -56,7 +56,7 @@ tags = {
     "anchor": Tag("a", "[[", "]]", re.compile(r"\[\[(?P<address>.+?)([|](?P<link_text>.+?))?\]\]")),
     "kbd":    Tag("kbd", "`", "`", re.compile(r"`(?P<kbd>.+?)`")),
     "hint":   Tag("mark", "[!hint=hint_id!]", "[!hint!]", re.compile(r"\[\!hint\=(?P<hint_id>\w+)\!\](?P<hint_text>.+?)\[\!hint\!\]")),
-    "term":   Tag("span", '[!term=term_name!]', '[!term!]', re.compile(r"\[\!term\=(?P<term_name>\w+)\!\](?P<term_text>.+?)\[\!term\!\]")),
+    "term":   Tag("span", '[!term=term_name!]', '[!term!]', re.compile(r"\[\!term\=(?P<term_name>[^!]+)\!\](?P<term_text>.+?)\[\!term\!\]")),
 }
 
 def parse_pre_tag(parsed_string, tag, hilite, match):
