@@ -15,10 +15,11 @@ class CreateFeedbackQuestionsForm(forms.Form):
         default_lang = get_default_lang()
         lang_list = get_lang_list()
 
-        # Possibly edited existing instance files
+        # Possibly edited existing feedback questions
         for question in feedback_questions:
             self._add_fields(str(question.id), data, default_lang, lang_list)
 
+        # New feedback questions
         for question_id in new_question_ids:
             self._add_fields(question_id, data, default_lang, lang_list)
 
@@ -64,7 +65,7 @@ class CreateFeedbackQuestionsForm(forms.Form):
             field_val = cleaned_data.get(field_name)
             if field_val is None:
                 continue
-            question_id = re.findall("\[(.*?)\]", field_name)[0]
+            question_id = field_name[field_name.index("[") + 1:field_name.index("]")]
 
             if field_name.startswith("feedback_question") and field_val:
                 self._clean_duplicates_of_field(field_name, field_val, "feedback_question", "question", cleaned_data, lang_list)
@@ -115,8 +116,6 @@ class CreateInstanceIncludeFilesForm(forms.Form):
                 self.fields[default_name_field] = forms.CharField(max_length=255, required=False, strip=True)
 
             self.fields[description_field] = forms.CharField(required=False, strip=True)
-
-        instance_field = "instance_file_instance_[{}]".format(file_id)        
 
     #TODO: Move to main form!
     def _add_link_fields(self, file_id, default_lang, lang_list):

@@ -93,7 +93,7 @@ function submit_main_form(e) {
     console.log(order_hierarchy);
 
     // Get the linked feedback questions
-    var question_ids = $('#feedback-question-table > table > tbody > tr').map(function() {
+    var question_ids = $('#feedback-question-table > tbody > tr').map(function() {
         return this.getAttribute('data-question-id');
     }).get().join(',');
     console.log("Question ids: ");

@@ -1,9 +1,6 @@
-{% load i18n %}
 {% load exercise_admin_extras %}
-{% get_default_language as DEFAULT_LANGUAGE %}
 {% get_current_language as CURRENT_LANGUAGE %}
 {% get_available_languages as AVAILABLE_LANGUAGES %}
-{% get_language_info_list for AVAILABLE_LANGUAGES as LANGUAGES_VERBOSE %}
 <div id="feedback-choice-div-{{ choice.id }}" class="feedback-choice-div">
   {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #} 
     <div class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %} inline-block-elem" data-language-code="{{ language_choice }}">

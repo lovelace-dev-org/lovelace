@@ -2,7 +2,6 @@ import collections
 import json
 import string
 import random
-import re
 
 from django.http import HttpResponse, HttpResponseNotFound, HttpResponseForbidden,\
     HttpResponseNotAllowed, JsonResponse
@@ -590,7 +589,7 @@ def edit_feedback_questions(request):
                 choice_prefix = "feedback_choice_[{id}]_{lang}".format(id=q_obj.id, lang=lang_code)
                 for field, val in cleaned_data.items():
                     if field.startswith(choice_prefix) and val:
-                        choice_id = re.findall("\((.*?)\)", field)[0]
+                        choice_id = field[field.index("(") + 1:field.index(")")]
                         if choice_id in choice_val_dict:
                             choice_val_dict[choice_id][lang_code] = val
                         else:
@@ -613,7 +612,7 @@ def edit_feedback_questions(request):
         new_feedbacks = [field for field in cleaned_data.keys()
                          if field.startswith("feedback_question_[new") and default_lang in field]
         for question_field in new_feedbacks:
-            question_id = re.findall("\[(.*?)\]", question_field)[0]
+            question_id = question_field[question_field.index("[") + 1:question_field.index("]")]
             choices = {}
             question_type = cleaned_data["feedback_type_[{}]".format(question_id)]
             
@@ -626,7 +625,7 @@ def edit_feedback_questions(request):
                 choice_fields = [field for field in cleaned_data.keys()
                                  if field.startswith("feedback_choice_[new") and default_lang in field]
                 for choice_field in choice_fields:
-                    choice_id = re.findall("\((.*?)\)", choice_field)[0]
+                    choice_id = choice_field[choice_field.index("(") + 1:choice_field.index(")")]
                     choices[choice_id] = MultipleChoiceFeedbackAnswer()
             elif question_type == "TEXTFIELD_FEEDBACK":
                 q_obj = TextfieldFeedbackQuestion(question=question)
