@@ -750,11 +750,11 @@ div.popup div.popup-buttons {
     text-align: right;
 }
 
-div.popup div.popup-buttons button.popup-button,
-div.popup div.popup-buttons input[type=submit].popup-button {
+div.popup div.popup-buttons .popup-button {
     display: inline-block;
     background: #888;
     padding: 0.5rem 1rem;
+    height: 40px;
     color: #eee;
     font-family: "LatoWeb";
     text-decoration: none;
@@ -864,6 +864,10 @@ div.popup table.instance-file-table col.file-instance {
     width: 31%;
 }
 
+div.popup table.instance-file-table col.file-description {
+    width: 0%;
+}
+
 div.popup table.instance-file-table col.uploaded-file {
     width: 3%;
 }
@@ -874,6 +878,10 @@ div.popup table.instance-file-table col.edit-file-link {
 
 div.popup table.instance-file-table col.edit-file {
     width: 3%;
+}
+
+div.popup td.description-cell div {
+    display: none;
 }
 
 div.popup input[type=checkbox].instance-file-checkbox {
@@ -914,13 +922,17 @@ div.popup div.link-instance-file {
     display: none;
 }
 
+.file-link-title-div-hidden {
+    display: none;
+}
+
 /* Language picker */
 div#language-picker-container {
     position: fixed;
     right: 1rem;
     bottom: 1rem;
     width: 280px;
-    height: 50px;
+    height: 70px;
     padding: 6px;
     border: 2px solid #aaa;
     background: #272;

@@ -57,7 +57,7 @@ $(document).ready(function() {
         }
     });
     // Update instance file table since link input fields may have been edited before previous page refresh
-    update_instance_file_table_with_client_link_data();
+    update_instance_file_table_with_client_data(false);
     // Display the required files with the currently selected translation
     refresh_required_files_all();
 });
@@ -1196,6 +1196,64 @@ function show_edit_instance_files_popup(event, url) {
     });
 }
 
+function update_instance_file_table_with_client_data(update_file_data) {
+    var link_divs = $("#edit-instance-files-popup div.link-instance-file");
+    var target_tbody = $("#instance-files-table tbody");
+
+    link_divs.each(function() {
+        var file_id = $(this).attr("data-file-id");
+        var in_table = false;
+        var tr = null;
+        var linked = $(this).attr("data-linked") === "true";
+
+        // Check if the file is in the instance file table of the exercise
+        target_tbody.find("tr").each(function() {
+            if ($(this).attr("data-file-id") === file_id) {
+                tr = $(this);
+                in_table = true;
+                return false;
+            }
+        });
+
+        var name_inputs = $(this).find("input.file-name-input");
+        var purpose_display = $(this).find("select.file-purpose-select option:selected").text();
+        var popup_tr = $("#instance-file-popup-tr-" + file_id);
+        var instance_divs = popup_tr.find("td.instance-cell div");
+        var description_divs = popup_tr.find("td.description-cell div");
+
+        if (in_table && !linked) {     // If the file is in the table but is not linked, remove it from the table
+            tr.remove();
+        } else if (in_table) {         // If the file is in the table and it is linked, update its link data displayed in the table
+            tr.find("td.name-cell span").each(function() {
+                $(this).text(name_inputs.filter("input[data-language-code=" + $(this).attr("data-language-code") + "]").val());
+            });
+            tr.find("td.purpose-cell").text(purpose_display);
+        } else if (linked) {           // If the file is not in the table but is linked, add it to the table
+            tr = $("#instance-file-tr-" + "SAMPLE_ID").clone().attr("id", "instance-file-tr-" + file_id);
+            tr.attr("data-file-id", file_id)
+            tr.html(function(index, html) {
+                html = html.replace(/SAMPLE_ID/g, file_id).replace(/SAMPLE_GET_PURPOSE_DISPLAY/g, purpose_display);
+                $.each(name_inputs, function() {
+                    sample_str = "SAMPLE_NAME_" + $(this).attr("data-language-code");
+                    html = html.replace(new RegExp(sample_str, "g"), $(this).val());
+                });
+                if (update_file_data) {
+                    $.each(instance_divs, function() {
+                        sample_str = "SAMPLE_INSTANCE_NAME_" + $(this).attr("data-language-code");
+                        html = html.replace(new RegExp(sample_str, "g"), $(this).text());
+                    });
+                    $.each(description_divs, function() {
+                        sample_str = "SAMPLE_DESCRIPTION_" + $(this).attr("data-language-code");
+                        html = html.replace(new RegExp(sample_str, "g"), $(this).val());
+                    });
+                }
+                return html;
+            }); 
+            target_tbody.append(tr);
+        }
+    });
+}
+
 function close_popup_and_add_instance_files(instance_files, default_lang) {
     var target_tbody = $("#instance-files-table tbody");
     $("#add-instance-file-table > tbody input.instance-file-checkbox").each(function(index) {
@@ -1282,119 +1340,20 @@ function close_popup_and_add_instance_files(instance_files, default_lang) {
     refresh_required_files_all();
 }
 
-function update_instance_file_table_with_client_link_data() {
-    var popup = $("#edit-instance-files-popup")
-    var link_divs = popup.find("div.link-instance-file");
-    var target_tbody = $("#instance-files-table tbody");
-
-    link_divs.each(function() {
-        var file_id = $(this).attr("data-file-id");
-        var in_table = false;
-        var tr = null;
-        var linked = $(this).attr("data-linked") === "true";
-
-        // Check if the file is in the instance file table of the exercise
-        target_tbody.find("tr").each(function() {
-            if ($(this).attr("data-file-id") === file_id) {
-                tr = $(this);
-                in_table = true;
-                return false;
-            }
-        });
-
-        var name_inputs = $(this).find("input.file-name-input");
-        var purpose_display = $(this).find("select.file-purpose-select option:selected").text();
-        var popup_tr = $("#instance-file-popup-tr-" + file_id);
-        
-        console.log(file_id);
-        console.log("in table: " + in_table);
-        console.log("linked: " + linked);
-        if (in_table && !linked) {     // If the file is in the table but is not linked, remove it from the table
-            tr.remove();
-        } else if (in_table) {         // If the file is in the table and it is linked, update its link data displayed in the table
-            tr.find("td.name-cell span").each(function() {
-                $(this).text(name_inputs.filter("input[data-language-code=" + $(this).attr("data-language-code") + "]").val());
-            });
-            tr.find("td.purpose-cell").text(purpose_display);
-        } else if (linked) {           // If the file is not in the table but is linked, add it to the table
-            tr = $("#instance-file-tr-" + "SAMPLE_ID").clone().attr("id", "instance-file-tr-" + file_id);
-            tr.attr("data-file-id", file_id)
-            tr.html(function(index, html) {
-                html = html.replace(/SAMPLE_ID/g, file_id).replace(/SAMPLE_GET_PURPOSE_DISPLAY/g, purpose_display);
-                $.each(name_inputs, function() {
-                    sample_str = "SAMPLE_NAME_" + $(this).attr("data-language-code");
-                    html = html.replace(new RegExp(sample_str, "g"), $(this).val());
-                });
-                return html;
-            }); 
-            target_tbody.append(tr);
-        }
-    });
-}
-
 function close_instance_file_popup() {
     var popup = $("#edit-instance-files-popup")
     var link_divs = popup.find("div.link-instance-file");
     var remove_divs = $();
-    var target_tbody = $("#instance-files-table tbody");
 
     link_divs.each(function() {
         var file_id = $(this).attr("data-file-id");
-
         if (file_id.startsWith("new")) {      // If the file was just added to the popup, mark its link div to be removed
             remove_divs.add($(this));
             return;
         }
-
-        var in_table = false;
-        var tr = null;
-        var linked = $(this).attr("data-linked") === "true";
-
-        // Check if the file is in the instance file table of the exercise
-        target_tbody.find("tr").each(function() {
-            if ($(this).attr("data-file-id") === file_id) {
-                tr = $(this);
-                in_table = true;
-                return false;
-            }
-        });
-
-        var name_inputs = $(this).find("input.file-name-input");
-        var purpose_display = $(this).find("select.file-purpose-select option:selected").text();
-        var popup_tr = $("#instance-file-popup-tr-" + file_id);
-        var instance_divs = popup_tr.find("td.instance-cell div");
-        var description_divs = popup_tr.find("td.description-cell div");
-
-        if (in_table && !linked) {     // If the file is in the table but is not linked, remove it from the table
-            tr.remove();
-        } else if (in_table) {         // If the file is in the table and it is linked, update its link data displayed in the table
-            tr.find("td.name-cell span").each(function() {
-                $(this).text(name_inputs.filter("input[data-language-code=" + $(this).attr("data-language-code") + "]").val());
-            });
-            tr.find("td.purpose-cell").text(purpose_display);
-        } else if (linked) {           // If the file is not in the table but is linked, add it to the table
-            tr = $("#instance-file-tr-" + "SAMPLE_ID").clone().attr("id", "instance-file-tr-" + file_id);
-            tr.attr("data-file-id", file_id)
-            tr.html(function(index, html) {
-                html = html.replace(/SAMPLE_ID/g, file_id).replace(/SAMPLE_GET_PURPOSE_DISPLAY/g, purpose_display);
-                $.each(instance_divs, function() {
-                    sample_str = "SAMPLE_INSTANCE_NAME_" + $(this).attr("data-language-code");
-                    html = html.replace(new RegExp(sample_str, "g"), $(this).text());
-                });
-                $.each(name_inputs, function() {
-                    sample_str = "SAMPLE_NAME_" + $(this).attr("data-language-code");
-                    html = html.replace(new RegExp(sample_str, "g"), $(this).val());
-                });
-                $.each(description_divs, function() {
-                    sample_str = "SAMPLE_DESCRIPTION_" + $(this).attr("data-language-code");
-                    html = html.replace(new RegExp(sample_str, "g"), $(this).val());
-                });
-                return html;
-            }); 
-            target_tbody.append(tr);
-        }
     });
     remove_divs.remove();
+    update_instance_file_table_with_client_data(true);
     close_popup(popup);
 }
 
