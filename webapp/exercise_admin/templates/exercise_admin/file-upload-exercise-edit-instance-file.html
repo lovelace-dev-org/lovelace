@@ -37,7 +37,8 @@
       <div class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}">
         <label class="file-label" for="instance-file-instance-{{ instance_file.id }}">
           <span class="file-instance-span">Course instance {% lang_reminder language_choice %}:</span>
-          <select id="instance-file-instance-{{ instance_file.id }}-{{ language_choice }}" class="file-instance-select" name="instance_file_instance_[{{ instance_file.id }}]_{{ language_choice }}">
+          <select id="instance-file-instance-{{ instance_file.id }}-{{ language_choice }}" class="file-instance-select" name="instance_file_instance_[{{ instance_file.id }}]_{{ language_choice }}"
+                  onchange="update_instance_file_selects('{{ instance_file.id }}', $(this));" data-language-code="{{ language_choice }}">
             {% for instance in instances %}
               <option value="{{ instance.id }}">{% get_translated_field instance "name" language_choice %}</option>
             {% endfor %}
