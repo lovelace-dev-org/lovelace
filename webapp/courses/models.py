@@ -260,7 +260,6 @@ class Term(models.Model):
         return self.name
 
     class Meta:
-        ordering = ('name',)
         unique_together = ('instance', 'name',)
 
 ## Time reservation and event calendar system

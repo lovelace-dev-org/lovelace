@@ -340,6 +340,7 @@ class TermAdmin(TranslationAdmin):
     list_display = ('name', 'instance',)
     list_filter = ('instance',)
     list_per_page = 500
+    ordering = ('name',)
 
 admin.site.register(Calendar, CalendarAdmin)
 admin.site.register(File, FileAdmin)
