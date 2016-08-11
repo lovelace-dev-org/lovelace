@@ -50,19 +50,42 @@ def create_exercise(args):
     
     feedbacks = []
     for i in range(star_fb_count):
-        star_fb = fb_models.StarFeedbackQuestion(question="Star feedback question number {}".format(i), slug="")
+        star_fb = fb_models.StarFeedbackQuestion(
+            question_en="Star feedback question number {}".format(i),
+            question_fi="Tähtipalautekysymys numero {}".format(i),
+            slug=""
+        )
         star_fb.save()
         feedbacks.append(star_fb)
     for i in range(thumb_fb_count):
-        thumb_fb = fb_models.ThumbFeedbackQuestion(question="Thumb feedback question number {}".format(i), slug="")
+        thumb_fb = fb_models.ThumbFeedbackQuestion(
+            question_en="Thumb feedback question number {}".format(i),
+            question_fi="Peukalopalautekysymys numero {}".format(i),
+            slug=""
+        )
         thumb_fb.save()
         feedbacks.append(thumb_fb)
     for i in range(mc_fb_count):
-        mc_fb = fb_models.MultipleChoiceFeedbackQuestion(question="Multiple choice feedback question number {}".format(i), slug="")
+        mc_fb = fb_models.MultipleChoiceFeedbackQuestion(
+            question_en="Multiple choice feedback question number {}".format(i),
+            question_fi="Monivalintapalautekysymys numero {}".format(i),
+            slug=""
+        )
         mc_fb.save()
         feedbacks.append(mc_fb)
+        for j in range(5): # TODO: Use a variable/constant
+            mc_fb_choice = fb_models.MultipleChoiceFeedbackAnswer(
+                question=mc_fb,
+                answer_en="Multiplce choice feedback answer {} for question {}".format(j, i),
+                answer_fi="Monivalintapalautevastaus {} kysymykselle {}".format(j, i),
+            )
+            mc_fb_choice.save()
     for i in range(tf_fb_count):
-        tf_fb = fb_models.TextfieldFeedbackQuestion(question="Textfield feedback question number {}".format(i), slug="")
+        tf_fb = fb_models.TextfieldFeedbackQuestion(
+            question_en="Textfield feedback question number {}".format(i),
+            question_fi="Tekstikenttäpalautekysymys numero {}".format(i),
+            slug=""
+        )
         tf_fb.save()
         feedbacks.append(tf_fb)
     cfqs = [fb_models.ContentFeedbackQuestion.objects.get(question=fb.question) for fb in feedbacks]
@@ -83,6 +106,13 @@ def create_exercise(args):
         course=course,
     )
     instance.save()
+
+    instance2 = c_models.CourseInstance(
+        name_en="Ye olde instance",
+        name_fi="Wanhassa wara barembi",
+        course=course,
+    )
+    instance2.save()
 
     # TODO: Clean up to use the args
 
