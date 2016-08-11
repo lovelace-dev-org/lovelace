@@ -98,13 +98,21 @@ function submit_main_form(e) {
     console.log(order_hierarchy);
 
     // Get the linked feedback questions
+    console.log($('#feedback-question-table > tbody > tr'));
     var question_ids = $('#feedback-question-table > tbody > tr').map(function() {
         return this.getAttribute('data-question-id');
     }).get().join(',');
     console.log("Question ids: ");
     console.log(question_ids);
 
-    // Get the instance file id mapping for new instance file links and remove unnecessary fields
+    var form_type = form.attr('method');
+    var form_url = form.attr('action');
+
+    console.log("Method: " + form_type + ", URL: " + form_url);
+
+    var form_data = new FormData(form[0]);
+    
+    // Remove unnecessary instance file link fields and add fields that map new-ids to file ids.
     var link_fields_to_remove = [];
     $("div.link-instance-file").each(function() {
         var new_id = $(this).attr("data-file-id-new");
@@ -117,16 +125,11 @@ function submit_main_form(e) {
             link_fields_to_remove.push($(this).find("select.file-chgrp-select").attr("name"));
             link_fields_to_remove.push($(this).find("input.file-chmod-input").attr("name"));
         } else if (new_id.startsWith("new")) {
+            console.log("new")
             form_data.append("instance_file_link_[" + new_id + "]_file_id", $(this).attr("data-file-id"));
         }
     });
-    
-    var form_type = form.attr('method');
-    var form_url = form.attr('action');
 
-    console.log("Method: " + form_type + ", URL: " + form_url);
-
-    var form_data = new FormData(form[0]);
     form_data.append('order_hierarchy', JSON.stringify(order_hierarchy));
     form_data.append('exercise_feedback_questions', question_ids);
     for (var field_name of link_fields_to_remove) {
@@ -984,6 +987,8 @@ function add_create_instance_file_div() {
 function add_instance_file_link_div(file_id, default_names) {
     var sample_id = "SAMPLE_ID";
     var link_div = $("#link-instance-file-" + sample_id).clone().attr('id', 'link-instance-file-' + file_id);
+    link_div.attr("data-file-id", file_id);
+    link_div.attr("data-file-id-new", file_id);
     link_div.html(function(index, html) {
         html = html.replace(new RegExp(sample_id, 'g'), file_id).replace(/SAMPLE_FORM/g, 'main-form');
         $.each(default_names, function(key, val) {
@@ -1141,6 +1146,7 @@ function switch_link_edit_button_mode(file_id) {
         button.attr("onclick", "add_instance_file_to_exercise('" + file_id + "');");
         button.attr("data-button-mode", "add");
         button.text("Add link");
+        button.prop("disabled", true);
     } else if (button.attr("data-button-mode") === "add") {
         button.attr("title", "Removes the file from the linked files of the exercise");
         button.attr("onclick", "remove_instance_file_from_exercise('" + file_id + "');");

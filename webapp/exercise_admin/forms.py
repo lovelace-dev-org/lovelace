@@ -136,7 +136,6 @@ class CreateInstanceIncludeFilesForm(forms.Form):
             field_val = cleaned_data.get(field_name)
             if field_val is None:
                 continue
-            file_id = re.findall("\[(.*?)\]", field_name)[0]
 
             if field_name.startswith("instance_file_default_name") and field_val:
                 self._clean_duplicates_of_field(field_name, field_val, "instance_file_default_name", "default_name", cleaned_data, lang_list)
@@ -194,7 +193,7 @@ class CreateFileUploadExerciseForm(forms.Form):
     #exercise_content = forms.CharField(required=False) # Translate
     exercise_default_points = forms.IntegerField(required=True)
     # tags handled at __init__
-    exercise_feedback_questions = SimpleArrayField(forms.IntegerField())
+    exercise_feedback_questions = SimpleArrayField(forms.IntegerField(), required=False)
     #exercise_question = forms.CharField(required=False) # Translate
     exercise_manually_evaluated = forms.BooleanField(required=False)
     exercise_ask_collaborators = forms.BooleanField(required=False)
@@ -278,7 +277,9 @@ class CreateFileUploadExerciseForm(forms.Form):
             self.fields[purpose_field] = forms.ChoiceField(choices=c_models.IncludeFileSettings.FILE_PURPOSE_CHOICES, required=False)
             self.fields[chown_field] = forms.ChoiceField(choices=c_models.IncludeFileSettings.FILE_OWNERSHIP_CHOICES, required=False)
             self.fields[chgrp_field] = forms.ChoiceField(choices=c_models.IncludeFileSettings.FILE_OWNERSHIP_CHOICES, required=False)
-            self.fields[chmod_field] = forms.CharField(max_length=10, required=False, strip=True) 
+            self.fields[chmod_field] = forms.CharField(max_length=10, required=False, strip=True)
+            if if_id.startswith("new"):
+                self.fields["instance_file_link_[{id}]_file_id".format(id=if_id)] = forms.IntegerField()
 
         # Tests, stages and commands
         
@@ -314,8 +315,11 @@ class CreateFileUploadExerciseForm(forms.Form):
                 command_command_line_field = command_template.format(command_id, 'command_line_{}'.format(lang_code))
                 if lang_code != default_lang:
                     command_line_kwargs['required'] = False
-                self.fields[command_command_line_field] = forms.CharField(min_length=1, max_length=255, strip=True)
-            
+                if lang_code == default_lang:
+                    self.fields[command_command_line_field] = forms.CharField(min_length=1, max_length=255, strip=True, required=True)
+                else:
+                    self.fields[command_command_line_field] = forms.CharField(min_length=1, max_length=255, strip=True, required=False)
+                
                 command_input_text_field = command_template.format(command_id, 'input_text_{}'.format(lang_code))
                 self.fields[command_input_text_field] = forms.CharField(required=False, strip=False)
                 

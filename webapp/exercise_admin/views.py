@@ -38,7 +38,7 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_hin
     #e_content = form_data['exercise_content']
     e_default_points = form_data['exercise_default_points']
     e_tags = [tag for key, tag in sorted(form_data.items()) if key.startswith('exercise_tag')] # TODO: Do this in clean
-    e_feedback_questions = form_data['exercise_feedback_questions']
+    e_feedback_questions = form_data.get('exercise_feedback_questions') or []
     #e_question = form_data['exercise_question']
     e_manually_evaluated = form_data['exercise_manually_evaluated']
     e_ask_collaborators = form_data['exercise_ask_collaborators']
@@ -427,7 +427,7 @@ def file_upload_exercise(request, exercise_id=None, action=None):
                 with transaction.atomic(), reversion.create_revision():
                     save_file_upload_exercise(exercise, cleaned_data, order_hierarchy_json,
                                               old_hint_ids, old_ef_ids, old_if_ids, old_test_ids, old_stage_ids,
-                                              old_cmd_ids, new_stages, new_commands, hint_ids, ef_ids, if_ids, new_if_id_map)
+                                              old_cmd_ids, new_stages, new_commands, hint_ids, ef_ids, if_ids)
                     reversion.set_user(request.user)
                     reversion.set_comment(cleaned_data['version_comment'])
             except IntegrityError as e:
@@ -443,7 +443,7 @@ def file_upload_exercise(request, exercise_id=None, action=None):
             })
         else:
             print("DEBUG: the form is not valid")
-            print(form.errors)
+            print(repr(form.errors))
             return JsonResponse({
                 "error": form.errors,
             })
