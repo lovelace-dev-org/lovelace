@@ -111,7 +111,7 @@
           </div>
           <div class="popup-buttons">
             <input type="submit" class="popup-button" value="Save changes &amp; Confirm selection" name="save_and_confirm">
-            <button type="button" class="popup-button" onclick="close_feedback_popup();">Cancel</button>
+            <button type="button" class="popup-button" onclick="close_feedback_popup();">Close</button>
           </div>
           <div id="feedback-error" class="admin-error"></div>
         </div>
@@ -223,8 +223,9 @@
           <ul class="exercise-tags">
             {% for ex_tag in exercise.tags %}
               <li class="exercise-tag">
-                <input type="text" id="exercise-tag-{{ forloop.counter }}" class="exercise-tag-input" name="exercise_tag_{{ forloop.counter }}"
-                       value="{{ ex_tag }}" maxlength="32" onfocus="highlight_parent_li(this);" oninput="change_tag_width(this);">
+                <input type="text" id="exercise-tag-{{ forloop.counter }}" class="exercise-tag-input"
+                       name="exercise_tag_{{ forloop.counter }}" value="{{ ex_tag }}" maxlength="32"
+                       onfocus="highlight_parent_li(this);" oninput="change_tag_width(this);">
                 <button type="button" class="delete-button" onclick="remove_tag(this);">x</button>
               </li>
             {% endfor %}
@@ -312,6 +313,7 @@
     </div>
 
     <div id="language-picker-container">
+      <div title="Default language of the system. Must be provided">Default language: {{ DEFAULT_LANGUAGE }}</div>
       <div title="You are currently editing the translated version of this exercise in this language">Language of the current translation: <span id="language-info-code">{{ CURRENT_LANGUAGE }}</span></div>
       <label for="language-selector">Change to </label>
       <select id="language-selector" onChange="change_current_language(event);">

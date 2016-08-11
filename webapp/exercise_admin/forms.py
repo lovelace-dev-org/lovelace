@@ -15,10 +15,11 @@ class CreateFeedbackQuestionsForm(forms.Form):
         default_lang = get_default_lang()
         lang_list = get_lang_list()
 
-        # Possibly edited existing instance files
+        # Possibly edited existing feedback questions
         for question in feedback_questions:
             self._add_fields(str(question.id), data, default_lang, lang_list)
 
+        # New feedback questions
         for question_id in new_question_ids:
             self._add_fields(question_id, data, default_lang, lang_list)
 
@@ -64,7 +65,7 @@ class CreateFeedbackQuestionsForm(forms.Form):
             field_val = cleaned_data.get(field_name)
             if field_val is None:
                 continue
-            question_id = re.findall("\[(.*?)\]", field_name)[0]
+            question_id = field_name[field_name.index("[") + 1:field_name.index("]")]
 
             if field_name.startswith("feedback_question") and field_val:
                 self._clean_duplicates_of_field(field_name, field_val, "feedback_question", "question", cleaned_data, lang_list)
@@ -200,7 +201,7 @@ class CreateFileUploadExerciseForm(forms.Form):
     exercise_allowed_filenames = forms.CharField(required=False)
     version_comment = forms.CharField(required=False, strip=True)
 
-    def __init__(self, tag_fields, hint_ids, ef_ids, lf_ids, if_ids, order_hierarchy, data, files, *args, **kwargs):
+    def __init__(self, tag_fields, hint_ids, ef_ids, if_ids, order_hierarchy, data, files, *args, **kwargs):
         super(CreateFileUploadExerciseForm, self).__init__(data, files, *args, **kwargs)
 
         # Translated fields
@@ -260,7 +261,7 @@ class CreateFileUploadExerciseForm(forms.Form):
             self.fields[ef_template.format('chown', ef_id)] = forms.CharField(required=True)
             self.fields[ef_template.format('purpose', ef_id)] = forms.CharField(required=True)
 
-        # Instance included files (moved from instance file form)
+        # Instance file links
 
         for if_id in if_ids:
             for lang_code, _ in lang_list:
@@ -274,25 +275,6 @@ class CreateFileUploadExerciseForm(forms.Form):
             chown_field = "instance_file_chown_[{id}]".format(id=if_id)
             chgrp_field = "instance_file_chgrp_[{id}]".format(id=if_id)
             chmod_field = "instance_file_chmod_[{id}]".format(id=if_id)
-            self.fields[purpose_field] = forms.ChoiceField(choices=c_models.IncludeFileSettings.FILE_PURPOSE_CHOICES, required=False)
-            self.fields[chown_field] = forms.ChoiceField(choices=c_models.IncludeFileSettings.FILE_OWNERSHIP_CHOICES, required=False)
-            self.fields[chgrp_field] = forms.ChoiceField(choices=c_models.IncludeFileSettings.FILE_OWNERSHIP_CHOICES, required=False)
-            self.fields[chmod_field] = forms.CharField(max_length=10, required=False, strip=True) 
-
-        # Instance file links
-
-        for file_id in lf_ids:
-            for lang_code, _ in lang_list:
-                name_field = "instance_file_name_[{id}]_{lang}".format(id=file_id, lang=lang_code)
-                if lang_code == default_lang:
-                    self.fields[name_field] = forms.CharField(max_length=255, required=True, strip=True)
-                else:
-                    self.fields[name_field] = forms.CharField(max_length=255, required=False, strip=True)
-
-            purpose_field = "instance_file_purpose_[{id}]".format(id=file_id)
-            chown_field = "instance_file_chown_[{id}]".format(id=file_id)
-            chgrp_field = "instance_file_chgrp_[{id}]".format(id=file_id)
-            chmod_field = "instance_file_chmod_[{id}]".format(id=file_id)
             self.fields[purpose_field] = forms.ChoiceField(choices=c_models.IncludeFileSettings.FILE_PURPOSE_CHOICES, required=False)
             self.fields[chown_field] = forms.ChoiceField(choices=c_models.IncludeFileSettings.FILE_OWNERSHIP_CHOICES, required=False)
             self.fields[chgrp_field] = forms.ChoiceField(choices=c_models.IncludeFileSettings.FILE_OWNERSHIP_CHOICES, required=False)
@@ -359,7 +341,6 @@ class CreateFileUploadExerciseForm(forms.Form):
                 error_code = "duplicate_{}".format(model_field)
                 field_error = forms.ValidationError(error_msg, code=error_code)
                 self.add_error(field_name, field_error)
-
             
     def clean(self):
         cleaned_data = super(CreateFileUploadExerciseForm, self).clean()

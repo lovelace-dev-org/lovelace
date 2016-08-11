@@ -98,14 +98,19 @@ function submit_main_form(e) {
     console.log(order_hierarchy);
 
     // Get the linked feedback questions
-    var question_ids = $('#feedback-question-table > table > tbody > tr').map(function() {
+    var question_ids = $('#feedback-question-table > tbody > tr').map(function() {
         return this.getAttribute('data-question-id');
     }).get().join(',');
     console.log("Question ids: ");
     console.log(question_ids);
 
-    // Get the linked instance files
-    
+    // Get the instance file id mapping for new instance file links.
+    $("div.link-instance-file").each(function() {
+        var new_id = $(this).attr("data-file-id-new");
+        if (new_id.startsWith("new")) {
+            form_data.append("instance_file_link_[" + new_id " + ]_file_id", $(this).attr("data-file-id"));
+        }
+    })
     
     var form_type = form.attr('method');
     var form_url = form.attr('action');
@@ -1150,10 +1155,11 @@ function add_instance_file_to_exercise(file_id) {
 function remove_instance_file_from_exercise(file_id) {
     var link_div = $("#link-instance-file-" + file_id);
 
-    $("#link-instance-file-" + file_id).attr("data-linked", false);
+    link_div.attr("data-linked", false);
     $("#instance-file-checkbox-" + file_id).prop("checked", false);
     $("#edit-file-link-title-div-" + file_id).addClass("file-link-title-div-hidden");
     $("#create-file-link-title-div-" + file_id).removeClass("file-link-title-div-hidden");
+    
     link_div.find("input.file-name-input").val("");
     link_div.find("select.file-purpose-select").val("INPUT");
     link_div.find("select.file-chown-select").val("OWNED");

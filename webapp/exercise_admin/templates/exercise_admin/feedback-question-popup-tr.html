@@ -1,9 +1,7 @@
 {% load i18n %}
 {% load exercise_admin_extras %}
-{% get_default_language as DEFAULT_LANGUAGE %}
 {% get_current_language as CURRENT_LANGUAGE %}
 {% get_available_languages as AVAILABLE_LANGUAGES %}
-{% get_language_info_list for AVAILABLE_LANGUAGES as LANGUAGES_VERBOSE %}
 <tr id="feedback-question-popup-tr-{{ question.id }}">
   <td class="question-cell">
     <input type="checkbox" id="fb-question-checkbox-{{ question.id }}" class="feedback-question-checkbox" data-question-id="{{ question.id }}" {% if checked %}checked{% endif %}>

@@ -2,7 +2,6 @@ import collections
 import json
 import string
 import random
-import re
 
 from django.http import HttpResponse, HttpResponseNotFound, HttpResponseForbidden,\
     HttpResponseNotAllowed, JsonResponse
@@ -141,12 +140,14 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_hin
 
     edited_instance_file_links = {}
     for if_id in if_ids:
-        #if if_id.startswith('new'):
-            #current_if_link =
+        if if_id.startswith("new"):
+            file_id = form_data['instance_file_link_[{}]_file_id'.format(if_id)]
+        else:
+            file_id = if_id
         if if_id not in old_if_ids:
             current_if_link = InstanceIncludeFileToExerciseLink()
             current_if_link.exercise = exercise
-            current_if_link.include_file = InstanceIncludeFile.objects.get(id=if_id)
+            current_if_link.include_file = InstanceIncludeFile.objects.get(id=file_id)
             if_settings = IncludeFileSettings()
             current_if_link.file_settings = if_settings
         else:
@@ -412,7 +413,7 @@ def file_upload_exercise(request, exercise_id=None, action=None):
         tag_fields = [k for k in data.keys() if k.startswith("exercise_tag")]
         hint_ids = [k.split('_')[2][1:-1] for k in data.keys() if k.startswith('hint_tries')]
         # TODO: included_file-fields to included_file_file-fields
-        ef_ids = [k.split('_')[3][1:-1] for k in data.keys() if k.startswith('included_file_name')] # does this have to be set()?
+        ef_ids = set([k.split('_')[3][1:-1] for k in data.keys() if k.startswith('included_file_name')])
         if_ids = set([k.split('_')[3][1:-1] for k in data.keys() if k.startswith('instance_file_purpose')])
 
         form = CreateFileUploadExerciseForm(tag_fields, hint_ids, ef_ids, if_ids, order_hierarchy_json, data, files)
@@ -426,7 +427,7 @@ def file_upload_exercise(request, exercise_id=None, action=None):
                 with transaction.atomic(), reversion.create_revision():
                     save_file_upload_exercise(exercise, cleaned_data, order_hierarchy_json,
                                               old_hint_ids, old_ef_ids, old_if_ids, old_test_ids, old_stage_ids,
-                                              old_cmd_ids, new_stages, new_commands, hint_ids, ef_ids, if_ids)
+                                              old_cmd_ids, new_stages, new_commands, hint_ids, ef_ids, if_ids, new_if_id_map)
                     reversion.set_user(request.user)
                     reversion.set_comment(cleaned_data['version_comment'])
             except IntegrityError as e:
@@ -564,7 +565,7 @@ def edit_feedback_questions(request):
                 choice_prefix = "feedback_choice_[{id}]_{lang}".format(id=q_obj.id, lang=lang_code)
                 for field, val in cleaned_data.items():
                     if field.startswith(choice_prefix) and val:
-                        choice_id = re.findall("\((.*?)\)", field)[0]
+                        choice_id = field[field.index("(") + 1:field.index(")")]
                         if choice_id in choice_val_dict:
                             choice_val_dict[choice_id][lang_code] = val
                         else:
@@ -581,7 +582,7 @@ def edit_feedback_questions(request):
         new_feedbacks = [field for field in cleaned_data.keys()
                          if field.startswith("feedback_question_[new") and default_lang in field]
         for question_field in new_feedbacks:
-            question_id = re.findall("\[(.*?)\]", question_field)[0]
+            question_id = question_field[question_field.index("[") + 1:question_field.index("]")]
             choices = {}
             question_type = cleaned_data["feedback_type_[{}]".format(question_id)]
             
@@ -594,7 +595,7 @@ def edit_feedback_questions(request):
                 choice_fields = [field for field in cleaned_data.keys()
                                  if field.startswith("feedback_choice_[new") and default_lang in field]
                 for choice_field in choice_fields:
-                    choice_id = re.findall("\((.*?)\)", choice_field)[0]
+                    choice_id = choice_field[choice_field.index("(") + 1:choice_field.index(")")]
                     choices[choice_id] = MultipleChoiceFeedbackAnswer()
             elif question_type == "TEXTFIELD_FEEDBACK":
                 q_obj = TextfieldFeedbackQuestion(question=question)
