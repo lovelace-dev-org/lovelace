@@ -104,13 +104,22 @@ function submit_main_form(e) {
     console.log("Question ids: ");
     console.log(question_ids);
 
-    // Get the instance file id mapping for new instance file links.
+    // Get the instance file id mapping for new instance file links and remove unnecessary fields
+    var link_fields_to_remove = [];
     $("div.link-instance-file").each(function() {
         var new_id = $(this).attr("data-file-id-new");
-        if (new_id.startsWith("new")) {
+        if ($(this).attr("data-linked") !== "true") {
+            $(this).find("input.file-name-input").each(function() {
+                link_fields_to_remove.push($(this).attr("name"));
+            });
+            link_fields_to_remove.push($(this).find("select.file-purpose-select").attr("name"));
+            link_fields_to_remove.push($(this).find("select.file-chown-select").attr("name"));
+            link_fields_to_remove.push($(this).find("select.file-chgrp-select").attr("name"));
+            link_fields_to_remove.push($(this).find("input.file-chmod-input").attr("name"));
+        } else if (new_id.startsWith("new")) {
             form_data.append("instance_file_link_[" + new_id " + ]_file_id", $(this).attr("data-file-id"));
         }
-    })
+    });
     
     var form_type = form.attr('method');
     var form_url = form.attr('action');
@@ -120,7 +129,10 @@ function submit_main_form(e) {
     var form_data = new FormData(form[0]);
     form_data.append('order_hierarchy', JSON.stringify(order_hierarchy));
     form_data.append('exercise_feedback_questions', question_ids);
-
+    for (var field_name of link_fields_to_remove) {
+        form_data.delete(field_name);
+    }
+    
     console.log("Serialized form data:");
     for (var [key, value] of form_data.entries()) {
         console.log(key, value);

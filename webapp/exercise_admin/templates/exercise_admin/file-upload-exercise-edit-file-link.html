@@ -3,7 +3,6 @@
 {% get_default_language as DEFAULT_LANGUAGE %}
 {% get_current_language as CURRENT_LANGUAGE %}
 {% get_available_languages as AVAILABLE_LANGUAGES %}
-{% get_language_info_list for AVAILABLE_LANGUAGES as LANGUAGES_VERBOSE %}
 <div id="link-instance-file-{{ instance_file.id }}" class="link-instance-file" data-file-id="{{ instance_file.id }}" data-file-id-new="{{ instance_file.id }}"
      {% if linked %}data-linked="true"{% else %}data-linked="false"{% endif %}>
   <div id="edit-file-link-title-div-{{ instance_file.id }}"{% if not linked %} class="file-link-title-div-hidden"{% endif %}>

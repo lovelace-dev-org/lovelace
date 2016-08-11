@@ -2,7 +2,6 @@
 {% load exercise_admin_extras %}
 {% get_current_language as CURRENT_LANGUAGE %}
 {% get_available_languages as AVAILABLE_LANGUAGES %}
-{% get_language_info_list for AVAILABLE_LANGUAGES as LANGUAGES_VERBOSE %}
 <tr id="instance-file-popup-tr-{{ instance_file.id }}">
   <td class="default-name-cell">
     <input type="checkbox" id="instance-file-checkbox-{{ instance_file.id }}" class="instance-file-checkbox" data-file-id="{{ instance_file.id }}"{% if linked %} checked{% endif %} disabled>
