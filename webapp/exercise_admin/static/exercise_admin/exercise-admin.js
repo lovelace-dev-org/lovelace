@@ -25,7 +25,7 @@ $(document).ready(function() {
     $('div.feedback-table-div').slimScroll({
         height: '225px'
     });
-    $('div.feedback-choices').slimScroll({
+    $('#feedback-choice-list-div-create').slimScroll({
         height: '150px'
     });
     $('div.add-instance-file-table-div').slimScroll({
@@ -93,7 +93,7 @@ function submit_main_form(e) {
     console.log(order_hierarchy);
 
     // Get the linked feedback questions
-    var question_ids = $('#feedback-question-table > table > tbody > tr').map(function() {
+    var question_ids = $('#feedback-question-table > tbody > tr').map(function() {
         return this.getAttribute('data-question-id');
     }).get().join(',');
     console.log("Question ids: ");
@@ -260,7 +260,7 @@ function highlight_parent_li(input_elem) {
         if (!input.is(':focus')) {
             parent.toggleClass(hilight_class, false);
         }
-    });
+   });
 }
 
 
@@ -269,73 +269,88 @@ function highlight_parent_li(input_elem) {
 ********************/
 
 
+function update_create_feedback_button_state(default_lang) {
+    var button = $("#create-feedback-button");
+    var question_ok = $("#feedback-question-create-" + default_lang).val() != "";
+
+    var choices_ok = true;
+    var choice1_div = $("#feedback-choices-div-create:visible").find("div.feedback-choice-div:first");
+    if (choice1_div.length > 0) {
+        var choice_1 = choice1_div.find("input[data-language-code=" + default_lang + "].feedback-choice");
+        if (choice_1.val() === "") {
+            choices_ok = false;
+        } else {
+            var choice2_div = choice1_div.next();
+            var choice_2 = choice2_div.find("input[data-language-code=" + default_lang + "].feedback-choice");
+            if (choice_2.val() === "") {
+                choices_ok = false;
+            }
+        }
+    }
+
+    if (!question_ok || !choices_ok) {
+        button.prop("disabled", true);
+    } else {
+        button.prop("disabled", false);
+    }
+}
+
 var fb_choice_enum = 1;
 
-function add_feedback_choice(id_prefix, name_prefix, container_div_id, choices_div_id, named, choice_val) {
-    var TITLE_TEXT = "Deletes an answer choice of a feedback question";
-
-    var choice_container_div = $('#' + container_div_id);
-    var choices_div = $('#' + choices_div_id);
-    var label_n = choices_div.children().length + 1;
-    var choice_div = $('<div id="' + id_prefix + '-div-' + fb_choice_enum + '" class="feedback-choice-div">');
-    var new_label = $('<label class="feedback-choice-label" for="' + id_prefix + '-' + fb_choice_enum + '">');
-    var input = $('<input type="text" id="' + id_prefix + '-' + fb_choice_enum + '" class="feedback-choice">');
-
-    new_label.append('<span class="feedback-choice-span">Choice ' + label_n + ':</span>');
-    if (typeof choice_val !== "undefined") {
-        input.val(choice_val);
-    }
-    if (named) {  
-        input.attr("name", name_prefix + "_{" + fb_choice_enum + "}");
-    } else if (label_n <= 2) {
-        input.attr("oninput", "update_create_feedback_button_state();");
-    }
-    new_label.append(input);
-    if (label_n > 2) {
-        var delete_params = [id_prefix, fb_choice_enum].join("', '")
-        new_label.append('<button type="button" class="delete-button" title="' + TITLE_TEXT +
-                         '" onclick="delete_feedback_choice(\'' + delete_params + '\');">x</button>');
+function add_feedback_choice(question_id, choice_answers) {
+    var choice_list_div = $("#feedback-choice-list-div-" + question_id);
+    var choice_n = choice_list_div.children().length + 1;
+    var REQUIRED_CHOICES_N = 2;
+    if (choice_n > REQUIRED_CHOICES_N) {
+        var sample_id = "SAMPLE_CHOICE_ID";
+    } else {
+        var sample_id = "SAMPLE_REQUIRED_CHOICE_ID";
     }
     
-    choice_div.append(new_label);
-    choice_div.append('<div id="' + id_prefix + "-" + fb_choice_enum + '-error" class="admin-error"></div>');
-    choices_div.append(choice_div);
+    var choice_div = $("#feedback-choice-div-" + sample_id).clone().attr("id", "feedback-choice-div-" + fb_choice_enum);
+    choice_div.html(function(index, html) {
+        html = html.replace(new RegExp(sample_id, "g"), fb_choice_enum).replace(/SAMPLE_QUESTION_ID/g, question_id)
+            .replace(/SAMPLE_CHOICE_N/g, choice_n);
+        if (typeof choice_answers != "undefined") {
+            $.each(choice_answers, function(key, val) {
+                html = html.replace(new RegExp("SAMPLE_ANSWER_" + key, "g"), val);
+            });
+        } else {
+            html = html.replace(/SAMPLE_ANSWER_[A-Za-z]{2}/g, "");
+        }
+        return html;
+    });
+    
+    choice_list_div.append(choice_div);
     fb_choice_enum++;
 }
 
-function add_choice_to_selected_feedback() {
-    var choices_div = $("#feedback-choice-container > div.feedback-choices:visible");
-    var choices_div_id = choices_div.attr("id");
-    var question_id = choices_div.attr("data-feedback-question-id");
-    var choice_count = choices_div.children().length;
-    add_feedback_choice("feedback-choice-" + question_id, "choice_field_[" + question_id + "]", "feedback-choice-container", choices_div_id, true);
+function delete_feedback_choice(choice_id) {
+    var choice_div = $("#feedback-choice-div-" + choice_id);
+    var choice_n = choice_div.index();
+    var nextChoices = choice_div.nextAll();
+
+    choice_div.remove();
+    nextChoices.each(function(index) {
+        var new_choice_n = choice_n + index + 1;
+        $(this).find("span.feedback-choice-span").text("Choice " + new_choice_n + ":");
+    });
 }
 
-function delete_feedback_choice(id_prefix, choice_enum) {
-    $('#' + id_prefix + '-div-' + choice_enum).remove();
-}
-
-function handle_feedback_type_selection(select) {
-    var CHOICE_ID_PREFIX = 'new-feedback-choice';
-    var CHOICE_NAME_PREFIX = 'choice_field';
-    var CONTAINER_DIV_ID = 'new-feedback-choice-container';
-    var CHOICES_DIV_ID = 'new-feedback-choices';
-    
+function handle_feedback_type_selection(select, default_lang) {
     var option = select.options[select.selectedIndex];
-    var choice_container_div = $('#' + CONTAINER_DIV_ID);
-    var choices_div = $('#' + CHOICES_DIV_ID);
+    var choices_div = $("#feedback-choices-div-create");
     var add_choice_button = $('#add-new-feedback-choice');
     
     if (option.value === "MULTIPLE_CHOICE_FEEDBACK") {
-        choice_container_div.css({"display": "block"});
+        choices_div.css({"display": "block"});
         add_choice_button.css({"display": "inline-block"});
-        add_feedback_choice(CHOICE_ID_PREFIX, CHOICE_NAME_PREFIX, CONTAINER_DIV_ID, CHOICES_DIV_ID, false);
-        add_feedback_choice(CHOICE_ID_PREFIX, CHOICE_NAME_PREFIX, CONTAINER_DIV_ID, CHOICES_DIV_ID, false);
     } else {
-        choice_container_div.hide();
-        choices_div.empty();
+        choices_div.hide();
+        $("#feedback-choices-div-list-create").empty();
         add_choice_button.hide();
     }
+    update_create_feedback_button_state(default_lang);
 }
 
 function select_all_feedback_questions(select) {
@@ -343,124 +358,126 @@ function select_all_feedback_questions(select) {
 }
 
 function show_feedback_question_edit_menu(question_id) {
-    var MENU_TITLE = "Edit feedback question: "
-
-    var feedback_choices_div = $("#feedback-choices");
-    var add_choice_button = $("#add-feedback-choice");
-    var choices_div = $("#feedback-choices-" + question_id);
-
-    $("#edit-feedback-question-inputs > div").hide();
-    $("#feedback-question-input-div-" + question_id).css({"display" : "block"});
-    $("#edit-feedback-div").css({"display" : "block"});
+    $("div.edit-feedback-div").hide();
     $("#create-feedback-div").hide();
-    $("#edit-feedback-div-title").text(MENU_TITLE + $("#feedback-question-" + question_id + "-label").text());
-    
-    if (choices_div.length > 0) {
-        var all_choices_divs = $("#feedback-choice-container div.feedback-choices");
-        feedback_choices_div.css({"display" : "block"});
-        all_choices_divs.hide();
-        choices_div.css({"display" : "block"});
-        add_choice_button.css({"display" : "inline-block"});
-    } else {
-        feedback_choices_div.hide();
-        add_choice_button.hide();
-    }
+    $("#edit-feedback-divs").css({"display" : "block"});
+    $("#edit-feedback-div-" + question_id).css({"display" : "block"});
 }
 
 function close_edit_feedback_menu() {
-    $("#edit-feedback-div").hide();
+    $("#edit-feedback-divs").hide();
     $("#create-feedback-div").css({"display" : "block"});
 }
 
 function add_feedback_choices_to_popup(question_id, choices) {
-    var CHOICE_ID_PREFIX = 'feedback-choice-' + question_id;
-    var CHOICE_NAME_PREFIX = 'choice_field_[' + question_id + ']';
-    var CONTAINER_DIV_ID = 'feedback-choice-container';
-    var CHOICES_DIV_ID = 'feedback-choices-' + question_id;
-    
-    var choice_container_div = $('#' + CONTAINER_DIV_ID);
-    var choices_div = $('<div id="' + CHOICES_DIV_ID + '" class="feedback-choices" data-feedback-question-id="' + question_id + '">');
-    choice_container_div.append(choices_div);
-
     if (choices.length > 0) {
         $.each(choices, function(index, choice) {
-            add_feedback_choice(CHOICE_ID_PREFIX, CHOICE_NAME_PREFIX, CONTAINER_DIV_ID, CHOICES_DIV_ID, true, choice);
+            add_feedback_choice(question_id, choice);
         });
     } else {
-        add_feedback_choice(CHOICE_ID_PREFIX, CHOICE_NAME_PREFIX, CONTAINER_DIV_ID, CHOICES_DIV_ID, true);
-        add_feedback_choice(CHOICE_ID_PREFIX, CHOICE_NAME_PREFIX, CONTAINER_DIV_ID, CHOICES_DIV_ID, true);
+        add_feedback_choice(question_id);
+        add_feedback_choice(question_id);
     }
 }
 
-function add_feedback_question_to_popup(question, id, type, readable_type, choices, checked) {
-    var tr = $('<tr>');
-    var td_question = $('<td class="question-cell">');
-    var td_type = $('<td class="type-cell">' + readable_type + '</td>');
-    var td_edit = $('<td class="edit-cell">');
-    var inputs_div = $("#edit-feedback-question-inputs");
-    var input_div = $('<div id="feedback-question-input-div-' + id + '">');
-    var label = $('<label class="feedback-question-input-label" for="feedback-question-' + id + '">');
-    var checkbox = $('<input type="checkbox" id="fb-question-checkbox-' + id +
-                     '" class="feedback-question-checkbox" data-question-id="' + id + '">');
+function add_feedback_question_to_popup(id, questions, type, readable_type, choices, checked) {
     if (checked) {
-        checkbox.prop("checked", true);
+        var sample_id = "SAMPLE_CHECKED_ID";
+    } else {
+        var sample_id = "SAMPLE_ID";
     }
     
-    td_question.append(checkbox);
-    td_question.append('<label id="feedback-question-' + id + '-label" for="fb-question-checkbox-' + id +
-                       '" class="feedback-question-label">' + question + '</label>');
-    td_edit.append('<button type="button" class="edit-button" onclick="show_feedback_question_edit_menu(\'' + id + '\');"></button>');
-    tr.append(td_question);
-    tr.append(td_type);
-    tr.append(td_edit);
+    var tr = $("#feedback-question-popup-tr-" + sample_id).clone().attr('id', 'feedback-question-popup-tr' + id);
+    tr.html(function(index, html) {
+        html = html.replace(new RegExp(sample_id, 'g'), id).replace(/SAMPLE_HUMAN_READABLE_TYPE/g, readable_type);
+        $.each(questions, function(key, val) {
+            html = html.replace(new RegExp("SAMPLE_QUESTION_" + key, 'g'), val);
+        });
+        return html;
+    });
     $("#add-feedback-table > tbody").append(tr);
 
-    label.append('<span class="feedback-question-span">Feedback question:</span>');
-    label.append('<input type="text" id="feedback-question-' + id + '" class="feedback-question-input" name="question_field_[' +
-                 id + ']" maxlength="100" value="' + question + '">');
-    input_div.append(label);
-    input_div.append($('<div id="feedback-question-' + id + '-error" class="admin-error">'));
-    input_div.append('<input type="text" id="feedback-type-' + id + '" name="type_field_[' + id + ']" value="' + type + '" hidden readonly>');
-    inputs_div.append(input_div);
+    var edit_div = $("#edit-feedback-div-SAMPLE_ID").clone().attr('id', 'edit-feedback-div-' + id);
+    edit_div.html(function(index, html) {
+        html = html.replace(/SAMPLE_ID/g, id).replace(/SAMPLE_TYPE/g, type);
+        $.each(questions, function(key, val) {
+            html = html.replace(new RegExp("SAMPLE_QUESTION_" + key, 'g'), val);
+        });
+        return html;
+    });
+    
+    $("#edit-feedback-divs").append(edit_div);
+
     if (type === "MULTIPLE_CHOICE_FEEDBACK") {
+        $("#feedback-choice-list-div-" + id).slimScroll({
+            height: '150px'
+        });
         add_feedback_choices_to_popup(id, choices);
+    } else {
+        edit_div.find("#feedback-choices-div-" + id).hide();
+        edit_div.find("#add-feedback-choice-" + id).hide();
     }
 }
 
-function create_new_feedback_question_entry() {
-    var question = $("#feedback-question-new").val();
-    var type = $("#feedback-type-select").val();
-    var readable_type = type.toLowerCase().replace(/_/g, " ");
-    var choices = [];
-    var choices_div = $("#new-feedback-choices");
-    var choice_container_div = $("#new-feedback-choice-container");
+function init_create_feedback_choice_list(default_lang) {
+    var choice_list_div = $("#feedback-choice-list-div-create");
+    choice_list_div.empty();
+    add_feedback_choice("create");
+    add_feedback_choice("create");
+    choice_list_div.find("input.feedback-choice").attr("oninput", "update_create_feedback_button_state('" + default_lang + "');");
+}
 
-    $("div.popup div.admin-error").hide();
-    
-    var duplicates = false;
-    $("#create-feedback-div input[type=text].feedback-choice").each(function(index) {
-        if (this.value != "" && choices.indexOf(this.value) > -1) {
-            var choice_error_div = $("#new-feedback-choice-" + index + "-error");
-            choice_error_div.text("Duplicate choice!");
-            choice_error_div.css({"display" : "block"});
-            duplicates = true;
-        }
-        choices.push(this.value);
+var feedback_enum = 1;
+
+function create_new_feedback_question_entry(default_lang) {
+    var questions = {};
+    var question_inputs = $("#create-feedback-div input.feedback-question-input");
+    question_inputs.each(function() {
+        questions[$(this).attr("data-language-code")] = $(this).val();
     });
 
-    var new_count = 0;
+    var type = $("#feedback-type-select-create").val();
+    var readable_type = type.toLowerCase().replace(/_/g, " ");
+    var choice_check = {};
+    var choices = [];
+
+    $("div.popup div.admin-error").hide();
+
+    var duplicates = false;
+    $("#create-feedback-div div.feedback-choice-div").each(function() {
+        var choice_div = $(this);
+        var choice = {}
+        choice_div.find("input.feedback-choice").each(function() {
+            var lang = $(this).attr("data-language-code");
+            var answer = $(this).val();
+            if (typeof choice_check[lang] != "undefined") {
+                if (answer != "" && choice_check[lang].indexOf(answer) > -1) {
+                    var choice_error_div = choice_div.find("div.admin-error");
+                    choice_error_div.text("Duplicate choice!");
+                    choice_error_div.css({"display" : "block"});
+                    duplicates = true;
+                }
+                choice_check[lang].push(answer);
+            } else {
+                choice_check[lang] = [answer];
+            }
+            choice[lang] = answer;
+        });
+        choices.push(choice);
+    });
+
     var already_exists = false;
     $("#add-feedback-div label.feedback-question-label").each(function() {
-        if ($(this).text() === question) {
+        var lang = $(this).parent().attr("data-language-code");
+        var question = $(this).text();
+        if (question != "" && question === questions[lang]) {
             already_exists = true;
             return false;
         }
-        if (this.id.indexOf("new") > -1) {
-            new_count++;
-        }
     });
     if (already_exists) {
-        var feedback_error_div = $("#new-feedback-question-error");
+        var feedback_error_div = $("#feedback-question-error-create");
+        console.log(feedback_error_div);
         feedback_error_div.text("This feedback question already exists");
         feedback_error_div.css({"display" : "block"});
         return;
@@ -469,33 +486,21 @@ function create_new_feedback_question_entry() {
         return;
     }
     
-    $("#feedback-question-new").val("");
-    choices_div.empty();
-    handle_feedback_type_selection($("#feedback-type-select")[0]);
-    add_feedback_question_to_popup(question, "new-" + (new_count + 1), type, readable_type, choices, true);
+    question_inputs.val("");
+    init_create_feedback_choice_list(default_lang);
+
+    handle_feedback_type_selection($("#feedback-type-select-create")[0], default_lang);
+    add_feedback_question_to_popup("new-" + feedback_enum, questions, type, readable_type, choices, true);
+    feedback_enum++;
 }
 
-function update_create_feedback_button_state() {
-    var button = $("#create-feedback-button");
-    var question_val = $("#feedback-question-new").val();
-    var choice1 = $("#new-feedback-choice-1");
-    var choice2 = $("#new-feedback-choice-2");
-    if (question_val === "" ||
-        (choice1.length > 0 && choice1.val() === "") ||
-        (choice2.length > 0 && choice2.val() === "")) {
-        button.prop("disabled", true);
-    } else {
-        button.prop("disabled", false);
-    }
-}
-
-function show_edit_feedback_questions_popup(event, url) {
+function show_edit_feedback_questions_popup(event, url, default_lang) {
     event.preventDefault();
 
     $.get(url, function(data, textStatus, jqXHR) {
-        var questions = [];
+        var question_ids = [];
         $('#feedback-question-table tbody tr').each(function() {
-            questions.push($(this).find("td:first").html());   
+            question_ids.push($(this).attr("data-question-id"));   
         });
         var popup = $("#edit-feedback-popup");
         var error_span = $("#edit-feedback-popup-error");
@@ -514,42 +519,121 @@ function show_edit_feedback_questions_popup(event, url) {
         $("div.popup div.admin-error").hide();
         $("#add-feedback-table > tbody").empty();
         $("#fb-question-checkbox-all").prop("checked", false);
-        $("#feedback-choice-container").empty();
-        $("#edit-feedback-question-inputs").empty();
-        $("#edit-feedback-div").hide();
+        $("#edit-feedback-divs").empty();
+        $("#edit-feedback-divs").hide();
         $("#create-feedback-div").css({"display" : "block"});
+        init_create_feedback_choice_list(default_lang);
         
         $.each(result, function() {
-            var question = this.question;
-            if ($.inArray(question, questions) > -1) {
-                add_feedback_question_to_popup(question, this.id, this.type, this.readable_type, this.choices, true);
+            var question_id = "" + this.id;
+            if ($.inArray(question_id, question_ids) > -1) {
+                add_feedback_question_to_popup(this.id, this.questions, this.type, this.readable_type, this.choices, true);
             } else {
-                add_feedback_question_to_popup(question, this.id, this.type, this.readable_type, this.choices, false);
+                add_feedback_question_to_popup(this.id, this.questions, this.type, this.readable_type, this.choices, false);
             }
         });
-        $('#new-feedback-choices').empty();
-        handle_feedback_type_selection($("#feedback-type-select")[0]);
+        handle_feedback_type_selection($("#feedback-type-select-create")[0]);
+        update_create_feedback_button_state(default_lang)
         popup.css({"opacity": "1", "pointer-events": "auto"});
     });
 }
 
-function edit_feedback_form_success(data, text_status, jqxhr_obj) {
+function close_popup_and_add_questions(questions, default_lang) {
+    console.log("close");
+    var target_tbody = $("#feedback-question-table tbody");
+    $("#add-feedback-table > tbody input.feedback-question-checkbox").each(function(index) {
+        console.log(this);
+        var checked = $(this).prop("checked");
+        var question_id = $(this).attr("data-question-id");
+        var question = $("#feedback-question-label-" + question_id + "-" + default_lang).text();
+        var db_id = "";
+        var db_readable_type = "";
+        var db_questions = [];
+        var in_table = false;
+        var saved = false;
+
+        $.each(questions, function(index, db_question) {
+            if (db_question.questions[default_lang] === question) {
+                db_id = "" + db_question.id;
+                db_readable_type = db_question.readable_type;
+                db_questions = db_question.questions;
+                saved = true;
+                return false;
+            }
+        });
+        if (!saved) {
+            console.log("not saved");
+            return;
+        }
+
+        var tr = null;
+        target_tbody.find("tr").each(function() {
+            if ($(this).attr("data-question-id") === db_id) {
+                tr = $(this);
+                in_table = true;
+                return false;
+            }
+        });
+
+        if (in_table && !checked) {
+            tr.remove();
+            console.log("in table and not checked");
+        } else if (in_table) {
+            tr.find("td.question-cell span").each(function() {
+                var span = $(this);
+                span.text(db_questions[span.attr("data-language-code")]);
+            });
+            tr.find("td.type-cell").text(db_readable_type);
+            console.log("in table");
+        } else if (checked) {
+            tr = $("#feedback-question-tr-" + "SAMPLE_ID").clone().attr("id", "feedback-question-tr-" + db_id);
+            tr.attr("data-question-id", db_id)
+            tr.html(function(index, html) {
+                html = html.replace(/SAMPLE_ID/g, db_id).replace(/SAMPLE_HUMAN_READABLE_TYPE/g, db_readable_type);
+                $.each(db_questions, function(key, val) {
+                    sample_str = "SAMPLE_QUESTION_" + key;
+                    html = html.replace(new RegExp(sample_str, "g"), val);
+                });
+                return html;
+            });
+            console.log("not in table");
+            target_tbody.append(tr);
+        }
+    });
+    close_popup($("#edit-feedback-popup"));
+}
+
+function close_feedback_popup() {
+    var choice_lists = $("div.feedback-choice-list");
+    choice_lists.slimScroll({
+        destroy: true
+    });
+
+    // Remove binded events that slimScroll doesn't remove automatically
+    // http://stackoverflow.com/questions/26783076/slimscroll-destroy-doesnt-unbind-the-scroll-events
+    choice_lists.each(function() {
+        events = $._data($(this)[0], "events");
+        if (events) {
+            $._removeData($(this)[0], "events");
+        }
+    });
+    close_popup($("#edit-feedback-popup"));
+}
+
+function edit_feedback_form_success(data, text_status, jqxhr_obj, default_lang) {
     var ID_PATTERN = /\[(.*?)\]/;
-    var CHOICE_ENUM_PATTERN = /\{(.*?)\}/;
+    var CHOICE_ENUM_PATTERN = /\((.*?)\)/;
     if (data.error) {
         var sep = "<br>";
         $.each(data.error, function(err_source, err_msg) {
-            if (err_source === "__all__") {
-                var error_div = $("#feedback-error");
-            } else {
+            var error_div = $("#feedback-error");
+            if (err_source != "__all__") {
                 var question_id = err_source.match(ID_PATTERN)[1];
-                if (err_source.startsWith("question_field")) {
-                    var error_div = $("#feedback-question-" + question_id + "-error");
-                } else if (err_source.startsWith("type_field")) {
-                    var error_div = $("#feedback-error");
-                } else if (err_source.startsWith("choice_field")) {
+                if (err_source.startsWith("feedback_question")) {
+                    var error_div = $("#feedback-question-error-" + question_id);
+                } else if (err_source.startsWith("feedback_choice")) {
                     var choice_enum = err_source.match(CHOICE_ENUM_PATTERN)[1];
-                    var error_div = $("#feedback-choice-" + question_id + "-" + choice_enum + "-error");
+                    var error_div = $("#feedback-choice-error-" + choice_enum);
                 }
             }
             error_div.html(err_msg.join(sep));
@@ -559,7 +643,7 @@ function edit_feedback_form_success(data, text_status, jqxhr_obj) {
         });
     } else if (data.result) {
         console.log("Feedback questions edited successfully!");    
-        close_popup_and_add_questions(data.result);
+        close_popup_and_add_questions(data.result, default_lang);
     }
 }
 
@@ -576,7 +660,7 @@ function edit_feedback_form_error(xhr, status, type) {
     error_span.css("display", "block");
 }
 
-function submit_edit_feedback_form(e) {
+function submit_edit_feedback_form(e, default_lang) {
     e.preventDefault();
     console.log("User requested create feedback form submit.");
 
@@ -588,13 +672,35 @@ function submit_edit_feedback_form(e) {
 
     console.log("Method: " + form_type + ", URL: " + form_url);
 
+    var new_question_ids = [];
+    var linked_question_ids = [];
+    $("#edit-feedback-popup tbody input[type=checkbox].feedback-question-checkbox").each(function() {
+        var id = $(this).attr("data-question-id");
+        if (id.startsWith("new")) {
+            new_question_ids.push(id);
+        }
+        if ($(this).prop("checked")) {
+            linked_question_ids.push(id);
+        }
+    });
+    
     var form_data = new FormData(form[0]);
 
+    var create_keys = []
     console.log("Serialized form data:");
     for (var [key, value] of form_data.entries()) { 
         console.log(key, value);
+        if (key.indexOf("create") > -1) {
+            create_keys.push(key);
+        }
     }
-    
+
+    form_data.append("new_questions", new_question_ids.join(","));
+    form_data.append("linked_questions", linked_question_ids.join(","));
+    for (var key of create_keys) {
+        form_data.delete(key);
+    }
+
     console.log("Submitting the form...");
     $.ajax({
         type: form_type,
@@ -603,58 +709,12 @@ function submit_edit_feedback_form(e) {
         processData: false,
         contentType: false,
         dataType: 'json',
-        success: edit_feedback_form_success,
+        success: function(data, textStatus, jqXHR) {
+            edit_feedback_form_success(data, textStatus, jqXHR, default_lang)
+        },
         error: edit_feedback_form_error
     });
 }
-
-function close_popup_and_add_questions(questions) {
-    var TITLE_TEXT = "Deletes the relation between the feedback question and the exercise";
-    var target_tbody = $("#feedback-question-table tbody");
-    $("#add-feedback-table > tbody input.feedback-question-checkbox").each(function(index) {
-        var checked = $(this).prop("checked");
-        var id = $(this).attr("data-question-id");
-        var question = $("#feedback-question-" + id).val();
-        var type = "";
-        var in_table = false;
-        var not_saved = true;
-        
-        $.each(questions, function(index, db_question) {
-            if (db_question.question === question) {
-                id = "" + db_question.id;
-                type = db_question.readable_type;
-                not_saved = false;
-                return false;
-            }
-        });
-        if (not_saved) {
-            return;
-        }
-
-        var tr = $('<tr data-question-id="' + id + '">');
-        target_tbody.find("tr").each(function() {
-            if ($(this).attr("data-question-id") === id) {
-                tr = $(this);
-                in_table = true;
-                return false;
-            }
-        });
-        if (in_table && !checked) {
-            tr.remove();
-        } else if (in_table) {
-            tr.children("td.question-cell").html(question);
-        } else if (checked) {
-            var td_delete = $('<td class="delete-cell">');
-            tr.append('<td class="question-cell">' + question + '</td>');
-            tr.append('<td class="type-cell">' + type + '</td>');
-            td_delete.append('<button class="delete-button" title="' + TITLE_TEXT + '" onclick="delete_table_row(this);">x</button>');
-            tr.append(td_delete);
-            target_tbody.append(tr);
-        }
-    });
-    close_popup($("#edit-feedback-popup"));
-}
-
 
 /********
 * Hints *
@@ -697,6 +757,7 @@ function update_included_file_ok_button_state(file_id, default_lang) {
 function show_edit_included_file_popup(file_id, default_lang) {
     var popup = $("#edit-included-file-" + file_id);
     update_included_file_ok_button_state(file_id, default_lang);
+    $("#file-chmod-error-" + file_id).hide();
     popup.css({"opacity": "1", "pointer-events": "auto"});
 }
 
@@ -945,15 +1006,19 @@ function add_unchecked_instance_file_link_div(file_id, default_names) {
     $("#link-instance-file-divs").append(link_div);
 }
 
-function add_instance_file_popup_tr(file_id, default_names, instance, urls, checked, link) {
+function add_instance_file_popup_tr(file_id, default_names, instances, urls, checked, link) {
     if (checked) {
         var sample_id = "SAMPLE_LINKED_ID";
     } else {
         var sample_id = "SAMPLE_ID";
     }
+    
     var tr = $("#instance-file-popup-tr-" + sample_id).clone().attr('id', 'instance-file-popup-tr-' + file_id);
     tr.html(function(index, html) {
-        html = html.replace(new RegExp(sample_id, 'g'), file_id).replace("SAMPLE_INSTANCE", instance);
+        html = html.replace(new RegExp(sample_id, 'g'), file_id);
+        $.each(instances, function(key, val) {
+            html = html.replace(new RegExp("SAMPLE_INSTANCE_" + key, 'g'), val);
+        });
         $.each(default_names, function(key, val) {
             html = html.replace(new RegExp("SAMPLE_DEFAULT_NAME_" + key, 'g'), val);
         });
@@ -975,13 +1040,13 @@ function add_instance_file_popup_tr(file_id, default_names, instance, urls, chec
     $("#add-instance-file-table > tbody").append(tr);
 }
 
-function add_existing_instance_file_to_popup(file_id, instance, default_names, descriptions, urls, link, checked) {
+function add_existing_instance_file_to_popup(file_id, instance_id, instance_names, default_names, descriptions, urls, link, checked) {
     if (checked) {
         add_checked_instance_file_link_div(file_id, default_names, link);
-        add_instance_file_popup_tr(file_id, default_names, instance, urls, true, link);
+        add_instance_file_popup_tr(file_id, default_names, instance_names, urls, true, link);
     } else {
         add_unchecked_instance_file_link_div(file_id, default_names);
-        add_instance_file_popup_tr(file_id, default_names, instance, urls, false, link);
+        add_instance_file_popup_tr(file_id, default_names, instance_names, urls, false, link);
     }
     
     var edit_div = $("#edit-instance-file-SAMPLE_ID").clone().attr('id', 'edit-instance-file-' + file_id);
@@ -995,9 +1060,10 @@ function add_existing_instance_file_to_popup(file_id, instance, default_names, d
         });
         return html;
     });
-    
-    var instance_option = edit_div.find("select.file-instance-select option:contains('" + instance + "')");
-    instance_option.prop("selected", true)
+    $.each(instance_names, function(key, val) {
+        var select = edit_div.find("#instance-file-instance-" + file_id + "-" + key);
+        select.val(instance_id);
+    });
     $("#edit-instance-file-divs").append(edit_div);
 }
 
@@ -1137,10 +1203,10 @@ function show_edit_instance_files_popup(event, url) {
         $.each(result, function() {
             var file_id = "" + this.id;
             if ($.inArray(file_id, file_ids) > -1) {
-                add_existing_instance_file_to_popup(file_id, this.instance, this.default_names, this.descriptions,
+                add_existing_instance_file_to_popup(file_id, this.instance_id, this.instance_names, this.default_names, this.descriptions,
                                                     this.urls, this.link, true);
             } else {
-                add_existing_instance_file_to_popup(file_id, this.instance, this.default_names, this.descriptions,
+                add_existing_instance_file_to_popup(file_id, this.instance_id, this.instance_names, this.default_names, this.descriptions,
                                                     this.urls, this.link, false);
             }
         });
@@ -1155,8 +1221,8 @@ function close_popup_and_add_instance_files(instance_files, default_lang) {
         var file_id = $(this).attr("data-file-id");
         var default_name = $("#instance-file-label-" + file_id + "-" + default_lang).text();
         var db_id = "";
-        var db_instance = "";
         var db_purpose_display = "";
+        var db_instances = [];
         var db_names = [];
         var db_description = [];
         var in_table = false;
@@ -1165,7 +1231,7 @@ function close_popup_and_add_instance_files(instance_files, default_lang) {
         $.each(instance_files, function(index, db_file) {
             if (db_file.default_names[default_lang] === default_name) {
                 db_id = "" + db_file.id;
-                db_instance = db_file.instance;
+                db_instances = db_file.instance_names;
                 db_purpose_display = db_file.link.purpose_display;
                 db_names = db_file.link.names;
                 db_descriptions = db_file.descriptions;
@@ -1193,7 +1259,10 @@ function close_popup_and_add_instance_files(instance_files, default_lang) {
                 var span = $(this);
                 span.text(db_names[span.attr("data-language-code")]);
             });
-            tr.find("td.instance-cell").text(db_instance);
+            tr.find("td.instance-cell span").each(function() {
+                var span = $(this);
+                span.text(db_instances[span.attr("data-language-code")]);
+            });
             tr.find("td.purpose-cell").text(db_purpose_display);
             tr.find("td.description-cell span").each(function() {
                 var span = $(this);
@@ -1203,8 +1272,11 @@ function close_popup_and_add_instance_files(instance_files, default_lang) {
             tr = $("#instance-file-tr-" + "SAMPLE_ID").clone().attr("id", "instance-file-tr-" + db_id);
             tr.attr("data-file-id", db_id)
             tr.html(function(index, html) {
-                html = html.replace(/SAMPLE_ID/g, db_id).replace(/SAMPLE_INSTANCE_NAME/g, db_instance)
-                    .replace(/SAMPLE_GET_PURPOSE_DISPLAY/g, db_purpose_display);
+                html = html.replace(/SAMPLE_ID/g, db_id).replace(/SAMPLE_GET_PURPOSE_DISPLAY/g, db_purpose_display);
+                $.each(db_instances, function(key, val) {
+                    sample_str = "SAMPLE_INSTANCE_NAME_" + key;
+                    html = html.replace(new RegExp(sample_str, "g"), val);
+                });
                 $.each(db_names, function(key, val) {
                     sample_str = "SAMPLE_NAME_" + key;
                     html = html.replace(new RegExp(sample_str, "g"), val);
@@ -1228,9 +1300,8 @@ function edit_instance_file_form_success(data, text_status, jqxhr_obj, default_l
     if (data.error) {
         var sep = "<br>";
         $.each(data.error, function(err_source, err_msg) {
-            if (err_source === "__all__") {
-                var error_div = $("#instance-file-error");
-            } else {
+            var error_div = $("#instance-file-error");
+            if (err_source != "__all__") {
                 var file_id = err_source.match(ID_PATTERN)[1];
                 var error_in_link = false;
                 if (err_source.startsWith("instance_file_file")) {

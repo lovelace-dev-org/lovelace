@@ -3,7 +3,6 @@
 {% get_default_language as DEFAULT_LANGUAGE %}
 {% get_current_language as CURRENT_LANGUAGE %}
 {% get_available_languages as AVAILABLE_LANGUAGES %}
-{% get_language_info_list for AVAILABLE_LANGUAGES as LANGUAGES_VERBOSE %}
 <tr id="included-file-tr-{{ include_file.id }}">
   <td id="included-file-td-name-{{ include_file.id }}">
     {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}

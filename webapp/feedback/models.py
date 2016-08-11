@@ -1,6 +1,7 @@
 from django.utils.text import slugify
 from django.db import models
 from django.contrib.auth.models import User
+import django.conf
 
 #from courses.models import ContentPage # prevent circular import
 
@@ -15,7 +16,7 @@ QUESTION_TYPE_CHOICES = (
 
 class ContentFeedbackQuestion(models.Model):
     """A feedback that can be linked to any content."""
-    question = models.CharField(verbose_name="Question", max_length=100, unique=True)
+    question = models.CharField(verbose_name="Question", max_length=100)
     question_type = models.CharField(max_length=28, default="TEXTFIELD_FEEDBACK", choices=QUESTION_TYPE_CHOICES)
     slug = models.SlugField(max_length=255, db_index=True, unique=True, allow_unicode=True)
     
@@ -24,7 +25,9 @@ class ContentFeedbackQuestion(models.Model):
 
     def get_url_name(self):
         """Creates a URL and HTML5 ID field friendly version of the name."""
-        return slugify(self.question, allow_unicode=True)
+        # TODO: Ensure uniqueness!
+        default_lang = django.conf.settings.LANGUAGE_CODE
+        return slugify(getattr(self, "question_{}".format(default_lang)), allow_unicode=True)
     
     def get_type_object(self):
         """Returns the actual type object of the question object that is the child of ContentFeedbackQuestion."""
@@ -194,9 +197,6 @@ class MultipleChoiceFeedbackAnswer(models.Model):
 
     def __str__(self):
         return self.answer
-
-    class Meta:
-        unique_together = ('question', 'answer',)
 
 class ContentFeedbackUserAnswer(models.Model):
     user = models.ForeignKey(User)                          # The user who has given this feedback

@@ -9,71 +9,74 @@ import feedback.models
 import courses.models as c_models
 
 class CreateFeedbackQuestionsForm(forms.Form):
-    def __init__(self, feedback_questions, data, *args, **kwargs):
+    def __init__(self, feedback_questions, new_question_ids, data, *args, **kwargs):
         super(CreateFeedbackQuestionsForm, self).__init__(data, *args, **kwargs)
+
+        default_lang = get_default_lang()
+        lang_list = get_lang_list()
 
         # Possibly edited existing feedback questions
         for question in feedback_questions:
-            question = question.get_type_object()
-            self._add_fields(question.id, data)
-            
-        # New added feedback questions
-        new_feedback_count = len([k for k in data.keys() if k.startswith("question_field_[new")])
-        for i in range(new_feedback_count):
-            self._add_fields("new-{}".format(i + 1), data)
+            self._add_fields(str(question.id), data, default_lang, lang_list)
 
-    def _add_fields(self, prefix_id, data):
-        self.fields["question_field_[{}]".format(prefix_id)] = forms.CharField(max_length=100, required=True, strip=True)
-        self.fields["type_field_[{}]".format(prefix_id)] = forms.ChoiceField(choices=feedback.models.QUESTION_TYPE_CHOICES, required=True)
-        choice_field_prefix = "choice_field_[{}]_".format(prefix_id)
-        choice_fields = sorted([k for k in data.keys() if k.startswith(choice_field_prefix)])
-        for i, choice_field in enumerate(choice_fields):
-            if i < 2:
-                self.fields[choice_field] = forms.CharField(required=True, strip=True)
+        # New feedback questions
+        for question_id in new_question_ids:
+            self._add_fields(question_id, data, default_lang, lang_list)
+
+    def _clean_duplicates_of_field(self, field_name, field_val, field_prefix, model_field, cleaned_data, lang_list):
+        model_field_readable = model_field.replace("_", " ")
+
+        for lang_code, _ in lang_list:
+            if lang_code in field_name:
+                break
+
+        for k, v in cleaned_data.copy().items():
+            if k.startswith(field_prefix) and lang_code in k and v == field_val and k != field_name:
+                error_msg = "Duplicate {field} in language {lang}!".format(field=model_field_readable, lang=lang_code)
+                error_code = "duplicate_{}".format(model_field)
+                field_error = forms.ValidationError(error_msg, code=error_code)
+                self.add_error(field_name, field_error)
+            
+    def _add_fields(self, question_id, data, default_lang, lang_list):
+        for lang_code, _ in lang_list:
+            question_field = "feedback_question_[{id}]_{lang}".format(id=question_id, lang=lang_code)
+            
+            if lang_code == default_lang:
+                self.fields[question_field] = forms.CharField(max_length=100, required=True, strip=True)
             else:
-                self.fields[choice_field] = forms.CharField(required=False, strip=True)
+                self.fields[question_field] = forms.CharField(max_length=100, required=False, strip=True)
+
+            choice_field_prefix = "feedback_choice_[{id}]_{lang}".format(id=question_id, lang=lang_code)
+            choice_fields = sorted([k for k in data.keys() if k.startswith(choice_field_prefix)])
+            for i, choice_field in enumerate(choice_fields):
+                if i < 2 and lang_code == default_lang:
+                    self.fields[choice_field] = forms.CharField(required=True, strip=True)
+                else:
+                    self.fields[choice_field] = forms.CharField(required=False, strip=True)
+        
+        type_field = "feedback_type_[{id}]".format(id=question_id)
+        self.fields[type_field] = forms.ChoiceField(choices=feedback.models.QUESTION_TYPE_CHOICES, required=True)
             
     def clean(self):
         cleaned_data = super(CreateFeedbackQuestionsForm, self).clean()
+        lang_list = get_lang_list()
 
-        for k1 in self.fields.keys():
-            field_val = cleaned_data.get(k1)
+        for field_name in self.fields.keys():
+            field_val = cleaned_data.get(field_name)
             if field_val is None:
                 continue
-            
-            if k1.startswith("question_field"):
-                for k2, v in cleaned_data.copy().items():
-                    if k2.startswith("question_field") and v == field_val and k1 != k2:
-                        question_error = forms.ValidationError("Duplicate feedback question!", code="duplicate_question")
-                        self.add_error(k1, question_error)
-                try:
-                    feedback_question = feedback.models.ContentFeedbackQuestion.objects.get(question=field_val)
-                except feedback.models.ContentFeedbackQuestion.DoesNotExist:
-                    pass
-                else:
-                    question_id = re.findall("\[(.*?)\]", k1)[0]
-                    if str(feedback_question.get_type_object().id) != question_id:
-                        #TODO: handle swapping of names
-                        question_error = forms.ValidationError("A feedback question with this name already exists! Remove the duplicate first!",
-                                                               code="question_exists")
-                        self.add_error(k1, question_error)
+            question_id = field_name[field_name.index("[") + 1:field_name.index("]")]
 
-            elif k1.startswith("type_field"):
-                if field_val not in [choice[0] for choice in feedback.models.QUESTION_TYPE_CHOICES]:
-                    type_error = forms.ValidationError("This feedback question is of invalid type!", code="invalid_type")
-                    self.add_error(k, type_error)
+            if field_name.startswith("feedback_question") and field_val:
+                self._clean_duplicates_of_field(field_name, field_val, "feedback_question", "question", cleaned_data, lang_list)
+            elif field_name.startswith("feedback_choice") and field_val:
+                self._clean_duplicates_of_field(field_name, field_val, "feedback_choice_[{}]".format(question_id), "choice", cleaned_data, lang_list)
 
-            elif k1.startswith("choice_field"):
-                question_id = re.findall("\[(.*?)\]", k1)[0]
+            if field_name.startswith("choice_field"):
                 type_field_name = "type_field_[{}]".format(question_id)
                 if type_field_name in cleaned_data and cleaned_data[type_field_name] != "MULTIPLE_CHOICE_FEEDBACK":
                     type_error = forms.ValidationError("Only multiple choice feedback accepts choice!", code="choices_with_incorrect_type")
                     self.add_error(type_field_name, type_error)
-                for k2, v in cleaned_data.copy().items():
-                    if k2.startswith("choice_field_[{}]".format(question_id)) and v == field_val and k1 != k2:
-                        choice_error = forms.ValidationError("Duplicate choice!", code="duplicate_choice")
-                        self.add_error(k1, choice_error)
-
 
 class CreateInstanceIncludeFilesForm(forms.Form):
     def __init__(self, instance_files, new_file_ids, linked_file_ids, data, files, *args, **kwargs):
@@ -104,15 +107,15 @@ class CreateInstanceIncludeFilesForm(forms.Form):
                 self.fields[file_field] = forms.FileField(max_length=255, required=False)
                 
             if lang_code == default_lang:
+                instance_field = "instance_file_instance_[{id}]_{lang}".format(id=file_id, lang=lang_code)
+                instance_choices = [(instance.id, getattr(instance, "name_{}".format(default_lang)))
+                                    for instance in c_models.CourseInstance.objects.all()]
                 self.fields[default_name_field] = forms.CharField(max_length=255, required=True, strip=True)
+                self.fields[instance_field] = forms.ChoiceField(choices=instance_choices, required=True)
             else:
                 self.fields[default_name_field] = forms.CharField(max_length=255, required=False, strip=True)
 
             self.fields[description_field] = forms.CharField(required=False, strip=True)
-
-        instance_field = "instance_file_instance_[{}]".format(file_id)
-        instance_choices = [(instance.id, instance.name) for instance in c_models.CourseInstance.objects.all()]
-        self.fields[instance_field] = forms.ChoiceField(choices=instance_choices, required=True)
 
     #TODO: Move to main form!
     def _add_link_fields(self, file_id, default_lang, lang_list):
@@ -123,7 +126,7 @@ class CreateInstanceIncludeFilesForm(forms.Form):
         model_field_readable = model_field.replace("_", " ")
         
         for lang_code, _ in lang_list:
-            if field_name.startswith(field_prefix) and field_name.endswith(lang_code) and field_val != "":
+            if field_name.startswith(field_prefix) and field_name.endswith(lang_code) and field_val:
                 for k, v in cleaned_data.copy().items():
                     if k.startswith(field_prefix) and k.endswith(lang_code) and v == field_val and k != field_name:
                         error_msg = "Duplicate {field} in language {lang}!".format(field=model_field_readable, lang=lang_code)

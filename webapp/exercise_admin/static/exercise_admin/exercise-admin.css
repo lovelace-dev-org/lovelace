@@ -630,7 +630,7 @@ div.popup div.bordered-editable-area {
 
 /* Feedback popup elements */
 
-div#edit-feedback-div {
+div#edit-feedback-divs {
     margin-top: 30px;
     display: none;
 }
@@ -661,6 +661,7 @@ div.popup input[type=checkbox].feedback-question-checkbox {
 }
 
 div.popup td label.feedback-question-label {
+    display: inline-block;
     margin-left: 5px;
 }
 
@@ -672,40 +673,43 @@ div.popup table.feedback-question-table td {
     height: 28px;
 }
 
+div.popup h2.edit-feedback-popup-title {
+    display: inline-block;
+}
+
 div.popup span.feedback-question-span {
     display: inline-block;
     margin-left: 5px;
-    width: 140px;
+    margin-right: 5px;
 }
 
 div.popup input[type=text].feedback-question-input {
     height: 24px;
     margin-left: 5px;
-    width: 1030px;
+    width: 1000px;
 }
 
-div#edit-feedback-div input[type=text].feedback-question-input {
-    width: 1034px;
+div.popup span.feedback-type-span {
+    margin-left: 5px;
+    margin-right: 5px;
 }
 
 div.popup select.feedback-type-select {
     margin-top: 5px;
 }
 
-div#new-feedback-choice-container {
-    display: none;
+div.feedback-choices {
+    margin-top: 10px;
+}
+
+div.feedback-choice-container {
     margin-top: 5px;
-    margin-bottom: 10px;
     padding-bottom: 5px;
     height: auto;
 }
 
-div.popup div.feedback-choices {
-    height: auto;
-}
-
-div#feedback-choice-container > div.feedback-choices {
-    display: none;
+div.popup span.feedback-choice-container-span {
+    margin-left: 5px;
 }
 
 div.popup span.feedback-choice-span {
@@ -721,13 +725,10 @@ div.popup input[type=text].feedback-choice {
     width: 1045px;
 }
 
-div.popup input[type=text].feedback-choice + button {
-    margin-left: 5px;
-    margin-top: 7px;
-}
-
-button#add-new-feedback-choice {
-    display: none;
+div.popup div.feedback-choice-div > button {
+    margin-left: 3px;
+    vertical-align: middle;
+    margin-bottom: 5px;
 }
 
 div.popup button.add-item:disabled {
@@ -739,7 +740,7 @@ div.popup button.add-item:disabled {
 }
 
 div.popup button.add-item, div.popup input[type=submit].add-item {
-    margin-top: 0px;
+    margin-top: 7px;
     box-shadow: 1px 1px 2px #285c00;
 }
 
@@ -909,16 +910,8 @@ div.popup div.edit-instance-file {
     display: none;
 }
 
-div.popup div.edit-instance-file button.add-item {
-    margin-top: 7px;
-}
-
 div.popup div.link-instance-file {
     display: none;
-}
-
-div.popup div.link-instance-file button.add-item {
-    margin-top: 7px;
 }
 
 /* Language picker */

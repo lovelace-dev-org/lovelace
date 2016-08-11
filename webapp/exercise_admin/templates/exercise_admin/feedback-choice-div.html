@@ -1,0 +1,19 @@
+{% load i18n %}
+{% load exercise_admin_extras %}
+{% get_current_language as CURRENT_LANGUAGE %}
+{% get_available_languages as AVAILABLE_LANGUAGES %}
+<div id="feedback-choice-div-{{ choice.id }}" class="feedback-choice-div">
+  {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #} 
+    <div class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %} inline-block-elem" data-language-code="{{ language_choice }}">
+      <label class="feedback-choice-label" for="feedback-choice-input-{{ choice.id }}-{{ language_choice }}">
+        <span class="feedback-choice-span">Choice {{ choice.n }}:</span>
+        <input type="text" id="feedback-choice-input-{{ choice.id }}-{{ language_choice }}" class="feedback-choice" value="{% get_translated_field choice "answer" language_choice %}"
+               name="feedback_choice_[{{ question.id }}]_{{ language_choice }}_({{ choice.id }})" data-language-code="{{ language_choice }}">
+      </label>
+    </div>
+  {% endfor%}
+  {% if not choice.required %}
+    <button type="button" class="delete-button" title="Deletes an answer choice of a feedback question" onclick="delete_feedback_choice('{{ choice.id }}');">x</button>
+  {% endif %}
+  <div id="feedback-choice-error-{{ choice.id }}" class="admin-error"></div>
+</div>

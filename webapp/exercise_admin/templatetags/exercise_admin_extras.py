@@ -8,6 +8,81 @@ from ..utils import get_default_lang, get_lang_list
 
 register = template.Library()
 
+@register.inclusion_tag('exercise_admin/feedback-question-tr.html')
+def feedback_question_tr(question, jstemplate=False):
+    if not jstemplate:
+        return {'question' : question,}
+
+    lang_list = get_lang_list()
+
+    class TemplateFeedbackQuestion:
+        id = "SAMPLE_ID"
+        get_human_readable_type = "SAMPLE_HUMAN_READABLE_TYPE"
+        
+        def __init__(self):
+            for lang_code, _ in lang_list:
+                setattr(self, 'question_{}'.format(lang_code), "SAMPLE_QUESTION_{}".format(lang_code))
+
+    return {"question" : TemplateFeedbackQuestion()}
+
+@register.inclusion_tag('exercise_admin/feedback-question-popup-tr.html')
+def feedback_question_popup_tr(checked):
+    lang_list = get_lang_list()
+
+    class TemplateFeedbackQuestion:
+        get_human_readable_type = "SAMPLE_HUMAN_READABLE_TYPE"
+        
+        def __init__(self, checked):
+            if checked:
+                self.id = "SAMPLE_CHECKED_ID"
+            else:
+                self.id = "SAMPLE_ID"
+            for lang_code, _ in lang_list:
+                setattr(self, 'question_{}'.format(lang_code), "SAMPLE_QUESTION_{}".format(lang_code))
+
+    return {
+        "question" : TemplateFeedbackQuestion(checked),
+        "checked" : checked
+    }
+
+@register.inclusion_tag('exercise_admin/feedback-edit-div.html')
+def feedback_edit_div():
+    lang_list = get_lang_list()
+
+    class TemplateFeedbackQuestion:
+        id = "SAMPLE_ID"
+        type = "SAMPLE_TYPE"
+
+        def __init__(self):
+            for lang_code, _ in lang_list:
+                setattr(self, 'question_{}'.format(lang_code), "SAMPLE_QUESTION_{}".format(lang_code))
+
+    return {"question" : TemplateFeedbackQuestion()}
+
+@register.inclusion_tag('exercise_admin/feedback-choice-div.html')
+def feedback_choice_div(required):
+    lang_list = get_lang_list()
+
+    class TemplateFeedbackQuestion:
+        id = "SAMPLE_QUESTION_ID"
+    
+    class TemplateMultipleChoiceFeedbackAnswer:
+        n = "SAMPLE_CHOICE_N"
+        
+        def __init__(self, required):
+            self.required = required
+            if required:
+                self.id = "SAMPLE_REQUIRED_CHOICE_ID"
+            else:
+                self.id = "SAMPLE_CHOICE_ID"
+            for lang_code, _ in lang_list:
+                setattr(self, 'answer_{}'.format(lang_code), "SAMPLE_ANSWER_{}".format(lang_code))
+
+    return {
+        "question" : TemplateFeedbackQuestion(),
+        "choice" : TemplateMultipleChoiceFeedbackAnswer(required),
+    }
+
 @register.inclusion_tag('exercise_admin/hint.html')
 def hint_tr(hint, jstemplate=False):
     if not jstemplate:
@@ -151,7 +226,8 @@ def instance_file_tr(instance_file_link, jstemplate=False):
 
     class TemplateCourseInstance:
         def __init__(self):
-            self.name = "SAMPLE_INSTANCE_NAME"
+            for lang_code, _ in lang_list:
+                setattr(self, "name_{}".format(lang_code), "SAMPLE_INSTANCE_NAME_{}".format(lang_code))
                     
     class TemplateInstanceFile:
         def __init__(self):
@@ -242,7 +318,7 @@ def instance_file_popup_tr(linked):
             for lang_code, _ in lang_list:
                 setattr(self, 'default_name_{}'.format(lang_code), "SAMPLE_DEFAULT_NAME_{}".format(lang_code))
                 setattr(self, 'fileinfo_{}'.format(lang_code), TemplateFileInfo(linked, lang_code))
-            self.instance = "SAMPLE_INSTANCE"
+                setattr(self, 'instance_{}'.format(lang_code), "SAMPLE_INSTANCE_{}".format(lang_code))
 
     class TemplateFileSettings:
         def __init__(self, linked):
@@ -267,7 +343,8 @@ def lang_reminder(lang_code):
 @register.simple_tag()
 def get_translated_field(model, variable, lang_code):
     if model:
-        return getattr(model, '{}_{}'.format(variable, lang_code))
+        field_val = getattr(model, '{}_{}'.format(variable, lang_code))
+        return field_val or ''
     else:
         return ''
 
