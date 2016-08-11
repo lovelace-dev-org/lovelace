@@ -337,6 +337,8 @@ class VideoLinkAdmin(admin.ModelAdmin):
 
 class TermAdmin(TranslationAdmin):
     search_fields = ('name',)
+    list_display = ('name', 'instance',)
+    list_per_page = 500
 
 admin.site.register(Calendar, CalendarAdmin)
 admin.site.register(File, FileAdmin)
