@@ -727,14 +727,13 @@ def edit_instance_files(request):
         for file_id in new_file_ids:
             instance_file = InstanceIncludeFile()
             for lang_code, _ in lang_list:
-                fileinfo_field = "instance_file_[{id}]_{lang}".format(id=file_id, lang=lang_code)
+                fileinfo_field = "instance_file_file_[{id}]_{lang}".format(id=file_id, lang=lang_code)
                 default_name_field = "instance_file_default_name_[{id}]_{lang}".format(id=file_id, lang=lang_code)
                 description_field = "instance_file_description_[{id}]_{lang}".format(id=file_id, lang=lang_code)
                 setattr(instance_file, "fileinfo_{}".format(lang_code), cleaned_data.get(fileinfo_field))
                 setattr(instance_file, "default_name_{}".format(lang_code), cleaned_data.get(default_name_field))
                 setattr(instance_file, "description_{}".format(lang_code), cleaned_data.get(description_field))
             instance_field = "instance_file_instance_[{id}]_{lang}".format(id=file_id, lang=default_lang)
-            print(cleaned_data.get(instance_field))
             instance_file.instance_id = cleaned_data.get(instance_field)
             instance_file.save()
             new_instance_files[file_id] = instance_file.id

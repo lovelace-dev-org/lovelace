@@ -350,7 +350,6 @@ class CreateFileUploadExerciseForm(forms.Form):
             field_val = cleaned_data.get(field_name)
             if field_val is None:
                 continue
-            file_id = re.findall("\[(.*?)\]", field_name)[0]
 
             if field_name.startswith("instance_file_name") and field_val:
                 self._clean_duplicates_of_field(field_name, field_val, "instance_file_name", "name", cleaned_data, lang_list)
