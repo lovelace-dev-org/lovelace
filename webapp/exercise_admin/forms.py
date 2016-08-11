@@ -79,7 +79,7 @@ class CreateFeedbackQuestionsForm(forms.Form):
                     self.add_error(type_field_name, type_error)
 
 class CreateInstanceIncludeFilesForm(forms.Form):
-    def __init__(self, instance_files, new_file_ids, linked_file_ids, data, files, *args, **kwargs):
+    def __init__(self, instance_files, new_file_ids, data, files, *args, **kwargs):
         super(CreateInstanceIncludeFilesForm, self).__init__(data, files, *args, **kwargs)
 
         default_lang = get_default_lang()
@@ -91,10 +91,7 @@ class CreateInstanceIncludeFilesForm(forms.Form):
 
         for file_id in new_file_ids:
             self._add_file_fields(file_id, default_lang, lang_list)
-
-        for file_id in linked_file_ids:
-            self._add_link_fields(file_id, default_lang, lang_list)
-
+            
     def _add_file_fields(self, file_id, default_lang, lang_list):
         for lang_code, _ in lang_list:
             file_field = "instance_file_file_[{id}]_{lang}".format(id=file_id, lang=lang_code)
@@ -115,25 +112,22 @@ class CreateInstanceIncludeFilesForm(forms.Form):
             else:
                 self.fields[default_name_field] = forms.CharField(max_length=255, required=False, strip=True)
 
-            self.fields[description_field] = forms.CharField(required=False, strip=True)
+            self.fields[description_field] = forms.CharField(required=False, strip=True)        
 
-    #TODO: Move to main form!
-    def _add_link_fields(self, file_id, default_lang, lang_list):
-        return
-
-    def _clean_duplicates_of_field(self, field_name, field_val, model_field, cleaned_data, lang_list):
-        field_prefix = "instance_file_{}".format(model_field)
+    def _clean_duplicates_of_field(self, field_name, field_val, field_prefix, model_field, cleaned_data, lang_list):
         model_field_readable = model_field.replace("_", " ")
-        
+
         for lang_code, _ in lang_list:
-            if field_name.startswith(field_prefix) and field_name.endswith(lang_code) and field_val:
-                for k, v in cleaned_data.copy().items():
-                    if k.startswith(field_prefix) and k.endswith(lang_code) and v == field_val and k != field_name:
-                        error_msg = "Duplicate {field} in language {lang}!".format(field=model_field_readable, lang=lang_code)
-                        error_code = "duplicate_{}".format(model_field)
-                        field_error = forms.ValidationError(error_msg, code=error_code)
-                        self.add_error(field_name, field_error)
-        
+            if lang_code in field_name:
+                break
+
+        for k, v in cleaned_data.copy().items():
+            if k.startswith(field_prefix) and lang_code in k and v == field_val and k != field_name:
+                error_msg = "Duplicate {field} in language {lang}!".format(field=model_field_readable, lang=lang_code)
+                error_code = "duplicate_{}".format(model_field)
+                field_error = forms.ValidationError(error_msg, code=error_code)
+                self.add_error(field_name, field_error)
+                
     def clean(self):
         cleaned_data = super(CreateInstanceIncludeFilesForm, self).clean()
         lang_list = get_lang_list()
@@ -142,9 +136,10 @@ class CreateInstanceIncludeFilesForm(forms.Form):
             field_val = cleaned_data.get(field_name)
             if field_val is None:
                 continue
+            file_id = re.findall("\[(.*?)\]", field_name)[0]
 
-            self._clean_duplicates_of_field(field_name, field_val, "default_name", cleaned_data, lang_list)
-            self._clean_duplicates_of_field(field_name, field_val, "name", cleaned_data, lang_list)
+            if field_name.startswith("instance_file_default_name") and field_val:
+                self._clean_duplicates_of_field(field_name, field_val, "instance_file_default_name", "default_name", cleaned_data, lang_list)
 
             # TODO: Replace with a parser that just compares character at current index to '-' or ('rwx')[current index % 3]
             chmod_pattern = r"^((r|-)(w|-)(x|-)){3}$"
@@ -266,7 +261,7 @@ class CreateFileUploadExerciseForm(forms.Form):
             self.fields[ef_template.format('chown', ef_id)] = forms.CharField(required=True)
             self.fields[ef_template.format('purpose', ef_id)] = forms.CharField(required=True)
 
-        # Instance included files (moved from instance file form)
+        # Instance file links
 
         for if_id in if_ids:
             for lang_code, _ in lang_list:
@@ -284,7 +279,7 @@ class CreateFileUploadExerciseForm(forms.Form):
             self.fields[chown_field] = forms.ChoiceField(choices=c_models.IncludeFileSettings.FILE_OWNERSHIP_CHOICES, required=False)
             self.fields[chgrp_field] = forms.ChoiceField(choices=c_models.IncludeFileSettings.FILE_OWNERSHIP_CHOICES, required=False)
             self.fields[chmod_field] = forms.CharField(max_length=10, required=False, strip=True) 
-        
+
         # Tests, stages and commands
         
         test_template = "test_{}_{}"
@@ -332,9 +327,42 @@ class CreateFileUploadExerciseForm(forms.Form):
             self.fields[command_significant_stderr_field] = forms.BooleanField(required=False)
             self.fields[command_return_value_field] = forms.IntegerField(required=False)
             self.fields[command_timeout_field] = forms.DurationField()
-        
+
+    def _clean_duplicates_of_field(self, field_name, field_val, field_prefix, model_field, cleaned_data, lang_list):
+        model_field_readable = model_field.replace("_", " ")
+
+        for lang_code, _ in lang_list:
+            if lang_code in field_name:
+                break
+
+        for k, v in cleaned_data.copy().items():
+            if k.startswith(field_prefix) and lang_code in k and v == field_val and k != field_name:
+                error_msg = "Duplicate {field} in language {lang}!".format(field=model_field_readable, lang=lang_code)
+                error_code = "duplicate_{}".format(model_field)
+                field_error = forms.ValidationError(error_msg, code=error_code)
+                self.add_error(field_name, field_error)
+            
     def clean(self):
         cleaned_data = super(CreateFileUploadExerciseForm, self).clean()
+        lang_list = get_lang_list()
 
+        for field_name in self.fields.keys():
+            field_val = cleaned_data.get(field_name)
+            if field_val is None:
+                continue
+            file_id = re.findall("\[(.*?)\]", field_name)[0]
+
+            if field_name.startswith("instance_file_name") and field_val:
+                self._clean_duplicates_of_field(field_name, field_val, "instance_file_name", "name", cleaned_data, lang_list)
+
+            # TODO: Replace with a parser that just compares character at current index to '-' or ('rwx')[current index % 3]
+            chmod_pattern = r"^((r|-)(w|-)(x|-)){3}$"
+            if field_name.startswith("instance_file_chmod") and not re.match(chmod_pattern, field_val):
+                error_msg = "File access mode was of incorrect format! Give 9 character, each either r, w, x or -!"
+                error_code = "invalid_chmod"
+                field_error = forms.ValidationError(error_msg, code=error_code)
+                self.add_error(field_name, field_error)
+
+        
         return cleaned_data
             

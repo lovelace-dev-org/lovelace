@@ -269,35 +269,40 @@ def edit_instance_file(create, instances):
     }
 
 @register.inclusion_tag('exercise_admin/file-upload-exercise-edit-file-link.html')
-def edit_instance_file_link(linked):
+def edit_instance_file_link(instance_file, instance_file_link, jstemplate=False):
+    if not jstemplate:
+        return {
+            "instance_file" : instance_file,
+            "instance_file_link" : instance_file_link,
+            "linked" : True,
+            "form" : "main-form",
+        }
+    
     lang_list = get_lang_list()
 
     class TemplateInstanceFile:
-        def __init__(self, linked):
-            if linked:
-                self.id = "SAMPLE_LINKED_ID"
-                for lang_code, _ in lang_list:
-                    setattr(self, 'default_name_{}'.format(lang_code), "SAMPLE_DEFAULT_NAME_{}".format(lang_code))
-            else:
-                self.id = "SAMPLE_ID"
-                for lang_code, _ in lang_list:
-                    setattr(self, 'default_name_{}'.format(lang_code), "SAMPLE_DEFAULT_NAME_{}".format(lang_code))
-    
-    class TemplateInstanceFileLink:
-        def __init__(self, linked):
-            if linked:
-                self.chmod_settings = "SAMPLE_CHMOD_SETTINGS"
-                for lang_code, _ in lang_list:
-                    setattr(self, 'name_{}'.format(lang_code), "SAMPLE_NAME_{}".format(lang_code))
-            else:
-                self.chmod_settings = "rw-rw-rw-"
-                for lang_code, _ in lang_list:
-                    setattr(self, 'name_{}'.format(lang_code), "")
+        def __init__(self):
+            self.id = "SAMPLE_ID"
+            for lang_code, _ in lang_list:
+                setattr(self, 'default_name_{}'.format(lang_code), "SAMPLE_DEFAULT_NAME_{}".format(lang_code))
 
+    class FileSettings:
+        def __init__(self):
+            self.chmod_settings = "rw-rw-rw-"
+            for lang_code, _ in lang_list:
+                setattr(self, 'name_{}'.format(lang_code), "")
+                
+    class TemplateInstanceFileLink:
+        def __init__(self):
+            self.file_settings = FileSettings()
+            
+    if instance_file is None:
+        instance_file = TemplateInstanceFile()
     return {
-        "instance_file" : TemplateInstanceFile(linked),
-        "instance_file_link" : TemplateInstanceFileLink(linked),
-        "linked" : linked
+        "instance_file" : instance_file,
+        "instance_file_link" : TemplateInstanceFileLink(),
+        "linked" : False,
+        "form" : "SAMPLE_FORM",
     }
 
 @register.inclusion_tag('exercise_admin/file-upload-exercise-instance-file-popup-tr.html')
@@ -317,6 +322,7 @@ def instance_file_popup_tr(linked):
                 self.id = "SAMPLE_ID"
             for lang_code, _ in lang_list:
                 setattr(self, 'default_name_{}'.format(lang_code), "SAMPLE_DEFAULT_NAME_{}".format(lang_code))
+                setattr(self, 'description_{}'.format(lang_code), "SAMPLE_DESCRIPTION_{}".format(lang_code))
                 setattr(self, 'fileinfo_{}'.format(lang_code), TemplateFileInfo(linked, lang_code))
                 setattr(self, 'instance_{}'.format(lang_code), "SAMPLE_INSTANCE_{}".format(lang_code))
 
