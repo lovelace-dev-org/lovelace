@@ -27,7 +27,7 @@ class CreateFeedbackQuestionsForm(forms.Form):
         model_field_readable = model_field.replace("_", " ")
 
         for lang_code, _ in lang_list:
-            if lang_code in field_name:
+            if "_" + lang_code + "_" in field_name or field_name.endswith("_" + lang_code):
                 break
 
         for k, v in cleaned_data.copy().items():
@@ -336,7 +336,7 @@ class CreateFileUploadExerciseForm(forms.Form):
         model_field_readable = model_field.replace("_", " ")
 
         for lang_code, _ in lang_list:
-            if lang_code in field_name:
+            if "_" + lang_code + "_" in field_name or field_name.endswith("_" + lang_code):
                 break
 
         for k, v in cleaned_data.copy().items():
