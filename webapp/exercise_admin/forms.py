@@ -8,6 +8,9 @@ from .utils import get_default_lang, get_lang_list
 import feedback.models
 import courses.models as c_models
 
+def lang_code_in_field_name(lang_code, field_name):
+    return lang_code in field_name.split("_")[-3:]
+
 class CreateFeedbackQuestionsForm(forms.Form):
     def __init__(self, feedback_questions, new_question_ids, data, *args, **kwargs):
         super(CreateFeedbackQuestionsForm, self).__init__(data, *args, **kwargs)
@@ -27,11 +30,11 @@ class CreateFeedbackQuestionsForm(forms.Form):
         model_field_readable = model_field.replace("_", " ")
 
         for lang_code, _ in lang_list:
-            if "_" + lang_code + "_" in field_name or field_name.endswith("_" + lang_code):
+            if lang_code_in_field_name(lang_code, field_name):
                 break
 
         for k, v in cleaned_data.copy().items():
-            if k.startswith(field_prefix) and lang_code in k and v == field_val and k != field_name:
+            if k.startswith(field_prefix) and lang_code_in_field_name(lang_code, k) and v == field_val and k != field_name:
                 error_msg = "Duplicate {field} in language {lang}!".format(field=model_field_readable, lang=lang_code)
                 error_code = "duplicate_{}".format(model_field)
                 field_error = forms.ValidationError(error_msg, code=error_code)
@@ -118,11 +121,11 @@ class CreateInstanceIncludeFilesForm(forms.Form):
         model_field_readable = model_field.replace("_", " ")
 
         for lang_code, _ in lang_list:
-            if lang_code in field_name:
+            if lang_code_in_field_name(lang_code, field_name):
                 break
 
         for k, v in cleaned_data.copy().items():
-            if k.startswith(field_prefix) and lang_code in k and v == field_val and k != field_name:
+            if k.startswith(field_prefix) and lang_code_in_field_name(lang_code, k) and v == field_val and k != field_name:
                 error_msg = "Duplicate {field} in language {lang}!".format(field=model_field_readable, lang=lang_code)
                 error_code = "duplicate_{}".format(model_field)
                 field_error = forms.ValidationError(error_msg, code=error_code)
@@ -340,7 +343,7 @@ class CreateFileUploadExerciseForm(forms.Form):
                 break
 
         for k, v in cleaned_data.copy().items():
-            if k.startswith(field_prefix) and lang_code in k and v == field_val and k != field_name:
+            if k.startswith(field_prefix) and lang_code_in_field_name(lang_code, k) and v == field_val and k != field_name:
                 error_msg = "Duplicate {field} in language {lang}!".format(field=model_field_readable, lang=lang_code)
                 error_code = "duplicate_{}".format(model_field)
                 field_error = forms.ValidationError(error_msg, code=error_code)
