@@ -316,12 +316,11 @@ class CreateFileUploadExerciseForm(forms.Form):
             for lang_code, _ in lang_list:
                 command_line_kwargs = {}
                 command_command_line_field = command_template.format(command_id, 'command_line_{}'.format(lang_code))
-                if lang_code != default_lang:
-                    command_line_kwargs['required'] = False
                 if lang_code == default_lang:
                     self.fields[command_command_line_field] = forms.CharField(min_length=1, max_length=255, strip=True, required=True)
                 else:
                     self.fields[command_command_line_field] = forms.CharField(min_length=1, max_length=255, strip=True, required=False)
+                    command_line_kwargs['required'] = False
                 
                 command_input_text_field = command_template.format(command_id, 'input_text_{}'.format(lang_code))
                 self.fields[command_input_text_field] = forms.CharField(required=False, strip=False)
@@ -339,7 +338,7 @@ class CreateFileUploadExerciseForm(forms.Form):
         model_field_readable = model_field.replace("_", " ")
 
         for lang_code, _ in lang_list:
-            if "_" + lang_code + "_" in field_name or field_name.endswith("_" + lang_code):
+            if lang_code_in_field_name(lang_code, field_name):
                 break
 
         for k, v in cleaned_data.copy().items():
