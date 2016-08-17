@@ -38,7 +38,7 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_hin
     #e_content = form_data['exercise_content']
     e_default_points = form_data['exercise_default_points']
     e_tags = [tag for key, tag in sorted(form_data.items()) if key.startswith('exercise_tag')] # TODO: Do this in clean
-    e_feedback_questions = form_data['exercise_feedback_questions']
+    e_feedback_questions = form_data.get('exercise_feedback_questions') or []
     #e_question = form_data['exercise_question']
     e_manually_evaluated = form_data['exercise_manually_evaluated']
     e_ask_collaborators = form_data['exercise_ask_collaborators']
@@ -140,12 +140,14 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_hin
 
     edited_instance_file_links = {}
     for if_id in if_ids:
-        #if if_id.startswith('new'):
-            #current_if_link =
+        if if_id.startswith("new"):
+            file_id = form_data['instance_file_link_[{}]_file_id'.format(if_id)]
+        else:
+            file_id = if_id
         if if_id not in old_if_ids:
             current_if_link = InstanceIncludeFileToExerciseLink()
             current_if_link.exercise = exercise
-            current_if_link.include_file = InstanceIncludeFile.objects.get(id=if_id)
+            current_if_link.include_file = InstanceIncludeFile.objects.get(id=file_id)
             if_settings = IncludeFileSettings()
             current_if_link.file_settings = if_settings
         else:
@@ -365,6 +367,8 @@ def file_upload_exercise(request, exercise_id=None, action=None):
         return HttpResponse(content="400 Bad request", status=400)
 
     instance_files = InstanceIncludeFile.objects.all()
+    instance_files_linked = [link.include_file for link in instance_file_links]
+    instance_files_not_linked = [f for f in instance_files if f not in instance_files_linked]
     instances = CourseInstance.objects.all()
 
     if request.method == "POST":
@@ -409,7 +413,7 @@ def file_upload_exercise(request, exercise_id=None, action=None):
         tag_fields = [k for k in data.keys() if k.startswith("exercise_tag")]
         hint_ids = [k.split('_')[2][1:-1] for k in data.keys() if k.startswith('hint_tries')]
         # TODO: included_file-fields to included_file_file-fields
-        ef_ids = [k.split('_')[3][1:-1] for k in data.keys() if k.startswith('included_file_name')] # does this have to be set()?
+        ef_ids = set([k.split('_')[3][1:-1] for k in data.keys() if k.startswith('included_file_name')])
         if_ids = set([k.split('_')[3][1:-1] for k in data.keys() if k.startswith('instance_file_purpose')])
 
         form = CreateFileUploadExerciseForm(tag_fields, hint_ids, ef_ids, if_ids, order_hierarchy_json, data, files)
@@ -439,7 +443,7 @@ def file_upload_exercise(request, exercise_id=None, action=None):
             })
         else:
             print("DEBUG: the form is not valid")
-            print(form.errors)
+            print(repr(form.errors))
             return JsonResponse({
                 "error": form.errors,
             })
@@ -452,6 +456,7 @@ def file_upload_exercise(request, exercise_id=None, action=None):
         'instances': instances,
         'include_files': include_files,
         'instance_files': instance_files,
+        'instance_files_not_linked': instance_files_not_linked,
         'instance_file_links': instance_file_links,
         'tests': test_list,
 
@@ -494,22 +499,9 @@ def get_feedback_questions(request):
         "result": result
     })
 
-# HACK: Workaround for lack of deferred constraints on unique_together
-def create_placeholder_value(placeholder_values, existing_values):
-    PLACEHOLDER_VAL_LEN = 10
-    PLACEHOLDER_VAL_CHARS = string.ascii_uppercase + string.digits
-    while True:
-        placeholder_val = "".join(random.choice(PLACEHOLDER_VAL_CHARS) for _ in range(PLACEHOLDER_VAL_LEN))
-        if placeholder_val not in placeholder_values and placeholder_val not in existing_values:
-            return placeholder_val
-
 def edit_choices(q_obj, choice_val_dict, lang_list):
     existing_choices = q_obj.get_choices()
     existing_choice_count= len(existing_choices)
-    edited_choices = {}
-    answers = {lang_code : [getattr(choice, "answer_{}".format(lang_code))
-                            for choice in existing_choices]
-               for lang_code, _ in lang_list}
     
     for i, (choice_id, choice_values) in enumerate(sorted(choice_val_dict.items())):
         if existing_choice_count <= i:
@@ -529,14 +521,8 @@ def edit_choices(q_obj, choice_val_dict, lang_list):
                 else:
                     continue
                 if getattr(choice_obj, "answer_{}".format(lang_code)) != answer:
-                    placeholder_answer = create_placeholder_value(edited_choices.keys(), answers[lang_code])
-                    setattr(choice_obj, "answer_{}".format(lang_code), placeholder_answer)
-                    edited_choices[placeholder_answer] = (answer, choice_obj, lang_code)
+                    setattr(choice_obj, "answer_{}".format(lang_code), answer)
                     choice_obj.save()
-                        
-    for answer, choice_obj, lang_code in edited_choices.values():
-        setattr(choice_obj, "answer_{}".format(lang_code), answer)
-        choice_obj.save()
         
 def edit_feedback_questions(request):
     if request.method != "POST":
@@ -562,23 +548,13 @@ def edit_feedback_questions(request):
         new_question_ids = new_question_str.split(",")
     else:
         new_question_ids = []
-    linked_question_str = data.pop("linked_questions")
-    if linked_question_str:
-        linked_question_ids = linked_question_str.split(",")
-    else:
-        linked_question_ids = []
-
+        
     form = CreateFeedbackQuestionsForm(feedback_questions, new_question_ids, data)
         
     if form.is_valid():
         cleaned_data = form.cleaned_data
         lang_list = get_lang_list()
         default_lang = get_default_lang()
-
-        edited_questions = {}
-        question_values = {lang_code : [getattr(question, "question_{}".format(lang_code))
-                                  for question in feedback_questions]
-                     for lang_code, _ in lang_list}
 
         # Edit existing feedback questions if necessary
         for q_obj in feedback_questions:
@@ -596,15 +572,9 @@ def edit_feedback_questions(request):
                             choice_val_dict[choice_id] = {lang_code : val}
 
                 if q_obj.question != question:
-                    placeholder_name = create_placeholder_value(edited_questions.keys(), question_values[lang_code])
-                    setattr(q_obj, "question_{}".format(lang_code), placeholder_name)
-                    edited_questions[placeholder_name] = (question, q_obj, lang_code)
+                    setattr(q_obj, "question_{}".format(lang_code), question)
                     q_obj.save()
-
-            for question, q_obj, lang_code in edited_questions.values():
-                setattr(q_obj, "question_{}".format(lang_code), question)
-                q_obj.save()
-                    
+                   
             if q_obj.question_type == "MULTIPLE_CHOICE_FEEDBACK":
                 edit_choices(q_obj, choice_val_dict, lang_list)
                         
@@ -653,7 +623,7 @@ def edit_feedback_questions(request):
     
     return get_feedback_questions(request)
 
-def get_instance_files(request, exercise_id):
+def get_instance_files(request):
     if not (request.user.is_staff and request.user.is_authenticated() and request.user.is_active):
         return JsonResponse({
             "error": "Only logged in admins can query instance files!"
@@ -664,20 +634,6 @@ def get_instance_files(request, exercise_id):
     result = []
     
     for instance_file in instance_files:
-        try:
-            link = InstanceIncludeFileToExerciseLink.objects.get(include_file=instance_file, exercise=exercise_id)
-            link_json = {
-                "id" : link.id,
-                "names" : {},
-                "purpose" : link.file_settings.purpose,
-                "purpose_display" : link.file_settings.get_purpose_display(),
-                "chown_settings" : link.file_settings.chown_settings,
-                "chgrp_settings" : link.file_settings.chgrp_settings,
-                "chmod_settings" : link.file_settings.chmod_settings,
-            }
-        except InstanceIncludeFileToExerciseLink.DoesNotExist:
-            link = None
-            link_json = {}
         instance_file_json = {
             "id" : instance_file.id,
             "instance_id" : instance_file.instance.id,
@@ -685,7 +641,6 @@ def get_instance_files(request, exercise_id):
             "default_names" : {},
             "descriptions" : {},
             "urls" : {},
-            "link" : link_json,
         }
         
         for lang_code, _ in lang_list:
@@ -701,8 +656,6 @@ def get_instance_files(request, exercise_id):
             instance_file_json["instance_names"][lang_code] = getattr(instance_file.instance, name_attr) or ""
             instance_file_json["default_names"][lang_code] = getattr(instance_file, default_name_attr) or ""
             instance_file_json["descriptions"][lang_code] = getattr(instance_file, description_attr) or ""
-            if link is not None:
-                instance_file_json["link"]["names"][lang_code] = getattr(link.file_settings, name_attr) or ""
         result.append(instance_file_json)
 
     default_lang = get_default_lang()
@@ -710,7 +663,7 @@ def get_instance_files(request, exercise_id):
         "result": sorted(result, key=lambda f: f["default_names"][default_lang])
     })
 
-def edit_instance_files(request, exercise_id):
+def edit_instance_files(request):
     if request.method != "POST":
         return HttpResponseNotAllowed(["POST"])
 
@@ -733,26 +686,15 @@ def edit_instance_files(request, exercise_id):
         new_file_ids = new_file_id_str.split(",")
     else:
         new_file_ids = []
-    linked_file_id_str = data.pop("linked_files")
-    if linked_file_id_str:
-        linked_file_ids = linked_file_id_str.split(",")
-    else:
-        linked_file_ids = []
-
+        
     instance_files = InstanceIncludeFile.objects.all()
-    instance_file_links = InstanceIncludeFileToExerciseLink.objects.filter(exercise=exercise_id)
-    form = CreateInstanceIncludeFilesForm(instance_files, new_file_ids, linked_file_ids, data, files)
+    form = CreateInstanceIncludeFilesForm(instance_files, new_file_ids, data, files)
 
     if form.is_valid():
         cleaned_data = form.cleaned_data
         lang_list = get_lang_list()
         default_lang = get_default_lang()
         
-        edited_default_names = {}
-        default_names = {lang_code : [getattr(instance_file, "default_name_{}".format(lang_code))
-                                      for instance_file in instance_files]
-                         for lang_code, _ in lang_list}
-
         # Edit existing instance files
         for instance_file in instance_files:
             file_changed = False
@@ -762,9 +704,7 @@ def edit_instance_files(request, exercise_id):
                 description = cleaned_data.get("instance_file_description_[{id}]_{lang}".format(id=instance_file.id, lang=lang_code))
 
                 if getattr(instance_file, "default_name_{}".format(lang_code)) != default_name:
-                    placeholder_name = create_placeholder_name(edited_default_names.keys(), default_names[lang_code])
-                    setattr(instance_file, "default_name_{}".format(lang_code), placeholder_name)
-                    edited_default_names[placeholder_name] = (default_name, instance_file, lang_code)
+                    setattr(instance_file, "default_name_{}".format(lang_code), default_name)
                     file_changed = True
                 if fileinfo is not None:
                     setattr(instance_file, "fileinfo_{}".format(lang_code), fileinfo)
@@ -781,109 +721,26 @@ def edit_instance_files(request, exercise_id):
             if file_changed:
                 instance_file.save()
 
-        # Replace placeholder default names with actual default names
-        for default_name, instance_file, lang_code in edited_default_names.values():
-            setattr(instance_file, "default_name_{}".format(lang_code), default_name)
-            instance_file.save()
-
-        edited_names = {}
-        names = {lang_code : [getattr(instance_file_link.file_settings, "name_{}".format(lang_code))
-                              for instance_file_link in instance_file_links]
-                 for lang_code, _ in lang_list}
-        already_linked_file_ids = []
-
-        # Remove or edit existing instance file links
-        # TODO: Move to main form!
-        """
-        for instance_file_link in instance_file_links:
-            file_id = str(instance_file_link.include_file.id)
-            if file_id not in linked_file_ids:
-                instance_file_link.delete()
-            else:
-                file_changed = False
-                already_linked_file_ids.append(file_id)
-                
-                for lang_code, _ in lang_list:
-                    name = cleaned_data.get("instance_file_name_[{id}]_{lang}".format(id=file_id, lang=lang_code))
-                    if getattr(instance_file_link.file_settings, "name_{}".format(lang_code)) != name:
-                        placeholder_name = create_placeholder_value(edited_names.keys(), names[lang_code])
-                        setattr(instance_file_link.file_settings, "name_{}".format(lang_code), placeholder_name)
-                        edited_names[placeholder_name] = (name, instance_file_link, lang_code)
-                        file_changed = True
-
-                purpose = cleaned_data.get("instance_file_purpose_[{id}]".format(id=file_id))
-                chown = cleaned_data.get("instance_file_chown_[{id}]".format(id=file_id))
-                chgrp = cleaned_data.get("instance_file_chgrp_[{id}]".format(id=file_id))
-                chmod = cleaned_data.get("instance_file_chmod_[{id}]".format(id=file_id))
-
-                if purpose is not None and instance_file_link.file_settings.purpose != purpose:
-                    instance_file_link.file_settings.purpose = purpose
-                    file_changed = True
-                if chown is not None and instance_file_link.file_settings.chown_settings != chown:
-                    instance_file_link.file_settings.chown_settings = chown
-                    file_changed = True
-                if chgrp is not None and instance_file_link.file_settings.chgrp_settings != chgrp:
-                    instance_file_link.file_settings.chgrp_settings = chgrp
-                    file_changed = True
-                if chmod is not None and instance_file_link.file_settings.chmod_settings != chmod:
-                    instance_file_link.file_settings.chmod_settings = chmod
-                    file_changed = True
-
-            if file_changed:
-                instance_file_link.file_settings.save()
-        """
-        # Replace placeholder names with actual names
-        for name, instance_file_link, lang_code in edited_names.values():
-            setattr(instance_file_link.file_settings, "name_{}".format(lang_code), name)
-            instance_file_link.file_settings.save()
-            
         new_instance_files = {}
 
         # Create new instance files
         for file_id in new_file_ids:
             instance_file = InstanceIncludeFile()
             for lang_code, _ in lang_list:
-                fileinfo_field = "instance_file_[{id}]_{lang}".format(id=file_id, lang=lang_code)
+                fileinfo_field = "instance_file_file_[{id}]_{lang}".format(id=file_id, lang=lang_code)
                 default_name_field = "instance_file_default_name_[{id}]_{lang}".format(id=file_id, lang=lang_code)
                 description_field = "instance_file_description_[{id}]_{lang}".format(id=file_id, lang=lang_code)
                 setattr(instance_file, "fileinfo_{}".format(lang_code), cleaned_data.get(fileinfo_field))
                 setattr(instance_file, "default_name_{}".format(lang_code), cleaned_data.get(default_name_field))
                 setattr(instance_file, "description_{}".format(lang_code), cleaned_data.get(description_field))
-            instance_field = "instance_file_instance_[{id}]".format(id=file_id)
+            instance_field = "instance_file_instance_[{id}]_{lang}".format(id=file_id, lang=default_lang)
             instance_file.instance_id = cleaned_data.get(instance_field)
             instance_file.save()
             new_instance_files[file_id] = instance_file.id
-
-        # Create new instance file links
-        # TODO: Move to main form!
-        """
-        new_linked_file_ids = [file_id for file_id in linked_file_ids if file_id not in already_linked_file_ids]
-        for file_id in new_linked_file_ids:
-            file_settings = IncludeFileSettings()
-            instance_file_link = InstanceIncludeFileToExerciseLink()
-            for lang_code, _ in lang_list:
-                name_field = "instance_file_name_[{id}]_{lang}".format(id=file_id, lang=lang_code)
-                setattr(file_settings, "name_{}".format(lang_code), cleaned_data.get(name_field))
-            purpose_field = "instance_file_purpose_[{id}]".format(id=file_id)
-            chown_field = "instance_file_chown_[{id}]".format(id=file_id)
-            chgrp_field = "instance_file_chgrp_[{id}]".format(id=file_id)
-            chmod_field = "instance_file_chmod_[{id}]".format(id=file_id)
-            file_settings.purpose = cleaned_data.get(purpose_field)
-            file_settings.chown_settings = cleaned_data.get(chown_field)
-            file_settings.chgrp_settings = cleaned_data.get(chgrp_field)
-            file_settings.chmod_settings = cleaned_data.get(chmod_field)
-            file_settings.save()
-            instance_file_link.exercise_id = exercise_id
-            if file_id.startswith("new"):
-                file_id = new_instance_files[file_id]
-            instance_file_link.include_file_id = int(file_id)
-            instance_file_link.file_settings = file_settings
-            instance_file_link.save()
-        """
 
     else:
         return JsonResponse({
             "error" : form.errors
         })
     
-    return get_instance_files(request, exercise_id)
+    return get_instance_files(request)

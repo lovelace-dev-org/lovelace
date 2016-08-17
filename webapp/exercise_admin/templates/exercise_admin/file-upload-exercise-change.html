@@ -37,8 +37,8 @@
   {% get_current_language as CURRENT_LANGUAGE %}
   {% get_available_languages as AVAILABLE_LANGUAGES %}
   {% get_default_language as DEFAULT_LANGUAGE %}
-  <form method="POST" action="{% url 'exercise_admin:edit_instance_files' exercise.id %}" id="edit-instance-files-form"
-        onsubmit="submit_edit_instance_files_form(event, '{{ DEFAULT_LANGUAGE }}');">{# TODO: Can't use id here if adding a new exercise #}
+  <form method="POST" action="{% url 'exercise_admin:edit_instance_files' %}" id="edit-instance-files-form"
+        onsubmit="submit_edit_instance_files_form(event, '{{ DEFAULT_LANGUAGE }}');">
     {% csrf_token %}
     <div id="edit-instance-files-popup" class="popup">
       <div>
@@ -51,6 +51,7 @@
                   <col class="file-default-name">
                   <col class="file-name">
                   <col class="file-instance">
+                  <col class="file-description">
                   <col class="uploaded-file">
                   <col class="file-edit-link">
                   <col class="file-edit-button">
@@ -81,11 +82,18 @@
           </div>
         </div>
         <div id="edit-instance-file-divs"></div>
-        <div id="link-instance-file-divs"></div>
+        <div id="link-instance-file-divs">
+          {% for instance_file_link in instance_file_links %}
+            {% edit_instance_file_link instance_file_link.include_file instance_file_link %}
+          {% endfor %}
+          {% for instance_file in instance_files_not_linked %}
+            {% edit_instance_file_link instance_file None True %}
+          {% endfor %}
+        </div>
         <div id="instance-file-error" class="admin-error"></div>
         <div class="popup-buttons">
-          <input type="submit" class="popup-button" value="Save changes &amp; Confirm links" name="save_and_confirm">
-          <button type="button" class="popup-button" onclick="close_popup($('#edit-instance-files-popup'))">Cancel</button>
+          <input type="submit" class="popup-button" value="Save Files" name="save_and_confirm">
+          <button type="button" class="popup-button" onclick="close_instance_file_popup();">Close</button>
         </div>
       </div>
     </div>
@@ -187,7 +195,7 @@
         </tbody>
       </table>
       <button type="button" class="add-item" title="Opens a popup window to add and edit instance files"
-              onclick="show_edit_instance_files_popup(event, '{% url 'exercise_admin:get_instance_files' exercise.id %}');">Add and edit</button>
+              onclick="show_edit_instance_files_popup(event, '{% url 'exercise_admin:get_instance_files' %}');">Add and edit</button>
       <div id="edit-instance-files-popup-error" class="admin-error"></div>
     </div>
   </section>
@@ -245,10 +253,7 @@
     {% edit_instance_file True instances %}
   </div>
   <div style="display: none;">
-    {% edit_instance_file_link False %}
-  </div>
-  <div style="display: none;">
-    {% edit_instance_file_link True %}
+    {% edit_instance_file_link None None True %}
   </div>
   <div style="display: none;">
     <table>

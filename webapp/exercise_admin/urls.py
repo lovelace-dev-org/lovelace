@@ -12,9 +12,9 @@ urlpatterns = [
         {'action': 'change'}, name='file_upload_change'),
 
     # File upload exercise related objects
-    url(r'^instance-files/(?P<exercise_id>\d+)$', views.get_instance_files,
+    url(r'^instance-files$', views.get_instance_files,
         name='get_instance_files'),
-    url(r'^instance_files/(?P<exercise_id>\d+)/edit$', views.edit_instance_files,
+    url(r'^instance_files/edit$', views.edit_instance_files,
         name='edit_instance_files'),
     url(r'^feedback-questions$', views.get_feedback_questions,
         name='get_feedback_questions'),

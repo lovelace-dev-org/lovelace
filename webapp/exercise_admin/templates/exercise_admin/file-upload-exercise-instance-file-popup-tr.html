@@ -26,6 +26,13 @@
       </div>
     {% endfor %}
   </td>
+  <td class="description-cell">
+    {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
+      <div class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %} inline-block-elem" data-language-code="{{ language_choice }}">
+        {% get_translated_field instance_file "description" language_choice %}
+      </div>
+    {% endfor %}
+  </td>
   <td class="uploaded-file-cell">
     {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
       <div class="translated {% if language_choice == CURRENT_LANGUAGE and not create %}translated-visible{% endif %} inline-block-elem" data-language-code="{{ language_choice }}">
