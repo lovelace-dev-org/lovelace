@@ -82,7 +82,7 @@ class Course(models.Model):
                                   max_digits=6, decimal_places=2,
                                   blank=True, null=True)
     description = models.TextField(blank=True, null=True) # Translate
-    slug = models.SlugField(max_length=255, db_index=True, unique=True,
+    slug = models.SlugField(max_length=255, db_index=True, unique=True, blank=False,
                             allow_unicode=True)
     prerequisites = models.ManyToManyField('Course',
                                            verbose_name="Prerequisite courses",
@@ -138,7 +138,7 @@ class CourseInstance(models.Model):
     dates of the course.
     """
     name = models.CharField(max_length=255) # Translate
-    slug = models.SlugField(max_length=255, allow_unicode=True)
+    slug = models.SlugField(max_length=255, allow_unicode=True, blank=False)
     course = models.ForeignKey('Course')
     
     start_date = models.DateTimeField(verbose_name='Date and time on which the course begins',blank=True,null=True)
@@ -312,7 +312,7 @@ class ContentPage(models.Model):
     child classes all inherit from this class.
     """
     name = models.CharField(max_length=255, help_text="The full name of this page") # Translate
-    slug = models.SlugField(max_length=255, db_index=True, unique=True,
+    slug = models.SlugField(max_length=255, db_index=True, unique=True, blank=False,
                             allow_unicode=True)
     content = models.TextField(verbose_name="Page content body", blank=True, default="") # Translate
     default_points = models.IntegerField(default=1,
