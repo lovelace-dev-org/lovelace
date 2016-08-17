@@ -11,6 +11,16 @@ import courses.models as c_models
 def lang_code_in_field_name(lang_code, field_name):
     return lang_code in field_name.split("_")[-3:]
 
+def validate_chmod(chmod_str):
+    """
+    Validate a chmod string such as 'rwxrwxrwx' or 'r-xr-xrwx' by comparing
+    each character of the string to '-' or 'rwx'[index of char % 3].
+    """
+    if len(chmod_str) != 9:
+        return False
+    else:
+        return False not in (False for i in range(9) if chmod_str[i] != 'rwx'[i % 3] and chmod_str[i] != '-')
+
 class CreateFeedbackQuestionsForm(forms.Form):
     def __init__(self, feedback_questions, new_question_ids, data, *args, **kwargs):
         super(CreateFeedbackQuestionsForm, self).__init__(data, *args, **kwargs)
@@ -143,9 +153,7 @@ class CreateInstanceIncludeFilesForm(forms.Form):
             if field_name.startswith("instance_file_default_name") and field_val:
                 self._clean_duplicates_of_field(field_name, field_val, "instance_file_default_name", "default_name", cleaned_data, lang_list)
 
-            # TODO: Replace with a parser that just compares character at current index to '-' or ('rwx')[current index % 3]
-            chmod_pattern = r"^((r|-)(w|-)(x|-)){3}$"
-            if field_name.startswith("instance_file_chmod") and not re.match(chmod_pattern, field_val):
+            if field_name.startswith("instance_file_chmod") and not validate_chmod(field_val):
                 error_msg = "File access mode was of incorrect format! Give 9 character, each either r, w, x or -!"
                 error_code = "invalid_chmod"
                 field_error = forms.ValidationError(error_msg, code=error_code)
@@ -360,9 +368,7 @@ class CreateFileUploadExerciseForm(forms.Form):
             if field_name.startswith("instance_file_name") and field_val:
                 self._clean_duplicates_of_field(field_name, field_val, "instance_file_name", "name", cleaned_data, lang_list)
 
-            # TODO: Replace with a parser that just compares character at current index to '-' or ('rwx')[current index % 3]
-            chmod_pattern = r"^((r|-)(w|-)(x|-)){3}$"
-            if field_name.startswith("instance_file_chmod") and not re.match(chmod_pattern, field_val):
+            if field_name.startswith("instance_file_chmod") and not validate_chmod(field_val):
                 error_msg = "File access mode was of incorrect format! Give 9 character, each either r, w, x or -!"
                 error_code = "invalid_chmod"
                 field_error = forms.ValidationError(error_msg, code=error_code)
