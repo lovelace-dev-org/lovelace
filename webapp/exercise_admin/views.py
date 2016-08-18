@@ -8,6 +8,8 @@ from django.http import HttpResponse, HttpResponseNotFound, HttpResponseForbidde
 from django.template import loader
 from django.db import transaction, IntegrityError
 from django.conf import settings
+#from django.urls import reverse # Django 1.10
+from django.core.urlresolvers import reverse # Django 1.9
 
 from reversion import revisions as reversion
 
@@ -59,11 +61,13 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_hin
     #exercise.content = e_content
     exercise.default_points = e_default_points
     exercise.tags = e_tags
-    exercise.feedback_questions = e_feedback_questions
     #exercise.question = e_question
     exercise.manually_evaluated = e_manually_evaluated
     exercise.ask_collaborators = e_ask_collaborators
     exercise.allowed_filenames = e_allowed_filenames
+    exercise.save()
+    # save() first so that m2m can be used (when adding a new exercise)
+    exercise.feedback_questions = e_feedback_questions
     exercise.save()
 
     # TODO! Check for all existing foreignkey relations: must not be linked to a different exercise previously! 
@@ -310,18 +314,24 @@ def file_upload_exercise(request, exercise_id=None, action=None):
     if action == "add":
         # Handle the creation of new exercises
         add_or_edit = "Add"
-        lang_list = get_lang_list()
-        class FakeExercise:
-            id = 'new-exercise'
-            slug = None
 
-            def __init__(self):
-                for lang_code, _ in lang_list:
-                    setattr(self, 'name_{}'.format(lang_code), '')
-                    setattr(self, 'content_{}'.format(lang_code), '')
-                    setattr(self, 'question_{}'.format(lang_code), '')
-        
-        exercise = FakeExercise()
+        if request.method == "GET":
+            # The user requested the edit page for adding new exercises
+            lang_list = get_lang_list()
+            class FakeExercise:
+                id = 'new-exercise'
+                slug = None
+
+                def __init__(self):
+                    for lang_code, _ in lang_list:
+                        setattr(self, 'name_{}'.format(lang_code), '')
+                        setattr(self, 'content_{}'.format(lang_code), '')
+                        setattr(self, 'question_{}'.format(lang_code), '')
+
+            exercise = FakeExercise()
+        elif request.method == "POST":
+            # The user requested to save a new exercise
+            exercise = FileUploadExercise()
         hints = []
         include_files = []
         instance_file_links = []
@@ -435,11 +445,21 @@ def file_upload_exercise(request, exercise_id=None, action=None):
                 raise e
 
             # TODO ########################################################
+            # TODO: POSTing here should be idempotent!
             # TODO: Send the proper ids and replace the 'new...'-starting ids in javascript
             # TODO: to prevent addition of _even newer_ files, tests, stages, commands etc.!
             # TODO ########################################################
+
+            if action == 'add':
+                redirect_url = reverse('exercise_admin:file_upload_change',
+                                       kwargs={'exercise_id': exercise.id,
+                                               'action': 'change'})
+            else:
+                redirect_url = ''
+            
             return JsonResponse({
                 "yeah!": "everything went ok",
+                'redirect_url': redirect_url,
             })
         else:
             print("DEBUG: the form is not valid")

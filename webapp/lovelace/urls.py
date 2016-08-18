@@ -1,9 +1,12 @@
 from django.conf.urls import include, url
 from django.contrib import admin
+from django.views.generic import RedirectView
 
 # TODO: Design the url hierarchy from scratch
 urlpatterns = [
     #url(r'^admin/', include('smuggler.urls')),
+    url(r'^admin/courses/fileuploadexercise/add', RedirectView.as_view(pattern_name='exercise_admin:file_upload_add')),
+    url(r'^admin/courses/fileuploadexercise/(?P<exercise_id>\d+)/change', RedirectView.as_view(pattern_name='exercise_admin:file_upload_change')),
     url(r'^admin/', include(admin.site.urls)),
     url(r'^exercise-admin/', include('exercise_admin.urls', namespace='exercise_admin')),
     url(r'^stats/', include('stats.urls', namespace='stats')),

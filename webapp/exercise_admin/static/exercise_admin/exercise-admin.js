@@ -149,7 +149,11 @@ function submit_main_form(e) {
         processData: false,
         contentType: false,
         dataType: 'json',
-        success: function(data, text_status, jqxhr_obj) {},
+        success: function(data, text_status, jqxhr_obj) {
+            if (data.redirect_url !== '') {
+                window.location.href = data.redirect_url;
+            }
+        },
         error: function(xhr, status, type) {}
     });
 }
