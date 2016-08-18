@@ -132,7 +132,7 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_hin
 
     # TODO: Instance include file links
     
-    for removed_if_link_id in sorted(old_if_ids - {int(if_id) for if_id in if_ids if not if_id.startswith('new')}):
+    for removed_if_link_id in sorted(old_if_ids - {if_id for if_id in if_ids if not if_id.startswith('new')}):
         #removed_if_link = InstanceIncludeFileToExerciseLink.objects.f
         removed_if_link = InstanceIncludeFileToExerciseLink.objects.filter(include_file=removed_if_link_id, exercise=exercise)
         deletion = removed_if_link.delete()
@@ -151,7 +151,8 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_hin
             if_settings = IncludeFileSettings()
             current_if_link.file_settings = if_settings
         else:
-            current_if_link = InstanceIncludeFiletoExerciseLink.objects.get(include_file=if_id, exercise=exercise)
+            current_if_link = InstanceIncludeFileToExerciseLink.objects.filter(include_file=int(if_id), exercise=exercise)[0]
+            # TODO: use get and some smart error handling if multiple links are returned
 
         for lang_code, _ in lang_list:
             if_name = form_data['instance_file_name_[{}]_{}'.format(if_id, lang_code)]
@@ -397,7 +398,7 @@ def file_upload_exercise(request, exercise_id=None, action=None):
 
         old_hint_ids = set(hints.values_list('id', flat=True)) if action == 'change' else set()
         old_ef_ids = set(include_files.values_list('id', flat=True)) if action == 'change' else set()
-        old_if_ids = set(instance_file_links.values_list('include_file', flat=True)) if action == 'change' else set()
+        old_if_ids = set(str(old_id) for old_id in instance_file_links.values_list('include_file', flat=True)) if action == 'change' else set()
         old_test_ids = set(tests.values_list('id', flat=True)) if action == 'change' else set()
         if stages is not None:
             old_stage_ids = set(stages.values_list('id', flat=True)) if action == 'change' else set()
