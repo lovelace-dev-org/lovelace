@@ -465,8 +465,8 @@ def file_upload_exercise(request, exercise_id=None, action=None):
         else:
             print("DEBUG: the form is not valid")
             print(repr(form.errors))
-            return JsonResponse({
-                "error": form.errors,
+            return JsonResponse(status=400, data={
+                'errors': form.errors,
             })
     
     t = loader.get_template('exercise_admin/file-upload-exercise-change.html')

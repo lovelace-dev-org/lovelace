@@ -150,11 +150,14 @@ function submit_main_form(e) {
         contentType: false,
         dataType: 'json',
         success: function(data, text_status, jqxhr_obj) {
-            if (data.redirect_url !== '') {
+            if (data.redirect_url !== '' && typeof data.redirect_url !== "undefined") {
                 window.location.href = data.redirect_url;
             }
         },
-        error: function(xhr, status, type) {}
+        error: function(xhr, status, type) {
+            let error_text = "The following errors happened during processing of the form:\n\n" + xhr.responseText;
+            alert(error_text);
+        }
     });
 }
 
