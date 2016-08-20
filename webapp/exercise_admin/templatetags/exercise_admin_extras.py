@@ -270,14 +270,6 @@ def edit_instance_file(create, instances):
 
 @register.inclusion_tag('exercise_admin/file-upload-exercise-edit-file-link.html')
 def edit_instance_file_link(instance_file, instance_file_link, jstemplate=False):
-    if not jstemplate:
-        return {
-            "instance_file" : instance_file,
-            "instance_file_link" : instance_file_link,
-            "linked" : True,
-            "form" : "main-form",
-        }
-    
     lang_list = get_lang_list()
 
     class TemplateInstanceFile:
@@ -285,7 +277,7 @@ def edit_instance_file_link(instance_file, instance_file_link, jstemplate=False)
             self.id = "SAMPLE_ID"
             for lang_code, _ in lang_list:
                 setattr(self, 'default_name_{}'.format(lang_code), "SAMPLE_DEFAULT_NAME_{}".format(lang_code))
-
+    
     class FileSettings:
         def __init__(self):
             self.chmod_settings = "rw-rw-rw-"
@@ -296,14 +288,25 @@ def edit_instance_file_link(instance_file, instance_file_link, jstemplate=False)
         def __init__(self):
             self.file_settings = FileSettings()
             
-    if instance_file is None:
-        instance_file = TemplateInstanceFile()
-    return {
-        "instance_file" : instance_file,
-        "instance_file_link" : TemplateInstanceFileLink(),
-        "linked" : False,
-        "form" : "SAMPLE_FORM",
-    }
+    if not jstemplate:
+        if instance_file_link is None:
+            instance_file_link = TemplateInstanceFileLink()
+            linked = False
+        else:
+            linked = True
+        return {
+            "instance_file" : instance_file,
+            "instance_file_link" : instance_file_link,
+            "linked" : linked,
+            "form" : "main-form",
+        }
+    else:   
+        return {
+            "instance_file" : TemplateInstanceFile(),
+            "instance_file_link" : TemplateInstanceFileLink(),
+            "linked" : False,
+            "form" : "SAMPLE_FORM",
+        }
 
 @register.inclusion_tag('exercise_admin/file-upload-exercise-instance-file-popup-tr.html')
 def instance_file_popup_tr(linked):

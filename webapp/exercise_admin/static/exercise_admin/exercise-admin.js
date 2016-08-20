@@ -125,7 +125,6 @@ function submit_main_form(e) {
             link_fields_to_remove.push($(this).find("select.file-chgrp-select").attr("name"));
             link_fields_to_remove.push($(this).find("input.file-chmod-input").attr("name"));
         } else if (new_id.startsWith("new")) {
-            console.log("new")
             form_data.append("instance_file_link_[" + new_id + "]_file_id", $(this).attr("data-file-id"));
         }
     });

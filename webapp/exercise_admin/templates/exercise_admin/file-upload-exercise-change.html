@@ -87,7 +87,7 @@
             {% edit_instance_file_link instance_file_link.include_file instance_file_link %}
           {% endfor %}
           {% for instance_file in instance_files_not_linked %}
-            {% edit_instance_file_link instance_file None True %}
+            {% edit_instance_file_link instance_file None %}
           {% endfor %}
         </div>
         <div id="instance-file-error" class="admin-error"></div>
