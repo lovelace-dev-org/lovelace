@@ -7,7 +7,7 @@
 {% block breadcrumb-links %}
   <li><a href="{% url 'courses:index' %}">{% trans 'Courses' %}</a></li>
   <div class="separator">»</div>
-  <li><a href="{% url 'courses:course' course.slug instance.slug %}">{{ course.name }}&nbsp;/&nbsp;{{ instance.name }}</a></li>
+  <li><a href="{% url 'courses:course' course.slug instance.slug %}">{{ instance.get_identifying_str }}</a></li>
 {% endblock %}
 
 {% block toc %}{% endblock %}

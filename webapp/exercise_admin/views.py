@@ -380,7 +380,7 @@ def file_upload_exercise(request, exercise_id=None, action=None):
     instance_files = InstanceIncludeFile.objects.all()
     instance_files_linked = [link.include_file for link in instance_file_links]
     instance_files_not_linked = [f for f in instance_files if f not in instance_files_linked]
-    instances = CourseInstance.objects.all()
+    instances = CourseInstance.objects.all().order_by('course')
 
     if request.method == "POST":
         form_contents = request.POST

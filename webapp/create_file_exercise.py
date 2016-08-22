@@ -114,6 +114,23 @@ def create_exercise(args):
     )
     instance2.save()
 
+    course2 = c_models.Course(
+        name_en="An unused course",
+        name_fi="Käyttämätön kurssi",
+        code="1000000X",
+        credits=2.5,
+        description_en="A course that doesn't actually exist and, therefore, you cannot take.",
+        description_fi="Kurssi jota ei oikeasti ole olemassa, ja jota et voi siksi käydä.",
+    )
+    course2.save()
+
+    instance_course2 = c_models.CourseInstance(
+        name_en="The only instance",
+        name_fi="Ainut ilmentymä",
+        course=course2,
+    )
+    instance_course2.save()
+
     # TODO: Clean up to use the args
 
     name_en = "Example file upload exercise"
@@ -133,13 +150,34 @@ def create_exercise(args):
     exercise.save()
     exercise.feedback_questions.add(*cfqs)
 
+    
+    # A page that has the file upload exercise embedded
+
+    lecture = c_models.Lecture(
+        name_en="Lecture page with embedded file upload exercise",
+        name_fi="Luentosivu, jolla on sisällytettynä tiedostotehtävä",
+        content_en="= Lecture =\n\nSome text here.\n\n<!page=" + exercise.slug + ">\n",
+        content_fi="= Luento =\n\nTekstiä tässä.\n\n<!page=" + exercise.slug + ">\n",
+        default_points=1
+    )
+    lecture.save()
+
+    # The links
+
     link = c_models.ContentGraph(
         content=exercise,
         ordinal_number=1,
     )
     link.save()
+
+    lecture_link = c_models.ContentGraph(
+        content=lecture,
+        ordinal_number=2,
+    )
+    lecture_link.save()
     
     instance.contents.add(link)
+    instance.contents.add(lecture_link)
     instance.save()
     
     for i in range(hint_count):

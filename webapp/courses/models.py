@@ -179,6 +179,11 @@ class CourseInstance(models.Model):
     
     def __str__(self):
         return self.name
+
+    @property
+    def get_identifying_str(self):
+        return "{} / {}".format(self.course.name, self.name)
+    
     #link the content graph nodes to this instead
 
 

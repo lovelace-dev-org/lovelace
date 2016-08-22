@@ -39,7 +39,7 @@
           <select id="instance-file-instance-{{ instance_file.id }}-{{ language_choice }}" class="file-instance-select" name="instance_file_instance_[{{ instance_file.id }}]_{{ language_choice }}"
                   onchange="update_instance_file_selects('{{ instance_file.id }}', $(this));" data-language-code="{{ language_choice }}">
             {% for instance in instances %}
-              <option value="{{ instance.id }}">{% get_translated_field instance "name" language_choice %}</option>
+              <option value="{{ instance.id }}">{% get_translated_field instance.course "name" language_choice %} / {% get_translated_field instance "name" language_choice %}</option>
             {% endfor %}
           </select>
         </label>
