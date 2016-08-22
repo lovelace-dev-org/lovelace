@@ -152,6 +152,8 @@ function submit_main_form(e) {
             if (data.redirect_url !== '' && typeof data.redirect_url !== "undefined") {
                 window.location.href = data.redirect_url;
             }
+            let success_text = "Successfully saved!";
+            alert(success_text);
         },
         error: function(xhr, status, type) {
             let error_text = "The following errors happened during processing of the form:\n\n" + xhr.responseText;
