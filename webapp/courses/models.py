@@ -1158,6 +1158,12 @@ class InstanceIncludeFile(models.Model):
     description = models.TextField(blank=True, null=True) # Translate
     fileinfo = models.FileField(max_length=255, upload_to=get_instancefile_path) # Translate
 
+    def get_file_contents(self):
+        file_contents = None
+        with open(self.fileinfo.path, 'rb') as f:
+            file_contents = f.read()
+        return file_contents
+
 def get_testfile_path(instance, filename):
     return os.path.join(
         "{exercise_name}_files".format(exercise_name=instance.exercise.name),

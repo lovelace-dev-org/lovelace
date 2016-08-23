@@ -281,6 +281,7 @@ def run_test(self, test_id, answer_id, exercise_id, student=False, revision=None
         return # TODO: Find a way to signal the failure to the user
 
     try:
+        # TODO: Fallback file names for those that don't have translations?
         exercise_file_objects = cm.FileExerciseTestIncludeFile.objects.filter(exercise=exercise_id)
         #exercise_file_objects = test.fileexercisetestincludefile_set.all()
 
@@ -294,7 +295,19 @@ def run_test(self, test_id, answer_id, exercise_id, student=False, revision=None
         # TODO: Log weird request
         return # TODO: Find a way to signal the failure to the user
 
-    # TODO: Get the instance include files: InstanceIncludeFile
+    try:
+        # TODO: Fallback file names for those that don't have translations?
+        instance_file_links = cm.InstanceIncludeFileToExerciseLink.objects.filter(exercise=exercise_id)
+
+        if revision is not None:
+            old_instance_file_links = [
+                reversion.get_for_object(instance_file_link).get(revision=revision).object_version.object
+                for instance_file_link in instance_file_links
+                ]
+            instance_file_links = old_instance_file_links
+    except cm.InstanceIncludeFileToExerciseLink.DoesNotExist as e:
+        # TODO: Log weird request
+        return # TODO: Find a way to signal the failure to the user
 
     # Note: requires a shared/cloned file system!
     if student:
@@ -317,7 +330,7 @@ def run_test(self, test_id, answer_id, exercise_id, student=False, revision=None
 
     test_results = {test_id: {"fail": True, "name": test.name, "stages": {}}}
     with tempfile.TemporaryDirectory(dir=temp_dir_prefix) as test_dir:
-        # Write the files required by this test
+        # Write the exercise files required by this test
         for name, contents in ((f.file_settings.name, f.get_file_contents())
                                for f in exercise_file_objects
                                if f in test.required_files.all() and
@@ -325,7 +338,18 @@ def run_test(self, test_id, answer_id, exercise_id, student=False, revision=None
             fpath = os.path.join(test_dir, name)
             with open(fpath, "wb") as fd:
                 fd.write(contents)
-            print("Wrote required test file %s" % (fpath))
+            print("Wrote required exercise file {}".format(fpath))
+            # TODO: chmod, chown, chgrp
+
+        # Write the instance files required by this test
+        for name, contents in ((fl.file_settings.name, fl.include_file.get_file_contents())
+                               for fl in instance_file_links
+                               if fl.include_file in test.required_instance_files.all() and
+                               fl.file_settings.purpose in ('INPUT', 'WRAPPER', 'TEST')):
+            fpath = os.path.join(test_dir, name)
+            with open(fpath, 'wb') as fd:
+                fd.write(contents)
+            print("Wrote required instance file {}".format(fpath))
             # TODO: chmod, chown, chgrp
 
         # Write the files under test
