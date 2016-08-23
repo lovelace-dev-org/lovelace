@@ -440,13 +440,16 @@ def run_stage(self, stage_id, test_dir, temp_dir_prefix, files_to_check, revisio
         
         results = run_command_chainable(
             {"id":cmd.id, "input_text":cmd.input_text, "return_value":cmd.return_value},
-            temp_dir_prefix, test_dir, files_to_check, revision=revision
+            temp_dir_prefix, test_dir, files_to_check, stage_results=stage_results,
+            revision=revision
         )
         stage_results.update(results)
 
     # DEBUG #
 
     #stage_results.update(results)
+
+    print(stage_results)
 
     return stage_results
     
