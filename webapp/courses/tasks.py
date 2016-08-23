@@ -53,7 +53,7 @@ from courses import models as cm
 
 @shared_task(name="courses.run-fileexercise-tests", bind=True,
              serializer='json')
-def run_tests(self, user_id, exercise_id, answer_id, lang_code, revision):
+def run_tests(self, user_id, instance_id, exercise_id, answer_id, lang_code, revision):
     # TODO: Actually, just receive the relevant ids for fetching the Django
     #       models here instead of in the Django view.
     # http://celery.readthedocs.org/en/latest/userguide/tasks.html#database-transactions
@@ -107,9 +107,9 @@ def run_tests(self, user_id, exercise_id, answer_id, lang_code, revision):
         self.update_state(state="PROGRESS", meta={"current": i, "total": len(tests)})
 
         # TODO: The student's code can be run in parallel with the reference
-        results = run_test(test.id, answer_id, exercise_id, student=True, revision=revision)
+        results = run_test(test.id, answer_id, instance_id, exercise_id, student=True, revision=revision)
         student_results.update(results)
-        results = run_test(test.id, answer_id, exercise_id, revision=revision)
+        results = run_test(test.id, answer_id, instance_id, exercise_id, revision=revision)
         reference_results.update(results)
 
     #print(student_results.items())
@@ -259,7 +259,7 @@ def generate_results(results, exercise_id):
     return evaluation
 
 @shared_task(name="courses.run-test", bind=True, serializer='json')
-def run_test(self, test_id, answer_id, exercise_id, student=False, revision=None):
+def run_test(self, test_id, answer_id, instance_id, exercise_id, student=False, revision=None):
     """
     Runs all the stages of the given test.
     """
@@ -297,7 +297,9 @@ def run_test(self, test_id, answer_id, exercise_id, student=False, revision=None
 
     try:
         # TODO: Fallback file names for those that don't have translations?
-        instance_file_links = cm.InstanceIncludeFileToExerciseLink.objects.filter(exercise=exercise_id)
+        instance_file_links = cm.InstanceIncludeFileToExerciseLink.objects.filter(
+            exercise=exercise_id, include_file__instance=instance_id,
+        )
 
         if revision is not None:
             old_instance_file_links = [
