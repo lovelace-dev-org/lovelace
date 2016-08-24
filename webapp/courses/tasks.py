@@ -585,11 +585,14 @@ def run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check, revisio
     cmd = command.command_line.replace(
         "$RETURNABLES",
         " ".join(shlex.quote(f) for f in files_to_check)
+    ).replace(
+        "$CWD",
+        test_dir
     )
     timeout = command.timeout.total_seconds()
     env = { # Remember that some information (like PATH) may come from other sources
         'PWD': test_dir,
-        #'PATH': '/bin:/usr/bin',
+        'PATH': '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
         'LC_CTYPE': 'en_US.UTF-8',
     }
     args = shlex.split(cmd)
@@ -606,7 +609,7 @@ def run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check, revisio
             #preexec_fn=demote_process,                 # Demote before fork
             close_fds=True,                            # Don't inherit fds
             shell=False,                               # Don't run in shell
-            cwd=env["PWD"], env=env,
+            cwd=env['PWD'], env=env,
             universal_newlines=False                   # Binary stdout
         )
     except FileNotFoundError as e:
@@ -665,6 +668,12 @@ def run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check, revisio
                     "significant_stdout": command.significant_stdout,
                     "significant_stderr": command.significant_stderr,
                     "command_line": shell_like_cmd,}
+
+    #stdout.seek(0)
+    #print("\n".join(l.decode("utf-8") for l in stdout.readlines()))
+    #stderr.seek(0)
+    #print("\n".join(l.decode("utf-8") for l in stderr.readlines()))
+    #time.sleep(15)
 
     return proc_results
 
