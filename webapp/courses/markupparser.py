@@ -639,11 +639,11 @@ class EmbeddedScriptMarkup(Markup):
 
             #single_inject_template = "    script_iframe.contents().find(\"{elem}\").append(\"{new_tag}\");"
             single_inject_template = \
-"""    var new_{name} = cw.createElement("{type}");
-    new_{name}.{type_type} = "{type_value}";
-    new_{name}.{src_type} = "{addr}";
-    new_{name}.id = "id-{name}";
-    cw.getElementsByTagName("{where}")[0].appendChild(new_{name});
+"""    var new_{num} = cw.createElement("{type}");
+    new_{num}.{type_type} = "{type_value}";
+    new_{num}.{src_type} = "{addr}";
+    new_{num}.id = "id-{name}";
+    cw.getElementsByTagName("{where}")[0].appendChild(new_{num});
 """
 
             inject_images_template = \
@@ -658,10 +658,10 @@ class EmbeddedScriptMarkup(Markup):
             rendered_includes = inject_includes_template.format(
                 id=iframe_id,
                 injects="\n".join(
-                    single_inject_template.format(type=t, name=n, type_type=tt,
+                    single_inject_template.format(type=t, name=slugify(n, allow_unicode=True), num=i, type_type=tt,
                                                   type_value=tv, src_type=st, addr=a,
                                                   where=w)
-                    for t, n, tt, tv, st, a, w in includes
+                    for i, (t, n, tt, tv, st, a, w) in enumerate(includes)
                 ) + ((inject_images_template.format(where=image_urls[0][2], # Just take the first
                         img_addrs="\\\n".join(
                             single_image_inject_template.format(name=n, addr=a)
