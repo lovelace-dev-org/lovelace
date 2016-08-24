@@ -15,7 +15,7 @@ from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.core.urlresolvers import reverse
 from django.utils import translation
-from django.utils.text import slugify as slugify
+from django.utils.text import slugify
 from django.contrib.postgres.fields import ArrayField
 import django.conf
 

@@ -11,6 +11,7 @@ from django.http import HttpResponse, JsonResponse, HttpResponseRedirect,\
 from django.template import Template, loader
 from django.core.urlresolvers import reverse
 from django.utils import timezone
+from django.utils.text import slugify
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext as _
 from django.contrib import messages
@@ -406,11 +407,11 @@ def content(request, course_slug, instance_slug, content_slug, **kwargs):
     }
 
     term_context = context.copy()
-    term_context["tooltip"] = True
-    terms = Term.objects.filter(instance__course=course)
-    terms = [{"name" : term.name, 
-              "description" : "".join(markupparser.MarkupParser.parse(term.description, request, term_context)).strip(),
-              "span_id" : term.name + "-termbank-span"} 
+    term_context['tooltip'] = True
+    terms = Term.objects.filter(instance__course=course).order_by('name')
+    terms = [{'name' : term.name, 'slug': slugify(term.name, allow_unicode=True), 
+              'description' : "".join(markupparser.MarkupParser.parse(term.description, request, term_context)).strip(),
+              'span_id' : slugify(term.name, allow_unicode=True) + '-termbank-span'} 
              for term in terms]
 
     rendered_content = ""

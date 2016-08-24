@@ -172,7 +172,7 @@
                 <ul>
                   {% for term in terms %}
                     <li class="term-list-item">
-                      <span class="term" id="{{ term.span_id }}" onmouseover="show_termbank_term_description(this, '#{{ term.name }}-term-div');">{{ term.name }}</span>
+                      <span class="term" id="{{ term.span_id }}" onmouseover="show_termbank_term_description(this, '#{{ term.slug }}-term-div');">{{ term.name }}</span>
                     </li>
                   {% endfor %}
                 </ul>
@@ -214,7 +214,7 @@
           </div>
           {% if terms %}
             {% for term in terms %}
-              <div class="term-description" id="{{ term.name }}-term-div">
+              <div class="term-description" id="{{ term.slug }}-term-div">
                 <div class="term-desc-contents">
                   <div class="term-desc-scrollable">
                     {{ term.description|safe }}
