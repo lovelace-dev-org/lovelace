@@ -390,6 +390,10 @@ def content(request, course_slug, instance_slug, content_slug, **kwargs):
             content_graph = instance.contents.filter(content=content).first()
         except ContentGraph.DoesNotExist:
             return HttpResponseNotFound("Content {} is not linked to course {}!".format(content_slug, course_slug))
+        else:
+            if content_graph is None:
+                return HttpResponseNotFound("Content {} is not linked to course {}!".format(content_slug, course_slug))
+        
         revision = content_graph.revision
     
     content_type = content.content_type
