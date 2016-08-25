@@ -1347,7 +1347,7 @@ class FileUploadExerciseReturnFile(models.Model):
 
     def get_type(self):
         try:
-            mimetype = str(magic.from_file(self.fileinfo.path, mime=True), encoding="utf-8")
+            mimetype = magic.from_file(self.fileinfo.path, mime=True)
         except UnicodeDecodeError as e:
             # ???
             # Assume binary
