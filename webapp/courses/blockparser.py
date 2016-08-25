@@ -96,7 +96,7 @@ def parse_term_tag(parsed_string, tag, term_name, term_text, context):
         parsed_string += term_text
         return parsed_string
     
-    div_id = "#{}-term-div".format(term_name)
+    div_id = "#{}-term-div".format(slugify(term_name, allow_unicode=True))
     # LEFT_POS_CORRECTION: Corrects the position of the tooltip in horizontal direction to point to the end of the term.
     # TOP_POS_CORRECTION: Corrects the position of the tooltip in vertical direction to point to the term.
     on_mouse_over = (
