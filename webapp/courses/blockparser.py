@@ -8,6 +8,7 @@ import courses.markupparser
 # TODO: |forcedownload or |forceview for links
 import pygments
 from pygments import highlight
+from django.utils.text import slugify
 from pygments.lexers import get_lexer_by_name, get_all_lexers
 from pygments.formatters import HtmlFormatter
 
