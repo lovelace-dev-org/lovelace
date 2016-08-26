@@ -551,6 +551,19 @@ section.content {
         border-image: linear-gradient(to right, rgba(0, 0, 0, 0.02), rgba(0, 0, 0, 0.04), rgba(31, 31, 31, 0.2)) 1 stretch;
     }
 
+    div.course-contents li.admin-visible-content {
+        background: #cbe;
+        position: relative;
+    }
+    div.course-contents li.admin-visible-content::after {
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        content: 'invisible to students';
+        font-size: 0.5rem;
+        color: #333;
+    }
+
     div.course-contents progress.course-contents-progress {
         -moz-appearance: none;
         -webkit-appearance: none;

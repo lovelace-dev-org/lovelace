@@ -8,6 +8,7 @@ from cgi import escape
 from django.http import HttpResponse, JsonResponse, HttpResponseRedirect,\
     HttpResponseNotFound, HttpResponseForbidden, HttpResponseNotAllowed,\
     HttpResponseServerError
+from django.db.models import Q
 from django.template import Template, loader
 from django.core.urlresolvers import reverse
 from django.utils import timezone
@@ -85,13 +86,17 @@ def course(request, course_slug, instance_slug):
     context["course"] = course_obj
     context["instance"] = instance_obj
 
-    contents = instance_obj.contents.filter(visible=True).order_by('ordinal_number')
+    if request.user.is_staff:
+        contents = instance_obj.contents.all().order_by('ordinal_number')
+    else:
+        contents = instance_obj.contents.filter(visible=True).order_by('ordinal_number')
+    
     if len(contents) > 0:
         tree = []
-        tree.append((mark_safe('>'), None, None, None))
+        tree.append((mark_safe('>'), None, None, None, None))
         for content_ in contents:
             course_tree(tree, content_, request.user)
-        tree.append((mark_safe('<'), None, None, None))
+        tree.append((mark_safe('<'), None, None, None, None))
         context["content_tree"] = tree
 
     t = loader.get_template("courses/course.html")
@@ -113,17 +118,21 @@ def course_tree(tree, node, user):
                 print(emb_exercise.name)
                 correct_embedded += 1 if emb_exercise.get_user_evaluation(emb_exercise, user) == "correct" else 0
     
-    list_item = (node.content, evaluation, correct_embedded, embedded_count)
+    list_item = (node.content, evaluation, correct_embedded, embedded_count, node.visible)
     
     if list_item not in tree:
         tree.append(list_item)
 
-    children = ContentGraph.objects.filter(parentnode=node, visible=True).order_by('ordinal_number')
+    if user.is_staff:
+        children = ContentGraph.objects.filter(parentnode=node).order_by('ordinal_number')
+    else:
+        children = ContentGraph.objects.filter(parentnode=node, visible=True).order_by('ordinal_number')
+    
     if len(children) > 0:
-        tree.append((mark_safe('>'), None, None, None))
+        tree.append((mark_safe('>'), None, None, None, None))
         for child in children:
             course_tree(tree, child, user)
-        tree.append((mark_safe('<'), None, None, None))
+        tree.append((mark_safe('<'), None, None, None, None))
 
 def check_answer_sandboxed(request, content_slug):
     """
@@ -408,7 +417,7 @@ def content(request, course_slug, instance_slug, content_slug, **kwargs):
 
     term_context = context.copy()
     term_context['tooltip'] = True
-    terms = Term.objects.filter(instance__course=course).order_by('name')
+    terms = Term.objects.filter(instance__course=course).exclude(Q(description__isnull=True) | Q(description__exact='')).order_by('name')
     terms = [{'name' : term.name, 'slug': slugify(term.name, allow_unicode=True), 
               'description' : "".join(markupparser.MarkupParser.parse(term.description, request, term_context)).strip(),
               'span_id' : slugify(term.name, allow_unicode=True) + '-termbank-span'} 
