@@ -1,12 +1,13 @@
 from django.contrib import admin
+from modeltranslation.admin import TranslationAdmin, TranslationTabularInline
 
 from .models import TextfieldFeedbackQuestion, ThumbFeedbackQuestion, \
     StarFeedbackQuestion, MultipleChoiceFeedbackQuestion, MultipleChoiceFeedbackAnswer
 
-class MultipleChoiceFeedbackAnswerInline(admin.TabularInline):
+class MultipleChoiceFeedbackAnswerInline(TranslationTabularInline):
     model = MultipleChoiceFeedbackAnswer
 
-class TextfieldFeedbackQuestionAdmin(admin.ModelAdmin):
+class TextfieldFeedbackQuestionAdmin(TranslationAdmin):
     def get_queryset(self, request):
         return self.model.objects.filter(question_type="TEXTFIELD_FEEDBACK")
 
@@ -14,7 +15,7 @@ class TextfieldFeedbackQuestionAdmin(admin.ModelAdmin):
     list_display = ("question", "slug")
     list_per_page = 500
 
-class ThumbFeedbackQuestionAdmin(admin.ModelAdmin):
+class ThumbFeedbackQuestionAdmin(TranslationAdmin):
     def get_queryset(self, request):
         return self.model.objects.filter(question_type="THUMB_FEEDBACK")
 
@@ -22,7 +23,7 @@ class ThumbFeedbackQuestionAdmin(admin.ModelAdmin):
     list_display = ("question", "slug")
     list_per_page = 500
 
-class StarFeedbackQuestionAdmin(admin.ModelAdmin):
+class StarFeedbackQuestionAdmin(TranslationAdmin):
     def get_queryset(self, request):
         return self.model.objects.filter(question_type="STAR_FEEDBACK")
 
@@ -30,7 +31,7 @@ class StarFeedbackQuestionAdmin(admin.ModelAdmin):
     list_display = ("question", "slug")
     list_per_page = 500
 
-class MultipleChoiceFeedbackQuestionAdmin(admin.ModelAdmin):
+class MultipleChoiceFeedbackQuestionAdmin(TranslationAdmin):
     def get_queryset(self, request):
         return self.model.objects.filter(question_type="MULTIPLE_CHOICE_FEEDBACK")
 
