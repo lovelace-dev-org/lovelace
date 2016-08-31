@@ -792,7 +792,7 @@ class TextfieldExercise(ContentPage):
                 if user.is_staff:
                     errors.append("Contact staff, regexp error '{}' from regexp: {}".format(e, answer.answer))
                 else:
-                    errors.append("Contact staff! Regexp error '{}' in exercise '{}'.".format(e, content.name))
+                    errors.append("Contact staff! Regexp error '{}' in exercise '{}'.".format(e, self.name))
                 correct = False
                 continue
 
