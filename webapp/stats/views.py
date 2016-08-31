@@ -281,7 +281,7 @@ def textfield_exercise(exercise, users, course_inst=None):
     hinted_incorrect_given = 0
     incorrect_unique = 0
     hinted_incorrect_unique = 0
-    choices = exercise.get_type_object().get_choices()
+    choices = exercise.get_choices(exercise)
     for answer in given_answers_set:
         count = given_answers.count(answer)
         correct, hinted, matches = textfield_eval(answer, choices)
@@ -331,7 +331,8 @@ def exercise_answer_stats(request, ctx, exercise, exercise_type_f, template):
     stats = []
     users = []
     for course_inst in course_instances:
-        users_enrolled = filter_users_enrolled(all_users, course_inst)
+        #users_enrolled = filter_users_enrolled(all_users, course_inst)
+        users_enrolled = all_users # until enroll implemented
         stats.append(exercise_type_f(exercise, users_enrolled, course_inst))
         users.extend(users_enrolled)
 
