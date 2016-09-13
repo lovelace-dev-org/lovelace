@@ -24,6 +24,7 @@ from reversion import revisions as reversion
 import pygments
 import magic
 
+from lovelace.celery import app as celery_app
 import courses.tasks as rpc_tasks
 
 import feedback.models
@@ -887,10 +888,14 @@ class FileUploadExercise(ContentPage):
     def check_answer(self, user, ip, answer, files, answer_object, revision):
         lang_code = translation.get_language()
         if revision == "head": revision = None
-        result = rpc_tasks.run_tests.delay(user_id=user.id, instance_id=answer_object.instance.id,
-                                           exercise_id=self.id,
-                                           answer_id=answer_object.id,
-                                           lang_code=lang_code, revision=revision)
+        result = rpc_tasks.run_tests.delay(
+            user_id=user.id,
+            instance_id=answer_object.instance.id,
+            exercise_id=self.id,
+            answer_id=answer_object.id,
+            lang_code=lang_code,
+            revision=revision
+        )
         return {"task_id": result.task_id}
 
     def get_user_evaluation(self, user):

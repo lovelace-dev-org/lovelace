@@ -51,8 +51,7 @@ from courses import models as cm
 # TODO: Improve by following the guidelines here:
 #       - https://news.ycombinator.com/item?id=7909201
 
-@shared_task(name="courses.run-fileexercise-tests", bind=True,
-             serializer='json')
+@shared_task(name="courses.run-fileexercise-tests", bind=True)
 def run_tests(self, user_id, instance_id, exercise_id, answer_id, lang_code, revision):
     # TODO: Actually, just receive the relevant ids for fetching the Django
     #       models here instead of in the Django view.
@@ -258,7 +257,7 @@ def generate_results(results, exercise_id):
     })
     return evaluation
 
-@shared_task(name="courses.run-test", bind=True, serializer='json')
+@shared_task(name="courses.run-test", bind=True)
 def run_test(self, test_id, answer_id, instance_id, exercise_id, student=False, revision=None):
     """
     Runs all the stages of the given test.
@@ -394,7 +393,7 @@ def run_test(self, test_id, answer_id, instance_id, exercise_id, student=False, 
 
     return test_results
 
-@shared_task(name="courses.run-stage", bind=True, serializer='json')
+@shared_task(name="courses.run-stage", bind=True)
 def run_stage(self, stage_id, test_dir, temp_dir_prefix, files_to_check, revision=None):
     """
     Runs all the commands of this stage and collects the return values and the
@@ -522,7 +521,7 @@ def cp437_decoder(input_bytes):
     return "\n".join(byt_ln.decode('ibm437').translate(tr_table)
                      for byt_ln in input_bytes.split(CRLF))
 
-@shared_task(name="courses.run-command-chain-block", serializer='json')
+@shared_task(name="courses.run-command-chain-block")
 def run_command_chainable(cmd, temp_dir_prefix, test_dir, files_to_check, stage_results=None, revision=None):
     cmd_id, cmd_input_text, cmd_return_value = cmd["id"], cmd["input_text"], cmd["return_value"]
     if stage_results is None or "commands" not in stage_results.keys():
@@ -566,7 +565,7 @@ def run_command_chainable(cmd, temp_dir_prefix, test_dir, files_to_check, stage_
 
     return stage_results
 
-@shared_task(name="courses.run-command", serializer='json')
+@shared_task(name="courses.run-command")
 def run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check, revision=None):
     """
     Runs the current command of this stage by automated fork & exec.

@@ -19,7 +19,8 @@ from django.contrib import messages
 
 from reversion import revisions as reversion
 
-from celery.result import AsyncResult
+from lovelace.celery import app as celery_app
+import courses.tasks as rpc_tasks
 from courses.tasks import get_celery_worker_status
 
 from courses.models import *
@@ -256,7 +257,7 @@ def check_answer(request, course_slug, instance_slug, content_slug, revision):
 def check_progress(request, course_slug, instance_slug, content_slug, revision, task_id):
     # Based on https://djangosnippets.org/snippets/2898/
     # TODO: Check permissions
-    task = AsyncResult(task_id)
+    task = celery_app.AsyncResult(id=task_id)
     if task.ready():
         return file_exercise_evaluation(request, course_slug, instance_slug, content_slug, revision, task_id, task)
     else:
