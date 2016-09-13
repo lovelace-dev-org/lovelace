@@ -190,6 +190,7 @@ def generate_results(results, exercise_id):
                 "stage_id": stage_id,
                 "name": student_s["name"],
                 "ordinal_number": student_s["ordinal_number"],
+                'fail': student_s['fail'],
                 "commands": [],
             }
             current_test["stages"].append(current_stage)
@@ -201,7 +202,7 @@ def generate_results(results, exercise_id):
             for cmd_id, student_c, reference_c in ((k, student_cmds[k], reference_cmds[k])
                                                     for k in sorted(reference_cmds.keys(),
                                                                     key=lambda x: student_cmds[x]["ordinal_number"])):
-                cmd_correct = True
+                cmd_correct = True if not student_c.get('fail') else False
                 current_cmd = {
                     "cmd_id": cmd_id,
                 }
@@ -444,6 +445,10 @@ def run_stage(self, stage_id, test_dir, temp_dir_prefix, files_to_check, revisio
         )
         stage_results.update(results)
 
+        if results.get('fail'):
+            stage_results['fail'] = True
+            break
+
     # DEBUG #
 
     #stage_results.update(results)
@@ -557,6 +562,9 @@ def run_command_chainable(cmd, temp_dir_prefix, test_dir, files_to_check, stage_
         proc_results["binary_stderr"] = True
     stderr.close()
 
+    if proc_results.get('fail'):
+        stage_results['fail'] = True
+
     # TODO: Use ordinal number istead of id?
     stage_results["commands"][cmd_id] = proc_results
 
@@ -597,9 +605,8 @@ def run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check, revisio
     args = shlex.split(cmd)
 
     shell_like_cmd = " ".join(shlex.quote(arg) for arg in args)
-    print("Running: %s" % shell_like_cmd)
+    print("Running: {cmdline}".format(cmdline=shell_like_cmd))
     
-
     start_time = time.time()
     try:
         proc = subprocess.Popen(
@@ -611,9 +618,10 @@ def run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check, revisio
             cwd=env['PWD'], env=env,
             universal_newlines=False                   # Binary stdout
         )
-    except FileNotFoundError as e:
-        # In case the executable is not found
-        # TODO: Skip the rest and provide something useful
+    except (FileNotFoundError, PermissionError) as e:
+        # In case the executable is not found or permission to run the
+        # file didn't exist.
+        
         # TODO: Use the proper way to deal with exceptions in Celery tasks
         proc_results = {
             'retval': None, 'timedout': False, 'killed': False, 'runtime': 0,
@@ -624,13 +632,9 @@ def run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check, revisio
             'significant_stderr': command.significant_stderr,
             'command_line': shell_like_cmd,
             'error': str(e),
+            'fail': True,
         }
-        raise e # TODO: DEBUG! Defer until proper reporting in view.
         return proc_results
-    except PermissionError as e:
-        raise e # TODO: DEBUG! Defer until proper reporting in view.
-    # TODO: Prepare for other errors subprocess.Popen might cause, e.g. permission
-    # related etc.
     
     proc_retval = None
     proc_timedout = False

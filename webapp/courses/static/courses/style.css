@@ -1047,6 +1047,9 @@ section.content {
             font-size: 1.1rem;
             background: #cacaca;
         }
+        div.test-evaluation-stage-fail {
+            background: #eccaca;
+        }
         /* Command */
         div.test-evaluation-heading {
             padding: 2px 2px 2px 4px;

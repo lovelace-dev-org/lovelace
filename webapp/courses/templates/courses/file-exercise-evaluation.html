@@ -26,11 +26,17 @@
     <div class="test-evaluation-tab" id="file-test-{{ test_info.test_id }}" style="display: {% if forloop.first %}block{% else %}none{% endif %};">
       {% for stage_info in test_info.stages|dictsort:"ordinal_number" %}
         <div class="test-evaluation-stage">
-          <div class="test-evaluation-stage-name">{{ stage_info.name }}</div>
+          <div class="test-evaluation-stage-name{% if stage_info.fail %} test-evaluation-stage-fail{% endif %}">{{ stage_info.name }}</div>
         
           {% for cmd_info in stage_info.commands|dictsort:"ordinal_number" %}
             <div class="test-evaluation-heading">Command</div>
             <pre class="test-evaluation-cmdline">{{ cmd_info.command_line }}</pre>
+
+            {% if cmd_info.error %}
+              <div class="test-evaluation-msg test-evaluation-msg-attention">
+                Running the command failed due to the following reason: {{ cmd_info.error }}
+              </div>
+            {% endif %}
 
             {% if cmd_info.expected_retval != None %}
               <div class="test-evaluation-msg {% if cmd_info.retval != cmd_info.expected_retval %}test-evaluation-msg-attention{% endif %}">
