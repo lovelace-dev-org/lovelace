@@ -108,7 +108,7 @@ pip install pygments
 pip install pillow
 pip install django
 pip install django-redis
-pip install celery[redis]
+pip install celery[redis]==4.0.0rc4
 pip install django-allauth
 pip install django-modeltranslation
 pip install django-reversion
