@@ -211,11 +211,12 @@ class ContentGraph(models.Model):
     def __str__(self):
         if not self.content:
             return "No linked content yet"
-        return "{} ({})".format(self.content.slug, self.get_revision_str())
+        return "No. {} – {} ({})".format(self.ordinal_number, self.content.slug, self.get_revision_str())
 
     class Meta:
         verbose_name = "content to course link"
         verbose_name_plural = "content to course links"
+        #ordering = ('ordinal_number',)
 
 def get_file_upload_path(instance, filename):
     return os.path.join("files", "%s" % (filename))
@@ -517,7 +518,9 @@ class ContentPage(models.Model):
         else:
             return super(ContentPage, self).__getattribute__(name)
         return func
-        
+
+    class Meta:
+        ordering = ('name',)
 
 @reversion.register()
 class Lecture(ContentPage):

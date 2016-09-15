@@ -14,9 +14,6 @@ from modeltranslation.admin import TranslationAdmin, TranslationTabularInline, \
 
 from reversion.admin import VersionAdmin
 
-from nested_inline.admin import NestedStackedInline, NestedTabularInline, \
-    NestedModelAdmin
-
 ## User profiles
 # http://stackoverflow.com/questions/4565814/django-user-userprofile-and-admin
 admin.site.unregister(User)
@@ -47,82 +44,11 @@ admin.site.register(Evaluation)
 #        return qs.select_subclasses().filter(users=request.user)
 
 # TODO: How to link ContentFeedbackQuestion objects nicely?
-class HintInline(NestedTabularInline):
+class HintInline(TranslationTabularInline):
     model = Hint
     fk_name = 'exercise'
     extra = 0
-    queryset = NestedTabularInline.get_queryset
-
-class FileExerciseTestExpectedOutputInline(NestedStackedInline):
-    model = FileExerciseTestExpectedOutput
-    extra = 0
-    fk_name = 'command'
-    queryset = NestedStackedInline.get_queryset
-
-class FileExerciseTestCommandInline(NestedStackedInline):
-    model = FileExerciseTestCommand
-    extra = 1
-    fk_name = 'stage'
-    queryset = NestedStackedInline.get_queryset
-    fieldsets = (
-        ('', {
-            'fields': ('command_line', 'ordinal_number')
-        }),
-        ('Extra Options', {
-            'classes': ('collapse',),
-            'fields': ('significant_stdout', 'significant_stderr', 'timeout', 
-                       'signal', 'input_text', 'return_value')
-        }),
-    )
-    inlines = [FileExerciseTestExpectedOutputInline]
-
-class FileExerciseTestStageInline(NestedStackedInline):
-    model = FileExerciseTestStage
-    fields = ('name', 'ordinal_number', 'depends_on',)
-    extra = 1
-    fk_name = 'test'
-    inlines = [FileExerciseTestCommandInline]
-    queryset = NestedStackedInline.get_queryset
-
-class FileExerciseTestInline(NestedStackedInline):
-    model = FileExerciseTest
-    fields = ('exercise', 'name', 'required_files')
-    extra = 1
-    fk_name = 'exercise'
-    inlines = [FileExerciseTestStageInline]
-    queryset = NestedStackedInline.get_queryset
-    
-    def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        if db_field.name == "exercise":
-            kwargs["queryset"] = FileUploadExercise.objects.order_by("name")
-        return super(FileExerciseTestInline, self).formfield_for_foreignkey(db_field, request, **kwargs)
-
-class FileExerciseTestIncludeFileSettingsInline(NestedStackedInline):
-    model = IncludeFileSettings
-    queryset = NestedStackedInline.get_queryset
-    fk_name = 'fileexercisetestincludefile'
-    fieldsets = (
-        ('General information', {
-            'fields': ('name', 'purpose',)
-        }),
-        ('UNIX permissions', {
-            'classes': ('collapse',),
-            'fields': ('chown_settings', 'chgrp_settings', 'chmod_settings')
-        }),
-    )
-
-class FileExerciseTestIncludeFileInline(NestedStackedInline):
-    model = FileExerciseTestIncludeFile
-    extra = 0
-    fk_name = 'exercise'
-    inlines = [FileExerciseTestIncludeFileSettingsInline]
-    queryset = NestedStackedInline.get_queryset
-    fieldsets = (
-        ('General information', {
-            'fields': ('default_name', 'fileinfo')
-        }),
-        
-    )
+    queryset = TranslationTabularInline.get_queryset
 
 class MultipleChoiceExerciseAnswerInline(TranslationTabularInline):
     model = MultipleChoiceExerciseAnswer
@@ -247,23 +173,6 @@ class FileExerciseTestExpectedStderrAdmin(admin.StackedInline):
 #class FileExerciseTestAdmin(admin.StackedInline):
 #    inlines = [FileExerciseTestCommandAdmin, FileExerciseTestExpectedOutputAdmin, FileExerciseTestExpectedErrorAdmin, FileExerciseTestIncludeFileAdmin]
 
-
-class FileExerciseAdmin(NestedModelAdmin):
-    def get_queryset(self, request):
-        return self.model.objects.filter(content_type="FILE_UPLOAD_EXERCISE")
-
-    fieldsets = [
-        ('Page information',   {'fields': ['name', 'slug', 'content', 'question', 'tags']}),
-        ('Exercise miscellaneous', {'fields': ['default_points', 'manually_evaluated'],
-                                'classes': ['wide']}),
-        ('Feedback settings',  {'fields': ['feedback_questions']}),
-    ]
-    inlines = [HintInline, FileExerciseTestIncludeFileInline, FileExerciseTestInline]
-    search_fields = ("name",)
-    readonly_fields = ("slug",)
-    list_display = ("name", "slug",)
-    list_per_page = 500
-
 class LectureAdmin(TranslationAdmin, VersionAdmin):
     def get_queryset(self, request):
         return self.model.objects.filter(content_type="LECTURE")
@@ -292,12 +201,7 @@ admin.site.register(MultipleChoiceExercise, MultipleChoiceExerciseAdmin)
 admin.site.register(CheckboxExercise, CheckboxExerciseAdmin)
 admin.site.register(TextfieldExercise, TextfieldExerciseAdmin)
 admin.site.register(CodeReplaceExercise, CodeReplaceExerciseAdmin)
-admin.site.register(FileUploadExercise, FileExerciseAdmin)
-#admin.site.register(FileExerciseTest, FileExerciseTestAdmin)
-#admin.site.register(FileExerciseTest)
-#admin.site.register(FileExerciseTestStage)
-#admin.site.register(FileExerciseTestCommand)
-#admin.site.register(FileExerciseTestExpectedOutput)
+
 admin.site.register(FileExerciseTestIncludeFile)
 admin.site.register(InstanceIncludeFile)
 admin.site.register(IncludeFileSettings)
@@ -350,7 +254,16 @@ admin.site.register(Term, TermAdmin)
 
 ## Course related administration
 class ContentGraphAdmin(admin.ModelAdmin):
-    search_fields = ('content__slug',)
+    search_fields = ('content',)
+    list_display = ('ordinal_number', 'content', 'get_instances',)
+    list_display_links = ('content',)
+    list_filter = ('courseinstance',)
+    list_per_page = 500
+    ordering = ('courseinstance', 'ordinal_number',)
+
+    def get_instances(self, obj):
+        return " | ".join([i.name for i in obj.courseinstance_set.all()])
+    get_instances.short_description = "Instances"
 
 admin.site.register(ContentGraph, ContentGraphAdmin)
 
