@@ -24,7 +24,7 @@ class CourseTranslationOptions(TranslationOptions):
 
 @register(CourseInstance)
 class CourseInstanceTranslationOptions(TranslationOptions):
-    fields = ('name', 'notes')
+    fields = ('name', 'email', 'notes')
 
 
 ## Page content objects

@@ -281,7 +281,7 @@ admin.site.register(Course, CourseAdmin)
 
 class CourseInstanceAdmin(TranslationAdmin, VersionAdmin):
     fieldsets = [
-        (None,                {'fields': ['name', 'course', 'frontpage',]}),
+        (None,                {'fields': ['name', 'email', 'course', 'frontpage',]}),
         ('Schedule settings', {'fields': ['start_date', 'end_date', 'active',]}),
         ('Instance outline',  {'fields': ['contents',]}),
     ]

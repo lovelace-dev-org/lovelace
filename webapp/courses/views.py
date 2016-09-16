@@ -609,30 +609,35 @@ def show_answers(request, user, course, instance, exercise):
         pass
     else:
         return HttpResponseForbidden("You're only allowed to view your own answers.")
-
+    
     try:
         user_obj = User.objects.get(username=user)
     except User.DoesNotExist as e:
-        return HttpResponseNotFound("No such user %s" % user)
-
+        return HttpResponseNotFound("No such user {}.".format(user))
+    
     try:
         course_obj = Course.objects.get(slug=course)
     except Course.DoesNotExist as e:
-        return HttpResponseNotFound("No such course %s" % course)
+        return HttpResponseNotFound("No such course {}.".format(course))
+    
+    try:
+        instance_obj = CourseInstance.objects.get(slug=instance)
+    except CourseInstance.DoesNotExist as e:
+        return HttpResponseNotFound("No such course instance {}.".format(instance))
     
     try:
         exercise_obj = ContentPage.objects.get(slug=exercise).get_type_object()
     except ContentPage.DoesNotExist as e:
-        return HttpResponseNotFound("No such exercise %s" % exercise)
-
+        return HttpResponseNotFound("No such exercise {}.".format(exercise))
+    
     content_type = exercise_obj.content_type
     question = exercise_obj.question
     choices = exercise_obj.get_choices(exercise_obj)
-
+    
     # TODO: Error checking for exercises that don't belong to this course
     
     answers = []
-
+    
     if content_type == "MULTIPLE_CHOICE_EXERCISE":
         answers = UserMultipleChoiceExerciseAnswer.objects.filter(user=user_obj, exercise=exercise_obj)
     elif content_type == "CHECKBOX_EXERCISE":
@@ -643,17 +648,22 @@ def show_answers(request, user, course, instance, exercise):
         answers = UserFileUploadExerciseAnswer.objects.filter(user=user_obj, exercise=exercise_obj)
     elif content_type == "CODE_REPLACE_EXERCISE":
         answers = UserCodeReplaceExerciseAnswer.objects.filter(user=user_obj, exercise=exercise_obj)
-
+    
     answers = answers.order_by('-answer_date')
-
+    
     # TODO: Own subtemplates for each of the exercise types.
     t = loader.get_template("courses/user-exercise-answers.html")
     c = {
         'exercise': exercise,
+        'exercise_name': exercise_obj.name,
         'course_slug': course,
-        'instance_slug': instance,
         'course_name': course_obj.name,
+        'instance_slug': instance,
+        'instance_name': instance_obj.name,
+        'instance_email': instance_obj.email,
+        'answers_url': request.build_absolute_uri(),
         'answers': answers,
+        'username': user,
     }
     return HttpResponse(t.render(c, request))
 

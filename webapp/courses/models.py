@@ -139,6 +139,7 @@ class CourseInstance(models.Model):
     dates of the course.
     """
     name = models.CharField(max_length=255) # Translate
+    email = models.EmailField(blank=True)   # Translate
     slug = models.SlugField(max_length=255, allow_unicode=True, blank=False)
     course = models.ForeignKey('Course')
     
