@@ -47,6 +47,7 @@ from celery import shared_task, chain
     #FileUploadExerciseReturnFile
 
 from courses import models as cm
+from courses import evaluation_sec as sec 
 
 # TODO: Improve by following the guidelines here:
 #       - https://news.ycombinator.com/item?id=7909201
@@ -573,6 +574,10 @@ def run_command_chainable(cmd, temp_dir_prefix, test_dir, files_to_check, stage_
 
     return stage_results
 
+def demote_process():
+    #sec.drop_privileges()
+    sec.limit_resources()
+
 @shared_task(name="courses.run-command")
 def run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check, revision=None):
     """
@@ -612,7 +617,7 @@ def run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check, revisio
         proc = subprocess.Popen(
             args=args, bufsize=-1, executable=None,
             stdin=stdin, stdout=stdout, stderr=stderr, # Standard fds
-            #preexec_fn=demote_process,                 # Demote before fork
+            preexec_fn=demote_process,                 # Demote before fork
             close_fds=True,                            # Don't inherit fds
             shell=False,                               # Don't run in shell
             cwd=env['PWD'], env=env,
