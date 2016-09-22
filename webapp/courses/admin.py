@@ -193,6 +193,17 @@ class LectureAdmin(TranslationAdmin, VersionAdmin):
     list_display = ("name", "slug",)
     list_per_page = 500
 
+# Still required even though a custom admin is implemented
+class FileUploadExerciseAdmin(TranslationAdmin, VersionAdmin):
+    def get_queryset(self, request):
+        return self.model.objects.filter(content_type="FILE_UPLOAD_EXERCISE")
+    
+    search_fields = ("name",)
+    readonly_fields = ("slug",)
+    list_display = ("name", "slug",)
+    list_per_page = 500
+
+admin.site.register(FileUploadExercise, FileUploadExerciseAdmin)
 
 # TODO: Use the view_on_site on all content models!
 
