@@ -13,7 +13,7 @@
   </div>
 
   <div>
-    <label for="test-{{ test.id }}-required_files">Included files this test requires: </label>
+    <label for="test-{{ test.id }}-required_files">Included files required by this test: </label>
     <select id="test-{{ test.id }}-required_files" name="test_{{ test.id }}_required_files" class="test-filepicker" multiple>
       <optgroup class="filepicker-instance-options" label="Instance files">
         {% for instance_file in instance_files %}
@@ -26,6 +26,7 @@
         {% endfor%}
       </optgroup>
     </select>
+    <small class="input-help">Select the files used by this test; hold down Ctrl (or Cmd on macOS) to select more than one.</small>
   </div>
 
   <div class="separator"></div>

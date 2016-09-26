@@ -148,7 +148,7 @@
               <div class="form-bigrow">
                 <label for="exercise-page-content-{{ language_choice }}">Page contents in <a href="{% url 'courses:markup_help' %}" class="help-link" title="Help on how to edit with the markup language" target="_new">the markup language</a> {% lang_reminder language_choice %}:</label>
                 <textarea id="exercise-page-content-{{ language_choice }}" name="exercise_content_{{ language_choice }}"
-                          cols="100" rows="8" onInput="exercise_page_content_changed(event, '{{ language_choice }}');"
+                          cols="101" rows="8" onInput="exercise_page_content_changed(event, '{{ language_choice }}');"
                           class="exercise-content-input">{% get_translated_field exercise "content" language_choice %}</textarea>
               </div>
             </div>
@@ -158,7 +158,7 @@
             <div class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}">
               <div class="form-bigrow">
                 <label for="exercise-question-{{ language_choice }}">The exercise question {% lang_reminder language_choice %}:</label>
-                <textarea id="exercise-question-{{ language_choice }}" name="exercise_question_{{ language_choice }}" cols="100" rows="3">{% get_translated_field exercise "question" language_choice %}</textarea>
+                <textarea id="exercise-question-{{ language_choice }}" name="exercise_question_{{ language_choice }}" cols="101" rows="3">{% get_translated_field exercise "question" language_choice %}</textarea>
               </div>
             </div>
           {% endfor %}
