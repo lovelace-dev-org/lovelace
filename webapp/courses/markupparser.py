@@ -13,6 +13,8 @@ Idea from http://wiki.sheep.art.pl/Wiki%20Markup%20Parser%20in%20Python
 
 # TODO: Rework the parser into a plugin-extensible general Python library.
 
+# TODO: Provide example objects with lovelace-internal-<> like identifiers.
+
 import re
 import itertools
 import operator
@@ -328,10 +330,14 @@ markups.append(CalendarMarkup)
 class CodeMarkup(Markup):
     name = "Code"
     shortname = "code"
-    description = "Monospaced field for code and other preformatted text."
+    description = "Monospaced field for code and other preformatted text. Supported syntax highlighting identifiers (look for short names): http://pygments.org/docs/lexers/"
     regexp = r"^[{]{3}(highlight=(?P<highlight>[^\s]*))?\s*$" # TODO: Better settings
     markup_class = ""
-    example = ""
+    example = "{{{highlight=python3\n"\
+              "name = input(\"What is your name? \")\n"\
+              "\n"\
+              "print(\"Hello, {name}! Oh, and hello, world!\".format(name=name))\n"\
+              "}}}"
     states = {}
     inline = False
     allow_inline = False
@@ -754,7 +760,7 @@ markups.append(EmbeddedVideoMarkup)
 class EmptyMarkup(Markup):
     name = "Empty"
     shortname = "empty"
-    description = ""
+    description = "(Empty and whitespace only rows.)"
     regexp = "^\s*$"
     markup_class = ""
     example = ""
@@ -777,7 +783,12 @@ class HeadingMarkup(Markup):
     description = ""
     regexp = r"^\s*(?P<level>\={1,6})\=*\s*.+\s*(?P=level)\s*$"
     markup_class = ""
-    example = ""
+    example = "= 1st Level Heading =\n"\
+              "== 2nd Level Heading ==\n"\
+              "=== 3rd Level Heading ===\n"\
+              "==== 4th Level Heading ====\n"\
+              "===== 5th Level Heading =====\n"\
+              "====== 6th Level Heading ======\n"    
     inline = False
     allow_inline = False
 
