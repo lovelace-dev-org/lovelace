@@ -901,7 +901,7 @@ class ListMarkup(Markup):
         
         if len(state["list"]) == settings["level"]:
             if state["list"][-1] != tag:
-                top_tag = self.list_state.pop()
+                top_tag = state["list"].pop()
                 yield '</%s>' % top_tag
                 
                 state["list"].append(tag)
@@ -1002,10 +1002,10 @@ markups.append(TableMarkup)
 class TeXMarkup(Markup):
     name = "TeX"
     shortname = "tex"
-    description = ""
+    description = "TeX markup with KaTeX: https://github.com/Khan/KaTeX/wiki/Function-Support-in-KaTeX"
     regexp = r"^[<]math[>]\s*$"
     markup_class = ""
-    example = ""
+    example = "<math>\nx = \dfrac{-b \pm \sqrt{b^2 - 4ac}}{2a}\n</math>"
     inline = False
     allow_inline = False
 

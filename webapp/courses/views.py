@@ -4,6 +4,7 @@ Django views for rendering the course contents and checking exercises.
 import datetime
 import json
 from cgi import escape
+from collections import namedtuple
 
 from django.http import HttpResponse, JsonResponse, HttpResponseRedirect,\
     HttpResponseNotFound, HttpResponseForbidden, HttpResponseNotAllowed,\
@@ -672,9 +673,25 @@ def help_list(request):
 
 def markup_help(request):
     markups = markupparser.MarkupParser.get_markups()
+    Markup = namedtuple(
+        'Markup',
+        ['name', 'description', 'example', 'result', 'slug']
+    )
+
+    # For debugging
+    #for _, m in sorted(markups.items()):
+        #print("name: " + m.name)
+        #print("result: " + "".join(markupparser.MarkupParser.parse(m.example)))
+    
+    markup_list = (
+        Markup(m.name, m.description, m.example, mark_safe("".join(markupparser.MarkupParser.parse(m.example))),
+               slugify(m.name, allow_unicode=True))
+        for _, m in markups.items()
+    )
+    print(markup_list)
     t = loader.get_template("courses/markup-help.html")
     c = {
-        'markups': markups,
+        'markups': list(sorted(markup_list)),
     }
     return HttpResponse(t.render(c, request))
 
