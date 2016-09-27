@@ -688,7 +688,7 @@ def markup_help(request):
                slugify(m.name, allow_unicode=True))
         for _, m in markups.items()
     )
-    print(markup_list)
+    
     t = loader.get_template("courses/markup-help.html")
     c = {
         'markups': list(sorted(markup_list)),
