@@ -53,15 +53,15 @@
           height: '400px'
         });
 
-      $(document).on('click', function(event) {
-        var menu_display = $('#user-menu').css('display');
-        var target = $(event.target);
-        if (menu_display == 'block' && 
-            !target.closest('#user-menu').length &&
-            !target.closest('#user-menu-arrow').length) {
-          $('#user-menu').hide();
-        }
-      });
+        $(document).on('click', function(event) {
+          var menu_display = $('#user-menu').css('display');
+          var target = $(event.target);
+          if (menu_display == 'block' && 
+              !target.closest('#user-menu').length &&
+              !target.closest('#user-menu-arrow').length) {
+                $('#user-menu').hide();
+          }
+        });
             
         $(window).on('DOMContentLoaded load resize scroll', handler);
       });
@@ -172,7 +172,7 @@
                 <ul>
                   {% for term in terms %}
                     <li class="term-list-item">
-                      <span class="term" id="{{ term.span_id }}" onmouseover="show_termbank_term_description(this, '#{{ term.slug }}-term-div');">{{ term.name }}</span>
+                      <span class="term" id="{{ term.span_id }}" onmouseover="show_term_description_during_hover(this, '#{{ term.slug }}-term-div');">{{ term.name }}</span>
                     </li>
                   {% endfor %}
                 </ul>

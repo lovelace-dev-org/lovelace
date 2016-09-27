@@ -26,7 +26,7 @@ var handler = function() {
     var old, previous;
     headings.each(function(index) {
         var id = $(this).find("span.anchor-offset").first().attr("id");
-        var link_in_toc = $("#toc li a[href=#" + id + "]").parent();
+        var link_in_toc = $("#toc li a[href='#" + id + "']").parent();
         if (isElementInViewport(this) && topmost_found == false) {
             $(link_in_toc).attr("class", "toc-visible");
             topmost_found = true;
@@ -139,16 +139,17 @@ function accept_cookies() {
     cookie_law_message.hide();
 }
 
-function show_term_description(span_slct, div_slct, left_offset, top_offset) {
+function show_term_description(span_slct, div_slct) {
     var span = $(span_slct);
     var desc_div = $(div_slct);
     if (desc_div.length == 0) {
         desc_div = $("#term-div-not-found");
     }
 
-    var pos = span.position();
-    desc_div.css({"left" : pos.left + span.width() + left_offset + "px", 
-                  "top" : pos.top + top_offset + "px"});
+    let pos = span.offset();
+    let height = span.height();
+    let arrow_height = 9;
+
     var desc_content_div = desc_div.children("div.term-desc-contents");
     if (desc_div.height() + "px" === desc_content_div.css('max-height')) {
         desc_div.find("div.term-desc-scrollable").slimScroll({
@@ -156,24 +157,17 @@ function show_term_description(span_slct, div_slct, left_offset, top_offset) {
         });
     }
     desc_div.css({"display" : "block"}); //This works in Jquery3 unlike .show()
+    desc_div.offset({left: pos.left, top: pos.top + height + arrow_height});
 }
 
-function show_term_description_during_hover(span_elem, div_id, left_offset, top_offset) {
+function show_term_description_during_hover(span_elem, div_id) {
     var span = $(span_elem);
-    var parent = span.parent();
-    if (parent.hasClass("exercise-form")) {
-        var TOP_POS_CORRECTION = 8; // Corrects the top position of the tooltip if the term is inside an exercise form.
-        var parent_pos = parent.position();
-        console.log(parent);
-        top_offset += parent_pos.top + TOP_POS_CORRECTION;
-        left_offset += parent_pos.left;
-    }
     
-    show_term_description(span_elem, div_id, left_offset, top_offset);
+    show_term_description(span_elem, div_id);
     var elems_hovered = true;
     span.add(div_id).hover(function() {
         elems_hovered = true;
-        show_term_description(span_elem, div_id, left_offset, top_offset);
+        show_term_description(span_elem, div_id);
     }, function() {
         elems_hovered = false;
         if (elems_hovered == 0) {
@@ -182,22 +176,9 @@ function show_term_description_during_hover(span_elem, div_id, left_offset, top_
     });
 }
 
-function show_termbank_term_description(span_elem, div_id) {
-    var LEFT_POS_CORRECTION = 10; // Corrects the position of the tooltip in horizontal direction to point to the end of the term in termbank.
-    var TOP_POS_CORRECTION = 5; // Corrects the position of the tooltip in vertical direction to point to the term in termbank.
-    var termbank_elem = $("#termbank");
-    var termbank_heading = $("#termbank-heading");
-    var term_desc_offset = $("#term-descriptions").offset();
-    var termbank_offset = termbank_elem.offset();
-    var termbank_position = termbank_elem.position();
-    var left_offset = termbank_offset.left - term_desc_offset.left + LEFT_POS_CORRECTION;
-    var top_offset = termbank_position.top + termbank_heading.height() + $(span_elem).parent().position().top + TOP_POS_CORRECTION;
-    show_term_description_during_hover(span_elem, div_id, left_offset, top_offset + $(div_id).position().top);
-}
-
 function hide_tooltip(div_id) {
     var desc_div = $(div_id);
-    if (desc_div.length == 0) {
+    if (desc_div.length === 0) {
         desc_div = $("#term-div-not-found");
     }
     desc_div.hide();

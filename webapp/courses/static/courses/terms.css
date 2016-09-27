@@ -20,17 +20,21 @@ div.term-description {
     font-size: 0.9rem;
     padding: 2px 2px;
     border: 2px solid #333;
+    left: 0;
+    top: 0;
+    min-width: 22px;
 }
 
+/* The arrow */
 div.term-description:before {
     content: ' ';
     height: 0;
     position: absolute;
     width: 0;
-    left: -24px;
-    top: 0px;
-    border: 12px solid transparent;
-    border-right-color: #333;
+    top: -18px;
+    left: 0px;
+    border: 9px solid transparent;
+    border-bottom-color: #333;
 }
 
 div.term-description:after {
@@ -38,10 +42,10 @@ div.term-description:after {
     height: 0;
     position: absolute;
     width: 0;
-    left: -18px;
-    top: 3px;
-    border: 9px solid transparent;
-    border-right-color: #39ad39;
+    top: -12px;
+    left: 3px;
+    border: 6px solid transparent;
+    border-bottom-color: #39ad39;
 }
 
 div.term-desc-contents {

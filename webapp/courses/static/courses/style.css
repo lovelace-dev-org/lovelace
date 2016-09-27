@@ -1100,6 +1100,7 @@ section.content {
             cursor: help;
             border-bottom: 2px dashed #000;
             text-decoration: none;
+            position: relative;
         }
         
         pre.test-evaluation-inputs {
