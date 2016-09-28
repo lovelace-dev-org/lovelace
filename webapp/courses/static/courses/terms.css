@@ -1,7 +1,10 @@
 span.term {
     cursor: help;
     text-decoration: none;
-    border-bottom: 2px #222 dotted;
+    border-bottom: 2px rgba(51,51,51,0.75) dotted;
+}
+div.termbank span.term {
+    border-bottom: 2px #333 dotted;
 }
 
 li.term-list-item {
