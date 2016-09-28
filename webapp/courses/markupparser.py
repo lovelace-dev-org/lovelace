@@ -624,7 +624,6 @@ class EmbeddedScriptMarkup(Markup):
         # TODO: Could this cause a race condition?
         if includes or image_urls:
             inject_includes_template = """<script>
-//$(document).ready(function() {{
 (function() {{
   var script_iframe = $("#{id}");
   
@@ -632,18 +631,11 @@ class EmbeddedScriptMarkup(Markup):
     var cw = script_iframe[0].contentWindow.document;
 {injects}
   }};
-
-  //if (script_iframe[0].contentWindow.document.readyState == "complete") {{
-//    script_iframe_inject_function();
-//  }} else {{
-    script_iframe.load(script_iframe_inject_function);
-  //}}
-//}});
+  script_iframe.on("load", script_iframe_inject_function);
 }})();
 </script>
 """
 
-            #single_inject_template = "    script_iframe.contents().find(\"{elem}\").append(\"{new_tag}\");"
             single_inject_template = \
 """    var new_{num} = cw.createElement("{type}");
     new_{num}.{type_type} = "{type_value}";
@@ -658,8 +650,8 @@ class EmbeddedScriptMarkup(Markup):
     new_img_addresses.id = "id-img_addrs";
     cw.getElementsByTagName("{where}")[0].appendChild(new_img_addresses);
 """
-            single_image_inject_template = "var src_{name} = \"{addr}\";"
-            array_image_injects_template = "var img_srcs = [{var_names}];"
+            single_image_inject_template = "var src_{name} = \"{addr}\";"  # TODO: Bug with names that have a '-'
+            array_image_injects_template = "var img_srcs = [{var_names}];" # TODO: Bug with names that have a '-'
             
             rendered_includes = inject_includes_template.format(
                 id=iframe_id,
