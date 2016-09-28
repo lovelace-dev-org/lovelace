@@ -47,7 +47,7 @@ div#cookie-law-message > div {
 }
 div#cookie-law-message > div > p {
     font-family: "LatoWeb", "DejaVu Sans", "Open Sans", "Verdana", "Ubuntu", "Arial", sans-serif;
-    font-size: 1.5em;
+    font-size: 1.3rem;
     font-weight: normal;
     color: #222;
 }
@@ -57,7 +57,7 @@ div#cookie-law-message > div > button {
     top: 4px;
     z-index: 101;
     font-family: "DejaVu Sans", "Open Sans", "Verdana", "Ubuntu", "Arial", sans-serif;
-    font-size: 1.2em;
+    font-size: 1.0rem;
     font-weight: normal;
     color: #222;
     padding: 1px;
@@ -498,7 +498,7 @@ section.content {
     margin-right: auto;
     margin-top: 0;
     font-family: "LatoWeb", "DejaVu Sans", "Open Sans", "Verdana", "Ubuntu", "Arial", sans-serif;
-    font-size: 1.5em;
+    font-size: 1.3em;
     color: #333;
     line-height: 1.5;
     padding: 1em 2em 3em 120px;
