@@ -343,8 +343,8 @@ nav.breadcrumb {
  /* Termbank */
 div.termbank {
     position: fixed;
-    left: 1.5rem;
-    top: 5.5rem;
+    left: 0.5rem;
+    top: 4.5rem;
     
     width: 360px;
     min-height: 80px;
@@ -353,8 +353,8 @@ div.termbank {
     color: #222;
     z-index: 2;
 
-    font-family: "DejaVu Sans", "Open Sans", "Verdana", "Ubuntu", "Arial", sans-serif;
-    font-size: 0.8em;
+    font-family: "LatoWeb", "DejaVu Sans", "Open Sans", "Verdana", "Ubuntu", "Arial", sans-serif;
+    font-size: 1.0em;
     font-weight: normal;
 
     border: 1px solid #2e862e;
@@ -386,7 +386,7 @@ div.termbank {
 div.toc-box {
     position: fixed;
     right: 0.5rem;
-    top: 5.5rem;
+    top: 4.5rem;
     
     width: 360px;
     min-height: 80px;
