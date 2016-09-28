@@ -15,9 +15,9 @@
   <li><a href="{% url 'courses:index' %}">{% trans 'Courses' %}</a></li>
   {% if not sandboxed %}
   <div class="separator">»</div>
-  <li><a href="{% url 'courses:course' course_slug %}">{{ course_name }}</a></li>
+  <li><a href="{% url 'courses:course' course_slug instance_slug %}">{{ course_name }}&nbsp;/&nbsp;{{ instance_name }}</a></li>
   <div class="separator">»</div>
-  <li><a href="{% url 'courses:content' course_slug content.slug %}">{{ content.name }}</a></li>
+  <li><a href="{% url 'courses:content' course_slug instance_slug content.slug %}">{{ content.name }}</a></li>
   {% endif %}
 {% endblock %}
 
@@ -27,13 +27,27 @@
   {% endif %}
 {% endblock %}
 
+{% block revision-info %}
+  {% if revision and revision > 0 and user.is_superuser %}
+    <div class="revision-info">This is an old revision № {{ revision }} of this page!</div>
+  {% endif %}
+{% endblock %}
+
 {% block page-content %}
-{% if content.content_type == "LECTURE"%}
-  {% include "courses/lecture.html" %}
-{% elif rendered_content or tasktype %}
-  {{ rendered_content|safe }}
-  {% if content.is_answerable %}
-    {% include "courses/exercise.html" %}
+{% if not content.is_answerable %}
+  {% lecture %}
+{% else %}
+  {% if content.content_type == "MULTIPLE_CHOICE_EXERCISE" %}
+    {% multiple_choice_exercise %}
+  {% elif content.content_type == "CHECKBOX_EXERCISE" %}
+    {% checkbox_exercise %}
+  {% elif content.content_type == "TEXTFIELD_EXERCISE" %}
+    {% textfield_exercise %}
+  {% elif content.content_type == "FILE_UPLOAD_EXERCISE" %}
+    {% file_upload_exercise %}
   {% endif %}
 {% endif %}
+
 {% endblock %}
+
+

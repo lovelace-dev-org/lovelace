@@ -6,15 +6,15 @@
 {% block page-content %}
 <h1>Markup help</h1>
 {# TODO: Group by markup class #}
-{% for markup in markups.values %}
+{% for markup in markups %}
   <div>
-    <h2>{{ markup.name }}</h2>
+    <h2 class="content-heading">{{ markup.name }}<span id="{{ markup.slug }}" class="anchor-offset"></span><a href="#{{ markup.slug }}" class="permalink" title="Permalink to {{ markup.name }}">&para;</a></h2>
     <p>{{ markup.description }}</p>
-    <p>Example</p>
+    <h4>Example</h4>
     <pre class="normal">{{ markup.example }}</pre>
-    <p>Result</p>
+    <h4>Result</h4>
     <div>
-      parsed result here
+      {{ markup.result }}
     </div>
   </div>
 {% endfor %}

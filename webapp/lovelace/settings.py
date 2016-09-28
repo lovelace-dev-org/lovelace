@@ -20,6 +20,7 @@ ALLOWED_HOSTS = ["localhost"]
 
 # Applications
 INSTALLED_APPS = (
+    'modeltranslation',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -33,8 +34,10 @@ INSTALLED_APPS = (
     'courses',
     'stats',
     'feedback',
-    'smuggler',
     'nested_inline',
+    'exercise_admin',
+    'reversion',
+    #'mod_wsgi.server',
 )
 
 SITE_ID = 1
@@ -90,8 +93,12 @@ AUTHENTICATION_BACKENDS = (
 # https://docs.djangoproject.com/en/dev/ref/settings/#databases
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'mydatabase',
+        'USER': 'mydatabaseuser',
+        'PASSWORD': 'mypassword',
+        'HOST': '127.0.0.1',
+        'PORT': '5432',
     }
 }
 
@@ -154,6 +161,8 @@ LOCALE_PATHS = (
     os.path.join(BASE_DIR, 'locale'),
 )
 
+MODELTRANSLATION_DEFAULT_LANGUAGE = 'fi'
+
 # URL prefix for static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/dev/howto/static-files/
 STATIC_URL = '/static/'
@@ -188,11 +197,8 @@ STATICFILES_DIRS = (
 SECRET_KEY = '$34r(o@3yfyr-=v8*ndtqm6^ti0=p%cyt&amp;a*giv-1w%q21r4ae'
 
 # Celery settings
-BROKER_URL = 'amqp://guest:guest@localhost:5672//'
+CELERY_BROKER_URL = 'amqp://guest:guest@localhost:5672//'
 CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
 
 # Cache settings
 CACHES = {
@@ -206,4 +212,4 @@ CACHES = {
 }
 
 #Smuggler settings
-SMUGGLER_FIXTURE_DIR = os.path.join(BASE_DIR, 'fixtures')
+#SMUGGLER_FIXTURE_DIR = os.path.join(BASE_DIR, 'fixtures')

@@ -3,6 +3,18 @@ Parser for wiki markup block content, i.e. paragraphs, bullet lists, tables, etc
 Idea from http://wiki.sheep.art.pl/Wiki%20Markup%20Parser%20in%20Python
 """
 
+# TODO: Rework the registering of the different markups. Allow plugins to register
+# additional markups from their own files.
+
+# TODO: When the markup has been fully parsed, provide an object with an interface
+# which allows the user to get iterators/lists of embedded objects (names and options)
+# in the parsed document. This will make it easier to get and update the graph of
+# embedded pages.
+
+# TODO: Rework the parser into a plugin-extensible general Python library.
+
+# TODO: Provide example objects with lovelace-internal-<> like identifiers.
+
 import re
 import itertools
 import operator
@@ -14,15 +26,18 @@ from cgi import escape # Use this instead? Security? HTML injection?
 from django.template import loader
 from django.utils.safestring import mark_safe
 
-from slugify import slugify
+from django.utils.text import slugify as slugify
 
 import pygments
 from pygments.lexers import get_lexer_by_name
 from pygments.formatters import HtmlFormatter
 
+from reversion import revisions as reversion
+
 import courses.blockparser as blockparser
 import courses.models
 import courses.forms
+import feedback.models
 
 # TODO: Support indented blocks (e.g. <pre>) within indents, uls & ols
 # TODO: Support admonitions/warnings/good to know boxes/etc.
@@ -31,6 +46,7 @@ import courses.forms
 # TODO: Support tags for monospace ASCII art with horizontal and vertical rulers
 #       and a grid background (linear-gradients)
 # TODO: Support tags that display files as hexdumps
+# TODO: Generate the regexes automatically from given options etc. à la Python's argparse
 
 class ParserUninitializedError(Exception):
     def __init__(self, value):
@@ -61,6 +77,9 @@ class MarkupError(Exception):
 class UnclosedTagError(MarkupError):
     _type = "unclosed tag"
 
+class EmbeddedObjectNotAllowedError(MarkupError):
+    _type = "embedded object not allowed"
+    
 class EmbeddedObjectNotFoundError(MarkupError):
     _type = "embedded object not found"
 
@@ -163,6 +182,7 @@ class MarkupParser:
         # TODO: Generator version of splitter to avoid memory & CPU overhead of
         # first creating a complete list and afterwards iterating through it.
         # I.e. reduce from O(2n) to O(n)
+        # Note! pypi regex has regex.splititer
         lines = iter(re.split(r"\r\n|\r|\n", text))
 
         # Note: stateless single-pass parsing of HTML-like languages is
@@ -228,7 +248,6 @@ class Markup:
     @classmethod
     def settings(cls, matchobj, state):
         pass
-
 
 class BoldMarkup(Markup):
     name = "Bold"
@@ -311,10 +330,14 @@ markups.append(CalendarMarkup)
 class CodeMarkup(Markup):
     name = "Code"
     shortname = "code"
-    description = "Monospaced field for code and other preformatted text."
+    description = "Monospaced field for code and other preformatted text. Supported syntax highlighting identifiers (look for short names): http://pygments.org/docs/lexers/"
     regexp = r"^[{]{3}(highlight=(?P<highlight>[^\s]*))?\s*$" # TODO: Better settings
     markup_class = ""
-    example = ""
+    example = "{{{highlight=python3\n"\
+              "name = input(\"What is your name? \")\n"\
+              "\n"\
+              "print(\"Hello, {name}! Oh, and hello, world!\".format(name=name))\n"\
+              "}}}"
     states = {}
     inline = False
     allow_inline = False
@@ -423,7 +446,8 @@ class EmbeddedPageMarkup(Markup):
     name = "Embedded page"
     shortname = "embedded_page"
     description = "A lecture or exercise, embedded into the page in question."
-    regexp = r"^\<\!page\=(?P<page_slug>[^\s>]+)\>\s*$"
+    regexp = r"^\<\!page\=(?P<page_slug>[^|>]+)"\
+             r"(\|rev\=(?P<revision>\d+))?" r"\>\s*$"
     markup_class = "embedded item"
     example = "<!page=slug-of-some-exercise>"
     inline = False
@@ -431,34 +455,58 @@ class EmbeddedPageMarkup(Markup):
 
     @classmethod
     def block(cls, block, settings, state):
+        if "tooltip" in state["context"] and state["context"]["tooltip"]:
+            raise EmbeddedObjectNotAllowedError("embedded pages are not allowed in tooltips")
+        
         yield '<div class="embedded-page">\n'
         yield settings["rendered_content"]
         yield '</div>\n'
 
     @classmethod
     def settings(cls, matchobj, state):
-        settings = {"page_slug" : matchobj.group("page_slug")}
+        settings = {"page_slug": matchobj.group("page_slug")}
+        revision = None
+        try:
+            revision = int(matchobj.group("revision"))
+        except AttributeError:
+            pass
+        except TypeError:
+            pass #raise something about invalid revision? dunno
+
         try:
             page = courses.models.ContentPage.objects\
-                                             .get(slug=settings["page_slug"])\
-                                             .get_type_object()
+                                             .get(slug=settings["page_slug"])
         except courses.models.ContentPage.DoesNotExist as e:
             raise EmbeddedObjectNotFoundError("embedded page '%s' couldn't be found" % settings["page_slug"])
         else:
-            state["embedded_pages"].append(settings["page_slug"])
+            if revision is not None:
+                try:
+                    page = reversion.get_for_object(page).get(revision=revision)\
+                                                         .object_version.object
+                except reversion.Version.DoesNotExist as e:
+                    raise EmbeddedObjectNotFoundError("revision '%d' of embedded page '%s' couldn't be found"
+                                                      % (revision, settings["page_slug"]))
+            
+            state["embedded_pages"].append((settings["page_slug"], revision))
 
             # TODO: Prevent recursion depth > 2
-            embedded_content = page.rendered_markup()
+            #embedded_content = page.rendered_markup()
+            embedded_content = ""
+            markup_gen = MarkupParser.parse(page.content)
+            for chunk in markup_gen:
+                embedded_content += chunk
             
-            choices = page.get_choices()
-            question = blockparser.parseblock(escape(page.question))
-            
+            choices = page.get_choices(page, revision=revision)
+            question = blockparser.parseblock(escape(page.question), state["context"])
+
             c = {
                 "emb_content": embedded_content,
+                "embedded": True,
                 "content": page,
                 "content_slug": page.slug,
                 "question": question,
                 "choices": choices,
+                "revision": revision,
             }
             user = state["request"].user
             sandboxed = state["request"].path.startswith("/sandbox/")
@@ -470,14 +518,14 @@ class EmbeddedPageMarkup(Markup):
             else:
                 c["sandboxed"] = False
 
-            if user.is_active and page.get_user_answers(user) and not sandboxed:
-                c["evaluation"] = page.get_user_evaluation(user)
-                c["answer_count"] = page.get_user_answers(user).count()
+            if user.is_active and page.is_answerable() and page.get_user_answers(page, user) and not sandboxed:
+                c["evaluation"] = page.get_user_evaluation(page, user)
+                c["answer_count"] = page.get_user_answers(page, user).count()
             else:
                 c["evaluation"] = "unanswered"
                 c["answer_count"] = 0
             c.update(state["context"])
-            
+
             t = loader.get_template("courses/{page_type}.html".format(
                 page_type=page.get_dashed_type()
             ))
@@ -496,8 +544,8 @@ class EmbeddedScriptMarkup(Markup):
     shortname = "script"
     description = "An embedded script, contained inside an iframe."
     regexp = r"^\<\!script\=(?P<script_slug>[^\|>]+)(\|width\=(?P<script_width>[^>|]+))?"\
-              "(\|height\=(?P<script_height>[^>|]+))?(\|border\=(?P<border>[^>|]+))?"\
-              "(\|include\=(?P<include>[^>|]+))?" "\>\s*$"
+             r"(\|height\=(?P<script_height>[^>|]+))?(\|border\=(?P<border>[^>|]+))?"\
+             r"(\|include\=(?P<include>[^>|]+))?" r"\>\s*$"
     markup_class = "embedded item"
     example = "<!script=dijkstra-clickable-demo>"
     states = {}
@@ -506,6 +554,9 @@ class EmbeddedScriptMarkup(Markup):
 
     @classmethod
     def block(cls, block, settings, state):
+        if "tooltip" in state["context"] and state["context"]["tooltip"]:
+            raise EmbeddedObjectNotAllowedError("embedded scripts are not allowed in tooltips")
+        
         try:
             script = courses.models.File.objects.get(name=settings["script_slug"])
         except courses.models.File.DoesNotExist as e:
@@ -573,7 +624,6 @@ class EmbeddedScriptMarkup(Markup):
         # TODO: Could this cause a race condition?
         if includes or image_urls:
             inject_includes_template = """<script>
-//$(document).ready(function() {{
 (function() {{
   var script_iframe = $("#{id}");
   
@@ -581,24 +631,17 @@ class EmbeddedScriptMarkup(Markup):
     var cw = script_iframe[0].contentWindow.document;
 {injects}
   }};
-
-  //if (script_iframe[0].contentWindow.document.readyState == "complete") {{
-//    script_iframe_inject_function();
-//  }} else {{
-    script_iframe.load(script_iframe_inject_function);
-  //}}
-//}});
+  script_iframe.on("load", script_iframe_inject_function);
 }})();
 </script>
 """
 
-            #single_inject_template = "    script_iframe.contents().find(\"{elem}\").append(\"{new_tag}\");"
             single_inject_template = \
-"""    var new_{name} = cw.createElement("{type}");
-    new_{name}.{type_type} = "{type_value}";
-    new_{name}.{src_type} = "{addr}";
-    new_{name}.id = "id-{name}";
-    cw.getElementsByTagName("{where}")[0].appendChild(new_{name});
+"""    var new_{num} = cw.createElement("{type}");
+    new_{num}.{type_type} = "{type_value}";
+    new_{num}.{src_type} = "{addr}";
+    new_{num}.id = "id-{name}";
+    cw.getElementsByTagName("{where}")[0].appendChild(new_{num});
 """
 
             inject_images_template = \
@@ -607,16 +650,16 @@ class EmbeddedScriptMarkup(Markup):
     new_img_addresses.id = "id-img_addrs";
     cw.getElementsByTagName("{where}")[0].appendChild(new_img_addresses);
 """
-            single_image_inject_template = "var src_{name} = \"{addr}\";"
-            array_image_injects_template = "var img_srcs = [{var_names}];"
+            single_image_inject_template = "var src_{name} = \"{addr}\";"  # TODO: Bug with names that have a '-'
+            array_image_injects_template = "var img_srcs = [{var_names}];" # TODO: Bug with names that have a '-'
             
             rendered_includes = inject_includes_template.format(
                 id=iframe_id,
                 injects="\n".join(
-                    single_inject_template.format(type=t, name=n, type_type=tt,
+                    single_inject_template.format(type=t, name=slugify(n, allow_unicode=True), num=i, type_type=tt,
                                                   type_value=tv, src_type=st, addr=a,
                                                   where=w)
-                    for t, n, tt, tv, st, a, w in includes
+                    for i, (t, n, tt, tv, st, a, w) in enumerate(includes)
                 ) + ((inject_images_template.format(where=image_urls[0][2], # Just take the first
                         img_addrs="\\\n".join(
                             single_image_inject_template.format(name=n, addr=a)
@@ -662,7 +705,7 @@ class EmbeddedVideoMarkup(Markup):
     shortname = "video"
     description = "An embedded video, contained inside an iframe."
     regexp = r"^\<\!video\=(?P<video_slug>[^\|>]+)(\|width\=(?P<video_width>[^>|]+))?"\
-              "(\|height\=(?P<video_height>[^>|]+))?\>\s*$"
+             r"(\|height\=(?P<video_height>[^>|]+))?\>\s*$"
     markup_class = "embedded item"
     example = "<!video=my-video-link-name>"
     states = {}
@@ -671,6 +714,9 @@ class EmbeddedVideoMarkup(Markup):
 
     @classmethod
     def block(cls, block, settings, state):
+        if "tooltip" in state["context"] and state["context"]["tooltip"]:
+            raise EmbeddedObjectNotAllowedError("embedded videos are not allowed in tooltips")
+        
         try:
             videolink = courses.models.VideoLink.objects.get(name=settings["video_slug"])
         except courses.models.VideoLink.DoesNotExist as e:
@@ -706,7 +752,7 @@ markups.append(EmbeddedVideoMarkup)
 class EmptyMarkup(Markup):
     name = "Empty"
     shortname = "empty"
-    description = ""
+    description = "(Empty and whitespace only rows.)"
     regexp = "^\s*$"
     markup_class = ""
     example = ""
@@ -729,7 +775,12 @@ class HeadingMarkup(Markup):
     description = ""
     regexp = r"^\s*(?P<level>\={1,6})\=*\s*.+\s*(?P=level)\s*$"
     markup_class = ""
-    example = ""
+    example = "= 1st Level Heading =\n"\
+              "== 2nd Level Heading ==\n"\
+              "=== 3rd Level Heading ===\n"\
+              "==== 4th Level Heading ====\n"\
+              "===== 5th Level Heading =====\n"\
+              "====== 6th Level Heading ======\n"    
     inline = False
     allow_inline = False
 
@@ -738,12 +789,13 @@ class HeadingMarkup(Markup):
         heading = ''
         for line in block:
             heading += escape(line.strip("= \r\n\t"))
-        slug = slugify(heading)
+        slug = slugify(heading, allow_unicode=True)
         # TODO: Add "-heading" to id
         yield '<h%d class="content-heading">' % (settings["heading_level"])
         yield heading
-        yield '<span id="%s" class="anchor-offset"></span>' % (slug)
-        yield '<a href="#%s" class="permalink" title="Permalink to %s">&para;</a>' % (slug, heading)
+        if not "tooltip" in state["context"]:
+            yield '<span id="%s" class="anchor-offset"></span>' % (slug)
+            yield '<a href="#%s" class="permalink" title="Permalink to %s">&para;</a>' % (slug, heading)
         yield '</h%d>\n' % settings["heading_level"]
     
     @classmethod
@@ -758,9 +810,9 @@ class ImageMarkup(Markup):
     shortname = "image"
     description = "An image, img tag in HTML."
     regexp = r"^\<\!image\=(?P<image_name>[^>|]+)"\
-              "(\|alt\=(?P<alt_text>[^|]+))?"\
-              "(\|caption\=(?P<caption_text>(([\[]{2}[^|]+(\|.+)?[\]]{2})|([^|]))+))?"\
-              "(\|align\=(?P<align>[^|]+))?\>\s*$"
+             r"(\|alt\=(?P<alt_text>[^|]+))?"\
+             r"(\|caption\=(?P<caption_text>(([\[]{2}[^|]+(\|.+)?[\]]{2})|([^|]))+))?"\
+             r"(\|align\=(?P<align>[^|]+))?\>\s*$"
     markup_class = "embedded item"
     example = "<!image=name-of-some-image.png|alt=alternative text|caption=caption text>"
     inline = False
@@ -814,7 +866,7 @@ class ImageMarkup(Markup):
         except AttributeError:
             pass
         try:
-            settings["caption_text"] = blockparser.parseblock(escape(matchobj.group("caption_text")))
+            settings["caption_text"] = blockparser.parseblock(escape(matchobj.group("caption_text")), state["context"])
         except AttributeError:
             pass
         try:
@@ -852,14 +904,14 @@ class ListMarkup(Markup):
         
         if len(state["list"]) == settings["level"]:
             if state["list"][-1] != tag:
-                top_tag = self.list_state.pop()
+                top_tag = state["list"].pop()
                 yield '</%s>' % top_tag
                 
                 state["list"].append(tag)
                 yield '<%s>' % tag
         
         for line in block:
-            yield '<li>%s</li>' % blockparser.parseblock(escape(line.strip("*#").strip()))
+            yield '<li>%s</li>' % blockparser.parseblock(escape(line.strip("*#").strip()), state["context"])
 
     @classmethod
     def settings(cls, matchobj, state):
@@ -889,7 +941,7 @@ class ParagraphMarkup(Markup):
         for line in block:
             paragraph_lines.append(escape(line))
         paragraph = "<br>\n".join(paragraph_lines)
-        paragraph = blockparser.parseblock(paragraph)
+        paragraph = blockparser.parseblock(paragraph, state["context"])
         yield paragraph
         yield '</p>\n'
 
@@ -939,7 +991,7 @@ class TableMarkup(Markup):
         for line in block:
             row = line.split("||")[1:-1]
             yield '<tr>'
-            yield '\n'.join("<td>%s</td>" % blockparser.parseblock(escape(cell)) for cell in row)
+            yield '\n'.join("<td>%s</td>" % blockparser.parseblock(escape(cell), state["context"]) for cell in row)
             yield '</tr>'
             
         #yield '</table>'
@@ -953,10 +1005,10 @@ markups.append(TableMarkup)
 class TeXMarkup(Markup):
     name = "TeX"
     shortname = "tex"
-    description = ""
+    description = "TeX markup with KaTeX: https://github.com/Khan/KaTeX/wiki/Function-Support-in-KaTeX"
     regexp = r"^[<]math[>]\s*$"
     markup_class = ""
-    example = ""
+    example = "<math>\nx = \dfrac{-b \pm \sqrt{b^2 - 4ac}}{2a}\n</math>"
     inline = False
     allow_inline = False
 

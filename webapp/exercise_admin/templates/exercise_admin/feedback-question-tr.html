@@ -1,0 +1,17 @@
+{% load i18n %}
+{% load exercise_admin_extras %}
+{% get_current_language as CURRENT_LANGUAGE %}
+{% get_available_languages as AVAILABLE_LANGUAGES %}
+<tr id="feedback-question-tr-{{ question.id }}" data-question-id="{{ question.id }}">
+  <td class="question-cell">
+    {% for language_choice, _ in AVAILABLE_LANGUAGES %}
+      <span class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}"
+            data-language-code="{{ language_choice }}">{% get_translated_field question "question" language_choice %}</span>
+    {% endfor %}
+  </td>
+  <td class="type-cell">{{ question.get_human_readable_type }}</td>
+  <td class="delete-cell">
+    <button type="button" class="delete-button" title="Removes the feedback question from the list of feedback questions belonging to this exercise"
+            onclick="delete_table_row(this);">x</button>
+  </td>
+</tr>

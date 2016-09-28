@@ -2,7 +2,7 @@ function show_file(e, elem) {
     e.preventDefault();
   
     var popup = $(elem).siblings(".popup");
-    popup.css({"opacity":"1", "pointer-events":"auto"});
+    popup.css({"opacity":"1", "pointer-events":"auto", "overflow": "scroll"});
     
 }
 function show_results(e, elem, results_div) {
@@ -14,7 +14,7 @@ function show_results(e, elem, results_div) {
         r_div.html(data);
         //r_div.show();
         var popup = r_div.parent();
-        popup.css({"opacity":"1", "pointer-events":"auto"});
+        popup.css({"opacity":"1", "pointer-events":"auto", "overflow": "scroll"});
     });  
 }
 

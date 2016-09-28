@@ -8,7 +8,11 @@ from django.core.urlresolvers import reverse
 
 from django.db import models
 from django.forms import TextInput, Textarea
-from nested_inline.admin import NestedStackedInline, NestedTabularInline, NestedModelAdmin
+
+from modeltranslation.admin import TranslationAdmin, TranslationTabularInline, \
+    TranslationStackedInline
+
+from reversion.admin import VersionAdmin
 
 ## User profiles
 # http://stackoverflow.com/questions/4565814/django-user-userprofile-and-admin
@@ -40,76 +44,17 @@ admin.site.register(Evaluation)
 #        return qs.select_subclasses().filter(users=request.user)
 
 # TODO: How to link ContentFeedbackQuestion objects nicely?
-class HintInline(NestedTabularInline):
+class HintInline(TranslationTabularInline):
     model = Hint
     fk_name = 'exercise'
     extra = 0
-    queryset = NestedTabularInline.get_queryset
+    queryset = TranslationTabularInline.get_queryset
 
-class MultipleChoiceExerciseAnswerInline(admin.TabularInline):
+class MultipleChoiceExerciseAnswerInline(TranslationTabularInline):
     model = MultipleChoiceExerciseAnswer
     extra = 1
 
-class FileExerciseTestExpectedOutputInline(NestedStackedInline):
-    model = FileExerciseTestExpectedOutput
-    extra = 0
-    fk_name = 'command'
-    queryset = NestedStackedInline.get_queryset
-
-class FileExerciseTestCommandInline(NestedStackedInline):
-    model = FileExerciseTestCommand
-    extra = 1
-    fk_name = 'stage'
-    queryset = NestedStackedInline.get_queryset
-    fieldsets = (
-        ('', {
-            'fields': ('command_line', 'ordinal_number')
-        }),
-        ('Extra Options', {
-            'classes': ('collapse',),
-            'fields': ('significant_stdout', 'significant_stderr', 'timeout', 
-                       'signal', 'input_text', 'return_value')
-        }),
-    )
-    inlines = [FileExerciseTestExpectedOutputInline]
-
-class FileExerciseTestStageInline(NestedStackedInline):
-    model = FileExerciseTestStage
-    fields = ('name', 'ordinal_number', 'depends_on',)
-    extra = 1
-    fk_name = 'test'
-    inlines = [FileExerciseTestCommandInline]
-    queryset = NestedStackedInline.get_queryset
-
-class FileExerciseTestInline(NestedStackedInline):
-    model = FileExerciseTest
-    fields = ('exercise', 'name', 'required_files')
-    extra = 1
-    fk_name = 'exercise'
-    inlines = [FileExerciseTestStageInline]
-    queryset = NestedStackedInline.get_queryset
-    
-    def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        if db_field.name == "exercise":
-            kwargs["queryset"] = FileUploadExercise.objects.order_by("name")
-        return super(FileExerciseTestInline, self).formfield_for_foreignkey(db_field, request, **kwargs)
-
-class FileExerciseTestIncludeFileInline(NestedStackedInline):
-    model = FileExerciseTestIncludeFile
-    extra = 0
-    fk_name = 'exercise'
-    queryset = NestedStackedInline.get_queryset
-    fieldsets = (
-        ('General information', {
-            'fields': ('name', 'purpose', 'fileinfo')
-        }),
-        ('UNIX permissions', {
-            'classes': ('collapse',),
-            'fields': ('chown_settings', 'chgrp_settings', 'chmod_settings')
-        }),
-    )
-
-class MultipleChoiceExerciseAdmin(admin.ModelAdmin):
+class MultipleChoiceExerciseAdmin(TranslationAdmin, VersionAdmin):
     def get_queryset(self, request):
         return self.model.objects.filter(content_type="MULTIPLE_CHOICE_EXERCISE")
 
@@ -125,11 +70,11 @@ class MultipleChoiceExerciseAdmin(admin.ModelAdmin):
     list_display = ("name", "slug",)
     list_per_page = 500
 
-class CheckboxExerciseAnswerInline(admin.TabularInline):
+class CheckboxExerciseAnswerInline(TranslationTabularInline):
     model = CheckboxExerciseAnswer
     extra = 1
 
-class CheckboxExerciseAdmin(admin.ModelAdmin):
+class CheckboxExerciseAdmin(TranslationAdmin, VersionAdmin):
     def get_queryset(self, request):
         return self.model.objects.filter(content_type="CHECKBOX_EXERCISE")
 
@@ -145,11 +90,11 @@ class CheckboxExerciseAdmin(admin.ModelAdmin):
     list_display = ("name", "slug",)
     list_per_page = 500
 
-class TextfieldExerciseAnswerInline(admin.StackedInline):
+class TextfieldExerciseAnswerInline(TranslationStackedInline):
     model = TextfieldExerciseAnswer
     extra = 1
 
-class TextfieldExerciseAdmin(admin.ModelAdmin):
+class TextfieldExerciseAdmin(TranslationAdmin, VersionAdmin):
     def get_queryset(self, request):
         return self.model.objects.filter(content_type="TEXTFIELD_EXERCISE")
 
@@ -169,7 +114,7 @@ class CodeReplaceExerciseAnswerInline(admin.StackedInline):
     model = CodeReplaceExerciseAnswer
     extra = 1
 
-class CodeReplaceExerciseAdmin(admin.ModelAdmin):
+class CodeReplaceExerciseAdmin(TranslationAdmin, VersionAdmin):
     def get_queryset(self, request):
         return self.model.objects.filter(content_type="CODE_REPLACE_EXERCISE")
 
@@ -228,24 +173,7 @@ class FileExerciseTestExpectedStderrAdmin(admin.StackedInline):
 #class FileExerciseTestAdmin(admin.StackedInline):
 #    inlines = [FileExerciseTestCommandAdmin, FileExerciseTestExpectedOutputAdmin, FileExerciseTestExpectedErrorAdmin, FileExerciseTestIncludeFileAdmin]
 
-
-class FileExerciseAdmin(NestedModelAdmin):
-    def get_queryset(self, request):
-        return self.model.objects.filter(content_type="FILE_UPLOAD_EXERCISE")
-
-    fieldsets = [
-        ('Page information',   {'fields': ['name', 'slug', 'content', 'question', 'tags']}),
-        ('Exercise miscellaneous', {'fields': ['default_points', 'manually_evaluated'],
-                                'classes': ['wide']}),
-        ('Feedback settings',  {'fields': ['feedback_questions']}),
-    ]
-    inlines = [HintInline, FileExerciseTestIncludeFileInline, FileExerciseTestInline]
-    search_fields = ("name",)
-    readonly_fields = ("slug",)
-    list_display = ("name", "slug",)
-    list_per_page = 500
-
-class LectureAdmin(admin.ModelAdmin):
+class LectureAdmin(TranslationAdmin, VersionAdmin):
     def get_queryset(self, request):
         return self.model.objects.filter(content_type="LECTURE")
 
@@ -265,6 +193,18 @@ class LectureAdmin(admin.ModelAdmin):
     list_display = ("name", "slug",)
     list_per_page = 500
 
+# Still required even though a custom admin is implemented
+class FileUploadExerciseAdmin(TranslationAdmin, VersionAdmin):
+    def get_queryset(self, request):
+        return self.model.objects.filter(content_type="FILE_UPLOAD_EXERCISE")
+    
+    search_fields = ("name",)
+    readonly_fields = ("slug",)
+    list_display = ("name", "slug",)
+    list_per_page = 500
+
+admin.site.register(FileUploadExercise, FileUploadExerciseAdmin)
+
 # TODO: Use the view_on_site on all content models!
 
 admin.site.register(Lecture, LectureAdmin)
@@ -272,13 +212,10 @@ admin.site.register(MultipleChoiceExercise, MultipleChoiceExerciseAdmin)
 admin.site.register(CheckboxExercise, CheckboxExerciseAdmin)
 admin.site.register(TextfieldExercise, TextfieldExerciseAdmin)
 admin.site.register(CodeReplaceExercise, CodeReplaceExerciseAdmin)
-admin.site.register(FileUploadExercise, FileExerciseAdmin)
-#admin.site.register(FileExerciseTest, FileExerciseTestAdmin)
-#admin.site.register(FileExerciseTest)
-#admin.site.register(FileExerciseTestStage)
-#admin.site.register(FileExerciseTestCommand)
-#admin.site.register(FileExerciseTestExpectedOutput)
+
 admin.site.register(FileExerciseTestIncludeFile)
+admin.site.register(InstanceIncludeFile)
+admin.site.register(IncludeFileSettings)
 
 ## Page embeddable objects
 class CalendarDateAdmin(admin.StackedInline):
@@ -294,7 +231,7 @@ class FileAdmin(admin.ModelAdmin):
         obj.uploader = request.user
         obj.save()
 
-    search_fields = ("name",)
+    search_fields = ('name',)
     readonly_fields = ('uploader',)
 
 class ImageAdmin(admin.ModelAdmin):
@@ -302,7 +239,7 @@ class ImageAdmin(admin.ModelAdmin):
         obj.uploader = request.user
         obj.save()
 
-    search_fields = ("name",)
+    search_fields = ('name',)
     readonly_fields = ('uploader',)
 
 class VideoLinkAdmin(admin.ModelAdmin):
@@ -310,29 +247,56 @@ class VideoLinkAdmin(admin.ModelAdmin):
         obj.added_by = request.user
         obj.save()
 
-    search_fields = ("name",)
+    search_fields = ('name',)
     readonly_fields = ('added_by',)
+
+class TermAdmin(TranslationAdmin):
+    search_fields = ('name',)
+    list_display = ('name', 'instance',)
+    list_filter = ('instance',)
+    list_per_page = 500
+    ordering = ('name',)
 
 admin.site.register(Calendar, CalendarAdmin)
 admin.site.register(File, FileAdmin)
 admin.site.register(Image, ImageAdmin)
 admin.site.register(VideoLink, VideoLinkAdmin)
+admin.site.register(Term, TermAdmin)
 
 ## Course related administration
 class ContentGraphAdmin(admin.ModelAdmin):
-    search_fields = ("content__slug",)
+    search_fields = ('content',)
+    list_display = ('ordinal_number', 'content', 'get_instances',)
+    list_display_links = ('content',)
+    list_filter = ('courseinstance',)
+    list_per_page = 500
+    ordering = ('courseinstance', 'ordinal_number',)
+
+    def get_instances(self, obj):
+        return " | ".join([i.name for i in obj.courseinstance_set.all()])
+    get_instances.short_description = "Instances"
 
 admin.site.register(ContentGraph, ContentGraphAdmin)
 
-class CourseAdmin(admin.ModelAdmin):
+class CourseAdmin(TranslationAdmin, VersionAdmin):
     fieldsets = [
-        (None,             {'fields': ['name', 'slug', 'frontpage']}),
-        ('Course outline', {'fields': ['description', 'code', 'credits', 'contents']}),
+        (None,             {'fields': ['name', 'slug',]}),
+        ('Course outline', {'fields': ['description', 'code', 'credits']}),
         #('Settings for start date and end date of the course', {'fields': ['start_date','end_date'], 'classes': ['collapse']}),
     ]
     #formfield_overrides = {models.ManyToManyField: {'widget':}}
-    search_fields = ("name",)
+    search_fields = ('name',)
     readonly_fields = ('slug',)
 
 admin.site.register(Course, CourseAdmin)
 
+class CourseInstanceAdmin(TranslationAdmin, VersionAdmin):
+    fieldsets = [
+        (None,                {'fields': ['name', 'email', 'course', 'frontpage',]}),
+        ('Schedule settings', {'fields': ['start_date', 'end_date', 'active',]}),
+        ('Instance outline',  {'fields': ['contents',]}),
+    ]
+    search_fields = ('name',)
+    list_display = ('name', 'course')
+
+admin.site.register(CourseInstance, CourseInstanceAdmin)

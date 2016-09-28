@@ -1,0 +1,54 @@
+{% load i18n %}
+{% load exercise_admin_extras %}
+{% get_current_language as CURRENT_LANGUAGE %}
+{% get_available_languages as AVAILABLE_LANGUAGES %}
+<tr id="instance-file-popup-tr-{{ instance_file.id }}">
+  <td class="default-name-cell">
+    <input type="checkbox" id="instance-file-checkbox-{{ instance_file.id }}" class="instance-file-checkbox" data-file-id="{{ instance_file.id }}"{% if linked %} checked{% endif %} disabled>
+    {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
+      <div class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %} inline-block-elem" data-language-code="{{ language_choice }}">
+        <label id="instance-file-label-{{ instance_file.id }}-{{ language_choice }}" for="instance-file-checkbox-{{ instance_file.id }}"
+               class="instance-file-label">{% get_translated_field instance_file "default_name" language_choice %}</label>
+      </div>
+    {% endfor %}
+  </td>
+  <td class="name-cell">
+    {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
+      <div class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %} inline-block-elem" data-language-code="{{ language_choice }}">
+        {% get_translated_field file_settings "name" language_choice %}
+      </div>
+    {% endfor %}
+  </td>
+  <td class="instance-cell">
+    {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
+      <div class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %} inline-block-elem" data-language-code="{{ language_choice }}">
+        {% get_translated_field instance_file "instance" language_choice %}
+      </div>
+    {% endfor %}
+  </td>
+  <td class="description-cell">
+    {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
+      <div class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %} inline-block-elem" data-language-code="{{ language_choice }}">
+        {% get_translated_field instance_file "description" language_choice %}
+      </div>
+    {% endfor %}
+  </td>
+  <td class="uploaded-file-cell">
+    {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
+      <div class="translated {% if language_choice == CURRENT_LANGUAGE and not create %}translated-visible{% endif %} inline-block-elem" data-language-code="{{ language_choice }}">
+        {% get_translated_field instance_file "fileinfo" language_choice as fileinfo %}
+        {% if fileinfo and fileinfo.url %}
+          <a href="{{ fileinfo.url }}" class="{{ fileinfo.url_css_class }}" download></a>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </td>
+  <td class="edit-link-button-cell">
+    <button type="button" class="edit-link-button" title="Opens a menu to {% if linked %}edit the{% else %}add a{% endif %} link between the instance file and the exercise"
+            onclick="show_instance_file_edit_link_menu('{{ instance_file.id }}');"></button>
+  </td>
+  <td class="edit-button-cell">
+    <button type="button" class="edit-button" title="Opens a menu to edit an instance file"
+            onclick="show_instance_file_edit_menu('{{ instance_file.id }}');"></button>
+  </td>
+</tr>

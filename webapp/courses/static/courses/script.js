@@ -26,7 +26,7 @@ var handler = function() {
     var old, previous;
     headings.each(function(index) {
         var id = $(this).find("span.anchor-offset").first().attr("id");
-        var link_in_toc = $("#toc li a[href=#" + id + "]").parent();
+        var link_in_toc = $("#toc li a[href='#" + id + "']").parent();
         if (isElementInViewport(this) && topmost_found == false) {
             $(link_in_toc).attr("class", "toc-visible");
             topmost_found = true;
@@ -44,6 +44,7 @@ var handler = function() {
     if (topmost_found == false && typeof old !== "undefined") {
         old.attr("class", "toc-visible");
     }
+    $("div.term-description").hide();
 };
 
 // Build the table of contents
@@ -57,7 +58,11 @@ function build_toc(static_root_url) {
     $(headings).each(function(index) {
         // TODO: http://stackoverflow.com/questions/123999/how-to-tell-if-a-dom-element-is-visible-in-the-current-viewport
         var new_toc_level = parseInt(this.tagName[1]);
-        
+
+        if ($(this).closest("div.term-description").length > 0) {
+            return;
+        }
+
         // TODO: Fix, ol can only contain li
         if (new_toc_level > current_toc_level) {
             for (var i = current_toc_level; i < new_toc_level; i += 1) { // >
@@ -132,4 +137,49 @@ function accept_cookies() {
     document.cookie = "cookies_accepted=1";
     var cookie_law_message = $('#cookie-law-message');
     cookie_law_message.hide();
+}
+
+function show_term_description(span_slct, div_slct) {
+    var span = $(span_slct);
+    var desc_div = $(div_slct);
+    if (desc_div.length == 0) {
+        desc_div = $("#term-div-not-found");
+    }
+
+    let pos = span.offset();
+    let height = span.height();
+    let arrow_height = 9;
+
+    var desc_content_div = desc_div.children("div.term-desc-contents");
+    if (desc_div.height() + "px" === desc_content_div.css('max-height')) {
+        desc_div.find("div.term-desc-scrollable").slimScroll({
+            height: "600px"
+        });
+    }
+    desc_div.css({"display" : "block"}); //This works in Jquery3 unlike .show()
+    desc_div.offset({left: pos.left, top: pos.top + height + arrow_height});
+}
+
+function show_term_description_during_hover(span_elem, div_id) {
+    var span = $(span_elem);
+    
+    show_term_description(span_elem, div_id);
+    var elems_hovered = true;
+    span.add(div_id).hover(function() {
+        elems_hovered = true;
+        show_term_description(span_elem, div_id);
+    }, function() {
+        elems_hovered = false;
+        if (elems_hovered == 0) {
+            hide_tooltip(div_id);
+        }
+    });
+}
+
+function hide_tooltip(div_id) {
+    var desc_div = $(div_id);
+    if (desc_div.length === 0) {
+        desc_div = $("#term-div-not-found");
+    }
+    desc_div.hide();
 }

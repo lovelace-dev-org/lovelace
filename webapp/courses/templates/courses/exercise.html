@@ -1,4 +1,3 @@
-{% load staticfiles %}
 {% load i18n %}
 {% load course_tags %}
 
@@ -6,11 +5,17 @@
   {% content_meta %}
 {% endif %}
 
+{% if rendered_content %}
+  {{ rendered_content|safe }}
+{% endif %}
+
 {% if emb_content %}
+  {% if revision and revision > 0 and user.is_superuser %}
+    <div class="revision-info-embedded">This is an old revision № {{ revision }} of this embedded page!</div>
+  {% endif %}
   <div>{{ emb_content|safe }}</div>
 {% endif %}
 
-{% if content.is_answerable %}
   <div class="question">
     <div class="hints" style="display: none"></div>
     {% if sandboxed %}
@@ -18,7 +23,8 @@
           action="{% url 'courses:check_sandboxed' content.slug %}">
     {% else %}
     <form id="{{ content_slug }}-form" class="exercise-form" method="POST" enctype="multipart/form-data"
-          action="{% url 'courses:check' course_slug content.slug %}">
+          {% if revision %}action="{% url 'courses:check' course_slug instance_slug content.slug revision %}">
+          {% else %}action="{% url 'courses:check' course_slug instance_slug content.slug "head" %}">{% endif %}
     {% endif %}
 
       {% csrf_token %}
@@ -43,5 +49,8 @@
     <div class="result" style="display: none"></div>
     <div class="comments" style="display: none"></div>
     <div class="file-result" style="display: none"></div>
-  </div>  
-{% endif %}
+  </div>
+
+{% block feedback %}
+  {% feedbacks %}
+{% endblock %}

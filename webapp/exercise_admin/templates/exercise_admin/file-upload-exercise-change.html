@@ -1,0 +1,268 @@
+{% extends 'exercise_admin/base.html' %}
+{% load staticfiles %}
+{% load i18n %}
+{% load exercise_admin_extras %}
+
+{% block head-script %}
+  <script>
+    $(function() {
+      $("#test-tabs").tabs();
+      {% for test, stages in tests %}
+        $("#stages-sortable-{{ test.id }}").sortable();
+        $("#stages-sortable-{{ test.id }}").disableSelection();
+        {% for stage, commands in stages %}
+          $("#commands-sortable-{{ test.id }}-{{ stage.id }}").sortable();
+          $("#commands-sortable-{{ test.id }}-{{ stage.id }}").disableSelection();
+        {% endfor %}
+      {% endfor %}
+    });
+  </script>
+{% endblock %}
+
+{% block heading %}
+  <h1>{{ add_or_edit }} file upload exercise</h1>
+{% endblock %}
+
+{% block meta %}
+  <section class="meta">
+    <div class="breadcrumb"><a href="{% url 'admin:index' %}">Home</a> › <a href="{% url 'admin:app_list' 'courses' %}">Courses</a> › <a href="{% url 'admin:courses_fileuploadexercise_changelist' %}">File upload exercises</a> › <span id="exercise-name-breadcrumb">{{ exercise.name }}</span></div>
+    {% if add_or_edit == 'Edit' %}
+      <div class="top-button"><a href="{% url 'courses:sandbox' exercise.slug %}">View in sandbox</a></div>
+      <div class="top-button"><a href="{% url 'admin:courses_fileuploadexercise_history' exercise.id %}">View history</a></div>
+    {% endif %}
+  </section>
+{% endblock %}
+
+{% block exercise-type-specific-popups %}
+  {% get_current_language as CURRENT_LANGUAGE %}
+  {% get_available_languages as AVAILABLE_LANGUAGES %}
+  {% get_default_language as DEFAULT_LANGUAGE %}
+  <form method="POST" action="{% url 'exercise_admin:edit_instance_files' %}" id="edit-instance-files-form"
+        onsubmit="submit_edit_instance_files_form(event, '{{ DEFAULT_LANGUAGE }}');">
+    {% csrf_token %}
+    <div id="edit-instance-files-popup" class="popup">
+      <div>
+        <div id="instance-files-div">
+          <h2>Add instance file</h2>
+          <div class="bordered-editable-area">
+            <div class="add-instance-file-table-div">
+              <table id="add-instance-file-table" class="instance-file-table">
+                <colgroup>
+                  <col class="file-default-name">
+                  <col class="file-name">
+                  <col class="file-instance">
+                  <col class="file-description">
+                  <col class="uploaded-file">
+                  <col class="file-edit-link">
+                  <col class="file-edit-button">
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th>
+                      {% for language_choice, _ in AVAILABLE_LANGUAGES %}
+                        <span class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}">
+                          Default name {% lang_reminder language_choice %}
+                        </span>
+                      {% endfor %}
+                    </th>
+                    <th>
+                      {% for language_choice, _ in AVAILABLE_LANGUAGES %}
+                        <span class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}">
+                          File name during test {% lang_reminder language_choice %}
+                        </span>
+                      {% endfor %}
+                    </th>
+                    <th>Course instance</th>
+                  </tr>
+                </thead>
+                <tbody>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div id="edit-instance-file-divs"></div>
+        <div id="link-instance-file-divs">
+          {% for instance_file_link in instance_file_links %}
+            {% edit_instance_file_link instance_file_link.include_file instance_file_link %}
+          {% endfor %}
+          {% for instance_file in instance_files_not_linked %}
+            {% edit_instance_file_link instance_file None %}
+          {% endfor %}
+        </div>
+        <div id="instance-file-error" class="admin-error"></div>
+        <div class="popup-buttons">
+          <input type="submit" class="popup-button" value="Save Files" name="save_and_confirm">
+          <button type="button" class="popup-button" onclick="close_instance_file_popup();">Close</button>
+        </div>
+      </div>
+    </div>
+  </form>
+{% endblock %}
+
+{% block form-action-url %}{% if add_or_edit == 'Edit' %}{% url 'exercise_admin:file_upload_change' exercise.id %}{% else %}{% url 'exercise_admin:file_upload_add' %}{% endif %}{% endblock %}
+
+{% block exercise-type-extra %}
+  <div class="form-row">
+    <label for="exercise-allowed_filenames">Accepted file names: </label>
+    <input type="text" id="exercise-allowed_filenames" name="exercise_allowed_filenames" class="general-text-input"
+           value="{{ exercise.allowed_filenames|join:"," }}">
+  </div>
+{% endblock %}
+
+{% block exercise-type-specific %}
+  <section class="included-files">
+    <h2>Included files</h2>
+    
+    <div id="included-files">
+      A pool of files available only for this exercise:
+      <table id="included-files-table" class="files-table bordered-editable-area">
+        <colgroup>
+          <col class="file-name">
+          <col class="file-purpose">
+          <col class="file-description">
+          <col class="edit-file">
+          <col class="delete-file">
+        </colgroup>
+        <thead>
+          <tr>
+            <th>
+              {% for language_choice, _ in AVAILABLE_LANGUAGES %}
+                <span class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}">
+                  File name during test {% lang_reminder language_choice %}
+                </span>
+              {% endfor %}
+            </th>
+            <th>Used as</th>
+            <th>
+              {% for language_choice, _ in AVAILABLE_LANGUAGES %}
+                <span class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}">
+                  Description {% lang_reminder language_choice %}
+                </span>
+              {% endfor %}
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for include_file in include_files %}
+            {% include_file_tr include_file %}
+          {% endfor %}
+        </tbody>
+      </table>
+      {% get_default_language as DEFAULT_LANGUAGE %}
+      <button type="button" class="add-item" title="Opens a popup window to add an included file" onclick="create_included_file_popup('{{ DEFAULT_LANGUAGE }}');">Add</button>
+      
+      <div id="include-file-popups">
+        {% for include_file in include_files %}
+          {% include_file_popup include_file %}
+        {% endfor %}
+      </div>
+    </div>
+    
+    <div id="instance-files">
+      A pool of files specific to a course instance, linked to this exercise:
+      <table id="instance-files-table" class="files-table bordered-editable-area">
+        <colgroup>
+          <col class="file-name">
+          <col class="file-instance">
+          <col class="file-purpose">
+          <col class="file-description">
+        </colgroup>
+        <thead>
+          <tr>
+            <th>
+              {% for language_choice, _ in AVAILABLE_LANGUAGES %}
+                <span class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}">
+                  File name during test {% lang_reminder language_choice %}
+                </span>
+              {% endfor %}
+            </th>
+            <th>Course instance</th>
+            <th>Used as</th>
+            <th>
+              {% for language_choice, _ in AVAILABLE_LANGUAGES %}
+                <span class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}" data-language-code="{{ language_choice }}">
+                  Description {% lang_reminder language_choice %}
+                </span>
+              {% endfor %}
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for instance_file_link in instance_file_links %}
+            {% instance_file_tr instance_file_link %}
+          {% endfor %}
+        </tbody>
+      </table>
+      <button type="button" class="add-item" title="Opens a popup window to add and edit instance files"
+              onclick="show_edit_instance_files_popup(event, '{% url 'exercise_admin:get_instance_files' %}');">Add and edit</button>
+      <div id="edit-instance-files-popup-error" class="admin-error"></div>
+    </div>
+  </section>
+
+  <section class="tests">
+    <h2>Tests</h2>
+    
+    <div id="test-tabs">
+      <ol>
+        {% for test, stages in tests %}
+          <li>
+            <a href="#test-tabs-{{ test.id }}" id="test-{{ test.id }}">{{ test.name }}</a>
+            <button class="delete-button" type="button" title="Delete this test"
+                    onclick="delete_test('{{ test.id }}');">x</button>
+          </li>
+        {% endfor %}
+        <li class="test-tab-button-container"><button type="button" class="add-item" title="Adds a new test" onClick="add_test();">+</button></li>
+      </ol>
+
+      {% for test, stages in tests %}
+        {% test_tab test stages instance_file_links include_files %}
+      {% endfor %}
+    </div>
+  </section>
+{% endblock %}
+
+{% block form-controls %}
+  <section class="form-controls">
+    <div><a href="{% url 'admin:courses_fileuploadexercise_delete' exercise.id %}" id="delete-exercise">delete</a></div>
+    <input type="submit" id="save-exercise" value="save">
+  </section>
+{% endblock %}
+
+{% block templates %}
+  <div style="display: none;">
+    {% test_tab True True True True True %}
+  </div>
+  <div style="display: none;">
+    <table>
+      {% include_file_tr True True %}
+    </table>
+  </div>
+  <div style="display: none;">
+    {% include_file_popup True True True %}
+  </div>
+  <div style="display: none;">
+    <table>
+      {% instance_file_tr True True %}
+    </table>
+  </div>
+  <div style="display: none;">
+    {% edit_instance_file False instances %}
+  </div>
+  <div style="display: none;">
+    {% edit_instance_file True instances %}
+  </div>
+  <div style="display: none;">
+    {% edit_instance_file_link None None True %}
+  </div>
+  <div style="display: none;">
+    <table>
+      {% instance_file_popup_tr False %}
+    </table>
+  </div>
+  <div style="display: none;">
+    <table>
+      {% instance_file_popup_tr True %}
+    </table>
+  </div>
+{% endblock %}

@@ -3,7 +3,7 @@ import math
 import statistics
 
 import django
-from django.http import HttpResponse, HttpResponseRedirect, HttpResponseNotFound
+from django.http import HttpResponse, HttpResponseNotFound, HttpResponseForbidden
 from django.template import loader
 from django.core.urlresolvers import reverse
 from django.utils import timezone
@@ -43,9 +43,11 @@ def course_exercises_with_color(course):
             exercises.extend(list(zip(itertools.cycle([color]), all_pages)))
     return exercises
 
-def course_exercises(course):
+def course_instance_exercises(course_inst):
     exercises = []
-    parent_pages = course.contents.select_related('content').order_by('ordinal_number')
+
+    # TODO: course has no contents, use instance
+    parent_pages = course_inst.contents.select_related('content').order_by('ordinal_number')
     
     for p in parent_pages:
         if p.content.embedded_pages.count() > 0:
@@ -53,16 +55,16 @@ def course_exercises(course):
             exercises.extend(all_pages)
     return exercises
 
-def filter_users_on_course(users, course):
-    return users
+def filter_users_enrolled(users, course_inst):
+    return [user for user in users if user in course_inst.enrolled_users.all()]
 
-def courses_linked(exercise):
+def course_instances_linked(exercise):
     linked = []
-    courses = Course.objects.all()
+    course_instances = CourseInstance.objects.all()
     
-    for course in courses:
-        if exercise in course_exercises(course):
-            linked.append(course)
+    for course_inst in course_instances:
+        if exercise in course_instance_exercises(course_inst):
+            linked.append(course_inst)
     return linked
 
 ########################################################### 
@@ -279,7 +281,7 @@ def textfield_exercise(exercise, users, course_inst=None):
     hinted_incorrect_given = 0
     incorrect_unique = 0
     hinted_incorrect_unique = 0
-    choices = exercise.get_type_object().get_choices()
+    choices = exercise.get_choices(exercise)
     for answer in given_answers_set:
         count = given_answers.count(answer)
         correct, hinted, matches = textfield_eval(answer, choices)
@@ -324,14 +326,15 @@ def file_upload_exercise(exercise, users, course_inst=None):
 
 def exercise_answer_stats(request, ctx, exercise, exercise_type_f, template):
     all_users = User.objects.filter(is_staff=False).order_by('username')
-    courses = courses_linked(exercise)
+    course_instances = course_instances_linked(exercise)
 
     stats = []
     users = []
-    for course in courses:
-        users_on_course = filter_users_on_course(all_users, course)
-        stats.append(exercise_type_f(exercise, users_on_course, course))
-        users.extend(users_on_course)
+    for course_inst in course_instances:
+        #users_enrolled = filter_users_enrolled(all_users, course_inst)
+        users_enrolled = all_users # until enroll implemented
+        stats.append(exercise_type_f(exercise, users_enrolled, course_inst))
+        users.extend(users_enrolled)
 
     stats.append(exercise_type_f(exercise, list(set(users))))
     ctx.update({"stats": stats})
@@ -342,8 +345,8 @@ def single_exercise(request, content_slug):
     """
     Shows statistics on a single selected task.
     """
-    if not request.user.is_authenticated() and not request.user.is_active and not request.user.is_staff:
-        return HttpResponseNotFound()
+    if not request.user.is_authenticated() or not request.user.is_active or not request.user.is_staff:
+        return HttpResponseForbidden("Only logged in admins can view exercise statistics!")
 
     try:
         exercise = ContentPage.objects.get(slug=content_slug)
@@ -351,26 +354,20 @@ def single_exercise(request, content_slug):
         return HttpResponseNotFound("No exercise {} found!".format(content_slug))
     tasktype = exercise.content_type
 
-    tasktype_verbose = "unknown"
-    for choice, verbose in ContentPage.CONTENT_TYPE_CHOICES:
-        if choice == tasktype:
-            tasktype_verbose = verbose.lower()
-            break
-
     ctx = {
         "content": exercise,
-        "tasktype": tasktype_verbose,
-        "choices": exercise.get_type_object().get_choices(),
+        "tasktype": exercise.get_human_readable_type(),
+        "choices": exercise.get_choices(exercise),
     }
 
     if tasktype == "CHECKBOX_EXERCISE":
-        return exercise_answer_stats(request, ctx, exercise, checkbox_exercise, "checkbox_stats.html")
+        return exercise_answer_stats(request, ctx, exercise, checkbox_exercise, "checkbox-stats.html")
     elif tasktype == "MULTIPLE_CHOICE_EXERCISE":
-        return exercise_answer_stats(request, ctx, exercise, multiple_choice_exercise, "multiple_choice_stats.html")
+        return exercise_answer_stats(request, ctx, exercise, multiple_choice_exercise, "multiple-choice-stats.html")
     elif tasktype == "TEXTFIELD_EXERCISE":
-        return exercise_answer_stats(request, ctx, exercise, textfield_exercise, "textfield_stats.html")
+        return exercise_answer_stats(request, ctx, exercise, textfield_exercise, "textfield-stats.html")
     elif tasktype == "FILE_UPLOAD_EXERCISE":
-        return exercise_answer_stats(request, ctx, exercise, file_upload_exercise, "file_upload_stats.html")
+        return exercise_answer_stats(request, ctx, exercise, file_upload_exercise, "file-upload-stats.html")
     else:
         return HttpResponseNotFound("No stats for exercise {} found!".format(content_slug))
 
@@ -381,10 +378,10 @@ def user_task(request, user_name, task_name):
 
     content = ContentPage.objects.get(slug=task_name)
 
-    exercise = content_page.get_type_object()
+    exercise = content_page # content_page.get_type_object()
     tasktype = content_page.content_type
     question = content.question
-    choices = answers = exercise.get_choices() 
+    choices = answers = exercise.get_choices(exercise) 
 
     ruser = User.objects.get(username=user_name)
 
@@ -398,7 +395,7 @@ def user_task(request, user_name, task_name):
     elif tasktype == "FILE_UPLOAD_EXERCISE":
         fileanswers = UserFileUploadExerciseAnswer.objects.filter(exercise=content, user=ruser)
 
-    t = loader.get_template("stats/user_task_stats.html")
+    t = loader.get_template("stats/user-task-stats.html")
     c = {
         'username': user_name,
         'taskname': task_name,

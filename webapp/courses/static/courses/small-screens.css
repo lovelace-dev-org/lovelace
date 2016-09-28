@@ -10,6 +10,13 @@ nav.breadcrumb div.top-nav-container {
     margin-left: 0;
 }
 
+div.termbank {
+    left: 1000px;
+    top: calc(4rem + 452px);
+    width: 262px;
+    font-size: 0.65em;
+}
+
 div.toc-box {
     left: 1000px;
     top: 4rem;

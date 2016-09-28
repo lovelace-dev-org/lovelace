@@ -7,7 +7,7 @@
 {% block breadcrumb-links %}
   <li><a href="{% url 'courses:index' %}">{% trans 'Courses' %}</a></li>
   <div class="separator">»</div>
-  <li><a href="{% url 'courses:course' course.slug %}">{{ course.name }}</a></li>
+  <li><a href="{% url 'courses:course' course.slug instance.slug %}">{{ instance.get_identifying_str }}</a></li>
 {% endblock %}
 
 {% block toc %}{% endblock %}
@@ -20,14 +20,14 @@
 {% if content_tree %}
   <div class="course-contents">
     <h2 class="content-heading">{% trans 'Course Contents' %}<span id="course-contents" class="anchor-offset"></span><a href="#course-contents" class="permalink" title="Permalink to Course Contents">&para;</a></h2>
-    {% for list_direction, result, correct_emb, emb_count in content_tree %}
+    {% for list_direction, result, correct_emb, emb_count, visible in content_tree %}
       {% if list_direction == '>' %}
         <ul>
           {% elif list_direction == '<' %}
         </ul>
       {% else %}
-        <li>
-          <a href="{% url 'courses:content' course.slug list_direction.slug %}">{{ list_direction.name }}</a>
+        <li{% if visible == False %} class="admin-visible-content"{% endif %}>
+          <a href="{% url 'courses:content' course.slug instance.slug list_direction.slug %}">{{ list_direction.name }}</a>
           {% if result and emb_count == 0 %}
             {% if result == 'unanswered' %}
               <img class="course-contents-result" src="{% static 'courses/unanswered-16.png' %}" alt="Unanswered">

@@ -5,9 +5,9 @@
 
     {% load staticfiles %}
     {% load i18n %}
-    <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=Open+Sans:400,400italic,700,700italic%26subset=latin,latin-ext">
-    <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=Cinzel">
-    <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=Inconsolata">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:400,400italic,700,700italic%26subset=latin,latin-ext">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Cinzel">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inconsolata">
     <link rel="icon" href="{% static 'courses/favicon.png' %}">
     <link rel="stylesheet" href="{% static 'courses/style.css' %}">
     <link rel="stylesheet" href="{% static 'courses/small-screens.css' %}" media="(max-width: 1768px)">
@@ -15,14 +15,17 @@
     <link rel="stylesheet" href="{% static 'courses/embedded-file.css' %}">
     <link rel="stylesheet" href="{% static 'courses/katex.min.css' %}">
     <link rel="stylesheet" href="{% static 'courses/latofonts.css' %}">
+    <link rel="stylesheet" href="{% static 'feedback/style.css' %}">
+    <link rel="stylesheet" href="{% static 'courses/terms.css' %}">
 
     <script src="{% static 'courses/katex.min.js' %}"></script>
-    <script src="{% static 'courses/jquery-2.1.4.min.js' %}"></script>
+    <script src="{% static 'courses/jquery-3.1.1.min.js' %}"></script>
     <script src="{% static 'courses/jquery.slimscroll.min.js' %}"></script>
     <script src="{% static 'courses/script.js' %}"></script>
     <script src="{% static 'courses/embedded-file.js' %}"></script>
     <script src="{% static 'courses/exercise.js' %}"></script>
     <script src="{% static 'courses/calendar.js' %}"></script>
+    <script src="{% static 'feedback/script.js' %}"></script>
     <script>
       $(document).ready(function() {
         // TODO: Store data in a js object
@@ -30,6 +33,7 @@
         set_line_widths();
 
         add_exercise_form_callbacks();
+        add_feedback_form_callbacks();
 
         // Apply KaTeX to render all the math blocks
         $("div.tex").each(function(index) {
@@ -45,15 +49,19 @@
             height: '400px'
         });
 
-      $(document).on('click', function(event) {
-        var menu_display = $('#user-menu').css('display');
-        var target = $(event.target);
-        if (menu_display == 'block' && 
-            !target.closest('#user-menu').length &&
-            !target.closest('#user-menu-arrow').length) {
-          $('#user-menu').hide();
-        }
-      });
+        $('#termbank-contents > div.list-div').slimScroll({
+          height: '400px'
+        });
+
+        $(document).on('click', function(event) {
+          var menu_display = $('#user-menu').css('display');
+          var target = $(event.target);
+          if (menu_display == 'block' && 
+              !target.closest('#user-menu').length &&
+              !target.closest('#user-menu-arrow').length) {
+                $('#user-menu').hide();
+          }
+        });
             
         $(window).on('DOMContentLoaded load resize scroll', handler);
       });
@@ -135,11 +143,13 @@
           {% endblock %}
         </ul>
         <div class="right-side">
-          {# https://docs.djangoproject.com/en/1.7/topics/i18n/translation/#set-language-redirect-view #}
+          {# https://docs.djangoproject.com/en/1.9/topics/i18n/translation/#set-language-redirect-view #}
           <form action="{% url 'set_language' %}" method="post" class="language-picker">
             {% csrf_token %}
             <input name="next" type="hidden" value="{{ redirect_to }}">
             <select name="language" onchange="this.form.submit();">
+              {% get_current_language as LANGUAGE_CODE %}
+              {% get_available_languages as LANGUAGES %}
               {% get_language_info_list for LANGUAGES as languages %}
               {% for language in languages %}
                 <option value="{{ language.code }}"{% if language.code == LANGUAGE_CODE %} selected="selected"{% endif %}>
@@ -151,6 +161,25 @@
         </div>
         </div>
       </nav>
+      {% endblock %}
+
+      {% block termbank %}
+        {% if terms %}
+          <div class="termbank" id="termbank">
+            <div class="termbank-contents" id="termbank-contents">
+              <div class="termbank-heading" id="termbank-heading">{% trans "Termbank" %}</div>
+              <div id="termbank-list-div" class="list-div">
+                <ul>
+                  {% for term in terms %}
+                    <li class="term-list-item">
+                      <span class="term" id="{{ term.span_id }}" onmouseover="show_term_description_during_hover(this, '#{{ term.slug }}-term-div');">{{ term.name }}</span>
+                    </li>
+                  {% endfor %}
+                </ul>
+              </div>
+            </div>
+          </div>
+        {% endif %}
       {% endblock %}
 
       {% block toc %}
@@ -170,12 +199,33 @@
         {% endblock %}
       </div>
       {% endblock %}
-      
+
       <section class="content">
+        {% block revision-info %}
+        {% endblock %}
         {% block page-content %}
         {% endblock %}
       </section>
-  
+
+      {% block term-descriptions %}
+        <div class="term-descriptions" id="term-descriptions">
+          <div class="term-description" id="term-div-not-found">
+            ?
+          </div>
+          {% if terms %}
+            {% for term in terms %}
+              <div class="term-description" id="{{ term.slug }}-term-div">
+                <div class="term-desc-contents">
+                  <div class="term-desc-scrollable">
+                    {{ term.description|safe }}
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          {% endif %}
+        </div>
+      {% endblock %}
+
       <footer>
         <div class="column0">
           <p>Site design &amp; backend by Miikka Salminen</p>
