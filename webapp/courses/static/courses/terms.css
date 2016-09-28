@@ -15,14 +15,23 @@ div.term-description {
     text-align: left;
     font-weight: normal;
     font-style: normal;
-    background: #39ad39;
+    background: #eee;
     color: #222;
     font-size: 0.9rem;
-    padding: 2px 2px;
-    border: 2px solid #333;
+    padding: 5px 5px;
+    border: 1px solid #ccc;
     left: 0;
     top: 0;
     min-width: 22px;
+    -webkit-box-shadow: 1px 1px 8px 2px rgba(0,0,0,0.75);
+    -moz-box-shadow: 1px 1px 8px 2px rgba(0,0,0,0.75);
+    box-shadow: 1px 1px 8px 2px rgba(0,0,0,0.75);
+    -webkit-border-radius: 1px;
+    -webkit-border-top-left-radius: 2px;
+    -moz-border-radius: 1px;
+    -moz-border-radius-topleft: 2px;
+    border-radius: 1px;
+    border-top-left-radius: 2px;
 }
 
 /* The arrow */
@@ -34,7 +43,7 @@ div.term-description:before {
     top: -18px;
     left: 0px;
     border: 9px solid transparent;
-    border-bottom-color: #333;
+    border-bottom-color: #ccc;
 }
 
 div.term-description:after {
@@ -42,10 +51,10 @@ div.term-description:after {
     height: 0;
     position: absolute;
     width: 0;
-    top: -12px;
-    left: 3px;
-    border: 6px solid transparent;
-    border-bottom-color: #39ad39;
+    top: -16px;
+    left: 1px;
+    border: 8px solid transparent;
+    border-bottom-color: #eee;
 }
 
 div.term-desc-contents {
