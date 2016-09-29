@@ -45,6 +45,8 @@ import feedback.models
 # TODO: Support tags that get highlighted upon receiving hints
 # TODO: Support tags for monospace ASCII art with horizontal and vertical rulers
 #       and a grid background (linear-gradients)
+# TODO: Support full-width option for embedded content (e.g. images) so that they can
+#       take up the whole white column space.
 # TODO: Support tags that display files as hexdumps
 # TODO: Generate the regexes automatically from given options etc. à la Python's argparse
 
