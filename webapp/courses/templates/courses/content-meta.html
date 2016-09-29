@@ -1,6 +1,6 @@
 {% load staticfiles %}
 {% load i18n %}
-<div class="task-meta-container" style="position:relative;width:0px;height:0px;">
+<div class="task-meta-container">
   <div class="task-meta">
     {% if content.content_type != "LECTURE" and not sandboxed %}
       {% if evaluation == "unanswered" %}
@@ -21,57 +21,43 @@
       {% endcomment %}
 
       {% if not sandboxed %}
-      <div><a href="{% url 'courses:show_answers' user.username course_slug instance_slug content.slug %}"
-              title="{% trans 'View your previous answers' %}"><span class="answer-count">{{ answer_count }}</span> {% trans 'answers' %}</a></div>
+        <div><a href="{% url 'courses:show_answers' user.username course_slug instance_slug content.slug %}"
+                title="{% trans 'View your previous answers' %}"><span class="answer-count">{{ answer_count }}</span> {% trans 'answers' %}</a></div>
       {% endif %}
-
-      {% comment %}
-
-      {# TODO: Feedback things #}
-      <div class="give-feedback">
-        <div class="good-or-bad">
-          <span title="This exercise was good" style="cursor:pointer;">👍</span><span title="This exercise was bad" style="cursor:pointer;">👎</span>
-        </div>
-        <div class="five-stars">
-          {% for i in "12345" %}<span title="{{ i }}" onmouseover="this.innerHTML='★';" onmouseout="this.innerHTML='☆';" style="cursor:pointer;">☆</span>{% endfor %}
-        </div>
-        <div class="open-feedback">
-          <input type="text" title="Open feedback">{# TODO: onclick opens a bigger textarea for writing #}
-        </div>
-      </div>
-          {% endcomment %}
-      {% endif %}
+    {% endif %}
 
 
     {% if user.is_active and user.is_staff %}
-    <div class="admin-tools">
-      <div><b>{% trans "Teacher’s tools" %}</b></div>
-      <ul>
-        <li><div><a href="{% url 'stats:single_exercise' content.slug %}">{% trans 'Statistics' %}</a></div></li>
-        <li><div><a href="{% url 'feedback:statistics' content.slug %}">{% trans 'Feedback' %}</a></div></li>
-        <li><div><a href="{{ content.get_admin_change_url }}">
-              {% with type=content.get_human_readable_type %}
-                {% if type == "lecture" %}
-                  {% trans 'Edit this lecture' %}
-                {% elif type == "textfield exercise" %}
-                  {% trans 'Edit this textfield exercise' %}
-                {% elif type == "multiple choice exercise" %}
-                  {% trans 'Edit this multiple choice exercise' %}
-                {% elif type == "checkbox exercise" %}
-                  {% trans 'Edit this checkbox exercise' %}
-                {% elif type == "file upload exercise" %}
-                  {% trans 'Edit this file upload exericse' %}
-                {% elif type == "code input exercise" %}
-                  {% trans 'Edit this code input exercise' %}
-                {% elif type == "code replace exercise" %}
-                  {% trans 'Edit this code replace exercise' %}
-                {% endif %}
-              {% endwith %}
-        </a></div></li>
-        <li><div><a href="TODO">{% trans 'View reference answer' %}</a></div></li>
-        <li><div><a href="{% url 'courses:sandbox' content.slug %}">{% trans 'View separately' %}</a></div></li>
-      </ul>
-    </div>
+      <hr>
+      
+      <div class="admin-tools">
+        <div><b>{% trans "Teacher’s tools" %}</b></div>
+        <ul>
+          <li><div><a href="{% url 'stats:single_exercise' content.slug %}">{% trans 'Statistics' %}</a></div></li>
+          <li><div><a href="{% url 'feedback:statistics' content.slug %}">{% trans 'Feedback' %}</a></div></li>
+          <li><div><a href="{{ content.get_admin_change_url }}">
+            {% with type=content.get_human_readable_type %}
+              {% if type == "lecture" %}
+                {% trans 'Edit this lecture' %}
+              {% elif type == "textfield exercise" %}
+                {% trans 'Edit this textfield exercise' %}
+              {% elif type == "multiple choice exercise" %}
+                {% trans 'Edit this multiple choice exercise' %}
+              {% elif type == "checkbox exercise" %}
+                {% trans 'Edit this checkbox exercise' %}
+              {% elif type == "file upload exercise" %}
+                {% trans 'Edit this file upload exericse' %}
+              {% elif type == "code input exercise" %}
+                {% trans 'Edit this code input exercise' %}
+              {% elif type == "code replace exercise" %}
+                {% trans 'Edit this code replace exercise' %}
+              {% endif %}
+            {% endwith %}
+          </a></div></li>
+          <li><div><a href="TODO">{% trans 'View reference answer' %}</a></div></li>
+          <li><div><a href="{% url 'courses:sandbox' content.slug %}">{% trans 'View separately' %}</a></div></li>
+        </ul>
+      </div>
     {% endif %}
     
   </div>

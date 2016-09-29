@@ -56,7 +56,7 @@ div.embedded-code {
                 width: 2.5em;
                 padding-right: 0.5em;
                 border-right: 1px solid #333;
-                margin-right: 0.5em;
+                margin-right: 0.2em;
             }
             div.embedded-code > pre > code > span.line {
                 counter-increment: code-line;
