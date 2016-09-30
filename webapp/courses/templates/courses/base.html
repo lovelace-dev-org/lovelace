@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inconsolata">
     <link rel="icon" href="{% static 'courses/favicon.png' %}">
     <link rel="stylesheet" href="{% static 'courses/style.css' %}">
-    <link rel="stylesheet" href="{% static 'courses/small-screens.css' %}" media="(max-width: 1800px)">
+    <link rel="stylesheet" href="{% static 'courses/small-screens.css' %}" media="(max-width: 1912px)">
     <link rel="stylesheet" href="{% static 'courses/syntax.css' %}">
     <link rel="stylesheet" href="{% static 'courses/embedded-file.css' %}">
     <link rel="stylesheet" href="{% static 'courses/katex.min.css' %}">
@@ -62,7 +62,7 @@
                 $('#user-menu').hide();
           }
         });
-            
+        
         $(window).on('DOMContentLoaded load resize scroll', handler);
       });
     </script>
@@ -85,7 +85,6 @@
         <div id="container-top">
           <div class="page-title">
             <h1>Lovelace</h1>
-            {#<h2>Interactive learning environment</h2>#}
           </div>
           <div class="user-actions">
             {% if user.is_active %}
@@ -166,6 +165,7 @@
       {% block termbank %}
         {% if terms %}
           <div class="termbank" id="termbank">
+            <button class="expand-box" onclick="expand_box(this);" title="Hide/Show the termbank">◀</button>
             <div class="termbank-contents" id="termbank-contents">
               <div class="termbank-heading" id="termbank-heading">{% trans "Termbank" %}</div>
               <div id="termbank-list-div" class="list-div">
@@ -183,21 +183,22 @@
       {% endblock %}
 
       {% block toc %}
-      <div class="toc-box">
-        <nav class="toc" id="toc">
-          <div class="toc-box-heading">{% trans "Table of Contents" %}</div>
-          <div class="list-div">
-            <ol>
-            </ol>
-          </div>
-        </nav>
-        {% block progress %}
-        <div class="progress-container">
-          <div class="toc-box-progress-info">{% trans "Completed:" %} <span id="completed-exercises"></span>/<span id="total-exercises"></span> {% trans "exercises" %}</div>
-          <progress id="exercises-progress" value="0" max="0"></progress>
+        <div class="toc-box">
+          <button class="expand-box" onclick="expand_box(this);" title="Hide/Show the table of contents">◀</button>
+          <nav class="toc" id="toc">
+            <div class="toc-box-heading">{% trans "Table of Contents" %}</div>
+            <div class="list-div">
+              <ol>
+              </ol>
+            </div>
+          </nav>
+          {% block progress %}
+            <div class="progress-container">
+              <div class="toc-box-progress-info">{% trans "Completed:" %} <span id="completed-exercises"></span>/<span id="total-exercises"></span> {% trans "exercises" %}</div>
+              <progress id="exercises-progress" value="0" max="0"></progress>
+            </div>
+          {% endblock %}
         </div>
-        {% endblock %}
-      </div>
       {% endblock %}
 
       <section class="content">

@@ -45,7 +45,41 @@ var handler = function() {
         old.attr("class", "toc-visible");
     }
     $("div.term-description").hide();
+    let w = $(window).width(); // Small screen trickery below
+    if (w >= 1896) {
+        $('div.toc-box').attr('style', '');
+        $('div#termbank').attr('style', '');
+    } else if (w <= 1160 + 300) {
+        let toc = $('div.toc-box');
+        let tb = $('div#termbank');
+        if (toc.find('button').hasClass('retract-box')) {
+            toc.offset({left: (w - 300 < 1160) ? (w - 300) : (1160)});
+        }
+        if (tb.find('button').hasClass('retract-box')) {
+            tb.offset({left: (w - 300 < 1160) ? (w - 300) : (1160)});
+        }
+    }
 };
+
+function expand_box(b) {
+    let box = $(b.parentElement);
+    let button = $(b);
+    button.toggleClass("retract-box");
+    button.toggleClass("expand-box");
+    button.attr("onclick", "retract_box(this);");
+    button.html('▶');
+    let w = $(window).width();
+    box.offset({left: (w - 300 < 1160) ? (w - 300) : (1160)});
+}
+function retract_box(b) {
+    let box = $(b.parentElement);
+    let button = $(b);
+    button.toggleClass("retract-box");
+    button.toggleClass("expand-box");
+    button.attr("onclick", "expand_box(this);");
+    button.html('◀');
+    box.offset({left: 1160});
+}
 
 // Build the table of contents
 function build_toc(static_root_url) {

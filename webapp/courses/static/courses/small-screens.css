@@ -10,10 +10,14 @@ nav.breadcrumb div.top-nav-container {
     margin-left: 0;
 }
 
+button.expand-box, button.retract-box {
+    display: block;
+}
+
 div.termbank {
     left: 1160px;
     top: calc(4rem + 455px);
-    width: 262px;
+    width: 300px;
     font-size: 0.65em;
     line-height: 1.25;
 }
@@ -21,7 +25,7 @@ div.termbank {
 div.toc-box {
     left: 1160px;
     top: 4rem;
-    width: 262px;
+    width: 300px;
     font-size: 0.65em;
     line-height: 1.25;
 }

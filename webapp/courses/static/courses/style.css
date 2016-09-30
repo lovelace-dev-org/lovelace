@@ -103,7 +103,7 @@ div#container-top {
     }
 
     div#container-top div.page-title > h1 {
-        font-family: "LatoWebBlack", serif;
+        font-family: "LatoWebBlack", sans-serif;
         font-style: normal;
         font-variant: small-caps;
         font-size: 2.25rem;
@@ -115,9 +115,9 @@ div#container-top {
 	
     div#container-top div.user-actions {
         color: #eee;
-        font-family: "Verdana";
+        font-family: "LatoWeb", sans-serif;
         font-weight: bold;
-        font-size: 0.90rem;
+        font-size: 1.0rem;
         text-shadow: 1px 0px 0 rgba(200, 200, 200, 1.0),
                      2px 0px 1px rgba(0, 0, 0, 1.0);
         
@@ -333,7 +333,29 @@ nav.breadcrumb {
         font-family: "Verdana";
     }
 
- /* Termbank */
+
+/* Expand button for small screens for ToC and Termbank */
+button.expand-box, button.retract-box {
+    background: #ccc;
+    border: 0 solid #fff;
+    margin: 0;
+    padding: 0;
+    width: 12px;
+    height: 430px;
+    line-height: 3.0;
+    float: left; /* TODO: flexbox */
+    display: none;
+}
+button.expand-box:hover,
+button.retract-box:hover {
+    background: #39ad39;
+}
+div.toc-box > button.expand-box,
+div.toc-box > button.retract-box {
+    height: 426px;
+}
+
+/* Termbank */
 div.termbank {
     position: fixed;
     left: 0.5rem;
@@ -549,15 +571,15 @@ section.content {
     }
 
     div.course-contents li.admin-visible-content {
-        background: #cbe;
+        background: #ccc0ee;
         position: relative;
     }
     div.course-contents li.admin-visible-content::after {
         position: absolute;
-        top: 4px;
-        right: 4px;
+        top: 2px;
+        right: 24px;
         content: 'invisible to students';
-        font-size: 0.5rem;
+        font-size: 0.55rem;
         color: #333;
     }
 
@@ -566,9 +588,9 @@ section.content {
         -webkit-appearance: none;
         position: absolute;
         right: 24px;
-        top: 0.6em;
-        width: 200px;
-        height: 7px;
+        top: 0.65em;
+        width: 220px;
+        height: 8px;
         border: 1px solid #ccc;
         background-color: #eee;
     }
@@ -588,11 +610,11 @@ section.content {
     div.course-contents img.course-contents-result {
         position: absolute;
         right: 24px;
-        top: 4px;
+        top: 10px;
     }
 
     section.content h1, section.content h2, section.content h3, section.content h4, section.content h5, section.content h6 {
-        font-family: "LatoWebSemibold", "Trebutchet MS", "Helvetica", sans-serif;
+        font-family: "LatoWebSemibold", "Trebuchet MS", "Helvetica", sans-serif;
         /*font-weight: normal;*/
         /*letter-spacing: 0.05em;*/
         word-spacing: 0.1em;
@@ -704,9 +726,12 @@ section.content {
         margin-right: 15px;
     }
 
+    section.content p+ul, section.content p+ol {
+        position: relative;
+        top: -1.5em;
+    }
     section.content ul, section.content ol {
         margin-left: 1.5em;
-        margin-bottom: 5px;
     }
 
     section.content ul > li, section.content ol > li {
@@ -847,8 +872,9 @@ section.content {
             section.content div.question form input[type=file], section.content div.question form input[type=submit] {
                 font-family: "LatoWeb";
                 font-size: 0.9em;
-                min-width: 150px;
-                line-height: 1.5;
+                min-width: 170px;
+                line-height: 1.35;
+                margin: 6px 0 0 0;
             }
 
             section.content div.question form div.input-label-container {
@@ -862,13 +888,13 @@ section.content {
             
             section.content div.question form div.code-replace-filename {
                 font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
-                font-size: 1.0rem;
+                font-size: 1.2rem;
                 display: block;
             }
 
             section.content div.question form label.code-replace-label {
                 font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
-                font-size: 1.0rem;
+                font-size: 1.2rem;
                 width: 44px;
                 text-align: right;
                 display: inline-block;
@@ -882,7 +908,7 @@ section.content {
 
             section.content div.question form input.code-replace-input {
                 font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
-                font-size: 1.0rem;
+                font-size: 1.2rem;
                 display: inline-block !important;
                 width: calc(100% - 58px);
                 border: 1px solid #d0d0d0;
@@ -920,7 +946,7 @@ section.content {
                 resize: vertical;
                 background: #f5f5f5;
                 font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
-                font-size: 1.0em;
+                font-size: 1.2rem;
             }
 
             section.content div.question form div.answered-status {
