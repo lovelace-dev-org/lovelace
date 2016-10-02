@@ -1,0 +1,25 @@
+div.termbank {
+    top: 4rem;
+    left: 0;
+    width: 300px;
+    font-size: 0.65em;
+    line-height: 1.25;
+}
+
+div.toc-box {
+    top: 4rem;
+    right: 0;
+    width: 300px;
+    font-size: 0.65em;
+    line-height: 1.25;
+}
+
+nav.toc ol {
+    margin-left: 1em;
+}
+nav.toc ol > li {
+    margin-left: -1em;
+}
+nav.toc li > img {
+    top: 0;
+}
