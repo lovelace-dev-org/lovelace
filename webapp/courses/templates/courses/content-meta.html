@@ -22,7 +22,7 @@
 
       {% if not sandboxed %}
         <div><a href="{% url 'courses:show_answers' user.username course_slug instance_slug content.slug %}"
-                title="{% trans 'View your previous answers' %}"><span class="answer-count">{{ answer_count }}</span> {% trans 'answers' %}</a></div>
+                title="{% trans 'View your previous answers' %}">{% blocktrans count counter=answer_count %}<span class="answer-count">{{ counter }}</span> answer{% plural %}<span class="answer-count">{{ counter }}</span> answers{% endblocktrans %}</a></div>
       {% endif %}
     {% endif %}
 

@@ -4,7 +4,7 @@
 {% load staticfiles %}
 {% load course_tags %}
 
-{% block page-title %}{{ username }}’s answers to {{ exercise_name }}{% endblock %}
+{% block page-title %}{% blocktrans %}{{ username }}’s answers to {{ exercise_name }}{% endblocktrans %}{% endblock %}
 
 {% block extra-static %}
 <link rel="stylesheet" href="{% static 'courses/answers.css' %}">
@@ -17,14 +17,20 @@
     <div class="separator">»</div>
     <li><a href="{% url 'courses:course' course_slug instance_slug %}">{{ course_name }}&nbsp;/&nbsp;{{ instance_name }}</a></li>
     <div class="separator">»</div>
-    <li><a href="{% url 'courses:show_answers' username course_slug instance_slug exercise %}">{{ username }}’s answers to {{ exercise_name }}</a></li>
+    <li><a href="{% url 'courses:show_answers' username course_slug instance_slug exercise %}">{% blocktrans %}{{ username }}’s answers to {{ exercise_name }}{% endblocktrans %}</a></li>
   {% endif %}
 {% endblock %}
 
 {% block toc %}{% endblock %}
 
 {% block page-content %}
-  <h1>{% if request.user.username == username %}Your{% else %}{{ username }}’s{% endif %} answers to {{ exercise_name }}</h1>
+  <h1>
+    {% if request.user.username == username %}
+      {% blocktrans %}Your answers to {{ exercise_name }}{% endblocktrans %}
+    {% else %}
+      {% blocktrans %}{{ username }}’s answers to {{ exercise_name }}{% endblocktrans %}
+    {% endif %}
+  </h1>
 <table class="fixed">
 <colgroup>
   <col class="answer-date">
@@ -32,13 +38,19 @@
   <col class="evaluation">
   <col class="permalink">
 </colgroup>
-<caption>{{ answers.count }} entered answers for this exercise</caption>
+<caption>
+  {% blocktrans count answercount=answers.count %}
+    {{ answercount }} entered answer for this exercise
+    {% plural %}
+    {{ answercount }} entered answers for this exercise
+  {% endblocktrans %}
+</caption>
 <thead>
   <tr>
-    <th>Answer date</th>
-    <th>Entered answer</th>
-    <th>Evaluation</th>
-    <th>Link | e-mail</th>
+    <th>{% trans 'Answer date' %}</th>
+    <th>{% trans 'Entered answer' %}</th>
+    <th>{% trans 'Evaluation' %}</th>
+    <th>{% trans 'Link | e-mail' %}</th>
   </tr>
 </thead>
 <tbody>
@@ -72,9 +84,9 @@
     </td>
     <td class="evaluation {% if answer.evaluation.correct %}correct{% else %}incorrect{% endif %}">
       {% if answer.evaluation.correct %}
-        <span title="Correct">✔</span>
+        <span title="{% trans 'Correct' %}">✔</span>
       {% else %}
-        <span title="Incorrect">✘</span>
+        <span title="{% trans 'Incorrect' %}">✘</span>
       {% endif %}
       {% if answer.evaluation.test_results %}
         <a href="{% url 'courses:get_old_file_exercise_evaluation' user answer.id %}"
@@ -83,7 +95,7 @@
       {% endif %}
     </td>
     <td class="permalink">
-      <a href="#{{ answer.id }}">&para;</a> | <a target="_blank" rel="noopener noreferrer" href="mailto:{{ instance_email }}?subject={{ instance_name|urlencode }}%20-%20{{ exercise_name|urlencode }}{% autoescape off %}&body={% endautoescape %}{{ answers_url|urlencode }}%23{{ answer.id }}" title="Send course staff a question about this answer">Help!</a>
+      <a href="#{{ answer.id }}">&para;</a> | <a target="_blank" rel="noopener noreferrer" href="mailto:{{ instance_email }}?subject={{ instance_name|urlencode }}%20-%20{{ exercise_name|urlencode }}{% autoescape off %}&body={% endautoescape %}{{ answers_url|urlencode }}%23{{ answer.id }}" title="{% trans 'Send course staff a question about this answer' %}">{% trans 'Help!' %}</a>
     </td>
   </tr>
   {% endfor %}

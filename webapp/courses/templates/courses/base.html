@@ -165,7 +165,7 @@
       {% block termbank %}
         {% if terms %}
           <div class="termbank" id="termbank">
-            <button class="expand-box" onclick="expand_box(this);" title="Hide/Show the termbank">◀</button>
+            <button class="expand-box" onclick="expand_box(this);" title="{% trans 'Hide/Show the termbank' %}">◀</button>
             <div class="termbank-contents" id="termbank-contents">
               <div class="termbank-heading" id="termbank-heading">{% trans "Termbank" %}</div>
               <div id="termbank-list-div" class="list-div">
@@ -184,7 +184,7 @@
 
       {% block toc %}
         <div class="toc-box">
-          <button class="expand-box" onclick="expand_box(this);" title="Hide/Show the table of contents">◀</button>
+          <button class="expand-box" onclick="expand_box(this);" title="{% trans 'Hide/Show the table of contents' %}">◀</button>
           <nav class="toc" id="toc">
             <div class="toc-box-heading">{% trans "Table of Contents" %}</div>
             <div class="list-div">
