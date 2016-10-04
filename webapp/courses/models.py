@@ -225,6 +225,7 @@ def get_file_upload_path(instance, filename):
 class File(models.Model):
     """Metadata of an embedded or attached file that an admin has uploaded."""
     # TODO: Make the uploading user the default and don't allow it to change
+    # TODO: Slug and file name separately
     uploader = models.ForeignKey(User, null=True, blank=True) # Translate
     name = models.CharField(verbose_name='Name for reference in content',max_length=200,unique=True)
     date_uploaded = models.DateTimeField(verbose_name='date uploaded', auto_now_add=True)
