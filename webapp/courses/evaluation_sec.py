@@ -45,19 +45,19 @@ def limit_resources():
     spawning the process with the insecure shell=True setting.)
     """
     # Prevent the scope of fork bombs by limiting the total number of processes
-    resource.setrlimit(resource.RLIMIT_NPROC, (10, 10))
+    resource.setrlimit(resource.RLIMIT_NPROC, (20, 20))
 
     # Prevent filling up memory and file system by limiting the total number of
     # allowed files that the process is allowed to create
-    resource.setrlimit(resource.RLIMIT_NOFILE, (50, 50))
+    resource.setrlimit(resource.RLIMIT_NOFILE, (100, 100))
 
     # Prevent filling up memory and disk space by limiting the total number of
     # bytes occupied by one file
-    resource.setrlimit(resource.RLIMIT_FSIZE, (500*1024, 500*1024))
+    resource.setrlimit(resource.RLIMIT_FSIZE, (1024*1024, 1024*1024))
 
     # Prevent arbitrary use of computing power by limiting the amount of CPU time
     # in seconds
-    resource.setrlimit(resource.RLIMIT_CPU, (2, 2)) 
+    resource.setrlimit(resource.RLIMIT_CPU, (5, 5))
 
 def secure_kill(pid):
     """
