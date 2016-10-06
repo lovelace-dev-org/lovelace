@@ -29,6 +29,7 @@ import base64
 # Command dependencies
 import time
 import shlex
+import resource
 import subprocess
 
 from celery import shared_task, chain
@@ -135,8 +136,8 @@ def run_tests(self, user_id, instance_id, exercise_id, answer_id, lang_code, rev
     points = exercise_object.default_points
     
     evaluation_obj = cm.Evaluation(test_results=result_string,
-                                               points=points,
-                                               correct=correct)
+                                   points=points,
+                                   correct=correct)
     evaluation_obj.save()
     
     try:
@@ -574,10 +575,6 @@ def run_command_chainable(cmd, temp_dir_prefix, test_dir, files_to_check, stage_
 
     return stage_results
 
-def demote_process():
-    #sec.drop_privileges()
-    sec.limit_resources()
-
 @shared_task(name="courses.run-command")
 def run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check, revision=None):
     """
@@ -610,8 +607,25 @@ def run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check, revisio
     args = shlex.split(cmd)
 
     shell_like_cmd = " ".join(shlex.quote(arg) for arg in args)
+
+    proc_results = {
+        'ordinal_number': command.ordinal_number,
+        'expected_retval': command.return_value,
+        'input_text': command.input_text,
+        'significant_stdout': command.significant_stdout,
+        'significant_stderr': command.significant_stderr,
+        'json_output': command.json_output,
+        'command_line': shell_like_cmd,
+    }
     print("Running: {cmdline}".format(cmdline=shell_like_cmd))
-    
+
+    # TODO
+    # If additional resource limits have been provided, generate a customised
+    # process demotion function. Otherwise, use the default.
+    #demote_process = sec.get_demote_process_fun()
+    demote_process = sec.default_demote_process
+
+    start_rusage = resource.getrusage(resource.RUSAGE_CHILDREN)
     start_time = time.time()
     try:
         proc = subprocess.Popen(
@@ -628,17 +642,14 @@ def run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check, revisio
         # file didn't exist.
         
         # TODO: Use the proper way to deal with exceptions in Celery tasks
-        proc_results = {
-            'retval': None, 'timedout': False, 'killed': False, 'runtime': 0,
-            'ordinal_number': command.ordinal_number,
-            'expected_retval': command.return_value,
-            'input_text': command.input_text,
-            'significant_stdout': command.significant_stdout,
-            'significant_stderr': command.significant_stderr,
-            'command_line': shell_like_cmd,
+        proc_results.update({
+            'retval': None,
+            'timedout': False,
+            'killed': False,
+            'runtime': 0,
             'error': str(e),
             'fail': True,
-        }
+        })
         return proc_results
     
     proc_retval = None
@@ -658,25 +669,27 @@ def run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check, revisio
         
     # TODO: Clean up by halting all action (forking etc.) by the student's process
     # with SIGSTOP and by killing the frozen processes with SIGKILL
+    #sec.secure_kill()
     #proc_killed = True
-
-    # TODO: Collect statistics on CPU time consumed by the student's process
-    #import resource
-    #print(resource.getrusage(resource.RUSAGE_CHILDREN))
 
     proc_runtime = proc_runtime or (time.time() - start_time)
     proc_retval = proc_retval or proc.returncode
-    proc_results = {"retval": proc_retval,
-                    "timedout": proc_timedout,
-                    "killed": proc_killed,
-                    "runtime": proc_runtime,
-                    "ordinal_number": command.ordinal_number,
-                    "expected_retval": command.return_value,
-                    "input_text": command.input_text,
-                    "significant_stdout": command.significant_stdout,
-                    "significant_stderr": command.significant_stderr,
-                    "command_line": shell_like_cmd,}
+    # Collect statistics on CPU time consumed by the student's process
+    # Consider implementing wait3 and wait4 for subprocess
+    # http://stackoverflow.com/a/7050436/2096560
+    end_rusage = resource.getrusage(resource.RUSAGE_CHILDREN)
+    ru_utime = end_rusage.ru_utime - start_rusage.ru_utime
+    ru_stime = end_rusage.ru_stime - start_rusage.ru_stime
 
+    proc_results.update({
+        'retval': proc_retval,
+        'timedout': proc_timedout,
+        'killed': proc_killed,
+        'runtime': proc_runtime,
+        'usermodetime': ru_utime,
+        'kernelmodetime': ru_stime,
+    })
+    
     #stdout.seek(0)
     #print("\n".join(l.decode("utf-8") for l in stdout.readlines()))
     #stderr.seek(0)

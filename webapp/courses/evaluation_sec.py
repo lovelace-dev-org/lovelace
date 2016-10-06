@@ -9,6 +9,42 @@ import resource
 
 from signal import SIGKILL, SIGSTOP
 
+_CONCURRENT_PROCESSES = 20
+_NUMBER_OF_FILES = 100
+_FILE_SIZE = 1 * (1024 ** 2)  # 1 MiB
+_CPU_TIME = 5
+
+def get_demote_process_fun(concurrent_processes=_CONCURRENT_PROCESSES,
+                           number_of_files=_NUMBER_OF_FILES,
+                           file_size=_FILE_SIZE,
+                           cpu_time=_CPU_TIME):
+    """
+    Creates and returns a function that demotes the process based on given
+    arguments. Allows setting of custom limits based on, e.g., database values. 
+    """
+    def demote_process():
+        """
+        Execute a number of security measures to limit the possible scope of harm
+        available for the spawned processes to exploit.
+        """
+        #close_fds()
+        #drop_privileges()
+        limit_resources(concurrent_processes=concurrent_processes,
+                        number_of_files=number_of_files,
+                        file_size=file_size,
+                        cpu_time=cpu_time)
+
+    return demote_process
+
+default_demote_process = get_demote_process_fun()
+
+def close_fds():
+    """
+    Close all file descriptors (i.e. files, sockets etc.) except the standard
+    input, output and error streams to ensure that the forked process doesn't
+    have access to data it shouldn't have.
+    """
+
 def drop_privileges():
     """
     Drop all the privileges that can be reasonably dropped. This is to prevent
@@ -28,7 +64,11 @@ def drop_privileges():
         print("Unable to drop privileges to GID: (r:{s_gid}, e:{s_gid}, s:{s_gid}), UID: (r:{s_uid}, e:{s_uid}, s:{s_uid})".
               format(s_gid=student_gid, s_uid=student_uid))
 
-def limit_resources():
+
+def limit_resources(concurrent_processes=_CONCURRENT_PROCESSES,
+                    number_of_files=_NUMBER_OF_FILES,
+                    file_size=_FILE_SIZE,
+                    cpu_time=_CPU_TIME):
     """
     Use resource.setrlimit to define soft and hard limits for different
     resources available to the forked process.
@@ -44,30 +84,31 @@ def limit_resources():
     actual command line after the ulimit and a semicolon. This also required
     spawning the process with the insecure shell=True setting.)
     """
-    # Prevent the scope of fork bombs by limiting the total number of processes
-    resource.setrlimit(resource.RLIMIT_NPROC, (20, 20))
+    # Prevent the scope of fork bombs by limiting the total number of concurrent
+    # processes
+    resource.setrlimit(resource.RLIMIT_NPROC, (concurrent_processes, concurrent_processes))
 
     # Prevent filling up memory and file system by limiting the total number of
     # allowed files that the process is allowed to create
-    resource.setrlimit(resource.RLIMIT_NOFILE, (100, 100))
+    resource.setrlimit(resource.RLIMIT_NOFILE, (number_of_files, number_of_files))
 
     # Prevent filling up memory and disk space by limiting the total number of
     # bytes occupied by one file
-    resource.setrlimit(resource.RLIMIT_FSIZE, (1024*1024, 1024*1024))
+    resource.setrlimit(resource.RLIMIT_FSIZE, (file_size, file_size))
 
     # Prevent arbitrary use of computing power by limiting the amount of CPU time
     # in seconds
-    resource.setrlimit(resource.RLIMIT_CPU, (5, 5))
+    resource.setrlimit(resource.RLIMIT_CPU, (cpu_time, cpu_time))
 
 def secure_kill(pid):
     """
     Use SIGSTOP and SIGKILL signals to clean up any remaining processes. In
     order to prevent a perpetual fork bomb, a simple SIGKILL is not enough –
     a single SIGKILL will reliably kill _one_ process, which will leave room
-    for the other processes to spawn more processes, resulting in a neverending
-    SIGKILL whack-a-mole. By using SIGSTOP first to freeze the forking
-    processes and KILLing them after that, the fork bomb clean up should be
-    more reliable.
+    for the other processes to spawn more processes (up to the limit defined
+    in the limit_resources function), resulting in a neverending SIGKILL
+    whack-a-mole. By using SIGSTOP first to freeze the forking processes and
+    KILLing them after that, the fork bomb clean up should be more reliable.
 
     Neither SIGKILL nor SIGSTOP can be captured or blocked by any process.
 
