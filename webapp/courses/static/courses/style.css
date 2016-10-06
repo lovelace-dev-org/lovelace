@@ -1172,14 +1172,15 @@ section.content {
             word-wrap: break-word;
             font-weight: normal;
             font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
-            font-size: 1.0em;
+            font-size: 1.0rem;
             padding: 0 1px;
             line-height: 1.25;
             height: 1rem;
             border: 1px solid #aaa;
         }
         section.content table.diff td.diff-linenum {
-            font-size: 0.8em;
+            font-size: 0.8rem;
+            text-align: right;
         }
 
         section.content table.diff span.diff-sub {
