@@ -248,10 +248,19 @@ def check_answer(request, course_slug, instance_slug, content_slug, revision):
     else:
         evaluation["manual"] = True
 
+    msg_context = {
+        'course_slug': course_slug,
+        'instance_slug': instance_slug,
+    }
+    hints = ["".join(markupparser.MarkupParser.parse(msg, request, msg_context)).strip()
+             for msg in evaluation.get('hints')]
+
     # TODO: Errors, hints, comments in JSON
     t = loader.get_template("courses/exercise-evaluation.html")
+    print(evaluation)
     return JsonResponse({
         'result': t.render(evaluation),
+        'hints': hints,
         'evaluation': evaluation.get("evaluation"),
     })
 
@@ -259,6 +268,7 @@ def check_progress(request, course_slug, instance_slug, content_slug, revision, 
     # Based on https://djangosnippets.org/snippets/2898/
     # TODO: Check permissions
     task = celery_app.AsyncResult(id=task_id)
+    info = task.info
     if task.ready():
         return file_exercise_evaluation(request, course_slug, instance_slug, content_slug, revision, task_id, task)
     else:
@@ -272,7 +282,8 @@ def check_progress(request, course_slug, instance_slug, content_slug, revision, 
                                            'content_slug': content_slug,
                                            'revision': revision,
                                            'task_id': task_id,})
-            data = {"state": task.state, "metadata": task.info, "redirect": progress_url}
+            if not info: info = task.info # Try again in case the first time was too early
+            data = {"state": task.state, "metadata": info, "redirect": progress_url}
         return JsonResponse(data)
 
 def file_exercise_evaluation(request, course_slug, instance_slug, content_slug, revision, task_id, task=None):
@@ -288,6 +299,17 @@ def file_exercise_evaluation(request, course_slug, instance_slug, content_slug, 
     evaluation_json = r.get(task_id).decode("utf-8")
     evaluation_tree = json.loads(evaluation_json)
     r.delete(task_id)
+
+    msg_context = {
+        'course_slug': course_slug,
+        'instance_slug': instance_slug,
+    }
+
+    messages = ["".join(markupparser.MarkupParser.parse(msg, request, msg_context)).strip()
+                for msg in evaluation_tree['test_tree'].get('messages')]
+    hints = ["".join(markupparser.MarkupParser.parse(msg, request, msg_context)).strip()
+             for msg in evaluation_tree['test_tree'].get('hints')]
+    triggers = evaluation_tree['test_tree'].get('triggers')
 
     debug_json = json.dumps(evaluation_tree, indent=4)
 
@@ -305,6 +327,9 @@ def file_exercise_evaluation(request, course_slug, instance_slug, content_slug, 
         'result': t_exercise.render(c_exercise),
         'evaluation': evaluation_obj.correct,
         'points': evaluation_obj.points,
+        'messages': messages,
+        'hints': hints,
+        'triggers': triggers,
     }
     return JsonResponse(data)
 

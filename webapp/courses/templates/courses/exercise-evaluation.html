@@ -11,13 +11,6 @@
       {% trans "Incorrect answer!" %}
     {% endif %}
   </div>
-  {% if hints and evaluation == False %}
-    <div class="exercise-hints">
-      {% for hint in hints %}
-        <div class="exercise-hint">{% trans "Hint: " %}{{ hint }}</div>
-      {% endfor %}
-    </div>
-  {% endif %}
   {% if comments %}
     <div class="exercise-comments">
       {% for comment in comments %}

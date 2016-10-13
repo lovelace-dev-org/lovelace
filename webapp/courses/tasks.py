@@ -48,10 +48,16 @@ from celery import shared_task, chain
     #FileUploadExerciseReturnFile
 
 from courses import models as cm
-from courses import evaluation_sec as sec 
+from courses import evaluation_sec as sec
+from courses.evaluation_utils import *
 
 # TODO: Improve by following the guidelines here:
 #       - https://news.ycombinator.com/item?id=7909201
+
+JSON_INCORRECT = 0
+JSON_CORRECT = 1
+JSON_INFO = 2
+JSON_ERROR = 3
 
 @shared_task(name="courses.run-fileexercise-tests", bind=True)
 def run_tests(self, user_id, instance_id, exercise_id, answer_id, lang_code, revision):
@@ -151,7 +157,7 @@ def run_tests(self, user_id, instance_id, exercise_id, answer_id, lang_code, rev
     return evaluation_obj.id
     
     # TODO: Should we:
-    # - return the results? (most probably not)
+    # - return the results? (no)
     # - save the results directly into db? (is this worker contained enough?)
     # - send the results to a more privileged Celery worker for saving into db?
 
@@ -165,7 +171,13 @@ def generate_results(results, exercise_id):
     # It's possible some of the tests weren't run at all
     unmatched = set(student.keys()) ^ set(reference.keys())
     matched = set(student.keys()) & set(reference.keys()) if unmatched else reference.keys()
-    test_tree = {"tests": []}
+    test_tree = {
+        'tests': [],
+        'messages': [],
+        'errors': [],
+        'hints': [],
+        'triggers': [],
+    }
 
     #### GO THROUGH ALL TESTS
     for test_id, student_t, reference_t in ((k, student[k], reference[k]) for k in matched):
@@ -189,13 +201,13 @@ def generate_results(results, exercise_id):
                                                   for k in sorted(matched_stages,
                                                                   key=lambda x: student_stages[x]["ordinal_number"])):
             current_stage = {
-                "stage_id": stage_id,
-                "name": student_s["name"],
-                "ordinal_number": student_s["ordinal_number"],
+                'stage_id': stage_id,
+                'name': student_s['name'],
+                'ordinal_number': student_s['ordinal_number'],
                 'fail': student_s['fail'],
-                "commands": [],
+                'commands': [],
             }
-            current_test["stages"].append(current_stage)
+            current_test['stages'].append(current_stage)
 
             student_cmds = student_s["commands"]
             reference_cmds = reference_s["commands"]
@@ -248,6 +260,32 @@ def generate_results(results, exercise_id):
                 else:
                     stderr_diff = ""
                 current_cmd["stderr_diff"] = stderr_diff
+
+                # Handle JSON outputting testers
+
+                if student_c['json_output']:
+                    try:
+                        json_results = json.loads(student_stdout)
+                    except json.decoder.JSONDecodeError as e:
+                        test_tree['errors'].append("JSONDecodeError: {}".format(str(e)))
+                    else:
+                        tester = json_results.get('tester', "")
+                        for test in json_results.get('tests', []):
+                            test_title = test.get('title')
+                            for test_run in test.get('runs', []):
+                                for test_output in test_run.get('output', []):
+                                    output_triggers = test_output.get('triggers', [])
+                                    output_hints = test_output.get('hints', [])
+                                    output_msg = test_output.get('msg', '')
+                                    output_flag = test_output.get('flag', 0)
+
+                                    test_tree['triggers'].extend(output_triggers)
+                                    test_tree['hints'].extend(output_hints)
+                                    test_tree['messages'].append(output_msg)
+                                    if output_flag == JSON_INCORRECT:
+                                        cmd_correct = False
+                                    if output_flag == JSON_ERROR:
+                                        cmd_correct = False
 
                 current_test["correct"] = cmd_correct if current_test["correct"] else False
                 if cmd_correct == False: correct = False
@@ -506,28 +544,6 @@ def run_stage(self, stage_id, test_dir, temp_dir_prefix, files_to_check, revisio
     #       graph of dependent stages
 
 
-def cp437_decoder(input_bytes):
-    """
-    Reference:
-    - http://en.wikipedia.org/wiki/Code_page_437
-
-    Translation table copied from:
-    - http://stackoverflow.com/a/14553297/2096560
-    """
-    tr_table = str.maketrans({
-        0x01: "\u263A", 0x02: "\u263B", 0x03: "\u2665", 0x04: "\u2666",
-        0x05: "\u2663", 0x06: "\u2660", 0x07: "\u2022", 0x08: "\u25D8",
-        0x09: "\u25CB", 0x0a: "\u25D9", 0x0b: "\u2642", 0x0c: "\u2640",
-        0x0d: "\u266A", 0x0e: "\u266B", 0x0f: "\u263C", 0x10: "\u25BA",
-        0x11: "\u25C4", 0x12: "\u2195", 0x13: "\u203C", 0x14: "\u00B6",
-        0x15: "\u00A7", 0x16: "\u25AC", 0x17: "\u21A8", 0x18: "\u2191",
-        0x19: "\u2193", 0x1a: "\u2192", 0x1b: "\u2190", 0x1c: "\u221F",
-        0x1d: "\u2194", 0x1e: "\u25B2", 0x1f: "\u25BC", 0x7f: "\u2302",
-    })
-    CRLF = b'\x0d\x0a'
-    return "\n".join(byt_ln.decode('ibm437').translate(tr_table)
-                     for byt_ln in input_bytes.split(CRLF))
-
 @shared_task(name="courses.run-command-chain-block")
 def run_command_chainable(cmd, temp_dir_prefix, test_dir, files_to_check, stage_results=None, revision=None):
     cmd_id, cmd_input_text, cmd_return_value = cmd["id"], cmd["input_text"], cmd["return_value"]
@@ -665,8 +681,8 @@ def run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check, revisio
         proc_retval = None
         proc_timedout = True
         proc.terminate() # Try terminating the process nicely
-        time.sleep(0.5)
-        
+        time.sleep(0.5)  # Grace period to allow the process to terminate
+    
     # TODO: Clean up by halting all action (forking etc.) by the student's process
     # with SIGSTOP and by killing the frozen processes with SIGKILL
     #sec.secure_kill()

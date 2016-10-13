@@ -335,10 +335,12 @@ class CreateFileUploadExerciseForm(forms.Form):
                 
             command_significant_stdout_field = command_template.format(command_id, "significant_stdout")
             command_significant_stderr_field = command_template.format(command_id, "significant_stderr")
+            command_json_output_field = command_template.format(command_id, "json_output")
             command_return_value_field = command_template.format(command_id, "return_value")
             command_timeout_field = command_template.format(command_id, "timeout")
             self.fields[command_significant_stdout_field] = forms.BooleanField(required=False)
             self.fields[command_significant_stderr_field] = forms.BooleanField(required=False)
+            self.fields[command_json_output_field] = forms.BooleanField(required=False)
             self.fields[command_return_value_field] = forms.IntegerField(required=False)
             self.fields[command_timeout_field] = forms.DurationField()
 

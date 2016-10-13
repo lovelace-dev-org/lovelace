@@ -8,8 +8,8 @@ from django.http import HttpResponse, HttpResponseNotFound, HttpResponseForbidde
 from django.template import loader
 from django.db import transaction, IntegrityError
 from django.conf import settings
-#from django.urls import reverse # Django 1.10
-from django.core.urlresolvers import reverse # Django 1.9
+from django.urls import reverse # Django 1.10
+#from django.core.urlresolvers import reverse # Django 1.9
 
 from reversion import revisions as reversion
 
@@ -267,6 +267,7 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_hin
     for command_id, command_info in new_commands.items():
         c_significant_stdout = form_data['command_{}_significant_stdout'.format(command_id)]
         c_significant_stderr = form_data['command_{}_significant_stderr'.format(command_id)]
+        c_json_output = form_data['command_{}_json_output'.format(command_id)]
         c_return_value = form_data['command_{}_return_value'.format(command_id)]
         c_timeout = form_data['command_{}_timeout'.format(command_id)]
 
@@ -284,6 +285,7 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_hin
         current_command.stage = edited_stages[command_info.stage]
         current_command.significant_stdout = c_significant_stdout
         current_command.significant_stderr = c_significant_stderr
+        current_command.json_output = c_json_output
         current_command.return_value = c_return_value
         current_command.timeout = c_timeout
         current_command.ordinal_number = command_info.ordinal_number + command_count + 1 # Note

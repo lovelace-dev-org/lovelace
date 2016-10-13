@@ -5,6 +5,7 @@ function isElementInViewport (el) {
     }
 
     var rect = el.getBoundingClientRect();
+    // TODO: Use the height of the header here
     var result = (rect.top >= 0 &&
                   rect.bottom <= $(window).height());
     return result;

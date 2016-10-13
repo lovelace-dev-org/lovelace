@@ -265,6 +265,15 @@ class Term(models.Model):
     instance = models.ForeignKey(CourseInstance, verbose_name="Course instance")
     name = models.CharField(verbose_name='Term', max_length=200) # Translate
     description = models.TextField() # Translate
+
+    # TODO
+    #tags = ArrayField( # consider: https://github.com/funkybob/django-array-tags
+        #base_field=models.CharField(max_length=32, blank=True),
+        #default=list,
+        #blank=True
+    #)
+
+    # TODO: array of intra-instance links to relevant sections in material 
     
     def __str__(self):
         return self.name

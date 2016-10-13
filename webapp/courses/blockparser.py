@@ -87,7 +87,7 @@ def parse_anchor_tag(parsed_string, tag, address, link_text):
     return parsed_string
 
 def parse_hint_tag(parsed_string, tag, hint_id, hint_text):
-    parsed_string += tag.htmlbegin({"class":"hint", "id":"hint-id-"+hint_id})
+    parsed_string += tag.htmlbegin({"class":"hint-inactive", "id":"hint-id-"+hint_id})
     parsed_string += hint_text
     parsed_string += tag.htmlend()
     return parsed_string

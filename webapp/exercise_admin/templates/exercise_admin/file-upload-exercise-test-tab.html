@@ -128,6 +128,10 @@
                 <input type="checkbox" id="command-{{ command.id }}-significant_stderr" name="command_{{ command.id }}_significant_stderr" {% if command.significant_stderr %}checked{% endif %}>
                 <label for="command-{{ command.id }}-significant_stderr">Compare the generated stderr to reference</label>
               </div>
+              <div class="form-cb-row">
+                <input type="checkbox" id="command-{{ command.id }}-json_output" name="command_{{ command.id }}_json_output" {% if command.json_output %}checked{% endif %}>
+                <label for="command-{{ command.id }}-json_output">Provides evaluation data as JSON</label>
+              </div>
 
               <div class="form-row">
                 <label for="command-{{ command.id }}-timeout">Timeout: </label>

@@ -262,19 +262,6 @@ div.term-description p mark {
     padding: 2px 4px;
 }
 
-div.term-description p mark.hint {
-    background: inherit;
-    border-radius: 7px;
-    padding: 2px 4px;
-    animation: hint_background 2s linear infinite;
-}
-
-@keyframes hint_background {
-    0% {background: #f33;}
-    50% {background: #fe3;}
-    100% {background: #f33;}
-}
-
 div.term-description kbd { /* .key */
     padding: 4px 3px;
     margin-right: 1px;

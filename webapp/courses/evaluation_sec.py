@@ -1,6 +1,9 @@
 """
 Security measures for automatically running user-submitted code within file
-upload, code input and code replace exercise evaluation tasks. 
+upload, code input and code replace exercise evaluation tasks. Provides
+functions for, e.g., sandboxing the user-submitted code to lower privileges
+and limiting the OS resources available to the processes to provide a reasonably
+safe environment to run unsafe code in.
 """
 
 import os
@@ -9,10 +12,10 @@ import resource
 
 from signal import SIGKILL, SIGSTOP
 
-_CONCURRENT_PROCESSES = 20
+_CONCURRENT_PROCESSES = 40
 _NUMBER_OF_FILES = 100
-_FILE_SIZE = 1 * (1024 ** 2)  # 1 MiB
-_CPU_TIME = 5
+_FILE_SIZE = 4 * (1024 ** 2)  # 4 MiB
+_CPU_TIME = 20
 
 def get_demote_process_fun(concurrent_processes=_CONCURRENT_PROCESSES,
                            number_of_files=_NUMBER_OF_FILES,

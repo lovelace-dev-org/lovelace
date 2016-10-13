@@ -1,5 +1,6 @@
 function exercise_success(data, result_div, error_div, form_parent) {
     var hints_div = form_parent.children("div.hints");
+    var msgs_div = form_parent.children("div.msgs");
     var comments_div = form_parent.children("div.comments");
     var file_result_div = form_parent.children("div.file-result");
 
@@ -40,12 +41,50 @@ function exercise_success(data, result_div, error_div, form_parent) {
         update_progress_bar();        
     }
     if (data.errors) {
-        error_div.html(data.errors);
+        /*
+        let all_errors = "";
+        for (let error of data.errors) {
+            let error_text = "<li>" + error + "</li>\n";
+            all_errors += error_text;
+        }
+        all_errors += "\n";
+        */
+        let all_errors = data.errors;
+        error_div.html(all_errors);
         error_div.css("display", "block");
     }
     if (data.hints && data.evaluation === false) {
-        hints_div.html(data.hints);
+        let all_hints = "<ul>\n";
+        for (let hint of data.hints) {
+            let hint_text = "<li>" + hint + "</li>\n";
+            all_hints += hint_text;
+        }
+        all_hints += "\n";
+        hints_div.find('div.hints-list').html(all_hints);
         hints_div.css("display", "block");
+    }
+    if (data.triggers) {
+        /* TODO: For each triggered hint that's not currently on the screen:
+           - display a pink clickable arrow on the upper/lower section of screen
+             that automatically scrolls the page to the triggered hint
+           - set the CSS class to an intermediate value with the borders; only
+             start the animation when the hint becomes visible
+         */
+        console.log(data.triggers);
+        for (let hint_id of data.triggers) {
+            let hint_text = $('section.content').find('#hint-id-' + hint_id);
+            hint_text.attr({'class': 'hint-active'});
+        }
+    }
+    if (data.messages) {
+        let all_msgs = "<ul>\n";
+        for (let msg of data.messages) {
+            let msg_text = "<li>" + msg + "</li>\n";
+            all_msgs += msg_text;
+        }
+        all_msgs += "\n";
+        msgs_div.find('div.msgs-list').html(all_msgs);
+        msgs_div.css("display", "block");
     }
     if (data.comments) {
         comments_div.html(data.comments);
@@ -58,10 +97,13 @@ function exercise_success(data, result_div, error_div, form_parent) {
 
 
     if (data.metadata) {
-        var current = data.metadata.current;
-        var total = data.metadata.total;
-        // TODO: Progress bar
-        result_div.html('<div>' + current + '/' + total + '</div>');
+        let current = data.metadata.current;
+        let total = data.metadata.total;
+        if (typeof(current) !== "undefined" && typeof(total) !== "undefined") {
+            result_div.html('<progress value="' + current + '" max="' + total +
+                            '" title="' + current + '/' + total + '">' + current +
+                            '/' + total + '</progress>');
+        }
     }
     if (data.redirect) {
         var context = result_div.parent();
@@ -99,10 +141,10 @@ function poll_progress(url, context) {
                 exercise_error(status, type, error_div, $(this));
             }
         });
-    }, 500);
+    }, 100);
 }
 
-// TODO: WebSockets – maybe use Tornado as the backend?
+// TODO: WebSockets – migrate to Django Channels
 
 // http://stackoverflow.com/questions/7335780/how-to-post-a-django-form-with-ajax-jquery
 // http://stackoverflow.com/questions/9622901/how-to-upload-a-file-using-jquery-ajax-and-formdata

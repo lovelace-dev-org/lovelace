@@ -790,17 +790,26 @@ section.content {
             background: #59cd59;
             border-radius: 7px;
             padding: 2px 4px;
+            color: inherit;
         }
-        section.content p mark.hint {
+        section.content mark.hint-inactive {
+            background: transparent;
+            border-radius: 7px;
+            border: 2px solid transparent;
+            padding: 7px 2px;
+            margin: -7px -4px;
+        }
+        section.content mark.hint-active {
             background: inherit;
             border-radius: 7px;
-            padding: 2px 4px;
-            animation: hint_background 2s linear infinite;
+            border: 2px dashed #f88;
+            padding: 7px 2px;
+            margin: -7px -4px;
+            animation: hint_background 1s linear 5 alternate;
         }
         @keyframes hint_background {
-            0% {background: #f33;}
-            50% {background: #fe3;}
-            100% {background: #f33;}
+            0% {background: #f88;}
+            100% {background: transparent;}
         }
 
         section.content kbd { /* .key */
@@ -973,21 +982,55 @@ section.content {
             margin-bottom: 1rem;
         }
 
-        section.content div.error {
+        section.content div.results-box {
             position: relative;
-            margin-top: -2px;
+            margin-top: 4px;
             padding: 9px;
             border: 2px solid #d0d0d0;
+            background: #daeeda;            
+        }
+        section.content div.results-box > span.results-header {
+            display: block;
+            font-weight: bold;
+        }
+        section.content div.results-box.hints,
+        section.content div.results-box.msgs {
+            padding-bottom: 0;
+        }
+        section.content div.results-box.hints > div.hints-list,
+        section.content div.results-box.msgs > div.msgs-list {
+            position: relative;
+            margin: 0;
+            padding: 0;
+        }
+        section.content div.results-box.hints > div.hints-list > ul,
+        section.content div.results-box.msgs > div.msgs-list > ul {
+            list-style-type: none;
+            position: relative;
+            margin: 0;
+            padding: 0;
+            left: -11px;
+            width: 1000px;
+        }
+        section.content div.results-box.hints > div.hints-list > ul > li,
+        section.content div.results-box.msgs > div.msgs-list > ul > li {
+            margin: 0;
+            padding: 5px 11px;
+            border-top: 2px solid #ccc;
+        }
+        section.content div.results-box.hints > div.hints-list > ul > li > *:last-child,
+        section.content div.results-box.msgs > div.msgs-list > ul > li > *:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        section.content div.error {
             color: #f00;
             background: #eedada;
         }
 
         section.content div.result {
-            position: relative;
-            margin-top: -2px;
-            padding: 9px;
-            border: 2px solid #d0d0d0;
-            background: #daeeda;
+
         }
 
         section.content pre {
