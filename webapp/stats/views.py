@@ -26,14 +26,14 @@ from courses.models import *
 NO_USERS_MSG = "No users to calculate!"
 
 def user_evaluation(user, exercise):
-    return exercise.get_type_object().get_user_evaluation(user)
+    return exercise.get_type_object().get_user_evaluation(exercise, user)
 
 def user_has_answered(user, exercise):
     return user_evaluation(user, exercise) != "unanswered"
 
-def course_exercises_with_color(course):
+def course_exercises_with_color(course, instance):
     exercises = []
-    parent_pages = course.contents.select_related('content').order_by('ordinal_number')
+    parent_pages = instance.contents.select_related('content').order_by('ordinal_number')
     cg = color_generator(parent_pages.count())
     
     for p in parent_pages:
@@ -550,20 +550,21 @@ def color_generator(total_colors):
         #yield '#{:x}{:x}{:x}'.format(int(r), int(g), int(b))
         yield 'rgba({},{},{},0.65)'.format(int(r), int(g), int(b))
 
-def users_course(request, course):
+def users_course(request, course_slug, instance_slug):
     if not (request.user.is_authenticated() and request.user.is_active and\
             request.user.is_staff):
         return HttpResponseNotFound()
 
     users = User.objects.all().order_by('username')
-    course = Course.objects.get(slug=course)
+    course = Course.objects.get(slug=course_slug)
+    instance = CourseInstance.objects.get(slug=instance_slug, course=course)
 
-    exercises = course_exercises_with_color(course)
+    exercises = course_exercises_with_color(course, instance)
     
     # Argh...
     table_rows = [
         [user] +
-        [user_evaluation(user, e[1]) for e in exercises]
+        [(user_evaluation(user, e[1]), e[1].default_points) for e in exercises]
         for user in users
     ]
 

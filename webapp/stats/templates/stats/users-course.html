@@ -143,14 +143,14 @@
                   onMouseOut="cursor_dehighlight(this);"
                   data-col="{{ forloop.counter0 }}">
                 <span class="tc">
-                  {% if row_cell == "unanswered" %}
+                  {% if row_cell.0 == "unanswered" %}
                     <span class="light">?</span>
-                  {% elif row_cell == "incorrect" %}
+                  {% elif row_cell.0 == "incorrect" %}
                     0
-                  {% elif row_cell == "correct" %}
-                    <b>1</b>
+                  {% elif row_cell.0 == "correct" %}
+                    <b>{{ row_cell.1 }}</b>
                   {% else %}
-                    {{ row_cell }}
+                    {{ row_cell.0 }}
                   {% endif %}
                 </span>  
               </td>

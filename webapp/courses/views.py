@@ -10,7 +10,7 @@ from django.http import HttpResponse, JsonResponse, HttpResponseRedirect,\
     HttpResponseNotFound, HttpResponseForbidden, HttpResponseNotAllowed,\
     HttpResponseServerError
 from django.db.models import Q
-from django.template import Template, loader
+from django.template import Template, loader, engines
 from django.core.urlresolvers import reverse
 from django.utils import timezone
 from django.utils.text import slugify
@@ -255,6 +255,9 @@ def check_answer(request, course_slug, instance_slug, content_slug, revision):
     hints = ["".join(markupparser.MarkupParser.parse(msg, request, msg_context)).strip()
              for msg in evaluation.get('hints')]
 
+    answer_count = exercise.get_user_answers(exercise, user).count()
+    answer_count_str = get_answer_count_meta(answer_count)
+
     # TODO: Errors, hints, comments in JSON
     t = loader.get_template("courses/exercise-evaluation.html")
     print(evaluation)
@@ -262,6 +265,7 @@ def check_answer(request, course_slug, instance_slug, content_slug, revision):
         'result': t.render(evaluation),
         'hints': hints,
         'evaluation': evaluation.get("evaluation"),
+        'answer_count_str': answer_count_str,
     })
 
 def check_progress(request, course_slug, instance_slug, content_slug, revision, task_id):
@@ -286,12 +290,21 @@ def check_progress(request, course_slug, instance_slug, content_slug, revision, 
             data = {"state": task.state, "metadata": info, "redirect": progress_url}
         return JsonResponse(data)
 
+def get_answer_count_meta(answer_count):
+    # TODO: Maybe refactor
+    t = engines['django'].from_string("""{% load i18n %}{% blocktrans count counter=answer_count %}<span class="answer-count">{{ counter }}</span> answer{% plural %}<span class="answer-count">{{ counter }}</span> answers{% endblocktrans %}""")
+    return t.render({'answer_count': answer_count})
+    
+    
 def file_exercise_evaluation(request, course_slug, instance_slug, content_slug, revision, task_id, task=None):
     if task is None:
         task = AsyncResult(task_id)
     evaluation_id = task.get()
     task.forget() # TODO: IMPORTANT! Also forget all the subtask results somehow? in tasks.py?
     evaluation_obj = Evaluation.objects.get(id=evaluation_id)
+    content = ContentPage.objects.get(slug=content_slug)
+    answer_count = content.get_user_answers(content, request.user).count()
+    answer_count_str = get_answer_count_meta(answer_count)
 
     # TODO: Nicer way to get the proper address!
     import redis
@@ -330,6 +343,7 @@ def file_exercise_evaluation(request, course_slug, instance_slug, content_slug, 
         'messages': messages,
         'hints': hints,
         'triggers': triggers,
+        'answer_count_str': answer_count_str,
     }
     return JsonResponse(data)
 

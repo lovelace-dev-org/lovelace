@@ -53,6 +53,9 @@ function exercise_success(data, result_div, error_div, form_parent) {
         error_div.html(all_errors);
         error_div.css("display", "block");
     }
+    if (data.answer_count_str) {
+        form_parent.parent().find('div.task-meta > div > a').html(data.answer_count_str);
+    }
     if (data.hints && data.evaluation === false) {
         let all_hints = "<ul>\n";
         for (let hint of data.hints) {
@@ -66,7 +69,8 @@ function exercise_success(data, result_div, error_div, form_parent) {
     if (data.triggers) {
         /* TODO: For each triggered hint that's not currently on the screen:
            - display a pink clickable arrow on the upper/lower section of screen
-             that automatically scrolls the page to the triggered hint
+             that automatically scrolls the page to the triggered hint when
+             clicked on; also disappears after that
            - set the CSS class to an intermediate value with the borders; only
              start the animation when the hint becomes visible
          */

@@ -23,7 +23,7 @@
 
 {% block course-stats-link %}
   {% if not sandboxed %}
-  <a href="{% url 'stats:users_course' course_slug %}">{% trans 'Course statistics' %}</a>
+  <a href="{% url 'stats:users_course' course_slug instance_slug %}">{% trans 'Course statistics' %}</a>
   {% endif %}
 {% endblock %}
 

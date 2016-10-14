@@ -629,6 +629,7 @@ class MultipleChoiceExercise(ContentPage):
         return "correct" if correct else "incorrect"
 
     def get_user_answers(self, user, ignore_drafts=True):
+        # TODO: Take instances into account
         answers = UserMultipleChoiceExerciseAnswer.objects.filter(exercise=self, user=user)
         return answers
 
