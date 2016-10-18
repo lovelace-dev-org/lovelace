@@ -163,17 +163,23 @@
       {% endblock %}
 
       {% block termbank %}
-        {% if terms %}
+        {% if termbank_contents %}
           <div class="termbank" id="termbank">
             <button class="expand-box" onclick="expand_box(this);" title="{% trans 'Hide/Show the termbank' %}">◀</button>
             <div class="termbank-contents" id="termbank-contents">
               <div class="termbank-heading" id="termbank-heading">{% trans "Termbank" %}</div>
               <div id="termbank-list-div" class="list-div">
                 <ul>
-                  {% for term in terms %}
-                    <li class="term-list-item">
-                      <span class="term" id="{{ term.span_id }}" onmouseover="show_term_description_during_hover(this, '#{{ term.slug }}-term-div');">{{ term.name }}</span>
-                    </li>
+                  {% for title_letter, terms_by_letter in termbank_contents %}
+                    <li>
+                      <span class="term-title-letter">{{ title_letter }}</span>
+                      <ul>
+                        {% for term in terms_by_letter %}
+                          <li class="term-list-item">
+                            <span class="term" id="{{ term.span_id }}" onmouseover="show_term_description_during_hover(this, '#{{ term.slug }}-term-div');">{{ term.name }}</span>
+                          </li>
+                        {% endfor %}
+                      </ul>
                   {% endfor %}
                 </ul>
               </div>
@@ -213,8 +219,8 @@
           <div class="term-description" id="term-div-not-found">
             ?
           </div>
-          {% if terms %}
-            {% for term in terms %}
+          {% if term_div_data %}
+            {% for term in term_div_data %}
               <div class="term-description" id="{{ term.slug }}-term-div">
                 <div class="term-desc-contents">
                   <div class="term-desc-scrollable">

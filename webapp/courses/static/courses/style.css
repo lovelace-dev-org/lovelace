@@ -391,12 +391,20 @@ div.termbank {
         border: 0;
         margin: 0;
     }
+
+    div.termbank-contents span.term-title-letter {
+        font-weight: bold;
+    }
     
     div.termbank-contents ul > li {
         padding: 2px 1px;
         list-style-type: none;
         position: relative;
         border-radius: 2px;
+    }
+    
+    div.termbank-contents ul > li > ul {
+        padding: 0px 7px;
     }
     
 /* Table of Contents */
