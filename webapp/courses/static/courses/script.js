@@ -181,20 +181,41 @@ function show_term_description(span_slct, div_slct) {
         desc_div = $("#term-div-not-found");
     }
 
-    let pos = span.offset();
-    let height = span.height();
-    let arrow_height = 9;
+    let arrow_height = 10;
+    let arrow_width = 8;
+    let offset = span.offset();
+    let span_height = span.height();
+    let desc_div_height = desc_div.height();
+    let left_offset = offset.left;
+    let top_offset = offset.top + span_height + arrow_height
 
     var desc_content_div = desc_div.children("div.term-desc-contents");
     var desc_scrollable_div = desc_div.find("div.term-desc-scrollable");
     
-    if (desc_div.height() + "px" === desc_content_div.css('max-height')) {
+    if (desc_div_height + "px" === desc_content_div.css('max-height')) {
         desc_scrollable_div.slimScroll({
             height: desc_content_div.css('max-height')
         });
     }
     desc_div.css({"display" : "block"}); //This works in Jquery3 unlike .show()
-    desc_div.offset({left: pos.left, top: pos.top + height + arrow_height});
+
+    let section = $("section.content");
+
+    desc_div.removeClass("term-description-left-aligned");
+    desc_div.removeClass("term-description-top-aligned");
+    if (section.find(span).length > 0) {
+        if (left_offset - section.offset().left > section.width() / 2) {
+            left_offset = left_offset - desc_div.width() - arrow_width + span.width();
+            desc_div.addClass("term-description-left-aligned");
+        }
+        let section_visible_height =  window.innerHeight - $("header.top-header").height() - $("nav.breadcrumb").height();
+        console.log(section_visible_height);
+        if (offset.top - $(window).scrollTop() > section_visible_height / 2) {
+            top_offset = offset.top - span_height - desc_div_height;
+            desc_div.addClass("term-description-top-aligned");
+        }
+    }
+    desc_div.offset({left: left_offset, top: top_offset});
 }
 
 function show_term_description_during_hover(span_elem, div_id) {
@@ -230,7 +251,6 @@ function filter_termbank_contents(search_str) {
         }
     });
     $("li.terms-by-letter").each(function() {
-        console.log($(this).children("ul").children(":visible"));
         if($(this).children("ul").children(":visible").length > 0 || search_str === "") {
             $(this).css({"display" : "block"});
         } else {

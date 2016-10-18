@@ -11,7 +11,7 @@ li.term-list-item {
     margin-bottom: 4px;
 }
 
-div.term-description {
+div.term-description, div.term-description-left-aligned {
     display: none;
     position: absolute;
     z-index: 3;
@@ -43,10 +43,10 @@ div.term-description:before {
     height: 0;
     position: absolute;
     width: 0;
-    top: -18px;
-    left: 0px;
-    border: 9px solid transparent;
-    border-bottom-color: #ccc;
+    top: -23px;
+    left: -1px;
+    border: 11px solid transparent;
+    border-bottom-color: #999;
 }
 
 div.term-description:after {
@@ -54,15 +54,42 @@ div.term-description:after {
     height: 0;
     position: absolute;
     width: 0;
-    top: -16px;
-    left: 1px;
-    border: 8px solid transparent;
+    top: -19px;
+    left: 0px;
+    border: 10px solid transparent;
     border-bottom-color: #eee;
 }
 
+/* The arrow for left aligned description */
+div.term-description-left-aligned:before {
+    left: auto;
+    right: -1px;
+}
+
+div.term-description-left-aligned:after {
+    left: auto;
+    right: 0px;
+}
+
+/* The arrow for top aligned description */
+div.term-description-top-aligned:before {
+    top: auto;
+    bottom: -23px;
+    border-top-color: #999;
+    border-bottom-color: transparent;
+}
+
+div.term-description-top-aligned:after {
+    top: auto;
+    bottom: -19px;
+    border-top-color: #eee;
+    border-bottom-color: transparent;
+}
+
+
 div.term-desc-contents {
-    max-height: 600px;
-    max-width: 600px;
+    max-height: 400px;
+    max-width: 500px;
     overflow-y: hidden;
 }
 
