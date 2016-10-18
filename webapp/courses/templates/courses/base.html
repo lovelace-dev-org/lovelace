@@ -40,6 +40,7 @@
           katex.render($(this).text(), this);
         });
 
+        filter_termbank_contents($("#termbank-search").val());
         build_toc("{% static 'courses/' %}");
 
         update_progress_bar();
@@ -168,10 +169,14 @@
             <button class="expand-box" onclick="expand_box(this);" title="{% trans 'Hide/Show the termbank' %}">◀</button>
             <div class="termbank-contents" id="termbank-contents">
               <div class="termbank-heading" id="termbank-heading">{% trans "Termbank" %}</div>
+              <div class="termbank-search-div">
+                <span>{% trans "Search:" %}</span>
+                <input id="termbank-search" type="search" oninput="filter_termbank_contents($(this).val());">
+              </div>
               <div id="termbank-list-div" class="list-div">
                 <ul>
                   {% for title_letter, terms_by_letter in termbank_contents %}
-                    <li>
+                    <li class="terms-by-letter">
                       <span class="term-title-letter">{{ title_letter }}</span>
                       <ul>
                         {% for term in terms_by_letter %}

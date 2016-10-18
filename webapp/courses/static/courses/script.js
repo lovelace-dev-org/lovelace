@@ -186,9 +186,11 @@ function show_term_description(span_slct, div_slct) {
     let arrow_height = 9;
 
     var desc_content_div = desc_div.children("div.term-desc-contents");
+    var desc_scrollable_div = desc_div.find("div.term-desc-scrollable");
+    
     if (desc_div.height() + "px" === desc_content_div.css('max-height')) {
-        desc_div.find("div.term-desc-scrollable").slimScroll({
-            height: "600px"
+        desc_scrollable_div.slimScroll({
+            height: desc_content_div.css('max-height')
         });
     }
     desc_div.css({"display" : "block"}); //This works in Jquery3 unlike .show()
@@ -217,4 +219,22 @@ function hide_tooltip(div_id) {
         desc_div = $("#term-div-not-found");
     }
     desc_div.hide();
+}
+
+function filter_termbank_contents(search_str) {
+    $("li.term-list-item").each(function() {
+        if ($(this).children("span").text().indexOf(search_str) > -1 || search_str === "") {
+            $(this).css({"display" : "block"});
+        } else {
+            $(this).hide();
+        }
+    });
+    $("li.terms-by-letter").each(function() {
+        console.log($(this).children("ul").children(":visible"));
+        if($(this).children("ul").children(":visible").length > 0 || search_str === "") {
+            $(this).css({"display" : "block"});
+        } else {
+            $(this).hide();
+        }
+    });
 }

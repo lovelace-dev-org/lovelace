@@ -475,7 +475,7 @@ def content(request, course_slug, instance_slug, content_slug, **kwargs):
             'span_id' : slug + '-termbank-span',
         }
         try:
-            first_char = term.name.lower()[0]
+            first_char = term.name.upper()[0]
         except IndexError:
             first_char = "#"
         else:

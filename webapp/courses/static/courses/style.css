@@ -386,6 +386,11 @@ div.termbank {
         margin-bottom: 4px;
     }
 
+    div.termbank-contents div.termbank-search-div {
+        padding-bottom: 5px;
+        border-bottom: 1px solid #222;
+    }
+    
     div.termbank-contents div.list-div {
         font-weight: normal;
         border: 0;
