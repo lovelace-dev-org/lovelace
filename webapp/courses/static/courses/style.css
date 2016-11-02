@@ -394,7 +394,7 @@ div.termbank {
     div.termbank-contents div.list-div {
         font-weight: normal;
         border: 0;
-        margin-top: 3px;
+        margin-top: 5px;
     }
 
     div.termbank-contents span.term-title-letter {
@@ -513,11 +513,14 @@ div.toc-box {
     }
 
 div.term-descriptions {
+    width: 100%;
+    z-index: 3;
     font-family: "LatoWeb", "DejaVu Sans", "Verdana", "Ubuntu", "Arial", sans-serif;
     font-size: 1.0em;
     color: #222;
     line-height: 1.5;
     word-wrap: break-word;
+    position: fixed;
 }
     
 /* MAIN CONTENT */

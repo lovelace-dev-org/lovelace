@@ -174,7 +174,7 @@
                 <input id="termbank-search" type="search" oninput="filter_termbank_contents($(this).val());">
               </div>
               <div id="termbank-list-div" class="list-div">
-                <ul>
+                <ol>
                   {% for title_letter, terms_by_letter in termbank_contents %}
                     <li class="terms-by-letter">
                       <span class="term-title-letter">{{ title_letter }}</span>
@@ -186,7 +186,7 @@
                         {% endfor %}
                       </ul>
                   {% endfor %}
-                </ul>
+                </ol>
               </div>
             </div>
           </div>

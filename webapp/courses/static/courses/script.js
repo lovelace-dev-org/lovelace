@@ -187,7 +187,7 @@ function show_term_description(span_slct, div_slct) {
     let span_height = span.height();
     let desc_div_height = desc_div.height();
     let left_offset = offset.left;
-    let top_offset = offset.top + span_height + arrow_height
+    let top_offset = offset.top + span_height + arrow_height;
 
     var desc_content_div = desc_div.children("div.term-desc-contents");
     var desc_scrollable_div = desc_div.find("div.term-desc-scrollable");
@@ -199,21 +199,16 @@ function show_term_description(span_slct, div_slct) {
     }
     desc_div.css({"display" : "block"}); //This works in Jquery3 unlike .show()
 
-    let section = $("section.content");
-
     desc_div.removeClass("term-description-left-aligned");
     desc_div.removeClass("term-description-top-aligned");
-    if (section.find(span).length > 0) {
-        if (left_offset - section.offset().left > section.width() / 2) {
-            left_offset = left_offset - desc_div.width() - arrow_width + span.width();
-            desc_div.addClass("term-description-left-aligned");
-        }
-        let section_visible_height =  window.innerHeight - $("header.top-header").height() - $("nav.breadcrumb").height();
-        console.log(section_visible_height);
-        if (offset.top - $(window).scrollTop() > section_visible_height / 2) {
-            top_offset = offset.top - span_height - desc_div_height;
-            desc_div.addClass("term-description-top-aligned");
-        }
+    if (left_offset - $(window).scrollLeft() >  window.innerWidth / 2) {
+        left_offset = left_offset - desc_div.width() - arrow_width + span.width();
+        desc_div.addClass("term-description-left-aligned");
+    }
+    let section_visible_height =  window.innerHeight - $("header.top-header").height() - $("nav.breadcrumb").height();
+    if (offset.top - $(window).scrollTop() > section_visible_height / 2) {
+        top_offset = offset.top - span_height - desc_div_height;
+        desc_div.addClass("term-description-top-aligned");
     }
     desc_div.offset({left: left_offset, top: top_offset});
 }

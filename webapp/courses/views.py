@@ -5,7 +5,6 @@ import datetime
 import json
 from cgi import escape
 from collections import namedtuple
-from collections import OrderedDict
 
 from django.http import HttpResponse, JsonResponse, HttpResponseRedirect,\
     HttpResponseNotFound, HttpResponseForbidden, HttpResponseNotAllowed,\
@@ -461,7 +460,7 @@ def content(request, course_slug, instance_slug, content_slug, **kwargs):
     term_context['tooltip'] = True
     terms = Term.objects.filter(instance__course=course).exclude(Q(description__isnull=True) | Q(description__exact='')).order_by('name')
     term_div_data = []
-    termbank_contents = OrderedDict()
+    termbank_contents = {}
     for term in terms:
         slug = slugify(term.name, allow_unicode=True)
         term_div_data.append({
@@ -539,7 +538,7 @@ def content(request, course_slug, instance_slug, content_slug, **kwargs):
         'evaluation': evaluation,
         'answer_count': answer_count,
         'sandboxed': False,
-        'termbank_contents': list(termbank_contents.items()),
+        'termbank_contents': sorted(list(termbank_contents.items())),
         'term_div_data': term_div_data,
         'revision': revision,
     }
