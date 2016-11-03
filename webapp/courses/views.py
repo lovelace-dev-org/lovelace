@@ -317,9 +317,13 @@ def file_exercise_evaluation(request, course_slug, instance_slug, content_slug, 
         'course_slug': course_slug,
         'instance_slug': instance_slug,
     }
-
-    messages = ["".join(markupparser.MarkupParser.parse(msg, request, msg_context)).strip()
-                for msg in evaluation_tree['test_tree'].get('messages')]
+    messages = [
+        (msg['title'], [
+            "".join(markupparser.MarkupParser.parse(msg_msg, request, msg_context)).strip()
+            for msg_msg in msg['msgs']
+        ])
+        for msg in evaluation_tree['test_tree'].get('messages')
+    ]
     hints = ["".join(markupparser.MarkupParser.parse(msg, request, msg_context)).strip()
              for msg in evaluation_tree['test_tree'].get('hints')]
     triggers = evaluation_tree['test_tree'].get('triggers')
@@ -335,12 +339,13 @@ def file_exercise_evaluation(request, course_slug, instance_slug, content_slug, 
     c_exercise = {
         'evaluation': evaluation_obj.correct,
     }
+    t_messages = loader.get_template('courses/exercise-evaluation-messages.html')
     data = {
         'file_tabs': t_file.render(c_file, request),
         'result': t_exercise.render(c_exercise),
         'evaluation': evaluation_obj.correct,
         'points': evaluation_obj.points,
-        'messages': messages,
+        'messages': t_messages.render({'messages': messages}),
         'hints': hints,
         'triggers': triggers,
         'answer_count_str': answer_count_str,

@@ -81,13 +81,7 @@ function exercise_success(data, result_div, error_div, form_parent) {
         }
     }
     if (data.messages) {
-        let all_msgs = "<ul>\n";
-        for (let msg of data.messages) {
-            let msg_text = "<li>" + msg + "</li>\n";
-            all_msgs += msg_text;
-        }
-        all_msgs += "\n";
-        msgs_div.find('div.msgs-list').html(all_msgs);
+        msgs_div.find('div.msgs-list').html(data.messages);
         msgs_div.css("display", "block");
     }
     if (data.comments) {
