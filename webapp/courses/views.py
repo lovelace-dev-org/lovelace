@@ -464,11 +464,32 @@ def content(request, course_slug, instance_slug, content_slug, **kwargs):
     term_context = context.copy()
     term_context['tooltip'] = True
     terms = Term.objects.filter(instance__course=course).exclude(Q(description__isnull=True) | Q(description__exact='')).order_by('name')
-    terms = [{'name' : term.name, 'slug': slugify(term.name, allow_unicode=True), 
-              'description' : "".join(markupparser.MarkupParser.parse(term.description, request, term_context)).strip(),
-              'span_id' : slugify(term.name, allow_unicode=True) + '-termbank-span'} 
-             for term in terms]
+    term_div_data = []
+    termbank_contents = {}
+    for term in terms:
+        slug = slugify(term.name, allow_unicode=True)
+        term_div_data.append({
+            'slug' : slug,
+            'description' : "".join(markupparser.MarkupParser.parse(term.description, request, term_context)).strip(),
+        })
 
+        term_data = {
+            'slug' : slug,
+            'name' : term.name, 
+            'span_id' : slug + '-termbank-span',
+        }
+        try:
+            first_char = term.name.upper()[0]
+        except IndexError:
+            first_char = "#"
+        else:
+            if not first_char.isalpha():
+                first_char = "#"
+        if first_char in termbank_contents:
+            termbank_contents[first_char].append(term_data)
+        else:
+            termbank_contents[first_char] = [term_data]
+            
     rendered_content = ""
 
     # TODO: Admin link should point to the correct version!
@@ -522,7 +543,8 @@ def content(request, course_slug, instance_slug, content_slug, **kwargs):
         'evaluation': evaluation,
         'answer_count': answer_count,
         'sandboxed': False,
-        'terms': terms,
+        'termbank_contents': sorted(list(termbank_contents.items())),
+        'term_div_data': term_div_data,
         'revision': revision,
     }
     if "frontpage" in kwargs:

@@ -386,10 +386,19 @@ div.termbank {
         margin-bottom: 4px;
     }
 
+    div.termbank-contents div.termbank-search-div {
+        padding-bottom: 5px;
+        border-bottom: 1px solid #222;
+    }
+    
     div.termbank-contents div.list-div {
         font-weight: normal;
         border: 0;
-        margin: 0;
+        margin-top: 5px;
+    }
+
+    div.termbank-contents span.term-title-letter {
+        font-weight: bold;
     }
     
     div.termbank-contents ul > li {
@@ -397,6 +406,10 @@ div.termbank {
         list-style-type: none;
         position: relative;
         border-radius: 2px;
+    }
+    
+    div.termbank-contents ul > li > ul {
+        padding: 0 7px;
     }
     
 /* Table of Contents */
@@ -500,11 +513,14 @@ div.toc-box {
     }
 
 div.term-descriptions {
+    width: 100%;
+    z-index: 3;
     font-family: "LatoWeb", "DejaVu Sans", "Verdana", "Ubuntu", "Arial", sans-serif;
     font-size: 1.0em;
     color: #222;
     line-height: 1.5;
     word-wrap: break-word;
+    position: fixed;
 }
     
 /* MAIN CONTENT */
