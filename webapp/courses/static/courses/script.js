@@ -198,7 +198,6 @@ function show_term_description(span_slct, div_slct) {
         });
     }
 
-    console.log("whut");
     desc_div.css({"display" : "block", "visibility" : "hidden"}); //This works in Jquery3 unlike .show()
     desc_div.removeClass("term-description-left-aligned");
     desc_div.removeClass("term-description-top-aligned");
