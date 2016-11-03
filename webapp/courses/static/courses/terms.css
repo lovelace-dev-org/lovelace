@@ -55,7 +55,7 @@ div.term-description:after {
     position: absolute;
     width: 0;
     top: -19px;
-    left: 0px;
+    left: 0;
     border: 10px solid transparent;
     border-bottom-color: #eee;
 }
@@ -68,7 +68,7 @@ div.term-description-left-aligned:before {
 
 div.term-description-left-aligned:after {
     left: auto;
-    right: 0px;
+    right: 0;
 }
 
 /* The arrow for top aligned description */
@@ -302,7 +302,7 @@ div.term-description form.feedback {
 }
 
 div.term-description div.question {
-    margin-bottom: 0px;
+    margin-bottom: 0;
 }
 
 div.term-description form.task {

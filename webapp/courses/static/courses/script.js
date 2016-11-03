@@ -197,8 +197,9 @@ function show_term_description(span_slct, div_slct) {
             height: desc_content_div.css('max-height')
         });
     }
-    desc_div.css({"display" : "block"}); //This works in Jquery3 unlike .show()
 
+    console.log("whut");
+    desc_div.css({"display" : "block", "visibility" : "hidden"}); //This works in Jquery3 unlike .show()
     desc_div.removeClass("term-description-left-aligned");
     desc_div.removeClass("term-description-top-aligned");
     if (left_offset - $(window).scrollLeft() >  window.innerWidth / 2) {
@@ -211,6 +212,7 @@ function show_term_description(span_slct, div_slct) {
         desc_div.addClass("term-description-top-aligned");
     }
     desc_div.offset({left: left_offset, top: top_offset});
+    desc_div.css({"visibility" : "visible"}); //This works in Jquery3 unlike .show()
 }
 
 function show_term_description_during_hover(span_elem, div_id) {

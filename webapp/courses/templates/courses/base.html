@@ -178,13 +178,13 @@
                   {% for title_letter, terms_by_letter in termbank_contents %}
                     <li class="terms-by-letter">
                       <span class="term-title-letter">{{ title_letter }}</span>
-                      <ul>
+                      <ol>
                         {% for term in terms_by_letter %}
                           <li class="term-list-item">
                             <span class="term" id="{{ term.span_id }}" onmouseover="show_term_description_during_hover(this, '#{{ term.slug }}-term-div');">{{ term.name }}</span>
                           </li>
                         {% endfor %}
-                      </ul>
+                      </ol>
                   {% endfor %}
                 </ol>
               </div>
