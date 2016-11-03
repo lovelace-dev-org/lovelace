@@ -181,18 +181,37 @@ function show_term_description(span_slct, div_slct) {
         desc_div = $("#term-div-not-found");
     }
 
-    let pos = span.offset();
-    let height = span.height();
-    let arrow_height = 9;
+    let arrow_height = 10;
+    let arrow_width = 8;
+    let offset = span.offset();
+    let span_height = span.height();
+    let desc_div_height = desc_div.height();
+    let left_offset = offset.left;
+    let top_offset = offset.top + span_height + arrow_height;
 
     var desc_content_div = desc_div.children("div.term-desc-contents");
-    if (desc_div.height() + "px" === desc_content_div.css('max-height')) {
-        desc_div.find("div.term-desc-scrollable").slimScroll({
-            height: "600px"
+    var desc_scrollable_div = desc_div.find("div.term-desc-scrollable");
+    
+    if (desc_div_height + "px" === desc_content_div.css('max-height')) {
+        desc_scrollable_div.slimScroll({
+            height: desc_content_div.css('max-height')
         });
     }
-    desc_div.css({"display" : "block"}); //This works in Jquery3 unlike .show()
-    desc_div.offset({left: pos.left, top: pos.top + height + arrow_height});
+
+    desc_div.css({"display" : "block", "visibility" : "hidden"}); //This works in Jquery3 unlike .show()
+    desc_div.removeClass("term-description-left-aligned");
+    desc_div.removeClass("term-description-top-aligned");
+    if (left_offset - $(window).scrollLeft() >  window.innerWidth / 2) {
+        left_offset = left_offset - desc_div.width() - arrow_width + span.width();
+        desc_div.addClass("term-description-left-aligned");
+    }
+    let section_visible_height =  window.innerHeight - $("header.top-header").height() - $("nav.breadcrumb").height();
+    if (offset.top - $(window).scrollTop() > section_visible_height / 2) {
+        top_offset = offset.top - span_height - desc_div_height;
+        desc_div.addClass("term-description-top-aligned");
+    }
+    desc_div.offset({left: left_offset, top: top_offset});
+    desc_div.css({"visibility" : "visible"}); //This works in Jquery3 unlike .show()
 }
 
 function show_term_description_during_hover(span_elem, div_id) {
@@ -217,4 +236,21 @@ function hide_tooltip(div_id) {
         desc_div = $("#term-div-not-found");
     }
     desc_div.hide();
+}
+
+function filter_termbank_contents(search_str) {
+    $("li.term-list-item").each(function() {
+        if ($(this).children("span").text().indexOf(search_str) > -1 || search_str === "") {
+            $(this).css({"display" : "block"});
+        } else {
+            $(this).hide();
+        }
+    });
+    $("li.terms-by-letter").each(function() {
+        if($(this).children("ul").children(":visible").length > 0 || search_str === "") {
+            $(this).css({"display" : "block"});
+        } else {
+            $(this).hide();
+        }
+    });
 }
