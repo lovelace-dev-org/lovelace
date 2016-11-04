@@ -247,7 +247,7 @@ function filter_termbank_contents(search_str) {
         }
     });
     $("li.terms-by-letter").each(function() {
-        if($(this).children("ul").children(":visible").length > 0 || search_str === "") {
+        if($(this).children("ol").children(":visible").length > 0 || search_str === "") {
             $(this).css({"display" : "block"});
         } else {
             $(this).hide();

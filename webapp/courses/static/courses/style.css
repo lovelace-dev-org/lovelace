@@ -401,14 +401,14 @@ div.termbank {
         font-weight: bold;
     }
     
-    div.termbank-contents ul > li {
+    div.termbank-contents ol > li {
         padding: 2px 1px;
         list-style-type: none;
         position: relative;
         border-radius: 2px;
     }
     
-    div.termbank-contents ul > li > ul {
+    div.termbank-contents ol > li > ol {
         padding: 0 7px;
     }
     

@@ -45,16 +45,16 @@
       <select id="instance-file-purpose-{{ instance_file.id }}" class="file-purpose-select"
               name="instance_file_purpose_[{{ instance_file.id }}]" form="{{ form }}">
         <optgroup label="Files written into the test directory for reading">
-          <option value="INPUT">Input file</option>
+          <option value="INPUT" {% if instance_file_link.file_settings.purpose == "INPUT" %}selected{% endif %}>Input file</option>
         </optgroup>
         <optgroup label="Files the program is expected to generate">
-          <option value="OUTPUT">Expected output file</option>
+          <option value="OUTPUT" {% if instance_file_link.file_settings.purpose == "OUTPUT" %}selected{% endif %}>Expected output file</option>
         </optgroup>
         <optgroup label="Executable files">
-          <option value="REFERENCE">Reference implementation</option>
-          <option value="INPUTGEN">Input generator</option>
-          <option value="WRAPPER">Wrapper for uploaded code</option>
-          <option value="TEST">Unit test</option>
+          <option value="REFERENCE" {% if instance_file_link.file_settings.purpose == "REFERENCE" %}selected{% endif %}>Reference implementation</option>
+          <option value="INPUTGEN" {% if instance_file_link.file_settings.purpose == "INPUTGEN" %}selected{% endif %}>Input generator</option>
+          <option value="WRAPPER" {% if instance_file_link.file_settings.purpose == "WRAPPER" %}selected{% endif %}>Wrapper for uploaded code</option>
+          <option value="TEST" {% if instance_file_link.file_settings.purpose == "TEST" %}selected{% endif %}>Unit test</option>
         </optgroup>
       </select>
     </label>
@@ -64,8 +64,8 @@
       <span class="file-chown-span">File user ownership:</span>
       <select id="instance-file-chown-{{ instance_file.id }}" class="file-chown-select"
               name="instance_file_chown_[{{ instance_file.id }}]" form="{{ form }}">
-        <option value="OWNED">Owned by the tested program</option>
-        <option value="NOT_OWNED">Not owned by the tested program</option>
+        <option value="OWNED" {% if instance_file_link.file_settings.chown_settings == "OWNED" %}selected{% endif %}>Owned by the tested program</option>
+        <option value="NOT_OWNED" {% if instance_file_link.file_settings.chown_settings == "NOT_OWNED" %}selected{% endif %}>Not owned by the tested program</option>
       </select>
     </label>
   </div>
@@ -74,8 +74,8 @@
       <span class="file-chgrp-span">File group ownership:</span>
       <select id="instance-file-chgrp-{{ instance_file.id }}" class="file-chgrp-select"
               name="instance_file_chgrp_[{{ instance_file.id }}]" form="{{ form }}">
-        <option value="OWNED">Owned by the tested program</option>
-        <option value="NOT_OWNED">Not owned by the tested program</option>
+        <option value="OWNED" {% if instance_file_link.file_settings.chown_settings == "OWNED" %}selected{% endif %}>Owned by the tested program</option>
+        <option value="NOT_OWNED" {% if instance_file_link.file_settings.chown_settings == "NOT_OWNED" %}selected{% endif %}>Not owned by the tested program</option>
       </select>
     </label>
   </div>
