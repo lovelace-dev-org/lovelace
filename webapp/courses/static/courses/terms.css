@@ -11,7 +11,7 @@ li.term-list-item {
     margin-bottom: 4px;
 }
 
-div.term-description, div.term-description-left-aligned {
+div.term-description {
     display: none;
     position: absolute;
     z-index: 3;
@@ -22,7 +22,7 @@ div.term-description, div.term-description-left-aligned {
     color: #222;
     font-size: 0.9rem;
     padding: 5px 5px;
-    border: 1px solid #ccc;
+    border: 0.5px solid #ccc;
     left: 0;
     top: 0;
     min-width: 22px;
@@ -37,16 +37,21 @@ div.term-description, div.term-description-left-aligned {
     border-top-left-radius: 2px;
 }
 
+div.term-description-left-aligned {
+    border-radius: 1px;
+    border-top-right-radius: 2px;
+}
+
 /* The arrow */
 div.term-description:before {
     content: ' ';
     height: 0;
     position: absolute;
     width: 0;
-    top: -23px;
-    left: -1px;
-    border: 11px solid transparent;
-    border-bottom-color: #999;
+    top: -18px;
+    left: 0px;
+    border: 9px solid transparent;
+    border-bottom-color: #ccc;
 }
 
 div.term-description:after {
@@ -54,16 +59,16 @@ div.term-description:after {
     height: 0;
     position: absolute;
     width: 0;
-    top: -19px;
-    left: 0;
-    border: 10px solid transparent;
+    top: -17.5px;
+    left: 0px;
+    border: 9px solid transparent;
     border-bottom-color: #eee;
 }
 
 /* The arrow for left aligned description */
 div.term-description-left-aligned:before {
     left: auto;
-    right: -1px;
+    right: 0px;
 }
 
 div.term-description-left-aligned:after {
@@ -72,16 +77,24 @@ div.term-description-left-aligned:after {
 }
 
 /* The arrow for top aligned description */
+div.term-description-top-aligned {
+    border-radius: 1px;
+    border-bottom-left-radius: 2px;
+}
+div.term-description-top-aligned.term-description-left-aligned {
+    border-radius: 1px;
+    border-bottom-right-radius: 2px;
+}
 div.term-description-top-aligned:before {
     top: auto;
-    bottom: -23px;
-    border-top-color: #999;
+    bottom: -18px;
+    border-top-color: #ccc;
     border-bottom-color: transparent;
 }
 
 div.term-description-top-aligned:after {
     top: auto;
-    bottom: -19px;
+    bottom: -17px;
     border-top-color: #eee;
     border-bottom-color: transparent;
 }

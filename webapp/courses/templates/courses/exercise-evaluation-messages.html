@@ -1,0 +1,9 @@
+{% load i18n %}
+{% for message in messages %}
+  <ul>
+    <li class="evaluation-msg-title">{{ message.0 }}</li>
+    {% for msg_detail in message.1 %}
+      <li>{{ msg_detail|safe }}</li>
+    {% endfor %}
+  </ul>
+{% endfor %}

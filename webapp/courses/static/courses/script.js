@@ -181,7 +181,7 @@ function show_term_description(span_slct, div_slct) {
         desc_div = $("#term-div-not-found");
     }
 
-    let arrow_height = 10;
+    let arrow_height = 9;
     let arrow_width = 8;
     let offset = span.offset();
     let span_height = span.height();

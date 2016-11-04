@@ -272,6 +272,7 @@ def generate_results(results, exercise_id):
                         tester = json_results.get('tester', "")
                         for test in json_results.get('tests', []):
                             test_title = test.get('title')
+                            test_msg = {'title': test_title, 'msgs': []}
                             for test_run in test.get('runs', []):
                                 for test_output in test_run.get('output', []):
                                     output_triggers = test_output.get('triggers', [])
@@ -281,11 +282,13 @@ def generate_results(results, exercise_id):
 
                                     test_tree['triggers'].extend(output_triggers)
                                     test_tree['hints'].extend(output_hints)
-                                    test_tree['messages'].append(output_msg)
+                                    test_msg['msgs'].append(output_msg)
+                                    
                                     if output_flag == JSON_INCORRECT:
                                         cmd_correct = False
                                     if output_flag == JSON_ERROR:
                                         cmd_correct = False
+                            test_tree['messages'].append(test_msg)
 
                 current_test["correct"] = cmd_correct if current_test["correct"] else False
                 if cmd_correct == False: correct = False
