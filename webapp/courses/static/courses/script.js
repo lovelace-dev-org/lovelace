@@ -181,7 +181,7 @@ function show_term_description(span_slct, div_slct) {
         desc_div = $("#term-div-not-found");
     }
 
-    let arrow_height = 10;
+    let arrow_height = 9;
     let arrow_width = 8;
     let offset = span.offset();
     let span_height = span.height();
@@ -247,7 +247,7 @@ function filter_termbank_contents(search_str) {
         }
     });
     $("li.terms-by-letter").each(function() {
-        if($(this).children("ul").children(":visible").length > 0 || search_str === "") {
+        if($(this).children("ol").children(":visible").length > 0 || search_str === "") {
             $(this).css({"display" : "block"});
         } else {
             $(this).hide();
