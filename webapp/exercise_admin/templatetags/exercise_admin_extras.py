@@ -280,7 +280,7 @@ def edit_instance_file_link(instance_file, instance_file_link, jstemplate=False)
     
     class FileSettings:
         def __init__(self):
-            self.purpose = "INPUT"
+            self.purpose = "TEST"
             self.chown_settings = "OWNED"
             self.chgrp_settings = "OWNED"
             self.chmod_settings = "rw-rw-rw-"
