@@ -184,7 +184,7 @@ def include_file_popup(include_file, create=False, jstemplate=False):
     lang_list = get_lang_list()
 
     class TemplateFileSettings:
-        purpose = "INPUT"
+        purpose = "TEST"
         chown_settings = "OWNED"
         chgrp_settings = "OWNED"
         chmod_settings = "rw-rw-rw-"
@@ -280,6 +280,9 @@ def edit_instance_file_link(instance_file, instance_file_link, jstemplate=False)
     
     class FileSettings:
         def __init__(self):
+            self.purpose = "TEST"
+            self.chown_settings = "OWNED"
+            self.chgrp_settings = "OWNED"
             self.chmod_settings = "rw-rw-rw-"
             for lang_code, _ in lang_list:
                 setattr(self, 'name_{}'.format(lang_code), "")

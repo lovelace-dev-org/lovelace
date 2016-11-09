@@ -304,7 +304,7 @@ function highlight_parent_li(input_elem) {
 
 function update_create_feedback_button_state(default_lang) {
     var button = $("#create-feedback-button");
-    var question_ok = $("#feedback-question-create-" + default_lang).val() != "";
+    var question_ok = $("#feedback-question-create-" + default_lang).val() !== "";
 
     var choices_ok = true;
     var choice1_div = $("#feedback-choices-div-create:visible").find("div.feedback-choice-div:first");
@@ -344,7 +344,7 @@ function add_feedback_choice(question_id, choice_answers) {
     choice_div.html(function(index, html) {
         html = html.replace(new RegExp(sample_id, "g"), fb_choice_enum).replace(/SAMPLE_QUESTION_ID/g, question_id)
             .replace(/SAMPLE_CHOICE_N/g, choice_n);
-        if (typeof choice_answers != "undefined") {
+        if (typeof choice_answers !== "undefined") {
             $.each(choice_answers, function(key, val) {
                 html = html.replace(new RegExp("SAMPLE_ANSWER_" + key, "g"), val);
             });
@@ -483,8 +483,8 @@ function create_new_feedback_question_entry(default_lang) {
         choice_div.find("input.feedback-choice").each(function() {
             var lang = $(this).attr("data-language-code");
             var answer = $(this).val();
-            if (typeof choice_check[lang] != "undefined") {
-                if (answer != "" && choice_check[lang].indexOf(answer) > -1) {
+            if (typeof choice_check[lang] !== "undefined") {
+                if (answer !== "" && choice_check[lang].indexOf(answer) > -1) {
                     var choice_error_div = choice_div.find("div.admin-error");
                     choice_error_div.text("Duplicate choice!");
                     choice_error_div.css({"display" : "block"});
@@ -503,7 +503,7 @@ function create_new_feedback_question_entry(default_lang) {
     $("#add-feedback-div label.feedback-question-label").each(function() {
         var lang = $(this).parent().attr("data-language-code");
         var question = $(this).text();
-        if (question != "" && question === questions[lang]) {
+        if (question !== "" && question === questions[lang]) {
             already_exists = true;
             return false;
         }
@@ -653,7 +653,7 @@ function edit_feedback_form_success(data, text_status, jqxhr_obj, default_lang) 
         var sep = "<br>";
         $.each(data.error, function(err_source, err_msg) {
             var error_div = $("#feedback-error");
-            if (err_source != "__all__") {
+            if (err_source !== "__all__") {
                 var question_id = err_source.match(ID_PATTERN)[1];
                 if (err_source.startsWith("feedback_question")) {
                     var error_div = $("#feedback-question-error-" + question_id);
@@ -780,6 +780,29 @@ function update_included_file_ok_button_state(file_id, default_lang) {
     }
 }
 
+function update_inc_file_popup_on_def_name_change(default_name_input, file_id, default_lang) {
+    let filename = default_name_input.val();
+    let lang_code = default_name_input.attr("data-language-code");
+    
+    let name_input = $("#included-file-name-" + file_id + "-" + lang_code);
+    if (name_input.val() === "") {
+        name_input.val(filename);
+    }
+    update_included_file_ok_button_state(file_id, default_lang);
+}
+
+function update_inc_file_popup_on_file_change(file_input, file_id, default_lang) {
+    let filename = file_input.val();
+    let lang_code = file_input.attr("data-language-code");
+
+    let default_name_input = $("#included-file-default-name-" + file_id + "-" + lang_code);
+    if (default_name_input.val() === "") {
+        default_name_input.val(filename);
+    }
+
+    update_inc_file_popup_on_def_name_change(default_name_input, file_id, default_lang);
+}
+
 function show_edit_included_file_popup(file_id, default_lang) {
     var popup = $("#edit-included-file-" + file_id);
     update_included_file_ok_button_state(file_id, default_lang);
@@ -791,7 +814,7 @@ function check_chmod_input_validity(chmod_id, chmod_error_id) {
     var chmod = $(chmod_id).val();
     var found = chmod.match(/^((r|-)(w|-)(x|-)){3}$/);
 
-    if (found === null || found[0] != chmod) {
+    if (found === null || found[0] !== chmod) {
         var chmod_error_div = $(chmod_error_id);
         chmod_error_div.text("File access mode was of incorrect format! Give 9 character, each either r, w, x or -!");
         chmod_error_div.css({"display": "block"});
