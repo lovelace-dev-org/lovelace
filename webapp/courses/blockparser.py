@@ -98,10 +98,10 @@ def parse_term_tag(parsed_string, tag, term_name, term_text, context):
         return parsed_string
     
     div_id = "#{}-term-div".format(slugify(term_name, allow_unicode=True))
-    on_mouse_over = "show_term_description_during_hover(this, '{}');".format(div_id)
+    on_mouse_over = "show_term_description_during_hover(this, event, '{}');".format(div_id)
 
     parsed_string += tag.htmlbegin({"class":"term",
-                                    "onmouseover": on_mouse_over})
+                                    "onmouseenter": on_mouse_over})
     parsed_string += term_text
     parsed_string += tag.htmlend()
     return parsed_string

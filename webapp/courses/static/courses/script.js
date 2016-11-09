@@ -182,7 +182,7 @@ function show_term_description(span_slct, div_slct) {
     }
 
     let arrow_height = 9;
-    let arrow_width = 8;
+    let arrow_width = 10;
     let offset = span.offset();
     let span_height = span.height();
     let desc_div_height = desc_div.height();
@@ -198,11 +198,15 @@ function show_term_description(span_slct, div_slct) {
         });
     }
 
-    desc_div.css({"display" : "block", "visibility" : "hidden"}); //This works in Jquery3 unlike .show()
+    desc_div.css({"display" : "block", "visibility" : "hidden"});
     desc_div.removeClass("term-description-left-aligned");
     desc_div.removeClass("term-description-top-aligned");
     if (left_offset - $(window).scrollLeft() >  window.innerWidth / 2) {
         left_offset = left_offset - desc_div.width() - arrow_width + span.width();
+        left_offset_MAX = window.innerWidth - desc_div.width() - arrow_width; // TODO: Align prettily
+        if (left_offset + desc_div.width() + arrow_width >= window.innerWidth) {
+            left_offset = left_offset_MAX;
+        }
         desc_div.addClass("term-description-left-aligned");
     }
     let section_visible_height =  window.innerHeight - $("header.top-header").height() - $("nav.breadcrumb").height();
@@ -211,22 +215,43 @@ function show_term_description(span_slct, div_slct) {
         desc_div.addClass("term-description-top-aligned");
     }
     desc_div.offset({left: left_offset, top: top_offset});
-    desc_div.css({"visibility" : "visible"}); //This works in Jquery3 unlike .show()
+    desc_div.css({"visibility" : "visible"});
 }
 
-function show_term_description_during_hover(span_elem, div_id) {
+function show_term_description_during_hover(span_elem, event, div_id) {
     var span = $(span_elem);
-    
+    event.stopPropagation();
+    span.attr({'onmouseenter': ''});
+
+    var span_hovered = true;
+    var div_hovered = false;
     show_term_description(span_elem, div_id);
-    var elems_hovered = true;
-    span.add(div_id).hover(function() {
-        elems_hovered = true;
-        show_term_description(span_elem, div_id);
-    }, function() {
-        elems_hovered = false;
-        if (elems_hovered == 0) {
+
+    var span_and_div = span.add(div_id);
+    var hide_fn = function() {
+        if (span_hovered === false && div_hovered === false) {
+            //span_and_div.off('mouseenter mouseleave');
             hide_tooltip(div_id);
+            span.attr({'onmouseenter': 'show_term_description_during_hover(this, event, "' + div_id + '");'});
         }
+    };
+
+    $(div_id).hover(function(event) {
+        event.stopPropagation();
+        div_hovered = true;
+        show_term_description(span_elem, div_id);
+    }, function(event) {
+        div_hovered = false;
+        hide_fn();
+    });
+
+    span.hover(function(event) {
+        event.stopPropagation();
+        span_hovered = true;
+        show_term_description(span_elem, div_id);
+    }, function(event) {
+        span_hovered = false;
+        hide_fn();
     });
 }
 
