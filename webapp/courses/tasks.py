@@ -227,40 +227,6 @@ def generate_results(results, exercise_id):
 
                 current_cmd["input_text"] = current_cmd["input_text"]
 
-                # Handle stdout
-
-                student_stdout = student_c["stdout"]
-                reference_stdout = reference_c["stdout"]
-
-                if student_c["significant_stdout"] and student_stdout != reference_stdout:
-                    cmd_correct = False
-                
-                if student_stdout or reference_stdout:
-                    stdout_diff = difflib.HtmlDiff().make_table(
-                        fromlines=student_stdout.splitlines(), tolines=reference_stdout.splitlines(),
-                        fromdesc="Your program's output", todesc="Expected output"
-                    )
-                else:
-                    stdout_diff = ""
-                current_cmd["stdout_diff"] = stdout_diff
-
-                # Handle stderr
-
-                student_stderr = student_c["stderr"]
-                reference_stderr = reference_c["stderr"]
-
-                if student_c["significant_stderr"] and student_stderr != reference_stderr:
-                    cmd_correct = False
-
-                if student_stderr or reference_stderr:
-                    stderr_diff = difflib.HtmlDiff().make_table(
-                        fromlines=student_stderr.splitlines(), tolines=reference_stderr.splitlines(),
-                        fromdesc="Your program's errors", todesc="Expected errors"
-                    )
-                else:
-                    stderr_diff = ""
-                current_cmd["stderr_diff"] = stderr_diff
-
                 # Handle JSON outputting testers
 
                 if student_c['json_output']:
@@ -290,10 +256,46 @@ def generate_results(results, exercise_id):
                                         cmd_correct = False
                             test_tree['messages'].append(test_msg)
 
+                    if student_c['stderr']:
+                        test_tree['errors'].append(student_c['stderr'])
+                else:
+                    # Handle stdout
+
+                    student_stdout = student_c["stdout"]
+                    reference_stdout = reference_c["stdout"]
+
+                    if student_c["significant_stdout"] and student_stdout != reference_stdout:
+                        cmd_correct = False
+
+                    if student_stdout or reference_stdout:
+                        stdout_diff = difflib.HtmlDiff().make_table(
+                            fromlines=student_stdout.splitlines(), tolines=reference_stdout.splitlines(),
+                            fromdesc="Your program's output", todesc="Expected output"
+                        )
+                    else:
+                        stdout_diff = ""
+                    current_cmd["stdout_diff"] = stdout_diff
+
+                    # Handle stderr
+
+                    student_stderr = student_c["stderr"]
+                    reference_stderr = reference_c["stderr"]
+
+                    if student_c["significant_stderr"] and student_stderr != reference_stderr:
+                        cmd_correct = False
+
+                    if student_stderr or reference_stderr:
+                        stderr_diff = difflib.HtmlDiff().make_table(
+                            fromlines=student_stderr.splitlines(), tolines=reference_stderr.splitlines(),
+                            fromdesc="Your program's errors", todesc="Expected errors"
+                        )
+                    else:
+                        stderr_diff = ""
+                    current_cmd["stderr_diff"] = stderr_diff
+
                 current_test["correct"] = cmd_correct if current_test["correct"] else False
                 if cmd_correct == False: correct = False
-
-                
+               
 
     evaluation.update({
         "correct": correct,
