@@ -57,7 +57,7 @@ tags = {
     "anchor": Tag("a", "[[", "]]", re.compile(r"\[\[(?P<address>.+?)([|](?P<link_text>.+?))?\]\]")),
     "kbd":    Tag("kbd", "`", "`", re.compile(r"`(?P<kbd>.+?)`")),
     "hint":   Tag("mark", "[!hint=hint_id!]", "[!hint!]", re.compile(r"\[\!hint\=(?P<hint_id>\w+)\!\](?P<hint_text>.+?)\[\!hint\!\]")),
-    "term":   Tag("span", '[!term=term_name!]', '[!term!]', re.compile(r"\[\!term\=(?P<term_name>[^!]+)\!\](?P<term_text>.+?)\[\!term\!\]")),
+    "term":   Tag("div", '[!term=term_name!]', '[!term!]', re.compile(r"\[\!term\=(?P<term_name>[^!]+)\!\](?P<term_text>.+?)\[\!term\!\]")),
 }
 
 def parse_pre_tag(parsed_string, tag, hilite, match):
@@ -98,11 +98,13 @@ def parse_term_tag(parsed_string, tag, term_name, term_text, context):
         return parsed_string
     
     div_id = "#{}-term-div".format(slugify(term_name, allow_unicode=True))
-    on_mouse_over = "show_term_description_during_hover(this, event, '{}');".format(div_id)
+    on_mouse_enter = "show_term_description_during_hover(this, event, '{}');".format(div_id)
+    on_mouse_leave = "hide_tooltip('{}');".format(div_id)
 
-    parsed_string += tag.htmlbegin({"class":"term",
-                                    "onmouseenter": on_mouse_over})
-    parsed_string += term_text
+    parsed_string += tag.htmlbegin({"class":"term-container",
+                                    "onmouseenter": on_mouse_enter,
+                                    "onmouseleave": on_mouse_leave,})
+    parsed_string += "<span class=\"term\">{}</span>".format(term_text)
     parsed_string += tag.htmlend()
     return parsed_string
 

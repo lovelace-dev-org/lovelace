@@ -1185,6 +1185,12 @@ section.content {
         span.cmd-runtime {
             
         }
+        div.term-container {
+            position: relative;
+            margin: 0;
+            padding: 0;
+            display: inline;
+        }
         span.term {
             cursor: help;
             border-bottom: 2px dashed #000;

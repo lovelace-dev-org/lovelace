@@ -181,7 +181,11 @@
                       <ol>
                         {% for term in terms_by_letter %}
                           <li class="term-list-item">
-                            <span class="term" id="{{ term.span_id }}" onmouseenter="show_term_description_during_hover(this, event, '#{{ term.slug }}-term-div');">{{ term.name }}</span>
+                            <div class="term-container" id="{{ term.span_id }}"
+                                 onmouseenter="show_term_description_during_hover(this, event, '#{{ term.slug }}-term-div');"
+                                 onmouseleave="hide_tooltip('#{{ term.slug }}-term-div');">
+                              <span class="term">{{ term.name }}</span>
+                            </div>
                           </li>
                         {% endfor %}
                       </ol>

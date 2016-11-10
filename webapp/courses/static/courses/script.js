@@ -218,41 +218,11 @@ function show_term_description(span_slct, div_slct) {
     desc_div.css({"visibility" : "visible"});
 }
 
-function show_term_description_during_hover(span_elem, event, div_id) {
-    var span = $(span_elem);
-    event.stopPropagation();
-    span.attr({'onmouseenter': ''});
-
-    var span_hovered = true;
-    var div_hovered = false;
-    show_term_description(span_elem, div_id);
-
-    var span_and_div = span.add(div_id);
-    var hide_fn = function() {
-        if (span_hovered === false && div_hovered === false) {
-            //span_and_div.off('mouseenter mouseleave');
-            hide_tooltip(div_id);
-            span.attr({'onmouseenter': 'show_term_description_during_hover(this, event, "' + div_id + '");'});
-        }
-    };
-
-    $(div_id).hover(function(event) {
-        event.stopPropagation();
-        div_hovered = true;
-        show_term_description(span_elem, div_id);
-    }, function(event) {
-        div_hovered = false;
-        hide_fn();
-    });
-
-    span.hover(function(event) {
-        event.stopPropagation();
-        span_hovered = true;
-        show_term_description(span_elem, div_id);
-    }, function(event) {
-        span_hovered = false;
-        hide_fn();
-    });
+function show_term_description_during_hover(container_elem, event, div_id) {
+    var container = $(container_elem);
+    var description_dom_element = $(div_id).detach();
+    container.append(description_dom_element);
+    show_term_description(container_elem, div_id);
 }
 
 function hide_tooltip(div_id) {
