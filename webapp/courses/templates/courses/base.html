@@ -231,6 +231,7 @@
           {% if term_div_data %}
             {% for term in term_div_data %}
               <div class="term-description" id="{{ term.slug }}-term-div">
+                <div class="term-grace-area"></div>
                 <div class="term-desc-contents">
                   <div class="term-desc-scrollable">
                     {{ term.description|safe }}

@@ -42,6 +42,18 @@ div.term-description-left-aligned {
     border-top-right-radius: 2px;
 }
 
+/* The grace area to allow smooth mouseenter */
+div.term-grace-area {
+    position: absolute;
+    z-index: -1;
+    top: 0;
+    left: 0;
+    width: calc(100% + 20px);
+    height: calc(100% + 20px);
+    background: transparent;
+    margin: -10px;
+}
+
 /* The arrow */
 div.term-description:before {
     content: ' ';
