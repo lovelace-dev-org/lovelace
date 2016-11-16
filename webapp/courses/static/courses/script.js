@@ -185,6 +185,9 @@ function show_term_description(span_slct, div_slct) {
     let arrow_width = 10;
     let offset = span.offset();
     let span_height = span.height();
+
+    desc_div.css({"display" : "block", "visibility" : "hidden"});
+    
     let desc_div_height = desc_div.height();
     let left_offset = offset.left;
     let top_offset = offset.top + span_height + arrow_height;
@@ -198,7 +201,6 @@ function show_term_description(span_slct, div_slct) {
         });
     }
 
-    desc_div.css({"display" : "block", "visibility" : "hidden"});
     desc_div.removeClass("term-description-left-aligned");
     desc_div.removeClass("term-description-top-aligned");
     if (left_offset - $(window).scrollLeft() >  window.innerWidth / 2) {
