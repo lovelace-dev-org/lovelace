@@ -253,7 +253,7 @@ def check_answer(request, course_slug, instance_slug, content_slug, revision):
         'instance_slug': instance_slug,
     }
     hints = ["".join(markupparser.MarkupParser.parse(msg, request, msg_context)).strip()
-             for msg in evaluation.get('hints')]
+             for msg in evaluation.get('hints', [])]
 
     answer_count = exercise.get_user_answers(exercise, user).count()
     answer_count_str = get_answer_count_meta(answer_count)
@@ -322,11 +322,11 @@ def file_exercise_evaluation(request, course_slug, instance_slug, content_slug, 
             "".join(markupparser.MarkupParser.parse(msg_msg, request, msg_context)).strip()
             for msg_msg in msg['msgs']
         ])
-        for msg in evaluation_tree['test_tree'].get('messages')
+        for msg in evaluation_tree['test_tree'].get('messages', [])
     ]
     hints = ["".join(markupparser.MarkupParser.parse(msg, request, msg_context)).strip()
-             for msg in evaluation_tree['test_tree'].get('hints')]
-    triggers = evaluation_tree['test_tree'].get('triggers')
+             for msg in evaluation_tree['test_tree'].get('hints', [])]
+    triggers = evaluation_tree['test_tree'].get('triggers', [])
 
     debug_json = json.dumps(evaluation_tree, indent=4)
 
