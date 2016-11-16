@@ -733,7 +733,7 @@ section.content {
         background-image: -moz-linear-gradient(left, #999, #666, #999);
     }
 
-    section.content p {
+    section.content div.paragraph {
         margin-bottom: 1.5em;
     }
     
@@ -776,7 +776,7 @@ section.content {
         padding: 2px 4px 2px 4px;
     }
 
-        section.content p code, section.content table * code,
+        section.content div.paragraph > code, section.content table * code,
         section.content ul * code, section.content ol * code {
             font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
             background: #e2e2e2;
@@ -802,7 +802,7 @@ section.content {
             border-radius: 3px;
         }
 
-        section.content p mark {
+        section.content div.paragraph mark {
             background: #59cd59;
             border-radius: 7px;
             padding: 2px 4px;

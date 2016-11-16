@@ -928,7 +928,7 @@ markups.append(ListMarkup)
 class ParagraphMarkup(Markup):
     name = "Paragraph"
     shortname = "paragraph"
-    description = "A paragraph of text, p tag in HTML."
+    description = "A paragraph of text, equivalent of a p tag in HTML."
     regexp = r""
     markup_class = "text"
     example = "Text without any of the block level markups."
@@ -937,7 +937,7 @@ class ParagraphMarkup(Markup):
 
     @classmethod
     def block(cls, block, settings, state):
-        yield '<p>'
+        yield '<div class="paragraph">'
         paragraph = ""
         paragraph_lines = []
         for line in block:
@@ -945,7 +945,7 @@ class ParagraphMarkup(Markup):
         paragraph = "<br>\n".join(paragraph_lines)
         paragraph = blockparser.parseblock(paragraph, state["context"])
         yield paragraph
-        yield '</p>\n'
+        yield '</div>\n'
 
     @classmethod
     def settings(cls, matchobj, state):
