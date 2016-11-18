@@ -579,8 +579,13 @@ section.content {
         margin-bottom: 1em;
     }
 
+    div.course-contents ul {
+        padding-bottom: 0 !important;
+    }
+
     div.course-contents li {
         position: relative;
+        margin-bottom: 4px !important;
         border: 0;
         border-top: 1px solid transparent;
         border-image: linear-gradient(to right, rgba(0, 0, 0, 0.02), rgba(0, 0, 0, 0.04), rgba(31, 31, 31, 0.2)) 1 stretch;
@@ -742,17 +747,18 @@ section.content {
         margin-right: 15px;
     }
 
-    section.content p+ul, section.content p+ol {
+    section.content div.paragraph+ul, section.content div.paragraph+ol {
         position: relative;
-        top: -1.5em;
+        top: -.75em;
     }
     section.content ul, section.content ol {
         margin-left: 1.5em;
+        margin-bottom: -.75em;
     }
 
     section.content ul > li, section.content ol > li {
         margin-left: 0;
-        margin-bottom: 4px;
+        margin-bottom: .5em;
         padding-left: 5px;
     }
 
