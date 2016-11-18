@@ -580,7 +580,7 @@ section.content {
     }
 
     div.course-contents ul {
-        padding-bottom: 0 !important;
+        padding-bottom: 0.75em !important;
     }
 
     div.course-contents li {
