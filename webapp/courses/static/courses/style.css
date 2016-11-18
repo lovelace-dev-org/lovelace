@@ -774,7 +774,7 @@ section.content {
     section.content table {
         border-collapse: collapse;
         border: 1px solid #8a8;
-        margin-bottom: 5px;
+        margin-bottom: 1em;
     }
 
     section.content table th, section.content table td {
