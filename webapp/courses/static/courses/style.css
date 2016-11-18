@@ -782,7 +782,7 @@ section.content {
         padding: 2px 4px 2px 4px;
     }
 
-        section.content div.paragraph > code, section.content table * code,
+        section.content div.paragraph * code, section.content table * code,
         section.content ul * code, section.content ol * code {
             font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
             background: #e2e2e2;
@@ -808,7 +808,7 @@ section.content {
             border-radius: 3px;
         }
 
-        section.content div.paragraph mark {
+        section.content mark {
             background: #59cd59;
             border-radius: 7px;
             padding: 2px 4px;
