@@ -69,6 +69,7 @@ class MultipleChoiceExerciseAdmin(TranslationAdmin, VersionAdmin):
     readonly_fields = ("slug",)
     list_display = ("name", "slug",)
     list_per_page = 500
+    save_on_top = True
 
 class CheckboxExerciseAnswerInline(TranslationTabularInline):
     model = CheckboxExerciseAnswer
@@ -89,6 +90,7 @@ class CheckboxExerciseAdmin(TranslationAdmin, VersionAdmin):
     readonly_fields = ("slug",)
     list_display = ("name", "slug",)
     list_per_page = 500
+    save_on_top = True
 
 class TextfieldExerciseAnswerInline(TranslationStackedInline):
     model = TextfieldExerciseAnswer
@@ -109,6 +111,7 @@ class TextfieldExerciseAdmin(TranslationAdmin, VersionAdmin):
     readonly_fields = ("slug",)
     list_display = ("name", "slug",)
     list_per_page = 500
+    save_on_top = True
 
 class CodeReplaceExerciseAnswerInline(admin.StackedInline):
     model = CodeReplaceExerciseAnswer
@@ -129,6 +132,7 @@ class CodeReplaceExerciseAdmin(TranslationAdmin, VersionAdmin):
     readonly_fields = ("slug",)
     list_display = ("name", "slug",)
     list_per_page = 500
+    save_on_top = True
 
 class FileExerciseTestCommandAdmin(admin.TabularInline):
     model = FileExerciseTestCommand
@@ -192,6 +196,7 @@ class LectureAdmin(TranslationAdmin, VersionAdmin):
     readonly_fields = ("slug",)
     list_display = ("name", "slug",)
     list_per_page = 500
+    save_on_top = True
 
 # Still required even though a custom admin is implemented
 class FileUploadExerciseAdmin(TranslationAdmin, VersionAdmin):
