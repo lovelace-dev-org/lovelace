@@ -234,21 +234,25 @@ class FileAdmin(admin.ModelAdmin):
     search_fields = ('name',)
     readonly_fields = ('uploader',)
 
-class ImageAdmin(admin.ModelAdmin):
+class ImageAdmin(TranslationAdmin):
     def save_model(self, request, obj, form, change):
         obj.uploader = request.user
         obj.save()
 
     search_fields = ('name',)
     readonly_fields = ('uploader',)
+    list_display = ('name', 'description',)
+    list_per_page = 500
 
-class VideoLinkAdmin(admin.ModelAdmin):
+class VideoLinkAdmin(TranslationAdmin):
     def save_model(self, request, obj, form, change):
         obj.added_by = request.user
         obj.save()
 
     search_fields = ('name',)
     readonly_fields = ('added_by',)
+    list_display = ('name', 'description',)
+    list_per_page = 500
 
 class TermAdmin(TranslationAdmin):
     search_fields = ('name',)
