@@ -214,7 +214,7 @@ def generate_results(results, exercise_id):
 
             #### GO THROUGH ALL COMMANDS
             for cmd_id, student_c, reference_c in ((k, student_cmds[k], reference_cmds[k])
-                                                    for k in sorted(reference_cmds.keys(),
+                                                    for k in sorted(student_cmds.keys(),
                                                                     key=lambda x: student_cmds[x]["ordinal_number"])):
                 cmd_correct = True if not student_c.get('fail') else False
                 current_cmd = {
@@ -230,10 +230,12 @@ def generate_results(results, exercise_id):
                 # Handle JSON outputting testers
 
                 if student_c['json_output']:
+                    student_stdout = student_c["stdout"]
                     try:
                         json_results = json.loads(student_stdout)
                     except json.decoder.JSONDecodeError as e:
                         test_tree['errors'].append("JSONDecodeError: {}".format(str(e)))
+                        print("Error decoding JSON output: {}".format(str(e)))
                     else:
                         tester = json_results.get('tester', "")
                         for test in json_results.get('tests', []):
