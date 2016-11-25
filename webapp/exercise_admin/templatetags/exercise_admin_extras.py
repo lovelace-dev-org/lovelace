@@ -52,6 +52,7 @@ def feedback_edit_div():
     class TemplateFeedbackQuestion:
         id = "SAMPLE_ID"
         type = "SAMPLE_TYPE"
+        readable_type = "SAMPLE_HUMAN_READABLE_TYPE"
 
         def __init__(self):
             for lang_code, _ in lang_list:

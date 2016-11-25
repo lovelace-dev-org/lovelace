@@ -432,7 +432,7 @@ function add_feedback_question_to_popup(id, questions, type, readable_type, choi
 
     var edit_div = $("#edit-feedback-div-SAMPLE_ID").clone().attr('id', 'edit-feedback-div-' + id);
     edit_div.html(function(index, html) {
-        html = html.replace(/SAMPLE_ID/g, id).replace(/SAMPLE_TYPE/g, type);
+        html = html.replace(/SAMPLE_ID/g, id).replace(/SAMPLE_TYPE/g, type).replace(/SAMPLE_HUMAN_READABLE_TYPE/g, readable_type);
         $.each(questions, function(key, val) {
             html = html.replace(new RegExp("SAMPLE_QUESTION_" + key, 'g'), val);
         });
@@ -570,7 +570,23 @@ function show_edit_feedback_questions_popup(event, url, default_lang) {
     });
 }
 
-function close_popup_and_add_questions(questions, default_lang) {
+function destroy_choice_lists() {
+    var choice_lists = $("div.feedback-choice-list");
+    choice_lists.slimScroll({
+        destroy: true
+    });
+
+    // Remove binded events that slimScroll doesn't remove automatically
+    // http://stackoverflow.com/questions/26783076/slimscroll-destroy-doesnt-unbind-the-scroll-events
+    choice_lists.each(function() {
+        events = $._data($(this)[0], "events");
+        if (events) {
+            $._removeData($(this)[0], "events");
+        }
+    });
+}
+
+function update_feedback_table_selection_and_existing_data(questions, default_lang) {
     var target_tbody = $("#feedback-question-table tbody");
     $("#add-feedback-table > tbody input.feedback-question-checkbox").each(function(index) {
         var checked = $(this).prop("checked");
@@ -626,24 +642,47 @@ function close_popup_and_add_questions(questions, default_lang) {
             target_tbody.append(tr);
         }
     });
+    destroy_choice_lists();
     close_popup($("#edit-feedback-popup"));
 }
 
-function close_feedback_popup() {
-    var choice_lists = $("div.feedback-choice-list");
-    choice_lists.slimScroll({
-        destroy: true
-    });
+function update_feedback_table_selection() {
+    var target_tbody = $("#feedback-question-table tbody");
+    $("#add-feedback-table > tbody input.feedback-question-checkbox").each(function(index) {
+        var checked = $(this).prop("checked");
+        var question_id = $(this).attr("data-question-id");
+        if (question_id.startsWith("new")) {
+            return;
+        }
+        var in_table = false;
 
-    // Remove binded events that slimScroll doesn't remove automatically
-    // http://stackoverflow.com/questions/26783076/slimscroll-destroy-doesnt-unbind-the-scroll-events
-    choice_lists.each(function() {
-        events = $._data($(this)[0], "events");
-        if (events) {
-            $._removeData($(this)[0], "events");
+        var tr = null;
+        target_tbody.find("tr").each(function() {
+            if ($(this).attr("data-question-id") === question_id) {
+                tr = $(this);
+                in_table = true;
+                return false;
+            }
+        });
+
+        if (in_table && !checked) {
+            tr.remove();
+        } else if (!in_table && checked) {
+            var questions = $("#edit-feedback-div-" + question_id + " input.feedback-question-input");
+            var readable_type = $("#feedback-readable-type-" + question_id).val();
+            tr = $("#feedback-question-tr-" + "SAMPLE_ID").clone().attr("id", "feedback-question-tr-" + question_id);
+            tr.attr("data-question-id", question_id)
+            tr.html(function(index, html) {
+                html = html.replace(/SAMPLE_ID/g, question_id).replace(/SAMPLE_HUMAN_READABLE_TYPE/g, readable_type);
+                $.each(questions, function() {
+                    sample_str = "SAMPLE_QUESTION_" + $(this).attr("data-language-code");
+                    html = html.replace(new RegExp(sample_str, "g"), $(this).val());
+                });
+                return html;
+            });
+            target_tbody.append(tr);
         }
     });
-    close_popup($("#edit-feedback-popup"));
 }
 
 function edit_feedback_form_success(data, text_status, jqxhr_obj, default_lang) {
@@ -668,9 +707,17 @@ function edit_feedback_form_success(data, text_status, jqxhr_obj, default_lang) 
             //TODO: Scroll to the choice that caused the error
         });
     } else if (data.result) {
-        console.log("Feedback questions edited successfully!");    
-        close_popup_and_add_questions(data.result, default_lang);
+        console.log("Feedback questions edited successfully!");
+        update_feedback_table_selection_and_existing_data(data.result, default_lang);
+        close_popup($("#edit-feedback-popup"));
+        destroy_choice_lists();
     }
+}
+
+function close_feedback_popup_without_saving() {
+    update_feedback_table_selection();
+    close_popup($("#edit-feedback-popup"));
+    destroy_choice_lists();
 }
 
 function edit_feedback_form_error(xhr, status, type) {
@@ -705,9 +752,6 @@ function submit_edit_feedback_form(e, default_lang) {
         if (id.startsWith("new")) {
             new_question_ids.push(id);
         }
-        if ($(this).prop("checked")) {
-            linked_question_ids.push(id);
-        }
     });
     
     var form_data = new FormData(form[0]);
@@ -722,7 +766,6 @@ function submit_edit_feedback_form(e, default_lang) {
     }
 
     form_data.append("new_questions", new_question_ids.join(","));
-    form_data.append("linked_questions", linked_question_ids.join(","));
     for (var key of create_keys) {
         form_data.delete(key);
     }
@@ -1465,7 +1508,6 @@ function submit_edit_instance_files_form(e, default_lang) {
 
     var form_data = new FormData(form[0]);
     var new_file_ids = [];
-    var linked_file_ids = [];
     $("div.popup input[type=checkbox].instance-file-checkbox").each(function() {
         var id = $(this).attr("data-file-id");
         if (id.startsWith("new")) {
