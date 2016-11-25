@@ -182,9 +182,12 @@ function show_term_description(span_slct, div_slct) {
     }
 
     let arrow_height = 9;
-    let arrow_width = 8;
+    let arrow_width = 10;
     let offset = span.offset();
     let span_height = span.height();
+
+    desc_div.css({"display" : "block", "visibility" : "hidden"});
+    
     let desc_div_height = desc_div.height();
     let left_offset = offset.left;
     let top_offset = offset.top + span_height + arrow_height;
@@ -198,11 +201,14 @@ function show_term_description(span_slct, div_slct) {
         });
     }
 
-    desc_div.css({"display" : "block", "visibility" : "hidden"}); //This works in Jquery3 unlike .show()
     desc_div.removeClass("term-description-left-aligned");
     desc_div.removeClass("term-description-top-aligned");
     if (left_offset - $(window).scrollLeft() >  window.innerWidth / 2) {
         left_offset = left_offset - desc_div.width() - arrow_width + span.width();
+        left_offset_MAX = window.innerWidth - desc_div.width() - arrow_width; // TODO: Align prettily
+        if (left_offset + desc_div.width() + arrow_width >= window.innerWidth) {
+            left_offset = left_offset_MAX;
+        }
         desc_div.addClass("term-description-left-aligned");
     }
     let section_visible_height =  window.innerHeight - $("header.top-header").height() - $("nav.breadcrumb").height();
@@ -211,23 +217,14 @@ function show_term_description(span_slct, div_slct) {
         desc_div.addClass("term-description-top-aligned");
     }
     desc_div.offset({left: left_offset, top: top_offset});
-    desc_div.css({"visibility" : "visible"}); //This works in Jquery3 unlike .show()
+    desc_div.css({"visibility" : "visible"});
 }
 
-function show_term_description_during_hover(span_elem, div_id) {
-    var span = $(span_elem);
-    
-    show_term_description(span_elem, div_id);
-    var elems_hovered = true;
-    span.add(div_id).hover(function() {
-        if (!elems_hovered) {
-            show_term_description(span_elem, div_id);
-            elems_hovered = true;
-        }
-    }, function() {
-        elems_hovered = false;
-        hide_tooltip(div_id);
-    });
+function show_term_description_during_hover(container_elem, event, div_id) {
+    var container = $(container_elem);
+    var description_dom_element = $(div_id).detach();
+    container.append(description_dom_element);
+    show_term_description(container_elem, div_id);
 }
 
 function hide_tooltip(div_id) {
@@ -240,7 +237,7 @@ function hide_tooltip(div_id) {
 
 function filter_termbank_contents(search_str) {
     $("li.term-list-item").each(function() {
-        if ($(this).children("span").text().indexOf(search_str) > -1 || search_str === "") {
+        if ($(this).find("span.term").text().toLowerCase().indexOf(search_str.toLowerCase()) > -1 || search_str === "") {
             $(this).css({"display" : "block"});
         } else {
             $(this).hide();

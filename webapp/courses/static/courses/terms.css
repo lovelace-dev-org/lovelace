@@ -13,7 +13,7 @@ li.term-list-item {
 
 div.term-description {
     display: none;
-    position: absolute;
+    position: fixed;
     z-index: 3;
     text-align: left;
     font-weight: normal;
@@ -40,6 +40,18 @@ div.term-description {
 div.term-description-left-aligned {
     border-radius: 1px;
     border-top-right-radius: 2px;
+}
+
+/* The grace area to allow smooth mouseenter */
+div.term-grace-area {
+    position: absolute;
+    z-index: -1;
+    top: 0;
+    left: 0;
+    width: calc(100% + 20px);
+    height: calc(100% + 20px);
+    background: transparent;
+    margin: -10px;
 }
 
 /* The arrow */
@@ -228,8 +240,8 @@ div.term-description hr {
     background-image: -moz-linear-gradient(left, #999, #666, #999);
 }
 
-div.term-description p {
-    margin-bottom: 1em;
+div.term-description div.paragraph {
+    margin-bottom: 0;
 }
     
 div.term-description div.normal {
@@ -268,7 +280,7 @@ div.term-description table th, div.term-description table td {
     padding: 2px 4px 2px 4px;
 }
 
-div.term-description p code, div.term-description table * code,
+div.term-description div.paragraph code, div.term-description table * code,
 div.term-description ul * code, div.term-description ol * code {
     font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
     background: #e2e2e2;
@@ -296,7 +308,7 @@ div.term-description * a:hover {
     border-radius: 3px;
 }
 
-div.term-description p mark {
+div.term-description div.paragraph mark {
     background: #59cd59;
     border-radius: 7px;
     padding: 2px 4px;

@@ -579,8 +579,13 @@ section.content {
         margin-bottom: 1em;
     }
 
+    div.course-contents ul {
+        padding-bottom: 0.75em !important;
+    }
+
     div.course-contents li {
         position: relative;
+        margin-bottom: 4px !important;
         border: 0;
         border-top: 1px solid transparent;
         border-image: linear-gradient(to right, rgba(0, 0, 0, 0.02), rgba(0, 0, 0, 0.04), rgba(31, 31, 31, 0.2)) 1 stretch;
@@ -733,7 +738,7 @@ section.content {
         background-image: -moz-linear-gradient(left, #999, #666, #999);
     }
 
-    section.content p {
+    section.content div.paragraph {
         margin-bottom: 1.5em;
     }
     
@@ -742,17 +747,18 @@ section.content {
         margin-right: 15px;
     }
 
-    section.content p+ul, section.content p+ol {
+    section.content div.paragraph+ul, section.content div.paragraph+ol {
         position: relative;
-        top: -1.5em;
+        top: -.75em;
     }
     section.content ul, section.content ol {
         margin-left: 1.5em;
+        margin-bottom: -.75em;
     }
 
     section.content ul > li, section.content ol > li {
         margin-left: 0;
-        margin-bottom: 4px;
+        margin-bottom: .5em;
         padding-left: 5px;
     }
 
@@ -768,7 +774,7 @@ section.content {
     section.content table {
         border-collapse: collapse;
         border: 1px solid #8a8;
-        margin-bottom: 5px;
+        margin-bottom: 1em;
     }
 
     section.content table th, section.content table td {
@@ -776,7 +782,7 @@ section.content {
         padding: 2px 4px 2px 4px;
     }
 
-        section.content p code, section.content table * code,
+        section.content div.paragraph * code, section.content table * code,
         section.content ul * code, section.content ol * code {
             font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
             background: #e2e2e2;
@@ -802,7 +808,7 @@ section.content {
             border-radius: 3px;
         }
 
-        section.content p mark {
+        section.content mark {
             background: #59cd59;
             border-radius: 7px;
             padding: 2px 4px;
@@ -1184,6 +1190,12 @@ section.content {
         }
         span.cmd-runtime {
             
+        }
+        div.term-container {
+            position: relative;
+            margin: 0;
+            padding: 0;
+            display: inline;
         }
         span.term {
             cursor: help;
