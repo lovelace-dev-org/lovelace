@@ -220,13 +220,13 @@ function show_term_description_during_hover(span_elem, div_id) {
     show_term_description(span_elem, div_id);
     var elems_hovered = true;
     span.add(div_id).hover(function() {
-        elems_hovered = true;
-        show_term_description(span_elem, div_id);
+        if (!elems_hovered) {
+            show_term_description(span_elem, div_id);
+            elems_hovered = true;
+        }
     }, function() {
         elems_hovered = false;
-        if (elems_hovered == 0) {
-            hide_tooltip(div_id);
-        }
+        hide_tooltip(div_id);
     });
 }
 
