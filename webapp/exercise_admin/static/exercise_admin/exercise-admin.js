@@ -884,20 +884,15 @@ function update_included_file_tr(file_id, popup) {
     purpose_td.text($("#included-file-purpose-" + file_id + " option:selected").text());
 }
 
-function create_new_incuded_file_tr(file_id) {
+function create_new_included_file_tr(file_id) {
     var popup = $("#edit-included-file-" + file_id);
-    var purpose = $("#included-file-purpose-" + file_id).val();
     var purpose_display = $("#included-file-purpose-" + file_id + " option:selected").text();
-    var chown = $("#included-file-chown-" + file_id).val();
-    var chgrp = $("#included-file-chgrp-" + file_id).val();
     var name_inputs = popup.find("input.file-name-input");
     var description_areas = popup.find("textarea.file-description-area");
 
     var tr = $("#included-file-tr-SAMPLE_ID").clone().attr('id', 'included-file-tr-' + file_id);
     tr.html(function(index, html) {
-        html =  html.replace(/SAMPLE_ID/g, file_id). replace(/SAMPLE_PURPOSE/g, purpose).
-            replace(/SAMPLE_GET_PURPOSE_DISPLAY/g, purpose_display).replace(/SAMPLE_CHOWN_SETTINGS/g, chown).
-            replace(/SAMPLE_CHGRP_SETTINGS/g, chgrp);
+        html =  html.replace(/SAMPLE_ID/g, file_id).replace(/SAMPLE_GET_PURPOSE_DISPLAY/g, purpose_display);
         name_inputs.each(function() {
             sample_str = "SAMPLE_NAME_" + $(this).attr("data-language-code");
             val = $(this).val();
@@ -931,7 +926,7 @@ function confirm_included_file_popup(file_id) {
     if (existing_file) {
         update_included_file_tr(file_id, popup);
     } else {
-        create_new_incuded_file_tr(file_id);
+        create_new_included_file_tr(file_id);
         popup.find("div.edit-included-file-title-div").css({"display" : "block"});
         popup.find("div.create-included-file-title-div").hide();
     }
