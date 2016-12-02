@@ -62,6 +62,105 @@ $(document).ready(function() {
     refresh_required_files_all();
 });
 
+function replace_ids_in_attrs(elem, old_id, obj_id) {
+    let attrs = {
+        "id" : $(elem).attr("id"),
+        "name" : $(elem).attr("name"),
+        "onchange" : $(elem).attr("onchange"),
+        "oninput" : $(elem).attr("oninput"),
+        "onclick" : $(elem).attr("onclick"),
+        "for" : $(elem).attr("for"),
+        "href" : $(elem).attr("href")
+    };
+    for (let attr in attrs) {
+        let val = attrs[attr];
+        if (typeof val !== "undefined") {
+            $(elem).attr(attr, val.replace(old_id, obj_id));
+        }
+    }
+}
+
+function refresh_ids_after_saving(updated_ids) {
+    // Refresh hint ids
+    let hint_ids = updated_ids["hints"];
+    for (let old_id in hint_ids) {
+        let obj_id = hint_ids[old_id];
+        let hint_tr = $("#hint-" + old_id);
+        hint_tr.attr("id", "hint-" + obj_id);
+        hint_tr.find("input").each(function (index, elem) {
+            replace_ids_in_attrs(elem, old_id, obj_id);
+        });
+    }
+
+    // Refresh included files
+    let include_file_ids = updated_ids["include_files"];
+    for (let old_id in include_file_ids) {
+        let obj_id = include_file_ids[old_id];
+        let edit_div = $("#edit-included-file-" + old_id);
+        let included_file_tr = $("#included-file-tr-" + old_id);
+        edit_div.attr("id", "edit-included-file-" + obj_id);
+        edit_div.find("input, div, label, select, h2, textarea, button").each(function (index, elem) {
+            replace_ids_in_attrs(elem, old_id, obj_id);
+        });
+        included_file_tr.attr("id", "included-file-tr-" + obj_id);
+        included_file_tr.find("td, button").each(function (index, elem) {
+            replace_ids_in_attrs(elem, old_id, obj_id);
+        });
+    }
+
+    // Refresh test ids
+    let test_ids = updated_ids["tests"];
+    console.log(test_ids);
+    for (let old_id in test_ids) {
+        let obj_id = test_ids[old_id];
+        let test_li = $("#test-" + old_id).parent();
+        let test_div = $("#test-tabs-" + old_id);
+        test_li.attr("aria-controls", "test-tabs-" + obj_id);
+        test_li.attr("aria-labelledby", "test-" + obj_id);
+        test_li.find("a, button").each(function (index, elem) {
+            replace_ids_in_attrs(elem, old_id, obj_id);
+        });
+        test_div.attr("id", "test-tabs-" + obj_id);
+        test_div.attr("aria-labelledby", "test-" + obj_id);
+        test_div.find("input, div, label, select, ol, button").each(function (index, elem) {
+            replace_ids_in_attrs(elem, old_id, obj_id);
+        });
+    }
+
+    // Refresh stage ids
+    let stage_ids = updated_ids["stages"];
+    for (let old_id in stage_ids) {
+        let obj_id = stage_ids[old_id];
+        let stage_li = $("li.ui-state-default[data-stage-id=" + old_id + "]");
+        let stage_div = $("#stage-information-" + old_id);
+        stage_li.attr("data-stage-id", "" + obj_id);
+        stage_li.find("span, input, ol, button").each(function (index, elem) {
+            replace_ids_in_attrs(elem, old_id, obj_id);
+        });
+        stage_div.attr("id", "stage-information-" + obj_id);
+        stage_div.find("label, input, select").each(function (index, elem) {
+            replace_ids_in_attrs(elem, old_id, obj_id);
+        });
+    }
+
+    // Refresh command ids
+    let cmd_ids = updated_ids["commands"];
+    for (let old_id in cmd_ids) {
+        let obj_id = cmd_ids[old_id];
+        let cmd_li = $("li.ui-state-default[data-command-id=" + old_id + "]");
+        let cmd_div = $("#command-information-" + old_id);
+        cmd_li.attr("data-command-id", "" + obj_id);
+        cmd_li.find("span, button").each(function (index, elem) {
+            replace_ids_in_attrs(elem, old_id, obj_id);
+        });
+        cmd_div.attr("id", "command-information" + obj_id);
+        cmd_div.find("label, input, textarea").each(function (index, elem) {
+            replace_ids_in_attrs(elem, old_id, obj_id);
+        });
+    }
+
+}
+
 function submit_main_form(e) {
     e.preventDefault();
     console.log("User requested main form submit.");
@@ -115,7 +214,6 @@ function submit_main_form(e) {
     // Remove unnecessary instance file link fields and add fields that map new-ids to file ids.
     var link_fields_to_remove = [];
     $("div.link-instance-file").each(function() {
-        var new_id = $(this).attr("data-file-id-new");
         if ($(this).attr("data-linked") !== "true") {
             $(this).find("input.file-name-input").each(function() {
                 link_fields_to_remove.push($(this).attr("name"));
@@ -124,8 +222,6 @@ function submit_main_form(e) {
             link_fields_to_remove.push($(this).find("select.file-chown-select").attr("name"));
             link_fields_to_remove.push($(this).find("select.file-chgrp-select").attr("name"));
             link_fields_to_remove.push($(this).find("input.file-chmod-input").attr("name"));
-        } else if (new_id.startsWith("new")) {
-            form_data.append("instance_file_link_[" + new_id + "]_file_id", $(this).attr("data-file-id"));
         }
     });
 
@@ -154,6 +250,7 @@ function submit_main_form(e) {
             }
             let success_text = "Successfully saved!";
             alert(success_text);
+            refresh_ids_after_saving(data.updated_ids);
         },
         error: function(xhr, status, type) {
             let error_text = "The following errors happened during processing of the form:\n\n" + xhr.responseText;
@@ -1057,7 +1154,6 @@ function add_instance_file_link_div(file_id, default_names) {
     var sample_id = "SAMPLE_ID";
     var link_div = $("#link-instance-file-" + sample_id).clone().attr('id', 'link-instance-file-' + file_id);
     link_div.attr("data-file-id", file_id);
-    link_div.attr("data-file-id-new", file_id);
     link_div.html(function(index, html) {
         html = html.replace(new RegExp(sample_id, 'g'), file_id).replace(/SAMPLE_FORM/g, 'main-form');
         $.each(default_names, function(key, val) {
@@ -1374,6 +1470,13 @@ function close_popup_and_add_instance_files(instance_files, default_lang) {
             link_div.remove();
             return;
         }
+        
+        // Update the file ids in the link div to correspond to the file id in the database
+        link_div.attr("id", "link-instance-file-" + db_id);
+        link_div.attr("data-file-id", db_id);
+        link_div.find("input, div, label, select, h2, button").each(function (index, elem) {
+            replace_ids_in_attrs(elem, file_id, db_id);
+        });
 
         var checked = $(this).prop("checked");
         var name_inputs = link_div.find("input.file-name-input");
@@ -1425,9 +1528,6 @@ function close_popup_and_add_instance_files(instance_files, default_lang) {
             target_tbody.append(tr);
         }
         
-        // Update the file ids in the link div to correspond to the file id in the database
-        link_div.attr("id", "link-instance-file-" + db_id);
-        link_div.attr("data-file-id", db_id);
     });
     close_popup($("#edit-instance-files-popup"));
     refresh_required_files_all();
