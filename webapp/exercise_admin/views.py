@@ -9,6 +9,7 @@ from django.template import loader
 from django.db import transaction, IntegrityError
 from django.conf import settings
 from django.urls import reverse # Django 1.10
+from django.core import serializers
 #from django.core.urlresolvers import reverse # Django 1.9
 
 from reversion import revisions as reversion
@@ -32,8 +33,12 @@ from .utils import get_default_lang, get_lang_list
 def index(request):
     return HttpResponseNotFound()
 
-def create_id_update_dict(edited_objs):
-    return {old_id : obj.id for (old_id, obj) in edited_objs.items() if old_id.startswith("new")}
+def convert_object_to_json(obj):
+    return json.loads(serializers.serialize("json", [obj]))[0]
+
+def convert_new_objects_to_json(objs):
+    return {old_id : convert_object_to_json(obj)
+            for (old_id, obj) in objs.items() if old_id.startswith("new")}
 
 def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_hint_ids, old_ef_ids, old_if_ids, old_test_ids,
                               old_stage_ids, old_cmd_ids, new_stages, new_commands, hint_ids, ef_ids, if_ids):
@@ -298,13 +303,12 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_hin
         command_obj.save()
 
     return {
-        "hints" : create_id_update_dict(edited_hints),
-        "include_files" : create_id_update_dict(edited_exercise_files),
-        "tests" : create_id_update_dict(edited_tests),
-        "stages" : create_id_update_dict(edited_stages),
-        "commands" : create_id_update_dict(edited_commands),
+        "hints" : convert_new_objects_to_json(edited_hints),
+        "included_files" : convert_new_objects_to_json(edited_exercise_files),
+        "tests" : convert_new_objects_to_json(edited_tests),
+        "stages" : convert_new_objects_to_json(edited_stages),
+        "commands" : convert_new_objects_to_json(edited_commands),
     }
-    
         
 Stage = collections.namedtuple('Stage', ['test', 'ordinal_number'])
 Command = collections.namedtuple('Command', ['stage', 'ordinal_number'])
@@ -445,7 +449,7 @@ def file_upload_exercise(request, exercise_id=None, action=None):
             updated_ids = {}
             try:
                 with transaction.atomic(), reversion.create_revision():
-                    updated_ids = save_file_upload_exercise(exercise, cleaned_data, order_hierarchy_json,
+                    new_objects = save_file_upload_exercise(exercise, cleaned_data, order_hierarchy_json,
                                                             old_hint_ids, old_ef_ids, old_if_ids, old_test_ids, old_stage_ids,
                                                             old_cmd_ids, new_stages, new_commands, hint_ids, ef_ids, if_ids)
                     reversion.set_user(request.user)
@@ -470,7 +474,7 @@ def file_upload_exercise(request, exercise_id=None, action=None):
             return JsonResponse({
                 "yeah!": "everything went ok",
                 "redirect_url": redirect_url,
-                "updated_ids" : updated_ids,
+                "new_objects" : new_objects,
             })
         else:
             print("DEBUG: the form is not valid")

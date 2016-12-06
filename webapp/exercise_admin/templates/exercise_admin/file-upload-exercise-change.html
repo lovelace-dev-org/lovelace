@@ -207,7 +207,7 @@
     <div id="test-tabs">
       <ol>
         {% for test, stages in tests %}
-          <li>
+          <li id="test-li-{{ test.id }}">
             <a href="#test-tabs-{{ test.id }}" id="test-{{ test.id }}">{{ test.name }}</a>
             <button class="delete-button" type="button" title="Delete this test"
                     onclick="delete_test('{{ test.id }}');">x</button>

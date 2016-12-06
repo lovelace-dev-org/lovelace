@@ -62,103 +62,93 @@ $(document).ready(function() {
     refresh_required_files_all();
 });
 
-function replace_ids_in_attrs(elem, old_id, obj_id) {
-    let attrs = {
-        "id" : $(elem).attr("id"),
-        "name" : $(elem).attr("name"),
-        "onchange" : $(elem).attr("onchange"),
-        "oninput" : $(elem).attr("oninput"),
-        "onclick" : $(elem).attr("onclick"),
-        "for" : $(elem).attr("for"),
-        "href" : $(elem).attr("href")
-    };
-    for (let attr in attrs) {
-        let val = attrs[attr];
-        if (typeof val !== "undefined") {
-            $(elem).attr(attr, val.replace(old_id, obj_id));
+function create_id_mapping_from_json_of_new_objects(new_objects_json) {
+    let id_mapping = {};
+    for (let object_type in new_objects_json) {
+        id_mapping[object_type] = {};
+        let objects_of_type = new_objects_json[object_type];
+        for (let old_id in objects_of_type) {
+            id_mapping[object_type][old_id] = objects_of_type[old_id]["pk"];
+        }
+    }
+    return id_mapping;
+}
+
+function replace_str_in_elem_attrs(elem, old_str, new_str) {
+    for (let i = 0; i < elem.attributes.length; i++) {
+        let attr = elem.attributes[i];
+        if (attr.specified) {
+            $(elem).attr(attr.name, attr.value.replace(old_str, new_str));
         }
     }
 }
 
-function refresh_ids_after_saving(updated_ids) {
-    // Refresh hint ids
-    let hint_ids = updated_ids["hints"];
-    for (let old_id in hint_ids) {
-        let obj_id = hint_ids[old_id];
-        let hint_tr = $("#hint-" + old_id);
-        hint_tr.attr("id", "hint-" + obj_id);
-        hint_tr.find("input").each(function (index, elem) {
-            replace_ids_in_attrs(elem, old_id, obj_id);
-        });
-    }
+function refresh_id_occurences_in_subtree(old_id, db_id, root) {
+    replace_str_in_elem_attrs(root.get(0), old_id, db_id);
+    root.find("*").each(function() {
+        replace_str_in_elem_attrs(this, old_id, db_id);
+    });
+}
 
-    // Refresh included files
-    let include_file_ids = updated_ids["include_files"];
-    for (let old_id in include_file_ids) {
-        let obj_id = include_file_ids[old_id];
-        let edit_div = $("#edit-included-file-" + old_id);
-        let included_file_tr = $("#included-file-tr-" + old_id);
-        edit_div.attr("id", "edit-included-file-" + obj_id);
-        edit_div.find("input, div, label, select, h2, textarea, button").each(function (index, elem) {
-            replace_ids_in_attrs(elem, old_id, obj_id);
-        });
-        included_file_tr.attr("id", "included-file-tr-" + obj_id);
-        included_file_tr.find("td, button").each(function (index, elem) {
-            replace_ids_in_attrs(elem, old_id, obj_id);
-        });
+function refresh_id_occurences_in_subtrees(id_mapping, root_prefixes) {
+    for (let old_id in id_mapping) {
+        let db_id = id_mapping[old_id];
+        for (let i = 0; i < root_prefixes.length; i++) {
+            let root = $("#" + root_prefixes[i] + "-" + old_id);
+            refresh_id_occurences_in_subtree(old_id, db_id, root);
+        }
     }
+}
 
-    // Refresh test ids
-    let test_ids = updated_ids["tests"];
-    console.log(test_ids);
-    for (let old_id in test_ids) {
-        let obj_id = test_ids[old_id];
-        let test_li = $("#test-" + old_id).parent();
-        let test_div = $("#test-tabs-" + old_id);
-        test_li.attr("aria-controls", "test-tabs-" + obj_id);
-        test_li.attr("aria-labelledby", "test-" + obj_id);
-        test_li.find("a, button").each(function (index, elem) {
-            replace_ids_in_attrs(elem, old_id, obj_id);
-        });
-        test_div.attr("id", "test-tabs-" + obj_id);
-        test_div.attr("aria-labelledby", "test-" + obj_id);
-        test_div.find("input, div, label, select, ol, button").each(function (index, elem) {
-            replace_ids_in_attrs(elem, old_id, obj_id);
-        });
+function refresh_hint_ids(id_mapping) {
+    refresh_id_occurences_in_subtrees(id_mapping["hints"], ["hint"]);
+}
+
+function refresh_included_file_ids(id_mapping) {
+    refresh_id_occurences_in_subtrees(id_mapping["included_files"], ["edit-included-file", "included-file-tr"]);
+}
+
+function refresh_test_ids(id_mapping) {
+    refresh_id_occurences_in_subtrees(id_mapping["tests"], ["test-li", "test-tabs"]);
+}
+
+function refresh_stage_ids(id_mapping) {
+    refresh_id_occurences_in_subtrees(id_mapping["stages"], ["stage-li", "stage-information"]);
+}
+
+function refresh_command_ids(id_mapping) {
+    refresh_id_occurences_in_subtrees(id_mapping["commands"], ["command-li", "command-information"]);
+}
+
+function refresh_ids_of_new_objects(new_objects_json) {
+    let id_mapping = create_id_mapping_from_json_of_new_objects(new_objects_json);
+    refresh_hint_ids(id_mapping);
+    refresh_included_file_ids(id_mapping);
+    refresh_test_ids(id_mapping);
+    refresh_stage_ids(id_mapping);
+    refresh_command_ids(id_mapping);
+}
+
+function add_links_of_new_included_file(link_divs, new_file_fields) {
+    link_divs.each(function() {
+        let lang_code = $(this).attr("data-language-code");
+        let fileinfo = new_file_fields["fileinfo_" + lang_code];
+        if (fileinfo) {
+            let url = "/media/" + fileinfo;
+            let link = $('<a href="' + url + '" class="file-url" data-language-code="' + lang_code + '" download>"');
+            $(this).append(link);
+        }
+    });
+}
+
+function add_links_of_new_included_files(new_files_json) {
+    for (let old_id in new_files_json) {
+        let new_file_fields = new_files_json[old_id]["fields"];
+        let link_divs_main = $("#included-file-td-link-" + old_id).find("div.included-file-link-div");
+        let link_divs_popup = $("#edit-included-file-" + old_id).find("div.included-file-link-div");
+        add_links_of_new_included_file(link_divs_main, new_file_fields);
+        add_links_of_new_included_file(link_divs_popup, new_file_fields);
     }
-
-    // Refresh stage ids
-    let stage_ids = updated_ids["stages"];
-    for (let old_id in stage_ids) {
-        let obj_id = stage_ids[old_id];
-        let stage_li = $("li.ui-state-default[data-stage-id=" + old_id + "]");
-        let stage_div = $("#stage-information-" + old_id);
-        stage_li.attr("data-stage-id", "" + obj_id);
-        stage_li.find("span, input, ol, button").each(function (index, elem) {
-            replace_ids_in_attrs(elem, old_id, obj_id);
-        });
-        stage_div.attr("id", "stage-information-" + obj_id);
-        stage_div.find("label, input, select").each(function (index, elem) {
-            replace_ids_in_attrs(elem, old_id, obj_id);
-        });
-    }
-
-    // Refresh command ids
-    let cmd_ids = updated_ids["commands"];
-    for (let old_id in cmd_ids) {
-        let obj_id = cmd_ids[old_id];
-        let cmd_li = $("li.ui-state-default[data-command-id=" + old_id + "]");
-        let cmd_div = $("#command-information-" + old_id);
-        cmd_li.attr("data-command-id", "" + obj_id);
-        cmd_li.find("span, button").each(function (index, elem) {
-            replace_ids_in_attrs(elem, old_id, obj_id);
-        });
-        cmd_div.attr("id", "command-information" + obj_id);
-        cmd_div.find("label, input, textarea").each(function (index, elem) {
-            replace_ids_in_attrs(elem, old_id, obj_id);
-        });
-    }
-
 }
 
 function submit_main_form(e) {
@@ -250,7 +240,9 @@ function submit_main_form(e) {
             }
             let success_text = "Successfully saved!";
             alert(success_text);
-            refresh_ids_after_saving(data.updated_ids);
+            add_links_of_new_included_files(data.new_objects["included_files"]);
+            refresh_ids_of_new_objects(data.new_objects);
+            refresh_required_files_all();
         },
         error: function(xhr, status, type) {
             let error_text = "The following errors happened during processing of the form:\n\n" + xhr.responseText;
@@ -683,17 +675,47 @@ function destroy_choice_lists() {
     });
 }
 
+function update_tr_in_feedback_table(new_tr_data, tr) {
+    let questions = new_tr_data.questions;
+    let readable_type = new_tr_data.readable_type;
+    
+    tr.find("td.question-cell span").each(function() {
+        let span = $(this);
+        span.text(questions[span.attr("data-language-code")]);
+    });
+    tr.find("td.type-cell").text(readable_type);
+}
+
+function add_tr_to_feedback_table(tr_data, tbody) {
+    let question_id = tr_data.question_id;
+    let questions = tr_data.questions;
+    let readable_type = tr_data.readable_type;
+    let tr = $("#feedback-question-tr-SAMPLE_ID").clone();
+    
+    tr.attr("id", "feedback-question-tr-" + question_id);
+    tr.attr("data-question-id", question_id)
+    tr.html(function(index, html) {
+        html = html.replace(/SAMPLE_ID/g, question_id).replace(/SAMPLE_HUMAN_READABLE_TYPE/g, readable_type);
+        $.each(questions, function(key, val) {
+            sample_str = "SAMPLE_QUESTION_" + key;
+            html = html.replace(new RegExp(sample_str, "g"), val);
+        });
+        return html;
+    });
+    tbody.append(tr);
+}
+
 function update_feedback_table_selection_and_existing_data(questions, default_lang) {
     var target_tbody = $("#feedback-question-table tbody");
     $("#add-feedback-table > tbody input.feedback-question-checkbox").each(function(index) {
-        var checked = $(this).prop("checked");
-        var question_id = $(this).attr("data-question-id");
-        var question = $("#feedback-question-" + question_id + "-" + default_lang).val();
-        var db_id = "";
-        var db_readable_type = "";
-        var db_questions = [];
-        var in_table = false;
-        var saved = false;
+        let checked = $(this).prop("checked");
+        let question_id = $(this).attr("data-question-id");
+        let question = $("#feedback-question-" + question_id + "-" + default_lang).val();
+        let db_id = "";
+        let db_readable_type = "";
+        let db_questions = {};
+        let in_table = false;
+        let saved = false;
 
         $.each(questions, function(index, db_question) {
             if (db_question.questions[default_lang] === question) {
@@ -708,7 +730,7 @@ function update_feedback_table_selection_and_existing_data(questions, default_la
             return;
         }
 
-        var tr = null;
+        let tr = null;
         target_tbody.find("tr").each(function() {
             if ($(this).attr("data-question-id") === db_id) {
                 tr = $(this);
@@ -720,40 +742,26 @@ function update_feedback_table_selection_and_existing_data(questions, default_la
         if (in_table && !checked) {
             tr.remove();
         } else if (in_table) {
-            tr.find("td.question-cell span").each(function() {
-                var span = $(this);
-                span.text(db_questions[span.attr("data-language-code")]);
-            });
-            tr.find("td.type-cell").text(db_readable_type);
+            let tr_data = {questions : db_questions, readable_type : db_readable_type};
+            update_tr_in_feedback_table(tr_data, tr);
         } else if (checked) {
-            tr = $("#feedback-question-tr-" + "SAMPLE_ID").clone().attr("id", "feedback-question-tr-" + db_id);
-            tr.attr("data-question-id", db_id)
-            tr.html(function(index, html) {
-                html = html.replace(/SAMPLE_ID/g, db_id).replace(/SAMPLE_HUMAN_READABLE_TYPE/g, db_readable_type);
-                $.each(db_questions, function(key, val) {
-                    sample_str = "SAMPLE_QUESTION_" + key;
-                    html = html.replace(new RegExp(sample_str, "g"), val);
-                });
-                return html;
-            });
-            target_tbody.append(tr);
+            let tr_data = {question_id : db_id, questions : db_questions, readable_type : db_readable_type};
+            add_tr_to_feedback_table(tr_data, target_tbody);
         }
     });
-    destroy_choice_lists();
-    close_popup($("#edit-feedback-popup"));
 }
 
 function update_feedback_table_selection() {
     var target_tbody = $("#feedback-question-table tbody");
     $("#add-feedback-table > tbody input.feedback-question-checkbox").each(function(index) {
-        var checked = $(this).prop("checked");
-        var question_id = $(this).attr("data-question-id");
+        let checked = $(this).prop("checked");
+        let question_id = $(this).attr("data-question-id");
         if (question_id.startsWith("new")) {
             return;
         }
-        var in_table = false;
+        let in_table = false;
 
-        var tr = null;
+        let tr = null;
         target_tbody.find("tr").each(function() {
             if ($(this).attr("data-question-id") === question_id) {
                 tr = $(this);
@@ -765,19 +773,14 @@ function update_feedback_table_selection() {
         if (in_table && !checked) {
             tr.remove();
         } else if (!in_table && checked) {
-            var questions = $("#edit-feedback-div-" + question_id + " input.feedback-question-input");
-            var readable_type = $("#feedback-readable-type-" + question_id).val();
-            tr = $("#feedback-question-tr-" + "SAMPLE_ID").clone().attr("id", "feedback-question-tr-" + question_id);
-            tr.attr("data-question-id", question_id)
-            tr.html(function(index, html) {
-                html = html.replace(/SAMPLE_ID/g, question_id).replace(/SAMPLE_HUMAN_READABLE_TYPE/g, readable_type);
-                $.each(questions, function() {
-                    sample_str = "SAMPLE_QUESTION_" + $(this).attr("data-language-code");
-                    html = html.replace(new RegExp(sample_str, "g"), $(this).val());
-                });
-                return html;
+            let question_inputs = $("#edit-feedback-div-" + question_id + " input.feedback-question-input");
+            let readable_type = $("#feedback-readable-type-" + question_id).val();
+            let questions = {};
+            $.each(question_inputs, function() {
+                questions[$(this).attr("data-language-code")] =  $(this).val();
             });
-            target_tbody.append(tr);
+            let tr_data = {question_id : question_id, questions : questions, readable_type : readable_type};
+            add_tr_to_feedback_table(tr_data, target_tbody);
         }
     });
 }
@@ -1470,13 +1473,8 @@ function close_popup_and_add_instance_files(instance_files, default_lang) {
             link_div.remove();
             return;
         }
-        
-        // Update the file ids in the link div to correspond to the file id in the database
-        link_div.attr("id", "link-instance-file-" + db_id);
-        link_div.attr("data-file-id", db_id);
-        link_div.find("input, div, label, select, h2, button").each(function (index, elem) {
-            replace_ids_in_attrs(elem, file_id, db_id);
-        });
+
+        refresh_id_occurences_in_subtree(file_id, db_id, link_div)
 
         var checked = $(this).prop("checked");
         var name_inputs = link_div.find("input.file-name-input");
@@ -1753,7 +1751,7 @@ function add_test() {
     // TODO: The new test tab item should be included in the template section and cloned.
 
     var new_test_tab_item = $(
-        '<li>'
+        '<li id="test-li-' + new_id + '">'
           + '<a href="#test-tabs-' + new_id + '" id="test-' + new_id + '">' + new_name + '</a>'
           + '<button class="delete-button" type="button" title="Delete this test"'
                   + 'onclick="delete_test(\'' + new_id + '\');">x</button>'
