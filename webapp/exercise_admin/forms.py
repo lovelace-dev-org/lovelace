@@ -289,8 +289,6 @@ class CreateFileUploadExerciseForm(forms.Form):
             self.fields[chown_field] = forms.ChoiceField(choices=c_models.IncludeFileSettings.FILE_OWNERSHIP_CHOICES, required=False)
             self.fields[chgrp_field] = forms.ChoiceField(choices=c_models.IncludeFileSettings.FILE_OWNERSHIP_CHOICES, required=False)
             self.fields[chmod_field] = forms.CharField(max_length=10, required=False, strip=True)
-            if if_id.startswith("new"):
-                self.fields["instance_file_link_[{id}]_file_id".format(id=if_id)] = forms.IntegerField()
 
         # Tests, stages and commands
         

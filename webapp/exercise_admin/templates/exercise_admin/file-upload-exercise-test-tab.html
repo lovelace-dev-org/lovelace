@@ -37,7 +37,7 @@
     <div class="left-side"><!-- left side, stages and commands -->
       <ol id="stages-sortable-{{ test.id }}" class="stages-sortable">
         {% for stage, commands in stages %}
-          <li class="ui-state-default" data-stage-id="{{ stage.id }}">
+          <li id="stage-li-{{ stage.id }}" class="ui-state-default" data-stage-id="{{ stage.id }}">
             {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
               <span class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}"
                     data-language-code="{{ language_choice }}" onClick="show_stagecmd_information(event);"
@@ -48,7 +48,7 @@
             <div>
               <ol id="commands-sortable-{{ test.id }}-{{ stage.id }}" class="commands-sortable">
                 {% for cmd, expected_outputs in commands %}
-                  <li class="ui-state-default" data-command-id="{{ cmd.id }}">
+                  <li id="command-li-{{ cmd.id }}" class="ui-state-default" data-command-id="{{ cmd.id }}">
                     {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
                       <span class="clickable-commandline translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}"
                             data-language-code="{{ language_choice }}" onClick="show_stagecmd_information(event);"

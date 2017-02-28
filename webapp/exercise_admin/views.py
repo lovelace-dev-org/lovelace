@@ -9,6 +9,7 @@ from django.template import loader
 from django.db import transaction, IntegrityError
 from django.conf import settings
 from django.urls import reverse # Django 1.10
+from django.core import serializers
 #from django.core.urlresolvers import reverse # Django 1.9
 
 from reversion import revisions as reversion
@@ -31,6 +32,13 @@ from .utils import get_default_lang, get_lang_list
 
 def index(request):
     return HttpResponseNotFound()
+
+def convert_object_to_json(obj):
+    return json.loads(serializers.serialize("json", [obj]))[0]
+
+def convert_new_objects_to_json(objs):
+    return {old_id : convert_object_to_json(obj)
+            for (old_id, obj) in objs.items() if old_id.startswith("new")}
 
 def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_hint_ids, old_ef_ids, old_if_ids, old_test_ids,
                               old_stage_ids, old_cmd_ids, new_stages, new_commands, hint_ids, ef_ids, if_ids):
@@ -144,14 +152,10 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_hin
 
     edited_instance_file_links = {}
     for if_id in if_ids:
-        if if_id.startswith("new"):
-            file_id = form_data['instance_file_link_[{}]_file_id'.format(if_id)]
-        else:
-            file_id = if_id
         if if_id not in old_if_ids:
             current_if_link = InstanceIncludeFileToExerciseLink()
             current_if_link.exercise = exercise
-            current_if_link.include_file = InstanceIncludeFile.objects.get(id=file_id)
+            current_if_link.include_file = InstanceIncludeFile.objects.get(id=if_id)
             if_settings = IncludeFileSettings()
             current_if_link.file_settings = if_settings
         else:
@@ -297,8 +301,14 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_hin
     for command_id, command_obj in edited_commands.items():
         command_obj.ordinal_number -= command_count + 1
         command_obj.save()
-            
-    
+
+    return {
+        "hints" : convert_new_objects_to_json(edited_hints),
+        "included_files" : convert_new_objects_to_json(edited_exercise_files),
+        "tests" : convert_new_objects_to_json(edited_tests),
+        "stages" : convert_new_objects_to_json(edited_stages),
+        "commands" : convert_new_objects_to_json(edited_commands),
+    }
         
 Stage = collections.namedtuple('Stage', ['test', 'ordinal_number'])
 Command = collections.namedtuple('Command', ['stage', 'ordinal_number'])
@@ -436,11 +446,12 @@ def file_upload_exercise(request, exercise_id=None, action=None):
             cleaned_data = form.cleaned_data
 
             # create/update the form
+            updated_ids = {}
             try:
                 with transaction.atomic(), reversion.create_revision():
-                    save_file_upload_exercise(exercise, cleaned_data, order_hierarchy_json,
-                                              old_hint_ids, old_ef_ids, old_if_ids, old_test_ids, old_stage_ids,
-                                              old_cmd_ids, new_stages, new_commands, hint_ids, ef_ids, if_ids)
+                    new_objects = save_file_upload_exercise(exercise, cleaned_data, order_hierarchy_json,
+                                                            old_hint_ids, old_ef_ids, old_if_ids, old_test_ids, old_stage_ids,
+                                                            old_cmd_ids, new_stages, new_commands, hint_ids, ef_ids, if_ids)
                     reversion.set_user(request.user)
                     reversion.set_comment(cleaned_data['version_comment'])
             except IntegrityError as e:
@@ -462,7 +473,8 @@ def file_upload_exercise(request, exercise_id=None, action=None):
             
             return JsonResponse({
                 "yeah!": "everything went ok",
-                'redirect_url': redirect_url,
+                "redirect_url": redirect_url,
+                "new_objects" : new_objects,
             })
         else:
             print("DEBUG: the form is not valid")
