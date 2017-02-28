@@ -271,12 +271,16 @@ table#included-files-table col.file-purpose {
     width: 20%;
 }
 
+table#included-files-table col.uploaded-file {
+    width: 3%;
+}
+
 table#included-files-table col.edit-file {
-    width: 2%;
+    width: 3%;
 }
 
 table#included-files-table col.delete-file {
-    width: 2%;
+    width: 3%;
 }
 
 table#instance-files-table {
@@ -297,6 +301,23 @@ table#instance-files-table col.file-instance {
 
 div#instance-files {
     margin-top: 20px;
+}
+
+a.file-url {
+    display: inline-block;
+    background: url("download.png");
+    width: 25px;
+    height: 25px;
+    outline: 0;
+    vertical-align: top;
+    overflow: hidden;
+    color: #4CAF50;
+    background-color: #fff;
+    text-align: center;
+    cursor: pointer;
+    border: 0px solid #42860e;
+    border-radius: 8px;
+    box-shadow: 1px 1px 2px #285c00;
 }
 
 /* Configurable hints */
@@ -773,23 +794,6 @@ div.popup div.popup-buttons button.popup-button:disabled {
 
 div.popup h2.popup-file-title {
     display: inline-block;
-}
-
-div.popup a.file-url {
-    display: inline-block;
-    background: url("download.png");
-    width: 25px;
-    height: 25px;
-    outline: 0;
-    vertical-align: top;
-    overflow: hidden;
-    color: #4CAF50;
-    background-color: #fff;
-    text-align: center;
-    cursor: pointer;
-    border: 0px solid #42860e;
-    border-radius: 8px;
-    box-shadow: 1px 1px 2px #285c00;
 }
 
 div.popup div.edit-included-file-title-div a.file-url {

@@ -21,6 +21,16 @@
       </span>
     {% endfor %}
   </td>
+  <td id="included-file-td-link-{{ include_file.id }}">
+    {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
+      <div class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %} inline-block-elem" data-language-code="{{ language_choice }}">
+        {% get_translated_field include_file "fileinfo" language_choice as fileinfo %}
+        {% if fileinfo and fileinfo.url %}
+          <a href="{{ fileinfo.url }}" class="file-url" download></a>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </td>
   <td>
     <button type="button" class="edit-button" title="Opens a popup window to edit an included file"
             onclick="show_edit_included_file_popup('{{ include_file.id }}', '{{ DEFAULT_LANGUAGE }}');"></button>

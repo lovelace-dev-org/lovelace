@@ -546,6 +546,10 @@ def edit_choices(q_obj, choice_val_dict, lang_list):
                 if getattr(choice_obj, "answer_{}".format(lang_code)) != answer:
                     setattr(choice_obj, "answer_{}".format(lang_code), answer)
                     choice_obj.save()
+
+    for i, choice_obj in enumerate(existing_choices):
+        if i >= len(choice_val_dict):
+            choice_obj.delete()
         
 def edit_feedback_questions(request):
     if request.method != "POST":

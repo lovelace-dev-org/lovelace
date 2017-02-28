@@ -52,6 +52,7 @@ def feedback_edit_div():
     class TemplateFeedbackQuestion:
         id = "SAMPLE_ID"
         type = "SAMPLE_TYPE"
+        readable_type = "SAMPLE_HUMAN_READABLE_TYPE"
 
         def __init__(self):
             for lang_code, _ in lang_list:
@@ -154,11 +155,12 @@ def include_file_tr(include_file, jstemplate=False):
 
     lang_list = get_lang_list()
 
+    class TemplateFileInfo:
+        url = None
+    
     class TemplateFileSettings:
         purpose = "SAMPLE_PURPOSE"
         get_purpose_display = "SAMPLE_GET_PURPOSE_DISPLAY"
-        chown_settings = "SAMPLE_CHOWN_SETTINGS"
-        chgrp_settings = "SAMPLE_CHGRP_SETTINGS"
         
         def __init__(self):
             for lang_code, _ in lang_list:
@@ -171,6 +173,7 @@ def include_file_tr(include_file, jstemplate=False):
         def __init__(self):
             for lang_code, _ in lang_list:
                 setattr(self, 'description_{}'.format(lang_code), "SAMPLE_DESCRIPTION_{}".format(lang_code))
+                setattr(self, 'fileinfo_{}'.format(lang_code), TemplateFileInfo())
 
     return {'include_file' : TemplateIncludeFile()}
 
