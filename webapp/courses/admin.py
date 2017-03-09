@@ -51,7 +51,7 @@ class CourseContentAccess(admin.ModelAdmin):
            either as a contentgraph node or as an embedded page
         
         The content type is read from the content_type attribute. Child
-        classes shouls set this attrbute to control which type of 
+        classes should set this attribute to control which type of 
         content is shown.         
         """        
         
@@ -536,7 +536,7 @@ class CourseAdmin(TranslationAdmin, VersionAdmin):
     fieldsets = [
         (None,             {'fields': ['name', 'slug',]}),
         ('Course outline', {'fields': ['description', 'code', 'credits']}),
-        ('Adminstration', {'fields': ['staff_group', 'main_responsible']}),
+        ('Administration', {'fields': ['staff_group', 'main_responsible']}),
         #('Settings for start date and end date of the course', {'fields': ['start_date','end_date'], 'classes': ['collapse']}),
     ]
     #formfield_overrides = {models.ManyToManyField: {'widget':}}
