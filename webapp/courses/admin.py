@@ -23,7 +23,7 @@ admin.site.unregister(User)
 #TODO: There's a loophole where staff members of any course A can gain access
 #      to any course B's pages by embedding the course B page to a course A 
 #      page. The behavior itself is necessary to complete the access chain. 
-#      Editors must be prohobited from adding embedded links to pages they do
+#      Editors must be prohibited from adding embedded links to pages they do
 #      not have access to. 
 class CourseContentAccess(admin.ModelAdmin):
     """
@@ -47,7 +47,7 @@ class CourseContentAccess(admin.ModelAdmin):
         """
         Gets a queryset of content where the requesting user either:
         1) has edited the page previously
-        2) belongs to the staff of a course thath contains the content
+        2) belongs to the staff of a course that contains the content
            either as a contentgraph node or as an embedded page
         
         The content type is read from the content_type attribute. Child
