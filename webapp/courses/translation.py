@@ -31,15 +31,15 @@ class CourseInstanceTranslationOptions(TranslationOptions):
 
 @register(File)
 class FileTranslationOptions(TranslationOptions):
-    fields = ('uploader', 'fileinfo',)
+    fields = ('owner', 'fileinfo',)
 
 @register(Image)
 class ImageTranslationOptions(TranslationOptions):
-    fields = ('uploader', 'description', 'fileinfo',)
+    fields = ('owner', 'description', 'fileinfo',)
 
 @register(VideoLink)
 class VideoLinkTranslationOptions(TranslationOptions):
-    fields = ('added_by', 'link', 'description',)
+    fields = ('owner', 'link', 'description',)
 
 @register(Term)
 class TermTranslationOptions(TranslationOptions):
