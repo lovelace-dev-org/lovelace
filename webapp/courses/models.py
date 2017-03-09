@@ -11,7 +11,7 @@ import re
 import os
 
 from django.db import models
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
 from django.db.models.signals import post_save
 from django.core.urlresolvers import reverse
 from django.utils import translation
@@ -88,6 +88,8 @@ class Course(models.Model):
     prerequisites = models.ManyToManyField('Course',
                                            verbose_name="Prerequisite courses",
                                            blank=True)
+    staff_group = models.ForeignKey(Group)
+    main_responsible = models.ForeignKey(User)
 
     # TODO: Create an instance automatically, if none exists
 
@@ -226,7 +228,8 @@ class File(models.Model):
     """Metadata of an embedded or attached file that an admin has uploaded."""
     # TODO: Make the uploading user the default and don't allow it to change
     # TODO: Slug and file name separately
-    uploader = models.ForeignKey(User, null=True, blank=True) # Translate
+    courseinstance = models.ForeignKey(CourseInstance, verbose_name="Course instance")
+    owner = models.ForeignKey(User, null=True, blank=True, verbose_name="Uploader") # Translate
     name = models.CharField(verbose_name='Name for reference in content',max_length=200,unique=True)
     date_uploaded = models.DateTimeField(verbose_name='date uploaded', auto_now_add=True)
     typeinfo = models.CharField(max_length=200)
@@ -241,7 +244,8 @@ def get_image_upload_path(instance, filename):
 class Image(models.Model):
     """Image"""
     # TODO: Make the uploading user the default and don't allow it to change
-    uploader = models.ForeignKey(User, null=True, blank=True) # Translate
+    courseinstance = models.ForeignKey(CourseInstance, verbose_name="Course instance")
+    owner = models.ForeignKey(User, null=True, blank=True, verbose_name="Uploader") # Translate
     name = models.CharField(verbose_name='Name for reference in content', max_length=200, unique=True)
     date_uploaded = models.DateTimeField(verbose_name='date uploaded', auto_now_add=True)
     description = models.CharField(max_length=500) # Translate
@@ -253,7 +257,8 @@ class Image(models.Model):
 class VideoLink(models.Model):
     """Youtube link for embedded videos"""
     # TODO: Make the adding user the default and don't allow it to change
-    added_by = models.ForeignKey(User, null=True, blank=True) # Translate
+    courseinstance = models.ForeignKey(CourseInstance, verbose_name="Course instance")
+    owner = models.ForeignKey(User, null=True, blank=True, verbose_name="Added by") # Translate
     name = models.CharField(verbose_name='Name for reference in content', max_length=200, unique=True)
     link = models.URLField() # Translate
     description = models.CharField(max_length=500) # Translate

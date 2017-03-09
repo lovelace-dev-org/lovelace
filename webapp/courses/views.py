@@ -31,6 +31,15 @@ from feedback.models import *
 import courses.markupparser as markupparser
 import courses.blockparser as blockparser
 
+def is_course_staff(user, instance):
+    if user.is_superuser:
+        return True
+    elif user.is_staff:
+        return user in instance.course.staff_group.user_set.get_queryset()
+    else:
+        return False
+    
+
 def cookie_law(view_func):
     """
     To comply with the European Union cookie law, display a warning about the
@@ -88,7 +97,7 @@ def course(request, course_slug, instance_slug):
     context["course"] = course_obj
     context["instance"] = instance_obj
 
-    if request.user.is_staff:
+    if is_course_staff(request.user, instance_obj):
         contents = instance_obj.contents.all().order_by('ordinal_number')
     else:
         contents = instance_obj.contents.filter(visible=True).order_by('ordinal_number')
@@ -97,14 +106,14 @@ def course(request, course_slug, instance_slug):
         tree = []
         tree.append((mark_safe('>'), None, None, None, None))
         for content_ in contents:
-            course_tree(tree, content_, request.user)
+            course_tree(tree, content_, request.user, instance_obj)
         tree.append((mark_safe('<'), None, None, None, None))
         context["content_tree"] = tree
 
     t = loader.get_template("courses/course.html")
     return HttpResponse(t.render(context, request))
 
-def course_tree(tree, node, user):
+def course_tree(tree, node, user, instance_obj):
     embedded_links = EmbeddedLink.objects.filter(parent=node.content.id)
     embedded_count = len(embedded_links)
     correct_embedded = 0
@@ -125,7 +134,7 @@ def course_tree(tree, node, user):
     if list_item not in tree:
         tree.append(list_item)
 
-    if user.is_staff:
+    if is_course_staff(user, instance_obj):
         children = ContentGraph.objects.filter(parentnode=node).order_by('ordinal_number')
     else:
         children = ContentGraph.objects.filter(parentnode=node, visible=True).order_by('ordinal_number')
@@ -133,7 +142,7 @@ def course_tree(tree, node, user):
     if len(children) > 0:
         tree.append((mark_safe('>'), None, None, None, None))
         for child in children:
-            course_tree(tree, child, user)
+            course_tree(tree, child, user, instance_obj)
         tree.append((mark_safe('<'), None, None, None, None))
 
 def check_answer_sandboxed(request, content_slug):
@@ -368,7 +377,7 @@ def get_old_file_exercise_evaluation(request, user, answer_id):
     except UserFileUploadExerciseAnswer.DoesNotExist as e:
         return HttpResponseNotFound("No such answer {}".format(answer_id))
     else:
-        if answer_obj.user != request.user and not request.user.is_staff:
+        if answer_obj.user != request.user and not is_course_staff(request.user, answer_obj.instance):
             return HttpResponseForbidden("You're only allowed to view your own answers.")
 
     from .tasks import generate_results
@@ -672,7 +681,12 @@ def show_answers(request, user, course, instance, exercise):
     """
     Show the user's answers for a specific exercise on a specific course.
     """
-    if request.user.is_authenticated() and (request.user.username == user or request.user.is_staff):
+    try:
+        instance_obj = CourseInstance.objects.get(slug=instance)
+    except CourseInstance.DoesNotExist as e:
+        return HttpResponseNotFound("No such course instance {}.".format(instance))
+    
+    if request.user.is_authenticated() and (request.user.username == user or is_course_staff(request.user, instance_obj)):
         pass
     else:
         return HttpResponseForbidden("You're only allowed to view your own answers.")
@@ -686,11 +700,6 @@ def show_answers(request, user, course, instance, exercise):
         course_obj = Course.objects.get(slug=course)
     except Course.DoesNotExist as e:
         return HttpResponseNotFound("No such course {}.".format(course))
-    
-    try:
-        instance_obj = CourseInstance.objects.get(slug=instance)
-    except CourseInstance.DoesNotExist as e:
-        return HttpResponseNotFound("No such course instance {}.".format(instance))
     
     try:
         exercise_obj = ContentPage.objects.get(slug=exercise).get_type_object()
