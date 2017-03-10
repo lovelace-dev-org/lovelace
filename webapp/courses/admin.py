@@ -6,7 +6,7 @@ from django.contrib.auth.admin import UserAdmin
 
 from django.core.urlresolvers import reverse
 
-from django.db import models
+from django.db import models, transaction
 from django.db.models import Q
 from django.forms import Field, ModelForm, TextInput, Textarea, ModelChoiceField
 
@@ -164,7 +164,8 @@ class CourseMediaAccess(admin.ModelAdmin):
     
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == 'courseinstance':
-            kwargs['queryset'] = CourseInstance.objects.filter(course__staff_group__user=request.user)
+            if not request.user.is_superuser:
+                kwargs['queryset'] = CourseInstance.objects.filter(course__staff_group__user=request.user)
         
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
     
@@ -431,7 +432,8 @@ class CalendarAdmin(admin.ModelAdmin):
 
 class FileAdmin(CourseMediaAccess):
     def save_model(self, request, obj, form, change):
-        obj.owner = request.user
+        if not change:
+            obj.owner = request.user
         obj.save()
 
     search_fields = ('name',)
@@ -439,7 +441,8 @@ class FileAdmin(CourseMediaAccess):
 
 class ImageAdmin(CourseMediaAccess):
     def save_model(self, request, obj, form, change):
-        obj.owner = request.user
+        if not change:
+            obj.owner = request.user
         obj.save()
 
     search_fields = ('name',)
@@ -449,7 +452,8 @@ class ImageAdmin(CourseMediaAccess):
 
 class VideoLinkAdmin(CourseMediaAccess):
     def save_model(self, request, obj, form, change):
-        obj.owner = request.user
+        if not change:
+            obj.owner = request.user
         obj.save()
 
     search_fields = ('name',)
@@ -566,7 +570,8 @@ class CourseInstanceAdmin(TranslationAdmin, VersionAdmin):
         """
         
         if db_field.name == 'course':
-            kwargs['queryset'] = Course.objects.filter(main_responsible=request.user)
+            if not request.user.is_superuser:
+                kwargs['queryset'] = Course.objects.filter(main_responsible=request.user)
             
         return super().formfield_for_foreignkey(db_field, request, **kwargs)                                                
         
@@ -625,5 +630,23 @@ class CourseInstanceAdmin(TranslationAdmin, VersionAdmin):
         
         for cg in obj.contents.all():
             cg.content.rendered_markup(request, context)
-
+            
+        self.current = obj
+        transaction.on_commit(self.set_frontpage_cg)
+            
+    # the horror
+    def set_frontpage_cg(self): 
+        obj = self.current
+        if obj.frontpage:
+            fp_node = ContentGraph.objects.filter(courseinstance=obj.id, ordinal_number=0).first()
+            if fp_node:
+                fp_node.content = obj.frontpage
+                fp_node.save()
+            else:
+                fp_node = obj.contents.create(
+                    content=obj.frontpage,
+                    scored=False,
+                    ordinal_number=0
+                )
+            
 admin.site.register(CourseInstance, CourseInstanceAdmin)

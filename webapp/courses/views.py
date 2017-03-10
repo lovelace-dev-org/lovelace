@@ -98,9 +98,9 @@ def course(request, course_slug, instance_slug):
     context["instance"] = instance_obj
 
     if is_course_staff(request.user, instance_obj):
-        contents = instance_obj.contents.all().order_by('ordinal_number')
+        contents = instance_obj.contents.filter(ordinal_number__gt=0).order_by('ordinal_number')
     else:
-        contents = instance_obj.contents.filter(visible=True).order_by('ordinal_number')
+        contents = instance_obj.contents.filter(ordinal_number__gt=0, visible=True).order_by('ordinal_number')
     
     if len(contents) > 0:
         tree = []
