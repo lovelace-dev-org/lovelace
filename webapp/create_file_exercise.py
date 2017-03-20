@@ -6,6 +6,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "lovelace.settings")
 import django
 django.setup()
 
+from django.contrib.auth.models import User, Group
 from django.core.files import File
 from django.db import transaction
 from reversion import revisions as reversion
@@ -90,13 +91,21 @@ def create_exercise(args):
         feedbacks.append(tf_fb)
     cfqs = [fb_models.ContentFeedbackQuestion.objects.get(question=fb.question) for fb in feedbacks]
 
+    main_responsible = User.objects.first()
+    staff_group = Group()
+    staff_group.save()
+    staff_group.user_set.add(main_responsible)
+    staff_group.save()
+
     course = c_models.Course(
         name_en="An example course",
         name_fi="Esimerkkikurssi",
         code="1234567890",
         credits=10,
         description_en="A thorough description of this course.",
-        description_fi="Täytelälinen kuvaelma kurssituksesta.",
+        description_fi="Täyteläinen kuvaelma kurssituksesta.",
+        staff_group=staff_group,
+        main_responsible=main_responsible,
     )
     course.save()
 
@@ -121,6 +130,8 @@ def create_exercise(args):
         credits=2.5,
         description_en="A course that doesn't actually exist and, therefore, you cannot take.",
         description_fi="Kurssi jota ei oikeasti ole olemassa, ja jota et voi siksi käydä.",
+        staff_group=staff_group,
+        main_responsible=main_responsible,
     )
     course2.save()
 
