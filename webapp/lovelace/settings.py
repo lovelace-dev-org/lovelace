@@ -34,10 +34,8 @@ INSTALLED_APPS = (
     'courses',
     'stats',
     'feedback',
-    'nested_inline',
     'exercise_admin',
     'reversion',
-    #'mod_wsgi.server',
 )
 
 SITE_ID = 1
@@ -210,6 +208,3 @@ CACHES = {
         }
     }
 }
-
-#Smuggler settings
-#SMUGGLER_FIXTURE_DIR = os.path.join(BASE_DIR, 'fixtures')
