@@ -4,6 +4,7 @@ from django.contrib import admin
 from django.contrib.auth.models import User
 from django.contrib.auth.admin import UserAdmin
 
+from django.core.cache import cache
 from django.core.urlresolvers import reverse
 
 from django.db import models, transaction
@@ -461,12 +462,17 @@ class VideoLinkAdmin(CourseMediaAccess):
     list_display = ('name', 'description',)
     list_per_page = 500
 
-class TermAdmin(TranslationAdmin):
+class TermAdmin(TranslationAdmin, VersionAdmin):
     search_fields = ('name',)
     list_display = ('name', 'instance',)
     list_filter = ('instance',)
     list_per_page = 500
     ordering = ('name',)
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        cache.set('termbank_contents', None)
+        cache.set('termbank_div_data', None)
 
 admin.site.register(Calendar, CalendarAdmin)
 admin.site.register(File, FileAdmin)

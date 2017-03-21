@@ -11,6 +11,7 @@ from django.http import HttpResponse, JsonResponse, HttpResponseRedirect,\
     HttpResponseServerError
 from django.db.models import Q
 from django.template import Template, loader, engines
+from django.core.cache import cache
 from django.core.urlresolvers import reverse
 from django.utils import timezone
 from django.utils.text import slugify
@@ -19,6 +20,7 @@ from django.utils.translation import ugettext as _
 from django.contrib import messages
 
 from reversion import revisions as reversion
+from reversion.models import Version
 
 from lovelace.celery import app as celery_app
 import courses.tasks as rpc_tasks
@@ -470,34 +472,41 @@ def content(request, course_slug, instance_slug, content_slug, **kwargs):
         'instance_slug': instance.slug,
     }
 
-    term_context = context.copy()
-    term_context['tooltip'] = True
-    terms = Term.objects.filter(instance__course=course).exclude(Q(description__isnull=True) | Q(description__exact='')).order_by('name')
-    term_div_data = []
-    termbank_contents = {}
-    for term in terms:
-        slug = slugify(term.name, allow_unicode=True)
-        term_div_data.append({
-            'slug' : slug,
-            'description' : "".join(markupparser.MarkupParser.parse(term.description, request, term_context)).strip(),
-        })
+    termbank_contents = cache.get('termbank_contents')
+    term_div_data = cache.get('term_div_data')
+    if termbank_contents is None or term_div_data is None:
+        term_context = context.copy()
+        term_context['tooltip'] = True
+        terms = Term.objects.filter(instance__course=course).exclude(Q(description__isnull=True) | Q(description__exact='')).order_by('name')
+        term_div_data = []
+        termbank_contents = {}
+        for term in terms:
+            slug = slugify(term.name, allow_unicode=True)
+            description = "".join(markupparser.MarkupParser.parse(term.description, request, term_context)).strip()
 
-        term_data = {
-            'slug' : slug,
-            'name' : term.name, 
-            'span_id' : slug + '-termbank-span',
-        }
-        try:
-            first_char = term.name.upper()[0]
-        except IndexError:
-            first_char = "#"
-        else:
-            if not first_char.isalpha():
+            term_div_data.append({
+                'slug' : slug,
+                'description' : description,
+            })
+
+            term_data = {
+                'slug' : slug,
+                'name' : term.name,
+                'span_id' : slug + '-termbank-span',
+            }
+            try:
+                first_char = term.name.upper()[0]
+            except IndexError:
                 first_char = "#"
-        if first_char in termbank_contents:
-            termbank_contents[first_char].append(term_data)
-        else:
-            termbank_contents[first_char] = [term_data]
+            else:
+                if not first_char.isalpha():
+                    first_char = "#"
+            if first_char in termbank_contents:
+                termbank_contents[first_char].append(term_data)
+            else:
+                termbank_contents[first_char] = [term_data]
+        cache.set('termbank_contents', termbank_contents)
+        cache.set('term_div_data', term_div_data)
             
     rendered_content = ""
 
@@ -510,6 +519,7 @@ def content(request, course_slug, instance_slug, content_slug, **kwargs):
         # This seems unoptimal. Maybe create a patch to django-reversions?
         # reversion.get_revision_for_object or sth. would be nice...
         #version_list = reversion.get_for_object(content).order_by('revision_id')
+        # TODO: New form? Version.objects.get_for_object(term)[0].revision.
         version = reversion.get_for_object(content).get(revision=revision).field_dict
         old_content = version["content"]
         question = version["question"]
