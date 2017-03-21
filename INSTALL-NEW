@@ -96,6 +96,7 @@ Installing the dependencies
 Install the dependencies' dependencies
 
 sudo apt-get install postgresql-server-dev-9.5
+#sudo apt-get install build-essential libz-dev libreadline-dev libssl-dev libsqlite3-dev libbz2-dev # if you compile python
 sudo apt-get install libjpeg-dev
 sudo apt-get install redis-server redis-tools
 sudo apt-get install rabbitmq-server
@@ -108,11 +109,10 @@ pip install pygments
 pip install pillow
 pip install django
 pip install django-redis
-pip install celery[redis]==4.0.0rc4
+pip install celery[redis]
 pip install django-allauth
 pip install django-modeltranslation
 pip install django-reversion
-pip install django-nested-inline
 
 
 Edit the configuration
