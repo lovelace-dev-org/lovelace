@@ -181,7 +181,8 @@
                       <ol>
                         {% for term in terms_by_letter %}
                           <li class="term-list-item">
-                            <div class="term-container" id="{{ term.span_id }}"
+                            {% if term.alias %}<span class="term-alias">{{ term.alias }}</span> → {% endif %}
+                            <div class="term-container"
                                  onmouseenter="show_term_description_during_hover(this, event, '#{{ term.slug }}-term-div');"
                                  onmouseleave="hide_tooltip('#{{ term.slug }}-term-div');">
                               <span class="term">{{ term.name }}</span>
@@ -232,11 +233,25 @@
             {% for term in term_div_data %}
               <div class="term-description" id="{{ term.slug }}-term-div">
                 <div class="term-grace-area"></div>
+                {% if term.tabs %}
+                  <ol class="term-tab-titles">
+                    {% for tab_title, _ in term.tabs %}
+                      <li>{{ tab_title }}</li>
+                    {% endfor %}
+                  </ol>
+                {% endif %}
                 <div class="term-desc-contents">
                   <div class="term-desc-scrollable">
                     {{ term.description|safe }}
                   </div>
                 </div>
+                {% for tab_title, tab_description in term.tabs %}
+                  <div class="term-desc-contents">
+                    <div class="term-desc-scrollable">
+                      {{ tab_description|safe }}
+                    </div>
+                  </div>
+                {% endfor %}
               </div>
             {% endfor %}
           {% endif %}

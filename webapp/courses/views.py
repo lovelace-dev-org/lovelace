@@ -472,8 +472,8 @@ def content(request, course_slug, instance_slug, content_slug, **kwargs):
         'instance_slug': instance.slug,
     }
 
-    termbank_contents = cache.get('termbank_contents')
-    term_div_data = cache.get('term_div_data')
+    termbank_contents = None #cache.get('termbank_contents')
+    term_div_data = None #cache.get('term_div_data')
     if termbank_contents is None or term_div_data is None:
         term_context = context.copy()
         term_context['tooltip'] = True
@@ -483,28 +483,52 @@ def content(request, course_slug, instance_slug, content_slug, **kwargs):
         for term in terms:
             slug = slugify(term.name, allow_unicode=True)
             description = "".join(markupparser.MarkupParser.parse(term.description, request, term_context)).strip()
+            tabs = [(tab.title, "".join(markupparser.MarkupParser.parse(tab.description, request, term_context)).strip())
+                    for tab in term.termtab_set.all()]
 
             term_div_data.append({
                 'slug' : slug,
                 'description' : description,
+                'tabs' : tabs,
             })
 
             term_data = {
                 'slug' : slug,
                 'name' : term.name,
-                'span_id' : slug + '-termbank-span',
+                'alias' : False,
             }
-            try:
-                first_char = term.name.upper()[0]
-            except IndexError:
-                first_char = "#"
-            else:
-                if not first_char.isalpha():
+
+            def get_term_initial(term):
+                try:
+                    first_char = term.upper()[0]
+                except IndexError:
                     first_char = "#"
+                else:
+                    if not first_char.isalpha():
+                        first_char = "#"
+                return first_char
+
+            first_char = get_term_initial(term.name)
+            
             if first_char in termbank_contents:
                 termbank_contents[first_char].append(term_data)
             else:
                 termbank_contents[first_char] = [term_data]
+
+            for alias in term.aliases:
+                alias_data = {
+                    'slug' : slug,
+                    'name' : term.name,
+                    'alias' : alias,
+                }
+
+                first_char = get_term_initial(alias)
+
+                if first_char in termbank_contents:
+                    termbank_contents[first_char].append(alias_data)
+                else:
+                    termbank_contents[first_char] = [alias_data]
+                    
         cache.set('termbank_contents', termbank_contents)
         cache.set('term_div_data', term_div_data)
             

@@ -266,26 +266,40 @@ class VideoLink(models.Model):
     def __str__(self):
         return self.name
 
-@reversion.register()
+@reversion.register(follow=["termtab_set"])
 class Term(models.Model):
     instance = models.ForeignKey(CourseInstance, verbose_name="Course instance")
     name = models.CharField(verbose_name='Term', max_length=200) # Translate
     description = models.TextField() # Translate
-
-    # TODO
-    #tags = ArrayField( # consider: https://github.com/funkybob/django-array-tags
-        #base_field=models.CharField(max_length=32, blank=True),
-        #default=list,
-        #blank=True
-    #)
-
-    # TODO: array of intra-instance links to relevant sections in material 
+    aliases = ArrayField(
+        verbose_name="Aliases for this term",
+        base_field=models.CharField(max_length=200, blank=True),
+        default=list,
+        blank=True
+    )
+    links = ArrayField(
+        verbose_name="Links to pages describing this term in detail",
+        base_field=models.CharField(max_length=255, blank=True),
+        default=list,
+        blank=True
+    )
+    tags = ArrayField( # consider: https://github.com/funkybob/django-array-tags
+        base_field=models.CharField(max_length=48, blank=True),
+        default=list,
+        blank=True
+    )
     
     def __str__(self):
         return self.name
 
     class Meta:
         unique_together = ('instance', 'name',)
+
+@reversion.register()
+class TermTab(models.Model):
+    term = models.ForeignKey(Term)
+    title = models.CharField(verbose_name="Title of this tab", max_length=100) # Translate
+    description = models.TextField() # Translate
 
 ## Time reservation and event calendar system
 class Calendar(models.Model):

@@ -462,12 +462,18 @@ class VideoLinkAdmin(CourseMediaAccess):
     list_display = ('name', 'description',)
     list_per_page = 500
 
+class TermTabInline(TranslationTabularInline):
+    model = TermTab
+    extra = 0
+
 class TermAdmin(TranslationAdmin, VersionAdmin):
     search_fields = ('name',)
     list_display = ('name', 'instance',)
     list_filter = ('instance',)
     list_per_page = 500
     ordering = ('name',)
+
+    inlines = [TermTabInline]
 
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)

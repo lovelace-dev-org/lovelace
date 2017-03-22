@@ -237,7 +237,9 @@ function hide_tooltip(div_id) {
 
 function filter_termbank_contents(search_str) {
     $("li.term-list-item").each(function() {
-        if ($(this).find("span.term").text().toLowerCase().indexOf(search_str.toLowerCase()) > -1 || search_str === "") {
+        if ($(this).find("span.term").text().toLowerCase().indexOf(search_str.toLowerCase()) > -1 ||
+            $(this).find("span.term-alias").text().toLowerCase().indexOf(search_str.toLowerCase()) > -1 ||
+            search_str === "") {
             $(this).css({"display" : "block"});
         } else {
             $(this).hide();

@@ -126,6 +126,29 @@ div.term-desc-contents :first-child {
     margin-top: 0;
 }
 
+/* The tabs */
+
+ol.term-tab-titles {
+    margin-left: 0;
+    padding-left: 0;
+    border-bottom: 2px solid #ccc;
+    margin-bottom: 4px;
+}
+ol.term-tab-titles > li {
+    margin-left: 0;
+    padding-left: 0;
+    display: inline;
+    cursor: pointer;
+    font-weight: bold;
+    border-right: 2px solid #ccc;
+    padding-right: 4px;
+    margin-right: 4px;
+}
+ol.term-tab-titles > li:last-child {
+    border: 0;
+    margin-right: 0;
+}
+
 /* Copied from style.css */
 
 div.term-description h1, div.term-description h2, div.term-description h3, div.term-description h4, div.term-description h5, div.term-description h6 {
@@ -249,18 +272,18 @@ div.term-description div.normal {
     margin-right: 15px;
 }
 
-div.term-description ul, div.term-description ol {
+div.term-desc-contents ul, div.term-desc-contents ol {
     margin-left: 1.5em;
     margin-bottom: 5px;
 }
 
-div.term-description ul > li, div.term-description ol > li {
+div.term-desc-contents ul > li, div.term-desc-contents ol > li {
     margin-left: 0;
     margin-bottom: 4px;
     padding-left: 5px;
 }
 
-div.term-description ul > ul, div.term-description ul > ol, div.term-description ol > ol, div.term-description ol > ul {
+div.term-desc-contents ul > ul, div.term-desc-contents ul > ol, div.term-desc-contents ol > ol, div.term-desc-contents ol > ul {
     margin-left: 3em;
     margin-bottom: 0;
 }
