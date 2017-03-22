@@ -9,6 +9,7 @@ import courses.markupparser
 import pygments
 from pygments import highlight
 from django.utils.text import slugify
+from django.core.urlresolvers import reverse
 from pygments.lexers import get_lexer_by_name, get_all_lexers
 from pygments.formatters import HtmlFormatter
 
@@ -78,12 +79,26 @@ def parse_pre_tag(parsed_string, tag, hilite, match):
 
     return parsed_string
     
-def parse_anchor_tag(parsed_string, tag, address, link_text):
-    contents = link_text or address
-    parsed_string += tag.htmlbegin({"href":address, "target":"_blank"})
-    parsed_string += contents
+def parse_anchor_tag(parsed_string, tag, address, link_text, context):
+    try:
+        server_side, client_side = address.split('#', 1)
+    except ValueError:
+        server_side = address
+        client_side = None
+    slugified = slugify(server_side, allow_unicode=True)
+    if server_side == slugified and context is not None:
+        # internal address
+        final_address = reverse('courses:content', args=[context['course_slug'], context['instance_slug'], slugified])
+        if client_side is not None:
+            final_address = final_address.rstrip('/') + '#' + client_side
+    else:
+        # external address
+        final_address = address
+    
+    parsed_string += tag.htmlbegin({"href": final_address, "target": "_blank",})
+    parsed_string += link_text or address
     parsed_string += tag.htmlend()
-    #print tag.htmlbegin({"href":address}) + contents + tag.htmlend()
+
     return parsed_string
 
 def parse_hint_tag(parsed_string, tag, hint_id, hint_text):
@@ -146,7 +161,7 @@ def parsetag(tagname, unparsed_string, context=None):
         if hilite:
             parsed_string = parse_pre_tag(parsed_string, tag, hilite, m)
         elif address:
-            parsed_string = parse_anchor_tag(parsed_string, tag, address, link_text)
+            parsed_string = parse_anchor_tag(parsed_string, tag, address, link_text, context)
         elif hint_id:
             parsed_string = parse_hint_tag(parsed_string, tag, hint_id, hint_text)
         elif term_name:
@@ -193,7 +208,7 @@ def parseblock(blockstring, context=None):
     parsed_string = parsetag("italic", parsed_string)
     parsed_string = parsetag("mark", parsed_string)
     parsed_string = parsetag("kbd", parsed_string)
-    parsed_string = parsetag("anchor", parsed_string)
+    parsed_string = parsetag("anchor", parsed_string, context)
     parsed_string = parsetag("hint", parsed_string)
     parsed_string = parsetag("term", parsed_string, context)
 
