@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2016-10-04 13:44+0300\n"
+"POT-Creation-Date: 2017-03-23 12:09+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,7 +18,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: courses/templates/courses/base.html:78
+#: courses/templates/courses/base.html:79
 #, python-format
 msgid ""
 "This site uses cookies. Learn more about our <a href=\"%(terms_url)s\">terms "
@@ -27,65 +27,69 @@ msgstr ""
 "Tämä sivusto käyttää evästeitä. Lue lisää <a href=\"%(terms_url)s"
 "\">käyttöehdoista</a>."
 
-#: courses/templates/courses/base.html:79
+#: courses/templates/courses/base.html:80
 msgid "Accept"
 msgstr "Hyväksy"
 
-#: courses/templates/courses/base.html:108
+#: courses/templates/courses/base.html:109
 msgid "Settings"
 msgstr "Asetukset"
 
-#: courses/templates/courses/base.html:110
+#: courses/templates/courses/base.html:111
 #: courses/templates/courses/content-meta.html:35
 msgid "Teacher’s tools"
 msgstr "Opettajan työkalut"
 
-#: courses/templates/courses/base.html:112
+#: courses/templates/courses/base.html:113
 #: courses/templates/courses/contentpage.html:26
-#: courses/templates/courses/course.html:15
+#: courses/templates/courses/course.html:16
 #, fuzzy
 #| msgid "Statistics"
 msgid "Course statistics"
 msgstr "Kurssin tilastot"
 
-#: courses/templates/courses/base.html:115
+#: courses/templates/courses/base.html:116
 msgid "Log out"
 msgstr "Kirjaudu ulos"
 
-#: courses/templates/courses/base.html:121
+#: courses/templates/courses/base.html:122
 msgid "Log in"
 msgstr "Kirjaudu sisään"
 
-#: courses/templates/courses/base.html:125
+#: courses/templates/courses/base.html:126
 msgid "Sign up"
 msgstr "Luo käyttäjä"
 
-#: courses/templates/courses/base.html:160
-#: courses/templates/courses/base.html:190
+#: courses/templates/courses/base.html:161
+#: courses/templates/courses/base.html:206
 msgid "Table of Contents"
 msgstr "Sisällysluettelo"
 
-#: courses/templates/courses/base.html:169
+#: courses/templates/courses/base.html:170
 msgid "Hide/Show the termbank"
 msgstr "Piilota/Näytä termipankki"
 
-#: courses/templates/courses/base.html:171
+#: courses/templates/courses/base.html:172
 msgid "Termbank"
 msgstr "Termipankki"
 
-#: courses/templates/courses/base.html:188
+#: courses/templates/courses/base.html:174
+msgid "Search:"
+msgstr "Hae:"
+
+#: courses/templates/courses/base.html:204
 msgid "Hide/Show the table of contents"
 msgstr "Piilota/Näytä sisällysluettelo"
 
-#: courses/templates/courses/base.html:198
+#: courses/templates/courses/base.html:214
 msgid "Completed:"
 msgstr "Ratkaistu:"
 
-#: courses/templates/courses/base.html:198
+#: courses/templates/courses/base.html:214
 msgid "exercises"
 msgstr "tehtävää"
 
-#: courses/templates/courses/base.html:238
+#: courses/templates/courses/base.html:269
 #: courses/templates/courses/terms.html:10
 #: courses/templates/courses/terms.html:17
 msgid "Terms and Conditions"
@@ -171,7 +175,7 @@ msgstr "Katso erikseen"
 msgid "Courses"
 msgstr "Kurssit"
 
-#: courses/templates/courses/course.html:22
+#: courses/templates/courses/course.html:24
 msgid "Course Contents"
 msgstr "Kurssin sisältö"
 
@@ -189,9 +193,11 @@ msgstr "Oikea vastaus!"
 msgid "Incorrect answer!"
 msgstr "Väärä vastaus!"
 
-#: courses/templates/courses/exercise-evaluation.html:17
-msgid "Hint: "
-msgstr "Vihje: "
+#: courses/templates/courses/exercise.html:21
+#, fuzzy
+#| msgid "Hint: "
+msgid "Hints"
+msgstr "Vihjeet"
 
 #: courses/templates/courses/exercise.html:36
 msgid "Send answer"
@@ -208,6 +214,12 @@ msgstr "Olet aiemmin vastannut tähän tehtävään väärin."
 #: courses/templates/courses/exercise.html:45
 msgid "You have already answered this task correctly."
 msgstr "Olet aiemmin vastannut tähän tehtävään oikein."
+
+#: courses/templates/courses/exercise.html:51
+#, fuzzy
+#| msgid "Messages:"
+msgid "Messages"
+msgstr "Viestit"
 
 #: courses/templates/courses/file-exercise-evaluation.html:16
 #: courses/templates/courses/user-exercise-answers.html:87
@@ -366,6 +378,35 @@ msgstr "Viestit:"
 #: templates/account/base.html:32
 msgid "Menu:"
 msgstr "Valikko:"
+
+#: templates/admin/change_form.html:20
+msgid "Home"
+msgstr ""
+
+#: templates/admin/change_form.html:23
+#, python-format
+msgid "Add %(name)s"
+msgstr ""
+
+#: templates/admin/change_form.html:35
+msgid "History"
+msgstr ""
+
+#: templates/admin/change_form.html:37
+msgid "View on site"
+msgstr ""
+
+#: templates/admin/change_form.html:46
+msgid "Restore editor settings"
+msgstr ""
+
+#: templates/admin/change_form.html:49
+msgid "Please correct the error below."
+msgstr ""
+
+#: templates/admin/change_form.html:49
+msgid "Please correct the errors below."
+msgstr ""
 
 #, fuzzy
 #~| msgid "Send answer"
