@@ -472,8 +472,8 @@ def content(request, course_slug, instance_slug, content_slug, **kwargs):
         'instance_slug': instance.slug,
     }
 
-    termbank_contents = None #cache.get('termbank_contents')
-    term_div_data = None #cache.get('term_div_data')
+    termbank_contents = cache.get('termbank_contents')
+    term_div_data = cache.get('term_div_data')
     if termbank_contents is None or term_div_data is None:
         term_context = context.copy()
         term_context['tooltip'] = True
