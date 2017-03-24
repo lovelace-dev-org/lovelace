@@ -256,6 +256,13 @@
                     </div>
                   </div>
                 {% endfor %}
+                {% if term.links %}
+                  <ul>
+                    {% for link in term.links %}
+                      <li><a href="{{ link.url }}">{{ link.text }}</a></li>
+                    {% endfor %}
+                  </ul>
+                {% endif %}
               </div>
             {% endfor %}
           {% endif %}

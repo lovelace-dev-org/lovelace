@@ -266,7 +266,7 @@ class VideoLink(models.Model):
     def __str__(self):
         return self.name
 
-@reversion.register(follow=["termtab_set"])
+@reversion.register(follow=["termtab_set", "termlink_set"])
 class Term(models.Model):
     instance = models.ForeignKey(CourseInstance, verbose_name="Course instance")
     name = models.CharField(verbose_name='Term', max_length=200) # Translate
@@ -274,12 +274,6 @@ class Term(models.Model):
     aliases = ArrayField(
         verbose_name="Aliases for this term",
         base_field=models.CharField(max_length=200, blank=True),
-        default=list,
-        blank=True
-    )
-    links = ArrayField(
-        verbose_name="Links to pages describing this term in detail",
-        base_field=models.CharField(max_length=255, blank=True),
         default=list,
         blank=True
     )
@@ -303,6 +297,12 @@ class TermTab(models.Model):
 
     def __str__(self):
         return self.title
+
+@reversion.register()
+class TermLink(models.Model):
+    term = models.ForeignKey(Term)
+    url = models.CharField(verbose_name="URL", max_length=300) # Translate
+    link_text = models.CharField(verbose_name="Link text", max_length=80) # Translate
 
 ## Time reservation and event calendar system
 class Calendar(models.Model):

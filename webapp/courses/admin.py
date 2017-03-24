@@ -466,6 +466,10 @@ class TermTabInline(TranslationTabularInline):
     model = TermTab
     extra = 0
 
+class TermLinkInline(TranslationTabularInline):
+    model = TermLink
+    extra = 0
+    
 class TermAdmin(TranslationAdmin, VersionAdmin):
     search_fields = ('name',)
     list_display = ('name', 'instance',)
@@ -473,7 +477,7 @@ class TermAdmin(TranslationAdmin, VersionAdmin):
     list_per_page = 500
     ordering = ('name',)
 
-    inlines = [TermTabInline]
+    inlines = [TermTabInline, TermLinkInline]
 
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)

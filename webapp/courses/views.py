@@ -486,11 +486,13 @@ def content(request, course_slug, instance_slug, content_slug, **kwargs):
             tabs = [(tab.title, "".join(markupparser.MarkupParser.parse(tab.description, request, term_context)).strip())
                     for tab in term.termtab_set.all().order_by('id')]
             tags = term.tags
+            links = [{"url": link.url, "text": link.link_text} for link in term.termlink_set.all()]
             
             term_div_data.append({
                 'slug' : slug,
                 'description' : description,
                 'tabs' : tabs,
+                'links' : links,
             })
 
             term_data = {
