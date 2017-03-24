@@ -194,6 +194,8 @@ function show_term_description(span_slct, div_slct) {
 
     var desc_content_div = desc_div.children("div.term-desc-contents");
     var desc_scrollable_div = desc_div.find("div.term-desc-scrollable");
+
+    // TODO: Rework to allow slimscroll on term tabs
     
     if (desc_div_height + "px" === desc_content_div.css('max-height')) {
         desc_scrollable_div.slimScroll({
@@ -248,6 +250,22 @@ function filter_termbank_contents(search_str) {
     $("li.terms-by-letter").each(function() {
         if($(this).children("ol").children(":visible").length > 0 || search_str === "") {
             $(this).css({"display" : "block"});
+        } else {
+            $(this).hide();
+        }
+    });
+}
+
+function show_term_tab(elem) {
+    let item = $(elem);
+    item.siblings().removeClass("term-tab-active");
+    item.addClass("term-tab-active");
+    // Calculate the ordinal of this element in the parent <ol>
+    let index = item.parent().children().index(item);
+    item.parent().parent().children('.term-desc-contents').each(function() {
+        let PRECEDING_ELEMENTS = 2;
+        if ($(this).index() - PRECEDING_ELEMENTS === index) {
+            $(this).show();
         } else {
             $(this).hide();
         }

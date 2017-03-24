@@ -187,6 +187,9 @@
                                  onmouseleave="hide_tooltip('#{{ term.slug }}-term-div');">
                               <span class="term">{{ term.name }}</span>
                             </div>
+                            {% for tag in term.tags %}
+                              <span class="term-tag">{{ tag }}</span>
+                            {% endfor %}
                           </li>
                         {% endfor %}
                       </ol>
@@ -235,8 +238,9 @@
                 <div class="term-grace-area"></div>
                 {% if term.tabs %}
                   <ol class="term-tab-titles">
+                    <li onclick="show_term_tab(this);" class="term-tab-active">{% trans 'Description' %}</li>
                     {% for tab_title, _ in term.tabs %}
-                      <li>{{ tab_title }}</li>
+                      <li onclick="show_term_tab(this);">{{ tab_title }}</li>
                     {% endfor %}
                   </ol>
                 {% endif %}
@@ -246,7 +250,7 @@
                   </div>
                 </div>
                 {% for tab_title, tab_description in term.tabs %}
-                  <div class="term-desc-contents">
+                  <div class="term-desc-contents" style="display:none;">
                     <div class="term-desc-scrollable">
                       {{ tab_description|safe }}
                     </div>

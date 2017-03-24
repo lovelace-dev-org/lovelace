@@ -484,8 +484,9 @@ def content(request, course_slug, instance_slug, content_slug, **kwargs):
             slug = slugify(term.name, allow_unicode=True)
             description = "".join(markupparser.MarkupParser.parse(term.description, request, term_context)).strip()
             tabs = [(tab.title, "".join(markupparser.MarkupParser.parse(tab.description, request, term_context)).strip())
-                    for tab in term.termtab_set.all()]
-
+                    for tab in term.termtab_set.all().order_by('id')]
+            tags = term.tags
+            
             term_div_data.append({
                 'slug' : slug,
                 'description' : description,
@@ -495,6 +496,7 @@ def content(request, course_slug, instance_slug, content_slug, **kwargs):
             term_data = {
                 'slug' : slug,
                 'name' : term.name,
+                'tags' : tags,
                 'alias' : False,
             }
 

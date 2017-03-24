@@ -301,6 +301,9 @@ class TermTab(models.Model):
     title = models.CharField(verbose_name="Title of this tab", max_length=100) # Translate
     description = models.TextField() # Translate
 
+    def __str__(self):
+        return self.title
+
 ## Time reservation and event calendar system
 class Calendar(models.Model):
     """A multi purpose calendar for course events markups, time reservations etc."""

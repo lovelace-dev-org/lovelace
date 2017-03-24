@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-03-23 12:09+0200\n"
+"POT-Creation-Date: 2017-03-24 12:15+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -89,7 +89,11 @@ msgstr "Ratkaistu:"
 msgid "exercises"
 msgstr "tehtävää"
 
-#: courses/templates/courses/base.html:269
+#: courses/templates/courses/base.html:239
+msgid "Description"
+msgstr "Kuvaus"
+
+#: courses/templates/courses/base.html:270
 #: courses/templates/courses/terms.html:10
 #: courses/templates/courses/terms.html:17
 msgid "Terms and Conditions"
