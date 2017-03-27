@@ -494,7 +494,7 @@ class EmbeddedPageMarkup(Markup):
             # TODO: Prevent recursion depth > 2
             #embedded_content = page.rendered_markup()
             embedded_content = ""
-            markup_gen = MarkupParser.parse(page.content)
+            markup_gen = MarkupParser.parse(page.content, state["request"], state["context"])
             for chunk in markup_gen:
                 embedded_content += chunk
             
