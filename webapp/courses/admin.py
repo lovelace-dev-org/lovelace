@@ -70,7 +70,7 @@ class CourseContentAccess(admin.ModelAdmin):
             Q(id__in=list(edited)) |
             Q(contentgraph__courseinstance__course__staff_group__user=request.user) |
             Q(emb_embedded__parent__contentgraph__courseinstance__course__staff_group__user=request.user)
-        )        
+        ).distinct()
 
     def get_queryset(self, request):
         return CourseContentAccess.content_access_list(request, self.model, self.content_type)
@@ -82,7 +82,7 @@ class CourseContentAccess(admin.ModelAdmin):
         
         if request.user.is_staff:
             if obj:
-                return Version.objects.get_for_object(obj).filter(revision__user=request.user) or self._match_groups(request.user, obj)
+                return Version.objects.get_for_object(obj).filter(revision__user=request.user).exists() or self._match_groups(request.user, obj)
             else:            
                 return True
         else:
@@ -94,7 +94,7 @@ class CourseContentAccess(admin.ModelAdmin):
         
         elif request.user.is_staff:
             if obj:
-                return Version.objects.get_for_object(obj).filter(revision__user=request.user) or self._match_groups(request.user, obj)
+                return Version.objects.get_for_object(obj).filter(revision__user=request.user).exists() or self._match_groups(request.user, obj)
             else:            
                 return True
         else:
@@ -161,7 +161,7 @@ class CourseMediaAccess(admin.ModelAdmin):
         return qs.filter(
             Q(owner=request.user) |
             Q(courseinstance__course__staff_group__in=user_groups)
-        )
+        ).distinct()
     
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == 'courseinstance':
