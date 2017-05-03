@@ -1,68 +1,70 @@
 {% load i18n %}
 {% for test in log %}
     <div class="evaluation-msg-title">
-    {{ test.title|safe }}
+      {{ test.title|safe }}
     </div>  
     {% for run in test.runs %}
         {% if forloop.first %}
-        {% if run.output %}
-        <div class="evaluation-run evaluation-run-open" onclick="collapse_eval_debug(this)">
-        {% endif %}
-        <ul>
-            {% for output in run.output %}
-                {% if output.flag == 0 %}
-                <li class="evaluation-msg-incorrect">            
-                    {{ output.msg|safe }}                    
-                </li>
-                {% elif output.flag == 1 %}
-                <li class="evaluation-msg-correct">
-                    {{ output.msg|safe }}
-                </li>
-                {% elif output.flag == 2 %}
-                <li class="evaluation-msg-info">
-                    {{ output.msg|safe }}
-                </li>
-                {% elif output.flag == 3 %}
-                <li class="evaluation-msg-error">
-                    {{ output.msg|safe }}
-                </li>
-                {% elif output.flag == 4 %}
-                <li class="evaluation-msg-debug">
-                    {{ output.msg|safe }}
-                </li>
-                {% endif %}        
-            {% endfor %}
+          {% if run.output %}
+            <div class="evaluation-run evaluation-run-open" onclick="collapse_eval_debug(this)">
+              <ul>
+                {% for output in run.output %}
+                  {% if output.flag == 0 %}
+                    <li class="evaluation-msg-incorrect">            
+                      {{ output.msg|safe }}                    
+                    </li>
+                  {% elif output.flag == 1 %}
+                    <li class="evaluation-msg-correct">
+                      {{ output.msg|safe }}
+                    </li>
+                  {% elif output.flag == 2 %}
+                    <li class="evaluation-msg-info">
+                      {{ output.msg|safe }}
+                    </li>
+                  {% elif output.flag == 3 %}
+                    <li class="evaluation-msg-error">
+                      {{ output.msg|safe }}
+                    </li>
+                  {% elif output.flag == 4 %}
+                    <li class="evaluation-msg-debug">
+                      {{ output.msg|safe }}
+                    </li>
+                  {% endif %}        
+                {% endfor %}
+              </ul>
+            </div>
+          {% endif %}
         {% else %}    
-        {% if run.output %}
-        <div class="evaluation-run evaluation-run-closed" onclick="expand_eval_debug(this)">
-        {% endif %}
-        <ul>
-            {% for output in run.output %}
-                {% if output.flag == 0 %}
-                <li class="evaluation-msg-incorrect">            
-                    {{ output.msg|safe }}                    
-                </li>
-                {% elif output.flag == 1 %}
-                <li class="evaluation-msg-correct">
-                    {{ output.msg|safe }}
-                </li>
-                {% elif output.flag == 2 %}
-                <li class="evaluation-msg-info evaluation-li-hidden">
-                    {{ output.msg|safe }}
-                </li>
-                {% elif output.flag == 3 %}
-                <li class="evaluation-msg-error evaluation-li-hidden">
-                    {{ output.msg|safe }}
-                </li>
-                {% elif output.flag == 4 %}
-                <li class="evaluation-msg-debug evaluation-li-hidden">
-                    {{ output.msg|safe }}
-                </li>
-                {% endif %}        
-            {% endfor %}
-        {% endif %}
-        </ul>
-        </div>
+          {% if run.output %}
+            <div class="evaluation-run evaluation-run-closed" onclick="expand_eval_debug(this)">
+              <ul>
+                {% for output in run.output %}
+                  {% if output.flag == 0 %}
+                    <li class="evaluation-msg-incorrect">            
+                      {{ output.msg|safe }}                    
+                    </li>
+                  {% elif output.flag == 1 %}
+                    <li class="evaluation-msg-correct">
+                      {{ output.msg|safe }}
+                    </li>
+                  {% elif output.flag == 2 %}
+                    <li class="evaluation-msg-info evaluation-li-hidden">
+                      {{ output.msg|safe }}
+                    </li>
+                  {% elif output.flag == 3 %}
+                    <li class="evaluation-msg-error evaluation-li-hidden">
+                      {{ output.msg|safe }}
+                    </li>
+                  {% elif output.flag == 4 %}
+                    <li class="evaluation-msg-debug evaluation-li-hidden">
+                      {{ output.msg|safe }}
+                    </li>
+                  {% endif %}        
+                {% endfor %}
+              </ul>
+            </div>
+          {% endif %}
+        {% endif %}  
     {% endfor %}
 {% endfor %}
     
