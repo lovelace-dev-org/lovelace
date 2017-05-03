@@ -66,6 +66,10 @@ function exercise_success(data, result_div, error_div, form_parent) {
         hints_div.find('div.hints-list').html(all_hints);
         hints_div.css("display", "block");
     }
+    
+    // clean up old highlights
+    $('section.content mark.hint-active').attr({'class': 'hint-inactive'}); 
+    
     if (data.triggers) {
         /* TODO: For each triggered hint that's not currently on the screen:
            - display a pink clickable arrow on the upper/lower section of screen
@@ -74,7 +78,7 @@ function exercise_success(data, result_div, error_div, form_parent) {
            - set the CSS class to an intermediate value with the borders; only
              start the animation when the hint becomes visible
          */
-        console.log(data.triggers);
+        //console.log(data.triggers);
         for (let hint_id of data.triggers) {
             let hint_text = $('section.content').find('#hint-id-' + hint_id);
             hint_text.attr({'class': 'hint-active'});
