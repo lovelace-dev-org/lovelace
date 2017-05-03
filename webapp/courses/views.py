@@ -33,6 +33,12 @@ from feedback.models import *
 import courses.markupparser as markupparser
 import courses.blockparser as blockparser
 
+JSON_INCORRECT = 0
+JSON_CORRECT = 1
+JSON_INFO = 2
+JSON_ERROR = 3
+JSON_DEBUG = 4
+
 def is_course_staff(user, instance):
     if user.is_superuser:
         return True
@@ -324,6 +330,8 @@ def file_exercise_evaluation(request, course_slug, instance_slug, content_slug, 
     evaluation_tree = json.loads(evaluation_json)
     r.delete(task_id)
 
+    log = evaluation_tree["test_tree"].get("log", [])
+
     msg_context = {
         'course_slug': course_slug,
         'instance_slug': instance_slug,
@@ -335,6 +343,15 @@ def file_exercise_evaluation(request, course_slug, instance_slug, content_slug, 
         ])
         for msg in evaluation_tree['test_tree'].get('messages', [])
     ]
+        
+    # render all individual messages in the log tree
+    for test in log:
+        test["title"] = "".join(markupparser.MarkupParser.parse(test["title"], request, msg_context)).strip()
+        test["runs"].sort(key=lambda run: run["correct"])
+        for run in test["runs"]:
+            for output in run["output"]:
+                output["msg"] = "".join(markupparser.MarkupParser.parse(output["msg"], request, msg_context)).strip()                
+        
     hints = ["".join(markupparser.MarkupParser.parse(msg, request, msg_context)).strip()
              for msg in evaluation_tree['test_tree'].get('hints', [])]
     triggers = evaluation_tree['test_tree'].get('triggers', [])
@@ -356,7 +373,7 @@ def file_exercise_evaluation(request, course_slug, instance_slug, content_slug, 
         'result': t_exercise.render(c_exercise),
         'evaluation': evaluation_obj.correct,
         'points': evaluation_obj.points,
-        'messages': t_messages.render({'messages': messages}),
+        'messages': t_messages.render({'log': log}),
         'hints': hints,
         'triggers': triggers,
         'answer_count_str': answer_count_str,

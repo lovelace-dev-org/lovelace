@@ -271,3 +271,31 @@ function show_term_tab(elem) {
         }
     });
 }
+
+function collapse_eval_debug(button) {
+    let item = $(button);
+    item.children("ul").children("li.evaluation-msg-debug").each(function() {
+        $(this).removeClass("evaluation-li-visible");
+        $(this).addClass("evaluation-li-hidden");
+        $(this).hide();
+    });
+    item.attr("onclick", "expand_eval_debug(this)");
+    item.removeClass("evaluation-run-open");
+    item.addClass("evaluation-run-closed");
+}
+    
+function expand_eval_debug(button) {
+    let item = $(button);
+    item.children("ul").children("li.evaluation-msg-debug").each(function() {
+        $(this).removeClass("evaluation-li-hidden");
+        $(this).addClass("evaluation-li-visible");
+        $(this).show();
+    });
+    item.attr("onclick", "collapse_eval_debug(this)");
+    item.removeClass("evaluation-run-closed");
+    item.addClass("evaluation-run-open");
+}
+
+    
+    
+

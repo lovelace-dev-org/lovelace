@@ -58,6 +58,7 @@ JSON_INCORRECT = 0
 JSON_CORRECT = 1
 JSON_INFO = 2
 JSON_ERROR = 3
+JSON_DEBUG = 4
 
 @shared_task(name="courses.run-fileexercise-tests", bind=True)
 def run_tests(self, user_id, instance_id, exercise_id, answer_id, lang_code, revision):
@@ -175,8 +176,9 @@ def generate_results(results, exercise_id):
         'tests': [],
         'messages': [],
         'errors': [],
-        'hints': [],
-        'triggers': [],
+        'hints': set(),
+        'triggers': set(),
+        'log': []
     }
 
     #### GO THROUGH ALL TESTS
@@ -238,24 +240,29 @@ def generate_results(results, exercise_id):
                         print("Error decoding JSON output: {}".format(str(e)))
                     else:
                         tester = json_results.get('tester', "")
+                        test_tree['log'] = json_results.get('tests', [])
                         for test in json_results.get('tests', []):
                             test_title = test.get('title')
                             test_msg = {'title': test_title, 'msgs': []}
                             for test_run in test.get('runs', []):
+                                run_correct = True
                                 for test_output in test_run.get('output', []):
                                     output_triggers = test_output.get('triggers', [])
                                     output_hints = test_output.get('hints', [])
                                     output_msg = test_output.get('msg', '')
                                     output_flag = test_output.get('flag', 0)
 
-                                    test_tree['triggers'].extend(output_triggers)
-                                    test_tree['hints'].extend(output_hints)
-                                    test_msg['msgs'].append(output_msg)
+                                    test_tree['triggers'].update(output_triggers)
+                                    test_tree['hints'].update(output_hints)
+                                    test_msg['msgs'].append(output_msg) 
                                     
                                     if output_flag == JSON_INCORRECT:
                                         cmd_correct = False
+                                        run_correct = False
                                     if output_flag == JSON_ERROR:
                                         cmd_correct = False
+                                        run_correct = False
+                                test_run["correct"] = run_correct
                             test_tree['messages'].append(test_msg)
 
                     if student_c['stderr']:
@@ -298,7 +305,10 @@ def generate_results(results, exercise_id):
                 current_test["correct"] = cmd_correct if current_test["correct"] else False
                 if cmd_correct == False: correct = False
                
-
+    # return unique hints and triggers only
+    test_tree["hints"] = list(test_tree["hints"])
+    test_tree["triggers"] = list(test_tree["triggers"])
+    
     evaluation.update({
         "correct": correct,
         "test_tree": test_tree,

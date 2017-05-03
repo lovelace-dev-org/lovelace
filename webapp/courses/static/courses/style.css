@@ -1166,6 +1166,57 @@ section.content {
             color: #555;
             position: relative;
         }
+        
+        /* Evaluation message log items */
+        div.evaluation-msg-title {
+            font-weight: bold;
+            background: #ddd;
+        }
+        div.evaluation-msg-title div.paragraph,
+        div.evaluation-run div.paragraph {
+            margin-bottom: 0;
+        }
+        
+        div.evaluation-run {
+            border: 2px solid #aaa;
+        }
+        
+        div.evaluation-run li {
+        }
+        
+        li.evaluation-msg-incorrect {
+            list-style-image: url("incorrect-16.png");
+        }
+        li.evaluation-msg-correct {
+            list-style-image: url("correct-16.png");
+        }
+        li.evaluation-msg-info {
+            list-style: none;
+        }
+        li.evaluation-msg-error {
+            list-style-image: url("error-16.png");
+            
+        }
+        li.evaluation-msg-debug {
+            list-style-image: url("debug-16.png");
+        }
+        
+        li.evaluation-li-hidden {
+            display: none;
+        }
+        
+        li.evaluation-li-visible {
+            display: list-item;
+        }
+        
+        div.evaluation-run-open {
+            background: #daeeda; 
+        }
+        
+        div.evaluation-run-closed {
+            background: #caeeca;
+        }        
+        
         div.test-evaluation-msg-attention:after {
             content: "!";
             color: #eee;
