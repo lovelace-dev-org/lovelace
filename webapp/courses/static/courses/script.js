@@ -274,7 +274,7 @@ function show_term_tab(elem) {
 
 function collapse_eval_debug(button) {
     let item = $(button);
-    item.children("ul").children("li.evaluation-msg-debug").each(function() {
+    item.children("ul").children("li.evaluation-msg-debug, li.evaluation-msg-info").each(function() {
         $(this).removeClass("evaluation-li-visible");
         $(this).addClass("evaluation-li-hidden");
         $(this).hide();
@@ -286,7 +286,7 @@ function collapse_eval_debug(button) {
     
 function expand_eval_debug(button) {
     let item = $(button);
-    item.children("ul").children("li.evaluation-msg-debug").each(function() {
+    item.children("ul").children("li.evaluation-msg-debug, li.evaluation-msg-info").each(function() {
         $(this).removeClass("evaluation-li-hidden");
         $(this).addClass("evaluation-li-visible");
         $(this).show();

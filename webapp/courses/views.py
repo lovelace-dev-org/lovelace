@@ -376,8 +376,12 @@ def file_exercise_evaluation(request, course_slug, instance_slug, content_slug, 
         'messages': t_messages.render({'log': log}),
         'hints': hints,
         'triggers': triggers,
-        'answer_count_str': answer_count_str,
+        'answer_count_str': answer_count_str
     }
+    
+    if evaluation_tree['test_tree'].get('errors', []):
+        data['errors'] = "Checking program was unable to finish due to an error. Contact course staff."
+    
     return JsonResponse(data)
 
 def get_old_file_exercise_evaluation(request, user, answer_id):
