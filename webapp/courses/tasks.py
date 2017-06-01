@@ -266,7 +266,8 @@ def generate_results(results, exercise_id):
                             test_tree['messages'].append(test_msg)
 
                     if student_c['stderr']:
-                        test_tree['errors'].append(student_c['stderr'])
+                        test_tree['errors'].append(student_c['stderr'])                        
+                        correct = False
                 else:
                     # Handle stdout
 

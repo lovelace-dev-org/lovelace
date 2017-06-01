@@ -822,16 +822,17 @@ section.content {
             margin: -7px -4px;
         }
         section.content mark.hint-active {
-            background: inherit;
+            background: #338;
+            color: #eee;
             border-radius: 7px;
-            border: 2px dashed #f88;
+            /*border: 2px dashed #88f;*/
             padding: 7px 2px;
             margin: -7px -4px;
             animation: hint_background 1s linear 5 alternate;
         }
         @keyframes hint_background {
-            0% {background: #f88;}
-            100% {background: transparent;}
+            0% {background: transparent;}
+            100% {background: #338;}
         }
 
         section.content kbd { /* .key */
@@ -1191,7 +1192,7 @@ section.content {
             list-style-image: url("correct-16.png");
         }
         li.evaluation-msg-info {
-            list-style: none;
+            list-style-image: url("info-16.png");
         }
         li.evaluation-msg-error {
             list-style-image: url("error-16.png");
