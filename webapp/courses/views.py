@@ -577,7 +577,7 @@ def content(request, course_slug, instance_slug, content_slug, **kwargs):
         cache.set('termbank_contents', termbank_contents)
         cache.set('term_div_data', term_div_data)
             
-    rendered_content = ""   
+    rendered_content = ""
 
     # TODO: Admin link should point to the correct version!
 
