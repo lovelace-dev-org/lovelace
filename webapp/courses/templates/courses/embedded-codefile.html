@@ -2,5 +2,7 @@
   <header class="embedded-code-header">
     <a href="{{ url }}" title="Download {{ name }}">{{ name }}</a>
   </header>
-  <pre><code class="highlight">{{ contents }}</code></pre>
+  {% if show_content %}
+    <pre><code class="highlight">{{ contents }}</code></pre>
+  {% endif %}
 </div>

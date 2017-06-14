@@ -394,7 +394,7 @@ class EmbeddedFileMarkup(Markup):
     name = "Embedded file"
     shortname = "file"
     description = "An embedded file, syntax highlighted and line numbered."
-    regexp = r"^\<\!file\=(?P<file_slug>[^\|>]+)\>\s*$"
+    regexp = r"^\<\!file\=(?P<file_slug>[^\|>]+)(\|link_only\=(?P<link_only>[^>|]+))?\>\s*$"
     markup_class = "embedded item"
     example = "<!file=my-file-name>"
     states = {}
@@ -426,12 +426,17 @@ class EmbeddedFileMarkup(Markup):
             raise StopIteration
 
         highlighted = pygments.highlight(file_contents, lexer, HtmlFormatter(nowrap=True))
+        
+        print(settings)
+        link_only = settings.get("link_only", "") == "True"
+        print(link_only)
 
         t = loader.get_template("courses/embedded-codefile.html")
         c = {
             "name": file_object.name,
             "url": file_object.fileinfo.url,
             "contents": mark_safe(highlighted),
+            "show_content": not link_only,
         }
 
         yield t.render(c)
@@ -439,6 +444,10 @@ class EmbeddedFileMarkup(Markup):
     @classmethod
     def settings(cls, matchobj, state):
         settings = {"file_slug" : escape(matchobj.group("file_slug"))}
+        try:
+            settings["link_only"] = escape(matchobj.group("link_only"))
+        except AttributeError:
+            pass
         
         return settings
 

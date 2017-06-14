@@ -379,7 +379,9 @@ def file_exercise_evaluation(request, course_slug, instance_slug, content_slug, 
         'answer_count_str': answer_count_str
     }
     
+    
     if evaluation_tree['test_tree'].get('errors', []):
+        print(evaluation_tree['test_tree']['errors'])
         data['errors'] = "Checking program was unable to finish due to an error. Contact course staff."
     
     return JsonResponse(data)
@@ -507,13 +509,31 @@ def content(request, course_slug, instance_slug, content_slug, **kwargs):
             tabs = [(tab.title, "".join(markupparser.MarkupParser.parse(tab.description, request, term_context)).strip())
                     for tab in term.termtab_set.all().order_by('id')]
             tags = term.tags
-            links = [{"url": link.url, "text": link.link_text} for link in term.termlink_set.all()]
             
+            final_links = []
+            for link in term.termlink_set.all():
+                try:
+                    server_side, client_side = link.url.split('#', 1)
+                except ValueError:
+                    server_side = link.url
+                    client_side = None
+                
+                slugified = slugify(server_side, allow_unicode=True)
+                if server_side == slugified and context is not None:
+                    final_address = reverse('courses:content', args=[context['course_slug'], context['instance_slug'], slugified])
+                    if client_side is not None:
+                        final_address = final_address.rstrip('/') + '#' + client_side
+                else:
+                    # external address
+                    final_address = link.url
+                    
+                final_links.append({"url": final_address, "text": link.link_text})
+                
             term_div_data.append({
                 'slug' : slug,
                 'description' : description,
                 'tabs' : tabs,
-                'links' : links,
+                'links' : final_links,
             })
 
             term_data = {
@@ -557,7 +577,7 @@ def content(request, course_slug, instance_slug, content_slug, **kwargs):
         cache.set('termbank_contents', termbank_contents)
         cache.set('term_div_data', term_div_data)
             
-    rendered_content = ""
+    rendered_content = ""   
 
     # TODO: Admin link should point to the correct version!
 
