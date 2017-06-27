@@ -35,6 +35,16 @@ from allauth.account.forms import LoginForm
 import courses.markupparser as markupparser
 import courses.blockparser as blockparser
 import django.conf
+from django.contrib import auth
+
+try:
+    from shibboleth.app_settings import LOGOUT_URL, LOGOUT_REDIRECT_URL, LOGOUT_SESSION_KEY
+except:
+    # shibboleth not installed 
+    # these are not needed
+    LOGOUT_URL = ""
+    LOGOUT_REDIRECT_URL = ""
+    LOGOUT_SESSION_KEY = ""
 
 JSON_INCORRECT = 0
 JSON_CORRECT = 1
@@ -88,9 +98,19 @@ def login(request):
 def logout(request):
     # template based on allauth logout page
     t = loader.get_template("courses/logout.html")   
+    
+    if request.method == "POST":
+        # handle shibboleth logout
+        
+        auth.logout(self.request)
+        self.request.session[LOGOUT_SESSION_KEY] = True
+        target = LOGOUT_REDIRECT_URL
+        logout = LOGOUT_URL % target
+        return redirect(logout)        
+    
     if request.session.get("shib", None):
         c = {
-            "logout_url": reverse("shibboleth:logout")
+            "logout_url": reverse("courses:logout")
         }
     else:        
         c = {
