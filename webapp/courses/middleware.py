@@ -21,7 +21,7 @@ if 'shibboleth' in django.conf.settings.INSTALLED_APPS:
             profile = UserProfile()
             profile.user = user
             try:
-                profile.student_id = int(shib_meta["student_id"].rsplit(":", 1))
+                profile.student_id = int(shib_meta["student_id"].rsplit(":", 1)[-1])
             except:
                 pass
             else:
