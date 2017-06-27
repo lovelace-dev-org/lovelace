@@ -5,6 +5,8 @@
 {% block page-title %}{% trans 'Login' %}{% endblock %}
 
 {% block breadcrumb-links %}
+  <li><a href="{% url 'courses:index' %}">{% trans 'Courses' %}</a></li>
+  <div class="separator">»</div>
   <li><a href="{% url 'courses:login' %}">{% trans 'Login' %}</a></li>
 {% endblock %}
 

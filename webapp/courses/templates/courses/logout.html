@@ -1,6 +1,12 @@
 {% extends 'courses/base.html' %}
 {% load i18n %}
 
+{% block breadcrumb-links %}
+  <li><a href="{% url 'courses:index' %}">{% trans 'Courses' %}</a></li>
+  <div class="separator">»</div>
+  <li><a href="{% url 'courses:login' %}">{% trans 'Login' %}</a></li>
+{% endblock %}
+
 {% block page-content %}
 <h1>{% trans "Sign Out" %}</h1>
 

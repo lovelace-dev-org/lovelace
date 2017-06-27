@@ -103,7 +103,7 @@ def logout(request):
         # handle shibboleth logout
         
         auth.logout(request)
-        self.request.session[LOGOUT_SESSION_KEY] = True
+        request.session[LOGOUT_SESSION_KEY] = True
         target = LOGOUT_REDIRECT_URL
         logout = LOGOUT_URL % target
         return redirect(logout)        
