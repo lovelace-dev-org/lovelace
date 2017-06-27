@@ -102,6 +102,7 @@ def logout(request):
     
     if request.method == "POST":
         # handle shibboleth logout
+        # from shibboleth login view
         
         auth.logout(request)
         request.session[LOGOUT_SESSION_KEY] = True

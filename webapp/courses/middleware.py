@@ -18,7 +18,7 @@ if 'shibboleth' in django.conf.settings.INSTALLED_APPS:
     class LovelaceShibbolethRemoteUser(ShibbolethRemoteUserMiddleware):
     
         def make_profile(self, user, shib_meta):
-            profile = Profile()
+            profile = UserProfile()
             profile.user = user
             profile.student_id = shib_meta["student_id"]
             
