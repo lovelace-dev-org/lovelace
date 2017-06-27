@@ -21,4 +21,5 @@ if 'shibboleth' in django.conf.settings.INSTALLED_APPS:
             profile = UserProfile()
             profile.user = user
             profile.student_id = shib_meta["student_id"]
+            profile.save()
             
