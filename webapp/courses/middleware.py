@@ -20,6 +20,10 @@ if 'shibboleth' in django.conf.settings.INSTALLED_APPS:
         def make_profile(self, user, shib_meta):
             profile = UserProfile()
             profile.user = user
-            profile.student_id = shib_meta["student_id"]
-            profile.save()
+            try:
+                profile.student_id = int(shib_meta["student_id"].rsplit(":", 1))
+            except:
+                pass
+            else:
+                profile.save()
             
