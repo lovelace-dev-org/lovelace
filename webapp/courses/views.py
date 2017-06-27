@@ -102,7 +102,7 @@ def logout(request):
     if request.method == "POST":
         # handle shibboleth logout
         
-        auth.logout(self.request)
+        auth.logout(request)
         self.request.session[LOGOUT_SESSION_KEY] = True
         target = LOGOUT_REDIRECT_URL
         logout = LOGOUT_URL % target
@@ -110,7 +110,7 @@ def logout(request):
     
     if request.session.get("shib", None):
         c = {
-            "logout_url": reverse("courses:logout")
+            "logout_url": reverse("courses:logout") 
         }
     else:        
         c = {
