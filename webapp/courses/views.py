@@ -36,6 +36,7 @@ import courses.markupparser as markupparser
 import courses.blockparser as blockparser
 import django.conf
 from django.contrib import auth
+from django.shortcuts import redirect
 
 try:
     from shibboleth.app_settings import LOGOUT_URL, LOGOUT_REDIRECT_URL, LOGOUT_SESSION_KEY
