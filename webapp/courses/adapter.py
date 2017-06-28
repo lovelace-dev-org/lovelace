@@ -17,7 +17,6 @@ def validate_username_not_email(value):
 
 username_validators = [validate_username_not_email]
 
-
 class LovelaceAccountAdapter(DefaultAccountAdapter):
     
     def logout(self, request):

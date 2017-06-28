@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-03-24 12:15+0200\n"
+"POT-Creation-Date: 2017-06-28 09:49+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -61,7 +61,7 @@ msgid "Sign up"
 msgstr "Luo käyttäjä"
 
 #: courses/templates/courses/base.html:161
-#: courses/templates/courses/base.html:206
+#: courses/templates/courses/base.html:209
 msgid "Table of Contents"
 msgstr "Sisällysluettelo"
 
@@ -77,23 +77,23 @@ msgstr "Termipankki"
 msgid "Search:"
 msgstr "Hae:"
 
-#: courses/templates/courses/base.html:204
+#: courses/templates/courses/base.html:207
 msgid "Hide/Show the table of contents"
 msgstr "Piilota/Näytä sisällysluettelo"
 
-#: courses/templates/courses/base.html:214
+#: courses/templates/courses/base.html:217
 msgid "Completed:"
 msgstr "Ratkaistu:"
 
-#: courses/templates/courses/base.html:214
+#: courses/templates/courses/base.html:217
 msgid "exercises"
 msgstr "tehtävää"
 
-#: courses/templates/courses/base.html:239
+#: courses/templates/courses/base.html:242
 msgid "Description"
 msgstr "Kuvaus"
 
-#: courses/templates/courses/base.html:270
+#: courses/templates/courses/base.html:280
 #: courses/templates/courses/terms.html:10
 #: courses/templates/courses/terms.html:17
 msgid "Terms and Conditions"
@@ -174,6 +174,8 @@ msgstr "Katso erikseen"
 #: courses/templates/courses/contentpage.html:15
 #: courses/templates/courses/course.html:8
 #: courses/templates/courses/index.html:9
+#: courses/templates/courses/login.html:8
+#: courses/templates/courses/logout.html:5
 #: courses/templates/courses/terms.html:8
 #: courses/templates/courses/user-exercise-answers.html:15
 msgid "Courses"
@@ -259,6 +261,57 @@ msgstr "op"
 #: courses/templates/courses/index.html:57
 msgid "No courses available!"
 msgstr "Tarjolla olevia kursseja ei löytynyt!"
+
+#: courses/templates/courses/login.html:5
+#: courses/templates/courses/login.html:10
+msgid "Login"
+msgstr "Kirjautuminen"
+
+#: courses/templates/courses/login.html:17
+msgid "Sign in with university account"
+msgstr "Kirjaudu sisään yliopiston tunnuksilla"
+
+#: courses/templates/courses/login.html:19
+msgid "To login page"
+msgstr "Kirjautumissivulle"
+
+#: courses/templates/courses/login.html:22
+msgid "Sign in with Lovelace account"
+msgstr "Kirjaudu sisään Lovelace-tunnuksella"
+
+#: courses/templates/courses/login.html:23
+#, python-format
+msgid ""
+"If you have not created an account yet, then please\n"
+"  <a href=\"%(signup_url)s\">sign up</a> first."
+msgstr ""
+"Jos et ole vielä luonut tunnusta\n"
+"  <a href=\"%(signup_url)s\">luo tunnus</a> ensin."
+
+#: courses/templates/courses/login.html:32
+msgid "Forgot Password?"
+msgstr "Unohtunut salasana?"
+
+#: courses/templates/courses/login.html:33
+#, fuzzy
+#| msgid "Sign up"
+msgid "Sign In"
+msgstr "Luo käyttäjä"
+
+#: courses/templates/courses/logout.html:7
+msgid "Logout"
+msgstr "Uloskirjautuminen"
+
+#: courses/templates/courses/logout.html:11
+#: courses/templates/courses/logout.html:20
+#, fuzzy
+#| msgid "Sign up"
+msgid "Sign Out"
+msgstr "Luo käyttäjä"
+
+#: courses/templates/courses/logout.html:13
+msgid "Are you sure you want to sign out?"
+msgstr ""
 
 #: courses/templates/courses/terms.html:5
 msgid "Terms and conditions"
