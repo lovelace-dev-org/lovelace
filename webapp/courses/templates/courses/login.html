@@ -1,0 +1,37 @@
+{% extends 'courses/base.html' %}
+{% load staticfiles %}
+{% load i18n %}
+
+{% block page-title %}{% trans 'Login' %}{% endblock %}
+
+{% block breadcrumb-links %}
+  <li><a href="{% url 'courses:index' %}">{% trans 'Courses' %}</a></li>
+  <div class="separator">»</div>
+  <li><a href="{% url 'courses:login' %}">{% trans 'Login' %}</a></li>
+{% endblock %}
+
+{% block toc %}{% endblock %}
+
+{% block page-content %}
+  {% if shibboleth_login %}
+    <h1>{% trans 'Sign in with university account' %}</h1>
+    <div class="p">
+    <a href="{{ shibboleth_login }}">{% trans 'To login page' %}</a>
+    </div>
+  {% endif %}
+  <h1>{% trans 'Sign in with Lovelace account' %}</h1>
+  <p>{% blocktrans %}If you have not created an account yet, then please
+  <a href="{{ signup_url }}">sign up</a> first.{% endblocktrans %}</p>
+
+  <form class="login" method="POST" action="{% url 'account_login' %}">
+    {% csrf_token %}
+    {{ login_form.as_p }}
+    {% if redirect_field_value %}
+    <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
+    {% endif %}
+    <a class="button secondaryAction" href="{% url 'account_reset_password' %}">{% trans "Forgot Password?" %}</a>
+    <button class="primaryAction" type="submit">{% trans "Sign In" %}</button>
+  </form>
+{% endblock %}
+
+

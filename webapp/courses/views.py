@@ -30,8 +30,22 @@ from courses.models import *
 from courses.forms import *
 from feedback.models import *
 
+from allauth.account.forms import LoginForm
+
 import courses.markupparser as markupparser
 import courses.blockparser as blockparser
+import django.conf
+from django.contrib import auth
+from django.shortcuts import redirect
+
+try:
+    from shibboleth.app_settings import LOGOUT_URL, LOGOUT_REDIRECT_URL, LOGOUT_SESSION_KEY
+except:
+    # shibboleth not installed 
+    # these are not needed
+    LOGOUT_URL = ""
+    LOGOUT_REDIRECT_URL = ""
+    LOGOUT_SESSION_KEY = ""
 
 JSON_INCORRECT = 0
 JSON_CORRECT = 1
@@ -66,9 +80,49 @@ def cookie_law(view_func):
     return func_wrapper
 
 @cookie_law
+def login(request):
+    # template based on allauth login page
+    t = loader.get_template("courses/login.html")
+    c = {
+        'login_form': LoginForm(),
+        'signup_url': reverse("account_signup")
+    }
+    
+    if 'shibboleth' in django.conf.settings.INSTALLED_APPS:
+        c['shibboleth_login'] = reverse("shibboleth:login")
+    else:
+        c['shibboleth_login'] = False
+    
+    return HttpResponse(t.render(c, request))
+    
+@cookie_law    
+def logout(request):
+    # template based on allauth logout page
+    t = loader.get_template("courses/logout.html")   
+    
+    if request.method == "POST":
+        # handle shibboleth logout
+        # from shibboleth login view
+        
+        auth.logout(request)
+        request.session[LOGOUT_SESSION_KEY] = True
+        target = LOGOUT_REDIRECT_URL
+        logout = LOGOUT_URL % target
+        return redirect(logout)        
+    
+    if request.session.get("shib", None):
+        c = {
+            "logout_url": reverse("courses:logout") 
+        }
+    else:        
+        c = {
+            "logout_url": reverse("account_logout")
+        }
+    return HttpResponse(t.render(c, request))
+
+@cookie_law
 def index(request):
     course_list = Course.objects.all()
-
     t = loader.get_template("courses/index.html")
     c = {
         'course_list': course_list,
@@ -379,7 +433,9 @@ def file_exercise_evaluation(request, course_slug, instance_slug, content_slug, 
         'answer_count_str': answer_count_str
     }
     
+    
     if evaluation_tree['test_tree'].get('errors', []):
+        print(evaluation_tree['test_tree']['errors'])
         data['errors'] = "Checking program was unable to finish due to an error. Contact course staff."
     
     return JsonResponse(data)
@@ -493,8 +549,8 @@ def content(request, course_slug, instance_slug, content_slug, **kwargs):
         'instance_slug': instance.slug,
     }
 
-    termbank_contents = cache.get('termbank_contents')
-    term_div_data = cache.get('term_div_data')
+    termbank_contents = cache.get('termbank_contents_' + context['instance_slug'])
+    term_div_data = cache.get('term_div_data_' + context['instance_slug'])
     if termbank_contents is None or term_div_data is None:
         term_context = context.copy()
         term_context['tooltip'] = True
@@ -507,13 +563,31 @@ def content(request, course_slug, instance_slug, content_slug, **kwargs):
             tabs = [(tab.title, "".join(markupparser.MarkupParser.parse(tab.description, request, term_context)).strip())
                     for tab in term.termtab_set.all().order_by('id')]
             tags = term.tags
-            links = [{"url": link.url, "text": link.link_text} for link in term.termlink_set.all()]
             
+            final_links = []
+            for link in term.termlink_set.all():
+                try:
+                    server_side, client_side = link.url.split('#', 1)
+                except ValueError:
+                    server_side = link.url
+                    client_side = None
+                
+                slugified = slugify(server_side, allow_unicode=True)
+                if server_side == slugified and context is not None:
+                    final_address = reverse('courses:content', args=[context['course_slug'], context['instance_slug'], slugified])
+                    if client_side is not None:
+                        final_address = final_address.rstrip('/') + '#' + client_side
+                else:
+                    # external address
+                    final_address = link.url
+                    
+                final_links.append({"url": final_address, "text": link.link_text})
+                
             term_div_data.append({
                 'slug' : slug,
                 'description' : description,
                 'tabs' : tabs,
-                'links' : links,
+                'links' : final_links,
             })
 
             term_data = {
@@ -554,8 +628,8 @@ def content(request, course_slug, instance_slug, content_slug, **kwargs):
                 else:
                     termbank_contents[first_char] = [alias_data]
                     
-        cache.set('termbank_contents', termbank_contents)
-        cache.set('term_div_data', term_div_data)
+        cache.set('termbank_contents_' + context['instance_slug'], termbank_contents)
+        cache.set('term_div_data_' + context['instance_slug'], term_div_data)
             
     rendered_content = ""
 
@@ -833,4 +907,7 @@ def terms(request):
     t = loader.get_template("courses/terms.html")
     c = {}
     return HttpResponse(t.render(c, request))
+
+
+
 
