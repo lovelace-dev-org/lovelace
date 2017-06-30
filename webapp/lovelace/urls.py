@@ -1,10 +1,10 @@
+from django.conf import settings
 from django.conf.urls import include, url
 from django.contrib import admin
 from django.views.generic import RedirectView
 
 # TODO: Design the url hierarchy from scratch
 urlpatterns = [
-    #url(r'^admin/', include('smuggler.urls')),
     url(r'^admin/courses/fileuploadexercise/add', RedirectView.as_view(pattern_name='exercise_admin:file_upload_add')),
     url(r'^admin/courses/fileuploadexercise/(?P<exercise_id>\d+)/change', RedirectView.as_view(pattern_name='exercise_admin:file_upload_change')),
     url(r'^admin/', include(admin.site.urls)),
@@ -23,10 +23,18 @@ except ImportError:
     # shibboleth is not installed
     pass
 finally:
-    
     urlpatterns.append(
         url(r'^', include('courses.urls', namespace='courses')),
     )
-    
-        
+
+if settings.DEBUG:
+    try:
+        import debug_toolbar
+    except ModuleNotFoundError:
+        # Django Debug Toolbar not installed
+        pass
+    else:
+        urlpatterns = [
+            url(r'^__debug__/', include(debug_toolbar.urls)),
+        ] + urlpatterns
 
