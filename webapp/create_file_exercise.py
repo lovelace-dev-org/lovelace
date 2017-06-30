@@ -92,7 +92,7 @@ def create_exercise(args):
     cfqs = [fb_models.ContentFeedbackQuestion.objects.get(question=fb.question) for fb in feedbacks]
 
     main_responsible = User.objects.first()
-    staff_group = Group()
+    staff_group = Group(name="Staff")
     staff_group.save()
     staff_group.user_set.add(main_responsible)
     staff_group.save()
