@@ -35,6 +35,7 @@ INSTALLED_APPS = (
     'stats',
     'feedback',
     'exercise_admin',
+    #'debug_toolbar',
     'reversion',
 )
 
@@ -42,6 +43,7 @@ SITE_ID = 1
 LOGIN_REDIRECT_URL = '/'
 
 MIDDLEWARE_CLASSES = (
+    #'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.locale.LocaleMiddleware',
