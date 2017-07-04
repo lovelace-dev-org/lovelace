@@ -1,3 +1,5 @@
+import django.conf
+
 from courses.models import *
 
 from django.contrib import admin
@@ -481,8 +483,11 @@ class TermAdmin(TranslationAdmin, VersionAdmin):
 
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)
-        cache.set('termbank_contents', None)
-        cache.set('termbank_div_data', None)
+        instance_slug = obj.instance.slug
+        lang_list = django.conf.settings.LANGUAGES
+        for lang, _ in lang_list:
+            cache.set('termbank_contents_{instance}_{lang}'.format(instance=instance_slug, lang=lang), None)
+            cache.set('termbank_div_data_{instance}_{lang}'.format(instance=instance_slug, lang=lang), None)
 
 admin.site.register(Calendar, CalendarAdmin)
 admin.site.register(File, FileAdmin)
