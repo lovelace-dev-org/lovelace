@@ -13,7 +13,7 @@ from django.db.models import Q
 from django.template import Template, loader, engines
 from django.core.cache import cache
 from django.core.urlresolvers import reverse
-from django.utils import timezone
+from django.utils import timezone, translation
 from django.utils.text import slugify
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext as _
@@ -549,8 +549,12 @@ def content(request, course_slug, instance_slug, content_slug, **kwargs):
         'instance_slug': instance.slug,
     }
 
-    termbank_contents = cache.get('termbank_contents_' + context['instance_slug'])
-    term_div_data = cache.get('term_div_data_' + context['instance_slug'])
+    termbank_contents = cache.get('termbank_contents_{instance}_{lang}'.format(instance=context['instance_slug'],
+                                                                               lang=translation.get_language()))
+    term_div_data = cache.get('term_div_data_{instance}_{lang}'.format(instance=context['instance_slug'],
+                                                                       lang=translation.get_language()))
+    print(termbank_contents)
+    print(term_div_data)
     if termbank_contents is None or term_div_data is None:
         term_context = context.copy()
         term_context['tooltip'] = True
@@ -628,8 +632,10 @@ def content(request, course_slug, instance_slug, content_slug, **kwargs):
                 else:
                     termbank_contents[first_char] = [alias_data]
                     
-        cache.set('termbank_contents_' + context['instance_slug'], termbank_contents)
-        cache.set('term_div_data_' + context['instance_slug'], term_div_data)
+        cache.set('termbank_contents_{instance}_{lang}'.format(instance=context['instance_slug'],
+                                                               lang=translation.get_language()), termbank_contents)
+        cache.set('term_div_data_{instance}_{lang}'.format(instance=context['instance_slug'],
+                                                           lang=translation.get_language()), term_div_data)
             
     rendered_content = ""
 
