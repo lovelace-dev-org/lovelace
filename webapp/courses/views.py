@@ -553,8 +553,6 @@ def content(request, course_slug, instance_slug, content_slug, **kwargs):
                                                                                lang=translation.get_language()))
     term_div_data = cache.get('term_div_data_{instance}_{lang}'.format(instance=context['instance_slug'],
                                                                        lang=translation.get_language()))
-    print(termbank_contents)
-    print(term_div_data)
     if termbank_contents is None or term_div_data is None:
         term_context = context.copy()
         term_context['tooltip'] = True
