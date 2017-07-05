@@ -333,6 +333,7 @@ class CalendarMarkup(Markup):
 markups.append(CalendarMarkup)
 
 class CodeMarkup(Markup):
+    # TODO: A way to change the language mid-way (e.g. a shell session with Python code in it)
     name = "Code"
     shortname = "code"
     description = "Monospaced field for code and other preformatted text. Supported syntax highlighting identifiers (look for short names): http://pygments.org/docs/lexers/"
