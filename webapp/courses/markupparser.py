@@ -163,7 +163,10 @@ class MarkupParser:
         the key. Otherwise, default the key to 'paragraph'.
 
         The match object is returned for use in the settings function of the
-        markup.        
+        markup.
+
+        TODO: The state selection could be implemented here; just have a class-
+        wide object point to the current regex-state instead of _block_re.
         """
         matchobj = cls._block_re.match(line)
         return getattr(matchobj, "lastgroup", "paragraph"), matchobj
