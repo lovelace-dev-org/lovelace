@@ -311,6 +311,33 @@ def textfield_exercise(exercise, users, course_inst=None):
             answer_data, 
             round(hint_coverage_unique * 100, 1),
             round(hint_coverage_given * 100, 1))
+
+def repeated_template_exercise(exercise, users, course_inst=None):
+    """
+    Shows statistics on a single repeated template exercise.
+    """
+    answer_sessions = UserRepeatedTemplateExerciseAnswer.objects.filter(exercise=exercise, user__in=users)
+    answer_instances = UserRepeatedTemplateInstanceAnswer.objects.filter(session_instance__in=answer_sessions.values_list('id', flat=True))
+    basic_stats, piechart = exercise_basic_answer_stats(exercise, users, answer_sessions, course_inst)
+
+    correct_answers = answer_instances.filter(correct=True)
+    incorrect_answers = answer_instances.filter(correct=False)
+    
+    answer_data = []
+    for answer_instance in correct_answers:
+        
+        answer_data.append(())
+
+    hint_coverage_unique = 0.0
+    hint_coverage_given = 0.0
+
+    return (course_inst,
+            basic_stats,
+            piechart,
+            answer_data,
+            round(hint_coverage_unique * 100, 1),
+            round(hint_coverage_given * 100, 1))
+    
     
 def file_upload_exercise(exercise, users, course_inst=None):
     """
@@ -345,7 +372,7 @@ def single_exercise(request, content_slug):
     """
     Shows statistics on a single selected task.
     """
-    if not request.user.is_authenticated() or not request.user.is_active or not request.user.is_staff:
+    if not (request.user.is_authenticated() and request.user.is_active and request.user.is_staff):
         return HttpResponseForbidden("Only logged in admins can view exercise statistics!")
 
     try:
@@ -368,6 +395,8 @@ def single_exercise(request, content_slug):
         return exercise_answer_stats(request, ctx, exercise, textfield_exercise, "textfield-stats.html")
     elif tasktype == "FILE_UPLOAD_EXERCISE":
         return exercise_answer_stats(request, ctx, exercise, file_upload_exercise, "file-upload-stats.html")
+    elif tasktype == "REPEATED_TEMPLATE_EXERCISE":
+        return exercise_answer_stats(request, ctx, exercise, repeated_template_exercise, "repeated-template-stats.html")
     else:
         return HttpResponseNotFound("No stats for exercise {} found!".format(content_slug))
 

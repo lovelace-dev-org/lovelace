@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-06-28 09:49+0300\n"
+"POT-Creation-Date: 2017-07-25 10:09+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -163,11 +163,15 @@ msgstr "Muokkaa tätä koodinsyöttötehtävää"
 msgid "Edit this code replace exercise"
 msgstr "Muokkaa tätä koodinkorvaustehtävää"
 
-#: courses/templates/courses/content-meta.html:58
+#: courses/templates/courses/content-meta.html:56
+msgid "Edit this repeated template exercise"
+msgstr "Muokkaa tätä mallinkertaustehtävää"
+
+#: courses/templates/courses/content-meta.html:60
 msgid "View reference answer"
 msgstr "Katso mallivastausta"
 
-#: courses/templates/courses/content-meta.html:59
+#: courses/templates/courses/content-meta.html:61
 msgid "View separately"
 msgstr "Katso erikseen"
 
@@ -199,29 +203,29 @@ msgstr "Oikea vastaus!"
 msgid "Incorrect answer!"
 msgstr "Väärä vastaus!"
 
-#: courses/templates/courses/exercise.html:21
+#: courses/templates/courses/exercise.html:24
 #, fuzzy
 #| msgid "Hint: "
 msgid "Hints"
 msgstr "Vihjeet"
 
-#: courses/templates/courses/exercise.html:36
+#: courses/templates/courses/exercise.html:39
 msgid "Send answer"
 msgstr "Lähetä vastaus"
 
-#: courses/templates/courses/exercise.html:38
+#: courses/templates/courses/exercise.html:41
 msgid "Warning: You have not logged in. Your answer will not be saved."
 msgstr "Varoitus: Et ole kirjautunut sisään. Vastaustasi ei tallenneta."
 
-#: courses/templates/courses/exercise.html:43
+#: courses/templates/courses/exercise.html:46
 msgid "You have previously answered this task incorrectly."
 msgstr "Olet aiemmin vastannut tähän tehtävään väärin."
 
-#: courses/templates/courses/exercise.html:45
+#: courses/templates/courses/exercise.html:48
 msgid "You have already answered this task correctly."
 msgstr "Olet aiemmin vastannut tähän tehtävään oikein."
 
-#: courses/templates/courses/exercise.html:51
+#: courses/templates/courses/exercise.html:57
 #, fuzzy
 #| msgid "Messages:"
 msgid "Messages"
@@ -313,6 +317,21 @@ msgstr "Luo käyttäjä"
 msgid "Are you sure you want to sign out?"
 msgstr ""
 
+#: courses/templates/courses/repeated-template-exercise.html:7
+#: courses/templates/courses/repeated-template-exercise.html:8
+msgid "Start exercise session"
+msgstr "Aloita harjoitusistunto"
+
+#: courses/templates/courses/repeated-template-exercise.html:7
+msgid "Next"
+msgstr "Seuraava"
+
+#: courses/templates/courses/repeated-template-exercise.html:14
+#: courses/templates/courses/textfield-exercise.html:5
+#: feedback/templates/feedback/textfield-feedback-question.html:5
+msgid "Enter your answer here"
+msgstr "Kirjoita vastauksesi tänne"
+
 #: courses/templates/courses/terms.html:5
 msgid "Terms and conditions"
 msgstr "Käyttöehdot"
@@ -349,11 +368,6 @@ msgid ""
 msgstr ""
 "Voit pyytää rekisteriselostetta sähköpostitse osoitteesta E-MAIL. "
 "Vastaamiseen voi kestää 14 arkipäivää."
-
-#: courses/templates/courses/textfield-exercise.html:5
-#: feedback/templates/feedback/textfield-feedback-question.html:5
-msgid "Enter your answer here"
-msgstr "Kirjoita vastauksesi tänne"
 
 #: courses/templates/courses/user-exercise-answers.html:7
 #: courses/templates/courses/user-exercise-answers.html:20

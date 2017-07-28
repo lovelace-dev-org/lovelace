@@ -333,6 +333,36 @@ class CodeReplaceExerciseAdmin(CourseContentAccess, TranslationAdmin, VersionAdm
     list_per_page = 500
     save_on_top = True
 
+class RepeatedTemplateExerciseTemplateInline(TranslationStackedInline):
+    model = RepeatedTemplateExerciseTemplate
+    extra = 1
+
+class RepeatedTemplateExerciseBackendFileInline(admin.StackedInline):
+    model = RepeatedTemplateExerciseBackendFile
+    extra = 1
+
+class RepeatedTemplateExerciseBackendCommandInline(TranslationStackedInline):
+    model = RepeatedTemplateExerciseBackendCommand
+
+class RepeatedTemplateExerciseAdmin(CourseContentAccess, TranslationAdmin, VersionAdmin):
+
+    content_type = "REPEATED_TEMPLATE_EXERCISE"
+
+    fieldsets = [
+        ('Page information',   {'fields': ['name', 'slug', 'content', 'question', 'tags']}),
+        ('Exercise miscellaneous', {'fields': ['default_points'],
+                                'classes': ['wide']}),
+        ('Feedback settings',  {'fields': ['feedback_questions']}),
+    ]
+
+    inlines = [RepeatedTemplateExerciseTemplateInline, RepeatedTemplateExerciseBackendFileInline,
+               RepeatedTemplateExerciseBackendCommandInline, HintInline]
+    search_fields = ("name",)
+    readonly_fields = ("slug",)
+    list_display = ("name", "slug",)
+    list_per_page = 500
+    save_on_top = True
+
 class FileExerciseTestCommandAdmin(admin.TabularInline):
     model = FileExerciseTestCommand
     extra = 1
@@ -419,6 +449,7 @@ admin.site.register(MultipleChoiceExercise, MultipleChoiceExerciseAdmin)
 admin.site.register(CheckboxExercise, CheckboxExerciseAdmin)
 admin.site.register(TextfieldExercise, TextfieldExerciseAdmin)
 admin.site.register(CodeReplaceExercise, CodeReplaceExerciseAdmin)
+admin.site.register(RepeatedTemplateExercise, RepeatedTemplateExerciseAdmin)
 
 admin.site.register(FileExerciseTestIncludeFile)
 admin.site.register(InstanceIncludeFile)

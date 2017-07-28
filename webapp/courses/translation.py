@@ -6,14 +6,15 @@ from courses.models import Course, CourseInstance,\
     \
     ContentPage, Lecture, MultipleChoiceExercise, CheckboxExercise,\
     TextfieldExercise, CodeReplaceExercise, CodeInputExercise,\
-    FileUploadExercise,\
+    RepeatedTemplateExercise, FileUploadExercise,\
     \
     Hint, FileExerciseTestStage, FileExerciseTestCommand,\
     InstanceIncludeFile, FileExerciseTestIncludeFile,\
     FileExerciseTestIncludeFile, IncludeFileSettings,\
     TextfieldExerciseAnswer, MultipleChoiceExerciseAnswer,\
     CheckboxExerciseAnswer, CodeInputExerciseAnswer,\
-    CodeReplaceExerciseAnswer
+    CodeReplaceExerciseAnswer, RepeatedTemplateExerciseTemplate,\
+    RepeatedTemplateExerciseBackendCommand
 
 
 ## Course related
@@ -90,6 +91,10 @@ class FileUploadExerciseTranslationOptions(TranslationOptions):
 class CodeReplaceExerciseTranslationOptions(TranslationOptions):
     fields = ('name', 'content', 'question',)
 
+@register(RepeatedTemplateExercise)
+class RepeatedTemplateExerciseTranslationOptions(TranslationOptions):
+    fields = ('name', 'content', 'question',)
+
 #@register(CodeInputExercise)
 #class CodeInputExerciseTranslationOptions(TranslationOptions):
     #fields = ('',)
@@ -132,6 +137,14 @@ class MultipleChoiceExerciseAnswerTranslationOptions(TranslationOptions):
 @register(CheckboxExerciseAnswer)
 class CheckboxExerciseAnswerTranslationOptions(TranslationOptions):
     fields = ('answer', 'hint', 'comment',)
+
+@register(RepeatedTemplateExerciseTemplate)
+class RepeatedTemplateExerciseTemplateTranslationOptions(TranslationOptions):
+    fields = ('title', 'content_string',)
+
+@register(RepeatedTemplateExerciseBackendCommand)
+class RepeatedTemplateExerciseBackendCommandTranslationOptions(TranslationOptions):
+    fields = ('command',)
 
 # TODO: Unfinished exercise types: deter until ready.
 

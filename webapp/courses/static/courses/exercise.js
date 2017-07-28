@@ -18,22 +18,44 @@ function exercise_success(data, result_div, error_div, form_parent) {
         var previous_status = meta_img.attr("class");
         if (previous_status !== "correct") {
             // TODO: "evaluation pending" icons
-            if (data.evaluation === false) {
-                meta_img.attr({
-                    "src": "/static/courses/incorrect-96.png",
-                    "class": "incorrect"
-                });
-                toc_symbol.attr({
-                    "src": "/static/courses/incorrect-16.png",
-                });
-            } else if (data.evaluation === true) {
-                meta_img.attr({
-                    "src": "/static/courses/correct-96.png",
-                    "class": "correct"
-                });
-                toc_symbol.attr({
-                    "src": "/static/courses/correct-16.png",
-                });
+            if (typeof(data.next_instance) !== undefined && typeof(data.total_instances) !== undefined) {
+                if (data.next_instance === null) {
+                    if (data.total_evaluation === "incorrect") {
+                        meta_img.attr({
+                            "src": "/static/courses/incorrect-96.png",
+                            "class": "incorrect"
+                        });
+                        toc_symbol.attr({
+                            "src": "/static/courses/incorrect-16.png",
+                        });
+                    } else if (data.total_evaluation === "correct") {
+                        meta_img.attr({
+                            "src": "/static/courses/correct-96.png",
+                            "class": "correct"
+                        });
+                        toc_symbol.attr({
+                            "src": "/static/courses/correct-16.png",
+                        });
+                    }
+                }
+            } else {
+                if (data.evaluation === false) {
+                    meta_img.attr({
+                        "src": "/static/courses/incorrect-96.png",
+                        "class": "incorrect"
+                    });
+                    toc_symbol.attr({
+                        "src": "/static/courses/incorrect-16.png",
+                    });
+                } else if (data.evaluation === true) {
+                    meta_img.attr({
+                        "src": "/static/courses/correct-96.png",
+                        "class": "correct"
+                    });
+                    toc_symbol.attr({
+                        "src": "/static/courses/correct-16.png",
+                    });
+                }
             }
         }
         
@@ -95,6 +117,16 @@ function exercise_success(data, result_div, error_div, form_parent) {
     if (data.file_tabs) {
         file_result_div.html(data.file_tabs);
         file_result_div.css("display", "block");
+    }
+    if (data.next_instance || data.total_instances) {
+        form_parent.parent().find("form :input").prop("disabled", true);
+        let interaction_button = form_parent.parent().find('button.rt-interaction');
+        interaction_button.prop("disabled", false);
+        if (data.next_instance === null) {
+            interaction_button.html(interaction_button.attr('data-start-text'));
+        } else {
+            interaction_button.html(interaction_button.attr('data-next-text'));
+        }
     }
 
 
@@ -187,3 +219,35 @@ function add_exercise_form_callbacks() {
     });
 }
 
+function start_repeated_template_session(e) {
+    let button = $(e.target);
+    let exercise = button.parent();
+    //let csrf_token = exercise.find("form > input[name=csrfmiddlewaretoken]");
+    let rendered_template = exercise.find("div.repeated-template");
+    rendered_template.html('');
+
+    $.ajax({
+        type: 'GET',
+        url: button.attr("data-url"),
+        success: function(data, text_status, jqxhr_obj) {
+            console.log(data);
+            if (data.rendered_template) {
+                rendered_template.html(data.rendered_template);
+            }
+            if (data.redirect) {
+                setTimeout(function() {
+                    start_repeated_template_session(e);
+                }, 1000);
+            }
+        },
+        error: function(xhr, status, type) {
+            console.log(status);
+        }
+    });
+
+    let input_element = exercise.find("form :input");
+    input_element.prop("disabled", false);
+    input_element[1].focus();
+    $(input_element[1]).val("");
+    button.prop("disabled", true);
+}

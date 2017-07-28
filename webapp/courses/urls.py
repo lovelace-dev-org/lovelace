@@ -35,6 +35,7 @@ urlpatterns = [
 
     # Exercise sending for checking, progress and evaluation views
     url(r'^(?P<course_slug>[^/]+)/(?P<instance_slug>[^/]+)/(?P<content_slug>[^/]+)/(?P<revision>(?:\d+|head))/check/$', views.check_answer, name='check'),
+    url(r'^(?P<course_slug>[^/]+)/(?P<instance_slug>[^/]+)/(?P<content_slug>[^/]+)/(?P<revision>(?:\d+|head))/exercise-session/$', views.get_repeated_template_session, name='get_repeated_template_session'),
     url(r'^(?P<course_slug>[^/]+)/(?P<instance_slug>[^/]+)/(?P<content_slug>[^/]+)/(?P<revision>(?:\d+|head))/progress/(?P<task_id>[^/]+)/$',
         views.check_progress, name='check_progress'),
     url(r'^(?P<course_slug>[^/]+)/(?P<instance_slug>[^/]+)/(?P<content_slug>[^/]+)/(?P<revision>(?:\d+|head))/evaluation/(?P<task_id>[^/]+)/$',

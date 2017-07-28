@@ -31,6 +31,9 @@ td.correct > span {
 td.incorrect > span {
     color: #a33;
 }
+td.unknown > span {
+    color: #aa3;
+}
 td.permalink {
     text-align: center;
 }

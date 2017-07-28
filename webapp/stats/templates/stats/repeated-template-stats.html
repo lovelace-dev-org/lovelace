@@ -1,0 +1,66 @@
+{% extends 'stats/exercise-stats.html' %}
+
+{% load stats_tags %}
+
+{% block user-answer-data %}
+  {% for course_inst, basic_stats, piechart, answer_data, hint_coverage_unique, hint_coverage_given in stats %}
+    <h3 class="content-heading">{{ course_inst|user_answers_title }}<span id="{{ course_inst|heading_id }}" class="anchor-offset"></span></h3>
+    <div class="stat-table">
+      <div class="stat-table row">
+        <div class="stat-table cell">
+          {% show_basic_stats basic_stats %}
+          <div>Hint coverage of unique incorrect answers: {{ hint_coverage_unique|floatformat:"1" }}&#37;</div>
+          <div>Hint coverage of all incorrect answers: {{ hint_coverage_given|floatformat:"1" }}&#37;</div>
+        </div>
+        {% if piechart %}
+          <div class="stat-table cell">{% show_piechart piechart %}</div>
+        {% endif %}
+      </div>
+    </div>
+    {% if answer_data %}
+      <table id="{{ course_inst|table_id }}" class="fixed">
+        <colgroup>
+          <col>
+          <col class="count">
+          <col class="correct">
+          <col class="hint-given">
+          <col class="latest">
+        </colgroup>
+        <tr>
+          <th>User answer</th>
+          {% sortable_table_header course_inst "Count" "1" %}
+          <th>Correct</th>
+          <th>Hint given</th>
+          {% sortable_table_header course_inst "Latest" "4" %}
+        </tr>
+        {% for answer, count, correct, hinted, latest, matches in answer_data %}
+          <tr>
+            <td class="answer">{{ answer }}</td>
+            <td>{{ count }}</td>
+            <td class="{% if correct %}correct{% else %}incorrect{% endif %}">
+              <span {% if matches %}onmouseover="show_matches(this);"
+                                    onmouseout="hide_matches(this);"{% endif %}>{{ correct }}</span>
+              {% if matches %}
+                <div class="matches-list">
+                  Matching answers:
+                  <ul>
+                    {% for match, error in matches %}
+                      <li>
+                        <span class="match">{{ match|escape }}</span>
+                        {% if error %}
+                          <span class="error">{{ error|escape }}</span>
+                        {% endif %}
+                      </li>
+                    {% endfor %}
+                  </ul>  
+                </div>
+              {% endif %}
+            </td>
+            <td class="{% if hinted %}hinted{% else %}unhinted{% endif %}">{{ hinted }}</td>
+            <td title="{{ latest|date:'Y-m-d, H:i:s' }}">{{ latest|answer_date }}</td>
+          </tr>
+        {% endfor %}
+      </table>
+    {% endif %}
+  {% endfor %}
+{% endblock %}

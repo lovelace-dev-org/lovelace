@@ -11,12 +11,13 @@ import re
 import os
 
 from django.db import models
+from django.db.models import Q, Max
 from django.contrib.auth.models import User, Group
 from django.db.models.signals import post_save
 from django.core.urlresolvers import reverse
 from django.utils import translation
 from django.utils.text import slugify
-from django.contrib.postgres.fields import ArrayField
+from django.contrib.postgres.fields import ArrayField, JSONField
 import django.conf
 
 from reversion import revisions as reversion
@@ -373,6 +374,7 @@ class ContentPage(models.Model):
         ('FILE_UPLOAD_EXERCISE', 'File upload exercise'),
         ('CODE_INPUT_EXERCISE', 'Code input exercise'),
         ('CODE_REPLACE_EXERCISE', 'Code replace exercise'),
+        ('REPEATED_TEMPLATE_EXERCISE', 'Repeated template exercise'),
     )
     content_type = models.CharField(max_length=28, default='LECTURE', choices=CONTENT_TYPE_CHOICES)
     embedded_pages = models.ManyToManyField('self', blank=True,
@@ -456,25 +458,27 @@ class ContentPage(models.Model):
     def get_type_object(self):
         # this seems to lose the revision info?
         type_models = {
-            "LECTURE" : Lecture,
-            "TEXTFIELD_EXERCISE" : TextfieldExercise,
-            "MULTIPLE_CHOICE_EXERCISE" : MultipleChoiceExercise,
-            "CHECKBOX_EXERCISE" : CheckboxExercise,
-            "FILE_UPLOAD_EXERCISE" : FileUploadExercise,
-            "CODE_INPUT_EXERCISE" : CodeInputExercise,
-            "CODE_REPLACE_EXERCISE" : CodeReplaceExercise,
+            'LECTURE': Lecture,
+            'TEXTFIELD_EXERCISE': TextfieldExercise,
+            'MULTIPLE_CHOICE_EXERCISE': MultipleChoiceExercise,
+            'CHECKBOX_EXERCISE': CheckboxExercise,
+            'FILE_UPLOAD_EXERCISE': FileUploadExercise,
+            'CODE_INPUT_EXERCISE': CodeInputExercise,
+            'CODE_REPLACE_EXERCISE': CodeReplaceExercise,
+            'REPEATED_TEMPLATE_EXERCISE': RepeatedTemplateExercise,
         }
         return type_models[self.content_type].objects.get(id=self.id)
 
     def get_type_model(self):
         type_models = {
-            "LECTURE" : Lecture,
-            "TEXTFIELD_EXERCISE" : TextfieldExercise,
-            "MULTIPLE_CHOICE_EXERCISE" : MultipleChoiceExercise,
-            "CHECKBOX_EXERCISE" : CheckboxExercise,
-            "FILE_UPLOAD_EXERCISE" : FileUploadExercise,
-            "CODE_INPUT_EXERCISE" : CodeInputExercise,
-            "CODE_REPLACE_EXERCISE" : CodeReplaceExercise,
+            'LECTURE': Lecture,
+            'TEXTFIELD_EXERCISE': TextfieldExercise,
+            'MULTIPLE_CHOICE_EXERCISE': MultipleChoiceExercise,
+            'CHECKBOX_EXERCISE': CheckboxExercise,
+            'FILE_UPLOAD_EXERCISE': FileUploadExercise,
+            'CODE_INPUT_EXERCISE': CodeInputExercise,
+            'CODE_REPLACE_EXERCISE': CodeReplaceExercise,
+            'REPEATED_TEMPLATE_EXERCISE': RepeatedTemplateExercise,
         }
         return type_models[self.content_type]
 
@@ -1013,6 +1017,178 @@ class CodeReplaceExercise(ContentPage):
         verbose_name = "code replace exercise"
         proxy = True
 
+@reversion.register(follow=['repeatedtemplateexercisetemplate_set', 'repeatedtemplateexercisebackendfile_set', 'repeatedtemplateexercisebackendcommand'])
+class RepeatedTemplateExercise(ContentPage):
+    # TODO: Reimplement to allow any type of exercise (textfield, checkbox etc.)
+    #       to be a repeated template exercise.
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = self.get_url_name()
+        else:
+            self.slug = slugify(self.slug, allow_unicode=True)
+
+        self.content_type = "REPEATED_TEMPLATE_EXERCISE"
+        super(RepeatedTemplateExercise, self).save(*args, **kwargs)
+
+    def get_choices(self, revision=None):
+        return
+
+    def get_user_answers(self, user, ignore_drafts=True):
+        answers = UserRepeatedTemplateExerciseAnswer.objects.filter(exercise=self, user=user)
+        return answers
+
+    def get_user_evaluation(self, user):
+        evaluations = Evaluation.objects.filter(useranswer__userrepeatedtemplateexerciseanswer__exercise=self, useranswer__user=user)
+        if not evaluations:
+            return "unanswered"
+        correct = evaluations.filter(correct=True).count() > 0
+        return "correct" if correct else "incorrect"
+
+    def save_answer(self, user, ip, answer, files, instance, revision):
+        if "answer" in answer.keys():
+            given_answer = answer["answer"].replace("\r", "")
+        else:
+            raise InvalidExerciseAnswerException("Answer missing!")
+
+
+        # FIX: DEBUG DEBUG DEBUG DEBUG
+        if revision == "head": revision = 0
+        # FIX: DEBUG DEBUG DEBUG DEBUG
+
+        session = RepeatedTemplateExerciseSession.objects.filter(
+            exercise=content, user=request.user, language_code=lang_code,
+            repeatedtemplateexercisesessioninstance__userrepeatedtemplateinstanceanswer__isnull=True
+        ).distinct().first()
+        session_instance = RepeatedTemplateExerciseSessionInstance.objects.filter(session=session, userrepeatedtemplateinstanceanswer__isnull=True).order_by('ordinal_number').first()
+
+        if session is None or session_instance is None:
+            raise InvalidExerciseAnswerException("Answering without a started session!")
+
+        print("saving", session_instance)
+        try:
+            answer_object = UserRepeatedTemplateExerciseAnswer.objects.get(exercise_id=self.id, session=session)
+        except UserRepeatedTemplateExerciseAnswer.DoesNotExist as e:
+            answer_object = UserRepeatedTemplateExerciseAnswer(
+                exercise_id=self.id, session=session, user=user,
+                answerer_ip=ip, instance=instance, revision=revision,
+            )
+            answer_object.save()
+
+        try: # Only allow one answer for each instance
+            old_instance_answer = UserRepeatedTemplateInstanceAnswer.objects.get(session_instance=session_instance)
+        except UserRepeatedTemplateInstanceAnswer.DoesNotExist as e:
+            instance_answer = UserRepeatedTemplateInstanceAnswer(
+                answer=answer_object, session_instance=session_instance,
+                given_answer=given_answer,
+            )
+            instance_answer.save()
+        
+        return answer_object
+
+    def check_answer(self, user, ip, answer, files, answer_object, revision):
+        session = answer_object.session
+        session_instance = RepeatedTemplateExerciseSessionInstance.objects.filter(session=session, userrepeatedtemplateinstanceanswer__isnull=False).order_by('ordinal_number').last()
+        
+        print("checking", session_instance)
+
+        answers = RepeatedTemplateExerciseSessionInstanceAnswer.objects.filter(session_instance=session_instance)
+
+        # Copied from textfield exercise
+
+        # Determine, if the given answer was correct and which hints/comments to show
+        correct = False
+        hints = []
+        comments = []
+        triggers = []
+        errors = []
+        
+        if "answer" in answer.keys():
+            given_answer = answer["answer"].replace("\r", "")
+        else:
+            return {"evaluation": False}
+
+        def re_validate(db_ans, given_ans):
+            m = re.match(db_ans, given_ans)
+            return (m is not None, m)
+        #re_validate = lambda db_ans, given_ans: re.match(db_ans, given_ans) is not None
+        str_validate = lambda db_ans, given_ans: (db_ans == given_ans, None)
+
+        for answer in answers:
+            validate = re_validate if answer.regexp else str_validate
+
+            try:
+                match, m = validate(answer.answer, given_answer)
+            except re.error as e:
+                if user.is_staff:
+                    errors.append("Contact staff, regexp error '{}' from regexp: {}".format(e, answer.answer))
+                else:
+                    errors.append("Contact staff! Regexp error '{}' in exercise '{}'.".format(e, self.name))
+                correct = False
+                continue
+
+            sub = lambda text: text
+            if m is not None and m.groupdict():
+                groups = {re.escape("{{{k}}}".format(k=k)): v for k, v in m.groupdict().items() if v is not None}
+                if groups:
+                    pattern = re.compile("|".join((re.escape("{{{k}}}".format(k=k)) for k in m.groupdict().keys())))
+                    sub = lambda text: pattern.sub(lambda mo: groups[re.escape(mo.group(0))], text)
+
+            hint = comment = ""
+            if answer.hint:
+                hint = sub(answer.hint)
+            if answer.comment:
+                comment = sub(answer.comment)
+            #if answer.triggers:
+                #triggers.extend(answer.triggers)
+
+            if match and answer.correct:
+                correct = True
+                if comment:
+                    comments.append(comment)
+            elif match and not answer.correct:
+                if hint:
+                    hints.append(hint)
+                if comment:
+                    comments.append(comment)
+            elif not match and answer.correct:
+                if hint:
+                    hints.append(hint)
+
+        instance_answer = UserRepeatedTemplateInstanceAnswer.objects.get(session_instance=session_instance)
+        instance_answer.correct = correct
+        instance_answer.save()
+        
+        total_instances = session.total_instances()
+        # +2: zero-indexing and next from current
+        next_instance = session_instance.ordinal_number + 2 if session_instance.ordinal_number + 1 < total_instances else None
+        
+        return {'evaluation': correct, 'hints': hints, 'comments': comments,
+                'errors': errors, 'triggers': triggers, 'next_instance': next_instance,
+                'total_instances': total_instances,}
+
+    def save_evaluation(self, user, evaluation, answer_object):
+        session = answer_object.session
+        instance_answers = UserRepeatedTemplateInstanceAnswer.objects.filter(answer__session=session)
+
+        if instance_answers.count() == session.total_instances():
+            incorrect_count = instance_answers.filter(correct=False).count()
+            if incorrect_count > 0:
+                correct = False
+                points = 0
+            else:
+                correct = True
+                points = self.default_points
+
+            evaluation_object = Evaluation(correct=correct, points=points)
+            evaluation_object.save()
+            answer_object.evaluation = evaluation_object
+            answer_object.save()
+    
+    class Meta:
+        verbose_name = "repeated template exercise"
+        proxy = True
+
+
 # TODO: Code exercise that is ranked
 # 1. against others
 #     * celery runs a tournament of uploaded algorithms
@@ -1332,6 +1508,95 @@ class CodeReplaceExerciseAnswer(models.Model):
     replace_file = models.TextField() # DEBUG
     replace_line = models.PositiveIntegerField()
 
+# Repeated template exercise models
+@reversion.register()
+class RepeatedTemplateExerciseTemplate(models.Model):
+    exercise = models.ForeignKey(RepeatedTemplateExercise)
+    title = models.CharField(max_length=64) # Translate
+    content_string = models.TextField() # Translate
+
+@reversion.register()
+class RepeatedTemplateExerciseBackendFile(models.Model):
+    exercise = models.ForeignKey(RepeatedTemplateExercise)
+    filename = models.CharField(max_length=255, blank=True)
+    fileinfo = models.FileField(max_length=255, upload_to=get_testfile_path)
+
+    def get_filename(self):
+        return os.path.basename(self.fileinfo.name)
+
+    def save(self, *args, **kwargs):
+        if not self.filename:
+            self.filename = os.path.basename(self.fileinfo.name)
+        super(RepeatedTemplateExerciseBackendFile, self).save(*args, **kwargs)
+
+    def get_file_contents(self):
+        file_contents = None
+        with open(self.fileinfo.path, 'rb') as f:
+            file_contents = f.read()
+        return file_contents
+
+@reversion.register()
+class RepeatedTemplateExerciseBackendCommand(models.Model):
+    exercise = models.OneToOneField(RepeatedTemplateExercise)
+    command = models.TextField() # Translate
+
+class RepeatedTemplateExerciseSession(models.Model):
+    exercise = models.ForeignKey(RepeatedTemplateExercise)
+    user = models.ForeignKey(User, blank=True, null=True)
+    revision = models.PositiveIntegerField()
+    language_code = models.CharField(max_length=7)
+    generated_json = JSONField()
+
+    def __str__(self):
+        if self.user is not None:
+            user = self.user.username
+        else:
+            user = "<no-one>"
+        return "<RepeatedTemplateExerciseSession: id {} for exercise id {}, user {}>".format(self.id, self.exercise.id, user)
+
+    def total_instances(self) -> int:
+        total = RepeatedTemplateExerciseSessionInstance.objects.filter(session=self).aggregate(Max('ordinal_number'))
+        return total['ordinal_number__max'] + 1
+
+class RepeatedTemplateExerciseSessionInstance(models.Model):
+    exercise = models.ForeignKey(RepeatedTemplateExercise)
+    session = models.ForeignKey(RepeatedTemplateExerciseSession)
+    template = models.ForeignKey(RepeatedTemplateExerciseTemplate)
+    ordinal_number = models.PositiveSmallIntegerField()
+    variables = ArrayField(
+        base_field=models.TextField(),
+        default=list,
+    )
+    values = ArrayField(
+        base_field=models.TextField(),
+        default=list,
+    )
+
+    class Meta:
+        ordering = ('ordinal_number',)
+        unique_together = ('session', 'ordinal_number',)
+
+    def __str__(self):
+        return "<RepeatedTemplateExerciseSessionInstance: no. {} of session {}>".format(self.ordinal_number, self.session.id)
+
+class RepeatedTemplateExerciseSessionInstanceAnswer(models.Model):
+    session_instance = models.ForeignKey(RepeatedTemplateExerciseSessionInstance)
+    correct = models.BooleanField()
+    regexp = models.BooleanField()
+    answer = models.TextField()
+    hint = models.TextField(blank=True)
+    comment = models.TextField(blank=True)
+
+    def __str__(self):
+        if len(self.answer) > 76:
+            return self.answer[0:76] + " ..."
+        else:
+            return self.answer
+
+    def save(self, *args, **kwargs):
+        self.answer = self.answer.replace("\r", "")
+        super(RepeatedTemplateExerciseSessionInstanceAnswer, self).save(*args, **kwargs)
+
 class Evaluation(models.Model):
     """Evaluation of a student's answer to an exercise."""
     correct = models.BooleanField(default=False)
@@ -1440,6 +1705,28 @@ class UserFileUploadExerciseAnswer(UserAnswer):
                         contents = pygments.highlight(contents, lexer, pygments.formatters.HtmlFormatter(nowrap=True))
                 returned_files[returned_file.filename()] = type_info + (contents,)
         return returned_files
+
+class UserRepeatedTemplateInstanceAnswer(models.Model):
+    answer = models.ForeignKey('UserRepeatedTemplateExerciseAnswer')
+    session_instance = models.ForeignKey(RepeatedTemplateExerciseSessionInstance)
+    given_answer = models.TextField(blank=True)
+    correct = models.BooleanField(default=False)
+
+    def print_for_student(self):
+        return "{ordinal_number:02d}: {given_answer}".format(
+            ordinal_number=self.session_instance.ordinal_number + 1,
+            given_answer=self.given_answer
+        )
+
+class UserRepeatedTemplateExerciseAnswer(UserAnswer):
+    exercise = models.ForeignKey(RepeatedTemplateExercise, models.SET_NULL, blank=True, null=True)
+    session = models.ForeignKey(RepeatedTemplateExerciseSession)
+
+    def __str__(self):
+        return "Repeated template exercise answers by {} to {}".format(self.user.username, self.exercise.name)
+
+    def get_instance_answers(self):
+        return UserRepeatedTemplateInstanceAnswer.objects.filter(answer=self)
 
 class UserTextfieldExerciseAnswer(UserAnswer):
     exercise = models.ForeignKey(TextfieldExercise)

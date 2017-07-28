@@ -5,8 +5,13 @@ replace exercises.
 # TODO: Implement tests for ranked code exercises and group code exercises.
 from __future__ import absolute_import
 
+import random
 from collections import namedtuple
+from itertools import chain as iterchain
+
+from django.db import transaction
 from django.utils import translation
+from django.conf import settings as django_settings
 from django.contrib.auth.models import User
 
 from reversion import revisions as reversion
@@ -32,7 +37,7 @@ import shlex
 import resource
 import subprocess
 
-from celery import shared_task, chain
+from celery import shared_task, chain, group
 
 # The test data
 #from courses.models import FileExerciseTest, FileExerciseTestStage,\
@@ -772,3 +777,165 @@ def get_celery_worker_status():
     except ImportError as e:
         d = { ERROR_KEY: str(e)}
     return d
+
+
+@shared_task(name="courses.precache-repeated-template-sessions", bind=True)
+def precache_repeated_template_sessions(self):
+    """
+    Iterate through all repeated template exercises and ensure there's a buffer
+    of pre-created sessions for each exercise in the database, waiting to be
+    assigned to users.
+    """
+    # TODO: How to account for revisions?
+    exercises = cm.RepeatedTemplateExercise.objects.filter(content_type="REPEATED_TEMPLATE_EXERCISE")
+
+    ENSURE_COUNT = 10
+    lang_codes = django_settings.LANGUAGES
+
+    session_generator_chain = None
+    for exercise in exercises:
+        for lang_code, _ in lang_codes:
+            sessions = cm.RepeatedTemplateExerciseSession.objects.filter(exercise=exercise, user=None, language_code=lang_code)
+            generate_count = ENSURE_COUNT - sessions.count()
+            print("Exercise {} with language {} missing {} pre-generated sessions!".format(exercise.name, lang_code, generate_count))
+            exercise_generator = [
+                generate_repeated_template_session.s(
+                    None, None, exercise.id, lang_code, 0
+                ) for _ in range(generate_count)
+            ]
+
+            if session_generator_chain is None:
+                session_generator_chain = exercise_generator
+            else:
+                session_generator_chain = iterchain(session_generator_chain, exercise_generator)
+    group(session_generator_chain).delay()
+
+@shared_task(name="courses.generate-repeated-template-session", bind=True)
+def generate_repeated_template_session(self, user_id, instance_id, exercise_id, lang_code, revision):
+    """
+    Invoke the repeated template backend program to generate a session for a
+    repeated template exercise. The session consists of multiple instances of
+    parameters to fill in the template and the correct answers to accompany the
+    generated parameters.
+
+    Expects a conforming JSON in the stdout.
+    """
+    translation.activate(lang_code)
+    
+    exercise = cm.RepeatedTemplateExercise.objects.get(id=exercise_id)
+    backend_files = cm.RepeatedTemplateExerciseBackendFile.objects.filter(exercise=exercise_id)
+    command_m = cm.RepeatedTemplateExerciseBackendCommand.objects.get(exercise=exercise_id)
+
+    if user_id is not None:
+        user = User.objects.get(id=user_id)
+    else:
+        user = None
+
+    # TODO: Also write some instance wide include files?
+
+    args = shlex.split(command_m.command)
+
+    # DEBUG
+    timeout = 10
+    # DEBUG
+
+    temp_dir_prefix = os.path.join("/", "tmp")
+    with tempfile.TemporaryDirectory(dir=temp_dir_prefix) as generate_dir:
+        for backend_file in backend_files:
+            filename = backend_file.filename
+            contents = backend_file.get_file_contents()
+            backend_file_path = os.path.join(generate_dir, filename)
+            with open(backend_file_path, "wb") as backend_fd:
+                backend_fd.write(contents)
+        
+        stdout = tempfile.TemporaryFile(dir=generate_dir)
+        stderr = tempfile.TemporaryFile(dir=generate_dir)
+
+        env = { # Remember that some information (like PATH) may come from other sources
+            'PWD': generate_dir,
+            'PATH': '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
+            'LC_CTYPE': 'en_US.UTF-8',
+        }
+
+        print("Running: {}".format(" ".join(shlex.quote(arg) for arg in args)))
+        # TODO: Security aspects
+        proc = subprocess.Popen(
+            args=args,
+            stdout=stdout,
+            stderr=stderr,
+            cwd=env['PWD'], env=env,
+        )
+
+        try:
+            proc.wait(timeout=timeout)
+        except subprocess.TimeoutExpired:
+            proc.terminate()
+
+        stdout.seek(0)
+        try:
+            output = stdout.read().decode("utf-8")
+        except UnicodeDecodeError as e:
+            raise e # TODO
+
+        stderr.seek(0)
+        try:
+            errors = stderr.read().decode("utf-8")
+        except UnicodeDecodeError as e:
+            raise e # TODO
+        stdout.close()
+        stderr.close()
+
+        print("output", output)
+        print("errors", errors)
+
+    try:
+        output_json = json.loads(output)
+        # TODO: https://python-jsonschema.readthedocs.io/en/latest/
+    except json.decoder.JSONDecodeError as e:
+        raise e # TODO
+
+    # Create the session, its instances and the associated answer choices
+    session = cm.RepeatedTemplateExerciseSession.objects.create(
+        exercise=exercise,
+        user=user,
+        revision=0, #revision, # TODO
+        language_code=lang_code,
+        generated_json=output_json,
+    )
+    session.save()
+
+    with transaction.atomic():
+        for i, instance in enumerate(output_json['repeats']):
+             variables, values = zip(*instance['variables'].items())
+             templates = cm.RepeatedTemplateExerciseTemplate.objects.filter(exercise=exercise_id)
+             template = templates[random.randint(0, templates.count() - 1)]
+
+             instance_obj = cm.RepeatedTemplateExerciseSessionInstance.objects.create(
+                 exercise=exercise,
+                 session=session,
+                 template=template,
+                 ordinal_number=i,
+                 variables=variables,
+                 values=values,
+             )
+             instance_obj.save()
+
+             for answer in instance['answers']:
+                 correct = answer['correct']
+                 is_regex = answer['is_regex']
+                 answer_str = answer['answer_str']
+                 hint = answer.get('hint', '')
+                 comment = answer.get('comment', '')
+                 # triggers = answer.get('triggers', [])
+
+                 answer_obj = cm.RepeatedTemplateExerciseSessionInstanceAnswer.objects.create(
+                     session_instance=instance_obj,
+                     correct=correct,
+                     regexp=is_regex,
+                     answer=answer_str,
+                     hint=hint,
+                     comment=comment,
+                     #triggers=triggers,
+                 )
+                 answer_obj.save()
+

@@ -16,6 +16,9 @@
   <div>{{ emb_content|safe }}</div>
 {% endif %}
 
+{% block extra-content %}
+{% endblock %}
+
 <div class="question">
   <div class="results-box hints" style="display: none">
     <span class="results-header">{% trans 'Hints' %}</span>
@@ -44,6 +47,9 @@
     {% elif evaluation == "correct" %}
       <div class="answered-status"><span class="correct">{% trans "You have already answered this task correctly." %}</span></div>
     {% endif %}
+
+    {% block exercise-form-extra %}
+    {% endblock %}
   </form>
   <div class="results-box error" style="display: none"></div>
   <div class="results-box result" style="display: none"></div>

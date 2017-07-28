@@ -80,13 +80,21 @@
             {% endif %}
           {% endfor %}
         </ul>
+      {% elif answer.get_instance_answers %}
+        <ul>
+          {% for instance_answer in answer.get_instance_answers %}
+            <li>{{ instance_answer.print_for_student }}</li>
+          {% endfor %}
+        </ul>
       {% endif %}
     </td>
-    <td class="evaluation {% if answer.evaluation.correct %}correct{% else %}incorrect{% endif %}">
-      {% if answer.evaluation.correct %}
+    <td class="evaluation {% if answer.evaluation.correct == True %}correct{% elif answer.evaluation.correct == False %}incorrect{% else %}unknown{% endif %}">
+      {% if answer.evaluation.correct == True %}
         <span title="{% trans 'Correct' %}">✔</span>
-      {% else %}
+      {% elif answer.evaluation.correct == False %}
         <span title="{% trans 'Incorrect' %}">✘</span>
+      {% else %}
+        <span title="{% trans 'Unknown' %}">?</span>
       {% endif %}
       {% if answer.evaluation.test_results %}
         <a href="{% url 'courses:get_old_file_exercise_evaluation' user answer.id %}"

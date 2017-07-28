@@ -6,9 +6,12 @@ import json
 from cgi import escape
 from collections import namedtuple
 
+import redis
+
 from django.http import HttpResponse, JsonResponse, HttpResponseRedirect,\
     HttpResponseNotFound, HttpResponseForbidden, HttpResponseNotAllowed,\
     HttpResponseServerError
+from django.db import transaction
 from django.db.models import Q
 from django.template import Template, loader, engines
 from django.core.cache import cache
@@ -135,6 +138,37 @@ def course_instances(request, course_slug):
 
 # TODO: A tool for locking the current revisions of embedded pages for
 # course instances.
+
+def check_exercise_accessible(request, course_slug, instance_slug, content_slug):
+    try:
+        course_obj = Course.objects.get(slug=course_slug)
+    except Course.DoesNotExist as e:
+        return {'error': HttpResponseNotFound("No such course {}.".format(course_slug))}
+
+    try:
+        instance_obj = CourseInstance.objects.get(slug=instance_slug)
+    except CourseInstance.DoesNotExist as e:
+        return {'error': HttpResponseNotFound("No such course instance {}.".format(instance_slug))}
+
+    try:
+        content_obj = ContentPage.objects.get(slug=content_slug)
+    except ContentPage.DoesNotExist as e:
+        return {'error': HttpResponseNotFound("No such exercise {}.".format(content_slug))}
+
+    embedded_links = EmbeddedLink.objects.filter(embedded_page_id=content_obj.id, parent__in=instance_obj.contents.values_list('content', flat=True))
+    content_graph_links = instance_obj.contents.filter(content_id=content_obj.id)
+    
+    if content_graph_links.first() is None and embedded_links.first() is None:
+        return {'error': HttpResponseNotFound("Content {} is not linked to course {}!".format(content_slug, course_slug))}
+
+    return {
+        'course': course_obj,
+        'instance': instance_obj,
+        'content': content_obj,
+        'embedded_links': embedded_links,
+        'content_graph_links': content_graph_links,
+        'error': None,
+    }
 
 @cookie_law
 def course(request, course_slug, instance_slug):
@@ -331,13 +365,103 @@ def check_answer(request, course_slug, instance_slug, content_slug, revision):
 
     # TODO: Errors, hints, comments in JSON
     t = loader.get_template("courses/exercise-evaluation.html")
+    total_evaluation = exercise.get_user_evaluation(content, user)
     print(evaluation)
-    return JsonResponse({
+    
+    data = {
         'result': t.render(evaluation),
         'hints': hints,
         'evaluation': evaluation.get("evaluation"),
         'answer_count_str': answer_count_str,
-    })
+        'next_instance': evaluation.get('next_instance', None),
+        'total_instances': evaluation.get('total_instances', None),
+        'total_evaluation': total_evaluation,
+    }
+    return JsonResponse(data)
+
+
+def get_repeated_template_session(request, course_slug, instance_slug, content_slug, revision):
+    if not request.user.is_active:
+        return HttpResponseForbidden("Only logged in users are allowed to answer repeated template exercises.")
+    
+    check_results = check_exercise_accessible(request, course_slug, instance_slug, content_slug)
+    check_error = check_results.get('error')
+    if check_error is not None:
+        return check_error
+
+    course = check_results['course']
+    instance = check_results['instance']
+    content = check_results['content'].get_type_object()
+    
+    lang_code = translation.get_language()
+
+    # If a user has an unfinished session, pick that one
+    session = RepeatedTemplateExerciseSession.objects.filter(
+        exercise=content, user=request.user, language_code=lang_code,
+        repeatedtemplateexercisesessioninstance__userrepeatedtemplateinstanceanswer__isnull=True
+    ).distinct().first()
+
+    print(session)
+    if session is None:
+        with transaction.atomic():
+            session = RepeatedTemplateExerciseSession.objects.filter(exercise=content, user__isnull=True).first()
+            if session is not None:
+                session.user = request.user
+                session.save()
+            else:
+                # create a new one, no need for atomic anymore
+                if revision == "head": revision = None
+                # TODO: DO NOTHING AND FORGET THE TASK IF CELERY IS NOT WORKING!
+                celery_status = rpc_tasks.get_celery_worker_status()
+                if 'errors' in celery_status.keys():
+                    data = {
+                        'ready': True,
+                        'rendered_template': "Error, exercise backend unavailable.",
+                    }
+                else:
+                    result = rpc_tasks.generate_repeated_template_session.delay(
+                        user_id=request.user.id,
+                        instance_id=instance.id,
+                        exercise_id=content.id,
+                        lang_code=lang_code,
+                        revision=revision
+                    )
+                    # TODO: Check that the task was successfully launched
+                    rerequest_url = reverse('courses:get_repeated_template_session',
+                                            kwargs={'course_slug': course_slug,
+                                                    'instance_slug': instance_slug,
+                                                    'content_slug': content_slug,
+                                                    'revision': "head" if revision is None else revision,
+                                            })
+                    data = {
+                        'ready': False,
+                        'redirect': rerequest_url,
+                    }
+                return JsonResponse(data)
+
+    # Pick the first unfinished instance
+    session_instance = RepeatedTemplateExerciseSessionInstance.objects.filter(session=session, userrepeatedtemplateinstanceanswer__isnull=True).order_by('ordinal_number').first()
+    print(session_instance)
+
+    session_template = session_instance.template
+    variables = session_instance.variables
+    values = session_instance.values
+    
+    total_instances = session.total_instances()
+    next_instance = session_instance.ordinal_number + 2 if session_instance.ordinal_number + 1 < total_instances else None
+    
+    rendered_template = session_instance.template.content_string.format(**dict(zip(variables, values)))
+
+    data = {
+        'ready': True,
+        'title': session_template.title,
+        'rendered_template': rendered_template,
+        'redirect': None,
+        'next_instance': next_instance,
+        'total_instances': total_instances,
+    }
+    
+    return JsonResponse(data)
 
 def check_progress(request, course_slug, instance_slug, content_slug, revision, task_id):
     # Based on https://djangosnippets.org/snippets/2898/
@@ -378,7 +502,6 @@ def file_exercise_evaluation(request, course_slug, instance_slug, content_slug, 
     answer_count_str = get_answer_count_meta(answer_count)
 
     # TODO: Nicer way to get the proper address!
-    import redis
     r = redis.StrictRedis(host='localhost', port=6379, db=0)
     evaluation_json = r.get(task_id).decode("utf-8")
     evaluation_tree = json.loads(evaluation_json)
@@ -531,7 +654,7 @@ def content(request, course_slug, instance_slug, content_slug, **kwargs):
     revision = None
     if "frontpage" not in kwargs:
         try:
-            content_graph = instance.contents.filter(content=content).first()
+            content_graph = instance.contents.filter(content=content).first() # TODO: never causes exception?
         except ContentGraph.DoesNotExist:
             return HttpResponseNotFound("Content {} is not linked to course {}!".format(content_slug, course_slug))
         else:
@@ -861,7 +984,9 @@ def show_answers(request, user, course, instance, exercise):
         answers = UserFileUploadExerciseAnswer.objects.filter(user=user_obj, exercise=exercise_obj)
     elif content_type == "CODE_REPLACE_EXERCISE":
         answers = UserCodeReplaceExerciseAnswer.objects.filter(user=user_obj, exercise=exercise_obj)
-    
+    elif content_type == "REPEATED_TEMPLATE_EXERCISE":
+        answers = UserRepeatedTemplateExerciseAnswer.objects.filter(user=user_obj, exercise=exercise_obj)
+        
     answers = answers.order_by('-answer_date')
     
     # TODO: Own subtemplates for each of the exercise types.
