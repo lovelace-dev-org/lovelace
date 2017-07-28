@@ -113,6 +113,8 @@ pip install celery[redis]
 pip install django-allauth
 pip install django-modeltranslation
 pip install django-reversion
+pip install django-debug-toolbar
+pip install ipython
 
 
 Edit the configuration
