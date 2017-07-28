@@ -113,6 +113,10 @@ def secure_kill(pid):
     whack-a-mole. By using SIGSTOP first to freeze the forking processes and
     KILLing them after that, the fork bomb clean up should be more reliable.
 
+    The 'killall' command alone doesn't solve the problem, since the operation
+    of killing all the processes is not atomic, i.e., single processes are
+    signalled one by one by iterating over a list of them.
+
     Neither SIGKILL nor SIGSTOP can be captured or blocked by any process.
 
     NOTE: Requires the issuing process to match its real or effective UID with
