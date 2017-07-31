@@ -1055,8 +1055,10 @@ class RepeatedTemplateExercise(ContentPage):
         if revision == "head": revision = 0
         # FIX: DEBUG DEBUG DEBUG DEBUG
 
+        lang_code = translation.get_language()
+
         session = RepeatedTemplateExerciseSession.objects.filter(
-            exercise=content, user=request.user, language_code=lang_code,
+            exercise_id=self.id, user=user, language_code=lang_code,
             repeatedtemplateexercisesessioninstance__userrepeatedtemplateinstanceanswer__isnull=True
         ).distinct().first()
         session_instance = RepeatedTemplateExerciseSessionInstance.objects.filter(session=session, userrepeatedtemplateinstanceanswer__isnull=True).order_by('ordinal_number').first()
