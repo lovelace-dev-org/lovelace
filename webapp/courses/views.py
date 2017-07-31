@@ -869,27 +869,29 @@ def user_profile(request):
     return HttpResponse(t.render(c, request))
 
 def user(request, user_name):
-    '''Shows user information to the requesting user. The amount of information depends on who the
-    requesting user is.'''
-    if request.user == "AnonymousUser":
-        # TODO: Don't allow anons to view anything
-        # Return 404 even if the users exists to prevent snooping around
-        # Distinguishing 403 and 404 here would give away information
-        return HttpResponseNotFound()
-    elif request.user == user_name:
-        # TODO: Allow the user to view their own info and edit some of it
+    """
+    Shows user information to the requesting user. The amount of information
+    depends on who the requesting user is.
+    """
+    user = request.user
+
+    if not (user.is_authenticated() and user.is_active): # Don't allow anons to view anything
+        return HttpResponseForbidden("Please log in to view your information.")
+    elif user.is_staff: # Allow admins to view useful information regarding the user they've requested
         pass
-    elif request.user == "mdf":
-        # TODO: Allow admins to view useful information regarding the user they've requested
-        pass
-    else:
-        # TODO: Allow normal users to view some very basic information?
-        pass
+    elif user.username != user_name: # Allow the user to view their own info
+        return HttpResponseForbidden("You are only allowed to view your own information.")
+
+    try:
+        target_user = User.objects.get(username=user_name)
+    except User.DoesNotExist as e:
+        return HttpReponseNotFound("No such user {}".format(user_name))
     
-    checkboxexercise_answers = UserCheckboxExerciseAnswer.objects.filter(user=request.user)
-    multiplechoiceexercise_answers = UserMultipleChoiceExerciseAnswer.objects.filter(user=request.user)
-    textfieldexercise_answers = UserTextfieldExerciseAnswer.objects.filter(user=request.user)
-    fileexercise_answers = UserFileUploadExerciseAnswer.objects.filter(user=request.user)
+    checkboxexercise_answers = UserCheckboxExerciseAnswer.objects.filter(user=target_user)
+    multiplechoiceexercise_answers = UserMultipleChoiceExerciseAnswer.objects.filter(user=target_user)
+    textfieldexercise_answers = UserTextfieldExerciseAnswer.objects.filter(user=target_user)
+    fileexercise_answers = UserFileUploadExerciseAnswer.objects.filter(user=target_user)
+    repeatedtemplateexercise_answers = UserRepeatedTemplateExerciseAnswer.objects.filter(user=target_user)
 
     t = loader.get_template("courses/userinfo.html")
     c = {
@@ -897,6 +899,7 @@ def user(request, user_name):
         'multiplechoiceexercise_answers': multiplechoiceexercise_answers,
         'textfieldexercise_answers': textfieldexercise_answers,
         'fileexercise_answers': fileexercise_answers,
+        'repeatedtemplateexercise_answers': repeatedtemplateexercise_answers,
     }
     return HttpResponse(t.render(c, request))
 
