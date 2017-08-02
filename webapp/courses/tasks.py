@@ -9,7 +9,7 @@ import random
 from collections import namedtuple
 from itertools import chain as iterchain
 
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.utils import translation
 from django.conf import settings as django_settings
 from django.contrib.auth.models import User
@@ -895,16 +895,19 @@ def generate_repeated_template_session(self, user_id, instance_id, exercise_id, 
         raise e # TODO
 
     # Create the session, its instances and the associated answer choices
-    session = cm.RepeatedTemplateExerciseSession.objects.create(
-        exercise=exercise,
-        user=user,
-        revision=0, #revision, # TODO
-        language_code=lang_code,
-        generated_json=output_json,
-    )
-    session.save()
-
     with transaction.atomic():
+        session = cm.RepeatedTemplateExerciseSession.objects.create(
+            exercise=exercise,
+            user=user,
+            revision=0, #revision, # TODO
+            language_code=lang_code,
+            generated_json=output_json,
+        )
+        session.save()
+
+        if len(output_json['repeats']) < 1:
+            return IntegrityError("No session instances generated! Rolling back.")
+        
         for i, instance in enumerate(output_json['repeats']):
              variables, values = zip(*instance['variables'].items())
              templates = cm.RepeatedTemplateExerciseTemplate.objects.filter(exercise=exercise_id)
