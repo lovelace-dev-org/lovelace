@@ -396,10 +396,12 @@ def get_repeated_template_session(request, course_slug, instance_slug, content_s
     lang_code = translation.get_language()
 
     # If a user has an unfinished session, pick that one
-    session = RepeatedTemplateExerciseSession.objects.filter(
+    open_sessions = RepeatedTemplateExerciseSession.objects.filter(
         exercise=content, user=request.user, language_code=lang_code,
         repeatedtemplateexercisesessioninstance__userrepeatedtemplateinstanceanswer__isnull=True
-    ).distinct().first()
+    )
+    
+    session = open_sessions.exclude(repeatedtemplateexercisesessioninstance__userrepeatedtemplateinstanceanswer__correct=False).distinct().first()
 
     print(session)
     if session is None:
@@ -450,6 +452,8 @@ def get_repeated_template_session(request, course_slug, instance_slug, content_s
     total_instances = session.total_instances()
     next_instance = session_instance.ordinal_number + 2 if session_instance.ordinal_number + 1 < total_instances else None
     
+    print(session_instance.ordinal_number + 1, " / ", total_instances)
+    
     rendered_template = session_instance.template.content_string.format(**dict(zip(variables, values)))
 
     data = {
@@ -459,6 +463,7 @@ def get_repeated_template_session(request, course_slug, instance_slug, content_s
         'redirect': None,
         'next_instance': next_instance,
         'total_instances': total_instances,
+        'progress': "{} / {}".format(session_instance.ordinal_number + 1, total_instances)
     }
     
     return JsonResponse(data)

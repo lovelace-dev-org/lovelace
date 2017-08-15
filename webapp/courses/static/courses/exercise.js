@@ -88,6 +88,10 @@ function exercise_success(data, result_div, error_div, form_parent) {
         hints_div.find('div.hints-list').html(all_hints);
         hints_div.css("display", "block");
     }
+    else {
+        hints_div.find('div.hints-list').html("");
+        hints_div.css("display", "none");
+    }
     
     // clean up old highlights
     $('section.content mark.hint-active').attr({'class': 'hint-inactive'}); 
@@ -122,8 +126,10 @@ function exercise_success(data, result_div, error_div, form_parent) {
         form_parent.parent().find("form :input").prop("disabled", true);
         let interaction_button = form_parent.parent().find('button.rt-interaction');
         interaction_button.prop("disabled", false);
-        if (data.next_instance === null) {
-            interaction_button.html(interaction_button.attr('data-start-text'));
+        if (data.next_instance === null && data.evaluation === false) {
+            interaction_button.html(interaction_button.attr('data-start-over-text'));
+        } else if (data.next_instance === null) {
+            interaction_button.html(interaction_button.attr('data-start-over-text'));
         } else {
             interaction_button.html(interaction_button.attr('data-next-text'));
         }
@@ -222,9 +228,15 @@ function add_exercise_form_callbacks() {
 function start_repeated_template_session(e) {
     let button = $(e.target);
     let exercise = button.parent();
+    console.log(exercise);
     //let csrf_token = exercise.find("form > input[name=csrfmiddlewaretoken]");
     let rendered_template = exercise.find("div.repeated-template");
+    let progress = exercise.find("span.rt-progress-tag");
     rendered_template.html('');
+    var hints_div = exercise.children("div.question").children("div.hints");
+    console.log(hints_div);
+    hints_div.find('div.hints-list').html("");
+    hints_div.css("display", "none");
 
     $.ajax({
         type: 'GET',
@@ -233,6 +245,7 @@ function start_repeated_template_session(e) {
             console.log(data);
             if (data.rendered_template) {
                 rendered_template.html(data.rendered_template);
+                progress.html(data.progress);
             }
             if (data.redirect) {
                 setTimeout(function() {
