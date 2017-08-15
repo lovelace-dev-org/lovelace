@@ -228,13 +228,13 @@ function add_exercise_form_callbacks() {
 function start_repeated_template_session(e) {
     let button = $(e.target);
     let exercise = button.parent();
-    console.log(exercise);
+    //console.log(exercise);
     //let csrf_token = exercise.find("form > input[name=csrfmiddlewaretoken]");
     let rendered_template = exercise.find("div.repeated-template");
     let progress = exercise.find("span.rt-progress-tag");
     rendered_template.html('');
     var hints_div = exercise.children("div.question").children("div.hints");
-    console.log(hints_div);
+    //console.log(hints_div);
     hints_div.find('div.hints-list').html("");
     hints_div.css("display", "none");
 
@@ -242,7 +242,7 @@ function start_repeated_template_session(e) {
         type: 'GET',
         url: button.attr("data-url"),
         success: function(data, text_status, jqxhr_obj) {
-            console.log(data);
+            //console.log(data);
             if (data.rendered_template) {
                 rendered_template.html(data.rendered_template);
                 progress.html(data.progress);
