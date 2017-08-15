@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-07-25 10:09+0300\n"
+"POT-Creation-Date: 2017-08-15 14:49+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -232,12 +232,12 @@ msgid "Messages"
 msgstr "Viestit"
 
 #: courses/templates/courses/file-exercise-evaluation.html:16
-#: courses/templates/courses/user-exercise-answers.html:87
+#: courses/templates/courses/user-exercise-answers.html:93
 msgid "Correct"
 msgstr "Oikein"
 
 #: courses/templates/courses/file-exercise-evaluation.html:18
-#: courses/templates/courses/user-exercise-answers.html:89
+#: courses/templates/courses/user-exercise-answers.html:95
 msgid "Incorrect"
 msgstr "Väärin"
 
@@ -315,18 +315,22 @@ msgstr "Luo käyttäjä"
 
 #: courses/templates/courses/logout.html:13
 msgid "Are you sure you want to sign out?"
-msgstr ""
+msgstr "Haluatko varmasti kirjautua ulos"
 
 #: courses/templates/courses/repeated-template-exercise.html:7
-#: courses/templates/courses/repeated-template-exercise.html:8
+#: courses/templates/courses/repeated-template-exercise.html:10
 msgid "Start exercise session"
 msgstr "Aloita harjoitusistunto"
 
-#: courses/templates/courses/repeated-template-exercise.html:7
+#: courses/templates/courses/repeated-template-exercise.html:8
 msgid "Next"
 msgstr "Seuraava"
 
-#: courses/templates/courses/repeated-template-exercise.html:14
+#: courses/templates/courses/repeated-template-exercise.html:9
+msgid "Start over"
+msgstr "Aloita alusta"
+
+#: courses/templates/courses/repeated-template-exercise.html:19
 #: courses/templates/courses/textfield-exercise.html:5
 #: feedback/templates/feedback/textfield-feedback-question.html:5
 msgid "Enter your answer here"
@@ -414,11 +418,15 @@ msgstr "Arviointi"
 msgid "Link | e-mail"
 msgstr "Linkki | sähköposti"
 
-#: courses/templates/courses/user-exercise-answers.html:98
+#: courses/templates/courses/user-exercise-answers.html:97
+msgid "Unknown"
+msgstr ""
+
+#: courses/templates/courses/user-exercise-answers.html:106
 msgid "Send course staff a question about this answer"
 msgstr "Lähetä kurssin henkilökunnalle kysymys tästä vastauksesta"
 
-#: courses/templates/courses/user-exercise-answers.html:98
+#: courses/templates/courses/user-exercise-answers.html:106
 msgid "Help!"
 msgstr "Apua!"
 

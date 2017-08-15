@@ -991,6 +991,23 @@ section.content {
             div.answered-status span.incorrect {
                 color: #a33;
             }
+            
+            /* repeated template exercise */
+            
+            section.content button.rt-interaction {
+                font-family: "LatoWeb";
+                font-size: 0.9em;
+                min-width: 170px;
+                line-height: 1.35;
+                margin: 6px 0 6px 0;    
+            }
+            
+            section.content span.rt-progress-tag {
+                background: #9c9;
+                padding: 6px;
+                border-radius: 4px;
+            }
+            
 
         section.content div.auth-warning {
             font-weight: bold;

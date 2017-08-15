@@ -1057,10 +1057,13 @@ class RepeatedTemplateExercise(ContentPage):
 
         lang_code = translation.get_language()
 
-        session = RepeatedTemplateExerciseSession.objects.filter(
+        open_sessions = RepeatedTemplateExerciseSession.objects.filter(
             exercise_id=self.id, user=user, language_code=lang_code,
             repeatedtemplateexercisesessioninstance__userrepeatedtemplateinstanceanswer__isnull=True
-        ).distinct().first()
+        )
+        
+        session = open_sessions.exclude(repeatedtemplateexercisesessioninstance__userrepeatedtemplateinstanceanswer__correct=False).distinct().first()
+        
         session_instance = RepeatedTemplateExerciseSessionInstance.objects.filter(session=session, userrepeatedtemplateinstanceanswer__isnull=True).order_by('ordinal_number').first()
 
         if session is None or session_instance is None:
@@ -1162,7 +1165,11 @@ class RepeatedTemplateExercise(ContentPage):
         
         total_instances = session.total_instances()
         # +2: zero-indexing and next from current
-        next_instance = session_instance.ordinal_number + 2 if session_instance.ordinal_number + 1 < total_instances else None
+        
+        if correct:
+            next_instance = session_instance.ordinal_number + 2 if session_instance.ordinal_number + 1 < total_instances else None
+        else:
+            next_instance = None
         
         return {'evaluation': correct, 'hints': hints, 'comments': comments,
                 'errors': errors, 'triggers': triggers, 'next_instance': next_instance,
