@@ -455,11 +455,17 @@ def get_repeated_template_session(request, course_slug, instance_slug, content_s
     print(session_instance.ordinal_number + 1, " / ", total_instances)
     
     rendered_template = session_instance.template.content_string.format(**dict(zip(variables, values)))
+    
+    template_context = {
+        'course_slug': course_slug,
+        'instance_slug': instance_slug,
+    }
+    template_parsed = "".join(markupparser.MarkupParser.parse(rendered_template, request, template_context)).strip()
 
     data = {
         'ready': True,
         'title': session_template.title,
-        'rendered_template': rendered_template,
+        'rendered_template': template_parsed,
         'redirect': None,
         'next_instance': next_instance,
         'total_instances': total_instances,
