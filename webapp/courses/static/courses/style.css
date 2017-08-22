@@ -695,7 +695,7 @@ section.content {
 
     figure {
         margin-top: 0.5em;
-        margin-left: 0.5em;
+        margin-left: 0;
         margin-bottom: 1em;
         display: table;
         width: 1px;
@@ -703,7 +703,7 @@ section.content {
     
     img.content-img {
         margin-top: 0.5em;
-        margin-left: 0.5em;
+        margin-left: 0;
         margin-bottom: 1em;
         display: block;
     }

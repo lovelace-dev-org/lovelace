@@ -846,7 +846,7 @@ class ImageMarkup(Markup):
         w = image.fileinfo.width
         h = image.fileinfo.height
 
-        MAX_IMG_WIDTH = 840
+        MAX_IMG_WIDTH = 1000 # TODO: Depend on the level of indentation
 
         size_attr = ""
         if w > MAX_IMG_WIDTH:
