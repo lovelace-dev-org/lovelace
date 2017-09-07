@@ -1,0 +1,40 @@
+{% load i18n %}
+
+<div class="results-box hints">    
+  <span class="results-header">{% trans 'Hints' %}</span>
+  <div class="hints-list">
+    {% if hints %}
+      <ul>
+      {% for hint in hints %}
+        <li>{{ hint|safe }}</li>
+      {% endfor %}
+      </ul>
+    {% endif %}  
+  </div>
+</div>    
+
+<br />
+
+{{ file_tabs }}
+
+<br />
+
+{{ messages }}
+
+<br /> 
+
+{% if triggers %}
+  <div class="results-box hints">
+    <span class="results-header">{% trans 'Triggers fired' %}</span>
+    <div class="hints-list">
+      <ul>
+      {% for trigger in triggers %}
+        <li>{{ trigger|safe }}</li>
+      {% endfor %}
+      </ul>
+    </div>
+  </div>    
+{% endif %}  
+  
+
+    

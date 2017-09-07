@@ -97,7 +97,7 @@
         <span title="{% trans 'Unknown' %}">?</span>
       {% endif %}
       {% if answer.evaluation.test_results %}
-        <a href="{% url 'courses:get_old_file_exercise_evaluation' user answer.id %}"
+        <a href="{% url 'courses:get_file_exercise_evaluation' user answer.id %}"
            onclick="show_results(event, this, 'results-{{ answer.id }}');">View results</a>
         <div class="popup"><div class="results-view" id="results-{{ answer.id }}"></div></div>
       {% endif %}

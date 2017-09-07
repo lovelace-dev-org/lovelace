@@ -518,55 +518,12 @@ def file_exercise_evaluation(request, course_slug, instance_slug, content_slug, 
     evaluation_tree = json.loads(evaluation_json)
     r.delete(task_id)
 
-    log = evaluation_tree["test_tree"].get("log", [])
-
     msg_context = {
         'course_slug': course_slug,
         'instance_slug': instance_slug,
     }
-    messages = [
-        (msg['title'], [
-            "".join(markupparser.MarkupParser.parse(msg_msg, request, msg_context)).strip()
-            for msg_msg in msg['msgs']
-        ])
-        for msg in evaluation_tree['test_tree'].get('messages', [])
-    ]
-        
-    # render all individual messages in the log tree
-    for test in log:
-        test["title"] = "".join(markupparser.MarkupParser.parse(test["title"], request, msg_context)).strip()
-        test["runs"].sort(key=lambda run: run["correct"])
-        for run in test["runs"]:
-            for output in run["output"]:
-                output["msg"] = "".join(markupparser.MarkupParser.parse(output["msg"], request, msg_context)).strip()                
-        
-    hints = ["".join(markupparser.MarkupParser.parse(msg, request, msg_context)).strip()
-             for msg in evaluation_tree['test_tree'].get('hints', [])]
-    triggers = evaluation_tree['test_tree'].get('triggers', [])
 
-    debug_json = json.dumps(evaluation_tree, indent=4)
-
-    t_file = loader.get_template("courses/file-exercise-evaluation.html")
-    c_file = {
-        'debug_json': debug_json,
-        'evaluation_tree': evaluation_tree["test_tree"],
-    }
-    t_exercise = loader.get_template("courses/exercise-evaluation.html")
-    c_exercise = {
-        'evaluation': evaluation_obj.correct,
-    }
-    t_messages = loader.get_template('courses/exercise-evaluation-messages.html')
-    data = {
-        'file_tabs': t_file.render(c_file, request),
-        'result': t_exercise.render(c_exercise),
-        'evaluation': evaluation_obj.correct,
-        'points': evaluation_obj.points,
-        'messages': t_messages.render({'log': log}),
-        'hints': hints,
-        'triggers': triggers,
-        'answer_count_str': answer_count_str
-    }
-    
+    data = compile_evaluation_data(request, evaluation_tree, evaluation_obj, msg_context)
     
     if evaluation_tree['test_tree'].get('errors', []):
         print(evaluation_tree['test_tree']['errors'])
@@ -574,6 +531,9 @@ def file_exercise_evaluation(request, course_slug, instance_slug, content_slug, 
     
     return JsonResponse(data)
 
+
+
+# OBSOLETE
 def get_old_file_exercise_evaluation(request, user, answer_id):
     if request.user.is_authenticated() and (request.user.username == user or request.user.is_staff):
         pass
@@ -608,6 +568,99 @@ def get_old_file_exercise_evaluation(request, user, answer_id):
         'evaluation_tree': evaluation_dict["test_tree"],
     }
     return HttpResponse(t_file.render(c_file, request))
+
+
+def compile_evaluation_data(request, evaluation_tree, evaluation_obj, context=None):
+    
+    log = evaluation_tree["test_tree"].get("log", [])
+    
+    messages = [
+        (msg['title'], [
+            "".join(markupparser.MarkupParser.parse(msg_msg, request, context)).strip()
+            for msg_msg in msg['msgs']
+        ])
+        for msg in evaluation_tree['test_tree'].get('messages', [])
+    ]
+    
+    # render all individual messages in the log tree
+    for test in log:
+        test["title"] = "".join(markupparser.MarkupParser.parse(test["title"], request, context)).strip()
+        test["runs"].sort(key=lambda run: run["correct"])
+        for run in test["runs"]:
+            for output in run["output"]:
+                output["msg"] = "".join(markupparser.MarkupParser.parse(output["msg"], request, context)).strip()                
+        
+    
+    debug_json = json.dumps(evaluation_tree, indent=4)
+
+    hints = ["".join(markupparser.MarkupParser.parse(msg, request, context)).strip()
+             for msg in evaluation_tree['test_tree'].get('hints', [])]
+    triggers = evaluation_tree['test_tree'].get('triggers', [])
+
+    t_file = loader.get_template("courses/file-exercise-evaluation.html")
+    c_file = {
+        'debug_json': debug_json,
+        'evaluation_tree': evaluation_tree["test_tree"],
+    }
+    t_exercise = loader.get_template("courses/exercise-evaluation.html")
+    c_exercise = {
+        'evaluation': evaluation_obj.correct,
+    }
+    t_messages = loader.get_template('courses/exercise-evaluation-messages.html')
+    data = {
+        'file_tabs': t_file.render(c_file, request),
+        'result': t_exercise.render(c_exercise),
+        'evaluation': evaluation_obj.correct,
+        'points': evaluation_obj.points,
+        'messages': t_messages.render({'log': log}),
+        'hints': hints,
+        'triggers': triggers,
+        'answer_count_str': ""
+    }
+    
+    return data
+    
+
+def get_file_exercise_evaluation(request, user, answer_id):
+    if request.user.is_authenticated() and (request.user.username == user or request.user.is_staff):
+        pass
+    else:
+        return HttpResponseForbidden("You're only allowed to view your own answers.")
+
+    try:
+        user_obj = User.objects.get(username=user)
+    except User.DoesNotExist as e:
+        return HttpResponseNotFound("No such user %s" % user)
+
+    try:
+        answer_obj = UserFileUploadExerciseAnswer.objects.get(id=answer_id)
+    except UserFileUploadExerciseAnswer.DoesNotExist as e:
+        return HttpResponseNotFound("No such answer {}".format(answer_id))
+    else:
+        if answer_obj.user != request.user and not is_course_staff(request.user, answer_obj.instance):
+            return HttpResponseForbidden("You're only allowed to view your own answers.")
+        
+    from .tasks import generate_results
+    
+    results_json = answer_obj.evaluation.test_results
+    results_dict = json.loads(results_json)
+
+    evaluation_tree = generate_results(results_dict, 0)
+    evaluation_obj = answer_obj.evaluation
+    
+    data = compile_evaluation_data(request, evaluation_tree, evaluation_obj)
+    
+    if not request.user.is_staff:
+        data["triggers"] = []
+    
+    t_view = loader.get_template("courses/view-answer-results.html")
+    
+    return HttpResponse(t_view.render(data, request))
+    
+    
+    
+    
+
 
 @cookie_law
 def sandboxed_content(request, content_slug, **kwargs):
