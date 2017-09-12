@@ -528,6 +528,8 @@ def file_exercise_evaluation(request, course_slug, instance_slug, content_slug, 
     if evaluation_tree['test_tree'].get('errors', []):
         print(evaluation_tree['test_tree']['errors'])
         data['errors'] = "Checking program was unable to finish due to an error. Contact course staff."
+        
+    data["answer_count"] = answer_count_str
     
     return JsonResponse(data)
 
@@ -615,7 +617,6 @@ def compile_evaluation_data(request, evaluation_tree, evaluation_obj, context=No
         'messages': t_messages.render({'log': log}),
         'hints': hints,
         'triggers': triggers,
-        'answer_count_str': ""
     }
     
     return data
