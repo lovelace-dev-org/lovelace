@@ -782,9 +782,8 @@ section.content {
         padding: 2px 4px 2px 4px;
     }
 
-        section.content div.paragraph > code, section.content table > code,
-        section.content ul > code, section.content ol > code,
-        section.content form > code {
+        section.content div.paragraph > code, section.content td > code,
+        section.content li > code, section.content form > code {
             font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
             background: #e2e2e2;
             font-size: 1em;
