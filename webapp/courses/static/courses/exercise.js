@@ -18,7 +18,7 @@ function exercise_success(data, result_div, error_div, form_parent) {
         var previous_status = meta_img.attr("class");
         if (previous_status !== "correct") {
             // TODO: "evaluation pending" icons
-            if (typeof(data.next_instance) !== undefined && typeof(data.total_instances) !== undefined) {
+            if (typeof(data.next_instance) !== "undefined" && typeof(data.total_instances) !== "undefined") {
                 if (data.next_instance === null) {
                     if (data.total_evaluation === "incorrect") {
                         meta_img.attr({
