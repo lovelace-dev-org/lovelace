@@ -589,6 +589,7 @@ section.content {
         border: 0;
         border-top: 1px solid transparent;
         border-image: linear-gradient(to right, rgba(0, 0, 0, 0.02), rgba(0, 0, 0, 0.04), rgba(31, 31, 31, 0.2)) 1 stretch;
+        list-style-type: none;
     }
 
     div.course-contents li.admin-visible-content {
@@ -791,6 +792,7 @@ section.content {
             border: 1px solid #cacaca;
             border-radius: 3px;
             box-shadow: inset 0 0 5px #cacaca;
+            white-space: nowrap;
         }
 
         section.content * a {

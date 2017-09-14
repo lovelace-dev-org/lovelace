@@ -32,16 +32,16 @@
           <a href="{% url 'courses:content' course.slug instance.slug list_direction.slug %}">{{ list_direction.name }}</a>
           {% if result and emb_count == 0 %}
             {% if result == 'unanswered' %}
-              <img class="course-contents-result" src="{% static 'courses/unanswered-16.png' %}" alt="Unanswered">
+              <img class="course-contents-result" src="{% static 'courses/unanswered-16.png' %}" alt="{% trans 'Unanswered' %}">
             {% elif result == 'correct' %}
-              <img class="course-contents-result" src="{% static 'courses/correct-16.png' %}" alt="Correctly answered">
+              <img class="course-contents-result" src="{% static 'courses/correct-16.png' %}" alt="{% trans 'Correctly answered' %}">
             {% elif result == 'incorrect' %}
-              <img class="course-contents-result" src="{% static 'courses/incorrect-16.png' %}" alt="Incorrectly answered">
+              <img class="course-contents-result" src="{% static 'courses/incorrect-16.png' %}" alt="{% trans 'Incorrectly answered' %}">
             {% endif %}
           {% endif %}
           {% if emb_count > 0 %}
             <progress class="course-contents-progress" value="{{ correct_emb }}" max="{{ emb_count }}"
-                      title="Completed {{ correct_emb }} / {{ emb_count }}">
+                      title="{% trans 'Completed' %} {{ correct_emb }} / {{ emb_count }}">
           {% endif %}
         </li>
       {% endif %}

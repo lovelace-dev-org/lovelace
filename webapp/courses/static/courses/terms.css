@@ -18,6 +18,7 @@ div.term-description {
     text-align: left;
     font-weight: normal;
     font-style: normal;
+    line-height: normal;
     background: #eee;
     color: #222;
     font-size: 0.9rem;
@@ -165,6 +166,18 @@ li.term-tab-active {
     font-weight: bold !important;
 }
 
+/* The links */
+div.term-description > ul {
+    border-top: 2px solid #ccc;
+    margin: 5px 0 0 0;
+
+}
+div.term-description > ul > li {
+    margin: 5px 0 0 12px;
+    padding: 0;
+    list-style-type: square;
+}
+
 /* Copied from style.css */
 
 div.term-description h1, div.term-description h2, div.term-description h3, div.term-description h4, div.term-description h5, div.term-description h6 {
@@ -299,7 +312,10 @@ div.term-desc-contents ul > li, div.term-desc-contents ol > li {
     padding-left: 5px;
 }
 
-div.term-desc-contents ul > ul, div.term-desc-contents ul > ol, div.term-desc-contents ol > ol, div.term-desc-contents ol > ul {
+div.term-desc-contents ul ul,
+div.term-desc-contents ul ol,
+div.term-desc-contents ol ol,
+div.term-desc-contents ol ul {
     margin-left: 3em;
     margin-bottom: 0;
 }

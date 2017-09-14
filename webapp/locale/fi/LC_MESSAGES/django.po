@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-08-15 14:49+0300\n"
+"POT-Creation-Date: 2017-09-14 16:51+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -189,6 +189,22 @@ msgstr "Kurssit"
 msgid "Course Contents"
 msgstr "Kurssin sisältö"
 
+#: courses/templates/courses/course.html:35
+msgid "Unanswered"
+msgstr "Vastaamaton"
+
+#: courses/templates/courses/course.html:37
+msgid "Correctly answered"
+msgstr "Oikein vastattu"
+
+#: courses/templates/courses/course.html:39
+msgid "Incorrectly answered"
+msgstr "Väärin vastattu"
+
+#: courses/templates/courses/course.html:44
+msgid "Completed"
+msgstr "Ratkaistu"
+
 #: courses/templates/courses/exercise-evaluation.html:4
 msgid ""
 "Your answer has been recorded and is currently pending an evaluation by a "
@@ -204,6 +220,7 @@ msgid "Incorrect answer!"
 msgstr "Väärä vastaus!"
 
 #: courses/templates/courses/exercise.html:24
+#: courses/templates/courses/view-answer-results.html:4
 #, fuzzy
 #| msgid "Hint: "
 msgid "Hints"
@@ -430,6 +447,10 @@ msgstr "Lähetä kurssin henkilökunnalle kysymys tästä vastauksesta"
 msgid "Help!"
 msgstr "Apua!"
 
+#: courses/templates/courses/view-answer-results.html:24
+msgid "Triggers fired"
+msgstr ""
+
 #: feedback/templates/feedback/feedbacks.html:10
 #: feedback/templates/feedback/feedbacks.html:14
 #: feedback/templates/feedback/feedbacks.html:19
@@ -486,8 +507,3 @@ msgstr ""
 #: templates/admin/change_form.html:49
 msgid "Please correct the errors below."
 msgstr ""
-
-#, fuzzy
-#~| msgid "Send answer"
-#~ msgid "answers"
-#~ msgstr "vastausta"
