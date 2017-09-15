@@ -305,18 +305,29 @@ div.term-desc-contents ul, div.term-desc-contents ol {
     margin-left: 1.5em;
     margin-bottom: 5px;
 }
+div.term-desc-contents div.paragraph + ul,
+div.term-desc-contents div.paragraph + ol {
+    top: 0;
+}
 
 div.term-desc-contents ul > li, div.term-desc-contents ol > li {
     margin-left: 0;
     margin-bottom: 4px;
     padding-left: 5px;
+    list-style-type: disc;
+}
+div.term-desc-contents ul ul > li {
+    list-style-type: circle;
+}
+div.term-desc-contents ul ul ul > li {
+    list-style-type: square;
 }
 
 div.term-desc-contents ul ul,
 div.term-desc-contents ul ol,
 div.term-desc-contents ol ol,
 div.term-desc-contents ol ul {
-    margin-left: 3em;
+    margin-left: 1.5em;
     margin-bottom: 0;
 }
 
@@ -402,7 +413,7 @@ div.term-description pre.normal {
     white-space: pre;
     overflow-x: auto;
     width: auto;
-    margin-bottom: 1em;
+    margin-bottom: 0.25em;
 }
 
 div.term-description pre.normal code {
