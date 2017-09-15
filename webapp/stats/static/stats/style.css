@@ -47,16 +47,16 @@ table.fixed {
 }
 
 col.count {
-    width: 65px;
+    width: 72px;
 }
 col.correct {
-    width: 80px;
+    width: 86px;
 }
 col.hint-given {
-    width: 60px;
+    width: 64px;
 }
 col.latest {
-    width: 110px;
+    width: 121px;
 }
 
 button.sort-desc {

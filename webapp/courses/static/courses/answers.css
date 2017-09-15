@@ -9,16 +9,19 @@ col.answer-date {
 }
 col.answer {}
 col.evaluation {
-    width: 110px;
+    width: 114px;
 }
 col.permalink {
-    width: 100px;
+    width: 117px;
 }
 
 td.answer-date {
     text-align: center;
 }
 td.answer {}
+td.answer.render-white-space {
+    white-space: pre-wrap;
+}
 td.evaluation {
     text-align: center;
 }

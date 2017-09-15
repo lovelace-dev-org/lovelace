@@ -57,18 +57,20 @@
   {% for answer in answers %}
   <tr id="{{ answer.id }}">
     <td class="answer-date">{{ answer.answer_date|answer_date }}</td>
-    <td class="answer">
-      {% if answer.given_answer %}
-        {{ answer.given_answer }}
-      {% elif answer.chosen_answer %}
-        {{ answer.chosen_answer }}
-      {% elif answer.chosen_answers %}
+    {% if answer.given_answer %}
+      <td class="answer render-white-space">{{ answer.given_answer }}</td>
+    {% elif answer.chosen_answer %}
+      <td class="answer render-white-space">{{ answer.chosen_answer }}</td>
+    {% elif answer.chosen_answers %}
+      <td class="answer">
         <ul>
           {% for chosen_answer in answer.chosen_answers.all %}
             <li>{{ chosen_answer }}</li>
           {% endfor %}
         </ul>
-      {% elif answer.get_returned_files %}
+      </td>
+    {% elif answer.get_returned_files %}
+      <td class="answer">
         <ul>
           {% for file in answer.get_returned_files.items %}
             {% if file.1.1 == True %}
@@ -80,14 +82,16 @@
             {% endif %}
           {% endfor %}
         </ul>
-      {% elif answer.get_instance_answers %}
+      </td>
+    {% elif answer.get_instance_answers %}
+      <td class="answer">
         <ul>
           {% for instance_answer in answer.get_instance_answers %}
             <li>{{ instance_answer.print_for_student }}</li>
           {% endfor %}
         </ul>
-      {% endif %}
-    </td>
+      </td>
+    {% endif %}
     <td class="evaluation {% if answer.evaluation.correct == True %}correct{% elif answer.evaluation.correct == False %}incorrect{% else %}unknown{% endif %}">
       {% if answer.evaluation.correct == True %}
         <span title="{% trans 'Correct' %}">✔</span>
