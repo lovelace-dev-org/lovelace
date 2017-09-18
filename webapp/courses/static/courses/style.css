@@ -784,7 +784,8 @@ section.content {
     }
 
         section.content div.paragraph > code, section.content td > code,
-        section.content li > code, section.content form > code {
+        section.content li > code, section.content form > code,
+        section.content mark > code {
             font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
             background: #e2e2e2;
             font-size: 1em;
