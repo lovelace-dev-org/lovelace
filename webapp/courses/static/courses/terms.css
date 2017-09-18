@@ -293,9 +293,12 @@ div.term-description hr {
 }
 
 div.term-description div.paragraph {
+    margin-bottom: 0.4em;
+}
+div.term-description div.paragraph:last-child {
     margin-bottom: 0;
 }
-    
+
 div.term-description div.normal {
     margin-bottom: 15px;
     margin-right: 15px;
@@ -312,7 +315,7 @@ div.term-desc-contents div.paragraph + ol {
 
 div.term-desc-contents ul > li, div.term-desc-contents ol > li {
     margin-left: 0;
-    margin-bottom: 4px;
+    margin-bottom: 2px;
     padding-left: 5px;
     list-style-type: disc;
 }
@@ -351,10 +354,11 @@ div.term-description ul * code, div.term-description ol * code {
     font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
     background: #e2e2e2;
     font-size: 1em;
-    padding: 1px 3px;
+    padding: 0 1px;
     border: 1px solid #cacaca;
     border-radius: 3px;
     box-shadow: inset 0 0 5px #cacaca;
+    white-space: nowrap;
 }
 
 div.term-description * a {
