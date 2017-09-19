@@ -406,7 +406,7 @@ def get_repeated_template_session(request, course_slug, instance_slug, content_s
     print(session)
     if session is None:
         with transaction.atomic():
-            session = RepeatedTemplateExerciseSession.objects.filter(exercise=content, user__isnull=True).first()
+            session = RepeatedTemplateExerciseSession.objects.filter(exercise=content, user__isnull=True, language_code=lang_code).first()
             if session is not None:
                 session.user = request.user
                 session.save()
