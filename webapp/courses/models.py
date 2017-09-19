@@ -1063,8 +1063,6 @@ class RepeatedTemplateExercise(ContentPage):
             repeatedtemplateexercisesessioninstance__userrepeatedtemplateinstanceanswer__isnull=True
         )
         
-        print(open_sessions)
-        
         session = open_sessions.exclude(repeatedtemplateexercisesessioninstance__userrepeatedtemplateinstanceanswer__correct=False).distinct().first()
         
         session_instance = RepeatedTemplateExerciseSessionInstance.objects.filter(session=session, userrepeatedtemplateinstanceanswer__isnull=True).order_by('ordinal_number').first()
