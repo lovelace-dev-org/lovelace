@@ -1028,6 +1028,7 @@ class RepeatedTemplateExercise(ContentPage):
             self.slug = slugify(self.slug, allow_unicode=True)
 
         self.content_type = "REPEATED_TEMPLATE_EXERCISE"
+        RepeatedTemplateExerciseSession.objects.filter(exercise=self, user=None).delete()
         super(RepeatedTemplateExercise, self).save(*args, **kwargs)
 
     def get_choices(self, revision=None):
@@ -1067,6 +1068,7 @@ class RepeatedTemplateExercise(ContentPage):
         session_instance = RepeatedTemplateExerciseSessionInstance.objects.filter(session=session, userrepeatedtemplateinstanceanswer__isnull=True).order_by('ordinal_number').first()
 
         if session is None or session_instance is None:
+            
             raise InvalidExerciseAnswerException("Answering without a started session!")
 
         print("saving", session_instance)

@@ -236,7 +236,7 @@ def generate_results(results, exercise_id):
 
                 # Handle JSON outputting testers
 
-                if student_c['json_output']:
+                if student_c.get('json_output'):
                     student_stdout = student_c["stdout"]
                     try:
                         json_results = json.loads(student_stdout)
