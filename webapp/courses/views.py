@@ -222,7 +222,7 @@ def course_tree(tree, node, user, instance_obj):
         if embedded_count > 0:
             for emb_exercise in embedded_links.values_list('embedded_page', flat=True):
                 emb_exercise = ContentPage.objects.get(id=emb_exercise)
-                print(emb_exercise.name)
+                #print(emb_exercise.name)
                 correct_embedded += 1 if emb_exercise.get_user_evaluation(emb_exercise, user) == "correct" else 0
     
     list_item = (node.content, evaluation, correct_embedded, embedded_count, node.visible)
@@ -366,7 +366,7 @@ def check_answer(request, course_slug, instance_slug, content_slug, revision):
     # TODO: Errors, hints, comments in JSON
     t = loader.get_template("courses/exercise-evaluation.html")
     total_evaluation = exercise.get_user_evaluation(content, user)
-    print(evaluation)
+    #print(evaluation)
     
     data = {
         'result': t.render(evaluation),
@@ -403,7 +403,7 @@ def get_repeated_template_session(request, course_slug, instance_slug, content_s
     
     session = open_sessions.exclude(repeatedtemplateexercisesessioninstance__userrepeatedtemplateinstanceanswer__correct=False).distinct().first()
 
-    print(session)
+    #print(session)
     if session is None:
         with transaction.atomic():
             session = RepeatedTemplateExerciseSession.objects.filter(exercise=content, user__isnull=True, language_code=lang_code).first()
@@ -443,7 +443,7 @@ def get_repeated_template_session(request, course_slug, instance_slug, content_s
 
     # Pick the first unfinished instance
     session_instance = RepeatedTemplateExerciseSessionInstance.objects.filter(session=session, userrepeatedtemplateinstanceanswer__isnull=True).order_by('ordinal_number').first()
-    print(session_instance)
+    #print(session_instance)
 
     session_template = session_instance.template
     variables = session_instance.variables
@@ -452,7 +452,7 @@ def get_repeated_template_session(request, course_slug, instance_slug, content_s
     total_instances = session.total_instances()
     next_instance = session_instance.ordinal_number + 2 if session_instance.ordinal_number + 1 < total_instances else None
     
-    print(session_instance.ordinal_number + 1, " / ", total_instances)
+    #print(session_instance.ordinal_number + 1, " / ", total_instances)
     
     rendered_template = session_instance.template.content_string.format(**dict(zip(variables, values)))
     
@@ -526,8 +526,9 @@ def file_exercise_evaluation(request, course_slug, instance_slug, content_slug, 
     data = compile_evaluation_data(request, evaluation_tree, evaluation_obj, msg_context)
     
     if evaluation_tree['test_tree'].get('errors', []):
-        print(evaluation_tree['test_tree']['errors'])
+        #print(evaluation_tree['test_tree']['errors'])        
         data['errors'] = "Checking program was unable to finish due to an error. Contact course staff."
+        #print(data)
         
     data["answer_count"] = answer_count_str
     
