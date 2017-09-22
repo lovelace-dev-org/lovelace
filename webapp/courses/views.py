@@ -300,7 +300,7 @@ def check_answer(request, course_slug, instance_slug, content_slug, revision):
 
     if not request.user.is_active:
         return JsonResponse({
-            'result': 'Only logged in users can send their answers for evaluation!'
+            'result': _('Only logged in users can send their answers for evaluation!')
         })
 
     course = Course.objects.get(slug=course_slug)
@@ -327,7 +327,7 @@ def check_answer(request, course_slug, instance_slug, content_slug, revision):
             else:
                 # TODO: Use a template!
                 return JsonResponse({
-                    'result': 'The deadline for this exercise (%s) has passed. Your answer will not be evaluated!' % (content_graph.deadline)
+                    'result': _('The deadline for this exercise (%s) has passed. Your answer will not be evaluated!') % (content_graph.deadline)
                 })
 
     user = request.user
@@ -382,7 +382,7 @@ def check_answer(request, course_slug, instance_slug, content_slug, revision):
 
 def get_repeated_template_session(request, course_slug, instance_slug, content_slug, revision):
     if not request.user.is_active:
-        return HttpResponseForbidden("Only logged in users are allowed to answer repeated template exercises.")
+        return HttpResponseForbidden(_("Only logged in users are allowed to answer repeated template exercises."))
     
     check_results = check_exercise_accessible(request, course_slug, instance_slug, content_slug)
     check_error = check_results.get('error')
@@ -418,7 +418,7 @@ def get_repeated_template_session(request, course_slug, instance_slug, content_s
                 if 'errors' in celery_status.keys():
                     data = {
                         'ready': True,
-                        'rendered_template': "Error, exercise backend unavailable.",
+                        'rendered_template': _("Error, exercise backend unavailable."),
                     }
                 else:
                     result = rpc_tasks.generate_repeated_template_session.delay(
@@ -526,9 +526,12 @@ def file_exercise_evaluation(request, course_slug, instance_slug, content_slug, 
     data = compile_evaluation_data(request, evaluation_tree, evaluation_obj, msg_context)
     
     if evaluation_tree['test_tree'].get('errors', []):
-        #print(evaluation_tree['test_tree']['errors'])        
-        data['errors'] = "Checking program was unable to finish due to an error. Contact course staff."
-        #print(data)
+        if evaluation_tree['timedout']:
+            data['errors'] = _("The program took too long to execute and was terminated. Check your code for too slow solutions.")
+        else:
+            #print(evaluation_tree['test_tree']['errors'])        
+            data['errors'] = _("Checking program was unable to finish due to an error. Contact course staff.")
+            #print(data)
         
     data["answer_count"] = answer_count_str
     
@@ -541,7 +544,7 @@ def get_old_file_exercise_evaluation(request, user, answer_id):
     if request.user.is_authenticated() and (request.user.username == user or request.user.is_staff):
         pass
     else:
-        return HttpResponseForbidden("You're only allowed to view your own answers.")
+        return HttpResponseForbidden(_("You're only allowed to view your own answers."))
 
     try:
         user_obj = User.objects.get(username=user)
@@ -554,7 +557,7 @@ def get_old_file_exercise_evaluation(request, user, answer_id):
         return HttpResponseNotFound("No such answer {}".format(answer_id))
     else:
         if answer_obj.user != request.user and not is_course_staff(request.user, answer_obj.instance):
-            return HttpResponseForbidden("You're only allowed to view your own answers.")
+            return HttpResponseForbidden(_("You're only allowed to view your own answers."))
 
     from .tasks import generate_results
     
@@ -627,7 +630,7 @@ def get_file_exercise_evaluation(request, user, answer_id):
     if request.user.is_authenticated() and (request.user.username == user or request.user.is_staff):
         pass
     else:
-        return HttpResponseForbidden("You're only allowed to view your own answers.")
+        return HttpResponseForbidden(_("You're only allowed to view your own answers."))
 
     try:
         user_obj = User.objects.get(username=user)
@@ -640,7 +643,7 @@ def get_file_exercise_evaluation(request, user, answer_id):
         return HttpResponseNotFound("No such answer {}".format(answer_id))
     else:
         if answer_obj.user != request.user and not is_course_staff(request.user, answer_obj.instance):
-            return HttpResponseForbidden("You're only allowed to view your own answers.")
+            return HttpResponseForbidden(_("You're only allowed to view your own answers."))
         
     from .tasks import generate_results
     
@@ -942,11 +945,11 @@ def user(request, user_name):
     user = request.user
 
     if not (user.is_authenticated() and user.is_active): # Don't allow anons to view anything
-        return HttpResponseForbidden("Please log in to view your information.")
+        return HttpResponseForbidden(_("Please log in to view your information."))
     elif user.is_staff: # Allow admins to view useful information regarding the user they've requested
         pass
     elif user.username != user_name: # Allow the user to view their own info
-        return HttpResponseForbidden("You are only allowed to view your own information.")
+        return HttpResponseForbidden(_("You are only allowed to view your own information."))
 
     try:
         target_user = User.objects.get(username=user_name)
@@ -987,22 +990,22 @@ def calendar_post(request, calendar_id, event_id):
         # TODO: How to make this atomic?
         reservations = CalendarReservation.objects.filter(calendar_date_id=event_id)
         if reservations.count() >= calendar_date.reservable_slots:
-            return HttpResponse("This event is already full.")
+            return HttpResponse(_("This event is already full."))
         user_reservations = reservations.filter(user=request.user)
         if user_reservations.count() >= 1:
-            return HttpResponse("You have already reserved a slot in this event.")
+            return HttpResponse(_("You have already reserved a slot in this event."))
 
         new_reservation = CalendarReservation(calendar_date_id=event_id, user=request.user)
         new_reservation.save()
         # TODO: Check that we didn't overfill the event
-        return HttpResponse("Slot reserved!")
+        return HttpResponse(_("Slot reserved!"))
     elif "reserve" in form.keys() and int(form["reserve"]) == 0:
         user_reservations = CalendarReservation.objects.filter(calendar_date_id=event_id, user=request.user)
         if user_reservations.count() >= 1:
             user_reservations.delete()
-            return HttpResponse("Reservation cancelled.")
+            return HttpResponse(_("Reservation cancelled."))
         else:
-            return HttpResponse("Reservation already cancelled.")
+            return HttpResponse(_("Reservation already cancelled."))
     else:
         return HttpResponseForbidden()
 
@@ -1018,7 +1021,7 @@ def show_answers(request, user, course, instance, exercise):
     if request.user.is_authenticated() and (request.user.username == user or is_course_staff(request.user, instance_obj)):
         pass
     else:
-        return HttpResponseForbidden("You're only allowed to view your own answers.")
+        return HttpResponseForbidden(_("You're only allowed to view your own answers."))
     
     try:
         user_obj = User.objects.get(username=user)

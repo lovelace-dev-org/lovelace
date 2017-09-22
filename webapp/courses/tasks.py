@@ -229,6 +229,9 @@ def generate_results(results, exercise_id):
                     cmd_correct = False
                 if student_c.get('timedout'):
                     cmd_correct = False
+                    timedout = True
+                else:
+                    timedout = False
                 
                 current_cmd = {
                     "cmd_id": cmd_id,
@@ -323,6 +326,7 @@ def generate_results(results, exercise_id):
     
     evaluation.update({
         "correct": correct,
+        "timedout": timedout,
         "test_tree": test_tree,
     })
     return evaluation
