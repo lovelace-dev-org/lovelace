@@ -223,8 +223,7 @@ def generate_results(results, exercise_id):
             for cmd_id, student_c, reference_c in ((k, student_cmds[k], reference_cmds[k])
                                                     for k in sorted(student_cmds.keys(),
                                                                     key=lambda x: student_cmds[x]["ordinal_number"])):
-                cmd_correct = True if not student_c.get('fail') else False                
-                
+
                 cmd_correct = True
                 if student_c.get('fail'):
                     cmd_correct = False
