@@ -170,6 +170,7 @@ def run_tests(self, user_id, instance_id, exercise_id, answer_id, lang_code, rev
 def generate_results(results, exercise_id):
     evaluation = {}
     correct = True
+    timedout = False
 
     student = results["student"]
     reference = results["reference"]
@@ -223,7 +224,14 @@ def generate_results(results, exercise_id):
             for cmd_id, student_c, reference_c in ((k, student_cmds[k], reference_cmds[k])
                                                     for k in sorted(student_cmds.keys(),
                                                                     key=lambda x: student_cmds[x]["ordinal_number"])):
-                cmd_correct = True if not student_c.get('fail') else False
+
+                cmd_correct = True
+                if student_c.get('fail'):
+                    cmd_correct = False
+                if student_c.get('timedout'):
+                    cmd_correct = False
+                    timedout = True
+
                 current_cmd = {
                     "cmd_id": cmd_id,
                 }
@@ -317,6 +325,7 @@ def generate_results(results, exercise_id):
     
     evaluation.update({
         "correct": correct,
+        "timedout": timedout,
         "test_tree": test_tree,
     })
     return evaluation
