@@ -170,6 +170,7 @@ def run_tests(self, user_id, instance_id, exercise_id, answer_id, lang_code, rev
 def generate_results(results, exercise_id):
     evaluation = {}
     correct = True
+    timedout = False
 
     student = results["student"]
     reference = results["reference"]
@@ -230,9 +231,7 @@ def generate_results(results, exercise_id):
                 if student_c.get('timedout'):
                     cmd_correct = False
                     timedout = True
-                else:
-                    timedout = False
-                
+
                 current_cmd = {
                     "cmd_id": cmd_id,
                 }
