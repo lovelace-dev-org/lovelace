@@ -15,6 +15,10 @@ col.permalink {
     width: 117px;
 }
 
+tr:target {
+    background: #efc;
+}
+
 td.answer-date {
     text-align: center;
 }
