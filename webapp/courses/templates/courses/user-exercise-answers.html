@@ -91,6 +91,9 @@
           {% endfor %}
         </ul>
       </td>
+    {% else %}{# No answers, e.g. files, were sent #}
+      <td class="answer">
+      </td>
     {% endif %}
     <td class="evaluation {% if answer.evaluation.correct == True %}correct{% elif answer.evaluation.correct == False %}incorrect{% else %}unknown{% endif %}">
       {% if answer.evaluation.correct == True %}
@@ -102,7 +105,7 @@
       {% endif %}
       {% if answer.evaluation.test_results %}
         <a href="{% url 'courses:get_file_exercise_evaluation' user answer.id %}"
-           onclick="show_results(event, this, 'results-{{ answer.id }}');">View results</a>
+           onclick="show_results(event, this, 'results-{{ answer.id }}');">{% trans 'View results' %}</a>
         <div class="popup"><div class="results-view" id="results-{{ answer.id }}"></div></div>
       {% endif %}
     </td>

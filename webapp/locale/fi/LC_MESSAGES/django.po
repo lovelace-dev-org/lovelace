@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-09-22 12:08+0300\n"
+"POT-Creation-Date: 2017-09-27 16:43+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -249,12 +249,12 @@ msgid "Messages"
 msgstr "Viestit"
 
 #: courses/templates/courses/file-exercise-evaluation.html:16
-#: courses/templates/courses/user-exercise-answers.html:97
+#: courses/templates/courses/user-exercise-answers.html:100
 msgid "Correct"
 msgstr "Oikein"
 
 #: courses/templates/courses/file-exercise-evaluation.html:18
-#: courses/templates/courses/user-exercise-answers.html:99
+#: courses/templates/courses/user-exercise-answers.html:102
 msgid "Incorrect"
 msgstr "Väärin"
 
@@ -435,15 +435,19 @@ msgstr "Arviointi"
 msgid "Link | e-mail"
 msgstr "Linkki | sähköposti"
 
-#: courses/templates/courses/user-exercise-answers.html:101
+#: courses/templates/courses/user-exercise-answers.html:104
 msgid "Unknown"
-msgstr ""
+msgstr "Tuntematon"
 
-#: courses/templates/courses/user-exercise-answers.html:110
+#: courses/templates/courses/user-exercise-answers.html:108
+msgid "View results"
+msgstr "Katso tuloksia"
+
+#: courses/templates/courses/user-exercise-answers.html:113
 msgid "Send course staff a question about this answer"
 msgstr "Lähetä kurssin henkilökunnalle kysymys tästä vastauksesta"
 
-#: courses/templates/courses/user-exercise-answers.html:110
+#: courses/templates/courses/user-exercise-answers.html:113
 msgid "Help!"
 msgstr "Apua!"
 
@@ -453,7 +457,8 @@ msgstr ""
 
 #: courses/views.py:303
 msgid "Only logged in users can send their answers for evaluation!"
-msgstr "Vain sisäänkirjautuneet käyttäjät voivat lähettää vastauksia "
+msgstr ""
+"Vain sisäänkirjautuneet käyttäjät voivat lähettää vastauksia "
 "tarkistettavaksi!"
 
 #: courses/views.py:330
