@@ -414,6 +414,7 @@ def get_repeated_template_session(request, course_slug, instance_slug, content_s
                 # create a new one, no need for atomic anymore
                 if revision == "head": revision = None
                 # TODO: DO NOTHING AND FORGET THE TASK IF CELERY IS NOT WORKING!
+                # TODO: Add an expire date
                 celery_status = rpc_tasks.get_celery_worker_status()
                 if 'errors' in celery_status.keys():
                     data = {
@@ -577,7 +578,6 @@ def get_old_file_exercise_evaluation(request, user, answer_id):
 
 
 def compile_evaluation_data(request, evaluation_tree, evaluation_obj, context=None):
-    
     log = evaluation_tree["test_tree"].get("log", [])
     
     messages = [
@@ -594,8 +594,7 @@ def compile_evaluation_data(request, evaluation_tree, evaluation_obj, context=No
         test["runs"].sort(key=lambda run: run["correct"])
         for run in test["runs"]:
             for output in run["output"]:
-                output["msg"] = "".join(markupparser.MarkupParser.parse(output["msg"], request, context)).strip()                
-        
+                output["msg"] = "".join(markupparser.MarkupParser.parse(output["msg"], request, context)).strip()
     
     debug_json = json.dumps(evaluation_tree, indent=4)
 
@@ -661,10 +660,6 @@ def get_file_exercise_evaluation(request, user, answer_id):
     t_view = loader.get_template("courses/view-answer-results.html")
     
     return HttpResponse(t_view.render(data, request))
-    
-    
-    
-    
 
 
 @cookie_law
@@ -987,7 +982,7 @@ def calendar_post(request, calendar_id, event_id):
         return HttpResponseNotFound("Error: the selected calendar does not exist.")
 
     if "reserve" in form.keys() and int(form["reserve"]) == 1:
-        # TODO: How to make this atomic?
+        # TODO: How to make this atomic? Use with transaction.atomic
         reservations = CalendarReservation.objects.filter(calendar_date_id=event_id)
         if reservations.count() >= calendar_date.reservable_slots:
             return HttpResponse(_("This event is already full."))
@@ -1087,11 +1082,6 @@ def markup_help(request):
         ['name', 'description', 'example', 'result', 'slug']
     )
 
-    # For debugging
-    #for _, m in sorted(markups.items()):
-        #print("name: " + m.name)
-        #print("result: " + "".join(markupparser.MarkupParser.parse(m.example)))
-    
     markup_list = (
         Markup(m.name, m.description, m.example, mark_safe("".join(markupparser.MarkupParser.parse(m.example))),
                slugify(m.name, allow_unicode=True))
@@ -1108,7 +1098,3 @@ def terms(request):
     t = loader.get_template("courses/terms.html")
     c = {}
     return HttpResponse(t.render(c, request))
-
-
-
-
