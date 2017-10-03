@@ -389,6 +389,13 @@ div.termbank {
     div.termbank-contents div.termbank-search-div {
         padding-bottom: 5px;
         border-bottom: 1px solid #222;
+        display: flex;
+    }
+
+    div.termbank-contents div.termbank-search-div > input#termbank-search {
+        border: 1px solid #222;
+        max-width: 100%;
+        flex: 1;
     }
     
     div.termbank-contents div.list-div {

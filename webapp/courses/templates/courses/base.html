@@ -170,8 +170,8 @@
             <div class="termbank-contents" id="termbank-contents">
               <div class="termbank-heading" id="termbank-heading">{% trans "Termbank" %}</div>
               <div class="termbank-search-div">
-                <span>{% trans "Search:" %}</span>
-                <input id="termbank-search" type="search" oninput="filter_termbank_contents($(this).val());">
+                <input id="termbank-search" type="search" oninput="filter_termbank_contents($(this).val());"
+                       placeholder="{% trans 'Search for a term…' %}">
               </div>
               <div id="termbank-list-div" class="list-div">
                 <ol>

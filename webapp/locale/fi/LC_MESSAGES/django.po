@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-09-27 16:43+0300\n"
+"POT-Creation-Date: 2017-10-03 16:05+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -73,9 +73,9 @@ msgstr "Piilota/Näytä termipankki"
 msgid "Termbank"
 msgstr "Termipankki"
 
-#: courses/templates/courses/base.html:174
-msgid "Search:"
-msgstr "Hae:"
+#: courses/templates/courses/base.html:175
+msgid "Search for a term…"
+msgstr "Hae termiä…"
 
 #: courses/templates/courses/base.html:207
 msgid "Hide/Show the table of contents"
@@ -472,11 +472,11 @@ msgstr "Tehtävän palautusaika (%s) on mennyt. Vastaustasi ei arvioida!"
 msgid "Only logged in users are allowed to answer repeated template exercises."
 msgstr "Vain sisäänkirjautuneet käyttäjät voivat vastata tehtäviin."
 
-#: courses/views.py:421
+#: courses/views.py:422
 msgid "Error, exercise backend unavailable."
 msgstr "Virhe: tarkistusprosessi ei ole päällä."
 
-#: courses/views.py:530
+#: courses/views.py:531
 msgid ""
 "The program took too long to execute and was terminated. Check your code for "
 "too slow solutions."
@@ -484,45 +484,45 @@ msgstr ""
 "Ohjelman suoritus kesti liian kauan ja se lopetettiin kesken. Tarkista "
 "koodisi ja korjaa mahdolliset hitaat ratkaisut"
 
-#: courses/views.py:533
+#: courses/views.py:534
 msgid ""
 "Checking program was unable to finish due to an error. Contact course staff."
 msgstr ""
 "Tarkistinohjelma kaatui kesken tarkistuksen. Ota yhteyttä kurssin "
 "henkilökuntaan."
 
-#: courses/views.py:547 courses/views.py:560 courses/views.py:633
-#: courses/views.py:646 courses/views.py:1024
+#: courses/views.py:548 courses/views.py:561 courses/views.py:632
+#: courses/views.py:645 courses/views.py:1019
 msgid "You're only allowed to view your own answers."
 msgstr "Voit katsoa vain omia vastauksiasi."
 
-#: courses/views.py:948
+#: courses/views.py:943
 msgid "Please log in to view your information."
 msgstr "Kirjaudu sisään nähdäksesi tietosi."
 
-#: courses/views.py:952
+#: courses/views.py:947
 msgid "You are only allowed to view your own information."
 msgstr "Voit katsoa vain omia tietojasi."
 
-#: courses/views.py:993
+#: courses/views.py:988
 msgid "This event is already full."
 msgstr "Tapahtuma on jo täynnä."
 
-#: courses/views.py:996
+#: courses/views.py:991
 #, fuzzy
 #| msgid "You have already answered this task correctly."
 msgid "You have already reserved a slot in this event."
 msgstr "Olet jo varannut paikan tähän tapahtumaan."
 
-#: courses/views.py:1001
+#: courses/views.py:996
 msgid "Slot reserved!"
 msgstr "Paikka varattu!"
 
-#: courses/views.py:1006
+#: courses/views.py:1001
 msgid "Reservation cancelled."
 msgstr "Varaus peruttu."
 
-#: courses/views.py:1008
+#: courses/views.py:1003
 msgid "Reservation already cancelled."
 msgstr "Varaus on jo peruttu."
 
@@ -582,3 +582,6 @@ msgstr ""
 #: templates/admin/change_form.html:49
 msgid "Please correct the errors below."
 msgstr ""
+
+#~ msgid "Search:"
+#~ msgstr "Hae:"
