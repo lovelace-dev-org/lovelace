@@ -457,6 +457,8 @@ def get_repeated_template_session(request, course_slug, instance_slug, content_s
     
     rendered_template = session_instance.template.content_string.format(**dict(zip(variables, values)))
     
+    #print(session_instance.repeatedtemplateexercisesessioninstanceanswer_set.first().answer)
+    
     template_context = {
         'course_slug': course_slug,
         'instance_slug': instance_slug,
