@@ -1093,7 +1093,7 @@ def download_answer_file(request, user, answer_id, filename):
     else:
         return HttpResponseForbidden(_("You cannot access this answer."))
     
-    with open(fs_path, "rb") as f:
+    with open(fs_path.encode("utf-8"), "rb") as f:
         response = HttpResponse(f.read())
         
     response["Content-Disposition"] = "attachment; filename={}".format(os.path.basename(fs_path))
