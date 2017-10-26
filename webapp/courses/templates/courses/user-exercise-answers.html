@@ -73,13 +73,15 @@
       <td class="answer">
         <ul>
           {% for file in answer.get_returned_files.items %}
-            {% if file.1.1 == True %}
-              <li>{{ file.0 }}</li>
-            {% else %}
-              <li><a class="fileview-link" href="" onclick="show_file(event, this);">{{ file.0 }}</a>
+            <li>
+              {% if file.1.1 == True %}
+                {{ file.0 }}
+              {% else %}
+                <a class="fileview-link" href="" onclick="show_file(event, this);">{{ file.0 }}</a>
                 <div class="popup"><pre class="fileview">{{ file.1.2|safe }}</pre></div>
-              </li>
-            {% endif %}
+              {% endif %}
+              <a href="{% url 'courses:download_answer_file' username answer.id file.0 %}" class="file-url" dowload></a>
+            </li>
           {% endfor %}
         </ul>
       </td>

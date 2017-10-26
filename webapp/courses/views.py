@@ -14,7 +14,9 @@ from django.http import HttpResponse, JsonResponse, HttpResponseRedirect,\
 from django.db import transaction
 from django.db.models import Q
 from django.template import Template, loader, engines
+from django.conf import settings
 from django.core.cache import cache
+from django.core.files.base import File
 from django.core.urlresolvers import reverse
 from django.utils import timezone, translation
 from django.utils.text import slugify
@@ -1073,6 +1075,30 @@ def show_answers(request, user, course, instance, exercise):
         'username': user,
     }
     return HttpResponse(t.render(c, request))
+
+def download_answer_file(request, user, answer_id, filename):
+    
+    if not request.user.is_authenticated() and (request.user.username == user or request.user.is_superuser):
+        return HttpResponseForbidden(_("You're only allowed to view your own answers."))
+        
+    try:
+        files = FileUploadExerciseReturnFile.objects.filter(answer__id=answer_id, answer__user__username=user)
+    except FileUploadExerciseReturnFile.DoesNotExist as e:
+        return HttpResponseForbidden(_("You cannot access this answer."))
+    
+    for f in files:
+        if f.filename() == filename:
+            fs_path = os.path.join(getattr(settings, "UPLOAD_DISK_PATH", "."), f.fileinfo.name)
+            break
+    else:
+        return HttpResponseForbidden(_("You cannot access this answer."))
+    
+    with open(fs_path, "rb") as f:
+        response = HttpResponse(f.read())
+        
+    response["Content-Disposition"] = "attachment; filename={}".format(os.path.basename(fs_path))
+    
+    return response
 
 def help_list(request):
     return HttpResponse()
