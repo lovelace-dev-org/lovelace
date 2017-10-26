@@ -136,8 +136,6 @@ msgid "Feedback"
 msgstr "Palautteet"
 
 #: courses/templates/courses/content-meta.html:41
-#, fuzzy
-#| msgid "Send answer"
 msgid "Download answers"
 msgstr "Lataa vastaukset"
 
