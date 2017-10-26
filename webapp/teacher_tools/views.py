@@ -5,6 +5,7 @@ import zipfile
 from django.conf import settings
 from django.http import HttpResponse, HttpResponseForbidden
 from django.shortcuts import render
+from django.utils.translation import ugettext as _
 
 from utils.access import determine_access
 
