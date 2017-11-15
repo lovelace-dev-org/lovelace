@@ -32,7 +32,7 @@ class CourseInstanceTranslationOptions(TranslationOptions):
 
 @register(File)
 class FileTranslationOptions(TranslationOptions):
-    fields = ('owner', 'fileinfo',)
+    fields = ('owner', 'fileinfo', 'download_as')
 
 @register(Image)
 class ImageTranslationOptions(TranslationOptions):
