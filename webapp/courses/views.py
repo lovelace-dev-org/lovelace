@@ -1088,17 +1088,50 @@ def download_answer_file(request, user, answer_id, filename):
     
     for f in files:
         if f.filename() == filename:
-            fs_path = os.path.join(getattr(settings, "UPLOAD_DISK_PATH", "."), f.fileinfo.name)
+            fs_path = os.path.join(getattr(settings, "PRIVATE_STORAGE_FS_PATH", settings.MEDIA_ROOT), f.fileinfo.name)
             break
     else:
         return HttpResponseForbidden(_("You cannot access this answer."))
     
-    with open(fs_path.encode("utf-8"), "rb") as f:
-        response = HttpResponse(f.read())
+    # use x-sendfile if set as available
+    if getattr(settings, "PRIVATE_STORAGE_X_SENDFILE", False):
+        response = HttpResponse()
+        response["X-Sendfile"] = fs_path.encode("utf-8")
         
-    response["Content-Disposition"] = "attachment; filename={}".format(os.path.basename(fs_path))
+    else:    
+        with open(fs_path.encode("utf-8"), "rb") as f:
+            response = HttpResponse(f.read())
+            
+        response["Content-Disposition"] = "attachment; filename={}".format(os.path.basename(fs_path))
     
     return response
+
+def download_embedded_file(request, course_slug, instance_slug, file_slug):
+    
+    try:
+        fileobject = File.objects.get(name=file_slug)
+    except File.DoesNotExist as e:
+        return HttpResponseNotFound("No such file {}".format(file_slug))
+    
+    fs_path = os.path.join(getattr(settings, "PRIVATE_STORAGE_FS_PATH", settings.MEDIA_ROOT), fileobject.fileinfo.name)
+
+    if getattr(settings, "PRIVATE_STORAGE_X_SENDFILE", False):
+        response = HttpResponse()
+        response["X-Sendfile"] = fs_path.encode("utf-8")
+    else:
+        with open(fs_path.encode("utf-8")) as f:
+            response = HttpResponse(f.read())
+            
+    if fileobject.download_as:
+        dl_name = fileobject.download_as
+    else:
+        dl_name = os.path.basename(fs_path)
+        
+    response["Content-Disposition"] = "attachment; filename={}".format(dl_name)
+    
+    return response
+    
+    
 
 def help_list(request):
     return HttpResponse()

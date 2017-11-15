@@ -36,7 +36,7 @@ def download_answers(request, course_slug, instance_slug, content_slug):
     for fileinfo in files:
         parts = fileinfo.split("/")
         
-        fs_path = os.path.join(getattr(settings, "UPLOAD_DISK_PATH", "."), fileinfo)
+        fs_path = os.path.join(getattr(settings, "PRIVATE_STORAGE_FS_PATH", settings.MEDIA_ROOT), fileinfo)
         
         try:
             content_zip.write(fs_path.encode("utf-8"), "/".join((parts[2], parts[1], parts[3], parts[4])))

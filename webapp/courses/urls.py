@@ -34,6 +34,8 @@ urlpatterns = [
     url(r'^(?P<course_slug>[^/]+)/(?P<instance_slug>[^/]+)/$', views.course, name='course'),
     url(r'^(?P<course_slug>[^/]+)/(?P<instance_slug>[^/]+)/(?P<content_slug>[^/]+)/$', views.content, name='content'),
 
+    url(r'^(?P<course_slug>[^/]+)/(?P<instance_slug>[^/]+)/(?P<file_slug>[^/]+)/download$', views.download_embedded_file, name='download_embedded_file'),
+
     # Exercise sending for checking, progress and evaluation views
     url(r'^(?P<course_slug>[^/]+)/(?P<instance_slug>[^/]+)/(?P<content_slug>[^/]+)/(?P<revision>(?:\d+|head))/check/$', views.check_answer, name='check'),
     url(r'^(?P<course_slug>[^/]+)/(?P<instance_slug>[^/]+)/(?P<content_slug>[^/]+)/(?P<revision>(?:\d+|head))/exercise-session/$', views.get_repeated_template_session, name='get_repeated_template_session'),

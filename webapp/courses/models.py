@@ -10,6 +10,7 @@ import operator
 import re
 import os
 
+from django.conf import settings
 from django.db import models
 from django.db.models import Q, Max
 from django.contrib.auth.models import User, Group
@@ -31,6 +32,8 @@ import courses.tasks as rpc_tasks
 import feedback.models
 
 import courses.markupparser as markupparser
+
+PRIVATE_UPLOAD = getattr(settings, "PRIVATE_STORAGE_FS_PATH", settings.MEDIA_ROOT)
 
 # TODO: Extend the registration system to allow users to enter the profile data!
 # TODO: Separate profiles for students and teachers
@@ -235,6 +238,7 @@ class File(models.Model):
     date_uploaded = models.DateTimeField(verbose_name='date uploaded', auto_now_add=True)
     typeinfo = models.CharField(max_length=200)
     fileinfo = models.FileField(max_length=255, upload_to=get_file_upload_path) # Translate
+    download_as = models.CharField(verbose_name='Default name for the download dialog', max_length=200, null=True, blank=True)
 
     def __str__(self):
         return self.name

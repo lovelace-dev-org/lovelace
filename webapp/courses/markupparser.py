@@ -434,11 +434,22 @@ class EmbeddedFileMarkup(Markup):
         print(settings)
         link_only = settings.get("link_only", "") == "True"
         print(link_only)
+        
+        instance = file_object.courseinstance
+        instance_slug = instance.slug
+        course_slug = instance.course.slug
+        
+        if file_object.download_as:
+            dl_name = file_object.download_as
+        else:
+            dl_name = file_object.name
 
         t = loader.get_template("courses/embedded-codefile.html")
         c = {
-            "name": file_object.name,
-            "url": file_object.fileinfo.url,
+            "name": dl_name,
+            "slug": file_object.name,
+            "course": course_slug,
+            "instance": instance_slug,
             "contents": mark_safe(highlighted),
             "show_content": not link_only,
         }
