@@ -1,3 +1,4 @@
+from courses.models import CourseInstance, Course
 from reversion.models import Version
 
 
@@ -38,3 +39,26 @@ def determine_access(user, content, responsible_only=False):
     
     return False
 
+def is_course_staff(user, instance_slug, responsible_only=False):
+    
+    if not user.is_authenticated():
+        return False
+    
+    if user.is_superuser:
+        return True
+    
+    if user.is_staff:
+        try:
+            instance_object = CourseInstance.objects.get(slug=instance_slug) 
+        except CourseInstance.DoesNotExist as e:
+            return False
+        
+        if not responsible_only:
+            if Course.objects.filter(staff_group__user=user):
+                return True
+            
+        return user == instance_object.course.main_responsible
+        
+            
+    
+    
