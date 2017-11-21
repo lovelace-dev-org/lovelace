@@ -54,7 +54,7 @@ def is_course_staff(user, instance_slug, responsible_only=False):
             return False
         
         if not responsible_only:
-            if Course.objects.filter(staff_group__user=user):
+            if user in instance_object.course.staff_group.user_set.get_queryset():
                 return True
             
         return user == instance_object.course.main_responsible

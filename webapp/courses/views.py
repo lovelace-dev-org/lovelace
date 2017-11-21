@@ -8,6 +8,8 @@ from collections import namedtuple
 
 import redis
 
+import magic
+
 from django.http import HttpResponse, JsonResponse, HttpResponseRedirect,\
     HttpResponseNotFound, HttpResponseForbidden, HttpResponseNotAllowed,\
     HttpResponseServerError
@@ -43,6 +45,8 @@ import django.conf
 from django.contrib import auth
 from django.shortcuts import redirect
 
+from utils.access import is_course_staff
+
 try:
     from shibboleth.app_settings import LOGOUT_URL, LOGOUT_REDIRECT_URL, LOGOUT_SESSION_KEY
 except:
@@ -58,14 +62,6 @@ JSON_INFO = 2
 JSON_ERROR = 3
 JSON_DEBUG = 4
 
-def is_course_staff(user, instance):
-    if user.is_superuser:
-        return True
-    elif user.is_staff:
-        return user in instance.course.staff_group.user_set.get_queryset()
-    else:
-        return False
-    
 
 def cookie_law(view_func):
     """
@@ -1078,9 +1074,14 @@ def show_answers(request, user, course, instance, exercise):
 
 def download_answer_file(request, user, answer_id, filename):
     
-    if not request.user.is_authenticated() and (request.user.username == user or request.user.is_superuser):
+    try:
+        answer_object = UserAnswer.objects.get(id=answer_id)
+    except UserAnswer.DoesNotExist as e:
+        return HttpReponseForbidden(_("You cannot access this answer."))
+    
+    if not (request.user.username == user or is_course_staff(request.user, answer_object.instance)):
         return HttpResponseForbidden(_("You're only allowed to view your own answers."))
-        
+    
     try:
         files = FileUploadExerciseReturnFile.objects.filter(answer__id=answer_id, answer__user__username=user)
     except FileUploadExerciseReturnFile.DoesNotExist as e:
@@ -1102,7 +1103,9 @@ def download_answer_file(request, user, answer_id, filename):
         with open(fs_path.encode("utf-8"), "rb") as f:
             response = HttpResponse(f.read())
             
-        response["Content-Disposition"] = "attachment; filename={}".format(os.path.basename(fs_path))
+    mime = magic.Magic(mime=True)    
+    response["Content-Type"] = mime.from_file(fs_path)
+    response["Content-Disposition"] = "attachment; filename={}".format(os.path.basename(fs_path))
     
     return response
 
@@ -1127,11 +1130,97 @@ def download_embedded_file(request, course_slug, instance_slug, file_slug):
     else:
         dl_name = os.path.basename(fs_path)
         
+    mime = magic.Magic(mime=True)    
+    response["Content-Type"] = mime.from_file(fs_path)
     response["Content-Disposition"] = "attachment; filename={}".format(dl_name)
     
     return response
+
+    
+def download_media_file(request, instance_id, file_slug, field_name):
+    
+    try:
+        instance_object = CourseInstance.objects.get(id=instance_id)
+    except CourseInstance.DoesNotExist as e:
+        return HttpResponseNotFound(_("This course instance does't exist"))
+            
+    if not is_course_staff(request.user, instance_object.slug):
+        return HttpResponseForbidden(_("Only course main responsible teachers are allowed to download media files through this interface."))
+    
+    try:
+        fileobject = File.objects.get(name=file_slug, courseinstance=instance_object)
+    except FileExerciseTestIncludeFile.DoesNotExist as e:
+        return HttpResponseNotFound(_("Requested file does not exist."))
+    
+    try:
+        fs_path = os.path.join(getattr(settings, "PRIVATE_STORAGE_FS_PATH", settings.MEDIA_ROOT), getattr(fileobject, field_name).name)
+    except AttributeError as e:
+        return HttpResponseNotFound(_("Requested file does not exist."))
+
+    if getattr(settings, "PRIVATE_STORAGE_X_SENDFILE", False):
+        response = HttpResponse()
+        response["X-Sendfile"] = fs_path.encode("utf-8")
+    else:
+        with open(fs_path.encode("utf-8")) as f:
+            response = HttpResponse(f.read())
+            
+    dl_name = os.path.basename(fs_path)
+        
+    mime = magic.Magic(mime=True)    
+    response["Content-Type"] = mime.from_file(fs_path)
+    response["Content-Disposition"] = "attachment; filename={}".format(dl_name)
+    
+    return response
+
+
+def download_template_exercise_backend(request, exercise_id, filename):
+    
+    try:
+        exercise_object = RepeatedTemplateExercise.objects.get(id=exercise_id)
+    except CourseInstance.DoesNotExist as e:
+        return HttpResponseNotFound(_("This exercise does't exist"))
+            
+    #if not is_course_staff(request.user, exercise_object.instance.slug):
+    #    return HttpResponseForbidden(_("Only course staff members are allowed to download repeated template exercise backends."))
+    
+    if not request.user.is_authenticated():
+        return HttpResponseForbidden(_("Only course staff members are allowed to download repeated template exercise backends."))
+    elif (not request.user.is_staff) and (not request.user.is_superuser):
+        return HttpResponseForbidden(_("Only course staff members are allowed to download repeated template exercise backends."))
+    
+    try:
+        fileobject = RepeatedTemplateExerciseBackendFile.objects.get(filename=filename, exercise=exercise_object)
+    except FileExerciseTestIncludeFile.DoesNotExist as e:
+        return HttpResponseNotFound(_("Requested file does not exist."))
+    
+    try:
+        fs_path = os.path.join(getattr(settings, "PRIVATE_STORAGE_FS_PATH", settings.MEDIA_ROOT), fileobject.fileinfo.name)
+    except AttributeError as e:
+        return HttpResponseNotFound(_("Requested file does not exist."))
+
+    if getattr(settings, "PRIVATE_STORAGE_X_SENDFILE", False):
+        response = HttpResponse()
+        response["X-Sendfile"] = fs_path.encode("utf-8")
+    else:
+        with open(fs_path.encode("utf-8")) as f:
+            response = HttpResponse(f.read())
+            
+    dl_name = os.path.basename(fs_path)
+        
+    mime = magic.Magic(mime=True)    
+    response["Content-Type"] = mime.from_file(fs_path)
+    response["Content-Disposition"] = "attachment; filename={}".format(dl_name)
+    
+    return response
+
+
     
     
+    
+    
+    
+    
+
 
 def help_list(request):
     return HttpResponse()

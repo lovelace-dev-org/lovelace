@@ -2,6 +2,8 @@ import collections
 import json
 import string
 import random
+import os
+import magic
 
 from django.http import HttpResponse, HttpResponseNotFound, HttpResponseForbidden,\
     HttpResponseNotAllowed, JsonResponse
@@ -10,6 +12,7 @@ from django.db import transaction, IntegrityError
 from django.conf import settings
 from django.urls import reverse # Django 1.10
 from django.core import serializers
+from django.utils.translation import ugettext as _
 #from django.core.urlresolvers import reverse # Django 1.9
 
 from reversion import revisions as reversion
@@ -18,10 +21,10 @@ from reversion import revisions as reversion
 from courses.models import ContentGraph, EmbeddedLink
 
 # The editable models
-from courses.models import CourseInstance, FileUploadExercise, FileExerciseTest, FileExerciseTestStage,\
+from courses.models import ContentPage, CourseInstance, FileUploadExercise, FileExerciseTest, FileExerciseTestStage,\
     FileExerciseTestCommand, FileExerciseTestExpectedOutput, FileExerciseTestExpectedStdout,\
     FileExerciseTestExpectedStderr, FileExerciseTestIncludeFile, IncludeFileSettings, \
-    Hint, InstanceIncludeFile, InstanceIncludeFileToExerciseLink
+    Hint, InstanceIncludeFile, InstanceIncludeFileToExerciseLink, File, RepeatedTemplateExercise, RepeatedTemplateExerciseBackendFile
 from feedback.models import ContentFeedbackQuestion, TextfieldFeedbackQuestion, \
     ThumbFeedbackQuestion, StarFeedbackQuestion, MultipleChoiceFeedbackQuestion, \
     MultipleChoiceFeedbackAnswer
@@ -29,6 +32,9 @@ from feedback.models import ContentFeedbackQuestion, TextfieldFeedbackQuestion, 
 # Forms
 from .forms import CreateFeedbackQuestionsForm, CreateInstanceIncludeFilesForm, CreateFileUploadExerciseForm
 from .utils import get_default_lang, get_lang_list
+
+from utils.access import determine_access, is_course_staff
+
 
 def index(request):
     return HttpResponseNotFound()
@@ -783,3 +789,72 @@ def edit_instance_files(request):
         })
     
     return get_instance_files(request)
+
+
+
+# DOWNLOAD VIEWS
+# - currently we need a different view for each file type...
+
+def download_exercise_file(request, exercise_id, file_id, lang_code):
+
+    content = ContentPage.objects.get(id=exercise_id)
+    
+    if not determine_access(request.user, content):
+        return HttpResponseForbidden(_("Only course staff members are allowed to download exercise files."))
+    
+    try:
+        fileobject = FileExerciseTestIncludeFile.objects.get(id=file_id, exercise__id=exercise_id)
+    except FileExerciseTestIncludeFile.DoesNotExist as e:
+        return HttpResponseNotFound(_("Requested file does not exist."))
+        
+    try:
+        fs_path = os.path.join(getattr(settings, "PRIVATE_STORAGE_FS_PATH", settings.MEDIA_ROOT), getattr(fileobject, "fileinfo_{}".format(lang_code)).name)
+    except AttributeError:
+        return HttpResponseNotFound(_("Requested file does not exist."))
+
+    if getattr(settings, "PRIVATE_STORAGE_X_SENDFILE", False):
+        response = HttpResponse()
+        response["X-Sendfile"] = fs_path.encode("utf-8")
+    else:
+        with open(fs_path.encode("utf-8")) as f:
+            response = HttpResponse(f.read())
+            
+    dl_name = os.path.basename(fs_path)
+        
+    mime = magic.Magic(mime=True)    
+    response["Content-Type"] = mime.from_file(fs_path)
+    response["Content-Disposition"] = "attachment; filename={}".format(dl_name)
+    
+    return response
+    
+    
+def download_instance_file(request, file_id, lang_code):
+    
+    try:
+        fileobject = InstanceIncludeFile.objects.get(id=file_id)
+    except FileExerciseTestIncludeFile.DoesNotExist as e:
+        return HttpResponseNotFound(_("Requested file does not exist."))
+    
+    instance_object = fileobject.instance
+            
+    if not is_course_staff(request.user, instance_object.slug):
+        return HttpResponseForbidden(_("Only course staff members are allowed to download instance files."))
+    
+    fs_path = os.path.join(getattr(settings, "PRIVATE_STORAGE_FS_PATH", settings.MEDIA_ROOT), fileobject.fileinfo.name)
+
+    if getattr(settings, "PRIVATE_STORAGE_X_SENDFILE", False):
+        response = HttpResponse()
+        response["X-Sendfile"] = fs_path.encode("utf-8")
+    else:
+        with open(fs_path.encode("utf-8")) as f:
+            response = HttpResponse(f.read())
+            
+    dl_name = os.path.basename(fs_path)
+        
+    mime = magic.Magic(mime=True)    
+    response["Content-Type"] = mime.from_file(fs_path)
+    response["Content-Disposition"] = "attachment; filename={}".format(dl_name)
+    
+    return response
+    
+    

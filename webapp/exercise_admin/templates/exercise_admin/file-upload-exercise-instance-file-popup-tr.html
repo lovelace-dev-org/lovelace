@@ -36,10 +36,7 @@
   <td class="uploaded-file-cell">
     {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
       <div class="translated {% if language_choice == CURRENT_LANGUAGE and not create %}translated-visible{% endif %} inline-block-elem" data-language-code="{{ language_choice }}">
-        {% get_translated_field instance_file "fileinfo" language_choice as fileinfo %}
-        {% if fileinfo and fileinfo.url %}
-          <a href="{{ fileinfo.url }}" class="{{ fileinfo.url_css_class }}" download></a>
-        {% endif %}
+        <a href="{% url 'exercise_admin:download_instance_file' instance_file.id language_choice %}" class="file-url" dowload></a>          
       </div>
     {% endfor %}
   </td>
