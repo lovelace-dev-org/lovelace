@@ -191,7 +191,7 @@ def course(request, course_slug, instance_slug):
     context["course"] = course_obj
     context["instance"] = instance_obj
 
-    if is_course_staff(request.user, instance_obj):
+    if is_course_staff(request.user, instance_obj.slug):
         contents = instance_obj.contents.filter(ordinal_number__gt=0).order_by('ordinal_number')
     else:
         contents = instance_obj.contents.filter(ordinal_number__gt=0, visible=True).order_by('ordinal_number')
@@ -228,7 +228,7 @@ def course_tree(tree, node, user, instance_obj):
     if list_item not in tree:
         tree.append(list_item)
 
-    if is_course_staff(user, instance_obj):
+    if is_course_staff(user, instance_obj.slug):
         children = ContentGraph.objects.filter(parentnode=node).order_by('ordinal_number')
     else:
         children = ContentGraph.objects.filter(parentnode=node, visible=True).order_by('ordinal_number')
@@ -557,7 +557,7 @@ def get_old_file_exercise_evaluation(request, user, answer_id):
     except UserFileUploadExerciseAnswer.DoesNotExist as e:
         return HttpResponseNotFound("No such answer {}".format(answer_id))
     else:
-        if answer_obj.user != request.user and not is_course_staff(request.user, answer_obj.instance):
+        if answer_obj.user != request.user and not is_course_staff(request.user, answer_obj.instance.slug):
             return HttpResponseForbidden(_("You're only allowed to view your own answers."))
 
     from .tasks import generate_results
@@ -641,7 +641,7 @@ def get_file_exercise_evaluation(request, user, answer_id):
     except UserFileUploadExerciseAnswer.DoesNotExist as e:
         return HttpResponseNotFound("No such answer {}".format(answer_id))
     else:
-        if answer_obj.user != request.user and not is_course_staff(request.user, answer_obj.instance):
+        if answer_obj.user != request.user and not is_course_staff(request.user, answer_obj.instance.slug):
             return HttpResponseForbidden(_("You're only allowed to view your own answers."))
         
     from .tasks import generate_results
@@ -1013,7 +1013,7 @@ def show_answers(request, user, course, instance, exercise):
     except CourseInstance.DoesNotExist as e:
         return HttpResponseNotFound("No such course instance {}.".format(instance))
     
-    if request.user.is_authenticated() and (request.user.username == user or is_course_staff(request.user, instance_obj)):
+    if request.user.is_authenticated() and (request.user.username == user or is_course_staff(request.user, instance_obj.slug)):
         pass
     else:
         return HttpResponseForbidden(_("You're only allowed to view your own answers."))
@@ -1079,7 +1079,7 @@ def download_answer_file(request, user, answer_id, filename):
     except UserAnswer.DoesNotExist as e:
         return HttpReponseForbidden(_("You cannot access this answer."))
     
-    if not (request.user.username == user or is_course_staff(request.user, answer_object.instance)):
+    if not (request.user.username == user or is_course_staff(request.user, answer_object.instance.slug)):
         return HttpResponseForbidden(_("You're only allowed to view your own answers."))
     
     try:
