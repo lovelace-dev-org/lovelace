@@ -623,8 +623,9 @@ class CourseInstanceAdmin(TranslationAdmin, VersionAdmin):
     """    
     
     fieldsets = [
-        (None,                {'fields': ['name', 'email', 'course', 'frontpage',]}),
+        (None,                {'fields': ['name', 'email', 'course', 'frontpage']}),
         ('Schedule settings', {'fields': ['start_date', 'end_date', 'active',]}),
+        ('Enrollment',        {'fields': ['manual_accept']}),
         ('Instance outline',  {'fields': ['contents',]}),
     ]
     search_fields = ('name',)

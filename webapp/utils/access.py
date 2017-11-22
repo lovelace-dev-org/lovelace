@@ -39,7 +39,7 @@ def determine_access(user, content, responsible_only=False):
     
     return False
 
-def is_course_staff(user, instance_slug, responsible_only=False):
+def is_course_staff(user, instance, responsible_only=False):
     
     if not user.is_authenticated():
         return False
@@ -48,16 +48,11 @@ def is_course_staff(user, instance_slug, responsible_only=False):
         return True
     
     if user.is_staff:
-        try:
-            instance_object = CourseInstance.objects.get(slug=instance_slug) 
-        except CourseInstance.DoesNotExist as e:
-            return False
-        
         if not responsible_only:
-            if user in instance_object.course.staff_group.user_set.get_queryset():
+            if user in instance.course.staff_group.user_set.get_queryset():
                 return True
             
-        return user == instance_object.course.main_responsible
+        return user == instance.course.main_responsible
         
             
     

@@ -837,7 +837,7 @@ def download_instance_file(request, file_id, lang_code):
     
     instance_object = fileobject.instance
             
-    if not is_course_staff(request.user, instance_object.slug):
+    if not is_course_staff(request.user, instance_object):
         return HttpResponseForbidden(_("Only course staff members are allowed to download instance files."))
     
     fs_path = os.path.join(getattr(settings, "PRIVATE_STORAGE_FS_PATH", settings.MEDIA_ROOT), fileobject.fileinfo.name)
