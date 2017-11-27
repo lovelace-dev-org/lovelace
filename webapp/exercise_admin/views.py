@@ -816,7 +816,7 @@ def download_exercise_file(request, exercise_id, file_id, lang_code):
         response = HttpResponse()
         response["X-Sendfile"] = fs_path.encode("utf-8")
     else:
-        with open(fs_path.encode("utf-8")) as f:
+        with open(fs_path.encode("utf-8"), "rb") as f:
             response = HttpResponse(f.read())
             
     dl_name = os.path.basename(fs_path)
@@ -846,7 +846,7 @@ def download_instance_file(request, file_id, lang_code):
         response = HttpResponse()
         response["X-Sendfile"] = fs_path.encode("utf-8")
     else:
-        with open(fs_path.encode("utf-8")) as f:
+        with open(fs_path.encode("utf-8"), "rb") as f:
             response = HttpResponse(f.read())
             
     dl_name = os.path.basename(fs_path)

@@ -1122,7 +1122,7 @@ def download_embedded_file(request, course_slug, instance_slug, file_slug):
         response = HttpResponse()
         response["X-Sendfile"] = fs_path.encode("utf-8")
     else:
-        with open(fs_path.encode("utf-8")) as f:
+        with open(fs_path.encode("utf-8"), "rb") as f:
             response = HttpResponse(f.read())
             
     if fileobject.download_as:
@@ -1161,7 +1161,7 @@ def download_media_file(request, instance_id, file_slug, field_name):
         response = HttpResponse()
         response["X-Sendfile"] = fs_path.encode("utf-8")
     else:
-        with open(fs_path.encode("utf-8")) as f:
+        with open(fs_path.encode("utf-8"), "rb") as f:
             response = HttpResponse(f.read())
             
     dl_name = os.path.basename(fs_path)
@@ -1202,7 +1202,7 @@ def download_template_exercise_backend(request, exercise_id, filename):
         response = HttpResponse()
         response["X-Sendfile"] = fs_path.encode("utf-8")
     else:
-        with open(fs_path.encode("utf-8")) as f:
+        with open(fs_path.encode("utf-8"), "rb") as f:
             response = HttpResponse(f.read())
             
     dl_name = os.path.basename(fs_path)
