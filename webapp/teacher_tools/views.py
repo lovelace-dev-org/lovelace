@@ -7,9 +7,9 @@ from django.http import HttpResponse, HttpResponseForbidden
 from django.shortcuts import render
 from django.utils.translation import ugettext as _
 
-from utils.access import determine_access
+from utils.access import determine_access, is_course_staff
 
-from courses.models import ContentPage, FileUploadExerciseReturnFile
+from courses.models import *
 
 
 def download_answers(request, course_slug, instance_slug, content_slug):
@@ -49,6 +49,20 @@ def download_answers(request, course_slug, instance_slug, content_slug):
     
     response["Content-Disposition"] = "attachment; filename={}_answers.zip".format(content_slug)
     return response
+    
+    
+def manage_enrollments(request, course_slug, instance_slug):
+    
+    if not is_course_staff(request.user, instance_slug, responsible_only=True):
+        return HttpResponseForbidden(_("Only course main resopnsible teachers are allowed to manage enrollments."))
+    
+    try:
+        instance_object = CourseInstance.objects.get(slug=instance_slug)
+    except CourseInstance.DoesNotExist as e:
+        return HttpNotFound(_("This course instance does not exist."))
+    
+    users = instance_object.enrolled_users.get_queryset()
+    
     
     
     
