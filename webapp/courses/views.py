@@ -124,6 +124,7 @@ def logout(request):
 @cookie_law
 def index(request):
     course_list = Course.objects.all()
+    
     t = loader.get_template("courses/index.html")
     c = {
         'course_list': course_list,
@@ -1072,6 +1073,13 @@ def show_answers(request, user, course, instance, exercise):
     }
     return HttpResponse(t.render(c, request))
 
+
+
+# DOWNLOAD VIEWS
+# ^
+# |
+# |
+
 def download_answer_file(request, user, answer_id, filename):
     
     try:
@@ -1213,13 +1221,42 @@ def download_template_exercise_backend(request, exercise_id, filename):
     
     return response
 
-
+# |
+# |
+# v
+# ENROLLMENT VIEWS
+# ^
+# |
+# |
+   
+def enroll(request, course_slug, instance_slug):
     
+    if not request.user.is_authenticated():
+        return HttpResponseForbidden(_("Only logged in users can enroll to courses."))
     
+    try:
+        instance_object = CourseInstance.objects.get(slug=instance_slug)
+    except CourseInstance.DoesNotExist as e:
+        return HttpResponseForbidden(_("You cannot enroll to this course."))
     
+    status = instance_object.user_enroll_status(request.user)
     
+    if status is not None:
+        return HttpResponseForbidden(_("You have already enrolled to this course."))
     
+    enrollment = CourseEnrollment(instance=instance_object, student=request.user)
     
+    if not instance_object.manual_accept:
+        enrollment.enrollment_state = "ACCEPTED"
+        response_text = _("Your enrollment has been automatically accepted.")
+    else:
+        response_text = _("Your enrollment application has been registered for approval.")
+            
+    enrollment.save()
+    
+    return HttpResponse(response_text)
+        
+        
 
 
 def help_list(request):
