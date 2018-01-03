@@ -34,15 +34,34 @@
                   <div>
                     {% with request.user|enrolled:instance as enroll_status %}
                       {% if enroll_status == None %}
-                        <span class="instance-userinfo">You are not enrolled.</span><button>Enroll</button>
+                        <span class="instance-userinfo">You are not enrolled.</span><button onclick="show_popup(event, '{{ instance.slug }}-enrollment-application-popup')">{% trans 'Enroll' %}</button>
                       {% else %}
                         <span class="instance-userinfo">Enroll status: {{ enroll_status }}</span>
                       {% endif %}
                     {% endwith %}
                   </div>
+                  <div class="popup" id="{{ instance.slug }}-enrollment-application-popup">
+                    <div>
+                      <h2>{% trans 'Enroll to' %} {{ instance.name }}</h2>
+                      <form id="{{ instance.slug }}-enroll-form" class="enroll-form" method="POST" enctype="multipart/form-data" action="{%url 'courses:enroll' course.slug instance.slug %}">
+                        {% csrf_token %}
+                        
+                        {% if instance.manual_accept %}
+                          <div class="p">{% trans 'Enrollments to this course must be accepted by the teacher' %}</div>
+                          <div class="p">{% trans 'You can attach a note to your enrollment application  by typing below' %}</div>                        
+                          <textarea name="application-note" class="generic-textfield" placeholder="{% trans 'Type your application here' %}" rows="3"></textarea><br>
+                        {% else %}
+                          <div class="p">{% trans 'Enrollments to this course are accepted automatically' %}</div>
+                        {% endif %}
+                        
+                        <input type="submit" name="submit" value="{% trans 'Send application' %}"></input>
+                      </form>
+                      <div class="enroll-status-msg" id="{{ instance.slug }}-enroll-status-msg"></>
+                    </div>
+                  </div>                  
                   {% comment %}
                   <div>
-                    <span class="instance-userino">Your progress: </span>
+                    <span class="instance-userinfo">Your progress: </span>
                     <progress max="5" value="3" title="3/5 completed"></progress>
                   </div>
                   {% endcomment %}

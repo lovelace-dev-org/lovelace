@@ -3,9 +3,10 @@ import tempfile
 import zipfile
 
 from django.conf import settings
-from django.http import HttpResponse, HttpResponseForbidden
+from django.http import HttpResponse, HttpResponseForbidden, JsonResponse
 from django.shortcuts import render
 from django.utils.translation import ugettext as _
+from django.template import loader
 
 from utils.access import determine_access, is_course_staff
 
@@ -53,15 +54,61 @@ def download_answers(request, course_slug, instance_slug, content_slug):
     
 def manage_enrollments(request, course_slug, instance_slug):
     
-    if not is_course_staff(request.user, instance_slug, responsible_only=True):
-        return HttpResponseForbidden(_("Only course main resopnsible teachers are allowed to manage enrollments."))
-    
     try:
         instance_object = CourseInstance.objects.get(slug=instance_slug)
     except CourseInstance.DoesNotExist as e:
         return HttpNotFound(_("This course instance does not exist."))
     
-    users = instance_object.enrolled_users.get_queryset()
+    if not is_course_staff(request.user, instance_object, responsible_only=True):
+        return HttpResponseForbidden(_("Only course main resopnsible teachers are allowed to manage enrollments."))
+    
+    if request.method == "POST":
+        form = request.POST
+        
+        response = {}
+        
+        if "username" in form:
+            username = form.get("username")
+            try:
+                enrollment = CourseEnrollment.objects.get(student__username=username)
+            except CourseEnrollment.DoesNotExist:
+                response["msg"] = _("Enrollment for the student does not exist.")
+            else:                
+                enrollment.enrollment_state = form.get("action").upper()
+                enrollment.save()
+                response["msg"] = _("Enrollment status of {} changed to {}".format(username, form.get("action")))
+                response["new_state"] = form.get("action").upper()
+                response["user"] = username
+            
+        else:
+            pass
+        
+        return JsonResponse(response)
+        
+    else:        
+        users = instance_object.enrolled_users.get_queryset().order_by("last_name", "first_name", "username")
+        
+        enrollment_list = []
+        
+        for user in users:
+            
+            enrollment = CourseEnrollment.objects.get(student=user)
+            enrollment_list.append((user, enrollment))
+            
+        t = loader.get_template("teacher_tools/manage_enrollments.html")
+        c = {
+            "course": course_slug,
+            "instance": instance_object,
+            "enrollments": enrollment_list,
+        }
+        
+        return HttpResponse(t.render(c, request))
+        
+        
+    
+    
+    
+    
     
     
     

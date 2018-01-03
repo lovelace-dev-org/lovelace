@@ -1192,6 +1192,11 @@ def download_template_exercise_backend(request, exercise_id, filename):
    
 def enroll(request, course_slug, instance_slug):
     
+    if not request.method == "POST":
+        return HttpResponseNotFound()        
+    
+    form = request.POST
+    
     if not request.user.is_authenticated():
         return HttpResponseForbidden(_("Only logged in users can enroll to courses."))
     
@@ -1211,11 +1216,12 @@ def enroll(request, course_slug, instance_slug):
         enrollment.enrollment_state = "ACCEPTED"
         response_text = _("Your enrollment has been automatically accepted.")
     else:
+        enrollment.application_note = form.get("application-note")
         response_text = _("Your enrollment application has been registered for approval.")
             
     enrollment.save()
     
-    return HttpResponse(response_text)
+    return JsonResponse({"message": response_text})
         
         
         

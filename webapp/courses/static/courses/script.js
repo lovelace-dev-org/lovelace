@@ -296,6 +296,46 @@ function expand_eval_debug(button) {
     item.addClass("evaluation-run-open");
 }
 
+function show_popup(e, popup_id) {
+    e.preventDefault();
     
+    var popup = $("#" + popup_id);
+    popup.css({"opacity":"1", "pointer-events":"auto", "overflow": "scroll"});        
+}    
+
+function submit_enrollment(event) {
+    event.preventDefault();
     
+    var form = $(this);
+    var url = form.attr('action');
+    
+    $.ajax({
+        type: form.attr('method'),
+        url: url,
+        data: new FormData(form[0]),
+        processData: false,
+        contentType: false, 
+        dataType: 'json',        
+        success: function(data, text_status, jqxhr_obj) {
+            form.parent().children("div.enroll-status-msg").html(data.message);
+        },
+        error: function(xhr, status, type) {
+            form.children("div.enroll-status-msg").html("{% trans 'There was an error while submitting.' %}");
+        }
+    });
+}
+
+$(document).ready(function() {
+    $('.popup').click(function() {
+        $(this).css({"opacity":"0", "pointer-events":"none"});
+    });
+    $('.popup > div').click(function(event) {
+        event.stopPropagation();
+    });
+    $('.popup > pre').click(function(event) {
+        event.stopPropagation();
+    });    
+    
+    $('.enroll-form').submit(submit_enrollment) 
+});
 
