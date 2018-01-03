@@ -1,0 +1,69 @@
+{% extends 'courses/base.html' %}
+{% load staticfiles %}
+{% load i18n %}
+{% load course_tags %}
+
+{% block extra-static %}
+  <script src="{% static 'teacher_tools/script.js' %}"></script>
+{% endblock %}
+
+{% block page-title %}{% trans 'Manage enrollments' %}{% endblock %}
+
+{% block breadcrumb-links %}
+  <li><a href="{% url 'courses:index' %}">{% trans 'Courses' %}</a></li>
+{% endblock %}
+
+{% block page-content %}
+
+  <h1>{{ instance.name }} {% trans 'enrollments' %}</h1>
+  
+  <form id="{{ instance.slug }}-enrollment-manage-form" class="teacher-form" method="POST" enctype="multipart/form-data" action="{% url 'teacher:manage_enrollments' course instance.slug %}">
+  
+    {% csrf_token %}
+  
+    <table class="enrollments-table">
+      <tr class="enrollments-headers">
+        <th>{% trans 'Last name' %}</th>
+        <th>{% trans 'First name' %}</th>
+        <th>{% trans 'Username' %}</th>
+        <th>{% trans 'Email' %}</th>
+        <th>{% trans 'Status' %}</th>
+        <th>{% trans 'Note' %}</th>
+        <th>{% trans 'Controls' %}</th>
+      </tr>
+      {% for user, enrollment in enrollments %}
+        <tr class="enrollment-row {{ enrollment.enrollment_state.lower }}" id="{{ user.username }}-tr">
+          <td class="last-name-cell">{{ user.last_name }}</td>
+          <td class="first-name-cell">{{ user.first_name }}</td>
+          <td class="username-cell">{{ user.username }}</td>
+          <td class="email-cell">{{ user.email }}</td>
+          <td class="state-cell">{{ enrollment.enrollment_state }}</td>
+          <td class="note-cell">
+            <button class="enrollment-note-button" onclick="show_popup(event, '{{ user.username }}-enrollment-note')">show</button>
+            <div class="popup" id="{{ user.username }}-enrollment-note">
+              <div>{{ enrollment.application_note }}</div>
+            </div>
+          </td>
+          <td class="controls-cell">
+            {% if enrollment.enrollment_state == "ACCEPT" %}
+              <button class="enrollment-expel-button" onclick="process_one(event, this, 'expel')">expel</button></td>
+            {% elif enrollment.enrollment_state == "WAITING" %}
+              <button class="enrollment-accept-button" onclick="process_one(event, this, 'accept')">accept</button>
+              <button class="enrollment-deny-button" onclick="process_one(event, this, 'deny')">deny</button>
+            {% else %}
+              <button class="enrollment-accept-button" onclick="process_one(event, this, 'accept')">accept</button>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      
+    </table>
+
+  </form>
+    
+  <div class="popup" id="status-msg-popup"><div></div></div>
+
+{% endblock %}
+        
+      
+    

@@ -109,6 +109,9 @@
                 <a href="/profile/">{% trans 'Settings' %}</a>
               </div>{% if user.is_staff %}<div class="user-tools">
                 <a href="{% url 'admin:index' %}">{% trans 'Teacher’s tools' %}</a>
+              </div><div class="user-tools">{% block course-enrollments-link %}
+                {% trans 'Manage enrollments' %}
+                {% endblock %}
               </div><div class="user-tools">{% block course-stats-link %}
                 {% trans 'Course statistics' %}
                 {% endblock %}

@@ -16,6 +16,10 @@
   <a href="{% url 'stats:users_course' course.slug instance.slug %}">{% trans 'Course statistics' %}</a>
 {% endblock %}
 
+{% block course-enrollments-link %}
+  <a href="{% url 'teacher:manage_enrollments' course.slug instance.slug %}">{% trans 'Manage enrollments' %}</a>
+{% endblock %}
+
 {% block page-content %}
 <h1 class="content-heading">{{ course.name }}<span id="{{ course.slug }}" class="anchor-offset"></span><a href="#{{ course.slug }}" class="permalink" title="Permalink to {{ course.name }}">&para;</a></h1>
 
