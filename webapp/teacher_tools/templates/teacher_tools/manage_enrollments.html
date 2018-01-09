@@ -20,45 +20,80 @@
   <form id="{{ instance.slug }}-enrollment-manage-form" class="teacher-form" method="POST" enctype="multipart/form-data" action="{% url 'teacher:manage_enrollments' course instance.slug %}">
   
     {% csrf_token %}
+    
+    <div class="enrollments-actions">
+      <select class="enrollments-action-select" name="action">
+        <option value="accepted">{% trans 'accept' %}</option>        
+        <option value="denied">{% trans 'deny' %}</option>
+        <option value="expelled">{% trans 'expel' %}</option>
+      </select>    
+      {% trans 'selected users' %}
+      <input type="submit" value="{% trans 'Submit' %}">
+    </div>
   
     <table class="enrollments-table">
-      <tr class="enrollments-headers">
-        <th>{% trans 'Last name' %}</th>
-        <th>{% trans 'First name' %}</th>
-        <th>{% trans 'Username' %}</th>
-        <th>{% trans 'Email' %}</th>
-        <th>{% trans 'Status' %}</th>
-        <th>{% trans 'Note' %}</th>
-        <th>{% trans 'Controls' %}</th>
-      </tr>
-      {% for user, enrollment in enrollments %}
-        <tr class="enrollment-row {{ enrollment.enrollment_state.lower }}" id="{{ user.username }}-tr">
-          <td class="last-name-cell">{{ user.last_name }}</td>
-          <td class="first-name-cell">{{ user.first_name }}</td>
-          <td class="username-cell">{{ user.username }}</td>
-          <td class="email-cell">{{ user.email }}</td>
-          <td class="state-cell">{{ enrollment.enrollment_state }}</td>
-          <td class="note-cell">
-            <button class="enrollment-note-button" onclick="show_popup(event, '{{ user.username }}-enrollment-note')">show</button>
-            <div class="popup" id="{{ user.username }}-enrollment-note">
-              <div>{{ enrollment.application_note }}</div>
-            </div>
-          </td>
-          <td class="controls-cell">
-            {% if enrollment.enrollment_state == "ACCEPT" %}
-              <button class="enrollment-expel-button" onclick="process_one(event, this, 'expel')">expel</button></td>
-            {% elif enrollment.enrollment_state == "WAITING" %}
-              <button class="enrollment-accept-button" onclick="process_one(event, this, 'accept')">accept</button>
-              <button class="enrollment-deny-button" onclick="process_one(event, this, 'deny')">deny</button>
-            {% else %}
-              <button class="enrollment-accept-button" onclick="process_one(event, this, 'accept')">accept</button>
-            {% endif %}
-          </td>
+      <thead>
+        <tr class="enrollments-headers">
+        
+          <th></th>
+          <th>
+            {% trans 'Last name' %}
+            <button class="sort-ascending-button" onclick="sort_enrollments(event, 1, 1)">up</button>
+            <button class="sort-descending-button" onclick="sort_enrollments(event, 1, -1)">dn</button>          
+          </th>
+          <th>
+            {% trans 'First name' %}
+            <button class="sort-ascending-button" onclick="sort_enrollments(event, 2, 1)">up</button>
+            <button class="sort-descending-button" onclick="sort_enrollments(event, 2, -1)">dn</button>
+          </th>
+          <th>
+            {% trans 'Username' %}
+            <button class="sort-ascending-button" onclick="sort_enrollments(event, 3, 1)">up</button>
+            <button class="sort-descending-button" onclick="sort_enrollments(event, 3, -1)">dn</button>
+          </th>          
+          <th>
+            {% trans 'Email' %}
+            <button class="sort-ascending-button" onclick="sort_enrollments(event, 4, 1)">up</button>
+            <button class="sort-descending-button" onclick="sort_enrollments(event, 4, -1)">dn</button>        
+          </th>
+          <th>{% trans 'Status' %}
+            <button class="sort-ascending-button" onclick="sort_enrollments(event, 5, 1)">up</button>
+            <button class="sort-descending-button" onclick="sort_enrollments(event, 5, -1)">dn</button>        
+          </th>
+          <th>{% trans 'Note' %}</th>
+          <th>{% trans 'Controls' %}</th>
         </tr>
-      {% endfor %}
-      
+      </thead>
+      <tbody>
+        {% for user, enrollment in enrollments %}
+          <tr class="enrollment-row {{ enrollment.enrollment_state.lower }}" id="{{ user.username }}-tr">
+            <td class="select-cell"><input type="checkbox" name="selected-users" value="{{ user.username }}"></td>
+            <td class="last-name-cell">{{ user.last_name }}</td>
+            <td class="first-name-cell">{{ user.first_name }}</td>
+            <td class="username-cell">{{ user.username }}</td>
+            <td class="email-cell">{{ user.email }}</td>
+            <td class="state-cell">{{ enrollment.enrollment_state }}</td>
+            <td class="note-cell">
+              <button class="enrollment-note-button" onclick="show_popup(event, '{{ user.username }}-enrollment-note')">show</button>
+              <div class="popup" id="{{ user.username }}-enrollment-note">
+                <div>{{ enrollment.application_note }}</div>
+              </div>
+            </td>
+            <td class="controls-cell">
+              {% if enrollment.enrollment_state == "ACCEPTED" %}
+                <button class="enrollment-expel-button" onclick="process_one(event, this, 'expelled')">expel</button></td>
+              {% elif enrollment.enrollment_state == "WAITING" %}
+                <button class="enrollment-accept-button" onclick="process_one(event, this, 'accepted')">accept</button>
+                <button class="enrollment-deny-button" onclick="process_one(event, this, 'denied')">deny</button>
+              {% else %}
+                <button class="enrollment-accept-button" onclick="process_one(event, this, 'accepted')">accept</button>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>      
     </table>
-
+        
   </form>
     
   <div class="popup" id="status-msg-popup"><div></div></div>
