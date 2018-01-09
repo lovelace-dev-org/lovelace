@@ -81,8 +81,37 @@ def manage_enrollments(request, course_slug, instance_slug):
                 response["user"] = username
             
         else:
-            pass
-        
+            usernames = form.getlist("selected-users")
+            print(usernames)
+            action = form.get("action")
+            response["users-affected"] = []
+            response["users-skipped"] = []
+            response["affected-title"] = _("Set enrollment state to {} for the following users.".format(action))            
+            response["skipped-title"] = _("The operation was not applicable for these users.")
+            response["new_state"] = action.upper()
+            
+            enrollments = CourseEnrollment.objects.filter(student__username__in=usernames)
+            
+            for enrollment in enrollments:
+                if action == "accepted" and enrollment.enrollment_state == "WAITING":
+                    enrollment.enrollment_state = action.upper()
+                    enrollment.save()
+                    response["users-affected"].append(enrollment.student.username)
+                elif action == "denied" and enrollment.enrollment_state == "WAITING":
+                    enrollment.enrollment_state = action.upper()
+                    enrollment.save()
+                    response["users-affected"].append(enrollment.student.username)
+                elif action == "expelled" and enrollment.enrollment_state == "ACCEPTED":
+                    enrollment.enrollment_state = action.upper()
+                    enrollment.save()
+                    response["users-affected"].append(enrollment.student.username)
+                elif action == "accepted" and enrollment.enrollment_state == "EXPELLED":
+                    enrollment.enrollment_state = action.upper()
+                    enrollment.save()
+                    response["users-affected"].append(enrollment.student.username)
+                else:
+                    response["users-skipped"].append(enrollment.student.username)
+                    
         return JsonResponse(response)
         
     else:        
