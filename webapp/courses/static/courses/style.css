@@ -519,6 +519,34 @@ div.toc-box {
         background-color: #ad3939;
     }
 
+/* 
+ * enrollment popups 
+ * borrowed from answers.css
+ */
+    
+div.popup {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background: rgba(0,0,0,0.8);
+    z-index: 99999;
+    opacity: 0;
+    transition: opacity 200ms ease-in;
+    pointer-events: none;
+}
+div.popup > div, div.popup > pre {
+    width: 1200px;
+    position: relative;
+    margin: 10% auto;
+    padding: 10px;
+    border-radius: 10px;
+    background: #eee;
+}
+    
+/* */
+    
 div.term-descriptions {
     width: 100%;
     z-index: 3;
@@ -981,6 +1009,7 @@ section.content {
                 clear: both;
             }
 
+            textarea.generic-textfield,
             section.content div.question form textarea {
                 width: 100%;
                 border: 2px solid #ddd;
@@ -1448,6 +1477,26 @@ section.content {
             list-style-type: square;
         }
 
+/* Borrowed from exerciseadmin.css */
+        
+a.file-url {
+    display: inline-block;
+    background: url("download.png");
+    width: 25px;
+    height: 25px;
+    outline: 0;
+    vertical-align: top;
+    overflow: hidden;
+    color: #4CAF50;
+    background-color: #fff;
+    text-align: center;
+    cursor: pointer;
+    border: 0px solid #42860e;
+    border-radius: 8px;
+    box-shadow: 1px 1px 2px #285c00;
+}
+        
+        
 /* FOOTER */
 footer {
     font-family: "LatoWeb", "DejaVu Sans", "Verdana", sans-serif;

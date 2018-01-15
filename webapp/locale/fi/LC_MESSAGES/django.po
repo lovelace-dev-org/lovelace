@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-10-03 16:05+0300\n"
+"POT-Creation-Date: 2017-10-26 15:20+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -135,43 +135,47 @@ msgstr "Tilastot"
 msgid "Feedback"
 msgstr "Palautteet"
 
-#: courses/templates/courses/content-meta.html:42
+#: courses/templates/courses/content-meta.html:41
+msgid "Download answers"
+msgstr "Lataa vastaukset"
+
+#: courses/templates/courses/content-meta.html:45
 msgid "Edit this lecture"
 msgstr "Muokkaa tätä luentosivua"
 
-#: courses/templates/courses/content-meta.html:44
+#: courses/templates/courses/content-meta.html:47
 msgid "Edit this textfield exercise"
 msgstr "Muokkaa tätä tekstikenttätehtävää"
 
-#: courses/templates/courses/content-meta.html:46
+#: courses/templates/courses/content-meta.html:49
 msgid "Edit this multiple choice exercise"
 msgstr "Muokkaa tätä monivalintatehtävää"
 
-#: courses/templates/courses/content-meta.html:48
+#: courses/templates/courses/content-meta.html:51
 msgid "Edit this checkbox exercise"
 msgstr "Muokkaa tätä valintaruututehtävää"
 
-#: courses/templates/courses/content-meta.html:50
+#: courses/templates/courses/content-meta.html:53
 msgid "Edit this file upload exericse"
 msgstr "Muokkaa tätä tiedoston lähetys -tehtävää"
 
-#: courses/templates/courses/content-meta.html:52
+#: courses/templates/courses/content-meta.html:55
 msgid "Edit this code input exercise"
 msgstr "Muokkaa tätä koodinsyöttötehtävää"
 
-#: courses/templates/courses/content-meta.html:54
+#: courses/templates/courses/content-meta.html:57
 msgid "Edit this code replace exercise"
 msgstr "Muokkaa tätä koodinkorvaustehtävää"
 
-#: courses/templates/courses/content-meta.html:56
+#: courses/templates/courses/content-meta.html:59
 msgid "Edit this repeated template exercise"
 msgstr "Muokkaa tätä mallinkertaustehtävää"
 
-#: courses/templates/courses/content-meta.html:60
+#: courses/templates/courses/content-meta.html:63
 msgid "View reference answer"
 msgstr "Katso mallivastausta"
 
-#: courses/templates/courses/content-meta.html:61
+#: courses/templates/courses/content-meta.html:64
 msgid "View separately"
 msgstr "Katso erikseen"
 
@@ -249,12 +253,12 @@ msgid "Messages"
 msgstr "Viestit"
 
 #: courses/templates/courses/file-exercise-evaluation.html:16
-#: courses/templates/courses/user-exercise-answers.html:100
+#: courses/templates/courses/user-exercise-answers.html:102
 msgid "Correct"
 msgstr "Oikein"
 
 #: courses/templates/courses/file-exercise-evaluation.html:18
-#: courses/templates/courses/user-exercise-answers.html:102
+#: courses/templates/courses/user-exercise-answers.html:104
 msgid "Incorrect"
 msgstr "Väärin"
 
@@ -435,19 +439,19 @@ msgstr "Arviointi"
 msgid "Link | e-mail"
 msgstr "Linkki | sähköposti"
 
-#: courses/templates/courses/user-exercise-answers.html:104
+#: courses/templates/courses/user-exercise-answers.html:106
 msgid "Unknown"
 msgstr "Tuntematon"
 
-#: courses/templates/courses/user-exercise-answers.html:108
+#: courses/templates/courses/user-exercise-answers.html:110
 msgid "View results"
 msgstr "Katso tuloksia"
 
-#: courses/templates/courses/user-exercise-answers.html:113
+#: courses/templates/courses/user-exercise-answers.html:115
 msgid "Send course staff a question about this answer"
 msgstr "Lähetä kurssin henkilökunnalle kysymys tästä vastauksesta"
 
-#: courses/templates/courses/user-exercise-answers.html:113
+#: courses/templates/courses/user-exercise-answers.html:115
 msgid "Help!"
 msgstr "Apua!"
 
@@ -455,28 +459,28 @@ msgstr "Apua!"
 msgid "Triggers fired"
 msgstr ""
 
-#: courses/views.py:303
+#: courses/views.py:305
 msgid "Only logged in users can send their answers for evaluation!"
 msgstr ""
 "Vain sisäänkirjautuneet käyttäjät voivat lähettää vastauksia "
 "tarkistettavaksi!"
 
-#: courses/views.py:330
+#: courses/views.py:332
 #, python-format
 msgid ""
 "The deadline for this exercise (%s) has passed. Your answer will not be "
 "evaluated!"
 msgstr "Tehtävän palautusaika (%s) on mennyt. Vastaustasi ei arvioida!"
 
-#: courses/views.py:385
+#: courses/views.py:387
 msgid "Only logged in users are allowed to answer repeated template exercises."
 msgstr "Vain sisäänkirjautuneet käyttäjät voivat vastata tehtäviin."
 
-#: courses/views.py:422
+#: courses/views.py:424
 msgid "Error, exercise backend unavailable."
 msgstr "Virhe: tarkistusprosessi ei ole päällä."
 
-#: courses/views.py:531
+#: courses/views.py:535
 msgid ""
 "The program took too long to execute and was terminated. Check your code for "
 "too slow solutions."
@@ -484,47 +488,51 @@ msgstr ""
 "Ohjelman suoritus kesti liian kauan ja se lopetettiin kesken. Tarkista "
 "koodisi ja korjaa mahdolliset hitaat ratkaisut"
 
-#: courses/views.py:534
+#: courses/views.py:538
 msgid ""
 "Checking program was unable to finish due to an error. Contact course staff."
 msgstr ""
 "Tarkistinohjelma kaatui kesken tarkistuksen. Ota yhteyttä kurssin "
 "henkilökuntaan."
 
-#: courses/views.py:548 courses/views.py:561 courses/views.py:632
-#: courses/views.py:645 courses/views.py:1019
+#: courses/views.py:552 courses/views.py:565 courses/views.py:636
+#: courses/views.py:649 courses/views.py:1023 courses/views.py:1082
 msgid "You're only allowed to view your own answers."
 msgstr "Voit katsoa vain omia vastauksiasi."
 
-#: courses/views.py:943
+#: courses/views.py:947
 msgid "Please log in to view your information."
 msgstr "Kirjaudu sisään nähdäksesi tietosi."
 
-#: courses/views.py:947
+#: courses/views.py:951
 msgid "You are only allowed to view your own information."
 msgstr "Voit katsoa vain omia tietojasi."
 
-#: courses/views.py:988
+#: courses/views.py:992
 msgid "This event is already full."
 msgstr "Tapahtuma on jo täynnä."
 
-#: courses/views.py:991
+#: courses/views.py:995
 #, fuzzy
 #| msgid "You have already answered this task correctly."
 msgid "You have already reserved a slot in this event."
 msgstr "Olet jo varannut paikan tähän tapahtumaan."
 
-#: courses/views.py:996
+#: courses/views.py:1000
 msgid "Slot reserved!"
 msgstr "Paikka varattu!"
 
-#: courses/views.py:1001
+#: courses/views.py:1005
 msgid "Reservation cancelled."
 msgstr "Varaus peruttu."
 
-#: courses/views.py:1003
+#: courses/views.py:1007
 msgid "Reservation already cancelled."
 msgstr "Varaus on jo peruttu."
+
+#: courses/views.py:1087 courses/views.py:1094
+msgid "You cannot access this answer."
+msgstr "Et voi ladata tätä vastausta."
 
 #: feedback/templates/feedback/feedbacks.html:10
 #: feedback/templates/feedback/feedbacks.html:14
@@ -545,6 +553,12 @@ msgstr "Lähetä palaute"
 #| msgid "You have already answered this task correctly."
 msgid "You have already answered this feedback."
 msgstr "Olet jo vastannut tähän palautekysymykseen."
+
+#: teacher_tools/views.py:22
+msgid ""
+"Only course main responsible teachers are allowed to download answer files."
+msgstr ""
+"Vain kurssien vastuuhenkilöt voivat ladata vastaustiedostot."
 
 #: templates/account/base.html:22
 msgid "Messages:"

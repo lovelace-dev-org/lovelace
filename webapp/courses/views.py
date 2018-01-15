@@ -8,13 +8,17 @@ from collections import namedtuple
 
 import redis
 
+import magic
+
 from django.http import HttpResponse, JsonResponse, HttpResponseRedirect,\
     HttpResponseNotFound, HttpResponseForbidden, HttpResponseNotAllowed,\
     HttpResponseServerError
 from django.db import transaction
 from django.db.models import Q
 from django.template import Template, loader, engines
+from django.conf import settings
 from django.core.cache import cache
+from django.core.files.base import File
 from django.core.urlresolvers import reverse
 from django.utils import timezone, translation
 from django.utils.text import slugify
@@ -41,6 +45,8 @@ import django.conf
 from django.contrib import auth
 from django.shortcuts import redirect
 
+from utils.access import is_course_staff
+
 try:
     from shibboleth.app_settings import LOGOUT_URL, LOGOUT_REDIRECT_URL, LOGOUT_SESSION_KEY
 except:
@@ -56,14 +62,6 @@ JSON_INFO = 2
 JSON_ERROR = 3
 JSON_DEBUG = 4
 
-def is_course_staff(user, instance):
-    if user.is_superuser:
-        return True
-    elif user.is_staff:
-        return user in instance.course.staff_group.user_set.get_queryset()
-    else:
-        return False
-    
 
 def cookie_law(view_func):
     """
@@ -126,6 +124,7 @@ def logout(request):
 @cookie_law
 def index(request):
     course_list = Course.objects.all()
+    
     t = loader.get_template("courses/index.html")
     c = {
         'course_list': course_list,
@@ -456,6 +455,8 @@ def get_repeated_template_session(request, course_slug, instance_slug, content_s
     #print(session_instance.ordinal_number + 1, " / ", total_instances)
     
     rendered_template = session_instance.template.content_string.format(**dict(zip(variables, values)))
+    
+    #print(session_instance.repeatedtemplateexercisesessioninstanceanswer_set.first().answer)
     
     template_context = {
         'course_slug': course_slug,
@@ -1071,6 +1072,198 @@ def show_answers(request, user, course, instance, exercise):
         'username': user,
     }
     return HttpResponse(t.render(c, request))
+
+
+
+# DOWNLOAD VIEWS
+# ^
+# |
+# |
+
+def download_answer_file(request, user, answer_id, filename):
+    
+    try:
+        answer_object = UserAnswer.objects.get(id=answer_id)
+    except UserAnswer.DoesNotExist as e:
+        return HttpReponseForbidden(_("You cannot access this answer."))
+    
+    if not (request.user.username == user or is_course_staff(request.user, answer_object.instance)):
+        return HttpResponseForbidden(_("You're only allowed to view your own answers."))
+    
+    try:
+        files = FileUploadExerciseReturnFile.objects.filter(answer__id=answer_id, answer__user__username=user)
+    except FileUploadExerciseReturnFile.DoesNotExist as e:
+        return HttpResponseForbidden(_("You cannot access this answer."))
+    
+    for f in files:
+        if f.filename() == filename:
+            fs_path = os.path.join(getattr(settings, "PRIVATE_STORAGE_FS_PATH", settings.MEDIA_ROOT), f.fileinfo.name)
+            break
+    else:
+        return HttpResponseForbidden(_("You cannot access this answer."))
+    
+    # use x-sendfile if set as available
+    if getattr(settings, "PRIVATE_STORAGE_X_SENDFILE", False):
+        response = HttpResponse()
+        response["X-Sendfile"] = fs_path.encode("utf-8")
+        
+    else:    
+        with open(fs_path.encode("utf-8"), "rb") as f:
+            response = HttpResponse(f.read())
+            
+    mime = magic.Magic(mime=True)    
+    response["Content-Type"] = mime.from_file(fs_path)
+    response["Content-Disposition"] = "attachment; filename={}".format(os.path.basename(fs_path))
+    
+    return response
+
+def download_embedded_file(request, course_slug, instance_slug, file_slug):
+    
+    try:
+        fileobject = File.objects.get(name=file_slug)
+    except File.DoesNotExist as e:
+        return HttpResponseNotFound("No such file {}".format(file_slug))
+    
+    fs_path = os.path.join(getattr(settings, "PRIVATE_STORAGE_FS_PATH", settings.MEDIA_ROOT), fileobject.fileinfo.name)
+
+    if getattr(settings, "PRIVATE_STORAGE_X_SENDFILE", False):
+        response = HttpResponse()
+        response["X-Sendfile"] = fs_path.encode("utf-8")
+    else:
+        with open(fs_path.encode("utf-8")) as f:
+            response = HttpResponse(f.read())
+            
+    if fileobject.download_as:
+        dl_name = fileobject.download_as
+    else:
+        dl_name = os.path.basename(fs_path)
+        
+    mime = magic.Magic(mime=True)    
+    response["Content-Type"] = mime.from_file(fs_path)
+    response["Content-Disposition"] = "attachment; filename={}".format(dl_name)
+    
+    return response
+
+    
+def download_media_file(request, instance_id, file_slug, field_name):
+    
+    try:
+        instance_object = CourseInstance.objects.get(id=instance_id)
+    except CourseInstance.DoesNotExist as e:
+        return HttpResponseNotFound(_("This course instance does't exist"))
+            
+    if not is_course_staff(request.user, instance_object):
+        return HttpResponseForbidden(_("Only course main responsible teachers are allowed to download media files through this interface."))
+    
+    try:
+        fileobject = File.objects.get(name=file_slug, courseinstance=instance_object)
+    except FileExerciseTestIncludeFile.DoesNotExist as e:
+        return HttpResponseNotFound(_("Requested file does not exist."))
+    
+    try:
+        fs_path = os.path.join(getattr(settings, "PRIVATE_STORAGE_FS_PATH", settings.MEDIA_ROOT), getattr(fileobject, field_name).name)
+    except AttributeError as e:
+        return HttpResponseNotFound(_("Requested file does not exist."))
+
+    if getattr(settings, "PRIVATE_STORAGE_X_SENDFILE", False):
+        response = HttpResponse()
+        response["X-Sendfile"] = fs_path.encode("utf-8")
+    else:
+        with open(fs_path.encode("utf-8")) as f:
+            response = HttpResponse(f.read())
+            
+    dl_name = os.path.basename(fs_path)
+        
+    mime = magic.Magic(mime=True)    
+    response["Content-Type"] = mime.from_file(fs_path)
+    response["Content-Disposition"] = "attachment; filename={}".format(dl_name)
+    
+    return response
+
+
+def download_template_exercise_backend(request, exercise_id, filename):
+    
+    try:
+        exercise_object = RepeatedTemplateExercise.objects.get(id=exercise_id)
+    except CourseInstance.DoesNotExist as e:
+        return HttpResponseNotFound(_("This exercise does't exist"))
+            
+    #if not is_course_staff(request.user, exercise_object.instance.slug):
+    #    return HttpResponseForbidden(_("Only course staff members are allowed to download repeated template exercise backends."))
+    
+    if not request.user.is_authenticated():
+        return HttpResponseForbidden(_("Only course staff members are allowed to download repeated template exercise backends."))
+    elif (not request.user.is_staff) and (not request.user.is_superuser):
+        return HttpResponseForbidden(_("Only course staff members are allowed to download repeated template exercise backends."))
+    
+    try:
+        fileobject = RepeatedTemplateExerciseBackendFile.objects.get(filename=filename, exercise=exercise_object)
+    except FileExerciseTestIncludeFile.DoesNotExist as e:
+        return HttpResponseNotFound(_("Requested file does not exist."))
+    
+    try:
+        fs_path = os.path.join(getattr(settings, "PRIVATE_STORAGE_FS_PATH", settings.MEDIA_ROOT), fileobject.fileinfo.name)
+    except AttributeError as e:
+        return HttpResponseNotFound(_("Requested file does not exist."))
+
+    if getattr(settings, "PRIVATE_STORAGE_X_SENDFILE", False):
+        response = HttpResponse()
+        response["X-Sendfile"] = fs_path.encode("utf-8")
+    else:
+        with open(fs_path.encode("utf-8")) as f:
+            response = HttpResponse(f.read())
+            
+    dl_name = os.path.basename(fs_path)
+        
+    mime = magic.Magic(mime=True)    
+    response["Content-Type"] = mime.from_file(fs_path)
+    response["Content-Disposition"] = "attachment; filename={}".format(dl_name)
+    
+    return response
+
+# |
+# |
+# v
+# ENROLLMENT VIEWS
+# ^
+# |
+# |
+   
+def enroll(request, course_slug, instance_slug):
+    
+    if not request.method == "POST":
+        return HttpResponseNotFound()        
+    
+    form = request.POST
+    
+    if not request.user.is_authenticated():
+        return HttpResponseForbidden(_("Only logged in users can enroll to courses."))
+    
+    try:
+        instance_object = CourseInstance.objects.get(slug=instance_slug)
+    except CourseInstance.DoesNotExist as e:
+        return HttpResponseForbidden(_("You cannot enroll to this course."))
+    
+    status = instance_object.user_enroll_status(request.user)
+    
+    if status is not None:
+        return HttpResponseForbidden(_("You have already enrolled to this course."))
+    
+    enrollment = CourseEnrollment(instance=instance_object, student=request.user)
+    
+    if not instance_object.manual_accept:
+        enrollment.enrollment_state = "ACCEPTED"
+        response_text = _("Your enrollment has been automatically accepted.")
+    else:
+        enrollment.application_note = form.get("application-note")
+        response_text = _("Your enrollment application has been registered for approval.")
+            
+    enrollment.save()
+    
+    return JsonResponse({"message": response_text})
+        
+        
+
 
 def help_list(request):
     return HttpResponse()

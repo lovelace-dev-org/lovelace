@@ -35,8 +35,11 @@
         <ul>
           <li><div><a href="{% url 'stats:single_exercise' content.slug %}">{% trans 'Statistics' %}</a></div></li>
           <li><div><a href="{% url 'feedback:statistics' content.slug %}">{% trans 'Feedback' %}</a></div></li>
-          <li><div><a href="{{ content.get_admin_change_url }}">
-            {% with type=content.get_human_readable_type %}
+          {% with type=content.get_human_readable_type %}
+            {% if type == "file upload exercise" %}            
+              <li><div><a href="{% url 'teacher:download_answers' course_slug instance_slug content.slug %}">{% trans 'Download answers' %}</a></div></li>
+            {% endif %}
+            <li><div><a href="{{ content.get_admin_change_url }}">
               {% if type == "lecture" %}
                 {% trans 'Edit this lecture' %}
               {% elif type == "textfield exercise" %}
@@ -54,8 +57,8 @@
               {% elif type == "repeated template exercise" %}
                 {% trans 'Edit this repeated template exercise' %}
               {% endif %}
-            {% endwith %}
-          </a></div></li>
+            </a></div></li>
+          {% endwith %}
           <li><div><a href="TODO">{% trans 'View reference answer' %}</a></div></li>
           <li><div><a href="{% url 'courses:sandbox' content.slug %}">{% trans 'View separately' %}</a></div></li>
         </ul>
