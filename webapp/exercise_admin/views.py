@@ -34,6 +34,7 @@ from .forms import CreateFeedbackQuestionsForm, CreateInstanceIncludeFilesForm, 
 from .utils import get_default_lang, get_lang_list
 
 from utils.access import determine_access, is_course_staff
+from utils.files import generate_download_response
 
 
 def index(request):
@@ -812,20 +813,7 @@ def download_exercise_file(request, exercise_id, file_id, lang_code):
     except AttributeError:
         return HttpResponseNotFound(_("Requested file does not exist."))
 
-    if getattr(settings, "PRIVATE_STORAGE_X_SENDFILE", False):
-        response = HttpResponse()
-        response["X-Sendfile"] = fs_path.encode("utf-8")
-    else:
-        with open(fs_path.encode("utf-8"), "rb") as f:
-            response = HttpResponse(f.read())
-            
-    dl_name = os.path.basename(fs_path)
-        
-    mime = magic.Magic(mime=True)    
-    response["Content-Type"] = mime.from_file(fs_path)
-    response["Content-Disposition"] = "attachment; filename={}".format(dl_name)
-    
-    return response
+    return generate_download_response(fs_path)
     
     
 def download_instance_file(request, file_id, lang_code):
@@ -842,19 +830,6 @@ def download_instance_file(request, file_id, lang_code):
     
     fs_path = os.path.join(getattr(settings, "PRIVATE_STORAGE_FS_PATH", settings.MEDIA_ROOT), fileobject.fileinfo.name)
 
-    if getattr(settings, "PRIVATE_STORAGE_X_SENDFILE", False):
-        response = HttpResponse()
-        response["X-Sendfile"] = fs_path.encode("utf-8")
-    else:
-        with open(fs_path.encode("utf-8"), "rb") as f:
-            response = HttpResponse(f.read())
-            
-    dl_name = os.path.basename(fs_path)
-        
-    mime = magic.Magic(mime=True)    
-    response["Content-Type"] = mime.from_file(fs_path)
-    response["Content-Disposition"] = "attachment; filename={}".format(dl_name)
-    
-    return response
+    return generate_download_response(fs_path)
     
     

@@ -28,7 +28,7 @@ class FileEditForm(forms.ModelForm):
         
         default_value = super().get_initial_for_field(field, field_name)
         
-        if isinstance(field, fields.FileField):
+        if isinstance(field, fields.FileField) and default_value:
             default_value.media_slug = self.initial.get("name")
             default_value.instance_id = self.initial.get("courseinstance")
             default_value.field_name = field_name

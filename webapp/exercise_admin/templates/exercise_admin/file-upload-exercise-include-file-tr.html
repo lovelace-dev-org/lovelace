@@ -26,7 +26,7 @@
       <div class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %} inline-block-elem included-file-link-div" data-language-code="{{ language_choice }}">
         {% get_translated_field include_file "fileinfo" language_choice as fileinfo %}
         {% if fileinfo and fileinfo.url %}
-          <a href="{% url 'exercise_admin:download_exercise_file' include_file.exercise.id include_file.id language_choice %}" class="file-url" dowload></a>          
+          <a href="{% url 'exercise_admin:download_exercise_file' include_file.exercise.id include_file.id language_choice %}" class="file-url" download></a>          
         {% endif %}
       </div>
     {% endfor %}

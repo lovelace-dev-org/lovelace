@@ -80,7 +80,7 @@
                 <a class="fileview-link" href="" onclick="show_file(event, this);">{{ file.0 }}</a>
                 <div class="popup"><pre class="fileview">{{ file.1.2|safe }}</pre></div>
               {% endif %}
-              <a href="{% url 'courses:download_answer_file' username answer.id file.0 %}" class="file-url" dowload></a>
+              <a href="{% url 'courses:download_answer_file' username course_slug instance_slug answer.id file.0 %}" class="file-url" download></a>
             </li>
           {% endfor %}
         </ul>

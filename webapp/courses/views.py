@@ -46,6 +46,7 @@ from django.contrib import auth
 from django.shortcuts import redirect
 
 from utils.access import is_course_staff
+from utils.files import generate_download_response
 
 try:
     from shibboleth.app_settings import LOGOUT_URL, LOGOUT_REDIRECT_URL, LOGOUT_SESSION_KEY
@@ -1072,15 +1073,23 @@ def show_answers(request, user, course, instance, exercise):
     }
     return HttpResponse(t.render(c, request))
 
-def download_answer_file(request, user, answer_id, filename):
+def download_answer_file(request, user, course, instance, answer_id, filename):
     
+    # Try to find the course instance first (404 if not found)
+    try:
+        instance_object = CourseInstance.objects.get(slug=instance)
+    except CourseInstance.DoesNotExist as e:
+        return HttpResponseNotFound(_("This course instance does't exist"))    
+    
+    # Determine access to the user's answers 
+    if not (request.user.username == user or is_course_staff(request.user, answer_object.instance)):
+        return HttpResponseForbidden(_("You're only allowed to view your own answers."))
+    
+    # Try to find the answer itself
     try:
         answer_object = UserAnswer.objects.get(id=answer_id)
     except UserAnswer.DoesNotExist as e:
         return HttpReponseForbidden(_("You cannot access this answer."))
-    
-    if not (request.user.username == user or is_course_staff(request.user, answer_object.instance)):
-        return HttpResponseForbidden(_("You're only allowed to view your own answers."))
     
     try:
         files = FileUploadExerciseReturnFile.objects.filter(answer__id=answer_id, answer__user__username=user)
@@ -1094,22 +1103,12 @@ def download_answer_file(request, user, answer_id, filename):
     else:
         return HttpResponseForbidden(_("You cannot access this answer."))
     
-    # use x-sendfile if set as available
-    if getattr(settings, "PRIVATE_STORAGE_X_SENDFILE", False):
-        response = HttpResponse()
-        response["X-Sendfile"] = fs_path.encode("utf-8")
-        
-    else:    
-        with open(fs_path.encode("utf-8"), "rb") as f:
-            response = HttpResponse(f.read())
-            
-    mime = magic.Magic(mime=True)    
-    response["Content-Type"] = mime.from_file(fs_path)
-    response["Content-Disposition"] = "attachment; filename={}".format(os.path.basename(fs_path))
-    
-    return response
+    return generate_download_response(fs_path)
 
 def download_embedded_file(request, course_slug, instance_slug, file_slug):
+    """
+    This view function is for downloading media files via the actual site.
+    """
     
     try:
         fileobject = File.objects.get(name=file_slug)
@@ -1118,35 +1117,25 @@ def download_embedded_file(request, course_slug, instance_slug, file_slug):
     
     fs_path = os.path.join(getattr(settings, "PRIVATE_STORAGE_FS_PATH", settings.MEDIA_ROOT), fileobject.fileinfo.name)
 
-    if getattr(settings, "PRIVATE_STORAGE_X_SENDFILE", False):
-        response = HttpResponse()
-        response["X-Sendfile"] = fs_path.encode("utf-8")
-    else:
-        with open(fs_path.encode("utf-8"), "rb") as f:
-            response = HttpResponse(f.read())
-            
-    if fileobject.download_as:
-        dl_name = fileobject.download_as
-    else:
-        dl_name = os.path.basename(fs_path)
-        
-    mime = magic.Magic(mime=True)    
-    response["Content-Type"] = mime.from_file(fs_path)
-    response["Content-Disposition"] = "attachment; filename={}".format(dl_name)
-    
-    return response
+    return generate_download_response(fs_path, fileobject.download_as)
 
     
 def download_media_file(request, instance_id, file_slug, field_name):
-    
+    """
+    This view function is for downloading media files via the file admin interface.
+    """
+        
+    # Try to find the course instance first (404 if not found)
     try:
         instance_object = CourseInstance.objects.get(id=instance_id)
     except CourseInstance.DoesNotExist as e:
         return HttpResponseNotFound(_("This course instance does't exist"))
-            
+                        
+    # Determine staff access to the instance
     if not is_course_staff(request.user, instance_object):
         return HttpResponseForbidden(_("Only course main responsible teachers are allowed to download media files through this interface."))
     
+    # Try to find the file 
     try:
         fileobject = File.objects.get(name=file_slug, courseinstance=instance_object)
     except FileExerciseTestIncludeFile.DoesNotExist as e:
@@ -1157,23 +1146,15 @@ def download_media_file(request, instance_id, file_slug, field_name):
     except AttributeError as e:
         return HttpResponseNotFound(_("Requested file does not exist."))
 
-    if getattr(settings, "PRIVATE_STORAGE_X_SENDFILE", False):
-        response = HttpResponse()
-        response["X-Sendfile"] = fs_path.encode("utf-8")
-    else:
-        with open(fs_path.encode("utf-8"), "rb") as f:
-            response = HttpResponse(f.read())
-            
-    dl_name = os.path.basename(fs_path)
-        
-    mime = magic.Magic(mime=True)    
-    response["Content-Type"] = mime.from_file(fs_path)
-    response["Content-Disposition"] = "attachment; filename={}".format(dl_name)
-    
-    return response
+    return generate_download_response(fs_path)
 
 
 def download_template_exercise_backend(request, exercise_id, filename):
+    
+    if not request.user.is_authenticated():
+        return HttpResponseForbidden(_("Only course staff members are allowed to download repeated template exercise backends."))
+    elif (not request.user.is_staff) and (not request.user.is_superuser):
+        return HttpResponseForbidden(_("Only course staff members are allowed to download repeated template exercise backends."))
     
     try:
         exercise_object = RepeatedTemplateExercise.objects.get(id=exercise_id)
@@ -1182,11 +1163,6 @@ def download_template_exercise_backend(request, exercise_id, filename):
             
     #if not is_course_staff(request.user, exercise_object.instance.slug):
     #    return HttpResponseForbidden(_("Only course staff members are allowed to download repeated template exercise backends."))
-    
-    if not request.user.is_authenticated():
-        return HttpResponseForbidden(_("Only course staff members are allowed to download repeated template exercise backends."))
-    elif (not request.user.is_staff) and (not request.user.is_superuser):
-        return HttpResponseForbidden(_("Only course staff members are allowed to download repeated template exercise backends."))
     
     try:
         fileobject = RepeatedTemplateExerciseBackendFile.objects.get(filename=filename, exercise=exercise_object)
@@ -1198,28 +1174,7 @@ def download_template_exercise_backend(request, exercise_id, filename):
     except AttributeError as e:
         return HttpResponseNotFound(_("Requested file does not exist."))
 
-    if getattr(settings, "PRIVATE_STORAGE_X_SENDFILE", False):
-        response = HttpResponse()
-        response["X-Sendfile"] = fs_path.encode("utf-8")
-    else:
-        with open(fs_path.encode("utf-8"), "rb") as f:
-            response = HttpResponse(f.read())
-            
-    dl_name = os.path.basename(fs_path)
-        
-    mime = magic.Magic(mime=True)    
-    response["Content-Type"] = mime.from_file(fs_path)
-    response["Content-Disposition"] = "attachment; filename={}".format(dl_name)
-    
-    return response
-
-
-    
-    
-    
-    
-    
-    
+    return generate_download_response(fs_path)
 
 
 def help_list(request):
