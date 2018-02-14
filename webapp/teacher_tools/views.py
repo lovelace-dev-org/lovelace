@@ -60,7 +60,7 @@ def manage_enrollments(request, course_slug, instance_slug):
         return HttpNotFound(_("This course instance does not exist."))
     
     if not is_course_staff(request.user, instance_object, responsible_only=True):
-        return HttpResponseForbidden(_("Only course main resopnsible teachers are allowed to manage enrollments."))
+        return HttpResponseForbidden(_("Only course main responsible teachers are allowed to manage enrollments."))
     
     if request.method == "POST":
         form = request.POST

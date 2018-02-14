@@ -1193,7 +1193,7 @@ def download_template_exercise_backend(request, exercise_id, filename):
 def enroll(request, course_slug, instance_slug):
     
     if not request.method == "POST":
-        return HttpResponseNotFound()        
+        return HttpResponseNotAllowed()        
     
     form = request.POST
     
@@ -1208,7 +1208,7 @@ def enroll(request, course_slug, instance_slug):
     status = instance_object.user_enroll_status(request.user)
     
     if status is not None:
-        return HttpResponseForbidden(_("You have already enrolled to this course."))
+        return HttpResponseBadRequest(_("You have already enrolled to this course."))
     
     enrollment = CourseEnrollment(instance=instance_object, student=request.user)
     

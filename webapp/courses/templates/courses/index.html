@@ -48,8 +48,8 @@
                         
                         {% if instance.manual_accept %}
                           <div class="p">{% trans 'Enrollments to this course must be accepted by the teacher' %}</div>
-                          <div class="p">{% trans 'You can attach a note to your enrollment application  by typing below' %}</div>                        
-                          <textarea name="application-note" class="generic-textfield" placeholder="{% trans 'Type your application here' %}" rows="3"></textarea><br>
+                          <div class="p">{% trans 'You can attach a note to your enrollment application by typing below' %}</div>                        
+                          <textarea name="application-note" class="generic-textfield" placeholder="{% trans 'Type your application here' %}" rows="3"></textarea>
                         {% else %}
                           <div class="p">{% trans 'Enrollments to this course are accepted automatically' %}</div>
                         {% endif %}

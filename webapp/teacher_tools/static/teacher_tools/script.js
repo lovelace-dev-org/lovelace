@@ -50,12 +50,12 @@ function change_state(username, new_state) {
     
     state_cell.html(new_state);
     
-    if (new_state == "ACCEPTED") {
+    if (new_state === "ACCEPTED") {
         controls_cell.html(
             '<button class="enrollment-expel-button" onclick="process_one(event, this, \'expelled\')">expel</button></td>'
         );            
     }
-    else if (new_state == "WAITING") {
+    else if (new_state === "WAITING") {
         controls_cell.html(
             '<button class="enrollment-accept-button" onclick="process_one(event, this, \'accepted\')">accept</button><button class="enrollment-deny-button" onclick="process_one(event, this, \'denied\')">deny</button>'
         );
@@ -84,7 +84,7 @@ function process_success_many(response, status, jqxhr_obj) {
         log += "<h3>" + response["affected-title"] + "</h3>";
     
         response["users-affected"].forEach(function(username) {
-            log += username + "<br>";
+            log += "<div>" + username + "</div>";
             change_state(username, response.new_state);
         })
     }
@@ -93,7 +93,7 @@ function process_success_many(response, status, jqxhr_obj) {
         log += "<h3>" + response["skipped-title"] + "</h3>";
     
         response["users-skipped"].forEach(function(username) {
-            log += username + "<br>";
+            log += "<div>" + username + "</div>";
         })
     }    
     
