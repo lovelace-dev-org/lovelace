@@ -10,6 +10,7 @@ urlpatterns = [
     # For viewing and changing user information
     url(r'^answers/(?P<user>[^/]+)/(?P<answer_id>\d+)$',
         views.get_file_exercise_evaluation, name='get_file_exercise_evaluation'),
+    url(r'^answers/(?P<user>[^/]+)/(?P<course>[^/]+)/(?P<instance>[^/]+)/(?P<answer_id>\d+)/(?P<filename>[^/]+)/download/$', views.download_answer_file, name='download_answer_file'),
     url(r'^answers/(?P<user>[^/]+)/(?P<course>[^/]+)/(?P<instance>[^/]+)/(?P<exercise>[^/]+)',
         views.show_answers, name='show_answers'),
     url(r'^user/(?P<user_name>[^/]+)/$', views.user),
@@ -32,6 +33,11 @@ urlpatterns = [
     url(r'^(?P<course_slug>[^/]+)/$', views.course_instances, name='course_instances'),
     url(r'^(?P<course_slug>[^/]+)/(?P<instance_slug>[^/]+)/$', views.course, name='course'),
     url(r'^(?P<course_slug>[^/]+)/(?P<instance_slug>[^/]+)/(?P<content_slug>[^/]+)/$', views.content, name='content'),
+
+    url(r'^file-download/embedded/(?P<course_slug>[^/]+)/(?P<instance_slug>[^/]+)/(?P<file_slug>[^/]+)/$', views.download_embedded_file, name='download_embedded_file'),
+    url(r'^file-download/media/(?P<instance_id>\d+)/(?P<file_slug>[^/]+)/(?P<field_name>[^/]+)/$', views.download_media_file, name='download_media_file'),
+    url(r'^file-download/template-backend/(?P<exercise_id>\d+)/(?P<filename>[^/]+)/$',
+        views.download_template_exercise_backend, name="download_template_exercise_backend"),
 
     # Exercise sending for checking, progress and evaluation views
     url(r'^(?P<course_slug>[^/]+)/(?P<instance_slug>[^/]+)/(?P<content_slug>[^/]+)/(?P<revision>(?:\d+|head))/check/$', views.check_answer, name='check'),

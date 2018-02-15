@@ -10,11 +10,13 @@ import operator
 import re
 import os
 
+from django.conf import settings
 from django.db import models
 from django.db.models import Q, Max
 from django.contrib.auth.models import User, Group
 from django.db.models.signals import post_save
 from django.core.urlresolvers import reverse
+from django.core.files.storage import FileSystemStorage
 from django.utils import translation
 from django.utils.text import slugify
 from django.contrib.postgres.fields import ArrayField, JSONField
@@ -31,6 +33,10 @@ import courses.tasks as rpc_tasks
 import feedback.models
 
 import courses.markupparser as markupparser
+
+PRIVATE_UPLOAD = getattr(settings, "PRIVATE_STORAGE_FS_PATH", settings.MEDIA_ROOT)
+
+upload_storage = FileSystemStorage(location=PRIVATE_UPLOAD)
 
 # TODO: Extend the registration system to allow users to enter the profile data!
 # TODO: Separate profiles for students and teachers
@@ -234,7 +240,8 @@ class File(models.Model):
     name = models.CharField(verbose_name='Name for reference in content',max_length=200,unique=True)
     date_uploaded = models.DateTimeField(verbose_name='date uploaded', auto_now_add=True)
     typeinfo = models.CharField(max_length=200)
-    fileinfo = models.FileField(max_length=255, upload_to=get_file_upload_path) # Translate
+    fileinfo = models.FileField(max_length=255, upload_to=get_file_upload_path, storage=upload_storage) # Translate
+    download_as = models.CharField(verbose_name='Default name for the download dialog', max_length=200, null=True, blank=True)
 
     def __str__(self):
         return self.name
@@ -1390,7 +1397,7 @@ class InstanceIncludeFile(models.Model):
                                        through_fields=('include_file', 'exercise'))
     default_name = models.CharField(verbose_name='Default name', max_length=255) # Translate
     description = models.TextField(blank=True, null=True) # Translate
-    fileinfo = models.FileField(max_length=255, upload_to=get_instancefile_path) # Translate
+    fileinfo = models.FileField(max_length=255, upload_to=get_instancefile_path, storage=upload_storage) # Translate
 
     def get_file_contents(self):
         file_contents = None
@@ -1416,7 +1423,7 @@ class FileExerciseTestIncludeFile(models.Model):
     file_settings = models.OneToOneField('IncludeFileSettings')
     default_name = models.CharField(verbose_name='Default name', max_length=255) # Translate
     description = models.TextField(blank=True, null=True) # Translate
-    fileinfo = models.FileField(max_length=255, upload_to=get_testfile_path) # Translate
+    fileinfo = models.FileField(max_length=255, upload_to=get_testfile_path, storage=upload_storage) # Translate
 
     def __str__(self):
         return "%s - %s" % (self.file_settings.purpose, self.default_name)
@@ -1445,6 +1452,7 @@ class IncludeFileSettings(models.Model):
             ('OUTPUT', "Expected output file"),
         )),
         ('Executable files', (
+            ('LIBRARY', "Library file"),
             ('REFERENCE', "Reference implementation"),
             ('INPUTGEN', "Input generator"),
             ('WRAPPER', "Wrapper for uploaded code"),
@@ -1454,7 +1462,7 @@ class IncludeFileSettings(models.Model):
     # Default order: reference, inputgen, wrapper, test
     purpose = models.CharField(verbose_name='Used as',max_length=10,default="REFERENCE",choices=FILE_PURPOSE_CHOICES)
 
-    FILE_OWNERSHIP_CHOICES = (
+    FILE_OWNERSHIP_CHOICES = (  
         ('OWNED', "Owned by the tested program"),
         ('NOT_OWNED', "Not owned by the tested program"),
     )
@@ -1530,7 +1538,7 @@ class RepeatedTemplateExerciseTemplate(models.Model):
 class RepeatedTemplateExerciseBackendFile(models.Model):
     exercise = models.ForeignKey(RepeatedTemplateExercise)
     filename = models.CharField(max_length=255, blank=True)
-    fileinfo = models.FileField(max_length=255, upload_to=get_testfile_path)
+    fileinfo = models.FileField(max_length=255, upload_to=get_testfile_path, storage=upload_storage)
 
     def get_filename(self):
         return os.path.basename(self.fileinfo.name)
@@ -1662,7 +1670,7 @@ def get_answerfile_path(instance, filename): # TODO: Versioning?
 class FileUploadExerciseReturnFile(models.Model):
     """A file that a user returns for checking."""
     answer = models.ForeignKey('UserFileUploadExerciseAnswer')
-    fileinfo = models.FileField(max_length=255, upload_to=get_answerfile_path)
+    fileinfo = models.FileField(max_length=255, upload_to=get_answerfile_path, storage=upload_storage)
 
     def filename(self):
         return os.path.basename(self.fileinfo.name)

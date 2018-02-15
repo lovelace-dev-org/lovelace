@@ -1448,6 +1448,26 @@ section.content {
             list-style-type: square;
         }
 
+/* Borrowed from exerciseadmin.css */
+        
+a.file-url {
+    display: inline-block;
+    background: url("download.png");
+    width: 25px;
+    height: 25px;
+    outline: 0;
+    vertical-align: top;
+    overflow: hidden;
+    color: #4CAF50;
+    background-color: #fff;
+    text-align: center;
+    cursor: pointer;
+    border: 0px solid #42860e;
+    border-radius: 8px;
+    box-shadow: 1px 1px 2px #285c00;
+}
+        
+        
 /* FOOTER */
 footer {
     font-family: "LatoWeb", "DejaVu Sans", "Verdana", sans-serif;

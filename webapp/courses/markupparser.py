@@ -415,30 +415,42 @@ class EmbeddedFileMarkup(Markup):
             raise StopIteration
 
         file_path = file_object.fileinfo.path
-        try:
-            file_contents = open(file_path, mode='r', encoding='utf-8').read()
-        except ValueError as e:
-            # TODO: Modular errors
-            yield "<div>Unable to decode file %s with utf-8.</div>" % settings["file_slug"]
-            raise StopIteration
-
-        try:
-            lexer = pygments.lexers.guess_lexer_for_filename(file_path, file_contents)
-        except pygments.util.ClassNotFound:
-            # TODO: Modular errors
-            yield '<div>Unable to find lexer for file %s.</div>' % settings['file_slug']
-            raise StopIteration
-
-        highlighted = pygments.highlight(file_contents, lexer, HtmlFormatter(nowrap=True))
-        
-        print(settings)
         link_only = settings.get("link_only", "") == "True"
-        print(link_only)
+
+        if link_only:
+            highlighted = ""
+        else:           
+            try:
+                file_contents = open(file_path, mode='r', encoding='utf-8').read()
+            except ValueError as e:
+                # TODO: Modular errors
+                yield "<div>Unable to decode file %s with utf-8.</div>" % settings["file_slug"]
+                raise StopIteration
+
+            try:
+                lexer = pygments.lexers.guess_lexer_for_filename(file_path, file_contents)
+            except pygments.util.ClassNotFound:
+                # TODO: Modular errors
+                yield '<div>Unable to find lexer for file %s.</div>' % settings['file_slug']
+                raise StopIteration
+
+            highlighted = pygments.highlight(file_contents, lexer, HtmlFormatter(nowrap=True))
+        
+        instance = file_object.courseinstance
+        instance_slug = instance.slug
+        course_slug = instance.course.slug
+        
+        if file_object.download_as:
+            dl_name = file_object.download_as
+        else:
+            dl_name = file_object.name
 
         t = loader.get_template("courses/embedded-codefile.html")
         c = {
-            "name": file_object.name,
-            "url": file_object.fileinfo.url,
+            "name": dl_name,
+            "slug": file_object.name,
+            "course": course_slug,
+            "instance": instance_slug,
             "contents": mark_safe(highlighted),
             "show_content": not link_only,
         }

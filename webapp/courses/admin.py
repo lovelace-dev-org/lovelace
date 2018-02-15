@@ -13,6 +13,9 @@ from django.db import models, transaction
 from django.db.models import Q
 from django.forms import Field, ModelForm, TextInput, Textarea, ModelChoiceField
 
+from .forms import FileEditForm, RepeatedTemplateExerciseBackendForm
+from .widgets import AdminFileWidget, AdminTemplateBackendFileWidget
+
 from modeltranslation.admin import TranslationAdmin, TranslationTabularInline, \
     TranslationStackedInline
 
@@ -340,6 +343,10 @@ class RepeatedTemplateExerciseTemplateInline(TranslationStackedInline):
 class RepeatedTemplateExerciseBackendFileInline(admin.StackedInline):
     model = RepeatedTemplateExerciseBackendFile
     extra = 1
+    form = RepeatedTemplateExerciseBackendForm
+    formfield_overrides = {
+        models.FileField: {'widget': AdminTemplateBackendFileWidget}
+    }
 
 class RepeatedTemplateExerciseBackendCommandInline(TranslationStackedInline):
     model = RepeatedTemplateExerciseBackendCommand
@@ -472,6 +479,13 @@ class FileAdmin(CourseMediaAccess):
 
     search_fields = ('name',)
     readonly_fields = ('owner',)
+    form = FileEditForm
+    formfield_overrides = {
+        models.FileField: {'widget': AdminFileWidget}
+    }
+        
+    
+    
 
 class ImageAdmin(CourseMediaAccess):
     def save_model(self, request, obj, form, change):
@@ -609,8 +623,9 @@ class CourseInstanceAdmin(TranslationAdmin, VersionAdmin):
     """    
     
     fieldsets = [
-        (None,                {'fields': ['name', 'email', 'course', 'frontpage',]}),
+        (None,                {'fields': ['name', 'email', 'course', 'frontpage']}),
         ('Schedule settings', {'fields': ['start_date', 'end_date', 'active',]}),
+        ('Enrollment',        {'fields': ['manual_accept']}),
         ('Instance outline',  {'fields': ['contents',]}),
     ]
     search_fields = ('name',)
