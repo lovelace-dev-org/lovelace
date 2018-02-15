@@ -31,12 +31,12 @@ def download_answers(request, course_slug, instance_slug, content_slug):
     with tempfile.TemporaryFile() as temp_storage:
         with zipfile.ZipFile(temp_storage ,"w") as content_zip:
             for fileinfo in files:
-                parts = fileinfo.split("/")
+                parts = fileinfo.split(os.path.sep)
                 
                 fs_path = os.path.join(getattr(settings, "PRIVATE_STORAGE_FS_PATH", settings.MEDIA_ROOT), fileinfo)
                 
                 try:
-                    content_zip.write(fs_path.encode("utf-8"), "/".join((parts[2], parts[1], parts[3], parts[4])))
+                    content_zip.write(fs_path.encode("utf-8"), os.path.join(parts[2], parts[1], parts[3], parts[4]))
                 except (IndexError, OSError) as e:
                     errors.append(fileinfo)    
                     
