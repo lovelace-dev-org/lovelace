@@ -15,9 +15,11 @@
 
 {% block page-content %}
 
-  {% blocktrans with name=instance.name %}
-    <h1>{{ name }} enrollments</h1>
-  {% endblocktrans %}
+  <h1>
+    {% blocktrans with name=instance.name %}
+      {{ name }} enrollments
+    {% endblocktrans %}
+  </h1>
   
   <form id="{{ instance.slug }}-enrollment-manage-form" 
     class="teacher-form" 
