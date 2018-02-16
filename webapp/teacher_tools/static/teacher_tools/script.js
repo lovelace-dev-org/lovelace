@@ -1,10 +1,10 @@
 function process_one(event, button, action) {
     event.preventDefault();
     
-    var tr = $(button).parent().parent();
-    var form = $(".teacher-form");
-    var username = tr.children(".username-cell").html();
-    var csrf = form.children("input[name*='csrfmiddlewaretoken']").attr("value");
+    let tr = $(button).parent().parent();
+    let form = $(".teacher-form");
+    let username = tr.children(".username-cell").html();
+    let csrf = form.children("input[name*='csrfmiddlewaretoken']").attr("value");
     
     $.ajax({
         type: form.attr('method'),
@@ -24,7 +24,7 @@ function process_one(event, button, action) {
 function process_many(event) {
     event.preventDefault();
     
-    var form = $(".teacher-form");
+    let form = $(".teacher-form");
     
     $.ajax({
         type: form.attr('method'),

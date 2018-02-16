@@ -3,6 +3,7 @@ import tempfile
 import zipfile
 
 from django.conf import settings
+from django.db import transaction
 from django.http import HttpResponse, HttpResponseForbidden, JsonResponse
 from django.shortcuts import render
 from django.utils.translation import ugettext as _
@@ -55,9 +56,14 @@ def download_answers(request, course_slug, instance_slug, content_slug):
 def manage_enrollments(request, course_slug, instance_slug):
     
     try:
+        course_object = Course.objects.get(slug=course_slug)
+    except Course.DoesNotExist as e:
+        return HttpResponseNotFound(_("This course does not exist."))
+    
+    try:
         instance_object = CourseInstance.objects.get(slug=instance_slug)
     except CourseInstance.DoesNotExist as e:
-        return HttpNotFound(_("This course instance does not exist."))
+        return HttpResponseNotFound(_("This course instance does not exist."))
     
     if not is_course_staff(request.user, instance_object, responsible_only=True):
         return HttpResponseForbidden(_("Only course main responsible teachers are allowed to manage enrollments."))
@@ -69,16 +75,17 @@ def manage_enrollments(request, course_slug, instance_slug):
         
         if "username" in form:
             username = form.get("username")
-            try:
-                enrollment = CourseEnrollment.objects.get(student__username=username)
-            except CourseEnrollment.DoesNotExist:
-                response["msg"] = _("Enrollment for the student does not exist.")
-            else:                
-                enrollment.enrollment_state = form.get("action").upper()
-                enrollment.save()
-                response["msg"] = _("Enrollment status of {} changed to {}".format(username, form.get("action")))
-                response["new_state"] = form.get("action").upper()
-                response["user"] = username
+            with transaction.atomic():
+                try:
+                    enrollment = CourseEnrollment.objects.get(student__username=username, instance=instance_object)
+                except CourseEnrollment.DoesNotExist:
+                    response["msg"] = _("Enrollment for the student does not exist.")
+                else:                
+                    enrollment.enrollment_state = form.get("action").upper()
+                    enrollment.save()
+                    response["msg"] = _("Enrollment status of {} changed to {}".format(username, form.get("action")))
+                    response["new_state"] = form.get("action").upper()
+                    response["user"] = username
             
         else:
             usernames = form.getlist("selected-users")
@@ -90,27 +97,28 @@ def manage_enrollments(request, course_slug, instance_slug):
             response["skipped-title"] = _("The operation was not applicable for these users.")
             response["new_state"] = action.upper()
             
-            enrollments = CourseEnrollment.objects.filter(student__username__in=usernames)
-            
-            for enrollment in enrollments:
-                if action == "accepted" and enrollment.enrollment_state == "WAITING":
-                    enrollment.enrollment_state = action.upper()
-                    enrollment.save()
-                    response["users-affected"].append(enrollment.student.username)
-                elif action == "denied" and enrollment.enrollment_state == "WAITING":
-                    enrollment.enrollment_state = action.upper()
-                    enrollment.save()
-                    response["users-affected"].append(enrollment.student.username)
-                elif action == "expelled" and enrollment.enrollment_state == "ACCEPTED":
-                    enrollment.enrollment_state = action.upper()
-                    enrollment.save()
-                    response["users-affected"].append(enrollment.student.username)
-                elif action == "accepted" and enrollment.enrollment_state == "EXPELLED":
-                    enrollment.enrollment_state = action.upper()
-                    enrollment.save()
-                    response["users-affected"].append(enrollment.student.username)
-                else:
-                    response["users-skipped"].append(enrollment.student.username)
+            with transaction.atomic():
+                enrollments = CourseEnrollment.objects.filter(student__username__in=usernames, instance=instance_object)
+                
+                for enrollment in enrollments:
+                    if action == "accepted" and enrollment.enrollment_state == "WAITING":
+                        enrollment.enrollment_state = action.upper()
+                        enrollment.save()
+                        response["users-affected"].append(enrollment.student.username)
+                    elif action == "denied" and enrollment.enrollment_state == "WAITING":
+                        enrollment.enrollment_state = action.upper()
+                        enrollment.save()
+                        response["users-affected"].append(enrollment.student.username)
+                    elif action == "expelled" and enrollment.enrollment_state == "ACCEPTED":
+                        enrollment.enrollment_state = action.upper()
+                        enrollment.save()
+                        response["users-affected"].append(enrollment.student.username)
+                    elif action == "accepted" and enrollment.enrollment_state == "EXPELLED":
+                        enrollment.enrollment_state = action.upper()
+                        enrollment.save()
+                        response["users-affected"].append(enrollment.student.username)
+                    else:
+                        response["users-skipped"].append(enrollment.student.username)
                     
         return JsonResponse(response)
         
@@ -121,7 +129,7 @@ def manage_enrollments(request, course_slug, instance_slug):
         
         for user in users:
             
-            enrollment = CourseEnrollment.objects.get(student=user)
+            enrollment = CourseEnrollment.objects.get(student=user, instance=instance_object)
             enrollment_list.append((user, enrollment))
             
         t = loader.get_template("teacher_tools/manage_enrollments.html")

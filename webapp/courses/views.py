@@ -12,7 +12,7 @@ import magic
 
 from django.http import HttpResponse, JsonResponse, HttpResponseRedirect,\
     HttpResponseNotFound, HttpResponseForbidden, HttpResponseNotAllowed,\
-    HttpResponseServerError
+    HttpResponseServerError, HttpResponseBadRequest
 from django.db import transaction
 from django.db.models import Q
 from django.template import Template, loader, engines
@@ -1095,7 +1095,7 @@ def download_answer_file(request, user, course, instance, answer_id, filename):
     try:
         answer_object = UserAnswer.objects.get(id=answer_id)
     except UserAnswer.DoesNotExist as e:
-        return HttpReponseForbidden(_("You cannot access this answer."))
+        return HttpResponseForbidden(_("You cannot access this answer."))
     
     try:
         files = FileUploadExerciseReturnFile.objects.filter(answer__id=answer_id, answer__user__username=user)
@@ -1193,7 +1193,7 @@ def download_template_exercise_backend(request, exercise_id, filename):
 def enroll(request, course_slug, instance_slug):
     
     if not request.method == "POST":
-        return HttpResponseNotAllowed()        
+        return HttpResponseNotAllowed(["POST"])        
     
     form = request.POST
     
@@ -1203,23 +1203,24 @@ def enroll(request, course_slug, instance_slug):
     try:
         instance_object = CourseInstance.objects.get(slug=instance_slug)
     except CourseInstance.DoesNotExist as e:
-        return HttpResponseForbidden(_("You cannot enroll to this course."))
+        return HttpResponseNotFound(_("You cannot enroll to this course."))
     
     status = instance_object.user_enroll_status(request.user)
     
     if status is not None:
         return HttpResponseBadRequest(_("You have already enrolled to this course."))
     
-    enrollment = CourseEnrollment(instance=instance_object, student=request.user)
+    with transaction.atomic():
+        enrollment = CourseEnrollment(instance=instance_object, student=request.user)
     
-    if not instance_object.manual_accept:
-        enrollment.enrollment_state = "ACCEPTED"
-        response_text = _("Your enrollment has been automatically accepted.")
-    else:
-        enrollment.application_note = form.get("application-note")
-        response_text = _("Your enrollment application has been registered for approval.")
+        if not instance_object.manual_accept:
+            enrollment.enrollment_state = "ACCEPTED"
+            response_text = _("Your enrollment has been automatically accepted.")
+        else:
+            enrollment.application_note = form.get("application-note")
+            response_text = _("Your enrollment application has been registered for approval.")
             
-    enrollment.save()
+        enrollment.save()
     
     return JsonResponse({"message": response_text})
         

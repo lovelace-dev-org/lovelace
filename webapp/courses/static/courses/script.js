@@ -299,15 +299,15 @@ function expand_eval_debug(button) {
 function show_popup(e, popup_id) {
     e.preventDefault();
     
-    var popup = $("#" + popup_id);
+    let popup = $("#" + popup_id);
     popup.css({"opacity":"1", "pointer-events":"auto", "overflow": "scroll"});        
 }    
 
 function submit_enrollment(event) {
     event.preventDefault();
     
-    var form = $(this);
-    var url = form.attr('action');
+    let form = $(this);
+    let url = form.attr('action');
     
     $.ajax({
         type: form.attr('method'),
@@ -320,7 +320,7 @@ function submit_enrollment(event) {
             form.parent().children("div.enroll-status-msg").html(data.message);
         },
         error: function(xhr, status, type) {
-            form.children("div.enroll-status-msg").html("{% trans 'There was an error while submitting.' %}");
+            form.children("div.enroll-status-msg").html("There was an error while submitting.");
         }
     });
 }

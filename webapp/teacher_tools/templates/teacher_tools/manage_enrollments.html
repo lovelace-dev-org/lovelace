@@ -15,9 +15,15 @@
 
 {% block page-content %}
 
-  <h1>{{ instance.name }} {% trans 'enrollments' %}</h1>
+  {% blocktrans with name=instance.name %}
+    <h1>{{ name }} enrollments</h1>
+  {% endblocktrans %}
   
-  <form id="{{ instance.slug }}-enrollment-manage-form" class="teacher-form" method="POST" enctype="multipart/form-data" action="{% url 'teacher:manage_enrollments' course instance.slug %}">
+  <form id="{{ instance.slug }}-enrollment-manage-form" 
+    class="teacher-form" 
+    method="POST" 
+    enctype="multipart/form-data" 
+    action="{% url 'teacher:manage_enrollments' course instance.slug %}">
   
     {% csrf_token %}
     
@@ -38,27 +44,27 @@
           <th></th>
           <th>
             {% trans 'Last name' %}
-            <button class="sort-ascending-button" onclick="sort_enrollments(event, 1, 1)">up</button>
-            <button class="sort-descending-button" onclick="sort_enrollments(event, 1, -1)">dn</button>          
+            <button class="sort-ascending-button" onclick="sort_enrollments(event, 1, 1)">↑</button>
+            <button class="sort-descending-button" onclick="sort_enrollments(event, 1, -1)">↓</button>          
           </th>
           <th>
             {% trans 'First name' %}
-            <button class="sort-ascending-button" onclick="sort_enrollments(event, 2, 1)">up</button>
-            <button class="sort-descending-button" onclick="sort_enrollments(event, 2, -1)">dn</button>
+            <button class="sort-ascending-button" onclick="sort_enrollments(event, 2, 1)">↑</button>
+            <button class="sort-descending-button" onclick="sort_enrollments(event, 2, -1)">↓</button>
           </th>
           <th>
             {% trans 'Username' %}
-            <button class="sort-ascending-button" onclick="sort_enrollments(event, 3, 1)">up</button>
-            <button class="sort-descending-button" onclick="sort_enrollments(event, 3, -1)">dn</button>
+            <button class="sort-ascending-button" onclick="sort_enrollments(event, 3, 1)">↑</button>
+            <button class="sort-descending-button" onclick="sort_enrollments(event, 3, -1)">↓</button>
           </th>          
           <th>
             {% trans 'Email' %}
-            <button class="sort-ascending-button" onclick="sort_enrollments(event, 4, 1)">up</button>
-            <button class="sort-descending-button" onclick="sort_enrollments(event, 4, -1)">dn</button>        
+            <button class="sort-ascending-button" onclick="sort_enrollments(event, 4, 1)">↑</button>
+            <button class="sort-descending-button" onclick="sort_enrollments(event, 4, -1)">↓</button>        
           </th>
           <th>{% trans 'Status' %}
-            <button class="sort-ascending-button" onclick="sort_enrollments(event, 5, 1)">up</button>
-            <button class="sort-descending-button" onclick="sort_enrollments(event, 5, -1)">dn</button>        
+            <button class="sort-ascending-button" onclick="sort_enrollments(event, 5, 1)">↑</button>
+            <button class="sort-descending-button" onclick="sort_enrollments(event, 5, -1)">↓</button>        
           </th>
           <th>{% trans 'Note' %}</th>
           <th>{% trans 'Controls' %}</th>
