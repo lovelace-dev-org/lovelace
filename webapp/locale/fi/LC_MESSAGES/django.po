@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2018-02-16 13:41+0200\n"
+"POT-Creation-Date: 2018-02-19 10:04+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -45,7 +45,7 @@ msgstr "Opettajan työkalut"
 #: courses/templates/courses/course.html:20
 #: teacher_tools/templates/teacher_tools/manage_enrollments.html:10
 msgid "Manage enrollments"
-msgstr ""
+msgstr "Kurssi-ilmoittautumiset"
 
 #: courses/templates/courses/base.html:116
 #: courses/templates/courses/contentpage.html:26
@@ -293,31 +293,33 @@ msgstr "op"
 
 #: courses/templates/courses/index.html:37
 msgid "Enroll"
-msgstr ""
+msgstr "Ilmoittaudu"
 
 #: courses/templates/courses/index.html:45
 msgid "Enroll to"
-msgstr ""
+msgstr "Ilmoittaudu"
 
 #: courses/templates/courses/index.html:50
 msgid "Enrollments to this course must be accepted by the teacher"
-msgstr ""
+msgstr "Tämän kurssin ilmoittautumiset vaativat opettajan hyväksynnän"
 
 #: courses/templates/courses/index.html:51
 msgid "You can attach a note to your enrollment application by typing below"
 msgstr ""
+"Voit liittää ilmoittutumishakemukseen viestin kirjoittamalla alla olevaan "
+"laatikkoon"
 
 #: courses/templates/courses/index.html:52
 msgid "Type your application here"
-msgstr ""
+msgstr "Kirjoita hakemuksesi tähän"
 
 #: courses/templates/courses/index.html:54
 msgid "Enrollments to this course are accepted automatically"
-msgstr ""
+msgstr "Tämän kurssin ilmoittautumiset hyväksytään automaattisesti"
 
 #: courses/templates/courses/index.html:57
 msgid "Send application"
-msgstr ""
+msgstr "Lähetä ilmoittautuminen"
 
 #: courses/templates/courses/index.html:80
 msgid "No courses available!"
@@ -493,7 +495,7 @@ msgstr "Apua!"
 
 #: courses/templates/courses/view-answer-results.html:24
 msgid "Triggers fired"
-msgstr ""
+msgstr "Aktivoidut tapahtumat"
 
 #: courses/views.py:303
 msgid "Only logged in users can send their answers for evaluation!"
@@ -568,7 +570,7 @@ msgstr "Varaus on jo peruttu."
 
 #: courses/views.py:1088 courses/views.py:1138
 msgid "This course instance does't exist"
-msgstr ""
+msgstr "Kurssi-instanssia ei löytynyt"
 
 #: courses/views.py:1098 courses/views.py:1103 courses/views.py:1110
 msgid "You cannot access this answer."
@@ -588,7 +590,7 @@ msgstr "Vain kurssien vastuuhenkilöt voivat ladata vastaustiedostot."
 #: courses/views.py:1181 exercise_admin/views.py:809
 #: exercise_admin/views.py:814 exercise_admin/views.py:824
 msgid "Requested file does not exist."
-msgstr ""
+msgstr "Tiedostoa ei löytynyt"
 
 #: courses/views.py:1161 courses/views.py:1163
 #, fuzzy
@@ -601,7 +603,7 @@ msgstr "Vain sisäänkirjautuneet käyttäjät voivat vastata tehtäviin."
 
 #: courses/views.py:1168
 msgid "This exercise does't exist"
-msgstr ""
+msgstr "Tehtävää ei löytynyt"
 
 #: courses/views.py:1201
 #, fuzzy
@@ -625,11 +627,11 @@ msgstr "Olet aiemmin vastannut tähän tehtävään oikein."
 
 #: courses/views.py:1218
 msgid "Your enrollment has been automatically accepted."
-msgstr ""
+msgstr "Ilmoittautumisesi on hyväksytty automaattisesti"
 
 #: courses/views.py:1221
 msgid "Your enrollment application has been registered for approval."
-msgstr ""
+msgstr "Ilmoittautumishakemuksesi on lähetetty hyväksyttäväksi"
 
 #: exercise_admin/views.py:804
 #, fuzzy
@@ -662,8 +664,6 @@ msgid "Send feedback"
 msgstr "Lähetä palaute"
 
 #: feedback/templates/feedback/textfield-feedback-question.html:8
-#, fuzzy
-#| msgid "You have already answered this task correctly."
 msgid "You have already answered this feedback."
 msgstr "Olet jo vastannut tähän palautekysymykseen."
 
@@ -674,58 +674,57 @@ msgid ""
 "      %(name)s enrollments\n"
 "    "
 msgstr ""
+"\n"
+"      %(name)s ilmoittautumiset \n"
+"    "
 
 #: teacher_tools/templates/teacher_tools/manage_enrollments.html:34
-#, fuzzy
-#| msgid "Accept"
 msgid "accept"
-msgstr "Hyväksy"
+msgstr "hyväksy"
 
 #: teacher_tools/templates/teacher_tools/manage_enrollments.html:35
 msgid "deny"
-msgstr ""
+msgstr "evää"
 
 #: teacher_tools/templates/teacher_tools/manage_enrollments.html:36
 msgid "expel"
-msgstr ""
+msgstr "poista"
 
 #: teacher_tools/templates/teacher_tools/manage_enrollments.html:38
 msgid "selected users"
-msgstr ""
+msgstr "valitut käyttäjät"
 
 #: teacher_tools/templates/teacher_tools/manage_enrollments.html:39
 msgid "Submit"
-msgstr ""
+msgstr "Lähetä"
 
 #: teacher_tools/templates/teacher_tools/manage_enrollments.html:48
 msgid "Last name"
-msgstr ""
+msgstr "Sukunimi"
 
 #: teacher_tools/templates/teacher_tools/manage_enrollments.html:53
 msgid "First name"
-msgstr ""
+msgstr "Etunimi"
 
 #: teacher_tools/templates/teacher_tools/manage_enrollments.html:58
 msgid "Username"
-msgstr ""
+msgstr "Käyttäjätunnus"
 
 #: teacher_tools/templates/teacher_tools/manage_enrollments.html:63
 msgid "Email"
-msgstr ""
+msgstr "Sähköposti"
 
 #: teacher_tools/templates/teacher_tools/manage_enrollments.html:67
-#, fuzzy
-#| msgid "Statistics"
 msgid "Status"
-msgstr "Tilastot"
+msgstr "Tila"
 
 #: teacher_tools/templates/teacher_tools/manage_enrollments.html:71
 msgid "Note"
-msgstr ""
+msgstr "Viesti"
 
 #: teacher_tools/templates/teacher_tools/manage_enrollments.html:72
 msgid "Controls"
-msgstr ""
+msgstr "Toiminnot"
 
 #: teacher_tools/views.py:22
 msgid ""
@@ -734,11 +733,11 @@ msgstr "Vain kurssien vastuuhenkilöt voivat ladata vastaustiedostot."
 
 #: teacher_tools/views.py:61
 msgid "This course does not exist."
-msgstr ""
+msgstr "Kurssia ei löytynyt"
 
 #: teacher_tools/views.py:66
 msgid "This course instance does not exist."
-msgstr ""
+msgstr "Kurssi-instanssi ei löytynyt"
 
 #: teacher_tools/views.py:69
 #, fuzzy
@@ -751,19 +750,19 @@ msgstr "Vain kurssien vastuuhenkilöt voivat ladata vastaustiedostot."
 
 #: teacher_tools/views.py:82
 msgid "Enrollment for the student does not exist."
-msgstr ""
+msgstr "Tämä opiskelija ei ole ilmoittautunut"
 
 #: teacher_tools/views.py:86
 msgid "Enrollment status of {} changed to {}"
-msgstr ""
+msgstr "Opiskelijan {} ilmoittautumisen tilaksi muutettu: {}"
 
 #: teacher_tools/views.py:96
 msgid "Set enrollment state to {} for the following users."
-msgstr ""
+msgstr "Asetettiin ilmoittautumisen tilaksi {} seuraaville käyttäjille"
 
 #: teacher_tools/views.py:97
 msgid "The operation was not applicable for these users."
-msgstr ""
+msgstr "Operaatiota ei voitu suorittaa näille käyttäjille"
 
 #: templates/account/base.html:22
 msgid "Messages:"
