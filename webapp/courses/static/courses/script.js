@@ -318,9 +318,11 @@ function submit_enrollment(event) {
         dataType: 'json',        
         success: function(data, text_status, jqxhr_obj) {
             form.parent().children("div.enroll-status-msg").html(data.message);
+            let instance = form.children(".instance-hint").attr('value');
+            $("#" + instance + "-enroll-button").attr('disabled', true);           
         },
         error: function(xhr, status, type) {
-            form.children("div.enroll-status-msg").html("There was an error while submitting.");
+            form.parent().children("div.enroll-status-msg").html("There was an error while submitting.");
         }
     });
 }

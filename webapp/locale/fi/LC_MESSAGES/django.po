@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2018-02-19 10:04+0200\n"
+"POT-Creation-Date: 2018-02-21 09:33+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -50,8 +50,6 @@ msgstr "Kurssi-ilmoittautumiset"
 #: courses/templates/courses/base.html:116
 #: courses/templates/courses/contentpage.html:26
 #: courses/templates/courses/course.html:16
-#, fuzzy
-#| msgid "Statistics"
 msgid "Course statistics"
 msgstr "Kurssin tilastot"
 
@@ -233,8 +231,6 @@ msgstr "Väärä vastaus!"
 
 #: courses/templates/courses/exercise.html:24
 #: courses/templates/courses/view-answer-results.html:4
-#, fuzzy
-#| msgid "Hint: "
 msgid "Hints"
 msgstr "Vihjeet"
 
@@ -255,8 +251,6 @@ msgid "You have already answered this task correctly."
 msgstr "Olet aiemmin vastannut tähän tehtävään oikein."
 
 #: courses/templates/courses/exercise.html:57
-#, fuzzy
-#| msgid "Messages:"
 msgid "Messages"
 msgstr "Viestit"
 
@@ -292,36 +286,54 @@ msgid "credits"
 msgstr "op"
 
 #: courses/templates/courses/index.html:37
+#, fuzzy
+#| msgid "You cannot enroll to this course."
+msgid "You are not enrolled."
+msgstr "Et voi ladata tätä vastausta."
+
+#: courses/templates/courses/index.html:37
 msgid "Enroll"
 msgstr "Ilmoittaudu"
 
-#: courses/templates/courses/index.html:45
+#: courses/templates/courses/index.html:40
+#, python-format
+msgid ""
+"\n"
+"                            Enroll status: %(status)s\n"
+"                          "
+msgstr ""
+"\n"
+"                            Ilmoittautumisen tila: %(status)s\n"
+"                          "
+
+
+#: courses/templates/courses/index.html:49
 msgid "Enroll to"
 msgstr "Ilmoittaudu"
 
-#: courses/templates/courses/index.html:50
+#: courses/templates/courses/index.html:54
 msgid "Enrollments to this course must be accepted by the teacher"
 msgstr "Tämän kurssin ilmoittautumiset vaativat opettajan hyväksynnän"
 
-#: courses/templates/courses/index.html:51
+#: courses/templates/courses/index.html:55
 msgid "You can attach a note to your enrollment application by typing below"
 msgstr ""
 "Voit liittää ilmoittutumishakemukseen viestin kirjoittamalla alla olevaan "
 "laatikkoon"
 
-#: courses/templates/courses/index.html:52
+#: courses/templates/courses/index.html:56
 msgid "Type your application here"
 msgstr "Kirjoita hakemuksesi tähän"
 
-#: courses/templates/courses/index.html:54
+#: courses/templates/courses/index.html:58
 msgid "Enrollments to this course are accepted automatically"
 msgstr "Tämän kurssin ilmoittautumiset hyväksytään automaattisesti"
 
-#: courses/templates/courses/index.html:57
+#: courses/templates/courses/index.html:62
 msgid "Send application"
 msgstr "Lähetä ilmoittautuminen"
 
-#: courses/templates/courses/index.html:80
+#: courses/templates/courses/index.html:85
 msgid "No courses available!"
 msgstr "Tarjolla olevia kursseja ei löytynyt!"
 
@@ -577,10 +589,6 @@ msgid "You cannot access this answer."
 msgstr "Et voi ladata tätä vastausta."
 
 #: courses/views.py:1142
-#, fuzzy
-#| msgid ""
-#| "Only course main responsible teachers are allowed to download answer "
-#| "files."
 msgid ""
 "Only course main responsible teachers are allowed to download media files "
 "through this interface."
@@ -593,9 +601,6 @@ msgid "Requested file does not exist."
 msgstr "Tiedostoa ei löytynyt"
 
 #: courses/views.py:1161 courses/views.py:1163
-#, fuzzy
-#| msgid ""
-#| "Only logged in users are allowed to answer repeated template exercises."
 msgid ""
 "Only course staff members are allowed to download repeated template exercise "
 "backends."
@@ -606,22 +611,16 @@ msgid "This exercise does't exist"
 msgstr "Tehtävää ei löytynyt"
 
 #: courses/views.py:1201
-#, fuzzy
-#| msgid "Only logged in users can send their answers for evaluation!"
 msgid "Only logged in users can enroll to courses."
 msgstr ""
 "Vain sisäänkirjautuneet käyttäjät voivat lähettää vastauksia "
 "tarkistettavaksi!"
 
 #: courses/views.py:1206
-#, fuzzy
-#| msgid "You cannot access this answer."
 msgid "You cannot enroll to this course."
 msgstr "Et voi ladata tätä vastausta."
 
 #: courses/views.py:1211
-#, fuzzy
-#| msgid "You have already answered this task correctly."
 msgid "You have already enrolled to this course."
 msgstr "Olet aiemmin vastannut tähän tehtävään oikein."
 
@@ -634,18 +633,10 @@ msgid "Your enrollment application has been registered for approval."
 msgstr "Ilmoittautumishakemuksesi on lähetetty hyväksyttäväksi"
 
 #: exercise_admin/views.py:804
-#, fuzzy
-#| msgid ""
-#| "Only course main responsible teachers are allowed to download answer "
-#| "files."
 msgid "Only course staff members are allowed to download exercise files."
 msgstr "Vain kurssien vastuuhenkilöt voivat ladata vastaustiedostot."
 
 #: exercise_admin/views.py:829
-#, fuzzy
-#| msgid ""
-#| "Only course main responsible teachers are allowed to download answer "
-#| "files."
 msgid "Only course staff members are allowed to download instance files."
 msgstr "Vain kurssien vastuuhenkilöt voivat ladata vastaustiedostot."
 
@@ -740,10 +731,6 @@ msgid "This course instance does not exist."
 msgstr "Kurssi-instanssi ei löytynyt"
 
 #: teacher_tools/views.py:69
-#, fuzzy
-#| msgid ""
-#| "Only course main responsible teachers are allowed to download answer "
-#| "files."
 msgid ""
 "Only course main responsible teachers are allowed to manage enrollments."
 msgstr "Vain kurssien vastuuhenkilöt voivat ladata vastaustiedostot."

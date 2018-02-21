@@ -34,9 +34,13 @@
                   {% with request.user|enrolled:instance as enroll_status %}
                     <div>
                       {% if enroll_status == None %}
-                        <span class="instance-userinfo">You are not enrolled.</span><button onclick="show_popup(event, '{{ instance.slug }}-enrollment-application-popup')">{% trans 'Enroll' %}</button>
+                        <span class="instance-userinfo">{% trans 'You are not enrolled.' %}</span><button id="{{ instance.slug }}-enroll-button" onclick="show_popup(event, '{{ instance.slug }}-enrollment-application-popup')">{% trans 'Enroll' %}</button>
                       {% else %}
-                        <span class="instance-userinfo">Enroll status: {{ enroll_status }}</span>
+                        <span class="instance-userinfo">
+                          {% blocktrans with status=enroll_status %}
+                            Enroll status: {{ status }}
+                          {% endblocktrans %}
+                        </span> 
                       {% endif %}
                     </div>
                     {% if enroll_status == None %}
@@ -54,6 +58,7 @@
                               <div class="p">{% trans 'Enrollments to this course are accepted automatically' %}</div>
                             {% endif %}
                         
+                            <input type="hidden" class="instance-hint" name="instance-slug" value="{{ instance.slug }}">
                             <input type="submit" name="submit" value="{% trans 'Send application' %}"></input>
                           </form>
                           <div class="enroll-status-msg" id="{{ instance.slug }}-enroll-status-msg"></div>

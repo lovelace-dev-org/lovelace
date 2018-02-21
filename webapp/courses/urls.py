@@ -28,6 +28,9 @@ urlpatterns = [
     url(r'^help/markup/$', views.markup_help, name='markup_help',),
     url(r'^terms/$', views.terms, name='terms',),
 
+    # Enrollment views
+    url(r'^enroll/(?P<course_slug>[^/]+)/(?P<instance_slug>[^/]+)/$', views.enroll, name='enroll'),
+    
     # Course front page and content views
     url(r'^answers/(?P<user>[^/]+)/(?P<course>[^/]+)/(?P<instance>[^/]+)/(?P<answer_id>\d+)/(?P<filename>[^/]+)/download/$', views.download_answer_file, name='download_answer_file'),
     url(r'^(?P<course_slug>[^/]+)/$', views.course_instances, name='course_instances'),
@@ -40,9 +43,6 @@ urlpatterns = [
     url(r'^file-download/template-backend/(?P<exercise_id>\d+)/(?P<filename>[^/]+)/$',
         views.download_template_exercise_backend, name="download_template_exercise_backend"),
 
-    # Enrollment views
-    url(r'^(?P<course_slug>[^/]+)/(?P<instance_slug>[^/]+)/enroll/$', views.enroll, name='enroll'),
-    
 
     # Exercise sending for checking, progress and evaluation views
     url(r'^(?P<course_slug>[^/]+)/(?P<instance_slug>[^/]+)/(?P<content_slug>[^/]+)/(?P<revision>(?:\d+|head))/check/$', views.check_answer, name='check'),
