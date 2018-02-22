@@ -28,19 +28,52 @@
             <ul>
               {% for instance in course.get_instances %}
                 <li>
-                  <div><a href="{% url 'courses:course' course.slug instance.slug %}">{{ instance.name }}</a></div>
+                  <div>
+                    <a href="{% url 'courses:course' course.slug instance.slug %}">{{ instance.name }}</a>
+                  </div>
+                  {% with request.user|enrolled:instance as enroll_status %}
+                    <div>
+                      {% if enroll_status == None %}
+                        {% if request.user.is_authenticated %}                        
+                          <span class="instance-userinfo">{% trans 'You are not enrolled.' %}</span>
+                          <button id="{{ instance.slug }}-enroll-button" onclick="show_popup(event, '{{ instance.slug }}-enrollment-application-popup')">{% trans 'Enroll' %}</button>
+                        {% else %}
+                          <span class="instance-userinfo">{% trans 'Log in to enable enrolling.' %}</span>
+                        {% endif %}
+                      {% else %}
+                        <span class="instance-userinfo">
+                          {% blocktrans with status=enroll_status %}
+                            Enroll status: {{ status }}
+                          {% endblocktrans %}
+                        </span> 
+                      {% endif %}
+                    </div>
+                    {% if enroll_status == None %}
+                      <div class="popup" id="{{ instance.slug }}-enrollment-application-popup">
+                        <div>
+                          <h2>{% trans 'Enroll to' %} {{ instance.name }}</h2>
+                          <form id="{{ instance.slug }}-enroll-form" class="enroll-form" method="POST" enctype="multipart/form-data" action="{%url 'courses:enroll' course.slug instance.slug %}">
+                            {% csrf_token %}
+                        
+                            {% if instance.manual_accept %}
+                              <div class="p">{% trans 'Enrollments to this course must be accepted by the teacher' %}</div>
+                              <div class="p">{% trans 'You can attach a note to your enrollment application by typing below' %}</div>                        
+                              <textarea name="application-note" class="generic-textfield" placeholder="{% trans 'Type your application here' %}" rows="3"></textarea>
+                            {% else %}
+                              <div class="p">{% trans 'Enrollments to this course are accepted automatically' %}</div>
+                            {% endif %}
+                        
+                            <input type="hidden" class="instance-hint" name="instance-slug" value="{{ instance.slug }}">
+                            <input type="submit" name="submit" value="{% trans 'Send application' %}"></input>
+                          </form>
+                          <div class="enroll-status-msg" id="{{ instance.slug }}-enroll-status-msg"></div>
+                        </div>                      
+                      </div>  
+                    {% endif %}
+                  {% endwith %}
                   {% comment %}
                   <div>
-                    {% with request.user|enrolled:instance as enroll_status %}
-                      {% if enroll_status == None %}
-                        <span class="instance-userinfo">You are not enrolled.</span><button>Enroll</button>
-                      {% else %}
-                        <span class="instance-userinfo">Enroll status: {{ enroll_status }}</span>
-                      {% endif %}
-                    {% endwith %}
-                  </div>
-                  <div>
-                    <span class="instance-userifno">Your progress: </span>
+                    <span class="instance-userinfo">Your progress: </span>
                     <progress max="5" value="3" title="3/5 completed"></progress>
                   </div>
                   {% endcomment %}
