@@ -34,7 +34,12 @@
                   {% with request.user|enrolled:instance as enroll_status %}
                     <div>
                       {% if enroll_status == None %}
-                        <span class="instance-userinfo">{% trans 'You are not enrolled.' %}</span><button id="{{ instance.slug }}-enroll-button" onclick="show_popup(event, '{{ instance.slug }}-enrollment-application-popup')">{% trans 'Enroll' %}</button>
+                        {% if request.user.is_authenticated %}                        
+                          <span class="instance-userinfo">{% trans 'You are not enrolled.' %}</span>
+                          <button id="{{ instance.slug }}-enroll-button" onclick="show_popup(event, '{{ instance.slug }}-enrollment-application-popup')">{% trans 'Enroll' %}</button>
+                        {% else %}
+                          <span class="instance-userinfo">{% trans 'Log in to enable enrolling.' %}</span>
+                        {% endif %}
                       {% else %}
                         <span class="instance-userinfo">
                           {% blocktrans with status=enroll_status %}

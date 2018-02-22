@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2018-02-21 09:33+0200\n"
+"POT-Creation-Date: 2018-02-22 11:40+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -285,17 +285,19 @@ msgstr "Tarjolla olevat kurssit"
 msgid "credits"
 msgstr "op"
 
-#: courses/templates/courses/index.html:37
-#, fuzzy
-#| msgid "You cannot enroll to this course."
+#: courses/templates/courses/index.html:38
 msgid "You are not enrolled."
-msgstr "Et voi ladata tätä vastausta."
+msgstr "Et ole ilmoittautunut."
 
-#: courses/templates/courses/index.html:37
+#: courses/templates/courses/index.html:39
 msgid "Enroll"
 msgstr "Ilmoittaudu"
 
-#: courses/templates/courses/index.html:40
+#: courses/templates/courses/index.html:41
+msgid "Log in to enable enrolling."
+msgstr "Kirjaudu sisään ilmoittautuaksesi."
+
+#: courses/templates/courses/index.html:45
 #, python-format
 msgid ""
 "\n"
@@ -306,34 +308,33 @@ msgstr ""
 "                            Ilmoittautumisen tila: %(status)s\n"
 "                          "
 
-
-#: courses/templates/courses/index.html:49
+#: courses/templates/courses/index.html:54
 msgid "Enroll to"
 msgstr "Ilmoittaudu"
 
-#: courses/templates/courses/index.html:54
+#: courses/templates/courses/index.html:59
 msgid "Enrollments to this course must be accepted by the teacher"
 msgstr "Tämän kurssin ilmoittautumiset vaativat opettajan hyväksynnän"
 
-#: courses/templates/courses/index.html:55
+#: courses/templates/courses/index.html:60
 msgid "You can attach a note to your enrollment application by typing below"
 msgstr ""
 "Voit liittää ilmoittutumishakemukseen viestin kirjoittamalla alla olevaan "
 "laatikkoon"
 
-#: courses/templates/courses/index.html:56
+#: courses/templates/courses/index.html:61
 msgid "Type your application here"
 msgstr "Kirjoita hakemuksesi tähän"
 
-#: courses/templates/courses/index.html:58
+#: courses/templates/courses/index.html:63
 msgid "Enrollments to this course are accepted automatically"
 msgstr "Tämän kurssin ilmoittautumiset hyväksytään automaattisesti"
 
-#: courses/templates/courses/index.html:62
+#: courses/templates/courses/index.html:67
 msgid "Send application"
 msgstr "Lähetä ilmoittautuminen"
 
-#: courses/templates/courses/index.html:85
+#: courses/templates/courses/index.html:90
 msgid "No courses available!"
 msgstr "Tarjolla olevia kursseja ei löytynyt!"
 
@@ -368,10 +369,8 @@ msgid "Forgot Password?"
 msgstr "Unohtunut salasana?"
 
 #: courses/templates/courses/login.html:33
-#, fuzzy
-#| msgid "Sign up"
 msgid "Sign In"
-msgstr "Luo käyttäjä"
+msgstr "Kirjaudu sisään"
 
 #: courses/templates/courses/logout.html:7
 msgid "Logout"
@@ -379,10 +378,8 @@ msgstr "Uloskirjautuminen"
 
 #: courses/templates/courses/logout.html:11
 #: courses/templates/courses/logout.html:20
-#, fuzzy
-#| msgid "Sign up"
 msgid "Sign Out"
-msgstr "Luo käyttäjä"
+msgstr "Kirjaudu ulos"
 
 #: courses/templates/courses/logout.html:13
 msgid "Are you sure you want to sign out?"
@@ -563,8 +560,6 @@ msgid "This event is already full."
 msgstr "Tapahtuma on jo täynnä."
 
 #: courses/views.py:993
-#, fuzzy
-#| msgid "You have already answered this task correctly."
 msgid "You have already reserved a slot in this event."
 msgstr "Olet jo varannut paikan tähän tapahtumaan."
 
