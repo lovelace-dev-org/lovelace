@@ -75,6 +75,7 @@ post_save.connect(create_user_profile, sender=User, dispatch_uid="create_user_pr
 
 # TODO: Abstract the exercise model to allow "an answering entity" to give the answer, be it a group or a student
 
+@reversion.register()
 class Course(models.Model):
     """
     Describes the metadata for a course.
@@ -140,6 +141,7 @@ class CourseEnrollment(models.Model):
     def is_enrolled(self):
         return True if self.enrollment_state == 'ACCEPTED' else False
 
+@reversion.register()
 class CourseInstance(models.Model):
     """
     A running instance of a course. Contains details about the start and end
