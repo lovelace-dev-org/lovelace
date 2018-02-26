@@ -37,6 +37,7 @@ INSTALLED_APPS = (
     'exercise_admin',
     #'debug_toolbar',
     'reversion',
+    'teacher_tools'
 )
 
 SITE_ID = 1
@@ -50,7 +51,6 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 )
@@ -210,3 +210,20 @@ CACHES = {
         }
     }
 }
+
+
+# Shibboleth related options - uncomment if using Shibboleth
+# First one makes emails invalid usernames when creating accounts
+# Second one is required for Shibboleth logout to work properly
+#ACCOUNT_USERNAME_VALIDATORS = "courses.adapter.username_validators"
+#ACCOUNT_ADAPTER = "courses.adapter.LovelaceAccountAdapter"
+
+# Set PRIVATE_STORAGE_FS_PATH outside www root to make uploaded files
+# inaccessible through URLs
+# Set PRIVATE_STORAGE_X_SENDFILE to True if your configuration supports
+# mod_xsendfile 
+PRIVATE_STORAGE_FS_PATH = MEDIA_ROOT
+PRIVATE_STORAGE_X_SENDFILE = False
+
+    
+    
