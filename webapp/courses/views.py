@@ -19,7 +19,7 @@ from django.template import Template, loader, engines
 from django.conf import settings
 from django.core.cache import cache
 from django.core.files.base import File
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.utils import timezone, translation
 from django.utils.text import slugify
 from django.utils.safestring import mark_safe
@@ -215,7 +215,7 @@ def course_tree(tree, node, user, instance_obj):
     correct_embedded = 0
     
     evaluation = ""
-    if user.is_authenticated():
+    if user.is_authenticated:
         exercise = node.content
         evaluation = exercise.get_user_evaluation(exercise, user)
 
@@ -253,7 +253,7 @@ def check_answer_sandboxed(request, content_slug):
         return HttpResponseNotAllowed(['POST'])
 
     user = request.user
-    if not user.is_authenticated() or not user.is_active or not user.is_staff:
+    if not user.is_authenticated or not user.is_active or not user.is_staff:
         return JsonResponse({
             'result': 'Only logged in admins can send their answers for evaluation!'
         })
@@ -544,7 +544,7 @@ def file_exercise_evaluation(request, course_slug, instance_slug, content_slug, 
 
 # OBSOLETE
 def get_old_file_exercise_evaluation(request, user, answer_id):
-    if request.user.is_authenticated() and (request.user.username == user or request.user.is_staff):
+    if request.user.is_authenticated and (request.user.username == user or request.user.is_staff):
         pass
     else:
         return HttpResponseForbidden(_("You're only allowed to view your own answers."))
@@ -628,7 +628,7 @@ def compile_evaluation_data(request, evaluation_tree, evaluation_obj, context=No
     
 
 def get_file_exercise_evaluation(request, user, answer_id):
-    if request.user.is_authenticated() and (request.user.username == user or request.user.is_staff):
+    if request.user.is_authenticated and (request.user.username == user or request.user.is_staff):
         pass
     else:
         return HttpResponseForbidden(_("You're only allowed to view your own answers."))
@@ -672,7 +672,7 @@ def sandboxed_content(request, content_slug, **kwargs):
         return HttpResponseNotFound("Content {} does not exist!".format(content_slug))
 
     user = request.user
-    if not user.is_authenticated() or not user.is_active or not user.is_staff:
+    if not user.is_authenticated or not user.is_active or not user.is_staff:
         return HttpResponseForbidden("Only logged in admins can view pages in sandbox!")
 
     content_type = content.content_type
@@ -851,7 +851,7 @@ def content(request, course_slug, instance_slug, content_slug, **kwargs):
 
     evaluation = None
     answer_count = None
-    if request.user.is_authenticated():
+    if request.user.is_authenticated:
         if request.user.is_active and content.is_answerable() and content.get_user_answers(content, request.user):
             answer_count = content.get_user_answers(content, request.user).count()
         if content_graph and (content_graph.publish_date is None or content_graph.publish_date < datetime.datetime.now()):
@@ -892,7 +892,7 @@ def user_profile_save(request):
     """
     Save the submitted form.
     """
-    if not request.user.is_authenticated():
+    if not request.user.is_authenticated:
         return HttpResponseNotFound()
     if not request.method == "POST":
         return HttpResponseNotFound()
@@ -918,7 +918,7 @@ def user_profile(request):
     """
     Allow the user to change information in their profile.
     """
-    if not request.user.is_authenticated():
+    if not request.user.is_authenticated:
         return HttpResponseNotFound()
 
     profile = UserProfile.objects.get(user=request.user)
@@ -941,7 +941,7 @@ def user(request, user_name):
     """
     user = request.user
 
-    if not (user.is_authenticated() and user.is_active): # Don't allow anons to view anything
+    if not (user.is_authenticated and user.is_active): # Don't allow anons to view anything
         return HttpResponseForbidden(_("Please log in to view your information."))
     elif user.is_staff: # Allow admins to view useful information regarding the user they've requested
         pass
@@ -970,7 +970,7 @@ def user(request, user_name):
     return HttpResponse(t.render(c, request))
 
 def calendar_post(request, calendar_id, event_id):
-    if not request.user.is_authenticated():
+    if not request.user.is_authenticated:
         return HttpResponseNotFound()
     if not request.method == "POST":
         return HttpResponseNotFound()
@@ -1015,7 +1015,7 @@ def show_answers(request, user, course, instance, exercise):
     except CourseInstance.DoesNotExist as e:
         return HttpResponseNotFound("No such course instance {}.".format(instance))
     
-    if request.user.is_authenticated() and (request.user.username == user or is_course_staff(request.user, instance_obj)):
+    if request.user.is_authenticated and (request.user.username == user or is_course_staff(request.user, instance_obj)):
         pass
     else:
         return HttpResponseForbidden(_("You're only allowed to view your own answers."))
@@ -1157,7 +1157,7 @@ def download_media_file(request, instance_id, file_slug, field_name):
 
 def download_template_exercise_backend(request, exercise_id, filename):
     
-    if not request.user.is_authenticated():
+    if not request.user.is_authenticated:
         return HttpResponseForbidden(_("Only course staff members are allowed to download repeated template exercise backends."))
     elif (not request.user.is_staff) and (not request.user.is_superuser):
         return HttpResponseForbidden(_("Only course staff members are allowed to download repeated template exercise backends."))
@@ -1197,7 +1197,7 @@ def enroll(request, course_slug, instance_slug):
     
     form = request.POST
     
-    if not request.user.is_authenticated():
+    if not request.user.is_authenticated:
         return HttpResponseForbidden(_("Only logged in users can enroll to courses."))
     
     try:

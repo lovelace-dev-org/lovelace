@@ -7,11 +7,11 @@ from django.contrib.auth.models import User
 from django.contrib.auth.admin import UserAdmin
 
 from django.core.cache import cache
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 
 from django.db import models, transaction
 from django.db.models import Q
-from django.forms import Field, ModelForm, TextInput, Textarea, ModelChoiceField
+from django.forms import Field, ModelForm, TextInput, Textarea, ModelChoiceField, BaseInlineFormSet
 
 from .forms import FileEditForm, RepeatedTemplateExerciseBackendForm
 from .widgets import AdminFileWidget, AdminTemplateBackendFileWidget
@@ -240,9 +240,19 @@ class HintInline(TranslationTabularInline):
     extra = 0
     queryset = TranslationTabularInline.get_queryset
 
+
+class SoftDeleteFormSet(BaseInlineFormSet):
+    
+    def delete_existing(self, obj, commit=True):
+        if commit:
+            obj.exercise = None
+            obj.save()
+        
+
 class MultipleChoiceExerciseAnswerInline(TranslationTabularInline):
     model = MultipleChoiceExerciseAnswer
     extra = 1
+    formset = SoftDeleteFormSet 
 
 class MultipleChoiceExerciseAdmin(CourseContentAccess, TranslationAdmin, VersionAdmin):
     
@@ -264,9 +274,15 @@ class MultipleChoiceExerciseAdmin(CourseContentAccess, TranslationAdmin, Version
     list_per_page = 500
     save_on_top = True
 
+
+
 class CheckboxExerciseAnswerInline(TranslationTabularInline):
     model = CheckboxExerciseAnswer
     extra = 1
+    formset = SoftDeleteFormSet
+    
+    
+    
 
 class CheckboxExerciseAdmin(CourseContentAccess, TranslationAdmin, VersionAdmin):
     

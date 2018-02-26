@@ -2,6 +2,8 @@ from django.conf.urls import url
 
 from . import views
 
+app_name="stats"
+
 urlpatterns = [
     url(r'^single-exercise/(?P<content_slug>[^/]+)/$', views.single_exercise, name='single_exercise'),
     url(r'^course-users/(?P<course_slug>[^/]+)/(?P<content_to_search>[^/]+)/(?P<year>\d{4})\-(?P<month>\d{2})\-(?P<day>\d{2})/$', views.course_users, name='course_users'),

@@ -14,7 +14,7 @@ def determine_access(user, content, responsible_only=False):
       in (can be disabled by setting responsible_only to True)
     """    
     
-    if not user.is_authenticated():
+    if not user.is_authenticated:
         return False
     
     if user.is_superuser:
@@ -41,7 +41,7 @@ def determine_access(user, content, responsible_only=False):
 
 def is_course_staff(user, instance, responsible_only=False):
     
-    if not user.is_authenticated():
+    if not user.is_authenticated:
         return False
     
     if user.is_superuser:

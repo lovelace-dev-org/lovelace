@@ -9,7 +9,7 @@ import courses.markupparser
 import pygments
 from pygments import highlight
 from django.utils.text import slugify
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from pygments.lexers import get_lexer_by_name, get_all_lexers
 from pygments.formatters import HtmlFormatter
 

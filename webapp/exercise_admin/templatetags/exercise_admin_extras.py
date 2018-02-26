@@ -363,6 +363,6 @@ def get_translated_field(model, variable, lang_code):
     else:
         return ''
 
-@register.assignment_tag()
+@register.simple_tag()
 def get_default_language():
     return get_default_lang()

@@ -192,16 +192,16 @@ class MultipleChoiceFeedbackQuestion(ContentFeedbackQuestion):
 class MultipleChoiceFeedbackAnswer(models.Model):
     #TODO: is there a need for setting maximum count of answer choices per feedback question?
     
-    question = models.ForeignKey(MultipleChoiceFeedbackQuestion)
+    question = models.ForeignKey(MultipleChoiceFeedbackQuestion, on_delete=models.CASCADE)
     answer = models.TextField(blank=False)
 
     def __str__(self):
         return self.answer
 
 class ContentFeedbackUserAnswer(models.Model):
-    user = models.ForeignKey(User)                          # The user who has given this feedback
-    content = models.ForeignKey('courses.ContentPage')      # The content on which this feedback was given
-    question = models.ForeignKey(ContentFeedbackQuestion)   # The feedback question this feedback answers
+    user = models.ForeignKey(User, on_delete=models.CASCADE)                          # The user who has given this feedback
+    content = models.ForeignKey('courses.ContentPage', on_delete=models.CASCADE)      # The content on which this feedback was given
+    question = models.ForeignKey(ContentFeedbackQuestion, on_delete=models.CASCADE)   # The feedback question this feedback answers
     answerer_ip = models.GenericIPAddressField()
     answer_date = models.DateTimeField(verbose_name='Date and time of when the user answered this feedback question',
                                        auto_now_add=True)
@@ -225,7 +225,7 @@ class StarFeedbackUserAnswer(ContentFeedbackUserAnswer):
         get_latest_by = "answer_date"
 
 class MultipleChoiceFeedbackUserAnswer(ContentFeedbackUserAnswer):
-    chosen_answer = models.ForeignKey(MultipleChoiceFeedbackAnswer)
+    chosen_answer = models.ForeignKey(MultipleChoiceFeedbackAnswer, on_delete=models.CASCADE)
 
     def __str__(self):
         return self.chosen_answer.answer

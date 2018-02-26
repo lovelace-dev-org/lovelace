@@ -15,7 +15,7 @@ from django.db import models
 from django.db.models import Q, Max
 from django.contrib.auth.models import User, Group
 from django.db.models.signals import post_save
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.core.files.storage import FileSystemStorage
 from django.utils import translation
 from django.utils.text import slugify
@@ -45,7 +45,7 @@ class UserProfile(models.Model):
     # For more information, see:
     # https://docs.djangoproject.com/en/dev/topics/auth/#storing-additional-information-about-users
     # http://stackoverflow.com/questions/44109/extending-the-user-model-with-custom-fields-in-django
-    user = models.OneToOneField(User)
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
     
     student_id = models.IntegerField(verbose_name='Student number', blank=True, null=True)
     study_program = models.CharField(verbose_name='Study program', max_length=80, blank=True, null=True)
@@ -75,7 +75,6 @@ post_save.connect(create_user_profile, sender=User, dispatch_uid="create_user_pr
 
 # TODO: Abstract the exercise model to allow "an answering entity" to give the answer, be it a group or a student
 
-@reversion.register()
 class Course(models.Model):
     """
     Describes the metadata for a course.
@@ -95,8 +94,8 @@ class Course(models.Model):
     prerequisites = models.ManyToManyField('Course',
                                            verbose_name="Prerequisite courses",
                                            blank=True)
-    staff_group = models.ForeignKey(Group)
-    main_responsible = models.ForeignKey(User)
+    staff_group = models.ForeignKey(Group, null=True, on_delete=models.SET_NULL)
+    main_responsible = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
 
     # TODO: Create an instance automatically, if none exists
 
@@ -122,8 +121,8 @@ class Course(models.Model):
         return self.name
 
 class CourseEnrollment(models.Model):
-    instance = models.ForeignKey('CourseInstance')
-    student = models.ForeignKey(User)
+    instance = models.ForeignKey('CourseInstance', on_delete=models.CASCADE)
+    student = models.ForeignKey(User, on_delete=models.CASCADE)
 
     enrollment_date = models.DateTimeField(auto_now_add=True)
     application_note = models.TextField(blank=True) # The student can write an application
@@ -141,7 +140,6 @@ class CourseEnrollment(models.Model):
     def is_enrolled(self):
         return True if self.enrollment_state == 'ACCEPTED' else False
 
-@reversion.register()
 class CourseInstance(models.Model):
     """
     A running instance of a course. Contains details about the start and end
@@ -150,7 +148,7 @@ class CourseInstance(models.Model):
     name = models.CharField(max_length=255) # Translate
     email = models.EmailField(blank=True)   # Translate
     slug = models.SlugField(max_length=255, allow_unicode=True, blank=False)
-    course = models.ForeignKey('Course')
+    course = models.ForeignKey('Course', on_delete=models.CASCADE)
     
     start_date = models.DateTimeField(verbose_name='Date and time on which the course begins',blank=True,null=True)
     end_date = models.DateTimeField(verbose_name='Date and time on which the course ends',blank=True,null=True)
@@ -163,7 +161,7 @@ class CourseInstance(models.Model):
     manual_accept = models.BooleanField(verbose_name='Teachers accept enrollments manually',
                                         default=False)
     
-    frontpage = models.ForeignKey('Lecture', blank=True, null=True) # TODO: Create one automatically!
+    frontpage = models.ForeignKey('Lecture', blank=True, null=True, on_delete=models.SET_NULL) # TODO: Create one automatically!
     contents = models.ManyToManyField('ContentGraph', blank=True)   # TODO: Rethink the content graph system!
 
     def get_url_name(self):
@@ -203,8 +201,8 @@ class ContentGraph(models.Model):
     # TODO: Rethink the content graph system! Maybe directed graph is the best choice...
     # TODO: Take embedded content into account! (Maybe: automatically make content nodes from embedded content)
     # TODO: "Allow answering after deadline has passed" flag.
-    parentnode = models.ForeignKey('self', null=True, blank=True)
-    content = models.ForeignKey('ContentPage', null=True, blank=True)
+    parentnode = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL)
+    content = models.ForeignKey('ContentPage', null=True, blank=True, on_delete=models.SET_NULL)
     responsible = models.ManyToManyField(User, blank=True)
     compulsory = models.BooleanField(verbose_name='Must be answered correctly before proceeding to next exercise', default=False)
     deadline = models.DateTimeField(verbose_name='The due date for completing this exercise',blank=True,null=True)
@@ -235,8 +233,8 @@ class File(models.Model):
     """Metadata of an embedded or attached file that an admin has uploaded."""
     # TODO: Make the uploading user the default and don't allow it to change
     # TODO: Slug and file name separately
-    courseinstance = models.ForeignKey(CourseInstance, verbose_name="Course instance")
-    owner = models.ForeignKey(User, null=True, blank=True, verbose_name="Uploader") # Translate
+    courseinstance = models.ForeignKey(CourseInstance, verbose_name="Course instance", null=True, on_delete=models.SET_NULL)
+    owner = models.ForeignKey(User, null=True, blank=True, verbose_name="Uploader", on_delete=models.SET_NULL) # Translate
     name = models.CharField(verbose_name='Name for reference in content',max_length=200,unique=True)
     date_uploaded = models.DateTimeField(verbose_name='date uploaded', auto_now_add=True)
     typeinfo = models.CharField(max_length=200)
@@ -252,8 +250,8 @@ def get_image_upload_path(instance, filename):
 class Image(models.Model):
     """Image"""
     # TODO: Make the uploading user the default and don't allow it to change
-    courseinstance = models.ForeignKey(CourseInstance, verbose_name="Course instance")
-    owner = models.ForeignKey(User, null=True, blank=True, verbose_name="Uploader") # Translate
+    courseinstance = models.ForeignKey(CourseInstance, verbose_name="Course instance", null=True, on_delete=models.SET_NULL)
+    owner = models.ForeignKey(User, null=True, blank=True, verbose_name="Uploader", on_delete=models.SET_NULL) # Translate
     name = models.CharField(verbose_name='Name for reference in content', max_length=200, unique=True)
     date_uploaded = models.DateTimeField(verbose_name='date uploaded', auto_now_add=True)
     description = models.CharField(max_length=500) # Translate
@@ -265,8 +263,8 @@ class Image(models.Model):
 class VideoLink(models.Model):
     """Youtube link for embedded videos"""
     # TODO: Make the adding user the default and don't allow it to change
-    courseinstance = models.ForeignKey(CourseInstance, verbose_name="Course instance")
-    owner = models.ForeignKey(User, null=True, blank=True, verbose_name="Added by") # Translate
+    courseinstance = models.ForeignKey(CourseInstance, verbose_name="Course instance", null=True, on_delete=models.SET_NULL)
+    owner = models.ForeignKey(User, null=True, blank=True, verbose_name="Added by", on_delete=models.SET_NULL) # Translate
     name = models.CharField(verbose_name='Name for reference in content', max_length=200, unique=True)
     link = models.URLField() # Translate
     description = models.CharField(max_length=500) # Translate
@@ -276,7 +274,7 @@ class VideoLink(models.Model):
 
 @reversion.register(follow=["termtab_set", "termlink_set"])
 class Term(models.Model):
-    instance = models.ForeignKey(CourseInstance, verbose_name="Course instance")
+    instance = models.ForeignKey(CourseInstance, verbose_name="Course instance", null=True, on_delete=models.SET_NULL)
     name = models.CharField(verbose_name='Term', max_length=200) # Translate
     description = models.TextField() # Translate
     aliases = ArrayField(
@@ -299,7 +297,7 @@ class Term(models.Model):
 
 @reversion.register()
 class TermTab(models.Model):
-    term = models.ForeignKey(Term)
+    term = models.ForeignKey(Term, on_delete=models.CASCADE)
     title = models.CharField(verbose_name="Title of this tab", max_length=100) # Translate
     description = models.TextField() # Translate
 
@@ -308,7 +306,7 @@ class TermTab(models.Model):
 
 @reversion.register()
 class TermLink(models.Model):
-    term = models.ForeignKey(Term)
+    term = models.ForeignKey(Term, on_delete=models.CASCADE)
     url = models.CharField(verbose_name="URL", max_length=300) # Translate
     link_text = models.CharField(verbose_name="Link text", max_length=80) # Translate
 
@@ -322,7 +320,7 @@ class Calendar(models.Model):
 
 class CalendarDate(models.Model):
     """A single date on a calendar."""
-    calendar = models.ForeignKey(Calendar)
+    calendar = models.ForeignKey(Calendar, on_delete=models.CASCADE)
     event_name = models.CharField(verbose_name='Name of the event', max_length=200) # Translate
     event_description = models.CharField(verbose_name='Description', max_length=200, blank=True, null=True) # Translate
     start_time = models.DateTimeField(verbose_name='Starts at')
@@ -340,12 +338,12 @@ class CalendarDate(models.Model):
 
 class CalendarReservation(models.Model):
     """A single user-made reservation on a calendar date."""
-    calendar_date = models.ForeignKey(CalendarDate)
-    user = models.ForeignKey(User)
+    calendar_date = models.ForeignKey(CalendarDate, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
 
 class EmbeddedLink(models.Model):
-    parent = models.ForeignKey('ContentPage', related_name='emb_parent')
-    embedded_page = models.ForeignKey('ContentPage', related_name='emb_embedded')
+    parent = models.ForeignKey('ContentPage', related_name='emb_parent', on_delete=models.CASCADE)
+    embedded_page = models.ForeignKey('ContentPage', related_name='emb_embedded', on_delete=models.CASCADE)
     revision = models.PositiveIntegerField()
     ordinal_number = models.PositiveSmallIntegerField()
 
@@ -602,7 +600,7 @@ class MultipleChoiceExercise(ContentPage):
         super(MultipleChoiceExercise, self).save(*args, **kwargs)
 
     def get_choices(self, revision=None):
-        choices = MultipleChoiceExerciseAnswer.objects.filter(exercise=self.id).order_by('id')
+        choices = self.multiplechoiceexerciseanswer_set.get_queryset()
         return choices
 
     def save_answer(self, user, ip, answer, files, instance, revision):
@@ -684,7 +682,7 @@ class CheckboxExercise(ContentPage):
 
     def get_choices(self, revision=None):
         if revision is None:
-            choices = CheckboxExerciseAnswer.objects.filter(exercise=self.id).order_by('id')
+            choices = self.checkboxexerciseanswer_set.get_queryset()
         else:
             # We need an old version of _which_ answer choices pointed to this exercise
             old_version = reversion.get_for_object(self).get(revision=revision).object_version.object
@@ -1245,7 +1243,7 @@ class Hint(models.Model):
     A hint that is linked to an exercise and shown to the user under
     configurable conditions.
     """
-    exercise = models.ForeignKey(ContentPage)
+    exercise = models.ForeignKey(ContentPage, on_delete=models.CASCADE)
     hint = models.TextField(verbose_name="hint text")
     tries_to_unlock = models.IntegerField(default=0,
                                           verbose_name="number of tries to unlock this hint",
@@ -1260,7 +1258,7 @@ def default_fue_timeout(): return datetime.timedelta(seconds=5)
 
 @reversion.register(follow=['fileexerciseteststage_set'])
 class FileExerciseTest(models.Model):
-    exercise = models.ForeignKey(FileUploadExercise, verbose_name="for file exercise", db_index=True)
+    exercise = models.ForeignKey(FileUploadExercise, verbose_name="for file exercise", db_index=True, on_delete=models.CASCADE)
     name = models.CharField(verbose_name="Test name", max_length=200)
 
     # Note: only allow selection of files that have been linked to the exercise!
@@ -1280,8 +1278,8 @@ class FileExerciseTest(models.Model):
 @reversion.register(follow=['fileexercisetestcommand_set'])
 class FileExerciseTestStage(models.Model):
     """A stage – a named sequence of commands to run in a file exercise test."""
-    test = models.ForeignKey(FileExerciseTest)
-    depends_on = models.ForeignKey('FileExerciseTestStage', null=True, blank=True) # TODO: limit_choices_to
+    test = models.ForeignKey(FileExerciseTest, on_delete=models.CASCADE)
+    depends_on = models.ForeignKey('FileExerciseTestStage', null=True, blank=True, on_delete=models.SET_NULL) # TODO: limit_choices_to
     name = models.CharField(max_length=64) # Translate
     ordinal_number = models.PositiveSmallIntegerField() # TODO: Enforce min=1
 
@@ -1296,7 +1294,7 @@ class FileExerciseTestStage(models.Model):
 @reversion.register(follow=['fileexercisetestexpectedoutput_set'])
 class FileExerciseTestCommand(models.Model):
     """A command that shall be executed on the test machine."""
-    stage = models.ForeignKey(FileExerciseTestStage)
+    stage = models.ForeignKey(FileExerciseTestStage, on_delete=models.CASCADE)
     command_line = models.CharField(max_length=255) # Translate
     significant_stdout = models.BooleanField(verbose_name="Compare the generated stdout to reference",
                                              default=False,
@@ -1338,7 +1336,7 @@ class FileExerciseTestCommand(models.Model):
 @reversion.register()
 class FileExerciseTestExpectedOutput(models.Model):
     """What kind of output is expected from the program?"""
-    command = models.ForeignKey(FileExerciseTestCommand)
+    command = models.ForeignKey(FileExerciseTestCommand, on_delete=models.CASCADE)
     correct = models.BooleanField(default=False)
     regexp = models.BooleanField(default=False)
     expected_answer = models.TextField(blank=True)
@@ -1372,11 +1370,11 @@ class FileExerciseTestExpectedStderr(FileExerciseTestExpectedOutput):
 # Include files
 @reversion.register()
 class InstanceIncludeFileToExerciseLink(models.Model):
-    include_file = models.ForeignKey('InstanceIncludeFile')
-    exercise = models.ForeignKey('ContentPage')
+    include_file = models.ForeignKey('InstanceIncludeFile', on_delete=models.CASCADE)
+    exercise = models.ForeignKey('ContentPage', on_delete=models.CASCADE)
 
     # The settings are determined per exercise basis
-    file_settings = models.OneToOneField('IncludeFileSettings')
+    file_settings = models.OneToOneField('IncludeFileSettings', on_delete=models.CASCADE)
 
 def get_instancefile_path(instance, filename):
     return os.path.join(
@@ -1391,7 +1389,7 @@ class InstanceIncludeFile(models.Model):
     A file that's linked to an instance and can be included in any exercise
     that needs it. (File upload, code input, code replace, ...)
     """
-    instance = models.ForeignKey(CourseInstance)
+    instance = models.ForeignKey(CourseInstance, null=True, on_delete=models.SET_NULL)
     exercises = models.ManyToManyField(ContentPage, blank=True,
                                        through='InstanceIncludeFileToExerciseLink',
                                        through_fields=('include_file', 'exercise'))
@@ -1419,8 +1417,8 @@ class FileExerciseTestIncludeFile(models.Model):
     tests. For example, a reference program, expected output file or input file
     for the program.
     """
-    exercise = models.ForeignKey(FileUploadExercise)
-    file_settings = models.OneToOneField('IncludeFileSettings')
+    exercise = models.ForeignKey(FileUploadExercise, on_delete=models.CASCADE)
+    file_settings = models.OneToOneField('IncludeFileSettings', on_delete=models.CASCADE)
     default_name = models.CharField(verbose_name='Default name', max_length=255) # Translate
     description = models.TextField(blank=True, null=True) # Translate
     fileinfo = models.FileField(max_length=255, upload_to=get_testfile_path, storage=upload_storage) # Translate
@@ -1475,7 +1473,7 @@ class IncludeFileSettings(models.Model):
 ## Answer models
 @reversion.register()
 class TextfieldExerciseAnswer(models.Model):
-    exercise = models.ForeignKey(TextfieldExercise)
+    exercise = models.ForeignKey(TextfieldExercise, on_delete=models.CASCADE)
     correct = models.BooleanField(default=False)
     regexp = models.BooleanField(default=True)
     answer = models.TextField() # Translate
@@ -1494,7 +1492,7 @@ class TextfieldExerciseAnswer(models.Model):
 
 @reversion.register()
 class MultipleChoiceExerciseAnswer(models.Model):
-    exercise = models.ForeignKey(MultipleChoiceExercise)
+    exercise = models.ForeignKey(MultipleChoiceExercise, null=True, on_delete=models.SET_NULL)
     correct = models.BooleanField(default=False)
     answer = models.TextField() # Translate
     hint = models.TextField(blank=True) # Translate
@@ -1505,7 +1503,7 @@ class MultipleChoiceExerciseAnswer(models.Model):
 
 @reversion.register()
 class CheckboxExerciseAnswer(models.Model):
-    exercise = models.ForeignKey(CheckboxExercise)
+    exercise = models.ForeignKey(CheckboxExercise, null=True, on_delete=models.SET_NULL)
     correct = models.BooleanField(default=False)
     answer = models.TextField() # Translate
     hint = models.TextField(blank=True) # Translate
@@ -1516,12 +1514,12 @@ class CheckboxExerciseAnswer(models.Model):
 
 @reversion.register()
 class CodeInputExerciseAnswer(models.Model):
-    exercise = models.ForeignKey(CodeInputExercise)
+    exercise = models.ForeignKey(CodeInputExercise, on_delete=models.CASCADE)
     answer = models.TextField() # Translate
 
 @reversion.register()
 class CodeReplaceExerciseAnswer(models.Model):
-    exercise = models.ForeignKey(CodeReplaceExercise)
+    exercise = models.ForeignKey(CodeReplaceExercise, on_delete=models.CASCADE)
     answer = models.TextField() # Translate
     #replace_file = models.ForeignKey()
     replace_file = models.TextField() # DEBUG
@@ -1530,13 +1528,13 @@ class CodeReplaceExerciseAnswer(models.Model):
 # Repeated template exercise models
 @reversion.register()
 class RepeatedTemplateExerciseTemplate(models.Model):
-    exercise = models.ForeignKey(RepeatedTemplateExercise)
+    exercise = models.ForeignKey(RepeatedTemplateExercise, on_delete=models.CASCADE)
     title = models.CharField(max_length=64) # Translate
     content_string = models.TextField() # Translate
 
 @reversion.register()
 class RepeatedTemplateExerciseBackendFile(models.Model):
-    exercise = models.ForeignKey(RepeatedTemplateExercise)
+    exercise = models.ForeignKey(RepeatedTemplateExercise, on_delete=models.CASCADE)
     filename = models.CharField(max_length=255, blank=True)
     fileinfo = models.FileField(max_length=255, upload_to=get_testfile_path, storage=upload_storage)
 
@@ -1556,12 +1554,12 @@ class RepeatedTemplateExerciseBackendFile(models.Model):
 
 @reversion.register()
 class RepeatedTemplateExerciseBackendCommand(models.Model):
-    exercise = models.OneToOneField(RepeatedTemplateExercise)
+    exercise = models.OneToOneField(RepeatedTemplateExercise, on_delete=models.CASCADE)
     command = models.TextField() # Translate
 
 class RepeatedTemplateExerciseSession(models.Model):
-    exercise = models.ForeignKey(RepeatedTemplateExercise)
-    user = models.ForeignKey(User, blank=True, null=True)
+    exercise = models.ForeignKey(RepeatedTemplateExercise, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, blank=True, null=True, on_delete=models.SET_NULL)
     revision = models.PositiveIntegerField()
     language_code = models.CharField(max_length=7)
     generated_json = JSONField()
@@ -1578,9 +1576,9 @@ class RepeatedTemplateExerciseSession(models.Model):
         return total['ordinal_number__max'] + 1
 
 class RepeatedTemplateExerciseSessionInstance(models.Model):
-    exercise = models.ForeignKey(RepeatedTemplateExercise)
-    session = models.ForeignKey(RepeatedTemplateExerciseSession)
-    template = models.ForeignKey(RepeatedTemplateExerciseTemplate)
+    exercise = models.ForeignKey(RepeatedTemplateExercise, on_delete=models.CASCADE)
+    session = models.ForeignKey(RepeatedTemplateExerciseSession, on_delete=models.CASCADE)
+    template = models.ForeignKey(RepeatedTemplateExerciseTemplate, on_delete=models.CASCADE)
     ordinal_number = models.PositiveSmallIntegerField()
     variables = ArrayField(
         base_field=models.TextField(),
@@ -1599,7 +1597,7 @@ class RepeatedTemplateExerciseSessionInstance(models.Model):
         return "<RepeatedTemplateExerciseSessionInstance: no. {} of session {}>".format(self.ordinal_number, self.session.id)
 
 class RepeatedTemplateExerciseSessionInstanceAnswer(models.Model):
-    session_instance = models.ForeignKey(RepeatedTemplateExerciseSessionInstance)
+    session_instance = models.ForeignKey(RepeatedTemplateExerciseSessionInstance, null=True, on_delete=models.SET_NULL)
     correct = models.BooleanField()
     regexp = models.BooleanField()
     answer = models.TextField()
@@ -1625,7 +1623,7 @@ class Evaluation(models.Model):
     # language the student used and give an evaluation using that language.
 
     evaluation_date = models.DateTimeField(verbose_name='When was the answer evaluated', auto_now_add=True)
-    evaluator = models.ForeignKey(User, verbose_name='Who evaluated the answer', blank=True, null=True)
+    evaluator = models.ForeignKey(User, verbose_name='Who evaluated the answer', blank=True, null=True, on_delete=models.SET_NULL)
     feedback = models.TextField(verbose_name='Feedback given by a teacher', blank=True)
     test_results = models.TextField(verbose_name='Test results in JSON', blank=True) # TODO: JSONField
 
@@ -1636,11 +1634,11 @@ class UserAnswer(models.Model):
     SET_NULL should be used as the on_delete behaviour for foreignkeys pointing to the
     exercises. The answers will then be kept even when the exercise is deleted.
     """
-    instance = models.ForeignKey(CourseInstance)
-    evaluation = models.OneToOneField(Evaluation, null=True, blank=True)
+    instance = models.ForeignKey(CourseInstance, null=True, on_delete=models.SET_NULL)
+    evaluation = models.OneToOneField(Evaluation, null=True, blank=True, on_delete=models.SET_NULL)
     revision = models.PositiveIntegerField() # The revision info is always required!
     language_code = models.CharField(max_length=7) # TODO: choices=all language codes
-    user = models.ForeignKey(User)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     answer_date = models.DateTimeField(verbose_name='Date and time of when the user answered this exercise',
                                        auto_now_add=True)
     answerer_ip = models.GenericIPAddressField()
@@ -1669,7 +1667,7 @@ def get_answerfile_path(instance, filename): # TODO: Versioning?
 
 class FileUploadExerciseReturnFile(models.Model):
     """A file that a user returns for checking."""
-    answer = models.ForeignKey('UserFileUploadExerciseAnswer')
+    answer = models.ForeignKey('UserFileUploadExerciseAnswer', on_delete=models.CASCADE)
     fileinfo = models.FileField(max_length=255, upload_to=get_answerfile_path, storage=upload_storage)
 
     def filename(self):
@@ -1692,7 +1690,7 @@ class FileUploadExerciseReturnFile(models.Model):
         return (mimetype, binary)
 
 class UserFileUploadExerciseAnswer(UserAnswer):
-    exercise = models.ForeignKey(FileUploadExercise, models.SET_NULL, blank=True, null=True)
+    exercise = models.ForeignKey(FileUploadExercise, blank=True, null=True, on_delete=models.SET_NULL)
 
     def __str__(self):
         return "Answer by %s" % (self.user.username)
@@ -1726,8 +1724,8 @@ class UserFileUploadExerciseAnswer(UserAnswer):
         return returned_files
 
 class UserRepeatedTemplateInstanceAnswer(models.Model):
-    answer = models.ForeignKey('UserRepeatedTemplateExerciseAnswer')
-    session_instance = models.ForeignKey(RepeatedTemplateExerciseSessionInstance)
+    answer = models.ForeignKey('UserRepeatedTemplateExerciseAnswer', on_delete=models.CASCADE)
+    session_instance = models.ForeignKey(RepeatedTemplateExerciseSessionInstance, null=True,  on_delete=models.SET_NULL)
     given_answer = models.TextField(blank=True)
     correct = models.BooleanField(default=False)
 
@@ -1738,8 +1736,8 @@ class UserRepeatedTemplateInstanceAnswer(models.Model):
         )
 
 class UserRepeatedTemplateExerciseAnswer(UserAnswer):
-    exercise = models.ForeignKey(RepeatedTemplateExercise, models.SET_NULL, blank=True, null=True)
-    session = models.ForeignKey(RepeatedTemplateExerciseSession)
+    exercise = models.ForeignKey(RepeatedTemplateExercise, blank=True, null=True, on_delete=models.SET_NULL)
+    session = models.ForeignKey(RepeatedTemplateExerciseSession, null=True, on_delete=models.SET_NULL)
 
     def __str__(self):
         return "Repeated template exercise answers by {} to {}".format(self.user.username, self.exercise.name)
@@ -1748,36 +1746,36 @@ class UserRepeatedTemplateExerciseAnswer(UserAnswer):
         return UserRepeatedTemplateInstanceAnswer.objects.filter(answer=self)
 
 class UserTextfieldExerciseAnswer(UserAnswer):
-    exercise = models.ForeignKey(TextfieldExercise)
+    exercise = models.ForeignKey(TextfieldExercise, null=True, on_delete=models.SET_NULL)
     given_answer = models.TextField()
 
     def __str__(self):
         return self.given_answer
 
 class UserMultipleChoiceExerciseAnswer(UserAnswer):
-    exercise = models.ForeignKey(MultipleChoiceExercise)
-    chosen_answer = models.ForeignKey(MultipleChoiceExerciseAnswer)
+    exercise = models.ForeignKey(MultipleChoiceExercise, null=True, on_delete=models.SET_NULL)
+    chosen_answer = models.ForeignKey(MultipleChoiceExerciseAnswer, null=True, on_delete=models.SET_NULL)
 
     def __str__(self):
-        return self.chosen_answer
+        return str(self.chosen_answer)
 
     def is_correct(self):
         return chosen_answer.correct
 
 class UserCheckboxExerciseAnswer(UserAnswer):
-    exercise = models.ForeignKey(CheckboxExercise)
+    exercise = models.ForeignKey(CheckboxExercise, null=True, on_delete=models.SET_NULL)
     chosen_answers = models.ManyToManyField(CheckboxExerciseAnswer)
 
     def __str__(self):
-        return ", ".join(self.chosen_answers)
+        return ", ".join(str(a) for a in self.chosen_answers.all()) 
 
 class CodeReplaceExerciseReplacement(models.Model):
-    answer = models.ForeignKey('UserCodeReplaceExerciseAnswer')
-    target = models.ForeignKey(CodeReplaceExerciseAnswer)
+    answer = models.ForeignKey('UserCodeReplaceExerciseAnswer', on_delete=models.CASCADE)
+    target = models.ForeignKey(CodeReplaceExerciseAnswer, null=True, on_delete=models.SET_NULL)
     replacement = models.TextField()
 
 class UserCodeReplaceExerciseAnswer(UserAnswer):
-    exercise = models.ForeignKey(CodeReplaceExercise)
+    exercise = models.ForeignKey(CodeReplaceExercise, null=True, on_delete=models.SET_NULL)
     given_answer = models.TextField()
 
     def __str__(self):

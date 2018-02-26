@@ -82,7 +82,7 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_hin
     exercise.allowed_filenames = e_allowed_filenames
     exercise.save()
     # save() first so that m2m can be used (when adding a new exercise)
-    exercise.feedback_questions = e_feedback_questions
+    exercise.feedback_questions.set(e_feedback_questions)
     exercise.save()
 
     # TODO! Check for all existing foreignkey relations: must not be linked to a different exercise previously! 
@@ -213,8 +213,8 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_hin
         # Set the test values
         current_test.name = t_name
         current_test.save() # Needed for the required files
-        current_test.required_files = t_required_ef
-        current_test.required_instance_files = t_required_if
+        current_test.required_files.set(t_required_ef)
+        current_test.required_instance_files.set(t_required_if)
 
         # Save the test and store a reference
         current_test.save()
@@ -325,7 +325,7 @@ Command = collections.namedtuple('Command', ['stage', 'ordinal_number'])
 # fileuploadexercise/{id}/change
 def file_upload_exercise(request, exercise_id=None, action=None):
     # Admins only, consider @staff_member_required
-    if not (request.user.is_staff and request.user.is_authenticated() and request.user.is_active):
+    if not (request.user.is_staff and request.user.is_authenticated and request.user.is_active):
         return HttpResponseForbidden("Only admins are allowed to edit file upload exercises.")
 
     # GET = show the page
@@ -506,7 +506,7 @@ def file_upload_exercise(request, exercise_id=None, action=None):
     return HttpResponse(t.render(c, request))
 
 def get_feedback_questions(request):
-    if not (request.user.is_staff and request.user.is_authenticated() and request.user.is_active):
+    if not (request.user.is_staff and request.user.is_authenticated and request.user.is_active):
         return JsonResponse({
             "error": "Only logged in admins can query feedback questions!"
         })
@@ -574,7 +574,7 @@ def edit_feedback_questions(request):
     if request.method != "POST":
         return HttpResponseNotAllowed(["POST"])
 
-    if not (request.user.is_staff and request.user.is_authenticated() and request.user.is_active):
+    if not (request.user.is_staff and request.user.is_authenticated and request.user.is_active):
         return JsonResponse({
             "error" : {
                 "__all__" : {
@@ -670,7 +670,7 @@ def edit_feedback_questions(request):
     return get_feedback_questions(request)
 
 def get_instance_files(request):
-    if not (request.user.is_staff and request.user.is_authenticated() and request.user.is_active):
+    if not (request.user.is_staff and request.user.is_authenticated and request.user.is_active):
         return JsonResponse({
             "error": "Only logged in admins can query instance files!"
         })
@@ -713,7 +713,7 @@ def edit_instance_files(request):
     if request.method != "POST":
         return HttpResponseNotAllowed(["POST"])
 
-    if not (request.user.is_staff and request.user.is_authenticated() and request.user.is_active):
+    if not (request.user.is_staff and request.user.is_authenticated and request.user.is_active):
         return JsonResponse({
             "error" : {
                 "__all__" : {

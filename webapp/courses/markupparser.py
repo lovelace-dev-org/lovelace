@@ -305,7 +305,7 @@ class CalendarMarkup(Markup):
         user_has_slot = False
         reserved_event_ids = []
 
-        if user.is_authenticated():
+        if user.is_authenticated:
             for cal_date, cal_reservations in calendar_reservations.items():
                 try:
                     found = cal_reservations.get(user=state["request"].user)
@@ -537,9 +537,9 @@ class EmbeddedPageMarkup(Markup):
             }
             user = state["request"].user
             sandboxed = state["request"].path.startswith("/sandbox/")
-            if sandboxed and user.is_authenticated() and user.is_active and user.is_staff:
+            if sandboxed and user.is_authenticated and user.is_active and user.is_staff:
                 c["sandboxed"] = True
-            elif sandboxed and (not user.is_authenticated() or not user.is_active or not user.is_staff):
+            elif sandboxed and (not user.is_authenticated or not user.is_active or not user.is_staff):
                 settings["rendered_content"] = ""
                 return settings
             else:

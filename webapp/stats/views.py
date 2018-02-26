@@ -5,7 +5,7 @@ import statistics
 import django
 from django.http import HttpResponse, HttpResponseNotFound, HttpResponseForbidden
 from django.template import loader
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 
@@ -372,7 +372,7 @@ def single_exercise(request, content_slug):
     """
     Shows statistics on a single selected task.
     """
-    if not (request.user.is_authenticated() and request.user.is_active and request.user.is_staff):
+    if not (request.user.is_authenticated and request.user.is_active and request.user.is_staff):
         return HttpResponseForbidden("Only logged in admins can view exercise statistics!")
 
     try:
@@ -402,7 +402,7 @@ def single_exercise(request, content_slug):
 
 def user_task(request, user_name, task_name):
     '''Shows a user's answers to a task.'''
-    if not request.user.is_authenticated() and not request.user.is_staff:
+    if not request.user.is_authenticated and not request.user.is_staff:
         return HttpResponseNotFound()
 
     content = ContentPage.objects.get(slug=task_name)
@@ -437,7 +437,7 @@ def user_task(request, user_name, task_name):
 
 def all_exercises(request, course_name):
     '''Shows statistics for all the tasks.'''
-    if not request.user.is_authenticated() and not request.user.is_staff:
+    if not request.user.is_authenticated and not request.user.is_staff:
         return HttpResponseNotFound()
 
     tasks = ContentPage.objects.all()
@@ -488,7 +488,7 @@ def all_exercises(request, course_name):
 
 def course_users(request, course_slug, content_to_search, year, month, day):
     '''Admin view that shows a table of all users and the tasks they've done on a particular course.'''
-    if not request.user.is_authenticated() and not request.user.is_active and not request.user.is_staff:
+    if not request.user.is_authenticated and not request.user.is_active and not request.user.is_staff:
         return HttpResponseNotFound()
 
     selected_course = Training.objects.get(name=course_slug)
@@ -547,7 +547,7 @@ def course_users(request, course_slug, content_to_search, year, month, day):
     return HttpResponse(t.render(c, request))
 
 def users_all(request):
-    if not (request.user.is_authenticated() and request.user.is_active and\
+    if not (request.user.is_authenticated and request.user.is_active and\
        request.user.is_staff):
         return HttpResponseNotFound()
 
@@ -580,7 +580,7 @@ def color_generator(total_colors):
         yield 'rgba({},{},{},0.65)'.format(int(r), int(g), int(b))
 
 def users_course(request, course_slug, instance_slug):
-    if not (request.user.is_authenticated() and request.user.is_active and\
+    if not (request.user.is_authenticated and request.user.is_active and\
             request.user.is_staff):
         return HttpResponseNotFound()
 

@@ -7,25 +7,25 @@ from django.views.generic import RedirectView
 urlpatterns = [
     url(r'^admin/courses/fileuploadexercise/add', RedirectView.as_view(pattern_name='exercise_admin:file_upload_add')),
     url(r'^admin/courses/fileuploadexercise/(?P<exercise_id>\d+)/change', RedirectView.as_view(pattern_name='exercise_admin:file_upload_change')),
-    url(r'^admin/', include(admin.site.urls)),
-    url(r'^exercise-admin/', include('exercise_admin.urls', namespace='exercise_admin')),
-    url(r'^stats/', include('stats.urls', namespace='stats')),
-    url(r'^feedback/', include('feedback.urls', namespace='feedback')),
+    url(r'^admin/', admin.site.urls),
+    url(r'^exercise-admin/', include('exercise_admin.urls', namespace="exercise_admin")),
+    url(r'^stats/', include('stats.urls', namespace="stats")),
+    url(r'^feedback/', include('feedback.urls', namespace="feedback")),
     url(r'^i18n/', include('django.conf.urls.i18n')),
     url(r'^accounts/', include('allauth.urls')),
-    url(r'^teacher/', include('teacher_tools.urls', namespace='teacher')),
+    url(r'^teacher/', include('teacher_tools.urls', namespace="teacher")),
 ]
 
 try:
     urlpatterns.append(
-        url(r'^shib/', include('shibboleth.urls', namespace='shibboleth'))
+        url(r'^shib/', include('shibboleth.urls'))
     )
 except ImportError:
     # shibboleth is not installed
     pass
 finally:
     urlpatterns.append(
-        url(r'^', include('courses.urls', namespace='courses')),
+        url(r'^', include('courses.urls', namespace="courses")),
     )
 
 if settings.DEBUG:
