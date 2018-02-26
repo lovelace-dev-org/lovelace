@@ -13,7 +13,7 @@
 {% endblock %}
 
 {% block breadcrumb-links %}
-  <li><a href="{% url 'courses:index' %}">Courses</a></li>
+  <li><a href="{% url 'courses:index' %}">{% trans 'Courses' %}</a></li>
   <div class="separator">»</div>
   <li><a href="{% url 'courses:sandbox' content.slug %}">{{ content.name }}</a></li>
 {% endblock %}

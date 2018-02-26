@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2018-02-22 11:40+0200\n"
+"POT-Creation-Date: 2018-02-22 11:53+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -191,6 +191,7 @@ msgstr "Katso erikseen"
 #: courses/templates/courses/logout.html:5
 #: courses/templates/courses/terms.html:8
 #: courses/templates/courses/user-exercise-answers.html:15
+#: feedback/templates/feedback/feedback-stats.html:16
 #: teacher_tools/templates/teacher_tools/manage_enrollments.html:13
 msgid "Courses"
 msgstr "Kurssit"
