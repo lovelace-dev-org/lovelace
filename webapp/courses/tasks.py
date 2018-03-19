@@ -369,8 +369,10 @@ def run_test(self, test_id, answer_id, instance_id, exercise_id, student=False, 
 
     try:
         # TODO: Fallback file names for those that don't have translations?
+        # PATCH: removed instance from filtering so that checking doesn't break
+        # for cloned instances (while waiting for instance file rework)
         instance_file_links = cm.InstanceIncludeFileToExerciseLink.objects.filter(
-            exercise=exercise_id, include_file__instance=instance_id,
+            exercise=exercise_id
         )
 
         if revision is not None:

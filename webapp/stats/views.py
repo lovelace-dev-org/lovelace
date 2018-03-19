@@ -215,7 +215,7 @@ def checkbox_exercise(exercise, users, course_inst=None):
     Shows statistics on a single checkbox exercise.
     """
     
-    answers = UserCheckboxExerciseAnswer.objects.filter(exercise=exercise, user__in=users)
+    answers = UserCheckboxExerciseAnswer.objects.filter(exercise=exercise, user__in=users, instance=course_inst)
     basic_stats, piechart = exercise_basic_answer_stats(exercise, users, answers, course_inst)
     chosen_answers = list(answers.values_list("chosen_answers", flat=True))
     chosen_answers_set = set(chosen_answers)
@@ -243,7 +243,7 @@ def multiple_choice_exercise(exercise, users, course_inst=None):
     Shows statistics on a single multiple choice exercise.
     """
     
-    answers = UserMultipleChoiceExerciseAnswer.objects.filter(exercise=exercise, user__in=users)
+    answers = UserMultipleChoiceExerciseAnswer.objects.filter(exercise=exercise, user__in=users, instance=course_inst)
     basic_stats, piechart = exercise_basic_answer_stats(exercise, users, answers, course_inst)
     chosen_answers = list(answers.values_list("chosen_answer", flat=True))
     chosen_answers_set = set(chosen_answers)
@@ -271,7 +271,7 @@ def textfield_exercise(exercise, users, course_inst=None):
     Shows statistics on a single textfield exercise.
     """
 
-    answers = UserTextfieldExerciseAnswer.objects.filter(exercise=exercise, user__in=users)
+    answers = UserTextfieldExerciseAnswer.objects.filter(exercise=exercise, user__in=users, instance=course_inst)
     basic_stats, piechart = exercise_basic_answer_stats(exercise, users, answers, course_inst)
     given_answers = list(answers.values_list("given_answer", flat=True))
     given_answers_set = set(given_answers)
@@ -316,7 +316,7 @@ def repeated_template_exercise(exercise, users, course_inst=None):
     """
     Shows statistics on a single repeated template exercise.
     """
-    answer_sessions = UserRepeatedTemplateExerciseAnswer.objects.filter(exercise=exercise, user__in=users)
+    answer_sessions = UserRepeatedTemplateExerciseAnswer.objects.filter(exercise=exercise, user__in=users, instance=course_inst)
     answer_instances = UserRepeatedTemplateInstanceAnswer.objects.filter(session_instance__in=answer_sessions.values_list('id', flat=True))
     basic_stats, piechart = exercise_basic_answer_stats(exercise, users, answer_sessions, course_inst)
 
@@ -344,7 +344,7 @@ def file_upload_exercise(exercise, users, course_inst=None):
     Shows statistics on a single file upload exercise.
     """
 
-    answers = UserFileUploadExerciseAnswer.objects.filter(exercise=exercise, user__in=users)
+    answers = UserFileUploadExerciseAnswer.objects.filter(exercise=exercise, user__in=users, instance=course_inst)
     basic_stats, piechart = exercise_basic_answer_stats(exercise, users, answers, course_inst)
     
     return (course_inst,

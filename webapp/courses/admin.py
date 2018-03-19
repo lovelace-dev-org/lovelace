@@ -105,25 +105,26 @@ class CourseContentAccess(admin.ModelAdmin):
         else:
             return False        
         
-    #TODO: this solution is garbage, we need to rethink the entire content
-    #      graph and embedded links structure. 
+    #TODO: this solution is less garbage now, but we still need to rethink
+    #      the entire contentgraph and embedded links structure. 
     def save_model(self, request, obj, form, change):
         """
         Need to call rendered_markup of the object for each context where it 
-        exists in order to create embedded page links. 
+        exists as latest version in order to create embedded page links. 
         """
         
         super().save_model(request, obj, form, change)
         contexts = self._find_contexts(obj)
         for context in contexts:
-            obj.rendered_markup(request, context)        
+            obj.update_embedded_links(context["instance"])
         
     def _find_contexts(self, obj):
         """
-        Find the context(s) (course instances) where this page is linked. 
+        Find the context(s) (course instances) where this page is linked that 
+        are have not been frozen. 
         """
         
-        instances = CourseInstance.objects.filter(contents__content=obj)
+        instances = CourseInstance.objects.filter(contents__content=obj, contents__revision=None)
         contexts = []
         for instance in instances:
             context = {
@@ -139,7 +140,7 @@ class CourseContentAccess(admin.ModelAdmin):
     def _match_groups(self, user, obj):
         """
         Matches a user's groups to the staff groups of the target object.
-        Returns True if the user is in the staff group of the course that 
+        Returns True if the user is in the staff group of the course that
         is at the end of the access chain for the object.
         """
         
@@ -646,6 +647,7 @@ class CourseInstanceAdmin(TranslationAdmin, VersionAdmin):
     ]
     search_fields = ('name',)
     list_display = ('name', 'course')
+    save_as = True
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         """
@@ -704,15 +706,8 @@ class CourseInstanceAdmin(TranslationAdmin, VersionAdmin):
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)
         
-        context = {
-            'course': obj.course,
-            'course_slug': obj.course.slug,
-            'instance': obj,
-            'instance_slug': obj.slug,
-        }
-        
         for cg in obj.contents.all():
-            cg.content.rendered_markup(request, context)
+            cg.content.update_embedded_links(obj, cg.revision)
             
         self.current = obj
         transaction.on_commit(self.set_frontpage_cg)

@@ -33,6 +33,7 @@ from pygments.lexers import get_lexer_by_name
 from pygments.formatters import HtmlFormatter
 
 from reversion import revisions as reversion
+from reversion.models import Version
 
 import courses.blockparser as blockparser
 import courses.models
@@ -224,7 +225,7 @@ class MarkupParser:
             yield '</%s>' % undent_lvl
         if state["table"]:
             yield '</table>\n'
-
+            
 markups = []
 
 # inline = this markup is inline
@@ -493,6 +494,7 @@ class EmbeddedPageMarkup(Markup):
     def settings(cls, matchobj, state):
         settings = {"page_slug": matchobj.group("page_slug")}
         revision = None
+        instance = state["context"]["instance"]
         try:
             revision = int(matchobj.group("revision"))
         except AttributeError:
@@ -501,16 +503,25 @@ class EmbeddedPageMarkup(Markup):
             pass #raise something about invalid revision? dunno
 
         try:
-            page = courses.models.ContentPage.objects\
-                                             .get(slug=settings["page_slug"])
+            try:
+                link = courses.models.EmbeddedLink.objects.get(embedded_page__slug=settings["page_slug"], instance=instance)
+            except courses.models.EmbeddedLink.DoesNotExist as e:
+                # link does not exist yet, get by page slug instead
+                page = courses.models.ContentPage.objects.get(slug=settings["page_slug"])
+            else:
+                page = link.embedded_page
+                revision = link.revision
+            #revision = link.revision
+            #page = courses.models.ContentPage.objects\
+                                             #.get(slug=settings["page_slug"])
         except courses.models.ContentPage.DoesNotExist as e:
             raise EmbeddedObjectNotFoundError("embedded page '%s' couldn't be found" % settings["page_slug"])
         else:
             if revision is not None:
                 try:
-                    page = reversion.get_for_object(page).get(revision=revision)\
-                                                         .object_version.object
-                except reversion.Version.DoesNotExist as e:
+                    page = Version.objects.get_for_object(page).get(revision=revision)\
+                                                         ._object_version.object
+                except Version.DoesNotExist as e:
                     raise EmbeddedObjectNotFoundError("revision '%d' of embedded page '%s' couldn't be found"
                                                       % (revision, settings["page_slug"]))
             
@@ -535,22 +546,29 @@ class EmbeddedPageMarkup(Markup):
                 "choices": choices,
                 "revision": revision,
             }
-            user = state["request"].user
-            sandboxed = state["request"].path.startswith("/sandbox/")
-            if sandboxed and user.is_authenticated and user.is_active and user.is_staff:
-                c["sandboxed"] = True
-            elif sandboxed and (not user.is_authenticated or not user.is_active or not user.is_staff):
-                settings["rendered_content"] = ""
-                return settings
-            else:
+            try:
+                user = state["request"].user
+            except AttributeError:
                 c["sandboxed"] = False
-
-            if user.is_active and page.is_answerable() and page.get_user_answers(page, user) and not sandboxed:
-                c["evaluation"] = page.get_user_evaluation(page, user)
-                c["answer_count"] = page.get_user_answers(page, user).count()
-            else:
                 c["evaluation"] = "unanswered"
                 c["answer_count"] = 0
+            else:
+                sandboxed = state["request"].path.startswith("/sandbox/")
+                if sandboxed and user.is_authenticated and user.is_active and user.is_staff:
+                    c["sandboxed"] = True
+                elif sandboxed and (not user.is_authenticated or not user.is_active or not user.is_staff):
+                    settings["rendered_content"] = ""
+                    return settings
+                else:
+                    c["sandboxed"] = False
+
+                if user.is_active and page.is_answerable() and page.get_user_answers(page, user, state["context"]["instance"]) and not sandboxed:
+                    c["evaluation"] = page.get_user_evaluation(page, user, instance)
+                    c["answer_count"] = page.get_user_answers(page, user, instance).count()
+                else:
+                    c["evaluation"] = "unanswered"
+                    c["answer_count"] = 0
+                    
             c.update(state["context"])
 
             t = loader.get_template("courses/{page_type}.html".format(
@@ -560,6 +578,28 @@ class EmbeddedPageMarkup(Markup):
 
         settings["rendered_content"] = rendered_content or embedded_content
         return settings
+
+    @classmethod
+    def parse_links(cls, text, instance):        
+        page_links = []
+        lines = iter(re.split(r"\r\n|\r|\n", text))
+        
+        link_re = re.compile(cls.regexp)
+        
+        for line in lines:
+            match = link_re.match(line)
+            if match:
+                page_slug = match.group("page_slug")
+                try:
+                    link = courses.models.EmbeddedLink.objects.get(embedded_page__slug=page_slug, instance=instance)
+                    page_revision = link.revision
+                except courses.models.EmbeddedLink.DoesNotExist:
+                    page_revision = None
+                
+                #page_revision = match.group("revision")
+                page_links.append((page_slug, page_revision))
+        
+        return page_links
 
 markups.append(EmbeddedPageMarkup)
 

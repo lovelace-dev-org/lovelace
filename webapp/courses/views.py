@@ -217,13 +217,13 @@ def course_tree(tree, node, user, instance_obj):
     evaluation = ""
     if user.is_authenticated:
         exercise = node.content
-        evaluation = exercise.get_user_evaluation(exercise, user)
+        evaluation = exercise.get_user_evaluation(exercise, user, instance_obj)
 
         if embedded_count > 0:
             for emb_exercise in embedded_links.values_list('embedded_page', flat=True):
                 emb_exercise = ContentPage.objects.get(id=emb_exercise)
                 #print(emb_exercise.name)
-                correct_embedded += 1 if emb_exercise.get_user_evaluation(emb_exercise, user) == "correct" else 0
+                correct_embedded += 1 if emb_exercise.get_user_evaluation(emb_exercise, user, instance_obj) == "correct" else 0
     
     list_item = (node.content, evaluation, correct_embedded, embedded_count, node.visible)
     
@@ -360,7 +360,7 @@ def check_answer(request, course_slug, instance_slug, content_slug, revision):
     hints = ["".join(markupparser.MarkupParser.parse(msg, request, msg_context)).strip()
              for msg in evaluation.get('hints', [])]
 
-    answer_count = exercise.get_user_answers(exercise, user).count()
+    answer_count = exercise.get_user_answers(exercise, user, instance).count()
     answer_count_str = get_answer_count_meta(answer_count)
 
     # TODO: Errors, hints, comments in JSON
@@ -512,7 +512,8 @@ def file_exercise_evaluation(request, course_slug, instance_slug, content_slug, 
     task.forget() # TODO: IMPORTANT! Also forget all the subtask results somehow? in tasks.py?
     evaluation_obj = Evaluation.objects.get(id=evaluation_id)
     content = ContentPage.objects.get(slug=content_slug)
-    answer_count = content.get_user_answers(content, request.user).count()
+    instance = CourseInstance.objects.get(slug=instance_slug)
+    answer_count = content.get_user_answers(content, request.user, instance).count()
     answer_count_str = get_answer_count_meta(answer_count)
 
     # TODO: Nicer way to get the proper address!
@@ -720,7 +721,7 @@ def content(request, course_slug, instance_slug, content_slug, **kwargs):
     revision = None
     if "frontpage" not in kwargs:
         try:
-            content_graph = instance.contents.filter(content=content).first() # TODO: never causes exception?
+            content_graph = instance.contents.get(content=content)
         except ContentGraph.DoesNotExist:
             return HttpResponseNotFound("Content {} is not linked to course {}!".format(content_slug, course_slug))
         else:
@@ -738,10 +739,8 @@ def content(request, course_slug, instance_slug, content_slug, **kwargs):
         'instance_slug': instance.slug,
     }
 
-    termbank_contents = cache.get('termbank_contents_{instance}_{lang}'.format(instance=context['instance_slug'],
-                                                                               lang=translation.get_language()))
-    term_div_data = cache.get('term_div_data_{instance}_{lang}'.format(instance=context['instance_slug'],
-                                                                       lang=translation.get_language()))
+    termbank_contents = cache.get('termbank_contents_{instance}_{lang}'.format(instance=context['instance_slug'], lang=translation.get_language()))
+    term_div_data = cache.get('term_div_data_{instance}_{lang}'.format(instance=context['instance_slug'], lang=translation.get_language()))
     if termbank_contents is None or term_div_data is None:
         term_context = context.copy()
         term_context['tooltip'] = True
@@ -836,7 +835,7 @@ def content(request, course_slug, instance_slug, content_slug, **kwargs):
         # reversion.get_revision_for_object or sth. would be nice...
         #version_list = reversion.get_for_object(content).order_by('revision_id')
         # TODO: New form? Version.objects.get_for_object(term)[0].revision.
-        version = reversion.get_for_object(content).get(revision=revision).field_dict
+        version = Version.objects.get_for_object(content).get(revision_id=revision).field_dict
         old_content = version["content"]
         question = version["question"]
         
@@ -852,11 +851,11 @@ def content(request, course_slug, instance_slug, content_slug, **kwargs):
     evaluation = None
     answer_count = None
     if request.user.is_authenticated:
-        if request.user.is_active and content.is_answerable() and content.get_user_answers(content, request.user):
-            answer_count = content.get_user_answers(content, request.user).count()
+        if request.user.is_active and content.is_answerable() and content.get_user_answers(content, request.user, instance):
+            answer_count = content.get_user_answers(content, request.user, instance).count()
         if content_graph and (content_graph.publish_date is None or content_graph.publish_date < datetime.datetime.now()):
             try:
-                evaluation = content.get_user_evaluation(content, request.user)
+                evaluation = content.get_user_evaluation(content, request.user, instance)
             except NotImplementedError:
                 evaluation = None
 
@@ -1044,17 +1043,17 @@ def show_answers(request, user, course, instance, exercise):
     answers = []
     
     if content_type == "MULTIPLE_CHOICE_EXERCISE":
-        answers = UserMultipleChoiceExerciseAnswer.objects.filter(user=user_obj, exercise=exercise_obj)
+        answers = UserMultipleChoiceExerciseAnswer.objects.filter(user=user_obj, exercise=exercise_obj, instance=instance_obj)
     elif content_type == "CHECKBOX_EXERCISE":
-        answers = UserCheckboxExerciseAnswer.objects.filter(user=user_obj, exercise=exercise_obj)
+        answers = UserCheckboxExerciseAnswer.objects.filter(user=user_obj, exercise=exercise_obj, instance=instance_obj)
     elif content_type == "TEXTFIELD_EXERCISE":
-        answers = UserTextfieldExerciseAnswer.objects.filter(user=user_obj, exercise=exercise_obj)
+        answers = UserTextfieldExerciseAnswer.objects.filter(user=user_obj, exercise=exercise_obj, instance=instance_obj)
     elif content_type == "FILE_UPLOAD_EXERCISE":
-        answers = UserFileUploadExerciseAnswer.objects.filter(user=user_obj, exercise=exercise_obj)
+        answers = UserFileUploadExerciseAnswer.objects.filter(user=user_obj, exercise=exercise_obj, instance=instance_obj)
     elif content_type == "CODE_REPLACE_EXERCISE":
-        answers = UserCodeReplaceExerciseAnswer.objects.filter(user=user_obj, exercise=exercise_obj)
+        answers = UserCodeReplaceExerciseAnswer.objects.filter(user=user_obj, exercise=exercise_obj, instance=instance_obj)
     elif content_type == "REPEATED_TEMPLATE_EXERCISE":
-        answers = UserRepeatedTemplateExerciseAnswer.objects.filter(user=user_obj, exercise=exercise_obj)
+        answers = UserRepeatedTemplateExerciseAnswer.objects.filter(user=user_obj, exercise=exercise_obj, instance=instance_obj)
         
     answers = answers.order_by('-answer_date')
     

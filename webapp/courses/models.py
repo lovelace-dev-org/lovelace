@@ -23,6 +23,7 @@ from django.contrib.postgres.fields import ArrayField, JSONField
 import django.conf
 
 from reversion import revisions as reversion
+from reversion.models import Version
 
 import pygments
 import magic
@@ -147,7 +148,7 @@ class CourseInstance(models.Model):
     A running instance of a course. Contains details about the start and end
     dates of the course.
     """
-    name = models.CharField(max_length=255) # Translate
+    name = models.CharField(max_length=255, unique=True) # Translate
     email = models.EmailField(blank=True)   # Translate
     slug = models.SlugField(max_length=255, allow_unicode=True, blank=False)
     course = models.ForeignKey('Course', on_delete=models.CASCADE)
@@ -171,6 +172,7 @@ class CourseInstance(models.Model):
         # TODO: Ensure uniqueness! I.e. what happens when there's a clash
         # between two slugs (e.g. two courses named "programming course" and
         # "Programming_Course").
+        # NOTE: Currently ensured by making name unique
         return slugify(self.name, allow_unicode=True)
 
     def user_enroll_status(self, user):
@@ -181,12 +183,35 @@ class CourseInstance(models.Model):
             return None
 
     def save(self, *args, **kwargs):
-        if not self.slug:
-            self.slug = self.get_url_name()
-        else:
-            self.slug = slugify(self.slug, allow_unicode=True)
+        #if not self.slug:
+        self.slug = self.get_url_name()
+        #else:
+        #self.slug = slugify(self.slug, allow_unicode=True)
 
         super(CourseInstance, self).save(*args, **kwargs)
+    
+    def freeze(self, freeze_to=None):
+        """
+        Freezes the course instance by creating copies of content graph links
+        and setting their revision to latest version that predates freeze_to 
+        (latest version if it is None). Embedded links are also updated in a 
+        similar way.
+        """
+        # NOTE: freeze_to is not used yet
+        
+        old_links = list(self.contents.all())
+        
+        self.contents.clear()
+        for content_link in old_links:
+            content_link.pk = None
+            content_link.freeze(freeze_to)
+            content_link.content.update_embedded_links(self, content_link.revision)
+            self.contents.add(content_link)
+        self.save()
+        
+        embedded_links = EmbeddedLink.objects.filter(instance=self)
+        for link in embedded_links:
+            link.freeze(freeze_to)
     
     def __str__(self):
         return self.name
@@ -217,6 +242,12 @@ class ContentGraph(models.Model):
 
     def get_revision_str(self):
         return "rev. {}".format(self.revision) if self.revision is not None else "newest"
+    
+    def freeze(self, freeze_to=None):
+        if self.revision is None:
+            latest = Version.objects.get_for_object(self.content).latest("revision__date_created")
+            self.revision = latest.revision_id
+        self.save()
     
     def __str__(self):
         if not self.content:
@@ -338,19 +369,29 @@ class CalendarDate(models.Model):
             'user__last_name', 'user__userprofile__student_id',
         )
 
+
 class CalendarReservation(models.Model):
     """A single user-made reservation on a calendar date."""
     calendar_date = models.ForeignKey(CalendarDate, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
 
+
 class EmbeddedLink(models.Model):
     parent = models.ForeignKey('ContentPage', related_name='emb_parent', on_delete=models.CASCADE)
     embedded_page = models.ForeignKey('ContentPage', related_name='emb_embedded', on_delete=models.CASCADE)
-    revision = models.PositiveIntegerField()
+    revision = models.PositiveIntegerField(blank=True, null=True)
     ordinal_number = models.PositiveSmallIntegerField()
+    instance = models.ForeignKey('CourseInstance', on_delete=models.CASCADE)
 
     class Meta:
         ordering = ['ordinal_number']
+        
+    def freeze(self, freeze_to=None):
+        if self.revision is None:
+            latest = Version.objects.get_for_object(self.embedded_page).latest("revision__date_created")
+            self.revision = latest.revision_id
+            self.save()
+
 
 ## Content management
 @reversion.register()
@@ -386,7 +427,7 @@ class ContentPage(models.Model):
     content_type = models.CharField(max_length=28, default='LECTURE', choices=CONTENT_TYPE_CHOICES)
     embedded_pages = models.ManyToManyField('self', blank=True,
                                             through=EmbeddedLink, symmetrical=False,
-                                            through_fields=('parent', 'embedded_page'))
+                                            through_fields=('parent', 'embedded_page', 'instance'))
 
     feedback_questions = models.ManyToManyField(feedback.models.ContentFeedbackQuestion, blank=True)
 
@@ -406,16 +447,25 @@ class ContentPage(models.Model):
         HTML. If a rendered version already exists in the cache, use that
         instead.
         """
+        # NOTE: Has not worked with context=None for a while
+        # NOTE: Not working with request=None either
         # TODO: Cache
         # TODO: Separate caching depending on the language!
         # TODO: Save the embedded pages as embedded content links
         # TODO: Take csrf protection into account; use cookies only
+        # NOTE: with update_embedded_links existing, does this do anything?
         #       - https://docs.djangoproject.com/en/1.7/ref/contrib/csrf/
         rendered = ""
         embedded_pages = []
 
+        if revision is None:
+            content = self.content
+        else:
+            version = Version.objects.get_for_object(self).get(revision_id=revision).field_dict
+            content = version["content"]
+
         # Render the page
-        markup_gen = markupparser.MarkupParser.parse(self.content, request, context, embedded_pages)
+        markup_gen = markupparser.MarkupParser.parse(content, request, context, embedded_pages)
         for chunk in markup_gen:
             rendered += chunk
 
@@ -425,20 +475,48 @@ class ContentPage(models.Model):
         # TODO: Refactor this to save.
         if embedded_pages:
             embedded_page_objs = ContentPage.objects.filter(slug__in=list(zip(*embedded_pages))[0])
-            self.embedded_pages.clear()
+            #self.embedded_pages.get_queryset().filter(instance=context["instance"]).delete()            
+            EmbeddedLink.objects.filter(parent=self, instance=context["instance"]).delete()
             for i, (embedded_page, rev_id) in enumerate(embedded_pages):
-                if rev_id is None:
-                    rev_id = 1 # TODO: Get the current revision
                 page_obj = EmbeddedLink(
                     parent=self,
                     embedded_page=embedded_page_objs.get(slug=embedded_page),
                     revision=rev_id,
-                    ordinal_number=i
+                    ordinal_number=i,
+                    instance=context["instance"]
                 )
                 page_obj.save()
-                self.save()
+            self.save()
 
         return rendered
+    
+    def update_embedded_links(self, instance, revision=None):
+        """
+        Uses EmbeddedPageMarkup parser to discover all embedded page links
+        within the page content and creates EmbeddedLink objects based on links
+        found in the markup.
+        """
+        
+        if revision is None:
+            content = self.content
+        else:
+            version = Version.objects.get_for_object(self).get(revision_id=revision).field_dict
+            content = version["content"]
+        
+        links = markupparser.EmbeddedPageMarkup.parse_links(content, instance)
+        if links:
+            embedded_page_objs = ContentPage.objects.filter(slug__in=list(zip(*links))[0])
+            EmbeddedLink.objects.filter(parent=self, instance=instance).delete()
+            for i, (embedded_page, rev_id) in enumerate(links):
+                page_obj = EmbeddedLink(
+                    parent=self,
+                    embedded_page=embedded_page_objs.get(slug=embedded_page),
+                    revision=rev_id,
+                    ordinal_number=i,
+                    instance=instance
+                )
+                page_obj.save()
+            self.save()
 
     # TODO: -> @property human_readable_type
     def get_human_readable_type(self):
@@ -511,10 +589,10 @@ class ContentPage(models.Model):
         answer_object.evaluation = evaluation_object
         answer_object.save()
 
-    def get_user_evaluation(self, user):
+    def get_user_evaluation(self, user, instance):
         raise NotImplementedError("base type has no method 'get_user_evaluation'")
 
-    def get_user_answers(self, user, ignore_drafts=True):
+    def get_user_answers(self, user, instance, ignore_drafts=True):
         raise NotImplementedError("base type has no method 'get_user_answers'")
 
     def save(self, *args, **kwargs):
@@ -587,7 +665,7 @@ class Lecture(ContentPage):
         verbose_name = "lecture page"
         proxy = True
 
-    def get_user_evaluation(self, user):
+    def get_user_evaluation(self, user, instance):
         pass
 
 @reversion.register(follow=["multiplechoiceexerciseanswer_set"])
@@ -602,7 +680,18 @@ class MultipleChoiceExercise(ContentPage):
         super(MultipleChoiceExercise, self).save(*args, **kwargs)
 
     def get_choices(self, revision=None):
-        choices = self.multiplechoiceexerciseanswer_set.get_queryset()
+        if revision is None:
+            choices = self.multiplechoiceexerciseanswer_set.get_queryset()
+        else:
+            choices = []
+            old_version = Version.objects.get_for_object(self).get(revision=revision)._object_version.object
+            old_choices = old_version.get_type_object().multiplechoiceexerciseanswer_set
+            for choice in old_choices.all():
+                try:
+                    old_choice = Version.objects.get_for_object(choice).get(revision=revision)._object_version.object
+                    choices.append(old_choice)
+                except Version.DoesNotExist as e:
+                    pass
         return choices
 
     def save_answer(self, user, ip, answer, files, instance, revision):
@@ -655,16 +744,24 @@ class MultipleChoiceExercise(ContentPage):
             
         return {"evaluation": correct, "hints": hints, "comments": comments}
 
-    def get_user_evaluation(self, user):
-        evaluations = Evaluation.objects.filter(useranswer__usermultiplechoiceexerciseanswer__exercise_id=self.id, useranswer__user=user)
+    def get_user_evaluation(self, user, instance):
+        
+        if instance is None:
+            evaluations = Evaluation.objects.filter(useranswer__usermultiplechoiceexerciseanswer__exercise_id=self.id, useranswer__user=user)
+        else:
+            evaluations =             Evaluation.objects.filter(useranswer__usermultiplechoiceexerciseanswer__exercise_id=self.id, useranswer__user=user, useranswer__instance=instance)
+            
         if not evaluations:
             return "unanswered"
         correct = evaluations.filter(correct=True).count() > 0
         return "correct" if correct else "incorrect"
 
-    def get_user_answers(self, user, ignore_drafts=True):
+    def get_user_answers(self, user, instance, ignore_drafts=True):
         # TODO: Take instances into account
-        answers = UserMultipleChoiceExerciseAnswer.objects.filter(exercise=self, user=user)
+        if instance is None:
+            answers = UserMultipleChoiceExerciseAnswer.objects.filter(exercise=self, user=user)
+        else:
+            answers = UserMultipleChoiceExerciseAnswer.objects.filter(exercise=self, instance=instance, user=user)
         return answers
 
     class Meta:
@@ -687,16 +784,16 @@ class CheckboxExercise(ContentPage):
             choices = self.checkboxexerciseanswer_set.get_queryset()
         else:
             # We need an old version of _which_ answer choices pointed to this exercise
-            old_version = reversion.get_for_object(self).get(revision=revision).object_version.object
+            old_version = Version.objects.get_for_object(self).get(revision=revision)._object_version.object
             old_choices = old_version.get_type_object().checkboxexerciseanswer_set # TODO: Remove get_type_object dependency?
             print(old_choices.all())
             choices = []
             for choice in old_choices.all():
                 # ...and we need an old version of _each_ of those answer choices
                 try:
-                    old_choice = reversion.get_for_object(choice).get(revision=revision).object_version.object
+                    old_choice = Version.objects.get_for_object(choice).get(revision=revision)._object_version.object
                     choices.append(old_choice)
-                except reversion.Version.DoesNotExist as e:
+                except Version.DoesNotExist as e:
                     pass
         return choices
 
@@ -761,15 +858,21 @@ class CheckboxExercise(ContentPage):
 
         return {"evaluation": correct, "hints": hints, "comments": comments}
 
-    def get_user_evaluation(self, user):
-        evaluations = Evaluation.objects.filter(useranswer__usercheckboxexerciseanswer__exercise=self, useranswer__user=user)
+    def get_user_evaluation(self, user, instance):
+        if instance is None:
+            evaluations = Evaluation.objects.filter(useranswer__usercheckboxexerciseanswer__exercise=self, useranswer__user=user)
+        else:
+            evaluations = Evaluation.objects.filter(useranswer__usercheckboxexerciseanswer__exercise=self, useranswer__user=user, useranswer__instance=instance)
         if not evaluations:
             return "unanswered"
         correct = evaluations.filter(correct=True).count() > 0
         return "correct" if correct else "incorrect"
 
-    def get_user_answers(self, user, ignore_drafts=True):
-        answers = UserCheckboxExerciseAnswer.objects.filter(exercise=self, user=user)
+    def get_user_answers(self, user, instance, ignore_drafts=True):
+        if instance is None:
+            answers = UserCheckboxExerciseAnswer.objects.filter(exercise=self, user=user)
+        else:
+            answers = UserCheckboxExerciseAnswer.objects.filter(exercise=self, instance=instance, user=user)
         return answers
 
     class Meta:
@@ -875,15 +978,22 @@ class TextfieldExercise(ContentPage):
         return {"evaluation": correct, "hints": hints, "comments": comments,
                 "errors": errors}
 
-    def get_user_evaluation(self, user):
-        evaluations = Evaluation.objects.filter(useranswer__usertextfieldexerciseanswer__exercise=self, useranswer__user=user)
+    def get_user_evaluation(self, user, instance):
+        if instance is None:
+            evaluations = Evaluation.objects.filter(useranswer__usertextfieldexerciseanswer__exercise=self, useranswer__user=user)
+        else:
+            evaluations = Evaluation.objects.filter(useranswer__usertextfieldexerciseanswer__exercise=self, useranswer__user=user, useranswer__instance=instance)
+            
         if not evaluations:
             return "unanswered"
         correct = evaluations.filter(correct=True).count() > 0
         return "correct" if correct else "incorrect"
 
-    def get_user_answers(self, user, ignore_drafts=True):
-        answers = UserTextfieldExerciseAnswer.objects.filter(exercise=self, user=user)
+    def get_user_answers(self, user, instance, ignore_drafts=True):
+        if instance is None:
+            answers = UserTextfieldExerciseAnswer.objects.filter(exercise=self, user=user)
+        else:
+            answers = UserTextfieldExerciseAnswer.objects.filter(exercise=self, instance=instance, user=user)
         return answers
 
     class Meta:
@@ -947,15 +1057,21 @@ class FileUploadExercise(ContentPage):
         )
         return {"task_id": result.task_id}
 
-    def get_user_evaluation(self, user):
-        evaluations = Evaluation.objects.filter(useranswer__userfileuploadexerciseanswer__exercise=self, useranswer__user=user)
+    def get_user_evaluation(self, user, instance):
+        if instance is None:
+            evaluations = Evaluation.objects.filter(useranswer__userfileuploadexerciseanswer__exercise=self, useranswer__user=user)
+        else:
+            evaluations = Evaluation.objects.filter(useranswer__userfileuploadexerciseanswer__exercise=self, useranswer__user=user, useranswer__instance=instance)            
         if not evaluations:
             return "unanswered"
         correct = evaluations.filter(correct=True).count() > 0
         return "correct" if correct else "incorrect"
 
-    def get_user_answers(self, user, ignore_drafts=True):
-        answers = UserFileUploadExerciseAnswer.objects.filter(exercise=self, user=user)
+    def get_user_answers(self, user, instance, ignore_drafts=True):
+        if instance is None:
+            answers = UserFileUploadExerciseAnswer.objects.filter(exercise=self, user=user)
+        else:
+            answers = UserFileUploadExerciseAnswer.objects.filter(exercise=self, instance=instance, user=user)
         return answers
 
     class Meta:
@@ -1009,15 +1125,21 @@ class CodeReplaceExercise(ContentPage):
     def check_answer(self, user, ip, answer, files, answer_object, revision):
         return {}
 
-    def get_user_evaluation(self, user):
-        evaluations = Evaluation.objects.filter(useranswer__usercodereplaceexerciseanswer__exercise=self, useranswer__user=user)
+    def get_user_evaluation(self, user, instance):
+        if instance is None:
+            evaluations = Evaluation.objects.filter(useranswer__usercodereplaceexerciseanswer__exercise=self, useranswer__user=user)
+        else:
+            evaluations = Evaluation.objects.filter(useranswer__usercodereplaceexerciseanswer__exercise=self, useranswer__user=user, useranswer__instance=instance)
         if not evaluations:
             return "unanswered"
         correct = evaluations.filter(correct=True).count() > 0
         return "correct" if correct else "incorrect"
     
-    def get_user_answers(self, user, ignore_drafts=True):
-        answers = UserCodeReplaceExerciseAnswer.objects.filter(exercise=self, user=user)
+    def get_user_answers(self, user, instance, ignore_drafts=True):
+        if instance is None:
+            answers = UserCodeReplaceExerciseAnswer.objects.filter(exercise=self, user=user)
+        else:
+            answers = UserCodeReplaceExerciseAnswer.objects.filter(exercise=self, instance=instance, user=user)
         return answers
 
     class Meta:
@@ -1041,12 +1163,18 @@ class RepeatedTemplateExercise(ContentPage):
     def get_choices(self, revision=None):
         return
 
-    def get_user_answers(self, user, ignore_drafts=True):
-        answers = UserRepeatedTemplateExerciseAnswer.objects.filter(exercise=self, user=user)
+    def get_user_answers(self, user, instance, ignore_drafts=True):
+        if instance is None:
+            answers = UserRepeatedTemplateExerciseAnswer.objects.filter(exercise=self, user=user)
+        else:
+            answers = UserRepeatedTemplateExerciseAnswer.objects.filter(exercise=self, instance=instance, user=user)
         return answers
 
-    def get_user_evaluation(self, user):
-        evaluations = Evaluation.objects.filter(useranswer__userrepeatedtemplateexerciseanswer__exercise=self, useranswer__user=user)
+    def get_user_evaluation(self, user, instance):
+        if instance is None:
+            evaluations = Evaluation.objects.filter(useranswer__userrepeatedtemplateexerciseanswer__exercise=self, useranswer__user=user)
+        else:
+            evaluations = Evaluation.objects.filter(useranswer__userrepeatedtemplateexerciseanswer__exercise=self, useranswer__user=user, useranswer__instance=instance)
         if not evaluations:
             return "unanswered"
         correct = evaluations.filter(correct=True).count() > 0
