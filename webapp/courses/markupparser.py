@@ -227,6 +227,45 @@ class MarkupParser:
             yield '</table>\n'
             
 markups = []
+link_markups = []
+
+class LinkParser(MarkupParser):
+    """
+    Lite version of MarkupParser. This is used for parsing embedded links to
+    content and media objects for the purpose of creating context objects:
+     - EmbeddedLink for embedded content
+     - CourseMediaLink for embedded media files
+    """
+    
+    _markups = {}
+    
+    @classmethod
+    def parse(cls, text, instance):
+        if not cls._ready:
+            raise ParserUninitializedError("compile() not called")
+        
+        page_links = []
+        media_links = []
+        
+        lines = iter(re.split(r"\r\n|\n\r", text))
+        
+        for (block_type, matchobj), block in itertools.groupby(lines, cls._get_line_kind):
+            try:
+                block_markup = cls._markups[block_type]
+            except KeyError:
+                pass
+            else:
+                link_func = block_markup.build_links
+                link_func(matchobj, instance, page_links, media_links)
+            
+        return page_links, media_links
+            
+        
+    
+    
+    
+
+
 
 # inline = this markup is inline
 # allow_inline = if use of inline markup, such as <b> is allowed
@@ -408,8 +447,23 @@ class EmbeddedFileMarkup(Markup):
 
     @classmethod
     def block(cls, block, settings, state):
+        instance = state["context"]["instance"]
+        
         try:
-            file_object = courses.models.File.objects.get(name=settings["file_slug"])
+            try:
+                link = courses.models.CourseMediaLink.objects.get(media__name=settings["file_slug"], instance=instance)
+            except courses.models.CourseMediaLink.DoesNotExist as e:
+                file_object = courses.models.File.objects.get(name=settings["file_slug"])
+            else:
+                if link.revision is None:
+                    file_object = link.media.file
+                else:
+                    revision_object = Version.objects.get_for_object(link.media.file).get(revision=link.revision)
+                    file_object = revision_object._object_version.object
+                    
+                    # is there a better way to get parent attributes
+                    # from the version object?
+                    file_object.name = revision_object.field_dict["name"]
         except courses.models.File.DoesNotExist as e:
             # TODO: Modular errors
             yield '<div>File %s not found.</div>' % settings["file_slug"]
@@ -437,7 +491,6 @@ class EmbeddedFileMarkup(Markup):
 
             highlighted = pygments.highlight(file_contents, lexer, HtmlFormatter(nowrap=True))
         
-        instance = file_object.courseinstance
         instance_slug = instance.slug
         course_slug = instance.course.slug
         
@@ -468,7 +521,13 @@ class EmbeddedFileMarkup(Markup):
         
         return settings
 
+    @classmethod
+    def build_links(cls, matchobj, instance, page_links, media_links):
+        slug = matchobj.group("file_slug")
+        media_links.append(slug)
+
 markups.append(EmbeddedFileMarkup)
+link_markups.append(EmbeddedFileMarkup)
 
 class EmbeddedPageMarkup(Markup):
     name = "Embedded page"
@@ -580,28 +639,13 @@ class EmbeddedPageMarkup(Markup):
         return settings
 
     @classmethod
-    def parse_links(cls, text, instance):        
-        page_links = []
-        lines = iter(re.split(r"\r\n|\r|\n", text))
+    def build_links(cls, matchobj, instance, page_links, media_links):
+        slug = matchobj.group("page_slug")
+        page_links.append(slug)
         
-        link_re = re.compile(cls.regexp)
-        
-        for line in lines:
-            match = link_re.match(line)
-            if match:
-                page_slug = match.group("page_slug")
-                try:
-                    link = courses.models.EmbeddedLink.objects.get(embedded_page__slug=page_slug, instance=instance)
-                    page_revision = link.revision
-                except courses.models.EmbeddedLink.DoesNotExist:
-                    page_revision = None
-                
-                #page_revision = match.group("revision")
-                page_links.append((page_slug, page_revision))
-        
-        return page_links
 
 markups.append(EmbeddedPageMarkup)
+link_markups.append(EmbeddedPageMarkup)
 
 # TODO: Support embeddable JavaScript apps (maybe in iframe?)
 # - http://www.html5rocks.com/en/tutorials/security/sandboxed-iframes/
@@ -764,8 +808,16 @@ class EmbeddedScriptMarkup(Markup):
         except AttributeError:
             pass
         return settings
+    
+    @classmethod
+    def build_links(cls, matchobj, instance, page_links, media_links):
+        slugs = matchobj.group("script_slug") + matchobj.group("include").split(",")
+        
+        for slug in slugs:
+            media_links.append(slug)
 
 markups.append(EmbeddedScriptMarkup)
+link_markups.append(EmbeddedScriptMarkup)
 
 class EmbeddedVideoMarkup(Markup):
     name = "Embedded video"
@@ -814,7 +866,14 @@ class EmbeddedVideoMarkup(Markup):
             pass
         return settings
 
+    @classmethod
+    def build_links(cls, matchobj, instance, page_links, media_links):
+        slug = matchobj.group("video_slug")
+        media_links.append(slug)
+
+
 markups.append(EmbeddedVideoMarkup)
+link_markups.append(EmbeddedVideoMarkup)
 
 class EmptyMarkup(Markup):
     name = "Empty"
@@ -887,16 +946,30 @@ class ImageMarkup(Markup):
 
     @classmethod
     def block(cls, block, settings, state):
+        instance = state["context"]["instance"]
         try:
-            image = courses.models.Image.objects.get(name=settings["image_name"])
+            try:
+                link = courses.models.CourseMediaLink.objects.get(media__name=settings["image_name"], instance=instance)
+            except courses.models.CourseMediaLink.DoesNotExist as e:
+                image_object = courses.models.File.objects.get(name=settings["image_name"])
+            else:
+                if link.revision is None:
+                    image_object = link.media.image
+                else:
+                    revision_object = Version.objects.get_for_object(link.media.image).get(revision=link.revision)
+                    image_object = revision_object._object_version.object
+                    
+                    # is there a better way to get parent attributes
+                    # from the version object?
+                    image_object.name = revision_object.field_dict["name"]
         except courses.models.Image.DoesNotExist as e:
             # TODO: Modular errors
-            yield '<div>Image %s not found.</div>' % settings["image_name"]
+            yield '<div>File %s not found.</div>' % settings["file_slug"]
             raise StopIteration
 
-        image_url = image.fileinfo.url
-        w = image.fileinfo.width
-        h = image.fileinfo.height
+        image_url = image_object.fileinfo.url
+        w = image_object.fileinfo.width
+        h = image_object.fileinfo.height
 
         MAX_IMG_WIDTH = 1000 # TODO: Depend on the level of indentation
 
@@ -942,7 +1015,13 @@ class ImageMarkup(Markup):
             pass
         return settings
 
+    @classmethod
+    def build_links(cls, matchobj, instance, page_links, media_links):
+        slug = matchobj.group("image_name")
+        media_links.append(slug)
+
 markups.append(ImageMarkup)
+link_markups.append(ImageMarkup)
 
 class ListMarkup(Markup):
     name = "List"
@@ -1102,3 +1181,5 @@ markups.append(TeXMarkup)
 
 MarkupParser.add(*markups)
 MarkupParser.compile()
+LinkParser.add(*link_markups)
+LinkParser.compile()

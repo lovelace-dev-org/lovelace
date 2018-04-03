@@ -41,7 +41,7 @@ urlpatterns = [
 
     # Download views
     url(r'^file-download/embedded/(?P<course_slug>[^/]+)/(?P<instance_slug>[^/]+)/(?P<file_slug>[^/]+)/$', views.download_embedded_file, name='download_embedded_file'),
-    url(r'^file-download/media/(?P<instance_id>\d+)/(?P<file_slug>[^/]+)/(?P<field_name>[^/]+)/$', views.download_media_file, name='download_media_file'),
+    url(r'^file-download/media/(?P<file_slug>[^/]+)/(?P<field_name>[^/]+)/$', views.download_media_file, name='download_media_file'),
     url(r'^file-download/template-backend/(?P<exercise_id>\d+)/(?P<filename>[^/]+)/$',
         views.download_template_exercise_backend, name="download_template_exercise_backend"),
 

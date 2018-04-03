@@ -162,19 +162,15 @@ class CourseMediaAccess(admin.ModelAdmin):
         if request.user.is_superuser:
             return qs
         
+        
+        edited = Version.objects.get_for_model(model).filter(revision__user=request.user).values_list("object_id", flat=True)
+        
         user_groups = request.user.groups.get_queryset()
         
         return qs.filter(
-            Q(owner=request.user) |
-            Q(courseinstance__course__staff_group__in=user_groups)
+            Q(id__in=list(edited)) |
+            Q(coursemedialink__instance__course__staff_group__in=user_groups)
         ).distinct()
-    
-    def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        if db_field.name == 'courseinstance':
-            if not request.user.is_superuser:
-                kwargs['queryset'] = CourseInstance.objects.filter(course__staff_group__user=request.user)
-        
-        return super().formfield_for_foreignkey(db_field, request, **kwargs)
     
     def get_queryset(self, request):
         return CourseMediaAccess.media_access_list(request, self.model)
@@ -185,7 +181,7 @@ class CourseMediaAccess(admin.ModelAdmin):
         
         if request.user.is_staff:
             if obj:
-                return self._match_groups(request.user, obj)
+                return Version.objects.get_for_object(obj).filter(revision__user=request.user).exists() or self._match_groups(request.user, obj)
             else:            
                 return True
         else:
@@ -197,15 +193,19 @@ class CourseMediaAccess(admin.ModelAdmin):
         
         if request.user.is_staff:
             if obj:
-                return self._match_groups(request.user, obj)
+                return Version.objects.get_for_object(obj).filter(revision__user=request.user).exists() or self._match_groups(request.user, obj)
             else:            
                 return True
         else:
             return False            
 
     def _match_groups(self, user, obj):
+        
         user_groups = user.groups.get_queryset()
-        return user in obj.courseinstance.course.staff_group.user_set.get_queryset()
+        if obj.coursemedialink_set.get_queryset().filter(instance__course__staff_group__in=user_groups).distinct():
+            return True
+        
+        return False
         
     
 
@@ -488,7 +488,7 @@ class CalendarAdmin(admin.ModelAdmin):
     inlines = [CalendarDateAdmin]
     search_fields = ("name",)
 
-class FileAdmin(CourseMediaAccess):
+class FileAdmin(CourseMediaAccess, VersionAdmin):
     def save_model(self, request, obj, form, change):
         if not change:
             obj.owner = request.user
@@ -500,11 +500,8 @@ class FileAdmin(CourseMediaAccess):
     formfield_overrides = {
         models.FileField: {'widget': AdminFileWidget}
     }
-        
-    
-    
 
-class ImageAdmin(CourseMediaAccess):
+class ImageAdmin(CourseMediaAccess, VersionAdmin):
     def save_model(self, request, obj, form, change):
         if not change:
             obj.owner = request.user
@@ -515,7 +512,7 @@ class ImageAdmin(CourseMediaAccess):
     list_display = ('name', 'description',)
     list_per_page = 500
 
-class VideoLinkAdmin(CourseMediaAccess):
+class VideoLinkAdmin(CourseMediaAccess, VersionAdmin):
     def save_model(self, request, obj, form, change):
         if not change:
             obj.owner = request.user

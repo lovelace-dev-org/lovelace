@@ -2,7 +2,7 @@ from modeltranslation.translator import register, TranslationOptions
 
 from courses.models import Course, CourseInstance,\
     \
-    File, Image, VideoLink, CalendarDate, Term, TermTab, TermLink,\
+    CourseMedia, File, Image, VideoLink, CalendarDate, Term, TermTab, TermLink,\
     \
     ContentPage, Lecture, MultipleChoiceExercise, CheckboxExercise,\
     TextfieldExercise, CodeReplaceExercise, CodeInputExercise,\
@@ -30,17 +30,21 @@ class CourseInstanceTranslationOptions(TranslationOptions):
 
 ## Page content objects
 
+@register(CourseMedia)
+class CourseMediaTranslationOptions(TranslationOptions):
+    fields = ('owner', )
+
 @register(File)
 class FileTranslationOptions(TranslationOptions):
-    fields = ('owner', 'fileinfo', 'download_as')
+    fields = ('fileinfo', 'download_as')
 
 @register(Image)
 class ImageTranslationOptions(TranslationOptions):
-    fields = ('owner', 'description', 'fileinfo',)
+    fields = ('description', 'fileinfo',)
 
 @register(VideoLink)
 class VideoLinkTranslationOptions(TranslationOptions):
-    fields = ('owner', 'link', 'description',)
+    fields = ('link', 'description',)
 
 @register(Term)
 class TermTranslationOptions(TranslationOptions):

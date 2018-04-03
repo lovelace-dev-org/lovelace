@@ -45,7 +45,7 @@ import django.conf
 from django.contrib import auth
 from django.shortcuts import redirect
 
-from utils.access import is_course_staff
+from utils.access import is_course_staff, determine_media_access
 from utils.files import generate_download_response
 
 try:
@@ -1116,36 +1116,34 @@ def download_embedded_file(request, course_slug, instance_slug, file_slug):
     """
     
     try:
-        fileobject = File.objects.get(name=file_slug)
-    except File.DoesNotExist as e:
+        file_link = CourseMediaLink.objects.get(media__name=file_slug, instance__slug=instance_slug)
+    except CourseMediaLink.DoesNotExist as e:
         return HttpResponseNotFound("No such file {}".format(file_slug))
     
-    fs_path = os.path.join(getattr(settings, "PRIVATE_STORAGE_FS_PATH", settings.MEDIA_ROOT), fileobject.fileinfo.name)
+    if file_link.revision is None:
+        file_object = file_link.media.file
+    else:
+        file_object = Version.objects.get_for_object(file_link.media.file).get(revision=file_link.revision)._object_version.object
+    
+    fs_path = os.path.join(getattr(settings, "PRIVATE_STORAGE_FS_PATH", settings.MEDIA_ROOT), file_object.fileinfo.name)
 
-    return generate_download_response(fs_path, fileobject.download_as)
+    return generate_download_response(fs_path, file_object.download_as)
 
     
-def download_media_file(request, instance_id, file_slug, field_name):
+def download_media_file(request, file_slug, field_name):
     """
     This view function is for downloading media files via the file admin interface.
     """
-        
-    # Try to find the course instance first (404 if not found)
-    try:
-        instance_object = CourseInstance.objects.get(id=instance_id)
-    except CourseInstance.DoesNotExist as e:
-        return HttpResponseNotFound(_("This course instance does't exist"))
-                        
-    # Determine staff access to the instance
-    if not is_course_staff(request.user, instance_object):
-        return HttpResponseForbidden(_("Only course main responsible teachers are allowed to download media files through this interface."))
     
     # Try to find the file 
     try:
-        fileobject = File.objects.get(name=file_slug, courseinstance=instance_object)
+        fileobject = File.objects.get(name=file_slug)
     except FileExerciseTestIncludeFile.DoesNotExist as e:
         return HttpResponseNotFound(_("Requested file does not exist."))
     
+    if not determine_media_access(request.user, fileobject):
+        return HttpResponseForbidden(_("Only course main responsible teachers are allowed to download media files through this interface."))
+                        
     try:
         fs_path = os.path.join(getattr(settings, "PRIVATE_STORAGE_FS_PATH", settings.MEDIA_ROOT), getattr(fileobject, field_name).name)
     except AttributeError as e:

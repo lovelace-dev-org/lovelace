@@ -39,6 +39,23 @@ def determine_access(user, content, responsible_only=False):
     
     return False
 
+def determine_media_access(user, media):
+    
+    if not user.is_authenticated:
+        return False
+    
+    if user.is_superuser:
+        return True
+    
+    if user.is_staff:
+        if Version.objects.get_for_object(media).filter(revision__user=user).exists():
+            return True
+        elif obj.coursemedialink_set.get_queryset().filter(instance__course__staff_group__in=user_groups).distinct():
+            return True            
+        
+    return False
+    
+
 def is_course_staff(user, instance, responsible_only=False):
     
     if not user.is_authenticated:

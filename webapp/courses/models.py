@@ -212,6 +212,10 @@ class CourseInstance(models.Model):
         embedded_links = EmbeddedLink.objects.filter(instance=self)
         for link in embedded_links:
             link.freeze(freeze_to)
+            
+        media_links = CourseMediaLink.objects.filter(instance=self)
+        for link in media_links:
+            link.freeze(freeze_to)
     
     def __str__(self):
         return self.name
@@ -262,13 +266,42 @@ class ContentGraph(models.Model):
 def get_file_upload_path(instance, filename):
     return os.path.join("files", "%s" % (filename))
 
-class File(models.Model):
+@reversion.register()
+class CourseMedia(models.Model):
+    """
+    Top level model for embedded media.
+    """
+    
+    # NOTE: owner is now an obsolete field (versioning serves the same purpose)
+    owner = models.ForeignKey(User, null=True, blank=True, verbose_name="Uploader", on_delete=models.SET_NULL)
+    name = models.CharField(verbose_name='Name for reference in content',max_length=200,unique=True)
+
+
+class CourseMediaLink(models.Model):
+    """
+    Context manager for embedded media.
+    """
+    
+    media = models.ForeignKey(CourseMedia, on_delete=models.CASCADE)
+    parent = models.ForeignKey("ContentPage", on_delete=models.CASCADE, null=True)
+    instance = models.ForeignKey(CourseInstance, verbose_name="Course instance", on_delete=models.CASCADE)
+    revision = models.PositiveIntegerField(verbose_name="Revision to display", blank=True, null=True)
+    
+    
+    class Meta:
+        unique_together = ("instance", "media", "parent")
+        
+    def freeze(self, freeze_to=None):
+        if self.revision is None:
+            latest = Version.objects.get_for_object(self.media).latest("revision__date_created")
+            self.revision = latest.revision_id
+            self.save()
+
+@reversion.register(follow=["coursemedia_ptr"])
+class File(CourseMedia):
     """Metadata of an embedded or attached file that an admin has uploaded."""
     # TODO: Make the uploading user the default and don't allow it to change
     # TODO: Slug and file name separately
-    courseinstance = models.ForeignKey(CourseInstance, verbose_name="Course instance", null=True, on_delete=models.SET_NULL)
-    owner = models.ForeignKey(User, null=True, blank=True, verbose_name="Uploader", on_delete=models.SET_NULL) # Translate
-    name = models.CharField(verbose_name='Name for reference in content',max_length=200,unique=True)
     date_uploaded = models.DateTimeField(verbose_name='date uploaded', auto_now_add=True)
     typeinfo = models.CharField(max_length=200)
     fileinfo = models.FileField(max_length=255, upload_to=get_file_upload_path, storage=upload_storage) # Translate
@@ -277,15 +310,14 @@ class File(models.Model):
     def __str__(self):
         return self.name
 
+
 def get_image_upload_path(instance, filename):
     return os.path.join("images", "%s" % (filename))
 
-class Image(models.Model):
+@reversion.register(follow=["coursemedia_ptr"])
+class Image(CourseMedia):
     """Image"""
     # TODO: Make the uploading user the default and don't allow it to change
-    courseinstance = models.ForeignKey(CourseInstance, verbose_name="Course instance", null=True, on_delete=models.SET_NULL)
-    owner = models.ForeignKey(User, null=True, blank=True, verbose_name="Uploader", on_delete=models.SET_NULL) # Translate
-    name = models.CharField(verbose_name='Name for reference in content', max_length=200, unique=True)
     date_uploaded = models.DateTimeField(verbose_name='date uploaded', auto_now_add=True)
     description = models.CharField(max_length=500) # Translate
     fileinfo = models.ImageField(upload_to=get_image_upload_path) # Translate
@@ -293,12 +325,10 @@ class Image(models.Model):
     def __str__(self):
         return self.name
 
-class VideoLink(models.Model):
+@reversion.register(follow=["coursemedia_ptr"])
+class VideoLink(CourseMedia):
     """Youtube link for embedded videos"""
     # TODO: Make the adding user the default and don't allow it to change
-    courseinstance = models.ForeignKey(CourseInstance, verbose_name="Course instance", null=True, on_delete=models.SET_NULL)
-    owner = models.ForeignKey(User, null=True, blank=True, verbose_name="Added by", on_delete=models.SET_NULL) # Translate
-    name = models.CharField(verbose_name='Name for reference in content', max_length=200, unique=True)
     link = models.URLField() # Translate
     description = models.CharField(max_length=500) # Translate
 
@@ -473,28 +503,28 @@ class ContentPage(models.Model):
         # Important! If we save the object with its old version info, it will
         # overwrite the current version!
         # TODO: Refactor this to save.
-        if embedded_pages:
-            embedded_page_objs = ContentPage.objects.filter(slug__in=list(zip(*embedded_pages))[0])
-            #self.embedded_pages.get_queryset().filter(instance=context["instance"]).delete()            
-            EmbeddedLink.objects.filter(parent=self, instance=context["instance"]).delete()
-            for i, (embedded_page, rev_id) in enumerate(embedded_pages):
-                page_obj = EmbeddedLink(
-                    parent=self,
-                    embedded_page=embedded_page_objs.get(slug=embedded_page),
-                    revision=rev_id,
-                    ordinal_number=i,
-                    instance=context["instance"]
-                )
-                page_obj.save()
-            self.save()
+        #if embedded_pages:
+            #embedded_page_objs = ContentPage.objects.filter(slug__in=list(zip(*embedded_pages))[0])
+            ##self.embedded_pages.get_queryset().filter(instance=context["instance"]).delete()            
+            #EmbeddedLink.objects.filter(parent=self, instance=context["instance"]).delete()
+            #for i, (embedded_page, rev_id) in enumerate(embedded_pages):
+                #page_obj = EmbeddedLink(
+                    #parent=self,
+                    #embedded_page=embedded_page_objs.get(slug=embedded_page),
+                    #revision=rev_id,
+                    #ordinal_number=i,
+                    #instance=context["instance"]
+                #)
+                #page_obj.save()
+            #self.save()
 
         return rendered
     
     def update_embedded_links(self, instance, revision=None):
         """
-        Uses EmbeddedPageMarkup parser to discover all embedded page links
-        within the page content and creates EmbeddedLink objects based on links
-        found in the markup.
+        Uses LinkMarkupParser to discover all embedded page links
+        within the page content and creates EmbeddedLink and CourseMediaLink 
+        objects based on links found in the markup.
         """
         
         if revision is None:
@@ -503,20 +533,42 @@ class ContentPage(models.Model):
             version = Version.objects.get_for_object(self).get(revision_id=revision).field_dict
             content = version["content"]
         
-        links = markupparser.EmbeddedPageMarkup.parse_links(content, instance)
-        if links:
-            embedded_page_objs = ContentPage.objects.filter(slug__in=list(zip(*links))[0])
-            EmbeddedLink.objects.filter(parent=self, instance=instance).delete()
-            for i, (embedded_page, rev_id) in enumerate(links):
-                page_obj = EmbeddedLink(
-                    parent=self,
-                    embedded_page=embedded_page_objs.get(slug=embedded_page),
-                    revision=rev_id,
-                    ordinal_number=i,
-                    instance=instance
-                )
-                page_obj.save()
-            self.save()
+        page_links, media_links = markupparser.LinkParser.parse(content, instance)
+        old_page_links = list(EmbeddedLink.objects.filter(instance=instance, parent=self).values_list("embedded_page__slug", flat=True))
+        old_media_links = list(CourseMediaLink.objects.filter(instance=instance, parent=self).values_list("media__name", flat=True))
+        
+        removed_page_links = set(old_page_links).difference(page_links)
+        removed_media_links = set(old_media_links).difference(media_links)
+        added_page_links = set(page_links).difference(old_page_links)
+        added_media_links = set(media_links).difference(old_media_links)
+    
+        EmbeddedLink.objects.filter(embedded_page__slug__in=removed_page_links).delete()
+        CourseMediaLink.objects.filter(media__name__in=removed_media_links).delete()
+        
+        for link_slug in added_page_links:
+            link_obj = EmbeddedLink(
+                parent=self,
+                embedded_page=ContentPage.objects.get(slug=link_slug),
+                revision=None,
+                ordinal_number=page_links.index(link_slug),
+                instance=instance
+            )
+            link_obj.save()
+
+        for link_slug in added_media_links:
+            link_obj = CourseMediaLink(
+                parent=self,
+                media=CourseMedia.objects.get(name=link_slug),
+                instance=instance,
+                revision=None
+            )
+            link_obj.save()
+            
+        for i, link_slug in enumerate(page_links):
+            link_obj = EmbeddedLink.objects.get(embedded_page__slug=link_slug, instance=instance, parent=self)
+            link_obj.ordinal_number = i
+            link_obj.save()
+            
 
     # TODO: -> @property human_readable_type
     def get_human_readable_type(self):
