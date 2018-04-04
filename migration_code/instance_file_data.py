@@ -1,7 +1,7 @@
 from django.db import migrations, models
 import django.db.models.deletion
 
-def move_instance_to_link(apps, schema_editor):
+def ifile_instance_to_course(apps, schema_editor):
     
     InstanceIncludeFile = apps.get_model("courses", "InstanceIncludeFile")
     for ifile in InstanceIncludeFile.objects.all():        
@@ -32,7 +32,6 @@ class Migration(migrations.Migration):
 
     operations = [
         
-        migrations.RunPython(create_coursemedia_for_file),
-        migrations.RunPython(create_coursemedia_for_image),        migrations.RunPython(create_coursemedia_for_video)
-        
+        migrations.RunPython(ifile_instance_to_course),
+        migrations.RunPython(create_instance_file_links)        
     ]
