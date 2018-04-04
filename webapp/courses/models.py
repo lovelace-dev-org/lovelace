@@ -166,6 +166,7 @@ class CourseInstance(models.Model):
     
     frontpage = models.ForeignKey('Lecture', blank=True, null=True, on_delete=models.SET_NULL) # TODO: Create one automatically!
     contents = models.ManyToManyField('ContentGraph', blank=True)   # TODO: Rethink the content graph system!
+    frozen = models.BooleanField(verbose_name="Freeze this instance", default=False)
 
     def get_url_name(self):
         """Creates a URL and HTML5 ID field friendly version of the name."""
@@ -194,8 +195,8 @@ class CourseInstance(models.Model):
         """
         Freezes the course instance by creating copies of content graph links
         and setting their revision to latest version that predates freeze_to 
-        (latest version if it is None). Embedded links are also updated in a 
-        similar way.
+        (latest version if it is None). Embedded links and instance file links
+        are also updated in a similar way.
         """
         # NOTE: freeze_to is not used yet
         
@@ -216,6 +217,13 @@ class CourseInstance(models.Model):
         media_links = CourseMediaLink.objects.filter(instance=self)
         for link in media_links:
             link.freeze(freeze_to)
+            
+        ifile_links = InstanceIncludeFileToInstanceLink.objects.filter(instance=self)
+        for link in ifile_links:
+            link.freeze(freeze_to)
+            
+        self.frozen = True
+        self.save()
     
     def __str__(self):
         return self.name
@@ -1130,7 +1138,7 @@ class FileUploadExercise(ContentPage):
         verbose_name = "file upload exercise"
         proxy = True
 
-@reversion.register()
+#@reversion.register()
 class CodeInputExercise(ContentPage):
     # TODO: A textfield exercise variant that's run like a file exercise (like in Viope)
     def save(self, *args, **kwargs):
@@ -1152,7 +1160,7 @@ class CodeInputExercise(ContentPage):
         verbose_name = "code input exercise"
         proxy = True
 
-@reversion.register()
+#@reversion.register()
 class CodeReplaceExercise(ContentPage):
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -1552,26 +1560,48 @@ class FileExerciseTestExpectedStderr(FileExerciseTestExpectedOutput):
 # Include files
 @reversion.register()
 class InstanceIncludeFileToExerciseLink(models.Model):
+    """
+    Context model for shared course files for file exercises. 
+    """
+    
     include_file = models.ForeignKey('InstanceIncludeFile', on_delete=models.CASCADE)
     exercise = models.ForeignKey('ContentPage', on_delete=models.CASCADE)
-
+    
     # The settings are determined per exercise basis
     file_settings = models.OneToOneField('IncludeFileSettings', on_delete=models.CASCADE)
 
-def get_instancefile_path(instance, filename):
+def get_instancefile_path(included_file, filename):
     return os.path.join(
-        "{course_instance}_files".format(course_instance=instance.instance),
+        "{course}_files".format(course=included_file.course),
         "{filename}".format(filename=filename), # TODO: Versioning?
         # TODO: Language?
     )
 
+
+class InstanceIncludeFileToInstanceLink(models.Model):
+    
+    revision = models.PositiveIntegerField(blank=True, null=True)
+    instance = models.ForeignKey('CourseInstance', on_delete=models.CASCADE)
+    include_file = models.ForeignKey('InstanceIncludeFile', on_delete=models.CASCADE)
+    
+    class Meta:
+        unique_together = ("instance", "include_file")
+    
+    def freeze(self, freeze_to=None):
+        if self.revision is None:
+            latest = Version.objects.get_for_object(self.include_file).latest("revision__date_created")
+            self.revision = latest.revision_id
+            self.save()
+    
+
+# NOTE: rename?
 @reversion.register()
 class InstanceIncludeFile(models.Model):
     """
-    A file that's linked to an instance and can be included in any exercise
+    A file that's linked to a course and can be included in any exercise
     that needs it. (File upload, code input, code replace, ...)
     """
-    instance = models.ForeignKey(CourseInstance, null=True, on_delete=models.SET_NULL)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)    
     exercises = models.ManyToManyField(ContentPage, blank=True,
                                        through='InstanceIncludeFileToExerciseLink',
                                        through_fields=('include_file', 'exercise'))
@@ -1579,11 +1609,30 @@ class InstanceIncludeFile(models.Model):
     description = models.TextField(blank=True, null=True) # Translate
     fileinfo = models.FileField(max_length=255, upload_to=get_instancefile_path, storage=upload_storage) # Translate
 
+    def save(self, *args, **kwargs):
+        new = False
+        if self.pk == None:
+            new = True            
+        super().save(*args, **kwargs)        
+        if new:
+            self.create_instance_links()        
+
     def get_file_contents(self):
         file_contents = None
         with open(self.fileinfo.path, 'rb') as f:
             file_contents = f.read()
         return file_contents
+    
+    def create_instance_links(self):
+        active_instances = CourseInstance.objects.filter(course=self.course, frozen=False)
+        for instance in active_instances:
+            link = InstanceIncludeFileToInstanceLink(
+                revision=None,
+                instance=instance,
+                include_file=self
+            )
+            link.save()
+            
 
 def get_testfile_path(instance, filename):
     return os.path.join(

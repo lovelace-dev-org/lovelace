@@ -87,6 +87,7 @@
             <option value="OUTPUT"{% if include_file.file_settings.purpose == "OUTPUT" %} selected="selected"{% endif %}>Expected output file</option>
           </optgroup>
           <optgroup label="Executable files">
+            <option value="LIBRARY"{% if include_file.file_settings.purpose == "LIBRARY" %} selected="selected"{% endif %}>Library file</option>
             <option value="REFERENCE"{% if include_file.file_settings.purpose == "REFERENCE" %} selected="selected"{% endif %}>Reference implementation</option>
             <option value="INPUTGEN"{% if include_file.file_settings.purpose == "INPUTGEN" %} selected="selected"{% endif %}>Input generator</option>
             <option value="WRAPPER"{% if include_file.file_settings.purpose == "WRAPPER" %} selected="selected"{% endif %}>Wrapper for uploaded code</option>

@@ -15,6 +15,7 @@ from django.conf import settings as django_settings
 from django.contrib.auth.models import User
 
 from reversion import revisions as reversion
+from reversion.models import Version
 
 import redis
 
@@ -96,7 +97,7 @@ def run_tests(self, user_id, instance_id, exercise_id, answer_id, lang_code, rev
         exercise_object = cm.FileUploadExercise.objects.get(id=exercise_id)
 
         if revision is not None:
-            old_exercise_object = reversion.get_for_object(exercise_object).get(revision=revision).object_version.object
+            old_exercise_object = Version.objects.get_for_object(exercise_object).get(revision=revision)._object_version.object
             exercise_object = old_exercise_object
     except cm.FileUploadExercise.DoesNotExist as e:
         # TODO: Log weird request
@@ -335,11 +336,14 @@ def run_test(self, test_id, answer_id, instance_id, exercise_id, student=False, 
     """
     Runs all the stages of the given test.
     """
+    
+    print("Revision:", revision)
+    
     try:
         test = cm.FileExerciseTest.objects.get(id=test_id)
 
         if revision is not None:
-            old_test = reversion.get_for_object(test).get(revision=revision).object_version.object
+            old_test = Version.objects.get_for_object(test).get(revision=revision)._object_version.object
             test = old_test
     except cm.FileExerciseTest.DoesNotExist as e:
         # TODO: Log weird request
@@ -359,7 +363,7 @@ def run_test(self, test_id, answer_id, instance_id, exercise_id, student=False, 
 
         if revision is not None:
             old_exercise_file_objects = [
-                reversion.get_for_object(exercise_file_object).get(revision=revision).object_version.object
+                Version.objects.get_for_object(exercise_file_object).get(revision=revision)._object_version.object
                 for exercise_file_object in exercise_file_objects
             ]
             exercise_file_objects = old_exercise_file_objects
@@ -375,12 +379,12 @@ def run_test(self, test_id, answer_id, instance_id, exercise_id, student=False, 
             exercise=exercise_id
         )
 
-        if revision is not None:
-            old_instance_file_links = [
-                reversion.get_for_object(instance_file_link).get(revision=revision).object_version.object
-                for instance_file_link in instance_file_links
-                ]
-            instance_file_links = old_instance_file_links
+        #if revision is not None:
+        #    old_instance_file_links = [
+        #        Version.objects.get_for_object(instance_file_link).get(revision=revision)._object_version.object
+        #        for instance_file_link in instance_file_links
+        #        ]
+        #    instance_file_links = old_instance_file_links
     except cm.InstanceIncludeFileToExerciseLink.DoesNotExist as e:
         # TODO: Log weird request
         return # TODO: Find a way to signal the failure to the user
@@ -394,12 +398,12 @@ def run_test(self, test_id, answer_id, instance_id, exercise_id, student=False, 
             return # TODO: Find a way to signal the failure to the user
         
         files_to_check = answer_object.get_returned_files_raw()
-        print("".join("%s:\n%s" % (n, c) for n, c in files_to_check.items()))
+        #print("".join("%s:\n%s" % (n, c) for n, c in files_to_check.items()))
     else:
         files_to_check = {f.file_settings.name: f.get_file_contents()
                           for f in exercise_file_objects
                           if f.file_settings.purpose == "REFERENCE"}
-        print("".join("%s:\n%s" % (n, c) for n, c in files_to_check.items()))
+        #print("".join("%s:\n%s" % (n, c) for n, c in files_to_check.items()))
 
     # TODO: Replace with the directory of the ramdisk
     temp_dir_prefix = os.path.join("/", "tmp")
@@ -407,26 +411,35 @@ def run_test(self, test_id, answer_id, instance_id, exercise_id, student=False, 
     test_results = {test_id: {"fail": True, "name": test.name, "stages": {}}}
     with tempfile.TemporaryDirectory(dir=temp_dir_prefix) as test_dir:
         # Write the exercise files required by this test
-        for name, contents in ((f.file_settings.name, f.get_file_contents())
+        for name, fileinfo, contents in ((f.file_settings.name, f.fileinfo, f.get_file_contents())
                                for f in exercise_file_objects
                                if f in test.required_files.all() and
-                               f.file_settings.purpose in ("INPUT", "WRAPPER", "TEST")):
+                               f.file_settings.purpose in ("INPUT", "WRAPPER", "TEST", "LIBRARY")):
             fpath = os.path.join(test_dir, name)
             with open(fpath, "wb") as fd:
                 fd.write(contents)
-            print("Wrote required exercise file {}".format(fpath))
+            #print("Wrote required exercise file {}".format(fpath))
+            print("Wrote required exercise file {} from {}".format(fpath, fileinfo))
             # TODO: chmod, chown, chgrp
 
-        # Write the instance files required by this test
-        for name, contents in ((fl.file_settings.name, fl.include_file.get_file_contents())
-                               for fl in instance_file_links
-                               if fl.include_file in test.required_instance_files.all() and
-                               fl.file_settings.purpose in ('INPUT', 'WRAPPER', 'TEST')):
-            fpath = os.path.join(test_dir, name)
-            with open(fpath, 'wb') as fd:
-                fd.write(contents)
-            print("Wrote required instance file {}".format(fpath))
-            # TODO: chmod, chown, chgrp
+        for if_link in instance_file_links:
+            if if_link.include_file in test.required_instance_files.all():                
+                settings = if_link.file_settings
+                if settings.purpose in ("INPUT", "WRAPPER", "TEST", "LIBRARY"):
+                    name = settings.name
+                    instance_link = cm.InstanceIncludeFileToInstanceLink.objects.get(include_file=if_link.include_file, instance__id=instance_id)
+                    
+                    if instance_link.revision is None:
+                        file_obj = if_link.include_file
+                    else:
+                        file_obj = Version.objects.get_for_object(if_link.include_file).get(revision=instance_link.revision)._object_version.object
+                        
+                    contents = file_obj.get_file_contents()
+                    fpath = os.path.join(test_dir, name)
+                    
+                    with open(fpath, "wb") as fd:
+                        fd.write(contents)
+                    print("Wrote required instance file {} from {}".format(fpath, file_obj.fileinfo))
 
         # Write the files under test
         for name, contents in files_to_check.items():
@@ -441,7 +454,7 @@ def run_test(self, test_id, answer_id, instance_id, exercise_id, student=False, 
             #self.update_state(state="PROGRESS",
                               #meta={"current": i, "total": len(stages)})
             if revision is not None:
-                old_stage = reversion.get_for_object(stage).get(revision=revision).object_version.object
+                old_stage = Version.objects.get_for_object(stage).get(revision=revision)._object_version.object
                 stage = old_stage
             
             stage_results = run_stage(stage.id, test_dir, temp_dir_prefix,
@@ -509,7 +522,7 @@ def run_stage(self, stage_id, test_dir, temp_dir_prefix, files_to_check, revisio
     # DEBUG #
     for i, cmd in enumerate(commands):
         if revision is not None:
-            old_cmd = reversion.get_for_object(cmd).get(revision=revision).object_version.object
+            old_cmd = Version.objects.get_for_object(cmd).get(revision=revision)._object_version.object
             cmd = old_cmd
         
         results = run_command_chainable(
@@ -527,7 +540,7 @@ def run_stage(self, stage_id, test_dir, temp_dir_prefix, files_to_check, revisio
 
     #stage_results.update(results)
 
-    print(stage_results)
+    #print(stage_results)
 
     return stage_results
     
@@ -634,7 +647,7 @@ def run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check, revisio
         command = cm.FileExerciseTestCommand.objects.get(id=cmd_id)
 
         if revision is not None:
-            old_command = reversion.get_for_object(command).get(revision=revision).object_version.object
+            old_command = Version.objects.get_for_object(command).get(revision=revision)._object_version.object
             command = old_command
     except cm.FileExerciseTestCommand.DoesNotExist as e:
         # TODO: Log weird request
@@ -896,8 +909,8 @@ def generate_repeated_template_session(self, user_id, instance_id, exercise_id, 
         stdout.close()
         stderr.close()
 
-        print("output", output)
-        print("errors", errors)
+        #print("output", output)
+        #print("errors", errors)
 
     try:
         output_json = json.loads(output)

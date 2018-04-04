@@ -21,7 +21,7 @@ from reversion import revisions as reversion
 from courses.models import ContentGraph, EmbeddedLink
 
 # The editable models
-from courses.models import ContentPage, CourseInstance, FileUploadExercise, FileExerciseTest, FileExerciseTestStage,\
+from courses.models import Course, ContentPage, CourseInstance, FileUploadExercise, FileExerciseTest, FileExerciseTestStage,\
     FileExerciseTestCommand, FileExerciseTestExpectedOutput, FileExerciseTestExpectedStdout,\
     FileExerciseTestExpectedStderr, FileExerciseTestIncludeFile, IncludeFileSettings, \
     Hint, InstanceIncludeFile, InstanceIncludeFileToExerciseLink, File, RepeatedTemplateExercise, RepeatedTemplateExerciseBackendFile
@@ -399,7 +399,7 @@ def file_upload_exercise(request, exercise_id=None, action=None):
     instance_files = InstanceIncludeFile.objects.all()
     instance_files_linked = [link.include_file for link in instance_file_links]
     instance_files_not_linked = [f for f in instance_files if f not in instance_files_linked]
-    instances = CourseInstance.objects.all().order_by('course')
+    instances = Course.objects.all().order_by('name')
 
     if request.method == "POST":
         form_contents = request.POST
@@ -682,7 +682,7 @@ def get_instance_files(request):
     for instance_file in instance_files:
         instance_file_json = {
             "id" : instance_file.id,
-            "instance_id" : instance_file.instance.id,
+            "instance_id" : instance_file.course.id,
             "instance_names" : {},
             "default_names" : {},
             "descriptions" : {},
@@ -699,7 +699,7 @@ def get_instance_files(request):
             except ValueError:
                 url = ""
             instance_file_json["urls"][lang_code] = url
-            instance_file_json["instance_names"][lang_code] = getattr(instance_file.instance, name_attr) or ""
+            instance_file_json["instance_names"][lang_code] = getattr(instance_file.course, name_attr) or ""
             instance_file_json["default_names"][lang_code] = getattr(instance_file, default_name_attr) or ""
             instance_file_json["descriptions"][lang_code] = getattr(instance_file, description_attr) or ""
         result.append(instance_file_json)
@@ -759,9 +759,9 @@ def edit_instance_files(request):
                     setattr(instance_file, "description_{}".format(lang_code), description)
                     file_changed = True
 
-            instance_id = cleaned_data.get("instance_file_instance_[{id}]_{lang}".format(id=instance_file.id, lang=default_lang))
-            if str(instance_file.instance.id) != instance_id:
-                instance_file.instance_id = instance_id
+            course_id = cleaned_data.get("instance_file_instance_[{id}]_{lang}".format(id=instance_file.id, lang=default_lang))
+            if str(instance_file.course.id) != course_id:
+                instance_file.course_id = course_id
                 file_changed = True
 
             if file_changed:
@@ -780,7 +780,7 @@ def edit_instance_files(request):
                 setattr(instance_file, "default_name_{}".format(lang_code), cleaned_data.get(default_name_field))
                 setattr(instance_file, "description_{}".format(lang_code), cleaned_data.get(description_field))
             instance_field = "instance_file_instance_[{id}]_{lang}".format(id=file_id, lang=default_lang)
-            instance_file.instance_id = cleaned_data.get(instance_field)
+            instance_file.course_id = cleaned_data.get(instance_field)
             instance_file.save()
             new_instance_files[file_id] = instance_file.id
 
