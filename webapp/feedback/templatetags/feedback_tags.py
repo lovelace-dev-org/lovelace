@@ -11,7 +11,7 @@ register = template.Library()
 def feedback_textfield(question, user, content):
     return {
         "question" : question.question,
-        "answered" : question.user_answered(user, content) if user.is_authenticated() else None,
+        "answered" : question.user_answered(user, content) if user.is_authenticated else None,
         "content_slug" : content.slug, 
         "feedback_slug" : question.slug
     }
@@ -19,7 +19,7 @@ def feedback_textfield(question, user, content):
 # {% feedback_thumb %}
 @register.inclusion_tag("feedback/thumb-feedback-question.html")
 def feedback_thumb(question, user, content):
-    if user.is_authenticated() and question.user_answered(user, content):
+    if user.is_authenticated and question.user_answered(user, content):
         user_answer = question.get_latest_answer(user, content).thumb_up 
     else:
         user_answer = None
@@ -34,7 +34,7 @@ def feedback_thumb(question, user, content):
 # {% feedback_star %}
 @register.inclusion_tag("feedback/star-feedback-question.html")
 def feedback_star(question, user, content):
-    if user.is_authenticated() and question.user_answered(user, content):
+    if user.is_authenticated and question.user_answered(user, content):
         user_answer = question.get_latest_answer(user, content).rating
     else:
         user_answer = None
@@ -50,7 +50,7 @@ def feedback_star(question, user, content):
 # {% feedback_multiple_choice %}
 @register.inclusion_tag("feedback/multiple-choice-feedback-question.html")
 def feedback_multiple_choice(question, user, content):
-    if user.is_authenticated() and question.user_answered(user, content):
+    if user.is_authenticated and question.user_answered(user, content):
         user_answer = question.get_latest_answer(user, content).chosen_answer
     else:
         user_answer = None

@@ -365,7 +365,7 @@ def check_answer(request, course_slug, instance_slug, content_slug, revision):
 
     # TODO: Errors, hints, comments in JSON
     t = loader.get_template("courses/exercise-evaluation.html")
-    total_evaluation = exercise.get_user_evaluation(content, user)
+    total_evaluation = exercise.get_user_evaluation(content, user, instance)
     #print(evaluation)
     
     data = {
@@ -737,6 +737,7 @@ def content(request, course_slug, instance_slug, content_slug, **kwargs):
         'course_slug': course_slug,
         'instance': instance,
         'instance_slug': instance.slug,
+        'content_page': content,
     }
 
     termbank_contents = cache.get('termbank_contents_{instance}_{lang}'.format(instance=context['instance_slug'], lang=translation.get_language()))
@@ -1141,7 +1142,7 @@ def download_embedded_file(request, course_slug, instance_slug, file_slug):
     else:
         file_object = Version.objects.get_for_object(file_link.media.file).get(revision=file_link.revision)._object_version.object
     
-    fs_path = os.path.join(getattr(settings, "PRIVATE_STORAGE_FS_PATH", settings.MEDIA_ROOT), file_object.fileinfo.name)
+    fs_path = os.path.join(settings.MEDIA_ROOT, file_object.fileinfo.name)
 
     return generate_download_response(fs_path, file_object.download_as)
 
@@ -1161,7 +1162,7 @@ def download_media_file(request, file_slug, field_name):
         return HttpResponseForbidden(_("Only course main responsible teachers are allowed to download media files through this interface."))
                         
     try:
-        fs_path = os.path.join(getattr(settings, "PRIVATE_STORAGE_FS_PATH", settings.MEDIA_ROOT), getattr(fileobject, field_name).name)
+        fs_path = os.path.join(settings.MEDIA_ROOT, getattr(fileobject, field_name).name)
     except AttributeError as e:
         return HttpResponseNotFound(_("Requested file does not exist."))
 

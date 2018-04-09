@@ -72,7 +72,7 @@ def multiple_choice_feedback_stats(question, content):
     }
 
 def content_feedback_stats(request, content_slug):
-    if not request.user.is_authenticated() or not request.user.is_active or not request.user.is_staff:
+    if not request.user.is_authenticated or not request.user.is_active or not request.user.is_staff:
         return HttpResponseForbidden("Only logged in admins can view feedback statistics!")
     
     try:

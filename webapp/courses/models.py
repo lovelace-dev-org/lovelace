@@ -618,6 +618,7 @@ class ContentPage(models.Model):
             link_obj = EmbeddedLink.objects.get(embedded_page__slug=link_slug, instance=instance, parent=self)
             link_obj.ordinal_number = i
             link_obj.save()
+            link.obj.embedded_page.update_embedded_links()
             
 
     # TODO: -> @property human_readable_type
