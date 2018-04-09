@@ -451,7 +451,7 @@ class EmbeddedFileMarkup(Markup):
         
         try:
             try:
-                link = courses.models.CourseMediaLink.objects.get(media__name=settings["file_slug"], instance=instance)
+                link = courses.models.CourseMediaLink.objects.get(media__name=settings["file_slug"], instance=instance, parent=state["context"]["content_page"])
             except courses.models.CourseMediaLink.DoesNotExist as e:
                 file_object = courses.models.File.objects.get(name=settings["file_slug"])
             else:
@@ -563,7 +563,7 @@ class EmbeddedPageMarkup(Markup):
 
         try:
             try:
-                link = courses.models.EmbeddedLink.objects.get(embedded_page__slug=settings["page_slug"], instance=instance)
+                link = courses.models.EmbeddedLink.objects.get(embedded_page__slug=settings["page_slug"], instance=instance, parent=state["context"]["content_page"])
             except courses.models.EmbeddedLink.DoesNotExist as e:
                 # link does not exist yet, get by page slug instead
                 page = courses.models.ContentPage.objects.get(slug=settings["page_slug"])
@@ -949,9 +949,9 @@ class ImageMarkup(Markup):
         instance = state["context"]["instance"]
         try:
             try:
-                link = courses.models.CourseMediaLink.objects.get(media__name=settings["image_name"], instance=instance)
+                link = courses.models.CourseMediaLink.objects.get(media__name=settings["image_name"], instance=instance, parent=state["context"]["content_page"])
             except courses.models.CourseMediaLink.DoesNotExist as e:
-                image_object = courses.models.File.objects.get(name=settings["image_name"])
+                image_object = courses.models.Image.objects.get(name=settings["image_name"])
             else:
                 if link.revision is None:
                     image_object = link.media.image

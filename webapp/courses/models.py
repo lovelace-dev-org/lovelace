@@ -543,6 +543,7 @@ class ContentPage(models.Model):
             content = version["content"]
 
         # Render the page
+        context["content_page"] = self
         markup_gen = markupparser.MarkupParser.parse(content, request, context, embedded_pages)
         for chunk in markup_gen:
             rendered += chunk
