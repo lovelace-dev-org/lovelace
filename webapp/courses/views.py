@@ -744,9 +744,25 @@ def content(request, course_slug, instance_slug, content_slug, **kwargs):
     if termbank_contents is None or term_div_data is None:
         term_context = context.copy()
         term_context['tooltip'] = True
-        terms = Term.objects.filter(instance__course=course).exclude(Q(description__isnull=True) | Q(description__exact='')).order_by('name')
+        term_links = TermToInstanceLink.objects.filter(instance__slug=context["instance_slug"])
         term_div_data = []
         termbank_contents = {}
+        #terms = Term.objects.filter(course=course).exclude(Q(description__isnull=True) | Q(description__exact='')).order_by('name')
+        terms = []
+        for link in term_links:
+            if link.revision is None:
+                term = link.term
+            else:
+                term = Version.objects.get_for_object(link.term).get(revision=link.revision)._object_version.object
+                
+            if term.description:
+                terms.append(term)
+        
+        def sort_by_name(item):
+            return item.name
+            
+        terms.sort(key=sort_by_name)
+        
         for term in terms:
             slug = slugify(term.name, allow_unicode=True)
             description = "".join(markupparser.MarkupParser.parse(term.description, request, term_context)).strip()

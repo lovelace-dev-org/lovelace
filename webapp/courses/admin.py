@@ -533,8 +533,8 @@ class TermLinkInline(TranslationTabularInline):
     
 class TermAdmin(TranslationAdmin, VersionAdmin):
     search_fields = ('name',)
-    list_display = ('name', 'instance',)
-    list_filter = ('instance',)
+    list_display = ('name', 'course',)
+    list_filter = ('course',)
     list_per_page = 500
     ordering = ('name',)
 
@@ -542,11 +542,12 @@ class TermAdmin(TranslationAdmin, VersionAdmin):
 
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)
-        instance_slug = obj.instance.slug
         lang_list = django.conf.settings.LANGUAGES
-        for lang, _ in lang_list:
-            cache.set('termbank_contents_{instance}_{lang}'.format(instance=instance_slug, lang=lang), None)
-            cache.set('termbank_div_data_{instance}_{lang}'.format(instance=instance_slug, lang=lang), None)
+        for instance in CourseInstance.objects.filter(course=obj.course):       
+            instance_slug = instance.slug
+            for lang, _ in lang_list:
+                cache.set('termbank_contents_{instance}_{lang}'.format(instance=instance_slug, lang=lang), None)
+                cache.set('termbank_div_data_{instance}_{lang}'.format(instance=instance_slug, lang=lang), None)
 
 admin.site.register(Calendar, CalendarAdmin)
 admin.site.register(File, FileAdmin)
@@ -638,7 +639,7 @@ class CourseInstanceAdmin(TranslationAdmin, VersionAdmin):
     
     fieldsets = [
         (None,                {'fields': ['name', 'email', 'course', 'frontpage']}),
-        ('Schedule settings', {'fields': ['start_date', 'end_date', 'active',]}),
+        ('Schedule settings', {'fields': ['start_date', 'end_date', 'active', 'visible']}),
         ('Enrollment',        {'fields': ['manual_accept']}),
         ('Instance outline',  {'fields': ['contents',]}),
     ]
@@ -701,16 +702,36 @@ class CourseInstanceAdmin(TranslationAdmin, VersionAdmin):
             return False
         
     def save_model(self, request, obj, form, change):
+        new = False
+        if obj.pk == None:
+            new = True
+        
         super().save_model(request, obj, form, change)
         
-        for cg in obj.contents.all():
-            cg.content.update_embedded_links(obj, cg.revision)
+        if new:
+            instance_files = InstanceIncludeFile.objects.filter(course=obj.course)
+            for ifile in instance_files:
+                link = InstanceIncludeFileToInstanceLink(
+                    revision=None,
+                    include_file=ifile,
+                    instance=obj
+                )
+                link.save()
+                
+            terms = Term.objects.filter(course=obj.course)
+            for term in terms:
+                link = TermToInstanceLink(
+                    revision=None,
+                    term=term,
+                    instance=obj
+                )
+                link.save()
             
         self.current = obj
-        transaction.on_commit(self.set_frontpage_cg)
+        transaction.on_commit(self.finish_cg)
             
     # the horror
-    def set_frontpage_cg(self): 
+    def finish_cg(self): 
         obj = self.current
         if obj.frontpage:
             fp_node = ContentGraph.objects.filter(courseinstance=obj.id, ordinal_number=0).first()
@@ -723,5 +744,12 @@ class CourseInstanceAdmin(TranslationAdmin, VersionAdmin):
                     scored=False,
                     ordinal_number=0
                 )
+        for cg in obj.contents.all():
+            print(cg)
+            cg.content.update_embedded_links(obj, cg.revision)
+            
+
+                
+                
             
 admin.site.register(CourseInstance, CourseInstanceAdmin)

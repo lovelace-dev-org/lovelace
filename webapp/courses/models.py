@@ -167,6 +167,7 @@ class CourseInstance(models.Model):
     frontpage = models.ForeignKey('Lecture', blank=True, null=True, on_delete=models.SET_NULL) # TODO: Create one automatically!
     contents = models.ManyToManyField('ContentGraph', blank=True)   # TODO: Rethink the content graph system!
     frozen = models.BooleanField(verbose_name="Freeze this instance", default=False)
+    visible = models.BooleanField(verbose_name="Is this course visible to students", default=True)
 
     def get_url_name(self):
         """Creates a URL and HTML5 ID field friendly version of the name."""
@@ -220,6 +221,10 @@ class CourseInstance(models.Model):
             
         ifile_links = InstanceIncludeFileToInstanceLink.objects.filter(instance=self)
         for link in ifile_links:
+            link.freeze(freeze_to)
+            
+        term_links = TermToInstanceLink.objects.filter(instance=self)
+        for link in term_links:
             link.freeze(freeze_to)
             
         self.frozen = True
@@ -287,7 +292,7 @@ class CourseMedia(models.Model):
 
 class CourseMediaLink(models.Model):
     """
-    Context manager for embedded media.
+    Context model for embedded media.
     """
     
     media = models.ForeignKey(CourseMedia, on_delete=models.CASCADE)
@@ -343,9 +348,28 @@ class VideoLink(CourseMedia):
     def __str__(self):
         return self.name
 
+class TermToInstanceLink(models.Model):
+    
+    term = models.ForeignKey("Term", on_delete=models.CASCADE)
+    instance = models.ForeignKey(CourseInstance, verbose_name="Course instance", on_delete=models.CASCADE)
+    revision = models.PositiveIntegerField(verbose_name="Revision to display", blank=True, null=True)
+    
+    
+    class Meta:
+        unique_together = ("instance", "term")
+        
+    def freeze(self, freeze_to=None):
+        if self.revision is None:
+            latest = Version.objects.get_for_object(self.term).latest("revision__date_created")
+            self.revision = latest.revision_id
+            self.save()
+    
+    
+    
+
 @reversion.register(follow=["termtab_set", "termlink_set"])
 class Term(models.Model):
-    instance = models.ForeignKey(CourseInstance, verbose_name="Course instance", null=True, on_delete=models.SET_NULL)
+    course = models.ForeignKey(Course, verbose_name="Course", null=True, on_delete=models.SET_NULL)
     name = models.CharField(verbose_name='Term', max_length=200) # Translate
     description = models.TextField() # Translate
     aliases = ArrayField(
@@ -362,9 +386,19 @@ class Term(models.Model):
     
     def __str__(self):
         return self.name
+    
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        for instance in CourseInstance.objects.filter(course=self.course, frozen=False):
+            link = TermToInstanceLink(
+                instance=instance,
+                revision=None,
+                term=self
+            )
+            link.save()
 
     class Meta:
-        unique_together = ('instance', 'name',)
+        unique_together = ('course', 'name',)
 
 @reversion.register()
 class TermTab(models.Model):
@@ -478,6 +512,12 @@ class ContentPage(models.Model):
         default=list,
         blank=True
     )
+    
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        for instance in CourseInstance.objects.filter(frozen=False, contents__content=self):
+            self.update_embedded_links(instance)
+        
 
     def rendered_markup(self, request=None, context=None, revision=None):
         """
