@@ -14,7 +14,7 @@ def create_instance_file_links(apps, schema_editor):
     InstanceIncludeFileToInstanceLink = apps.get_model("courses", "InstanceIncludeFileToInstanceLink")
     CourseInstance = apps.get_model("courses", "CourseInstance")    
     for ifile in InstanceIncludeFile.objects.all():
-        for instance in CourseInstance.objects.fiter(course=ifile.course):
+        for instance in CourseInstance.objects.filter(course=ifile.course):
             link = InstanceIncludeFileToInstanceLink(
                 revision=None,
                 instance=instance,

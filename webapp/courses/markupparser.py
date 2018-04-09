@@ -811,7 +811,7 @@ class EmbeddedScriptMarkup(Markup):
     
     @classmethod
     def build_links(cls, matchobj, instance, page_links, media_links):
-        slugs = matchobj.group("script_slug") + matchobj.group("include").split(",")
+        slugs = [matchobj.group("script_slug")] + [m.split("=")[1] for m in matchobj.group("include").split(",")]
         
         for slug in slugs:
             media_links.append(slug)

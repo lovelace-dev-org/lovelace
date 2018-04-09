@@ -317,7 +317,7 @@ class File(CourseMedia):
     # TODO: Slug and file name separately
     date_uploaded = models.DateTimeField(verbose_name='date uploaded', auto_now_add=True)
     typeinfo = models.CharField(max_length=200)
-    fileinfo = models.FileField(max_length=255, upload_to=get_file_upload_path, storage=upload_storage) # Translate
+    fileinfo = models.FileField(max_length=255, upload_to=get_file_upload_path) # Translate
     download_as = models.CharField(verbose_name='Default name for the download dialog', max_length=200, null=True, blank=True)
 
     def __str__(self):
@@ -604,6 +604,7 @@ class ContentPage(models.Model):
             link_obj.save()
 
         for link_slug in added_media_links:
+            print(link_slug)
             link_obj = CourseMediaLink(
                 parent=self,
                 media=CourseMedia.objects.get(name=link_slug),
@@ -1641,7 +1642,7 @@ class InstanceIncludeFile(models.Model):
     A file that's linked to a course and can be included in any exercise
     that needs it. (File upload, code input, code replace, ...)
     """
-    course = models.ForeignKey(Course, on_delete=models.CASCADE)    
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
     exercises = models.ManyToManyField(ContentPage, blank=True,
                                        through='InstanceIncludeFileToExerciseLink',
                                        through_fields=('include_file', 'exercise'))
