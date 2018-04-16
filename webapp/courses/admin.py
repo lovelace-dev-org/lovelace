@@ -13,7 +13,7 @@ from django.db import models, transaction
 from django.db.models import Q
 from django.forms import Field, ModelForm, TextInput, Textarea, ModelChoiceField, BaseInlineFormSet
 
-from .forms import FileEditForm, RepeatedTemplateExerciseBackendForm
+from .forms import FileEditForm, RepeatedTemplateExerciseBackendForm, ContentForm
 from .widgets import AdminFileWidget, AdminTemplateBackendFileWidget
 
 from modeltranslation.admin import TranslationAdmin, TranslationTabularInline, \
@@ -21,6 +21,37 @@ from modeltranslation.admin import TranslationAdmin, TranslationTabularInline, \
 
 from reversion.admin import VersionAdmin
 from reversion.models import Version
+from reversion import revisions as reversion
+
+# Moved these here from models.py so that all registering happens
+# in this file (as VersionAdmin autoregisters the associated model)
+# This makes modeltranslation work for with reversion, probably due 
+# to translated fields being added between loading models.py and 
+# this module.
+reversion.register(ContentPage)
+reversion.register(Hint)
+reversion.register(FileExerciseTest, follow=['fileexerciseteststage_set'])
+reversion.register(FileExerciseTestStage, follow=['fileexercisetestcommand_set'])
+reversion.register(FileExerciseTestCommand, follow=['fileexercisetestexpectedoutput_set'])
+reversion.register(FileExerciseTestExpectedOutput)
+reversion.register(FileExerciseTestExpectedStdout)
+reversion.register(FileExerciseTestExpectedStderr)
+reversion.register(InstanceIncludeFileToExerciseLink)
+reversion.register(InstanceIncludeFile)
+reversion.register(FileExerciseTestIncludeFile)
+reversion.register(IncludeFileSettings)
+reversion.register(TextfieldExerciseAnswer)
+reversion.register(MultipleChoiceExerciseAnswer)
+reversion.register(CourseMedia)
+reversion.register(TermTab)
+reversion.register(TermLink)
+reversion.register(CheckboxExerciseAnswer)
+reversion.register(CodeInputExerciseAnswer)
+reversion.register(CodeReplaceExerciseAnswer)
+reversion.register(RepeatedTemplateExerciseTemplate)
+reversion.register(RepeatedTemplateExerciseBackendFile)
+reversion.register(RepeatedTemplateExerciseBackendCommand)
+
 
 ## User profiles
 # http://stackoverflow.com/questions/4565814/django-user-userprofile-and-admin
@@ -107,16 +138,17 @@ class CourseContentAccess(admin.ModelAdmin):
         
     #TODO: this solution is less garbage now, but we still need to rethink
     #      the entire contentgraph and embedded links structure. 
-    def save_model(self, request, obj, form, change):
-        """
-        Need to call rendered_markup of the object for each context where it 
-        exists as latest version in order to create embedded page links. 
-        """
+    #NOTE: this is now done in ContentPage save method
+    #def save_model(self, request, obj, form, change):
+        #"""
+        #Need to call rendered_markup of the object for each context where it 
+        #exists as latest version in order to create embedded page links. 
+        #"""
         
-        super().save_model(request, obj, form, change)
-        contexts = self._find_contexts(obj)
-        for context in contexts:
-            obj.update_embedded_links(context["instance"])
+        #super().save_model(request, obj, form, change)
+        #contexts = self._find_contexts(obj)
+        #for context in contexts:
+            #obj.update_embedded_links(context["instance"])
         
     def _find_contexts(self, obj):
         """
@@ -249,7 +281,6 @@ class SoftDeleteFormSet(BaseInlineFormSet):
             obj.exercise = None
             obj.save()
         
-
 class MultipleChoiceExerciseAnswerInline(TranslationTabularInline):
     model = MultipleChoiceExerciseAnswer
     extra = 1
@@ -430,13 +461,15 @@ class FileExerciseTestExpectedStderrAdmin(admin.StackedInline):
 #class FileExerciseTestAdmin(admin.StackedInline):
 #    inlines = [FileExerciseTestCommandAdmin, FileExerciseTestExpectedOutputAdmin, FileExerciseTestExpectedErrorAdmin, FileExerciseTestIncludeFileAdmin]
 
+
 class LectureAdmin(CourseContentAccess, TranslationAdmin, VersionAdmin):
     
     content_type = "LECTURE"
+    form = ContentForm
     
     def formfield_for_dbfield(self, db_field, **kwargs):
         formfield = super(LectureAdmin, self).formfield_for_dbfield(db_field, **kwargs)
-        if db_field.name == 'content':
+        if db_field.name in ('content'):
             formfield.widget = Textarea(attrs={'rows':25, 'cols':120})
         elif db_field.name == 'tags':
             formfield.widget = Textarea(attrs={'rows':2})
@@ -488,6 +521,7 @@ class CalendarAdmin(admin.ModelAdmin):
     inlines = [CalendarDateAdmin]
     search_fields = ("name",)
 
+
 class FileAdmin(CourseMediaAccess, VersionAdmin):
     def save_model(self, request, obj, form, change):
         if not change:
@@ -531,6 +565,8 @@ class TermLinkInline(TranslationTabularInline):
     model = TermLink
     extra = 0
     
+    
+        
 class TermAdmin(TranslationAdmin, VersionAdmin):
     search_fields = ('name',)
     list_display = ('name', 'course',)

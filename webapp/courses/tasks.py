@@ -540,7 +540,7 @@ def run_stage(self, stage_id, test_dir, temp_dir_prefix, files_to_check, revisio
 
     #stage_results.update(results)
 
-    #print(stage_results)
+    print(stage_results)
 
     return stage_results
     
@@ -754,9 +754,9 @@ def run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check, revisio
     })
     
     #stdout.seek(0)
-    #print("\n".join(l.decode("utf-8") for l in stdout.readlines()))
+    print("\n".join(l.decode("utf-8") for l in stdout.readlines()))
     #stderr.seek(0)
-    #print("\n".join(l.decode("utf-8") for l in stderr.readlines()))
+    print("\n".join(l.decode("utf-8") for l in stderr.readlines()))
     #time.sleep(15)
 
     return proc_results
@@ -909,8 +909,8 @@ def generate_repeated_template_session(self, user_id, instance_id, exercise_id, 
         stdout.close()
         stderr.close()
 
-        #print("output", output)
-        #print("errors", errors)
+        print("output", output)
+        print("errors", errors)
 
     try:
         output_json = json.loads(output)

@@ -210,7 +210,7 @@ def course(request, course_slug, instance_slug):
     return HttpResponse(t.render(context, request))
 
 def course_tree(tree, node, user, instance_obj):
-    embedded_links = EmbeddedLink.objects.filter(parent=node.content.id)
+    embedded_links = EmbeddedLink.objects.filter(parent=node.content.id, instance=instance_obj)
     embedded_count = len(embedded_links)
     correct_embedded = 0
     
@@ -231,9 +231,9 @@ def course_tree(tree, node, user, instance_obj):
         tree.append(list_item)
 
     if is_course_staff(user, instance_obj):
-        children = ContentGraph.objects.filter(parentnode=node).order_by('ordinal_number')
+        children = ContentGraph.objects.filter(parentnode=node, courseinstance=instance_obj).order_by('ordinal_number')
     else:
-        children = ContentGraph.objects.filter(parentnode=node, visible=True).order_by('ordinal_number')
+        children = ContentGraph.objects.filter(parentnode=node, courseinstance=instance_obj, visible=True).order_by('ordinal_number')
     
     if len(children) > 0:
         tree.append((mark_safe('>'), None, None, None, None))
@@ -312,8 +312,8 @@ def check_answer(request, course_slug, instance_slug, content_slug, revision):
 
     # TODO: Resolve "head" revision to the newest revision
     if revision == "head":
-        #reversion.
-        pass
+        latest = Version.objects.get_for_object(content).latest("revision__date_created")
+        revision = latest.revision_id
 
     # Check if a deadline exists and if it has already passed
     try:
@@ -719,16 +719,16 @@ def content(request, course_slug, instance_slug, content_slug, **kwargs):
 
     content_graph = None
     revision = None
-    if "frontpage" not in kwargs:
-        try:
-            content_graph = instance.contents.get(content=content)
-        except ContentGraph.DoesNotExist:
+    #if "frontpage" not in kwargs:
+    try:
+        content_graph = instance.contents.get(content=content)
+    except ContentGraph.DoesNotExist:
+        return HttpResponseNotFound("Content {} is not linked to course {}!".format(content_slug, course_slug))
+    else:
+        if content_graph is None:
             return HttpResponseNotFound("Content {} is not linked to course {}!".format(content_slug, course_slug))
-        else:
-            if content_graph is None:
-                return HttpResponseNotFound("Content {} is not linked to course {}!".format(content_slug, course_slug))
         
-        revision = content_graph.revision
+    revision = content_graph.revision
     
     content_type = content.content_type
 

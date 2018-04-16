@@ -33,7 +33,7 @@ from feedback.models import ContentFeedbackQuestion, TextfieldFeedbackQuestion, 
 from .forms import CreateFeedbackQuestionsForm, CreateInstanceIncludeFilesForm, CreateFileUploadExerciseForm
 from .utils import get_default_lang, get_lang_list
 
-from utils.access import determine_access, is_course_staff
+from utils.access import determine_access, is_course_staff, determine_media_access
 from utils.files import generate_download_response
 
 
@@ -820,12 +820,10 @@ def download_instance_file(request, file_id, lang_code):
     
     try:
         fileobject = InstanceIncludeFile.objects.get(id=file_id)
-    except FileExerciseTestIncludeFile.DoesNotExist as e:
+    except InstanceIncludeFile.DoesNotExist as e:
         return HttpResponseNotFound(_("Requested file does not exist."))
-    
-    instance_object = fileobject.instance
-            
-    if not is_course_staff(request.user, instance_object):
+
+    if not request.user in fileobject.course.staff_group.user_set.get_queryset():
         return HttpResponseForbidden(_("Only course staff members are allowed to download instance files."))
     
     fs_path = os.path.join(getattr(settings, "PRIVATE_STORAGE_FS_PATH", settings.MEDIA_ROOT), fileobject.fileinfo.name)

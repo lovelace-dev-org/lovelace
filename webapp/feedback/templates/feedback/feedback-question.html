@@ -5,7 +5,7 @@
   <div class="feedback-question">
     <span>{{ question }}</span>
   </div>
-  <form class="feedback-form" method="POST" enctype="multipart/form-data" action="{% url 'feedback:receive' content_slug feedback_slug %}">
+  <form class="feedback-form" method="POST" enctype="multipart/form-data" action="{% url 'feedback:receive' instance_slug content_slug feedback_slug %}">
     {% csrf_token %}
     {% block feedback-input %}
     {% endblock %}

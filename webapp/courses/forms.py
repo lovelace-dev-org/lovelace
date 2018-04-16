@@ -2,6 +2,7 @@ from django.core.exceptions import ValidationError
 from django import forms
 from django.forms import fields
 
+
 class TextfieldExerciseForm(forms.Form):
     pass
 
@@ -46,3 +47,51 @@ class RepeatedTemplateExerciseBackendForm(forms.ModelForm):
             default_value.filename = self.initial.get("filename")
 
         return default_value
+
+class ContentForm(forms.ModelForm):
+    
+    def _validate_links(self, value):
+        import courses.blockparser as blockparser
+        import courses.markupparser as markupparser
+        from courses.models import ContentPage, CourseMedia, Term
+        
+        missing_pages = []
+        missing_media = []
+        missing_terms = []
+        messages = []
+        
+        page_links, media_links = markupparser.LinkParser.parse(value)
+        for link in page_links:
+            if not ContentPage.objects.filter(slug=link):
+                missing_pages.append(link)
+                messages.append("Content matching {} does not exist".format(link))
+                
+        for link in media_links:
+            if not CourseMedia.objects.filter(name=link):
+                missing_media.append(link)
+                messages.append("Media matching {} does not exist".format(link))
+                
+        term_re = blockparser.tags["term"].re
+        
+        term_links = set([match.group("term_name") for match in term_re.finditer(value)])
+        
+        for link in term_links:
+            if not Term.objects.filter(name=link):
+                missing_terms.append(link)
+                messages.append("Term matching {} does not exist".format(link))
+                                
+        if messages:
+            raise ValidationError(messages)
+    
+    def clean_content_fi(self):
+        
+        data = self.cleaned_data["content_fi"]
+        self._validate_links(data)
+        return data
+        
+    def clean_content_en(self):
+        
+        data = self.cleaned_data["content_en"]
+        self._validate_links(data)
+        return data
+        

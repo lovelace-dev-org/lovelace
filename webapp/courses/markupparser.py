@@ -240,7 +240,7 @@ class LinkParser(MarkupParser):
     _markups = {}
     
     @classmethod
-    def parse(cls, text, instance):
+    def parse(cls, text, instance=None):
         if not cls._ready:
             raise ParserUninitializedError("compile() not called")
         
@@ -629,7 +629,7 @@ class EmbeddedPageMarkup(Markup):
                     c["answer_count"] = 0
                     
             c.update(state["context"])
-
+            
             t = loader.get_template("courses/{page_type}.html".format(
                 page_type=page.get_dashed_type()
             ))

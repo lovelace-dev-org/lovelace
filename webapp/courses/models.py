@@ -2,7 +2,6 @@
 # TODO: Refactor into multiple apps
 # TODO: Serious effort to normalize the db!
 # TODO: Profile the app and add relevant indexes!
-# TODO: Add on_delete to ForeignKeys to comply with Django 2.0 requirements.
 
 import datetime
 import itertools
@@ -17,6 +16,7 @@ from django.contrib.auth.models import User, Group
 from django.db.models.signals import post_save
 from django.urls import reverse
 from django.core.files.storage import FileSystemStorage
+from django.core.exceptions import ValidationError
 from django.utils import translation
 from django.utils.text import slugify
 from django.contrib.postgres.fields import ArrayField, JSONField
@@ -34,6 +34,7 @@ import courses.tasks as rpc_tasks
 import feedback.models
 
 import courses.markupparser as markupparser
+import courses.blockparser as blockparser
 
 PRIVATE_UPLOAD = getattr(settings, "PRIVATE_STORAGE_FS_PATH", settings.MEDIA_ROOT)
 
@@ -76,7 +77,8 @@ post_save.connect(create_user_profile, sender=User, dispatch_uid="create_user_pr
 
 # TODO: Abstract the exercise model to allow "an answering entity" to give the answer, be it a group or a student
 
-@reversion.register()
+
+#@reversion.register()
 class Course(models.Model):
     """
     Describes the metadata for a course.
@@ -142,7 +144,7 @@ class CourseEnrollment(models.Model):
     def is_enrolled(self):
         return True if self.enrollment_state == 'ACCEPTED' else False
 
-@reversion.register()
+#@reversion.register()
 class CourseInstance(models.Model):
     """
     A running instance of a course. Contains details about the start and end
@@ -211,6 +213,10 @@ class CourseInstance(models.Model):
             self.contents.add(content_link)
         self.save()
         
+        new_links = self.contents.all()
+        for content_link in new_links:
+            content_link.set_frozen_parents(new_links)
+        
         embedded_links = EmbeddedLink.objects.filter(instance=self)
         for link in embedded_links:
             link.freeze(freeze_to)
@@ -264,7 +270,14 @@ class ContentGraph(models.Model):
         if self.revision is None:
             latest = Version.objects.get_for_object(self.content).latest("revision__date_created")
             self.revision = latest.revision_id
+            
         self.save()
+    
+    def set_frozen_parents(self, linked_contents):
+        if self.parentnode is not None:
+            frozen_parent = linked_contents.get(content=self.parentnode.content)
+            self.parentnode = frozen_parent 
+            self.save()
     
     def __str__(self):
         if not self.content:
@@ -279,7 +292,7 @@ class ContentGraph(models.Model):
 def get_file_upload_path(instance, filename):
     return os.path.join("files", "%s" % (filename))
 
-@reversion.register()
+#@reversion.register()
 class CourseMedia(models.Model):
     """
     Top level model for embedded media.
@@ -310,7 +323,7 @@ class CourseMediaLink(models.Model):
             self.revision = latest.revision_id
             self.save()
 
-@reversion.register(follow=["coursemedia_ptr"])
+#@reversion.register(follow=["coursemedia_ptr"])
 class File(CourseMedia):
     """Metadata of an embedded or attached file that an admin has uploaded."""
     # TODO: Make the uploading user the default and don't allow it to change
@@ -327,7 +340,7 @@ class File(CourseMedia):
 def get_image_upload_path(instance, filename):
     return os.path.join("images", "%s" % (filename))
 
-@reversion.register(follow=["coursemedia_ptr"])
+#@reversion.register(follow=["coursemedia_ptr"])
 class Image(CourseMedia):
     """Image"""
     # TODO: Make the uploading user the default and don't allow it to change
@@ -338,7 +351,7 @@ class Image(CourseMedia):
     def __str__(self):
         return self.name
 
-@reversion.register(follow=["coursemedia_ptr"])
+#@reversion.register(follow=["coursemedia_ptr"])
 class VideoLink(CourseMedia):
     """Youtube link for embedded videos"""
     # TODO: Make the adding user the default and don't allow it to change
@@ -367,7 +380,7 @@ class TermToInstanceLink(models.Model):
     
     
 
-@reversion.register(follow=["termtab_set", "termlink_set"])
+#@reversion.register(follow=["termtab_set", "termlink_set"])
 class Term(models.Model):
     course = models.ForeignKey(Course, verbose_name="Course", null=True, on_delete=models.SET_NULL)
     name = models.CharField(verbose_name='Term', max_length=200) # Translate
@@ -400,7 +413,7 @@ class Term(models.Model):
     class Meta:
         unique_together = ('course', 'name',)
 
-@reversion.register()
+#@reversion.register()
 class TermTab(models.Model):
     term = models.ForeignKey(Term, on_delete=models.CASCADE)
     title = models.CharField(verbose_name="Title of this tab", max_length=100) # Translate
@@ -409,7 +422,7 @@ class TermTab(models.Model):
     def __str__(self):
         return self.title
 
-@reversion.register()
+#@reversion.register()
 class TermLink(models.Model):
     term = models.ForeignKey(Term, on_delete=models.CASCADE)
     url = models.CharField(verbose_name="URL", max_length=300) # Translate
@@ -465,8 +478,10 @@ class EmbeddedLink(models.Model):
             self.save()
 
 
+
+
 ## Content management
-@reversion.register()
+#@reversion.register()
 class ContentPage(models.Model):
     """
     A single content containing page of a course.
@@ -618,7 +633,7 @@ class ContentPage(models.Model):
             link_obj = EmbeddedLink.objects.get(embedded_page__slug=link_slug, instance=instance, parent=self)
             link_obj.ordinal_number = i
             link_obj.save()
-            link.obj.embedded_page.update_embedded_links()
+            link_obj.embedded_page.update_embedded_links(instance)
             
 
     # TODO: -> @property human_readable_type
@@ -748,7 +763,7 @@ class ContentPage(models.Model):
     class Meta:
         ordering = ('name',)
 
-@reversion.register()
+#@reversion.register()
 class Lecture(ContentPage):
     """A single page for a lecture."""
 
@@ -771,7 +786,7 @@ class Lecture(ContentPage):
     def get_user_evaluation(self, user, instance):
         pass
 
-@reversion.register(follow=["multiplechoiceexerciseanswer_set"])
+#@reversion.register(follow=["multiplechoiceexerciseanswer_set"])
 class MultipleChoiceExercise(ContentPage):
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -822,7 +837,7 @@ class MultipleChoiceExercise(ContentPage):
         return answer_object
 
     def check_answer(self, user, ip, answer, files, answer_object, revision):
-        choices = self.get_choices(self)
+        choices = self.get_choices(self, revision)
         
         # quick hax:
         answered = int([v for k, v in answer.items() if k.endswith("-radio")][0])
@@ -871,7 +886,7 @@ class MultipleChoiceExercise(ContentPage):
         verbose_name = "multiple choice exercise"
         proxy = True
 
-@reversion.register(follow=["checkboxexerciseanswer_set"])
+#@reversion.register(follow=["checkboxexerciseanswer_set"])
 class CheckboxExercise(ContentPage):
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -985,7 +1000,7 @@ class CheckboxExercise(ContentPage):
 # TODO: Enforce allowed line count for text field exercises
 #         - in answer choices?
 #         - also reflect this in the size of the answer box
-@reversion.register(follow=["textfieldexerciseanswer_set"])
+#@reversion.register(follow=["textfieldexerciseanswer_set"])
 class TextfieldExercise(ContentPage):
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -997,7 +1012,18 @@ class TextfieldExercise(ContentPage):
         super(TextfieldExercise, self).save(*args, **kwargs)
 
     def get_choices(self, revision=None):
-        choices = TextfieldExerciseAnswer.objects.filter(exercise=self.id)
+        if revision is None:
+            choices = self.textfieldexerciseanswer_set.get_queryset()
+        else:
+            choices = []
+            old_version = Version.objects.get_for_object(self).get(revision=revision)._object_version.object
+            old_choices = old_version.get_type_object().textfieldexerciseanswer_set
+            for choice in old_choices.all():
+                try:
+                    old_choice = Version.objects.get_for_object(choice).get(revision=revision)._object_version.object
+                    choices.append(old_choice)
+                except Version.DoesNotExist as e:
+                    pass
         return choices
 
     def save_answer(self, user, ip, answer, files, instance, revision):
@@ -1020,7 +1046,7 @@ class TextfieldExercise(ContentPage):
         return answer_object
 
     def check_answer(self, user, ip, answer, files, answer_object, revision):
-        answers = self.get_choices(self)
+        answers = self.get_choices(self, revision)
 
         # Determine, if the given answer was correct and which hints/comments to show
         correct = False
@@ -1103,7 +1129,7 @@ class TextfieldExercise(ContentPage):
         verbose_name = "text field exercise"
         proxy = True
 
-@reversion.register(follow=['fileexercisetest_set', 'fileexercisetestincludefile_set'])
+#@reversion.register(follow=['fileexercisetest_set', 'fileexercisetestincludefile_set'])
 class FileUploadExercise(ContentPage):
     # TODO: A field for restricting uploadable file names (e.g. by extension, like .py)
     def save(self, *args, **kwargs):
@@ -1249,7 +1275,7 @@ class CodeReplaceExercise(ContentPage):
         verbose_name = "code replace exercise"
         proxy = True
 
-@reversion.register(follow=['repeatedtemplateexercisetemplate_set', 'repeatedtemplateexercisebackendfile_set', 'repeatedtemplateexercisebackendcommand'])
+#@reversion.register(follow=['repeatedtemplateexercisetemplate_set', 'repeatedtemplateexercisebackendfile_set', 'repeatedtemplateexercisebackendcommand'])
 class RepeatedTemplateExercise(ContentPage):
     # TODO: Reimplement to allow any type of exercise (textfield, checkbox etc.)
     #       to be a repeated template exercise.
@@ -1470,7 +1496,7 @@ class RepeatedTemplateExercise(ContentPage):
 # Inspiration:
 # - computer networks I course
 
-@reversion.register()
+#@reversion.register()
 class Hint(models.Model):
     """
     A hint that is linked to an exercise and shown to the user under
@@ -1489,7 +1515,7 @@ class Hint(models.Model):
 # TODO: whitelist for allowed file name extensions (e.g. only allow files that end ".py")
 def default_fue_timeout(): return datetime.timedelta(seconds=5)
 
-@reversion.register(follow=['fileexerciseteststage_set'])
+#@reversion.register(follow=['fileexerciseteststage_set'])
 class FileExerciseTest(models.Model):
     exercise = models.ForeignKey(FileUploadExercise, verbose_name="for file exercise", db_index=True, on_delete=models.CASCADE)
     name = models.CharField(verbose_name="Test name", max_length=200)
@@ -1508,7 +1534,7 @@ class FileExerciseTest(models.Model):
     class Meta:
         verbose_name = "file exercise test"
 
-@reversion.register(follow=['fileexercisetestcommand_set'])
+#@reversion.register(follow=['fileexercisetestcommand_set'])
 class FileExerciseTestStage(models.Model):
     """A stage – a named sequence of commands to run in a file exercise test."""
     test = models.ForeignKey(FileExerciseTest, on_delete=models.CASCADE)
@@ -1524,7 +1550,7 @@ class FileExerciseTestStage(models.Model):
         unique_together = ('test', 'ordinal_number')
         ordering = ['ordinal_number']
 
-@reversion.register(follow=['fileexercisetestexpectedoutput_set'])
+#@reversion.register(follow=['fileexercisetestexpectedoutput_set'])
 class FileExerciseTestCommand(models.Model):
     """A command that shall be executed on the test machine."""
     stage = models.ForeignKey(FileExerciseTestStage, on_delete=models.CASCADE)
@@ -1566,7 +1592,7 @@ class FileExerciseTestCommand(models.Model):
         unique_together = ('stage', 'ordinal_number')
         ordering = ['ordinal_number']
 
-@reversion.register()
+#@reversion.register()
 class FileExerciseTestExpectedOutput(models.Model):
     """What kind of output is expected from the program?"""
     command = models.ForeignKey(FileExerciseTestCommand, on_delete=models.CASCADE)
@@ -1580,7 +1606,7 @@ class FileExerciseTestExpectedOutput(models.Model):
     )
     output_type = models.CharField(max_length=7, default='STDOUT', choices=OUTPUT_TYPE_CHOICES)
 
-@reversion.register()
+#@reversion.register()
 class FileExerciseTestExpectedStdout(FileExerciseTestExpectedOutput):
     class Meta:
         verbose_name = "expected output"
@@ -1590,7 +1616,7 @@ class FileExerciseTestExpectedStdout(FileExerciseTestExpectedOutput):
         self.output_type = "STDOUT"
         super(FileExerciseTestExpectedStdout, self).save(*args, **kwargs)
 
-@reversion.register()
+#@reversion.register()
 class FileExerciseTestExpectedStderr(FileExerciseTestExpectedOutput):
     class Meta:
         verbose_name = "expected error"
@@ -1601,7 +1627,7 @@ class FileExerciseTestExpectedStderr(FileExerciseTestExpectedOutput):
         super(FileExerciseTestExpectedStderr, self).save(*args, **kwargs)
 
 # Include files
-@reversion.register()
+#@reversion.register()
 class InstanceIncludeFileToExerciseLink(models.Model):
     """
     Context model for shared course files for file exercises. 
@@ -1638,7 +1664,7 @@ class InstanceIncludeFileToInstanceLink(models.Model):
     
 
 # NOTE: rename?
-@reversion.register()
+#@reversion.register()
 class InstanceIncludeFile(models.Model):
     """
     A file that's linked to a course and can be included in any exercise
@@ -1684,7 +1710,7 @@ def get_testfile_path(instance, filename):
         # TODO: Language?
     )
 
-@reversion.register()
+#@reversion.register()
 class FileExerciseTestIncludeFile(models.Model):
     """
     A file which an admin can include in an exercise's file pool for use in
@@ -1712,7 +1738,7 @@ class FileExerciseTestIncludeFile(models.Model):
     class Meta:
         verbose_name = "included file"
 
-@reversion.register()
+#@reversion.register()
 class IncludeFileSettings(models.Model):
     name = models.CharField(verbose_name='File name during test', max_length=255) # Translate
 
@@ -1745,7 +1771,7 @@ class IncludeFileSettings(models.Model):
 
 # TODO: Create a superclass for exercise answer choices
 ## Answer models
-@reversion.register()
+#@reversion.register()
 class TextfieldExerciseAnswer(models.Model):
     exercise = models.ForeignKey(TextfieldExercise, on_delete=models.CASCADE)
     correct = models.BooleanField(default=False)
@@ -1764,7 +1790,7 @@ class TextfieldExerciseAnswer(models.Model):
         self.answer = self.answer.replace("\r", "")
         super(TextfieldExerciseAnswer, self).save(*args, **kwargs)
 
-@reversion.register()
+#@reversion.register()
 class MultipleChoiceExerciseAnswer(models.Model):
     exercise = models.ForeignKey(MultipleChoiceExercise, null=True, on_delete=models.SET_NULL)
     correct = models.BooleanField(default=False)
@@ -1775,7 +1801,7 @@ class MultipleChoiceExerciseAnswer(models.Model):
     def __str__(self):
         return self.answer
 
-@reversion.register()
+#@reversion.register()
 class CheckboxExerciseAnswer(models.Model):
     exercise = models.ForeignKey(CheckboxExercise, null=True, on_delete=models.SET_NULL)
     correct = models.BooleanField(default=False)
@@ -1786,12 +1812,12 @@ class CheckboxExerciseAnswer(models.Model):
     def __str__(self):
         return self.answer
 
-@reversion.register()
+#@reversion.register()
 class CodeInputExerciseAnswer(models.Model):
     exercise = models.ForeignKey(CodeInputExercise, on_delete=models.CASCADE)
     answer = models.TextField() # Translate
 
-@reversion.register()
+#@reversion.register()
 class CodeReplaceExerciseAnswer(models.Model):
     exercise = models.ForeignKey(CodeReplaceExercise, on_delete=models.CASCADE)
     answer = models.TextField() # Translate
@@ -1800,13 +1826,13 @@ class CodeReplaceExerciseAnswer(models.Model):
     replace_line = models.PositiveIntegerField()
 
 # Repeated template exercise models
-@reversion.register()
+#@reversion.register()
 class RepeatedTemplateExerciseTemplate(models.Model):
     exercise = models.ForeignKey(RepeatedTemplateExercise, on_delete=models.CASCADE)
     title = models.CharField(max_length=64) # Translate
     content_string = models.TextField() # Translate
 
-@reversion.register()
+#@reversion.register()
 class RepeatedTemplateExerciseBackendFile(models.Model):
     exercise = models.ForeignKey(RepeatedTemplateExercise, on_delete=models.CASCADE)
     filename = models.CharField(max_length=255, blank=True)
@@ -1826,7 +1852,7 @@ class RepeatedTemplateExerciseBackendFile(models.Model):
             file_contents = f.read()
         return file_contents
 
-@reversion.register()
+#@reversion.register()
 class RepeatedTemplateExerciseBackendCommand(models.Model):
     exercise = models.OneToOneField(RepeatedTemplateExercise, on_delete=models.CASCADE)
     command = models.TextField() # Translate

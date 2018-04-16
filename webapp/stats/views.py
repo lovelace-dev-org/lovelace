@@ -60,12 +60,8 @@ def filter_users_enrolled(users, course_inst):
 
 def course_instances_linked(exercise):
     linked = []
-    course_instances = CourseInstance.objects.all()
-    
-    for course_inst in course_instances:
-        if exercise in course_instance_exercises(course_inst):
-            linked.append(course_inst)
-    return linked
+    links = EmbeddedLink.objects.filter(embedded_page=exercise)
+    return [link.instance for link in links]
 
 ########################################################### 
 
@@ -210,7 +206,7 @@ def exercise_basic_answer_stats(exercise, users, answers, course_inst=None):
 
     return basic_stats, piechart
 
-def checkbox_exercise(exercise, users, course_inst=None):
+def checkbox_exercise(exercise, users, course_inst=None, revision=None):
     """
     Shows statistics on a single checkbox exercise.
     """
@@ -221,6 +217,7 @@ def checkbox_exercise(exercise, users, course_inst=None):
     chosen_answers_set = set(chosen_answers)
     answers_removed_count = 0    
     answer_data = []
+    choices = exercise.get_choices(exercise, revision)
 
     for answer in chosen_answers_set:
         try:
@@ -234,11 +231,12 @@ def checkbox_exercise(exercise, users, course_inst=None):
     
     return (course_inst,
             basic_stats,
+            choices,
             piechart,
             answer_data, 
             answers_removed_count)
 
-def multiple_choice_exercise(exercise, users, course_inst=None):
+def multiple_choice_exercise(exercise, users, course_inst=None, revision=None):
     """
     Shows statistics on a single multiple choice exercise.
     """
@@ -249,6 +247,7 @@ def multiple_choice_exercise(exercise, users, course_inst=None):
     chosen_answers_set = set(chosen_answers)
     answers_removed_count = 0
     answer_data = []
+    choices = exercise.get_choices(exercise, revision)
 
     for answer in chosen_answers_set:
         try:
@@ -262,11 +261,12 @@ def multiple_choice_exercise(exercise, users, course_inst=None):
             
     return (course_inst,
             basic_stats,
+            choices,
             piechart,
             answer_data, 
             answers_removed_count)
 
-def textfield_exercise(exercise, users, course_inst=None):
+def textfield_exercise(exercise, users, course_inst=None, revision=None):
     """
     Shows statistics on a single textfield exercise.
     """
@@ -281,7 +281,7 @@ def textfield_exercise(exercise, users, course_inst=None):
     hinted_incorrect_given = 0
     incorrect_unique = 0
     hinted_incorrect_unique = 0
-    choices = exercise.get_choices(exercise)
+    choices = exercise.get_choices(exercise, revision)
     for answer in given_answers_set:
         count = given_answers.count(answer)
         correct, hinted, matches = textfield_eval(answer, choices)
@@ -307,12 +307,13 @@ def textfield_exercise(exercise, users, course_inst=None):
 
     return (course_inst,
             basic_stats,
+            choices,
             piechart,
             answer_data, 
             round(hint_coverage_unique * 100, 1),
             round(hint_coverage_given * 100, 1))
 
-def repeated_template_exercise(exercise, users, course_inst=None):
+def repeated_template_exercise(exercise, users, course_inst=None, revision=None):
     """
     Shows statistics on a single repeated template exercise.
     """
@@ -360,7 +361,12 @@ def exercise_answer_stats(request, ctx, exercise, exercise_type_f, template):
     for course_inst in course_instances:
         #users_enrolled = filter_users_enrolled(all_users, course_inst)
         users_enrolled = all_users # until enroll implemented
-        stats.append(exercise_type_f(exercise, users_enrolled, course_inst))
+        
+        # this is not right, but we don't have knowledge of the parent page 
+        # in this context
+        link = EmbeddedLink.objects.filter(instance=course_inst, embedded_page=exercise).first()
+        
+        stats.append(exercise_type_f(exercise, users_enrolled, course_inst, link.revision))
         users.extend(users_enrolled)
 
     stats.append(exercise_type_f(exercise, list(set(users))))

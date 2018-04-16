@@ -34,7 +34,7 @@
         <div><b>{% trans "Teacher’s tools" %}</b></div>
         <ul>
           <li><div><a href="{% url 'stats:single_exercise' content.slug %}">{% trans 'Statistics' %}</a></div></li>
-          <li><div><a href="{% url 'feedback:statistics' content.slug %}">{% trans 'Feedback' %}</a></div></li>
+          <li><div><a href="{% url 'feedback:statistics' instance_slug content.slug %}">{% trans 'Feedback' %}</a></div></li>
           {% with type=content.get_human_readable_type %}
             {% if type == "file upload exercise" %}            
               <li><div><a href="{% url 'teacher:download_answers' course_slug instance_slug content.slug %}">{% trans 'Download answers' %}</a></div></li>
