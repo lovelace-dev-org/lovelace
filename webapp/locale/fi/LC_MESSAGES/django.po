@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2018-02-22 11:53+0200\n"
+"POT-Creation-Date: 2018-04-17 10:22+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -191,7 +191,7 @@ msgstr "Katso erikseen"
 #: courses/templates/courses/logout.html:5
 #: courses/templates/courses/terms.html:8
 #: courses/templates/courses/user-exercise-answers.html:15
-#: feedback/templates/feedback/feedback-stats.html:16
+#: feedback/templates/feedback/feedback-stats.html:17
 #: teacher_tools/templates/teacher_tools/manage_enrollments.html:13
 msgid "Courses"
 msgstr "Kurssit"
@@ -286,56 +286,61 @@ msgstr "Tarjolla olevat kurssit"
 msgid "credits"
 msgstr "op"
 
-#: courses/templates/courses/index.html:38
+#: courses/templates/courses/index.html:39
 msgid "You are not enrolled."
 msgstr "Et ole ilmoittautunut."
 
-#: courses/templates/courses/index.html:39
+#: courses/templates/courses/index.html:40
 msgid "Enroll"
 msgstr "Ilmoittaudu"
 
-#: courses/templates/courses/index.html:41
+#: courses/templates/courses/index.html:42
 msgid "Log in to enable enrolling."
 msgstr "Kirjaudu sisään ilmoittautuaksesi."
 
-#: courses/templates/courses/index.html:45
-#, python-format
-msgid ""
-"\n"
-"                            Enroll status: %(status)s\n"
-"                          "
-msgstr ""
-"\n"
-"                            Ilmoittautumisen tila: %(status)s\n"
-"                          "
+#: courses/templates/courses/index.html:47
+msgid "You have enrolled"
+msgstr "Olet ilmoittautunut."
 
-#: courses/templates/courses/index.html:54
+#: courses/templates/courses/index.html:49
+msgid "Your application was not accepted"
+msgstr "Osallistumispyyntöäsi ei hyväksytty."
+
+#: courses/templates/courses/index.html:51
+msgid "You have been removed from this course instance"
+msgstr "Sinut on poistettu tältä kurssilta."
+
+#: courses/templates/courses/index.html:53
+msgid "Your enrollment is waiting confirmation"
+msgstr "Osallistumispyyntösi odottaa käsittelyä."
+
+#: courses/templates/courses/index.html:61
 msgid "Enroll to"
 msgstr "Ilmoittaudu"
 
-#: courses/templates/courses/index.html:59
+#: courses/templates/courses/index.html:66
 msgid "Enrollments to this course must be accepted by the teacher"
-msgstr "Tämän kurssin ilmoittautumiset vaativat opettajan hyväksynnän"
+msgstr "Tälle kurssille osallistuminen vaatii opettajan hyväksynnän"
 
-#: courses/templates/courses/index.html:60
+#: courses/templates/courses/index.html:67
 msgid "You can attach a note to your enrollment application by typing below"
 msgstr ""
-"Voit liittää ilmoittutumishakemukseen viestin kirjoittamalla alla olevaan "
+"Voit liittää osallistumispyyntöön viestin kirjoittamalla alla olevaan "
 "laatikkoon"
 
-#: courses/templates/courses/index.html:61
+#: courses/templates/courses/index.html:68
 msgid "Type your application here"
 msgstr "Kirjoita hakemuksesi tähän"
 
-#: courses/templates/courses/index.html:63
+#: courses/templates/courses/index.html:70
 msgid "Enrollments to this course are accepted automatically"
 msgstr "Tämän kurssin ilmoittautumiset hyväksytään automaattisesti"
 
-#: courses/templates/courses/index.html:67
+#: courses/templates/courses/index.html:74
 msgid "Send application"
 msgstr "Lähetä ilmoittautuminen"
 
-#: courses/templates/courses/index.html:90
+#: courses/templates/courses/index.html:98
 msgid "No courses available!"
 msgstr "Tarjolla olevia kursseja ei löytynyt!"
 
@@ -507,28 +512,28 @@ msgstr "Apua!"
 msgid "Triggers fired"
 msgstr "Aktivoidut tapahtumat"
 
-#: courses/views.py:303
+#: courses/views.py:300
 msgid "Only logged in users can send their answers for evaluation!"
 msgstr ""
 "Vain sisäänkirjautuneet käyttäjät voivat lähettää vastauksia "
 "tarkistettavaksi!"
 
-#: courses/views.py:330
+#: courses/views.py:327
 #, python-format
 msgid ""
 "The deadline for this exercise (%s) has passed. Your answer will not be "
 "evaluated!"
 msgstr "Tehtävän palautusaika (%s) on mennyt. Vastaustasi ei arvioida!"
 
-#: courses/views.py:385
+#: courses/views.py:382
 msgid "Only logged in users are allowed to answer repeated template exercises."
 msgstr "Vain sisäänkirjautuneet käyttäjät voivat vastata tehtäviin."
 
-#: courses/views.py:422
+#: courses/views.py:419
 msgid "Error, exercise backend unavailable."
 msgstr "Virhe: tarkistusprosessi ei ole päällä."
 
-#: courses/views.py:533
+#: courses/views.py:531
 msgid ""
 "The program took too long to execute and was terminated. Check your code for "
 "too slow solutions."
@@ -536,95 +541,95 @@ msgstr ""
 "Ohjelman suoritus kesti liian kauan ja se lopetettiin kesken. Tarkista "
 "koodisi ja korjaa mahdolliset hitaat ratkaisut"
 
-#: courses/views.py:536
+#: courses/views.py:534
 msgid ""
 "Checking program was unable to finish due to an error. Contact course staff."
 msgstr ""
 "Tarkistinohjelma kaatui kesken tarkistuksen. Ota yhteyttä kurssin "
 "henkilökuntaan."
 
-#: courses/views.py:550 courses/views.py:563 courses/views.py:634
-#: courses/views.py:647 courses/views.py:1021 courses/views.py:1092
+#: courses/views.py:548 courses/views.py:561 courses/views.py:632
+#: courses/views.py:645 courses/views.py:1034 courses/views.py:1105
 msgid "You're only allowed to view your own answers."
 msgstr "Voit katsoa vain omia vastauksiasi."
 
-#: courses/views.py:945
+#: courses/views.py:958
 msgid "Please log in to view your information."
 msgstr "Kirjaudu sisään nähdäksesi tietosi."
 
-#: courses/views.py:949
+#: courses/views.py:962
 msgid "You are only allowed to view your own information."
 msgstr "Voit katsoa vain omia tietojasi."
 
-#: courses/views.py:990
+#: courses/views.py:1003
 msgid "This event is already full."
 msgstr "Tapahtuma on jo täynnä."
 
-#: courses/views.py:993
+#: courses/views.py:1006
 msgid "You have already reserved a slot in this event."
 msgstr "Olet jo varannut paikan tähän tapahtumaan."
 
-#: courses/views.py:998
+#: courses/views.py:1011
 msgid "Slot reserved!"
 msgstr "Paikka varattu!"
 
-#: courses/views.py:1003
+#: courses/views.py:1016
 msgid "Reservation cancelled."
 msgstr "Varaus peruttu."
 
-#: courses/views.py:1005
+#: courses/views.py:1018
 msgid "Reservation already cancelled."
 msgstr "Varaus on jo peruttu."
 
-#: courses/views.py:1088 courses/views.py:1138
+#: courses/views.py:1101
 msgid "This course instance does't exist"
 msgstr "Kurssi-instanssia ei löytynyt"
 
-#: courses/views.py:1098 courses/views.py:1103 courses/views.py:1110
+#: courses/views.py:1111 courses/views.py:1116 courses/views.py:1123
 msgid "You cannot access this answer."
 msgstr "Et voi ladata tätä vastausta."
 
-#: courses/views.py:1142
+#: courses/views.py:1156 courses/views.py:1164 courses/views.py:1187
+#: courses/views.py:1192 exercise_admin/views.py:809
+#: exercise_admin/views.py:814 exercise_admin/views.py:824
+msgid "Requested file does not exist."
+msgstr "Tiedostoa ei löytynyt"
+
+#: courses/views.py:1159
 msgid ""
 "Only course main responsible teachers are allowed to download media files "
 "through this interface."
 msgstr "Vain kurssien vastuuhenkilöt voivat ladata vastaustiedostot."
 
-#: courses/views.py:1148 courses/views.py:1153 courses/views.py:1176
-#: courses/views.py:1181 exercise_admin/views.py:809
-#: exercise_admin/views.py:814 exercise_admin/views.py:824
-msgid "Requested file does not exist."
-msgstr "Tiedostoa ei löytynyt"
-
-#: courses/views.py:1161 courses/views.py:1163
+#: courses/views.py:1172 courses/views.py:1174
 msgid ""
 "Only course staff members are allowed to download repeated template exercise "
 "backends."
 msgstr "Vain sisäänkirjautuneet käyttäjät voivat vastata tehtäviin."
 
-#: courses/views.py:1168
+#: courses/views.py:1179
 msgid "This exercise does't exist"
 msgstr "Tehtävää ei löytynyt"
 
-#: courses/views.py:1201
+#: courses/views.py:1212
 msgid "Only logged in users can enroll to courses."
 msgstr ""
 "Vain sisäänkirjautuneet käyttäjät voivat lähettää vastauksia "
 "tarkistettavaksi!"
 
-#: courses/views.py:1206
+#: courses/views.py:1217
 msgid "You cannot enroll to this course."
 msgstr "Et voi ladata tätä vastausta."
 
-#: courses/views.py:1211
+#: courses/views.py:1222
 msgid "You have already enrolled to this course."
 msgstr "Olet aiemmin vastannut tähän tehtävään oikein."
 
-#: courses/views.py:1218
+#: courses/views.py:1229
 msgid "Your enrollment has been automatically accepted."
 msgstr "Ilmoittautumisesi on hyväksytty automaattisesti"
 
-#: courses/views.py:1221
+#: courses/views.py:1232
 msgid "Your enrollment application has been registered for approval."
 msgstr "Ilmoittautumishakemuksesi on lähetetty hyväksyttäväksi"
 
@@ -632,7 +637,7 @@ msgstr "Ilmoittautumishakemuksesi on lähetetty hyväksyttäväksi"
 msgid "Only course staff members are allowed to download exercise files."
 msgstr "Vain kurssien vastuuhenkilöt voivat ladata vastaustiedostot."
 
-#: exercise_admin/views.py:829
+#: exercise_admin/views.py:827
 msgid "Only course staff members are allowed to download instance files."
 msgstr "Vain kurssien vastuuhenkilöt voivat ladata vastaustiedostot."
 
@@ -783,6 +788,15 @@ msgstr ""
 #: templates/admin/change_form.html:49
 msgid "Please correct the errors below."
 msgstr ""
+
+#~ msgid ""
+#~ "\n"
+#~ "                              Enroll status: %(status)s\n"
+#~ "                            "
+#~ msgstr ""
+#~ "\n"
+#~ "                            Ilmoittautumisen tila: %(status)s\n"
+#~ "                          "
 
 #~ msgid "Search:"
 #~ msgstr "Hae:"

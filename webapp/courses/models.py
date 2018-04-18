@@ -171,6 +171,10 @@ class CourseInstance(models.Model):
     frozen = models.BooleanField(verbose_name="Freeze this instance", default=False)
     visible = models.BooleanField(verbose_name="Is this course visible to students", default=True)
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.__was_frozen = self.frozen        
+
     def get_url_name(self):
         """Creates a URL and HTML5 ID field friendly version of the name."""
         # TODO: Ensure uniqueness! I.e. what happens when there's a clash
@@ -182,7 +186,9 @@ class CourseInstance(models.Model):
     def user_enroll_status(self, user):
         if not user.is_active: return None
         try:
-            return self.courseenrollment_set.get(student=user).enrollment_state
+            status = self.courseenrollment_set.get(student=user).enrollment_state
+            print(status)
+            return status
         except CourseEnrollment.DoesNotExist as e:
             return None
 
@@ -191,8 +197,12 @@ class CourseInstance(models.Model):
         self.slug = self.get_url_name()
         #else:
         #self.slug = slugify(self.slug, allow_unicode=True)
-
+        
         super(CourseInstance, self).save(*args, **kwargs)
+        if not self.__was_frozen and self.frozen:
+            self.__was_frozen = True
+            self.freeze()
+
     
     def freeze(self, freeze_to=None):
         """
@@ -298,8 +308,7 @@ class CourseMedia(models.Model):
     Top level model for embedded media.
     """
     
-    # NOTE: owner is now an obsolete field (versioning serves the same purpose)
-    owner = models.ForeignKey(User, null=True, blank=True, verbose_name="Uploader", on_delete=models.SET_NULL)
+
     name = models.CharField(verbose_name='Name for reference in content',max_length=200,unique=True)
 
 
@@ -620,7 +629,6 @@ class ContentPage(models.Model):
             link_obj.save()
 
         for link_slug in added_media_links:
-            print(link_slug)
             link_obj = CourseMediaLink(
                 parent=self,
                 media=CourseMedia.objects.get(name=link_slug),

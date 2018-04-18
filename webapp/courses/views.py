@@ -136,9 +136,6 @@ def index(request):
 def course_instances(request, course_slug):
     return HttpResponse("here be instances for this course")
 
-# TODO: A tool for locking the current revisions of embedded pages for
-# course instances.
-
 def check_exercise_accessible(request, course_slug, instance_slug, content_slug):
     try:
         course_obj = Course.objects.get(slug=course_slug)
@@ -1132,8 +1129,9 @@ def download_embedded_file(request, course_slug, instance_slug, file_slug):
     This view function is for downloading media files via the actual site.
     """
     
+    #NOTE: hotfix for multiple copies of medialinks
     try:
-        file_link = CourseMediaLink.objects.get(media__name=file_slug, instance__slug=instance_slug)
+        file_link = CourseMediaLink.objects.filter(media__name=file_slug, instance__slug=instance_slug).first()
     except CourseMediaLink.DoesNotExist as e:
         return HttpResponseNotFound("No such file {}".format(file_slug))
     

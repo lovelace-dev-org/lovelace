@@ -250,7 +250,7 @@ class UserProfileAdmin(UserAdmin):
 admin.site.register(User, UserProfileAdmin)
 
 ## Feedback for user answers
-admin.site.register(Evaluation)
+#admin.site.register(Evaluation)
 
 ## Exercise types
 # TODO: Create an abstract way to admin the different task types
@@ -466,6 +466,10 @@ class LectureAdmin(CourseContentAccess, TranslationAdmin, VersionAdmin):
     
     content_type = "LECTURE"
     form = ContentForm
+    fieldsets = [
+        ('Page information',    {'fields': ['name', 'content']}),
+        ('Feedback',            {'fields': ['feedback_questions']})
+    ]
     
     def formfield_for_dbfield(self, db_field, **kwargs):
         formfield = super(LectureAdmin, self).formfield_for_dbfield(db_field, **kwargs)
@@ -505,7 +509,7 @@ admin.site.register(Lecture, LectureAdmin)
 admin.site.register(MultipleChoiceExercise, MultipleChoiceExerciseAdmin)
 admin.site.register(CheckboxExercise, CheckboxExerciseAdmin)
 admin.site.register(TextfieldExercise, TextfieldExerciseAdmin)
-admin.site.register(CodeReplaceExercise, CodeReplaceExerciseAdmin)
+#admin.site.register(CodeReplaceExercise, CodeReplaceExerciseAdmin)
 admin.site.register(RepeatedTemplateExercise, RepeatedTemplateExerciseAdmin)
 
 admin.site.register(FileExerciseTestIncludeFile)
@@ -522,38 +526,23 @@ class CalendarAdmin(admin.ModelAdmin):
     search_fields = ("name",)
 
 
-class FileAdmin(CourseMediaAccess, VersionAdmin):
-    def save_model(self, request, obj, form, change):
-        if not change:
-            obj.owner = request.user
-        obj.save()
+class FileAdmin(CourseMediaAccess, TranslationAdmin, VersionAdmin):
 
     search_fields = ('name',)
-    readonly_fields = ('owner',)
     form = FileEditForm
     formfield_overrides = {
         models.FileField: {'widget': AdminFileWidget}
     }
 
-class ImageAdmin(CourseMediaAccess, VersionAdmin):
-    def save_model(self, request, obj, form, change):
-        if not change:
-            obj.owner = request.user
-        obj.save()
+class ImageAdmin(CourseMediaAccess, TranslationAdmin, VersionAdmin):
 
     search_fields = ('name',)
-    readonly_fields = ('owner',)
     list_display = ('name', 'description',)
     list_per_page = 500
 
-class VideoLinkAdmin(CourseMediaAccess, VersionAdmin):
-    def save_model(self, request, obj, form, change):
-        if not change:
-            obj.owner = request.user
-        obj.save()
+class VideoLinkAdmin(CourseMediaAccess, TranslationAdmin, VersionAdmin):
 
     search_fields = ('name',)
-    readonly_fields = ('owner',)
     list_display = ('name', 'description',)
     list_per_page = 500
 
@@ -601,6 +590,8 @@ class ContentGraphAdmin(admin.ModelAdmin):
     list_filter = ('courseinstance',)
     list_per_page = 500
     ordering = ('courseinstance', 'ordinal_number',)
+    
+    fields = ('parentnode', 'content', 'deadline', 'scored', 'ordinal_number', 'visible')
     
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         """
@@ -677,7 +668,7 @@ class CourseInstanceAdmin(TranslationAdmin, VersionAdmin):
         (None,                {'fields': ['name', 'email', 'course', 'frontpage']}),
         ('Schedule settings', {'fields': ['start_date', 'end_date', 'active', 'visible']}),
         ('Enrollment',        {'fields': ['manual_accept']}),
-        ('Instance outline',  {'fields': ['contents',]}),
+        ('Instance outline',  {'fields': ['contents', 'frozen']}),
     ]
     search_fields = ('name',)
     list_display = ('name', 'course')
@@ -789,3 +780,4 @@ class CourseInstanceAdmin(TranslationAdmin, VersionAdmin):
                 
             
 admin.site.register(CourseInstance, CourseInstanceAdmin)
+    

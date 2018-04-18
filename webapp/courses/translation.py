@@ -32,7 +32,7 @@ class CourseInstanceTranslationOptions(TranslationOptions):
 
 @register(CourseMedia)
 class CourseMediaTranslationOptions(TranslationOptions):
-    fields = ('owner', )
+    pass
 
 @register(File)
 class FileTranslationOptions(TranslationOptions):

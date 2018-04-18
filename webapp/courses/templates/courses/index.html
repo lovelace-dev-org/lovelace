@@ -43,9 +43,15 @@
                           {% endif %}
                         {% else %}
                           <span class="instance-userinfo">
-                            {% blocktrans with status=enroll_status %}
-                              Enroll status: {{ status }}
-                            {% endblocktrans %}
+                            {% if enroll_status == "ACCEPTED" %}
+                              {% trans 'You have enrolled' %}
+                            {% elif enroll_status == "DENIED" %}
+                              {% trans 'Your application was not accepted' %}
+                            {% elif enroll_status == "EXPELLED" %}
+                              {% trans 'You have been removed from this course instance' %}
+                            {% elif enroll_status == "WAITING" %}
+                              {% trans 'Your enrollment is waiting confirmation' %}
+                            {% endif %}
                           </span> 
                         {% endif %}
                       </div>

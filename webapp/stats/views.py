@@ -340,7 +340,7 @@ def repeated_template_exercise(exercise, users, course_inst=None, revision=None)
             round(hint_coverage_given * 100, 1))
     
     
-def file_upload_exercise(exercise, users, course_inst=None):
+def file_upload_exercise(exercise, users, course_inst=None, revision=None):
     """
     Shows statistics on a single file upload exercise.
     """
