@@ -691,7 +691,7 @@ section.content {
 
     section.content h1 {
         margin-top: 1em;
-        font-size: 1.5em;
+        font-size: 1.8em;
         font-variant: small-caps;
         word-spacing: 0.2em;
         padding-bottom: 2px;
@@ -700,7 +700,7 @@ section.content {
         text-shadow: rgba(63, 63, 63, 0.5) 1px 1px 1px;
     }
     section.content h2 {
-        font-size: 1.3em;
+        font-size: 1.5em;
         margin-top: 1em;
         margin-bottom: 0.5em;
         text-shadow: rgba(63, 63, 63, 0.5) 1px 1px 1px;
@@ -709,23 +709,23 @@ section.content {
     section.content h3 {
         font-size: 1.25em;
         margin-top: 1em;
-        margin-bottom: 0.5em;
+        margin-bottom: 0.0em;
         text-shadow: rgba(63, 63, 63, 0.5) 1px 1px 1px;
     }
     section.content h4 {
         font-size: 1.2em;
         letter-spacing: 0.03em;
         word-spacing: 0.07em;
-        margin-bottom: 0.5em;
+        margin-bottom: 0.0em;
         font-weight: bold;
     }
     section.content h5 {
         font-size: 1.1em;
-        margin-bottom: 0.5em;
+        margin-bottom: 0.0em;
     }
     section.content h6 {
         font-size: 1.0em;
-        margin-bottom: 0.5em;
+        margin-bottom: 0.0em;
         font-weight: bold;
     }
 
@@ -789,7 +789,7 @@ section.content {
     }
     section.content ul, section.content ol {
         margin-left: 1.5em;
-        margin-bottom: -.75em;
+        margin-bottom: 1.5em;
     }
 
     section.content ul > li, section.content ol > li {

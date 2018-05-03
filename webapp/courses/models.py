@@ -181,7 +181,8 @@ class CourseInstance(models.Model):
         # between two slugs (e.g. two courses named "programming course" and
         # "Programming_Course").
         # NOTE: Currently ensured by making name unique
-        return slugify(self.name, allow_unicode=True)
+        default_lang = django.conf.settings.LANGUAGE_CODE
+        return slugify(getattr(self, "name_{}".format(default_lang)), allow_unicode=True)
 
     def user_enroll_status(self, user):
         if not user.is_active: return None
@@ -412,12 +413,13 @@ class Term(models.Model):
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         for instance in CourseInstance.objects.filter(course=self.course, frozen=False):
-            link = TermToInstanceLink(
-                instance=instance,
-                revision=None,
-                term=self
-            )
-            link.save()
+            if not TermToInstanceLink.objects.filter(instance=instance, term=self):
+                link = TermToInstanceLink(
+                    instance=instance,
+                    revision=None,
+                    term=self
+                )
+                link.save()
 
     class Meta:
         unique_together = ('course', 'name',)
@@ -538,9 +540,7 @@ class ContentPage(models.Model):
     )
     
     def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-        for instance in CourseInstance.objects.filter(frozen=False, contents__content=self):
-            self.update_embedded_links(instance)
+        super().save(*args, **kwargs)        
         
 
     def rendered_markup(self, request=None, context=None, revision=None):
@@ -555,7 +555,6 @@ class ContentPage(models.Model):
         # TODO: Separate caching depending on the language!
         # TODO: Save the embedded pages as embedded content links
         # TODO: Take csrf protection into account; use cookies only
-        # NOTE: with update_embedded_links existing, does this do anything?
         #       - https://docs.djangoproject.com/en/1.7/ref/contrib/csrf/
         rendered = ""
         embedded_pages = []
@@ -642,7 +641,6 @@ class ContentPage(models.Model):
             link_obj.ordinal_number = i
             link_obj.save()
             link_obj.embedded_page.update_embedded_links(instance)
-            
 
     # TODO: -> @property human_readable_type
     def get_human_readable_type(self):
@@ -786,6 +784,8 @@ class Lecture(ContentPage):
         
         self.content_type = "LECTURE"
         super(Lecture, self).save(*args, **kwargs)
+        for instance in CourseInstance.objects.filter(Q(contents__content=self) | Q(contents__content__embedded_pages=self), frozen=False):
+            self.update_embedded_links(instance)
 
     class Meta:
         verbose_name = "lecture page"
@@ -803,7 +803,8 @@ class MultipleChoiceExercise(ContentPage):
             self.slug = slugify(self.slug, allow_unicode=True)
 
         self.content_type = "MULTIPLE_CHOICE_EXERCISE"
-        super(MultipleChoiceExercise, self).save(*args, **kwargs)
+        for instance in CourseInstance.objects.filter(Q(contents__content=self) | Q(contents__content__embedded_pages=self), frozen=False):
+            self.update_embedded_links(instance)
 
     def get_choices(self, revision=None):
         if revision is None:
@@ -903,7 +904,8 @@ class CheckboxExercise(ContentPage):
             self.slug = slugify(self.slug, allow_unicode=True)
 
         self.content_type = "CHECKBOX_EXERCISE"
-        super(CheckboxExercise, self).save(*args, **kwargs)
+        for instance in CourseInstance.objects.filter(Q(contents__content=self) | Q(contents__content__embedded_pages=self), frozen=False):
+            self.update_embedded_links(instance)
 
     def get_choices(self, revision=None):
         if revision is None:
@@ -1018,6 +1020,8 @@ class TextfieldExercise(ContentPage):
 
         self.content_type = "TEXTFIELD_EXERCISE"
         super(TextfieldExercise, self).save(*args, **kwargs)
+        for instance in CourseInstance.objects.filter(Q(contents__content=self) | Q(contents__content__embedded_pages=self), frozen=False):
+            self.update_embedded_links(instance)
 
     def get_choices(self, revision=None):
         if revision is None:
@@ -1148,6 +1152,8 @@ class FileUploadExercise(ContentPage):
 
         self.content_type = "FILE_UPLOAD_EXERCISE"
         super(FileUploadExercise, self).save(*args, **kwargs)
+        for instance in CourseInstance.objects.filter(Q(contents__content=self) | Q(contents__content__embedded_pages=self), frozen=False):
+            self.update_embedded_links(instance)
 
     def save_answer(self, user, ip, answer, files, instance, revision):
         
@@ -1226,6 +1232,8 @@ class CodeInputExercise(ContentPage):
 
         self.content_type = "CODE_INPUT_EXERCISE"
         super(CodeInputExercise, self).save(*args, **kwargs)
+        for instance in CourseInstance.objects.filter(Q(contents__content=self) | Q(contents__content__embedded_pages=self), frozen=False):
+            self.update_embedded_links(instance)
 
     def save_answer(self, user, ip, answer, files, instance, revision):
         pass
@@ -1247,6 +1255,8 @@ class CodeReplaceExercise(ContentPage):
 
         self.content_type = "CODE_REPLACE_EXERCISE"
         super(CodeReplaceExercise, self).save(*args, **kwargs)
+        for instance in CourseInstance.objects.filter(Q(contents__content=self) | Q(contents__content__embedded_pages=self), frozen=False):
+            self.update_embedded_links(instance)
 
     def get_choices(self, revision=None):
         choices = CodeReplaceExerciseAnswer.objects.filter(exercise=self)\
@@ -1296,6 +1306,8 @@ class RepeatedTemplateExercise(ContentPage):
         self.content_type = "REPEATED_TEMPLATE_EXERCISE"
         RepeatedTemplateExerciseSession.objects.filter(exercise=self, user=None).delete()
         super(RepeatedTemplateExercise, self).save(*args, **kwargs)
+        for instance in CourseInstance.objects.filter(Q(contents__content=self) | Q(contents__content__embedded_pages=self), frozen=False):
+            self.update_embedded_links(instance)
 
     def get_choices(self, revision=None):
         return

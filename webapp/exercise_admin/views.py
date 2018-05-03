@@ -675,7 +675,11 @@ def get_instance_files(request):
             "error": "Only logged in admins can query instance files!"
         })
     
-    instance_files = InstanceIncludeFile.objects.all()
+    if request.user.is_superuser:
+        instance_files = InstanceIncludeFile.objects.all()
+    else:
+        instance_files = InstanceIncludeFile.objects.filter(course__staff_group__user=request.user)
+    
     lang_list = get_lang_list()
     result = []
     

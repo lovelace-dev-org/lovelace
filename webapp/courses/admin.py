@@ -13,7 +13,7 @@ from django.db import models, transaction
 from django.db.models import Q
 from django.forms import Field, ModelForm, TextInput, Textarea, ModelChoiceField, BaseInlineFormSet
 
-from .forms import FileEditForm, RepeatedTemplateExerciseBackendForm, ContentForm
+from .forms import FileEditForm, RepeatedTemplateExerciseBackendForm, ContentForm, TextfieldAnswerForm
 from .widgets import AdminFileWidget, AdminTemplateBackendFileWidget
 
 from modeltranslation.admin import TranslationAdmin, TranslationTabularInline, \
@@ -336,9 +336,16 @@ class CheckboxExerciseAdmin(CourseContentAccess, TranslationAdmin, VersionAdmin)
     list_per_page = 500
     save_on_top = True
 
+
+
+
+
 class TextfieldExerciseAnswerInline(TranslationStackedInline):
     model = TextfieldExerciseAnswer
     extra = 1
+    form = TextfieldAnswerForm
+    
+    
 
 class TextfieldExerciseAdmin(CourseContentAccess, TranslationAdmin, VersionAdmin):
     
@@ -479,8 +486,9 @@ class LectureAdmin(CourseContentAccess, TranslationAdmin, VersionAdmin):
             formfield.widget = Textarea(attrs={'rows':2})
         return formfield
 
-    def view_on_site(self, obj):
-        return reverse('courses:sandbox', kwargs={'content_slug': obj.slug})
+    # TODO: instanceless viewing doesn't work
+    #def view_on_site(self, obj):
+    #    return reverse('courses:sandbox', kwargs={'content_slug': obj.slug})
 
     search_fields = ("name",)
     readonly_fields = ("slug",)
@@ -565,6 +573,37 @@ class TermAdmin(TranslationAdmin, VersionAdmin):
 
     inlines = [TermTabInline, TermLinkInline]
 
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        edited = Version.objects.get_for_model(Term).filter(revision__user=request.user).values_list("object_id", flat=True)
+        
+        return qs.filter(
+            Q(id__in=list(edited)) |
+            Q(course__staff_group__user=request.user)
+        ).distinct()
+
+    def has_change_permission(self, request, obj=None):
+        if request.user.is_superuser:
+            return True
+        elif request.user.is_staff:
+            if obj:
+                return Version.objects.get_for_object(obj).filter(revision__user=request.user).exists() or request.user in obj.course.staff_group.user_set.get_queryset()
+            else:
+                return True
+        else:
+            return False
+        
+    def has_delete_permission(self, request, obj=None):
+        if request.user.is_superuser:
+            return True
+        elif request.user.is_staff:
+            if obj:
+                return Version.objects.get_for_object(obj).filter(revision__user=request.user).exists() or request.user in obj.course.staff_group.user_set.get_queryset()
+            else:
+                return True
+        else:
+            return False
+
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)
         lang_list = django.conf.settings.LANGUAGES
@@ -573,6 +612,9 @@ class TermAdmin(TranslationAdmin, VersionAdmin):
             for lang, _ in lang_list:
                 cache.set('termbank_contents_{instance}_{lang}'.format(instance=instance_slug, lang=lang), None)
                 cache.set('termbank_div_data_{instance}_{lang}'.format(instance=instance_slug, lang=lang), None)
+                
+        
+        
 
 admin.site.register(Calendar, CalendarAdmin)
 admin.site.register(File, FileAdmin)

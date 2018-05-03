@@ -152,7 +152,7 @@ def check_exercise_accessible(request, course_slug, instance_slug, content_slug)
     except ContentPage.DoesNotExist as e:
         return {'error': HttpResponseNotFound("No such exercise {}.".format(content_slug))}
 
-    embedded_links = EmbeddedLink.objects.filter(embedded_page_id=content_obj.id, parent__in=instance_obj.contents.values_list('content', flat=True))
+    embedded_links = EmbeddedLink.objects.filter(embedded_page_id=content_obj.id, instance__slug=instance_slug)
     content_graph_links = instance_obj.contents.filter(content_id=content_obj.id)
     
     if content_graph_links.first() is None and embedded_links.first() is None:
@@ -383,7 +383,7 @@ def get_repeated_template_session(request, course_slug, instance_slug, content_s
     
     check_results = check_exercise_accessible(request, course_slug, instance_slug, content_slug)
     check_error = check_results.get('error')
-    if check_error is not None:
+    if check_error is not None:        
         return check_error
 
     course = check_results['course']
@@ -879,6 +879,7 @@ def content(request, course_slug, instance_slug, content_slug, **kwargs):
     c = {
         'course_slug': course_slug,
         'course_name': course.name,
+        "instance": instance,
         'instance_name': instance.name,
         'instance_slug': instance_slug,
         'content': content,
