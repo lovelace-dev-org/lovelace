@@ -1257,6 +1257,18 @@ section.content {
         li.evaluation-msg-debug {
             list-style-image: url("debug-16.png");
         }
+        li.evaluation-msg-lint-conv {
+            list-style-image: url("lint-conv-16.png");
+        }
+        li.evaluation-msg-lint-refact {
+            list-style-image: url("lint-refact-alt-16.png");
+        }
+        li.evaluation-msg-lint-warn {
+            list-style-image: url("lint-warn-16.png");
+        }
+        li.evaluation-msg-lint-error {
+            list-style-image: url("lint-error-16.png");
+        }
         
         li.evaluation-li-hidden {
             display: none;

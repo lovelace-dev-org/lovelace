@@ -803,6 +803,7 @@ class MultipleChoiceExercise(ContentPage):
             self.slug = slugify(self.slug, allow_unicode=True)
 
         self.content_type = "MULTIPLE_CHOICE_EXERCISE"
+        super().save(*args, **kwargs)
         for instance in CourseInstance.objects.filter(Q(contents__content=self) | Q(contents__content__embedded_pages=self), frozen=False):
             self.update_embedded_links(instance)
 
@@ -904,6 +905,7 @@ class CheckboxExercise(ContentPage):
             self.slug = slugify(self.slug, allow_unicode=True)
 
         self.content_type = "CHECKBOX_EXERCISE"
+        super().save(*args, **kwargs)
         for instance in CourseInstance.objects.filter(Q(contents__content=self) | Q(contents__content__embedded_pages=self), frozen=False):
             self.update_embedded_links(instance)
 

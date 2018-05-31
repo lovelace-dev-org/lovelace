@@ -115,6 +115,8 @@ class TextfieldAnswerForm(forms.ModelForm):
             re.compile(data)
         except re.error as e:
             raise ValidationError("Broken regexp: {}".format(e))
+        
+        return data
             
     def clean_answer_en(self):
         
@@ -126,4 +128,6 @@ class TextfieldAnswerForm(forms.ModelForm):
             re.compile(data)
         except re.error as e:
             raise ValidationError("Broken regexp: {}".format(e))
+
+        return data
         

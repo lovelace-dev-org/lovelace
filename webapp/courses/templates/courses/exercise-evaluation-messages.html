@@ -29,6 +29,22 @@
                 <li class="evaluation-msg-debug">
                   {{ output.msg|safe }}
                 </li>
+              {% elif output.flag == 10 %}
+                <li class="evaluation-msg-lint-conv">
+                  {{ output.msg|safe }}
+                </li>
+              {% elif output.flag == 11 %}
+                <li class="evaluation-msg-lint-refact">
+                  {{ output.msg|safe }}
+                </li>
+              {% elif output.flag == 12 %}
+                <li class="evaluation-msg-lint-warn">
+                  {{ output.msg|safe }}
+                </li>
+              {% elif output.flag == 13 %}
+                <li class="evaluation-msg-lint-error">
+                  {{ output.msg|safe }}
+                </li>
               {% endif %}        
             {% endfor %}
           </ul>
@@ -57,6 +73,22 @@
                 </li>
               {% elif output.flag == 4 %}
                 <li class="evaluation-msg-debug evaluation-li-hidden">
+                  {{ output.msg|safe }}
+                </li>
+              {% elif output.flag == 10 %}
+                <li class="evaluation-msg-lint-conv">
+                  {{ output.msg|safe }}
+                </li>
+              {% elif output.flag == 11 %}
+                <li class="evaluation-msg-lint-refact">
+                  {{ output.msg|safe }}
+                </li>
+              {% elif output.flag == 12 %}
+                <li class="evaluation-msg-lint-warn">
+                  {{ output.msg|safe }}
+                </li>
+              {% elif output.flag == 13 %}
+                <li class="evaluation-msg-lint-error">
                   {{ output.msg|safe }}
                 </li>
               {% endif %}        

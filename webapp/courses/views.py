@@ -1102,7 +1102,7 @@ def download_answer_file(request, user, course, instance, answer_id, filename):
         return HttpResponseNotFound(_("This course instance does't exist"))    
     
     # Determine access to the user's answers 
-    if not (request.user.username == user or is_course_staff(request.user, answer_object.instance)):
+    if not (request.user.username == user or is_course_staff(request.user, instance_object)):
         return HttpResponseForbidden(_("You're only allowed to view your own answers."))
     
     # Try to find the answer itself
