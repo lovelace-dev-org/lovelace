@@ -1,5 +1,17 @@
 """
-Django settings for Lovelace project.
+Django settings for Lovelace project. Do not modify this file. In order to make
+your own settings file(s), create them in the same folder with appropriate
+names (recommended: development.py, production.py, unittest.py) and import the
+contents of this file with: 
+
+from lovelace.settings.factory import *
+
+Then overwrite or modify the values you need to. You should also edit the
+__init__.py in this folder to import the settings file you wish to use as the
+default. When running manage.py you can change the settings file with the 
+--settings option, e.g.
+
+python manage.py --settings lovelace.settings.yoursettings
 
 For more information on this file, see
 https://docs.djangoproject.com/en/dev/topics/settings/
@@ -10,9 +22,12 @@ https://docs.djangoproject.com/en/dev/ref/settings/
 
 import os
 
-# Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+# to prevent accidents, unit tests will not run unless started with a settings
+# file where this flag is set to True.
+TEST_SETTINGS = False
 
+# Build paths inside the project like this: os.path.join(BASE_DIR, ...)
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True # Use True when viewing through web browser
 
@@ -43,7 +58,7 @@ INSTALLED_APPS = (
 SITE_ID = 1
 LOGIN_REDIRECT_URL = '/'
 
-MIDDLEWARE_CLASSES = (
+MIDDLEWARE = (
     #'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -172,6 +187,9 @@ AUTH_PROFILE_MODULE = 'courses.UserProfile'
 
 # Absolute filesystem path to the directory that will hold user-uploaded files.
 # Example: "/home/media/media.lawrence.com/media/"
+# When creating a settings file for unit tests, change this to 
+# os.path.join(BASS_DIR, "test_files", "upload") 
+# or to a similarly isolated path. 
 MEDIA_ROOT = os.path.join(BASE_DIR, 'upload')
 
 # URL that handles the media served from MEDIA_ROOT. Make sure to use a

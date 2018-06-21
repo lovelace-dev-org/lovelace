@@ -78,14 +78,23 @@ def content_feedback_stats(request, instance_slug, content_slug):
     
     try:
         link = courses.models.EmbeddedLink.objects.get(embedded_page__slug=content_slug, instance__slug=instance_slug)
+        content = link.embedded_page
+        instance = link.instance
     except courses.models.EmbeddedLink.DoesNotExist:
-        return HttpResponseNotFound("Content {} is not linked to course instance {}".format(content_slug, instance_slug))
+        try:
+            instance = courses.models.CourseInstance.objects.get(slug=instance_slug)
+            link = instance.contents.get(content__slug=content_slug)
+            content = link.content
+        except courses.models.ContentGraph.DoesNotExist:        
+            return HttpResponseNotFound("Content {} is not linked to course instance {}".format(content_slug, instance_slug))
+
+    
 
     if link.revision is None:        
-        content = link.embedded_page
+        pass
     else:
         try:
-            content = Version.objects.get_for_object(link.embedded_page).get(revision=link.revision)\
+            content = Version.objects.get_for_object(content).get(revision=link.revision)\
                                                          ._object_version.object
         except Version.DoesNotExist as e:
             return HttpResponseNotFound("The requested revision for {} is not available".format(content_slug))
@@ -110,13 +119,13 @@ def content_feedback_stats(request, instance_slug, content_slug):
             "question_slug": question.slug,
         }
         if question_type == "TEXTFIELD_FEEDBACK":
-            question_ctx.update(textfield_feedback_stats(question, link.instance, content))
+            question_ctx.update(textfield_feedback_stats(question, instance, content))
         elif question_type == "THUMB_FEEDBACK":
-            question_ctx.update(thumb_feedback_stats(question, link.instance, content))
+            question_ctx.update(thumb_feedback_stats(question, instance, content))
         elif question_type == "STAR_FEEDBACK":
-            question_ctx.update(star_feedback_stats(question, link.instance, content))
+            question_ctx.update(star_feedback_stats(question, instance, content))
         elif question_type == "MULTIPLE_CHOICE_FEEDBACK":
-            question_ctx.update(multiple_choice_feedback_stats(question, link.instance, content))
+            question_ctx.update(multiple_choice_feedback_stats(question, instance, content))
         stats[question_type.lower()].append(question_ctx)
     ctx["feedback_stats"] = stats
     
