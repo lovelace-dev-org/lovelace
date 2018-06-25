@@ -203,6 +203,9 @@ function add_exercise_form_callbacks() {
             result_div.css("display", "none");
             var error_div = form_parent.children("div.error");
             error_div.css("display", "none");
+            
+            var submit_element = form_parent.find(":submit");
+            submit_element.prop("disabled", true);
 
             // TODO: Use xhr and progressevent to measure upload progress
 
@@ -215,9 +218,11 @@ function add_exercise_form_callbacks() {
                 contentType: false, // And this
                 dataType: 'json',
                 success: function(data, text_status, jqxhr_obj) {
+                    submit_element.prop("disabled", false);
                     exercise_success(data, result_div, error_div, form_parent);
                 },
                 error: function(xhr, status, type) {
+                    submit_element.prop("disabled", false);
                     exercise_error(status, type, error_div, form_parent);
                 }
             });
