@@ -610,8 +610,8 @@ class ContentPage(models.Model):
         added_page_links = set(page_links).difference(old_page_links)
         added_media_links = set(media_links).difference(old_media_links)
     
-        EmbeddedLink.objects.filter(embedded_page__slug__in=removed_page_links).delete()
-        CourseMediaLink.objects.filter(media__name__in=removed_media_links).delete()
+        EmbeddedLink.objects.filter(embedded_page__slug__in=removed_page_links, instance=instance).delete()
+        CourseMediaLink.objects.filter(media__name__in=removed_media_links, instance=instance).delete()
         
         for link_slug in added_page_links:
             link_obj = EmbeddedLink(
@@ -781,6 +781,7 @@ class Lecture(ContentPage):
         self.content_type = "LECTURE"
         super(Lecture, self).save(*args, **kwargs)
         for instance in CourseInstance.objects.filter(Q(contents__content=self) | Q(contents__content__embedded_pages=self), frozen=False):
+            print(instance)
             self.update_embedded_links(instance)
 
     class Meta:
