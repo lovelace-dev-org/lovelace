@@ -173,7 +173,7 @@ class CourseInstance(models.Model):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.__was_frozen = self.frozen        
+        self._was_frozen = self.frozen
 
     def get_url_name(self):
         """Creates a URL and HTML5 ID field friendly version of the name."""
@@ -199,11 +199,8 @@ class CourseInstance(models.Model):
         #else:
         #self.slug = slugify(self.slug, allow_unicode=True)
         
+        #super(CourseInstance, self).save(*args, **kwargs)
         super(CourseInstance, self).save(*args, **kwargs)
-        if not self.__was_frozen and self.frozen:
-            self.__was_frozen = True
-            self.freeze()
-
     
     def freeze(self, freeze_to=None):
         """
@@ -222,7 +219,7 @@ class CourseInstance(models.Model):
             content_link.freeze(freeze_to)
             content_link.content.update_embedded_links(self, content_link.revision)
             self.contents.add(content_link)
-        self.save()
+        #self.save()
         
         new_links = self.contents.all()
         for content_link in new_links:
@@ -245,7 +242,6 @@ class CourseInstance(models.Model):
             link.freeze(freeze_to)
             
         self.frozen = True
-        self.save()
     
     def __str__(self):
         return self.name

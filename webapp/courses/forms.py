@@ -50,9 +50,18 @@ class RepeatedTemplateExerciseBackendForm(forms.ModelForm):
 
         return default_value
 
+# TODO: add a validator for broken markup
 class ContentForm(forms.ModelForm):
     
+    
     def _validate_links(self, value, lang):
+        """
+        Goes through the given content field and checks that every embedded
+        link to other pages, media files and terms matches an existing one.
+        If links to missing entities are found, these are reported as a
+        validation error. 
+        """
+        
         import courses.blockparser as blockparser
         import courses.markupparser as markupparser
         from courses.models import ContentPage, CourseMedia, Term
@@ -106,6 +115,10 @@ class ContentForm(forms.ModelForm):
 class TextfieldAnswerForm(forms.ModelForm):
     
     def clean_answer_fi(self):
+        """
+        Validates a regular expression by trying to compile it. Skipped for
+        non-regexp answers.
+        """
         
         data = self.cleaned_data["answer_fi"]
         if not self.cleaned_data["regexp"]:
@@ -119,6 +132,10 @@ class TextfieldAnswerForm(forms.ModelForm):
         return data
             
     def clean_answer_en(self):
+        """
+        Validates a regular expression by trying to compile it. Skipped for
+        non-regexp answers.
+        """
         
         data = self.cleaned_data["answer_en"]
         if not self.cleaned_data["regexp"]:

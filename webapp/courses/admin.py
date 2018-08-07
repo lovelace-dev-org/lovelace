@@ -813,9 +813,17 @@ class CourseInstanceAdmin(TranslationAdmin, VersionAdmin):
                     scored=False,
                     ordinal_number=0
                 )
-        for cg in obj.contents.all():
-            print(cg)
-            cg.content.update_embedded_links(obj, cg.revision)
+
+        if not obj._was_frozen and obj.frozen:
+            obj._was_frozen = True
+            obj.freeze()
+        else:
+            for cg in obj.contents.all():
+                cg.content.update_embedded_links(obj, cg.revision)
+                
+        #for cg in obj.contents.all():
+        #    print(cg)
+        #    cg.content.update_embedded_links(obj, cg.revision)
             
 
                 
