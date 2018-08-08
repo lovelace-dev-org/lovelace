@@ -746,48 +746,51 @@ def edit_instance_files(request):
         default_lang = get_default_lang()
         
         # Edit existing instance files
-        for instance_file in instance_files:
+        for instance_file in instance_files:            
             file_changed = False
-            for lang_code, _ in lang_list:
-                fileinfo = cleaned_data.get("instance_file_file_[{id}]_{lang}".format(id=instance_file.id, lang=lang_code))
-                default_name = cleaned_data.get("instance_file_default_name_[{id}]_{lang}".format(id=instance_file.id, lang=lang_code))
-                description = cleaned_data.get("instance_file_description_[{id}]_{lang}".format(id=instance_file.id, lang=lang_code))
+            with reversion.create_revision():
+                for lang_code, _ in lang_list:
+                    fileinfo = cleaned_data.get("instance_file_file_[{id}]_{lang}".format(id=instance_file.id, lang=lang_code))
+                    default_name = cleaned_data.get("instance_file_default_name_[{id}]_{lang}".format(id=instance_file.id, lang=lang_code))
+                    description = cleaned_data.get("instance_file_description_[{id}]_{lang}".format(id=instance_file.id, lang=lang_code))
 
-                if getattr(instance_file, "default_name_{}".format(lang_code)) != default_name:
-                    setattr(instance_file, "default_name_{}".format(lang_code), default_name)
-                    file_changed = True
-                if fileinfo is not None:
-                    setattr(instance_file, "fileinfo_{}".format(lang_code), fileinfo)
-                    file_changed = True
-                if description is not None and getattr(instance_file, "description_{}".format(lang_code)) != description:
-                    setattr(instance_file, "description_{}".format(lang_code), description)
+                    if getattr(instance_file, "default_name_{}".format(lang_code)) != default_name:
+                        setattr(instance_file, "default_name_{}".format(lang_code), default_name)
+                        file_changed = True
+                    if fileinfo is not None:
+                        setattr(instance_file, "fileinfo_{}".format(lang_code), fileinfo)
+                        file_changed = True
+                    if description is not None and getattr(instance_file, "description_{}".format(lang_code)) != description:
+                        setattr(instance_file, "description_{}".format(lang_code), description)
+                        file_changed = True
+
+                course_id = cleaned_data.get("instance_file_instance_[{id}]_{lang}".format(id=instance_file.id, lang=default_lang))
+                if str(instance_file.course.id) != course_id:
+                    instance_file.course_id = course_id
                     file_changed = True
 
-            course_id = cleaned_data.get("instance_file_instance_[{id}]_{lang}".format(id=instance_file.id, lang=default_lang))
-            if str(instance_file.course.id) != course_id:
-                instance_file.course_id = course_id
-                file_changed = True
-
-            if file_changed:
-                instance_file.save()
+                if file_changed:
+                    instance_file.save()
 
         new_instance_files = {}
 
         # Create new instance files
         for file_id in new_file_ids:
-            instance_file = InstanceIncludeFile()
-            for lang_code, _ in lang_list:
-                fileinfo_field = "instance_file_file_[{id}]_{lang}".format(id=file_id, lang=lang_code)
-                default_name_field = "instance_file_default_name_[{id}]_{lang}".format(id=file_id, lang=lang_code)
-                description_field = "instance_file_description_[{id}]_{lang}".format(id=file_id, lang=lang_code)
-                setattr(instance_file, "fileinfo_{}".format(lang_code), cleaned_data.get(fileinfo_field))
-                setattr(instance_file, "default_name_{}".format(lang_code), cleaned_data.get(default_name_field))
-                setattr(instance_file, "description_{}".format(lang_code), cleaned_data.get(description_field))
-            instance_field = "instance_file_instance_[{id}]_{lang}".format(id=file_id, lang=default_lang)
-            instance_file.course_id = cleaned_data.get(instance_field)
-            instance_file.save()
-            new_instance_files[file_id] = instance_file.id
-
+            with reversion.create_revision():
+                instance_file = InstanceIncludeFile()
+                for lang_code, _ in lang_list:
+                    fileinfo_field = "instance_file_file_[{id}]_{lang}".format(id=file_id, lang=lang_code)
+                    default_name_field = "instance_file_default_name_[{id}]_{lang}".format(id=file_id, lang=lang_code)
+                    description_field = "instance_file_description_[{id}]_{lang}".format(id=file_id, lang=lang_code)
+                    setattr(instance_file, "fileinfo_{}".format(lang_code), cleaned_data.get(fileinfo_field))
+                    setattr(instance_file, "default_name_{}".format(lang_code), cleaned_data.get(default_name_field))
+                    setattr(instance_file, "description_{}".format(lang_code), cleaned_data.get(description_field))
+                instance_field = "instance_file_instance_[{id}]_{lang}".format(id=file_id, lang=default_lang)
+                instance_file.course_id = cleaned_data.get(instance_field)
+                instance_file.save()
+                new_instance_files[file_id] = instance_file.id
+                
+                reversion.set_user(request.user)
     else:
         return JsonResponse({
             "error" : form.errors
