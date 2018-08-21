@@ -117,11 +117,11 @@ class CreateInstanceIncludeFilesForm(forms.Form):
                 self.fields[file_field] = forms.FileField(max_length=255, required=False)
                 
             if lang_code == default_lang:
-                instance_field = "instance_file_instance_[{id}]_{lang}".format(id=file_id, lang=lang_code)
-                instance_choices = [(instance.id, getattr(instance, "name_{}".format(default_lang)))
-                                    for instance in c_models.CourseInstance.objects.all()]
+                course_field = "instance_file_instance_[{id}]_{lang}".format(id=file_id, lang=lang_code)
+                course_choices = [(course.id, getattr(course, "name_{}".format(default_lang)))
+                                    for course in c_models.Course.objects.all()]
                 self.fields[default_name_field] = forms.CharField(max_length=255, required=True, strip=True)
-                self.fields[instance_field] = forms.ChoiceField(choices=instance_choices, required=True)
+                self.fields[course_field] = forms.ChoiceField(choices=course_choices, required=True)
             else:
                 self.fields[default_name_field] = forms.CharField(max_length=255, required=False, strip=True)
 
