@@ -439,6 +439,7 @@ class TermLink(models.Model):
 class Calendar(models.Model):
     """A multi purpose calendar for course events markups, time reservations etc."""
     name = models.CharField(verbose_name='Name for reference in content', max_length=200, unique=True)
+    allow_multiple = models.BooleanField(verbose_name='Allow multiple reservation', default=False)
 
     def __str__(self):
         return self.name

@@ -2,7 +2,7 @@
   {% for event, reservations in cal_reservations.items %}
     <form method="POST" action="{% url 'courses:calendar_post' cal_id event.id %}">
       {% csrf_token %}
-      <input type="hidden" name="reserve" value="{% if user_has_slot %}0{% else %}1{% endif %}">
+      <input type="hidden" name="reserve" value="{% if reservations.1 %}0{% else %}1{% endif %}">
       <fieldset>
         <legend>{{ event.event_name }}</legend>
         <div class="datetime">
@@ -10,10 +10,10 @@
           <div>To: {{ event.end_time|date:"l, Y-m-d, H:i" }}</div>
         </div>
         <div class="description">{{ event.event_description }}</div>
-        <div class="{% if reservations|length >= event.reservable_slots %}full-cal{% else %}free-cal{% endif %}">Reserved/total slots: {{ reservations|length }}&nbsp;/&nbsp;{{ event.reservable_slots }}</div>
+        <div class="{% if reservations|length >= event.reservable_slots %}full-cal{% else %}free-cal{% endif %}">Reserved/total slots: {{ reservations.0|length }}&nbsp;/&nbsp;{{ event.reservable_slots }}</div>
 
         {% if user.is_staff %}
-          {% if reservations %}
+          {% if reservations.0 %}
             <div>The following users have reserved a slot:</div>
             <ul>
               {% for e_user in event.get_users %}
@@ -25,14 +25,14 @@
           {% endif %}
         {% endif %}
 
-        {% if user.is_authenticated and not user_has_slot %}
+        {% if user.is_authenticated and not reservations.1 %}
           <div class="reservation-result"></div>
-          {% if reservations|length >= event.reservable_slots %}
+          {% if reservations.0|length >= event.reservable_slots %}
             <div><input type="submit" value="Reserve a slot" disabled="disabled"></div>
           {% else %}
             <div><input type="submit" value="Reserve a slot" onClick="reserve_slot(event, this);return false;"></div>
           {% endif %}
-        {% elif user.is_authenticated and user_has_slot and event.id in reserved_event_ids %}
+        {% elif user.is_authenticated and reservations.1 and event.id in reserved_event_ids %}
           <div class="reservation-result">You have been reserved a slot in {{ event.event_name }}.</div>
           <div><input type="submit" value="Cancel reservation" onClick="reserve_slot(event, this);return false;"></div>
         {% else %}
