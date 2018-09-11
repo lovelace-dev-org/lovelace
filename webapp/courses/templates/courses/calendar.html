@@ -1,5 +1,5 @@
 <div class="calendar">
-  {% for event, reservations in cal_reservations.items %}
+  {% for event, reservations in cal_reservations %}
     <form method="POST" action="{% url 'courses:calendar_post' cal_id event.id %}">
       {% csrf_token %}
       <input type="hidden" name="reserve" value="{% if reservations.1 %}0{% else %}1{% endif %}">
