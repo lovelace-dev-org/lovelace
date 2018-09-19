@@ -1,4 +1,5 @@
 from courses.models import CourseInstance, Course
+from django.db.models import Q
 from reversion.models import Version
 
 
@@ -26,14 +27,14 @@ def determine_access(user, content, responsible_only=False):
         else:
             if responsible_only:
                 if Course.objects.filter(
-                    Q(courseinstance__contents__content=obj) |
-                    Q(courseinstance__contents__content__embedded_pages=obj)
+                    Q(courseinstance__contents__content=content) |
+                    Q(courseinstance__contents__content__embedded_pages=content)
                 ).filter(main_responsible=user):                
                     return True
             else:
                 if Course.objects.filter(
-                    Q(courseinstance__contents__content=obj) |
-                    Q(courseinstance__contents__content__embedded_pages=obj)
+                    Q(courseinstance__contents__content=content) |
+                    Q(courseinstance__contents__content__embedded_pages=content)
                 ).filter(staff_group__user=user):
                     return True
     

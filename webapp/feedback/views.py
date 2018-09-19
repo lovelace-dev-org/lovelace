@@ -6,6 +6,8 @@ from django.http import HttpResponse, HttpResponseNotFound, HttpResponseNotAllow
     HttpResponseForbidden, JsonResponse
 from django.template import loader
 
+from utils.content import first_title_from_content
+
 def textfield_feedback_stats(question, instance, content):
     answers = question.get_answers_by_content(instance, content)
     return {
@@ -76,19 +78,28 @@ def content_feedback_stats(request, instance_slug, content_slug):
     if not request.user.is_authenticated or not request.user.is_active or not request.user.is_staff:
         return HttpResponseForbidden("Only logged in admins can view feedback statistics!")
     
-    try:
-        link = courses.models.EmbeddedLink.objects.get(embedded_page__slug=content_slug, instance__slug=instance_slug)
+    links = courses.models.EmbeddedLink.objects.filter(embedded_page__slug=content_slug, instance__slug=instance_slug)
+    if links:
+        if links.count() == 1:
+            single_linked = True
+            parent = link.parent
+        else:
+            single_linked = False
+            parent = None
+        link = links.first()
         content = link.embedded_page
         instance = link.instance
-    except courses.models.EmbeddedLink.DoesNotExist:
+        embedded = True
+    else:
         try:
             instance = courses.models.CourseInstance.objects.get(slug=instance_slug)
             link = instance.contents.get(content__slug=content_slug)
             content = link.content
+            parent = None
+            single_linked = True
+            embedded = False
         except courses.models.ContentGraph.DoesNotExist:        
             return HttpResponseNotFound("Content {} is not linked to course instance {}".format(content_slug, instance_slug))
-
-    
 
     if link.revision is None:        
         pass
@@ -99,9 +110,18 @@ def content_feedback_stats(request, instance_slug, content_slug):
         except Version.DoesNotExist as e:
             return HttpResponseNotFound("The requested revision for {} is not available".format(content_slug))
         
+    title, anchor = first_title_from_content(content.content)
+    
     questions = content.get_feedback_questions()
     ctx = {
         "content": content,
+        "parent": parent,
+        "instance_slug": instance.slug,
+        "instance_name": instance.name,
+        "course_slug": instance.course.slug,
+        "course_name": instance.course.name,
+        "single_linked": single_linked,
+        "anchor": anchor,
         "tasktype": content.get_human_readable_type(),
     }
 
@@ -128,6 +148,7 @@ def content_feedback_stats(request, instance_slug, content_slug):
             question_ctx.update(multiple_choice_feedback_stats(question, instance, content))
         stats[question_type.lower()].append(question_ctx)
     ctx["feedback_stats"] = stats
+
     
     t = loader.get_template("feedback/feedback-stats.html")
     return HttpResponse(t.render(ctx, request))

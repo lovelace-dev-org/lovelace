@@ -46,6 +46,7 @@ from django.contrib import auth
 from django.shortcuts import redirect
 
 from utils.access import is_course_staff, determine_media_access
+from utils.content import first_title_from_content
 from utils.files import generate_download_response
 
 try:
@@ -1072,6 +1073,17 @@ def show_answers(request, user, course, instance, exercise):
         
     answers = answers.order_by('-answer_date')
     
+    try:
+        link = EmbeddedLink.objects.get(embedded_page=exercise_obj, instance=instance_obj)
+    except EmbeddedLink.MultipleObjectsReturned:
+        parent = None
+        single_linked = False
+    else:
+        parent = link.parent
+        single_linked = True
+      
+    title, anchor = first_title_from_content(exercise_obj.content)
+    
     # TODO: Own subtemplates for each of the exercise types.
     t = loader.get_template("courses/user-exercise-answers.html")
     c = {
@@ -1082,6 +1094,9 @@ def show_answers(request, user, course, instance, exercise):
         'instance_slug': instance,
         'instance_name': instance_obj.name,
         'instance_email': instance_obj.email,
+        'parent': parent,
+        'single_linked': single_linked,
+        'anchor': anchor,
         'answers_url': request.build_absolute_uri(),
         'answers': answers,
         'username': user,
