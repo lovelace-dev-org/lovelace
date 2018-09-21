@@ -80,13 +80,13 @@ def content_feedback_stats(request, instance_slug, content_slug):
     
     links = courses.models.EmbeddedLink.objects.filter(embedded_page__slug=content_slug, instance__slug=instance_slug)
     if links:
+        link = links.first()
         if links.count() == 1:
             single_linked = True
             parent = link.parent
         else:
             single_linked = False
             parent = None
-        link = links.first()
         content = link.embedded_page
         instance = link.instance
         embedded = True
