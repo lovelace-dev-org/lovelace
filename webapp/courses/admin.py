@@ -4,7 +4,7 @@ from courses.models import *
 
 from django.contrib import admin
 from django.contrib.auth.models import User
-from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth.admin import UserAdmin, GroupAdmin
 
 from django.core.cache import cache
 from django.urls import reverse
@@ -56,6 +56,7 @@ reversion.register(RepeatedTemplateExerciseBackendCommand)
 ## User profiles
 # http://stackoverflow.com/questions/4565814/django-user-userprofile-and-admin
 admin.site.unregister(User)
+admin.site.unregister(Group)
 
 #TODO: There's a loophole where staff members of any course A can gain access
 #      to any course B's pages by embedding the course B page to a course A 
@@ -248,6 +249,11 @@ class UserProfileAdmin(UserAdmin):
     inlines = [UserProfileInline,]
 
 admin.site.register(User, UserProfileAdmin)
+
+class CopyingGroupAdmin(GroupAdmin):
+    save_as = True
+
+admin.site.register(Group, CopyingGroupAdmin)
 
 ## Feedback for user answers
 #admin.site.register(Evaluation)
