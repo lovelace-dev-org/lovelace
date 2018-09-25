@@ -252,6 +252,7 @@ def generate_results(results, exercise_id):
                     except json.decoder.JSONDecodeError as e:
                         test_tree['errors'].append("JSONDecodeError: {}".format(str(e)))
                         print("Error decoding JSON output: {}".format(str(e)))
+                        correct = False
                     else:
                         tester = json_results.get('tester', "")
                         test_tree['log'] = json_results.get('tests', [])
@@ -280,7 +281,7 @@ def generate_results(results, exercise_id):
                             test_tree['messages'].append(test_msg)
 
                     if student_c['stderr']:
-                        test_tree['errors'].append(student_c['stderr'])                        
+                        test_tree['errors'].append(student_c['stderr'])
                         correct = False
                 else:
                     # Handle stdout

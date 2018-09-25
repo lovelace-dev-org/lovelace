@@ -356,7 +356,7 @@ class CalendarMarkup(Markup):
                 reserved_event_ids.append(found.calendar_date.id)
         
         if user_has_slot and not calendar.allow_multiple:
-            for cal_date, cal_reservations in calendar_reservations.items():
+            for cal_date, cal_reservations in calendar_reservations:
                 cal_reservations[1] = True
         
         c = {
@@ -968,7 +968,7 @@ class ImageMarkup(Markup):
                     image_object.name = revision_object.field_dict["name"]
         except courses.models.Image.DoesNotExist as e:
             # TODO: Modular errors
-            yield '<div>File %s not found.</div>' % settings["file_slug"]
+            yield '<div>File %s not found.</div>' % settings["image_name"]
             raise StopIteration
 
         image_url = image_object.fileinfo.url

@@ -117,7 +117,7 @@ def logout(request):
         c = {
             "logout_url": reverse("courses:logout") 
         }
-    else:        
+    else:
         c = {
             "logout_url": reverse("account_logout")
         }
@@ -354,6 +354,8 @@ def check_answer(request, course_slug, instance_slug, content_slug, revision):
     msg_context = {
         'course_slug': course_slug,
         'instance_slug': instance_slug,
+        'instance': instance,
+        'content_page': content
     }
     hints = ["".join(markupparser.MarkupParser.parse(msg, request, msg_context)).strip()
              for msg in evaluation.get('hints', [])]
@@ -523,6 +525,8 @@ def file_exercise_evaluation(request, course_slug, instance_slug, content_slug, 
     msg_context = {
         'course_slug': course_slug,
         'instance_slug': instance_slug,
+        'instance': instance,
+        'content_page': content
     }
 
     data = compile_evaluation_data(request, evaluation_tree, evaluation_obj, msg_context)
