@@ -85,17 +85,23 @@ def parse_anchor_tag(parsed_string, tag, address, link_text, context):
     except ValueError:
         server_side = address
         client_side = None
-    slugified = slugify(server_side, allow_unicode=True)
-    if server_side == slugified and context is not None:
-        # internal address
-        final_address = reverse('courses:content', args=[context['course_slug'], context['instance_slug'], slugified])
-        if client_side is not None:
-            final_address = final_address.rstrip('/') + '#' + client_side
+
+    if server_side.strip() == "":
+        final_address = "#" + (client_side or "")
+        target = "_self"
     else:
-        # external address
-        final_address = address
+        target = "_blank"
+        slugified = slugify(server_side, allow_unicode=True)
+        if server_side == slugified and context is not None:
+            # internal address
+            final_address = reverse('courses:content', args=[context['course_slug'], context['instance_slug'], slugified])
+            if client_side is not None:
+                final_address = final_address.rstrip('/') + '#' + client_side
+        else:
+            # external address
+            final_address = address
     
-    parsed_string += tag.htmlbegin({"href": final_address, "target": "_blank",})
+    parsed_string += tag.htmlbegin({"href": final_address, "target": target,})
     parsed_string += link_text or address
     parsed_string += tag.htmlend()
 
