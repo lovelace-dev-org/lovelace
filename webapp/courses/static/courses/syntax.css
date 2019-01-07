@@ -52,7 +52,7 @@
 .s2 { color: #b83838 } /* Literal.String.Double */
 .se { color: #709030 } /* Literal.String.Escape */
 .sh { color: #b83838 } /* Literal.String.Heredoc */
-.si { color: #b83838; text-decoration: underline } /* Literal.String.Interpol */
+.si { color: #b83838; color: #5aaec3 } /* Literal.String.Interpol */
 .sx { color: #a848a8 } /* Literal.String.Other */
 .sr { color: #a848a8 } /* Literal.String.Regex */
 .s1 { color: #b83838 } /* Literal.String.Single */

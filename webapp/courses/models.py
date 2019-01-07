@@ -611,8 +611,8 @@ class ContentPage(models.Model):
         added_page_links = set(page_links).difference(old_page_links)
         added_media_links = set(media_links).difference(old_media_links)
     
-        EmbeddedLink.objects.filter(embedded_page__slug__in=removed_page_links, instance=instance).delete()
-        CourseMediaLink.objects.filter(media__name__in=removed_media_links, instance=instance).delete()
+        EmbeddedLink.objects.filter(embedded_page__slug__in=removed_page_links, instance=instance, parent=self).delete()
+        CourseMediaLink.objects.filter(media__name__in=removed_media_links, instance=instance, parent=self).delete()
         
         for link_slug in added_page_links:
             link_obj = EmbeddedLink(

@@ -411,6 +411,15 @@ def run_test(self, test_id, answer_id, instance_id, exercise_id, student=False, 
 
     test_results = {test_id: {"fail": True, "name": test.name, "stages": {}}}
     with tempfile.TemporaryDirectory(dir=temp_dir_prefix) as test_dir:
+        # Write the files under test
+        # Do this first to prevent overwriting of included/instance files
+        for name, contents in files_to_check.items():
+            fpath = os.path.join(test_dir, name)
+            with open(fpath, "wb") as fd:
+                fd.write(contents)
+            print("Wrote file under test %s" % (fpath))
+            # TODO: chmod, chown, chgrp
+
         # Write the exercise files required by this test
         for name, fileinfo, contents in ((f.file_settings.name, f.fileinfo, f.get_file_contents())
                                for f in exercise_file_objects
@@ -441,14 +450,6 @@ def run_test(self, test_id, answer_id, instance_id, exercise_id, student=False, 
                     with open(fpath, "wb") as fd:
                         fd.write(contents)
                     print("Wrote required instance file {} from {}".format(fpath, file_obj.fileinfo))
-
-        # Write the files under test
-        for name, contents in files_to_check.items():
-            fpath = os.path.join(test_dir, name)
-            with open(fpath, "wb") as fd:
-                fd.write(contents)
-            print("Wrote file under test %s" % (fpath))
-            # TODO: chmod, chown, chgrp
 
         # TODO: Replace with chaining
         for i, stage in enumerate(stages):

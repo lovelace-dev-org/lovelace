@@ -632,7 +632,7 @@ admin.site.register(Term, TermAdmin)
 ## Course related administration
 class ContentGraphAdmin(admin.ModelAdmin):
     
-    search_fields = ('content',)
+    search_fields = ('content__name',)
     list_display = ('ordinal_number', 'content', 'get_instances',)
     list_display_links = ('content',)
     list_filter = ('courseinstance',)
