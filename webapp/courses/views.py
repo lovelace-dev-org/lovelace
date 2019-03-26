@@ -517,7 +517,7 @@ def file_exercise_evaluation(request, course_slug, instance_slug, content_slug, 
     answer_count_str = get_answer_count_meta(answer_count)
 
     # TODO: Nicer way to get the proper address!
-    r = redis.StrictRedis(host='localhost', port=6379, db=0)
+    r = redis.StrictRedis(**settings.CELERY_RESULT_CONFIG)
     evaluation_json = r.get(task_id).decode("utf-8")
     evaluation_tree = json.loads(evaluation_json)
     r.delete(task_id)

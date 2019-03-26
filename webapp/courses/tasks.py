@@ -140,7 +140,7 @@ def run_tests(self, user_id, instance_id, exercise_id, answer_id, lang_code, rev
     # Save the rendered results into Redis
     # TODO: How to access CELERY_RESULT_BACKEND in settings?
     task_id = self.request.id
-    r = redis.StrictRedis(host='localhost', port=6379, db=0)
+    r = redis.StrictRedis(**django_settings.CELERY_RESULT_CONFIG)
     r.set(task_id, json.dumps(evaluation))
 
     # Save the results to database

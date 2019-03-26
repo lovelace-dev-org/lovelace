@@ -216,7 +216,8 @@ SECRET_KEY = '$34r(o@3yfyr-=v8*ndtqm6^ti0=p%cyt&amp;a*giv-1w%q21r4ae'
 
 # Celery settings
 CELERY_BROKER_URL = 'amqp://guest:guest@localhost:5672//'
-CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+CELERY_RESULT_CONFIG = {"host": "localhost", "port": 6379, "db": 0}
+CELERY_RESULT_BACKEND = 'redis://{host}:{port}/{db}'.format(**CELERY_RESULT_CONFIG)
 
 # Cache settings
 CACHES = {
