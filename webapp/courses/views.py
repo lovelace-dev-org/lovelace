@@ -210,6 +210,7 @@ def course(request, course_slug, instance_slug):
 def course_tree(tree, node, user, instance_obj):
     embedded_links = EmbeddedLink.objects.filter(parent=node.content.id, instance=instance_obj)
     embedded_count = len(embedded_links)
+    
     correct_embedded = 0
     
     evaluation = ""
@@ -218,7 +219,21 @@ def course_tree(tree, node, user, instance_obj):
         evaluation = exercise.get_user_evaluation(exercise, user, instance_obj)
 
         if embedded_count > 0:
-            for emb_exercise in embedded_links.values_list('embedded_page', flat=True):
+            
+            grouped = embedded_links.exclude(embedded_page__evaluation_group="")
+            group_repr = grouped.order_by("embedded_page__evaluation_group")\
+                .distinct("embedded_page__evaluation_group")
+            
+            embedded_count -= (grouped.count() - group_repr.count())
+            
+            for link in group_repr:
+                if link.embedded_page.get_user_evaluation(
+                    link.embedded_page, user, instance_obj
+                    ) in ("correct", "credited"):
+                    
+                    correct_embedded += 1
+            
+            for emb_exercise in embedded_links.filter(embedded_page__evaluation_group="").values_list('embedded_page', flat=True):
                 emb_exercise = ContentPage.objects.get(id=emb_exercise)
                 #print(emb_exercise.name)
                 correct_embedded += 1 if emb_exercise.get_user_evaluation(emb_exercise, user, instance_obj) == "correct" else 0
@@ -539,7 +554,7 @@ def file_exercise_evaluation(request, course_slug, instance_slug, content_slug, 
             data['errors'] = _("Checking program was unable to finish due to an error. Contact course staff.")
             #print(data)
         
-    data["answer_count"] = answer_count_str
+    data["answer_count_str"] = answer_count_str
     
     return JsonResponse(data)
 

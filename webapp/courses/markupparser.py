@@ -625,7 +625,7 @@ class EmbeddedPageMarkup(Markup):
                 else:
                     c["sandboxed"] = False
 
-                if user.is_active and page.is_answerable() and page.get_user_answers(page, user, state["context"]["instance"]) and not sandboxed:
+                if user.is_active and page.is_answerable() and not sandboxed:
                     c["evaluation"] = page.get_user_evaluation(page, user, instance)
                     c["answer_count"] = page.get_user_answers(page, user, instance).count()
                 else:

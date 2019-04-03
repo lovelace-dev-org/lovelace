@@ -128,6 +128,21 @@ function sort_enrollments(event, field, order) {
     });
 }
 
+function expand_task_list(page_bullet) {
+    let bullet = $(page_bullet);
+    bullet.next("ul").show();
+    bullet.attr("onclick", "collapse_task_list(this)");
+    bullet.removeClass("tasks-collapsed");
+    bullet.addClass("tasks-expanded");
+}
+
+function collapse_task_list(page_bullet) {
+    let bullet = $(page_bullet);
+    bullet.next("ul").hide();
+    bullet.attr("onclick", "expand_task_list(this)");
+    bullet.removeClass("tasks-expanded");
+    bullet.addClass("tasks-collapsed");
+}
 
 $(document).ready(function() {
     

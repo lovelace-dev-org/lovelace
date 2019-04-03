@@ -36,6 +36,10 @@ function exercise_success(data, result_div, error_div, form_parent) {
                         toc_symbol.attr({
                             "src": "/static/courses/correct-16.png",
                         });
+                        let eval_group = "embedded_page__evaluation_group";
+                        if (eval_group != "") {
+                            credit_eval_group(eval_group);
+                        }
                     }
                 }
             } else {
@@ -55,12 +59,16 @@ function exercise_success(data, result_div, error_div, form_parent) {
                     toc_symbol.attr({
                         "src": "/static/courses/correct-16.png",
                     });
+                    let eval_group = "embedded_page__evaluation_group";
+                    if (eval_group != "") {
+                        credit_eval_group(eval_group);
+                    }
                 }
             }
         }
         
         // Update the progress bar in ToC
-        update_progress_bar();        
+        update_progress_bar();
     }
     if (data.errors) {
         /*
@@ -268,4 +276,15 @@ function start_repeated_template_session(e) {
     input_element[1].focus();
     $(input_element[1]).val("");
     button.prop("disabled", true);
+}
+
+function credit_eval_group(eval_group) {
+    $("div.task-meta[data-eval-group='" + eval_group + "'] img").each(function () {
+        if (!$(this).hasClass("correct")) {
+            $(this).attr({
+                "src": "/static/courses/credited-96.png",
+                "class": "credited"
+            });
+        }
+    });
 }

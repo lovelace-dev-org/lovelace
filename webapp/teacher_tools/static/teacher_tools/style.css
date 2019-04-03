@@ -1,0 +1,27 @@
+li.task-bullet-correct {
+    list-style-image: url("/static/courses/correct-16.png");
+}
+
+li.task-bullet-incorrect {
+    list-style-image: url("/static/courses/incorrect-16.png");
+}
+
+li.task-bullet-unanswered {
+    list-style-image: url("/static/courses/unanswered-16.png");
+}
+
+li.task-bullet-credited {
+    list-style-image: url("/static/courses/credited-16.png");
+}
+
+li.tasks-expanded {
+    list-style-image: url("/static/courses/collapse-16.png");
+}
+
+li.tasks-collapsed {
+    list-style-image: url("/static/courses/expand-16.png");
+}
+
+ul.student-task-list {
+    display: none;
+}

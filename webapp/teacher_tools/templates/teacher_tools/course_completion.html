@@ -1,0 +1,49 @@
+{% extends 'courses/base.html' %}
+{% load staticfiles %}
+{% load i18n %}
+{% load course_tags %}
+
+{% block course-completion-link %}
+  {% if not sandboxed %}
+    <a href="{% url 'teacher_tools:completion' course.slug instance.slug %}">{% trans 'Course completion' %}</a>
+  {% endif %}
+{% endblock %}
+
+{% block course-enrollments-link %}
+  {% if not sandboxed %}
+    <a href="{% url 'teacher_tools:manage_enrollments' course.slug instance.slug %}">{% trans 'Manage enrollments' %}</a>
+  {% endif %}
+{% endblock %}
+
+{% block extra-static %}
+{% endblock %}
+
+{% block breadcrumb-links %}
+  <li><a href="{% url 'courses:index' %}">{% trans 'Courses' %}</a></li>
+  <div class="separator">»</div>
+  <li><a href="{% url 'courses:course' course.slug instance.slug %}">{{ course.name }}&nbsp;/&nbsp;{{ instance.name }}</a></li>
+{% endblock %}
+
+{% block page-content %}
+
+  <h1>
+    {% blocktrans with instance=instance.name %}
+      Completion statistics of {{ instance }}
+    {% endblocktrans %}
+  </h1>
+
+  <div class="paragraph">{% trans 'Statistics are available as downloadable CSV' %}</div>
+  
+  <div class="paragraph"><a href="{% url 'teacher_tools:completion_csv' course.slug instance.slug %}" download>{% trans 'Download CSV' %}</a></div>
+  
+  <div class="paragraph">{% trans 'Detailed student results can be accessed from below' %}</div>
+  
+  <ul class="student-list">
+    {% for user in users %}
+      <li class="student-bullet"><a href="{% url 'teacher_tools:student_completion' course.slug instance.slug user.username %}">{{ user.last_name }} {{ user.first_name }} ({{ user.username }})</a></li>
+    {% endfor %}
+  </ul>
+{% endblock %}
+  
+    
+

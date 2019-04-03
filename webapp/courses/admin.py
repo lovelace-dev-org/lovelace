@@ -301,7 +301,7 @@ class MultipleChoiceExerciseAdmin(CourseContentAccess, TranslationAdmin, Version
 
     fieldsets = [
         ('Page information',   {'fields': ['name', 'slug', 'content', 'question', 'tags'],}),
-        ('Exercise miscellaneous', {'fields': ['default_points'],
+        ('Exercise miscellaneous', {'fields': ['default_points', 'evaluation_group'],
                                 'classes': ['wide']}),
         ('Feedback settings',  {'fields': ['feedback_questions']}),
     ]
@@ -331,7 +331,7 @@ class CheckboxExerciseAdmin(CourseContentAccess, TranslationAdmin, VersionAdmin)
 
     fieldsets = [
         ('Page information',   {'fields': ['name', 'slug', 'content', 'question', 'tags']}),
-        ('Exercise miscellaneous', {'fields': ['default_points'],
+        ('Exercise miscellaneous', {'fields': ['default_points', 'evaluation_group'],
                                 'classes': ['wide']}),
         ('Feedback settings',  {'fields': ['feedback_questions']}),
     ]
@@ -362,7 +362,7 @@ class TextfieldExerciseAdmin(CourseContentAccess, TranslationAdmin, VersionAdmin
 
     fieldsets = [
         ('Page information',   {'fields': ['name', 'slug', 'content', 'question', 'tags']}),
-        ('Exercise miscellaneous', {'fields': ['default_points'],
+        ('Exercise miscellaneous', {'fields': ['default_points', 'evaluation_group'],
                                 'classes': ['wide']}),
         ('Feedback settings',  {'fields': ['feedback_questions']}),
     ]
@@ -386,7 +386,7 @@ class CodeReplaceExerciseAdmin(CourseContentAccess, TranslationAdmin, VersionAdm
 
     fieldsets = [
         ('Page information',   {'fields': ['name', 'slug', 'content', 'question', 'tags']}),
-        ('Exercise miscellaneous', {'fields': ['default_points'],
+        ('Exercise miscellaneous', {'fields': ['default_points', 'evaluation_group'],
                                 'classes': ['wide']}),
         ('Feedback settings',  {'fields': ['feedback_questions']}),
     ]
@@ -418,7 +418,7 @@ class RepeatedTemplateExerciseAdmin(CourseContentAccess, TranslationAdmin, Versi
 
     fieldsets = [
         ('Page information',   {'fields': ['name', 'slug', 'content', 'question', 'tags']}),
-        ('Exercise miscellaneous', {'fields': ['default_points'],
+        ('Exercise miscellaneous', {'fields': ['default_points', 'evaluation_group'],
                                 'classes': ['wide']}),
         ('Feedback settings',  {'fields': ['feedback_questions']}),
     ]

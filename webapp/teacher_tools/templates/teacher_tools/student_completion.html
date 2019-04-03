@@ -1,0 +1,64 @@
+{% extends 'courses/base.html' %}
+{% load staticfiles %}
+{% load i18n %}
+{% load course_tags %}
+
+{% block course-completion-link %}
+  {% if not sandboxed %}
+    <a href="{% url 'teacher_tools:completion' course.slug instance.slug %}">{% trans 'Course completion' %}</a>
+  {% endif %}
+{% endblock %}
+
+{% block course-enrollments-link %}
+  {% if not sandboxed %}
+    <a href="{% url 'teacher_tools:manage_enrollments' course.slug instance.slug %}">{% trans 'Manage enrollments' %}</a>
+  {% endif %}
+{% endblock %}
+
+{% block extra-static %}
+  <link rel="stylesheet" href="{% static 'teacher_tools/style.css' %}">
+  <script src="{% static 'teacher_tools/script.js' %}"></script>
+{% endblock %}
+
+{% block page-title %}{% trans 'Student course completion' %}{% endblock %}
+
+{% block breadcrumb-links %}
+  <li><a href="{% url 'courses:index' %}">{% trans 'Courses' %}</a></li>
+  <div class="separator">»</div>
+  <li><a href="{% url 'courses:course' course.slug instance.slug %}">{{ course.name }}&nbsp;/&nbsp;{{ instance.name }}</a></li>
+  <div class="separator">»</div>
+  <li><a href="{% url 'teacher_tools:completion' course.slug instance.slug %}">{% trans 'Completion' %}</a></li>
+{% endblock %}
+
+{% block page-content %}
+
+  <h1>
+    {% blocktrans with name=user.username instance=instance.name %}
+      {{ name }}'s completion of {{ instance }}
+    {% endblocktrans %}
+  </h1>
+
+  <div class="paragraph">
+    {% blocktrans with missing=total_missing points=total_points available=total_points_available %}
+      <div class="paragraph">Total missing: {{ missing }}</div>
+      <div class="paragraph">Total points: {{ points }} / {{ available }}</div>
+    {% endblocktrans %}
+  </div>
+
+  <div class="completion-missing">
+    {% trans 'Page results' %}
+    <ul class="results-page-list">
+      {% for results in results_by_page %}
+        {% blocktrans with name=results.page.name done=results.done_count tasks=results.task_count points=results.points available=results.points_available %}
+          <li class="results-page-bullet tasks-collapsed" onclick="expand_task_list(this)">{{ name }} (Done: {{ done }}/{{ tasks }} | Points: {{ points }}/{{ available }})</li>
+        {% endblocktrans %}
+        <ul class="student-task-list">
+          {% for task in results.tasks_list %}
+            <li class="task-bullet-{{ task.result }}"><a href="{{ task.answers_link }}">{{ task.eo.name }}</a></li>
+          {% endfor %}
+        </ul>
+      {% endfor %}
+    </ul>
+  </div>
+
+{% endblock %}

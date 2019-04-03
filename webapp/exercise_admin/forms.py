@@ -203,6 +203,7 @@ class CreateFileUploadExerciseForm(forms.Form):
     #exercise_name = forms.CharField(max_length=255, required=True, strip=True) # Translate
     #exercise_content = forms.CharField(required=False) # Translate
     exercise_default_points = forms.IntegerField(required=True)
+    exercise_evaluation_group = forms.CharField(required=False)
     # tags handled at __init__
     exercise_feedback_questions = SimpleArrayField(forms.IntegerField(), required=False)
     #exercise_question = forms.CharField(required=False) # Translate

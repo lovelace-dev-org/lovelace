@@ -27,9 +27,15 @@
   {% endif %}
 {% endblock %}
 
+{% block course-completion-link %}
+  {% if not sandboxed %}
+    <a href="{% url 'teacher_tools:completion' course_slug instance_slug %}">{% trans 'Course completion' %}</a>
+  {% endif %}
+{% endblock %}
+
 {% block course-enrollments-link %}
   {% if not sandboxed %}
-    <a href="{% url 'teacher:manage_enrollments' course_slug instance_slug %}">{% trans 'Manage enrollments' %}</a>
+    <a href="{% url 'teacher_tools:manage_enrollments' course_slug instance_slug %}">{% trans 'Manage enrollments' %}</a>
   {% endif %}
 {% endblock %}
 

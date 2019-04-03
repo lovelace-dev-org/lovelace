@@ -12,6 +12,12 @@
 
 {% block toc %}{% endblock %}
 
+{% block course-completion-link %}
+  {% if not sandboxed %}
+    <a href="{% url 'teacher_tools:completion' course_slug instance_slug %}">{% trans 'Course completion' %}</a>
+  {% endif %}
+{% endblock %}
+
 {% block course-stats-link %}
   <a href="{% url 'stats:users_course' course.slug instance.slug %}">{% trans 'Course statistics' %}</a>
 {% endblock %}
