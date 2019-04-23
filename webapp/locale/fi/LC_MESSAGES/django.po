@@ -131,10 +131,8 @@ msgid "You have answered this exercise correctly"
 msgstr "Olet aiemmin vastannut tähän tehtävään oikein."
 
 #: courses/templates/courses/content-meta.html:17
-#, fuzzy
-#| msgid "You have answered this exercise incorrectly"
 msgid "You have answered another exercise in this set correctly"
-msgstr "Olet aiemmin vastannut tähän tehtävään väärin."
+msgstr "Olet aiemmin vastannut vaihtoehtoiseen tehtävään oikein."
 
 #: courses/templates/courses/content-meta.html:29
 msgid "View your previous answers"
@@ -252,16 +250,12 @@ msgid "Send answer"
 msgstr "Lähetä vastaus"
 
 #: courses/templates/courses/exercise.html:49
-#, fuzzy
-#| msgid "Warning: You have not logged in. Your answer will not be saved."
 msgid "Warning: You have not logged in. You cannot answer."
-msgstr "Varoitus: Et ole kirjautunut sisään. Vastaustasi ei tallenneta."
+msgstr "Varoitus: Et ole kirjautunut sisään. Et voi vastata."
 
 #: courses/templates/courses/exercise.html:51
-#, fuzzy
-#| msgid "You have been removed from this course instance"
 msgid "Warning: You have enrolled to this course instance. You cannot answer."
-msgstr "Sinut on poistettu tältä kurssilta."
+msgstr "Varoitus: Et ole ilmoittautunut tälle kurssille. Et voi vastata."
 
 #: courses/templates/courses/exercise.html:57
 msgid "You have previously answered this task incorrectly."
@@ -793,8 +787,6 @@ msgstr ""
 "    "
 
 #: teacher_tools/templates/teacher_tools/course_completion.html:24
-#, fuzzy
-#| msgid "Statistics are available as downloadable CSV"
 msgid "Statistics can be requested as downloadable CSV using the link below"
 msgstr "Tilastot ovat saatavilla ladattavana CSV-tiedostona"
 
