@@ -107,15 +107,30 @@
                 <div id="user-menu"><div>
               <div class="user-settings">
                 <a href="/profile/">{% trans 'Settings' %}</a>
-              </div>{% if user.is_staff %}<div class="user-tools">
-                <a href="{% url 'admin:index' %}">{% trans 'Teacher’s tools' %}</a>
-              </div><div class="user-tools">{% block course-enrollments-link %}
-                {% trans 'Manage enrollments' %}
-                {% endblock %}
-              </div><div class="user-tools">{% block course-completion-link %}
-                {% trans 'Course completion' %}
-                {% endblock %}
-              </div>{% endif %}<div class="user-logout">
+              </div>
+              {% if user.is_staff %}
+                <div class="user-tools">
+                    <a href="{% url 'admin:index' %}">{% trans 'Teacher’s tools' %}</a>
+                </div>
+              {% endif %}
+              {% if course_staff and course and instance %}
+                <div class="user-tools">
+                  <a href="{% url 'teacher_tools:manage_enrollments' course instance %}">
+                    {% trans 'Manage enrollments' %}
+                  </a>
+                </div>
+                <div class="user-tools">
+                  <a href="{% url 'teacher_tools:completion' course instance %}">
+                    {% trans 'Course completion' %}
+                  </a>
+                </div>
+                <div class="user-tools">
+                  <a href="{% url 'stats:instance_console' course instance %}">
+                    {% trans 'Statistics' %}
+                  </a>
+                </div>
+              {% endif %}
+              <div class="user-logout">
                 <a href="/logout">{% trans 'Log out' %}</a>
               </div></div></div>
               </div>
@@ -131,8 +146,6 @@
               </a>
             {% endif %}
             
-            {% if user.is_staff and user.is_active %}
-            {% endif %}
           </div>{% comment %}login box{% endcomment %}
         </div>
       </header>

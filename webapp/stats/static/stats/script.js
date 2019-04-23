@@ -94,3 +94,100 @@ function sortTable(tableId, col, asc) {
     });
     
 }
+
+function request_stats(event, a) {
+    event.preventDefault();
+
+    let link = $(a);
+    $.ajax({
+        url: link.attr("href"),
+        success: function (data, text_status, jqxhr) {
+            link.hide();
+            process_stat_reply(data);
+        },
+        error: function (jqxhr, status, type) {
+            process_stat_error(status);
+        }
+    });
+}
+
+function process_stat_reply(data) {
+    let div = $("div.stat-status");
+    div.text(data.msg + " " + data.eta);
+}
+
+function process_stat_error(status) {
+    let div = $("div.stat-status");
+    div.text(status);
+    div.addClass("stat-error");
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

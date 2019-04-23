@@ -29,6 +29,8 @@ class FileEditForm(forms.ModelForm):
     
     def get_initial_for_field(self, field, field_name):
         
+        print(dir(self))
+        
         default_value = super().get_initial_for_field(field, field_name)
         
         if isinstance(field, fields.FileField) and default_value:

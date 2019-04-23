@@ -21,5 +21,17 @@ def first_title_from_content(content_text):
         
     return title, anchor
     
+def get_course_instance_tasks(instance):
     
+    all_embedded_links = EmbeddedLink.objects.filter(instance=instance).order_by("embedded_page__name")
+    
+    task_pages = []
+    for content_link in instance.contents.filter(scored=True, visible=True):
+        page_task_links = all_embedded_links.filter(parent=content_link.content)
+        if page_task_links:
+            task_pages.append((content_link.content, page_task_links))
+            
+    return task_pages
+
+
     

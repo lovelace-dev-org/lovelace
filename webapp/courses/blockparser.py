@@ -91,15 +91,31 @@ def parse_anchor_tag(parsed_string, tag, address, link_text, context):
         target = "_self"
     else:
         target = "_blank"
-        slugified = slugify(server_side, allow_unicode=True)
-        if server_side == slugified and context is not None:
-            # internal address
-            final_address = reverse('courses:content', args=[context['course_slug'], context['instance_slug'], slugified])
-            if client_side is not None:
-                final_address = final_address.rstrip('/') + '#' + client_side
+        
+        if server_side.startswith("file:"):
+            file_slug = server_side.split("file:", 1)[1]
+            try:
+                mediafile = courses.models.File.objects.get(name=file_slug)
+            except courses.models.File.DoesNotExist:
+                parsed_string += "<span>-- WARNING: BROKEN LINK --</span>"
+                final_address = ""
+            else:
+                final_address = reverse("courses:download_embedded_file", kwargs={
+                    "course": context["course"],
+                    "instance": context["instance"],
+                    "mediafile": mediafile
+                })
         else:
-            # external address
-            final_address = address
+        
+            slugified = slugify(server_side, allow_unicode=True)
+            if server_side == slugified and context is not None:
+                # internal address
+                final_address = reverse('courses:content', args=[context['course_slug'], context['instance_slug'], slugified])
+                if client_side is not None:
+                    final_address = final_address.rstrip('/') + '#' + client_side
+            else:
+                # external address
+                final_address = address
     
     parsed_string += tag.htmlbegin({"href": final_address, "target": target,})
     parsed_string += link_text or address

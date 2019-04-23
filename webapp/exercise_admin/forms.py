@@ -356,7 +356,54 @@ class CreateFileUploadExerciseForm(forms.Form):
                 error_code = "duplicate_{}".format(model_field)
                 field_error = forms.ValidationError(error_msg, code=error_code)
                 self.add_error(field_name, field_error)
-            
+
+    def _validate_links(self, value, lang):
+        """
+        Goes through the given content field and checks that every embedded
+        link to other pages, media files and terms matches an existing one.
+        If links to missing entities are found, these are reported as a
+        validation error. 
+        """
+        
+        import courses.blockparser as blockparser
+        import courses.markupparser as markupparser
+        from courses.models import ContentPage, CourseMedia, Term
+        
+        missing_pages = []
+        missing_media = []
+        missing_terms = []
+        messages = []
+        
+        page_links, media_links = markupparser.LinkParser.parse(value)
+        for link in page_links:
+            if not ContentPage.objects.filter(slug=link):
+                missing_pages.append(link)
+                messages.append("Content matching {} does not exist".format(link))
+                
+        for link in media_links:
+            if not CourseMedia.objects.filter(name=link):
+                missing_media.append(link)
+                messages.append("Media matching {} does not exist".format(link))
+                
+        term_re = blockparser.tags["term"].re
+        
+        term_links = set([match.group("term_name") for match in term_re.finditer(value)])
+        
+        for link in term_links:
+            if lang == "fi":
+                if not Term.objects.filter(name_fi=link):
+                    missing_terms.append(link)
+                    messages.append("Term matching {} does not exist".format(link))
+            elif lang == "en":
+                if not Term.objects.filter(name_en=link):
+                    missing_terms.append(link)
+                    messages.append("Term matching {} does not exist".format(link))
+        
+        if messages:
+            field_error = forms.ValidationError(messages)
+            self.add_error("exercise_content_" + lang, field_error)
+
+
     def clean(self):
         cleaned_data = super(CreateFileUploadExerciseForm, self).clean()
         lang_list = get_lang_list()
@@ -374,6 +421,10 @@ class CreateFileUploadExerciseForm(forms.Form):
                 error_code = "invalid_chmod"
                 field_error = forms.ValidationError(error_msg, code=error_code)
                 self.add_error(field_name, field_error)
+                
+            if field_name.startswith("exercise_content"):
+                for lang_code, _ in lang_list:
+                    self._validate_links(field_val, lang_code)
 
         
         return cleaned_data

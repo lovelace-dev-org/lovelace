@@ -15,15 +15,28 @@
 {% block page-content %}
   {% if shibboleth_login %}
     <h1>{% trans 'Sign in with university account' %}</h1>
-    <div class="p">
+    <div class="paragraph">
     <a href="{{ shibboleth_login }}">{% trans 'To login page' %}</a>
     </div>
   {% endif %}
   <h1>{% trans 'Sign in with Lovelace account' %}</h1>
-  <p>{% blocktrans %}If you have not created an account yet, then please
-  <a href="{{ signup_url }}">sign up</a> first.{% endblocktrans %}</p>
+  {% if shibboleth_login %}
+    <button onclick="show_collapsed()">{% trans 'Show login form' %}</button>
+    <div class="paragraph collapsed">
+  {% else %}
+    <div class="paragraph">
+  {% endif %}
+      {% blocktrans %}
+        If you have not created an account yet, then please
+          <a href="{{ signup_url }}">sign up</a> first.
+      {% endblocktrans %}
+    </div>
 
-  <form class="login" method="POST" action="{% url 'account_login' %}">
+  {% if shibboleth_login %}
+    <form class="login collapsed" method="POST" action="{% url 'account_login' %}" >
+  {% else %}
+    <form class="login" method="POST" action="{% url 'account_login' %}">
+  {% endif %}
     {% csrf_token %}
     {{ login_form.as_p }}
     {% if redirect_field_value %}

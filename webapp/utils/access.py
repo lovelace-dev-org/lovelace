@@ -1,5 +1,9 @@
-from courses.models import CourseInstance, Course
+from functools import wraps
+
+from courses.models import CourseEnrollment, CourseInstance, Course
 from django.db.models import Q
+from django.http import HttpResponseForbidden
+from django.utils.translation import ugettext as _
 from reversion.models import Version
 
 
@@ -71,7 +75,51 @@ def is_course_staff(user, instance, responsible_only=False):
                 return True
             
         return user == instance.course.main_responsible
+
+# ^
+# |
+# UTILITY FUNCTIONS
+# DECORATORS
+# |
+# v
+    
+def ensure_staff(function):
+    @wraps(function)
+    def wrap(request, course, instance, *args, **kwargs):
+        if is_course_staff(request.user, instance):
+            return function(request, course, instance, *args, **kwargs)
+        else:
+            return HttpResponseForbidden(_("This view is limited to course staff."))    
+    return wrap
+
+def ensure_responsible(function):
+    @wraps(function)
+    def wrap(request, course, instance, *args, **kwargs):
+        if is_course_staff(request.user, instance, True):
+            return function(request, course, instance, *args, **kwargs)
+        else:
+            return HttpResponseForbidden(_("This view is limited to main responsible teacher."))
+    return wrap
+
+def ensure_enrolled_or_staff(function):
+    @wraps(function)
+    def wrap(request, course, instance, *args, **kwargs):
+        try:
+            if CourseEnrollment.objects.get(instance=instance, student=request.user).is_enrolled():
+                return function(request, course, instance, *args, **kwargs)
+        except:
+            if is_course_staff(request.user, instance):
+                return function(request, course, instance, *args, **kwargs)
+
+        return HttpResponseForbidden(_("You must be enrolled to perform this action."))
+    return wrap
+
+def ensure_owner_or_staff(function):
+    @wraps(function)
+    def wrap(request, user, course, instance, *args, **kwargs):
+        if request.user == user or is_course_staff(request.user, instance):
+            return function(request, user, course, instance, *args, **kwargs)
+        else:
+            return HttpResponseForbidden(_("This view is limited to content owners and staff"))
+    return wrap
         
-            
-    
-    

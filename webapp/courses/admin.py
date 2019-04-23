@@ -295,6 +295,7 @@ class MultipleChoiceExerciseAnswerInline(TranslationTabularInline):
 class MultipleChoiceExerciseAdmin(CourseContentAccess, TranslationAdmin, VersionAdmin):
     
     content_type = "MULTIPLE_CHOICE_EXERCISE"
+    form = ContentForm
     
     #def get_queryset(self, request):
     #    return self.model.objects.filter(content_type="MULTIPLE_CHOICE_EXERCISE")
@@ -325,6 +326,7 @@ class CheckboxExerciseAnswerInline(TranslationTabularInline):
 class CheckboxExerciseAdmin(CourseContentAccess, TranslationAdmin, VersionAdmin):
     
     content_type = "CHECKBOX_EXERCISE"
+    form = ContentForm
     
     #def get_queryset(self, request):
     #   return self.model.objects.filter(content_type="CHECKBOX_EXERCISE")
@@ -356,6 +358,7 @@ class TextfieldExerciseAnswerInline(TranslationStackedInline):
 class TextfieldExerciseAdmin(CourseContentAccess, TranslationAdmin, VersionAdmin):
     
     content_type = "TEXTFIELD_EXERCISE"
+    form = ContentForm
     
     #def get_queryset(self, request):
     #    return self.model.objects.filter(content_type="TEXTFIELD_EXERCISE")
@@ -415,6 +418,7 @@ class RepeatedTemplateExerciseBackendCommandInline(TranslationStackedInline):
 class RepeatedTemplateExerciseAdmin(CourseContentAccess, TranslationAdmin, VersionAdmin):
 
     content_type = "REPEATED_TEMPLATE_EXERCISE"
+    form = ContentForm
 
     fieldsets = [
         ('Page information',   {'fields': ['name', 'slug', 'content', 'question', 'tags']}),
@@ -506,6 +510,7 @@ class LectureAdmin(CourseContentAccess, TranslationAdmin, VersionAdmin):
 class FileUploadExerciseAdmin(CourseContentAccess, TranslationAdmin, VersionAdmin):
     
     content_type = "FILE_UPLOAD_EXERCISE"
+    form = ContentForm
     
     #def get_queryset(self, request):
     #    return self.model.objects.filter(content_type="FILE_UPLOAD_EXERCISE")
@@ -530,7 +535,7 @@ admin.site.register(FileExerciseTestIncludeFile)
 admin.site.register(InstanceIncludeFile)
 admin.site.register(IncludeFileSettings)
 
-## Page embeddable objects
+    ## Page embeddable objects
 class CalendarDateAdmin(admin.StackedInline):
     model = CalendarDate
     extra = 1
@@ -777,13 +782,13 @@ class CourseInstanceAdmin(TranslationAdmin, VersionAdmin):
             return False
         
     def save_model(self, request, obj, form, change):
-        new = False
+        self._new = False
         if obj.pk == None:
-            new = True
+            self._new = True
         
         super().save_model(request, obj, form, change)
         
-        if new:
+        if self._new:
             instance_files = InstanceIncludeFile.objects.filter(course=obj.course)
             for ifile in instance_files:
                 link = InstanceIncludeFileToInstanceLink(
@@ -810,10 +815,12 @@ class CourseInstanceAdmin(TranslationAdmin, VersionAdmin):
         obj = self.current
         if obj.frontpage:
             fp_node = ContentGraph.objects.filter(courseinstance=obj.id, ordinal_number=0).first()
-            if fp_node:
+            if fp_node and not self._new:
                 fp_node.content = obj.frontpage
                 fp_node.save()
             else:
+                if fp_node:
+                    obj.contents.remove(fp_node)
                 fp_node = obj.contents.create(
                     content=obj.frontpage,
                     scored=False,
@@ -826,14 +833,6 @@ class CourseInstanceAdmin(TranslationAdmin, VersionAdmin):
         else:
             for cg in obj.contents.all():
                 cg.content.update_embedded_links(obj, cg.revision)
-                
-        #for cg in obj.contents.all():
-        #    print(cg)
-        #    cg.content.update_embedded_links(obj, cg.revision)
-            
-
-                
-                
             
 admin.site.register(CourseInstance, CourseInstanceAdmin)
     

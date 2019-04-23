@@ -5,13 +5,13 @@
 
 {% block course-completion-link %}
   {% if not sandboxed %}
-    <a href="{% url 'teacher_tools:completion' course.slug instance.slug %}">{% trans 'Course completion' %}</a>
+    <a href="{% url 'teacher_tools:completion' course instance %}">{% trans 'Course completion' %}</a>
   {% endif %}
 {% endblock %}
 
 {% block course-enrollments-link %}
   {% if not sandboxed %}
-    <a href="{% url 'teacher_tools:manage_enrollments' course.slug instance.slug %}">{% trans 'Manage enrollments' %}</a>
+    <a href="{% url 'teacher_tools:manage_enrollments' course instance %}">{% trans 'Manage enrollments' %}</a>
   {% endif %}
 {% endblock %}
 
@@ -24,7 +24,7 @@
 {% block breadcrumb-links %}
   <li><a href="{% url 'courses:index' %}">{% trans 'Courses' %}</a></li>
   <div class="separator">»</div>
-  <li><a href="{% url 'courses:course' course.slug instance.slug %}">{{ course.name }}&nbsp;/&nbsp;{{ instance.name }}</a></li>
+  <li><a href="{% url 'courses:course' course instance %}">{{ course.name }}&nbsp;/&nbsp;{{ instance.name }}</a></li>
 {% endblock %}
 
 {% block page-content %}
@@ -39,7 +39,7 @@
     class="teacher-form" 
     method="POST" 
     enctype="multipart/form-data" 
-    action="{% url 'teacher:manage_enrollments' course.slug instance.slug %}">
+    action="{% url 'teacher:manage_enrollments' course instance %}">
   
     {% csrf_token %}
     
@@ -104,7 +104,7 @@
             <td class="controls-cell">
               {% if enrollment.enrollment_state == "ACCEPTED" %}
                 <button class="enrollment-expel-button" onclick="process_one(event, this, 'expelled')">expel</button>
-                <a class="enrollment-user-completion-link" href="{% url 'teacher:student_completion' course.slug instance.slug user.username %}">completion</a>
+                <a class="enrollment-user-completion-link" href="{% url 'teacher:student_completion' course instance user %}">completion</a>
               {% elif enrollment.enrollment_state == "WAITING" %}
                 <button class="enrollment-accept-button" onclick="process_one(event, this, 'accepted')">accept</button>
                 <button class="enrollment-deny-button" onclick="process_one(event, this, 'denied')">deny</button>

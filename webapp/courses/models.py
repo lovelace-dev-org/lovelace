@@ -551,7 +551,6 @@ class ContentPage(models.Model):
         # NOTE: Not working with request=None either
         # TODO: Cache
         # TODO: Separate caching depending on the language!
-        # TODO: Save the embedded pages as embedded content links
         # TODO: Take csrf protection into account; use cookies only
         #       - https://docs.djangoproject.com/en/1.7/ref/contrib/csrf/
         rendered = ""
@@ -568,25 +567,6 @@ class ContentPage(models.Model):
         markup_gen = markupparser.MarkupParser.parse(content, request, context, embedded_pages)
         for chunk in markup_gen:
             rendered += chunk
-
-        # Update the embedded pages field if we are not rendering an old version.
-        # Important! If we save the object with its old version info, it will
-        # overwrite the current version!
-        # TODO: Refactor this to save.
-        #if embedded_pages:
-            #embedded_page_objs = ContentPage.objects.filter(slug__in=list(zip(*embedded_pages))[0])
-            ##self.embedded_pages.get_queryset().filter(instance=context["instance"]).delete()            
-            #EmbeddedLink.objects.filter(parent=self, instance=context["instance"]).delete()
-            #for i, (embedded_page, rev_id) in enumerate(embedded_pages):
-                #page_obj = EmbeddedLink(
-                    #parent=self,
-                    #embedded_page=embedded_page_objs.get(slug=embedded_page),
-                    #revision=rev_id,
-                    #ordinal_number=i,
-                    #instance=context["instance"]
-                #)
-                #page_obj.save()
-            #self.save()
 
         return rendered
     
@@ -2020,6 +2000,32 @@ class UserAnswer(models.Model):
     collaborators = models.TextField(verbose_name='Which users was this exercise answered with', blank=True, null=True)
     checked = models.BooleanField(verbose_name='This answer has been checked', default=False)
     draft = models.BooleanField(verbose_name='This answer is a draft', default=False)
+    
+    @staticmethod
+    def get_task_answers(task, instance=None, user=None, revision=None):
+        if task.content_type == "CHECKBOX_EXERCISE":
+            answers = UserAnswer.objects.filter(usercheckboxexerciseanswer__exercise=task)
+        elif task.content_type == "MULTIPLE_CHOICE_EXERCISE":
+            answers = UserAnswer.objects.filter(usermultiplechoiceexerciseanswer__exercise=task)
+        elif task.content_type == "TEXTFIELD_EXERCISE":
+            answers = UserAnswer.objects.filter(usertextfieldexerciseanswer__exercise=task)
+        elif task.content_type == "FILE_UPLOAD_EXERCISE":
+            answers = UserAnswer.objects.filter(userfileuploadexerciseanswer__exercise=task)
+        elif task.content_type == "REPEATED_TEMPLATE_EXERCISE":
+            answers = UserAnswer.objects.filter(userrepeatedtemplateexerciseanswer__exercise=task)
+        else:
+            raise ValueError("Task {} does not have a valid exercise type".format(task))
+        
+        if instance:
+            answers.filter(instance=instance)
+            
+        if user:
+            answers.filter(user=user)
+            
+        if revision:
+            answers.filter(revision=revision)
+            
+        return answers.order_by("answer_date")
 
 # TODO: Put in UserFileUploadExerciseAnswer's manager?
 def get_version(instance):
@@ -2058,6 +2064,19 @@ class FileUploadExerciseReturnFile(models.Model):
                 binary = True
 
         return (mimetype, binary)
+    
+    def get_content(self):
+        if not self.get_type()[1]:
+            path = self.fileinfo.path
+            with open(path, 'rb') as f:
+                contents = f.read()
+                try:
+                    lexer = pygments.lexers.guess_lexer_for_filename(path, contents)
+                except pygments.util.ClassNotFound:
+                    return contents
+                else:
+                    return pygments.highlight(contents, lexer, pygments.formatters.HtmlFormatter(nowrap=True))
+        return ""
 
 class UserFileUploadExerciseAnswer(UserAnswer):
     exercise = models.ForeignKey(FileUploadExercise, blank=True, null=True, on_delete=models.SET_NULL)
@@ -2092,6 +2111,15 @@ class UserFileUploadExerciseAnswer(UserAnswer):
                         contents = pygments.highlight(contents, lexer, pygments.formatters.HtmlFormatter(nowrap=True))
                 returned_files[returned_file.filename()] = type_info + (contents,)
         return returned_files
+
+    def get_returned_file_list(self):
+        file_objects = FileUploadExerciseReturnFile.objects.filter(answer=self)
+        returned_files = {}
+        for returned_file in file_objects:
+            type_info = returned_file.get_type()
+            returned_files[returned_file.filename()] = type_info
+        return returned_files
+        
 
 class UserRepeatedTemplateInstanceAnswer(models.Model):
     answer = models.ForeignKey('UserRepeatedTemplateExerciseAnswer', on_delete=models.CASCADE)

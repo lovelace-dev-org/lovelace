@@ -45,7 +45,7 @@ import django.conf
 from django.contrib import auth
 from django.shortcuts import redirect
 
-from utils.access import is_course_staff, determine_media_access
+from utils.access import is_course_staff, determine_media_access, ensure_enrolled_or_staff, ensure_owner_or_staff
 from utils.content import first_title_from_content
 from utils.files import generate_download_response
 
@@ -90,14 +90,14 @@ def login(request):
         'login_form': LoginForm(),
         'signup_url': reverse("account_signup")
     }
-    
+
     if 'shibboleth' in django.conf.settings.INSTALLED_APPS:
         c['shibboleth_login'] = reverse("shibboleth:login")
     else:
         c['shibboleth_login'] = False
-    
+
     return HttpResponse(t.render(c, request))
-    
+
 @cookie_law    
 def logout(request):
     # template based on allauth logout page
@@ -134,73 +134,45 @@ def index(request):
     return HttpResponse(t.render(c, request))
 
 @cookie_law
-def course_instances(request, course_slug):
+def course_instances(request, course):
     return HttpResponse("here be instances for this course")
 
-def check_exercise_accessible(request, course_slug, instance_slug, content_slug):
-    try:
-        course_obj = Course.objects.get(slug=course_slug)
-    except Course.DoesNotExist as e:
-        return {'error': HttpResponseNotFound("No such course {}.".format(course_slug))}
+def check_exercise_accessible(request, course, instance, content):
 
-    try:
-        instance_obj = CourseInstance.objects.get(slug=instance_slug)
-    except CourseInstance.DoesNotExist as e:
-        return {'error': HttpResponseNotFound("No such course instance {}.".format(instance_slug))}
-
-    try:
-        content_obj = ContentPage.objects.get(slug=content_slug)
-    except ContentPage.DoesNotExist as e:
-        return {'error': HttpResponseNotFound("No such exercise {}.".format(content_slug))}
-
-    embedded_links = EmbeddedLink.objects.filter(embedded_page_id=content_obj.id, instance__slug=instance_slug)
-    content_graph_links = instance_obj.contents.filter(content_id=content_obj.id)
+    embedded_links = EmbeddedLink.objects.filter(embedded_page_id=content.id, instance=instance)
+    content_graph_links = instance.contents.filter(content_id=content.id)
     
     if content_graph_links.first() is None and embedded_links.first() is None:
-        return {'error': HttpResponseNotFound("Content {} is not linked to course {}!".format(content_slug, course_slug))}
+        return {'error': HttpResponseNotFound("Content {} is not linked to course {}!".format(content.slug, course.slug))}
 
     return {
-        'course': course_obj,
-        'instance': instance_obj,
-        'content': content_obj,
         'embedded_links': embedded_links,
         'content_graph_links': content_graph_links,
         'error': None,
     }
 
 @cookie_law
-def course(request, course_slug, instance_slug):
-    try:
-        course_obj = Course.objects.get(slug=course_slug)
-    except Course.DoesNotExist:
-        return HttpResponseNotFound("Course {} does not exist!".format(course_slug))
+def course(request, course, instance):
 
-    try:
-        instance_obj = CourseInstance.objects.get(slug=instance_slug)
-    except CourseInstance.DoesNotExist:
-        return HttpResponseNotFound("Course {} does not have an instance {}!".
-                                    format(course_obj.name, instance_slug))
-
-    frontpage = instance_obj.frontpage
+    frontpage = instance.frontpage
     if frontpage:
-        content_slug = frontpage.slug
-        context = content(request, course_slug, instance_slug, content_slug, frontpage=True)
+        context = content(request, course, instance, frontpage, frontpage=True)
     else:
         context = {}
 
-    context["course"] = course_obj
-    context["instance"] = instance_obj
+    context["course"] = course
+    context["instance"] = instance
 
-    if is_course_staff(request.user, instance_obj):
-        contents = instance_obj.contents.filter(ordinal_number__gt=0).order_by('ordinal_number')
+    if is_course_staff(request.user, instance):
+        contents = instance.contents.filter(ordinal_number__gt=0).order_by('ordinal_number')
     else:
-        contents = instance_obj.contents.filter(ordinal_number__gt=0, visible=True).order_by('ordinal_number')
+        contents = instance.contents.filter(ordinal_number__gt=0, visible=True).order_by('ordinal_number')
     
     if len(contents) > 0:
         tree = []
         tree.append((mark_safe('>'), None, None, None, None))
         for content_ in contents:
-            course_tree(tree, content_, request.user, instance_obj)
+            course_tree(tree, content_, request.user, instance)
         tree.append((mark_safe('<'), None, None, None, None))
         context["content_tree"] = tree
 
@@ -303,7 +275,8 @@ def check_answer_sandboxed(request, content_slug):
         'evaluation': evaluation.get("evaluation"),
     })
 
-def check_answer(request, course_slug, instance_slug, content_slug, revision):
+@ensure_enrolled_or_staff
+def check_answer(request, course, instance, content, revision):
     """
     Saves and evaluates a user's answer to an exercise and sends the results
     back to the user.
@@ -311,19 +284,8 @@ def check_answer(request, course_slug, instance_slug, content_slug, revision):
     if request.method != "POST":
         return HttpResponseNotAllowed(['POST'])
 
-    if not request.user.is_active:
-        return JsonResponse({
-            'result': _('Only logged in users can send their answers for evaluation!')
-        })
-
-    course = Course.objects.get(slug=course_slug)
-    instance = CourseInstance.objects.get(slug=instance_slug)
-    content = ContentPage.objects.get(slug=content_slug)
     # TODO: Ensure that the content revision really belongs to the course instance
 
-    # TODO: The answer has to be linked to the revision the user is answering!
-
-    # TODO: Resolve "head" revision to the newest revision
     if revision == "head":
         latest = Version.objects.get_for_object(content).latest("revision__date_created")
         revision = latest.revision_id
@@ -360,15 +322,15 @@ def check_answer(request, course_slug, instance_slug, content_slug, revision):
     if not exercise.manually_evaluated:
         if exercise.content_type == "FILE_UPLOAD_EXERCISE":
             task_id = evaluation["task_id"]
-            return check_progress(request, course_slug, instance_slug, content_slug, revision, task_id)
+            return check_progress(request, course, instance, content, revision, task_id)
         exercise.save_evaluation(content, user, evaluation, answer_object)
         evaluation["manual"] = False
     else:
         evaluation["manual"] = True
 
     msg_context = {
-        'course_slug': course_slug,
-        'instance_slug': instance_slug,
+        'course_slug': course.slug,
+        'instance_slug': instance.slug,
         'instance': instance,
         'content_page': content
     }
@@ -395,18 +357,14 @@ def check_answer(request, course_slug, instance_slug, content_slug, revision):
     return JsonResponse(data)
 
 
-def get_repeated_template_session(request, course_slug, instance_slug, content_slug, revision):
-    if not request.user.is_active:
-        return HttpResponseForbidden(_("Only logged in users are allowed to answer repeated template exercises."))
-    
-    check_results = check_exercise_accessible(request, course_slug, instance_slug, content_slug)
+@ensure_enrolled_or_staff
+def get_repeated_template_session(request, course, instance, content, revision):
+    check_results = check_exercise_accessible(request, course, instance, content)
     check_error = check_results.get('error')
     if check_error is not None:        
         return check_error
 
-    course = check_results['course']
-    instance = check_results['instance']
-    content = check_results['content'].get_type_object()
+    content = content.get_type_object()
     
     lang_code = translation.get_language()
 
@@ -446,9 +404,9 @@ def get_repeated_template_session(request, course_slug, instance_slug, content_s
                     )
                     # TODO: Check that the task was successfully launched
                     rerequest_url = reverse('courses:get_repeated_template_session',
-                                            kwargs={'course_slug': course_slug,
-                                                    'instance_slug': instance_slug,
-                                                    'content_slug': content_slug,
+                                            kwargs={'course': course,
+                                                    'instance': instance,
+                                                    'content': content,
                                                     'revision': "head" if revision is None else revision,
                                             })
                     data = {
@@ -459,7 +417,7 @@ def get_repeated_template_session(request, course_slug, instance_slug, content_s
 
     # Pick the first unfinished instance
     session_instance = RepeatedTemplateExerciseSessionInstance.objects.filter(session=session, userrepeatedtemplateinstanceanswer__isnull=True).order_by('ordinal_number').first()
-    #print(session_instance)
+    #usession_instance)
 
     session_template = session_instance.template
     variables = session_instance.variables
@@ -475,8 +433,8 @@ def get_repeated_template_session(request, course_slug, instance_slug, content_s
     #print(session_instance.repeatedtemplateexercisesessioninstanceanswer_set.first().answer)
     
     template_context = {
-        'course_slug': course_slug,
-        'instance_slug': instance_slug,
+        'course_slug': course.slug,
+        'instance_slug': instance.slug,
     }
     template_parsed = "".join(markupparser.MarkupParser.parse(rendered_template, request, template_context)).strip()
 
@@ -492,22 +450,23 @@ def get_repeated_template_session(request, course_slug, instance_slug, content_s
     
     return JsonResponse(data)
 
-def check_progress(request, course_slug, instance_slug, content_slug, revision, task_id):
+@ensure_enrolled_or_staff
+def check_progress(request, course, instance, content, revision, task_id):
     # Based on https://djangosnippets.org/snippets/2898/
     # TODO: Check permissions
     task = celery_app.AsyncResult(id=task_id)
     info = task.info
     if task.ready():
-        return file_exercise_evaluation(request, course_slug, instance_slug, content_slug, revision, task_id, task)
+        return file_exercise_evaluation(request, course, instance, content, revision, task_id, task)
     else:
         celery_status = get_celery_worker_status()
         if "errors" in celery_status:
             data = celery_status
         else:
             progress_url = reverse('courses:check_progress',
-                                   kwargs={'course_slug': course_slug,
-                                           'instance_slug': instance_slug,
-                                           'content_slug': content_slug,
+                                   kwargs={'course': course,
+                                           'instance': instance,
+                                           'content': content,
                                            'revision': revision,
                                            'task_id': task_id,})
             if not info: info = task.info # Try again in case the first time was too early
@@ -520,26 +479,24 @@ def get_answer_count_meta(answer_count):
     return t.render({'answer_count': answer_count})
     
     
-def file_exercise_evaluation(request, course_slug, instance_slug, content_slug, revision, task_id, task=None):
+def file_exercise_evaluation(request, course, instance, content, revision, task_id, task=None):
     if task is None:
         task = AsyncResult(task_id)
     evaluation_id = task.get()
     task.forget() # TODO: IMPORTANT! Also forget all the subtask results somehow? in tasks.py?
     evaluation_obj = Evaluation.objects.get(id=evaluation_id)
-    content = ContentPage.objects.get(slug=content_slug)
-    instance = CourseInstance.objects.get(slug=instance_slug)
     answer_count = content.get_user_answers(content, request.user, instance).count()
     answer_count_str = get_answer_count_meta(answer_count)
 
-    # TODO: Nicer way to get the proper address!
-    r = redis.StrictRedis(**settings.CELERY_RESULT_CONFIG)
+    r = redis.StrictRedis(**settings.REDIS_RESULT_CONFIG)
     evaluation_json = r.get(task_id).decode("utf-8")
     evaluation_tree = json.loads(evaluation_json)
     r.delete(task_id)
+    task.forget()
 
     msg_context = {
-        'course_slug': course_slug,
-        'instance_slug': instance_slug,
+        'course_slug': course.slug,
+        'instance_slug': instance.slug,
         'instance': instance,
         'content_page': content
     }
@@ -557,45 +514,6 @@ def file_exercise_evaluation(request, course_slug, instance_slug, content_slug, 
     data["answer_count_str"] = answer_count_str
     
     return JsonResponse(data)
-
-
-
-# OBSOLETE
-def get_old_file_exercise_evaluation(request, user, answer_id):
-    if request.user.is_authenticated and (request.user.username == user or request.user.is_staff):
-        pass
-    else:
-        return HttpResponseForbidden(_("You're only allowed to view your own answers."))
-
-    try:
-        user_obj = User.objects.get(username=user)
-    except User.DoesNotExist as e:
-        return HttpResponseNotFound("No such user %s" % user)
-
-    try:
-        answer_obj = UserFileUploadExerciseAnswer.objects.get(id=answer_id)
-    except UserFileUploadExerciseAnswer.DoesNotExist as e:
-        return HttpResponseNotFound("No such answer {}".format(answer_id))
-    else:
-        if answer_obj.user != request.user and not is_course_staff(request.user, answer_obj.instance):
-            return HttpResponseForbidden(_("You're only allowed to view your own answers."))
-
-    from .tasks import generate_results
-    
-    results_json = answer_obj.evaluation.test_results
-    results_dict = json.loads(results_json)
-
-    evaluation_dict = generate_results(results_dict, 0)
-
-    debug_json = json.dumps(evaluation_dict, indent=4)
-
-    t_file = loader.get_template("courses/file-exercise-evaluation.html")
-    c_file = {
-        'debug_json': debug_json,
-        'evaluation_tree': evaluation_dict["test_tree"],
-    }
-    return HttpResponse(t_file.render(c_file, request))
-
 
 def compile_evaluation_data(request, evaluation_tree, evaluation_obj, context=None):
     log = evaluation_tree["test_tree"].get("log", [])
@@ -644,7 +562,7 @@ def compile_evaluation_data(request, evaluation_tree, evaluation_obj, context=No
     
     return data
     
-
+# TODO: figure out a way to change this to use decorators
 def get_file_exercise_evaluation(request, user, answer_id):
     if request.user.is_authenticated and (request.user.username == user or request.user.is_staff):
         pass
@@ -717,44 +635,50 @@ def sandboxed_content(request, content_slug, **kwargs):
         return HttpResponse(t.render(c, request))
 
 @cookie_law
-def content(request, course_slug, instance_slug, content_slug, **kwargs):
-    try:
-        course = Course.objects.get(slug=course_slug)
-    except Course.DoesNotExist:
-        return HttpResponseNotFound("Course {} does not exist!".format(course_slug))
-
-    try:
-        instance = CourseInstance.objects.get(slug=instance_slug)
-    except CourseInstance.DoesNotExist:
-        return HttpResponseNotFound("Course {} does not have an instance {}!".
-                                    format(course.name, instance_slug))
-    
-    try:
-        content = ContentPage.objects.get(slug=content_slug)
-    except ContentPage.DoesNotExist:
-        return HttpResponseNotFound("Content {} does not exist!".format(content_slug))
-
+def content(request, course, instance, content, **kwargs):
     content_graph = None
     revision = None
     #if "frontpage" not in kwargs:
     try:
         content_graph = instance.contents.get(content=content)
     except ContentGraph.DoesNotExist:
-        return HttpResponseNotFound("Content {} is not linked to course {}!".format(content_slug, course_slug))
+        return HttpResponseNotFound("Content {} is not linked to course {}!".format(content.slug, course.slug))
     else:
         if content_graph is None:
-            return HttpResponseNotFound("Content {} is not linked to course {}!".format(content_slug, course_slug))
+            return HttpResponseNotFound("Content {} is not linked to course {}!".format(content.slug, course.slug))
         
+    evaluation = None
+    answer_count = None
+    enrolled = False
+    course_staff = False
+    if request.user.is_authenticated:
+        if request.user.is_active and content.is_answerable() and content.get_user_answers(content, request.user, instance):
+            answer_count = content.get_user_answers(content, request.user, instance).count()
+        if content_graph and (content_graph.publish_date is None or content_graph.publish_date < datetime.datetime.now()):
+            try:
+                evaluation = content.get_user_evaluation(content, request.user, instance)
+            except NotImplementedError:
+                evaluation = None
+        try:
+            if CourseEnrollment.objects.get(instance=instance, student=request.user).is_enrolled():
+                enrolled = True
+        except CourseEnrollment.DoesNotExist:
+            pass
+        if is_course_staff(request.user, instance):
+            course_staff = True
+            
     revision = content_graph.revision
     
     content_type = content.content_type
 
     context = {
         'course': course,
-        'course_slug': course_slug,
+        'course_slug': course.slug,
         'instance': instance,
         'instance_slug': instance.slug,
         'content_page': content,
+        'enrolled': enrolled,
+        'course_staff': course_staff
     }
 
     termbank_contents = cache.get('termbank_contents_{instance}_{lang}'.format(instance=context['instance_slug'], lang=translation.get_language()))
@@ -796,14 +720,14 @@ def content(request, course_slug, instance_slug, content_slug, **kwargs):
                     server_side = link.url
                     client_side = None
                 
-                slugified = slugify(server_side, allow_unicode=True)
-                if server_side == slugified and context is not None:
-                    final_address = reverse('courses:content', args=[context['course_slug'], context['instance_slug'], slugified])
+                try:
+                    target_content = ContentPage.objects.get(slug=server_side)
+                except ContentPage.DoesNotExist:
+                    final_address = link.url
+                else:
+                    final_address = reverse('courses:content', args=[context['course'], context['instance'], target_content])
                     if client_side is not None:
                         final_address = final_address.rstrip('/') + '#' + client_side
-                else:
-                    # external address
-                    final_address = link.url
                     
                 final_links.append({"url": final_address, "text": link.link_text})
                 
@@ -882,26 +806,16 @@ def content(request, course_slug, instance_slug, content_slug, **kwargs):
 
     choices = answers = content.get_choices(content, revision=revision)
 
-    evaluation = None
-    answer_count = None
-    if request.user.is_authenticated:
-        if request.user.is_active and content.is_answerable() and content.get_user_answers(content, request.user, instance):
-            answer_count = content.get_user_answers(content, request.user, instance).count()
-        if content_graph and (content_graph.publish_date is None or content_graph.publish_date < datetime.datetime.now()):
-            try:
-                evaluation = content.get_user_evaluation(content, request.user, instance)
-            except NotImplementedError:
-                evaluation = None
-
     if not rendered_content:
         rendered_content = content.rendered_markup(request, context)
 
     c = {
-        'course_slug': course_slug,
+        'course': course,
+        'course_slug': course.slug,
         'course_name': course.name,
         "instance": instance,
         'instance_name': instance.name,
-        'instance_slug': instance_slug,
+        'instance_slug': instance.slug,
         'content': content,
         'rendered_content': rendered_content,
         'embedded': False,
@@ -915,6 +829,8 @@ def content(request, course_slug, instance_slug, content_slug, **kwargs):
         'termbank_contents': sorted(list(termbank_contents.items())),
         'term_div_data': term_div_data,
         'revision': revision,
+        'enrolled': enrolled,
+        'course_staff': course_staff
     }
     if "frontpage" in kwargs:
         return c
@@ -1003,6 +919,7 @@ def user(request, user_name):
     }
     return HttpResponse(t.render(c, request))
 
+# TODO: calendars should be tied to instances
 def calendar_post(request, calendar_id, event_id):
     if not request.user.is_authenticated:
         return HttpResponseNotFound()
@@ -1040,60 +957,61 @@ def calendar_post(request, calendar_id, event_id):
     else:
         return HttpResponseForbidden()
 
+@ensure_owner_or_staff
 def show_answers(request, user, course, instance, exercise):
     """
     Show the user's answers for a specific exercise on a specific course.
     """
-    try:
-        instance_obj = CourseInstance.objects.get(slug=instance)
-    except CourseInstance.DoesNotExist as e:
-        return HttpResponseNotFound("No such course instance {}.".format(instance))
-    
-    if request.user.is_authenticated and (request.user.username == user or is_course_staff(request.user, instance_obj)):
-        pass
-    else:
-        return HttpResponseForbidden(_("You're only allowed to view your own answers."))
-    
-    try:
-        user_obj = User.objects.get(username=user)
-    except User.DoesNotExist as e:
-        return HttpResponseNotFound("No such user {}.".format(user))
-    
-    try:
-        course_obj = Course.objects.get(slug=course)
-    except Course.DoesNotExist as e:
-        return HttpResponseNotFound("No such course {}.".format(course))
-    
-    try:
-        exercise_obj = ContentPage.objects.get(slug=exercise).get_type_object()
-    except ContentPage.DoesNotExist as e:
-        return HttpResponseNotFound("No such exercise {}.".format(exercise))
-    
-    content_type = exercise_obj.content_type
-    question = exercise_obj.question
-    choices = exercise_obj.get_choices(exercise_obj)
+
+    content_type = exercise.content_type
+    question = exercise.question
+    choices = exercise.get_choices(exercise)
     
     # TODO: Error checking for exercises that don't belong to this course
     
     answers = []
     
     if content_type == "MULTIPLE_CHOICE_EXERCISE":
-        answers = UserMultipleChoiceExerciseAnswer.objects.filter(user=user_obj, exercise=exercise_obj, instance=instance_obj)
+        answers = UserMultipleChoiceExerciseAnswer.objects.filter(
+            user=user,
+            exercise=exercise,
+            instance=instance
+        )
     elif content_type == "CHECKBOX_EXERCISE":
-        answers = UserCheckboxExerciseAnswer.objects.filter(user=user_obj, exercise=exercise_obj, instance=instance_obj)
+        answers = UserCheckboxExerciseAnswer.objects.filter(
+            user=user,
+            exercise=exercise,
+            instance=instance
+        )
     elif content_type == "TEXTFIELD_EXERCISE":
-        answers = UserTextfieldExerciseAnswer.objects.filter(user=user_obj, exercise=exercise_obj, instance=instance_obj)
+        answers = UserTextfieldExerciseAnswer.objects.filter(
+            user=user,
+            exercise=exercise,
+            instance=instance
+        )
     elif content_type == "FILE_UPLOAD_EXERCISE":
-        answers = UserFileUploadExerciseAnswer.objects.filter(user=user_obj, exercise=exercise_obj, instance=instance_obj)
+        answers = UserFileUploadExerciseAnswer.objects.filter(
+            user=user,
+            exercise=exercise,
+            instance=instance
+        )
     elif content_type == "CODE_REPLACE_EXERCISE":
-        answers = UserCodeReplaceExerciseAnswer.objects.filter(user=user_obj, exercise=exercise_obj, instance=instance_obj)
+        answers = UserCodeReplaceExerciseAnswer.objects.filter(
+            user=user,
+            exercise=exercise,
+            instance=instance
+        )
     elif content_type == "REPEATED_TEMPLATE_EXERCISE":
-        answers = UserRepeatedTemplateExerciseAnswer.objects.filter(user=user_obj, exercise=exercise_obj, instance=instance_obj)
+        answers = UserRepeatedTemplateExerciseAnswer.objects.filter(
+            user=user,
+            exercise=exercise,
+            instance=instance
+        )
         
     answers = answers.order_by('-answer_date')
     
     try:
-        link = EmbeddedLink.objects.get(embedded_page=exercise_obj, instance=instance_obj)
+        link = EmbeddedLink.objects.get(embedded_page=exercise, instance=instance)
     except EmbeddedLink.MultipleObjectsReturned:
         parent = None
         single_linked = False
@@ -1101,52 +1019,56 @@ def show_answers(request, user, course, instance, exercise):
         parent = link.parent
         single_linked = True
       
-    title, anchor = first_title_from_content(exercise_obj.content)
+    title, anchor = first_title_from_content(exercise.content)
     
     # TODO: Own subtemplates for each of the exercise types.
     t = loader.get_template("courses/user-exercise-answers.html")
     c = {
-        'exercise': exercise,
-        'exercise_name': exercise_obj.name,
-        'course_slug': course,
-        'course_name': course_obj.name,
-        'instance_slug': instance,
-        'instance_name': instance_obj.name,
-        'instance_email': instance_obj.email,
-        'parent': parent,
-        'single_linked': single_linked,
-        'anchor': anchor,
-        'answers_url': request.build_absolute_uri(),
-        'answers': answers,
-        'username': user,
+        "exercise": exercise,
+        "exercise_name": exercise.name,
+        "course": course,
+        "course_slug": course.slug,
+        "course_name": course.name,
+        "instance": instance,
+        "instance_slug": instance.slug,
+        "instance_name": instance.name,
+        "instance_email": instance.email,
+        "parent": parent,
+        "single_linked": single_linked,
+        "anchor": anchor,
+        "answers_url": request.build_absolute_uri(),
+        "answers": answers,
+        "user": user,
+        "username": user.username,
     }
     return HttpResponse(t.render(c, request))
 
-# DOWNLOAD VIEWS
-# ^
-# |
-# |
-
-def download_answer_file(request, user, course, instance, answer_id, filename):
-    
-    # Try to find the course instance first (404 if not found)
+@ensure_owner_or_staff
+def show_answer_file_content(request, user, course, instance, answer, filename):
     try:
-        instance_object = CourseInstance.objects.get(slug=instance)
-    except CourseInstance.DoesNotExist as e:
-        return HttpResponseNotFound(_("This course instance does't exist"))    
-    
-    # Determine access to the user's answers 
-    if not (request.user.username == user or is_course_staff(request.user, instance_object)):
-        return HttpResponseForbidden(_("You're only allowed to view your own answers."))
-    
-    # Try to find the answer itself
-    try:
-        answer_object = UserAnswer.objects.get(id=answer_id)
-    except UserAnswer.DoesNotExist as e:
+        files = FileUploadExerciseReturnFile.objects.filter(answer=answer, answer__user=user)
+    except FileUploadExerciseReturnFile.DoesNotExist as e:
         return HttpResponseForbidden(_("You cannot access this answer."))
     
+    for f in files:
+        if f.filename() == filename:
+            content = f.get_content()
+            break
+    else:
+        return HttpResponseForbidden(_("You cannot access this answer."))
+
+    return HttpResponse(content)
+    
+
+# DOWNLOAD VIEWS
+# |
+# v
+
+@ensure_owner_or_staff
+def download_answer_file(request, user, course, instance, answer, filename):
+    
     try:
-        files = FileUploadExerciseReturnFile.objects.filter(answer__id=answer_id, answer__user__username=user)
+        files = FileUploadExerciseReturnFile.objects.filter(answer=answer, answer__user=user)
     except FileUploadExerciseReturnFile.DoesNotExist as e:
         return HttpResponseForbidden(_("You cannot access this answer."))
     
@@ -1159,16 +1081,16 @@ def download_answer_file(request, user, course, instance, answer_id, filename):
     
     return generate_download_response(fs_path)
 
-def download_embedded_file(request, course_slug, instance_slug, file_slug):
+def download_embedded_file(request, course, instance, mediafile):
     """
     This view function is for downloading media files via the actual site.
     """
     
     #NOTE: hotfix for multiple copies of medialinks
     try:
-        file_link = CourseMediaLink.objects.filter(media__name=file_slug, instance__slug=instance_slug).first()
+        file_link = CourseMediaLink.objects.filter(media=mediafile, instance=instance).first()
     except CourseMediaLink.DoesNotExist as e:
-        return HttpResponseNotFound("No such file {}".format(file_slug))
+        return HttpResponseNotFound("No such file {}".format(mediafile.name))
     
     if file_link.revision is None:
         file_object = file_link.media.file
@@ -1202,6 +1124,7 @@ def download_media_file(request, file_slug, field_name):
     return generate_download_response(fs_path)
 
 
+# TODO: limit to owner and course staff
 def download_template_exercise_backend(request, exercise_id, filename):
     
     if not request.user.is_authenticated:
@@ -1229,15 +1152,14 @@ def download_template_exercise_backend(request, exercise_id, filename):
 
     return generate_download_response(fs_path)
 
-# |
-# |
-# v
-# ENROLLMENT VIEWS
 # ^
 # |
+# DOWNLOAD VIEWS
+# ENROLLMENT VIEWS
 # |
+# v
    
-def enroll(request, course_slug, instance_slug):
+def enroll(request, course, instance):
     
     if not request.method == "POST":
         return HttpResponseNotAllowed(["POST"])        
@@ -1247,20 +1169,15 @@ def enroll(request, course_slug, instance_slug):
     if not request.user.is_authenticated:
         return HttpResponseForbidden(_("Only logged in users can enroll to courses."))
     
-    try:
-        instance_object = CourseInstance.objects.get(slug=instance_slug)
-    except CourseInstance.DoesNotExist as e:
-        return HttpResponseNotFound(_("You cannot enroll to this course."))
-    
-    status = instance_object.user_enroll_status(request.user)
+    status = instance.user_enroll_status(request.user)
     
     if status is not None:
         return HttpResponseBadRequest(_("You have already enrolled to this course."))
     
     with transaction.atomic():
-        enrollment = CourseEnrollment(instance=instance_object, student=request.user)
+        enrollment = CourseEnrollment(instance=instance, student=request.user)
     
-        if not instance_object.manual_accept:
+        if not instance.manual_accept:
             enrollment.enrollment_state = "ACCEPTED"
             response_text = _("Your enrollment has been automatically accepted.")
         else:

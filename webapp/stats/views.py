@@ -1,15 +1,27 @@
+import json
 import re
 import math
 import statistics
-
 import django
-from django.http import HttpResponse, HttpResponseNotFound, HttpResponseForbidden
+import redis
+
+from celery import chain
+from django.conf import settings
+from django.http import HttpResponse, HttpResponseNotFound, HttpResponseForbidden, JsonResponse
 from django.template import loader
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.safestring import mark_safe
+from django.utils.translation import ugettext as _
+from lovelace.celery import app as celery_app
+
+import datetime
 
 from courses.models import *
+from .models import *
+import stats.tasks as stat_tasks
+
+from utils.access import ensure_responsible
 
 # TODO: A view that displays statistics of a page that has embedded pages.
 #       E.g. the average completion status, how many of total course
@@ -374,17 +386,13 @@ def exercise_answer_stats(request, ctx, exercise, exercise_type_f, template):
     t = loader.get_template("stats/" + template)
     return HttpResponse(t.render(ctx, request))
     
-def single_exercise(request, content_slug):
+def single_exercise(request, exercise):
     """
     Shows statistics on a single selected task.
     """
     if not (request.user.is_authenticated and request.user.is_active and request.user.is_staff):
         return HttpResponseForbidden("Only logged in admins can view exercise statistics!")
 
-    try:
-        exercise = ContentPage.objects.get(slug=content_slug)
-    except ContentPage.DoesNotExist:
-        return HttpResponseNotFound("No exercise {} found!".format(content_slug))
     tasktype = exercise.content_type
 
     ctx = {
@@ -614,3 +622,157 @@ def users_course(request, course_slug, instance_slug):
 
 class ZeroUsersException(Exception):
     pass
+
+
+# ^
+# |
+# OLD STUFF
+# NEW STUFF
+# |
+# v
+
+
+@ensure_responsible
+def instance_console(request, course, instance):
+    r = redis.StrictRedis(**settings.REDIS_RESULT_CONFIG)
+    task_meta = r.get("{}_stat_meta".format(instance.slug))
+    task_meta = task_meta and json.loads(task_meta.decode("utf-8"))
+    if task_meta and task_meta["completed"]:
+        gen_timestamp = task_meta["completed"]
+        stat_status = _("Last generated: %s" % gen_timestamp)
+    elif task_meta:
+        gen_timestamp = None
+        stat_status = _("Generation of new stats has been requested.")
+    else:
+        gen_timestamp = None
+        stat_status = _("Stats have not been generated.")
+
+    task_summary = TaskSummary.objects.all()
+
+    t = loader.get_template("stats/instance-console.html")
+    c = {
+        "course": course,
+        "instance": instance,
+        "stat_status": stat_status,
+        "task_summary": task_summary
+    }
+    return HttpResponse(t.render(c, request))
+
+@ensure_responsible
+def generate_instance_stats(request, course, instance):
+    r = redis.StrictRedis(**settings.REDIS_RESULT_CONFIG)
+    task_meta = r.get("{}_stat_meta".format(instance.slug))
+    task_meta = task_meta and json.loads(task_meta.decode("utf-8"))
+    if task_meta and task_meta["completed"] is None:
+        task = celery_app.AsyncResult(id=task_meta["task_id"])
+        if task.state in ("PENDING", "STARTED"):
+            return HttpResponse(
+                _("Stats generation for '%s' has already been requested." % instance.name),
+                status=409
+            )
+
+    data = {"msg": _("Stats requested. Request processing starts approximately:")}
+    if settings.STAT_GENERATION_HOUR is None:
+        task = chain(
+            stat_tasks.generate_instance_user_stats.si(instance_slug=instance.slug),
+            stat_tasks.generate_instance_tasks_summary.si(instance_slug=instance.slug),
+            stat_tasks.finalize_instance_stats.s(instance_slug=instance.slug)
+        ).delay(ignore_result=True)
+        data["eta"] = datetime.datetime.today().strftime("%Y-%m-%d %H:%M:%S")
+    else:
+        today = datetime.datetime.today()
+        eta = today.replace(hour=settings.STAT_GENERATION_HOUR)    
+        task = chain(
+            stat_tasks.generate_instance_user_stats.si(instance_slug=instance.slug),
+            stat_tasks.generate_instance_tasks_summary.si(instance_slug=instance.slug),
+            stat_tasks.finalize_instance_stats.s(instance_slug=instance.slug)
+        ).delay(eta=eta, ignore_result=True)
+        data["eta"] = eta.strftime("%Y-%m-%d %H:%M:%S")
+    
+    r.set("{}_stat_meta".format(instance.slug), json.dumps({"task_id": task.task_id, "completed": None}))
+    return JsonResponse(data)
+    
+    
+    
+    
+    
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

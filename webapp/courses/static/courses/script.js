@@ -315,6 +315,11 @@ function show_popup(e, popup_id) {
     popup.css({"opacity":"1", "pointer-events":"auto", "overflow": "scroll"});        
 }    
 
+function show_collapsed() {
+    $(".collapsed").removeClass("collapsed");
+}
+    
+
 function submit_enrollment(event) {
     event.preventDefault();
     

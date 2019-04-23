@@ -17,6 +17,7 @@
 
 {% block page-content %}
   {% block body %}
+    {% comment %}
     {% if messages %}
     <div class="link-box">
       <h2>{% trans 'Messages:' %}</h2>
@@ -27,6 +28,7 @@
       </ul>
     </div>
     {% endif %}
+    {% endcomment %}
 
     <div class="link-box">
       <h2>{% trans 'Menu:' %}</h2>

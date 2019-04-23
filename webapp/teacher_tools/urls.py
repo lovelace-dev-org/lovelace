@@ -1,19 +1,15 @@
-from django.conf.urls import include, url
+from django.urls import path
 
 from . import views
-
 app_name = "teacher_tools"
 
 urlpatterns = [
-    
-    url(r'^(?P<course_slug>[^/]+)/(?P<instance_slug>[^/]+)/(?P<content_slug>[^/]+)/download_answers/$', views.download_answers, name="download_answers"),
-    
-    url(r'^(?P<course_slug>[^/]+)/(?P<instance_slug>[^/]+)/enrollments/$', views.manage_enrollments, name="manage_enrollments"),
-    
-    url(r'^(?P<course_slug>[^/]+)/(?P<instance_slug>[^/]+)/completion/(?P<user>[^/]+)/$', views.student_course_completion, name="student_completion"),
-    
-    url(r'^(?P<course_slug>[^/]+)/(?P<instance_slug>[^/]+)/completion/$', views.course_completion, name="completion"),
-
-    url(r'^(?P<course_slug>[^/]+)/(?P<instance_slug>[^/]+)/completion-csv/$', views.course_completion_csv, name="completion_csv"),
+    path("<course:course>/<instance:instance>/<content:content>/download_answers/", views.download_answers, name="download_answers"),
+    path("<course:course>/<instance:instance>/enrollments/", views.manage_enrollments, name="manage_enrollments"),
+    path("<course:course>/<instance:instance>/completion/<user:user>/", views.student_course_completion, name="student_completion"),
+    path("<course:course>/<instance:instance>/completion/", views.course_completion, name="completion"),
+    path("<course:course>/<instance:instance>/completion-csv/", views.course_completion_csv, name="completion_csv"),
+    path("<course:course>/<instance:instance>/completion-csv/progress/<slug:task_id>/", views.course_completion_csv_progress, name="completion_csv_progress"),
+    path("<course:course>/<instance:instance>/completion-csv/download/<slug:task_id>/", views.course_completion_csv_download, name="completion_csv_download"),
 ]
 

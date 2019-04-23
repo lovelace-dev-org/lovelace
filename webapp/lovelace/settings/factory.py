@@ -214,10 +214,14 @@ STATICFILES_DIRS = (
 # Make this unique, and don't share it with anybody.
 SECRET_KEY = '$34r(o@3yfyr-=v8*ndtqm6^ti0=p%cyt&amp;a*giv-1w%q21r4ae'
 
+# Redis settings
+REDIS_RESULT_CONFIG = {"host": "localhost", "port": 6379, "db": 0}
+REDIS_RESULT_EXPIRE = 60
+REDIS_LONG_EXPIRE = 60 * 60 * 24 * 7
+
 # Celery settings
 CELERY_BROKER_URL = 'amqp://guest:guest@localhost:5672//'
-CELERY_RESULT_CONFIG = {"host": "localhost", "port": 6379, "db": 0}
-CELERY_RESULT_BACKEND = 'redis://{host}:{port}/{db}'.format(**CELERY_RESULT_CONFIG)
+CELERY_RESULT_BACKEND = 'redis://{host}:{port}/{db}'.format(**REDIS_RESULT_CONFIG)
 
 # Cache settings
 CACHES = {
@@ -230,6 +234,7 @@ CACHES = {
     }
 }
 
+STAT_GENERATION_HOUR = None
 
 # Shibboleth related options - uncomment if using Shibboleth
 # First one makes emails invalid usernames when creating accounts

@@ -1,21 +1,36 @@
 function show_file(e, elem) {
     e.preventDefault();
-  
+    var url = elem.href;  
     var popup = $(elem).siblings(".popup");
-    popup.css({"opacity":"1", "pointer-events":"auto", "overflow": "scroll"});
+    var pre = popup.children("pre");
     
+    if (!pre.html()) {
+        $.get(url, function(data, textStatus, jqXHR) {
+            pre.html(data);
+            popup.css({"opacity":"1", "pointer-events":"auto", "overflow": "scroll"});
+        });
+    }
+    else {
+        popup.css({"opacity":"1", "pointer-events":"auto", "overflow": "scroll"});
+    }
 }
+
 function show_results(e, elem, results_div) {
     e.preventDefault();
     var url = elem.href;
+    var r_div = $('#' + results_div);
+    var popup = r_div.parent();
     
-    $.get(url, function(data, textStatus, jqXHR) {
-        var r_div = $('#' + results_div);
-        r_div.html(data);
-        //r_div.show();
-        var popup = r_div.parent();
+    if (!r_div.html()) {
+        $.get(url, function(data, textStatus, jqXHR) {
+            r_div.html(data);
+            //r_div.show();
+            popup.css({"opacity":"1", "pointer-events":"auto", "overflow": "scroll"});
+        });  
+    }
+    else {
         popup.css({"opacity":"1", "pointer-events":"auto", "overflow": "scroll"});
-    });  
+    }
 }
 
 $(document).ready(function() {

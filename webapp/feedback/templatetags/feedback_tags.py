@@ -10,11 +10,10 @@ register = template.Library()
 @register.inclusion_tag("feedback/textfield-feedback-question.html")
 def feedback_textfield(question, user, content, instance):
     return {
-        "question": question.question,
+        "question": question,
         "answered": question.user_answered(user, instance, content) if user.is_authenticated else None,
-        "content_slug": content.slug, 
-        "instance_slug": instance.slug,
-        "feedback_slug": question.slug
+        "content": content, 
+        "instance": instance,
     }
 
 # {% feedback_thumb %}
@@ -28,11 +27,10 @@ def feedback_thumb(question, user, content, instance):
     print(instance.slug)
 
     return {
-        "question": question.question,
+        "question": question,
         "user_answer": user_answer, 
-        "content_slug": content.slug, 
-        "instance_slug": instance.slug,
-        "feedback_slug": question.slug
+        "content": content, 
+        "instance": instance,
     }
 
 # {% feedback_star %}
@@ -44,11 +42,10 @@ def feedback_star(question, user, content, instance):
         user_answer = None
 
     return {
-        "question": question.question,
-        "user_answer": user_answer,
-        "content_slug": content.slug, 
-        "instance_slug": instance.slug,
-        "feedback_slug": question.slug,
+        "question": question,
+        "user_answer": user_answer, 
+        "content": content, 
+        "instance": instance,
         "radiobutton_id": hashlib.md5(bytearray(question.slug + content.slug, "utf-8")).hexdigest()
     }
 
@@ -61,11 +58,10 @@ def feedback_multiple_choice(question, user, content, instance):
         user_answer = None
 
     return {
-        "question": question.question,
-        "user_answer": user_answer,
-        "content_slug": content.slug, 
-        "instance_slug": instance.slug,
-        "feedback_slug": question.slug,
+        "question": question,
+        "user_answer": user_answer, 
+        "content": content, 
+        "instance": instance,
         "choices": question.get_choices(),
         "radiobutton_id": hashlib.md5(bytearray(question.slug + content.slug, "utf-8")).hexdigest()
     }

@@ -117,7 +117,7 @@ def test_tab(test_obj, stages_list, instance_files, exercise_files, jstemplate=F
 
         def __init__(self):
             for lang_code, lang_name in lang_list:
-                setattr(self, 'command_line_{}'.format(lang_code), "New command ({})".format(lang_name))
+                setattr(self, 'command_line_{}'.format(lang_code), "".format(lang_name))
                 setattr(self, 'input_text_{}'.format(lang_code), "")
 
     class TemplateStage:

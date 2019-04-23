@@ -26,12 +26,12 @@
 {% block meta %}
   <section class="meta">
     <div class="breadcrumb"><a href="{% url 'admin:index' %}">Home</a> › <a href="{% url 'admin:app_list' 'courses' %}">Courses</a> › <a href="{% url 'admin:courses_fileuploadexercise_changelist' %}">File upload exercises</a> › <span id="exercise-name-breadcrumb">{{ exercise.name }}</span></div>
-    <!--
-    {% if add_or_edit == 'Edit' %}
-      <div class="top-button"><a href="{% url 'courses:sandbox' exercise.slug %}">View in sandbox</a></div>
-      <div class="top-button"><a href="{% url 'admin:courses_fileuploadexercise_history' exercise.id %}">View history</a></div>
-    {% endif %}
-    -->
+    {% comment %}
+      {% if add_or_edit == 'Edit' %}
+        <div class="top-button"><a href="{% url 'courses:sandbox' exercise.slug %}">View in sandbox</a></div>
+        <div class="top-button"><a href="{% url 'admin:courses_fileuploadexercise_history' exercise.id %}">View history</a></div>
+      {% endif %}
+    {% endcomment %}
   </section>
 {% endblock %}
 

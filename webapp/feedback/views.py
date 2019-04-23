@@ -74,11 +74,11 @@ def multiple_choice_feedback_stats(question, instance, content):
         "user_count" : user_count
     }
 
-def content_feedback_stats(request, instance_slug, content_slug):
+def content_feedback_stats(request, instance, content):
     if not request.user.is_authenticated or not request.user.is_active or not request.user.is_staff:
         return HttpResponseForbidden("Only logged in admins can view feedback statistics!")
     
-    links = courses.models.EmbeddedLink.objects.filter(embedded_page__slug=content_slug, instance__slug=instance_slug)
+    links = courses.models.EmbeddedLink.objects.filter(embedded_page=content, instance=instance)
     if links:
         link = links.first()
         if links.count() == 1:
@@ -87,18 +87,14 @@ def content_feedback_stats(request, instance_slug, content_slug):
         else:
             single_linked = False
             parent = None
-        content = link.embedded_page
-        instance = link.instance
         embedded = True
     else:
         try:
-            instance = courses.models.CourseInstance.objects.get(slug=instance_slug)
-            link = instance.contents.get(content__slug=content_slug)
-            content = link.content
+            link = instance.contents.get(content=content)
             parent = None
             single_linked = True
             embedded = False
-        except courses.models.ContentGraph.DoesNotExist:        
+        except courses.models.ContentGraph.DoesNotExist:
             return HttpResponseNotFound("Content {} is not linked to course instance {}".format(content_slug, instance_slug))
 
     if link.revision is None:        
@@ -108,7 +104,7 @@ def content_feedback_stats(request, instance_slug, content_slug):
             content = Version.objects.get_for_object(content).get(revision=link.revision)\
                                                          ._object_version.object
         except Version.DoesNotExist as e:
-            return HttpResponseNotFound("The requested revision for {} is not available".format(content_slug))
+            return HttpResponseNotFound("The requested revision for {} is not available".format(content.slug))
         
     title, anchor = first_title_from_content(content.content)
     
@@ -116,6 +112,8 @@ def content_feedback_stats(request, instance_slug, content_slug):
     ctx = {
         "content": content,
         "parent": parent,
+        "instance": instance,
+        "course": instance.course,
         "instance_slug": instance.slug,
         "instance_name": instance.name,
         "course_slug": instance.course.slug,
@@ -153,7 +151,7 @@ def content_feedback_stats(request, instance_slug, content_slug):
     t = loader.get_template("feedback/feedback-stats.html")
     return HttpResponse(t.render(ctx, request))
 
-def receive(request, instance_slug, content_slug, feedback_slug):
+def receive(request, instance, content, question):
     if request.method != "POST":
         return HttpResponseNotAllowed(["POST"])
 
@@ -165,15 +163,11 @@ def receive(request, instance_slug, content_slug, feedback_slug):
     #TODO: Check that the user has successfully enrolled to the course instance.
     #TODO: Take the revision into account.
     
-    content = courses.models.ContentPage.objects.get(slug=content_slug)
-    instance = courses.models.CourseInstance.objects.get(slug=instance_slug)
-    cfq = feedback.models.ContentFeedbackQuestion.objects.get(slug=feedback_slug)
-
     user = request.user
     ip = request.META.get("REMOTE_ADDR")
     answer = request.POST
 
-    question = cfq.get_type_object()
+    question = question.get_type_object()
     
     try:
         answer_object = question.save_answer(instance, content, user, ip, answer)

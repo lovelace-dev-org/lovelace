@@ -17,7 +17,7 @@
             <div>The following users have reserved a slot:</div>
             <ul>
               {% for e_user in event.get_users %}
-                <li>{{ e_user.user__first_name }} {{ e_user.user__last_name }}, {{ e_user.user__userprofile__student_id }}, {{ e_user.user__username }}</li>
+                <li>{{ e_user.user__first_name }} {{ e_user.user__last_name }}, {{ e_user.user__userprofile__student_id }}, {{ e_user.user__username }}, {{ e_user.user__email }}</li>
               {% endfor %}
             </ul>
           {% else %}

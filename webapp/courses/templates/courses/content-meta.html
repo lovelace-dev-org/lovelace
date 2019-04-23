@@ -24,7 +24,7 @@
       {% endcomment %}
 
       {% if not sandboxed %}
-        <div><a href="{% url 'courses:show_answers' user.username course_slug instance_slug content.slug %}"
+        <div><a href="{% url 'courses:show_answers' user course instance content %}"
                 title="{% trans 'View your previous answers' %}">{% blocktrans count counter=answer_count %}<span class="answer-count">{{ counter }}</span> answer{% plural %}<span class="answer-count">{{ counter }}</span> answers{% endblocktrans %}</a></div>
       {% endif %}
     {% endif %}
@@ -36,11 +36,11 @@
       <div class="admin-tools">
         <div><b>{% trans "Teacher’s tools" %}</b></div>
         <ul>
-          <li><div><a href="{% url 'stats:single_exercise' content.slug %}">{% trans 'Statistics' %}</a></div></li>
-          <li><div><a href="{% url 'feedback:statistics' instance_slug content.slug %}">{% trans 'Feedback' %}</a></div></li>
+          <li><div><a href="{% url 'stats:single_exercise' content %}">{% trans 'Statistics' %}</a></div></li>
+          <li><div><a href="{% url 'feedback:statistics' instance content %}">{% trans 'Feedback' %}</a></div></li>
           {% with type=content.get_human_readable_type %}
-            {% if type == "file upload exercise" %}            
-              <li><div><a href="{% url 'teacher:download_answers' course_slug instance_slug content.slug %}">{% trans 'Download answers' %}</a></div></li>
+            {% if type == "file upload exercise" %}
+              <li><div><a href="{% url 'teacher:download_answers' course instance content %}">{% trans 'Download answers' %}</a></div></li>
             {% endif %}
             <li><div><a href="{{ content.get_admin_change_url }}">
               {% if type == "lecture" %}
@@ -62,10 +62,10 @@
               {% endif %}
             </a></div></li>
           {% endwith %}
-          <!--
-          <li><div><a href="TODO">{% trans 'View reference answer' %}</a></div></li>
-          <li><div><a href="{% url 'courses:sandbox' content.slug %}">{% trans 'View separately' %}</a></div></li>
-          -->
+          {% comment %}
+            <li><div><a href="TODO">{% trans 'View reference answer' %}</a></div></li>
+            <li><div><a href="{% url 'courses:sandbox' content.slug %}">{% trans 'View separately' %}</a></div></li>
+          {% endcomment %}
         </ul>
       </div>
     {% endif %}

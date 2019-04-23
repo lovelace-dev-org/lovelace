@@ -121,9 +121,14 @@ def run_tests(self, user_id, instance_id, exercise_id, answer_id, lang_code, rev
         self.update_state(state="PROGRESS", meta={"current": i, "total": len(tests)})
 
         # TODO: The student's code can be run in parallel with the reference
-        results = run_test(test.id, answer_id, instance_id, exercise_id, student=True, revision=revision)
+        results, all_json = run_test(test.id, answer_id, instance_id, exercise_id, student=True, revision=revision)
         student_results.update(results)
-        results = run_test(test.id, answer_id, instance_id, exercise_id, revision=revision)
+
+        if not all_json:
+            results, all_json = run_test(test.id, answer_id, instance_id, exercise_id, revision=revision)
+
+        # if reference is not needed just put the student results there
+        # TODO: change generate results to not depend on reference existing
         reference_results.update(results)
 
     #print(student_results.items())
@@ -139,8 +144,8 @@ def run_tests(self, user_id, instance_id, exercise_id, answer_id, lang_code, rev
 
     # Save the rendered results into Redis
     task_id = self.request.id
-    r = redis.StrictRedis(**django_settings.CELERY_RESULT_CONFIG)
-    r.set(task_id, json.dumps(evaluation))
+    r = redis.StrictRedis(**django_settings.REDIS_RESULT_CONFIG)
+    r.set(task_id, json.dumps(evaluation), ex=django_settings.REDIS_RESULT_EXPIRE)
 
     # Save the results to database
     result_string = json.dumps(results)
@@ -269,7 +274,7 @@ def generate_results(results, exercise_id):
                                     test_tree['triggers'].update(output_triggers)
                                     test_tree['hints'].update(output_hints)
                                     test_msg['msgs'].append(output_msg) 
-                                    
+
                                     if output_flag == JSON_INCORRECT:
                                         cmd_correct = False
                                         run_correct = False
@@ -345,6 +350,7 @@ def run_test(self, test_id, answer_id, instance_id, exercise_id, student=False, 
         if revision is not None:
             old_test = Version.objects.get_for_object(test).get(revision=revision)._object_version.object
             test = old_test
+            
     except cm.FileExerciseTest.DoesNotExist as e:
         # TODO: Log weird request
         return # TODO: Find a way to signal the failure to the user
@@ -352,6 +358,18 @@ def run_test(self, test_id, answer_id, instance_id, exercise_id, student=False, 
     try:
         #stages = cm.FileExerciseTestStage.objects.filter(test=test_id)
         stages = test.fileexerciseteststage_set.all()
+        
+        if revision is not None:
+            old_stages = []
+            for stage in stages:
+                try:
+                    Version.objects.get_for_object(stage).get(revision=revision)._object_version.object
+                except Version.DoesNotExist:
+                    pass
+                else:
+                    old_stages.append(stage)
+            stages = old_stages
+            
     except cm.FileExerciseTestStage.DoesNotExist as e:
         # TODO: Log weird request
         return # TODO: Find a way to signal the failure to the user
@@ -359,14 +377,19 @@ def run_test(self, test_id, answer_id, instance_id, exercise_id, student=False, 
     try:
         # TODO: Fallback file names for those that don't have translations?
         exercise_file_objects = cm.FileExerciseTestIncludeFile.objects.filter(exercise=exercise_id)
-        #exercise_file_objects = test.fileexercisetestincludefile_set.all()
 
         if revision is not None:
-            old_exercise_file_objects = [
-                Version.objects.get_for_object(exercise_file_object).get(revision=revision)._object_version.object
-                for exercise_file_object in exercise_file_objects
-            ]
+            old_exercise_file_objects = []
+            
+            for ex_file in exercise_file_objects:            
+                try:
+                    old_file = Version.objects.get_for_object(ex_file).get(revision=revision)._object_version.object
+                except Version.DoesNotExist:
+                    pass
+                else:
+                    old_exercise_file_objects.append(old_file)
             exercise_file_objects = old_exercise_file_objects
+            
     except cm.FileExerciseTestIncludeFile.DoesNotExist as e:
         # TODO: Log weird request
         return # TODO: Find a way to signal the failure to the user
@@ -424,6 +447,7 @@ def run_test(self, test_id, answer_id, instance_id, exercise_id, student=False, 
                                for f in exercise_file_objects
                                if f in test.required_files.all() and
                                f.file_settings.purpose in ("INPUT", "WRAPPER", "TEST", "LIBRARY")):
+            print(name)
             fpath = os.path.join(test_dir, name)
             with open(fpath, "wb") as fd:
                 fd.write(contents)
@@ -450,19 +474,20 @@ def run_test(self, test_id, answer_id, instance_id, exercise_id, student=False, 
                         fd.write(contents)
                     print("Wrote required instance file {} from {}".format(fpath, file_obj.fileinfo))
 
+        all_json = True
+
         # TODO: Replace with chaining
         for i, stage in enumerate(stages):
             #self.update_state(state="PROGRESS",
                               #meta={"current": i, "total": len(stages)})
-            if revision is not None:
-                old_stage = Version.objects.get_for_object(stage).get(revision=revision)._object_version.object
-                stage = old_stage
-            
-            stage_results = run_stage(stage.id, test_dir, temp_dir_prefix,
+            stage_results, stage_json = run_stage(stage.id, test_dir, temp_dir_prefix,
                                       list(files_to_check.keys()), revision=revision)
             test_results[test_id]["stages"][stage.id] = stage_results
             test_results[test_id]["stages"][stage.id]["name"] = stage.name
             test_results[test_id]["stages"][stage.id]["ordinal_number"] = stage.ordinal_number
+
+            if not stage_json:
+                all_json = False
 
             if stage_results["fail"] == True:
                 break
@@ -480,7 +505,7 @@ def run_test(self, test_id, answer_id, instance_id, exercise_id, student=False, 
         # TODO: Read the expected output files (check the cache first?)
         test_dir_contents = os.listdir(test_dir)
 
-    return test_results
+    return test_results, all_json
 
 @shared_task(name="courses.run-stage", bind=True)
 def run_stage(self, stage_id, test_dir, temp_dir_prefix, files_to_check, revision=None):
@@ -488,6 +513,8 @@ def run_stage(self, stage_id, test_dir, temp_dir_prefix, files_to_check, revisio
     Runs all the commands of this stage and collects the return values and the
     outputs.
     """
+
+    all_json = True
 
     try:
         commands = cm.FileExerciseTestCommand.objects.filter(stage=stage_id)
@@ -523,27 +550,33 @@ def run_stage(self, stage_id, test_dir, temp_dir_prefix, files_to_check, revisio
     # DEBUG #
     for i, cmd in enumerate(commands):
         if revision is not None:
-            old_cmd = Version.objects.get_for_object(cmd).get(revision=revision)._object_version.object
-            cmd = old_cmd
-        
-        results = run_command_chainable(
-            {"id":cmd.id, "input_text":cmd.input_text, "return_value":cmd.return_value},
-            temp_dir_prefix, test_dir, files_to_check, stage_results=stage_results,
-            revision=revision
-        )
-        stage_results.update(results)
+            try:
+                old_cmd = Version.objects.get_for_object(cmd).get(revision=revision)._object_version.object
+                cmd = old_cmd
+            except Version.DoesNotExist:
+                pass
+            else:
+                results = run_command_chainable(
+                    {"id":cmd.id, "input_text":cmd.input_text, "return_value":cmd.return_value},
+                    temp_dir_prefix, test_dir, files_to_check, stage_results=stage_results,
+                    revision=revision
+                )
+                stage_results.update(results)
+                
+                if not cmd.json_output:
+                    all_json = False
 
-        if results.get('fail'):
-            stage_results['fail'] = True
-            break
+                if results.get('fail'):
+                    stage_results['fail'] = True
+                    break
 
     # DEBUG #
 
     #stage_results.update(results)
+    
+    #print(stage_results)
 
-    print(stage_results)
-
-    return stage_results
+    return stage_results, all_json
     
     
     """# Old, blocking version

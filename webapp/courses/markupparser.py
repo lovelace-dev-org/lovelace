@@ -256,7 +256,7 @@ class LinkParser(MarkupParser):
                 pass
             else:
                 link_func = block_markup.build_links
-                link_func(matchobj, instance, page_links, media_links)
+                link_func(block, matchobj, instance, page_links, media_links)
             
         return page_links, media_links
             
@@ -506,9 +506,9 @@ class EmbeddedFileMarkup(Markup):
         t = loader.get_template("courses/embedded-codefile.html")
         c = {
             "name": dl_name,
-            "slug": file_object.name,
-            "course": course_slug,
-            "instance": instance_slug,
+            "file": file_object,
+            "course": instance.course,
+            "instance": instance,
             "contents": mark_safe(highlighted),
             "show_content": not link_only,
         }
@@ -526,7 +526,7 @@ class EmbeddedFileMarkup(Markup):
         return settings
 
     @classmethod
-    def build_links(cls, matchobj, instance, page_links, media_links):
+    def build_links(cls, block, matchobj, instance, page_links, media_links):
         slug = matchobj.group("file_slug")
         media_links.append(slug)
 
@@ -643,7 +643,7 @@ class EmbeddedPageMarkup(Markup):
         return settings
 
     @classmethod
-    def build_links(cls, matchobj, instance, page_links, media_links):
+    def build_links(cls, block, matchobj, instance, page_links, media_links):
         slug = matchobj.group("page_slug")
         page_links.append(slug)
         
@@ -814,7 +814,7 @@ class EmbeddedScriptMarkup(Markup):
         return settings
     
     @classmethod
-    def build_links(cls, matchobj, instance, page_links, media_links):
+    def build_links(cls, block, matchobj, instance, page_links, media_links):
         slugs = [matchobj.group("script_slug")] + [m.split("=")[1] for m in matchobj.group("include").split(",")]
         
         for slug in slugs:
@@ -871,7 +871,7 @@ class EmbeddedVideoMarkup(Markup):
         return settings
 
     @classmethod
-    def build_links(cls, matchobj, instance, page_links, media_links):
+    def build_links(cls, block, matchobj, instance, page_links, media_links):
         slug = matchobj.group("video_slug")
         media_links.append(slug)
 
@@ -1020,7 +1020,7 @@ class ImageMarkup(Markup):
         return settings
 
     @classmethod
-    def build_links(cls, matchobj, instance, page_links, media_links):
+    def build_links(cls, block, matchobj, instance, page_links, media_links):
         slug = matchobj.group("image_name")
         media_links.append(slug)
 
@@ -1099,7 +1099,20 @@ class ParagraphMarkup(Markup):
     def settings(cls, matchobj, state):
         pass
 
+    @classmethod
+    def build_links(cls, block, matchobj, instance, page_links, media_links):
+        """
+        Finds inline links to media files. Necessary to ensure that all linked
+        files are provided with a context link.
+        """
+        
+        for line in block:
+            for tag in blockparser.tags["anchor"].re.findall(line):
+                if tag[0].startswith("file:"):
+                    media_links.append(tag[0].split("file:")[1])
+
 markups.append(ParagraphMarkup)
+link_markups.append(ParagraphMarkup)
 
 class SeparatorMarkup(Markup):
     name = "Separator"
