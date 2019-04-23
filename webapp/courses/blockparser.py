@@ -110,9 +110,15 @@ def parse_anchor_tag(parsed_string, tag, address, link_text, context):
             slugified = slugify(server_side, allow_unicode=True)
             if server_side == slugified and context is not None:
                 # internal address
-                final_address = reverse('courses:content', args=[context['course_slug'], context['instance_slug'], slugified])
-                if client_side is not None:
-                    final_address = final_address.rstrip('/') + '#' + client_side
+                try:
+                    content = courses.models.ContentPage.objects.get(slug=slugified)
+                except courses.models.ContentPage.DoesNotExist:
+                    parsed_string += "<span>-- WARNING: BROKEN LINK --</span>"
+                    final_address = ""
+                else:
+                    final_address = reverse('courses:content', args=[context['course'], context['instance'], content])
+                    if client_side is not None:
+                        final_address = final_address.rstrip('/') + '#' + client_side
             else:
                 # external address
                 final_address = address
