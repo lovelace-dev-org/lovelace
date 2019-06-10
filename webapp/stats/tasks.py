@@ -8,6 +8,7 @@ import statistics
 
 from celery import shared_task
 from django.conf import settings
+from django.core.cache import cache
 
 from courses.models import ContentGraph, CourseInstance, UserAnswer
 from .models import *
@@ -125,7 +126,7 @@ def generate_instance_tasks_summary(instance_slug):
                 if time_count % 2 == 1:
                     stats.time_median = times[time_count // 2]
                 else:
-                    stats.time_median = sum(times[time_count // 2:time_count // 2 + 2]) / 2
+                    stats.time_median = (times[time_count // 2 - 1] + times[time_count // 2]) / 2
                     
                 if time_count > 3:
                     stats.time_25p = times[int(round(time_count * 0.25))]
@@ -141,8 +142,7 @@ def generate_instance_tasks_summary(instance_slug):
 @shared_task(name="stats.finalize-instance-stats", bind=True)
 def finalize_instance_stats(self, timestamp, instance_slug):
     
-    r = redis.StrictRedis(**settings.REDIS_RESULT_CONFIG)
-    r.set("{}_stat_meta".format(instance_slug), json.dumps({"task_id": self.request.id, "completed": timestamp}))
+    cache.set("{}_stat_meta".format(instance_slug), json.dumps({"task_id": self.request.id, "completed": timestamp}))
     
     
             

@@ -7,6 +7,7 @@ import redis
 
 from celery import chain
 from django.conf import settings
+from django.core.cache import cache
 from django.http import HttpResponse, HttpResponseNotFound, HttpResponseForbidden, JsonResponse
 from django.template import loader
 from django.urls import reverse
@@ -633,9 +634,8 @@ class ZeroUsersException(Exception):
 
 @ensure_responsible
 def instance_console(request, course, instance):
-    r = redis.StrictRedis(**settings.REDIS_RESULT_CONFIG)
-    task_meta = r.get("{}_stat_meta".format(instance.slug))
-    task_meta = task_meta and json.loads(task_meta.decode("utf-8"))
+    task_meta = cache.get("{}_stat_meta".format(instance.slug))
+    task_meta = task_meta and json.loads(task_meta)
     if task_meta and task_meta["completed"]:
         gen_timestamp = task_meta["completed"]
         stat_status = _("Last generated: %s" % gen_timestamp)
@@ -659,9 +659,8 @@ def instance_console(request, course, instance):
 
 @ensure_responsible
 def generate_instance_stats(request, course, instance):
-    r = redis.StrictRedis(**settings.REDIS_RESULT_CONFIG)
-    task_meta = r.get("{}_stat_meta".format(instance.slug))
-    task_meta = task_meta and json.loads(task_meta.decode("utf-8"))
+    task_meta = cache.get("{}_stat_meta".format(instance.slug))
+    task_meta = task_meta and json.loads(task_meta)
     if task_meta and task_meta["completed"] is None:
         task = celery_app.AsyncResult(id=task_meta["task_id"])
         if task.state in ("PENDING", "STARTED"):
@@ -688,7 +687,7 @@ def generate_instance_stats(request, course, instance):
         ).apply_async(eta=eta, ignore_result=True)
         data["eta"] = eta.strftime("%Y-%m-%d %H:%M:%S")
     
-    r.set("{}_stat_meta".format(instance.slug), json.dumps({"task_id": task.task_id, "completed": None}))
+    cache.set("{}_stat_meta".format(instance.slug), json.dumps({"task_id": task.task_id, "completed": None}))
     return JsonResponse(data)
     
     

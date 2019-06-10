@@ -1,3 +1,7 @@
+from courses.models import *
+
+uploads = FileUploadExerciseReturnFile.objects.all()
+
 for uf in uploads:
     old = uf.fileinfo.path
     ordinal = os.path.dirname(old).split("/")[-1]
@@ -22,5 +26,6 @@ for uf in uploads:
         ordinal,
         os.path.basename(old)
     )
-    os.renames(old, os.path.join(settings.PRIVATE_STORAGE_FS_PATH, new))
+    #os.renames(old, os.path.join(settings.PRIVATE_STORAGE_FS_PATH, new))
     uf.fileinfo.name = new
+    uf.save()
