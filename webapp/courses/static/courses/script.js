@@ -345,6 +345,30 @@ function submit_enrollment(event) {
     });
 }
 
+function withdraw_enrollment(event) {
+    event.preventDefault();
+
+    let form = $(this);
+    let info = form.prev();
+    let url = form.attr('action');
+
+    $.ajax({
+        type: form.attr('method'),
+        url: url,
+        data: new FormData(form[0]),
+        processData: false,
+        contentType: false,
+        dataType: 'json',
+        success: function(data, status, jqxhr) {
+            info.html(data.message);
+            form.children("input[type=submit]").attr('disabled', true);
+        },
+        error: function(jqxhr, status, type) {
+            console.log(jqxhr.responseText);
+        }
+    });
+}
+
 $(document).ready(function() {
     $('.popup').click(function() {
         $(this).css({"opacity":"0", "pointer-events":"none"});
@@ -356,6 +380,7 @@ $(document).ready(function() {
         event.stopPropagation();
     });    
     
-    $('.enroll-form').submit(submit_enrollment)
+    $('.enroll-form').submit(submit_enrollment);
+    $('.withdraw-form').submit(withdraw_enrollment);
 });
 

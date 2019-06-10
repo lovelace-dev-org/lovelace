@@ -14,7 +14,7 @@ import shutil
 from django.conf import settings
 from django.test import TestCase
 from courses.models import *
-from courses.testhelpers import *
+from courses.tests.testhelpers import *
 
 
 class TestSettingsNotUsed(Exception):

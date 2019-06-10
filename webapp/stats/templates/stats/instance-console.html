@@ -3,8 +3,18 @@
 {% load i18n %}
 {% load course_tags %}
 
+{% block page-title %}{% blocktrans with instance=instance.name %}
+  {{ instance }} statistics
+{% endblocktrans %}{% endblock %}
+
 {% block extra-static %}
   <script src="{% static 'stats/script.js' %}"></script>
+{% endblock %}
+
+{% block breadcrumb-links %}
+  <li><a href="{% url 'courses:index' %}">{% trans 'Courses' %}</a></li>
+  <div class="separator">»</div>
+  <li><a href="{% url 'courses:course' course instance %}">{{ course.name }}&nbsp;/&nbsp;{{ instance.name }}</a></li>
 {% endblock %}
 
 {% block page-content %}

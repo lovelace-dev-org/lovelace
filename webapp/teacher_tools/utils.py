@@ -1,7 +1,7 @@
 from django.urls import reverse
 from reversion.models import Version
 
-def check_user_completion(user, task_links, instance):
+def check_user_completion(user, task_links, instance, include_links=True):
     results = []
     course = instance.course
     for link in task_links:
@@ -19,19 +19,21 @@ def check_user_completion(user, task_links, instance):
             correct = True
         else:
             correct = False
-        
-        results.append(({
+
+        result_dict = {
             "eo": exercise_obj,
             "correct": correct,
             "points": points,
-            "result": result,
-            "answers_link": reverse("courses:show_answers", kwargs={
+            "result": result
+        }
+        if include_links:
+            result_dict["answers_link"] = reverse("courses:show_answers", kwargs={
                 "user": user,
                 "course": course,
                 "instance": instance,
                 "exercise": exercise_obj
             })
-        }))
+        results.append(result_dict)
 
     return results
 

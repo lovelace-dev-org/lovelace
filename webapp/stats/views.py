@@ -365,19 +365,18 @@ def file_upload_exercise(exercise, users, course_inst=None, revision=None):
             piechart)
 
 def exercise_answer_stats(request, ctx, exercise, exercise_type_f, template):
-    all_users = User.objects.filter(is_staff=False).order_by('username')
     course_instances = course_instances_linked(exercise)
 
     stats = []
     users = []
     for course_inst in course_instances:
         #users_enrolled = filter_users_enrolled(all_users, course_inst)
-        users_enrolled = all_users # until enroll implemented
-        
+        users_enrolled = course_inst.enrolled_users.get_queryset() # until enroll implemented
+
         # this is not right, but we don't have knowledge of the parent page 
         # in this context
         link = EmbeddedLink.objects.filter(instance=course_inst, embedded_page=exercise).first()
-        
+
         stats.append(exercise_type_f(exercise, users_enrolled, course_inst, link.revision))
         users.extend(users_enrolled)
 
@@ -385,7 +384,7 @@ def exercise_answer_stats(request, ctx, exercise, exercise_type_f, template):
     ctx.update({"stats": stats})
     t = loader.get_template("stats/" + template)
     return HttpResponse(t.render(ctx, request))
-    
+
 def single_exercise(request, exercise):
     """
     Shows statistics on a single selected task.
@@ -677,16 +676,16 @@ def generate_instance_stats(request, course, instance):
             stat_tasks.generate_instance_user_stats.si(instance_slug=instance.slug),
             stat_tasks.generate_instance_tasks_summary.si(instance_slug=instance.slug),
             stat_tasks.finalize_instance_stats.s(instance_slug=instance.slug)
-        ).delay(ignore_result=True)
+        ).apply_async(ignore_result=True)
         data["eta"] = datetime.datetime.today().strftime("%Y-%m-%d %H:%M:%S")
     else:
         today = datetime.datetime.today()
-        eta = today.replace(hour=settings.STAT_GENERATION_HOUR)    
+        eta = today.replace(hour=settings.STAT_GENERATION_HOUR, minute=0, second=0)
         task = chain(
             stat_tasks.generate_instance_user_stats.si(instance_slug=instance.slug),
             stat_tasks.generate_instance_tasks_summary.si(instance_slug=instance.slug),
             stat_tasks.finalize_instance_stats.s(instance_slug=instance.slug)
-        ).delay(eta=eta, ignore_result=True)
+        ).apply_async(eta=eta, ignore_result=True)
         data["eta"] = eta.strftime("%Y-%m-%d %H:%M:%S")
     
     r.set("{}_stat_meta".format(instance.slug), json.dumps({"task_id": task.task_id, "completed": None}))

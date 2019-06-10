@@ -3,23 +3,13 @@
 {% load i18n %}
 {% load course_tags %}
 
-{% block course-completion-link %}
-  {% if not sandboxed %}
-    <a href="{% url 'teacher_tools:completion' course instance %}">{% trans 'Course completion' %}</a>
-  {% endif %}
-{% endblock %}
-
-{% block course-enrollments-link %}
-  {% if not sandboxed %}
-    <a href="{% url 'teacher_tools:manage_enrollments' course instance %}">{% trans 'Manage enrollments' %}</a>
-  {% endif %}
-{% endblock %}
+{% block page-title %}{% blocktrans with instance=instance.name %}
+  {{ instance }} enrollments
+{% endblocktrans %}{% endblock %}
 
 {% block extra-static %}
-  <script src="{% static 'teacher_tools/script.js' %}"></script>
+  <script src="{% static 'teacher_tools/enrollment.js' %}"></script>
 {% endblock %}
-
-{% block page-title %}{% trans 'Manage enrollments' %}{% endblock %}
 
 {% block breadcrumb-links %}
   <li><a href="{% url 'courses:index' %}">{% trans 'Courses' %}</a></li>

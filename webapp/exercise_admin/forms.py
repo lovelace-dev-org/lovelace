@@ -409,6 +409,7 @@ class CreateFileUploadExerciseForm(forms.Form):
         lang_list = get_lang_list()
 
         for field_name in self.fields.keys():
+
             field_val = cleaned_data.get(field_name)
             if field_val is None:
                 continue
@@ -421,11 +422,18 @@ class CreateFileUploadExerciseForm(forms.Form):
                 error_code = "invalid_chmod"
                 field_error = forms.ValidationError(error_msg, code=error_code)
                 self.add_error(field_name, field_error)
-                
-            if field_name.startswith("exercise_content"):
-                for lang_code, _ in lang_list:
-                    self._validate_links(field_val, lang_code)
 
-        
+            if field_name.startswith("exercise_content_"):
+                self._validate_links(field_val, field_name[-2:])
+
+            if field_name.startswith("exercise_allowed_filenames"):
+                if field_val:
+                    cleaned_data[field_name] = field_val.split(",")
+                else:
+                    cleaned_data[field_name] = []
+                
+
         return cleaned_data
-            
+    
+    
+

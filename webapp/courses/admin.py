@@ -13,7 +13,7 @@ from django.db import models, transaction
 from django.db.models import Q
 from django.forms import Field, ModelForm, TextInput, Textarea, ModelChoiceField, BaseInlineFormSet
 
-from .forms import FileEditForm, RepeatedTemplateExerciseBackendForm, ContentForm, TextfieldAnswerForm
+from .forms import FileEditForm, RepeatedTemplateExerciseBackendForm, ContentForm, TextfieldAnswerForm, InstanceForm
 from .widgets import AdminFileWidget, AdminTemplateBackendFileWidget
 
 from modeltranslation.admin import TranslationAdmin, TranslationTabularInline, \
@@ -319,9 +319,6 @@ class CheckboxExerciseAnswerInline(TranslationTabularInline):
     model = CheckboxExerciseAnswer
     extra = 1
     formset = SoftDeleteFormSet
-    
-    
-    
 
 class CheckboxExerciseAdmin(CourseContentAccess, TranslationAdmin, VersionAdmin):
     
@@ -539,6 +536,7 @@ admin.site.register(IncludeFileSettings)
 class CalendarDateAdmin(admin.StackedInline):
     model = CalendarDate
     extra = 1
+    #form = CalendarDateForm
 
 class CalendarAdmin(admin.ModelAdmin):
     inlines = [CalendarDateAdmin]
@@ -719,13 +717,15 @@ class CourseInstanceAdmin(TranslationAdmin, VersionAdmin):
     
     fieldsets = [
         (None,                {'fields': ['name', 'email', 'course', 'frontpage']}),
-        ('Schedule settings', {'fields': ['start_date', 'end_date', 'active', 'visible']}),
+        ('Schedule settings', {'fields': ['start_date', 'end_date', 'active', 'visible', 'primary']}),
         ('Enrollment',        {'fields': ['manual_accept']}),
+        ('Content license',   {'fields': ['content_license', 'license_url']}),
         ('Instance outline',  {'fields': ['contents', 'frozen']}),
     ]
     search_fields = ('name',)
     list_display = ('name', 'course')
     save_as = True
+    form = InstanceForm
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         """

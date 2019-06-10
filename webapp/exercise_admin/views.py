@@ -60,7 +60,7 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_hin
     #e_question = form_data['exercise_question']
     e_manually_evaluated = form_data['exercise_manually_evaluated']
     e_ask_collaborators = form_data['exercise_ask_collaborators']
-    e_allowed_filenames = form_data['exercise_allowed_filenames'].split(',') # TODO: Do this in clean
+    e_allowed_filenames = form_data['exercise_allowed_filenames']
 
     lang_list = get_lang_list()
     for lang_code, _ in lang_list:
@@ -203,7 +203,7 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_hin
         required_files = [i.split('_') for i in form_data['test_{}_required_files'.format(test_id)]]
         t_required_ef = [edited_exercise_files[i[1]] for i in required_files if i[0] == 'ef']
         t_required_if = [int(i[1]) for i in required_files if i[0] == 'if' and i[1] in if_ids]
-                
+
         # Check for new tests
         if test_id.startswith('newt'):
             current_test = FileExerciseTest()

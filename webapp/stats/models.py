@@ -11,9 +11,9 @@ class StudentTaskStats(models.Model):
     revision = models.PositiveIntegerField(blank=True, null=True)
     instance = models.ForeignKey(CourseInstance, on_delete=models.CASCADE)
     
-    total_answers = models.PositiveIntegerField()
-    tries_until_correct = models.PositiveIntegerField()
-    correct_answers = models.PositiveIntegerField()
+    total_answers = models.PositiveIntegerField(default=0)
+    tries_until_correct = models.PositiveIntegerField(default=0)
+    correct_answers = models.PositiveIntegerField(default=0)
     before_deadline = models.PositiveIntegerField(null=True)
     after_deadline = models.PositiveIntegerField(null=True)
     same_answers = models.PositiveIntegerField(default=0)
@@ -32,16 +32,20 @@ class TaskSummary(models.Model):
     instance = models.ForeignKey(CourseInstance, on_delete=models.CASCADE)
     
     # total_answers includes answers given after completing task
-    total_answers = models.PositiveIntegerField()
-    total_tries = models.PositiveIntegerField()
-    total_users = models.PositiveIntegerField()
-    correct_by_total = models.PositiveIntegerField()
-    correct_by_before_dl = models.PositiveIntegerField()
-    correct_by_after_dl = models.PositiveIntegerField()
-    tries_avg = models.FloatField()
-    tries_median = models.PositiveIntegerField()
-    time_avg = models.DurationField()
-    time_median = models.DurationField()
+    total_answers = models.PositiveIntegerField(default=0)
+    total_tries = models.PositiveIntegerField(default=0)
+    total_users = models.PositiveIntegerField(default=0)
+    correct_by_total = models.PositiveIntegerField(default=0)
+    correct_by_before_dl = models.PositiveIntegerField(default=0)
+    correct_by_after_dl = models.PositiveIntegerField(default=0)
+    tries_avg = models.FloatField(default=0.0)
+    tries_median = models.PositiveIntegerField(default=0.0)
+    tries_25p = models.PositiveIntegerField(default=0)
+    tries_75p = models.PositiveIntegerField(default=0)
+    time_avg = models.DurationField(default=datetime.timedelta(0))
+    time_median = models.DurationField(default=datetime.timedelta(0))
+    time_25p = models.DurationField(default=datetime.timedelta(0))
+    time_75p = models.DurationField(default=datetime.timedelta(0))
 
     def get_time_avg(self):
         value = self.time_avg

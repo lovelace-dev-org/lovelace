@@ -49,6 +49,8 @@ def generate_instance_user_stats(instance_slug):
                     stats.correct_answers = answers.filter(evaluation__correct=True).count()
                     stats.first_answer = answers.first().answer_date
                     stats.last_answer = answers.last().answer_date
+                else:
+                    stats.correct_answers = 0
 
                 if stats.correct_answers > 0:
                     stats.first_correct = answers.filter(evaluation__correct=True).first().answer_date
@@ -112,10 +114,25 @@ def generate_instance_tasks_summary(instance_slug):
             stats.correct_by_before_dl = correct_by_before_dl
             stats.correct_by_after_dl = correct_by - correct_by_before_dl
             stats.total_tries = sum(try_counts)
-            stats.tries_avg = statistics.mean(try_counts)
-            stats.tries_median = statistics.median(try_counts)
-            stats.time_avg = sum(times, datetime.timedelta(0)) / len(times)
-            stats.time_median = times[len(times) // 2]
+            if len(try_counts) > 0:
+                stats.tries_avg = statistics.mean(try_counts)
+                stats.tries_median = statistics.median(try_counts)
+            
+            time_count = len(times)
+            if time_count > 0:
+                stats.time_avg = sum(times, datetime.timedelta(0)) / len(times)
+            
+                if time_count % 2 == 1:
+                    stats.time_median = times[time_count // 2]
+                else:
+                    stats.time_median = sum(times[time_count // 2:time_count // 2 + 2]) / 2
+                    
+                if time_count > 3:
+                    stats.time_25p = times[int(round(time_count * 0.25))]
+                    stats.time_75p = times[int(round(time_count * 0.75))]
+                else:
+                    stats.time_25p = times[0]
+                    stats.time_75p = times[-1]
 
             stats.save()
             

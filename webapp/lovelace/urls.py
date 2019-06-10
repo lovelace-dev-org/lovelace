@@ -9,21 +9,16 @@ from django.urls import register_converter
 from model_path_converter import register_model_converter
 from courses.models import Course, CourseInstance, ContentPage, File, User, UserAnswer
 from feedback.models import ContentFeedbackQuestion
-
-class Utf8SlugConverter(StringConverter):
-    regex = "[-\w]+"
-
-class RevisionConverter(StringConverter):
-    regex = "\d+|head"
+from utils.converters import Utf8SlugConverter, RevisionConverter, InstanceConverter
 
 register_model_converter(Course, field="slug", base=Utf8SlugConverter)
-register_model_converter(CourseInstance, name="instance", field="slug", base=Utf8SlugConverter)
 register_model_converter(ContentPage, name="content", field="slug", base=Utf8SlugConverter)
 register_model_converter(User, field="username", base=StringConverter)
 register_model_converter(ContentFeedbackQuestion, name="feedback", field="slug", base=Utf8SlugConverter)
 register_model_converter(File, name="file", field="name", base=Utf8SlugConverter)
 register_model_converter(UserAnswer, name="answer")
 register_converter(RevisionConverter, "revision")
+register_converter(InstanceConverter, "instance")
 
 # TODO: Design the url hierarchy from scratch
 urlpatterns = [

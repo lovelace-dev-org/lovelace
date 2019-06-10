@@ -21,6 +21,7 @@ https://docs.djangoproject.com/en/dev/ref/settings/
 """
 
 import os
+from kombu import Exchange, Queue
 
 # to prevent accidents, unit tests will not run unless started with a settings
 # file where this flag is set to True.
@@ -188,7 +189,7 @@ AUTH_PROFILE_MODULE = 'courses.UserProfile'
 # Absolute filesystem path to the directory that will hold user-uploaded files.
 # Example: "/home/media/media.lawrence.com/media/"
 # When creating a settings file for unit tests, change this to 
-# os.path.join(BASS_DIR, "test_files", "upload") 
+# os.path.join(BASE_DIR, "test_files", "upload") 
 # or to a similarly isolated path. 
 MEDIA_ROOT = os.path.join(BASE_DIR, 'upload')
 
@@ -222,6 +223,24 @@ REDIS_LONG_EXPIRE = 60 * 60 * 24 * 7
 # Celery settings
 CELERY_BROKER_URL = 'amqp://guest:guest@localhost:5672//'
 CELERY_RESULT_BACKEND = 'redis://{host}:{port}/{db}'.format(**REDIS_RESULT_CONFIG)
+CELERY_TASK_DEFAULT_QUEUE = "default"
+CELERY_TASK_DEFAULT_ROUTING_KEY = "default"
+CELERY_QUEUES = (
+    Queue("default", Exchange("default"), routing_key="default"),
+    Queue("privileged", Exchange("privileged"), routing_key="privileged")
+)
+CELERY_ROUTES = {
+    "teacher_tools.*": {
+        "queue": "privileged",
+        "exchange": "privileged",
+        "routing_key": "privileged"
+    },
+    "stats.*": {
+        "queue": "privileged",
+        "exchange": "privileged",
+        "routing_key": "privileged"
+    }
+}
 
 # Cache settings
 CACHES = {
@@ -249,5 +268,6 @@ STAT_GENERATION_HOUR = None
 PRIVATE_STORAGE_FS_PATH = MEDIA_ROOT
 PRIVATE_STORAGE_X_SENDFILE = False
 
+MOSSNET_SUBMIT_PATH = None
     
     

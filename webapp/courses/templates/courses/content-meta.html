@@ -40,7 +40,16 @@
           <li><div><a href="{% url 'feedback:statistics' instance content %}">{% trans 'Feedback' %}</a></div></li>
           {% with type=content.get_human_readable_type %}
             {% if type == "file upload exercise" %}
-              <li><div><a href="{% url 'teacher:download_answers' course instance content %}">{% trans 'Download answers' %}</a></div></li>
+              <li><div>
+                <a href="{% url 'teacher:download_answers' course instance content %}">
+                  {% trans 'Download answers' %}
+                </a>
+              </div></li>
+              <li><div>
+                <a href="{% url 'teacher:exercise_plagiarism' course instance content %}">
+                  {% trans 'Check plagiarism' %}
+                </a>
+              </div></li>
             {% endif %}
             <li><div><a href="{{ content.get_admin_change_url }}">
               {% if type == "lecture" %}

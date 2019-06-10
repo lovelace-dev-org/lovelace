@@ -24,6 +24,7 @@ import json
 # Result generation dependencies
 import prettydiff.difflib as difflib
 
+
 # Test dependencies
 import tempfile
 import os
@@ -65,6 +66,14 @@ JSON_CORRECT = 1
 JSON_INFO = 2
 JSON_ERROR = 3
 JSON_DEBUG = 4
+
+@shared_task(name="add")
+def add(a, b):
+    """
+    A simple task for testing that celery interaction works. 
+    """
+    
+    return a+b
 
 @shared_task(name="courses.run-fileexercise-tests", bind=True)
 def run_tests(self, user_id, instance_id, exercise_id, answer_id, lang_code, revision):
@@ -554,21 +563,21 @@ def run_stage(self, stage_id, test_dir, temp_dir_prefix, files_to_check, revisio
                 old_cmd = Version.objects.get_for_object(cmd).get(revision=revision)._object_version.object
                 cmd = old_cmd
             except Version.DoesNotExist:
-                pass
-            else:
-                results = run_command_chainable(
-                    {"id":cmd.id, "input_text":cmd.input_text, "return_value":cmd.return_value},
-                    temp_dir_prefix, test_dir, files_to_check, stage_results=stage_results,
-                    revision=revision
-                )
-                stage_results.update(results)
-                
-                if not cmd.json_output:
-                    all_json = False
+                return
+            
+        results = run_command_chainable(
+            {"id":cmd.id, "input_text":cmd.input_text, "return_value":cmd.return_value},
+            temp_dir_prefix, test_dir, files_to_check, stage_results=stage_results,
+            revision=revision
+        )
+        stage_results.update(results)
+        
+        if not cmd.json_output:
+            all_json = False
 
-                if results.get('fail'):
-                    stage_results['fail'] = True
-                    break
+        if results.get('fail'):
+            stage_results['fail'] = True
+            break
 
     # DEBUG #
 
@@ -677,6 +686,7 @@ def run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check, revisio
     """
     Runs the current command of this stage by automated fork & exec.
     """
+    
     try:
         command = cm.FileExerciseTestCommand.objects.get(id=cmd_id)
 

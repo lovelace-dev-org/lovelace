@@ -8,6 +8,7 @@ import itertools
 import operator
 import re
 import os
+from fnmatch import fnmatch
 
 from django.conf import settings
 from django.db import models
@@ -136,6 +137,8 @@ class CourseEnrollment(models.Model):
         ('ACCEPTED', 'Accepted'),
         ('EXPELLED', 'Expelled'),
         ('DENIED', 'Denied'),
+        ('WITHDRAWN', 'Withdrawn'),
+        ('COMPLETED', 'Completed')
     )
     enrollment_state = models.CharField(max_length=11, default='WAITING',
                                         choices=ENROLLMENT_STATE_CHOICES)
@@ -170,6 +173,9 @@ class CourseInstance(models.Model):
     contents = models.ManyToManyField('ContentGraph', blank=True)   # TODO: Rethink the content graph system!
     frozen = models.BooleanField(verbose_name="Freeze this instance", default=False)
     visible = models.BooleanField(verbose_name="Is this course visible to students", default=True)
+    content_license = models.CharField(max_length=255, blank=True)
+    license_url = models.CharField(max_length=255, blank=True)
+    primary = models.BooleanField(verbose_name="Set this instance as primary.", default=False)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -200,6 +206,11 @@ class CourseInstance(models.Model):
         
         #super(CourseInstance, self).save(*args, **kwargs)
         super(CourseInstance, self).save(*args, **kwargs)
+        
+        if self.primary:
+            for instance in CourseInstance.objects.filter(course=self.course).exclude(pk=self.pk):
+                instance.primary = False
+                instance.save()
     
     def freeze(self, freeze_to=None):
         """
@@ -305,7 +316,7 @@ class CourseMedia(models.Model):
     """
     
 
-    name = models.CharField(verbose_name='Name for reference in content',max_length=200,unique=True)
+    name = models.SlugField(verbose_name='Name for reference in content',max_length=200,unique=True)
 
 
 class CourseMediaLink(models.Model):
@@ -458,8 +469,11 @@ class CalendarDate(models.Model):
     def get_users(self):
         return self.calendarreservation_set.all().values(
             'user__username', 'user__first_name',
-            'user__last_name', 'user__userprofile__student_id',
+            'user__last_name', 'user__userprofile__student_id', 'user__email'
         )
+    
+    def duration(self):
+        return self.end_time - self.start_time
 
 
 class CalendarReservation(models.Model):
@@ -1175,7 +1189,17 @@ class FileUploadExercise(ContentPage):
         if files:
             filelist = files.getlist('file')
             for uploaded_file in filelist:
-                # TODO: Use stdlib glob or fnmatch to see if file name is allowed
+                if self.allowed_filenames != []:
+                    for fnpat in self.allowed_filenames:
+                        if fnmatch(uploaded_file.name, fnpat):
+                            break
+                    else:
+                        raise InvalidExerciseAnswerException(
+                            "Filename {} is not listed in accepted filenames. Allowed:\n{}".format(
+                                uploaded_file.name, ", ".join(self.allowed_filenames)
+                            )
+                        )
+
                 return_file = FileUploadExerciseReturnFile(
                     answer=answer_object, fileinfo=uploaded_file
                 )
@@ -1354,7 +1378,6 @@ class RepeatedTemplateExercise(ContentPage):
         
         group = RepeatedTemplateExercise.objects.filter(evaluation_group=self.evaluation_group).exclude(id=self.id)
         for exercise in group:
-            print(exercise)
             if exercise.get_user_evaluation(exercise, user, instance, False) == "correct":
                 return "credited"
         return "incorrect" if evaluations else "unanswered"
@@ -1385,7 +1408,6 @@ class RepeatedTemplateExercise(ContentPage):
             
             raise InvalidExerciseAnswerException("Answering without a started session!")
 
-        print("saving", session_instance)
         try:
             answer_object = UserRepeatedTemplateExerciseAnswer.objects.get(exercise_id=self.id, session=session)
         except UserRepeatedTemplateExerciseAnswer.DoesNotExist as e:
@@ -1410,8 +1432,6 @@ class RepeatedTemplateExercise(ContentPage):
         session = answer_object.session
         session_instance = RepeatedTemplateExerciseSessionInstance.objects.filter(session=session, userrepeatedtemplateinstanceanswer__isnull=False).order_by('ordinal_number').last()
         
-        print("checking", session_instance)
-
         answers = RepeatedTemplateExerciseSessionInstanceAnswer.objects.filter(session_instance=session_instance)
 
         # Copied from textfield exercise
@@ -2017,27 +2037,28 @@ class UserAnswer(models.Model):
             raise ValueError("Task {} does not have a valid exercise type".format(task))
         
         if instance:
-            answers.filter(instance=instance)
+            answers = answers.filter(instance=instance)
             
         if user:
-            answers.filter(user=user)
+            answers = answers.filter(user=user)
             
         if revision:
-            answers.filter(revision=revision)
+            answers = answers.filter(revision=revision)
             
         return answers.order_by("answer_date")
 
 # TODO: Put in UserFileUploadExerciseAnswer's manager?
-def get_version(instance):
-    return UserFileUploadExerciseAnswer.objects.filter(user=instance.answer.user,
-                                                       exercise=instance.answer.exercise).count()
+def get_version(return_file):
+    return UserFileUploadExerciseAnswer.objects.filter(user=return_file.answer.user,
+                                                       exercise=return_file.answer.exercise).count()
 
-def get_answerfile_path(instance, filename): # TODO: Versioning?
+def get_answerfile_path(return_file, filename): # TODO: Versioning?
     return os.path.join(
         "returnables",
-        "%s" % (instance.answer.user.username),
-        "%s" % (instance.answer.exercise.name),
-        "%04d" % (get_version(instance)),
+        return_file.answer.instance.slug,
+        return_file.answer.user.username,
+        return_file.answer.exercise.slug,
+        "%04d" % (get_version(return_file)),
         "%s" % (filename)
     )
 

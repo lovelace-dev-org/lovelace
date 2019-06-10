@@ -1,8 +1,9 @@
 import re
+import django.conf
 from django.core.exceptions import ValidationError
 from django import forms
 from django.forms import fields
-
+from django.utils.text import slugify
 
 class TextfieldExerciseForm(forms.Form):
     
@@ -28,8 +29,6 @@ class CodeReplaceExerciseForm(forms.Form):
 class FileEditForm(forms.ModelForm):
     
     def get_initial_for_field(self, field, field_name):
-        
-        print(dir(self))
         
         default_value = super().get_initial_for_field(field, field_name)
         
@@ -150,3 +149,18 @@ class TextfieldAnswerForm(forms.ModelForm):
 
         return data
         
+        
+class InstanceForm(forms.ModelForm):
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        default_lang = django.conf.settings.LANGUAGE_CODE
+        slug = slugify(cleaned_data.get("name_{}".format(default_lang)), allow_unicode=True)
+        if slug == cleaned_data["course"].slug:
+            raise ValidationError("Instance cannot have the same slug as its course")
+        
+            
+            
+            
+    
+    

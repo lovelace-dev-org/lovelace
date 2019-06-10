@@ -1,0 +1,72 @@
+{% extends 'courses/base.html' %}
+{% load staticfiles %}
+{% load i18n %}
+{% load course_tags %}
+
+{% block page-title %}{% blocktrans with instance=instance.name %}
+  {{ instance }} reminders
+{% endblocktrans %}{% endblock %}
+
+{% block extra-static %}
+  <script src="{% static 'teacher_tools/reminders.js' %}"></script>
+{% endblock %}
+
+{% block breadcrumb-links %}
+  <li><a href="{% url 'courses:index' %}">{% trans 'Courses' %}</a></li>
+  <div class="separator">»</div>
+  <li><a href="{% url 'courses:course' course instance %}">{{ course.name }}&nbsp;/&nbsp;{{ instance.name }}</a></li>
+{% endblock %}
+
+{% block page-content %}
+
+  <h1>
+    {% blocktrans with instance=instance.name %}
+      Manage Reminders for {{ instance }}
+    {% endblocktrans %}
+  </h1>
+
+  <div class="paragraph">{% trans 'This utility can be used to remind students about late assignments' %}</div>
+
+  <form id="reminder-form"
+    class="teacher-form"
+    method="POST"
+    enctype="multipart/form-data"
+    action="{% url 'teacher:reminders' course instance %}">
+    
+    {% csrf_token %}
+    
+    <input type="hidden" class="action-hint" name="reminder-action" value="generate">
+    <div class="input-label-container">
+      <label for="reminder-title">{% trans "Reminder email title" %}</label>
+      <input type="text" name="reminder-title" value="{{ msg_template.title }}"></input>
+    </div>
+    <label for="reminder-header">{% trans "Reminder email header" %}</label>
+    <textarea name="reminder-header" class="generic-textfield" placeholder="{% trans 'Type the beginning of the reminder email here' %}" rows="5">{{ msg_template.header }}</textarea>
+    <label for="reminder-footer">{% trans "Reminder email footer" %}</label>
+    <textarea name="reminder-footer" class="generic-textfield" placeholder="{% trans 'Type the end of the reminder email here' %}" rows="5">{{ msg_template.footer }}</textarea>
+    <div class="form-field">
+      <input type="checkbox" name="save-template" value="save">
+      <label for="save-template">{% trans "save template for this instance" %}</label>
+    </div>
+    {% if cached_reminders %}
+      <input id="reminder-submit" type="submit" name="submit" value="{% trans 'Generate reminders' %}" disabled></input>
+      {% blocktrans with date=cached_reminders.generated sent=cached_reminders.progress %}
+        <p>This instance has cached reminders (generated: {{ date }} - sent: {{ sent }}). Choose what to do with them:</p>
+      {% endblocktrans %}
+      <a class="reminder-action" href="{% url 'teacher:load_reminders' course instance %}" onclick="load_reminders(event, this)">{% trans "load" %}</a>
+      <a class="reminder-action" href="{% url 'teacher:discard_reminders' course instance %}" onclick="discard_reminders(event, this)">{% trans "discard" %}</a>
+    {% else %}
+      <input id="reminder-submit" type="submit" name="submit" value="{% trans 'Generate reminders' %}"></input>
+    {% endif %}
+  
+    <div id="reminder-list-title" class="paragaraph" hidden>{% trans 'Reminders will be sent to the following students' %}</div>
+  
+    <ul class="preview-list">
+    </ul>
+
+  </form>
+  
+  <div class="task-progress"></div>
+  
+{% endblock %}
+

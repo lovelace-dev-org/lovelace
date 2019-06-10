@@ -47,6 +47,10 @@ media_content = """
 <!image=testimage|alt=test>
 """
 
+class TestSettingsNotUsed(Exception):
+
+    pass
+
 def create_admin_user():
     testuser_admin = User(
         username="testadmin",

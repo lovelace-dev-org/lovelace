@@ -37,7 +37,7 @@
                         {% if enroll_status == None %}
                           {% if request.user.is_authenticated %}                        
                             <span class="instance-userinfo">{% trans 'You are not enrolled.' %}</span>
-                            <button id="{{ instance.slug }}-enroll-button" onclick="show_popup(event, '{{ instance.slug }}-enrollment-application-popup')">{% trans 'Enroll' %}</button>
+                            <p><button id="{{ instance.slug }}-enroll-button" onclick="show_popup(event, '{{ instance.slug }}-enrollment-application-popup')">{% trans 'Enroll' %}</button></p>
                           {% else %}
                             <span class="instance-userinfo">{% trans 'Log in to enable enrolling.' %}</span>
                           {% endif %}
@@ -51,11 +51,22 @@
                               {% trans 'You have been removed from this course instance' %}
                             {% elif enroll_status == "WAITING" %}
                               {% trans 'Your enrollment is waiting confirmation' %}
+                            {% elif enroll_status == "WITHDRAWN" %}
+                              {% trans 'You have withdrawn your enrollment' %}
                             {% endif %}
                           </span> 
+                            {% if enroll_status == "ACCEPTED" or enroll_status == "WAITING" %}
+                              <form id="{{ instance.slug }}-withdraw-form" class="withdraw-form" method="POST" enctype="multipart/form-data" action="{% url 'courses:withdraw' course instance %}">
+                                {% csrf_token %}
+                                <input type="hidden" class="instance-hint" name="instance-slug" value="{{ instance.slug }}">
+                                <input type="submit" name="submit" value="{% trans 'Withdraw' %}"></input>
+                              </form>
+                            {% elif enroll_status == "WITHDRAWN" %}
+                              <p><button id="{{ instance.slug }}-enroll-button" onclick="show_popup(event, '{{ instance.slug }}-enrollment-application-popup')">{% trans 'Re-Enroll' %}</button></p>
+                            {% endif %}
                         {% endif %}
                       </div>
-                      {% if enroll_status == None %}
+                      {% if enroll_status == None or enroll_status == "WITHDRAWN" %}
                         <div class="popup" id="{{ instance.slug }}-enrollment-application-popup">
                           <div>
                             <h2>{% trans 'Enroll to' %} {{ instance.name }}</h2>

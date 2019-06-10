@@ -106,7 +106,7 @@ function request_stats(event, a) {
             process_stat_reply(data);
         },
         error: function (jqxhr, status, type) {
-            process_stat_error(status);
+            process_stat_error(jqxhr);
         }
     });
 }
@@ -116,9 +116,9 @@ function process_stat_reply(data) {
     div.text(data.msg + " " + data.eta);
 }
 
-function process_stat_error(status) {
+function process_stat_error(jqxhr) {
     let div = $("div.stat-status");
-    div.text(status);
+    div.text(jqxhr.responseText);
     div.addClass("stat-error");
 }
 

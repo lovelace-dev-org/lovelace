@@ -3,6 +3,12 @@
 {% load i18n %}
 {% load course_tags %}
 
+
+{% block page-title %}{% blocktrans with name=user.username instance=instance.name %}
+  {{ name }}'s completion of {{ instance }}
+{% endblocktrans %}{% endblock %}
+
+
 {% block course-completion-link %}
   {% if not sandboxed %}
     <a href="{% url 'teacher_tools:completion' course instance %}">{% trans 'Course completion' %}</a>
@@ -19,8 +25,6 @@
   <link rel="stylesheet" href="{% static 'teacher_tools/style.css' %}">
   <script src="{% static 'teacher_tools/script.js' %}"></script>
 {% endblock %}
-
-{% block page-title %}{% trans 'Student course completion' %}{% endblock %}
 
 {% block breadcrumb-links %}
   <li><a href="{% url 'courses:index' %}">{% trans 'Courses' %}</a></li>

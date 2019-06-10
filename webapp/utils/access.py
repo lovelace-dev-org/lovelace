@@ -75,6 +75,8 @@ def is_course_staff(user, instance, responsible_only=False):
                 return True
             
         return user == instance.course.main_responsible
+    
+    return False
 
 # ^
 # |
@@ -108,8 +110,10 @@ def ensure_enrolled_or_staff(function):
             if CourseEnrollment.objects.get(instance=instance, student=request.user).is_enrolled():
                 return function(request, course, instance, *args, **kwargs)
         except:
-            if is_course_staff(request.user, instance):
-                return function(request, course, instance, *args, **kwargs)
+            pass
+        
+        if is_course_staff(request.user, instance):
+            return function(request, course, instance, *args, **kwargs)
 
         return HttpResponseForbidden(_("You must be enrolled to perform this action."))
     return wrap

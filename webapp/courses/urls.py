@@ -36,6 +36,7 @@ urlpatterns = [
 
     # Enrollment views
     path("enroll/<course:course>/<instance:instance>/", views.enroll, name="enroll"),
+    path("withdraw/<course:course>/<instance:instance>/", views.withdraw, name="withdraw"),
     
     # Course front page and content views
     path("answers/<user:user>/<course:course>/<instance:instance>/<answer:answer>/<str:filename>/download/", views.download_answer_file, name="download_answer_file"),

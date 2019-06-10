@@ -776,10 +776,19 @@ def content(request, course, instance, content, **kwargs):
                 else:
                     termbank_contents[first_char] = [alias_data]
                     
-        cache.set('termbank_contents_{instance}_{lang}'.format(instance=context['instance_slug'],
-                                                               lang=translation.get_language()), termbank_contents)
-        cache.set('term_div_data_{instance}_{lang}'.format(instance=context['instance_slug'],
-                                                           lang=translation.get_language()), term_div_data)
+        cache.set(
+            'termbank_contents_{instance}_{lang}'.format(
+                instance=context['instance_slug'],
+                lang=translation.get_language()
+            ),
+            termbank_contents,
+        )
+        
+        cache.set(
+            'term_div_data_{instance}_{lang}'.format(
+                instance=context['instance_slug'],                                                           lang=translation.get_language()),
+            term_div_data,
+        )
             
     rendered_content = ""
 
@@ -1040,6 +1049,7 @@ def show_answers(request, user, course, instance, exercise):
         "answers": answers,
         "user": user,
         "username": user.username,
+        "course_staff": user.is_staff
     }
     return HttpResponse(t.render(c, request))
 
@@ -1158,12 +1168,12 @@ def download_template_exercise_backend(request, exercise_id, filename):
 # ENROLLMENT VIEWS
 # |
 # v
-   
+
 def enroll(request, course, instance):
-    
+
     if not request.method == "POST":
         return HttpResponseNotAllowed(["POST"])        
-    
+
     form = request.POST
     
     if not request.user.is_authenticated:
@@ -1171,10 +1181,11 @@ def enroll(request, course, instance):
     
     status = instance.user_enroll_status(request.user)
     
-    if status is not None:
+    if status not in [None, "WITHDRAWN"]:
         return HttpResponseBadRequest(_("You have already enrolled to this course."))
     
     with transaction.atomic():
+        CourseEnrollment.objects.filter(instance=instance, student=request.user).delete()
         enrollment = CourseEnrollment(instance=instance, student=request.user)
     
         if not instance.manual_accept:
@@ -1188,7 +1199,25 @@ def enroll(request, course, instance):
     
     return JsonResponse({"message": response_text})
         
+def withdraw(request, course, instance):
+    
+    if not request.method == "POST":
+        return HttpResponseNotAllowed(["POST"])
+    
+    if not request.user.is_authenticated:
+        return HttpResponseForbidden(_("Only logged in users can manage their enrollments."))
+    
+    status = instance.user_enroll_status(request.user)
+    
+    if status is None:
+        return HttpResponseBadRequest(_("You have not enrolled to this course."))
+    
+    with transaction.atomic():
+        enrollment = CourseEnrollment.objects.get(instance=instance, student=request.user)
+        enrollment.enrollment_state = "WITHDRAWN"
+        enrollment.save()
         
+    return JsonResponse({"message": _("Your enrollment has been withdrawn")})
         
 def help_list(request):
     return HttpResponse()

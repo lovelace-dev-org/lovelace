@@ -118,10 +118,15 @@
                   <a href="{% url 'teacher_tools:manage_enrollments' course instance %}">
                     {% trans 'Manage enrollments' %}
                   </a>
-                </div>
+                </div>                
                 <div class="user-tools">
                   <a href="{% url 'teacher_tools:completion' course instance %}">
                     {% trans 'Course completion' %}
+                  </a>
+                </div>
+                <div class="user-tools">
+                  <a href="{% url 'teacher_tools:reminders' course instance %}">
+                    {% trans 'Reminders' %}
                   </a>
                 </div>
                 <div class="user-tools">
@@ -287,8 +292,8 @@
 
       <footer>
         <div class="column0">
+          <p>Content license for this course: <a href="{{ instance.license_url }}">{{ instance.content_license }}</a></p>
           <p>Site design &amp; backend by Miikka Salminen</p>
-          <p>Page contents available under Creative Commons license.</p>
         </div>
         <div class="column1">
           <p>Powered by Python, Django and jQuery.</p>

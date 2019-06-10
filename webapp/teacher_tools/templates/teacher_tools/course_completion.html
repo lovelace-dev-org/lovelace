@@ -3,8 +3,12 @@
 {% load i18n %}
 {% load course_tags %}
 
+{% block page-title %}{% blocktrans with instance=instance.name %}
+  Completion statistics of {{ instance }}
+{% endblocktrans %}{% endblock %}
+
 {% block extra-static %}
-  <script src="{% static 'teacher_tools/script.js' %}"></script>
+  <script src="{% static 'teacher_tools/completion.js' %}"></script>
 {% endblock %}
 
 {% block breadcrumb-links %}
@@ -29,7 +33,7 @@
     </a>
   </div>
   
-  <div class="csv-progress"></div>
+  <div class="task-progress"></div>
   
   <div class="csv-download"></div>
   
