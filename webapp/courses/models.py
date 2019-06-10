@@ -1189,7 +1189,7 @@ class FileUploadExercise(ContentPage):
         if files:
             filelist = files.getlist('file')
             for uploaded_file in filelist:
-                if self.allowed_filenames != []:
+                if self.allowed_filenames != [] and self.allowed_filenames != [""]:
                     for fnpat in self.allowed_filenames:
                         if fnmatch(uploaded_file.name, fnpat):
                             break

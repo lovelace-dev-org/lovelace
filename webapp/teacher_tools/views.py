@@ -331,7 +331,27 @@ def reminders_progress(request, course, instance, task_id):
 @ensure_responsible
 def exercise_plagiarism(request, course, instance, content):
     if request.method == "POST":
-        pass
+        form = request.POST
+        files_to_submit = []
+        
+        exclude_subfolders = form.get("subfolder_exclude", [])
+        exclude_files = form.get("filename_exclude", [])
+        language = form.get("language")
+        m = form.get("max-matches")
+        base_files = request.FILES
+        
+        
+        
+        #task = teacher_tasks.order_moss_report.delay(
+            #instance.slug,
+            #content.slug,
+            #language,
+            #exclude_subfolders,
+            #exclude_files,
+        
+            
+            
+        
         
         
         

@@ -4,14 +4,17 @@ from __future__ import absolute_import
 import csv
 import io
 import redis
+import time
 
 from celery import shared_task
 from django.conf import settings
+from django.core.cache import cache
+from django.core.mail import get_connection, EmailMessage
 from django.urls import reverse
 from django.utils.translation import ugettext as _
+from smtplib import SMTPException
 
 from courses.models import Course, CourseInstance
-
 from utils.content import get_course_instance_tasks
 from teacher_tools.utils import compile_student_results
 
@@ -47,8 +50,57 @@ def generate_completion_csv(self, course_slug, instance_slug):
             self.update_state(state="PROGRESS", meta={"current": i, "total": users_n})
 
         task_id = self.request.id
-        r = redis.StrictRedis(**settings.REDIS_RESULT_CONFIG)
-        r.set(task_id, temp_csv.getvalue(), ex=settings.REDIS_LONG_EXPIRE)
+        cache.set(task_id, temp_csv.getvalue(), timeout=settings.REDIS_LONG_EXPIRE)
 
     return {"current": users_n, "total": users_n}
 
+@shared_task(name="teacher_tools.send_reminder_emails", bind=True)
+def send_reminder_emails(self, course_slug, instance_slug, title, header, footer):
+    course = Course.objects.get(slug=course_slug)
+    instance = CourseInstance.objects.get(slug=instance_slug)
+
+    reminder_cache = cache.get("{}_reminders".format(instance.slug))
+    reminder_list = reminder_cache["reminders"]
+    users_n = len(reminder_list)
+    
+    progress = reminder_cache["progress"]
+
+    self.update_state(state="PROGRESS", meta={"current": 0, "total": users_n})
+
+    connection = get_connection()
+    mailfrom = "{}-reminders@{}".format(instance.slug, settings.ALLOWED_HOSTS[0])
+    reply_to = instance.email
+
+    for i, reminder in enumerate(reminder_list[progress - 1:], start=progress):
+        body = header
+        body += "\n\n--\n\n"
+        body += reminder["missing_str"]
+        body += "\n\n--\n\n"
+        recipient = reminder["email"]
+        
+        mail = EmailMessage(title, body, mailfrom, [recipient], headers={"Reply-to": reply_to}, connection=connection)
+        
+        # try again once if sending fails
+        # report a failure
+        try:
+            mail.send()
+        except SMTPException:
+            time.sleep(10)
+            try:
+                connection = get_connection()
+                mail.send()
+            except Exception:
+                reminder_cache["progress"] = i
+                cache.set("{}_reminders".format(instance.slug), reminder_cache)
+                return {"current": i, "total": users_n, "aborted": _("Sending failed. Try again to resume.")}
+
+        self.update_state(state="PROGRESS", meta={"current": i, "total": users_n})
+
+    cache.delete("{}_reminders".format(instance.slug))
+
+    return {"current": users_n, "total": users_n}
+
+@shared_task(name="teacher_tools.order_moss_report", bind=True)
+def order_moss_report(self, instance, exercise, language, excl_sub, exlc_fn, m, base_files):
+    
+    pass
