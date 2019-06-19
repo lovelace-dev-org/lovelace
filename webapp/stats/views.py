@@ -646,7 +646,7 @@ def instance_console(request, course, instance):
         gen_timestamp = None
         stat_status = _("Stats have not been generated.")
 
-    task_summary = TaskSummary.objects.all()
+    task_summary = TaskSummary.objects.filter(instance=instance)
 
     t = loader.get_template("stats/instance-console.html")
     c = {

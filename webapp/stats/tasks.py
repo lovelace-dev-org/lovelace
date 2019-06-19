@@ -115,9 +115,17 @@ def generate_instance_tasks_summary(instance_slug):
             stats.correct_by_before_dl = correct_by_before_dl
             stats.correct_by_after_dl = correct_by - correct_by_before_dl
             stats.total_tries = sum(try_counts)
-            if len(try_counts) > 0:
+            tries_len = len(try_counts)
+            if tries_len > 0:
                 stats.tries_avg = statistics.mean(try_counts)
                 stats.tries_median = statistics.median(try_counts)
+                
+                if tries_len > 3:
+                    stats.tries_25p = try_counts[int(round(tries_len * 0.25))]
+                    stats.tries_75p = try_counts[int(round(tries_len * 0.75))]
+                else:
+                    stats.tries_25p = try_counts[0]
+                    stats.tries_75p = try_counts[-1]
             
             time_count = len(times)
             if time_count > 0:
