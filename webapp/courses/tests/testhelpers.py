@@ -124,11 +124,10 @@ def create_course_with_instance():
 def add_content_graph(content, instance, ordinal):
     context = ContentGraph(
         content=content,
-        ordinal_number=ordinal
+        ordinal_number=ordinal,
+        instance=instance
     )
     context.save()
-    instance.contents.add(context)
-    instance.save()
         
 def create_checkbox_exercise():
     exercise = CheckboxExercise(

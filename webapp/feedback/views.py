@@ -90,7 +90,7 @@ def content_feedback_stats(request, instance, content):
         embedded = True
     else:
         try:
-            link = instance.contents.get(content=content)
+            link = ContentGraph.objects.get(instance=instance, content=content)
             parent = None
             single_linked = True
             embedded = False

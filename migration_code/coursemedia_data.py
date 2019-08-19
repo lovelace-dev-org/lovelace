@@ -63,9 +63,8 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        
         migrations.RunPython(create_coursemedia_for_file),
-        migrations.RunPython(create_coursemedia_for_image),        migrations.RunPython(create_coursemedia_for_video)
-        
+        migrations.RunPython(create_coursemedia_for_image),
+        migrations.RunPython(create_coursemedia_for_video)
     ]
 

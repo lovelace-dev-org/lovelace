@@ -105,8 +105,8 @@ class CourseContentAccess(admin.ModelAdmin):
         
         return qs.filter(
             Q(id__in=list(edited)) |
-            Q(contentgraph__courseinstance__course__staff_group__user=request.user) |
-            Q(emb_embedded__parent__contentgraph__courseinstance__course__staff_group__user=request.user)
+            Q(contentgraph__instance__course__staff_group__user=request.user) |
+            Q(emb_embedded__parent__contentgraph__instance__course__staff_group__user=request.user)
         ).distinct()
 
     def get_queryset(self, request):
@@ -572,6 +572,7 @@ class TermLinkInline(TranslationTabularInline):
     extra = 0
     
     
+
         
 class TermAdmin(TranslationAdmin, VersionAdmin):
     search_fields = ('name',)
@@ -584,6 +585,10 @@ class TermAdmin(TranslationAdmin, VersionAdmin):
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
+        
+        if request.user.is_superuser:
+            return qs
+        
         edited = Version.objects.get_for_model(Term).filter(revision__user=request.user).values_list("object_id", flat=True)
         
         return qs.filter(
@@ -636,11 +641,11 @@ admin.site.register(Term, TermAdmin)
 class ContentGraphAdmin(admin.ModelAdmin):
     
     search_fields = ('content__name',)
-    list_display = ('ordinal_number', 'content', 'get_instances',)
+    list_display = ('ordinal_number', 'content', 'instance',)
     list_display_links = ('content',)
-    list_filter = ('courseinstance',)
+    list_filter = ('instance',)
     list_per_page = 500
-    ordering = ('courseinstance', 'ordinal_number',)
+    ordering = ('instance', 'ordinal_number',)
     
     fields = ('parentnode', 'content', 'deadline', 'scored', 'ordinal_number', 'visible')
     
@@ -708,6 +713,13 @@ class CourseAdmin(TranslationAdmin, VersionAdmin):
 
 admin.site.register(Course, CourseAdmin)
 
+class ContentGraphInline(admin.TabularInline):
+    model = ContentGraph
+    extra = 0
+    fields = ('parentnode', 'content', 'deadline', 'scored', 'ordinal_number', 'visible', 'revision')
+    readonly_fields = ('revision', )
+    
+
 class CourseInstanceAdmin(TranslationAdmin, VersionAdmin):
     """
     NOTE: Only the user designated as main responsible for a course is 
@@ -720,12 +732,14 @@ class CourseInstanceAdmin(TranslationAdmin, VersionAdmin):
         ('Schedule settings', {'fields': ['start_date', 'end_date', 'active', 'visible', 'primary']}),
         ('Enrollment',        {'fields': ['manual_accept']}),
         ('Content license',   {'fields': ['content_license', 'license_url']}),
-        ('Instance outline',  {'fields': ['contents', 'frozen']}),
+        ('Instance outline',  {'fields': ['frozen']}),
     ]
     search_fields = ('name',)
     list_display = ('name', 'course')
     save_as = True
     form = InstanceForm
+
+    inlines = [ContentGraphInline]
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         """

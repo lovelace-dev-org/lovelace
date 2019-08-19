@@ -242,7 +242,7 @@ class TaskTests(TestCase):
         self.r.delete(result.task_id)
         log = result_json["test_tree"]["log"]
         self.assertEqual(log[0]["runs"][0]["output"][0]["flag"], 1)
-        
+
     def test_file_upload_answering_incorrect(self):
         answer = create_answer(TEST_ANSWER_CODE.format(answer="incorrect"), self.user, self.instance, self.exercise, self.revision)
         result, evaluation_obj = self._submit_file_upload_answer(answer.id)
@@ -251,7 +251,7 @@ class TaskTests(TestCase):
         self.r.delete(result.task_id)
         log = result_json["test_tree"]["log"]
         self.assertEqual(log[0]["runs"][0]["output"][0]["flag"], 0)
-        
+
     def test_file_upload_answering_error(self):
         answer = create_answer(TEST_ANSWER_CODE.format(answer="error"), self.user, self.instance, self.exercise, self.revision)
         result, evaluation_obj = self._submit_file_upload_answer(answer.id)
@@ -298,7 +298,7 @@ class TaskTests(TestCase):
         self.r.delete(result.task_id)
         self.assertEqual(result_json["test_tree"]["log"], [])
         self.assertEqual(len(result_json["test_tree"]["errors"]), 1)
-        
+
 
 
 

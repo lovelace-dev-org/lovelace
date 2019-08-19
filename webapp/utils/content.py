@@ -1,6 +1,6 @@
 import re
 
-from courses.models import EmbeddedLink, CourseMediaLink, TermToInstanceLink, InstanceIncludeFileToInstanceLink
+from courses.models import ContentGraph, EmbeddedLink, CourseMediaLink, TermToInstanceLink, InstanceIncludeFileToInstanceLink
 from django.utils.text import slugify as slugify
 from reversion.models import Version
 
@@ -27,7 +27,7 @@ def get_course_instance_tasks(instance, deadline_before=None):
 
     task_pages = []
 
-    content_links = instance.contents.filter(scored=True, visible=True).order_by("ordinal_number")    
+    content_links = ContentGraph.objects.filter(instance=instance, scored=True, visible=True).order_by("ordinal_number")
     if deadline_before is not None:
         content_links = content_links.filter(deadline__lt=deadline_before)
 

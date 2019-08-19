@@ -35,7 +35,7 @@
     {% for list_direction, result, correct_emb, emb_count, visible in content_tree %}
       {% if list_direction == '>' %}
         <ul>
-          {% elif list_direction == '<' %}
+      {% elif list_direction == '<' %}
         </ul>
       {% else %}
         <li{% if visible == False %} class="admin-visible-content"{% endif %}>

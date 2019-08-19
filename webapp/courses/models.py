@@ -170,7 +170,7 @@ class CourseInstance(models.Model):
                                         default=False)
     
     frontpage = models.ForeignKey('Lecture', blank=True, null=True, on_delete=models.SET_NULL) # TODO: Create one automatically!
-    contents = models.ManyToManyField('ContentGraph', blank=True)   # TODO: Rethink the content graph system!
+    # contents = models.ManyToManyField('ContentGraph', blank=True)   # TODO: Rethink the content graph system!
     frozen = models.BooleanField(verbose_name="Freeze this instance", default=False)
     visible = models.BooleanField(verbose_name="Is this course visible to students", default=True)
     content_license = models.CharField(max_length=255, blank=True)
@@ -243,7 +243,7 @@ class CourseInstance(models.Model):
         for link in media_links:
             link.freeze(freeze_to)
             
-        ifile_links = InstanceIncludeFileToInstanceLink.objects.filter(instance=self)
+            ifile_links = InstanceIncludeFileToInstanceLink.objects.filter(instance=self)
         for link in ifile_links:
             link.freeze(freeze_to)
             
@@ -270,6 +270,7 @@ class ContentGraph(models.Model):
     # TODO: "Allow answering after deadline has passed" flag.
     parentnode = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL)
     content = models.ForeignKey('ContentPage', null=True, blank=True, on_delete=models.SET_NULL)
+    instance = models.ForeignKey('CourseInstance', null=False, blank=False, on_delete=models.CASCADE)
     responsible = models.ManyToManyField(User, blank=True)
     compulsory = models.BooleanField(verbose_name='Must be answered correctly before proceeding to next exercise', default=False)
     deadline = models.DateTimeField(verbose_name='The due date for completing this exercise',blank=True,null=True)
@@ -316,7 +317,7 @@ class CourseMedia(models.Model):
     """
     
 
-    name = models.SlugField(verbose_name='Name for reference in content',max_length=200,unique=True)
+    name = models.CharField(verbose_name='Name for reference in content',max_length=200,unique=True)
 
 
 class CourseMediaLink(models.Model):
@@ -776,7 +777,7 @@ class Lecture(ContentPage):
         
         self.content_type = "LECTURE"
         super(Lecture, self).save(*args, **kwargs)
-        for instance in CourseInstance.objects.filter(Q(contents__content=self) | Q(contents__content__embedded_pages=self), frozen=False):
+        for instance in CourseInstance.objects.filter(Q(contentgraph__content=self) | Q(contentgraph__content__embedded_pages=self), frozen=False):
             self.update_embedded_links(instance)
 
     class Meta:
@@ -796,7 +797,7 @@ class MultipleChoiceExercise(ContentPage):
 
         self.content_type = "MULTIPLE_CHOICE_EXERCISE"
         super().save(*args, **kwargs)
-        for instance in CourseInstance.objects.filter(Q(contents__content=self) | Q(contents__content__embedded_pages=self), frozen=False):
+        for instance in CourseInstance.objects.filter(Q(contentgraph__content=self) | Q(contentgraph__content__embedded_pages=self), frozen=False):
             self.update_embedded_links(instance)
 
     def get_choices(self, revision=None):
@@ -905,7 +906,7 @@ class CheckboxExercise(ContentPage):
 
         self.content_type = "CHECKBOX_EXERCISE"
         super().save(*args, **kwargs)
-        for instance in CourseInstance.objects.filter(Q(contents__content=self) | Q(contents__content__embedded_pages=self), frozen=False):
+        for instance in CourseInstance.objects.filter(Q(contentgraph__content=self) | Q(contentgraph__content__embedded_pages=self), frozen=False):
             self.update_embedded_links(instance)
 
     def get_choices(self, revision=None):
@@ -1029,7 +1030,7 @@ class TextfieldExercise(ContentPage):
 
         self.content_type = "TEXTFIELD_EXERCISE"
         super(TextfieldExercise, self).save(*args, **kwargs)
-        for instance in CourseInstance.objects.filter(Q(contents__content=self) | Q(contents__content__embedded_pages=self), frozen=False):
+        for instance in CourseInstance.objects.filter(Q(contentgraph__content=self) | Q(contentgraph__content__embedded_pages=self), frozen=False):
             self.update_embedded_links(instance)
 
     def get_choices(self, revision=None):
@@ -1169,7 +1170,7 @@ class FileUploadExercise(ContentPage):
 
         self.content_type = "FILE_UPLOAD_EXERCISE"
         super(FileUploadExercise, self).save(*args, **kwargs)
-        for instance in CourseInstance.objects.filter(Q(contents__content=self) | Q(contents__content__embedded_pages=self), frozen=False):
+        for instance in CourseInstance.objects.filter(Q(contentgraph__content=self) | Q(contentgraph__content__embedded_pages=self), frozen=False):
             self.update_embedded_links(instance)
 
     def save_answer(self, user, ip, answer, files, instance, revision):
@@ -1268,7 +1269,7 @@ class CodeInputExercise(ContentPage):
 
         self.content_type = "CODE_INPUT_EXERCISE"
         super(CodeInputExercise, self).save(*args, **kwargs)
-        for instance in CourseInstance.objects.filter(Q(contents__content=self) | Q(contents__content__embedded_pages=self), frozen=False):
+        for instance in CourseInstance.objects.filter(Q(contentgraph__content=self) | Q(contentgraph__content__embedded_pages=self), frozen=False):
             self.update_embedded_links(instance)
 
     def save_answer(self, user, ip, answer, files, instance, revision):
@@ -1291,7 +1292,7 @@ class CodeReplaceExercise(ContentPage):
 
         self.content_type = "CODE_REPLACE_EXERCISE"
         super(CodeReplaceExercise, self).save(*args, **kwargs)
-        for instance in CourseInstance.objects.filter(Q(contents__content=self) | Q(contents__content__embedded_pages=self), frozen=False):
+        for instance in CourseInstance.objects.filter(Q(contentgraph__content=self) | Q(contentgraph__content__embedded_pages=self), frozen=False):
             self.update_embedded_links(instance)
 
     def get_choices(self, revision=None):
@@ -1351,7 +1352,7 @@ class RepeatedTemplateExercise(ContentPage):
         self.content_type = "REPEATED_TEMPLATE_EXERCISE"
         RepeatedTemplateExerciseSession.objects.filter(exercise=self, user=None).delete()
         super(RepeatedTemplateExercise, self).save(*args, **kwargs)
-        for instance in CourseInstance.objects.filter(Q(contents__content=self) | Q(contents__content__embedded_pages=self), frozen=False):
+        for instance in CourseInstance.objects.filter(Q(contentgraph__content=self) | Q(contentgraph__content__embedded_pages=self), frozen=False):
             self.update_embedded_links(instance)
 
     def get_choices(self, revision=None):

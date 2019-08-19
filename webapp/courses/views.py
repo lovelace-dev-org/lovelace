@@ -140,7 +140,7 @@ def course_instances(request, course):
 def check_exercise_accessible(request, course, instance, content):
 
     embedded_links = EmbeddedLink.objects.filter(embedded_page_id=content.id, instance=instance)
-    content_graph_links = instance.contents.filter(content_id=content.id)
+    content_graph_links = ContentGraph.objects.filter(instance=instance, content=content)
     
     if content_graph_links.first() is None and embedded_links.first() is None:
         return {'error': HttpResponseNotFound("Content {} is not linked to course {}!".format(content.slug, course.slug))}
@@ -164,9 +164,9 @@ def course(request, course, instance):
     context["instance"] = instance
 
     if is_course_staff(request.user, instance):
-        contents = instance.contents.filter(ordinal_number__gt=0).order_by('ordinal_number')
+        contents = ContentGraph.objects.filter(instance=instance, ordinal_number__gt=0).order_by('ordinal_number')
     else:
-        contents = instance.contents.filter(ordinal_number__gt=0, visible=True).order_by('ordinal_number')
+        contents = ContentGraph.objects.filter(instance=instance, ordinal_number__gt=0, visible=True).order_by('ordinal_number')
     
     if len(contents) > 0:
         tree = []
@@ -216,9 +216,9 @@ def course_tree(tree, node, user, instance_obj):
         tree.append(list_item)
 
     if is_course_staff(user, instance_obj):
-        children = ContentGraph.objects.filter(parentnode=node, courseinstance=instance_obj).order_by('ordinal_number')
+        children = ContentGraph.objects.filter(parentnode=node, instance=instance_obj).order_by('ordinal_number')
     else:
-        children = ContentGraph.objects.filter(parentnode=node, courseinstance=instance_obj, visible=True).order_by('ordinal_number')
+        children = ContentGraph.objects.filter(parentnode=node, instance=instance_obj, visible=True).order_by('ordinal_number')
     
     if len(children) > 0:
         tree.append((mark_safe('>'), None, None, None, None))
@@ -292,7 +292,7 @@ def check_answer(request, course, instance, content, revision):
 
     # Check if a deadline exists and if it has already passed
     try:
-        content_graph = instance.contents.filter(content=content).first()
+        content_graph = ContentGraph.objects.get(instance=instance, content=content)
     except ContentGraph.DoesNotExist as e:
         pass
     else:
@@ -640,7 +640,7 @@ def content(request, course, instance, content, **kwargs):
     revision = None
     #if "frontpage" not in kwargs:
     try:
-        content_graph = instance.contents.get(content=content)
+        content_graph = ContentGraph.objects.get(instance=instance, content=content)
     except ContentGraph.DoesNotExist:
         return HttpResponseNotFound("Content {} is not linked to course {}!".format(content.slug, course.slug))
     else:
@@ -782,12 +782,14 @@ def content(request, course, instance, content, **kwargs):
                 lang=translation.get_language()
             ),
             termbank_contents,
+            timeout=None
         )
         
         cache.set(
             'term_div_data_{instance}_{lang}'.format(
                 instance=context['instance_slug'],                                                           lang=translation.get_language()),
             term_div_data,
+            timeout=None
         )
             
     rendered_content = ""
