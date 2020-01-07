@@ -4,7 +4,7 @@
 {% load course_tags %}
 
 {% block extra-static %}
-  <script src="{% static 'teacher_tools/reminders.js' %}"></script>
+  <script src="{% static 'teacher_tools/plagiarism.js' %}"></script>
 {% endblock %}
 
 {% block breadcrumb-links %}
@@ -27,90 +27,44 @@
 {% block page-content %}
 
   <h1>
-    {% blocktrans with instance=instance.name %}
+    {% blocktrans with exercise_name=exercise.name %}
       Check software plagiarism for {{ exercise_name }}
     {% endblocktrans %}
   </h1>
-  
+
   <div class="paragraph">
     {% trans "This utility uses <a href='http://theory.stanford.edu/~aiken/moss/'>MOSS</a> - a software-as-a-service provided by the University of Stanford - to produce a report about code similarity between answers sent to this exercise. You can customize the search using the options below. Please read the security and legal considerations regarding MOSS before using. Once the analysis is complete, you will receive a link to the results page on the MOSS server. Lovelace does not parse the results in any way." %}
   </div>
-    
-    
+
+  {% if current_url %}
+    <div class="paragraph">
+      <a href="{{ current_url }}">{% trans "Previously generated report for this task" %}</a>
+    </div>
+  {% endif %}
+
   <form id="plagiarism-form"
     class="teacher-form"
     method="POST"
     enctype="multipart/form-data"
-    action="{% url 'teacher:reminders' course instance %}">
-    
+    action="{% url 'teacher:exercise_plagiarism' course instance exercise %}">
+
     {% csrf_token %}
-    
-    <div class="input-label-container">
-      <label for="language">{% trans "Programming language:" %}</label>
-      <select class="moss-language-select" name="language">
-        <option value="">{% trans "-- select --" %}</option>
-        {% for key, display in supported_languages %}
-            <option value="{{ key }}">{{ display }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    
-    <div class="input-label-container">
-      <label for="file-extensions">{% trans "File extensions to include" %}</label>
-      <input type="text" name="file-extensions">
-    </div>
-    
-    <div class="input-label-container">
-      <label for="filename-exclude">{% trans "Exclude filename(s):" %}</label>
-      <input type="text" name="filename-exclude" default="comma separated list">
-    </div>
-    
-    <div class="input-label-container">
-      <label for="subfolder-exclude">{% trans "Exclude files in subfolder(s):" %}</label>
-      <input type="text" name="subfolder-exclude" default="comma separated list">
-    </div>
-    
-    <div class="input-label-container">
-      <label for="max-matches">{% trans "Number of matches to show:" %}</label>
-      <input type="text" name="show-matches"></input>
-    </div>
-    
-    <div class="input-label-container"">
-      <label for="base-files">{% trans "Upload base files:" %}</label>
-      <input type="file" name="base-files" multiple="multiple">
-    </div>
-    
-    <div class="form-section-title">{% trans "Include answers from other instances" %}</div>
-    {% for instance in other_instances %}
+
+    {% for field in form %}
+
       <div class="input-label-container">
-        <input type="checkbox" name="include-instance" value="{{ instance.slug }}">
-        <label for="{{ instance.slug }}">{{ instance.name }}</label>
+        {{ field.errors }}
+        {{ field.label_tag }} {{ field }}
       </div>
+
     {% endfor %}
-    
-    <div class="form-section-title">{% trans "Choose which version(s) of answers are analysed" %}</div>
-    <div class="input-label-container">
-      <input type="radio" name="include-versions" value="newest">
-      <label for="include-versions">{% trans "Latest version only (recommended)" %}</label>
-    </div>
-    <div class="input-label-container">
-      <input type="radio" name="include-versions" value="all">
-      <label for="include-versions">{% trans "Include all version (NOTE: they will match amongst themselves)" %}</label>
-    </div>
-    
-    <div class="input-label-container">
-      <input type="checkbox" name="save-settings-exercise" value="save">
-      <label for="save-settings-exercise">{% trans "Save settings for this exercise" %}</label>
-    </div>
-    <div class="input-label-container">
-      <input type="checkbox" name="save-settings-instance" value="save">
-      <label for="save-settings-instance">{% trans "Save settings for this instance" %}</label>
-    </div>
-    
+
     <input id="moss-submit" type="submit" name="submit" value="{% trans 'Submit request' %}"></input>
-    
-    <div id="moss-result-div" class="paragraph"></div>
-    
+
+    <div id="task-progress" class="paragraph"></div>
+
+    <div id="moss-link" class="paragraph"></div>
+
   </form>
 
 {% endblock %}

@@ -7,13 +7,13 @@ from reversion.models import Version
 def first_title_from_content(content_text):
     """
     Finds the first heading from a content page and returns the title. Also
-    return the slugified anchor.
+    returns the slugified anchor.
     """
 
     titlepat = re.compile("(?P<level>={1,6}) ?(?P<title>.*) ?(?P=level)")
     try:
-        title = titlepat.findall(content_text)[0]
-    except IndexError:
+        title = titlepat.search(content_text).group("title").strip()
+    except AttributeError:
         title = ""
         anchor = ""
     else:

@@ -718,6 +718,7 @@ class ContentGraphInline(admin.TabularInline):
     extra = 0
     fields = ('parentnode', 'content', 'deadline', 'scored', 'ordinal_number', 'visible', 'revision')
     readonly_fields = ('revision', )
+    ordering = ("ordinal_number", )
     
 
 class CourseInstanceAdmin(TranslationAdmin, VersionAdmin):
@@ -834,9 +835,10 @@ class CourseInstanceAdmin(TranslationAdmin, VersionAdmin):
                 fp_node.save()
             else:
                 if fp_node:
-                    obj.contents.remove(fp_node)
-                fp_node = obj.contents.create(
+                    fp_node.delete()
+                fp_node = ContentGraph(
                     content=obj.frontpage,
+                    instance=obj,
                     scored=False,
                     ordinal_number=0
                 )
@@ -845,8 +847,7 @@ class CourseInstanceAdmin(TranslationAdmin, VersionAdmin):
             obj._was_frozen = True
             obj.freeze()
         else:
-            for cg in obj.contents.all():
+            for cg in ContentGraph.objects.filter(instance=obj):
                 cg.content.update_embedded_links(obj, cg.revision)
             
 admin.site.register(CourseInstance, CourseInstanceAdmin)
-    

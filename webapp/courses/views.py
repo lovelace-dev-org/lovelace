@@ -361,7 +361,7 @@ def check_answer(request, course, instance, content, revision):
 def get_repeated_template_session(request, course, instance, content, revision):
     check_results = check_exercise_accessible(request, course, instance, content)
     check_error = check_results.get('error')
-    if check_error is not None:        
+    if check_error is not None:
         return check_error
 
     content = content.get_type_object()
@@ -517,7 +517,7 @@ def file_exercise_evaluation(request, course, instance, content, revision, task_
 
 def compile_evaluation_data(request, evaluation_tree, evaluation_obj, context=None):
     log = evaluation_tree["test_tree"].get("log", [])
-    
+
     messages = [
         (msg['title'], [
             "".join(markupparser.MarkupParser.parse(msg_msg, request, context)).strip()
@@ -525,7 +525,7 @@ def compile_evaluation_data(request, evaluation_tree, evaluation_obj, context=No
         ])
         for msg in evaluation_tree['test_tree'].get('messages', [])
     ]
-    
+
     # render all individual messages in the log tree
     for test in log:
         test["title"] = "".join(markupparser.MarkupParser.parse(test["title"], request, context)).strip()
@@ -562,41 +562,30 @@ def compile_evaluation_data(request, evaluation_tree, evaluation_obj, context=No
     
     return data
     
-# TODO: figure out a way to change this to use decorators
-def get_file_exercise_evaluation(request, user, answer_id):
-    if request.user.is_authenticated and (request.user.username == user or request.user.is_staff):
-        pass
-    else:
-        return HttpResponseForbidden(_("You're only allowed to view your own answers."))
-
-    try:
-        user_obj = User.objects.get(username=user)
-    except User.DoesNotExist as e:
-        return HttpResponseNotFound("No such user %s" % user)
-
-    try:
-        answer_obj = UserFileUploadExerciseAnswer.objects.get(id=answer_id)
-    except UserFileUploadExerciseAnswer.DoesNotExist as e:
-        return HttpResponseNotFound("No such answer {}".format(answer_id))
-    else:
-        if answer_obj.user != request.user and not is_course_staff(request.user, answer_obj.instance):
-            return HttpResponseForbidden(_("You're only allowed to view your own answers."))
-        
+@ensure_owner_or_staff
+def get_file_exercise_evaluation(request, user, course, instance, exercise, answer):
     from .tasks import generate_results
-    
-    results_json = answer_obj.evaluation.test_results
+
+    results_json = answer.evaluation.test_results
     results_dict = json.loads(results_json)
 
     evaluation_tree = generate_results(results_dict, 0)
-    evaluation_obj = answer_obj.evaluation
-    
-    data = compile_evaluation_data(request, evaluation_tree, evaluation_obj)
-    
+    evaluation_obj = answer.evaluation
+
+    msg_context = {
+        'course_slug': course.slug,
+        'instance_slug': instance.slug,
+        'instance': instance,
+        'content_page': exercise
+    }
+
+    data = compile_evaluation_data(request, evaluation_tree, evaluation_obj, msg_context)
+
     if not request.user.is_staff:
         data["triggers"] = []
-    
+
     t_view = loader.get_template("courses/view-answer-results.html")
-    
+
     return HttpResponse(t_view.render(data, request))
 
 
@@ -1036,7 +1025,7 @@ def show_answers(request, user, course, instance, exercise):
     t = loader.get_template("courses/user-exercise-answers.html")
     c = {
         "exercise": exercise,
-        "exercise_name": exercise.name,
+        "exercise_title": title,
         "course": course,
         "course_slug": course.slug,
         "course_name": course.name,
@@ -1049,7 +1038,7 @@ def show_answers(request, user, course, instance, exercise):
         "anchor": anchor,
         "answers_url": request.build_absolute_uri(),
         "answers": answers,
-        "user": user,
+        "student": user,
         "username": user.username,
         "course_staff": user.is_staff
     }

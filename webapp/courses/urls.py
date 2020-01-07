@@ -11,7 +11,7 @@ urlpatterns = [
     path("logout/", views.logout, name="logout"),
 
     # For viewing and changing user information
-    path("answers/<user:user>/<int:answer_id>/",
+    path("answers/<user:user>/<course:course>/<instance:instance>/<content:exercise>/<answer:answer>/",
         views.get_file_exercise_evaluation, name="get_file_exercise_evaluation"),
     path("answers/<user:user>/<course:course>/<instance:instance>/<content:exercise>/",
         views.show_answers, name="show_answers"),

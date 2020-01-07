@@ -377,7 +377,7 @@ msgstr "Kirjaudu sisään Lovelace-tunnuksella"
 
 #: courses/templates/courses/login.html:24
 msgid "Show login form"
-msgstr ""
+msgstr "Näytä kirjautumislomake"
 
 #: courses/templates/courses/login.html:29
 #, python-format
@@ -675,11 +675,11 @@ msgstr ""
 
 #: stats/templates/stats/instance-console.html:22
 msgid "Generate Stats"
-msgstr ""
+msgstr "Generoi tilastot"
 
 #: stats/templates/stats/instance-console.html:37
 msgid "task"
-msgstr ""
+msgstr "tehtävä"
 
 #: stats/templates/stats/instance-console.html:38
 msgid "answers"
@@ -939,7 +939,7 @@ msgstr "Operaatiota ei voitu suorittaa näille käyttäjille"
 #: teacher_tools/views.py:200
 #, python-format
 msgid "Completion CSV generation (task id: %s) has already been downloaded."
-msgstr ""
+msgstr "CSV-suoritustiedot (task id: %s) on jo ladattu."
 
 #: templates/account/base.html:35
 msgid "Menu:"
@@ -951,7 +951,7 @@ msgstr "Luo käyttäjä"
 
 #: templates/account/signup.html:8
 msgid "Sign Up for Lovelace account"
-msgstr "Kirjaudu sisään Lovelace-tunnuksella"
+msgstr "Luo erillinen Lovelace-tunnus"
 
 #: templates/account/signup.html:11
 #, python-format

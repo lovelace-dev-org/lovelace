@@ -428,7 +428,7 @@ class CreateFileUploadExerciseForm(forms.Form):
 
             if field_name.startswith("exercise_allowed_filenames"):
                 if field_val:
-                    cleaned_data[field_name] = field_val.split(",")
+                    cleaned_data[field_name] = [val.strip() for val in field_val.split(",")]
                 else:
                     cleaned_data[field_name] = []
                 

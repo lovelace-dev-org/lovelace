@@ -4,7 +4,7 @@
 {% load course_tags %}
 
 
-{% block page-title %}{% blocktrans with name=user.username instance=instance.name %}
+{% block page-title %}{% blocktrans with name=student.username instance=instance.name %}
   {{ name }}'s completion of {{ instance }}
 {% endblocktrans %}{% endblock %}
 
@@ -37,7 +37,7 @@
 {% block page-content %}
 
   <h1>
-    {% blocktrans with name=user.username instance=instance.name %}
+    {% blocktrans with name=student.oname instance=instance.name %}
       {{ name }}'s completion of {{ instance }}
     {% endblocktrans %}
   </h1>

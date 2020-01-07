@@ -390,7 +390,7 @@ def run_test(self, test_id, answer_id, instance_id, exercise_id, student=False, 
         if revision is not None:
             old_exercise_file_objects = []
             
-            for ex_file in exercise_file_objects:            
+            for ex_file in exercise_file_objects:
                 try:
                     old_file = Version.objects.get_for_object(ex_file).get(revision=revision)._object_version.object
                 except Version.DoesNotExist:

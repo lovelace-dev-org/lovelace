@@ -13,7 +13,7 @@
   <div>
     {% if widget.is_initial %}
       {{ widget.input_text }}: 
-    {% endif %}    
+    {% endif %}
     <input type="{{ widget.type }}" name="{{ widget.name }}"{% include "django/forms/widgets/attrs.html" %} />
   </div>
 </div>

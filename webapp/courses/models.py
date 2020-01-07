@@ -36,10 +36,7 @@ import feedback.models
 
 import courses.markupparser as markupparser
 import courses.blockparser as blockparser
-
-PRIVATE_UPLOAD = getattr(settings, "PRIVATE_STORAGE_FS_PATH", settings.MEDIA_ROOT)
-
-upload_storage = FileSystemStorage(location=PRIVATE_UPLOAD)
+from utils.files import *
 
 # TODO: Extend the registration system to allow users to enter the profile data!
 # TODO: Separate profiles for students and teachers
@@ -307,9 +304,6 @@ class ContentGraph(models.Model):
         verbose_name_plural = "content to course links"
         #ordering = ('ordinal_number',)
 
-def get_file_upload_path(instance, filename):
-    return os.path.join("files", "%s" % (filename))
-
 #@reversion.register()
 class CourseMedia(models.Model):
     """
@@ -353,9 +347,6 @@ class File(CourseMedia):
     def __str__(self):
         return self.name
 
-
-def get_image_upload_path(instance, filename):
-    return os.path.join("images", "%s" % (filename))
 
 #@reversion.register(follow=["coursemedia_ptr"])
 class Image(CourseMedia):
@@ -1174,19 +1165,19 @@ class FileUploadExercise(ContentPage):
             self.update_embedded_links(instance)
 
     def save_answer(self, user, ip, answer, files, instance, revision):
-        
+
 
         # FIX: DEBUG DEBUG DEBUG DEBUG
         if revision == "head": revision = 0
         # FIX: DEBUG DEBUG DEBUG DEBUG
-        
+
 
         answer_object = UserFileUploadExerciseAnswer(
             exercise_id=self.id, user=user, answerer_ip=ip,
             instance=instance, revision=revision,
         )
         answer_object.save()
-        
+
         if files:
             filelist = files.getlist('file')
             for uploaded_file in filelist:
@@ -1196,7 +1187,7 @@ class FileUploadExercise(ContentPage):
                             break
                     else:
                         raise InvalidExerciseAnswerException(
-                            "Filename {} is not listed in accepted filenames. Allowed:\n{}".format(
+                            _("Filename {} is not listed in accepted filenames. Allowed:\n{}").format(
                                 uploaded_file.name, ", ".join(self.allowed_filenames)
                             )
                         )
@@ -1214,7 +1205,7 @@ class FileUploadExercise(ContentPage):
 
     def get_admin_change_url(self):
         return reverse("exercise_admin:file_upload_change", args=(self.id,))
-    
+
     def check_answer(self, user, ip, answer, files, answer_object, revision):
         lang_code = translation.get_language()
         if revision == "head": revision = None
@@ -1710,12 +1701,6 @@ class InstanceIncludeFileToExerciseLink(models.Model):
     # The settings are determined per exercise basis
     file_settings = models.OneToOneField('IncludeFileSettings', on_delete=models.CASCADE)
 
-def get_instancefile_path(included_file, filename):
-    return os.path.join(
-        "{course}_files".format(course=included_file.course),
-        "{filename}".format(filename=filename), # TODO: Versioning?
-        # TODO: Language?
-    )
 
 
 class InstanceIncludeFileToInstanceLink(models.Model):
@@ -1773,13 +1758,6 @@ class InstanceIncludeFile(models.Model):
             )
             link.save()
             
-
-def get_testfile_path(instance, filename):
-    return os.path.join(
-        "{exercise_name}_files".format(exercise_name=instance.exercise.name),
-        "{filename}".format(filename=filename), # TODO: Versioning?
-        # TODO: Language?
-    )
 
 #@reversion.register()
 class FileExerciseTestIncludeFile(models.Model):
@@ -2047,21 +2025,6 @@ class UserAnswer(models.Model):
             answers = answers.filter(revision=revision)
             
         return answers.order_by("answer_date")
-
-# TODO: Put in UserFileUploadExerciseAnswer's manager?
-def get_version(return_file):
-    return UserFileUploadExerciseAnswer.objects.filter(user=return_file.answer.user,
-                                                       exercise=return_file.answer.exercise).count()
-
-def get_answerfile_path(return_file, filename): # TODO: Versioning?
-    return os.path.join(
-        "returnables",
-        return_file.answer.instance.slug,
-        return_file.answer.user.username,
-        return_file.answer.exercise.slug,
-        "%04d" % (get_version(return_file)),
-        "%s" % (filename)
-    )
 
 class FileUploadExerciseReturnFile(models.Model):
     """A file that a user returns for checking."""

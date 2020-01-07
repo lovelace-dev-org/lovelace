@@ -47,7 +47,7 @@
     {% if not user.is_authenticated %}
       <div class="auth-warning">{% trans "Warning: You have not logged in. You cannot answer." %}</div>
     {% elif not enrolled and not course_staff %}
-      <div class="auth-warning">{% trans "Warning: You have enrolled to this course instance. You cannot answer." %}</div>
+      <div class="auth-warning">{% trans "Warning: You have not enrolled to this course instance. You cannot answer." %}</div>
     {% endif %}
     
     {% if evaluation == "unanswered" %}

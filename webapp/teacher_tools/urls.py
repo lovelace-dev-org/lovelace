@@ -16,5 +16,6 @@ urlpatterns = [
     path("<course:course>/<instance:instance>/reminders/progress/<slug:task_id>/", views.reminders_progress, name="reminders_progress"),
     path("<course:course>/<instance:instance>/reminders/", views.manage_reminders, name="reminders"),
     path("<course:course>/<instance:instance>/<content:content>/plagiarism/", views.exercise_plagiarism, name="exercise_plagiarism"),
+    path("<course:course>/<instance:instance>/<content:content>/plagiarism/progress/<slug:task_id>/", views.moss_progress, name="moss_progress"),
 ]
 

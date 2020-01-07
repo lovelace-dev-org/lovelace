@@ -111,7 +111,7 @@ def ensure_enrolled_or_staff(function):
                 return function(request, course, instance, *args, **kwargs)
         except:
             pass
-        
+
         if is_course_staff(request.user, instance):
             return function(request, course, instance, *args, **kwargs)
 
@@ -126,4 +126,4 @@ def ensure_owner_or_staff(function):
         else:
             return HttpResponseForbidden(_("This view is limited to content owners and staff"))
     return wrap
-        
+

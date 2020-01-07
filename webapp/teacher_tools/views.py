@@ -23,14 +23,14 @@ from utils.content import get_course_instance_tasks
 from courses.models import *
 from teacher_tools.utils import *
 from teacher_tools.models import *
+from teacher_tools.forms import MossnetForm, ReminderForm
 
 
 def download_answers(request, course, instance, content):
-    
+
     if not determine_access(request.user, content, responsible_only=True):
         return HttpResponseForbidden(_("Only course main responsible teachers are allowed to download answer files."))
-    
-    
+
     files = FileUploadExerciseReturnFile.objects.filter(
         answer__exercise=content,
         answer__instance__course=course,
@@ -47,7 +47,7 @@ def download_answers(request, course, instance, content):
                 fs_path = os.path.join(getattr(settings, "PRIVATE_STORAGE_FS_PATH", settings.MEDIA_ROOT), fileinfo)
                 
                 try:
-                    content_zip.write(fs_path.encode("utf-8"), os.path.join(parts[2], parts[1], parts[3], parts[4]))
+                    content_zip.write(fs_path.encode("utf-8"), os.path.join(parts[2], parts[1], parts[4], parts[5]))
                 except (IndexError, OSError) as e:
                     errors.append(fileinfo)
                     
@@ -142,12 +142,12 @@ def manage_enrollments(request, course, instance):
         
 @ensure_responsible
 def student_course_completion(request, course, instance, user):    
-    
+
     tasks_by_page = get_course_instance_tasks(instance)
     results_by_page, total_points, total_missing, total_points_available = compile_student_results(user, instance, tasks_by_page)
     t = loader.get_template("teacher_tools/student_completion.html")
     c = {
-        "user": user,
+        "student": user,
         "course": course,
         "instance": instance,
         "results_by_page": results_by_page,
@@ -156,7 +156,6 @@ def student_course_completion(request, course, instance, user):
         "total_points_available": total_points_available,
         "course_staff": True
     }
-    
     return HttpResponse(t.render(c, request))
 
 @ensure_responsible
@@ -219,81 +218,77 @@ def course_completion(request, course, instance):
 
 @ensure_responsible
 def manage_reminders(request, course, instance):
-
+    saved_template = ReminderTemplate.objects.filter(instance=instance).first()
     if request.method == "POST":
-        form = request.POST
-        if form.get("reminder-action") == "generate":
+        form = ReminderForm(request.POST, instance=saved_template)
+        if form.is_valid():
+            if form.cleaned_data["reminder_action"] == "generate":
+                if form.cleaned_data.get("save_template"):
+                    template = form.save(commit=False)
+                    template.instance = instance
+                    template.save()
 
-            if form.get("save-template") == "save":
-                ReminderTemplate.objects.all().delete()
+                users = instance.enrolled_users.get_queryset().filter(
+                    courseenrollment__enrollment_state="ACCEPTED"
+                ).order_by("last_name", "first_name", "username")
+                
+                tasks_by_page = get_course_instance_tasks(instance, datetime.datetime.now())
 
-                template = ReminderTemplate(
-                    instance=instance,
-                    title=form.get("reminder-title"),
-                    header=form.get("reminder-header"),
-                    footer=form.get("reminder-footer")
-                )
-                template.save()
+                reminder_list = []
+                for i, user in enumerate(users, start=1):
+                    missing_str = ""
+                    missing_count = 0
+                    for page, task_links in tasks_by_page:
+                        page_stats = check_user_completion(user, task_links, instance, include_links=False)
+                        missing_list = []
+                        for result in page_stats:
+                            if not result["correct"]:
+                                missing_list.append(result["eo"])
+                                missing_count += 1
+                        if missing_list:
+                            missing_str += " / ".join(
+                                getattr(page, "name_" + code) or "" for code, lang in settings.LANGUAGES
+                            ).lstrip(" /")
+                            task_strs = []
+                            for task in missing_list:
+                                task_strs.append(" / ".join(
+                                    getattr(task, "name_" + code) or "" for code, lang in settings.LANGUAGES
+                                ).lstrip(" /"))
+                            missing_str += "\n  " + "\n  ".join(task_strs) + "\n"
+                    if missing_str:
+                        reminder_data = {
+                            "username": user.username,
+                            "email": user.email,
+                            "first_name": user.first_name,
+                            "last_name": user.last_name,
+                            "missing_count": missing_count,
+                            "missing_str": missing_str
+                        }
+                        reminder_list.append(reminder_data)
 
-            users = instance.enrolled_users.get_queryset().order_by("last_name", "first_name", "username")
-            tasks_by_page = get_course_instance_tasks(instance, datetime.datetime.now())
+                reminder_cache = {
+                    "generated": datetime.date.today().strftime("%Y-%m-%d"),
+                    "reminders": reminder_list,
+                    "progress": 0
+                }
+                cache.set("{}_reminders".format(instance.slug), reminder_cache, timeout=settings.REDIS_LONG_EXPIRE)
 
-            reminder_list = []
-            for i, user in enumerate(users, start=1):
-                missing_str = ""
-                missing_count = 0
-                for page, task_links in tasks_by_page:
-                    page_stats = check_user_completion(user, task_links, instance, include_links=False)
-                    missing_list = []
-                    for result in page_stats:
-                        if not result["correct"]:
-                            missing_list.append(result["eo"])
-                            missing_count += 1
-                    if missing_list:
-                        missing_str += " / ".join(
-                            getattr(page, "name_" + code) or "" for code, lang in settings.LANGUAGES
-                        ).lstrip(" /")
-                        task_strs = []
-                        for task in missing_list:
-                            task_strs.append(" / ".join(
-                                getattr(task, "name_" + code) or "" for code, lang in settings.LANGUAGES
-                            ).lstrip(" /"))
-                        missing_str += "\n  " + "\n  ".join(task_strs) + "\n"
-                if missing_str:
-                    reminder_data = {
-                        "username": user.username,
-                        "email": user.email,
-                        "first_name": user.first_name,
-                        "last_name": user.last_name,
-                        "missing_count": missing_count,
-                        "missing_str": missing_str
-                    }
-                    reminder_list.append(reminder_data)
+                return JsonResponse({"reminders": reminder_list, "submit_text": _("Send emails")})
 
-            reminder_cache = {
-                "generated": datetime.date.today().strftime("%Y-%m-%d"),
-                "reminders": reminder_list,
-                "progress": 0
-            }
-            cache.set("{}_reminders".format(instance.slug), reminder_cache, timeout=settings.REDIS_LONG_EXPIRE)
-
-            return JsonResponse({"reminders": reminder_list, "submit_text": _("Send emails")})
-
-        elif form.get("reminder-action") == "send":
-            title = form.get("reminder-title")
-            header = form.get("reminder-header")
-            footer = form.get("reminder-footer")
-            task = teacher_tasks.send_reminder_emails.delay(course.slug, instance.slug, title, header, footer)
-            return reminders_progress(request, course, instance, task.id)
+            elif form.cleaned_data["reminder-action"] == "send":
+                title = form.cleaned_data.get("title", "")
+                header = form.cleaned_data.get("header", "")
+                footer = form.cleaned_data.get("footer", "")
+                task = teacher_tasks.send_reminder_emails.delay(course.slug, instance.slug, title, header, footer)
+                return reminders_progress(request, course, instance, task.id)
     else:
-        msg_template = ReminderTemplate.objects.filter(instance=instance).first()
+        form = ReminderForm(instance=saved_template)
         reminders = cache.get("{}_reminders".format(instance.slug))
-
         t = loader.get_template("teacher_tools/manage_reminders.html")
         c = {
             "course": course,
             "instance": instance,
-            "msg_template": msg_template,
+            "form": form,
             "course_staff": True,
             "cached_reminders": reminders
         }
@@ -304,14 +299,14 @@ def load_reminders(request, course, instance):
     reminder_cache = cache.get("{}_reminders".format(instance.slug))
     if reminder_cache is None:
         return HttpNotFOund(_("Unable to retrieve cached reminders."))
-    
+
     return JsonResponse({"reminders": reminder_cache["reminders"], "submit_text": _("Send emails")})
 
 @ensure_responsible
 def discard_reminders(request, course, instance):
     cache.delete("{}_reminders".format(instance.slug))
     return JsonResponse({"success": True, "submit_text": _("Generate reminders")})
-    
+
 @ensure_responsible
 def reminders_progress(request, course, instance, task_id):
     task = celery_app.AsyncResult(id=task_id)
@@ -330,52 +325,64 @@ def reminders_progress(request, course, instance, task_id):
 
 @ensure_responsible
 def exercise_plagiarism(request, course, instance, content):
+    saved_settings = MossSettings.objects.filter(exercise=content).first()
+    other_instances = CourseInstance.objects.filter(course=course).exclude(pk=instance.pk)
+    current_url = cache.get("{}_moss_result".format(content.slug))
+
     if request.method == "POST":
-        form = request.POST
-        files_to_submit = []
-        
-        exclude_subfolders = form.get("subfolder_exclude", [])
-        exclude_files = form.get("filename_exclude", [])
-        language = form.get("language")
-        m = form.get("max-matches")
-        base_files = request.FILES
-        
-        
-        
-        #task = teacher_tasks.order_moss_report.delay(
-            #instance.slug,
-            #content.slug,
-            #language,
-            #exclude_subfolders,
-            #exclude_files,
-        
-            
-            
-        
-        
-        
-        
+        form = MossnetForm(request.POST, other_instances=other_instances, instance=saved_settings)
+        if form.is_valid():
+            if form.cleaned_data["save_settings"]:
+                settings = form.save(commit=False)
+                settings.exercise = content
+                settings.save()
+
+            if request.FILES:
+                if form.cleaned_data["save_settings"]:
+                    MossBaseFile.objects.filter(moss_settings=settings).delete()
+                for f in request.FILES.getlist("base_files"):
+                    base_file = MossBaseFile(
+                        fileinfo=f,
+                        exercise=content
+                    )
+                    if form.cleaned_data["save_settings"]:
+                        base_file.moss_settings = settings
+                    base_file.save()
+
+            task = teacher_tasks.order_moss_report.delay(course.slug, instance.slug, content.slug, form.cleaned_data)
+            return moss_progress(request, course, instance, content, task.id)
     else:
-        other_instances = CourseInstance.objects.filter(course=course).exclude(pk=instance.pk)
-        #try:
-            #saved_settings = MossSettings.objects.get(instance=instance, exercise=content)
-        #except MossSettings.DoesNotExist:
-            #saved_settings = MossSettings.objects.filter(instance=instance).first()
-
-        supported_languages = [("python", "Python")]
-
+        form = MossnetForm(other_instances=other_instances, instance=saved_settings)
         t = loader.get_template("teacher_tools/exercise_plagiarism.html")
         c = {
             "course": course,
             "instance": instance,
             "exercise": content,
-            "supported_languages": supported_languages,
-            "other_instances": other_instances,
-            #"saved_settings": saved_settings
+            "course_staff": True,
+            "form": form,
+            "current_url": current_url
         }
         return HttpResponse(t.render(c, request))
+
+@ensure_responsible
+def moss_progress(request, course, instance, content, task_id):
+    task = celery_app.AsyncResult(id=task_id)
+    if task.ready():
+        data = {"state": task.state, "metadata": task.info}
+        return JsonResponse(data)
+    else:
+        progress_url = reverse("teacher_tools:moss_progress", kwargs={
+            "course": course,
+            "instance": instance,
+            "content": content,
+            "task_id": task_id
+        })
+        data = {"state": task.state, "metadata": task.info, "redirect": progress_url}
+        return JsonResponse(data)
     
-    
+        
+        
+        
     
     
     
