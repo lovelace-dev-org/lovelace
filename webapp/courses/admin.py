@@ -25,7 +25,7 @@ from reversion import revisions as reversion
 
 # Moved these here from models.py so that all registering happens
 # in this file (as VersionAdmin autoregisters the associated model)
-# This makes modeltranslation work for with reversion, probably due 
+# This makes modeltranslation work with reversion, probably due 
 # to translated fields being added between loading models.py and 
 # this module.
 reversion.register(ContentPage)
@@ -720,6 +720,11 @@ class ContentGraphInline(admin.TabularInline):
     readonly_fields = ('revision', )
     ordering = ("ordinal_number", )
     
+    def get_formset(self, request, obj=None, **kwargs):
+        formset = super().get_formset(request, obj)
+        formset.form.base_fields["parentnode"].queryset = kwargs["accessible_graphs"]
+        formset.form.base_fields["content"].queryset = kwargs["accessible_pages"]
+        return formset
 
 class CourseInstanceAdmin(TranslationAdmin, VersionAdmin):
     """
@@ -751,29 +756,54 @@ class CourseInstanceAdmin(TranslationAdmin, VersionAdmin):
             if not request.user.is_superuser:
                 kwargs['queryset'] = Course.objects.filter(main_responsible=request.user)
             
-        return super().formfield_for_foreignkey(db_field, request, **kwargs)                                                
-        
-    
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
     def formfield_for_manytomany(self, db_field, request, **kwargs):
         """
         Only show content graphs that contain content that is in the editor's
         access chain.
         """
-        
+
         if db_field.name == 'contents':           
             content_access = CourseContentAccess.content_access_list(request, ContentPage)
             kwargs['queryset'] = ContentGraph.objects.filter(content__in=content_access)
-            
+
         return super().formfield_for_manytomany(db_field, request, **kwargs)
-    
+
+
+    # TODO: parent node selection with a custom widget that uses content pages
+    # TODO: prefetch querysets somehow to reduce database hits
+    def get_formsets_with_inlines(self, request, obj=None):
+        """
+        Limits the selectors inside inlines to content pages that are in the editor's
+        access chain. Also limits parent node selector to nodes that belong to the same
+        instance. Contains a minor hack that ignores the latter restriction when the
+        object is new. 
+        """
+
+        content_access = CourseContentAccess.content_access_list(request, ContentPage)
+        extra_kw = {
+            "accessible_pages": content_access,
+        }
+
+        if obj == None:
+            extra_kw["accessible_graphs"] = ContentGraph.objects.filter(content__in=content_access)
+        else:
+            extra_kw["accessible_graphs"] = ContentGraph.objects.filter(content__in=content_access, instance=obj)
+
+        for inline in self.get_inline_instances(request, obj):
+            if isinstance(inline, ContentGraphInline):
+                yield inline.get_formset(request, obj, **extra_kw), inline
+            else:
+                yield inline.get_formset(request, obj), inline
+
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        
         if request.user.is_superuser:
             return qs
-        
+
         return qs.filter(course__main_responsible=request.user)
-        
+
     def has_change_permission(self, request, obj=None):
         if request.user.is_superuser:
             return True
@@ -829,7 +859,7 @@ class CourseInstanceAdmin(TranslationAdmin, VersionAdmin):
     def finish_cg(self): 
         obj = self.current
         if obj.frontpage:
-            fp_node = ContentGraph.objects.filter(courseinstance=obj.id, ordinal_number=0).first()
+            fp_node = ContentGraph.objects.filter(instance=obj, ordinal_number=0).first()
             if fp_node and not self._new:
                 fp_node.content = obj.frontpage
                 fp_node.save()
@@ -842,6 +872,14 @@ class CourseInstanceAdmin(TranslationAdmin, VersionAdmin):
                     scored=False,
                     ordinal_number=0
                 )
+                fp_node.save()
+
+        if self._new:
+            children = ContentGraph.objects.filter(instance=obj).exclude(parentnode=None)
+            for child in children:
+                real_parent = ContentGraph.objects.get(content=child.parentnode.content, instance=obj)
+                child.parentnode = real_parent
+                child.save()
 
         if not obj._was_frozen and obj.frozen:
             obj._was_frozen = True

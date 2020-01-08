@@ -217,37 +217,30 @@ class CourseInstance(models.Model):
         are also updated in a similar way.
         """
         # NOTE: freeze_to is not used yet
-        
-        old_links = list(self.contents.all())
-        
-        self.contents.clear()
-        for content_link in old_links:
-            content_link.pk = None
+
+        contents = ContentGraph.objects.filter(instance=self)
+
+        for content_link in contents:
             content_link.freeze(freeze_to)
             content_link.content.update_embedded_links(self, content_link.revision)
-            self.contents.add(content_link)
-        #self.save()
-        
-        new_links = self.contents.all()
-        for content_link in new_links:
-            content_link.set_frozen_parents(new_links)
-        
+
         embedded_links = EmbeddedLink.objects.filter(instance=self)
         for link in embedded_links:
             link.freeze(freeze_to)
-            
+
         media_links = CourseMediaLink.objects.filter(instance=self)
         for link in media_links:
             link.freeze(freeze_to)
-            
+
             ifile_links = InstanceIncludeFileToInstanceLink.objects.filter(instance=self)
+
         for link in ifile_links:
             link.freeze(freeze_to)
-            
+
         term_links = TermToInstanceLink.objects.filter(instance=self)
         for link in term_links:
             link.freeze(freeze_to)
-            
+
         self.frozen = True
     
     def __str__(self):
@@ -288,6 +281,7 @@ class ContentGraph(models.Model):
             
         self.save()
     
+    # not needed anymore
     def set_frozen_parents(self, linked_contents):
         if self.parentnode is not None:
             frozen_parent = linked_contents.get(content=self.parentnode.content)
