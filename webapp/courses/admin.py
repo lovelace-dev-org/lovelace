@@ -23,6 +23,8 @@ from reversion.admin import VersionAdmin
 from reversion.models import Version
 from reversion import revisions as reversion
 
+from utils.access import determine_access, determine_media_access
+
 # Moved these here from models.py so that all registering happens
 # in this file (as VersionAdmin autoregisters the associated model)
 # This makes modeltranslation work with reversion, probably due 
@@ -112,30 +114,15 @@ class CourseContentAccess(admin.ModelAdmin):
     def get_queryset(self, request):
         return CourseContentAccess.content_access_list(request, self.model, self.content_type)
     
-    
-    def has_change_permission(self, request, obj=None):        
-        if request.user.is_superuser:
+    def has_change_permission(self, request, obj=None):
+        if obj is None:
             return True
-        
-        if request.user.is_staff:
-            if obj:
-                return Version.objects.get_for_object(obj).filter(revision__user=request.user).exists() or self._match_groups(request.user, obj)
-            else:            
-                return True
-        else:
-            return False            
-    
+        return determine_access(request.user, obj)
+
     def has_delete_permission(self, request, obj=None):
-        if request.user.is_superuser:
+        if obj is None:
             return True
-        
-        elif request.user.is_staff:
-            if obj:
-                return Version.objects.get_for_object(obj).filter(revision__user=request.user).exists() or self._match_groups(request.user, obj)
-            else:            
-                return True
-        else:
-            return False        
+        return determine_access(request.user, obj)
         
     #TODO: this solution is less garbage now, but we still need to rethink
     #      the entire contentgraph and embedded links structure. 
@@ -154,7 +141,7 @@ class CourseContentAccess(admin.ModelAdmin):
     def _find_contexts(self, obj):
         """
         Find the context(s) (course instances) where this page is linked that 
-        are have not been frozen. 
+        have not been frozen. 
         """
         
         instances = CourseInstance.objects.filter(contents__content=obj, contents__revision=None)
@@ -208,29 +195,15 @@ class CourseMediaAccess(admin.ModelAdmin):
     def get_queryset(self, request):
         return CourseMediaAccess.media_access_list(request, self.model)
     
-    def has_change_permission(self, request, obj=None):        
-        if request.user.is_superuser:
+    def has_change_permission(self, request, obj=None):
+        if obj is None:
             return True
+        return determine_media_access(request.user, obj)
         
-        if request.user.is_staff:
-            if obj:
-                return Version.objects.get_for_object(obj).filter(revision__user=request.user).exists() or self._match_groups(request.user, obj)
-            else:            
-                return True
-        else:
-            return False            
-        
-    def has_delete_permission(self, request, obj=None):        
-        if request.user.is_superuser:
+    def has_delete_permission(self, request, obj=None):
+        if obj is None:
             return True
-        
-        if request.user.is_staff:
-            if obj:
-                return Version.objects.get_for_object(obj).filter(revision__user=request.user).exists() or self._match_groups(request.user, obj)
-            else:            
-                return True
-        else:
-            return False            
+        return determine_media_access(request.user, obj)
 
     def _match_groups(self, user, obj):
         
@@ -814,7 +787,7 @@ class CourseInstanceAdmin(TranslationAdmin, VersionAdmin):
                 return True
         else:
             return False
-        
+
     def has_delete_permission(self, request, obj=None):
         if request.user.is_superuser:
             return True
@@ -825,14 +798,14 @@ class CourseInstanceAdmin(TranslationAdmin, VersionAdmin):
                 return True
         else:
             return False
-        
+
     def save_model(self, request, obj, form, change):
         self._new = False
         if obj.pk == None:
             self._new = True
-        
+
         super().save_model(request, obj, form, change)
-        
+
         if self._new:
             instance_files = InstanceIncludeFile.objects.filter(course=obj.course)
             for ifile in instance_files:
@@ -842,7 +815,7 @@ class CourseInstanceAdmin(TranslationAdmin, VersionAdmin):
                     instance=obj
                 )
                 link.save()
-                
+
             terms = Term.objects.filter(course=obj.course)
             for term in terms:
                 link = TermToInstanceLink(
@@ -851,10 +824,10 @@ class CourseInstanceAdmin(TranslationAdmin, VersionAdmin):
                     instance=obj
                 )
                 link.save()
-            
+
         self.current = obj
         transaction.on_commit(self.finish_cg)
-            
+
     # the horror
     def finish_cg(self): 
         obj = self.current

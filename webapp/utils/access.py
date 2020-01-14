@@ -56,7 +56,7 @@ def determine_media_access(user, media):
         if Version.objects.get_for_object(media).filter(revision__user=user).exists():
             return True
         elif media.coursemedialink_set.get_queryset().filter(instance__course__staff_group__user=user).distinct():
-            return True            
+            return True
         
     return False
     
