@@ -26,20 +26,30 @@
   </div>
   
   <form id="{{ content_slug }}-form" class="exercise-form" method="POST" enctype="multipart/form-data"
-        {% if revision and not sandboxed%}action="{% url 'courses:check' course_slug instance_slug content.slug revision %}"
-        {% elif sandboxed %}action="{% url 'courses:check_sandboxed' content.slug %}"
-        {% else %}action="{% url 'courses:check' course_slug instance_slug content.slug "head" %}"{% endif %}>
+        {% if revision and not sandboxed%}action="{% url 'courses:check' course instance content revision %}"
+        {% comment %}
+            {% elif sandboxed %}action="{% url 'courses:check_sandboxed' content.slug %}"
+        {% endcomment %}
+        {% else %}action="{% url 'courses:check' course instance content "head" %}"{% endif %}>
     
     {% csrf_token %}
     {% if question %}{{ question|safe }}{% endif %}
     
     {% block exercise-form %}
     {% endblock %}
-    
-    <input type="submit" name="submit" value="{% trans 'Send answer' %}">
-    {% if not user.is_authenticated %}
-      <div class="auth-warning">{% trans "Warning: You have not logged in. Your answer will not be saved." %}</div>
+
+    {% if enrolled or course_staff %}
+      <input type="submit" name="submit" value="{% trans 'Send answer' %}">
+    {% else %}
+      <input type="submit" name="submit" value="{% trans 'Send answer' %}" disabled>
     {% endif %}
+    
+    {% if not user.is_authenticated %}
+      <div class="auth-warning">{% trans "Warning: You have not logged in. You cannot answer." %}</div>
+    {% elif not enrolled and not course_staff %}
+      <div class="auth-warning">{% trans "Warning: You have not enrolled to this course instance. You cannot answer." %}</div>
+    {% endif %}
+    
     {% if evaluation == "unanswered" %}
       <div class="answered-status"></div>
     {% elif evaluation == "incorrect" %}
@@ -53,12 +63,12 @@
   </form>
   <div class="results-box error" style="display: none"></div>
   <div class="results-box result" style="display: none"></div>
+  <div class="results-box file-result" style="display: none"></div>
   <div class="results-box msgs" style="display: none">
     <span class="results-header">{% trans 'Messages' %}</span>
     <div class="msgs-list"></div>
   </div>
   <div class="results-box comments" style="display: none"></div>
-  <div class="results-box file-result" style="display: none"></div>
 </div>
 
 {% block feedback %}

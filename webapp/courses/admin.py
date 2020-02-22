@@ -4,16 +4,16 @@ from courses.models import *
 
 from django.contrib import admin
 from django.contrib.auth.models import User
-from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth.admin import UserAdmin, GroupAdmin
 
 from django.core.cache import cache
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 
 from django.db import models, transaction
 from django.db.models import Q
-from django.forms import Field, ModelForm, TextInput, Textarea, ModelChoiceField
+from django.forms import Field, ModelForm, TextInput, Textarea, ModelChoiceField, BaseInlineFormSet
 
-from .forms import FileEditForm, RepeatedTemplateExerciseBackendForm
+from .forms import FileEditForm, RepeatedTemplateExerciseBackendForm, ContentForm, TextfieldAnswerForm, InstanceForm
 from .widgets import AdminFileWidget, AdminTemplateBackendFileWidget
 
 from modeltranslation.admin import TranslationAdmin, TranslationTabularInline, \
@@ -21,10 +21,44 @@ from modeltranslation.admin import TranslationAdmin, TranslationTabularInline, \
 
 from reversion.admin import VersionAdmin
 from reversion.models import Version
+from reversion import revisions as reversion
+
+from utils.access import determine_access, determine_media_access
+
+# Moved these here from models.py so that all registering happens
+# in this file (as VersionAdmin autoregisters the associated model)
+# This makes modeltranslation work with reversion, probably due 
+# to translated fields being added between loading models.py and 
+# this module.
+reversion.register(ContentPage)
+reversion.register(Hint)
+reversion.register(FileExerciseTest, follow=['fileexerciseteststage_set'])
+reversion.register(FileExerciseTestStage, follow=['fileexercisetestcommand_set'])
+reversion.register(FileExerciseTestCommand, follow=['fileexercisetestexpectedoutput_set'])
+reversion.register(FileExerciseTestExpectedOutput)
+reversion.register(FileExerciseTestExpectedStdout)
+reversion.register(FileExerciseTestExpectedStderr)
+reversion.register(InstanceIncludeFileToExerciseLink)
+reversion.register(InstanceIncludeFile)
+reversion.register(FileExerciseTestIncludeFile)
+reversion.register(IncludeFileSettings)
+reversion.register(TextfieldExerciseAnswer)
+reversion.register(MultipleChoiceExerciseAnswer)
+reversion.register(CourseMedia)
+reversion.register(TermTab)
+reversion.register(TermLink)
+reversion.register(CheckboxExerciseAnswer)
+reversion.register(CodeInputExerciseAnswer)
+reversion.register(CodeReplaceExerciseAnswer)
+reversion.register(RepeatedTemplateExerciseTemplate)
+reversion.register(RepeatedTemplateExerciseBackendFile)
+reversion.register(RepeatedTemplateExerciseBackendCommand)
+
 
 ## User profiles
 # http://stackoverflow.com/questions/4565814/django-user-userprofile-and-admin
 admin.site.unregister(User)
+admin.site.unregister(Group)
 
 #TODO: There's a loophole where staff members of any course A can gain access
 #      to any course B's pages by embedding the course B page to a course A 
@@ -73,57 +107,44 @@ class CourseContentAccess(admin.ModelAdmin):
         
         return qs.filter(
             Q(id__in=list(edited)) |
-            Q(contentgraph__courseinstance__course__staff_group__user=request.user) |
-            Q(emb_embedded__parent__contentgraph__courseinstance__course__staff_group__user=request.user)
+            Q(contentgraph__instance__course__staff_group__user=request.user) |
+            Q(emb_embedded__parent__contentgraph__instance__course__staff_group__user=request.user)
         ).distinct()
 
     def get_queryset(self, request):
         return CourseContentAccess.content_access_list(request, self.model, self.content_type)
     
-    
-    def has_change_permission(self, request, obj=None):        
-        if request.user.is_superuser:
+    def has_change_permission(self, request, obj=None):
+        if obj is None:
             return True
-        
-        if request.user.is_staff:
-            if obj:
-                return Version.objects.get_for_object(obj).filter(revision__user=request.user).exists() or self._match_groups(request.user, obj)
-            else:            
-                return True
-        else:
-            return False            
-    
+        return determine_access(request.user, obj)
+
     def has_delete_permission(self, request, obj=None):
-        if request.user.is_superuser:
+        if obj is None:
             return True
+        return determine_access(request.user, obj)
         
-        elif request.user.is_staff:
-            if obj:
-                return Version.objects.get_for_object(obj).filter(revision__user=request.user).exists() or self._match_groups(request.user, obj)
-            else:            
-                return True
-        else:
-            return False        
+    #TODO: this solution is less garbage now, but we still need to rethink
+    #      the entire contentgraph and embedded links structure. 
+    #NOTE: this is now done in ContentPage save method
+    #def save_model(self, request, obj, form, change):
+        #"""
+        #Need to call rendered_markup of the object for each context where it 
+        #exists as latest version in order to create embedded page links. 
+        #"""
         
-    #TODO: this solution is garbage, we need to rethink the entire content
-    #      graph and embedded links structure. 
-    def save_model(self, request, obj, form, change):
-        """
-        Need to call rendered_markup of the object for each context where it 
-        exists in order to create embedded page links. 
-        """
-        
-        super().save_model(request, obj, form, change)
-        contexts = self._find_contexts(obj)
-        for context in contexts:
-            obj.rendered_markup(request, context)        
+        #super().save_model(request, obj, form, change)
+        #contexts = self._find_contexts(obj)
+        #for context in contexts:
+            #obj.update_embedded_links(context["instance"])
         
     def _find_contexts(self, obj):
         """
-        Find the context(s) (course instances) where this page is linked. 
+        Find the context(s) (course instances) where this page is linked that 
+        have not been frozen. 
         """
         
-        instances = CourseInstance.objects.filter(contents__content=obj)
+        instances = CourseInstance.objects.filter(contents__content=obj, contents__revision=None)
         contexts = []
         for instance in instances:
             context = {
@@ -139,7 +160,7 @@ class CourseContentAccess(admin.ModelAdmin):
     def _match_groups(self, user, obj):
         """
         Matches a user's groups to the staff groups of the target object.
-        Returns True if the user is in the staff group of the course that 
+        Returns True if the user is in the staff group of the course that
         is at the end of the access chain for the object.
         """
         
@@ -161,50 +182,36 @@ class CourseMediaAccess(admin.ModelAdmin):
         if request.user.is_superuser:
             return qs
         
+        
+        edited = Version.objects.get_for_model(model).filter(revision__user=request.user).values_list("object_id", flat=True)
+        
         user_groups = request.user.groups.get_queryset()
         
         return qs.filter(
-            Q(owner=request.user) |
-            Q(courseinstance__course__staff_group__in=user_groups)
+            Q(id__in=list(edited)) |
+            Q(coursemedialink__instance__course__staff_group__in=user_groups)
         ).distinct()
-    
-    def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        if db_field.name == 'courseinstance':
-            if not request.user.is_superuser:
-                kwargs['queryset'] = CourseInstance.objects.filter(course__staff_group__user=request.user)
-        
-        return super().formfield_for_foreignkey(db_field, request, **kwargs)
     
     def get_queryset(self, request):
         return CourseMediaAccess.media_access_list(request, self.model)
     
-    def has_change_permission(self, request, obj=None):        
-        if request.user.is_superuser:
+    def has_change_permission(self, request, obj=None):
+        if obj is None:
             return True
+        return determine_media_access(request.user, obj)
         
-        if request.user.is_staff:
-            if obj:
-                return self._match_groups(request.user, obj)
-            else:            
-                return True
-        else:
-            return False            
-        
-    def has_delete_permission(self, request, obj=None):        
-        if request.user.is_superuser:
+    def has_delete_permission(self, request, obj=None):
+        if obj is None:
             return True
-        
-        if request.user.is_staff:
-            if obj:
-                return self._match_groups(request.user, obj)
-            else:            
-                return True
-        else:
-            return False            
+        return determine_media_access(request.user, obj)
 
     def _match_groups(self, user, obj):
+        
         user_groups = user.groups.get_queryset()
-        return user in obj.courseinstance.course.staff_group.user_set.get_queryset()
+        if obj.coursemedialink_set.get_queryset().filter(instance__course__staff_group__in=user_groups).distinct():
+            return True
+        
+        return False
         
     
 
@@ -216,8 +223,13 @@ class UserProfileAdmin(UserAdmin):
 
 admin.site.register(User, UserProfileAdmin)
 
+class CopyingGroupAdmin(GroupAdmin):
+    save_as = True
+
+admin.site.register(Group, CopyingGroupAdmin)
+
 ## Feedback for user answers
-admin.site.register(Evaluation)
+#admin.site.register(Evaluation)
 
 ## Exercise types
 # TODO: Create an abstract way to admin the different task types
@@ -240,20 +252,30 @@ class HintInline(TranslationTabularInline):
     extra = 0
     queryset = TranslationTabularInline.get_queryset
 
+
+class SoftDeleteFormSet(BaseInlineFormSet):
+    
+    def delete_existing(self, obj, commit=True):
+        if commit:
+            obj.exercise = None
+            obj.save()
+        
 class MultipleChoiceExerciseAnswerInline(TranslationTabularInline):
     model = MultipleChoiceExerciseAnswer
     extra = 1
+    formset = SoftDeleteFormSet 
 
 class MultipleChoiceExerciseAdmin(CourseContentAccess, TranslationAdmin, VersionAdmin):
     
     content_type = "MULTIPLE_CHOICE_EXERCISE"
+    form = ContentForm
     
     #def get_queryset(self, request):
     #    return self.model.objects.filter(content_type="MULTIPLE_CHOICE_EXERCISE")
 
     fieldsets = [
         ('Page information',   {'fields': ['name', 'slug', 'content', 'question', 'tags'],}),
-        ('Exercise miscellaneous', {'fields': ['default_points'],
+        ('Exercise miscellaneous', {'fields': ['default_points', 'evaluation_group'],
                                 'classes': ['wide']}),
         ('Feedback settings',  {'fields': ['feedback_questions']}),
     ]
@@ -264,20 +286,24 @@ class MultipleChoiceExerciseAdmin(CourseContentAccess, TranslationAdmin, Version
     list_per_page = 500
     save_on_top = True
 
+
+
 class CheckboxExerciseAnswerInline(TranslationTabularInline):
     model = CheckboxExerciseAnswer
     extra = 1
+    formset = SoftDeleteFormSet
 
 class CheckboxExerciseAdmin(CourseContentAccess, TranslationAdmin, VersionAdmin):
     
     content_type = "CHECKBOX_EXERCISE"
+    form = ContentForm
     
     #def get_queryset(self, request):
     #   return self.model.objects.filter(content_type="CHECKBOX_EXERCISE")
 
     fieldsets = [
         ('Page information',   {'fields': ['name', 'slug', 'content', 'question', 'tags']}),
-        ('Exercise miscellaneous', {'fields': ['default_points'],
+        ('Exercise miscellaneous', {'fields': ['default_points', 'evaluation_group'],
                                 'classes': ['wide']}),
         ('Feedback settings',  {'fields': ['feedback_questions']}),
     ]
@@ -288,20 +314,28 @@ class CheckboxExerciseAdmin(CourseContentAccess, TranslationAdmin, VersionAdmin)
     list_per_page = 500
     save_on_top = True
 
+
+
+
+
 class TextfieldExerciseAnswerInline(TranslationStackedInline):
     model = TextfieldExerciseAnswer
     extra = 1
+    form = TextfieldAnswerForm
+    
+    
 
 class TextfieldExerciseAdmin(CourseContentAccess, TranslationAdmin, VersionAdmin):
     
     content_type = "TEXTFIELD_EXERCISE"
+    form = ContentForm
     
     #def get_queryset(self, request):
     #    return self.model.objects.filter(content_type="TEXTFIELD_EXERCISE")
 
     fieldsets = [
         ('Page information',   {'fields': ['name', 'slug', 'content', 'question', 'tags']}),
-        ('Exercise miscellaneous', {'fields': ['default_points'],
+        ('Exercise miscellaneous', {'fields': ['default_points', 'evaluation_group'],
                                 'classes': ['wide']}),
         ('Feedback settings',  {'fields': ['feedback_questions']}),
     ]
@@ -325,7 +359,7 @@ class CodeReplaceExerciseAdmin(CourseContentAccess, TranslationAdmin, VersionAdm
 
     fieldsets = [
         ('Page information',   {'fields': ['name', 'slug', 'content', 'question', 'tags']}),
-        ('Exercise miscellaneous', {'fields': ['default_points'],
+        ('Exercise miscellaneous', {'fields': ['default_points', 'evaluation_group'],
                                 'classes': ['wide']}),
         ('Feedback settings',  {'fields': ['feedback_questions']}),
     ]
@@ -354,10 +388,11 @@ class RepeatedTemplateExerciseBackendCommandInline(TranslationStackedInline):
 class RepeatedTemplateExerciseAdmin(CourseContentAccess, TranslationAdmin, VersionAdmin):
 
     content_type = "REPEATED_TEMPLATE_EXERCISE"
+    form = ContentForm
 
     fieldsets = [
         ('Page information',   {'fields': ['name', 'slug', 'content', 'question', 'tags']}),
-        ('Exercise miscellaneous', {'fields': ['default_points'],
+        ('Exercise miscellaneous', {'fields': ['default_points', 'evaluation_group'],
                                 'classes': ['wide']}),
         ('Feedback settings',  {'fields': ['feedback_questions']}),
     ]
@@ -413,20 +448,27 @@ class FileExerciseTestExpectedStderrAdmin(admin.StackedInline):
 #class FileExerciseTestAdmin(admin.StackedInline):
 #    inlines = [FileExerciseTestCommandAdmin, FileExerciseTestExpectedOutputAdmin, FileExerciseTestExpectedErrorAdmin, FileExerciseTestIncludeFileAdmin]
 
+
 class LectureAdmin(CourseContentAccess, TranslationAdmin, VersionAdmin):
     
     content_type = "LECTURE"
+    form = ContentForm
+    fieldsets = [
+        ('Page information',    {'fields': ['name', 'content']}),
+        ('Feedback',            {'fields': ['feedback_questions']})
+    ]
     
     def formfield_for_dbfield(self, db_field, **kwargs):
         formfield = super(LectureAdmin, self).formfield_for_dbfield(db_field, **kwargs)
-        if db_field.name == 'content':
+        if db_field.name in ('content'):
             formfield.widget = Textarea(attrs={'rows':25, 'cols':120})
         elif db_field.name == 'tags':
             formfield.widget = Textarea(attrs={'rows':2})
         return formfield
 
-    def view_on_site(self, obj):
-        return reverse('courses:sandbox', kwargs={'content_slug': obj.slug})
+    # TODO: instanceless viewing doesn't work
+    #def view_on_site(self, obj):
+    #    return reverse('courses:sandbox', kwargs={'content_slug': obj.slug})
 
     search_fields = ("name",)
     readonly_fields = ("slug",)
@@ -438,6 +480,7 @@ class LectureAdmin(CourseContentAccess, TranslationAdmin, VersionAdmin):
 class FileUploadExerciseAdmin(CourseContentAccess, TranslationAdmin, VersionAdmin):
     
     content_type = "FILE_UPLOAD_EXERCISE"
+    form = ContentForm
     
     #def get_queryset(self, request):
     #    return self.model.objects.filter(content_type="FILE_UPLOAD_EXERCISE")
@@ -455,57 +498,41 @@ admin.site.register(Lecture, LectureAdmin)
 admin.site.register(MultipleChoiceExercise, MultipleChoiceExerciseAdmin)
 admin.site.register(CheckboxExercise, CheckboxExerciseAdmin)
 admin.site.register(TextfieldExercise, TextfieldExerciseAdmin)
-admin.site.register(CodeReplaceExercise, CodeReplaceExerciseAdmin)
+#admin.site.register(CodeReplaceExercise, CodeReplaceExerciseAdmin)
 admin.site.register(RepeatedTemplateExercise, RepeatedTemplateExerciseAdmin)
 
 admin.site.register(FileExerciseTestIncludeFile)
 admin.site.register(InstanceIncludeFile)
 admin.site.register(IncludeFileSettings)
 
-## Page embeddable objects
+    ## Page embeddable objects
 class CalendarDateAdmin(admin.StackedInline):
     model = CalendarDate
     extra = 1
+    #form = CalendarDateForm
 
 class CalendarAdmin(admin.ModelAdmin):
     inlines = [CalendarDateAdmin]
     search_fields = ("name",)
 
-class FileAdmin(CourseMediaAccess):
-    def save_model(self, request, obj, form, change):
-        if not change:
-            obj.owner = request.user
-        obj.save()
+
+class FileAdmin(CourseMediaAccess, TranslationAdmin, VersionAdmin):
 
     search_fields = ('name',)
-    readonly_fields = ('owner',)
     form = FileEditForm
     formfield_overrides = {
         models.FileField: {'widget': AdminFileWidget}
     }
-        
-    
-    
 
-class ImageAdmin(CourseMediaAccess):
-    def save_model(self, request, obj, form, change):
-        if not change:
-            obj.owner = request.user
-        obj.save()
+class ImageAdmin(CourseMediaAccess, TranslationAdmin, VersionAdmin):
 
     search_fields = ('name',)
-    readonly_fields = ('owner',)
     list_display = ('name', 'description',)
     list_per_page = 500
 
-class VideoLinkAdmin(CourseMediaAccess):
-    def save_model(self, request, obj, form, change):
-        if not change:
-            obj.owner = request.user
-        obj.save()
+class VideoLinkAdmin(CourseMediaAccess, TranslationAdmin, VersionAdmin):
 
     search_fields = ('name',)
-    readonly_fields = ('owner',)
     list_display = ('name', 'description',)
     list_per_page = 500
 
@@ -517,22 +544,64 @@ class TermLinkInline(TranslationTabularInline):
     model = TermLink
     extra = 0
     
+    
+
+        
 class TermAdmin(TranslationAdmin, VersionAdmin):
     search_fields = ('name',)
-    list_display = ('name', 'instance',)
-    list_filter = ('instance',)
+    list_display = ('name', 'course',)
+    list_filter = ('course',)
     list_per_page = 500
     ordering = ('name',)
 
     inlines = [TermTabInline, TermLinkInline]
 
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        
+        if request.user.is_superuser:
+            return qs
+        
+        edited = Version.objects.get_for_model(Term).filter(revision__user=request.user).values_list("object_id", flat=True)
+        
+        return qs.filter(
+            Q(id__in=list(edited)) |
+            Q(course__staff_group__user=request.user)
+        ).distinct()
+
+    def has_change_permission(self, request, obj=None):
+        if request.user.is_superuser:
+            return True
+        elif request.user.is_staff:
+            if obj:
+                return Version.objects.get_for_object(obj).filter(revision__user=request.user).exists() or request.user in obj.course.staff_group.user_set.get_queryset()
+            else:
+                return True
+        else:
+            return False
+        
+    def has_delete_permission(self, request, obj=None):
+        if request.user.is_superuser:
+            return True
+        elif request.user.is_staff:
+            if obj:
+                return Version.objects.get_for_object(obj).filter(revision__user=request.user).exists() or request.user in obj.course.staff_group.user_set.get_queryset()
+            else:
+                return True
+        else:
+            return False
+
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)
-        instance_slug = obj.instance.slug
         lang_list = django.conf.settings.LANGUAGES
-        for lang, _ in lang_list:
-            cache.set('termbank_contents_{instance}_{lang}'.format(instance=instance_slug, lang=lang), None)
-            cache.set('termbank_div_data_{instance}_{lang}'.format(instance=instance_slug, lang=lang), None)
+        for instance in CourseInstance.objects.filter(course=obj.course):       
+            instance_slug = instance.slug
+            for lang, _ in lang_list:
+                cache.set('termbank_contents_{instance}_{lang}'.format(instance=instance_slug, lang=lang), None)
+                cache.set('termbank_div_data_{instance}_{lang}'.format(instance=instance_slug, lang=lang), None)
+                
+        
+        
 
 admin.site.register(Calendar, CalendarAdmin)
 admin.site.register(File, FileAdmin)
@@ -544,12 +613,14 @@ admin.site.register(Term, TermAdmin)
 ## Course related administration
 class ContentGraphAdmin(admin.ModelAdmin):
     
-    search_fields = ('content',)
-    list_display = ('ordinal_number', 'content', 'get_instances',)
+    search_fields = ('content__name',)
+    list_display = ('ordinal_number', 'content', 'instance',)
     list_display_links = ('content',)
-    list_filter = ('courseinstance',)
+    list_filter = ('instance',)
     list_per_page = 500
-    ordering = ('courseinstance', 'ordinal_number',)
+    ordering = ('instance', 'ordinal_number',)
+    
+    fields = ('parentnode', 'content', 'deadline', 'scored', 'ordinal_number', 'visible')
     
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         """
@@ -615,6 +686,19 @@ class CourseAdmin(TranslationAdmin, VersionAdmin):
 
 admin.site.register(Course, CourseAdmin)
 
+class ContentGraphInline(admin.TabularInline):
+    model = ContentGraph
+    extra = 0
+    fields = ('parentnode', 'content', 'deadline', 'scored', 'ordinal_number', 'visible', 'revision')
+    readonly_fields = ('revision', )
+    ordering = ("ordinal_number", )
+    
+    def get_formset(self, request, obj=None, **kwargs):
+        formset = super().get_formset(request, obj)
+        formset.form.base_fields["parentnode"].queryset = kwargs["accessible_graphs"]
+        formset.form.base_fields["content"].queryset = kwargs["accessible_pages"]
+        return formset
+
 class CourseInstanceAdmin(TranslationAdmin, VersionAdmin):
     """
     NOTE: Only the user designated as main responsible for a course is 
@@ -624,12 +708,17 @@ class CourseInstanceAdmin(TranslationAdmin, VersionAdmin):
     
     fieldsets = [
         (None,                {'fields': ['name', 'email', 'course', 'frontpage']}),
-        ('Schedule settings', {'fields': ['start_date', 'end_date', 'active',]}),
+        ('Schedule settings', {'fields': ['start_date', 'end_date', 'active', 'visible', 'primary']}),
         ('Enrollment',        {'fields': ['manual_accept']}),
-        ('Instance outline',  {'fields': ['contents',]}),
+        ('Content license',   {'fields': ['content_license', 'license_url']}),
+        ('Instance outline',  {'fields': ['frozen']}),
     ]
     search_fields = ('name',)
     list_display = ('name', 'course')
+    save_as = True
+    form = InstanceForm
+
+    inlines = [ContentGraphInline]
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         """
@@ -640,29 +729,54 @@ class CourseInstanceAdmin(TranslationAdmin, VersionAdmin):
             if not request.user.is_superuser:
                 kwargs['queryset'] = Course.objects.filter(main_responsible=request.user)
             
-        return super().formfield_for_foreignkey(db_field, request, **kwargs)                                                
-        
-    
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
     def formfield_for_manytomany(self, db_field, request, **kwargs):
         """
         Only show content graphs that contain content that is in the editor's
         access chain.
         """
-        
+
         if db_field.name == 'contents':           
             content_access = CourseContentAccess.content_access_list(request, ContentPage)
             kwargs['queryset'] = ContentGraph.objects.filter(content__in=content_access)
-            
+
         return super().formfield_for_manytomany(db_field, request, **kwargs)
-    
+
+
+    # TODO: parent node selection with a custom widget that uses content pages
+    # TODO: prefetch querysets somehow to reduce database hits
+    def get_formsets_with_inlines(self, request, obj=None):
+        """
+        Limits the selectors inside inlines to content pages that are in the editor's
+        access chain. Also limits parent node selector to nodes that belong to the same
+        instance. Contains a minor hack that ignores the latter restriction when the
+        object is new. 
+        """
+
+        content_access = CourseContentAccess.content_access_list(request, ContentPage)
+        extra_kw = {
+            "accessible_pages": content_access,
+        }
+
+        if obj == None:
+            extra_kw["accessible_graphs"] = ContentGraph.objects.filter(content__in=content_access)
+        else:
+            extra_kw["accessible_graphs"] = ContentGraph.objects.filter(content__in=content_access, instance=obj)
+
+        for inline in self.get_inline_instances(request, obj):
+            if isinstance(inline, ContentGraphInline):
+                yield inline.get_formset(request, obj, **extra_kw), inline
+            else:
+                yield inline.get_formset(request, obj), inline
+
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        
         if request.user.is_superuser:
             return qs
-        
+
         return qs.filter(course__main_responsible=request.user)
-        
+
     def has_change_permission(self, request, obj=None):
         if request.user.is_superuser:
             return True
@@ -673,7 +787,7 @@ class CourseInstanceAdmin(TranslationAdmin, VersionAdmin):
                 return True
         else:
             return False
-        
+
     def has_delete_permission(self, request, obj=None):
         if request.user.is_superuser:
             return True
@@ -684,36 +798,67 @@ class CourseInstanceAdmin(TranslationAdmin, VersionAdmin):
                 return True
         else:
             return False
-        
+
     def save_model(self, request, obj, form, change):
+        self._new = False
+        if obj.pk == None:
+            self._new = True
+
         super().save_model(request, obj, form, change)
-        
-        context = {
-            'course': obj.course,
-            'course_slug': obj.course.slug,
-            'instance': obj,
-            'instance_slug': obj.slug,
-        }
-        
-        for cg in obj.contents.all():
-            cg.content.rendered_markup(request, context)
-            
+
+        if self._new:
+            instance_files = InstanceIncludeFile.objects.filter(course=obj.course)
+            for ifile in instance_files:
+                link = InstanceIncludeFileToInstanceLink(
+                    revision=None,
+                    include_file=ifile,
+                    instance=obj
+                )
+                link.save()
+
+            terms = Term.objects.filter(course=obj.course)
+            for term in terms:
+                link = TermToInstanceLink(
+                    revision=None,
+                    term=term,
+                    instance=obj
+                )
+                link.save()
+
         self.current = obj
-        transaction.on_commit(self.set_frontpage_cg)
-            
+        transaction.on_commit(self.finish_cg)
+
     # the horror
-    def set_frontpage_cg(self): 
+    def finish_cg(self): 
         obj = self.current
         if obj.frontpage:
-            fp_node = ContentGraph.objects.filter(courseinstance=obj.id, ordinal_number=0).first()
-            if fp_node:
+            fp_node = ContentGraph.objects.filter(instance=obj, ordinal_number=0).first()
+            if fp_node and not self._new:
                 fp_node.content = obj.frontpage
                 fp_node.save()
             else:
-                fp_node = obj.contents.create(
+                if fp_node:
+                    fp_node.delete()
+                fp_node = ContentGraph(
                     content=obj.frontpage,
+                    instance=obj,
                     scored=False,
                     ordinal_number=0
                 )
+                fp_node.save()
+
+        if self._new:
+            children = ContentGraph.objects.filter(instance=obj).exclude(parentnode=None)
+            for child in children:
+                real_parent = ContentGraph.objects.get(content=child.parentnode.content, instance=obj)
+                child.parentnode = real_parent
+                child.save()
+
+        if not obj._was_frozen and obj.frozen:
+            obj._was_frozen = True
+            obj.freeze()
+        else:
+            for cg in ContentGraph.objects.filter(instance=obj):
+                cg.content.update_embedded_links(obj, cg.revision)
             
 admin.site.register(CourseInstance, CourseInstanceAdmin)

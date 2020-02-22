@@ -1,0 +1,50 @@
+{% extends 'courses/base.html' %}
+{% load staticfiles %}
+{% load i18n %}
+{% load course_tags %}
+
+{% block page-title %}{% blocktrans with instance=instance.name %}
+  Completion statistics of {{ instance }}
+{% endblocktrans %}{% endblock %}
+
+{% block extra-static %}
+  <script src="{% static 'teacher_tools/completion.js' %}"></script>
+{% endblock %}
+
+{% block breadcrumb-links %}
+  <li><a href="{% url 'courses:index' %}">{% trans 'Courses' %}</a></li>
+  <div class="separator">»</div>
+  <li><a href="{% url 'courses:course' course instance %}">{{ course.name }}&nbsp;/&nbsp;{{ instance.name }}</a></li>
+{% endblock %}
+
+{% block page-content %}
+
+  <h1>
+    {% blocktrans with instance=instance.name %}
+      Completion statistics of {{ instance }}
+    {% endblocktrans %}
+  </h1>
+
+  <div class="paragraph">{% trans 'Statistics can be requested as downloadable CSV using the link below' %}</div>
+  
+  <div class="csv-request">
+    <a href="{% url 'teacher_tools:completion_csv' course instance %}" onclick="request_csv(event, this)">
+      {% trans 'Generate CSV' %}
+    </a>
+  </div>
+  
+  <div class="task-progress"></div>
+  
+  <div class="csv-download"></div>
+  
+  <div class="paragraph">{% trans 'Detailed student results can be accessed from below' %}</div>
+  
+  <ul class="student-list">
+    {% for user in users %}
+      <li class="student-bullet"><a href="{% url 'teacher_tools:student_completion' course instance user %}">{{ user.last_name }} {{ user.first_name }} ({{ user.username }})</a></li>
+    {% endfor %}
+  </ul>
+{% endblock %}
+  
+    
+

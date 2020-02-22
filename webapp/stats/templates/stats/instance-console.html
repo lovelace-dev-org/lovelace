@@ -1,0 +1,78 @@
+{% extends 'courses/base.html' %}
+{% load staticfiles %}
+{% load i18n %}
+{% load course_tags %}
+
+{% block page-title %}{% blocktrans with instance=instance.name %}
+  {{ instance }} statistics
+{% endblocktrans %}{% endblock %}
+
+{% block extra-static %}
+  <script src="{% static 'stats/script.js' %}"></script>
+{% endblock %}
+
+{% block breadcrumb-links %}
+  <li><a href="{% url 'courses:index' %}">{% trans 'Courses' %}</a></li>
+  <div class="separator">»</div>
+  <li><a href="{% url 'courses:course' course instance %}">{{ course.name }}&nbsp;/&nbsp;{{ instance.name }}</a></li>
+{% endblock %}
+
+{% block page-content %}
+
+  <h1>
+    {% blocktrans with instance=instance.name %}
+      Statistics Console of {{ instance }}
+    {% endblocktrans %}
+  </h1>
+
+  <div class="stat-meta">
+    <div class="stat-status paragraph">{{ stat_status }}</div>
+    <div class="stat-request">
+      <a href="{% url 'stats:generate_instance_stats' course instance %}" onclick="request_stats(event, this)">
+        {% trans 'Generate Stats' %}
+      </a>
+    </div>
+  </div>
+  
+  <div class="task-summary">
+    <table class="stat-console-table">
+      <colgroup>
+        <col>
+        <col span="3" class="col-raw-numbers">
+        <col span="3" class="col-correct_by">
+        <col span="2" class="col-tries">
+        <col span="2" class="col-time">
+      </colgroup>
+      <tr>
+        <th scope="col">{% trans 'task' %}</th>
+        <th scope="col">{% trans 'answers' %}</th>
+        <th scope="col">{% trans 'tries' %}</th>
+        <th scope="col">{% trans 'users' %}</th>
+        <th scope="col">{% trans 'done' %}</th>
+        <th scope="col">{% trans 'by DL' %}</th>
+        <th scope="col">{% trans 'late' %}</th>
+        <th scope="col">{% trans 'tries avg' %}</th>
+        <th scope="col">{% trans 'tries med' %}</th>
+        <th scope="col">{% trans 'time avg' %}</th>
+        <th scope="col">{% trans 'time med' %}</th>
+      </tr>
+      {% for record in task_summary %}
+        <tr>
+          <td>{{ record.task.name }}</td>
+          <td>{{ record.total_answers }}</td>
+          <td>{{ record.total_tries }}</td>
+          <td>{{ record.total_users }}</td>
+          <td>{{ record.correct_by_total }}</td>
+          <td>{{ record.correct_by_before_dl }}</td>
+          <td>{{ record.correct_by_after_dl }}</td>
+          <td>{{ record.tries_avg }}</td>
+          <td>{{ record.tries_median }}</td>
+          <td>{{ record.get_time_avg }}</td>
+          <td>{{ record.get_time_median }}</td>
+        </tr>
+      {% endfor %}
+    </table>
+  </div>
+  
+{% endblock %}
+  

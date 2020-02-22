@@ -2,6 +2,7 @@
 
 {% load feedback_tags %}
 {% load staticfiles %}
+{% load i18n %}
 
 {% block extra-static %}
   <link rel="stylesheet" href="{% static 'stats/style.css' %}">
@@ -15,7 +16,21 @@
 {% block breadcrumb-links %}
   <li><a href="{% url 'courses:index' %}">{% trans 'Courses' %}</a></li>
   <div class="separator">»</div>
-  <li><a href="{% url 'courses:sandbox' content.slug %}">{{ content.name }}</a></li>
+  <li><a href="{% url 'courses:course' course instance %}">{{ course_name }}&nbsp;/&nbsp;{{ instance_name }}</a></li>
+  {% if single_linked and embedded %}
+    <div class="separator">»</div>
+    <li><a href="{% url 'courses:content' course instance parent %}">{{ parent.name }}</a></li>
+    <div class="separator">»</div>
+    <li><a href="{% url 'courses:content' course instance parent %}#{{ anchor }}">{{ content.name }}</a></li>
+  {% elif not embedded %}
+    <div class="separator">»</div>
+    <li><a href="{% url 'courses:content' course instance content %}">{{ content.name }}</a></li>
+  {% else %}
+    <div class="separator">»</div>
+    <li>{{ content.name }}</li>
+  {% endif %}
+  <div class="separator">»</div>
+  <li>{% trans 'Feedback' %}</li>
 {% endblock %}
 
 {% block page-content %}

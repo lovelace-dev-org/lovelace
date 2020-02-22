@@ -133,6 +133,8 @@ function build_toc(static_root_url) {
                 icon = static_root_url + "incorrect-16.png";
             else if (status == "unanswered")
                 icon = static_root_url + "unanswered-16.png";
+            else if (status == "credited")
+                icon = static_root_url + "credited-16.png";
             icon_img = $(document.createElement("img"));
             icon_img.attr("src", icon);
         }
@@ -148,13 +150,23 @@ function update_progress_bar() {
     var completed_elem = $('#completed-exercises');
     var total_elem = $('#total-exercises');
     var progress_elem = $('#exercises-progress');
+    
+    let grouped_tasks = $('div.task-meta[data-eval-group!=""]');
+    let group_names = new Set();
+    grouped_tasks.each(function () { group_names.add($(this).attr("data-eval-group")) });
+    let correct_groups = 0;
+    group_names.forEach(function (name) {
+        if ($('div.task-meta[data-eval-group="' + name +'"] img.correct').length > 0) {
+            correct_groups++;
+        }
+    });
 
-    var correct = $('img.correct').length;
-    var incorrect = $('img.incorrect').length;
-    var unanswered = $('img.unanswered').length;
+    var correct_other = $('div.task-meta[data-eval-group=""] img.correct').length;
+    var incorrect_other = $('div.task-meta[data-eval-group=""] img.incorrect').length;
+    var unanswered_other = $('div.task-meta[data-eval-group=""] img.unanswered').length;
 
-    var completed = correct;
-    var total = correct + incorrect + unanswered;
+    var completed = correct_other + correct_groups;
+    var total = group_names.size + correct_other + incorrect_other + unanswered_other;
 
     completed_elem.html(completed);
     total_elem.html(total);
@@ -303,6 +315,11 @@ function show_popup(e, popup_id) {
     popup.css({"opacity":"1", "pointer-events":"auto", "overflow": "scroll"});        
 }    
 
+function show_collapsed() {
+    $(".collapsed").removeClass("collapsed");
+}
+    
+
 function submit_enrollment(event) {
     event.preventDefault();
     
@@ -328,6 +345,30 @@ function submit_enrollment(event) {
     });
 }
 
+function withdraw_enrollment(event) {
+    event.preventDefault();
+
+    let form = $(this);
+    let info = form.prev();
+    let url = form.attr('action');
+
+    $.ajax({
+        type: form.attr('method'),
+        url: url,
+        data: new FormData(form[0]),
+        processData: false,
+        contentType: false,
+        dataType: 'json',
+        success: function(data, status, jqxhr) {
+            info.html(data.message);
+            form.children("input[type=submit]").attr('disabled', true);
+        },
+        error: function(jqxhr, status, type) {
+            console.log(jqxhr.responseText);
+        }
+    });
+}
+
 $(document).ready(function() {
     $('.popup').click(function() {
         $(this).css({"opacity":"0", "pointer-events":"none"});
@@ -339,6 +380,7 @@ $(document).ready(function() {
         event.stopPropagation();
     });    
     
-    $('.enroll-form').submit(submit_enrollment) 
+    $('.enroll-form').submit(submit_enrollment);
+    $('.withdraw-form').submit(withdraw_enrollment);
 });
 

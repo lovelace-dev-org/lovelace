@@ -2,27 +2,29 @@
 # TODO: Refactor into multiple apps
 # TODO: Serious effort to normalize the db!
 # TODO: Profile the app and add relevant indexes!
-# TODO: Add on_delete to ForeignKeys to comply with Django 2.0 requirements.
 
 import datetime
 import itertools
 import operator
 import re
 import os
+from fnmatch import fnmatch
 
 from django.conf import settings
 from django.db import models
 from django.db.models import Q, Max
 from django.contrib.auth.models import User, Group
 from django.db.models.signals import post_save
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.core.files.storage import FileSystemStorage
+from django.core.exceptions import ValidationError
 from django.utils import translation
 from django.utils.text import slugify
 from django.contrib.postgres.fields import ArrayField, JSONField
 import django.conf
 
 from reversion import revisions as reversion
+from reversion.models import Version
 
 import pygments
 import magic
@@ -33,10 +35,8 @@ import courses.tasks as rpc_tasks
 import feedback.models
 
 import courses.markupparser as markupparser
-
-PRIVATE_UPLOAD = getattr(settings, "PRIVATE_STORAGE_FS_PATH", settings.MEDIA_ROOT)
-
-upload_storage = FileSystemStorage(location=PRIVATE_UPLOAD)
+import courses.blockparser as blockparser
+from utils.files import *
 
 # TODO: Extend the registration system to allow users to enter the profile data!
 # TODO: Separate profiles for students and teachers
@@ -45,7 +45,7 @@ class UserProfile(models.Model):
     # For more information, see:
     # https://docs.djangoproject.com/en/dev/topics/auth/#storing-additional-information-about-users
     # http://stackoverflow.com/questions/44109/extending-the-user-model-with-custom-fields-in-django
-    user = models.OneToOneField(User)
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
     
     student_id = models.IntegerField(verbose_name='Student number', blank=True, null=True)
     study_program = models.CharField(verbose_name='Study program', max_length=80, blank=True, null=True)
@@ -75,7 +75,8 @@ post_save.connect(create_user_profile, sender=User, dispatch_uid="create_user_pr
 
 # TODO: Abstract the exercise model to allow "an answering entity" to give the answer, be it a group or a student
 
-@reversion.register()
+
+#@reversion.register()
 class Course(models.Model):
     """
     Describes the metadata for a course.
@@ -95,8 +96,8 @@ class Course(models.Model):
     prerequisites = models.ManyToManyField('Course',
                                            verbose_name="Prerequisite courses",
                                            blank=True)
-    staff_group = models.ForeignKey(Group)
-    main_responsible = models.ForeignKey(User)
+    staff_group = models.ForeignKey(Group, null=True, on_delete=models.SET_NULL)
+    main_responsible = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
 
     # TODO: Create an instance automatically, if none exists
 
@@ -122,8 +123,8 @@ class Course(models.Model):
         return self.name
 
 class CourseEnrollment(models.Model):
-    instance = models.ForeignKey('CourseInstance')
-    student = models.ForeignKey(User)
+    instance = models.ForeignKey('CourseInstance', on_delete=models.CASCADE)
+    student = models.ForeignKey(User, on_delete=models.CASCADE)
 
     enrollment_date = models.DateTimeField(auto_now_add=True)
     application_note = models.TextField(blank=True) # The student can write an application
@@ -133,6 +134,8 @@ class CourseEnrollment(models.Model):
         ('ACCEPTED', 'Accepted'),
         ('EXPELLED', 'Expelled'),
         ('DENIED', 'Denied'),
+        ('WITHDRAWN', 'Withdrawn'),
+        ('COMPLETED', 'Completed')
     )
     enrollment_state = models.CharField(max_length=11, default='WAITING',
                                         choices=ENROLLMENT_STATE_CHOICES)
@@ -141,16 +144,16 @@ class CourseEnrollment(models.Model):
     def is_enrolled(self):
         return True if self.enrollment_state == 'ACCEPTED' else False
 
-@reversion.register()
+#@reversion.register()
 class CourseInstance(models.Model):
     """
     A running instance of a course. Contains details about the start and end
     dates of the course.
     """
-    name = models.CharField(max_length=255) # Translate
+    name = models.CharField(max_length=255, unique=True) # Translate
     email = models.EmailField(blank=True)   # Translate
     slug = models.SlugField(max_length=255, allow_unicode=True, blank=False)
-    course = models.ForeignKey('Course')
+    course = models.ForeignKey('Course', on_delete=models.CASCADE)
     
     start_date = models.DateTimeField(verbose_name='Date and time on which the course begins',blank=True,null=True)
     end_date = models.DateTimeField(verbose_name='Date and time on which the course ends',blank=True,null=True)
@@ -163,30 +166,82 @@ class CourseInstance(models.Model):
     manual_accept = models.BooleanField(verbose_name='Teachers accept enrollments manually',
                                         default=False)
     
-    frontpage = models.ForeignKey('Lecture', blank=True, null=True) # TODO: Create one automatically!
-    contents = models.ManyToManyField('ContentGraph', blank=True)   # TODO: Rethink the content graph system!
+    frontpage = models.ForeignKey('Lecture', blank=True, null=True, on_delete=models.SET_NULL) # TODO: Create one automatically!
+    # contents = models.ManyToManyField('ContentGraph', blank=True)   # TODO: Rethink the content graph system!
+    frozen = models.BooleanField(verbose_name="Freeze this instance", default=False)
+    visible = models.BooleanField(verbose_name="Is this course visible to students", default=True)
+    content_license = models.CharField(max_length=255, blank=True)
+    license_url = models.CharField(max_length=255, blank=True)
+    primary = models.BooleanField(verbose_name="Set this instance as primary.", default=False)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._was_frozen = self.frozen
 
     def get_url_name(self):
         """Creates a URL and HTML5 ID field friendly version of the name."""
         # TODO: Ensure uniqueness! I.e. what happens when there's a clash
         # between two slugs (e.g. two courses named "programming course" and
         # "Programming_Course").
-        return slugify(self.name, allow_unicode=True)
+        # NOTE: Currently ensured by making name unique
+        default_lang = django.conf.settings.LANGUAGE_CODE
+        return slugify(getattr(self, "name_{}".format(default_lang)), allow_unicode=True)
 
     def user_enroll_status(self, user):
         if not user.is_active: return None
         try:
-            return self.courseenrollment_set.get(student=user).enrollment_state
+            status = self.courseenrollment_set.get(student=user).enrollment_state
+            return status
         except CourseEnrollment.DoesNotExist as e:
             return None
 
     def save(self, *args, **kwargs):
-        if not self.slug:
-            self.slug = self.get_url_name()
-        else:
-            self.slug = slugify(self.slug, allow_unicode=True)
-
+        #if not self.slug:
+        self.slug = self.get_url_name()
+        #else:
+        #self.slug = slugify(self.slug, allow_unicode=True)
+        
+        #super(CourseInstance, self).save(*args, **kwargs)
         super(CourseInstance, self).save(*args, **kwargs)
+        
+        if self.primary:
+            for instance in CourseInstance.objects.filter(course=self.course).exclude(pk=self.pk):
+                instance.primary = False
+                instance.save()
+    
+    def freeze(self, freeze_to=None):
+        """
+        Freezes the course instance by creating copies of content graph links
+        and setting their revision to latest version that predates freeze_to 
+        (latest version if it is None). Embedded links and instance file links
+        are also updated in a similar way.
+        """
+        # NOTE: freeze_to is not used yet
+
+        contents = ContentGraph.objects.filter(instance=self)
+
+        for content_link in contents:
+            content_link.freeze(freeze_to)
+            content_link.content.update_embedded_links(self, content_link.revision)
+
+        embedded_links = EmbeddedLink.objects.filter(instance=self)
+        for link in embedded_links:
+            link.freeze(freeze_to)
+
+        media_links = CourseMediaLink.objects.filter(instance=self)
+        for link in media_links:
+            link.freeze(freeze_to)
+
+            ifile_links = InstanceIncludeFileToInstanceLink.objects.filter(instance=self)
+
+        for link in ifile_links:
+            link.freeze(freeze_to)
+
+        term_links = TermToInstanceLink.objects.filter(instance=self)
+        for link in term_links:
+            link.freeze(freeze_to)
+
+        self.frozen = True
     
     def __str__(self):
         return self.name
@@ -203,8 +258,9 @@ class ContentGraph(models.Model):
     # TODO: Rethink the content graph system! Maybe directed graph is the best choice...
     # TODO: Take embedded content into account! (Maybe: automatically make content nodes from embedded content)
     # TODO: "Allow answering after deadline has passed" flag.
-    parentnode = models.ForeignKey('self', null=True, blank=True)
-    content = models.ForeignKey('ContentPage', null=True, blank=True)
+    parentnode = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL)
+    content = models.ForeignKey('ContentPage', null=True, blank=True, on_delete=models.SET_NULL)
+    instance = models.ForeignKey('CourseInstance', null=False, blank=False, on_delete=models.CASCADE)
     responsible = models.ManyToManyField(User, blank=True)
     compulsory = models.BooleanField(verbose_name='Must be answered correctly before proceeding to next exercise', default=False)
     deadline = models.DateTimeField(verbose_name='The due date for completing this exercise',blank=True,null=True)
@@ -218,6 +274,20 @@ class ContentGraph(models.Model):
     def get_revision_str(self):
         return "rev. {}".format(self.revision) if self.revision is not None else "newest"
     
+    def freeze(self, freeze_to=None):
+        if self.revision is None:
+            latest = Version.objects.get_for_object(self.content).latest("revision__date_created")
+            self.revision = latest.revision_id
+            
+        self.save()
+    
+    # not needed anymore
+    def set_frozen_parents(self, linked_contents):
+        if self.parentnode is not None:
+            frozen_parent = linked_contents.get(content=self.parentnode.content)
+            self.parentnode = frozen_parent 
+            self.save()
+    
     def __str__(self):
         if not self.content:
             return "No linked content yet"
@@ -228,33 +298,54 @@ class ContentGraph(models.Model):
         verbose_name_plural = "content to course links"
         #ordering = ('ordinal_number',)
 
-def get_file_upload_path(instance, filename):
-    return os.path.join("files", "%s" % (filename))
+#@reversion.register()
+class CourseMedia(models.Model):
+    """
+    Top level model for embedded media.
+    """
+    
 
-class File(models.Model):
+    name = models.CharField(verbose_name='Name for reference in content',max_length=200,unique=True)
+
+
+class CourseMediaLink(models.Model):
+    """
+    Context model for embedded media.
+    """
+    
+    media = models.ForeignKey(CourseMedia, on_delete=models.CASCADE)
+    parent = models.ForeignKey("ContentPage", on_delete=models.CASCADE, null=True)
+    instance = models.ForeignKey(CourseInstance, verbose_name="Course instance", on_delete=models.CASCADE)
+    revision = models.PositiveIntegerField(verbose_name="Revision to display", blank=True, null=True)
+    
+    
+    class Meta:
+        unique_together = ("instance", "media", "parent")
+        
+    def freeze(self, freeze_to=None):
+        if self.revision is None:
+            latest = Version.objects.get_for_object(self.media).latest("revision__date_created")
+            self.revision = latest.revision_id
+            self.save()
+
+#@reversion.register(follow=["coursemedia_ptr"])
+class File(CourseMedia):
     """Metadata of an embedded or attached file that an admin has uploaded."""
     # TODO: Make the uploading user the default and don't allow it to change
     # TODO: Slug and file name separately
-    courseinstance = models.ForeignKey(CourseInstance, verbose_name="Course instance")
-    owner = models.ForeignKey(User, null=True, blank=True, verbose_name="Uploader") # Translate
-    name = models.CharField(verbose_name='Name for reference in content',max_length=200,unique=True)
     date_uploaded = models.DateTimeField(verbose_name='date uploaded', auto_now_add=True)
     typeinfo = models.CharField(max_length=200)
-    fileinfo = models.FileField(max_length=255, upload_to=get_file_upload_path, storage=upload_storage) # Translate
+    fileinfo = models.FileField(max_length=255, upload_to=get_file_upload_path) # Translate
     download_as = models.CharField(verbose_name='Default name for the download dialog', max_length=200, null=True, blank=True)
 
     def __str__(self):
         return self.name
 
-def get_image_upload_path(instance, filename):
-    return os.path.join("images", "%s" % (filename))
 
-class Image(models.Model):
+#@reversion.register(follow=["coursemedia_ptr"])
+class Image(CourseMedia):
     """Image"""
     # TODO: Make the uploading user the default and don't allow it to change
-    courseinstance = models.ForeignKey(CourseInstance, verbose_name="Course instance")
-    owner = models.ForeignKey(User, null=True, blank=True, verbose_name="Uploader") # Translate
-    name = models.CharField(verbose_name='Name for reference in content', max_length=200, unique=True)
     date_uploaded = models.DateTimeField(verbose_name='date uploaded', auto_now_add=True)
     description = models.CharField(max_length=500) # Translate
     fileinfo = models.ImageField(upload_to=get_image_upload_path) # Translate
@@ -262,21 +353,38 @@ class Image(models.Model):
     def __str__(self):
         return self.name
 
-class VideoLink(models.Model):
+#@reversion.register(follow=["coursemedia_ptr"])
+class VideoLink(CourseMedia):
     """Youtube link for embedded videos"""
     # TODO: Make the adding user the default and don't allow it to change
-    courseinstance = models.ForeignKey(CourseInstance, verbose_name="Course instance")
-    owner = models.ForeignKey(User, null=True, blank=True, verbose_name="Added by") # Translate
-    name = models.CharField(verbose_name='Name for reference in content', max_length=200, unique=True)
     link = models.URLField() # Translate
     description = models.CharField(max_length=500) # Translate
 
     def __str__(self):
         return self.name
 
-@reversion.register(follow=["termtab_set", "termlink_set"])
+class TermToInstanceLink(models.Model):
+    
+    term = models.ForeignKey("Term", on_delete=models.CASCADE)
+    instance = models.ForeignKey(CourseInstance, verbose_name="Course instance", on_delete=models.CASCADE)
+    revision = models.PositiveIntegerField(verbose_name="Revision to display", blank=True, null=True)
+    
+    
+    class Meta:
+        unique_together = ("instance", "term")
+        
+    def freeze(self, freeze_to=None):
+        if self.revision is None:
+            latest = Version.objects.get_for_object(self.term).latest("revision__date_created")
+            self.revision = latest.revision_id
+            self.save()
+    
+    
+    
+
+#@reversion.register(follow=["termtab_set", "termlink_set"])
 class Term(models.Model):
-    instance = models.ForeignKey(CourseInstance, verbose_name="Course instance")
+    course = models.ForeignKey(Course, verbose_name="Course", null=True, on_delete=models.SET_NULL)
     name = models.CharField(verbose_name='Term', max_length=200) # Translate
     description = models.TextField() # Translate
     aliases = ArrayField(
@@ -293,22 +401,33 @@ class Term(models.Model):
     
     def __str__(self):
         return self.name
+    
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        for instance in CourseInstance.objects.filter(course=self.course, frozen=False):
+            if not TermToInstanceLink.objects.filter(instance=instance, term=self):
+                link = TermToInstanceLink(
+                    instance=instance,
+                    revision=None,
+                    term=self
+                )
+                link.save()
 
     class Meta:
-        unique_together = ('instance', 'name',)
+        unique_together = ('course', 'name',)
 
-@reversion.register()
+#@reversion.register()
 class TermTab(models.Model):
-    term = models.ForeignKey(Term)
+    term = models.ForeignKey(Term, on_delete=models.CASCADE)
     title = models.CharField(verbose_name="Title of this tab", max_length=100) # Translate
     description = models.TextField() # Translate
 
     def __str__(self):
         return self.title
 
-@reversion.register()
+#@reversion.register()
 class TermLink(models.Model):
-    term = models.ForeignKey(Term)
+    term = models.ForeignKey(Term, on_delete=models.CASCADE)
     url = models.CharField(verbose_name="URL", max_length=300) # Translate
     link_text = models.CharField(verbose_name="Link text", max_length=80) # Translate
 
@@ -316,13 +435,14 @@ class TermLink(models.Model):
 class Calendar(models.Model):
     """A multi purpose calendar for course events markups, time reservations etc."""
     name = models.CharField(verbose_name='Name for reference in content', max_length=200, unique=True)
+    allow_multiple = models.BooleanField(verbose_name='Allow multiple reservation', default=False)
 
     def __str__(self):
         return self.name
 
 class CalendarDate(models.Model):
     """A single date on a calendar."""
-    calendar = models.ForeignKey(Calendar)
+    calendar = models.ForeignKey(Calendar, on_delete=models.CASCADE)
     event_name = models.CharField(verbose_name='Name of the event', max_length=200) # Translate
     event_description = models.CharField(verbose_name='Description', max_length=200, blank=True, null=True) # Translate
     start_time = models.DateTimeField(verbose_name='Starts at')
@@ -335,25 +455,40 @@ class CalendarDate(models.Model):
     def get_users(self):
         return self.calendarreservation_set.all().values(
             'user__username', 'user__first_name',
-            'user__last_name', 'user__userprofile__student_id',
+            'user__last_name', 'user__userprofile__student_id', 'user__email'
         )
+    
+    def duration(self):
+        return self.end_time - self.start_time
+
 
 class CalendarReservation(models.Model):
     """A single user-made reservation on a calendar date."""
-    calendar_date = models.ForeignKey(CalendarDate)
-    user = models.ForeignKey(User)
+    calendar_date = models.ForeignKey(CalendarDate, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+
 
 class EmbeddedLink(models.Model):
-    parent = models.ForeignKey('ContentPage', related_name='emb_parent')
-    embedded_page = models.ForeignKey('ContentPage', related_name='emb_embedded')
-    revision = models.PositiveIntegerField()
+    parent = models.ForeignKey('ContentPage', related_name='emb_parent', on_delete=models.CASCADE)
+    embedded_page = models.ForeignKey('ContentPage', related_name='emb_embedded', on_delete=models.CASCADE)
+    revision = models.PositiveIntegerField(blank=True, null=True)
     ordinal_number = models.PositiveSmallIntegerField()
+    instance = models.ForeignKey('CourseInstance', on_delete=models.CASCADE)
 
     class Meta:
         ordering = ['ordinal_number']
+        
+    def freeze(self, freeze_to=None):
+        if self.revision is None:
+            latest = Version.objects.get_for_object(self.embedded_page).latest("revision__date_created")
+            self.revision = latest.revision_id
+            self.save()
+
+
+
 
 ## Content management
-@reversion.register()
+#@reversion.register()
 class ContentPage(models.Model):
     """
     A single content containing page of a course.
@@ -373,6 +508,8 @@ class ContentPage(models.Model):
         blank=True
     )
     
+    evaluation_group = models.CharField(max_length=32, help_text="Evaluation group identifier, used for binding together mutually exclusive tasks.", blank=True)
+    
     CONTENT_TYPE_CHOICES = (
         ('LECTURE', 'Lecture'),
         ('TEXTFIELD_EXERCISE', 'Textfield exercise'),
@@ -386,7 +523,7 @@ class ContentPage(models.Model):
     content_type = models.CharField(max_length=28, default='LECTURE', choices=CONTENT_TYPE_CHOICES)
     embedded_pages = models.ManyToManyField('self', blank=True,
                                             through=EmbeddedLink, symmetrical=False,
-                                            through_fields=('parent', 'embedded_page'))
+                                            through_fields=('parent', 'embedded_page', 'instance'))
 
     feedback_questions = models.ManyToManyField(feedback.models.ContentFeedbackQuestion, blank=True)
 
@@ -399,6 +536,10 @@ class ContentPage(models.Model):
         default=list,
         blank=True
     )
+    
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)        
+        
 
     def rendered_markup(self, request=None, context=None, revision=None):
         """
@@ -406,39 +547,78 @@ class ContentPage(models.Model):
         HTML. If a rendered version already exists in the cache, use that
         instead.
         """
+        # NOTE: Has not worked with context=None for a while
+        # NOTE: Not working with request=None either
         # TODO: Cache
         # TODO: Separate caching depending on the language!
-        # TODO: Save the embedded pages as embedded content links
         # TODO: Take csrf protection into account; use cookies only
         #       - https://docs.djangoproject.com/en/1.7/ref/contrib/csrf/
         rendered = ""
         embedded_pages = []
 
+        if revision is None:
+            content = self.content
+        else:
+            version = Version.objects.get_for_object(self).get(revision_id=revision).field_dict
+            content = version["content"]
+
         # Render the page
-        markup_gen = markupparser.MarkupParser.parse(self.content, request, context, embedded_pages)
+        context["content_page"] = self
+        markup_gen = markupparser.MarkupParser.parse(content, request, context, embedded_pages)
         for chunk in markup_gen:
             rendered += chunk
 
-        # Update the embedded pages field if we are not rendering an old version.
-        # Important! If we save the object with its old version info, it will
-        # overwrite the current version!
-        # TODO: Refactor this to save.
-        if embedded_pages:
-            embedded_page_objs = ContentPage.objects.filter(slug__in=list(zip(*embedded_pages))[0])
-            self.embedded_pages.clear()
-            for i, (embedded_page, rev_id) in enumerate(embedded_pages):
-                if rev_id is None:
-                    rev_id = 1 # TODO: Get the current revision
-                page_obj = EmbeddedLink(
-                    parent=self,
-                    embedded_page=embedded_page_objs.get(slug=embedded_page),
-                    revision=rev_id,
-                    ordinal_number=i
-                )
-                page_obj.save()
-                self.save()
-
         return rendered
+    
+    def update_embedded_links(self, instance, revision=None):
+        """
+        Uses LinkMarkupParser to discover all embedded page links
+        within the page content and creates EmbeddedLink and CourseMediaLink 
+        objects based on links found in the markup.
+        """
+        
+        if revision is None:
+            content = self.content
+        else:
+            version = Version.objects.get_for_object(self).get(revision_id=revision).field_dict
+            content = version["content"]
+        
+        page_links, media_links = markupparser.LinkParser.parse(content, instance)
+        old_page_links = list(EmbeddedLink.objects.filter(instance=instance, parent=self).values_list("embedded_page__slug", flat=True))
+        old_media_links = list(CourseMediaLink.objects.filter(instance=instance, parent=self).values_list("media__name", flat=True))
+        
+        removed_page_links = set(old_page_links).difference(page_links)
+        removed_media_links = set(old_media_links).difference(media_links)
+        added_page_links = set(page_links).difference(old_page_links)
+        added_media_links = set(media_links).difference(old_media_links)
+    
+        EmbeddedLink.objects.filter(embedded_page__slug__in=removed_page_links, instance=instance, parent=self).delete()
+        CourseMediaLink.objects.filter(media__name__in=removed_media_links, instance=instance, parent=self).delete()
+        
+        for link_slug in added_page_links:
+            link_obj = EmbeddedLink(
+                parent=self,
+                embedded_page=ContentPage.objects.get(slug=link_slug),
+                revision=None,
+                ordinal_number=page_links.index(link_slug),
+                instance=instance
+            )
+            link_obj.save()
+
+        for link_slug in added_media_links:
+            link_obj = CourseMediaLink(
+                parent=self,
+                media=CourseMedia.objects.get(name=link_slug),
+                instance=instance,
+                revision=None
+            )
+            link_obj.save()
+            
+        for i, link_slug in enumerate(page_links):
+            link_obj = EmbeddedLink.objects.get(embedded_page__slug=link_slug, instance=instance, parent=self)
+            link_obj.ordinal_number = i
+            link_obj.save()
+            link_obj.embedded_page.update_embedded_links(instance)
 
     # TODO: -> @property human_readable_type
     def get_human_readable_type(self):
@@ -511,10 +691,10 @@ class ContentPage(models.Model):
         answer_object.evaluation = evaluation_object
         answer_object.save()
 
-    def get_user_evaluation(self, user):
+    def get_user_evaluation(self, user, instance, check_group=True):
         raise NotImplementedError("base type has no method 'get_user_evaluation'")
 
-    def get_user_answers(self, user, ignore_drafts=True):
+    def get_user_answers(self, user, instance, ignore_drafts=True):
         raise NotImplementedError("base type has no method 'get_user_answers'")
 
     def save(self, *args, **kwargs):
@@ -567,7 +747,7 @@ class ContentPage(models.Model):
     class Meta:
         ordering = ('name',)
 
-@reversion.register()
+#@reversion.register()
 class Lecture(ContentPage):
     """A single page for a lecture."""
 
@@ -582,15 +762,17 @@ class Lecture(ContentPage):
         
         self.content_type = "LECTURE"
         super(Lecture, self).save(*args, **kwargs)
+        for instance in CourseInstance.objects.filter(Q(contentgraph__content=self) | Q(contentgraph__content__embedded_pages=self), frozen=False):
+            self.update_embedded_links(instance)
 
     class Meta:
         verbose_name = "lecture page"
         proxy = True
 
-    def get_user_evaluation(self, user):
+    def get_user_evaluation(self, user, instance, check_group=True):
         pass
 
-@reversion.register(follow=["multiplechoiceexerciseanswer_set"])
+#@reversion.register(follow=["multiplechoiceexerciseanswer_set"])
 class MultipleChoiceExercise(ContentPage):
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -599,10 +781,23 @@ class MultipleChoiceExercise(ContentPage):
             self.slug = slugify(self.slug, allow_unicode=True)
 
         self.content_type = "MULTIPLE_CHOICE_EXERCISE"
-        super(MultipleChoiceExercise, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
+        for instance in CourseInstance.objects.filter(Q(contentgraph__content=self) | Q(contentgraph__content__embedded_pages=self), frozen=False):
+            self.update_embedded_links(instance)
 
     def get_choices(self, revision=None):
-        choices = MultipleChoiceExerciseAnswer.objects.filter(exercise=self.id).order_by('id')
+        if revision is None:
+            choices = self.multiplechoiceexerciseanswer_set.get_queryset()
+        else:
+            choices = []
+            old_version = Version.objects.get_for_object(self).get(revision=revision)._object_version.object
+            old_choices = old_version.get_type_object().multiplechoiceexerciseanswer_set
+            for choice in old_choices.all():
+                try:
+                    old_choice = Version.objects.get_for_object(choice).get(revision=revision)._object_version.object
+                    choices.append(old_choice)
+                except Version.DoesNotExist as e:
+                    pass
         return choices
 
     def save_answer(self, user, ip, answer, files, instance, revision):
@@ -630,7 +825,7 @@ class MultipleChoiceExercise(ContentPage):
         return answer_object
 
     def check_answer(self, user, ip, answer, files, answer_object, revision):
-        choices = self.get_choices(self)
+        choices = self.get_choices(self, revision)
         
         # quick hax:
         answered = int([v for k, v in answer.items() if k.endswith("-radio")][0])
@@ -655,23 +850,38 @@ class MultipleChoiceExercise(ContentPage):
             
         return {"evaluation": correct, "hints": hints, "comments": comments}
 
-    def get_user_evaluation(self, user):
-        evaluations = Evaluation.objects.filter(useranswer__usermultiplechoiceexerciseanswer__exercise_id=self.id, useranswer__user=user)
-        if not evaluations:
-            return "unanswered"
+    def get_user_evaluation(self, user, instance, check_group=True):
+        if instance is None:
+            evaluations = Evaluation.objects.filter(useranswer__usermultiplechoiceexerciseanswer__exercise_id=self.id, useranswer__user=user)
+        else:
+            evaluations =             Evaluation.objects.filter(useranswer__usermultiplechoiceexerciseanswer__exercise_id=self.id, useranswer__user=user, useranswer__instance=instance)
+            
         correct = evaluations.filter(correct=True).count() > 0
-        return "correct" if correct else "incorrect"
+        if correct:
+            return "correct"
+        
+        if not self.evaluation_group or not check_group:
+            return "incorrect" if evaluations else "unanswered"
+        
+        group = MultipleChoiceExercise.objects.filter(evaluation_group=self.evaluation_group).exclude(id=self.id)
+        for exercise in group:
+            if exercise.get_user_evaluation(exercise, user, instance, False) == "correct":
+                return "credited"
+        return "incorrect" if evaluations else "unanswered"
 
-    def get_user_answers(self, user, ignore_drafts=True):
+    def get_user_answers(self, user, instance, ignore_drafts=True):
         # TODO: Take instances into account
-        answers = UserMultipleChoiceExerciseAnswer.objects.filter(exercise=self, user=user)
+        if instance is None:
+            answers = UserMultipleChoiceExerciseAnswer.objects.filter(exercise=self, user=user)
+        else:
+            answers = UserMultipleChoiceExerciseAnswer.objects.filter(exercise=self, instance=instance, user=user)
         return answers
 
     class Meta:
         verbose_name = "multiple choice exercise"
         proxy = True
 
-@reversion.register(follow=["checkboxexerciseanswer_set"])
+#@reversion.register(follow=["checkboxexerciseanswer_set"])
 class CheckboxExercise(ContentPage):
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -680,23 +890,24 @@ class CheckboxExercise(ContentPage):
             self.slug = slugify(self.slug, allow_unicode=True)
 
         self.content_type = "CHECKBOX_EXERCISE"
-        super(CheckboxExercise, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
+        for instance in CourseInstance.objects.filter(Q(contentgraph__content=self) | Q(contentgraph__content__embedded_pages=self), frozen=False):
+            self.update_embedded_links(instance)
 
     def get_choices(self, revision=None):
         if revision is None:
-            choices = CheckboxExerciseAnswer.objects.filter(exercise=self.id).order_by('id')
+            choices = self.checkboxexerciseanswer_set.get_queryset()
         else:
             # We need an old version of _which_ answer choices pointed to this exercise
-            old_version = reversion.get_for_object(self).get(revision=revision).object_version.object
+            old_version = Version.objects.get_for_object(self).get(revision=revision)._object_version.object
             old_choices = old_version.get_type_object().checkboxexerciseanswer_set # TODO: Remove get_type_object dependency?
-            print(old_choices.all())
             choices = []
             for choice in old_choices.all():
                 # ...and we need an old version of _each_ of those answer choices
                 try:
-                    old_choice = reversion.get_for_object(choice).get(revision=revision).object_version.object
+                    old_choice = Version.objects.get_for_object(choice).get(revision=revision)._object_version.object
                     choices.append(old_choice)
-                except reversion.Version.DoesNotExist as e:
+                except Version.DoesNotExist as e:
                     pass
         return choices
 
@@ -761,15 +972,30 @@ class CheckboxExercise(ContentPage):
 
         return {"evaluation": correct, "hints": hints, "comments": comments}
 
-    def get_user_evaluation(self, user):
-        evaluations = Evaluation.objects.filter(useranswer__usercheckboxexerciseanswer__exercise=self, useranswer__user=user)
-        if not evaluations:
-            return "unanswered"
-        correct = evaluations.filter(correct=True).count() > 0
-        return "correct" if correct else "incorrect"
+    def get_user_evaluation(self, user, instance, check_group=True):
+        if instance is None:
+            evaluations = Evaluation.objects.filter(useranswer__usercheckboxexerciseanswer__exercise=self, useranswer__user=user)
+        else:
+            evaluations = Evaluation.objects.filter(useranswer__usercheckboxexerciseanswer__exercise=self, useranswer__user=user, useranswer__instance=instance)
 
-    def get_user_answers(self, user, ignore_drafts=True):
-        answers = UserCheckboxExerciseAnswer.objects.filter(exercise=self, user=user)
+        correct = evaluations.filter(correct=True).count() > 0
+        if correct:
+            return "correct"
+        
+        if not self.evaluation_group or not check_group:
+            return "incorrect" if evaluations else "unanswered"
+        
+        group = CheckboxExercise.objects.filter(evaluation_group=self.evaluation_group).exclude(id=self.id)
+        for exercise in group:
+            if exercise.get_user_evaluation(exercise, user, instance, False) == "correct":
+                return "credited"
+        return "incorrect" if evaluations else "unanswered"
+
+    def get_user_answers(self, user, instance, ignore_drafts=True):
+        if instance is None:
+            answers = UserCheckboxExerciseAnswer.objects.filter(exercise=self, user=user)
+        else:
+            answers = UserCheckboxExerciseAnswer.objects.filter(exercise=self, instance=instance, user=user)
         return answers
 
     class Meta:
@@ -779,7 +1005,7 @@ class CheckboxExercise(ContentPage):
 # TODO: Enforce allowed line count for text field exercises
 #         - in answer choices?
 #         - also reflect this in the size of the answer box
-@reversion.register(follow=["textfieldexerciseanswer_set"])
+#@reversion.register(follow=["textfieldexerciseanswer_set"])
 class TextfieldExercise(ContentPage):
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -789,9 +1015,22 @@ class TextfieldExercise(ContentPage):
 
         self.content_type = "TEXTFIELD_EXERCISE"
         super(TextfieldExercise, self).save(*args, **kwargs)
+        for instance in CourseInstance.objects.filter(Q(contentgraph__content=self) | Q(contentgraph__content__embedded_pages=self), frozen=False):
+            self.update_embedded_links(instance)
 
     def get_choices(self, revision=None):
-        choices = TextfieldExerciseAnswer.objects.filter(exercise=self.id)
+        if revision is None:
+            choices = self.textfieldexerciseanswer_set.get_queryset()
+        else:
+            choices = []
+            old_version = Version.objects.get_for_object(self).get(revision=revision)._object_version.object
+            old_choices = old_version.get_type_object().textfieldexerciseanswer_set
+            for choice in old_choices.all():
+                try:
+                    old_choice = Version.objects.get_for_object(choice).get(revision=revision)._object_version.object
+                    choices.append(old_choice)
+                except Version.DoesNotExist as e:
+                    pass
         return choices
 
     def save_answer(self, user, ip, answer, files, instance, revision):
@@ -814,7 +1053,7 @@ class TextfieldExercise(ContentPage):
         return answer_object
 
     def check_answer(self, user, ip, answer, files, answer_object, revision):
-        answers = self.get_choices(self)
+        answers = self.get_choices(self, revision)
 
         # Determine, if the given answer was correct and which hints/comments to show
         correct = False
@@ -875,22 +1114,37 @@ class TextfieldExercise(ContentPage):
         return {"evaluation": correct, "hints": hints, "comments": comments,
                 "errors": errors}
 
-    def get_user_evaluation(self, user):
-        evaluations = Evaluation.objects.filter(useranswer__usertextfieldexerciseanswer__exercise=self, useranswer__user=user)
-        if not evaluations:
-            return "unanswered"
+    def get_user_evaluation(self, user, instance, check_group=True):
+        if instance is None:
+            evaluations = Evaluation.objects.filter(useranswer__usertextfieldexerciseanswer__exercise=self, useranswer__user=user)
+        else:
+            evaluations = Evaluation.objects.filter(useranswer__usertextfieldexerciseanswer__exercise=self, useranswer__user=user, useranswer__instance=instance)
+            
         correct = evaluations.filter(correct=True).count() > 0
-        return "correct" if correct else "incorrect"
+        if correct:
+            return "correct"
+        
+        if not self.evaluation_group or not check_group:
+            return "incorrect" if evaluations else "unanswered"
+        
+        group = TextfieldExercise.objects.filter(evaluation_group=self.evaluation_group).exclude(id=self.id)
+        for exercise in group:
+            if exercise.get_user_evaluation(exercise, user, instance, False) == "correct":
+                return "credited"
+        return "incorrect" if evaluations else "unanswered"
 
-    def get_user_answers(self, user, ignore_drafts=True):
-        answers = UserTextfieldExerciseAnswer.objects.filter(exercise=self, user=user)
+    def get_user_answers(self, user, instance, ignore_drafts=True):
+        if instance is None:
+            answers = UserTextfieldExerciseAnswer.objects.filter(exercise=self, user=user)
+        else:
+            answers = UserTextfieldExerciseAnswer.objects.filter(exercise=self, instance=instance, user=user)
         return answers
 
     class Meta:
         verbose_name = "text field exercise"
         proxy = True
 
-@reversion.register(follow=['fileexercisetest_set', 'fileexercisetestincludefile_set'])
+#@reversion.register(follow=['fileexercisetest_set', 'fileexercisetestincludefile_set'])
 class FileUploadExercise(ContentPage):
     # TODO: A field for restricting uploadable file names (e.g. by extension, like .py)
     def save(self, *args, **kwargs):
@@ -901,25 +1155,37 @@ class FileUploadExercise(ContentPage):
 
         self.content_type = "FILE_UPLOAD_EXERCISE"
         super(FileUploadExercise, self).save(*args, **kwargs)
+        for instance in CourseInstance.objects.filter(Q(contentgraph__content=self) | Q(contentgraph__content__embedded_pages=self), frozen=False):
+            self.update_embedded_links(instance)
 
     def save_answer(self, user, ip, answer, files, instance, revision):
-        
+
 
         # FIX: DEBUG DEBUG DEBUG DEBUG
         if revision == "head": revision = 0
         # FIX: DEBUG DEBUG DEBUG DEBUG
-        
+
 
         answer_object = UserFileUploadExerciseAnswer(
             exercise_id=self.id, user=user, answerer_ip=ip,
             instance=instance, revision=revision,
         )
         answer_object.save()
-        
+
         if files:
             filelist = files.getlist('file')
             for uploaded_file in filelist:
-                # TODO: Use stdlib glob or fnmatch to see if file name is allowed
+                if self.allowed_filenames != [] and self.allowed_filenames != [""]:
+                    for fnpat in self.allowed_filenames:
+                        if fnmatch(uploaded_file.name, fnpat):
+                            break
+                    else:
+                        raise InvalidExerciseAnswerException(
+                            _("Filename {} is not listed in accepted filenames. Allowed:\n{}").format(
+                                uploaded_file.name, ", ".join(self.allowed_filenames)
+                            )
+                        )
+
                 return_file = FileUploadExerciseReturnFile(
                     answer=answer_object, fileinfo=uploaded_file
                 )
@@ -933,7 +1199,7 @@ class FileUploadExercise(ContentPage):
 
     def get_admin_change_url(self):
         return reverse("exercise_admin:file_upload_change", args=(self.id,))
-    
+
     def check_answer(self, user, ip, answer, files, answer_object, revision):
         lang_code = translation.get_language()
         if revision == "head": revision = None
@@ -947,22 +1213,37 @@ class FileUploadExercise(ContentPage):
         )
         return {"task_id": result.task_id}
 
-    def get_user_evaluation(self, user):
-        evaluations = Evaluation.objects.filter(useranswer__userfileuploadexerciseanswer__exercise=self, useranswer__user=user)
-        if not evaluations:
-            return "unanswered"
-        correct = evaluations.filter(correct=True).count() > 0
-        return "correct" if correct else "incorrect"
+    def get_user_evaluation(self, user, instance, check_group=True):
+        if instance is None:
+            evaluations = Evaluation.objects.filter(useranswer__userfileuploadexerciseanswer__exercise=self, useranswer__user=user)
+        else:
+            evaluations = Evaluation.objects.filter(useranswer__userfileuploadexerciseanswer__exercise=self, useranswer__user=user, useranswer__instance=instance)            
 
-    def get_user_answers(self, user, ignore_drafts=True):
-        answers = UserFileUploadExerciseAnswer.objects.filter(exercise=self, user=user)
+        correct = evaluations.filter(correct=True).count() > 0
+        if correct:
+            return "correct"
+        
+        if not self.evaluation_group or not check_group:
+            return "incorrect" if evaluations else "unanswered"
+        
+        group = FileUploadExercise.objects.filter(evaluation_group=self.evaluation_group).exclude(id=self.id)
+        for exercise in group:
+            if exercise.get_user_evaluation(exercise, user, instance, False) == "correct":
+                return "credited"
+        return "incorrect" if evaluations else "unanswered"
+
+    def get_user_answers(self, user, instance, ignore_drafts=True):
+        if instance is None:
+            answers = UserFileUploadExerciseAnswer.objects.filter(exercise=self, user=user)
+        else:
+            answers = UserFileUploadExerciseAnswer.objects.filter(exercise=self, instance=instance, user=user)
         return answers
 
     class Meta:
         verbose_name = "file upload exercise"
         proxy = True
 
-@reversion.register()
+#@reversion.register()
 class CodeInputExercise(ContentPage):
     # TODO: A textfield exercise variant that's run like a file exercise (like in Viope)
     def save(self, *args, **kwargs):
@@ -973,6 +1254,8 @@ class CodeInputExercise(ContentPage):
 
         self.content_type = "CODE_INPUT_EXERCISE"
         super(CodeInputExercise, self).save(*args, **kwargs)
+        for instance in CourseInstance.objects.filter(Q(contentgraph__content=self) | Q(contentgraph__content__embedded_pages=self), frozen=False):
+            self.update_embedded_links(instance)
 
     def save_answer(self, user, ip, answer, files, instance, revision):
         pass
@@ -984,7 +1267,7 @@ class CodeInputExercise(ContentPage):
         verbose_name = "code input exercise"
         proxy = True
 
-@reversion.register()
+#@reversion.register()
 class CodeReplaceExercise(ContentPage):
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -994,6 +1277,8 @@ class CodeReplaceExercise(ContentPage):
 
         self.content_type = "CODE_REPLACE_EXERCISE"
         super(CodeReplaceExercise, self).save(*args, **kwargs)
+        for instance in CourseInstance.objects.filter(Q(contentgraph__content=self) | Q(contentgraph__content__embedded_pages=self), frozen=False):
+            self.update_embedded_links(instance)
 
     def get_choices(self, revision=None):
         choices = CodeReplaceExerciseAnswer.objects.filter(exercise=self)\
@@ -1009,22 +1294,37 @@ class CodeReplaceExercise(ContentPage):
     def check_answer(self, user, ip, answer, files, answer_object, revision):
         return {}
 
-    def get_user_evaluation(self, user):
-        evaluations = Evaluation.objects.filter(useranswer__usercodereplaceexerciseanswer__exercise=self, useranswer__user=user)
-        if not evaluations:
-            return "unanswered"
+    def get_user_evaluation(self, user, instance, check_group=True):
+        if instance is None:
+            evaluations = Evaluation.objects.filter(useranswer__usercodereplaceexerciseanswer__exercise=self, useranswer__user=user)
+        else:
+            evaluations = Evaluation.objects.filter(useranswer__usercodereplaceexerciseanswer__exercise=self, useranswer__user=user, useranswer__instance=instance)
+
         correct = evaluations.filter(correct=True).count() > 0
-        return "correct" if correct else "incorrect"
+        if correct:
+            return "correct"
+        
+        if not self.evaluation_group or not check_group:
+            return "incorrect" if evaluations else "unanswered"
+        
+        group = CodeReplaceExercise.objects.filter(evaluation_group=self.evaluation_group).exclude(id=self.id)
+        for exercise in group:
+            if exercise.get_user_evaluation(exercise, user, instance, False) == "correct":
+                return "credited"
+        return "incorrect" if evaluations else "unanswered"
     
-    def get_user_answers(self, user, ignore_drafts=True):
-        answers = UserCodeReplaceExerciseAnswer.objects.filter(exercise=self, user=user)
+    def get_user_answers(self, user, instance, ignore_drafts=True):
+        if instance is None:
+            answers = UserCodeReplaceExerciseAnswer.objects.filter(exercise=self, user=user)
+        else:
+            answers = UserCodeReplaceExerciseAnswer.objects.filter(exercise=self, instance=instance, user=user)
         return answers
 
     class Meta:
         verbose_name = "code replace exercise"
         proxy = True
 
-@reversion.register(follow=['repeatedtemplateexercisetemplate_set', 'repeatedtemplateexercisebackendfile_set', 'repeatedtemplateexercisebackendcommand'])
+#@reversion.register(follow=['repeatedtemplateexercisetemplate_set', 'repeatedtemplateexercisebackendfile_set', 'repeatedtemplateexercisebackendcommand'])
 class RepeatedTemplateExercise(ContentPage):
     # TODO: Reimplement to allow any type of exercise (textfield, checkbox etc.)
     #       to be a repeated template exercise.
@@ -1037,20 +1337,36 @@ class RepeatedTemplateExercise(ContentPage):
         self.content_type = "REPEATED_TEMPLATE_EXERCISE"
         RepeatedTemplateExerciseSession.objects.filter(exercise=self, user=None).delete()
         super(RepeatedTemplateExercise, self).save(*args, **kwargs)
+        for instance in CourseInstance.objects.filter(Q(contentgraph__content=self) | Q(contentgraph__content__embedded_pages=self), frozen=False):
+            self.update_embedded_links(instance)
 
     def get_choices(self, revision=None):
         return
 
-    def get_user_answers(self, user, ignore_drafts=True):
-        answers = UserRepeatedTemplateExerciseAnswer.objects.filter(exercise=self, user=user)
+    def get_user_answers(self, user, instance, ignore_drafts=True):
+        if instance is None:
+            answers = UserRepeatedTemplateExerciseAnswer.objects.filter(exercise=self, user=user)
+        else:
+            answers = UserRepeatedTemplateExerciseAnswer.objects.filter(exercise=self, instance=instance, user=user)
         return answers
 
-    def get_user_evaluation(self, user):
-        evaluations = Evaluation.objects.filter(useranswer__userrepeatedtemplateexerciseanswer__exercise=self, useranswer__user=user)
-        if not evaluations:
-            return "unanswered"
+    def get_user_evaluation(self, user, instance, check_group=True):
+        if instance is None:
+            evaluations = Evaluation.objects.filter(useranswer__userrepeatedtemplateexerciseanswer__exercise=self, useranswer__user=user)
+        else:
+            evaluations = Evaluation.objects.filter(useranswer__userrepeatedtemplateexerciseanswer__exercise=self, useranswer__user=user, useranswer__instance=instance)
         correct = evaluations.filter(correct=True).count() > 0
-        return "correct" if correct else "incorrect"
+        if correct:
+            return "correct"
+        
+        if not self.evaluation_group or not check_group:
+            return "incorrect" if evaluations else "unanswered"
+        
+        group = RepeatedTemplateExercise.objects.filter(evaluation_group=self.evaluation_group).exclude(id=self.id)
+        for exercise in group:
+            if exercise.get_user_evaluation(exercise, user, instance, False) == "correct":
+                return "credited"
+        return "incorrect" if evaluations else "unanswered"
 
     def save_answer(self, user, ip, answer, files, instance, revision):
         if "answer" in answer.keys():
@@ -1078,7 +1394,6 @@ class RepeatedTemplateExercise(ContentPage):
             
             raise InvalidExerciseAnswerException("Answering without a started session!")
 
-        print("saving", session_instance)
         try:
             answer_object = UserRepeatedTemplateExerciseAnswer.objects.get(exercise_id=self.id, session=session)
         except UserRepeatedTemplateExerciseAnswer.DoesNotExist as e:
@@ -1103,8 +1418,6 @@ class RepeatedTemplateExercise(ContentPage):
         session = answer_object.session
         session_instance = RepeatedTemplateExerciseSessionInstance.objects.filter(session=session, userrepeatedtemplateinstanceanswer__isnull=False).order_by('ordinal_number').last()
         
-        print("checking", session_instance)
-
         answers = RepeatedTemplateExerciseSessionInstanceAnswer.objects.filter(session_instance=session_instance)
 
         # Copied from textfield exercise
@@ -1239,13 +1552,13 @@ class RepeatedTemplateExercise(ContentPage):
 # Inspiration:
 # - computer networks I course
 
-@reversion.register()
+#@reversion.register()
 class Hint(models.Model):
     """
     A hint that is linked to an exercise and shown to the user under
     configurable conditions.
     """
-    exercise = models.ForeignKey(ContentPage)
+    exercise = models.ForeignKey(ContentPage, on_delete=models.CASCADE)
     hint = models.TextField(verbose_name="hint text")
     tries_to_unlock = models.IntegerField(default=0,
                                           verbose_name="number of tries to unlock this hint",
@@ -1258,9 +1571,9 @@ class Hint(models.Model):
 # TODO: whitelist for allowed file name extensions (e.g. only allow files that end ".py")
 def default_fue_timeout(): return datetime.timedelta(seconds=5)
 
-@reversion.register(follow=['fileexerciseteststage_set'])
+#@reversion.register(follow=['fileexerciseteststage_set'])
 class FileExerciseTest(models.Model):
-    exercise = models.ForeignKey(FileUploadExercise, verbose_name="for file exercise", db_index=True)
+    exercise = models.ForeignKey(FileUploadExercise, verbose_name="for file exercise", db_index=True, on_delete=models.CASCADE)
     name = models.CharField(verbose_name="Test name", max_length=200)
 
     # Note: only allow selection of files that have been linked to the exercise!
@@ -1277,11 +1590,11 @@ class FileExerciseTest(models.Model):
     class Meta:
         verbose_name = "file exercise test"
 
-@reversion.register(follow=['fileexercisetestcommand_set'])
+#@reversion.register(follow=['fileexercisetestcommand_set'])
 class FileExerciseTestStage(models.Model):
     """A stage – a named sequence of commands to run in a file exercise test."""
-    test = models.ForeignKey(FileExerciseTest)
-    depends_on = models.ForeignKey('FileExerciseTestStage', null=True, blank=True) # TODO: limit_choices_to
+    test = models.ForeignKey(FileExerciseTest, on_delete=models.CASCADE)
+    depends_on = models.ForeignKey('FileExerciseTestStage', null=True, blank=True, on_delete=models.SET_NULL) # TODO: limit_choices_to
     name = models.CharField(max_length=64) # Translate
     ordinal_number = models.PositiveSmallIntegerField() # TODO: Enforce min=1
 
@@ -1293,10 +1606,10 @@ class FileExerciseTestStage(models.Model):
         unique_together = ('test', 'ordinal_number')
         ordering = ['ordinal_number']
 
-@reversion.register(follow=['fileexercisetestexpectedoutput_set'])
+#@reversion.register(follow=['fileexercisetestexpectedoutput_set'])
 class FileExerciseTestCommand(models.Model):
     """A command that shall be executed on the test machine."""
-    stage = models.ForeignKey(FileExerciseTestStage)
+    stage = models.ForeignKey(FileExerciseTestStage, on_delete=models.CASCADE)
     command_line = models.CharField(max_length=255) # Translate
     significant_stdout = models.BooleanField(verbose_name="Compare the generated stdout to reference",
                                              default=False,
@@ -1335,10 +1648,10 @@ class FileExerciseTestCommand(models.Model):
         unique_together = ('stage', 'ordinal_number')
         ordering = ['ordinal_number']
 
-@reversion.register()
+#@reversion.register()
 class FileExerciseTestExpectedOutput(models.Model):
     """What kind of output is expected from the program?"""
-    command = models.ForeignKey(FileExerciseTestCommand)
+    command = models.ForeignKey(FileExerciseTestCommand, on_delete=models.CASCADE)
     correct = models.BooleanField(default=False)
     regexp = models.BooleanField(default=False)
     expected_answer = models.TextField(blank=True)
@@ -1349,7 +1662,7 @@ class FileExerciseTestExpectedOutput(models.Model):
     )
     output_type = models.CharField(max_length=7, default='STDOUT', choices=OUTPUT_TYPE_CHOICES)
 
-@reversion.register()
+#@reversion.register()
 class FileExerciseTestExpectedStdout(FileExerciseTestExpectedOutput):
     class Meta:
         verbose_name = "expected output"
@@ -1359,7 +1672,7 @@ class FileExerciseTestExpectedStdout(FileExerciseTestExpectedOutput):
         self.output_type = "STDOUT"
         super(FileExerciseTestExpectedStdout, self).save(*args, **kwargs)
 
-@reversion.register()
+#@reversion.register()
 class FileExerciseTestExpectedStderr(FileExerciseTestExpectedOutput):
     class Meta:
         verbose_name = "expected error"
@@ -1370,28 +1683,44 @@ class FileExerciseTestExpectedStderr(FileExerciseTestExpectedOutput):
         super(FileExerciseTestExpectedStderr, self).save(*args, **kwargs)
 
 # Include files
-@reversion.register()
+#@reversion.register()
 class InstanceIncludeFileToExerciseLink(models.Model):
-    include_file = models.ForeignKey('InstanceIncludeFile')
-    exercise = models.ForeignKey('ContentPage')
-
+    """
+    Context model for shared course files for file exercises. 
+    """
+    
+    include_file = models.ForeignKey('InstanceIncludeFile', on_delete=models.CASCADE)
+    exercise = models.ForeignKey('ContentPage', on_delete=models.CASCADE)
+    
     # The settings are determined per exercise basis
-    file_settings = models.OneToOneField('IncludeFileSettings')
+    file_settings = models.OneToOneField('IncludeFileSettings', on_delete=models.CASCADE)
 
-def get_instancefile_path(instance, filename):
-    return os.path.join(
-        "{course_instance}_files".format(course_instance=instance.instance),
-        "{filename}".format(filename=filename), # TODO: Versioning?
-        # TODO: Language?
-    )
 
-@reversion.register()
+
+class InstanceIncludeFileToInstanceLink(models.Model):
+    
+    revision = models.PositiveIntegerField(blank=True, null=True)
+    instance = models.ForeignKey('CourseInstance', on_delete=models.CASCADE)
+    include_file = models.ForeignKey('InstanceIncludeFile', on_delete=models.CASCADE)
+    
+    class Meta:
+        unique_together = ("instance", "include_file")
+    
+    def freeze(self, freeze_to=None):
+        if self.revision is None:
+            latest = Version.objects.get_for_object(self.include_file).latest("revision__date_created")
+            self.revision = latest.revision_id
+            self.save()
+    
+
+# NOTE: rename?
+#@reversion.register()
 class InstanceIncludeFile(models.Model):
     """
-    A file that's linked to an instance and can be included in any exercise
+    A file that's linked to a course and can be included in any exercise
     that needs it. (File upload, code input, code replace, ...)
     """
-    instance = models.ForeignKey(CourseInstance)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
     exercises = models.ManyToManyField(ContentPage, blank=True,
                                        through='InstanceIncludeFileToExerciseLink',
                                        through_fields=('include_file', 'exercise'))
@@ -1399,28 +1728,40 @@ class InstanceIncludeFile(models.Model):
     description = models.TextField(blank=True, null=True) # Translate
     fileinfo = models.FileField(max_length=255, upload_to=get_instancefile_path, storage=upload_storage) # Translate
 
+    def save(self, *args, **kwargs):
+        new = False
+        if self.pk == None:
+            new = True            
+        super().save(*args, **kwargs)        
+        if new:
+            self.create_instance_links()        
+
     def get_file_contents(self):
         file_contents = None
         with open(self.fileinfo.path, 'rb') as f:
             file_contents = f.read()
         return file_contents
+    
+    def create_instance_links(self):
+        active_instances = CourseInstance.objects.filter(course=self.course, frozen=False)
+        for instance in active_instances:
+            link = InstanceIncludeFileToInstanceLink(
+                revision=None,
+                instance=instance,
+                include_file=self
+            )
+            link.save()
+            
 
-def get_testfile_path(instance, filename):
-    return os.path.join(
-        "{exercise_name}_files".format(exercise_name=instance.exercise.name),
-        "{filename}".format(filename=filename), # TODO: Versioning?
-        # TODO: Language?
-    )
-
-@reversion.register()
+#@reversion.register()
 class FileExerciseTestIncludeFile(models.Model):
     """
     A file which an admin can include in an exercise's file pool for use in
     tests. For example, a reference program, expected output file or input file
     for the program.
     """
-    exercise = models.ForeignKey(FileUploadExercise)
-    file_settings = models.OneToOneField('IncludeFileSettings')
+    exercise = models.ForeignKey(FileUploadExercise, on_delete=models.CASCADE)
+    file_settings = models.OneToOneField('IncludeFileSettings', on_delete=models.CASCADE)
     default_name = models.CharField(verbose_name='Default name', max_length=255) # Translate
     description = models.TextField(blank=True, null=True) # Translate
     fileinfo = models.FileField(max_length=255, upload_to=get_testfile_path, storage=upload_storage) # Translate
@@ -1440,7 +1781,7 @@ class FileExerciseTestIncludeFile(models.Model):
     class Meta:
         verbose_name = "included file"
 
-@reversion.register()
+#@reversion.register()
 class IncludeFileSettings(models.Model):
     name = models.CharField(verbose_name='File name during test', max_length=255) # Translate
 
@@ -1473,9 +1814,9 @@ class IncludeFileSettings(models.Model):
 
 # TODO: Create a superclass for exercise answer choices
 ## Answer models
-@reversion.register()
+#@reversion.register()
 class TextfieldExerciseAnswer(models.Model):
-    exercise = models.ForeignKey(TextfieldExercise)
+    exercise = models.ForeignKey(TextfieldExercise, on_delete=models.CASCADE)
     correct = models.BooleanField(default=False)
     regexp = models.BooleanField(default=True)
     answer = models.TextField() # Translate
@@ -1492,9 +1833,9 @@ class TextfieldExerciseAnswer(models.Model):
         self.answer = self.answer.replace("\r", "")
         super(TextfieldExerciseAnswer, self).save(*args, **kwargs)
 
-@reversion.register()
+#@reversion.register()
 class MultipleChoiceExerciseAnswer(models.Model):
-    exercise = models.ForeignKey(MultipleChoiceExercise)
+    exercise = models.ForeignKey(MultipleChoiceExercise, null=True, on_delete=models.SET_NULL)
     correct = models.BooleanField(default=False)
     answer = models.TextField() # Translate
     hint = models.TextField(blank=True) # Translate
@@ -1503,9 +1844,9 @@ class MultipleChoiceExerciseAnswer(models.Model):
     def __str__(self):
         return self.answer
 
-@reversion.register()
+#@reversion.register()
 class CheckboxExerciseAnswer(models.Model):
-    exercise = models.ForeignKey(CheckboxExercise)
+    exercise = models.ForeignKey(CheckboxExercise, null=True, on_delete=models.SET_NULL)
     correct = models.BooleanField(default=False)
     answer = models.TextField() # Translate
     hint = models.TextField(blank=True) # Translate
@@ -1514,29 +1855,29 @@ class CheckboxExerciseAnswer(models.Model):
     def __str__(self):
         return self.answer
 
-@reversion.register()
+#@reversion.register()
 class CodeInputExerciseAnswer(models.Model):
-    exercise = models.ForeignKey(CodeInputExercise)
+    exercise = models.ForeignKey(CodeInputExercise, on_delete=models.CASCADE)
     answer = models.TextField() # Translate
 
-@reversion.register()
+#@reversion.register()
 class CodeReplaceExerciseAnswer(models.Model):
-    exercise = models.ForeignKey(CodeReplaceExercise)
+    exercise = models.ForeignKey(CodeReplaceExercise, on_delete=models.CASCADE)
     answer = models.TextField() # Translate
     #replace_file = models.ForeignKey()
     replace_file = models.TextField() # DEBUG
     replace_line = models.PositiveIntegerField()
 
 # Repeated template exercise models
-@reversion.register()
+#@reversion.register()
 class RepeatedTemplateExerciseTemplate(models.Model):
-    exercise = models.ForeignKey(RepeatedTemplateExercise)
+    exercise = models.ForeignKey(RepeatedTemplateExercise, on_delete=models.CASCADE)
     title = models.CharField(max_length=64) # Translate
     content_string = models.TextField() # Translate
 
-@reversion.register()
+#@reversion.register()
 class RepeatedTemplateExerciseBackendFile(models.Model):
-    exercise = models.ForeignKey(RepeatedTemplateExercise)
+    exercise = models.ForeignKey(RepeatedTemplateExercise, on_delete=models.CASCADE)
     filename = models.CharField(max_length=255, blank=True)
     fileinfo = models.FileField(max_length=255, upload_to=get_testfile_path, storage=upload_storage)
 
@@ -1554,14 +1895,14 @@ class RepeatedTemplateExerciseBackendFile(models.Model):
             file_contents = f.read()
         return file_contents
 
-@reversion.register()
+#@reversion.register()
 class RepeatedTemplateExerciseBackendCommand(models.Model):
-    exercise = models.OneToOneField(RepeatedTemplateExercise)
+    exercise = models.OneToOneField(RepeatedTemplateExercise, on_delete=models.CASCADE)
     command = models.TextField() # Translate
 
 class RepeatedTemplateExerciseSession(models.Model):
-    exercise = models.ForeignKey(RepeatedTemplateExercise)
-    user = models.ForeignKey(User, blank=True, null=True)
+    exercise = models.ForeignKey(RepeatedTemplateExercise, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, blank=True, null=True, on_delete=models.SET_NULL)
     revision = models.PositiveIntegerField()
     language_code = models.CharField(max_length=7)
     generated_json = JSONField()
@@ -1578,9 +1919,9 @@ class RepeatedTemplateExerciseSession(models.Model):
         return total['ordinal_number__max'] + 1
 
 class RepeatedTemplateExerciseSessionInstance(models.Model):
-    exercise = models.ForeignKey(RepeatedTemplateExercise)
-    session = models.ForeignKey(RepeatedTemplateExerciseSession)
-    template = models.ForeignKey(RepeatedTemplateExerciseTemplate)
+    exercise = models.ForeignKey(RepeatedTemplateExercise, on_delete=models.CASCADE)
+    session = models.ForeignKey(RepeatedTemplateExerciseSession, on_delete=models.CASCADE)
+    template = models.ForeignKey(RepeatedTemplateExerciseTemplate, on_delete=models.CASCADE)
     ordinal_number = models.PositiveSmallIntegerField()
     variables = ArrayField(
         base_field=models.TextField(),
@@ -1599,7 +1940,7 @@ class RepeatedTemplateExerciseSessionInstance(models.Model):
         return "<RepeatedTemplateExerciseSessionInstance: no. {} of session {}>".format(self.ordinal_number, self.session.id)
 
 class RepeatedTemplateExerciseSessionInstanceAnswer(models.Model):
-    session_instance = models.ForeignKey(RepeatedTemplateExerciseSessionInstance)
+    session_instance = models.ForeignKey(RepeatedTemplateExerciseSessionInstance, null=True, on_delete=models.SET_NULL)
     correct = models.BooleanField()
     regexp = models.BooleanField()
     answer = models.TextField()
@@ -1625,7 +1966,7 @@ class Evaluation(models.Model):
     # language the student used and give an evaluation using that language.
 
     evaluation_date = models.DateTimeField(verbose_name='When was the answer evaluated', auto_now_add=True)
-    evaluator = models.ForeignKey(User, verbose_name='Who evaluated the answer', blank=True, null=True)
+    evaluator = models.ForeignKey(User, verbose_name='Who evaluated the answer', blank=True, null=True, on_delete=models.SET_NULL)
     feedback = models.TextField(verbose_name='Feedback given by a teacher', blank=True)
     test_results = models.TextField(verbose_name='Test results in JSON', blank=True) # TODO: JSONField
 
@@ -1636,11 +1977,11 @@ class UserAnswer(models.Model):
     SET_NULL should be used as the on_delete behaviour for foreignkeys pointing to the
     exercises. The answers will then be kept even when the exercise is deleted.
     """
-    instance = models.ForeignKey(CourseInstance)
-    evaluation = models.OneToOneField(Evaluation, null=True, blank=True)
+    instance = models.ForeignKey(CourseInstance, null=True, on_delete=models.SET_NULL)
+    evaluation = models.OneToOneField(Evaluation, null=True, blank=True, on_delete=models.SET_NULL)
     revision = models.PositiveIntegerField() # The revision info is always required!
     language_code = models.CharField(max_length=7) # TODO: choices=all language codes
-    user = models.ForeignKey(User)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     answer_date = models.DateTimeField(verbose_name='Date and time of when the user answered this exercise',
                                        auto_now_add=True)
     answerer_ip = models.GenericIPAddressField()
@@ -1652,24 +1993,36 @@ class UserAnswer(models.Model):
     collaborators = models.TextField(verbose_name='Which users was this exercise answered with', blank=True, null=True)
     checked = models.BooleanField(verbose_name='This answer has been checked', default=False)
     draft = models.BooleanField(verbose_name='This answer is a draft', default=False)
-
-# TODO: Put in UserFileUploadExerciseAnswer's manager?
-def get_version(instance):
-    return UserFileUploadExerciseAnswer.objects.filter(user=instance.answer.user,
-                                                       exercise=instance.answer.exercise).count()
-
-def get_answerfile_path(instance, filename): # TODO: Versioning?
-    return os.path.join(
-        "returnables",
-        "%s" % (instance.answer.user.username),
-        "%s" % (instance.answer.exercise.name),
-        "%04d" % (get_version(instance)),
-        "%s" % (filename)
-    )
+    
+    @staticmethod
+    def get_task_answers(task, instance=None, user=None, revision=None):
+        if task.content_type == "CHECKBOX_EXERCISE":
+            answers = UserAnswer.objects.filter(usercheckboxexerciseanswer__exercise=task)
+        elif task.content_type == "MULTIPLE_CHOICE_EXERCISE":
+            answers = UserAnswer.objects.filter(usermultiplechoiceexerciseanswer__exercise=task)
+        elif task.content_type == "TEXTFIELD_EXERCISE":
+            answers = UserAnswer.objects.filter(usertextfieldexerciseanswer__exercise=task)
+        elif task.content_type == "FILE_UPLOAD_EXERCISE":
+            answers = UserAnswer.objects.filter(userfileuploadexerciseanswer__exercise=task)
+        elif task.content_type == "REPEATED_TEMPLATE_EXERCISE":
+            answers = UserAnswer.objects.filter(userrepeatedtemplateexerciseanswer__exercise=task)
+        else:
+            raise ValueError("Task {} does not have a valid exercise type".format(task))
+        
+        if instance:
+            answers = answers.filter(instance=instance)
+            
+        if user:
+            answers = answers.filter(user=user)
+            
+        if revision:
+            answers = answers.filter(revision=revision)
+            
+        return answers.order_by("answer_date")
 
 class FileUploadExerciseReturnFile(models.Model):
     """A file that a user returns for checking."""
-    answer = models.ForeignKey('UserFileUploadExerciseAnswer')
+    answer = models.ForeignKey('UserFileUploadExerciseAnswer', on_delete=models.CASCADE)
     fileinfo = models.FileField(max_length=255, upload_to=get_answerfile_path, storage=upload_storage)
 
     def filename(self):
@@ -1690,9 +2043,22 @@ class FileUploadExerciseReturnFile(models.Model):
                 binary = True
 
         return (mimetype, binary)
+    
+    def get_content(self):
+        if not self.get_type()[1]:
+            path = self.fileinfo.path
+            with open(path, 'rb') as f:
+                contents = f.read()
+                try:
+                    lexer = pygments.lexers.guess_lexer_for_filename(path, contents)
+                except pygments.util.ClassNotFound:
+                    return contents
+                else:
+                    return pygments.highlight(contents, lexer, pygments.formatters.HtmlFormatter(nowrap=True))
+        return ""
 
 class UserFileUploadExerciseAnswer(UserAnswer):
-    exercise = models.ForeignKey(FileUploadExercise, models.SET_NULL, blank=True, null=True)
+    exercise = models.ForeignKey(FileUploadExercise, blank=True, null=True, on_delete=models.SET_NULL)
 
     def __str__(self):
         return "Answer by %s" % (self.user.username)
@@ -1725,9 +2091,18 @@ class UserFileUploadExerciseAnswer(UserAnswer):
                 returned_files[returned_file.filename()] = type_info + (contents,)
         return returned_files
 
+    def get_returned_file_list(self):
+        file_objects = FileUploadExerciseReturnFile.objects.filter(answer=self)
+        returned_files = {}
+        for returned_file in file_objects:
+            type_info = returned_file.get_type()
+            returned_files[returned_file.filename()] = type_info
+        return returned_files
+        
+
 class UserRepeatedTemplateInstanceAnswer(models.Model):
-    answer = models.ForeignKey('UserRepeatedTemplateExerciseAnswer')
-    session_instance = models.ForeignKey(RepeatedTemplateExerciseSessionInstance)
+    answer = models.ForeignKey('UserRepeatedTemplateExerciseAnswer', on_delete=models.CASCADE)
+    session_instance = models.ForeignKey(RepeatedTemplateExerciseSessionInstance, null=True,  on_delete=models.SET_NULL)
     given_answer = models.TextField(blank=True)
     correct = models.BooleanField(default=False)
 
@@ -1738,8 +2113,8 @@ class UserRepeatedTemplateInstanceAnswer(models.Model):
         )
 
 class UserRepeatedTemplateExerciseAnswer(UserAnswer):
-    exercise = models.ForeignKey(RepeatedTemplateExercise, models.SET_NULL, blank=True, null=True)
-    session = models.ForeignKey(RepeatedTemplateExerciseSession)
+    exercise = models.ForeignKey(RepeatedTemplateExercise, blank=True, null=True, on_delete=models.SET_NULL)
+    session = models.ForeignKey(RepeatedTemplateExerciseSession, null=True, on_delete=models.SET_NULL)
 
     def __str__(self):
         return "Repeated template exercise answers by {} to {}".format(self.user.username, self.exercise.name)
@@ -1748,36 +2123,36 @@ class UserRepeatedTemplateExerciseAnswer(UserAnswer):
         return UserRepeatedTemplateInstanceAnswer.objects.filter(answer=self)
 
 class UserTextfieldExerciseAnswer(UserAnswer):
-    exercise = models.ForeignKey(TextfieldExercise)
+    exercise = models.ForeignKey(TextfieldExercise, null=True, on_delete=models.SET_NULL)
     given_answer = models.TextField()
 
     def __str__(self):
         return self.given_answer
 
 class UserMultipleChoiceExerciseAnswer(UserAnswer):
-    exercise = models.ForeignKey(MultipleChoiceExercise)
-    chosen_answer = models.ForeignKey(MultipleChoiceExerciseAnswer)
+    exercise = models.ForeignKey(MultipleChoiceExercise, null=True, on_delete=models.SET_NULL)
+    chosen_answer = models.ForeignKey(MultipleChoiceExerciseAnswer, null=True, on_delete=models.SET_NULL)
 
     def __str__(self):
-        return self.chosen_answer
+        return str(self.chosen_answer)
 
     def is_correct(self):
         return chosen_answer.correct
 
 class UserCheckboxExerciseAnswer(UserAnswer):
-    exercise = models.ForeignKey(CheckboxExercise)
+    exercise = models.ForeignKey(CheckboxExercise, null=True, on_delete=models.SET_NULL)
     chosen_answers = models.ManyToManyField(CheckboxExerciseAnswer)
 
     def __str__(self):
-        return ", ".join(self.chosen_answers)
+        return ", ".join(str(a) for a in self.chosen_answers.all()) 
 
 class CodeReplaceExerciseReplacement(models.Model):
-    answer = models.ForeignKey('UserCodeReplaceExerciseAnswer')
-    target = models.ForeignKey(CodeReplaceExerciseAnswer)
+    answer = models.ForeignKey('UserCodeReplaceExerciseAnswer', on_delete=models.CASCADE)
+    target = models.ForeignKey(CodeReplaceExerciseAnswer, null=True, on_delete=models.SET_NULL)
     replacement = models.TextField()
 
 class UserCodeReplaceExerciseAnswer(UserAnswer):
-    exercise = models.ForeignKey(CodeReplaceExercise)
+    exercise = models.ForeignKey(CodeReplaceExercise, null=True, on_delete=models.SET_NULL)
     given_answer = models.TextField()
 
     def __str__(self):

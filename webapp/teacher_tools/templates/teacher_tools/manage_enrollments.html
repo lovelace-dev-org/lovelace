@@ -3,14 +3,18 @@
 {% load i18n %}
 {% load course_tags %}
 
-{% block extra-static %}
-  <script src="{% static 'teacher_tools/script.js' %}"></script>
-{% endblock %}
+{% block page-title %}{% blocktrans with instance=instance.name %}
+  {{ instance }} enrollments
+{% endblocktrans %}{% endblock %}
 
-{% block page-title %}{% trans 'Manage enrollments' %}{% endblock %}
+{% block extra-static %}
+  <script src="{% static 'teacher_tools/enrollment.js' %}"></script>
+{% endblock %}
 
 {% block breadcrumb-links %}
   <li><a href="{% url 'courses:index' %}">{% trans 'Courses' %}</a></li>
+  <div class="separator">»</div>
+  <li><a href="{% url 'courses:course' course instance %}">{{ course.name }}&nbsp;/&nbsp;{{ instance.name }}</a></li>
 {% endblock %}
 
 {% block page-content %}
@@ -25,7 +29,7 @@
     class="teacher-form" 
     method="POST" 
     enctype="multipart/form-data" 
-    action="{% url 'teacher:manage_enrollments' course instance.slug %}">
+    action="{% url 'teacher:manage_enrollments' course instance %}">
   
     {% csrf_token %}
     
@@ -89,7 +93,8 @@
             </td>
             <td class="controls-cell">
               {% if enrollment.enrollment_state == "ACCEPTED" %}
-                <button class="enrollment-expel-button" onclick="process_one(event, this, 'expelled')">expel</button></td>
+                <button class="enrollment-expel-button" onclick="process_one(event, this, 'expelled')">expel</button>
+                <a class="enrollment-user-completion-link" href="{% url 'teacher:student_completion' course instance user %}">completion</a>
               {% elif enrollment.enrollment_state == "WAITING" %}
                 <button class="enrollment-accept-button" onclick="process_one(event, this, 'accepted')">accept</button>
                 <button class="enrollment-deny-button" onclick="process_one(event, this, 'denied')">deny</button>

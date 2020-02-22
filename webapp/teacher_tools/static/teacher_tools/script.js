@@ -128,9 +128,113 @@ function sort_enrollments(event, field, order) {
     });
 }
 
+function expand_task_list(page_bullet) {
+    let bullet = $(page_bullet);
+    bullet.next("ul").show();
+    bullet.attr("onclick", "collapse_task_list(this)");
+    bullet.removeClass("tasks-collapsed");
+    bullet.addClass("tasks-expanded");
+}
+
+function collapse_task_list(page_bullet) {
+    let bullet = $(page_bullet);
+    bullet.next("ul").hide();
+    bullet.attr("onclick", "expand_task_list(this)");
+    bullet.removeClass("tasks-expanded");
+    bullet.addClass("tasks-collapsed");
+}
 
 $(document).ready(function() {
     
     $(".teacher-form").submit(process_many);
     
+});
+
+function request_csv(event, a) {
+    event.preventDefault();
+
+    let link = $(a);
+    $.ajax({
+        url: link.attr("href"),
+        success: function (data, text_status, jqxhr) {
+            link.hide();
+            process_csv_progress(data);
+        },
+        error: function (jqxhr, status, type) {
+            process_csv_error(status);
+        }
+    });
+}
+
+function poll_csv_progress(url) {
+    setTimeout(function () {
+        $.ajax({
+            url: url,
+            success: function (data, text_status, jqxhr) {
+                process_csv_progress(data);
+            },
+            error: function (jqxhr, status, type) {
+                process_csv_error(status);
+            }
+        });
+    }, 100);
+}
+
+function process_csv_progress(data) {
+    if (data.state == "SUCCESS") {
+        $("div.csv-progress").text(data.metadata.current + " / " + data.metadata.total);
+        $("div.csv-download").html("<a class='file-url' href='" +
+            data.redirect + "' download></a>"
+        );
+    }
+    else if (data.state == "PROGRESS") {
+        $("div.csv-progress").text(data.metadata.current + " / " + data.metadata.total);
+        poll_csv_progress(data.redirect);
+    }
+    else if (data.state == "FAILURE") {
+        $("div.csv-error").text(data.metadata);
+    }
+    else if (data.state == "PENDING") {
+        $("div.csv-progress").text("...");
+        poll_csv_progress(data.redirect);
+    }
+}
+
+function submit_reminders(event) {
+    event.preventDefault();
+    
+    let form = $(this);
+    let url = form.attr('action');
+    
+    $.ajax({
+        type: form.attr('method'),
+        url: url,
+        data: new FormData(form[0]),
+        processData: false,
+        contentType: false, 
+        dataType: 'json',        
+        success: function(data, text_status, jqxhr_obj) {
+            $("#reminder-list-title").show();
+            let ul = $("ul.preview-list");
+            data.reminders.forEach(function (student) {
+                ul.append("<li class='student-bullet'>" +
+                    student.last_name + " " + student.first_name +
+                    " (" + student.username + ")" + 
+                    " - " + student.email + "</li>"
+                );
+            });
+            $("textarea").attr("disabled", true);
+            $("input.action-hint").attr("value", "send");
+            let submit_button = $("input#reminder-submit").detach();
+            submit_button.attr("value", data.submit_text);
+            
+            ul.after(submit_button);
+        },
+        error: function(xhr, status, type) {        
+        }
+    });
+}
+    
+$(document).ready(function() {
+    $("#reminder-form").submit(submit_reminders);
 });

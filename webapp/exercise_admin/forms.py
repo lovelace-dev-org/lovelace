@@ -117,11 +117,11 @@ class CreateInstanceIncludeFilesForm(forms.Form):
                 self.fields[file_field] = forms.FileField(max_length=255, required=False)
                 
             if lang_code == default_lang:
-                instance_field = "instance_file_instance_[{id}]_{lang}".format(id=file_id, lang=lang_code)
-                instance_choices = [(instance.id, getattr(instance, "name_{}".format(default_lang)))
-                                    for instance in c_models.CourseInstance.objects.all()]
+                course_field = "instance_file_instance_[{id}]_{lang}".format(id=file_id, lang=lang_code)
+                course_choices = [(course.id, getattr(course, "name_{}".format(default_lang)))
+                                    for course in c_models.Course.objects.all()]
                 self.fields[default_name_field] = forms.CharField(max_length=255, required=True, strip=True)
-                self.fields[instance_field] = forms.ChoiceField(choices=instance_choices, required=True)
+                self.fields[course_field] = forms.ChoiceField(choices=course_choices, required=True)
             else:
                 self.fields[default_name_field] = forms.CharField(max_length=255, required=False, strip=True)
 
@@ -203,6 +203,7 @@ class CreateFileUploadExerciseForm(forms.Form):
     #exercise_name = forms.CharField(max_length=255, required=True, strip=True) # Translate
     #exercise_content = forms.CharField(required=False) # Translate
     exercise_default_points = forms.IntegerField(required=True)
+    exercise_evaluation_group = forms.CharField(required=False)
     # tags handled at __init__
     exercise_feedback_questions = SimpleArrayField(forms.IntegerField(), required=False)
     #exercise_question = forms.CharField(required=False) # Translate
@@ -355,12 +356,60 @@ class CreateFileUploadExerciseForm(forms.Form):
                 error_code = "duplicate_{}".format(model_field)
                 field_error = forms.ValidationError(error_msg, code=error_code)
                 self.add_error(field_name, field_error)
-            
+
+    def _validate_links(self, value, lang):
+        """
+        Goes through the given content field and checks that every embedded
+        link to other pages, media files and terms matches an existing one.
+        If links to missing entities are found, these are reported as a
+        validation error. 
+        """
+        
+        import courses.blockparser as blockparser
+        import courses.markupparser as markupparser
+        from courses.models import ContentPage, CourseMedia, Term
+        
+        missing_pages = []
+        missing_media = []
+        missing_terms = []
+        messages = []
+        
+        page_links, media_links = markupparser.LinkParser.parse(value)
+        for link in page_links:
+            if not ContentPage.objects.filter(slug=link):
+                missing_pages.append(link)
+                messages.append("Content matching {} does not exist".format(link))
+                
+        for link in media_links:
+            if not CourseMedia.objects.filter(name=link):
+                missing_media.append(link)
+                messages.append("Media matching {} does not exist".format(link))
+                
+        term_re = blockparser.tags["term"].re
+        
+        term_links = set([match.group("term_name") for match in term_re.finditer(value)])
+        
+        for link in term_links:
+            if lang == "fi":
+                if not Term.objects.filter(name_fi=link):
+                    missing_terms.append(link)
+                    messages.append("Term matching {} does not exist".format(link))
+            elif lang == "en":
+                if not Term.objects.filter(name_en=link):
+                    missing_terms.append(link)
+                    messages.append("Term matching {} does not exist".format(link))
+        
+        if messages:
+            field_error = forms.ValidationError(messages)
+            self.add_error("exercise_content_" + lang, field_error)
+
+
     def clean(self):
         cleaned_data = super(CreateFileUploadExerciseForm, self).clean()
         lang_list = get_lang_list()
 
         for field_name in self.fields.keys():
+
             field_val = cleaned_data.get(field_name)
             if field_val is None:
                 continue
@@ -374,6 +423,17 @@ class CreateFileUploadExerciseForm(forms.Form):
                 field_error = forms.ValidationError(error_msg, code=error_code)
                 self.add_error(field_name, field_error)
 
-        
+            if field_name.startswith("exercise_content_"):
+                self._validate_links(field_val, field_name[-2:])
+
+            if field_name.startswith("exercise_allowed_filenames"):
+                if field_val:
+                    cleaned_data[field_name] = [val.strip() for val in field_val.split(",")]
+                else:
+                    cleaned_data[field_name] = []
+                
+
         return cleaned_data
-            
+    
+    
+

@@ -3,6 +3,13 @@ span.term {
     text-decoration: none;
     border-bottom: 2px rgba(51,51,51,0.70) dotted;
 }
+
+section.content span.term::after {
+    content: "?";
+    vertical-align: super;
+    font-size: small;
+}
+
 div.termbank span.term {
     border-bottom: 2px #333 dotted;
 }

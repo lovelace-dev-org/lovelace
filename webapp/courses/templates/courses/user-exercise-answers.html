@@ -4,7 +4,7 @@
 {% load staticfiles %}
 {% load course_tags %}
 
-{% block page-title %}{% blocktrans %}{{ username }}’s answers to {{ exercise_name }}{% endblocktrans %}{% endblock %}
+{% block page-title %}{% blocktrans %}{{ username }}’s answers to {{ exercise_title }}{% endblocktrans %}{% endblock %}
 
 {% block extra-static %}
 <link rel="stylesheet" href="{% static 'courses/answers.css' %}">
@@ -13,12 +13,19 @@
 
 {% block breadcrumb-links %}
   <li><a href="{% url 'courses:index' %}">{% trans 'Courses' %}</a></li>
-  {% if not sandboxed %}
+  <div class="separator">»</div>
+  <li><a href="{% url 'courses:course' course instance %}">{{ course_name }}&nbsp;/&nbsp;{{ instance_name }}</a></li>
+  {% if single_linked %}
     <div class="separator">»</div>
-    <li><a href="{% url 'courses:course' course_slug instance_slug %}">{{ course_name }}&nbsp;/&nbsp;{{ instance_name }}</a></li>
+    <li><a href="{% url 'courses:content' course instance parent %}">{{ parent.name }}</a></li>
     <div class="separator">»</div>
-    <li><a href="{% url 'courses:show_answers' username course_slug instance_slug exercise %}">{% blocktrans %}{{ username }}’s answers to {{ exercise_name }}{% endblocktrans %}</a></li>
+    <li><a href="{% url 'courses:content' course instance parent %}#{{ anchor }}">{{ exercise_title }}</a></li>
+  {% else %}
+    <div class="separator">»</div>
+    <li>{{ exercise.name }}</li>
   {% endif %}
+  <div class="separator">»</div>
+  <li><a href="{% url 'courses:show_answers' student course instance exercise %}">{% blocktrans %}{{ username }}’s answers to {{ exercise.name }}{% endblocktrans %}</a></li>
 {% endblock %}
 
 {% block toc %}{% endblock %}
@@ -26,9 +33,9 @@
 {% block page-content %}
   <h1>
     {% if request.user.username == username %}
-      {% blocktrans %}Your answers to {{ exercise_name }}{% endblocktrans %}
+      {% blocktrans %}Your answers to {{ exercise_title}}{% endblocktrans %}
     {% else %}
-      {% blocktrans %}{{ username }}’s answers to {{ exercise_name }}{% endblocktrans %}
+      {% blocktrans %}{{ username }}’s answers to {{ exercise_title }}{% endblocktrans %}
     {% endif %}
   </h1>
 <table class="fixed">
@@ -54,14 +61,15 @@
   </tr>
 </thead>
 <tbody>
+
   {% for answer in answers %}
   <tr id="{{ answer.id }}">
     <td class="answer-date">{{ answer.answer_date|answer_date }}</td>
-    {% if answer.given_answer %}
+    {% if exercise.content_type == "TEXTFIELD_EXERCISE" %}
       <td class="answer render-white-space">{{ answer.given_answer }}</td>
-    {% elif answer.chosen_answer %}
+    {% elif exercise.content_type == "MULTIPLE_CHOICE_EXERCISE" %}
       <td class="answer render-white-space">{{ answer.chosen_answer }}</td>
-    {% elif answer.chosen_answers %}
+    {% elif exercise.content_type == "CHECKBOX_EXERCISE" %}
       <td class="answer">
         <ul>
           {% for chosen_answer in answer.chosen_answers.all %}
@@ -69,23 +77,23 @@
           {% endfor %}
         </ul>
       </td>
-    {% elif answer.get_returned_files %}
+    {% elif exercise.content_type == "FILE_UPLOAD_EXERCISE" %}
       <td class="answer">
         <ul>
-          {% for file in answer.get_returned_files.items %}
+          {% for file in answer.get_returned_file_list.items %}
             <li>
               {% if file.1.1 == True %}
                 {{ file.0 }}
               {% else %}
-                <a class="fileview-link" href="" onclick="show_file(event, this);">{{ file.0 }}</a>
-                <div class="popup"><pre class="fileview">{{ file.1.2|safe }}</pre></div>
+                <a class="fileview-link" href="{% url 'courses:show_answer_file' student course instance answer file.0 %}" onclick="show_file(event, this);">{{ file.0 }}</a>
+                <div class="popup"><pre class="fileview"></pre></div>
               {% endif %}
-              <a href="{% url 'courses:download_answer_file' username course_slug instance_slug answer.id file.0 %}" class="file-url" download></a>
+              <a href="{% url 'courses:download_answer_file' student course instance answer file.0 %}" class="file-url" download></a>
             </li>
           {% endfor %}
         </ul>
       </td>
-    {% elif answer.get_instance_answers %}
+    {% elif exercise.content_type == "REPEATED_TEMPLATE_EXERCISE" %}
       <td class="answer">
         <ul>
           {% for instance_answer in answer.get_instance_answers %}
@@ -106,13 +114,13 @@
         <span title="{% trans 'Unknown' %}">?</span>
       {% endif %}
       {% if answer.evaluation.test_results %}
-        <a href="{% url 'courses:get_file_exercise_evaluation' user answer.id %}"
+        <a href="{% url 'courses:get_file_exercise_evaluation' student course instance exercise answer %}"
            onclick="show_results(event, this, 'results-{{ answer.id }}');">{% trans 'View results' %}</a>
         <div class="popup"><div class="results-view" id="results-{{ answer.id }}"></div></div>
       {% endif %}
     </td>
     <td class="permalink">
-      <a href="#{{ answer.id }}">&para;</a> | <a target="_blank" rel="noopener noreferrer" href="mailto:{{ instance_email }}?subject={{ instance_name|urlencode }}%20-%20{{ exercise_name|urlencode }}{% autoescape off %}&body={% endautoescape %}{{ answers_url|urlencode }}%23{{ answer.id }}" title="{% trans 'Send course staff a question about this answer' %}">{% trans 'Help!' %}</a>
+      <a href="#{{ answer.id }}">&para;</a> | <a target="_blank" rel="noopener noreferrer" href="mailto:{{ instance_email }}?subject={{ instance_name|urlencode }}%20-%20{{ exercise_title|urlencode }}{% autoescape off %}&body={% endautoescape %}{{ answers_url|urlencode }}%23{{ answer.id }}" title="{% trans 'Send course staff a question about this answer' %}">{% trans 'Help!' %}</a>
     </td>
   </tr>
   {% endfor %}

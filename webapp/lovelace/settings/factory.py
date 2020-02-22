@@ -1,5 +1,17 @@
 """
-Django settings for Lovelace project.
+Django settings for Lovelace project. Do not modify this file. In order to make
+your own settings file(s), create them in the same folder with appropriate
+names (recommended: development.py, production.py, unittest.py) and import the
+contents of this file with: 
+
+from lovelace.settings.factory import *
+
+Then overwrite or modify the values you need to. You should also edit the
+__init__.py in this folder to import the settings file you wish to use as the
+default. When running manage.py you can change the settings file with the 
+--settings option, e.g.
+
+python manage.py --settings lovelace.settings.yoursettings
 
 For more information on this file, see
 https://docs.djangoproject.com/en/dev/topics/settings/
@@ -9,10 +21,14 @@ https://docs.djangoproject.com/en/dev/ref/settings/
 """
 
 import os
+from kombu import Exchange, Queue
+
+# to prevent accidents, unit tests will not run unless started with a settings
+# file where this flag is set to True.
+TEST_SETTINGS = False
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-BASE_DIR = os.path.dirname(os.path.dirname(__file__))
-
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True # Use True when viewing through web browser
 
@@ -37,12 +53,13 @@ INSTALLED_APPS = (
     'exercise_admin',
     #'debug_toolbar',
     'reversion',
+    'teacher_tools'
 )
 
 SITE_ID = 1
 LOGIN_REDIRECT_URL = '/'
 
-MIDDLEWARE_CLASSES = (
+MIDDLEWARE = (
     #'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -50,7 +67,6 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 )
@@ -172,6 +188,9 @@ AUTH_PROFILE_MODULE = 'courses.UserProfile'
 
 # Absolute filesystem path to the directory that will hold user-uploaded files.
 # Example: "/home/media/media.lawrence.com/media/"
+# When creating a settings file for unit tests, change this to 
+# os.path.join(BASE_DIR, "test_files", "upload") 
+# or to a similarly isolated path. 
 MEDIA_ROOT = os.path.join(BASE_DIR, 'upload')
 
 # URL that handles the media served from MEDIA_ROOT. Make sure to use a
@@ -196,9 +215,32 @@ STATICFILES_DIRS = (
 # Make this unique, and don't share it with anybody.
 SECRET_KEY = '$34r(o@3yfyr-=v8*ndtqm6^ti0=p%cyt&amp;a*giv-1w%q21r4ae'
 
+# Redis settings
+REDIS_RESULT_CONFIG = {"host": "localhost", "port": 6379, "db": 0}
+REDIS_RESULT_EXPIRE = 60
+REDIS_LONG_EXPIRE = 60 * 60 * 24 * 7
+
 # Celery settings
 CELERY_BROKER_URL = 'amqp://guest:guest@localhost:5672//'
-CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'redis://{host}:{port}/{db}'.format(**REDIS_RESULT_CONFIG)
+CELERY_TASK_DEFAULT_QUEUE = "default"
+CELERY_TASK_DEFAULT_ROUTING_KEY = "default"
+CELERY_QUEUES = (
+    Queue("default", Exchange("default"), routing_key="default"),
+    Queue("privileged", Exchange("privileged"), routing_key="privileged")
+)
+CELERY_ROUTES = {
+    "teacher_tools.*": {
+        "queue": "privileged",
+        "exchange": "privileged",
+        "routing_key": "privileged"
+    },
+    "stats.*": {
+        "queue": "privileged",
+        "exchange": "privileged",
+        "routing_key": "privileged"
+    }
+}
 
 # Cache settings
 CACHES = {
@@ -210,3 +252,23 @@ CACHES = {
         }
     }
 }
+
+STAT_GENERATION_HOUR = None
+
+# Shibboleth related options - uncomment if using Shibboleth
+# First one makes emails invalid usernames when creating accounts
+# Second one is required for Shibboleth logout to work properly
+#ACCOUNT_USERNAME_VALIDATORS = "courses.adapter.username_validators"
+#ACCOUNT_ADAPTER = "courses.adapter.LovelaceAccountAdapter"
+
+# Set PRIVATE_STORAGE_FS_PATH outside www root to make uploaded files
+# inaccessible through URLs
+# Set PRIVATE_STORAGE_X_SENDFILE to True if your configuration supports
+# mod_xsendfile 
+PRIVATE_STORAGE_FS_PATH = MEDIA_ROOT
+PRIVATE_STORAGE_X_SENDFILE = False
+
+MOSSNET_SUBMIT_PATH = None
+MOSSNET_LANGUAGES = []
+
+

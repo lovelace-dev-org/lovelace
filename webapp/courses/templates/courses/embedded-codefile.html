@@ -1,7 +1,7 @@
 <div class="embedded-code">
   <header class="embedded-code-header">
     {{ name }}
-    <a href="{% url 'courses:download_embedded_file' course instance slug %}" class="file-url" dowload></a>
+    <a href="{% url 'courses:download_embedded_file' course instance file %}" class="file-url" dowload></a>
   </header>
   {% if show_content %}
     <pre><code class="highlight">{{ contents }}</code></pre>

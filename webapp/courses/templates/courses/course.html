@@ -7,17 +7,23 @@
 {% block breadcrumb-links %}
   <li><a href="{% url 'courses:index' %}">{% trans 'Courses' %}</a></li>
   <div class="separator">»</div>
-  <li><a href="{% url 'courses:course' course.slug instance.slug %}">{{ instance.get_identifying_str }}</a></li>
+  <li><a href="{% url 'courses:course' course instance %}">{{ instance.get_identifying_str }}</a></li>
 {% endblock %}
 
 {% block toc %}{% endblock %}
 
+{% block course-completion-link %}
+  {% if not sandboxed %}
+    <a href="{% url 'teacher_tools:completion' course instance %}">{% trans 'Course completion' %}</a>
+  {% endif %}
+{% endblock %}
+
 {% block course-stats-link %}
-  <a href="{% url 'stats:users_course' course.slug instance.slug %}">{% trans 'Course statistics' %}</a>
+  <a href="{% url 'stats:users_course' course instance %}">{% trans 'Course statistics' %}</a>
 {% endblock %}
 
 {% block course-enrollments-link %}
-  <a href="{% url 'teacher:manage_enrollments' course.slug instance.slug %}">{% trans 'Manage enrollments' %}</a>
+  <a href="{% url 'teacher:manage_enrollments' course instance %}">{% trans 'Manage enrollments' %}</a>
 {% endblock %}
 
 {% block page-content %}
@@ -29,11 +35,11 @@
     {% for list_direction, result, correct_emb, emb_count, visible in content_tree %}
       {% if list_direction == '>' %}
         <ul>
-          {% elif list_direction == '<' %}
+      {% elif list_direction == '<' %}
         </ul>
       {% else %}
         <li{% if visible == False %} class="admin-visible-content"{% endif %}>
-          <a href="{% url 'courses:content' course.slug instance.slug list_direction.slug %}">{{ list_direction.name }}</a>
+          <a href="{% url 'courses:content' course instance list_direction %}">{{ list_direction.name }}</a>
           {% if result and emb_count == 0 %}
             {% if result == 'unanswered' %}
               <img class="course-contents-result" src="{% static 'courses/unanswered-16.png' %}" alt="{% trans 'Unanswered' %}">

@@ -3,8 +3,32 @@
 {% load stats_tags %}
 
 {% block user-answer-data %}
-  {% for course, basic_stats, piechart, answer_data, answers_removed in stats %}
+  {% for course, basic_stats, choices, piechart, answer_data, answers_removed in stats %}
   <h3 class="content-heading">{{ course|user_answers_title }}<span id="{{ course|heading_id }}" class="anchor-offset"></span></h3> 
+
+  <div class="stat-table">
+    <table class="fixed">
+      <colgroup>
+        <col class="answer">
+        <col class="correct">
+      </colgroup>
+      <tr>
+        <th>Answer choice</th>
+        <th>Correct</th>
+      </tr>
+      {% for choice in choices %}
+      <tr>
+        <td class="answer">{{ choice }}</td>
+        {% if choice.correct %}
+        <td class="correct">{{ choice.correct }}</td>
+        {% else %}
+        <td class="incorrect">{{ choice.correct }}</td>
+        {% endif %}
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+  
   <div class="stat-table">
     <div class="stat-table row">
       <div class="stat-table cell">

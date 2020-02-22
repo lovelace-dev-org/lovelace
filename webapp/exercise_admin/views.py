@@ -21,7 +21,7 @@ from reversion import revisions as reversion
 from courses.models import ContentGraph, EmbeddedLink
 
 # The editable models
-from courses.models import ContentPage, CourseInstance, FileUploadExercise, FileExerciseTest, FileExerciseTestStage,\
+from courses.models import Course, ContentPage, CourseInstance, FileUploadExercise, FileExerciseTest, FileExerciseTestStage,\
     FileExerciseTestCommand, FileExerciseTestExpectedOutput, FileExerciseTestExpectedStdout,\
     FileExerciseTestExpectedStderr, FileExerciseTestIncludeFile, IncludeFileSettings, \
     Hint, InstanceIncludeFile, InstanceIncludeFileToExerciseLink, File, RepeatedTemplateExercise, RepeatedTemplateExerciseBackendFile
@@ -33,7 +33,7 @@ from feedback.models import ContentFeedbackQuestion, TextfieldFeedbackQuestion, 
 from .forms import CreateFeedbackQuestionsForm, CreateInstanceIncludeFilesForm, CreateFileUploadExerciseForm
 from .utils import get_default_lang, get_lang_list
 
-from utils.access import determine_access, is_course_staff
+from utils.access import determine_access, is_course_staff, determine_media_access
 from utils.files import generate_download_response
 
 
@@ -54,12 +54,13 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_hin
     #e_name = form_data['exercise_name']
     #e_content = form_data['exercise_content']
     e_default_points = form_data['exercise_default_points']
+    e_evaluation_group = form_data['exercise_evaluation_group']
     e_tags = [tag for key, tag in sorted(form_data.items()) if key.startswith('exercise_tag')] # TODO: Do this in clean
     e_feedback_questions = form_data.get('exercise_feedback_questions') or []
     #e_question = form_data['exercise_question']
     e_manually_evaluated = form_data['exercise_manually_evaluated']
     e_ask_collaborators = form_data['exercise_ask_collaborators']
-    e_allowed_filenames = form_data['exercise_allowed_filenames'].split(',') # TODO: Do this in clean
+    e_allowed_filenames = form_data['exercise_allowed_filenames']
 
     lang_list = get_lang_list()
     for lang_code, _ in lang_list:
@@ -75,6 +76,7 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_hin
     #exercise.name = e_name
     #exercise.content = e_content
     exercise.default_points = e_default_points
+    exercise.evaluation_group = e_evaluation_group
     exercise.tags = e_tags
     #exercise.question = e_question
     exercise.manually_evaluated = e_manually_evaluated
@@ -82,7 +84,7 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_hin
     exercise.allowed_filenames = e_allowed_filenames
     exercise.save()
     # save() first so that m2m can be used (when adding a new exercise)
-    exercise.feedback_questions = e_feedback_questions
+    exercise.feedback_questions.set(e_feedback_questions)
     exercise.save()
 
     # TODO! Check for all existing foreignkey relations: must not be linked to a different exercise previously! 
@@ -201,7 +203,7 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_hin
         required_files = [i.split('_') for i in form_data['test_{}_required_files'.format(test_id)]]
         t_required_ef = [edited_exercise_files[i[1]] for i in required_files if i[0] == 'ef']
         t_required_if = [int(i[1]) for i in required_files if i[0] == 'if' and i[1] in if_ids]
-                
+
         # Check for new tests
         if test_id.startswith('newt'):
             current_test = FileExerciseTest()
@@ -213,8 +215,8 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_hin
         # Set the test values
         current_test.name = t_name
         current_test.save() # Needed for the required files
-        current_test.required_files = t_required_ef
-        current_test.required_instance_files = t_required_if
+        current_test.required_files.set(t_required_ef)
+        current_test.required_instance_files.set(t_required_if)
 
         # Save the test and store a reference
         current_test.save()
@@ -325,7 +327,7 @@ Command = collections.namedtuple('Command', ['stage', 'ordinal_number'])
 # fileuploadexercise/{id}/change
 def file_upload_exercise(request, exercise_id=None, action=None):
     # Admins only, consider @staff_member_required
-    if not (request.user.is_staff and request.user.is_authenticated() and request.user.is_active):
+    if not (request.user.is_staff and request.user.is_authenticated and request.user.is_active):
         return HttpResponseForbidden("Only admins are allowed to edit file upload exercises.")
 
     # GET = show the page
@@ -399,7 +401,7 @@ def file_upload_exercise(request, exercise_id=None, action=None):
     instance_files = InstanceIncludeFile.objects.all()
     instance_files_linked = [link.include_file for link in instance_file_links]
     instance_files_not_linked = [f for f in instance_files if f not in instance_files_linked]
-    instances = CourseInstance.objects.all().order_by('course')
+    instances = Course.objects.all().order_by('name')
 
     if request.method == "POST":
         form_contents = request.POST
@@ -506,7 +508,7 @@ def file_upload_exercise(request, exercise_id=None, action=None):
     return HttpResponse(t.render(c, request))
 
 def get_feedback_questions(request):
-    if not (request.user.is_staff and request.user.is_authenticated() and request.user.is_active):
+    if not (request.user.is_staff and request.user.is_authenticated and request.user.is_active):
         return JsonResponse({
             "error": "Only logged in admins can query feedback questions!"
         })
@@ -574,7 +576,7 @@ def edit_feedback_questions(request):
     if request.method != "POST":
         return HttpResponseNotAllowed(["POST"])
 
-    if not (request.user.is_staff and request.user.is_authenticated() and request.user.is_active):
+    if not (request.user.is_staff and request.user.is_authenticated and request.user.is_active):
         return JsonResponse({
             "error" : {
                 "__all__" : {
@@ -670,19 +672,23 @@ def edit_feedback_questions(request):
     return get_feedback_questions(request)
 
 def get_instance_files(request):
-    if not (request.user.is_staff and request.user.is_authenticated() and request.user.is_active):
+    if not (request.user.is_staff and request.user.is_authenticated and request.user.is_active):
         return JsonResponse({
             "error": "Only logged in admins can query instance files!"
         })
     
-    instance_files = InstanceIncludeFile.objects.all()
+    if request.user.is_superuser:
+        instance_files = InstanceIncludeFile.objects.all()
+    else:
+        instance_files = InstanceIncludeFile.objects.filter(course__staff_group__user=request.user)
+    
     lang_list = get_lang_list()
     result = []
     
     for instance_file in instance_files:
         instance_file_json = {
             "id" : instance_file.id,
-            "instance_id" : instance_file.instance.id,
+            "instance_id" : instance_file.course.id,
             "instance_names" : {},
             "default_names" : {},
             "descriptions" : {},
@@ -699,7 +705,7 @@ def get_instance_files(request):
             except ValueError:
                 url = ""
             instance_file_json["urls"][lang_code] = url
-            instance_file_json["instance_names"][lang_code] = getattr(instance_file.instance, name_attr) or ""
+            instance_file_json["instance_names"][lang_code] = getattr(instance_file.course, name_attr) or ""
             instance_file_json["default_names"][lang_code] = getattr(instance_file, default_name_attr) or ""
             instance_file_json["descriptions"][lang_code] = getattr(instance_file, description_attr) or ""
         result.append(instance_file_json)
@@ -713,7 +719,7 @@ def edit_instance_files(request):
     if request.method != "POST":
         return HttpResponseNotAllowed(["POST"])
 
-    if not (request.user.is_staff and request.user.is_authenticated() and request.user.is_active):
+    if not (request.user.is_staff and request.user.is_authenticated and request.user.is_active):
         return JsonResponse({
             "error" : {
                 "__all__" : {
@@ -742,48 +748,51 @@ def edit_instance_files(request):
         default_lang = get_default_lang()
         
         # Edit existing instance files
-        for instance_file in instance_files:
+        for instance_file in instance_files:            
             file_changed = False
-            for lang_code, _ in lang_list:
-                fileinfo = cleaned_data.get("instance_file_file_[{id}]_{lang}".format(id=instance_file.id, lang=lang_code))
-                default_name = cleaned_data.get("instance_file_default_name_[{id}]_{lang}".format(id=instance_file.id, lang=lang_code))
-                description = cleaned_data.get("instance_file_description_[{id}]_{lang}".format(id=instance_file.id, lang=lang_code))
+            with reversion.create_revision():
+                for lang_code, _ in lang_list:
+                    fileinfo = cleaned_data.get("instance_file_file_[{id}]_{lang}".format(id=instance_file.id, lang=lang_code))
+                    default_name = cleaned_data.get("instance_file_default_name_[{id}]_{lang}".format(id=instance_file.id, lang=lang_code))
+                    description = cleaned_data.get("instance_file_description_[{id}]_{lang}".format(id=instance_file.id, lang=lang_code))
 
-                if getattr(instance_file, "default_name_{}".format(lang_code)) != default_name:
-                    setattr(instance_file, "default_name_{}".format(lang_code), default_name)
-                    file_changed = True
-                if fileinfo is not None:
-                    setattr(instance_file, "fileinfo_{}".format(lang_code), fileinfo)
-                    file_changed = True
-                if description is not None and getattr(instance_file, "description_{}".format(lang_code)) != description:
-                    setattr(instance_file, "description_{}".format(lang_code), description)
+                    if getattr(instance_file, "default_name_{}".format(lang_code)) != default_name:
+                        setattr(instance_file, "default_name_{}".format(lang_code), default_name)
+                        file_changed = True
+                    if fileinfo is not None:
+                        setattr(instance_file, "fileinfo_{}".format(lang_code), fileinfo)
+                        file_changed = True
+                    if description is not None and getattr(instance_file, "description_{}".format(lang_code)) != description:
+                        setattr(instance_file, "description_{}".format(lang_code), description)
+                        file_changed = True
+
+                course_id = cleaned_data.get("instance_file_instance_[{id}]_{lang}".format(id=instance_file.id, lang=default_lang))
+                if str(instance_file.course.id) != course_id:
+                    instance_file.course_id = course_id
                     file_changed = True
 
-            instance_id = cleaned_data.get("instance_file_instance_[{id}]_{lang}".format(id=instance_file.id, lang=default_lang))
-            if str(instance_file.instance.id) != instance_id:
-                instance_file.instance_id = instance_id
-                file_changed = True
-
-            if file_changed:
-                instance_file.save()
+                if file_changed:
+                    instance_file.save()
 
         new_instance_files = {}
 
         # Create new instance files
         for file_id in new_file_ids:
-            instance_file = InstanceIncludeFile()
-            for lang_code, _ in lang_list:
-                fileinfo_field = "instance_file_file_[{id}]_{lang}".format(id=file_id, lang=lang_code)
-                default_name_field = "instance_file_default_name_[{id}]_{lang}".format(id=file_id, lang=lang_code)
-                description_field = "instance_file_description_[{id}]_{lang}".format(id=file_id, lang=lang_code)
-                setattr(instance_file, "fileinfo_{}".format(lang_code), cleaned_data.get(fileinfo_field))
-                setattr(instance_file, "default_name_{}".format(lang_code), cleaned_data.get(default_name_field))
-                setattr(instance_file, "description_{}".format(lang_code), cleaned_data.get(description_field))
-            instance_field = "instance_file_instance_[{id}]_{lang}".format(id=file_id, lang=default_lang)
-            instance_file.instance_id = cleaned_data.get(instance_field)
-            instance_file.save()
-            new_instance_files[file_id] = instance_file.id
-
+            with reversion.create_revision():
+                instance_file = InstanceIncludeFile()
+                for lang_code, _ in lang_list:
+                    fileinfo_field = "instance_file_file_[{id}]_{lang}".format(id=file_id, lang=lang_code)
+                    default_name_field = "instance_file_default_name_[{id}]_{lang}".format(id=file_id, lang=lang_code)
+                    description_field = "instance_file_description_[{id}]_{lang}".format(id=file_id, lang=lang_code)
+                    setattr(instance_file, "fileinfo_{}".format(lang_code), cleaned_data.get(fileinfo_field))
+                    setattr(instance_file, "default_name_{}".format(lang_code), cleaned_data.get(default_name_field))
+                    setattr(instance_file, "description_{}".format(lang_code), cleaned_data.get(description_field))
+                instance_field = "instance_file_instance_[{id}]_{lang}".format(id=file_id, lang=default_lang)
+                instance_file.course_id = cleaned_data.get(instance_field)
+                instance_file.save()
+                new_instance_files[file_id] = instance_file.id
+                
+                reversion.set_user(request.user)
     else:
         return JsonResponse({
             "error" : form.errors
@@ -820,12 +829,10 @@ def download_instance_file(request, file_id, lang_code):
     
     try:
         fileobject = InstanceIncludeFile.objects.get(id=file_id)
-    except FileExerciseTestIncludeFile.DoesNotExist as e:
+    except InstanceIncludeFile.DoesNotExist as e:
         return HttpResponseNotFound(_("Requested file does not exist."))
-    
-    instance_object = fileobject.instance
-            
-    if not is_course_staff(request.user, instance_object):
+
+    if not request.user in fileobject.course.staff_group.user_set.get_queryset():
         return HttpResponseForbidden(_("Only course staff members are allowed to download instance files."))
     
     fs_path = os.path.join(getattr(settings, "PRIVATE_STORAGE_FS_PATH", settings.MEDIA_ROOT), fileobject.fileinfo.name)

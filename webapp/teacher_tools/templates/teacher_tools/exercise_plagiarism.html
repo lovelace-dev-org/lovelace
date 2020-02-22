@@ -1,0 +1,70 @@
+{% extends 'courses/base.html' %}
+{% load staticfiles %}
+{% load i18n %}
+{% load course_tags %}
+
+{% block extra-static %}
+  <script src="{% static 'teacher_tools/plagiarism.js' %}"></script>
+{% endblock %}
+
+{% block breadcrumb-links %}
+  <li><a href="{% url 'courses:index' %}">{% trans 'Courses' %}</a></li>
+  <div class="separator">»</div>
+  <li><a href="{% url 'courses:course' course instance %}">{{ course_name }}&nbsp;/&nbsp;{{ instance_name }}</a></li>
+  {% if single_linked %}
+    <div class="separator">»</div>
+    <li><a href="{% url 'courses:content' course instance parent %}">{{ parent.name }}</a></li>
+    <div class="separator">»</div>
+    <li><a href="{% url 'courses:content' course instance parent %}#{{ anchor }}">{{ exercise_name }}</a></li>
+  {% else %}
+    <div class="separator">»</div>
+    <li>{{ exercise_name }}</li>
+  {% endif %}
+  <div class="separator">»</div>
+  <li><a href="{% url 'courses:show_answers' user course instance exercise %}">{% blocktrans %}{{ username }}’s answers to {{ exercise_name }}{% endblocktrans %}</a></li>
+{% endblock %}
+
+{% block page-content %}
+
+  <h1>
+    {% blocktrans with exercise_name=exercise.name %}
+      Check software plagiarism for {{ exercise_name }}
+    {% endblocktrans %}
+  </h1>
+
+  <div class="paragraph">
+    {% trans "This utility uses <a href='http://theory.stanford.edu/~aiken/moss/'>MOSS</a> - a software-as-a-service provided by the University of Stanford - to produce a report about code similarity between answers sent to this exercise. You can customize the search using the options below. Please read the security and legal considerations regarding MOSS before using. Once the analysis is complete, you will receive a link to the results page on the MOSS server. Lovelace does not parse the results in any way." %}
+  </div>
+
+  {% if current_url %}
+    <div class="paragraph">
+      <a href="{{ current_url }}">{% trans "Previously generated report for this task" %}</a>
+    </div>
+  {% endif %}
+
+  <form id="plagiarism-form"
+    class="teacher-form"
+    method="POST"
+    enctype="multipart/form-data"
+    action="{% url 'teacher:exercise_plagiarism' course instance exercise %}">
+
+    {% csrf_token %}
+
+    {% for field in form %}
+
+      <div class="input-label-container">
+        {{ field.errors }}
+        {{ field.label_tag }} {{ field }}
+      </div>
+
+    {% endfor %}
+
+    <input id="moss-submit" type="submit" name="submit" value="{% trans 'Submit request' %}"></input>
+
+    <div id="task-progress" class="paragraph"></div>
+
+    <div id="moss-link" class="paragraph"></div>
+
+  </form>
+
+{% endblock %}

@@ -3,9 +3,9 @@
 
 <div class="feedback">
   <div class="feedback-question">
-    <span>{{ question }}</span>
+    <span>{{ question.question }}</span>
   </div>
-  <form class="feedback-form" method="POST" enctype="multipart/form-data" action="{% url 'feedback:receive' content_slug feedback_slug %}">
+  <form class="feedback-form" method="POST" enctype="multipart/form-data" action="{% url 'feedback:receive' instance content question %}">
     {% csrf_token %}
     {% block feedback-input %}
     {% endblock %}

@@ -1,15 +1,28 @@
+import json
 import re
 import math
 import statistics
-
 import django
-from django.http import HttpResponse, HttpResponseNotFound, HttpResponseForbidden
+import redis
+
+from celery import chain
+from django.conf import settings
+from django.core.cache import cache
+from django.http import HttpResponse, HttpResponseNotFound, HttpResponseForbidden, JsonResponse
 from django.template import loader
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.safestring import mark_safe
+from django.utils.translation import ugettext as _
+from lovelace.celery import app as celery_app
+
+import datetime
 
 from courses.models import *
+from .models import *
+import stats.tasks as stat_tasks
+
+from utils.access import ensure_responsible
 
 # TODO: A view that displays statistics of a page that has embedded pages.
 #       E.g. the average completion status, how many of total course
@@ -60,12 +73,8 @@ def filter_users_enrolled(users, course_inst):
 
 def course_instances_linked(exercise):
     linked = []
-    course_instances = CourseInstance.objects.all()
-    
-    for course_inst in course_instances:
-        if exercise in course_instance_exercises(course_inst):
-            linked.append(course_inst)
-    return linked
+    links = EmbeddedLink.objects.filter(embedded_page=exercise)
+    return [link.instance for link in links]
 
 ########################################################### 
 
@@ -210,17 +219,18 @@ def exercise_basic_answer_stats(exercise, users, answers, course_inst=None):
 
     return basic_stats, piechart
 
-def checkbox_exercise(exercise, users, course_inst=None):
+def checkbox_exercise(exercise, users, course_inst=None, revision=None):
     """
     Shows statistics on a single checkbox exercise.
     """
     
-    answers = UserCheckboxExerciseAnswer.objects.filter(exercise=exercise, user__in=users)
+    answers = UserCheckboxExerciseAnswer.objects.filter(exercise=exercise, user__in=users, instance=course_inst)
     basic_stats, piechart = exercise_basic_answer_stats(exercise, users, answers, course_inst)
     chosen_answers = list(answers.values_list("chosen_answers", flat=True))
     chosen_answers_set = set(chosen_answers)
     answers_removed_count = 0    
     answer_data = []
+    choices = exercise.get_choices(exercise, revision)
 
     for answer in chosen_answers_set:
         try:
@@ -234,21 +244,23 @@ def checkbox_exercise(exercise, users, course_inst=None):
     
     return (course_inst,
             basic_stats,
+            choices,
             piechart,
             answer_data, 
             answers_removed_count)
 
-def multiple_choice_exercise(exercise, users, course_inst=None):
+def multiple_choice_exercise(exercise, users, course_inst=None, revision=None):
     """
     Shows statistics on a single multiple choice exercise.
     """
     
-    answers = UserMultipleChoiceExerciseAnswer.objects.filter(exercise=exercise, user__in=users)
+    answers = UserMultipleChoiceExerciseAnswer.objects.filter(exercise=exercise, user__in=users, instance=course_inst)
     basic_stats, piechart = exercise_basic_answer_stats(exercise, users, answers, course_inst)
     chosen_answers = list(answers.values_list("chosen_answer", flat=True))
     chosen_answers_set = set(chosen_answers)
     answers_removed_count = 0
     answer_data = []
+    choices = exercise.get_choices(exercise, revision)
 
     for answer in chosen_answers_set:
         try:
@@ -262,16 +274,17 @@ def multiple_choice_exercise(exercise, users, course_inst=None):
             
     return (course_inst,
             basic_stats,
+            choices,
             piechart,
             answer_data, 
             answers_removed_count)
 
-def textfield_exercise(exercise, users, course_inst=None):
+def textfield_exercise(exercise, users, course_inst=None, revision=None):
     """
     Shows statistics on a single textfield exercise.
     """
 
-    answers = UserTextfieldExerciseAnswer.objects.filter(exercise=exercise, user__in=users)
+    answers = UserTextfieldExerciseAnswer.objects.filter(exercise=exercise, user__in=users, instance=course_inst)
     basic_stats, piechart = exercise_basic_answer_stats(exercise, users, answers, course_inst)
     given_answers = list(answers.values_list("given_answer", flat=True))
     given_answers_set = set(given_answers)
@@ -281,7 +294,7 @@ def textfield_exercise(exercise, users, course_inst=None):
     hinted_incorrect_given = 0
     incorrect_unique = 0
     hinted_incorrect_unique = 0
-    choices = exercise.get_choices(exercise)
+    choices = exercise.get_choices(exercise, revision)
     for answer in given_answers_set:
         count = given_answers.count(answer)
         correct, hinted, matches = textfield_eval(answer, choices)
@@ -307,16 +320,17 @@ def textfield_exercise(exercise, users, course_inst=None):
 
     return (course_inst,
             basic_stats,
+            choices,
             piechart,
             answer_data, 
             round(hint_coverage_unique * 100, 1),
             round(hint_coverage_given * 100, 1))
 
-def repeated_template_exercise(exercise, users, course_inst=None):
+def repeated_template_exercise(exercise, users, course_inst=None, revision=None):
     """
     Shows statistics on a single repeated template exercise.
     """
-    answer_sessions = UserRepeatedTemplateExerciseAnswer.objects.filter(exercise=exercise, user__in=users)
+    answer_sessions = UserRepeatedTemplateExerciseAnswer.objects.filter(exercise=exercise, user__in=users, instance=course_inst)
     answer_instances = UserRepeatedTemplateInstanceAnswer.objects.filter(session_instance__in=answer_sessions.values_list('id', flat=True))
     basic_stats, piechart = exercise_basic_answer_stats(exercise, users, answer_sessions, course_inst)
 
@@ -339,12 +353,12 @@ def repeated_template_exercise(exercise, users, course_inst=None):
             round(hint_coverage_given * 100, 1))
     
     
-def file_upload_exercise(exercise, users, course_inst=None):
+def file_upload_exercise(exercise, users, course_inst=None, revision=None):
     """
     Shows statistics on a single file upload exercise.
     """
 
-    answers = UserFileUploadExerciseAnswer.objects.filter(exercise=exercise, user__in=users)
+    answers = UserFileUploadExerciseAnswer.objects.filter(exercise=exercise, user__in=users, instance=course_inst)
     basic_stats, piechart = exercise_basic_answer_stats(exercise, users, answers, course_inst)
     
     return (course_inst,
@@ -352,33 +366,33 @@ def file_upload_exercise(exercise, users, course_inst=None):
             piechart)
 
 def exercise_answer_stats(request, ctx, exercise, exercise_type_f, template):
-    all_users = User.objects.filter(is_staff=False).order_by('username')
     course_instances = course_instances_linked(exercise)
 
     stats = []
     users = []
     for course_inst in course_instances:
         #users_enrolled = filter_users_enrolled(all_users, course_inst)
-        users_enrolled = all_users # until enroll implemented
-        stats.append(exercise_type_f(exercise, users_enrolled, course_inst))
+        users_enrolled = course_inst.enrolled_users.get_queryset() # until enroll implemented
+
+        # this is not right, but we don't have knowledge of the parent page 
+        # in this context
+        link = EmbeddedLink.objects.filter(instance=course_inst, embedded_page=exercise).first()
+
+        stats.append(exercise_type_f(exercise, users_enrolled, course_inst, link.revision))
         users.extend(users_enrolled)
 
     stats.append(exercise_type_f(exercise, list(set(users))))
     ctx.update({"stats": stats})
     t = loader.get_template("stats/" + template)
     return HttpResponse(t.render(ctx, request))
-    
-def single_exercise(request, content_slug):
+
+def single_exercise(request, exercise):
     """
     Shows statistics on a single selected task.
     """
-    if not (request.user.is_authenticated() and request.user.is_active and request.user.is_staff):
+    if not (request.user.is_authenticated and request.user.is_active and request.user.is_staff):
         return HttpResponseForbidden("Only logged in admins can view exercise statistics!")
 
-    try:
-        exercise = ContentPage.objects.get(slug=content_slug)
-    except ContentPage.DoesNotExist:
-        return HttpResponseNotFound("No exercise {} found!".format(content_slug))
     tasktype = exercise.content_type
 
     ctx = {
@@ -402,7 +416,7 @@ def single_exercise(request, content_slug):
 
 def user_task(request, user_name, task_name):
     '''Shows a user's answers to a task.'''
-    if not request.user.is_authenticated() and not request.user.is_staff:
+    if not request.user.is_authenticated and not request.user.is_staff:
         return HttpResponseNotFound()
 
     content = ContentPage.objects.get(slug=task_name)
@@ -437,7 +451,7 @@ def user_task(request, user_name, task_name):
 
 def all_exercises(request, course_name):
     '''Shows statistics for all the tasks.'''
-    if not request.user.is_authenticated() and not request.user.is_staff:
+    if not request.user.is_authenticated and not request.user.is_staff:
         return HttpResponseNotFound()
 
     tasks = ContentPage.objects.all()
@@ -488,7 +502,7 @@ def all_exercises(request, course_name):
 
 def course_users(request, course_slug, content_to_search, year, month, day):
     '''Admin view that shows a table of all users and the tasks they've done on a particular course.'''
-    if not request.user.is_authenticated() and not request.user.is_active and not request.user.is_staff:
+    if not request.user.is_authenticated and not request.user.is_active and not request.user.is_staff:
         return HttpResponseNotFound()
 
     selected_course = Training.objects.get(name=course_slug)
@@ -547,7 +561,7 @@ def course_users(request, course_slug, content_to_search, year, month, day):
     return HttpResponse(t.render(c, request))
 
 def users_all(request):
-    if not (request.user.is_authenticated() and request.user.is_active and\
+    if not (request.user.is_authenticated and request.user.is_active and\
        request.user.is_staff):
         return HttpResponseNotFound()
 
@@ -580,7 +594,7 @@ def color_generator(total_colors):
         yield 'rgba({},{},{},0.65)'.format(int(r), int(g), int(b))
 
 def users_course(request, course_slug, instance_slug):
-    if not (request.user.is_authenticated() and request.user.is_active and\
+    if not (request.user.is_authenticated and request.user.is_active and\
             request.user.is_staff):
         return HttpResponseNotFound()
 
@@ -608,3 +622,155 @@ def users_course(request, course_slug, instance_slug):
 
 class ZeroUsersException(Exception):
     pass
+
+
+# ^
+# |
+# OLD STUFF
+# NEW STUFF
+# |
+# v
+
+
+@ensure_responsible
+def instance_console(request, course, instance):
+    task_meta = cache.get("{}_stat_meta".format(instance.slug))
+    task_meta = task_meta and json.loads(task_meta)
+    if task_meta and task_meta["completed"]:
+        gen_timestamp = task_meta["completed"]
+        stat_status = _("Last generated: %s" % gen_timestamp)
+    elif task_meta:
+        gen_timestamp = None
+        stat_status = _("Generation of new stats has been requested.")
+    else:
+        gen_timestamp = None
+        stat_status = _("Stats have not been generated.")
+
+    task_summary = TaskSummary.objects.filter(instance=instance)
+
+    t = loader.get_template("stats/instance-console.html")
+    c = {
+        "course": course,
+        "instance": instance,
+        "stat_status": stat_status,
+        "task_summary": task_summary
+    }
+    return HttpResponse(t.render(c, request))
+
+@ensure_responsible
+def generate_instance_stats(request, course, instance):
+    task_meta = cache.get("{}_stat_meta".format(instance.slug))
+    task_meta = task_meta and json.loads(task_meta)
+    if task_meta and task_meta["completed"] is None:
+        task = celery_app.AsyncResult(id=task_meta["task_id"])
+        if task.state in ("PENDING", "STARTED"):
+            return HttpResponse(
+                _("Stats generation for '%s' has already been requested." % instance.name),
+                status=409
+            )
+
+    data = {"msg": _("Stats requested. Request processing starts approximately:")}
+    if settings.STAT_GENERATION_HOUR is None:
+        task = chain(
+            stat_tasks.generate_instance_user_stats.si(instance_slug=instance.slug),
+            stat_tasks.generate_instance_tasks_summary.si(instance_slug=instance.slug),
+            stat_tasks.finalize_instance_stats.s(instance_slug=instance.slug)
+        ).apply_async(ignore_result=True)
+        data["eta"] = datetime.datetime.today().strftime("%Y-%m-%d %H:%M:%S")
+    else:
+        today = datetime.datetime.today()
+        eta = today.replace(hour=settings.STAT_GENERATION_HOUR, minute=0, second=0)
+        task = chain(
+            stat_tasks.generate_instance_user_stats.si(instance_slug=instance.slug),
+            stat_tasks.generate_instance_tasks_summary.si(instance_slug=instance.slug),
+            stat_tasks.finalize_instance_stats.s(instance_slug=instance.slug)
+        ).apply_async(eta=eta, ignore_result=True)
+        data["eta"] = eta.strftime("%Y-%m-%d %H:%M:%S")
+    
+    cache.set("{}_stat_meta".format(instance.slug), json.dumps({"task_id": task.task_id, "completed": None}))
+    return JsonResponse(data)
+    
+    
+    
+    
+    
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
