@@ -37,6 +37,8 @@ from courses.models import *
 from courses.forms import *
 from feedback.models import *
 
+from routine_exercise.models import RoutineExerciseAnswer
+
 from allauth.account.forms import LoginForm
 
 import courses.markupparser as markupparser
@@ -985,6 +987,7 @@ def show_answers(request, user, course, instance, exercise):
     content_type = exercise.content_type
     question = exercise.question
     choices = exercise.get_choices(exercise)
+    template = "courses/user-exercise-answers.html"
     
     # TODO: Error checking for exercises that don't belong to this course
     
@@ -1026,9 +1029,12 @@ def show_answers(request, user, course, instance, exercise):
             exercise=exercise,
             instance=instance
         )
-        
+    elif content_type == "ROUTINE_EXERCISE":
+        answers = exercise.get_user_answers(exercise, user, instance)
+        template = "routine_exercise/user-answers.html"
+
     answers = answers.order_by('-answer_date')
-    
+
     try:
         link = EmbeddedLink.objects.get(embedded_page=exercise, instance=instance)
     except EmbeddedLink.MultipleObjectsReturned:
@@ -1037,11 +1043,11 @@ def show_answers(request, user, course, instance, exercise):
     else:
         parent = link.parent
         single_linked = True
-      
+
     title, anchor = first_title_from_content(exercise.content)
-    
+
     # TODO: Own subtemplates for each of the exercise types.
-    t = loader.get_template("courses/user-exercise-answers.html")
+    t = loader.get_template(template)
     c = {
         "exercise": exercise,
         "exercise_title": title,

@@ -1,0 +1,62 @@
+{% extends 'courses/base.html' %}
+
+{% load i18n %}
+{% load staticfiles %}
+{% load course_tags %}
+
+{% block page-title %}{% blocktrans %}{{ username }}’s answers to {{ exercise_title }}{% endblocktrans %}{% endblock %}
+
+{% block breadcrumb-links %}
+  <li><a href="{% url 'courses:index' %}">{% trans 'Courses' %}</a></li>
+  <div class="separator">»</div>
+  <li><a href="{% url 'courses:course' course instance %}">{{ course_name }}&nbsp;/&nbsp;{{ instance_name }}</a></li>
+  {% if single_linked %}
+    <div class="separator">»</div>
+    <li><a href="{% url 'courses:content' course instance parent %}">{{ parent.name }}</a></li>
+    <div class="separator">»</div>
+    <li><a href="{% url 'courses:content' course instance parent %}#{{ anchor }}">{{ exercise_title }}</a></li>
+  {% else %}
+    <div class="separator">»</div>
+    <li>{{ exercise.name }}</li>
+  {% endif %}
+  <div class="separator">»</div>
+  <li><a href="{% url 'courses:show_answers' user course instance exercise %}">{% blocktrans %}{{ username }}’s answers to {{ exercise.name }}{% endblocktrans %}</a></li>
+{% endblock %}
+
+{% block toc %}{% endblock %}
+
+{% block page-content %}
+  <h1>
+    {% if request.user.username == username %}
+      {% blocktrans %}Your answers to {{ exercise_title}}{% endblocktrans %}
+    {% else %}
+      {% blocktrans %}{{ username }}’s answers to {{ exercise_title }}{% endblocktrans %}
+    {% endif %}
+  </h1>
+  
+<table class="fixed">
+<colgroup>
+  <col class="answer-date">
+  <col class="answer">
+  <col class="evaluation">
+  <col class="permalink">
+</colgroup>
+<caption>
+  {% blocktrans count answercount=answers.count %}
+    {{ answercount }} entered answer for this exercise
+    {% plural %}
+    {{ answercount }} entered answers for this exercise
+  {% endblocktrans %}
+</caption>
+<thead>
+  {% block answer-table-head %}{% endblock %}
+</thead>
+<tbody>
+
+  {% block answer-table-body %}{% endblock %}
+
+</tbody>
+</table>
+{% endblock %}
+  
+  

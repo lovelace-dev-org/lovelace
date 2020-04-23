@@ -1,4 +1,6 @@
 function exercise_success(data, result_div, error_div, form_parent) {
+    console.log(data);
+    
     var hints_div = form_parent.children("div.hints");
     var msgs_div = form_parent.children("div.msgs");
     var comments_div = form_parent.children("div.comments");
@@ -134,6 +136,7 @@ function exercise_success(data, result_div, error_div, form_parent) {
         form_parent.parent().find("form.exercise-form :input").prop("disabled", true);
         let interaction_button = form_parent.parent().find('button.rt-interaction');
         interaction_button.prop("disabled", false);
+        interaction_button.focus();
         if (data.next_instance === null && data.evaluation === false) {
             interaction_button.html(interaction_button.attr('data-start-over-text'));
         } else if (data.next_instance === null) {

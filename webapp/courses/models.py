@@ -307,7 +307,6 @@ class CourseMedia(models.Model):
     """
     Top level model for embedded media.
     """
-    
 
     name = models.CharField(verbose_name='Name for reference in content',max_length=200,unique=True)
 
@@ -674,6 +673,8 @@ class ContentPage(models.Model):
 
     def get_type_object(self):
         # this seems to lose the revision info?
+        from routine_exercise.models import RoutineExercise
+        
         type_models = {
             'LECTURE': Lecture,
             'TEXTFIELD_EXERCISE': TextfieldExercise,
@@ -683,10 +684,13 @@ class ContentPage(models.Model):
             'CODE_INPUT_EXERCISE': CodeInputExercise,
             'CODE_REPLACE_EXERCISE': CodeReplaceExercise,
             'REPEATED_TEMPLATE_EXERCISE': RepeatedTemplateExercise,
+            'ROUTINE_EXERCISE': RoutineExercise
         }
         return type_models[self.content_type].objects.get(id=self.id)
 
     def get_type_model(self):
+        from routine_exercise.models import RoutineExercise
+
         type_models = {
             'LECTURE': Lecture,
             'TEXTFIELD_EXERCISE': TextfieldExercise,
@@ -696,6 +700,7 @@ class ContentPage(models.Model):
             'CODE_INPUT_EXERCISE': CodeInputExercise,
             'CODE_REPLACE_EXERCISE': CodeReplaceExercise,
             'REPEATED_TEMPLATE_EXERCISE': RepeatedTemplateExercise,
+            'ROUTINE_EXERCISE': RoutineExercise
         }
         return type_models[self.content_type]
 
@@ -780,6 +785,7 @@ class ContentPage(models.Model):
 #@reversion.register()
 class Lecture(ContentPage):
     """A single page for a lecture."""
+    template = "courses/lecture.html"
 
     def get_choices(self, revision=None):
         pass
@@ -804,6 +810,8 @@ class Lecture(ContentPage):
 
 #@reversion.register(follow=["multiplechoiceexerciseanswer_set"])
 class MultipleChoiceExercise(ContentPage):
+    template = "courses/multiple-choice-exercise.html"
+
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = self.get_url_name()
@@ -905,6 +913,8 @@ class MultipleChoiceExercise(ContentPage):
 
 #@reversion.register(follow=["checkboxexerciseanswer_set"])
 class CheckboxExercise(ContentPage):
+    template = "courses/checkbox-exercise.html"
+
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = self.get_url_name()
@@ -1019,6 +1029,8 @@ class CheckboxExercise(ContentPage):
 #         - also reflect this in the size of the answer box
 #@reversion.register(follow=["textfieldexerciseanswer_set"])
 class TextfieldExercise(ContentPage):
+    template = "courses/textfield-exercise.html"
+
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = self.get_url_name()
@@ -1150,6 +1162,8 @@ class TextfieldExercise(ContentPage):
 
 #@reversion.register(follow=['fileexercisetest_set', 'fileexercisetestincludefile_set'])
 class FileUploadExercise(ContentPage):
+    template = "courses/file-upload-exercise.html"
+
     # TODO: A field for restricting uploadable file names (e.g. by extension, like .py)
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -1249,6 +1263,9 @@ class FileUploadExercise(ContentPage):
 
 #@reversion.register()
 class CodeInputExercise(ContentPage):
+    template = "courses/code-input-exercise.html"
+    
+    
     # TODO: A textfield exercise variant that's run like a file exercise (like in Viope)
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -1273,6 +1290,8 @@ class CodeInputExercise(ContentPage):
 
 #@reversion.register()
 class CodeReplaceExercise(ContentPage):
+    template = "courses/code-replace-exercise.html"
+    
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = self.get_url_name()
@@ -1330,6 +1349,8 @@ class CodeReplaceExercise(ContentPage):
 
 #@reversion.register(follow=['repeatedtemplateexercisetemplate_set', 'repeatedtemplateexercisebackendfile_set', 'repeatedtemplateexercisebackendcommand'])
 class RepeatedTemplateExercise(ContentPage):
+    template = "courses/repeated-template-exercise.html"
+    
     # TODO: Reimplement to allow any type of exercise (textfield, checkbox etc.)
     #       to be a repeated template exercise.
     def save(self, *args, **kwargs):

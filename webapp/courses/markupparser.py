@@ -655,9 +655,7 @@ class EmbeddedPageMarkup(Markup):
                     
             c.update(state["context"])
             
-            t = loader.get_template("courses/{page_type}.html".format(
-                page_type=page.get_dashed_type()
-            ))
+            t = loader.get_template(page.get_type_model().template)
             rendered_content = t.render(c, state["request"])
 
         settings["rendered_content"] = rendered_content or embedded_content

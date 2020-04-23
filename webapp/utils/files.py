@@ -12,7 +12,6 @@ PRIVATE_UPLOAD = getattr(settings, "PRIVATE_STORAGE_FS_PATH", settings.MEDIA_ROO
 upload_storage = FileSystemStorage(location=PRIVATE_UPLOAD)
 
 
-
 def generate_download_response(fs_path, dl_name=None):
 
     if getattr(settings, "PRIVATE_STORAGE_X_SENDFILE", False):
@@ -45,6 +44,12 @@ def get_instancefile_path(included_file, filename):
         "{filename}".format(filename=filename), # TODO: Versioning?
         # TODO: Language?
     )
+
+def get_file_contents(model_instance):
+    file_contents = None
+    with open(model_instance.fileinfo.path, 'rb') as f:
+        file_contents = f.read()
+    return file_contents
 
 def get_testfile_path(instance, filename):
     return os.path.join(
