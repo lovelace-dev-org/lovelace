@@ -773,7 +773,7 @@ def run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check, revisio
         proc_timedout = True
         proc.terminate() # Try terminating the process nicely
         time.sleep(0.5)  # Grace period to allow the process to terminate
-    
+
     # TODO: Clean up by halting all action (forking etc.) by the student's process
     # with SIGSTOP and by killing the frozen processes with SIGKILL
     #sec.secure_kill()
@@ -796,7 +796,7 @@ def run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check, revisio
         'usermodetime': ru_utime,
         'kernelmodetime': ru_stime,
     })
-    
+
     #stdout.seek(0)
     print("\n".join(l.decode("utf-8") for l in stdout.readlines()))
     #stderr.seek(0)
