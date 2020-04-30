@@ -730,7 +730,7 @@ def content(request, course, instance, content, **kwargs):
             term_data = {
                 'slug' : slug,
                 'name' : term.name,
-                'tags' : tags,
+                'tags' : tags.values_list("name", flat=True),
                 'alias' : False,
             }
 
@@ -751,14 +751,16 @@ def content(request, course, instance, content, **kwargs):
             else:
                 termbank_contents[first_char] = [term_data]
 
-            for alias in term.aliases:
+                
+            aliases = TermAlias.objects.filter(term=term)
+            for alias in aliases:
                 alias_data = {
                     'slug' : slug,
                     'name' : term.name,
-                    'alias' : alias,
+                    'alias' : alias.name,
                 }
 
-                first_char = get_term_initial(alias)
+                first_char = get_term_initial(alias.name)
 
                 if first_char in termbank_contents:
                     termbank_contents[first_char].append(alias_data)

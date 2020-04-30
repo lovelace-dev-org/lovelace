@@ -387,17 +387,19 @@ class Term(models.Model):
     course = models.ForeignKey(Course, verbose_name="Course", null=True, on_delete=models.SET_NULL)
     name = models.CharField(verbose_name='Term', max_length=200) # Translate
     description = models.TextField() # Translate
-    aliases = ArrayField(
-        verbose_name="Aliases for this term",
-        base_field=models.CharField(max_length=200, blank=True),
-        default=list,
-        blank=True
-    )
-    tags = ArrayField( # consider: https://github.com/funkybob/django-array-tags
-        base_field=models.CharField(max_length=48, blank=True),
-        default=list,
-        blank=True
-    )
+    # aliases = ArrayField(
+        # verbose_name="Aliases for this term",
+        # base_field=models.CharField(max_length=200, blank=True),
+        # default=list,
+        # blank=True
+    # )
+    # tags = ArrayField( # consider: https://github.com/funkybob/django-array-tags
+        # base_field=models.CharField(max_length=48, blank=True),
+        # default=list,
+        # blank=True
+    # )
+    
+    tags = models.ManyToManyField("TermTag")
     
     def __str__(self):
         return self.name
@@ -416,6 +418,17 @@ class Term(models.Model):
     class Meta:
         unique_together = ('course', 'name',)
 
+class TermAlias(models.Model):
+    term = models.ForeignKey(Term, null=False, on_delete=models.CASCADE)
+    name = models.CharField(verbose_name='Term', max_length=200) # Translate
+    
+
+class TermTag(models.Model):
+    name = models.CharField(verbose_name='Term', max_length=200) # Translate
+
+    def __str__(self):
+        return self.name
+        
 #@reversion.register()
 class TermTab(models.Model):
     term = models.ForeignKey(Term, on_delete=models.CASCADE)
