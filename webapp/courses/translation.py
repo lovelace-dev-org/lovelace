@@ -2,7 +2,8 @@ from modeltranslation.translator import register, TranslationOptions
 
 from courses.models import Course, CourseInstance,\
     \
-    CourseMedia, File, Image, VideoLink, CalendarDate, Term, TermTab, TermLink,\
+    CourseMedia, File, Image, VideoLink, CalendarDate,\
+    Term, TermTab, TermLink, TermAlias, TermTag,\
     \
     ContentPage, Lecture, MultipleChoiceExercise, CheckboxExercise,\
     TextfieldExercise, CodeReplaceExercise, CodeInputExercise,\
@@ -48,12 +49,20 @@ class VideoLinkTranslationOptions(TranslationOptions):
 
 @register(Term)
 class TermTranslationOptions(TranslationOptions):
-    fields = ('name', 'description',)
+    fields = ('name', 'description')
 
 @register(TermTab)
 class TermTabTranslationOptions(TranslationOptions):
     fields = ('title', 'description',)
 
+@register(TermAlias)
+class TermAliasTranslationOptions(TranslationOptions):
+    fields = ('name',)
+    
+@register(TermTag)
+class TermTagTranslationOptions(TranslationOptions):
+    fields = ('name',)
+    
 @register(TermLink)
 class TermLinkTranslationOptions(TranslationOptions):
     fields = ('url', 'link_text',)

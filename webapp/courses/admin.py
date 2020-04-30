@@ -409,8 +409,8 @@ class FileExerciseTestCommandAdmin(admin.TabularInline):
     model = FileExerciseTestCommand
     extra = 1
 
-    def formfield_for_dbfield(self, db_field, **kwargs):
-        formfield = super(FileExerciseTestCommandAdmin, self).formfield_for_dbfield(db_field, **kwargs)
+    def formfield_for_dbfield(self, db_field, request, **kwargs):
+        formfield = super(FileExerciseTestCommandAdmin, self).formfield_for_dbfield(db_field, request, **kwargs)
         if db_field.name == 'command_line':
             formfield.widget = TextInput(attrs={'size':120})
         return formfield
@@ -458,8 +458,8 @@ class LectureAdmin(CourseContentAccess, TranslationAdmin, VersionAdmin):
         ('Feedback',            {'fields': ['feedback_questions']})
     ]
     
-    def formfield_for_dbfield(self, db_field, **kwargs):
-        formfield = super(LectureAdmin, self).formfield_for_dbfield(db_field, **kwargs)
+    def formfield_for_dbfield(self, db_field, request, **kwargs):
+        formfield = super(LectureAdmin, self).formfield_for_dbfield(db_field, request, **kwargs)
         if db_field.name in ('content'):
             formfield.widget = Textarea(attrs={'rows':25, 'cols':120})
         elif db_field.name == 'tags':
@@ -544,7 +544,9 @@ class TermLinkInline(TranslationTabularInline):
     model = TermLink
     extra = 0
     
-    
+class TermAliasInline(TranslationTabularInline):
+    model = TermAlias
+    extra = 0
 
         
 class TermAdmin(TranslationAdmin, VersionAdmin):
@@ -554,7 +556,7 @@ class TermAdmin(TranslationAdmin, VersionAdmin):
     list_per_page = 500
     ordering = ('name',)
 
-    inlines = [TermTabInline, TermLinkInline]
+    inlines = [TermAliasInline, TermTabInline, TermLinkInline]
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -597,10 +599,12 @@ class TermAdmin(TranslationAdmin, VersionAdmin):
         for instance in CourseInstance.objects.filter(course=obj.course):       
             instance_slug = instance.slug
             for lang, _ in lang_list:
-                cache.set('termbank_contents_{instance}_{lang}'.format(instance=instance_slug, lang=lang), None)
-                cache.set('termbank_div_data_{instance}_{lang}'.format(instance=instance_slug, lang=lang), None)
+                cache.set('termbank_contents_{instance}_{lang}'.format(instance=instance_slug, lang=lang), None, timeout=None)
+                cache.set('termbank_div_data_{instance}_{lang}'.format(instance=instance_slug, lang=lang), None, timeout=None)
                 
         
+class TermTagAdmin(TranslationAdmin):
+    pass
         
 
 admin.site.register(Calendar, CalendarAdmin)
@@ -608,7 +612,7 @@ admin.site.register(File, FileAdmin)
 admin.site.register(Image, ImageAdmin)
 admin.site.register(VideoLink, VideoLinkAdmin)
 admin.site.register(Term, TermAdmin)
-
+admin.site.register(TermTag, TermTagAdmin)
 
 ## Course related administration
 class ContentGraphAdmin(admin.ModelAdmin):
