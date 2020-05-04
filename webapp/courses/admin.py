@@ -724,6 +724,30 @@ class CourseInstanceAdmin(TranslationAdmin, VersionAdmin):
 
     inlines = [ContentGraphInline]
 
+    def add_view(self, request, form_url='', extra_context=None):
+        """
+        Prefetch accessible pages and their corresponding content graphs to
+        limit what is shown under the content to course links in selectors.
+        
+        Accessible graphs has to include graphs from all instances.
+        """
+        
+        content_access = CourseContentAccess.content_access_list(request, ContentPage)
+        self._accessible_pages = content_access
+        self._accessible_graphs = ContentGraph.objects.filter(content__in=content_access)
+        return super().add_view(request, form_url, extra_context)
+    
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        """
+        Prefetch accessible pages and their corresponding content graphs to
+        limit what is shown under the content to course links in selectors.
+        """
+        
+        content_access = CourseContentAccess.content_access_list(request, ContentPage)
+        self._accessible_pages = content_access
+        self._accessible_graphs = ContentGraph.objects.filter(content__in=content_access, instance__id=object_id)
+        return super().change_view(request, object_id, form_url, extra_context)
+    
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         """
         Only show courses where the editor is marked as main responsible. 
@@ -749,24 +773,17 @@ class CourseInstanceAdmin(TranslationAdmin, VersionAdmin):
 
 
     # TODO: parent node selection with a custom widget that uses content pages
-    # TODO: prefetch querysets somehow to reduce database hits
     def get_formsets_with_inlines(self, request, obj=None):
         """
         Limits the selectors inside inlines to content pages that are in the editor's
         access chain. Also limits parent node selector to nodes that belong to the same
-        instance. Contains a minor hack that ignores the latter restriction when the
-        object is new. 
+        instance.
         """
 
-        content_access = CourseContentAccess.content_access_list(request, ContentPage)
         extra_kw = {
-            "accessible_pages": content_access,
+            "accessible_pages": self._accessible_pages,
+            "accessible_graphs": self._accessible_graphs
         }
-
-        if obj == None:
-            extra_kw["accessible_graphs"] = ContentGraph.objects.filter(content__in=content_access)
-        else:
-            extra_kw["accessible_graphs"] = ContentGraph.objects.filter(content__in=content_access, instance=obj)
 
         for inline in self.get_inline_instances(request, obj):
             if isinstance(inline, ContentGraphInline):
