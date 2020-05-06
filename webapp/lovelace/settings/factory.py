@@ -177,7 +177,7 @@ LOCALE_PATHS = (
     os.path.join(BASE_DIR, 'locale'),
 )
 
-MODELTRANSLATION_DEFAULT_LANGUAGE = 'fi'
+MODELTRANSLATION_DEFAULT_LANGUAGE = 'en'
 
 # URL prefix for static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/dev/howto/static-files/
