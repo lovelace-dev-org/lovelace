@@ -21,7 +21,7 @@ import operator
 import copy
 #from django.utils.html import escape # Escapes ' characters -> prevents inline parsing
 # Possible solution: Import above as strict_escape and below as body_escape
-from cgi import escape # Use this instead? Security? HTML injection?
+from html import escape # Use this instead? Security? HTML injection?
 
 from django.template import loader
 from django.utils.safestring import mark_safe
@@ -598,7 +598,7 @@ class EmbeddedPageMarkup(Markup):
                 embedded_content += chunk
             
             choices = page.get_choices(page, revision=revision)
-            question = blockparser.parseblock(escape(page.question), state["context"])
+            question = blockparser.parseblock(escape(page.question, quote=False), state["context"])
 
             c = {
                 "emb_content": embedded_content,
@@ -1006,11 +1006,11 @@ class ImageMarkup(Markup):
     def settings(cls, matchobj, state):
         settings = {"image_name" : escape(matchobj.group("image_name"))}
         try:
-            settings["alt_text"] = escape(matchobj.group("alt_text"))
+            settings["alt_text"] = escape(matchobj.group("alt_text"), quote=False)
         except AttributeError:
             pass
         try:
-            settings["caption_text"] = blockparser.parseblock(escape(matchobj.group("caption_text")), state["context"])
+            settings["caption_text"] = blockparser.parseblock(escape(matchobj.group("caption_text"), quote=False), state["context"])
         except AttributeError:
             pass
         try:
@@ -1061,7 +1061,7 @@ class ListMarkup(Markup):
                 yield '<%s>' % tag
         
         for line in block:
-            yield '<li>%s</li>' % blockparser.parseblock(escape(line.strip("*#").strip()), state["context"])
+            yield '<li>%s</li>' % blockparser.parseblock(escape(line.strip("*#").strip(), quote=False), state["context"])
 
     @classmethod
     def settings(cls, matchobj, state):
@@ -1089,7 +1089,7 @@ class ParagraphMarkup(Markup):
         paragraph = ""
         paragraph_lines = []
         for line in block:
-            paragraph_lines.append(escape(line))
+            paragraph_lines.append(escape(line, quote=False))
         paragraph = "<br>\n".join(paragraph_lines)
         paragraph = blockparser.parseblock(paragraph, state["context"])
         yield paragraph
@@ -1154,7 +1154,7 @@ class TableMarkup(Markup):
         for line in block:
             row = line.split("||")[1:-1]
             yield '<tr>'
-            yield '\n'.join("<td>%s</td>" % blockparser.parseblock(escape(cell), state["context"]) for cell in row)
+            yield '\n'.join("<td>%s</td>" % blockparser.parseblock(escape(cell, quote=False), state["context"]) for cell in row)
             yield '</tr>'
             
         #yield '</table>'
@@ -1181,7 +1181,7 @@ class TeXMarkup(Markup):
         try:
             line = next(state["lines"])
             while not line.startswith("</math>"):
-                yield escape(line) + "\n"
+                yield escape(line, quote=False) + "\n"
                 line = next(state["lines"])
         except StopIteration:
             # TODO: Modular, class-based warning system

@@ -3,7 +3,7 @@ Django views for rendering the course contents and checking exercises.
 """
 import datetime
 import json
-from cgi import escape
+from html import escape
 from collections import namedtuple
 
 import redis
@@ -48,6 +48,7 @@ from django.shortcuts import redirect
 from utils.access import is_course_staff, determine_media_access, ensure_enrolled_or_staff, ensure_owner_or_staff
 from utils.content import first_title_from_content
 from utils.files import generate_download_response
+from utils.notify import send_error_report
 
 try:
     from shibboleth.app_settings import LOGOUT_URL, LOGOUT_REDIRECT_URL, LOGOUT_SESSION_KEY
@@ -509,6 +510,13 @@ def file_exercise_evaluation(request, course, instance, content, revision, task_
         else:
             #print(evaluation_tree['test_tree']['errors'])        
             data['errors'] = _("Checking program was unable to finish due to an error. Contact course staff.")
+            answer_url = reverse("courses:show_answers", kwargs={
+                "user": request.user,
+                "course": course,
+                "instance": instance,
+                "exercise": content
+            }) + "#" + evaluation_obj.useranswer.id
+            send_error_report(instance, content, revision, errors, answer_url)
             #print(data)
         
     data["answer_count_str"] = answer_count_str
@@ -601,7 +609,7 @@ def sandboxed_content(request, content_slug, **kwargs):
         return HttpResponseForbidden("Only logged in admins can view pages in sandbox!")
 
     content_type = content.content_type
-    question = blockparser.parseblock(escape(content.question))
+    question = blockparser.parseblock(escape(content.question, quote=False))
     choices = answers = content.get_choices(content)
 
     rendered_content = content.rendered_markup(request)
@@ -804,7 +812,7 @@ def content(request, course, instance, content, **kwargs):
         for chunk in markup_gen:
             rendered_content += chunk
     else:
-        question = blockparser.parseblock(escape(content.question), {"course": course})
+        question = blockparser.parseblock(escape(content.question, quote=False), {"course": course})
 
     choices = answers = content.get_choices(content, revision=revision)
 
@@ -863,7 +871,7 @@ def user_profile_save(request):
     profile.study_program = form["study_program"][:80]
 
     profile.save()
-    request.user.save()
+    request.user.save   ()
     return HttpResponseRedirect('/')
 
 def user_profile(request):
