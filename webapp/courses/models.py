@@ -11,7 +11,7 @@ import os
 from fnmatch import fnmatch
 
 from django.conf import settings
-from django.db import models
+from django.db import models, transaction
 from django.db.models import Q, Max
 from django.contrib.auth.models import User, Group
 from django.db.models.signals import post_save
@@ -37,6 +37,10 @@ import feedback.models
 import courses.markupparser as markupparser
 import courses.blockparser as blockparser
 from utils.files import *
+from utils.archive import get_archived_field
+
+class RollbackRevert(Exception):
+    pass
 
 # TODO: Extend the registration system to allow users to enter the profile data!
 # TODO: Separate profiles for students and teachers
@@ -802,15 +806,7 @@ class MultipleChoiceExercise(ContentPage):
         if revision is None:
             choices = self.multiplechoiceexerciseanswer_set.get_queryset()
         else:
-            choices = []
-            old_version = Version.objects.get_for_object(self).get(revision=revision)._object_version.object
-            old_choices = old_version.get_type_object().multiplechoiceexerciseanswer_set
-            for choice in old_choices.all():
-                try:
-                    old_choice = Version.objects.get_for_object(choice).get(revision=revision)._object_version.object
-                    choices.append(old_choice)
-                except Version.DoesNotExist as e:
-                    pass
+            choices = get_archived_field(self, revision, "multiplechoiceexerciseanswer_set")
         return choices
 
     def save_answer(self, user, ip, answer, files, instance, revision):
@@ -911,19 +907,9 @@ class CheckboxExercise(ContentPage):
         if revision is None:
             choices = self.checkboxexerciseanswer_set.get_queryset()
         else:
-            # We need an old version of _which_ answer choices pointed to this exercise
-            old_version = Version.objects.get_for_object(self).get(revision=revision)._object_version.object
-            old_choices = old_version.get_type_object().checkboxexerciseanswer_set # TODO: Remove get_type_object dependency?
-            choices = []
-            for choice in old_choices.all():
-                # ...and we need an old version of _each_ of those answer choices
-                try:
-                    old_choice = Version.objects.get_for_object(choice).get(revision=revision)._object_version.object
-                    choices.append(old_choice)
-                except Version.DoesNotExist as e:
-                    pass
+            choices = get_archived_field(self, revision, "checkboxexerciseanswer_set")
         return choices
-
+ 
     def save_answer(self, user, ip, answer, files, instance, revision):
         chosen_answer_ids = [int(i) for i, _ in answer.items() if i.isdigit()]
         
@@ -1035,15 +1021,7 @@ class TextfieldExercise(ContentPage):
         if revision is None:
             choices = self.textfieldexerciseanswer_set.get_queryset()
         else:
-            choices = []
-            old_version = Version.objects.get_for_object(self).get(revision=revision)._object_version.object
-            old_choices = old_version.get_type_object().textfieldexerciseanswer_set
-            for choice in old_choices.all():
-                try:
-                    old_choice = Version.objects.get_for_object(choice).get(revision=revision)._object_version.object
-                    choices.append(old_choice)
-                except Version.DoesNotExist as e:
-                    pass
+            choices = get_archived_field(self, revision, "textfieldexerciseanswer_set")
         return choices
 
     def save_answer(self, user, ip, answer, files, instance, revision):
@@ -2176,3 +2154,4 @@ class InvalidExerciseAnswerException(Exception):
     This exception is cast when an exercise answer cannot be processed.
     """
     pass
+

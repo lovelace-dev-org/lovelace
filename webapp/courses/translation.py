@@ -169,9 +169,6 @@ class RepeatedTemplateExerciseBackendCommandTranslationOptions(TranslationOption
 #class CodeReplaceExerciseAnswerTranslationOptions(TranslationOptions):
     #fields = ('answer',)
 
-
-
-
 """ for easy copy paste:
 @register()
 class TranslationOptions(TranslationOptions):

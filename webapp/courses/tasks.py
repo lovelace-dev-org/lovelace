@@ -57,6 +57,7 @@ from celery import shared_task, chain, group
 from courses import models as cm
 from courses import evaluation_sec as sec
 from courses.evaluation_utils import *
+from utils.archive import get_archived_instances
 
 # TODO: Improve by following the guidelines here:
 #       - https://news.ycombinator.com/item?id=7909201
@@ -106,8 +107,8 @@ def run_tests(self, user_id, instance_id, exercise_id, answer_id, lang_code, rev
         exercise_object = cm.FileUploadExercise.objects.get(id=exercise_id)
 
         if revision is not None:
-            old_exercise_object = Version.objects.get_for_object(exercise_object).get(revision=revision)._object_version.object
-            exercise_object = old_exercise_object
+            old_exercise_object = get_archived_instances(exercise_object, revision)
+            exercise_object = old_exercise_object["self"]
     except cm.FileUploadExercise.DoesNotExist as e:
         # TODO: Log weird request
         return # TODO: Find a way to signal the failure to the user
@@ -355,68 +356,43 @@ def run_test(self, test_id, answer_id, instance_id, exercise_id, student=False, 
     
     try:
         test = cm.FileExerciseTest.objects.get(id=test_id)
-
         if revision is not None:
-            old_test = Version.objects.get_for_object(test).get(revision=revision)._object_version.object
-            test = old_test
-            
+            old_test = get_archived_instances(test, revision)
+            test = old_test["self"]
     except cm.FileExerciseTest.DoesNotExist as e:
         # TODO: Log weird request
         return # TODO: Find a way to signal the failure to the user
 
     try:
-        #stages = cm.FileExerciseTestStage.objects.filter(test=test_id)
-        stages = test.fileexerciseteststage_set.all()
-        
-        if revision is not None:
-            old_stages = []
-            for stage in stages:
-                try:
-                    Version.objects.get_for_object(stage).get(revision=revision)._object_version.object
-                except Version.DoesNotExist:
-                    pass
-                else:
-                    old_stages.append(stage)
-            stages = old_stages
-            
+        if revision is None:
+            stages = test.fileexerciseteststage_set.get_queryset()
+        else:
+            stages = old_test["fileexerciseteststage_set"]
     except cm.FileExerciseTestStage.DoesNotExist as e:
         # TODO: Log weird request
         return # TODO: Find a way to signal the failure to the user
 
     try:
-        # TODO: Fallback file names for those that don't have translations?
-        exercise_file_objects = cm.FileExerciseTestIncludeFile.objects.filter(exercise=exercise_id)
-
+        exercise = cm.FileUploadExercise.objects.get(id=exercise_id)
         if revision is not None:
-            old_exercise_file_objects = []
-            
-            for ex_file in exercise_file_objects:
-                try:
-                    old_file = Version.objects.get_for_object(ex_file).get(revision=revision)._object_version.object
-                except Version.DoesNotExist:
-                    pass
-                else:
-                    old_exercise_file_objects.append(old_file)
-            exercise_file_objects = old_exercise_file_objects
-            
+            old_exercise = get_archived_instances(test, revision)
+            exercise = old_exercise["self"]
+        
+        # TODO: Fallback file names for those that don't have translations?
+        if revision is None:
+            exercise_file_objects = exercise.fileexercisetestincludefile_set.get_queryset()
+        else:
+            exercise_file_objects = old_exercise["fileexercisetestincludefile_set"]
     except cm.FileExerciseTestIncludeFile.DoesNotExist as e:
         # TODO: Log weird request
         return # TODO: Find a way to signal the failure to the user
 
     try:
-        # TODO: Fallback file names for those that don't have translations?
-        # PATCH: removed instance from filtering so that checking doesn't break
-        # for cloned instances (while waiting for instance file rework)
-        instance_file_links = cm.InstanceIncludeFileToExerciseLink.objects.filter(
-            exercise=exercise_id
-        )
-
-        #if revision is not None:
-        #    old_instance_file_links = [
-        #        Version.objects.get_for_object(instance_file_link).get(revision=revision)._object_version.object
-        #        for instance_file_link in instance_file_links
-        #        ]
-        #    instance_file_links = old_instance_file_links
+        if revision is None:
+            instance_file_links = exercise.instanceincludefiletoexerciselink_set.get_queryset()
+        else:
+            instance_file_links = old_exercise["instanceincludefiletoexerciselink_set"]
+        
     except cm.InstanceIncludeFileToExerciseLink.DoesNotExist as e:
         # TODO: Log weird request
         return # TODO: Find a way to signal the failure to the user
@@ -451,10 +427,12 @@ def run_test(self, test_id, answer_id, instance_id, exercise_id, student=False, 
             print("Wrote file under test %s" % (fpath))
             # TODO: chmod, chown, chgrp
 
+        required_files = test.required_files.all()
+            
         # Write the exercise files required by this test
         for name, fileinfo, contents in ((f.file_settings.name, f.fileinfo, f.get_file_contents())
                                for f in exercise_file_objects
-                               if f in test.required_files.all() and
+                               if f in required_files and
                                f.file_settings.purpose in ("INPUT", "WRAPPER", "TEST", "LIBRARY")):
             print(name)
             fpath = os.path.join(test_dir, name)
@@ -469,9 +447,8 @@ def run_test(self, test_id, answer_id, instance_id, exercise_id, student=False, 
                 settings = if_link.file_settings
                 if settings.purpose in ("INPUT", "WRAPPER", "TEST", "LIBRARY"):
                     name = settings.name
-                    instance_link = cm.InstanceIncludeFileToInstanceLink.objects.get(include_file=if_link.include_file, instance__id=instance_id)
-                    
-                    if instance_link.revision is None:
+
+                    if if_link.revision is None:
                         file_obj = if_link.include_file
                     else:
                         file_obj = Version.objects.get_for_object(if_link.include_file).get(revision=instance_link.revision)._object_version.object
@@ -526,8 +503,13 @@ def run_stage(self, stage_id, test_dir, temp_dir_prefix, files_to_check, revisio
     all_json = True
 
     try:
-        commands = cm.FileExerciseTestCommand.objects.filter(stage=stage_id)
-    except cm.FileExerciseTestCommand.DoesNotExist as e:
+        if revision is None:
+            commands = cm.FileExerciseTestCommand.objects.filter(stage=stage_id)
+        else:
+            stage = cm.FileExerciseTestStage.objecs.get(id=stage_id)
+            old_stage = get_archived_instances(stage, revision)
+            commands = old_stage["fileexercisetestcommand_set"]
+    except (cm.FileExerciseTestCommand.DoesNotExist, cm.FileExerciseTestStage.DoesNotExist) as e:
         # TODO: Log weird request
         return # TODO: Find a way to signal the failure to the user
 
@@ -558,13 +540,6 @@ def run_stage(self, stage_id, test_dir, temp_dir_prefix, files_to_check, revisio
     """
     # DEBUG #
     for i, cmd in enumerate(commands):
-        if revision is not None:
-            try:
-                old_cmd = Version.objects.get_for_object(cmd).get(revision=revision)._object_version.object
-                cmd = old_cmd
-            except Version.DoesNotExist:
-                return
-            
         results = run_command_chainable(
             {"id":cmd.id, "input_text":cmd.input_text, "return_value":cmd.return_value},
             temp_dir_prefix, test_dir, files_to_check, stage_results=stage_results,
@@ -691,8 +666,8 @@ def run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check, revisio
         command = cm.FileExerciseTestCommand.objects.get(id=cmd_id)
 
         if revision is not None:
-            old_command = Version.objects.get_for_object(command).get(revision=revision)._object_version.object
-            command = old_command
+            old_command = get_archived_instances(command, revision)
+            command = old_command["self"]
     except cm.FileExerciseTestCommand.DoesNotExist as e:
         # TODO: Log weird request
         return # TODO: Find a way to signal the failure to the user

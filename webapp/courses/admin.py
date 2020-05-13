@@ -30,8 +30,19 @@ from utils.access import determine_access, determine_media_access
 # This makes modeltranslation work with reversion, probably due 
 # to translated fields being added between loading models.py and 
 # this module.
-reversion.register(ContentPage)
-reversion.register(Hint)
+reversion.register(ContentPage, follow=[
+    'checkboxexerciseanswer_set',
+    'codeinputexerciseanswer_set',
+    'codereplaceexerciseanswer_set',
+    'fileexercisetest_set',
+    'fileexercisetestincludefile_set',
+    'hint_set',
+    'instanceincludefiletoexerciselink_set',
+    'multiplechoiceexerciseanswer_set',
+    'repeatedtemplateexercisebackendfile_set',
+    'repeatedtemplateexercisetemplate_set',
+    'textfieldexerciseanswer_set',
+])
 reversion.register(FileExerciseTest, follow=['fileexerciseteststage_set'])
 reversion.register(FileExerciseTestStage, follow=['fileexercisetestcommand_set'])
 reversion.register(FileExerciseTestCommand, follow=['fileexercisetestexpectedoutput_set'])
@@ -42,12 +53,9 @@ reversion.register(InstanceIncludeFileToExerciseLink)
 reversion.register(InstanceIncludeFile)
 reversion.register(FileExerciseTestIncludeFile)
 reversion.register(IncludeFileSettings)
-reversion.register(TextfieldExerciseAnswer)
-reversion.register(MultipleChoiceExerciseAnswer)
 reversion.register(CourseMedia)
 reversion.register(TermTab)
 reversion.register(TermLink)
-reversion.register(CheckboxExerciseAnswer)
 reversion.register(CodeInputExerciseAnswer)
 reversion.register(CodeReplaceExerciseAnswer)
 reversion.register(RepeatedTemplateExerciseTemplate)
@@ -250,7 +258,7 @@ class HintInline(TranslationTabularInline):
     model = Hint
     fk_name = 'exercise'
     extra = 0
-    queryset = TranslationTabularInline.get_queryset
+    # queryset = TranslationTabularInline.get_queryset
 
 
 class SoftDeleteFormSet(BaseInlineFormSet):
@@ -287,7 +295,6 @@ class MultipleChoiceExerciseAdmin(CourseContentAccess, TranslationAdmin, Version
     save_on_top = True
 
 
-
 class CheckboxExerciseAnswerInline(TranslationTabularInline):
     model = CheckboxExerciseAnswer
     extra = 1
@@ -313,9 +320,6 @@ class CheckboxExerciseAdmin(CourseContentAccess, TranslationAdmin, VersionAdmin)
     list_display = ("name", "slug",)
     list_per_page = 500
     save_on_top = True
-
-
-
 
 
 class TextfieldExerciseAnswerInline(TranslationStackedInline):
@@ -346,6 +350,7 @@ class TextfieldExerciseAdmin(CourseContentAccess, TranslationAdmin, VersionAdmin
     list_per_page = 500
     save_on_top = True
 
+    
 class CodeReplaceExerciseAnswerInline(admin.StackedInline):
     model = CodeReplaceExerciseAnswer
     extra = 1
@@ -490,6 +495,15 @@ class FileUploadExerciseAdmin(CourseContentAccess, TranslationAdmin, VersionAdmi
     list_display = ("name", "slug",)
     list_per_page = 500
 
+    def reversion_register(self, model, **options):
+        options["follow"] = (
+            "fileexercisetest_set",
+            "instanceincludefiletoexerciselink_set",
+            "fileexercisetestincludefile_set"
+        )
+        super().reversion_register(model, **options)
+            
+    
 admin.site.register(FileUploadExercise, FileUploadExerciseAdmin)
 
 # TODO: Use the view_on_site on all content models!
@@ -663,12 +677,7 @@ class ContentGraphAdmin(admin.ModelAdmin):
             return False
         
     def _match_groups(self, user, obj):
-        user_groups = user.groups.get_queryset()
-        
-        if Course.objects.filter(courseinstance__contents=obj).filter(staff_group__in=user_groups):
-            return True
-        
-        return False
+        return user in obj.instance.course.staff_group.user_set.get_queryset()
 
     def get_instances(self, obj):
         return " | ".join([i.name for i in obj.courseinstance_set.all()])
@@ -883,3 +892,5 @@ class CourseInstanceAdmin(TranslationAdmin, VersionAdmin):
                 cg.content.update_embedded_links(obj, cg.revision)
             
 admin.site.register(CourseInstance, CourseInstanceAdmin)
+
+

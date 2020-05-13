@@ -1,8 +1,9 @@
 import re
+from collections import defaultdict
 
 from courses.models import ContentGraph, EmbeddedLink, CourseMediaLink, TermToInstanceLink, InstanceIncludeFileToInstanceLink
 from django.utils.text import slugify as slugify
-from reversion.models import Version
+from reversion.models import Version, Revision
 
 def first_title_from_content(content_text):
     """
@@ -38,4 +39,25 @@ def get_course_instance_tasks(instance, deadline_before=None):
 
     return task_pages
 
+# Modified from reversion.models.Revision.revert
+def get_archived_instances(main_obj, revision_id):
+    revision = Revision.objects.get(id=revision_id)
+    archived_objects = set()
+    for version in revision.version_set.iterator():
+        model = version._model
+        try:
+            archived_objects.add(
+                model._default_manager.using(version.db).get(pk=version.object_id)
+            )
+        except model.DoesNotExist:
+            pass
+        
+    by_model = defaultdict(list)
+    for obj in archived_objects:
+        by_model[obj.__class__.__name__].append(obj)
+        
+    return by_model
+    
+            
 
+    
