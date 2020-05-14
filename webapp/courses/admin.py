@@ -43,7 +43,11 @@ reversion.register(ContentPage, follow=[
     'repeatedtemplateexercisetemplate_set',
     'textfieldexerciseanswer_set',
 ])
-reversion.register(FileExerciseTest, follow=['fileexerciseteststage_set'])
+reversion.register(FileExerciseTest, follow=[
+    'fileexerciseteststage_set',
+    'required_files',
+    'required_instance_files'
+])
 reversion.register(FileExerciseTestStage, follow=['fileexercisetestcommand_set'])
 reversion.register(FileExerciseTestCommand, follow=['fileexercisetestexpectedoutput_set'])
 reversion.register(FileExerciseTestExpectedOutput)

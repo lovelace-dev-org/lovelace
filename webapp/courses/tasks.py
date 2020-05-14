@@ -375,7 +375,7 @@ def run_test(self, test_id, answer_id, instance_id, exercise_id, student=False, 
     try:
         exercise = cm.FileUploadExercise.objects.get(id=exercise_id)
         if revision is not None:
-            old_exercise = get_archived_instances(test, revision)
+            old_exercise = get_archived_instances(exercise, revision)
             exercise = old_exercise["self"]
         
         # TODO: Fallback file names for those that don't have translations?
@@ -415,7 +415,7 @@ def run_test(self, test_id, answer_id, instance_id, exercise_id, student=False, 
 
     # TODO: Replace with the directory of the ramdisk
     temp_dir_prefix = os.path.join("/", "tmp")
-
+    
     test_results = {test_id: {"fail": True, "name": test.name, "stages": {}}}
     with tempfile.TemporaryDirectory(dir=temp_dir_prefix) as test_dir:
         # Write the files under test
@@ -427,8 +427,11 @@ def run_test(self, test_id, answer_id, instance_id, exercise_id, student=False, 
             print("Wrote file under test %s" % (fpath))
             # TODO: chmod, chown, chgrp
 
-        required_files = test.required_files.all()
-            
+        if revision is None:
+            required_files = test.required_files
+        else:
+            required_files = old_test["required_files"]
+        
         # Write the exercise files required by this test
         for name, fileinfo, contents in ((f.file_settings.name, f.fileinfo, f.get_file_contents())
                                for f in exercise_file_objects
@@ -447,11 +450,16 @@ def run_test(self, test_id, answer_id, instance_id, exercise_id, student=False, 
                 settings = if_link.file_settings
                 if settings.purpose in ("INPUT", "WRAPPER", "TEST", "LIBRARY"):
                     name = settings.name
-
-                    if if_link.revision is None:
+                    
+                    ii_link = cm.InstanceIncludeFileToInstanceLink.objects.get(
+                        include_file=if_link.include_file,
+                        instance__id=instance_id
+                    )
+                    
+                    if ii_link.revision is None:
                         file_obj = if_link.include_file
                     else:
-                        file_obj = Version.objects.get_for_object(if_link.include_file).get(revision=instance_link.revision)._object_version.object
+                        file_obj = Version.objects.get_for_object(if_link.include_file).get(revision=ii_link.revision)._object_version.object
                         
                     contents = file_obj.get_file_contents()
                     fpath = os.path.join(test_dir, name)
@@ -506,7 +514,7 @@ def run_stage(self, stage_id, test_dir, temp_dir_prefix, files_to_check, revisio
         if revision is None:
             commands = cm.FileExerciseTestCommand.objects.filter(stage=stage_id)
         else:
-            stage = cm.FileExerciseTestStage.objecs.get(id=stage_id)
+            stage = cm.FileExerciseTestStage.objects.get(id=stage_id)
             old_stage = get_archived_instances(stage, revision)
             commands = old_stage["fileexercisetestcommand_set"]
     except (cm.FileExerciseTestCommand.DoesNotExist, cm.FileExerciseTestStage.DoesNotExist) as e:
