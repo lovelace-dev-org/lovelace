@@ -739,7 +739,10 @@ def edit_instance_files(request):
     else:
         new_file_ids = []
         
-    instance_files = InstanceIncludeFile.objects.all()
+    if request.user.is_superuser:
+        instance_files = InstanceIncludeFile.objects.all()
+    else:
+        instance_files = InstanceIncludeFile.objects.filter(course__staff_group__user=request.user)
     form = CreateInstanceIncludeFilesForm(instance_files, new_file_ids, data, files)
 
     if form.is_valid():
