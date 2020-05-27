@@ -88,67 +88,43 @@ class ContentForm(forms.ModelForm):
         term_links = set([match.group("term_name") for match in term_re.finditer(value)])
         
         for link in term_links:
-            if lang == "fi":
-                if not Term.objects.filter(name_fi=link):
-                    missing_terms.append(link)
-                    messages.append("Term matching {} does not exist".format(link))
-            elif lang == "en":
-                if not Term.objects.filter(name_en=link):
-                    missing_terms.append(link)
-                    messages.append("Term matching {} does not exist".format(link))
+            if not Term.objects.filter(**{"name_" + lang: link}):
+                missing_terms.append(link)
+                messages.append("Term matching {} does not exist".format(link))
                                 
         if messages:
             raise ValidationError(messages)
     
-    def clean_content_fi(self):
-        
-        data = self.cleaned_data["content_fi"]
-        self._validate_links(data, "fi")
-        return data
-        
-    def clean_content_en(self):
-        
-        data = self.cleaned_data["content_en"]
-        self._validate_links(data, "en")
-        return data
-        
+    def clean(self):
+        cleaned_data = super().clean()
+        for lang_code, _ in django.conf.settings.LANGUAGES:
+            try:
+                self._validate_links(cleaned_data["content_" + lang_code], lang_code)
+            except ValidationError as e:
+                self.add_error("content_" + lang_code, e)
+    
         
 class TextfieldAnswerForm(forms.ModelForm):
     
-    def clean_answer_fi(self):
+    def _check_regexp(self, exp):
         """
         Validates a regular expression by trying to compile it. Skipped for
         non-regexp answers.
         """
         
-        data = self.cleaned_data["answer_fi"]
-        if not self.cleaned_data["regexp"]:
-            return data
-        
         try:
-            re.compile(data)
-        except re.error as e:
-            raise ValidationError("Broken regexp: {}".format(e))
-        
-        return data
-            
-    def clean_answer_en(self):
-        """
-        Validates a regular expression by trying to compile it. Skipped for
-        non-regexp answers.
-        """
-        
-        data = self.cleaned_data["answer_en"]
-        if not self.cleaned_data["regexp"]:
-            return data
-        
-        try:
-            re.compile(data)
+            re.compile(exp)
         except re.error as e:
             raise ValidationError("Broken regexp: {}".format(e))
 
-        return data
-        
+    def clean(self):
+        cleaned_data = super().clean()
+        for lang_code, _ in django.conf.settings.LANGUAGES:
+            try:
+                self._check_regexp(cleaned_data["answer_" + lang_code])
+            except ValidationError as e:
+                self.add_error("answer_" + lang_code, e)
+            
         
 class InstanceForm(forms.ModelForm):
     

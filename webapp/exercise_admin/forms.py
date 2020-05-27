@@ -390,14 +390,9 @@ class CreateFileUploadExerciseForm(forms.Form):
         term_links = set([match.group("term_name") for match in term_re.finditer(value)])
         
         for link in term_links:
-            if lang == "fi":
-                if not Term.objects.filter(name_fi=link):
-                    missing_terms.append(link)
-                    messages.append("Term matching {} does not exist".format(link))
-            elif lang == "en":
-                if not Term.objects.filter(name_en=link):
-                    missing_terms.append(link)
-                    messages.append("Term matching {} does not exist".format(link))
+            if not Term.objects.filter(**{"name_" + lang: link}):
+                missing_terms.append(link)
+                messages.append("Term matching {} does not exist".format(link))
         
         if messages:
             field_error = forms.ValidationError(messages)

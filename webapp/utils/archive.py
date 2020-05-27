@@ -50,3 +50,16 @@ def get_archived_field(main_obj, revision_id, field):
     archive_copy = get_archived_instances(main_obj, revision_id)
     return archive_copy[field]
     
+def get_single_archived(model_instance, revision_id):
+    """
+    Gets an archived instance of a model instance without doing a
+    revert-rollback on the database. Please note that this does not revert
+    relationships! Referencing to other models through any relationship type
+    attributes in the returned object will refer to most recent set of related
+    models. If you need archived version of related objects listing, please use
+    get_archived_instances or get_archived_field.
+    """
+
+    return Version.objects.get_for_object(model_instance)\
+        .get(revision=revision_id)\
+        ._object_version.object

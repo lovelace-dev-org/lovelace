@@ -140,11 +140,19 @@ def course_instances(request, course):
 
 def check_exercise_accessible(request, course, instance, content):
 
-    embedded_links = EmbeddedLink.objects.filter(embedded_page_id=content.id, instance=instance)
-    content_graph_links = ContentGraph.objects.filter(instance=instance, content=content)
+    embedded_links = EmbeddedLink.objects.filter(
+        embedded_page_id=content.id, instance=instance
+    )
+    content_graph_links = ContentGraph.objects.filter(
+        instance=instance, content=content
+    )
     
     if content_graph_links.first() is None and embedded_links.first() is None:
-        return {'error': HttpResponseNotFound("Content {} is not linked to course {}!".format(content.slug, course.slug))}
+        return {'error': HttpResponseNotFound(
+            "Content {} is not linked to course {}!".format(
+                content.slug, course.slug
+            )
+        )}
 
     return {
         'embedded_links': embedded_links,

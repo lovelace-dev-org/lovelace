@@ -593,14 +593,22 @@ class ContentPage(models.Model):
         within the page content and creates EmbeddedLink and CourseMediaLink 
         objects based on links found in the markup.
         """
+                
+                
+        page_links = set()
+        media_links = set()
         
-        if revision is None:
-            content = self.content
-        else:
-            version = Version.objects.get_for_object(self).get(revision_id=revision).field_dict
-            content = version["content"]
+        for lang_code, _ in settings.LANGUAGES:
+            if revision is None:
+                content = getattr(self, "content_" + lang_code)
+            else:
+                version = Version.objects.get_for_object(self).get(revision_id=revision).field_dict
+                content = version["content_" + lang_code]
         
-        page_links, media_links = markupparser.LinkParser.parse(content, instance)
+            lang_page_links, lang_media_links = markupparser.LinkParser.parse(content, instance)
+            page_links = page_links.union(lang_page_links)
+            media_links = media_links.union(lang_media_links)
+        
         old_page_links = list(EmbeddedLink.objects.filter(instance=instance, parent=self).values_list("embedded_page__slug", flat=True))
         old_media_links = list(CourseMediaLink.objects.filter(instance=instance, parent=self).values_list("media__name", flat=True))
         

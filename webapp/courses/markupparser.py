@@ -29,16 +29,18 @@ from django.utils.safestring import mark_safe
 from django.utils.text import slugify as slugify
 
 import pygments
-from pygments.lexers import get_lexer_by_name
+from pygments.lexers import get_lexer_by_name, guess_lexer_for_filename
 from pygments.formatters import HtmlFormatter
 
 from reversion import revisions as reversion
 from reversion.models import Version
 
 import courses.blockparser as blockparser
-import courses.models
+import courses.models as cm
 import courses.forms
 import feedback.models
+
+from utils.archive import get_single_archived
 
 # TODO: Support indented blocks (e.g. <pre>) within indents, uls & ols
 # TODO: Support admonitions/warnings/good to know boxes/etc.
@@ -244,8 +246,8 @@ class LinkParser(MarkupParser):
         if not cls._ready:
             raise ParserUninitializedError("compile() not called")
         
-        page_links = []
-        media_links = []
+        page_links = set()
+        media_links = set()
         
         lines = iter(re.split(r"\r\n|\n\r", text))
         
@@ -328,16 +330,21 @@ class CalendarMarkup(Markup):
     @classmethod
     def block(cls, block, settings, state):
         try:
-            calendar = courses.models.Calendar.objects.get(name=settings["calendar_name"])
-        except courses.models.Calendar.DoesNotExist as e:
+            calendar = cm.Calendar.objects.get(name=settings["calendar_name"])
+        except cm.Calendar.DoesNotExist as e:
             # TODO: Modular errors
-            yield '<div>Calendar {} not found.</div>'.format(settings["calendar_name"])
+            yield '<div>Calendar {} not found.</div>'.format(
+                settings["calendar_name"]
+                )
             raise StopIteration
 
-        calendar_dates = courses.models.CalendarDate.objects.filter(calendar=calendar)
+        calendar_dates = cm.CalendarDate.objects.filter(calendar=calendar)
 
         calendar_reservations = [
-            (cal_date, [courses.models.CalendarReservation.objects.filter(calendar_date=cal_date), False])
+            (
+                cal_date, 
+                [cm.CalendarReservation.objects.filter(calendar_date=cal_date), False]
+            )
             for cal_date in calendar_dates
         ]
 
@@ -349,7 +356,7 @@ class CalendarMarkup(Markup):
             for cal_date, cal_reservations in calendar_reservations:
                 try:
                     found = cal_reservations[0].get(user=state["request"].user)
-                except courses.models.CalendarReservation.DoesNotExist as e:
+                except cm.CalendarReservation.DoesNotExist as e:
                     continue
                 cal_reservations[1] = True
                 user_has_slot = True
@@ -455,9 +462,13 @@ class EmbeddedFileMarkup(Markup):
         
         try:
             try:
-                link = courses.models.CourseMediaLink.objects.get(media__name=settings["file_slug"], instance=instance, parent=state["context"]["content_page"])
-            except courses.models.CourseMediaLink.DoesNotExist as e:
-                file_object = courses.models.File.objects.get(name=settings["file_slug"])
+                link = cm.CourseMediaLink.objects.get(
+                    media__name=settings["file_slug"],
+                    instance=instance,
+                    parent=state["context"]["content_page"]
+                    )
+            except cm.CourseMediaLink.DoesNotExist as e:
+                file_object = cm.File.objects.get(name=settings["file_slug"])
             else:
                 if link.revision is None:
                     file_object = link.media.file
@@ -468,7 +479,7 @@ class EmbeddedFileMarkup(Markup):
                     # is there a better way to get parent attributes
                     # from the version object?
                     file_object.name = revision_object.field_dict["name"]
-        except courses.models.File.DoesNotExist as e:
+        except cm.File.DoesNotExist as e:
             # TODO: Modular errors
             yield '<div>File %s not found.</div>' % settings["file_slug"]
             raise StopIteration
@@ -487,16 +498,15 @@ class EmbeddedFileMarkup(Markup):
                 raise StopIteration
 
             try:
-                lexer = pygments.lexers.guess_lexer_for_filename(file_path, file_contents)
+                lexer = guess_lexer_for_filename(file_path, file_contents)
             except pygments.util.ClassNotFound:
                 # TODO: Modular errors
                 yield '<div>Unable to find lexer for file %s.</div>' % settings['file_slug']
                 raise StopIteration
 
-            highlighted = pygments.highlight(file_contents, lexer, HtmlFormatter(nowrap=True))
-        
-        instance_slug = instance.slug
-        course_slug = instance.course.slug
+            highlighted = pygments.highlight(
+                file_contents, lexer, HtmlFormatter(nowrap=True)
+            )
         
         if file_object.download_as:
             dl_name = file_object.download_as
@@ -528,7 +538,7 @@ class EmbeddedFileMarkup(Markup):
     @classmethod
     def build_links(cls, block, matchobj, instance, page_links, media_links):
         slug = matchobj.group("file_slug")
-        media_links.append(slug)
+        media_links.add(slug)
 
 markups.append(EmbeddedFileMarkup)
 link_markups.append(EmbeddedFileMarkup)
@@ -547,7 +557,9 @@ class EmbeddedPageMarkup(Markup):
     @classmethod
     def block(cls, block, settings, state):
         if "tooltip" in state["context"] and state["context"]["tooltip"]:
-            raise EmbeddedObjectNotAllowedError("embedded pages are not allowed in tooltips")
+            raise EmbeddedObjectNotAllowedError(
+                "embedded pages are not allowed in tooltips"
+            )
         
         yield '<div class="embedded-page">\n'
         yield settings["rendered_content"]
@@ -567,38 +579,47 @@ class EmbeddedPageMarkup(Markup):
 
         try:
             try:
-                link = courses.models.EmbeddedLink.objects.get(embedded_page__slug=settings["page_slug"], instance=instance, parent=state["context"]["content_page"])
-            except courses.models.EmbeddedLink.DoesNotExist as e:
+                link = cm.EmbeddedLink.objects.get(
+                    embedded_page__slug=settings["page_slug"],
+                    instance=instance,
+                    parent=state["context"]["content_page"]
+                )
+            except cm.EmbeddedLink.DoesNotExist as e:
                 # link does not exist yet, get by page slug instead
-                page = courses.models.ContentPage.objects.get(slug=settings["page_slug"])
+                page = cm.ContentPage.objects.get(slug=settings["page_slug"])
             else:
                 page = link.embedded_page
                 revision = link.revision
             #revision = link.revision
-            #page = courses.models.ContentPage.objects\
+            #page = cm.ContentPage.objects\
                                              #.get(slug=settings["page_slug"])
-        except courses.models.ContentPage.DoesNotExist as e:
+        except cm.ContentPage.DoesNotExist as e:
             raise EmbeddedObjectNotFoundError("embedded page '%s' couldn't be found" % settings["page_slug"])
         else:
             if revision is not None:
                 try:
-                    page = Version.objects.get_for_object(page).get(revision=revision)\
-                                                         ._object_version.object
+                    page = get_single_archived(page, revision)
                 except Version.DoesNotExist as e:
-                    raise EmbeddedObjectNotFoundError("revision '%d' of embedded page '%s' couldn't be found"
-                                                      % (revision, settings["page_slug"]))
+                    raise EmbeddedObjectNotFoundError(
+                        "revision '%d' of embedded page '%s' couldn't be found"
+                        % (revision, settings["page_slug"])
+                    )
             
             state["embedded_pages"].append((settings["page_slug"], revision))
 
             # TODO: Prevent recursion depth > 2
             #embedded_content = page.rendered_markup()
             embedded_content = ""
-            markup_gen = MarkupParser.parse(page.content, state["request"], state["context"])
+            markup_gen = MarkupParser.parse(
+                page.content, state["request"], state["context"]
+            )
             for chunk in markup_gen:
                 embedded_content += chunk
             
             choices = page.get_choices(page, revision=revision)
-            question = blockparser.parseblock(escape(page.question, quote=False), state["context"])
+            question = blockparser.parseblock(
+                escape(page.question, quote=False), state["context"]
+            )
 
             c = {
                 "emb_content": embedded_content,
@@ -645,7 +666,7 @@ class EmbeddedPageMarkup(Markup):
     @classmethod
     def build_links(cls, block, matchobj, instance, page_links, media_links):
         slug = matchobj.group("page_slug")
-        page_links.append(slug)
+        page_links.add(slug)
         
 
 markups.append(EmbeddedPageMarkup)
@@ -654,6 +675,7 @@ link_markups.append(EmbeddedPageMarkup)
 # TODO: Support embeddable JavaScript apps (maybe in iframe?)
 # - http://www.html5rocks.com/en/tutorials/security/sandboxed-iframes/
 # - https://developer.mozilla.org/en-US/docs/Web/API/window.postMessage
+# TODO: support archived versions?
 class EmbeddedScriptMarkup(Markup):
     name = "Embedded script"
     shortname = "script"
@@ -673,8 +695,8 @@ class EmbeddedScriptMarkup(Markup):
             raise EmbeddedObjectNotAllowedError("embedded scripts are not allowed in tooltips")
         
         try:
-            script = courses.models.File.objects.get(name=settings["script_slug"])
-        except courses.models.File.DoesNotExist as e:
+            script = cm.File.objects.get(name=settings["script_slug"])
+        except cm.File.DoesNotExist as e:
             # TODO: Modular errors
             yield '<div>Script %s not found.</div>' % settings["script_slug"]
             raise StopIteration
@@ -693,10 +715,10 @@ class EmbeddedScriptMarkup(Markup):
 
             try:
                 if incl_type == "image":
-                    incl_obj = courses.models.Image.objects.get(name=incl_name)
+                    incl_obj = cm.Image.objects.get(name=incl_name)
                 else:
-                    incl_obj = courses.models.File.objects.get(name=incl_name)
-            except (courses.models.File.DoesNotExist, courses.models.Image.DoesNotExist) as e:
+                    incl_obj = cm.File.objects.get(name=incl_name)
+            except (cm.File.DoesNotExist, cm.Image.DoesNotExist) as e:
                 # TODO: Modular errors
                 yield '<div>{} {} not found.</div>'.format(incl_type.capitalize(), incl_name)
                 raise StopIteration
@@ -768,25 +790,37 @@ class EmbeddedScriptMarkup(Markup):
             single_image_inject_template = "var src_{name} = \"{addr}\";"  # TODO: Bug with names that have a '-'
             array_image_injects_template = "var img_srcs = [{var_names}];" # TODO: Bug with names that have a '-'
             
-            rendered_includes = inject_includes_template.format(
-                id=iframe_id,
-                injects="\n".join(
-                    single_inject_template.format(type=t, name=slugify(n, allow_unicode=True), num=i, type_type=tt,
-                                                  type_value=tv, src_type=st, addr=a,
-                                                  where=w)
-                    for i, (t, n, tt, tv, st, a, w) in enumerate(includes)
-                ) + ((inject_images_template.format(where=image_urls[0][2], # Just take the first
-                        img_addrs="\\\n".join(
-                            single_image_inject_template.format(name=n, addr=a)
-                            for n, a, _ in image_urls
-                        ) + array_image_injects_template.format(
-                            var_names=", ".join(
-                                "src_" + n
-                                for n, _, _ in image_urls
-                            )
+            injects = "\n".join(
+                single_inject_template.format(
+                    type=t,
+                    name=slugify(n, allow_unicode=True),
+                    num=i,
+                    type_type=tt,
+                    type_value=tv,
+                    src_type=st,
+                    addr=a,
+                    where=w
+                )
+                for i, (t, n, tt, tv, st, a, w) in enumerate(includes)
+            )
+            if image_urls:
+                image_includes = inject_images_template.format(
+                    where=image_urls[0][2], # Just take the first
+                    img_addrs="\\\n".join(
+                        single_image_inject_template.format(name=n, addr=a)
+                        for n, a, _ in image_urls
+                    ) + array_image_injects_template.format(
+                        var_names=", ".join(
+                            "src_" + n
+                            for n, _, _ in image_urls
                         )
                     )
-                ) if image_urls else "")
+                )
+                injects += "\n" + image_includes
+            
+            rendered_includes = inject_includes_template.format(
+                id=iframe_id,
+                injects=injects
             )
             tag += rendered_includes
 
@@ -815,10 +849,11 @@ class EmbeddedScriptMarkup(Markup):
     
     @classmethod
     def build_links(cls, block, matchobj, instance, page_links, media_links):
-        slugs = [matchobj.group("script_slug")] + [m.split("=")[1] for m in matchobj.group("include").split(",")]
+        slugs = [matchobj.group("script_slug")]\
+                + [m.split("=")[1] for m in matchobj.group("include").split(",")]
         
         for slug in slugs:
-            media_links.append(slug)
+            media_links.add(slug)
 
 markups.append(EmbeddedScriptMarkup)
 link_markups.append(EmbeddedScriptMarkup)
@@ -841,8 +876,8 @@ class EmbeddedVideoMarkup(Markup):
             raise EmbeddedObjectNotAllowedError("embedded videos are not allowed in tooltips")
         
         try:
-            videolink = courses.models.VideoLink.objects.get(name=settings["video_slug"])
-        except courses.models.VideoLink.DoesNotExist as e:
+            videolink = cm.VideoLink.objects.get(name=settings["video_slug"])
+        except cm.VideoLink.DoesNotExist as e:
             # TODO: Modular errors
             yield '<div>Video link %s not found.</div>' % settings["video_slug"]
             raise StopIteration
@@ -873,7 +908,7 @@ class EmbeddedVideoMarkup(Markup):
     @classmethod
     def build_links(cls, block, matchobj, instance, page_links, media_links):
         slug = matchobj.group("video_slug")
-        media_links.append(slug)
+        media_links.add(slug)
 
 
 markups.append(EmbeddedVideoMarkup)
@@ -953,9 +988,13 @@ class ImageMarkup(Markup):
         instance = state["context"]["instance"]
         try:
             try:
-                link = courses.models.CourseMediaLink.objects.get(media__name=settings["image_name"], instance=instance, parent=state["context"]["content_page"])
-            except courses.models.CourseMediaLink.DoesNotExist as e:
-                image_object = courses.models.Image.objects.get(name=settings["image_name"])
+                link = cm.CourseMediaLink.objects.get(
+                    media__name=settings["image_name"],
+                    instance=instance,
+                    parent=state["context"]["content_page"]
+                )
+            except cm.CourseMediaLink.DoesNotExist as e:
+                image_object = cm.Image.objects.get(name=settings["image_name"])
             else:
                 if link.revision is None:
                     image_object = link.media.image
@@ -966,7 +1005,7 @@ class ImageMarkup(Markup):
                     # is there a better way to get parent attributes
                     # from the version object?
                     image_object.name = revision_object.field_dict["name"]
-        except courses.models.Image.DoesNotExist as e:
+        except cm.Image.DoesNotExist as e:
             # TODO: Modular errors
             yield '<div>File %s not found.</div>' % settings["image_name"]
             raise StopIteration
@@ -1022,7 +1061,7 @@ class ImageMarkup(Markup):
     @classmethod
     def build_links(cls, block, matchobj, instance, page_links, media_links):
         slug = matchobj.group("image_name")
-        media_links.append(slug)
+        media_links.add(slug)
 
 markups.append(ImageMarkup)
 link_markups.append(ImageMarkup)
@@ -1061,7 +1100,11 @@ class ListMarkup(Markup):
                 yield '<%s>' % tag
         
         for line in block:
-            yield '<li>%s</li>' % blockparser.parseblock(escape(line.strip("*#").strip(), quote=False), state["context"])
+            yield '<li>%s</li>' % blockparser.parseblock(
+                escape(line.strip("*#").strip(),
+                quote=False),
+                state["context"]
+            )
 
     @classmethod
     def settings(cls, matchobj, state):
@@ -1109,7 +1152,7 @@ class ParagraphMarkup(Markup):
         for line in block:
             for tag in blockparser.tags["anchor"].re.findall(line):
                 if tag[0].startswith("file:"):
-                    media_links.append(tag[0].split("file:")[1])
+                    media_links.add(tag[0].split("file:")[1])
 
 markups.append(ParagraphMarkup)
 link_markups.append(ParagraphMarkup)

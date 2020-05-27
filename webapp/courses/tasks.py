@@ -57,7 +57,7 @@ from celery import shared_task, chain, group
 from courses import models as cm
 from courses import evaluation_sec as sec
 from courses.evaluation_utils import *
-from utils.archive import get_archived_instances
+from utils.archive import get_archived_instances, get_single_archived
 
 # TODO: Improve by following the guidelines here:
 #       - https://news.ycombinator.com/item?id=7909201
@@ -131,11 +131,18 @@ def run_tests(self, user_id, instance_id, exercise_id, answer_id, lang_code, rev
         self.update_state(state="PROGRESS", meta={"current": i, "total": len(tests)})
 
         # TODO: The student's code can be run in parallel with the reference
-        results, all_json = run_test(test.id, answer_id, instance_id, exercise_id, student=True, revision=revision)
+        results, all_json = run_test(
+            test.id, answer_id, instance_id, exercise_id,
+            student=True,
+            revision=revision
+        )
         student_results.update(results)
 
         if not all_json:
-            results, all_json = run_test(test.id, answer_id, instance_id, exercise_id, revision=revision)
+            results, all_json = run_test(
+                test.id, answer_id, instance_id, exercise_id,
+                revision=revision
+            )
 
         # if reference is not needed just put the student results there
         # TODO: change generate results to not depend on reference existing
@@ -162,9 +169,11 @@ def run_tests(self, user_id, instance_id, exercise_id, answer_id, lang_code, rev
     correct = evaluation["correct"]
     points = exercise_object.default_points
     
-    evaluation_obj = cm.Evaluation(test_results=result_string,
-                                   points=points,
-                                   correct=correct)
+    evaluation_obj = cm.Evaluation(
+        test_results=result_string,
+        points=points,
+       correct=correct
+    )
     evaluation_obj.save()
     
     try:
@@ -192,7 +201,11 @@ def generate_results(results, exercise_id):
 
     # It's possible some of the tests weren't run at all
     unmatched = set(student.keys()) ^ set(reference.keys())
-    matched = set(student.keys()) & set(reference.keys()) if unmatched else reference.keys()
+    if unmatched:
+        matched = set(student.keys()) & set(reference.keys()) 
+    else:
+        matched = reference.keys()
+    
     test_tree = {
         'tests': [],
         'messages': [],
@@ -220,9 +233,13 @@ def generate_results(results, exercise_id):
         matched_stages = set(student_stages.keys()) & set(reference_stages.keys())
 
         #### GO THROUGH ALL STAGES
-        for stage_id, student_s, reference_s in ((k, student_stages[k], reference_stages[k])
-                                                  for k in sorted(matched_stages,
-                                                                  key=lambda x: student_stages[x]["ordinal_number"])):
+        for stage_id, student_s, reference_s in (
+            (k, student_stages[k], reference_stages[k])
+            for k in sorted(
+                matched_stages,
+                key=lambda x: student_stages[x]["ordinal_number"]
+            )
+        ):
             current_stage = {
                 'stage_id': stage_id,
                 'name': student_s['name'],
@@ -236,9 +253,13 @@ def generate_results(results, exercise_id):
             reference_cmds = reference_s["commands"]
 
             #### GO THROUGH ALL COMMANDS
-            for cmd_id, student_c, reference_c in ((k, student_cmds[k], reference_cmds[k])
-                                                    for k in sorted(student_cmds.keys(),
-                                                                    key=lambda x: student_cmds[x]["ordinal_number"])):
+            for cmd_id, student_c, reference_c in (
+                (k, student_cmds[k], reference_cmds[k])
+                for k in sorted(
+                    student_cmds.keys(),
+                    key=lambda x: student_cmds[x]["ordinal_number"]
+                )
+            ):
 
                 cmd_correct = True
                 if student_c.get('fail'):
@@ -308,8 +329,10 @@ def generate_results(results, exercise_id):
 
                     if student_stdout or reference_stdout:
                         stdout_diff = difflib.HtmlDiff().make_table(
-                            fromlines=student_stdout.splitlines(), tolines=reference_stdout.splitlines(),
-                            fromdesc="Your program's output", todesc="Expected output"
+                            fromlines=student_stdout.splitlines(),
+                            tolines=reference_stdout.splitlines(),
+                            fromdesc="Your program's output",
+                            todesc="Expected output"
                         )
                     else:
                         stdout_diff = ""
@@ -325,8 +348,10 @@ def generate_results(results, exercise_id):
 
                     if student_stderr or reference_stderr:
                         stderr_diff = difflib.HtmlDiff().make_table(
-                            fromlines=student_stderr.splitlines(), tolines=reference_stderr.splitlines(),
-                            fromdesc="Your program's errors", todesc="Expected errors"
+                            fromlines=student_stderr.splitlines(),
+                            tolines=reference_stderr.splitlines(),
+                            fromdesc="Your program's errors",
+                            todesc="Expected errors"
                         )
                     else:
                         stderr_diff = ""
@@ -459,14 +484,16 @@ def run_test(self, test_id, answer_id, instance_id, exercise_id, student=False, 
                     if ii_link.revision is None:
                         file_obj = if_link.include_file
                     else:
-                        file_obj = Version.objects.get_for_object(if_link.include_file).get(revision=ii_link.revision)._object_version.object
+                        file_obj = get_single_archived(file_obj, revision)
                         
                     contents = file_obj.get_file_contents()
                     fpath = os.path.join(test_dir, name)
                     
                     with open(fpath, "wb") as fd:
                         fd.write(contents)
-                    print("Wrote required instance file {} from {}".format(fpath, file_obj.fileinfo))
+                    print("Wrote required instance file {} from {}".format(
+                        fpath, file_obj.fileinfo
+                    ))
 
         all_json = True
 
@@ -474,8 +501,11 @@ def run_test(self, test_id, answer_id, instance_id, exercise_id, student=False, 
         for i, stage in enumerate(stages):
             #self.update_state(state="PROGRESS",
                               #meta={"current": i, "total": len(stages)})
-            stage_results, stage_json = run_stage(stage.id, test_dir, temp_dir_prefix,
-                                      list(files_to_check.keys()), revision=revision)
+            stage_results, stage_json = run_stage(
+                stage.id, test_dir, temp_dir_prefix,
+                list(files_to_check.keys()),
+                revision=revision
+            )
             test_results[test_id]["stages"][stage.id] = stage_results
             test_results[test_id]["stages"][stage.id]["name"] = stage.name
             test_results[test_id]["stages"][stage.id]["ordinal_number"] = stage.ordinal_number
@@ -549,8 +579,15 @@ def run_stage(self, stage_id, test_dir, temp_dir_prefix, files_to_check, revisio
     # DEBUG #
     for i, cmd in enumerate(commands):
         results = run_command_chainable(
-            {"id":cmd.id, "input_text":cmd.input_text, "return_value":cmd.return_value},
-            temp_dir_prefix, test_dir, files_to_check, stage_results=stage_results,
+            {
+                "id": cmd.id,
+                "input_text": cmd.input_text,
+                "return_value": cmd.return_value
+            },
+            temp_dir_prefix,
+            test_dir,
+            files_to_check,
+            stage_results=stage_results,
             revision=revision
         )
         stage_results.update(results)
@@ -629,7 +666,10 @@ def run_command_chainable(cmd, temp_dir_prefix, test_dir, files_to_check, stage_
     stdin.write(bytearray(cmd_input_text, "utf-8"))
     stdin.seek(0)
     
-    proc_results = run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check, revision=revision)
+    proc_results = run_command(
+        cmd_id, stdin, stdout, stderr, test_dir, files_to_check,
+        revision=revision
+    )
     
     stdout.seek(0)
     #proc_results["stdout"] = base64.standard_b64encode(stdout.read()).decode("ASCII")
@@ -838,7 +878,9 @@ def precache_repeated_template_sessions(self):
     assigned to users.
     """
     # TODO: How to account for revisions?
-    exercises = cm.RepeatedTemplateExercise.objects.filter(content_type="REPEATED_TEMPLATE_EXERCISE")
+    exercises = cm.RepeatedTemplateExercise.objects.filter(
+        content_type="REPEATED_TEMPLATE_EXERCISE"
+    )
 
     ENSURE_COUNT = 10
     lang_codes = django_settings.LANGUAGES
@@ -846,9 +888,17 @@ def precache_repeated_template_sessions(self):
     session_generator_chain = None
     for exercise in exercises:
         for lang_code, _ in lang_codes:
-            sessions = cm.RepeatedTemplateExerciseSession.objects.filter(exercise=exercise, user=None, language_code=lang_code)
+            sessions = cm.RepeatedTemplateExerciseSession.objects.filter(
+                exercise=exercise,
+                user=None,
+                language_code=lang_code
+            )
             generate_count = ENSURE_COUNT - sessions.count()
-            print("Exercise {} with language {} missing {} pre-generated sessions!".format(exercise.name, lang_code, generate_count))
+            print("Exercise {} with language {} missing {} pre-generated sessions!".format(
+                exercise.name,
+                lang_code,
+                generate_count
+            ))
             exercise_generator = [
                 generate_repeated_template_session.s(
                     None, None, exercise.id, lang_code, 0
@@ -858,7 +908,9 @@ def precache_repeated_template_sessions(self):
             if session_generator_chain is None:
                 session_generator_chain = exercise_generator
             else:
-                session_generator_chain = iterchain(session_generator_chain, exercise_generator)
+                session_generator_chain = iterchain(
+                    session_generator_chain, exercise_generator
+                )
     group(session_generator_chain).delay()
 
 @shared_task(name="courses.generate-repeated-template-session", bind=True)
