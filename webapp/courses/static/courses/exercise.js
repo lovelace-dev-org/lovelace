@@ -131,7 +131,7 @@ function exercise_success(data, result_div, error_div, form_parent) {
         file_result_div.css("display", "block");
     }
     if (data.next_instance || data.total_instances) {
-        form_parent.parent().find("form :input").prop("disabled", true);
+        form_parent.parent().find("form.exercise-form :input").prop("disabled", true);
         let interaction_button = form_parent.parent().find('button.rt-interaction');
         interaction_button.prop("disabled", false);
         if (data.next_instance === null && data.evaluation === false) {
