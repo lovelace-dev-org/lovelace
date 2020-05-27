@@ -1,7 +1,7 @@
 <div class="file-upload"> 
   <div> 
     {% if widget.is_initial %}
-      {{ widget.initial_text }}: <a href="{% url 'courses:download_template_exercise_backend' widget.value.exercise_id widget.value.filename %}">{{ widget.value }}</a>
+      {{ widget.initial_text }}: <a href="{% url 'courses:download_template_exercise_backend' widget.value.exercise_id widget.value.field_name widget.value.filename %}">{{ widget.value }}</a>
       {% if not widget.required %}
         <span class="clearable-file-input">
           <input type="checkbox" name="{{ widget.checkbox_name }}" id="{{ widget.checkbox_id }}" />

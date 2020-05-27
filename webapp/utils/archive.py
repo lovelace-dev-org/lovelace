@@ -1,3 +1,4 @@
+import os.path
 from collections import defaultdict
 from django.db import transaction
 from reversion.models import Version, Revision
@@ -63,3 +64,16 @@ def get_single_archived(model_instance, revision_id):
     return Version.objects.get_for_object(model_instance)\
         .get(revision=revision_id)\
         ._object_version.object
+
+def find_version_with_filename(model_instance, field, name):
+    """
+    Finds a version object where the (fileinfo) field had a specific filename.
+    Usually used to determine if there ever was a version where the field had
+    the given value.
+    """
+
+    for version in Version.objects.get_for_object(model_instance):
+        if os.path.basename(version.field_dict[field].name) == name:
+            return version
+    else:
+        return None

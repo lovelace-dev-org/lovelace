@@ -45,7 +45,8 @@ import django.conf
 from django.contrib import auth
 from django.shortcuts import redirect
 
-from utils.access import is_course_staff, determine_media_access, ensure_enrolled_or_staff, ensure_owner_or_staff
+from utils.access import is_course_staff, determine_media_access, ensure_enrolled_or_staff, ensure_owner_or_staff, determine_access
+from utils.archive import find_version_with_filename
 from utils.content import first_title_from_content
 from utils.files import generate_download_response
 from utils.notify import send_error_report
@@ -1121,7 +1122,7 @@ def download_embedded_file(request, course, instance, mediafile):
     return generate_download_response(fs_path, file_object.download_as)
 
     
-def download_media_file(request, file_slug, field_name):
+def download_media_file(request, file_slug, field_name, filename):
     """
     This view function is for downloading media files via the file admin interface.
     """
@@ -1134,39 +1135,51 @@ def download_media_file(request, file_slug, field_name):
     
     if not determine_media_access(request.user, fileobject):
         return HttpResponseForbidden(_("Only course main responsible teachers are allowed to download media files through this interface."))
-                        
+    
     try:
-        fs_path = os.path.join(settings.MEDIA_ROOT, getattr(fileobject, field_name).name)
-    except AttributeError as e:
+        if filename == os.path.basename(getattr(fileobject, field_name).name):
+            fs_path = os.path.join(settings.MEDIA_ROOT, getattr(fileobject, field_name).name)
+        else:
+            # Archived file was requested
+            version = find_version_with_filename(fileobject, field_name, filename)
+            if version:
+                filename = version.field_dict[field_name].name
+                fs_path = os.path.join(settings.MEDIA_ROOT, filename)
+            else:
+                return HttpResponseNotFound(_("Requested file does not exist."))
+    except AttributeError as e: 
         return HttpResponseNotFound(_("Requested file does not exist."))
-
+            
     return generate_download_response(fs_path)
 
 
 # TODO: limit to owner and course staff
-def download_template_exercise_backend(request, exercise_id, filename):
-    
-    if not request.user.is_authenticated:
-        return HttpResponseForbidden(_("Only course staff members are allowed to download repeated template exercise backends."))
-    elif (not request.user.is_staff) and (not request.user.is_superuser):
-        return HttpResponseForbidden(_("Only course staff members are allowed to download repeated template exercise backends."))
+def download_template_exercise_backend(request, exercise_id, field_name, filename):
     
     try:
         exercise_object = RepeatedTemplateExercise.objects.get(id=exercise_id)
     except CourseInstance.DoesNotExist as e:
         return HttpResponseNotFound(_("This exercise does't exist"))
             
-    #if not is_course_staff(request.user, exercise_object.instance.slug):
-    #    return HttpResponseForbidden(_("Only course staff members are allowed to download repeated template exercise backends."))
-    
+    if not determine_access(request.user, exercise_object):
+        return HttpResponseForbidden(_("Only course main responsible teachers are allowed to download files through this interface."))
+            
+    fileobjects = RepeatedTemplateExerciseBackendFile.objects.filter(exercise=exercise_object)
     try:
-        fileobject = RepeatedTemplateExerciseBackendFile.objects.get(filename=filename, exercise=exercise_object)
-    except FileExerciseTestIncludeFile.DoesNotExist as e:
-        return HttpResponseNotFound(_("Requested file does not exist."))
-    
-    try:
-        fs_path = os.path.join(getattr(settings, "PRIVATE_STORAGE_FS_PATH", settings.MEDIA_ROOT), fileobject.fileinfo.name)
-    except AttributeError as e:
+        for fileobject in fileobjects:
+            if filename == os.path.basename(getattr(fileobject, field_name).name):
+                fs_path = os.path.join(settings.PRIVATE_STORAGE_FS_PATH, getattr(fileobject, field_name).name)
+                break
+            else:
+                # Archived file was requested
+                version = find_version_with_filename(fileobject, field_name, filename)
+                if version:
+                    filename = version.field_dict[field_name].name
+                    fs_path = os.path.join(settings.PRIVATE_STORAGE_FS_PATH, filename)
+                    break
+        else:
+            return HttpResponseNotFound(_("Requested file does not exist."))
+    except AttributeError as e: 
         return HttpResponseNotFound(_("Requested file does not exist."))
 
     return generate_download_response(fs_path)

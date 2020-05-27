@@ -1,3 +1,4 @@
+import os.path
 import re
 import django.conf
 from django.core.exceptions import ValidationError
@@ -29,13 +30,13 @@ class CodeReplaceExerciseForm(forms.Form):
 class FileEditForm(forms.ModelForm):
     
     def get_initial_for_field(self, field, field_name):
-        
+
         default_value = super().get_initial_for_field(field, field_name)
-        
         if isinstance(field, fields.FileField) and default_value:
             default_value.media_slug = self.initial.get("name")
             default_value.field_name = field_name
-        
+            default_value.filename = os.path.basename(default_value.name)
+            
         return default_value
         
         
@@ -43,11 +44,11 @@ class RepeatedTemplateExerciseBackendForm(forms.ModelForm):
     
     def get_initial_for_field(self, field, field_name):
         
-        default_value = super().get_initial_for_field(field, field_name)
-        
+        default_value = super().get_initial_for_field(field, field_name)        
         if isinstance(field, fields.FileField) and default_value:
             default_value.exercise_id = self.initial.get("exercise")
-            default_value.filename = self.initial.get("filename")
+            default_value.field_name = field_name
+            default_value.filename = os.path.basename(default_value.name)
 
         return default_value
 
