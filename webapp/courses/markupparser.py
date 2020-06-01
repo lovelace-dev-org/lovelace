@@ -246,8 +246,8 @@ class LinkParser(MarkupParser):
         if not cls._ready:
             raise ParserUninitializedError("compile() not called")
         
-        page_links = set()
-        media_links = set()
+        page_links = []
+        media_links = []
         
         lines = iter(re.split(r"\r\n|\n\r", text))
         
@@ -538,7 +538,7 @@ class EmbeddedFileMarkup(Markup):
     @classmethod
     def build_links(cls, block, matchobj, instance, page_links, media_links):
         slug = matchobj.group("file_slug")
-        media_links.add(slug)
+        media_links.append(slug)
 
 markups.append(EmbeddedFileMarkup)
 link_markups.append(EmbeddedFileMarkup)
@@ -666,7 +666,7 @@ class EmbeddedPageMarkup(Markup):
     @classmethod
     def build_links(cls, block, matchobj, instance, page_links, media_links):
         slug = matchobj.group("page_slug")
-        page_links.add(slug)
+        page_links.append(slug)
         
 
 markups.append(EmbeddedPageMarkup)
@@ -853,7 +853,7 @@ class EmbeddedScriptMarkup(Markup):
                 + [m.split("=")[1] for m in matchobj.group("include").split(",")]
         
         for slug in slugs:
-            media_links.add(slug)
+            media_links.append(slug)
 
 markups.append(EmbeddedScriptMarkup)
 link_markups.append(EmbeddedScriptMarkup)
@@ -908,7 +908,7 @@ class EmbeddedVideoMarkup(Markup):
     @classmethod
     def build_links(cls, block, matchobj, instance, page_links, media_links):
         slug = matchobj.group("video_slug")
-        media_links.add(slug)
+        media_links.append(slug)
 
 
 markups.append(EmbeddedVideoMarkup)
@@ -1061,7 +1061,7 @@ class ImageMarkup(Markup):
     @classmethod
     def build_links(cls, block, matchobj, instance, page_links, media_links):
         slug = matchobj.group("image_name")
-        media_links.add(slug)
+        media_links.append(slug)
 
 markups.append(ImageMarkup)
 link_markups.append(ImageMarkup)
@@ -1152,7 +1152,7 @@ class ParagraphMarkup(Markup):
         for line in block:
             for tag in blockparser.tags["anchor"].re.findall(line):
                 if tag[0].startswith("file:"):
-                    media_links.add(tag[0].split("file:")[1])
+                    media_links.append(tag[0].split("file:")[1])
 
 markups.append(ParagraphMarkup)
 link_markups.append(ParagraphMarkup)

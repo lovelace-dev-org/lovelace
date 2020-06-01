@@ -598,6 +598,8 @@ class ContentPage(models.Model):
         page_links = set()
         media_links = set()
         
+        page_links_per_lang = {}
+        
         for lang_code, _ in settings.LANGUAGES:
             if revision is None:
                 content = getattr(self, "content_" + lang_code)
@@ -608,6 +610,7 @@ class ContentPage(models.Model):
             lang_page_links, lang_media_links = markupparser.LinkParser.parse(content, instance)
             page_links = page_links.union(lang_page_links)
             media_links = media_links.union(lang_media_links)
+            page_links_per_lang[lang_code] = lang_page_links
         
         old_page_links = list(EmbeddedLink.objects.filter(instance=instance, parent=self).values_list("embedded_page__slug", flat=True))
         old_media_links = list(CourseMediaLink.objects.filter(instance=instance, parent=self).values_list("media__name", flat=True))
@@ -620,12 +623,13 @@ class ContentPage(models.Model):
         EmbeddedLink.objects.filter(embedded_page__slug__in=removed_page_links, instance=instance, parent=self).delete()
         CourseMediaLink.objects.filter(media__name__in=removed_media_links, instance=instance, parent=self).delete()
         
+        # set ordinal to zero at first, updated per language later
         for link_slug in added_page_links:
             link_obj = EmbeddedLink(
                 parent=self,
                 embedded_page=ContentPage.objects.get(slug=link_slug),
                 revision=None,
-                ordinal_number=page_links.index(link_slug),
+                ordinal_number=0,
                 instance=instance
             )
             link_obj.save()
@@ -639,11 +643,12 @@ class ContentPage(models.Model):
             )
             link_obj.save()
             
-        for i, link_slug in enumerate(page_links):
-            link_obj = EmbeddedLink.objects.get(embedded_page__slug=link_slug, instance=instance, parent=self)
-            link_obj.ordinal_number = i
-            link_obj.save()
-            link_obj.embedded_page.update_embedded_links(instance)
+        for lang_code, _ in settings.LANGUAGES:
+            for i, link_slug in enumerate(page_links_per_lang[lang_code]):
+                link_obj = EmbeddedLink.objects.get(embedded_page__slug=link_slug, instance=instance, parent=self)
+                link_obj.ordinal_number = i
+                link_obj.save()
+                link_obj.embedded_page.update_embedded_links(instance)
 
     # TODO: -> @property human_readable_type
     def get_human_readable_type(self):
