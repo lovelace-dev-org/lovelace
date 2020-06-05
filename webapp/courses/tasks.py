@@ -522,8 +522,12 @@ def run_test(self, test_id, answer_id, instance_id, exercise_id, student=False, 
                 if ii_link.revision is None:
                     file_obj = if_link.include_file
                 else:
-                    file_obj = get_single_archived(if_link.include_file, revision)
-                    
+                    try:
+                        file_obj = get_single_archived(if_link.include_file, revision)
+                    except Version.DoesNotExist:
+                        # use latest version even though it may not work
+                        file_obj = if_link.include_file
+                        
                 contents = file_obj.get_file_contents()
                 fpath = os.path.join(test_dir, name)
                 
