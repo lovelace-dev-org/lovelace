@@ -40,6 +40,7 @@ import resource
 import subprocess
 
 from celery import shared_task, chain, group
+from celery.signals import task_prerun, worker_process_init
 
 # The test data
 #from courses.models import FileExerciseTest, FileExerciseTestStage,\
@@ -58,6 +59,7 @@ from courses import models as cm
 from courses import evaluation_sec as sec
 from courses.evaluation_utils import *
 from utils.archive import get_archived_instances, get_single_archived
+from utils.files import chmod_parse
 
 # TODO: Improve by following the guidelines here:
 #       - https://news.ycombinator.com/item?id=7909201
@@ -67,6 +69,19 @@ JSON_CORRECT = 1
 JSON_INFO = 2
 JSON_ERROR = 3
 JSON_DEBUG = 4
+
+@worker_process_init.connect
+def demote_server(**kwargs):
+    """
+    Drops each worker process to less privileged user defined in the server 
+    configuration while retaining the ability to lower child processes to even
+    more restricted user (as defined in the configuration).
+    """
+    
+    server_uid, server_gid = sec.get_uid_gid(django_settings.WORKER_USERNAME)
+    student_uid, student_gid = sec.get_uid_gid(django_settings.RESTRICTED_USERNAME)
+    os.setresgid(server_gid, student_gid, student_gid)
+    os.setresuid(server_uid, student_uid, student_uid)
 
 @shared_task(name="add")
 def add(a, b):
@@ -441,8 +456,20 @@ def run_test(self, test_id, answer_id, instance_id, exercise_id, student=False, 
     # TODO: Replace with the directory of the ramdisk
     temp_dir_prefix = os.path.join("/", "tmp")
     
+    server_uid, server_gid = sec.get_uid_gid(django_settings.WORKER_USERNAME)
+    student_uid, student_gid = sec.get_uid_gid(django_settings.RESTRICTED_USERNAME)
+    uid = {
+        "OWNED": student_uid,
+        "NOT_OWNED": server_uid
+    }
+    gid = {
+        "OWNED": student_gid,
+        "NOT_OWNED": server_gid
+    }
+    
     test_results = {test_id: {"fail": True, "name": test.name, "stages": {}}}
     with tempfile.TemporaryDirectory(dir=temp_dir_prefix) as test_dir:
+
         # Write the files under test
         # Do this first to prevent overwriting of included/instance files
         for name, contents in files_to_check.items():
@@ -450,7 +477,8 @@ def run_test(self, test_id, answer_id, instance_id, exercise_id, student=False, 
             with open(fpath, "wb") as fd:
                 fd.write(contents)
             print("Wrote file under test %s" % (fpath))
-            # TODO: chmod, chown, chgrp
+            os.chmod(fpath, 0o660)
+            os.chown(fpath, student_uid, student_gid)
 
         if revision is None:
             required_files = test.required_files
@@ -458,44 +486,70 @@ def run_test(self, test_id, answer_id, instance_id, exercise_id, student=False, 
             required_files = old_test["required_files"]
         
         # Write the exercise files required by this test
-        for name, fileinfo, contents in ((f.file_settings.name, f.fileinfo, f.get_file_contents())
-                               for f in exercise_file_objects
-                               if f in required_files and
-                               f.file_settings.purpose in ("INPUT", "WRAPPER", "TEST", "LIBRARY")):
+        for f in exercise_file_objects:
+            if f not in required_files:
+                continue
+            
+            if f.file_settings.purpose not in ("INPUT", "WRAPPER", "TEST", "LIBRARY"):
+                continue
+            
             print(name)
-            fpath = os.path.join(test_dir, name)
+            fpath = os.path.join(test_dir, f.file_settings.name)
             with open(fpath, "wb") as fd:
-                fd.write(contents)
-            #print("Wrote required exercise file {}".format(fpath))
-            print("Wrote required exercise file {} from {}".format(fpath, fileinfo))
-            # TODO: chmod, chown, chgrp
+                fd.write(f.get_file_contents())
+            print("Wrote required exercise file {} from {}".format(fpath, f.fileinfo))
+            os.chmod(fpath, chmod_parse(f.file_settings.chmod_settings))
+            if "OWNED" in (f.file_settings.chown_settings, f.file_settings.chgrp_settings):
+                os.chown(
+                    fpath,
+                    uid[f.file_settings.chown_settings],
+                    gid[f.file_settings.chgrp_settings]
+                )
 
         for if_link in instance_file_links:
             if if_link.include_file in test.required_instance_files.all():                
                 settings = if_link.file_settings
-                if settings.purpose in ("INPUT", "WRAPPER", "TEST", "LIBRARY"):
-                    name = settings.name
+                if settings.purpose not in ("INPUT", "WRAPPER", "TEST", "LIBRARY"):
+                    continue
                     
-                    ii_link = cm.InstanceIncludeFileToInstanceLink.objects.get(
-                        include_file=if_link.include_file,
-                        instance__id=instance_id
+                name = settings.name
+                
+                ii_link = cm.InstanceIncludeFileToInstanceLink.objects.get(
+                    include_file=if_link.include_file,
+                    instance__id=instance_id
+                )
+                
+                if ii_link.revision is None:
+                    file_obj = if_link.include_file
+                else:
+                    file_obj = get_single_archived(if_link.include_file, revision)
+                    
+                contents = file_obj.get_file_contents()
+                fpath = os.path.join(test_dir, name)
+                
+                with open(fpath, "wb") as fd:
+                    fd.write(contents)
+                print("Wrote required instance file {} from {}".format(
+                    fpath, file_obj.fileinfo
+                ))
+                os.chmod(fpath, chmod_parse(settings.chmod_settings))
+                if "OWNED" in (settings.chown_settings, settings.chgrp_settings):
+                    os.chown(
+                        fpath,
+                        uid[settings.chown_settings],
+                        gid[settings.chgrp_settings]
                     )
-                    
-                    if ii_link.revision is None:
-                        file_obj = if_link.include_file
-                    else:
-                        file_obj = get_single_archived(file_obj, revision)
-                        
-                    contents = file_obj.get_file_contents()
-                    fpath = os.path.join(test_dir, name)
-                    
-                    with open(fpath, "wb") as fd:
-                        fd.write(contents)
-                    print("Wrote required instance file {} from {}".format(
-                        fpath, file_obj.fileinfo
-                    ))
+                
 
         all_json = True
+
+        # temporary for testing
+        #os.chmod(test_dir, 0o777)
+        #for name in os.listdir(test_dir):
+            #full = os.path.join(test_dir, name)
+            #os.chmod(full, 0o666)
+            ##st = os.stat(full)
+            ##print(st.st_mode)
 
         # TODO: Replace with chaining
         for i, stage in enumerate(stages):
@@ -603,7 +657,7 @@ def run_stage(self, stage_id, test_dir, temp_dir_prefix, files_to_check, revisio
 
     #stage_results.update(results)
     
-    #print(stage_results)
+    print(stage_results)
 
     return stage_results, all_json
     
@@ -729,11 +783,9 @@ def run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check, revisio
         test_dir
     )
     timeout = command.timeout.total_seconds()
-    env = { # Remember that some information (like PATH) may come from other sources
-        'PWD': test_dir,
-        'PATH': '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
-        'LC_CTYPE': 'en_US.UTF-8',
-    }
+    env = django_settings.CHECKING_ENV
+    env["PWD"] = test_dir
+    
     args = shlex.split(cmd)
 
     shell_like_cmd = " ".join(shlex.quote(arg) for arg in args)

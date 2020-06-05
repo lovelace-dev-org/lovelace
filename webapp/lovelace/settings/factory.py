@@ -255,6 +255,14 @@ CACHES = {
 
 STAT_GENERATION_HOUR = None
 
+CHECKING_ENV = {
+    'PATH': '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
+    'LC_CTYPE': 'en_US.UTF-8',
+}
+
+WORKER_USERNAME = "nobody"
+RESTRICTED_USERNAME = "nobody"
+
 # Shibboleth related options - uncomment if using Shibboleth
 # First one makes emails invalid usernames when creating accounts
 # Second one is required for Shibboleth logout to work properly

@@ -7,15 +7,23 @@ safe environment to run unsafe code in.
 """
 
 import os
+import pwd
 import signal
 import resource
 
 from signal import SIGKILL, SIGSTOP
+from django.conf import settings
 
 _CONCURRENT_PROCESSES = 40
 _NUMBER_OF_FILES = 100
 _FILE_SIZE = 4 * (1024 ** 2)  # 4 MiB
 _CPU_TIME = 20
+
+def get_uid_gid(username):
+    pwrec = pwd.getpwnam(username)
+    uid = pwrec.pw_uid
+    gid = pwrec.pw_gid
+    return uid, gid
 
 def get_demote_process_fun(concurrent_processes=_CONCURRENT_PROCESSES,
                            number_of_files=_NUMBER_OF_FILES,
@@ -25,13 +33,14 @@ def get_demote_process_fun(concurrent_processes=_CONCURRENT_PROCESSES,
     Creates and returns a function that demotes the process based on given
     arguments. Allows setting of custom limits based on, e.g., database values. 
     """
+
     def demote_process():
         """
         Execute a number of security measures to limit the possible scope of harm
         available for the spawned processes to exploit.
         """
         #close_fds()
-        #drop_privileges()
+        drop_privileges()
         limit_resources(concurrent_processes=concurrent_processes,
                         number_of_files=number_of_files,
                         file_size=file_size,
@@ -59,13 +68,20 @@ def drop_privileges():
     - https://docs.python.org/3/library/os.html#os.setresuid
     """
 
+    student_uid, student_gid = get_uid_gid(settings.RESTRICTED_USERNAME)
+
     # Drop the real, effective and saved group and user ids
     try:
         os.setresgid(student_gid, student_gid, student_gid)
         os.setresuid(student_uid, student_uid, student_uid)
     except OSError:
-        print("Unable to drop privileges to GID: (r:{s_gid}, e:{s_gid}, s:{s_gid}), UID: (r:{s_uid}, e:{s_uid}, s:{s_uid})".
-              format(s_gid=student_gid, s_uid=student_uid))
+        print(
+            "Unable to drop privileges to "
+            "GID: (r:{s_gid}, e:{s_gid}, s:{s_gid}), "
+            "UID: (r:{s_uid}, e:{s_uid}, s:{s_uid})".format(
+                s_gid=student_gid, s_uid=student_uid
+            )
+        )
 
 
 def limit_resources(concurrent_processes=_CONCURRENT_PROCESSES,
@@ -125,7 +141,7 @@ def secure_kill(pid):
     [1] https://linux.die.net/man/3/kill
     """
     # DEBUG
-    user = "student"
+    user = settings.RESTRICTED_USERNAME
     timeout = 5
 
     kill_age = timeout + 5
@@ -135,4 +151,5 @@ def secure_kill(pid):
 
     # Iterate through the processes again and issue SIGKILL
     os.system("killall -KILL --verbose --user {user} --younger-than {kill_age}s".format(user=user, kill_age=kill_age))
+    
     
