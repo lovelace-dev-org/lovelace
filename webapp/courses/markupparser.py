@@ -24,6 +24,7 @@ import copy
 from html import escape # Use this instead? Security? HTML injection?
 
 from django.template import loader
+from django.urls import reverse
 from django.utils.safestring import mark_safe
 
 from django.utils.text import slugify as slugify
@@ -329,53 +330,67 @@ class CalendarMarkup(Markup):
 
     @classmethod
     def block(cls, block, settings, state):
+        # TODO: replace by form validation for calendar links
         try:
             calendar = cm.Calendar.objects.get(name=settings["calendar_name"])
-        except cm.Calendar.DoesNotExist as e:
-            # TODO: Modular errors
+        except cm.Calendar.DoesNotExist:
             yield '<div>Calendar {} not found.</div>'.format(
                 settings["calendar_name"]
-                )
-            raise StopIteration
-
-        calendar_dates = cm.CalendarDate.objects.filter(calendar=calendar)
-
-        calendar_reservations = [
-            (
-                cal_date, 
-                [cm.CalendarReservation.objects.filter(calendar_date=cal_date), False]
             )
-            for cal_date in calendar_dates
-        ]
+        else:
+            yield ("calendar", {"calendar": settings["calendar_name"]})
+    
+        # all dynamic
+        # v
+    
+        # try:
+            # calendar = cm.Calendar.objects.get(name=settings["calendar_name"])
+        # except cm.Calendar.DoesNotExist as e:
+            # # TODO: Modular errors
+            # yield '<div>Calendar {} not found.</div>'.format(
+                # settings["calendar_name"]
+                # )
+            # raise StopIteration
 
-        user = state["request"].user
-        user_has_slot = False
-        reserved_event_ids = []
+        # calendar_dates = cm.CalendarDate.objects.filter(calendar=calendar)
 
-        if user.is_authenticated:
-            for cal_date, cal_reservations in calendar_reservations:
-                try:
-                    found = cal_reservations[0].get(user=state["request"].user)
-                except cm.CalendarReservation.DoesNotExist as e:
-                    continue
-                cal_reservations[1] = True
-                user_has_slot = True
-                reserved_event_ids.append(found.calendar_date.id)
-        
-        if user_has_slot and not calendar.allow_multiple:
-            for cal_date, cal_reservations in calendar_reservations:
-                cal_reservations[1] = True
-        
-        c = {
-            "cal_id": calendar.id,
-            "cal_reservations": calendar_reservations,
-            "reserved_event_ids": reserved_event_ids,
-        }
-        
-        t = loader.get_template("courses/calendar.html")
-        rendered_content = t.render(c, state["request"])
-        yield rendered_content
+        # calendar_reservations = [
+            # (
+                # cal_date, 
+                # [cm.CalendarReservation.objects.filter(calendar_date=cal_date), False]
+            # )
+            # for cal_date in calendar_dates
+        # ]
 
+        # user = state["request"].user
+        # user_has_slot = False
+        # reserved_event_ids = []
+
+        # if user.is_authenticated:
+            # for cal_date, cal_reservations in calendar_reservations:
+                # try:
+                    # found = cal_reservations[0].get(user=state["request"].user)
+                # except cm.CalendarReservation.DoesNotExist as e:
+                    # continue
+                # cal_reservations[1] = True
+                # user_has_slot = True
+                # reserved_event_ids.append(found.calendar_date.id)
+        
+        # if user_has_slot and not calendar.allow_multiple:
+            # for cal_date, cal_reservations in calendar_reservations:
+                # cal_reservations[1] = True
+        
+        # c = {
+            # "cal_id": calendar.id,
+            # "cal_reservations": calendar_reservations,
+            # "reserved_event_ids": reserved_event_ids,
+        # }
+        
+        # t = loader.get_template("courses/calendar.html")
+        # rendered_content = t.render(c, state["request"])
+        #yield rendered_content
+        
+        
     @classmethod
     def settings(cls, matchobj, state):
         settings = {"calendar_name" : matchobj.group("calendar_name")}
@@ -465,7 +480,7 @@ class EmbeddedFileMarkup(Markup):
                 link = cm.CourseMediaLink.objects.get(
                     media__name=settings["file_slug"],
                     instance=instance,
-                    parent=state["context"]["content_page"]
+                    parent=state["context"]["content"]
                     )
             except cm.CourseMediaLink.DoesNotExist as e:
                 file_object = cm.File.objects.get(name=settings["file_slug"])
@@ -561,13 +576,17 @@ class EmbeddedPageMarkup(Markup):
                 "embedded pages are not allowed in tooltips"
             )
         
-        yield '<div class="embedded-page">\n'
-        yield settings["rendered_content"]
-        yield '</div>\n'
+#        yield '<div class="embedded-page">\n'
+#        yield settings["rendered_content"]
+#        yield '</div>\n'
+
+        yield ("embedded", settings)
 
     @classmethod
     def settings(cls, matchobj, state):
-        settings = {"page_slug": matchobj.group("page_slug")}
+        settings = {
+            "slug": matchobj.group("page_slug")
+        }
         revision = None
         instance = state["context"]["instance"]
         try:
@@ -580,9 +599,9 @@ class EmbeddedPageMarkup(Markup):
         try:
             try:
                 link = cm.EmbeddedLink.objects.get(
-                    embedded_page__slug=settings["page_slug"],
+                    embedded_page__slug=settings["slug"],
                     instance=instance,
-                    parent=state["context"]["content_page"]
+                    parent=state["context"]["content"]
                 )
             except cm.EmbeddedLink.DoesNotExist as e:
                 # link does not exist yet, get by page slug instead
@@ -605,62 +624,81 @@ class EmbeddedPageMarkup(Markup):
                         % (revision, settings["page_slug"])
                     )
             
-            state["embedded_pages"].append((settings["page_slug"], revision))
+            state["embedded_pages"].append((settings["slug"], revision))
 
             # TODO: Prevent recursion depth > 2
             #embedded_content = page.rendered_markup()
-            embedded_content = ""
-            markup_gen = MarkupParser.parse(
-                page.content, state["request"], state["context"]
-            )
-            for chunk in markup_gen:
-                embedded_content += chunk
-            
             choices = page.get_choices(page, revision=revision)
-            question = blockparser.parseblock(
-                escape(page.question, quote=False), state["context"]
-            )
-
             c = {
-                "emb_content": embedded_content,
-                "embedded": True,
                 "content": page,
-                "content_slug": page.slug,
-                "question": question,
+                "course": state["context"]["course"],
+                "instance": state["context"]["instance"],
                 "choices": choices,
-                "revision": revision,
-            }
-            try:
-                user = state["request"].user
-            except AttributeError:
-                c["sandboxed"] = False
-                c["evaluation"] = "unanswered"
-                c["answer_count"] = 0
-            else:
-                sandboxed = state["request"].path.startswith("/sandbox/")
-                if sandboxed and user.is_authenticated and user.is_active and user.is_staff:
-                    c["sandboxed"] = True
-                elif sandboxed and (not user.is_authenticated or not user.is_active or not user.is_staff):
-                    settings["rendered_content"] = ""
-                    return settings
-                else:
-                    c["sandboxed"] = False
-
-                if user.is_active and page.is_answerable() and not sandboxed:
-                    c["evaluation"] = page.get_user_evaluation(page, user, instance)
-                    c["answer_count"] = page.get_user_answers(page, user, instance).count()
-                else:
-                    c["evaluation"] = "unanswered"
-                    c["answer_count"] = 0
-                    
-            c.update(state["context"])
-            
+            }            
+            embedded_content = page.get_rendered_content(page, c)
+            question = page.get_question(page, c)
             t = loader.get_template("courses/{page_type}.html".format(
                 page_type=page.get_dashed_type()
             ))
-            rendered_content = t.render(c, state["request"])
+            rendered_form = t.render(c)
+            
+            settings["content"] = embedded_content
+            settings["question"] = question
+            settings["form"] = rendered_form
+            settings["urls"] = {
+                "stats_url": reverse("stats:single_exercise", kwargs={
+                    "exercise": page
+                }),
+                "feedback_url": reverse("feedback:statistics", kwargs={
+                    "instance": instance,
+                    "content": page
+                }),
+                "download_url": reverse("teacher_tools:download_answers", kwargs={
+                    "course": instance.course,
+                    "instance": instance,
+                    "content": page
+                }),
+                "edit_url": page.get_admin_change_url(),
+                "submit_url": reverse("courses:check", kwargs={
+                    "course": instance.course,
+                    "instance": instance,
+                    "content": page,
+                    "revision": revision or "head"
+                })
+            }
 
-        settings["rendered_content"] = rendered_content or embedded_content
+
+            # This part is dynamic
+            # v
+            
+            # try:
+                # user = state["request"].user
+            # except AttributeError:
+                # c["sandboxed"] = False
+                # c["evaluation"] = "unanswered"
+                # c["answer_count"] = 0
+            # else:
+                # sandboxed = state["request"].path.startswith("/sandbox/")
+                # if sandboxed and user.is_authenticated and user.is_active and user.is_staff:
+                    # c["sandboxed"] = True
+                # elif sandboxed and (not user.is_authenticated or not user.is_active or not user.is_staff):
+                    # settings["rendered_content"] = ""
+                    # return settings
+                # else:
+                    # c["sandboxed"] = False
+
+                # if user.is_active and page.is_answerable() and not sandboxed:
+                    # c["evaluation"] = page.get_user_evaluation(page, user, instance)
+                    # c["answer_count"] = page.get_user_answers(page, user, instance).count()
+                # else:
+                    # c["evaluation"] = "unanswered"
+                    # c["answer_count"] = 0
+               
+            # c.update(state["context"])
+            
+            # ^
+            # End dynamic part
+            
         return settings
 
     @classmethod
@@ -991,7 +1029,7 @@ class ImageMarkup(Markup):
                 link = cm.CourseMediaLink.objects.get(
                     media__name=settings["image_name"],
                     instance=instance,
-                    parent=state["context"]["content_page"]
+                    parent=state["context"]["content"]
                 )
             except cm.CourseMediaLink.DoesNotExist as e:
                 image_object = cm.Image.objects.get(name=settings["image_name"])

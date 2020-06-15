@@ -795,38 +795,26 @@ def content(request, course, instance, content, **kwargs):
         
         cache.set(
             'term_div_data_{instance}_{lang}'.format(
-                instance=context['instance_slug'],                                                           lang=translation.get_language()),
+                instance=context['instance_slug'],
+                lang=translation.get_language()
+            ),
             term_div_data,
             timeout=None
         )
             
-    rendered_content = ""
-
     # TODO: Admin link should point to the correct version!
 
     # TODO: Warn admins if the displayed version is not the current version!
 
-    # Get the other things based on the rev. if set
-    if revision is not None:
-        # This seems unoptimal. Maybe create a patch to django-reversions?
-        # reversion.get_revision_for_object or sth. would be nice...
-        #version_list = reversion.get_for_object(content).order_by('revision_id')
-        # TODO: New form? Version.objects.get_for_object(term)[0].revision.
-        version = Version.objects.get_for_object(content).get(revision_id=revision).field_dict
-        old_content = version["content"]
-        question = version["question"]
-        
-        # Render the old version of the page
-        markup_gen = markupparser.MarkupParser.parse(old_content, request, context)
-        for chunk in markup_gen:
-            rendered_content += chunk
-    else:
-        question = blockparser.parseblock(escape(content.question, quote=False), {"course": course})
-
+    question = blockparser.parseblock(escape(content.question, quote=False), {"course": course})
     choices = answers = content.get_choices(content, revision=revision)
-
-    if not rendered_content:
-        rendered_content = content.rendered_markup(request, context)
+    rendered_content = content.rendered_markup(request, context, revision)
+    embedded_links = EmbeddedLink.objects.filter(parent=content, instance=instance
+                                                 ).select_related("embedded_page")
+    embed_dict = {}
+    for link in embedded_links:
+        embed_dict[link.embedded_page.slug] = link.embedded_page
+            
 
     c = {
         'course': course,
@@ -836,6 +824,8 @@ def content(request, course, instance, content, **kwargs):
         'instance_name': instance.name,
         'instance_slug': instance.slug,
         'content': content,
+        'content_blocks': rendered_content,
+        'embedded_pages': embed_dict,
         'rendered_content': rendered_content,
         'embedded': False,
         'content_name': content.name,

@@ -80,7 +80,6 @@ class ContentFeedbackQuestion(models.Model):
         return self.get_answers_by_content(instance, content).order_by("user", "-answer_date").distinct("user")
 
     def user_answered(self, user, instance, content):
-        print("hemuli", instance, content)
         return self.get_answer_model().objects.filter(question=self, user=user, content=content, instance=instance).count() >= 1
             
     class Meta:

@@ -1,0 +1,65 @@
+{% load staticfiles %}
+{% load i18n %}
+<div class="task-meta-container">
+  <div class="task-meta" data-eval-group="{{ meta.eval_group }}">
+    {% if not sandboxed %}
+      {% if evaluation == "unanswered" %}
+        <img src="{% static 'courses/unanswered-96.png' %}" width="96" height="96" alt="?"
+             title="{% trans 'You haven’t answered this exercise yet' %}" class="unanswered">
+      {% elif evaluation == "incorrect" %}
+        <img src="{% static 'courses/incorrect-96.png' %}" width="96" height="96" alt="✘"
+             title="{% trans 'You have answered this exercise incorrectly' %}" class="incorrect">
+      {% elif evaluation == "correct" %}
+        <img src="{% static 'courses/correct-96.png' %}" width="96" height="96" alt="✔"
+             title="{% trans 'You have answered this exercise correctly' %}" class="correct">
+      {% elif evaluation == "credited" %}
+        <img src="{% static 'courses/credited-96.png' %}" width="96" height="96" alt="✔"
+             title="{% trans 'You have answered another exercise in this set correctly' %}" class="credited">
+      {% endif %}
+
+      {% comment %}
+      <hr>
+      Deadline: yyyy-mm-dd
+      <hr>
+      {% endcomment %}
+
+      {% if not sandboxed %}
+        <div><a href="{% url 'courses:show_answers' user course instance content %}"
+                title="{% trans 'View your previous answers' %}">{% blocktrans count counter=answer_count %}<span class="answer-count">{{ counter }}</span> answer{% plural %}<span class="answer-count">{{ counter }}</span> answers{% endblocktrans %}</a></div>
+      {% endif %}
+    {% endif %}
+
+
+    {% if user.is_active and user.is_staff %}
+      <hr>
+      
+      <div class="admin-tools">
+        <div><b>{% trans "Teacher’s tools" %}</b></div>
+        <ul>
+          <li><div><a href="{{ meta.stats_url }}">{% trans 'Statistics' %}</a></div></li>
+          <li><div><a href="{{ meta.feedback_url }}">{% trans 'Feedback' %}</a></div></li>
+            {% if type == "file upload exercise" %}
+              <li><div>
+                <a href="{{ meta.download_url }}">
+                  {% trans 'Download answers' %}
+                </a>
+              </div></li>
+              <li><div>
+                <a href="{{ meta.plagiarism_url }}">
+                  {% trans 'Check plagiarism' %}
+                </a>
+              </div></li>
+            {% endif %}
+          <li><div><a href="{{ meta.edit_url }}">
+                {% trans 'Edit this exercise' %}
+          </a></div></li>
+          {% comment %}
+            <li><div><a href="TODO">{% trans 'View reference answer' %}</a></div></li>
+            <li><div><a href="{% url 'courses:sandbox' content.slug %}">{% trans 'View separately' %}</a></div></li>
+          {% endcomment %}
+        </ul>
+      </div>
+    {% endif %}
+    
+  </div>
+</div>
