@@ -80,6 +80,9 @@ class MarkupError(Exception):
     def html(self):
         return self._template % (self._type, self.value)
 
+class PageBreak(object):
+    pass
+        
 class UnclosedTagError(MarkupError):
     _type = "unclosed tag"
 
@@ -1153,6 +1156,26 @@ class ListMarkup(Markup):
         return settings
 
 markups.append(ListMarkup)
+
+class PageBreakMarkup(Markup):
+    name = "Page break"
+    shortname = "pagebreak"
+    description = "Used to partition long content into several pages"
+    regexp = r"~~"
+    markup_class = "meta"
+    example = "~~"
+    inline = False
+    allow_inline = False
+    
+    @classmethod
+    def block(cls, block, settings, state):
+        yield PageBreak()
+        
+    @classmethod
+    def settings(cls, matchobj, state):
+        pass
+
+markups.append(PageBreakMarkup)
 
 class ParagraphMarkup(Markup):
     name = "Paragraph"

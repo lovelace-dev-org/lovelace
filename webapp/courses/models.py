@@ -569,33 +569,44 @@ class ContentPage(models.Model):
         super().save(*args, **kwargs)        
         
 
-    def rendered_markup(self, request=None, context=None, revision=None, lang_code=None):
-        """h
+    def rendered_markup(self,
+                        request=None,
+                        context=None,
+                        revision=None,
+                        lang_code=None,
+                        page=None):
+        """
         Uses the included MarkupParser library to render the page content into
         HTML. If a rendered version already exists in the cache, use that
         instead.
         """
-        # NOTE: Has not worked with context=None for a while
-        # NOTE: Not working with request=None either
-        # TODO: Cache
-        # TODO: Separate caching depending on the language!
         # TODO: Take csrf protection into account; use cookies only
         #       - https://docs.djangoproject.com/en/1.7/ref/contrib/csrf/
         blocks = []
         embedded_pages = []
-
+        
         if lang_code is None:
             lang_code = translation.get_language()
         
-        start = time.time()
         # Check cache
-        cached_content = cache.get(
-            "{slug}_contents_{instance}_{lang}".format(
-                slug=self.slug,
-                instance=context["instance"].slug,
-                lang=lang_code
+        if page is not None:
+            cached_content = cache.get(
+                "{slug}_contents_{instance}_{lang}_{page}".format(
+                    slug=self.slug,
+                    instance=context["instance"].slug,
+                    lang=lang_code,
+                    page=page
+                )
             )
-        )
+        else:
+            cached_content = cache.get(
+                "{slug}_contents_{instance}_{lang}".format(
+                    slug=self.slug,
+                    instance=context["instance"].slug,
+                    lang=lang_code,
+                )
+            )
+        
         if cached_content is None:
             if revision is None:
                 content = self.content
@@ -606,9 +617,15 @@ class ContentPage(models.Model):
             context["content"] = self
             markup_gen = markupparser.MarkupParser.parse(content, request, context, embedded_pages)
             segment = ""
+            pages = []
             for chunk in markup_gen:
                 if isinstance(chunk, str):
                     segment += chunk
+                elif isinstance(chunk, markupparser.PageBreak):
+                    blocks.append(("plain", segment))
+                    segment = ""
+                    pages.append(blocks)
+                    blocks = []
                 else:
                     blocks.append(("plain", segment))
                     blocks.append(chunk)                
@@ -617,18 +634,40 @@ class ContentPage(models.Model):
             if segment:
                 blocks.append(("plain", segment))
                 
+            pages.append(blocks)
+                
+                
+            if len(pages) > 1:
+                for i, blocks in enumerate(pages, start=1):
+                    cache.set(
+                            "{slug}_contents_{instance}_{lang}_{page}".format(
+                            slug=self.slug,
+                            instance=context["instance"].slug,
+                            lang=lang_code,
+                            page=i
+                        ),
+                        blocks,
+                        timeout=None
+                    )
+
+            full = [block for page in pages for block in page] 
             cache.set(
                 "{slug}_contents_{instance}_{lang}".format(
                     slug=self.slug,
                     instance=context["instance"].slug,
-                    lang=lang_code
+                    lang=lang_code,
                 ),
-                blocks,
+                full,
                 timeout=None
             )
-            #print(self, context["instance"], lang_code)
-            return blocks
+            
+            if page is not None:
+                print("Served {} (page {}) from generator".format(self.slug, page)) 
+                return pages[page - 1]
+            print("Served {} (full contents) from generator".format(self.slug))
+            return full
 
+        print("Served {} (page {}) from cache".format(self.slug, page)) 
         return cached_content
     
     def _get_rendered_content(self, context):
@@ -650,6 +689,16 @@ class ContentPage(models.Model):
             escape(self.question, quote=False), context
         )
         return question
+
+    def count_pages(self, instance):
+        lang_code = translation.get_language()
+        content_key = "{slug}_contents_{instance}_{lang}".format(
+            slug=self.slug,
+            instance=instance.slug,
+            lang=lang_code
+        )
+        keys = cache.keys(content_key + "*")
+        return len(keys) - 1
         
     def update_embedded_links(self, instance, revision=None):
         """
@@ -722,15 +771,15 @@ class ContentPage(models.Model):
         }
            
         for lang_code, _ in settings.LANGUAGES:
-            cache.set(
-                "{slug}_contents_{instance}_{lang}".format(
-                    slug=self.slug,
-                    instance=context["instance"].slug,
-                    lang=lang_code
-                ),
-                None,
-                timeout=None
+            content_key = "{slug}_contents_{instance}_{lang}".format(
+                slug=self.slug,
+                instance=context["instance"].slug,
+                lang=lang_code
             )
+            for key in cache.keys(content_key + "*"):
+                print("Deleting", key)
+                cache.delete(key)
+            
             self.rendered_markup(instance, context, lang_code=lang_code)
                 
     # TODO: -> @property human_readable_type

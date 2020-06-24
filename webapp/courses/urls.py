@@ -43,6 +43,7 @@ urlpatterns = [
     path("<course:course>/", views.course_instances, name="course_instances"),
     path("<course:course>/<instance:instance>/", views.course, name="course"),
     path("<course:course>/<instance:instance>/<content:content>/", views.content, name="content"),
+    path("<course:course>/<instance:instance>/<content:content>/<int:pagenum>/", views.content, name="content_part"),
 
     # Download views
     path("file-download/embedded/<course:course>/<instance:instance>/<file:mediafile>/", views.download_embedded_file, name="download_embedded_file"),
