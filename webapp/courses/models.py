@@ -182,6 +182,14 @@ class CourseInstance(models.Model):
         super().__init__(*args, **kwargs)
         self._was_frozen = self.frozen
 
+    def is_active(self):
+        if not self.active:
+            try:
+                return self.start_date <= datetime.datetime.now() <= self.end_date
+            except TypeError:
+                return True
+        return True
+        
     def get_url_name(self):
         """Creates a URL and HTML5 ID field friendly version of the name."""
         # TODO: Ensure uniqueness! I.e. what happens when there's a clash
@@ -253,6 +261,8 @@ class CourseInstance(models.Model):
     @property
     def get_identifying_str(self):
         return "{} / {}".format(self.course.name, self.name)
+    
+    
     
     #link the content graph nodes to this instead
 
