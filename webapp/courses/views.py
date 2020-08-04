@@ -524,7 +524,7 @@ def file_exercise_evaluation(request, course, instance, content, revision, task_
                 "course": course,
                 "instance": instance,
                 "exercise": content
-            }) + "#" + evaluation_obj.useranswer.id
+            }) + "#" + str(evaluation_obj.useranswer.id)
             send_error_report(instance, content, revision, errors, answer_url)
             #print(data)
         

@@ -117,14 +117,16 @@ class CourseContentAccess(admin.ModelAdmin):
         
         edited = Version.objects.get_for_model(model).filter(revision__user=request.user).values_list("object_id", flat=True)
         
-        return qs.filter(
+        qs = qs.filter(
             Q(id__in=list(edited)) |
             Q(contentgraph__instance__course__staff_group__user=request.user) |
             Q(emb_embedded__parent__contentgraph__instance__course__staff_group__user=request.user)
         ).distinct()
+        
+        return qs
 
     def get_queryset(self, request):
-        return CourseContentAccess.content_access_list(request, self.model, self.content_type)
+        return CourseContentAccess.content_access_list(request, self.model, self.content_type).defer("content")
     
     def has_change_permission(self, request, obj=None):
         if obj is None:
@@ -706,7 +708,15 @@ admin.site.register(Course, CourseAdmin)
 class ContentGraphInline(admin.TabularInline):
     model = ContentGraph
     extra = 0
-    fields = ('parentnode', 'content', 'deadline', 'scored', 'ordinal_number', 'visible', 'revision')
+    fields = (
+        'parentnode', 
+        'content', 
+        'deadline', 
+        'scored', 
+        'ordinal_number',
+        'visible', 
+        'revision'
+    )
     readonly_fields = ('revision', )
     ordering = ("ordinal_number", )
     
@@ -745,8 +755,8 @@ class CourseInstanceAdmin(TranslationAdmin, VersionAdmin):
         Accessible graphs has to include graphs from all instances.
         """
         
-        content_access = CourseContentAccess.content_access_list(request, ContentPage)
-        self._accessible_pages = content_access
+        content_access = CourseContentAccess.content_access_list(request, ContentPage, "LECTURE")
+        self._accessible_pages = content_access.defer("content")
         self._accessible_graphs = ContentGraph.objects.filter(content__in=content_access)
         return super().add_view(request, form_url, extra_context)
     
@@ -756,8 +766,8 @@ class CourseInstanceAdmin(TranslationAdmin, VersionAdmin):
         limit what is shown under the content to course links in selectors.
         """
         
-        content_access = CourseContentAccess.content_access_list(request, ContentPage)
-        self._accessible_pages = content_access
+        content_access = CourseContentAccess.content_access_list(request, ContentPage, "LECTURE")
+        self._accessible_pages = content_access.defer("content")
         self._accessible_graphs = ContentGraph.objects.filter(content__in=content_access, instance__id=object_id)
         return super().change_view(request, object_id, form_url, extra_context)
     
