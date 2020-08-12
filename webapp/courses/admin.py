@@ -42,6 +42,9 @@ reversion.register(ContentPage, follow=[
     'repeatedtemplateexercisebackendfile_set',
     'repeatedtemplateexercisetemplate_set',
     'textfieldexerciseanswer_set',
+    'routineexercisetemplate_set',
+    'routineexercisebackendfile_set',
+    'routineexercisebackendcommand_set',
 ])
 reversion.register(FileExerciseTest, follow=[
     'fileexerciseteststage_set',

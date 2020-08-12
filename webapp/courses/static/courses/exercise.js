@@ -146,6 +146,9 @@ function exercise_success(data, result_div, error_div, form_parent) {
         }
     }
 
+    if (data.progress) {
+        form_parent.parent().find("span.rt-progress-tag").html(data.progress);
+    }
 
     if (data.metadata) {
         let current = data.metadata.current;

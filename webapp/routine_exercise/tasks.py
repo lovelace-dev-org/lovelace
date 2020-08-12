@@ -118,7 +118,7 @@ def _answer_history(user_id, instance_id, exercise_id):
         question__user_id=user_id,
         question__instance_id=instance_id,
         question__exercise_id=exercise_id
-    ).order_by("date_answered")
+    ).order_by("answer_date")
     return [(answer.question.question_class, answer.correct) for answer in answers]
 
 @shared_task(name="routine_exercise.generate_question", bind=True)
@@ -144,6 +144,7 @@ def generate_question(self, user_id, instance_id, exercise_id, lang_code, revisi
         with open(os.path.join(test_dir, fn), "w") as f:
             json.dump(data, f)
         args = shlex.split(exercise.routineexercisebackendcommand.command)
+        args.append("--request-params")
         args.append(fn)
         proc_results = _run_command(args, test_dir)
 

@@ -155,6 +155,7 @@ def routine_progress(request, course, instance, content, task_id):
             if progress.completed:
                 data["evaluation"] = True
             data["next_instance"] = True
+            data["progress"] = progress.progress
             next_question = info["data"].get("next")
             if next_question:
                 _save_question(info, info["data"]["next"])
@@ -197,7 +198,7 @@ def check_routine_question(request, course, instance, content, revision):
     answer_str = request.POST["answer"]
     answer = RoutineExerciseAnswer(
         question=question,
-        date_answered=datetime.datetime.now(),
+        answer_date=datetime.datetime.now(),
         given_answer=answer_str
     )
     answer.save()

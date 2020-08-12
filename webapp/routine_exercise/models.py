@@ -10,6 +10,7 @@ from django.utils.text import slugify
 from courses.models import ContentPage, CourseInstance, Evaluation, User
 
 from utils.files import get_testfile_path, upload_storage
+import courses.markupparser as markupparser
 
 
 class RoutineExercise(ContentPage):
@@ -52,34 +53,56 @@ class RoutineExercise(ContentPage):
             answers = RoutineExerciseAnswer.objects.filter(
                 question__exercise=self,
                 question__user=user
-            )
+            ).prefetch_related("question", "question__template")
         else:
             answers = RoutineExerciseAnswer.objects.filter(
                 question__exercise=self,
                 question__user=user,
                 question__instance=instance
-            )
+            ).prefetch_related("question", "question__template")
+            
         return answers
+            
+        history = []
+        for answer in answers:
+            rendered_text = answer.question.template.content.format(
+                **answer.question.generated_json["formatdict"]
+            )
+            marked_text = "".join(
+                markupparser.MarkupParser.parse(rendered_text)
+            ).strip()
+            history.append({
+                "question": marked_text,
+                "answer": answer.given_answer,
+                "correct": answer.correct,
+                "answer_date": answer.date_answered,
+            })
+            
+        return history
 
     def get_user_evaluation(self, user, instance, check_group=True):
-        if instance is None:
-            evaluations = Evaluation.objects.filter(useranswer__userrepeatedtemplateexerciseanswer__exercise=self, useranswer__user=user)
-        else:
-            evaluations = Evaluation.objects.filter(useranswer__userrepeatedtemplateexerciseanswer__exercise=self, useranswer__user=user, useranswer__instance=instance)
-        correct = evaluations.filter(correct=True).count() > 0
-        if correct:
+        try:
+            progress = RoutineExerciseProgress.objects.get(
+                user=user,
+                instance=instance,
+                exercise=self
+            )
+        except RoutineExerciseProgress.DoesNotExist:
+            return "unanswered"
+        
+        if progress.completed:
             return "correct"
-
+        
         if not self.evaluation_group or not check_group:
-            return "incorrect" if evaluations else "unanswered"
-
+            return "incorrect"
+        
         group = RoutineExercise.objects.filter(evaluation_group=self.evaluation_group).exclude(id=self.id)
         for exercise in group:
             if exercise.get_user_evaluation(exercise, user, instance, False) == "correct":
                 return "credited"
-
-        return "incorrect" if evaluations else "unanswered"
-
+        
+        return "incorrect"
+        
     def save_answer(self, user, ip, answer, files, instance, revision):
         pass
 
@@ -134,7 +157,7 @@ class RoutineExerciseAnswer(models.Model):
 
     question = models.OneToOneField(RoutineExerciseQuestion, on_delete=models.CASCADE)
     correct = models.NullBooleanField(null=True)
-    date_answered = models.DateTimeField()
+    answer_date = models.DateTimeField()
     given_answer = models.TextField(blank=True)
 
 
