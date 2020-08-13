@@ -1532,3 +1532,9 @@ footer {
 	padding-right: 60px;
 	float: left;
     }
+
+/* routine exercise stuff */    
+    
+td.routine-meta {
+    background: #ddd;
+}

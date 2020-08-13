@@ -1,6 +1,9 @@
 {% load i18n %}
 {% load course_tags %}
 
+{% block extra-static %}
+{% endblock %}
+
 {% if user.is_active %}
   {% content_meta %}
 {% endif %}

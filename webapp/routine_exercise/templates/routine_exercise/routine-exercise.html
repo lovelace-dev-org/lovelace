@@ -1,0 +1,40 @@
+{% extends 'courses/exercise.html' %}
+{% load i18n %}
+{% load staticfiles %}
+
+{% block extra-content %}
+  <button id="rt-{{ content.id }}" onclick="get_routine_question(event);" class="rt-interaction"
+            data-url="
+            {% if revision %}
+              {% url 'routine_exercise:get_routine_question' course instance content revision %}
+            {% else %}
+              {% url 'routine_exercise:get_routine_question' course instance content "head" %}
+            {% endif %}
+            "
+            data-start-text="{% trans 'Start exercise session' %}"
+            data-next-text="{% trans 'Next' %}">
+  {% trans 'Start exercise session' %}
+  </button>
+  <div class="rt-question-area">
+    <div class="rt-progress"><span class="rt-progress-tag">{{ progress }}</span></div>
+    <div class="routine-template">{{ rendered_template }}</div>
+  </div>
+{% endblock %}
+
+{% block exercise-form %}
+  <textarea name="answer" class="task_text" placeholder="{% trans 'Enter your answer here' %}" rows="3"></textarea><br>
+{% endblock %}
+
+{% block exercise-form-extra %}
+    <script src="{% static 'routine_exercise/routine.js' %}"></script>  
+    <script>
+    (function() {
+      $(document.currentScript).parent().parent().parent().find("form :input").prop("disabled", "true");
+      {% if revision %}
+        $(document.currentScript).parent().parent().parent().find("form").prop("action", "{% url 'routine_exercise:check_routine_question' course instance content revision %}");
+      {% else %}
+        $(document.currentScript).parent().parent().parent().find("form").prop("action", "{% url 'routine_exercise:check_routine_question' course instance content 'head' %}");
+      {% endif %}
+    })();
+  </script>
+{% endblock %}

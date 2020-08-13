@@ -51,6 +51,7 @@ INSTALLED_APPS = (
     'stats',
     'feedback',
     'exercise_admin',
+    'routine_exercise',
     #'debug_toolbar',
     'reversion',
     'teacher_tools'
@@ -212,6 +213,8 @@ STATICFILES_DIRS = (
     # Don't forget to use absolute paths, not relative paths.
 )
 
+TMP_PATH = "/tmp"
+
 # Make this unique, and don't share it with anybody.
 SECRET_KEY = '$34r(o@3yfyr-=v8*ndtqm6^ti0=p%cyt&amp;a*giv-1w%q21r4ae'
 
@@ -279,4 +282,4 @@ PRIVATE_STORAGE_X_SENDFILE = False
 MOSSNET_SUBMIT_PATH = None
 MOSSNET_LANGUAGES = []
 
-
+CHECKER_PYTHON_PATH = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"

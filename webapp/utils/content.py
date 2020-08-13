@@ -58,6 +58,34 @@ def get_archived_instances(main_obj, revision_id):
         
     return by_model
     
-            
+def get_instance_revision(model_class, instance_id, revision):
+    print(revision)
+    instance_obj = model_class.objects.get(id=instance_id)
+    if revision is not None:
+        return Version.objects.get_for_object(instance_obj).get(revision=revision)._object_version.object
+    return instance_obj
 
-    
+def compile_json_feedback(log):
+    # render all individual messages in the log tree
+    triggers = []
+    hints = []
+
+    for test in log:
+        test["title"] = "".join(markupparser.MarkupParser.parse(test["title"], request, context)).strip()
+        test["runs"].sort(key=lambda run: run["correct"])
+        for run in test["runs"]:
+            for output in run["output"]:
+                output["msg"] = "".join(markupparser.MarkupParser.parse(output["msg"], request, context)).strip()
+                triggers.extend(output.get("triggers", []))
+                hints.extend(
+                    "".join(markupparser.MarkupParser.parse(msg, request, context)).strip()
+                    for msg in output.get("hints", [])
+                )
+
+    t_messages = loader.get_template('courses/exercise-evaluation-messages.html')
+    feedback = {
+        'messages': t_messages.render({'log': log}),
+        'hints': hints,
+        'triggers': triggers
+    }
+    return feedback

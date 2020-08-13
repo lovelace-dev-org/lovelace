@@ -1,0 +1,38 @@
+{% extends 'courses/answers-base.html' %}
+
+{% load i18n %}
+{% load routine_exercise_tags %}
+{% load course_tags %}
+
+{% block answer-table-head %}
+  <tr>
+    <th>{% trans 'Answer date' %}</th>
+    <th>{% trans 'Evaluation' %}</th>
+    <th>{% trans 'Link | e-mail' %}</th>
+  </tr>
+{% endblock %}
+{% block answer-table-body %}
+  {% for answer in answers %}
+    <tr>
+      <td class="answer-date routine-meta">{{ answer.answer_date|answer_date }}</td>
+      <td class="evaluation {% if answer.correct == True %}correct{% elif answer.correct == False %}incorrect{% else %}unknown{% endif %} routine-meta">
+          {% if answer.correct == True %}
+            <span title="{% trans 'Correct' %}">✔</span>
+          {% elif answer.correct == False %}
+            <span title="{% trans 'Incorrect' %}">✘</span>
+          {% else %}
+            <span title="{% trans 'Unknown' %}">?</span>
+          {% endif %}
+      </td>
+      <td class="permalink routine-meta">
+          <a href="#{{ answer.id }}">&para;</a> | <a target="_blank" rel="noopener noreferrer" href="mailto:{{ instance_email }}?subject={{ instance_name|urlencode }}%20-%20{{ exercise_title|urlencode }}{% autoescape off %}&body={% endautoescape %}{{ answers_url|urlencode }}%23{{ answer.id }}" title="{% trans 'Send course staff a question about this answer' %}">{% trans 'Help!' %}</a>
+      </td>
+    </tr>
+    <tr>
+      <td class="routine-question" colspan=3>{{ answer.question|rendered_question|safe }}</td>
+    </tr>
+    <tr>
+      <td class="routine-answer render-white-space" colspan=3>{{ answer.given_answer }}</td>
+    </tr>
+  {% endfor %}
+{% endblock %}
