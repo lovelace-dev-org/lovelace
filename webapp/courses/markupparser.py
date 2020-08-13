@@ -640,9 +640,8 @@ class EmbeddedPageMarkup(Markup):
             }            
             embedded_content = page.get_rendered_content(page, c)
             question = page.get_question(page, c)
-            t = loader.get_template("courses/{page_type}.html".format(
-                page_type=page.get_dashed_type()
-            ))
+            print(page.template)
+            t = loader.get_template(page.template)
             rendered_form = t.render(c)
             
             settings["content"] = embedded_content

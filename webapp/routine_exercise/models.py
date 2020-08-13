@@ -4,6 +4,7 @@ from django.conf import settings
 from django.db import models
 from django.db.models import Q
 from django.contrib.postgres.fields import ArrayField, JSONField
+from django.template import loader
 from django.urls import reverse
 from django.utils.text import slugify
 
@@ -38,8 +39,19 @@ class RoutineExercise(ContentPage):
             Q(contentgraph__content=self) | Q(contentgraph__content__embedded_pages=self),
             frozen=False
         )
-        for instance in instances:
+        parents = ContentPage.objects.filter(embedded_pages=self).distinct()
+        for instance in CourseInstance.objects.filter(Q(contentgraph__content=self) | Q(contentgraph__content__embedded_pages=self), frozen=False).distinct():
             self.update_embedded_links(instance)
+            for parent in parents:
+                parent.regenerate_cache(instance)
+
+    def get_rendered_content(self, context):
+        content = ContentPage._get_rendered_content(self, context)
+        t = loader.get_template("routine_exercise/routine-exercise-content-extra.html")
+        return content + t.render(context)
+
+    def get_question(self, context):
+        return ContentPage._get_question(self, context)
 
     def get_choices(self, revision=None):
         return

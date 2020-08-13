@@ -573,6 +573,8 @@ class ContentPage(models.Model):
         default=list,
         blank=True
     )
+
+    template = "courses/blank.html"
     
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)        
