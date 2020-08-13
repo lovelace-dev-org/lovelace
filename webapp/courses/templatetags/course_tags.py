@@ -1,6 +1,7 @@
 import time
 from django import template
 from datetime import datetime
+from courses.models import Calendar
 
 register = template.Library()
 
@@ -60,3 +61,66 @@ def event_duration(td):
     else:
         return time.strftime("%Mmin", time.gmtime(seconds))
     
+@register.inclusion_tag("courses/embed-frame.html", takes_context=True)
+def embed_frame(context, content_data):
+    page = context["embedded_pages"][content_data["slug"]]
+    if context["user"].is_active:
+        answer_count = page.get_user_answers(page, context["user"], context["instance"]).count()
+        evaluation = page.get_user_evaluation(page, context["user"], context["instance"])
+    else:
+        answer_count = 0
+        evaluation = None
+    return {
+        "emb": content_data,
+        "embedded": True,
+        "meta": content_data["urls"],
+        "user": context["user"],
+        "enrolled": context["enrolled"],
+        "course_staff": context["course_staff"],
+        "course": context["course"],
+        "instance": context["instance"],
+        "content": page,
+        "answer_count": answer_count,
+        "evaluation": evaluation
+    }
+
+@register.inclusion_tag("courses/calendar.html", takes_context=True)
+def calendar(context, calendar_data):
+    calendar = Calendar.objects.filter(
+        name=calendar_data["calendar"]
+    ).prefetch_related(
+        "calendardate_set", "calendardate_set__calendarreservation_set"
+    ).first()
+        
+    cal_dates = calendar.calendardate_set.get_queryset()
+    calendar_reservations = [
+        (
+            cal_date, 
+            [cal_date.calendarreservation_set.get_queryset(), False]
+        )
+        for cal_date in cal_dates
+    ]
+    user = context["user"]
+    user_has_slot = False
+    reserved_event_ids = []
+
+    if user.is_authenticated:
+        for cal_date, cal_reservations in calendar_reservations:
+            try:
+                found = cal_reservations[0].get(user=user)
+            except:
+                continue
+            cal_reservations[1] = True
+            user_has_slot = True
+            reserved_event_ids.append(found.calendar_date.id)
+    
+    if user_has_slot and not calendar.allow_multiple:
+        for cal_date, cal_reservations in calendar_reservations:
+            cal_reservations[1] = True
+    
+    return {
+        "user": user,
+        "cal_id": calendar.id,
+        "cal_reservations": calendar_reservations,
+        "reserved_event_ids": reserved_event_ids,
+    }

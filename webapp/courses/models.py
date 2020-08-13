@@ -9,6 +9,7 @@ import operator
 import re
 import os
 from fnmatch import fnmatch
+from html import escape 
 
 from django.conf import settings
 from django.db import models, transaction
@@ -16,8 +17,10 @@ from django.db.models import Q, Max
 from django.contrib.auth.models import User, Group
 from django.db.models.signals import post_save
 from django.urls import reverse
+from django.core.cache import cache
 from django.core.files.storage import FileSystemStorage
 from django.core.exceptions import ValidationError
+from django.template import loader
 from django.utils import translation
 from django.utils.text import slugify
 from django.contrib.postgres.fields import ArrayField, JSONField
@@ -30,14 +33,16 @@ import pygments
 import magic
 
 from lovelace.celery import app as celery_app
-import courses.tasks as rpc_tasks
 
 import feedback.models
 
+# circular imports btw, fix?
 import courses.markupparser as markupparser
 import courses.blockparser as blockparser
+import courses.tasks as rpc_tasks
+
 from utils.files import *
-from utils.archive import get_archived_field
+from utils.archive import get_archived_field, get_single_archived
 
 class RollbackRevert(Exception):
     pass
@@ -319,6 +324,12 @@ class CourseMedia(models.Model):
     """
 
     name = models.CharField(verbose_name='Name for reference in content',max_length=200,unique=True)
+    
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        for link in self.coursemedialink_set.get_queryset():
+            if not link.instance.frozen:
+                link.parent.regenerate_cache(link.instance)
 
 
 class CourseMediaLink(models.Model):
@@ -567,35 +578,137 @@ class ContentPage(models.Model):
         super().save(*args, **kwargs)        
         
 
-    def rendered_markup(self, request=None, context=None, revision=None):
+    def rendered_markup(self,
+                        request=None,
+                        context=None,
+                        revision=None,
+                        lang_code=None,
+                        page=None):
         """
         Uses the included MarkupParser library to render the page content into
         HTML. If a rendered version already exists in the cache, use that
         instead.
         """
-        # NOTE: Has not worked with context=None for a while
-        # NOTE: Not working with request=None either
-        # TODO: Cache
-        # TODO: Separate caching depending on the language!
         # TODO: Take csrf protection into account; use cookies only
         #       - https://docs.djangoproject.com/en/1.7/ref/contrib/csrf/
-        rendered = ""
+        blocks = []
         embedded_pages = []
-
-        if revision is None:
-            content = self.content
+        
+        if lang_code is None:
+            lang_code = translation.get_language()
+        
+        # Check cache
+        if page is not None:
+            cached_content = cache.get(
+                "{slug}_contents_{instance}_{lang}_{page}".format(
+                    slug=self.slug,
+                    instance=context["instance"].slug,
+                    lang=lang_code,
+                    page=page
+                )
+            )
         else:
-            version = Version.objects.get_for_object(self).get(revision_id=revision).field_dict
-            content = version["content"]
+            cached_content = cache.get(
+                "{slug}_contents_{instance}_{lang}".format(
+                    slug=self.slug,
+                    instance=context["instance"].slug,
+                    lang=lang_code,
+                )
+            )
+        
+        if cached_content is None:
+            if revision is None:
+                content = self.content
+            else:
+                content = get_single_archived(self, revision).content
 
-        # Render the page
-        context["content_page"] = self
-        markup_gen = markupparser.MarkupParser.parse(content, request, context, embedded_pages)
-        for chunk in markup_gen:
-            rendered += chunk
+            # Render the page
+            context["content"] = self
+            markup_gen = markupparser.MarkupParser.parse(content, request, context, embedded_pages)
+            segment = ""
+            pages = []
+            for chunk in markup_gen:
+                if isinstance(chunk, str):
+                    segment += chunk
+                elif isinstance(chunk, markupparser.PageBreak):
+                    blocks.append(("plain", segment))
+                    segment = ""
+                    pages.append(blocks)
+                    blocks = []
+                else:
+                    blocks.append(("plain", segment))
+                    blocks.append(chunk)                
+                    segment = ""
+                    
+            if segment:
+                blocks.append(("plain", segment))
+                
+            pages.append(blocks)
+                
+                
+            if len(pages) > 1:
+                for i, blocks in enumerate(pages, start=1):
+                    cache.set(
+                            "{slug}_contents_{instance}_{lang}_{page}".format(
+                            slug=self.slug,
+                            instance=context["instance"].slug,
+                            lang=lang_code,
+                            page=i
+                        ),
+                        blocks,
+                        timeout=None
+                    )
 
-        return rendered
+            full = [block for page in pages for block in page] 
+            cache.set(
+                "{slug}_contents_{instance}_{lang}".format(
+                    slug=self.slug,
+                    instance=context["instance"].slug,
+                    lang=lang_code,
+                ),
+                full,
+                timeout=None
+            )
+            
+            if page is not None:
+                print("Served {} (page {}) from generator".format(self.slug, page)) 
+                return pages[page - 1]
+            print("Served {} (full contents) from generator".format(self.slug))
+            return full
+
+        print("Served {} (page {}) from cache".format(self.slug, page)) 
+        return cached_content
     
+    def _get_rendered_content(self, context):
+        embedded_content = ""
+        markup_gen = markupparser.MarkupParser.parse(
+            self.content, context=context
+        )
+        for chunk in markup_gen:
+            try:
+                embedded_content += chunk
+            except ValueError as e:
+                raise markupparser.EmbeddedObjectNotAllowedError(
+                    "embedded pages are not allowed inside embedded pages"
+                )
+        return embedded_content
+            
+    def _get_question(self, context):
+        question = blockparser.parseblock(
+            escape(self.question, quote=False), context
+        )
+        return question
+
+    def count_pages(self, instance):
+        lang_code = translation.get_language()
+        content_key = "{slug}_contents_{instance}_{lang}".format(
+            slug=self.slug,
+            instance=instance.slug,
+            lang=lang_code
+        )
+        keys = cache.keys(content_key + "*")
+        return len(keys) - 1
+        
     def update_embedded_links(self, instance, revision=None):
         """
         Uses LinkMarkupParser to discover all embedded page links
@@ -659,6 +772,25 @@ class ContentPage(models.Model):
                 link_obj.save()
                 link_obj.embedded_page.update_embedded_links(instance)
 
+    def regenerate_cache(self, instance):
+        context = {
+            "instance": instance,
+            "course": instance.course,
+            'content_page': self
+        }
+           
+        for lang_code, _ in settings.LANGUAGES:
+            content_key = "{slug}_contents_{instance}_{lang}".format(
+                slug=self.slug,
+                instance=context["instance"].slug,
+                lang=lang_code
+            )
+            for key in cache.keys(content_key + "*"):
+                print("Deleting", key)
+                cache.delete(key)
+            
+            self.rendered_markup(instance, context, lang_code=lang_code)
+                
     # TODO: -> @property human_readable_type
     def get_human_readable_type(self):
         humanized_type = self.content_type.replace("_", " ").lower()
@@ -762,10 +894,17 @@ class ContentPage(models.Model):
         return self.name
 
     # HACK: Experimental way of implementing a better get_type_object
+    # TODO: get rid of this
     def __getattribute__(self, name):
         if name == "get_choices":
             type_model = self.get_type_model()
             func = type_model.get_choices
+        elif name == "get_rendered_content":
+            type_model = self.get_type_model()
+            func = type_model.get_rendered_content
+        elif name == "get_question":
+            type_model = self.get_type_model()
+            func = type_model.get_question
         elif name == "get_admin_change_url":
             type_model = self.get_type_model()
             # Can be called from a template (without parameter)
@@ -800,6 +939,12 @@ class Lecture(ContentPage):
     def get_choices(self, revision=None):
         pass
     
+    def get_rendered_content(self, context):
+        return ContentPage._get_rendered_content(self, context)
+    
+    def get_question(self, context):
+        return ContentPage._get_question(self, context)
+    
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = self.get_url_name()
@@ -808,8 +953,9 @@ class Lecture(ContentPage):
         
         self.content_type = "LECTURE"
         super(Lecture, self).save(*args, **kwargs)
-        for instance in CourseInstance.objects.filter(Q(contentgraph__content=self) | Q(contentgraph__content__embedded_pages=self), frozen=False):
+        for instance in CourseInstance.objects.filter(Q(contentgraph__content=self) | Q(contentgraph__content__embedded_pages=self), frozen=False).distinct():
             self.update_embedded_links(instance)
+            self.regenerate_cache(instance)
 
     class Meta:
         verbose_name = "lecture page"
@@ -830,8 +976,12 @@ class MultipleChoiceExercise(ContentPage):
 
         self.content_type = "MULTIPLE_CHOICE_EXERCISE"
         super().save(*args, **kwargs)
-        for instance in CourseInstance.objects.filter(Q(contentgraph__content=self) | Q(contentgraph__content__embedded_pages=self), frozen=False):
+        parents = ContentPage.objects.filter(embedded_pages=self).distinct()
+        for instance in CourseInstance.objects.filter(Q(contentgraph__content=self) | Q(contentgraph__content__embedded_pages=self), frozen=False).distinct():
             self.update_embedded_links(instance)
+            for parent in parents:
+                parent.regenerate_cache(instance)
+            
 
     def get_choices(self, revision=None):
         if revision is None:
@@ -840,6 +990,12 @@ class MultipleChoiceExercise(ContentPage):
             choices = get_archived_field(self, revision, "multiplechoiceexerciseanswer_set")
         return choices
 
+    def get_rendered_content(self, context):
+        return ContentPage._get_rendered_content(self, context)
+    
+    def get_question(self, context):
+        return ContentPage._get_question(self, context)
+    
     def save_answer(self, user, ip, answer, files, instance, revision):
         keys = list(answer.keys())
         key = [k for k in keys if k.endswith("-radio")]
@@ -933,8 +1089,11 @@ class CheckboxExercise(ContentPage):
 
         self.content_type = "CHECKBOX_EXERCISE"
         super().save(*args, **kwargs)
-        for instance in CourseInstance.objects.filter(Q(contentgraph__content=self) | Q(contentgraph__content__embedded_pages=self), frozen=False):
+        parents = ContentPage.objects.filter(embedded_pages=self).distinct()
+        for instance in CourseInstance.objects.filter(Q(contentgraph__content=self) | Q(contentgraph__content__embedded_pages=self), frozen=False).distinct():
             self.update_embedded_links(instance)
+            for parent in parents:
+                parent.regenerate_cache(instance)
 
     def get_choices(self, revision=None):
         if revision is None:
@@ -943,6 +1102,12 @@ class CheckboxExercise(ContentPage):
             choices = get_archived_field(self, revision, "checkboxexerciseanswer_set")
         return choices
  
+    def get_rendered_content(self, context):
+        return ContentPage._get_rendered_content(self, context)
+    
+    def get_question(self, context):
+        return ContentPage._get_question(self, context)
+        
     def save_answer(self, user, ip, answer, files, instance, revision):
         chosen_answer_ids = [int(i) for i, _ in answer.items() if i.isdigit()]
         
@@ -1049,8 +1214,11 @@ class TextfieldExercise(ContentPage):
 
         self.content_type = "TEXTFIELD_EXERCISE"
         super(TextfieldExercise, self).save(*args, **kwargs)
-        for instance in CourseInstance.objects.filter(Q(contentgraph__content=self) | Q(contentgraph__content__embedded_pages=self), frozen=False):
+        parents = ContentPage.objects.filter(embedded_pages=self).distinct()
+        for instance in CourseInstance.objects.filter(Q(contentgraph__content=self) | Q(contentgraph__content__embedded_pages=self), frozen=False).distinct():
             self.update_embedded_links(instance)
+            for parent in parents:
+                parent.regenerate_cache(instance)
 
     def get_choices(self, revision=None):
         if revision is None:
@@ -1059,6 +1227,12 @@ class TextfieldExercise(ContentPage):
             choices = get_archived_field(self, revision, "textfieldexerciseanswer_set")
         return choices
 
+    def get_rendered_content(self, context):
+        return ContentPage._get_rendered_content(self, context)
+    
+    def get_question(self, context):
+        return ContentPage._get_question(self, context)
+        
     def save_answer(self, user, ip, answer, files, instance, revision):
         if "answer" in answer.keys():
             given_answer = answer["answer"].replace("\r", "")
@@ -1183,8 +1357,11 @@ class FileUploadExercise(ContentPage):
 
         self.content_type = "FILE_UPLOAD_EXERCISE"
         super(FileUploadExercise, self).save(*args, **kwargs)
-        for instance in CourseInstance.objects.filter(Q(contentgraph__content=self) | Q(contentgraph__content__embedded_pages=self), frozen=False):
+        parents = ContentPage.objects.filter(embedded_pages=self).distinct()
+        for instance in CourseInstance.objects.filter(Q(contentgraph__content=self) | Q(contentgraph__content__embedded_pages=self), frozen=False).distinct():
             self.update_embedded_links(instance)
+            for parent in parents:
+                parent.regenerate_cache(instance)
 
     def save_answer(self, user, ip, answer, files, instance, revision):
 
@@ -1225,6 +1402,12 @@ class FileUploadExercise(ContentPage):
     def get_choices(self, revision=None):
         return
 
+    def get_rendered_content(self, context):
+        return ContentPage._get_rendered_content(self, context)
+    
+    def get_question(self, context):
+        return ContentPage._get_question(self, context)
+    
     def get_admin_change_url(self):
         return reverse("exercise_admin:file_upload_change", args=(self.id,))
 
@@ -1310,8 +1493,11 @@ class CodeReplaceExercise(ContentPage):
 
         self.content_type = "CODE_REPLACE_EXERCISE"
         super(CodeReplaceExercise, self).save(*args, **kwargs)
-        for instance in CourseInstance.objects.filter(Q(contentgraph__content=self) | Q(contentgraph__content__embedded_pages=self), frozen=False):
+        parents = ContentPage.objects.filter(embedded_pages=self).distinct()
+        for instance in CourseInstance.objects.filter(Q(contentgraph__content=self) | Q(contentgraph__content__embedded_pages=self), frozen=False).distinct():
             self.update_embedded_links(instance)
+            for parent in parents:
+                parent.regenerate_cache(instance)
 
     def get_choices(self, revision=None):
         choices = CodeReplaceExerciseAnswer.objects.filter(exercise=self)\
@@ -1321,6 +1507,12 @@ class CodeReplaceExercise(ContentPage):
         # Django templates don't like groupby, so evaluate iterators:
         return [(a, list(b)) for a, b in choices]
 
+    def get_rendered_content(self, context):
+        return ContentPage._get_rendered_content(self, context)
+    
+    def get_question(self, context):
+        return ContentPage._get_question(self, context)
+    
     def save_answer(self, user, ip, answer, files, instance, revision):
         pass
 
@@ -1372,12 +1564,23 @@ class RepeatedTemplateExercise(ContentPage):
         self.content_type = "REPEATED_TEMPLATE_EXERCISE"
         RepeatedTemplateExerciseSession.objects.filter(exercise=self, user=None).delete()
         super(RepeatedTemplateExercise, self).save(*args, **kwargs)
-        for instance in CourseInstance.objects.filter(Q(contentgraph__content=self) | Q(contentgraph__content__embedded_pages=self), frozen=False):
+        parents = ContentPage.objects.filter(embedded_pages=self).distinct()
+        for instance in CourseInstance.objects.filter(Q(contentgraph__content=self) | Q(contentgraph__content__embedded_pages=self), frozen=False).distinct():
             self.update_embedded_links(instance)
+            for parent in parents:
+                parent.regenerate_cache(instance)
 
     def get_choices(self, revision=None):
         return
 
+    def get_rendered_content(self, context):
+        content = ContentPage._get_rendered_content(self, context)
+        t = loader.get_template("courses/repeated-template-content-extra.html")
+        return content + t.render(context)
+    
+    def get_question(self, context):
+        return ContentPage._get_question(self, context)
+    
     def get_user_answers(self, user, instance, ignore_drafts=True):
         if instance is None:
             answers = UserRepeatedTemplateExerciseAnswer.objects.filter(exercise=self, user=user)

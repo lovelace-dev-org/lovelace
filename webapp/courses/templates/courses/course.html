@@ -32,7 +32,7 @@
 {% if content_tree %}
   <div class="course-contents">
     <h2 class="content-heading">{% trans 'Course Contents' %}<span id="course-contents" class="anchor-offset"></span><a href="#course-contents" class="permalink" title="Permalink to Course Contents">&para;</a></h2>
-    {% for list_direction, result, correct_emb, emb_count, visible in content_tree %}
+    {% for list_direction, result, correct_emb, emb_count, visible, page_count in content_tree %}
       {% if list_direction == '>' %}
         <ul>
       {% elif list_direction == '<' %}
@@ -49,6 +49,11 @@
               <img class="course-contents-result" src="{% static 'courses/incorrect-16.png' %}" alt="{% trans 'Incorrectly answered' %}">
             {% endif %}
           {% endif %}
+          {% comment %}
+          {% if page_count > 0 %}
+            <img class="course-pagination-icon" src="{% static 'courses/pagination.png' %}" alt="{% trans 'View as paginated' %}">
+          {% endif %}
+          {% endcomment %}
           {% if emb_count > 0 %}
             <progress class="course-contents-progress" value="{{ correct_emb }}" max="{{ emb_count }}"
                       title="{% trans 'Completed' %} {{ correct_emb }} / {{ emb_count }}">

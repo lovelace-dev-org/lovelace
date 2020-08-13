@@ -47,7 +47,20 @@
 
 {% block page-content %}
 {% if not content.is_answerable %}
-  {% lecture %}
+  {% for block_type, block_data in content_blocks %}
+    {% if block_type == "calendar" %}
+      {% calendar block_data %}
+    {% elif block_type == "embedded" %}
+      {% embed_frame block_data %}    
+    {% else %}
+      {{ block_data|safe }}
+    {% endif %}
+  {% endfor %}
+  
+  {% block feedback %}
+    {% feedbacks %}
+  {% endblock %}
+
 {% else %}
   {% if content.content_type == "MULTIPLE_CHOICE_EXERCISE" %}
     {% multiple_choice_exercise %}
