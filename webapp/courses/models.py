@@ -926,6 +926,9 @@ class ContentPage(models.Model):
         elif name == "get_user_answers":
             type_model = self.get_type_model()
             func = type_model.get_user_answers
+        elif name == "template":
+            type_model = self.get_type_model()
+            func = type_model.template
         else:
             return super(ContentPage, self).__getattribute__(name)
         return func
