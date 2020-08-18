@@ -1,6 +1,7 @@
 {% extends 'courses/base.html' %}
 {% load staticfiles %}
 {% load i18n %}
+{% load course_tags %}
 
 {% block page-title %}{{ course.name }}{% endblock %}
 
@@ -65,9 +66,24 @@
 {% endif %}
 
 {% if rendered_content %}
-  {{ rendered_content|safe }}
   {% if content.is_answerable %}
     {% include "courses/task.html" %}
+  {% elif not content.is_answerable %}
+    {% for block_type, block_data in content_blocks %}
+      {% if block_type == "calendar" %}
+        {% calendar block_data %}
+      {% elif block_type == "embedded" %}
+        {% embed_frame block_data %}    
+      {% else %}
+        {{ block_data|safe }}
+      {% endif %}
+    {% endfor %}
+
+    {% block feedback %}
+      {% feedbacks %}
+    {% endblock %}
+
   {% endif %}
+
 {% endif %}
 {% endblock %}

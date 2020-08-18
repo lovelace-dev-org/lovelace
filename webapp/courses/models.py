@@ -249,8 +249,7 @@ class CourseInstance(models.Model):
         for link in media_links:
             link.freeze(freeze_to)
 
-            ifile_links = InstanceIncludeFileToInstanceLink.objects.filter(instance=self)
-
+        ifile_links = InstanceIncludeFileToInstanceLink.objects.filter(instance=self)
         for link in ifile_links:
             link.freeze(freeze_to)
 
@@ -258,6 +257,9 @@ class CourseInstance(models.Model):
         for link in term_links:
             link.freeze(freeze_to)
 
+        for content_link in contents:
+            content_link.content.regenerate_cache(self)
+            
         self.frozen = True
     
     def __str__(self):
