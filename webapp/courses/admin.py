@@ -42,9 +42,11 @@ reversion.register(ContentPage, follow=[
     'repeatedtemplateexercisebackendfile_set',
     'repeatedtemplateexercisetemplate_set',
     'textfieldexerciseanswer_set',
-    'routineexercisetemplate_set',
-    'routineexercisebackendfile_set',
-    'routineexercisebackendcommand_set',
+# These cannot be added because it breaks existing archives.
+# Therefore routine exercise archiving does not work properly.
+#    'routineexercisetemplate_set',
+#    'routineexercisebackendfile_set',
+#    'routineexercisebackendcommand_set',
 ])
 reversion.register(FileExerciseTest, follow=[
     'fileexerciseteststage_set',

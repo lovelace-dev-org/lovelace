@@ -246,7 +246,7 @@ function add_exercise_form_callbacks() {
 
 function start_repeated_template_session(e) {
     let button = $(e.target);
-    let exercise = button.parent();
+    let exercise = button.parent().parent();
     //console.log(exercise);
     //let csrf_token = exercise.find("form > input[name=csrfmiddlewaretoken]");
     let rendered_template = exercise.find("div.repeated-template");
