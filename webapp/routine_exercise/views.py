@@ -1,3 +1,4 @@
+import os
 import random
 import routine_exercise.tasks as routine_tasks
 
@@ -10,8 +11,10 @@ from lovelace.celery import app as celery_app
 from courses import markupparser
 
 from routine_exercise.models import *
-from utils.access import ensure_enrolled_or_staff
+from utils.access import ensure_enrolled_or_staff, determine_access
+from utils.archive import find_version_with_filename
 from utils.exercise import render_json_feedback
+from utils.files import generate_download_response
 
 def _question_context_data(request, course, instance, question):
     template_context = {
@@ -238,6 +241,36 @@ def check_routine_question(request, course, instance, content, revision):
     return JsonResponse(data)
 
 
+# TODO: limit to owner and course staff
+def download_routine_exercise_backend(request, exercise_id, field_name, filename):
+    
+    try:
+        exercise_object = RoutineExercise.objects.get(id=exercise_id)
+    except CourseInstance.DoesNotExist as e:
+        return HttpResponseNotFound(_("This exercise does't exist"))
+            
+    if not determine_access(request.user, exercise_object):
+        return HttpResponseForbidden(_("Only course main responsible teachers are allowed to download files through this interface."))
+            
+    fileobjects = RoutineExerciseBackendFile.objects.filter(exercise=exercise_object)
+    try:
+        for fileobject in fileobjects:
+            if filename == os.path.basename(getattr(fileobject, field_name).name):
+                fs_path = os.path.join(settings.PRIVATE_STORAGE_FS_PATH, getattr(fileobject, field_name).name)
+                break
+            else:
+                # Archived file was requested
+                version = find_version_with_filename(fileobject, field_name, filename)
+                if version:
+                    filename = version.field_dict[field_name].name
+                    fs_path = os.path.join(settings.PRIVATE_STORAGE_FS_PATH, filename)
+                    break
+        else:
+            return HttpResponseNotFound(_("Requested file does not exist."))
+    except AttributeError as e: 
+        return HttpResponseNotFound(_("Requested file does not exist."))
+
+    return generate_download_response(fs_path)
 
 
 

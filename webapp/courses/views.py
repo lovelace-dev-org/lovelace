@@ -516,7 +516,8 @@ def file_exercise_evaluation(request, course, instance, content, revision, task_
 
     data = compile_evaluation_data(request, evaluation_tree, evaluation_obj, msg_context)
     
-    if evaluation_tree['test_tree'].get('errors', []):
+    errors = evaluation_tree['test_tree'].get('errors', [])
+    if errors:
         if evaluation_tree['timedout']:
             data['errors'] = _("The program took too long to execute and was terminated. Check your code for too slow solutions.")
         else:

@@ -7,9 +7,9 @@ from reversion import revisions as reversion
 from modeltranslation.admin import TranslationAdmin, TranslationStackedInline
 
 from courses.forms import RepeatedTemplateExerciseBackendForm, ContentForm
-from courses.widgets import AdminTemplateBackendFileWidget
 
 from routine_exercise.models import *
+from routine_exercise.widgets import AdminRoutineBackendFileWidget
 
 from utils.management import CourseContentAccess
 
@@ -29,7 +29,7 @@ class RoutineExerciseBackendFileInline(StackedInline):
     extra = 1
     form = RepeatedTemplateExerciseBackendForm
     formfield_overrides = {
-        models.FileField: {'widget': AdminTemplateBackendFileWidget}
+        models.FileField: {'widget': AdminRoutineBackendFileWidget}
     }
     classes = ["collapse"]
 

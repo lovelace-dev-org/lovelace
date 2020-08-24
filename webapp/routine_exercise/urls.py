@@ -1,3 +1,4 @@
+from django.conf.urls import include, url
 from django.urls import path
 
 from . import views
@@ -19,5 +20,9 @@ urlpatterns = [
         views.check_routine_question,
         name="check_routine_question"
     ),
+    
+    url(r"^file-download/routine-backend/(?P<exercise_id>\d+)/(?P<field_name>[^/]+)/(?P<filename>[^/]+)/$",
+        views.download_routine_exercise_backend, name="download_routine_exercise_backend"),
+
 ]
 

@@ -92,7 +92,7 @@ def calendar(context, calendar_data):
         "calendardate_set", "calendardate_set__calendarreservation_set"
     ).first()
         
-    cal_dates = calendar.calendardate_set.get_queryset()
+    cal_dates = calendar.calendardate_set.get_queryset().order_by("start_time")
     calendar_reservations = [
         (
             cal_date, 
