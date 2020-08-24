@@ -608,7 +608,7 @@ class EmbeddedPageMarkup(Markup):
                 )
             except cm.EmbeddedLink.DoesNotExist as e:
                 # link does not exist yet, get by page slug instead
-                page = cm.ContentPage.objects.get(slug=settings["page_slug"])
+                page = cm.ContentPage.objects.get(slug=settings["slug"])
             else:
                 page = link.embedded_page
                 revision = link.revision
@@ -616,7 +616,7 @@ class EmbeddedPageMarkup(Markup):
             #page = cm.ContentPage.objects\
                                              #.get(slug=settings["page_slug"])
         except cm.ContentPage.DoesNotExist as e:
-            raise EmbeddedObjectNotFoundError("embedded page '%s' couldn't be found" % settings["page_slug"])
+            raise EmbeddedObjectNotFoundError("embedded page '%s' couldn't be found" % settings["slug"])
         else:
             if revision is not None:
                 try:
@@ -624,7 +624,7 @@ class EmbeddedPageMarkup(Markup):
                 except Version.DoesNotExist as e:
                     raise EmbeddedObjectNotFoundError(
                         "revision '%d' of embedded page '%s' couldn't be found"
-                        % (revision, settings["page_slug"])
+                        % (revision, settings["slug"])
                     )
             
             state["embedded_pages"].append((settings["slug"], revision))

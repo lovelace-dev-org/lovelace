@@ -47,6 +47,9 @@
 
 {% block page-content %}
 {% if not content.is_answerable %}
+  {% if user.is_staff and user.is_active %}
+    {% content_meta %}
+  {% endif %}
   {% for block_type, block_data in content_blocks %}
     {% if block_type == "calendar" %}
       {% calendar block_data %}

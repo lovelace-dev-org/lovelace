@@ -412,7 +412,7 @@ def single_exercise(request, exercise):
     elif tasktype == "REPEATED_TEMPLATE_EXERCISE":
         return exercise_answer_stats(request, ctx, exercise, repeated_template_exercise, "repeated-template-stats.html")
     else:
-        return HttpResponseNotFound("No stats for exercise {} found!".format(content_slug))
+        return HttpResponseNotFound("No stats for exercise {} found!".format(exercise.slug))
 
 def user_task(request, user_name, task_name):
     '''Shows a user's answers to a task.'''

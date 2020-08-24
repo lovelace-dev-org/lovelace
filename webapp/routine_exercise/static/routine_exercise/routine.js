@@ -1,6 +1,6 @@
 function get_routine_question(e, url) {
     let button = $(e.target);
-    let exercise = button.parent();
+    let exercise = button.parent().parent();
     //console.log(exercise);
     //let csrf_token = exercise.find("form > input[name=csrfmiddlewaretoken]");
     let rendered_template = exercise.find("div.routine-template");
@@ -27,6 +27,11 @@ function get_routine_question(e, url) {
         url: url,
         success: function(data, text_status, jqxhr_obj) {
             console.log(data);
+            if (data.error) {
+                let errorbox = exercise.find("div.error");
+                errorbox.css("display", "block");
+                errorbox.html(data.error);
+            }
             if (data.question) {
                 rendered_template.html(data.question);
                 progress.html(data.progress);

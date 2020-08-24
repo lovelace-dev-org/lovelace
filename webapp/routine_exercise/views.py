@@ -124,7 +124,12 @@ def get_routine_question(request, course, instance, content, revision):
         }
         return JsonResponse(data)
 
-    data = _question_context_data(request, course, instance, question)
+    try:
+        data = _question_context_data(request, course, instance, question)
+    except Exception as e:
+        return JsonResponse({"error": _(
+            "Question retrieval failed. Contact teaching staff (reason: %s)"
+        ) % e})
     data["progress"] = progress.progress
     return JsonResponse(data)
 
@@ -139,7 +144,12 @@ def routine_progress(request, course, instance, content, task_id):
 
         if info["task"] == "generate":
             question = _save_question(info, info["data"])
-            data = _question_context_data(request, course, instance, question)
+            try:
+                data = _question_context_data(request, course, instance, question)
+            except Exception as e:
+                return JsonResponse({"error": _(
+                    "Question retrieval failed. Contact teaching staff (reason: %s)"
+                ) % e})
             progress = RoutineExerciseProgress.objects.get(
                 instance=instance,
                 exercise=content,

@@ -601,6 +601,8 @@ class ContentPage(models.Model):
         if lang_code is None:
             lang_code = translation.get_language()
         
+        print(lang_code)
+        
         # Check cache
         if page is not None:
             cached_content = cache.get(
@@ -622,9 +624,12 @@ class ContentPage(models.Model):
         
         if cached_content is None:
             if revision is None:
-                content = self.content
+                content = getattr(self, "content_" + lang_code)
             else:
-                content = get_single_archived(self, revision).content
+                content = getattr(
+                    get_single_archived(self, revision),
+                    "content_" + lang_code
+                )
 
             # Render the page
             context["content"] = self
@@ -648,7 +653,6 @@ class ContentPage(models.Model):
                 blocks.append(("plain", segment))
                 
             pages.append(blocks)
-                
                 
             if len(pages) > 1:
                 for i, blocks in enumerate(pages, start=1):
