@@ -601,8 +601,6 @@ class ContentPage(models.Model):
         if lang_code is None:
             lang_code = translation.get_language()
         
-        print(lang_code)
-        
         # Check cache
         if page is not None:
             cached_content = cache.get(
@@ -624,15 +622,13 @@ class ContentPage(models.Model):
         
         if cached_content is None:
             if revision is None:
-                content = getattr(self, "content_" + lang_code)
+                content = self.content
             else:
-                content = getattr(
-                    get_single_archived(self, revision),
-                    "content_" + lang_code
-                )
+                content = get_single_archived(self, revision).content
 
             # Render the page
             context["content"] = self
+            context["lang_code"] = lang_code
             markup_gen = markupparser.MarkupParser.parse(content, request, context, embedded_pages)
             segment = ""
             pages = []
@@ -787,7 +783,10 @@ class ContentPage(models.Model):
             'content_page': self
         }
            
+        current_lang = translation.get_language()
+           
         for lang_code, _ in settings.LANGUAGES:
+            translation.activate(lang_code)
             content_key = "{slug}_contents_{instance}_{lang}".format(
                 slug=self.slug,
                 instance=context["instance"].slug,
@@ -798,6 +797,7 @@ class ContentPage(models.Model):
                 cache.delete(key)
             
             self.rendered_markup(instance, context, lang_code=lang_code)
+        translation.activate(current_lang)
                 
     # TODO: -> @property human_readable_type
     def get_human_readable_type(self):
