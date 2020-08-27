@@ -521,10 +521,8 @@ msgid "Send application"
 msgstr "Lähetä ilmoittautuminen"
 
 #: courses/templates/courses/index.html:101
-#, fuzzy
-#| msgid "Enrollments to this course must be accepted by the teacher"
 msgid "Enrollment period for this course instance has closed."
-msgstr "Tälle kurssille osallistuminen vaatii opettajan hyväksynnän"
+msgstr "Ilmoittautumisaika tälle kurssille on sulkeutunut"
 
 #: courses/templates/courses/index.html:122
 msgid "No courses available!"
