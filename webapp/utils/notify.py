@@ -3,6 +3,7 @@ from django.core.mail import get_connection, EmailMessage
 
 def send_error_report(instance, content, revision, errors, answer_url):
     recipient = instance.email
+    mailfrom = "{}-notices@{}".format(instance.slug, settings.ALLOWED_HOSTS[0])
     title = "[LOVELACE NOTIFY] Checker error in {}".format(content.name)
     body = ""
     body += "An error occurred during checking of student submission.\n"

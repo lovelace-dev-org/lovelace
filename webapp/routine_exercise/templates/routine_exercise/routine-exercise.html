@@ -6,11 +6,11 @@
     <script src="{% static 'routine_exercise/routine.js' %}"></script>  
     <script>
     (function() {
-      $(document.currentScript).parent().parent().parent().parent().find("form :input").prop("disabled", "true");
+      $(document.currentScript).parent().parent().find("form :input").prop("disabled", "true");
       {% if revision %}
-        $(document.currentScript).parent().parent().parent().parent().find("form").prop("action", "{% url 'routine_exercise:check_routine_question' course instance content revision %}");
+        $(document.currentScript).parent().parent().find("form").prop("action", "{% url 'routine_exercise:check_routine_question' course instance content revision %}");
       {% else %}
-        $(document.currentScript).parent().parent().parent().parent().find("form").prop("action", "{% url 'routine_exercise:check_routine_question' course instance content 'head' %}");
+        $(document.currentScript).parent().parent().find("form").prop("action", "{% url 'routine_exercise:check_routine_question' course instance content 'head' %}");
       {% endif %}
     })();
    </script>

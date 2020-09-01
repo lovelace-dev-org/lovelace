@@ -165,6 +165,7 @@ def routine_progress(request, course, instance, content, task_id):
         elif info["task"] == "check":
             progress = _save_evaluation(info)
             data = render_json_feedback(info["data"]["log"], request, course, instance)
+            print(info)
             if progress.completed:
                 data["evaluation"] = True
             data["next_instance"] = True
@@ -206,7 +207,7 @@ def check_routine_question(request, course, instance, content, revision):
             revision=revision,
         )
     except RoutineExerciseQuestion.DoesNotExist as e:
-        return HttpResponse(_("You don't have an unanswered question for this exercise.", status=404))
+        return HttpResponse(_("You don't have an unanswered question for this exercise."), status=404)
 
     answer_str = request.POST["answer"]
     answer = RoutineExerciseAnswer(
