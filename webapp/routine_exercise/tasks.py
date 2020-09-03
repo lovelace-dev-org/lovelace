@@ -125,7 +125,8 @@ def _answer_history(user_id, instance_id, exercise_id):
 def generate_question(self, user_id, instance_id, exercise_id, lang_code, revision, completed):
     translation.activate(lang_code)
     exercise = get_instance_revision(RoutineExercise, exercise_id, revision)
-
+    progress = RoutineExerciseProgress.objects.get(exercise=exercise, user__id=user_id, instance__id=instance_id)
+    
     with tempfile.TemporaryDirectory(dir=settings.TMP_PATH) as test_dir:
 
         # prepare backend files
@@ -139,7 +140,8 @@ def generate_question(self, user_id, instance_id, exercise_id, lang_code, revisi
         fn = "".join(random.choice(string.ascii_lowercase) for i in range(24)) + ".json"
         data = {
             "history": _answer_history(user_id, instance_id, exercise_id),
-            "completed": completed
+            "completed": completed,
+            "progress": progress.progress,
         }
         with open(os.path.join(test_dir, fn), "w") as f:
             json.dump(data, f)
