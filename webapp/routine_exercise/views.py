@@ -94,15 +94,15 @@ def get_routine_question(request, course, instance, content, revision):
         )
         progress.save()
 
-    try:
-        question = RoutineExerciseQuestion.objects.get(
-            user=request.user,
-            instance=instance,
-            exercise=content,
-            revision=revision,
-            routineexerciseanswer=None
-        )
-    except RoutineExerciseQuestion.DoesNotExist as e:
+    question = RoutineExerciseQuestion.objects.filter(
+        user=request.user,
+        instance=instance,
+        exercise=content,
+        revision=revision,
+        routineexerciseanswer=None
+    ).first()
+    
+    if question is None:
         task = routine_tasks.generate_question.delay(
             request.user.id,
             instance.id,
