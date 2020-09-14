@@ -10,7 +10,7 @@ function show_reminders(data) {
         );
     });
     $("textarea").attr("readonly", true);
-    $("input.action-hint").attr("value", "send");
+    $("input[name*=reminder_action").attr("value", "send");
     let submit_button = $("input#reminder-submit").detach();
     submit_button.attr("value", data.submit_text);
     submit_button.attr("disabled", false);

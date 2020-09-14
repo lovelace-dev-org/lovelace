@@ -275,7 +275,7 @@ def manage_reminders(request, course, instance):
 
                 return JsonResponse({"reminders": reminder_list, "submit_text": _("Send emails")})
 
-            elif form.cleaned_data["reminder-action"] == "send":
+            elif form.cleaned_data["reminder_action"] == "send":
                 title = form.cleaned_data.get("title", "")
                 header = form.cleaned_data.get("header", "")
                 footer = form.cleaned_data.get("footer", "")
