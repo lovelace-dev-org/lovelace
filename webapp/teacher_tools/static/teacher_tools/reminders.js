@@ -23,7 +23,7 @@ function submit_reminders(event) {
     let form = $(this);
     let url = form.attr('action');
     let cb;
-    if ($("input.action-hint").attr("value") == "send") {
+    if ($("input[name*=reminder_action").attr("value") == "send") {
         cb = process_progress;
         $("input#reminder-submit").attr("disabled", true);
     }
