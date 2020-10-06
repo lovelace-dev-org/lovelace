@@ -1,5 +1,5 @@
+from django.conf import settings
 from django.core.mail import get_connection, EmailMessage
-
 
 def send_error_report(instance, content, revision, errors, answer_url):
     recipient = instance.email
@@ -23,5 +23,4 @@ def send_error_report(instance, content, revision, errors, answer_url):
         body += "\n\n"
     
     mail = EmailMessage(title, body, mailfrom, [recipient], headers={"Reply-to": reply_to}, connection=connection)
-    print(body)
-    #mail.send()
+    mail.send()
