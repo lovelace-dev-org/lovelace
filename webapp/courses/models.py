@@ -182,6 +182,7 @@ class CourseInstance(models.Model):
     content_license = models.CharField(max_length=255, blank=True)
     license_url = models.CharField(max_length=255, blank=True)
     primary = models.BooleanField(verbose_name="Set this instance as primary.", default=False)
+    welcome_message = models.TextField(verbose_name="Automatic welcome message for accepted enrollments", blank=True)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

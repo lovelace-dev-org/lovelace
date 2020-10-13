@@ -51,7 +51,7 @@ from utils.access import is_course_staff, determine_media_access, ensure_enrolle
 from utils.archive import find_version_with_filename
 from utils.content import first_title_from_content
 from utils.files import generate_download_response
-from utils.notify import send_error_report
+from utils.notify import send_error_report, send_welcome_email
 
 try:
     from shibboleth.app_settings import LOGOUT_URL, LOGOUT_REDIRECT_URL, LOGOUT_SESSION_KEY
@@ -521,7 +521,6 @@ def file_exercise_evaluation(request, course, instance, content, revision, task_
         if evaluation_tree['timedout']:
             data['errors'] = _("The program took too long to execute and was terminated. Check your code for too slow solutions.")
         else:
-            #print(evaluation_tree['test_tree']['errors'])        
             data['errors'] = _("Checking program was unable to finish due to an error. Contact course staff.")
             answer_url = reverse("courses:show_answers", kwargs={
                 "user": request.user,
@@ -530,7 +529,6 @@ def file_exercise_evaluation(request, course, instance, content, revision, task_
                 "exercise": content
             }) + "#" + str(evaluation_obj.useranswer.id)
             send_error_report(instance, content, revision, errors, answer_url)
-            #print(data)
         
     data["answer_count_str"] = answer_count_str
     
@@ -1211,6 +1209,7 @@ def enroll(request, course, instance):
         if not instance.manual_accept:
             enrollment.enrollment_state = "ACCEPTED"
             response_text = _("Your enrollment has been automatically accepted.")
+            send_welcome_email(instance, user=request.user)
         else:
             enrollment.application_note = form.get("application-note")
             response_text = _("Your enrollment application has been registered for approval.")
@@ -1238,7 +1237,15 @@ def withdraw(request, course, instance):
         enrollment.save()
         
     return JsonResponse({"message": _("Your enrollment has been withdrawn")})
-        
+
+# ^
+# |
+# ENROLLMENT VIEWS
+# OTHER
+# |
+# v
+
+    
 def help_list(request):
     return HttpResponse()
 

@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.core.mail import get_connection, EmailMessage
+from django.utils import translation
 
 def send_error_report(instance, content, revision, errors, answer_url):
     recipient = instance.email
@@ -22,5 +23,37 @@ def send_error_report(instance, content, revision, errors, answer_url):
         body += error
         body += "\n\n"
     
-    mail = EmailMessage(title, body, mailfrom, [recipient], headers={"Reply-to": reply_to}, connection=connection)
+    connection = get_connection()
+    mail = EmailMessage(
+        title, body, mailfrom, [recipient],
+        connection=connection
+    )
     mail.send()
+    
+def send_welcome_email(instance, user=None, lang_code=None, userlist=None):
+    if not instance.welcome_message:
+        return
+    
+    if lang_code is None:
+        lang_code = translation.get_language()
+
+    with translation.override(lang_code):
+        if user is not None:
+            recipients = [user.email]
+        else:
+            recipients = userlist.values_list("email", flat=True)
+            print(recipients)
+            
+        mailfrom = "{}-notices@{}".format(instance.slug, settings.ALLOWED_HOSTS[0])
+        title = "[{}]".format(instance.course.name)
+        body = instance.welcome_message
+        reply_to = instance.email
+        
+        connection = get_connection()
+        mail = EmailMessage(
+            title, body, mailfrom, recipients,
+            headers={"Reply-to": reply_to},
+            connection=connection
+        )
+        mail.send()
+    
