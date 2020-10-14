@@ -481,7 +481,7 @@ def run_test(self, test_id, answer_id, instance_id, exercise_id, student=False, 
             os.chown(fpath, student_uid, student_gid)
 
         if revision is None:
-            required_files = test.required_files
+            required_files = test.required_files.all()
         else:
             required_files = old_test["required_files"]
         
@@ -507,7 +507,7 @@ def run_test(self, test_id, answer_id, instance_id, exercise_id, student=False, 
                 )
 
         if revision is None:
-            required_instance_files = test.required_instance_files
+            required_instance_files = test.required_instance_files.all()
         else:
             required_instance_files = old_test["required_instance_files"]
                 

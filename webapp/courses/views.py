@@ -299,10 +299,6 @@ def check_answer(request, course, instance, content, revision):
 
     # TODO: Ensure that the content revision really belongs to the course instance
 
-    if revision == "head":
-        latest = Version.objects.get_for_object(content).latest("revision__date_created")
-        revision = latest.revision_id
-
     # Check if a deadline exists and if it has already passed
     try:
         content_graph = ContentGraph.objects.get(instance=instance, content=content)
@@ -325,8 +321,15 @@ def check_answer(request, course, instance, content, revision):
 
     exercise = content
     
+    if revision == "head":
+        latest = Version.objects.get_for_object(content).latest("revision__date_created")
+        answered_revision = latest.revision_id
+    else:
+        answered_revision = revision
+    
+
     try:
-        answer_object = exercise.save_answer(content, user, ip, answer, files, instance, revision)
+        answer_object = exercise.save_answer(content, user, ip, answer, files, instance, answered_revision)
     except InvalidExerciseAnswerException as e:
         return JsonResponse({
             'result': str(e)
