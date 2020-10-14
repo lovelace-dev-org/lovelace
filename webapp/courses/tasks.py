@@ -506,8 +506,13 @@ def run_test(self, test_id, answer_id, instance_id, exercise_id, student=False, 
                     gid[f.file_settings.chgrp_settings]
                 )
 
+        if revision is None:
+            required_instance_files = test.required_instance_files
+        else:
+            required_instance_files = old_test["required_instance_files"]
+                
         for if_link in instance_file_links:
-            if if_link.include_file in test.required_instance_files.all():                
+            if if_link.include_file in required_instance_files:
                 settings = if_link.file_settings
                 if settings.purpose not in ("INPUT", "WRAPPER", "TEST", "LIBRARY"):
                     continue
@@ -1101,3 +1106,25 @@ def generate_repeated_template_session(self, user_id, instance_id, exercise_id, 
                  )
                  answer_obj.save()
 
+@shared_task(name="courses.deploy-backend", bind=True)
+def deploy_backend(self, course, instance, source_path, target_name, lang, exercise=None):
+    """
+    Deploys an exercise backend file to a permanent location that's read-only
+    for the student process during checking.
+    """
+    
+    with open(source_path, "rb") as f:
+        file_contents = f.read()
+    
+    deploy_root = django_settings.CHECKER_DEPLOYMENT_ROOT
+    if exercise is None:
+        path = os.path.join(deploy_root, instance, lang, target_name)
+    else:
+        path = os.path.join(deploy_root, instance, lang, exercise, target_name)
+        
+    os.makedirs(os.path.dirname(path), mode=0o775, exist_ok=True)
+        
+    with open(path, "wb") as f:
+        f.write(file_contents)
+        
+        

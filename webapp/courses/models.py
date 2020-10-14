@@ -676,12 +676,9 @@ class ContentPage(models.Model):
             )
             
             if page is not None:
-                print("Served {} (page {}) from generator".format(self.slug, page)) 
                 return pages[page - 1]
-            print("Served {} (full contents) from generator".format(self.slug))
             return full
 
-        print("Served {} (page {}) from cache".format(self.slug, page)) 
         return cached_content
     
     def _get_rendered_content(self, context):
@@ -783,8 +780,13 @@ class ContentPage(models.Model):
             "course": instance.course,
             'content_page': self
         }
-           
+        try:
+            revision = ContentGraph.objects.get(content=self, instance=instance).revision
+        except ContentGraph.DoesNotExist:
+            return
+        
         current_lang = translation.get_language()
+        
            
         for lang_code, _ in settings.LANGUAGES:
             translation.activate(lang_code)
@@ -794,10 +796,9 @@ class ContentPage(models.Model):
                 lang=lang_code
             )
             for key in cache.keys(content_key + "*"):
-                print("Deleting", key)
                 cache.delete(key)
             
-            self.rendered_markup(instance, context, lang_code=lang_code)
+            self.rendered_markup(instance, context, lang_code=lang_code, revision=revision)
         translation.activate(current_lang)
                 
     # TODO: -> @property human_readable_type
