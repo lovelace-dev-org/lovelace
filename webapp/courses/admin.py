@@ -9,8 +9,8 @@ from django.contrib.auth.admin import UserAdmin, GroupAdmin
 from django.core.cache import cache
 from django.urls import reverse
 
-from django.db import models, transaction
-from django.db.models import Q
+from django.db import models, transaction 
+from django.db.models import Q, Prefetch
 from django.forms import Field, ModelForm, TextInput, Textarea, ModelChoiceField, BaseInlineFormSet
 
 from .forms import FileEditForm, RepeatedTemplateExerciseBackendForm, ContentForm, TextfieldAnswerForm, InstanceForm
@@ -568,11 +568,15 @@ class ContentGraphInline(admin.TabularInline):
     )
     readonly_fields = ('revision', )
     ordering = ("ordinal_number", )
-    
+
     def get_formset(self, request, obj=None, **kwargs):
         formset = super().get_formset(request, obj)
+        # use cached queryset
         formset.form.base_fields["parentnode"].queryset = kwargs["accessible_graphs"]
         formset.form.base_fields["content"].queryset = kwargs["accessible_pages"]
+        # force preload choices
+        formset.form.base_fields["parentnode"].choices = formset.form.base_fields["parentnode"].choices
+        formset.form.base_fields["content"].choices = formset.form.base_fields["content"].choices
         return formset
 
 class CourseInstanceAdmin(TranslationAdmin, VersionAdmin):
@@ -614,10 +618,10 @@ class CourseInstanceAdmin(TranslationAdmin, VersionAdmin):
         Prefetch accessible pages and their corresponding content graphs to
         limit what is shown under the content to course links in selectors.
         """
-        
+
         content_access = CourseContentAccess.content_access_list(request, ContentPage, "LECTURE")
-        self._accessible_pages = content_access.defer("content")
-        self._accessible_graphs = ContentGraph.objects.filter(content__in=content_access, instance__id=object_id)
+        self._accessible_pages = content_access.defer("content").all()
+        self._accessible_graphs = ContentGraph.objects.prefetch_related(Prefetch("content", queryset=self._accessible_pages)).filter(content__in=content_access, instance__id=object_id)
         return super().change_view(request, object_id, form_url, extra_context)
     
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
