@@ -312,7 +312,7 @@ function show_popup(e, popup_id) {
     e.preventDefault();
     
     let popup = $("#" + popup_id);
-    popup.css({"opacity":"1", "pointer-events":"auto", "overflow": "scroll"});        
+    popup.css({"opacity":"1", "pointer-events":"auto", "overflow": "scroll"});
 }    
 
 function show_collapsed() {

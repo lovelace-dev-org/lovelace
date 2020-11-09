@@ -4,7 +4,7 @@
             data-url="
             {% if revision %}
               {% url 'routine_exercise:get_routine_question' course instance content revision %}
-            {% else %}
+            {% elif instance %}
               {% url 'routine_exercise:get_routine_question' course instance content "head" %}
             {% endif %}
             "

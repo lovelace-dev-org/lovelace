@@ -786,7 +786,6 @@ class ContentPage(models.Model):
             return
         
         current_lang = translation.get_language()
-        
            
         for lang_code, _ in settings.LANGUAGES:
             translation.activate(lang_code)

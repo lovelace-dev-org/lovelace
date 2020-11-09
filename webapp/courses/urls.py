@@ -28,6 +28,8 @@ urlpatterns = [
     # currently disabled
     # path("sandbox/<content:content>/", views.sandboxed_content, name="sandbox",),
     # path("sandbox/<content:content>/check_sandboxed/", views.check_answer_sandboxed, name="check_sandboxed"),
+
+    path("preview/<str:field_name>", views.content_preview, name="content_preview",),
     
     # Help pages
     path("help/", views.help_list, name="help_list",),

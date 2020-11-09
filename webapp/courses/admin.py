@@ -14,7 +14,7 @@ from django.db.models import Q, Prefetch
 from django.forms import Field, ModelForm, TextInput, Textarea, ModelChoiceField, BaseInlineFormSet
 
 from .forms import FileEditForm, RepeatedTemplateExerciseBackendForm, ContentForm, TextfieldAnswerForm, InstanceForm
-from .widgets import AdminFileWidget, AdminTemplateBackendFileWidget
+from .widgets import AdminFileWidget, AdminTemplateBackendFileWidget, ContentPreviewWidget
 
 from modeltranslation.admin import TranslationAdmin, TranslationTabularInline, \
     TranslationStackedInline
@@ -130,6 +130,8 @@ class MultipleChoiceExerciseAnswerInline(TranslationTabularInline):
 
 class MultipleChoiceExerciseAdmin(CourseContentAccess, TranslationAdmin, VersionAdmin):
     
+    change_form_template = "courses/admin-multiple-choice.html"
+
     content_type = "MULTIPLE_CHOICE_EXERCISE"
     form = ContentForm
     
@@ -149,6 +151,14 @@ class MultipleChoiceExerciseAdmin(CourseContentAccess, TranslationAdmin, Version
     list_per_page = 500
     save_on_top = True
 
+    def formfield_for_dbfield(self, db_field, request, **kwargs):
+        formfield = super().formfield_for_dbfield(db_field, request, **kwargs)
+        if db_field.name in ('content'):
+            formfield.widget = ContentPreviewWidget(attrs={'rows':25, 'cols':120})
+        elif db_field.name == 'tags':
+            formfield.widget = Textarea(attrs={'rows':2})
+        return formfield
+
 
 class CheckboxExerciseAnswerInline(TranslationTabularInline):
     model = CheckboxExerciseAnswer
@@ -157,6 +167,8 @@ class CheckboxExerciseAnswerInline(TranslationTabularInline):
 
 class CheckboxExerciseAdmin(CourseContentAccess, TranslationAdmin, VersionAdmin):
     
+    change_form_template = "courses/admin-checkbox.html"
+
     content_type = "CHECKBOX_EXERCISE"
     form = ContentForm
     
@@ -176,6 +188,13 @@ class CheckboxExerciseAdmin(CourseContentAccess, TranslationAdmin, VersionAdmin)
     list_per_page = 500
     save_on_top = True
 
+    def formfield_for_dbfield(self, db_field, request, **kwargs):
+        formfield = super().formfield_for_dbfield(db_field, request, **kwargs)
+        if db_field.name in ('content'):
+            formfield.widget = ContentPreviewWidget(attrs={'rows':25, 'cols':120})
+        elif db_field.name == 'tags':
+            formfield.widget = Textarea(attrs={'rows':2})
+        return formfield
 
 class TextfieldExerciseAnswerInline(TranslationStackedInline):
     model = TextfieldExerciseAnswer
@@ -186,6 +205,8 @@ class TextfieldExerciseAnswerInline(TranslationStackedInline):
 
 class TextfieldExerciseAdmin(CourseContentAccess, TranslationAdmin, VersionAdmin):
     
+    change_form_template = "courses/admin-textfield.html"
+
     content_type = "TEXTFIELD_EXERCISE"
     form = ContentForm
     
@@ -205,6 +226,14 @@ class TextfieldExerciseAdmin(CourseContentAccess, TranslationAdmin, VersionAdmin
     list_per_page = 500
     save_on_top = True
 
+    def formfield_for_dbfield(self, db_field, request, **kwargs):
+        formfield = super().formfield_for_dbfield(db_field, request, **kwargs)
+        if db_field.name in ('content'):
+            formfield.widget = ContentPreviewWidget(attrs={'rows':25, 'cols':120})
+        elif db_field.name == 'tags':
+            formfield.widget = Textarea(attrs={'rows':2})
+        return formfield
+    
     
 class CodeReplaceExerciseAnswerInline(admin.StackedInline):
     model = CodeReplaceExerciseAnswer
@@ -239,7 +268,7 @@ class RepeatedTemplateExerciseBackendFileInline(admin.StackedInline):
     extra = 1
     form = RepeatedTemplateExerciseBackendForm
     formfield_overrides = {
-        models.FileField: {'widget': AdminTemplateBackendFileWidget}
+        models.FileField: {'widget': AdminFileWidget}
     }
 
 class RepeatedTemplateExerciseBackendCommandInline(TranslationStackedInline):
@@ -311,17 +340,18 @@ class FileExerciseTestExpectedStderrAdmin(admin.StackedInline):
 
 class LectureAdmin(CourseContentAccess, TranslationAdmin, VersionAdmin):
     
+    change_form_template = "courses/admin-lecture.html"
+    
     content_type = "LECTURE"
     form = ContentForm
     fieldsets = [
         ('Page information',    {'fields': ['name', 'content']}),
         ('Feedback',            {'fields': ['feedback_questions']})
     ]
-    
     def formfield_for_dbfield(self, db_field, request, **kwargs):
         formfield = super(LectureAdmin, self).formfield_for_dbfield(db_field, request, **kwargs)
         if db_field.name in ('content'):
-            formfield.widget = Textarea(attrs={'rows':25, 'cols':120})
+            formfield.widget = ContentPreviewWidget(attrs={'rows':25, 'cols':120})
         elif db_field.name == 'tags':
             formfield.widget = Textarea(attrs={'rows':2})
         return formfield

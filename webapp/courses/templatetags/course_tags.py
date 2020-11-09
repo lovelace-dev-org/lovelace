@@ -84,6 +84,12 @@ def embed_frame(context, content_data):
         "evaluation": evaluation
     }
 
+@register.inclusion_tag("courses/embed-frame-preview.html", takes_context=False)
+def embed_frame_preview(content_data):
+    return {
+        "emb": content_data
+    }
+    
 @register.inclusion_tag("courses/calendar.html", takes_context=True)
 def calendar(context, calendar_data):
     calendar = Calendar.objects.filter(

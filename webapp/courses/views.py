@@ -1248,6 +1248,79 @@ def withdraw(request, course, instance):
 # |
 # v
 
+
+def content_preview(request, field_name):
+    if not request.user.is_staff and not request.user.is_superuser:
+        return HttpResponseForbidden(_("Only staff members can access this view"))
+    
+    try:
+        content = request.POST["content"]
+    except KeyError:
+        return HttpResponseBadRequest(_("No content to show"))
+    
+    question = request.POST.get("question", "")
+    lang_code = field_name[-2:]
+    embedded_preview = request.POST.get("embedded", False)
+    
+    with translation.override(lang_code):
+        markup_gen = markupparser.MarkupParser.parse(content)
+        segment = ""
+        pages = []
+        blocks = []
+        
+        for chunk in markup_gen:
+            if isinstance(chunk, str):
+                segment += chunk
+            elif isinstance(chunk, markupparser.PageBreak):
+                blocks.append(("plain", segment))
+                segment = ""
+                pages.append(blocks)
+                blocks = []
+            else:
+                blocks.append(("plain", segment))
+                blocks.append(chunk)
+                segment = ""
+                
+        if segment:
+            blocks.append(("plain", segment))
+        
+        pages.append(blocks)
+        full = [block for page in pages for block in page]
+        
+        if question:
+            rendered_question = blockparser.parseblock(
+                escape(question, quote=False), {}
+            )
+        else:
+            rendered_question = ""            
+                
+        t = loader.get_template("courses/content-preview.html")
+        c = {
+            "content_blocks": full,
+        }
+        if embedded_preview:
+            template = request.POST["form_template"]
+            form = loader.get_template(template)
+            choices = []
+            for i, choice in enumerate(request.POST.getlist("choices[]")):
+                if choice:
+                    choices.append({
+                        "id": i,
+                        "answer": choice
+                    })
+            print(choices)
+            c["embedded_preview"] = True
+            c["embed_data"] = {
+                "content": "".join(block[1] for block in full),
+                "question": rendered_question,
+                "form": form.render({"choices": choices}, request)
+            }
+
+        rendered = t.render(c, request)
+
+    
+
+    return HttpResponse(rendered)
     
 def help_list(request):
     return HttpResponse()

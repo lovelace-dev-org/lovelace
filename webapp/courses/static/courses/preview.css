@@ -1,0 +1,873 @@
+* {
+    box-sizing: border-box;
+    margin: 0px;
+    padding: 0px;
+}
+
+section.content {
+    position: relative;
+    /*top: 4rem;*/
+    background: #eee;
+    box-shadow: 0 0 2em rgba(0, 0, 0, 0.4);
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 0;
+    font-family: "LatoWeb", "DejaVu Sans", "Verdana", "Ubuntu", "Arial", sans-serif;
+    font-size: 1.3em;
+    color: #333;
+    line-height: 1.5;
+    padding: 1em 40px 3em 120px;
+    min-height: calc(100% - 4rem); /* Header 6em, breadcrumbs 2em, footer 3em*/
+    word-wrap: break-word;
+}
+
+    section.content h1, section.content h2, section.content h3, section.content h4, section.content h5, section.content h6 {
+        font-family: "LatoWebSemibold", "Trebuchet MS", "Helvetica", sans-serif;
+        /*font-weight: normal;*/
+        /*letter-spacing: 0.05em;*/
+        background: none;
+        color: black;
+        padding: 0px;
+        word-spacing: 0.1em;
+    }
+
+    section.content span.anchor-offset {
+        width: 0;
+        height: 0;
+        padding-top: 4rem;
+        margin-top: -4rem;
+        visibility: hidden;
+    }
+
+    section.content h1:first-child, section.content h2:first-child, section.content h3:first-child, section.content h4:first-child, section.content h5:first-child, section.content h6:first-child, .task-meta-container + h1, .task-meta-container + h2, .task-meta-container + h3, .task-meta-container + h4, .task-meta-container + h5, .task-meta-container + h6 {
+        margin-top: 0 !important;
+    }
+
+    section.content h1 {
+        margin-top: 1em;
+        font-size: 1.8em;
+        font-variant: small-caps;
+        word-spacing: 0.2em;
+        padding-bottom: 2px;
+        border-bottom: 1px solid #888;
+        margin-bottom: 1em;
+        text-shadow: rgba(63, 63, 63, 0.5) 1px 1px 1px;
+    }
+    section.content h2 {
+        font-size: 1.5em;
+        margin-top: 1em;
+        margin-bottom: 0.5em;
+        text-shadow: rgba(63, 63, 63, 0.5) 1px 1px 1px;
+        font-weight: bold;
+    }
+    section.content h3 {
+        font-size: 1.25em;
+        margin-top: 1em;
+        margin-bottom: 0.0em;
+        text-shadow: rgba(63, 63, 63, 0.5) 1px 1px 1px;
+    }
+    section.content h4 {
+        font-size: 1.2em;
+        letter-spacing: 0.03em;
+        word-spacing: 0.07em;
+        margin-bottom: 0.0em;
+        font-weight: bold;
+    }
+    section.content h5 {
+        font-size: 1.1em;
+        margin-bottom: 0.0em;
+    }
+    section.content h6 {
+        font-size: 1.0em;
+        margin-bottom: 0.0em;
+        font-weight: bold;
+    }
+
+    figure {
+        margin-top: 0.5em;
+        margin-left: 0;
+        margin-bottom: 1em;
+        display: table;
+        width: 1px;
+    }
+    
+    img.content-img {
+        margin-top: 0.5em;
+        margin-left: 0;
+        margin-bottom: 1em;
+        display: block;
+    }
+    img.figure-img {
+        display: block;
+    }
+
+    figcaption {
+        display: table-caption;
+        caption-side: bottom;
+    }
+
+    .centered-block-outer {
+        overflow: hidden;
+        position: relative;
+    }
+    .centered-block-middle {
+        float: left;
+        position: relative;
+        left: 50%;
+    }
+    .centered-block-inner {
+        position: relative;
+        left: -50%;
+    }
+
+    section.content hr {
+        margin-bottom: 1em;
+        border: 0;
+        height: 1px;
+        background: #666;
+        background-image: -moz-linear-gradient(left, #999, #666, #999);
+    }
+
+    section.content div.paragraph {
+        margin-bottom: 1.5em;
+    }
+    
+    section.content div.normal {
+        margin-bottom: 15px;
+        margin-right: 15px;
+    }
+
+    section.content div.paragraph+ul, section.content div.paragraph+ol {
+        position: relative;
+        top: -.75em;
+    }
+    section.content ul, section.content ol {
+        margin-left: 1.5em;
+        margin-bottom: 1.5em;
+    }
+
+    section.content ul > li, section.content ol > li {
+        margin-left: 0;
+        margin-bottom: .5em;
+        padding-left: 5px;
+    }
+
+    section.content ul > ul, section.content ul > ol, section.content ol > ol, section.content ol > ul {
+        margin-left: 3em;
+        margin-bottom: 0;
+    }
+
+    section.content div.tex {
+        margin-left: 8em;
+    }
+
+    section.content table {
+        border-collapse: collapse;
+        border: 1px solid #8a8;
+        margin-bottom: 1em;
+    }
+
+    section.content table th, section.content table td {
+        border: 1px solid #8a8;
+        padding: 2px 4px 2px 4px;
+    }
+
+        section.content div.paragraph > code, section.content td > code,
+        section.content li > code, section.content div.exercise-form > code,
+        section.content mark > code {
+            font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
+            background: #e2e2e2;
+            font-size: 1em;
+            padding: 1px 3px;
+            border: 1px solid #cacaca;
+            border-radius: 3px;
+            box-shadow: inset 0 0 5px #cacaca;
+            white-space: nowrap;
+        }
+
+        section.content * a {
+            padding: 0 1px;
+            margin-left: -1px;
+            margin-right: -1px;
+            color: #143a14;
+        }
+        section.content * a:visited {
+            color: #ad3939;
+        }
+        section.content * a:hover {
+            color: #222;
+            background-color: #59cd59;
+            border-radius: 3px;
+        }
+
+        section.content mark {
+            background: #59cd59;
+            border-radius: 7px;
+            padding: 2px 4px;
+            color: inherit;
+        }
+        section.content mark.hint-inactive {
+            background: transparent;
+            border-radius: 7px;
+            border: 2px solid transparent;
+            padding: 7px 2px;
+            margin: -7px -4px;
+        }
+        section.content mark.hint-active {
+            background: #338;
+            color: #eee;
+            border-radius: 7px;
+            /*border: 2px dashed #88f;*/
+            padding: 7px 2px;
+            margin: -7px -4px;
+            animation: hint_background 1s linear 5 alternate;
+        }
+        @keyframes hint_background {
+            0% {background: transparent;}
+            100% {background: #338;}
+        }
+
+        section.content kbd { /* .key */
+            padding: 4px 3px;
+            margin-right: 1px;
+            border: 1px solid #c6c6c6;
+            border-radius: 3px;
+            box-shadow: 1px 1px 1px rgba(127, 127, 127, 0.2), inset 0 0 6px #fff;
+            background: #eee;
+        }
+
+	section.content form.feedback {
+	}
+
+        section.content div.question {
+            margin-bottom: 0px;
+        }
+
+        section.content form.task {
+	    width: 100%;
+        }
+
+	section.content pre.normal {
+        font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
+        background: #e2e2e2;
+        font-size: 1.2rem;
+        padding: 2px 4px;
+        border: 1px solid #cacaca;
+        border-radius: 3px;
+        box-shadow: inset 0 0 3px #cacaca;
+        line-height: 1.15;
+        
+        white-space: pre;
+        overflow-x: auto;
+        width: auto;
+        margin-bottom: 1em;
+	}
+
+        section.content pre.normal code {
+            font-family: inherit;
+        }
+        
+        section.content div.embedded-page {
+            position: relative;
+            left: -120px;
+            border-color: #d0d0d0;
+            border-style: solid;
+            border-width: 2px 0;
+            border: 0;
+            width: 1180px;
+            background: #caeaca;
+            padding: 1em 40px 2em 120px;
+            /*padding-left: 120px;*/
+            margin-bottom: 1em;
+        }
+
+        section.content div.question {
+            /*margin-bottom: 2em;*/
+        }
+
+        section.content div.question div.exercise-form {
+            position: relative;
+            margin-top: 5px;
+            padding: 9px;
+            border: 2px solid #d0d0d0;
+            background: #daeeda;
+        }
+
+            section.content div.question div.exercise-form input[type=file], section.content div.question div.exercise-form input[type=submit] {
+                font-family: "LatoWeb";
+                font-size: 0.9em;
+                min-width: 170px;
+                line-height: 1.35;
+                margin: 6px 0 0 0;
+                color: black;
+            }
+            
+            section.content div.question div.exercise-form input[type=submit] {
+                background: #aaa;
+                padding: 0px 0px;
+            }
+            
+            section.content div.question div.exercise-form div.input-label-container {
+                display: block;
+                vertical-align: bottom;
+            }
+            
+            section.content div.question div.exercise-form div.input-label-container label {
+                float: none;
+            }
+
+            section.content div.question div.exercise-form div.code-replace {
+                margin-top: -5px;
+            }
+            
+            section.content div.question div.exercise-form div.code-replace-filename {
+                font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
+                font-size: 1.2rem;
+                display: block;
+            }
+
+            section.content div.question div.exercise-form label.code-replace-label {
+                font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
+                font-size: 1.2rem;
+                width: 44px;
+                text-align: right;
+                display: inline-block;
+                background: #bbb;
+                border: 1px solid #d0d0d0;
+                margin: 0;
+                margin-right: -6px;
+                padding-right: 4px;
+                line-height: 1.25 !important;
+            }
+
+            section.content div.question div.exercise-form input.code-replace-input {
+                font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
+                font-size: 1.2rem;
+                display: inline-block !important;
+                width: calc(100% - 58px);
+                border: 1px solid #d0d0d0;
+                background: #eee;
+                line-height: 1.25 !important;
+            }
+
+            section.content div.question div.exercise-form label {
+                margin-left: 0.5em;
+                line-height: 1.75;
+                display: inline;
+                vertical-align: middle;
+            }
+
+            section.content div.question div.exercise-form div.input-label-container > input {
+                display: inline;
+                vertical-align: middle;
+            }
+
+            section.content div.question div.exercise-form label.file {
+                margin: 0;
+                display: inline-block;
+                clear: both;
+                width: 220px;
+            }
+
+            section.content div.question div.exercise-form input.task_file {
+                clear: both;
+            }
+            
+            textarea.generic-textfield,
+            section.content div.question div.exercise-form textarea {
+                width: 100%;
+                border: 2px solid #ddd;
+                padding: 2px;
+                resize: vertical;
+                background: #f5f5f5;
+                font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
+                font-size: 1.2rem;
+            }
+
+            section.content div.question div.exercise-form div.answered-status {
+                display: inline;
+            }
+
+            div.answered-status span.correct {
+                color: #3a3;
+            }
+            div.answered-status span.incorrect {
+                color: #a33;
+            }
+            
+            /* repeated template exercise */
+            
+            section.content button.rt-interaction {
+                font-family: "LatoWeb";
+                font-size: 0.9em;
+                min-width: 170px;
+                line-height: 1.35;
+                margin: 6px 0 6px 0;    
+            }
+            
+            section.content span.rt-progress-tag {
+                background: #9c9;
+                padding: 6px;
+                border-radius: 4px;
+            }
+            
+
+        section.content div.auth-warning {
+            font-weight: bold;
+            color: #f33;
+        }
+
+        section.content div.markup-error {
+            font-weight: bold;
+            color: red;
+            border: 2px dashed red;
+            padding: 4px 8px;
+            margin-bottom: 1rem;
+        }
+
+        section.content div.results-box {
+            position: relative;
+            margin-top: 4px;
+            padding: 9px;
+            border: 2px solid #d0d0d0;
+            background: #daeeda;            
+        }
+        section.content div.results-box > span.results-header {
+            display: block;
+            font-weight: bold;
+        }
+        section.content div.results-box.hints,
+        section.content div.results-box.msgs {
+            padding-bottom: 0;
+        }
+        section.content div.results-box.hints > div.hints-list,
+        section.content div.results-box.msgs > div.msgs-list {
+            position: relative;
+            margin: 0;
+            padding: 0;
+        }
+        section.content div.results-box.hints > div.hints-list > ul,
+        section.content div.results-box.msgs > div.msgs-list > ul {
+            list-style-type: none;
+            position: relative;
+            margin: 0;
+            padding: 0;
+            left: -11px;
+            width: 1000px;
+        }
+        section.content div.results-box.hints > div.hints-list > ul > li,
+        section.content div.results-box.msgs > div.msgs-list > ul > li {
+            margin: 0;
+            padding: 5px 11px;
+            border-top: 2px solid #ccc;
+        }
+        section.content div.results-box.hints > div.hints-list > ul > li > *:last-child,
+        section.content div.results-box.msgs > div.msgs-list > ul > li > *:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        section.content div.error {
+            color: #f00;
+            background: #eedada;
+        }
+
+        section.content div.result {
+
+        }
+
+        section.content pre {
+            width: auto;
+        }
+
+        section.content div#result div.hintbox {
+            
+        }
+
+        section.content div#result div.test {
+            padding: 9px;
+            border: 2px solid rgb(224,224,224);
+            background: #e7ffe7;
+        }            
+
+        section.content div#result h_1 {
+            font-size: 20px;
+            margin-top: 16px;
+            /*border-top: 1px solid grey;*/
+        }
+        section.content div#result h_2 {
+            margin-top: 8px;
+            font-size: 18px;
+        }
+        section.content div#result h_3 {
+            font-size: 16px;
+        }
+        section.content div#result h3 span.command {
+            white-space: pre;
+            font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
+        }
+
+        /* The file upload exercise evaluation tabs */
+        div.file-evaluation-widget {
+            width: 100%;
+            background: #ddd;
+        }
+        div.test-tab-selector-box {
+            color: #ccc;
+            background: #daeeda;
+        }
+        div.test-tab-selector {
+            display: inline-block;
+            border: 2px solid #d0d0d0;
+            border-radius: 2px 20px 0 0/2px 8px 0 0;
+            cursor: pointer;
+            padding: 0 2px;
+        }
+        div.correct-test {
+            background: #143a14;
+        }
+        div.incorrect-test {
+            background: #3a1414;
+        }
+        div.test-tab-selector img {
+            right: 2px;
+            top: 4px;
+            padding: 1px;
+            margin-left: 4px;
+            position: relative;
+            border: 1px dotted #aaa;
+            border-radius: 3px;
+        }
+        div.correct-test img {
+            background: #69cd69;
+        }
+        div.incorrect-test img {
+            background: #cd6969;
+        }
+
+        /* The file upload exercise items */
+        /* Stage */
+        div.test-evaluation-stage {
+            border-bottom: 2px solid #aaa;
+            padding-bottom: 1rem;
+        }
+        div.test-evaluation-stage:last-child {
+            border-bottom: 0;
+            padding-bottom: 0;
+        }
+        div.test-evaluation-stage-name {
+            font-weight: normal;
+            text-shadow: 0px 0px 4px rgba(63, 63, 63, 0.5);
+            border-bottom: 1px solid rgba(191, 191, 191, 0.5);
+            padding: 4px 4px 4px 8px;
+            font-size: 1.1rem;
+            background: #cacaca;
+        }
+        div.test-evaluation-stage-fail {
+            background: #eccaca;
+        }
+        /* Command */
+        div.test-evaluation-heading {
+            padding: 2px 2px 2px 4px;
+            font-size: 1.0rem;
+            text-decoration: underline;
+        }
+        pre.test-evaluation-cmdline {
+            padding: 2px 2px 2px 4px;
+            margin: 0 6px 6px 6px;
+            font-size: 1.0em;
+            font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
+            background: #d0d0d0;
+        }
+        div.test-evaluation-msg {
+            font-size: 0.8em;
+            padding: 0 2px 0 2px;
+            margin: -8px 6px 6px 6px;
+            background: #d7d7d7;
+            color: #555;
+            position: relative;
+        }
+        
+        /* Evaluation message log items */
+        div.evaluation-msg-title {
+            font-weight: bold;
+            background: #ddd;
+        }
+        div.evaluation-msg-title div.paragraph,
+        div.evaluation-run div.paragraph {
+            margin-bottom: 0;
+        }
+        
+        div.evaluation-run {
+            border: 2px solid #aaa;
+        }
+        
+        div.evaluation-run li {
+        }
+        
+        li.evaluation-msg-incorrect {
+            list-style-image: url("incorrect-16.png");
+        }
+        li.evaluation-msg-correct {
+            list-style-image: url("correct-16.png");
+        }
+        li.evaluation-msg-info {
+            list-style-image: url("info-16.png");
+        }
+        li.evaluation-msg-error {
+            list-style-image: url("error-16.png");
+            
+        }
+        li.evaluation-msg-debug {
+            list-style-image: url("debug-16.png");
+        }
+        li.evaluation-msg-lint-conv {
+            list-style-image: url("lint-conv-16.png");
+        }
+        li.evaluation-msg-lint-refact {
+            list-style-image: url("lint-refact-alt-16.png");
+        }
+        li.evaluation-msg-lint-warn {
+            list-style-image: url("lint-warn-16.png");
+        }
+        li.evaluation-msg-lint-error {
+            list-style-image: url("lint-error-16.png");
+        }
+        
+        li.evaluation-li-hidden {
+            display: none;
+        }
+        
+        li.evaluation-li-visible {
+            display: list-item;
+        }
+        
+        div.evaluation-run-open {
+            background: #daeeda; 
+        }
+        
+        div.evaluation-run-closed {
+            background: #caeeca;
+        }        
+        
+        div.test-evaluation-msg-attention:after {
+            content: "!";
+            color: #eee;
+            background: #d33;
+            position: absolute;
+            font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
+            font-size: 0.7em;
+            font-weight: bold;
+            right: 0;
+            top: 0;
+            margin: 2px 0 2px 0;
+            padding: 0 3px 0 3px;
+        }
+        span.retval {
+            font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
+        }
+        span.retval-correct {
+            color: #2e862e;
+        }
+        span.retval-incorrect {
+            color: #862e2e;
+        }
+        span.cmd-runtime {
+            
+        }
+        div.term-container {
+            position: relative;
+            margin: 0;
+            padding: 0;
+            display: inline;
+        }
+        span.term {
+            cursor: help;
+            border-bottom: 2px dashed #000;
+            text-decoration: none;
+            position: relative;
+        }
+        
+        pre.test-evaluation-inputs {
+            padding: 2px 2px 2px 4px;
+            margin: 0 6px 6px 6px;
+            font-size: 1.0em;
+            font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
+            background: #d0d0d0;
+        }
+
+        /* The file upload exercise difference table */
+
+        section.content table.diff {
+            table-layout: fixed;
+            width: 100%;
+            color: #222;
+        }
+
+        section.content table.diff col.line-number {
+            width: 1.2rem;
+            background: #ccc;
+        }
+        section.content table.diff colgroup.student,
+        section.content table.diff colgroup.reference {
+            width: 50%;
+        }
+
+        section.content table.diff th {
+            background: #ccc;
+            line-height: 1.25;
+            font-weight: normal;
+            border: 1px solid #aaa;
+            text-decoration: underline;
+        }
+
+        section.content table.diff td {
+            white-space: pre-wrap;
+            overflow-x: hidden;
+            word-wrap: break-word;
+            font-weight: normal;
+            font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
+            font-size: 1.0rem;
+            padding: 0 1px;
+            line-height: 1.25;
+            height: 1rem;
+            border: 1px solid #aaa;
+        }
+        section.content table.diff td.diff-linenum {
+            font-size: 0.8rem;
+            text-align: right;
+        }
+
+        section.content table.diff span.diff-sub {
+            background: #cd6969;
+        }
+
+        section.content table.diff span.diff-chg {
+            background: #6969cd;
+        }
+
+        section.content table.diff span.diff-add {
+            background: #69cd69;
+        }
+
+        /* Calendar */
+        div.calendar {
+            width: 50%;
+        }
+        div.calendar fieldset {
+            padding: 4px;
+        }
+        div.calendar legend {
+            font-size: 1.0rem;
+            font-weight: bold;
+            margin: 0 0 0 25px;
+        }
+        div.calendar fieldset > div {
+            padding: 0 2px;
+        }
+        div.calendar div.datetime {
+            background: #d7d7d7;
+        }
+        div.calendar div.description {
+            background: #e0e0e0;
+            font-style: italic;
+            padding: 4px 12px;
+        }
+        div.calendar li {
+            font-size: 0.8rem;
+            list-style-type: square;
+            background: #e0e0e0;
+        }
+        div.calendar div.reservation-result {
+            border: 1px solid #888;
+            background: #f0f099;
+        }
+        div.calendar input[type=submit] {
+            font-family: "LatoWeb", "DejaVu Sans", sans-serif;
+            font-size: 0.9em;
+            min-width: 150px;
+            line-height: 1.5;
+        }
+
+    section.content a.permalink {
+        position: relative;
+        top: -1px;
+        font-size: 0.8em;
+        text-shadow: none;
+        text-decoration: none;
+        padding: 2px 4px;
+        margin-left: 4px;
+        color: transparent;
+    }
+    section.content a.permalink:hover {
+        color: #39ad39;
+        background-color: transparent;
+    }
+
+    section.content div.task-meta-container {
+        position: relative;
+        width: 0;
+        font-size: 0.6rem;
+        padding: 0;
+    }
+
+    /* All task-metas, including those from embedded exercises */
+    section.content div.task-meta {
+        position: absolute;
+        width: 120px;
+        left: -120px;
+        top: -10px;          /* -1x padding as in embedded-page */
+        padding: 20px 0 0 0; /* 2x padding as in embedded-page */
+        text-align: center;
+    }
+
+    /* The first task-meta on a page */
+    section.content > div.task-meta-container > div.task-meta {
+        top: 0;
+    }
+    
+    section.content div.task-meta hr {
+        margin: 8px 16px;
+        height: 1px;
+        border: 0;
+        background: rgba(95, 95, 95, 0.85);
+        box-shadow: 0 0 0 2px rgba(95, 95, 95, 0.15);
+    }
+
+    section.content div.task-meta > div.admin-tools {
+
+        /*background: #e5e5e5;*/
+    }
+
+        section.content div.admin-tools ul {
+            margin: 0 0 0 12px;
+            padding: 0;
+        }
+
+        section.content div.admin-tools li {
+            font-size: 0.6rem;
+            line-height: 1.3;
+            padding: 0;
+            margin: 0;
+            text-align: left;
+            list-style-type: square;
+        }
+
+/* Borrowed from exerciseadmin.css */
+        
+a.file-url {
+    display: inline-block;
+    background: url("download.png");
+    width: 25px;
+    height: 25px;
+    outline: 0;
+    vertical-align: top;
+    overflow: hidden;
+    color: #4CAF50;
+    background-color: #fff;
+    text-align: center;
+    cursor: pointer;
+    border: 0px solid #42860e;
+    border-radius: 8px;
+    box-shadow: 1px 1px 2px #285c00;
+}

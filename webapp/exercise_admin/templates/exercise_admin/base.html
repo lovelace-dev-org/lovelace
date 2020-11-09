@@ -150,7 +150,12 @@
                 <textarea id="exercise-page-content-{{ language_choice }}" name="exercise_content_{{ language_choice }}"
                           cols="101" rows="8" onInput="exercise_page_content_changed(event, '{{ language_choice }}');"
                           class="exercise-content-input">{% get_translated_field exercise "content" language_choice %}</textarea>
-              </div>
+                
+                </div>
+                <button type="button" class="add-item"
+                    onclick="show_preview(this, '{{ language_choice }}');"
+                    data-url="{% url 'courses:content_preview' language_choice %}"
+                >{% trans 'Preview' %}</button>
             </div>
           {% endfor %}
 
@@ -330,6 +335,11 @@
         {% endfor %}
       </select>
     </div>
+    
+    <div id="preview-popup" class="popup">
+        <div class="content-preview" id="{{ widget.name }}-preview"></div>
+    </div>
+    
   </body>
 </html>
     

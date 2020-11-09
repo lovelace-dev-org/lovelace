@@ -476,7 +476,7 @@ class EmbeddedFileMarkup(Markup):
 
     @classmethod
     def block(cls, block, settings, state):
-        instance = state["context"]["instance"]
+        instance = state["context"].get("instance")
         
         try:
             try:
@@ -485,7 +485,7 @@ class EmbeddedFileMarkup(Markup):
                     instance=instance,
                     parent=state["context"]["content"]
                     )
-            except cm.CourseMediaLink.DoesNotExist as e:
+            except (KeyError, cm.CourseMediaLink.DoesNotExist) as e:
                 file_object = cm.File.objects.get(name=settings["file_slug"])
             else:
                 if link.revision is None:
@@ -535,9 +535,9 @@ class EmbeddedFileMarkup(Markup):
         c = {
             "name": dl_name,
             "file": file_object,
-            "course": instance.course,
             "instance": instance,
             "contents": mark_safe(highlighted),
+            "content_lines": highlighted.split("\n"),
             "show_content": not link_only,
         }
 
@@ -591,7 +591,7 @@ class EmbeddedPageMarkup(Markup):
             "slug": matchobj.group("page_slug")
         }
         revision = None
-        instance = state["context"]["instance"]
+        instance = state["context"].get("instance")
         try:
             revision = int(matchobj.group("revision"))
         except AttributeError:
@@ -606,7 +606,7 @@ class EmbeddedPageMarkup(Markup):
                     instance=instance,
                     parent=state["context"]["content"]
                 )
-            except cm.EmbeddedLink.DoesNotExist as e:
+            except (KeyError, cm.EmbeddedLink.DoesNotExist) as e:
                 # link does not exist yet, get by page slug instead
                 page = cm.ContentPage.objects.get(slug=settings["slug"])
             else:
@@ -634,8 +634,8 @@ class EmbeddedPageMarkup(Markup):
             choices = page.get_choices(page, revision=revision)
             c = {
                 "content": page,
-                "course": state["context"]["course"],
-                "instance": state["context"]["instance"],
+                "course": state["context"].get("course"),
+                "instance": state["context"].get("instance"),
                 "choices": choices,
             }            
             embedded_content = page.get_rendered_content(page, c)
@@ -646,27 +646,28 @@ class EmbeddedPageMarkup(Markup):
             settings["content"] = embedded_content
             settings["question"] = question
             settings["form"] = rendered_form
-            settings["urls"] = {
-                "stats_url": reverse("stats:single_exercise", kwargs={
-                    "exercise": page
-                }),
-                "feedback_url": reverse("feedback:statistics", kwargs={
-                    "instance": instance,
-                    "content": page
-                }),
-                "download_url": reverse("teacher_tools:download_answers", kwargs={
-                    "course": instance.course,
-                    "instance": instance,
-                    "content": page
-                }),
-                "edit_url": page.get_admin_change_url(),
-                "submit_url": reverse("courses:check", kwargs={
-                    "course": instance.course,
-                    "instance": instance,
-                    "content": page,
-                    "revision": revision or "head"
-                })
-            }
+            if instance is not None:
+                settings["urls"] = {
+                    "stats_url": reverse("stats:single_exercise", kwargs={
+                        "exercise": page
+                    }),
+                    "feedback_url": reverse("feedback:statistics", kwargs={
+                        "instance": instance,
+                        "content": page
+                    }),
+                    "download_url": reverse("teacher_tools:download_answers", kwargs={
+                        "course": instance.course,
+                        "instance": instance,
+                        "content": page
+                    }),
+                    "edit_url": page.get_admin_change_url(),
+                    "submit_url": reverse("courses:check", kwargs={
+                        "course": instance.course,
+                        "instance": instance,
+                        "content": page,
+                        "revision": revision or "head"
+                    })
+                }                
 
             # This part is dynamic
             # v
@@ -1023,7 +1024,7 @@ class ImageMarkup(Markup):
 
     @classmethod
     def block(cls, block, settings, state):
-        instance = state["context"]["instance"]
+        instance = state["context"].get("instance")
         try:
             try:
                 link = cm.CourseMediaLink.objects.get(
@@ -1031,7 +1032,7 @@ class ImageMarkup(Markup):
                     instance=instance,
                     parent=state["context"]["content"]
                 )
-            except cm.CourseMediaLink.DoesNotExist as e:
+            except (KeyError, cm.CourseMediaLink.DoesNotExist) as e:
                 image_object = cm.Image.objects.get(name=settings["image_name"])
             else:
                 if link.revision is None:

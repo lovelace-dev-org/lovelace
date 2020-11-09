@@ -1,0 +1,12 @@
+{% load i18n %}
+
+<div class="embedded-page">
+    <div>{{ emb.content|safe }}</div>
+    <div class="question">
+        <div class="exercise-form">
+            {% if emb.question %}{{ emb.question|safe }}{% endif %}
+            {{ emb.form|safe }}
+            <input type="submit" name="submit" value="{% trans 'Send answer' %}" disabled>
+        </div>
+    </div>
+</div>
