@@ -318,7 +318,45 @@ function show_popup(e, popup_id) {
 function show_collapsed() {
     $(".collapsed").removeClass("collapsed");
 }
+
+function expand_next_div(caller) {
+    $(caller).nextAll("div").first().removeClass("collapsed");
+    $(caller).attr("onclick", "collapse_next_div(this);");
+}
+
+function collapse_next_div(caller) {
+    $(caller).nextAll("div").first().addClass("collapsed");
+    $(caller).attr("onclick", "expand_next_div(this);");
+}
+
+
+function submit_ajax_form(form, success_extra_cb) {
+    let url = form.attr('action');
     
+    $.ajax({
+        type: form.attr('method'),
+        url: url,
+        data: new FormData(form[0]),
+        processData: false,
+        contentType: false, 
+        dataType: 'json', 
+        success: function(data, status, jqxhr) {
+            let okspan = "<span class='ajax-form-success'>OK</span>";
+            form.find("input[type='submit']").after(okspan);
+            success_extra_cb(data);
+        },
+        error: function (jqxhr, status, type) {
+            let errors = JSON.parse(JSON.parse(jqxhr.responseText).errors);
+            for (const [field, content] of Object.entries(errors)) {
+                content.forEach(function (entry) {
+                    let espan = "<span class='ajax-form-error'>" + entry.message + "</span>";
+                    form.find("input[name='" + field + "']").after(espan);
+                });
+                
+            }
+        }
+    });
+}
 
 function submit_enrollment(event) {
     event.preventDefault();
@@ -367,6 +405,79 @@ function withdraw_enrollment(event) {
             console.log(jqxhr.responseText);
         }
     });
+}
+
+function show_panel(event, caller, panel_type, panel_id) {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    let panel = $("#" + panel_id);
+    let container = panel.children(".panel-container");
+    let a = $(caller);
+    let url = a.attr("href") + "?" + a.attr("data-querystring");
+    
+    if (container.html() == "" || panel.attr("data-panel-type") != panel_type) {
+        $.ajax({
+            type: "GET",
+            url: url,
+            success: function(data, status, jqxhr) {
+                container.html(data);
+                panel.attr("data-panel-type", panel_type);
+            },
+            error: function(jqxhr, status, type) {
+                container.html(jqxhr.responseText);
+            },
+            complete: function(jqxhr, status) {
+                panel.addClass("panel--is-visible");
+            }
+        });
+    } 
+    else {
+        panel.addClass("panel--is-visible");
+    }
+}
+
+function hide_panel(event, panel_id) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    let panel = $("#" + panel_id);
+    panel.removeClass("panel--is-visible");    
+}
+
+function create_attention_arrow(hook, direction, click_action) {
+    let container = $("div.arrow-container");
+    
+    // if an arrow already exists, don't show it again
+    if ($("div#" + hook + "-arrow").length == 0) {
+        let arrow = $("<div></div>");
+        if (direction == "left" || direction == "right") {
+            let position = window.innerHeight/2;
+            arrow.css({
+                "top": position + "px", 
+            })
+        }
+        else {
+            let position = window.innerWidth/2;
+            arrow.css({
+                "left": position + "px",
+            })            
+        }
+        arrow.addClass("attention-arrow");
+        arrow.addClass(direction);
+        arrow.attr("id", hook + "-arrow");
+        arrow.attr("onclick", click_action + "hide_attention_arrow(event, this);");
+        container.append(arrow);
+        return arrow;
+    }    
+    return null;
+}
+
+function hide_attention_arrow(event, arrow) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    $(arrow).css({"opacity": "0", "pointer-events": "none"});
 }
 
 $(document).ready(function() {

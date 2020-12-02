@@ -31,7 +31,8 @@ urlpatterns = [
     url(r'^i18n/', include('django.conf.urls.i18n')),
     url(r'^accounts/', include('allauth.urls')),
     url(r'^teacher/', include('teacher_tools.urls', namespace="teacher")),
-    url(r'^routine_exercise/', include('routine_exercise.urls', namespace="routine"))
+    url(r'^routine_exercise/', include('routine_exercise.urls', namespace="routine")),
+    url(r'^faq/', include('faq.urls', namespace="faq")),
 ]
 
 try:

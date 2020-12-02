@@ -1318,7 +1318,7 @@ def content_preview(request, field_name):
 
         rendered = t.render(c, request)
 
-    
+        print(rendered)
 
     return HttpResponse(rendered)
     

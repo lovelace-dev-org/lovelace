@@ -16,5 +16,4 @@ class ContentPreviewWidget(forms.Textarea):
     def render(self, name, value, attrs=None, renderer=None):
         """Render the widget as an HTML string."""
         context = self.get_context(name, value, attrs)
-        print(self.template_name)
         return self._render(self.template_name, context, renderer)

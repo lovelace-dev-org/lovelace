@@ -1,7 +1,10 @@
 from django.contrib import admin
 from django.db.models import Q
+from django.db import transaction 
+from django.forms import Textarea
 from reversion.models import Version
-from courses.models import Course, CourseInstance
+from courses.models import Course, CourseInstance, ContentPage
+from courses.widgets import ContentPreviewWidget
 from utils.access import determine_access, determine_media_access
 
 #TODO: There's a loophole where staff members of any course A can gain access
@@ -9,7 +12,7 @@ from utils.access import determine_access, determine_media_access
 #      page. The behavior itself is necessary to complete the access chain. 
 #      Editors must be prohibited from adding embedded links to pages they do
 #      not have access to. 
-class CourseContentAccess(admin.ModelAdmin):
+class CourseContentAdmin(admin.ModelAdmin):
     """
     This class adds access control based on 1) authorship and 2) staff membership
     on the relevant course. Staff membership follows both contentgraph links and 
@@ -58,7 +61,7 @@ class CourseContentAccess(admin.ModelAdmin):
         return qs
 
     def get_queryset(self, request):
-        return CourseContentAccess.content_access_list(request, self.model, self.content_type).defer("content")
+        return CourseContentAdmin.content_access_list(request, self.model, self.content_type).defer("content")
     
     def has_add_permission(self, request):
         if request.user.is_staff or request.user.is_superuser:
@@ -88,6 +91,28 @@ class CourseContentAccess(admin.ModelAdmin):
         #contexts = self._find_contexts(obj)
         #for context in contexts:
             #obj.update_embedded_links(context["instance"])
+        
+    def formfield_for_dbfield(self, db_field, request, **kwargs):
+        formfield = super().formfield_for_dbfield(db_field, request, **kwargs)
+        if db_field.name in ('content'):
+            formfield.widget = ContentPreviewWidget(attrs={'rows':25, 'cols':120})
+        elif db_field.name == 'tags':
+            formfield.widget = Textarea(attrs={'rows':2})
+        return formfield
+        
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        self.current = obj
+        transaction.on_commit(self.post_save)
+        
+    def post_save(self):
+        parents = ContentPage.objects.filter(embedded_pages=self.current).distinct()
+        for instance in CourseInstance.objects.filter(Q(contentgraph__content=self.current) | Q(contentgraph__content__embedded_pages=self.current), frozen=False).distinct():
+            self.current.update_embedded_links(instance)
+            if self.current.content_type == "LECTURE":
+                self.current.regenerate_cache(instance)
+            for parent in parents:
+                parent.regenerate_cache(instance)
         
     def _find_contexts(self, obj):
         """
@@ -122,9 +147,10 @@ class CourseContentAccess(admin.ModelAdmin):
             return True
         
         return False
+        
 
 
-class CourseMediaAccess(admin.ModelAdmin):
+class CourseMediaAdmin(admin.ModelAdmin):
     
     @staticmethod
     def media_access_list(request, model):

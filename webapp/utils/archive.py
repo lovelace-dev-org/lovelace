@@ -1,6 +1,8 @@
 import os.path
 from collections import defaultdict
-from django.db import transaction
+from django.core.exceptions import ObjectDoesNotExist
+from django.db import models, transaction
+from django.db.models.query import QuerySet
 from reversion.models import Version, Revision
 from reversion import revisions
 
@@ -34,7 +36,15 @@ def get_archived_instances(main_obj, revision_id):
             by_model["self"] = version._object_version.object
             follow = revisions._get_options(main_obj).follow
             for field in follow:
-                by_model[field] = list(getattr(main_obj, field).get_queryset().all())
+                try:
+                    follow_obj = getattr(main_obj, field)
+                except ObjectDoesNotExist:
+                    by_model[field] = None
+                    continue
+                if isinstance(follow_obj, models.Model):
+                    by_model[field] = follow_obj
+                elif isinstance(follow_obj, (models.Manager, QuerySet)):
+                    by_model[field] = list(follow_obj.get_queryset().all())
             raise CancelRevert
     except CancelRevert:
         pass

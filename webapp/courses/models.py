@@ -258,6 +258,13 @@ class CourseInstance(models.Model):
         for link in term_links:
             link.freeze(freeze_to)
 
+        from faq.models import FaqToInstanceLink
+        from faq.utils import regenerate_cache as regen_faq_cache
+        
+        faq_links = FaqToInstanceLink.objects.filter(instance=self)
+        for link in faq_links:
+            link.freeze(freeze_to)
+            
         for content_link in contents:
             content_link.content.regenerate_cache(self)
             
@@ -965,9 +972,6 @@ class Lecture(ContentPage):
         
         self.content_type = "LECTURE"
         super(Lecture, self).save(*args, **kwargs)
-        for instance in CourseInstance.objects.filter(Q(contentgraph__content=self) | Q(contentgraph__content__embedded_pages=self), frozen=False).distinct():
-            self.update_embedded_links(instance)
-            self.regenerate_cache(instance)
 
     class Meta:
         verbose_name = "lecture page"
@@ -988,12 +992,6 @@ class MultipleChoiceExercise(ContentPage):
 
         self.content_type = "MULTIPLE_CHOICE_EXERCISE"
         super().save(*args, **kwargs)
-        parents = ContentPage.objects.filter(embedded_pages=self).distinct()
-        for instance in CourseInstance.objects.filter(Q(contentgraph__content=self) | Q(contentgraph__content__embedded_pages=self), frozen=False).distinct():
-            self.update_embedded_links(instance)
-            for parent in parents:
-                parent.regenerate_cache(instance)
-            
 
     def get_choices(self, revision=None):
         if revision is None:
@@ -1101,11 +1099,6 @@ class CheckboxExercise(ContentPage):
 
         self.content_type = "CHECKBOX_EXERCISE"
         super().save(*args, **kwargs)
-        parents = ContentPage.objects.filter(embedded_pages=self).distinct()
-        for instance in CourseInstance.objects.filter(Q(contentgraph__content=self) | Q(contentgraph__content__embedded_pages=self), frozen=False).distinct():
-            self.update_embedded_links(instance)
-            for parent in parents:
-                parent.regenerate_cache(instance)
 
     def get_choices(self, revision=None):
         if revision is None:
@@ -1226,11 +1219,6 @@ class TextfieldExercise(ContentPage):
 
         self.content_type = "TEXTFIELD_EXERCISE"
         super(TextfieldExercise, self).save(*args, **kwargs)
-        parents = ContentPage.objects.filter(embedded_pages=self).distinct()
-        for instance in CourseInstance.objects.filter(Q(contentgraph__content=self) | Q(contentgraph__content__embedded_pages=self), frozen=False).distinct():
-            self.update_embedded_links(instance)
-            for parent in parents:
-                parent.regenerate_cache(instance)
 
     def get_choices(self, revision=None):
         if revision is None:
@@ -1480,8 +1468,6 @@ class CodeInputExercise(ContentPage):
 
         self.content_type = "CODE_INPUT_EXERCISE"
         super(CodeInputExercise, self).save(*args, **kwargs)
-        for instance in CourseInstance.objects.filter(Q(contentgraph__content=self) | Q(contentgraph__content__embedded_pages=self), frozen=False):
-            self.update_embedded_links(instance)
 
     def save_answer(self, user, ip, answer, files, instance, revision):
         pass
@@ -1576,11 +1562,6 @@ class RepeatedTemplateExercise(ContentPage):
         self.content_type = "REPEATED_TEMPLATE_EXERCISE"
         RepeatedTemplateExerciseSession.objects.filter(exercise=self, user=None).delete()
         super(RepeatedTemplateExercise, self).save(*args, **kwargs)
-        parents = ContentPage.objects.filter(embedded_pages=self).distinct()
-        for instance in CourseInstance.objects.filter(Q(contentgraph__content=self) | Q(contentgraph__content__embedded_pages=self), frozen=False).distinct():
-            self.update_embedded_links(instance)
-            for parent in parents:
-                parent.regenerate_cache(instance)
 
     def get_choices(self, revision=None):
         return

@@ -22,7 +22,8 @@ body {
 }
 
 .collapsed {
-    visibility: hidden
+    visibility: hidden;
+    display: none;
 }
 
 div#container {
@@ -523,6 +524,8 @@ div.toc-box {
         background-color: #ad3939;
     }
 
+/* POPUPS AND HIDDEN PANELS */
+    
 /* 
  * enrollment popups 
  * borrowed from answers.css
@@ -548,8 +551,134 @@ div.popup > div, div.popup > pre {
     border-radius: 10px;
     background: #eee;
 }
-    
-/* */
+
+
+/* 
+ * side panel
+ */
+ 
+div.side-panel {
+    position: fixed;
+    top: 4rem;
+    left: -40%;
+    width: 40%;
+    height: 90%;
+    transition: transform 0.3s 0s;
+    background: #eee;
+    z-index: 99998;
+    border: 1px solid black;
+    border-left: 0px;
+    border-top-right-radius: 10px;
+    border-bottom-right-radius: 10px;
+}
+
+div.side-panel.panel--is-visible {
+    transform: translateX(100%);
+}
+
+div.side-panel > button.side-panel-closer {
+    right: 0;
+    position: absolute;
+    display: block;
+    height: 100%;
+    width: 40px;
+    border-top-right-radius: 10px;
+    border-bottom-right-radius: 10px;
+    border-style: none;
+    font-weight: bold;
+}
+
+div.side-panel > div.panel-container {
+    margin: 0px 40px 0px 10px;
+    height: 100%;
+    overflow-y: scroll; 
+}
+
+/*
+ * floating attention arrows
+ */
+
+div.attention-arrow {
+    position: fixed;
+    z-index: 99997;
+    margin: 0;
+    width: 96px;
+    height: 96px;
+    cursor: pointer;
+    animation-duration: 0.25s;
+    animation-iteration-count: 20;
+    animation-direction: alternate;
+}
+
+@keyframes left_nudge {
+    from {
+        margin-left: 0;
+    }
+    to {
+        margin-left: 10px;
+    }
+}
+
+div.attention-arrow.left {
+    background: no-repeat url("/static/courses/attention-arrow-left.png") center/96px;
+    left: 0px;
+    transform: translateY(-50%);
+    animation-name: left_nudge;
+}
+
+@keyframes right_nudge {
+    from {
+        margin-right: 0;
+    }
+    to {
+        margin-right: 10px;
+    }
+}
+
+div.attention-arrow.right {
+    background: no-repeat url("/static/courses/attention-arrow-right.png") center/96px;
+    right: 0px;
+    transform: translateY(-50%);
+    animation-name: right_nudge;
+}
+
+@keyframes up_nudge {
+    from {
+        margin-top: 0;
+    }
+    to {
+        margin-top: 10px;
+    }
+}
+
+div.attention-arrow.up {
+    background: no-repeat url("/static/courses/attention-arrow-up.png") center/96px;
+    top: 4rem;
+    transform: translateX(-50%);
+    animation-name: up_nudge;
+}
+
+@keyframes down_nudge {
+    from {
+        margin-bottom: 0;
+    }
+    to {
+        margin-bottom: 10px;
+    }
+}
+ 
+div.attention-arrow.down {
+    background: no-repeat url("/static/courses/attention-arrow-down.png") center/96px;
+    bottom: 0px;
+    transform: translateX(-50%);
+    animation-name: down_nudge;
+}
+
+ 
+/* 
+ * term display
+ */
+
     
 div.term-descriptions {
     width: 100%;
@@ -1492,6 +1621,13 @@ section.content {
             text-align: left;
             list-style-type: square;
         }
+        
+/* AJAX form stuff */
+
+span.ajax-form-error {
+    color: #a33;
+}
+    
 
 /* Borrowed from exerciseadmin.css */
         

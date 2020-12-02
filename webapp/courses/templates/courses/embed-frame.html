@@ -30,7 +30,19 @@
 
         {% if not sandboxed %}
           <div><a href="{% url 'courses:show_answers' user course instance content %}"
-                title="{% trans 'View your previous answers' %}">{% blocktrans count counter=answer_count %}<span class="answer-count">{{ counter }}</span> answer{% plural %}<span class="answer-count">{{ counter }}</span> answers{% endblocktrans %}</a></div>
+                  class="user-answers-link"
+                  title="{% trans 'View your previous answers' %}">
+                    {% blocktrans count counter=answer_count %}<span class="answer-count">{{ counter }}</span> answer{% plural %}<span class="answer-count">{{ counter }}</span> answers{% endblocktrans %}
+          </a></div>
+          <div>
+            <a id="{{ content.slug }}-faq-panel-link"
+               class="faq-panel-link"
+               href="{% url 'faq:faq_panel' course instance content %}"
+               title="{% trans 'Open the FAQ panel' %}"
+               onclick="show_panel(event, this, 'faq', '{{ content.slug }}-panel');"
+               data-querystring=""
+            >{% trans 'Frequently Asked Questions' %}</a>
+          </div>
         {% endif %}
       {% endif %}
 
@@ -42,7 +54,7 @@
           <ul>
             <li><div><a href="{{ meta.stats_url }}">{% trans 'Statistics' %}</a></div></li>
             <li><div><a href="{{ meta.feedback_url }}">{% trans 'Feedback' %}</a></div></li>
-              {% if type == "file upload exercise" %}
+              {% if content.content_type == "FILE_UPLOAD_EXERCISE" %}
                 <li><div>
                   <a href="{{ meta.download_url }}">
                     {% trans 'Download answers' %}
@@ -68,7 +80,7 @@
   </div>
 {% endif %}
 
-{% if emb.revision and emb.revision > 0 and user.is_superuser %}
+{% if emb.revision and emb.revision > 0 and course_staff %}
 <div class="revision-info-embedded">This is an old revision № {{ emb.revision }} of this embedded page!</div>
 {% endif %}
 
@@ -79,6 +91,17 @@
     <span class="results-header">{% trans 'Hints' %}</span>
     <div class="hints-list"></div>
   </div>
+
+  {% block panel %}
+    <div class="side-panel" id="{{ content.slug }}-panel">
+        <button type="button"
+                class="side-panel-closer"
+                title="{% trans 'Close the panel' %}"
+                onclick="hide_panel(event, '{{ content.slug }}-panel');"
+        >&lt;&lt;</button>
+        <div class="panel-container"></div>
+    </div>
+  {% endblock %}
   
   <form id="{{ content.slug }}-form" class="exercise-form" method="POST" enctype="multipart/form-data" action="{{ meta.submit_url }}">
     

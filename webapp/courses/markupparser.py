@@ -646,6 +646,7 @@ class EmbeddedPageMarkup(Markup):
             settings["content"] = embedded_content
             settings["question"] = question
             settings["form"] = rendered_form
+            settings["revision"] = revision
             if instance is not None:
                 settings["urls"] = {
                     "stats_url": reverse("stats:single_exercise", kwargs={

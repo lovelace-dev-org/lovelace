@@ -139,7 +139,11 @@ def parse_term_tag(parsed_string, tag, term_name, term_text, context):
     if context is not None and "tooltip" in context and context["tooltip"]:
         parsed_string += term_text
         return parsed_string
-    
+
+    if context is not None and context.get("instance") is None:
+        parsed_string += "<span class=\"term\">{}</span>".format(term_text)
+        return parsed_string
+        
     div_id = "#{}-term-div".format(slugify(term_name, allow_unicode=True))
     on_mouse_enter = "show_term_description_during_hover(this, event, '{}');".format(div_id)
     on_mouse_leave = "hide_tooltip('{}');".format(div_id)

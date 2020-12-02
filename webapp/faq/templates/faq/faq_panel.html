@@ -1,0 +1,106 @@
+{% load i18n %}
+
+<div class="faq-panel">
+    {% for hook, question, answer in faq_list %}
+        <div id="{{ hook }}-question"
+              {% if hook in preopened %}
+                onclick="collapse_next_div(this);"
+                class="faq-heading highlight"
+              {% else %}
+                onclick="expand_next_div(this);"
+                class="faq-heading"
+              {% endif %}>
+            <span class="faq-question">{{ question|safe }}</span>
+            {% if editable %}
+                <button type="button" 
+                        class="faq-button unlink-button" 
+                        title="{% trans 'Unlink this question from this course instance' %}"
+                        onclick="faq.unlink_question(event, this);"
+                        data-url="{% url 'faq:unlink_question' course instance exercise hook %}"
+                ></button>
+                <button type="button" 
+                        class="faq-button edit-button" 
+                        title="{% trans 'Edit this question or answer' %}"
+                        onclick="faq.edit_question(event, this);"
+                        data-url="{% url 'faq:get_editable' course instance exercise hook %}"
+                ></button>
+            {% endif %}
+        </div>
+        {% if hook in preopened %}
+            <div class="faq-answer" id="{{ hook }}-answer">{{ answer|safe }}</div>
+        {% else %}
+            <div class="faq-answer collapsed" id="{{ hook }}-answer">{{ answer|safe }}</div>
+        {% endif %}
+    {% endfor %}
+    {% if editable %}
+        <div class="faq-form-opener" onclick="expand_next_div(this);">
+            <button type="button"
+                    class="faq-button link-button" 
+                    title="{% trans 'Link an existing question to this exercise' %}" 
+            ></button><span class="faq-button-label">{% trans 'Link an existing question' %}</span>
+        </div>
+        <div class="faq-form-container collapsed">
+            <form id="{{ exercise.slug }}-faq-link-form"
+                  class="faq-link-form"
+                  method="POST"
+                  enctype="multipart/form-data"
+                  action="{% url 'faq:link_question' course instance exercise %}"
+                  >
+              
+                {% csrf_token %}
+            
+                {% for field in link_form.hidden_fields %}                
+                    {{ field }}                    
+                {% endfor %}
+                
+                {% for field in link_form.visible_fields %}                
+                  <div class="input-label-container">
+                    {{ field.errors }}
+                    {{ field.label_tag }} {{ field }}
+                  </div>
+                {% endfor %}
+                
+                <input id="faq-link-submit" type="submit" name="submit" value="{% trans 'Save' %}"></input>
+            </form>
+        </div>
+        <div class="faq-form-opener" onclick="expand_next_div(this);">
+            <button type="button"
+                class="faq-button add-button" 
+                title="{% trans 'Add a new question' %}" 
+            >+</button><span class="faq-button-label">{% trans 'Add a new question' %}</span>
+        </div>
+        <div class="faq-form-container collapsed">
+            <form id="{{ exercise.slug }}-faq-edit-form"
+                  class="faq-edit-form"
+                  method="POST"
+                  enctype="multipart/form-data"
+                  action="{% url 'faq:save_form' course instance exercise %}"
+                  >
+                  
+                {% csrf_token %}
+                
+                {% for field in edit_form.hidden_fields %}
+                    {{ field }}
+                {% endfor %}
+                
+                {% for field in edit_form.visible_fields %}                
+                  <div class="input-label-container">
+                    {{ field.errors }}
+                    {{ field.label_tag }} {{ field }}
+                  </div>                  
+                {% endfor %}
+                
+                <input id="faq-edit-submit" type="submit" name="submit" value="{% trans 'Save' %}"></input>
+                <button type="button"
+                        title="{% trans 'Clear form' %}"
+                        onclick="faq.clear_form(this);"
+                >{% trans 'Clear Form' %}</button>
+            </form>
+            <script>
+                $("#{{ exercise.slug }}-faq-edit-form").submit(faq.submit_edit_form);
+                $("#{{ exercise.slug }}-faq-link-form").submit(faq.submit_link_form);
+            </script>
+        </div>
+        
+    {% endif %}
+</div>

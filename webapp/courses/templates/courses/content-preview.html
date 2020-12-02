@@ -2,14 +2,17 @@
 {% load i18n %}
 {% load course_tags %}
 
-<iframe width='1200' height='900' frameborder='0' srcdoc='
+<iframe width='1200' height='900' frameborder='0' sandbox='allow-scripts allow-same-origin' srcdoc='
     <head>
         <link rel="stylesheet" href="{% static 'courses/preview.css' %}">
         <link rel="stylesheet" href="{% static 'courses/embedded-file.css' %}">
         <link rel="stylesheet" href="{% static 'courses/syntax.css' %}">
         <link rel="stylesheet" href="{% static 'courses/embedded-file.css' %}">
         <link rel="stylesheet" href="{% static 'courses/katex.min.css' %}">
-        <link rel="stylesheet" href="{% static 'courses/latofonts.css' %}">        
+        <link rel="stylesheet" href="{% static 'courses/latofonts.css' %}"> 
+        <script src="{% static 'courses/jquery-3.3.1.min.js' %}"></script>
+        <script src="{% static 'courses/jquery.slimscroll.min.js' %}"></script>
+        <script src="{% static 'courses/script.js' %}"></script>        
     </head>
         
     <body>

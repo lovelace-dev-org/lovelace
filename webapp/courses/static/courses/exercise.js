@@ -1,6 +1,4 @@
 function exercise_success(data, result_div, error_div, form_parent) {
-    console.log(data);
-    
     var hints_div = form_parent.children("div.hints");
     var msgs_div = form_parent.children("div.msgs");
     var comments_div = form_parent.children("div.comments");
@@ -8,6 +6,7 @@ function exercise_success(data, result_div, error_div, form_parent) {
 
     if (data.result) {
         result_div.html(data.result);
+        form_parent.children("form").trigger("reset");
     }
     if (data.evaluation === true || data.evaluation === false) {
         // Get the symbol in meta
@@ -84,9 +83,10 @@ function exercise_success(data, result_div, error_div, form_parent) {
         let all_errors = data.errors;
         error_div.html(all_errors);
         error_div.css("display", "block");
+        form_parent.children("form").trigger("reset");
     }
     if (data.answer_count_str) {
-        form_parent.parent().find('div.task-meta > div > a').html(data.answer_count_str);
+        form_parent.parent().find('div.task-meta > div > a.user-answers-link').html(data.answer_count_str);
     }
     if (data.hints && data.evaluation === false) {
         let all_hints = "<ul>\n";
@@ -119,6 +119,9 @@ function exercise_success(data, result_div, error_div, form_parent) {
             let hint_text = $('section.content').find('#hint-id-' + hint_id);
             hint_text.attr({'class': 'hint-active'});
         }
+        let panel = form_parent.children(".side-panel");
+        let handle = form_parent.parent().find("a.faq-panel-link");
+        faq.handle_triggers(panel, handle, data.triggers);
     }
     if (data.messages) {
         msgs_div.find('div.msgs-list').html(data.messages);

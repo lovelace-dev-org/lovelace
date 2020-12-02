@@ -15,7 +15,6 @@ function show_preview(event, a) {
         success: function(data, text_status, jqxhr_obj) {
             popup.css({"opacity":"1", "pointer-events":"auto", "overflow": "scroll"});
             popup.children(".content-preview").html(data);
-            add_line_numbers();
         },
         error: function(jqxhr_obj, status, type) {
             popup.css({"opacity":"1", "pointer-events":"auto", "overflow": "scroll"});

@@ -40,7 +40,7 @@
 {% endblock %}
 
 {% block revision-info %}
-  {% if revision and revision > 0 and user.is_superuser %}
+  {% if revision and revision > 0 and course_staff %}
     <div class="revision-info">This is an old revision № {{ revision }} of this page!</div>
   {% endif %}
 {% endblock %}

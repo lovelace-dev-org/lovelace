@@ -44,6 +44,10 @@ def file_upload_exercise(context):
 def feedbacks(context):
     return context
 
+@register.inclusion_tag("faq/faq.html", takes_context=True)
+def faq(context):
+    return context
+    
 # {% answer_date %}
 @register.filter
 def answer_date(t):
@@ -70,6 +74,7 @@ def embed_frame(context, content_data):
     else:
         answer_count = 0
         evaluation = None
+    
     return {
         "emb": content_data,
         "embedded": True,
