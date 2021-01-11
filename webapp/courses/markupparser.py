@@ -1237,6 +1237,39 @@ class SeparatorMarkup(Markup):
 
 markups.append(SeparatorMarkup)
 
+class SvgMarkup(Markup):
+    name = "SVG"
+    shortname = "svg"
+    description = "A block containing SVG."
+    regexp = r"^[{]{3}svg\|width=(?P<svg_width>[0-9]+)\|height=(?P<svg_height>[0-9]+)\s*$"
+    markup_class = ""
+    example = ""
+    inline = False
+    allow_inline = False
+    
+    @classmethod
+    def block(cls, block, settings, state):
+        yield '<svg width="{width}" height="{height}">\n'.format(**settings)
+        text = ""
+        try:
+            line = next(state["lines"])
+            while not line.startswith("}}}"):
+                yield line + "\n"
+                line = next(state["lines"])
+        except StopIteration:
+            # TODO: Raise an error (and close the pre and code tags)
+            yield 'Warning: unclosed SVG block!\n'
+        yield '</svg>\n'
+        
+    @classmethod
+    def settings(cls, matchobj, state):
+        return {
+            "width": matchobj.group("svg_width"),
+            "height": matchobj.group("svg_height")
+        }
+        
+markups.append(SvgMarkup)    
+
 class TableMarkup(Markup):
     name = "Table"
     shortname = "table"
