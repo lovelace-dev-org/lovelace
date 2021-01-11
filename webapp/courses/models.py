@@ -318,8 +318,6 @@ class ContentGraph(models.Model):
             self.save()
     
     def __str__(self):
-        if not self.content:
-            return "No linked content yet"
         return "No. {} – {} ({})".format(self.ordinal_number, self.content.slug, self.get_revision_str())
 
     class Meta:

@@ -4,3 +4,5 @@ e.g.
 
 from lovelace.settings.yoursettings import *
 """
+
+from lovelace.settings.dev import *

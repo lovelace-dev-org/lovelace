@@ -554,6 +554,22 @@ class CourseAdmin(TranslationAdmin, VersionAdmin):
 
 admin.site.register(Course, CourseAdmin)
 
+
+class AllMethodCachingQueryset(models.query.QuerySet):
+    def all(self, get_from_cache=True):
+        if get_from_cache:
+            return self
+        else:
+            return self._clone()
+
+class AllMethodCachingManager(models.Manager):
+    def get_query_set(self):
+        return AllMethodCachingQueryset(self.model, using=self._db)
+
+ContentGraph.cache_all_method = AllMethodCachingManager()
+ContentPage.cache_all_method = AllMethodCachingManager()
+
+
 class ContentGraphInline(admin.TabularInline):
     model = ContentGraph
     extra = 0
@@ -574,6 +590,7 @@ class ContentGraphInline(admin.TabularInline):
         # use cached queryset
         formset.form.base_fields["parentnode"].queryset = kwargs["accessible_graphs"]
         formset.form.base_fields["content"].queryset = kwargs["accessible_pages"]
+
         # force preload choices
         formset.form.base_fields["parentnode"].choices = formset.form.base_fields["parentnode"].choices
         formset.form.base_fields["content"].choices = formset.form.base_fields["content"].choices
