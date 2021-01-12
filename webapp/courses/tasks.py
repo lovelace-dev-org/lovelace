@@ -432,6 +432,10 @@ def run_test(self, test_id, answer_id, instance_id, exercise_id, student=False, 
             instance_file_links = exercise.instanceincludefiletoexerciselink_set.get_queryset()
         else:
             instance_file_links = old_exercise["instanceincludefiletoexerciselink_set"]
+            
+            # MONKEY PATCH FOR BROKEN ARCHIVED EXERCISES
+            if not instance_file_links:
+                instance_file_links = exercise.instanceincludefiletoexerciselink_set.get_queryset()
         
     except cm.InstanceIncludeFileToExerciseLink.DoesNotExist as e:
         # TODO: Log weird request
