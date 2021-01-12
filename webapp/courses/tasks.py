@@ -514,7 +514,11 @@ def run_test(self, test_id, answer_id, instance_id, exercise_id, student=False, 
             required_instance_files = test.required_instance_files.all()
         else:
             required_instance_files = old_test["required_instance_files"]
-                
+
+            # MONKEY PATCH FOR BROKEN ARCHIVED EXERCISES
+            if not required_instance_files:
+                required_instance_files = test.required_instance_files.all()
+            
         for if_link in instance_file_links:
             if if_link.include_file in required_instance_files:
                 settings = if_link.file_settings
