@@ -1,7 +1,7 @@
 from django.conf.urls import include, url
 from django.urls import path
 
-from . import views
+from . import views, staff_views
 
 app_name = "courses"
 
@@ -29,7 +29,44 @@ urlpatterns = [
     # path("sandbox/<content:content>/", views.sandboxed_content, name="sandbox",),
     # path("sandbox/<content:content>/check_sandboxed/", views.check_answer_sandboxed, name="check_sandboxed"),
 
-    path("preview/<str:field_name>", views.content_preview, name="content_preview",),
+    path("preview/<str:field_name>", staff_views.content_preview, name="content_preview",),
+    
+    # Staff URLs for editing content
+    path(
+        "staff/<course:course>/<instance:instance>/instance_settings/",
+        staff_views.instance_settings,
+        name="instance_settings"
+    ),    
+    path(
+        "staff/<course:course>/<instance:instance>/freeze_instance/",
+        staff_views.freeze_instance,
+        name="freeze_instance"
+    ),    
+    path(
+        "staff/<course:course>/<instance:instance>/clone_instance/",
+        staff_views.clone_instance,
+        name="clone_instance"
+    ),    
+    path(
+        "staff/<course:course>/<instance:instance>/create_content_node/",
+        staff_views.create_content_node,
+        name="create_content_node"
+    ),
+    path(
+        "staff/<course:course>/<instance:instance>/remove_content_node/<int:node_id>/",
+        staff_views.remove_content_node,
+        name="remove_content_node"
+    ),
+    path(
+        "staff/<course:course>/<instance:instance>/node_settings/<int:node_id>/",
+        staff_views.node_settings,
+        name="node_settings"
+    ),
+    path(
+        "staff/<course:course>/<instance:instance>/move_content_node/<int:target_id>/<str:placement>/",
+        staff_views.move_content_node,
+        name="move_content_node"
+    ),
     
     # Help pages
     path("help/", views.help_list, name="help_list",),

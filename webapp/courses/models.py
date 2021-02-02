@@ -42,7 +42,7 @@ import courses.blockparser as blockparser
 import courses.tasks as rpc_tasks
 
 from utils.files import *
-from utils.archive import get_archived_field, get_single_archived
+from utils.archive import get_archived_field, get_single_archived, find_latest_version
 
 class RollbackRevert(Exception):
     pass
@@ -187,6 +187,7 @@ class CourseInstance(models.Model):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._was_frozen = self.frozen
+        self._was_primary = self.primary
 
     def is_active(self):
         if not self.active:
@@ -195,7 +196,7 @@ class CourseInstance(models.Model):
             except TypeError:
                 return True
         return True
-        
+    
     def get_url_name(self):
         """Creates a URL and HTML5 ID field friendly version of the name."""
         # TODO: Ensure uniqueness! I.e. what happens when there's a clash
@@ -222,7 +223,7 @@ class CourseInstance(models.Model):
         #super(CourseInstance, self).save(*args, **kwargs)
         super(CourseInstance, self).save(*args, **kwargs)
         
-        if self.primary:
+        if not self._was_primary and self.primary:
             for instance in CourseInstance.objects.filter(course=self.course).exclude(pk=self.pk):
                 instance.primary = False
                 instance.save()
@@ -304,18 +305,18 @@ class ContentGraph(models.Model):
         return "rev. {}".format(self.revision) if self.revision is not None else "newest"
     
     def freeze(self, freeze_to=None):
-        if self.revision is None:
-            latest = Version.objects.get_for_object(self.content).latest("revision__date_created")
-            self.revision = latest.revision_id
+        try:
+            version = find_latest_version(self.content, freeze_to)
+        except Version.DoesNotExist:
+            if self.ordinal_number == 0:
+                self.instance.frontpage = None
+                self.instance.save()
             
+            self.delete()
+            return
+        
+        self.revision = version.revision_id
         self.save()
-    
-    # not needed anymore
-    def set_frozen_parents(self, linked_contents):
-        if self.parentnode is not None:
-            frozen_parent = linked_contents.get(content=self.parentnode.content)
-            self.parentnode = frozen_parent 
-            self.save()
     
     def __str__(self):
         return "No. {} – {} ({})".format(self.ordinal_number, self.content.slug, self.get_revision_str())
@@ -355,10 +356,14 @@ class CourseMediaLink(models.Model):
         unique_together = ("instance", "media", "parent")
         
     def freeze(self, freeze_to=None):
-        if self.revision is None:
-            latest = Version.objects.get_for_object(self.media).latest("revision__date_created")
-            self.revision = latest.revision_id
-            self.save()
+        try:
+            version = find_latest_version(self.media, freeze_to)
+        except Version.DoesNotExist:
+            self.delete()
+            return
+        
+        self.revision = version.revision_id
+        self.save()
 
 #@reversion.register(follow=["coursemedia_ptr"])
 class File(CourseMedia):
@@ -406,10 +411,14 @@ class TermToInstanceLink(models.Model):
         unique_together = ("instance", "term")
         
     def freeze(self, freeze_to=None):
-        if self.revision is None:
-            latest = Version.objects.get_for_object(self.term).latest("revision__date_created")
-            self.revision = latest.revision_id
-            self.save()
+        try:
+            version = find_latest_version(self.term, freeze_to)
+        except Version.DoesNotExist:
+            self.delete()
+            return
+        
+        self.revision = version.revision_id
+        self.save()
     
     
     
@@ -524,10 +533,15 @@ class EmbeddedLink(models.Model):
         ordering = ['ordinal_number']
         
     def freeze(self, freeze_to=None):
-        if self.revision is None:
-            latest = Version.objects.get_for_object(self.embedded_page).latest("revision__date_created")
-            self.revision = latest.revision_id
-            self.save()
+        try:
+            version = find_latest_version(self.embedded_page, freeze_to)
+        except Version.DoesNotExist:
+            self.delete()
+            return
+        
+        self.revision = version.revision_id
+        self.save()
+
 
 
 
@@ -1936,11 +1950,14 @@ class InstanceIncludeFileToInstanceLink(models.Model):
         unique_together = ("instance", "include_file")
     
     def freeze(self, freeze_to=None):
-        if self.revision is None:
-            latest = Version.objects.get_for_object(self.include_file).latest("revision__date_created")
-            self.revision = latest.revision_id
-            self.save()
-    
+        try:
+            version = find_latest_version(self.include_file, freeze_to)
+        except Version.DoesNotExist:
+            self.delete()
+            return
+        
+        self.revision = version.revision_id
+        self.save()
 
 # NOTE: rename?
 #@reversion.register()

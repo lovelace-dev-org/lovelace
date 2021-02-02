@@ -739,7 +739,7 @@ class CourseInstanceAdmin(TranslationAdmin, VersionAdmin):
                 )
                 link.save()
             
-            clone_faq_links(obj)    
+            clone_faq_links(obj)
                 
         self.current = obj
         transaction.on_commit(self.finish_cg)
@@ -773,7 +773,7 @@ class CourseInstanceAdmin(TranslationAdmin, VersionAdmin):
         if not obj._was_frozen and obj.frozen:
             obj._was_frozen = True
             obj.freeze()
-        else:   
+        else:
             for cg in ContentGraph.objects.filter(instance=obj):
                 cg.content.update_embedded_links(obj, cg.revision)
                 

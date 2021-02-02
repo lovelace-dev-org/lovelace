@@ -166,9 +166,14 @@
           {% endblock %}
         </ul>
         <div class="right-side">
+          <div class="vertical-separator"></div>
+          <a onclick="$('div.toc-box').toggle();" style="cursor:pointer;">
+            <img src="{% static 'courses/toc.png' %}" title="{% trans 'Table of Contents' %}">
+          </a>
+          <div class="vertical-separator"></div>
           {# https://docs.djangoproject.com/en/1.9/topics/i18n/translation/#set-language-redirect-view #}
           <form action="{% url 'set_language' %}" method="post" class="language-picker">
-            {% csrf_token %}
+            {% csrf_token %}            
             <input name="next" type="hidden" value="{{ redirect_to }}">
             <select name="language" onchange="this.form.submit();">
               {% get_current_language as LANGUAGE_CODE %}
@@ -180,7 +185,15 @@
                 </option>
               {% endfor %}
             </select>
-          </form><div class="vertical-separator"></div><a onclick="$('div.toc-box').toggle();" style="cursor:pointer;"><img src="{% static 'courses/toc.png' %}" title="{% trans 'Table of Contents' %}"></a><div class="vertical-separator"></div>
+          </form>
+          {% if course_staff %}
+            <div class="vertical-separator"></div>
+            <button type="button"
+                    class="nav-bar-button"
+                    title="{% trans 'Toggle between student and staff view' %}"
+                    onclick="toggle_staff_widgets(event, this);"
+            >{% trans 'staff view' %}</button>
+          {% endif %}          
         </div>
         </div>
       </nav>

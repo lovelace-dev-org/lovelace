@@ -38,7 +38,6 @@ from reversion.models import Version
 
 import courses.blockparser as blockparser
 import courses.models as cm
-import courses.forms
 import feedback.models
 
 from utils.archive import get_single_archived

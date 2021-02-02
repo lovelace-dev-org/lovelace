@@ -320,15 +320,8 @@ function show_collapsed() {
 }
 
 function expand_next_div(caller) {
-    $(caller).nextAll("div").first().removeClass("collapsed");
-    $(caller).attr("onclick", "collapse_next_div(this);");
+    $(caller).nextAll("div").first().toggleClass("collapsed");
 }
-
-function collapse_next_div(caller) {
-    $(caller).nextAll("div").first().addClass("collapsed");
-    $(caller).attr("onclick", "expand_next_div(this);");
-}
-
 
 function submit_ajax_form(form, success_extra_cb) {
     let url = form.attr('action');
@@ -478,6 +471,12 @@ function hide_attention_arrow(event, arrow) {
     event.stopPropagation();
 
     $(arrow).css({"opacity": "0", "pointer-events": "none"});
+}
+
+function toggle_staff_widgets(event, caller) {
+    $(".staff-only").toggleClass("collapsed");
+    $(".student-only").toggleClass("collapsed");
+    $(caller).toggleClass("pressed");
 }
 
 $(document).ready(function() {

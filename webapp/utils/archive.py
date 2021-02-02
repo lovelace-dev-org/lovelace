@@ -87,3 +87,13 @@ def find_version_with_filename(model_instance, field, name):
             return version
     else:
         return None
+        
+def find_latest_version(model_instance, before=None):
+    versions = Version.objects.get_for_object(model_instance)
+    if before:
+        versions = versions.filter(revision__date_created__lte=before)
+    return versions.latest("revision__date_created")
+        
+    
+    
+

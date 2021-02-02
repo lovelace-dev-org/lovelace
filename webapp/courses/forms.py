@@ -5,6 +5,9 @@ from django.core.exceptions import ValidationError
 from django import forms
 from django.forms import fields
 from django.utils.text import slugify
+from django.utils.translation import ugettext as _
+from modeltranslation.forms import TranslationModelForm
+import courses.models as cm
 
 class TextfieldExerciseForm(forms.Form):
     
@@ -135,9 +138,105 @@ class InstanceForm(forms.ModelForm):
         slug = slugify(cleaned_data.get("name_{}".format(default_lang)), allow_unicode=True)
         if slug == cleaned_data["course"].slug:
             raise ValidationError("Instance cannot have the same slug as its course")
+
+            
+class InstanceSettingsForm(TranslationModelForm):
+
+    class Meta:
+        model = cm.CourseInstance
+        fields = ["name", "email", "start_date", "end_date", "primary", "manual_accept", "welcome_message", "content_license", "license_url"]
         
-            
-            
-            
+    def __init__(self, *args, **kwargs):
+        available_content = kwargs.pop("available_content")
+        super().__init__(*args, **kwargs)
+        
+        self.fields["frontpage"] = forms.ChoiceField(
+            widget = forms.Select,
+            label = _("Choose frontpage"),
+            choices = [(0, _("--NO-FRONTPAGE--")), ] + [(c.id, c.name) for c in available_content]
+        )
     
+
+class InstanceFreezeForm(forms.Form):
+    
+    freeze_to = forms.DateField(
+        label=_("Freeze instance contents to date:"),
+        required=True
+    )
+    
+class InstanceCloneForm(forms.ModelForm):
+
+    class Meta:
+        model = cm.CourseInstance
+        fields = ["start_date", "end_date"]
+        
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        for lang_code, lang_name in django.conf.settings.LANGUAGES:
+            self.fields["name_" + lang_code] = forms.CharField(
+                label=_("Name for the instance clone ({lang}):").format(lang=lang_code),
+                required=True
+            )
+        
+    
+class NewContentNodeForm(forms.ModelForm):
+
+    class Meta:
+        model = cm.ContentGraph
+        fields = ["publish_date", "deadline", "scored", "visible"]
+        
+    make_child = forms.BooleanField(
+        label=_("Make this node a child of the selected node"),
+        required=False
+    )
+    
+    new_page_name = forms.CharField(
+        label=_("Name for new page (in default language)"),
+        required=False
+    )
+    
+    active_node = forms.IntegerField(
+        widget=forms.HiddenInput,
+        required=True
+    )
+    
+    def __init__(self, *args, **kwargs):
+        available_content = kwargs.pop("available_content")
+        super().__init__(*args, **kwargs)
+        
+        self.fields["content"] = forms.ChoiceField(
+            widget = forms.Select,
+            label = _("Choose content to link"),
+            choices = [(0, _("----NEW--PAGE----")), ] + [(c.id, c.name) for c in available_content]
+        )
+
+
+class NodeSettingsForm(forms.ModelForm):
+    
+    class Meta:
+        model = cm.ContentGraph
+        fields = ["publish_date", "deadline", "scored", "visible"]
+        
+    active_node = forms.IntegerField(
+        widget=forms.HiddenInput,
+        required=True
+    )
+    
+    def __init__(self, *args, **kwargs):
+        available_content = kwargs.pop("available_content")
+        super().__init__(*args, **kwargs)
+        
+        self.fields["content"] = forms.ChoiceField(
+            widget = forms.Select,
+            label = _("Choose content to link"),
+            choices = [(0, _("----NEW--PAGE----")), ] + [(c.id, c.name) for c in available_content]
+        )
+        
+class IndexEntryForm(TranslationModelForm):
+
+    class Meta:
+        pass
+        
+        
     

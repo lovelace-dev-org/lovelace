@@ -99,7 +99,7 @@ def unlink_question(request, course, instance, exercise, hook):
         regenerate_cache(instance, exercise)
         return HttpResponse(status=204)
     else:
-        return HttpResponseBadRequest()
+        return HttpResponseNotAllowed(["POST"])
         
     
     

@@ -47,10 +47,11 @@ import django.conf
 from django.contrib import auth
 from django.shortcuts import redirect
 
-from utils.access import is_course_staff, determine_media_access, ensure_enrolled_or_staff, ensure_owner_or_staff, determine_access
+from utils.access import is_course_staff, determine_media_access, ensure_enrolled_or_staff, ensure_owner_or_staff, determine_access, ensure_staff
 from utils.archive import find_version_with_filename
 from utils.content import first_title_from_content
 from utils.files import generate_download_response
+from utils.management import CourseContentAdmin
 from utils.notify import send_error_report, send_welcome_email
 
 try:
@@ -176,16 +177,34 @@ def course(request, course, instance):
     context["instance"] = instance
 
     if is_course_staff(request.user, instance):
-        contents = ContentGraph.objects.filter(instance=instance, ordinal_number__gt=0).order_by('ordinal_number')
+        from utils.management import CourseContentAdmin
+        contents = ContentGraph.objects.filter(
+            instance=instance,
+            ordinal_number__gt=0,
+            parentnode=None
+        ).order_by('ordinal_number')
+        context["course_staff"] = True
+        content_access = CourseContentAdmin.content_access_list(request, ContentPage, "LECTURE")
+        available_content = content_access.defer("content").all()
+        try:
+            frontpage_id = instance.frontpage.id
+        except AttributeError:
+            frontpage_id = 0
     else:
-        contents = ContentGraph.objects.filter(instance=instance, ordinal_number__gt=0, visible=True).order_by('ordinal_number')
+        contents = ContentGraph.objects.filter(
+            instance=instance,
+            ordinal_number__gt=0,
+            visible=True,
+            parentnode=None
+        ).order_by('ordinal_number')
+        context["course_staff"] = False 
     
     if len(contents) > 0:
         tree = []
-        tree.append((mark_safe('>'), None, None, None, None, 0))
+        tree.append((mark_safe('>'), None, None, None, None, None, 0))
         for content_ in contents:
             course_tree(tree, content_, request.user, instance)
-        tree.append((mark_safe('<'), None, None, None, None, 0))
+        tree.append((mark_safe('<'), None, None, None, None, None, 0))
         context["content_tree"] = tree
 
     t = loader.get_template("courses/course.html")
@@ -223,7 +242,7 @@ def course_tree(tree, node, user, instance_obj):
                 #print(emb_exercise.name)
                 correct_embedded += 1 if emb_exercise.get_user_evaluation(emb_exercise, user, instance_obj) == "correct" else 0
     
-    list_item = (node.content, evaluation, correct_embedded, embedded_count, node.visible, page_count)
+    list_item = (node.content, node.id, evaluation, correct_embedded, embedded_count, node.visible, page_count)
     
     if list_item not in tree:
         tree.append(list_item)
@@ -234,10 +253,10 @@ def course_tree(tree, node, user, instance_obj):
         children = ContentGraph.objects.filter(parentnode=node, instance=instance_obj, visible=True).order_by('ordinal_number')
     
     if len(children) > 0:
-        tree.append((mark_safe('>'), None, None, None, None, 0))
+        tree.append((mark_safe('>'), None, None, None, None, None, 0))
         for child in children:
             course_tree(tree, child, user, instance_obj)
-        tree.append((mark_safe('<'), None, None, None, None, 0))
+        tree.append((mark_safe('<'), None, None, None, None, None, 0))
 
 def check_answer_sandboxed(request, content_slug):
     """
@@ -324,9 +343,9 @@ def check_answer(request, course, instance, content, revision):
     if revision == "head":
         latest = Version.objects.get_for_object(content).latest("revision__date_created")
         answered_revision = latest.revision_id
+        revision = None
     else:
         answered_revision = revision
-    
 
     try:
         answer_object = exercise.save_answer(content, user, ip, answer, files, instance, answered_revision)
@@ -483,7 +502,7 @@ def check_progress(request, course, instance, content, revision, task_id):
                                    kwargs={'course': course,
                                            'instance': instance,
                                            'content': content,
-                                           'revision': revision,
+                                           'revision': "head" if revision is None else revision,
                                            'task_id': task_id,})
             if not info: info = task.info # Try again in case the first time was too early
             data = {"state": task.state, "metadata": info, "redirect": progress_url}
@@ -1244,83 +1263,6 @@ def withdraw(request, course, instance):
 # ^
 # |
 # ENROLLMENT VIEWS
-# OTHER
-# |
-# v
-
-
-def content_preview(request, field_name):
-    if not request.user.is_staff and not request.user.is_superuser:
-        return HttpResponseForbidden(_("Only staff members can access this view"))
-    
-    try:
-        content = request.POST["content"]
-    except KeyError:
-        return HttpResponseBadRequest(_("No content to show"))
-    
-    question = request.POST.get("question", "")
-    lang_code = field_name[-2:]
-    embedded_preview = request.POST.get("embedded", False)
-    
-    with translation.override(lang_code):
-        markup_gen = markupparser.MarkupParser.parse(content)
-        segment = ""
-        pages = []
-        blocks = []
-        
-        for chunk in markup_gen:
-            if isinstance(chunk, str):
-                segment += chunk
-            elif isinstance(chunk, markupparser.PageBreak):
-                blocks.append(("plain", segment))
-                segment = ""
-                pages.append(blocks)
-                blocks = []
-            else:
-                blocks.append(("plain", segment))
-                blocks.append(chunk)
-                segment = ""
-                
-        if segment:
-            blocks.append(("plain", segment))
-        
-        pages.append(blocks)
-        full = [block for page in pages for block in page]
-        
-        if question:
-            rendered_question = blockparser.parseblock(
-                escape(question, quote=False), {}
-            )
-        else:
-            rendered_question = ""            
-                
-        t = loader.get_template("courses/content-preview.html")
-        c = {
-            "content_blocks": full,
-        }
-        if embedded_preview:
-            template = request.POST["form_template"]
-            form = loader.get_template(template)
-            choices = []
-            for i, choice in enumerate(request.POST.getlist("choices[]")):
-                if choice:
-                    choices.append({
-                        "id": i,
-                        "answer": choice
-                    })
-            print(choices)
-            c["embedded_preview"] = True
-            c["embed_data"] = {
-                "content": "".join(block[1] for block in full),
-                "question": rendered_question,
-                "form": form.render({"choices": choices}, request)
-            }
-
-        rendered = t.render(c, request)
-
-        print(rendered)
-
-    return HttpResponse(rendered)
     
 def help_list(request):
     return HttpResponse()

@@ -390,19 +390,4 @@ def moss_progress(request, course, instance, content, task_id):
         })
         data = {"state": task.state, "metadata": task.info, "redirect": progress_url}
         return JsonResponse(data)
-    
         
-        
-        
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    

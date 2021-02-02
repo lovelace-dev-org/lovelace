@@ -27,13 +27,12 @@
           <div>
             <ul>
               {% for instance in course.get_instances %}
-                {% if instance.visible or request.user.is_staff %}
+                {% with request.user|enrolled:instance as enroll_status %}
+                {% if instance.is_active or enroll_status == "ACCEPTED" or request.user.is_staff %}
                   <li>
                     <div>
                       <a href="{% url 'courses:course' course instance %}">{{ instance.name }}</a>
                     </div>
-                    {% if instance.is_active %} 
-                        {% with request.user|enrolled:instance as enroll_status %}
                           <div>
                             {% if enroll_status == None %}
                               {% if request.user.is_authenticated %}                        
@@ -57,11 +56,17 @@
                                 {% endif %}
                               </span> 
                                 {% if enroll_status == "ACCEPTED" or enroll_status == "WAITING" %}
-                                  <form id="{{ instance.slug }}-withdraw-form" class="withdraw-form" method="POST" enctype="multipart/form-data" action="{% url 'courses:withdraw' course instance %}">
-                                    {% csrf_token %}
-                                    <input type="hidden" class="instance-hint" name="instance-slug" value="{{ instance.slug }}">
-                                    <input type="submit" name="submit" value="{% trans 'Withdraw' %}"></input>
-                                  </form>
+                                  {% if instance.is_active %}
+                                      <form id="{{ instance.slug }}-withdraw-form" class="withdraw-form" method="POST" enctype="multipart/form-data" action="{% url 'courses:withdraw' course instance %}">
+                                        {% csrf_token %}
+                                        <input type="hidden" class="instance-hint" name="instance-slug" value="{{ instance.slug }}">
+                                        <input type="submit" name="submit" value="{% trans 'Withdraw' %}"></input>
+                                      </form>
+                                  {% else %}
+                                     <div>
+                                      <span class="instance-userinfo">{% trans 'Enrollment period for this course instance has closed.' %}</span>
+                                     </div>
+                                  {% endif %}
                                 {% elif enroll_status == "WITHDRAWN" %}
                                   <p><button id="{{ instance.slug }}-enroll-button" onclick="show_popup(event, '{{ instance.slug }}-enrollment-application-popup')">{% trans 'Re-Enroll' %}</button></p>
                                 {% endif %}
@@ -89,19 +94,6 @@
                               </div>                      
                             </div>  
                           {% endif %}
-                        {% endwith %}
-                    {% else %}
-                      {% with request.user|enrolled:instance as enroll_status %}
-                          {% if enroll_status == "ACCEPTED" %}
-                            <div>
-                              <span class="instance-userinfo">{% trans 'You have enrolled' %}</span>
-                            </div>
-                          {% endif %}
-                        <div>
-                          <span class="instance-userinfo">{% trans 'Enrollment period for this course instance has closed.' %}</span>
-                        </div>
-                      {% endwith %}
-                    {% endif %}
                     {% comment %}
                     <div>
                       <span class="instance-userinfo">Your progress: </span>
@@ -110,6 +102,7 @@
                     {% endcomment %}
                   </li>
                 {% endif %}
+                {% endwith %}
               {% endfor %}
             </ul>
           </div>

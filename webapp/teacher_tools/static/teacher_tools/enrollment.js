@@ -144,6 +144,7 @@ function collapse_task_list(page_bullet) {
     bullet.addClass("tasks-collapsed");
 }
 
+
 $(document).ready(function() {
     
     $(".teacher-form").submit(process_many);

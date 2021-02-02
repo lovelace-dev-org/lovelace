@@ -3,7 +3,8 @@ from django.db.models import Q
 from django.db import transaction 
 from django.forms import Textarea
 from reversion.models import Version
-from courses.models import Course, CourseInstance, ContentPage
+from courses.models import Course, CourseInstance, ContentPage, ContentGraph,\
+    InstanceIncludeFile, Term, TermToInstanceLink, InstanceIncludeFileToInstanceLink
 from courses.widgets import ContentPreviewWidget
 from utils.access import determine_access, determine_media_access
 
@@ -170,7 +171,7 @@ class CourseMediaAdmin(admin.ModelAdmin):
         ).distinct()
     
     def get_queryset(self, request):
-        return CourseMediaAccess.media_access_list(request, self.model)
+        return CourseMediaAdmin.media_access_list(request, self.model)
     
     def has_change_permission(self, request, obj=None):
         if obj is None:
@@ -190,3 +191,42 @@ class CourseMediaAdmin(admin.ModelAdmin):
         
         return False
 
+def clone_instance_files(instance):
+    instance_files = InstanceIncludeFile.objects.filter(course=instance.course)
+    for ifile in instance_files:
+        link = InstanceIncludeFileToInstanceLink(
+            revision=None,
+            include_file=ifile,
+            instance=instance
+        )
+        link.save()
+        
+def clone_terms(instance):
+    terms = Term.objects.filter(course=instance.course)
+    for term in terms:
+        link = TermToInstanceLink(
+            revision=None,
+            term=term,
+            instance=instance
+        )
+        link.save()
+    
+def clone_content_graphs(old_instance, new_instance):
+    content_graphs = ContentGraph.objects.filter(instance=old_instance)
+    for graph in content_graphs:
+        graph.pk = None
+        graph.instance = new_instance
+        graph.save()
+        graph.content.update_embedded_links(new_instance, graph.revision)
+        
+    for child_node in ContentGraph.objects.filter(instance=new_instance).exclude(parentnode=None):
+        new_parent = ContentGraph.objects.get(
+            content=child_node.parentnode.content,
+            instance=new_instance
+        )
+        child_node.parentnode = new_parent
+        child_node.save()
+    
+    
+    
+    
