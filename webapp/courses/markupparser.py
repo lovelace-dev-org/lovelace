@@ -41,6 +41,7 @@ import courses.models as cm
 import feedback.models
 
 from utils.archive import get_single_archived
+from utils.content import get_embedded_media_file, get_embedded_media_image
 
 # TODO: Support indented blocks (e.g. <pre>) within indents, uls & ols
 # TODO: Support admonitions/warnings/good to know boxes/etc.
@@ -478,24 +479,11 @@ class EmbeddedFileMarkup(Markup):
         instance = state["context"].get("instance")
         
         try:
-            try:
-                link = cm.CourseMediaLink.objects.get(
-                    media__name=settings["file_slug"],
-                    instance=instance,
-                    parent=state["context"]["content"]
-                    )
-            except (KeyError, cm.CourseMediaLink.DoesNotExist) as e:
-                file_object = cm.File.objects.get(name=settings["file_slug"])
-            else:
-                if link.revision is None:
-                    file_object = link.media.file
-                else:
-                    revision_object = Version.objects.get_for_object(link.media.file).get(revision=link.revision)
-                    file_object = revision_object._object_version.object
-                    
-                    # is there a better way to get parent attributes
-                    # from the version object?
-                    file_object.name = revision_object.field_dict["name"]
+            file_object = get_embedded_media_file(
+                settings["file_slug"],
+                instance,
+                state["context"].get("content")
+            )
         except cm.File.DoesNotExist as e:
             # TODO: Modular errors
             yield '<div>File %s not found.</div>' % settings["file_slug"]
@@ -733,11 +721,16 @@ class EmbeddedScriptMarkup(Markup):
         if "tooltip" in state["context"] and state["context"]["tooltip"]:
             raise EmbeddedObjectNotAllowedError("embedded scripts are not allowed in tooltips")
         
+
+        instance = state["context"].get("instance")
+        content = state["context"].get("content")
+        
+        
         try:
-            script = cm.File.objects.get(name=settings["script_slug"])
+            script = get_embedded_media_file(settings["script_slug"], instance, content)
         except cm.File.DoesNotExist as e:
             # TODO: Modular errors
-            yield '<div>Script %s not found.</div>' % settings["script_slug"]
+            yield '<div>File %s not found.</div>' % settings["script_slug"]
             raise StopIteration
 
         includes = []
@@ -753,10 +746,10 @@ class EmbeddedScriptMarkup(Markup):
                 raise StopIteration
 
             try:
-                if incl_type == "image":
-                    incl_obj = cm.Image.objects.get(name=incl_name)
+                if incl_type == "image":                
+                    incl_obj = get_embedded_media_image(incl_name, instance, content)
                 else:
-                    incl_obj = cm.File.objects.get(name=incl_name)
+                    incl_obj = get_embedded_media_file(incl_name, instance, content)
             except (cm.File.DoesNotExist, cm.Image.DoesNotExist) as e:
                 # TODO: Modular errors
                 yield '<div>{} {} not found.</div>'.format(incl_type.capitalize(), incl_name)
@@ -1026,24 +1019,11 @@ class ImageMarkup(Markup):
     def block(cls, block, settings, state):
         instance = state["context"].get("instance")
         try:
-            try:
-                link = cm.CourseMediaLink.objects.get(
-                    media__name=settings["image_name"],
-                    instance=instance,
-                    parent=state["context"]["content"]
-                )
-            except (KeyError, cm.CourseMediaLink.DoesNotExist) as e:
-                image_object = cm.Image.objects.get(name=settings["image_name"])
-            else:
-                if link.revision is None:
-                    image_object = link.media.image
-                else:
-                    revision_object = Version.objects.get_for_object(link.media.image).get(revision=link.revision)
-                    image_object = revision_object._object_version.object
-                    
-                    # is there a better way to get parent attributes
-                    # from the version object?
-                    image_object.name = revision_object.field_dict["name"]
+            image_object = get_embedded_media_image(
+                settings["image_name"],
+                instance,
+                state["context"]["content"]
+            )
         except cm.Image.DoesNotExist as e:
             # TODO: Modular errors
             yield '<div>File %s not found.</div>' % settings["image_name"]

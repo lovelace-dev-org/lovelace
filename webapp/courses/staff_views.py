@@ -55,6 +55,7 @@ def clone_instance(request, course, instance):
         if form.is_valid():
             new_instance = form.save(commit=False)
             new_instance.pk = None
+            new_instance.primary = False
             for lang_code, lang_name in settings.LANGUAGES:
                 field = "name_" + lang_code
                 setattr(new_instance, field, form.cleaned_data[field])

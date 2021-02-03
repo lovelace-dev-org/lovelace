@@ -93,7 +93,6 @@ def find_latest_version(model_instance, before=None):
     if before:
         versions = versions.filter(revision__date_created__lte=before)
     return versions.latest("revision__date_created")
-        
     
     
 

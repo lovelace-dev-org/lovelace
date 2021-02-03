@@ -243,6 +243,8 @@ def parseblock(blockstring, context=None):
     parsed_string = parsetag("anchor", parsed_string, context)
     parsed_string = parsetag("hint", parsed_string)
     parsed_string = parsetag("term", parsed_string, context)
+    parsed_string = parsed_string.replace("'", "&#x27;")
+    parsed_string = parsed_string.replace("\"", "&quot;")
 
     return parsed_string
 

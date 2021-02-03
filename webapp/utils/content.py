@@ -1,7 +1,7 @@
 import re
 from collections import defaultdict
 
-from courses.models import ContentGraph, EmbeddedLink, CourseMediaLink, TermToInstanceLink, InstanceIncludeFileToInstanceLink
+import courses.models as cm
 from django.utils.text import slugify as slugify
 from reversion.models import Version, Revision
 
@@ -24,11 +24,11 @@ def first_title_from_content(content_text):
 
 def get_course_instance_tasks(instance, deadline_before=None):
 
-    all_embedded_links = EmbeddedLink.objects.filter(instance=instance).order_by("embedded_page__name")
+    all_embedded_links = cm.EmbeddedLink.objects.filter(instance=instance).order_by("embedded_page__name")
 
     task_pages = []
 
-    content_links = ContentGraph.objects.filter(instance=instance, scored=True, visible=True).order_by("ordinal_number")
+    content_links = cm.ContentGraph.objects.filter(instance=instance, scored=True, visible=True).order_by("ordinal_number")
     if deadline_before is not None:
         content_links = content_links.filter(deadline__lt=deadline_before)
 
@@ -89,3 +89,50 @@ def compile_json_feedback(log):
         'triggers': triggers
     }
     return feedback
+
+def get_embedded_media_file(name, instance, parent):
+    try:
+        link = cm.CourseMediaLink.objects.get(
+            media__name=name,
+            instance=instance,
+            parent=parent
+        )
+    except (KeyError, cm.CourseMediaLink.DoesNotExist) as e:
+        file_object = cm.File.objects.get(name=name)
+    else:
+        if link.revision is None:
+            file_object = link.media.file
+        else:
+            revision_object = Version.objects.get_for_object(link.media.file).get(revision=link.revision)
+            file_object = revision_object._object_version.object
+            
+            # is there a better way to get parent attributes
+            # from the version object?
+            file_object.name = revision_object.field_dict["name"]
+    return file_object
+    
+def get_embedded_media_image(name, instance, parent):
+    try:
+        link = cm.CourseMediaLink.objects.get(
+            media__name=name,
+            instance=instance,
+            parent=parent
+        )
+    except (KeyError, cm.CourseMediaLink.DoesNotExist) as e:
+        image_object = cm.Image.objects.get(name=name)
+    else:
+        if link.revision is None:
+            image_object = link.media.image
+        else:
+            revision_object = Version.objects.get_for_object(link.media.image).get(revision=link.revision)
+            image_object = revision_object._object_version.object
+            
+            # is there a better way to get parent attributes
+            # from the version object?
+            image_object.name = revision_object.field_dict["name"]
+    return image_object
+    
+    
+    
+    
+    
