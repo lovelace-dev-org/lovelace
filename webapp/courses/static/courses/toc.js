@@ -44,9 +44,10 @@ var toc = {
     submit_form: function(event) {
         event.preventDefault();
         let form = $(this);
+        $("body").css("cursor", "progress");
         
         process_success = function(data) {
-            console.log(data.instance);
+            $("body").css("cursor", "default");
             if (data.redirect) {
                 location.replace(data.redirect);
             }
