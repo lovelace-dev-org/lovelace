@@ -191,8 +191,7 @@ def create_content_node(request, course, instance):
                 try:
                     page = Lecture.objects.get(id=form.cleaned_data["content"])
                 except Lecture.DoesNotExist:
-                    return HttpResponseNotFound()
-            
+                    return HttpResponseNotFound()            
             
             new_node = form.save(commit=False)
             new_node.instance = instance
@@ -259,7 +258,13 @@ def node_settings(request, course, instance, node_id):
     if request.method == "POST":
         form = NodeSettingsForm(request.POST, available_content=available_content, instance=node)
         if form.is_valid():
-            form.save(commit=True)
+            node = form.save(commit=False)
+            try:
+                content = ContentPage.objects.get(id=form.cleaned_data["content"])
+            except ContentPage.DoesNotExist:
+                return HttpResponseNotFound()
+            node.content = content
+            node.save()
             return JsonResponse({"status": "ok"})
         else:
             errors = form.errors.as_json()
