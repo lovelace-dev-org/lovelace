@@ -9,7 +9,7 @@ def check_user_completion(user, task_links, instance, include_links=True):
         if link.revision is not None:
             exercise_obj = Version.objects.get_for_object(exercise_obj).get(revision=link.revision)._object_version.object
 
-        result = exercise_obj.get_user_evaluation(exercise_obj, user, instance)
+        result = exercise_obj.get_user_evaluation(user, instance)
 
         points = 0
         if result == "correct":

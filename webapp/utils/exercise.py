@@ -1,5 +1,6 @@
 from django.template import loader
 from courses import markupparser
+import courses.models as cm
 
 
 INCORRECT = 0
@@ -55,3 +56,49 @@ def render_json_feedback(log, request, course, instance):
     }
     return feedback
 
+def update_completion(exercise, instance, user, correct):
+    changed = False
+    try:
+        completion = cm.UserTaskCompletion.objects.get(
+            exercise=exercise,
+            instance=instance,
+            user=user
+        )
+    except cm.UserTaskCompletion.DoesNotExist:
+        completion = cm.UserTaskCompletion(
+            exercise=exercise,
+            instance=instance,
+            user=user
+        )
+        completion.state = ["incorrect", "correct"][correct]
+        completion.save()
+        changed = True
+    else:
+        if completion.state != "correct":
+            completion.state = "correct"
+            completion.save()
+            changed = True
+            
+    if changed and correct and exercise.evaluation_group:
+        others = cm.ContentPage.objects.filter(
+            evaluation_group=exercise.evaluation_group
+        ).exclude(id=exercise.id)
+        for task in others:
+            try:
+                completion = cm.UserTaskCompletion.objects.get(
+                    exercise=task,
+                    instance=instance,
+                    user=user
+                )
+            except cm.UserTaskCompletion.DoesNotExist:
+                completion = cm.UserTaskCompletion(
+                    exercise=task,
+                    instance=instance,
+                    user=user
+                )
+                completion.state = "credited"
+                completion.save()
+            else:
+                if completion.state not in ["correct", "credited"]:
+                    completion.state = "credited"
+                    completion.save()

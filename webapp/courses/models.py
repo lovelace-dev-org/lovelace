@@ -36,11 +36,6 @@ from lovelace.celery import app as celery_app
 
 import feedback.models
 
-# circular imports btw, fix?
-import courses.markupparser as markupparser
-import courses.blockparser as blockparser
-import courses.tasks as rpc_tasks
-
 from utils.files import *
 from utils.archive import get_archived_field, get_single_archived, find_latest_version
 
@@ -265,10 +260,15 @@ class CourseInstance(models.Model):
         faq_links = FaqToInstanceLink.objects.filter(instance=self)
         for link in faq_links:
             link.freeze(freeze_to)
-            
+                        
+        contents = ContentGraph.objects.filter(instance=self)
+        frontpage = None
         for content_link in contents:
             content_link.content.regenerate_cache(self)
+            if content_link.ordinal_number == 0:
+                frontpage = content_link.content
             
+        self.frontpage = frontpage
         self.frozen = True
     
     def __str__(self):
@@ -308,10 +308,6 @@ class ContentGraph(models.Model):
         try:
             version = find_latest_version(self.content, freeze_to)
         except Version.DoesNotExist:
-            if self.ordinal_number == 0:
-                self.instance.frontpage = None
-                self.instance.save()
-            
             self.delete()
             return
         
@@ -613,6 +609,8 @@ class ContentPage(models.Model):
         HTML. If a rendered version already exists in the cache, use that
         instead.
         """
+        from courses import markupparser
+        
         # TODO: Take csrf protection into account; use cookies only
         #       - https://docs.djangoproject.com/en/1.7/ref/contrib/csrf/
         blocks = []
@@ -701,6 +699,8 @@ class ContentPage(models.Model):
         return cached_content
     
     def _get_rendered_content(self, context):
+        from courses import markupparser
+    
         embedded_content = ""
         markup_gen = markupparser.MarkupParser.parse(
             self.content, context=context
@@ -715,6 +715,8 @@ class ContentPage(models.Model):
         return embedded_content
             
     def _get_question(self, context):
+        from courses import blockparser
+
         question = blockparser.parseblock(
             escape(self.question, quote=False), context
         )
@@ -736,7 +738,7 @@ class ContentPage(models.Model):
         within the page content and creates EmbeddedLink and CourseMediaLink 
         objects based on links found in the markup.
         """
-                
+        from courses import markupparser
                 
         page_links = set()
         media_links = set()
@@ -895,9 +897,37 @@ class ContentPage(models.Model):
         evaluation_object.save()
         answer_object.evaluation = evaluation_object
         answer_object.save()
+        try:
+            completion = UserTaskCompletion.objects.get(
+                exercise=self,
+                instance=answer_object.instance,
+                user=user
+            )
+        except UserTaskCompletion.DoesNotExist:
+            completion = UserTaskCompletion(
+                exercise=self,
+                instance=answer_object.instance,
+                user=user
+            )
+            completion.state = ["incorrect", "correct"][correct]
+            completion.save()
+        else:
+            if completion.state != "correct":
+                completion.state = "correct"
+                completion.save()
+                
+        return evaluation_object
 
     def get_user_evaluation(self, user, instance, check_group=True):
-        raise NotImplementedError("base type has no method 'get_user_evaluation'")
+        try:
+            completion = UserTaskCompletion.objects.get(
+                user=user,
+                instance=instance,
+                exercise=self
+            )
+            return completion.state
+        except UserTaskCompletion.DoesNotExist:
+            return "unanswered"
 
     def get_user_answers(self, user, instance, ignore_drafts=True):
         raise NotImplementedError("base type has no method 'get_user_answers'")
@@ -946,9 +976,9 @@ class ContentPage(models.Model):
         elif name == "save_evaluation":
             type_model = self.get_type_model()
             func = type_model.save_evaluation
-        elif name == "get_user_evaluation":
-            type_model = self.get_type_model()
-            func = type_model.get_user_evaluation
+        # elif name == "get_user_evaluation":
+            # type_model = self.get_type_model()
+            # func = type_model.get_user_evaluation
         elif name == "get_user_answers":
             type_model = self.get_type_model()
             func = type_model.get_user_answers
@@ -1072,7 +1102,7 @@ class MultipleChoiceExercise(ContentPage):
         if instance is None:
             evaluations = Evaluation.objects.filter(useranswer__usermultiplechoiceexerciseanswer__exercise_id=self.id, useranswer__user=user)
         else:
-            evaluations =             Evaluation.objects.filter(useranswer__usermultiplechoiceexerciseanswer__exercise_id=self.id, useranswer__user=user, useranswer__instance=instance)
+            evaluations = Evaluation.objects.filter(useranswer__usermultiplechoiceexerciseanswer__exercise_id=self.id, useranswer__user=user, useranswer__instance=instance)
             
         correct = evaluations.filter(correct=True).count() > 0
         if correct:
@@ -1187,6 +1217,16 @@ class CheckboxExercise(ContentPage):
         return {"evaluation": correct, "hints": hints, "comments": comments}
 
     def get_user_evaluation(self, user, instance, check_group=True):
+        # try:
+            # completion = UserTaskCompletion.objects.get(
+                # user=user,
+                # instance=instance,
+                # exercise=self
+            # )
+            # return completion.completion            
+        # except UserTaskCompletion.DoesNotExist:
+            # pass
+        
         if instance is None:
             evaluations = Evaluation.objects.filter(useranswer__usercheckboxexerciseanswer__exercise=self, useranswer__user=user)
         else:
@@ -1424,6 +1464,8 @@ class FileUploadExercise(ContentPage):
         return reverse("exercise_admin:file_upload_change", args=(self.id,))
 
     def check_answer(self, user, ip, answer, files, answer_object, revision):
+        import courses.tasks as rpc_tasks
+                
         lang_code = translation.get_language()
         if revision == "head": revision = None
         result = rpc_tasks.run_tests.delay(
@@ -2404,6 +2446,12 @@ class UserCodeReplaceExerciseAnswer(UserAnswer):
     def __str__(self):
         return given_answer
 
+class UserTaskCompletion(models.Model):
+    exercise = models.ForeignKey(ContentPage, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    instance = models.ForeignKey(CourseInstance, on_delete=models.CASCADE)
+    state = models.CharField(max_length=16)
+        
 class InvalidExerciseAnswerException(Exception):
     """
     This exception is cast when an exercise answer cannot be processed.

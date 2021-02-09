@@ -184,20 +184,18 @@ def run_tests(self, user_id, instance_id, exercise_id, answer_id, lang_code, rev
     correct = evaluation["correct"]
     points = exercise_object.default_points
     
-    evaluation_obj = cm.Evaluation(
-        test_results=result_string,
-        points=points,
-       correct=correct
-    )
-    evaluation_obj.save()
     
     try:
         answer_object = cm.UserFileUploadExerciseAnswer.objects.get(id=answer_id)
     except cm.UserFileUploadExerciseAnswer.DoesNotExist as e:
         # TODO: Log weird request
         return # TODO: Find a way to signal the failure to the user
-    answer_object.evaluation = evaluation_obj
-    answer_object.save()
+
+    evaluation_obj = exercise_object.save_evaluation(
+        user_object,
+        {"evaluation": correct},
+        answer_object
+    )
 
     return evaluation_obj.id
     

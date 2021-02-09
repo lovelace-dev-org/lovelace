@@ -165,9 +165,9 @@ def routine_progress(request, course, instance, content, task_id):
         elif info["task"] == "check":
             progress = _save_evaluation(info)
             data = render_json_feedback(info["data"]["log"], request, course, instance)
-            print(info)
             if progress.completed:
                 data["evaluation"] = True
+                update_completion(content, instance, request.user, True)
             data["next_instance"] = True
             data["progress"] = progress.progress
             next_question = info["data"].get("next")
@@ -252,7 +252,7 @@ def download_routine_exercise_backend(request, exercise_id, field_name, filename
             
     if not determine_access(request.user, exercise_object):
         return HttpResponseForbidden(_("Only course main responsible teachers are allowed to download files through this interface."))
-            
+
     fileobjects = RoutineExerciseBackendFile.objects.filter(exercise=exercise_object)
     try:
         for fileobject in fileobjects:

@@ -70,7 +70,7 @@ def embed_frame(context, content_data):
     page = context["embedded_pages"][content_data["slug"]]
     if context["user"].is_active:
         answer_count = page.get_user_answers(page, context["user"], context["instance"]).count()
-        evaluation = page.get_user_evaluation(page, context["user"], context["instance"])
+        evaluation = page.get_user_evaluation(context["user"], context["instance"])
     else:
         answer_count = 0
         evaluation = None

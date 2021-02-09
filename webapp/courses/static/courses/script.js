@@ -325,6 +325,7 @@ function expand_next_div(caller) {
 
 function submit_ajax_form(form, success_extra_cb) {
     let url = form.attr('action');
+    $("body").css("cursor", "progress");
     
     $.ajax({
         type: form.attr('method'),
@@ -338,7 +339,7 @@ function submit_ajax_form(form, success_extra_cb) {
             form.find("input[type='submit']").after(okspan);
             success_extra_cb(data);
         },
-        error: function (jqxhr, status, type) {
+        error: function(jqxhr, status, type) {
             let errors = JSON.parse(JSON.parse(jqxhr.responseText).errors);
             for (const [field, content] of Object.entries(errors)) {
                 content.forEach(function (entry) {
@@ -347,6 +348,9 @@ function submit_ajax_form(form, success_extra_cb) {
                 });
                 
             }
+        },
+        complete: function(jqxhr, status) {
+            $("body").css("cursor", "default");
         }
     });
 }

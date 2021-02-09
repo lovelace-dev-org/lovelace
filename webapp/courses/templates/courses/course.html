@@ -73,7 +73,8 @@
                 class="staff-base-button add-button"
                 title="{% trans 'Add a new content at the beginning' %}"
                 onclick="toc.fetch_form(event, this, 0);"
-                data-url="{% url 'courses:create_content_node' course instance %}">+
+                data-url="{% url 'courses:create_content_node' course instance %}"
+                data-node-id="0">+
             </button>
         </div>
     </div>
@@ -87,15 +88,6 @@
       {% else %}
         <li{% if visible == False %} class="admin-visible-content"{% endif %}>
           <a href="{% url 'courses:content' course instance list_direction %}">{{ list_direction.name }}</a>
-          {% if result and emb_count == 0 %}
-            {% if result == 'unanswered' %}
-              <img class="course-contents-result" src="{% static 'courses/unanswered-16.png' %}" alt="{% trans 'Unanswered' %}">
-            {% elif result == 'correct' %}
-              <img class="course-contents-result" src="{% static 'courses/correct-16.png' %}" alt="{% trans 'Correctly answered' %}">
-            {% elif result == 'incorrect' %}
-              <img class="course-contents-result" src="{% static 'courses/incorrect-16.png' %}" alt="{% trans 'Incorrectly answered' %}">
-            {% endif %}
-          {% endif %}
           {% comment %}
           {% if page_count > 0 %}
             <img class="course-pagination-icon" src="{% static 'courses/pagination.png' %}" alt="{% trans 'View as paginated' %}">

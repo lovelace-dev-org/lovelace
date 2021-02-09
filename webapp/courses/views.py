@@ -220,7 +220,7 @@ def course_tree(tree, node, user, instance_obj):
     evaluation = ""
     if user.is_authenticated:
         exercise = node.content
-        evaluation = exercise.get_user_evaluation(exercise, user, instance_obj)
+        evaluation = exercise.get_user_evaluation(user, instance_obj)
 
         if embedded_count > 0:
             
@@ -232,7 +232,7 @@ def course_tree(tree, node, user, instance_obj):
             
             for link in group_repr:
                 if link.embedded_page.get_user_evaluation(
-                    link.embedded_page, user, instance_obj
+                    user, instance_obj
                     ) in ("correct", "credited"):
                     
                     correct_embedded += 1
@@ -240,7 +240,7 @@ def course_tree(tree, node, user, instance_obj):
             for emb_exercise in embedded_links.filter(embedded_page__evaluation_group="").values_list('embedded_page', flat=True):
                 emb_exercise = ContentPage.objects.get(id=emb_exercise)
                 #print(emb_exercise.name)
-                correct_embedded += 1 if emb_exercise.get_user_evaluation(emb_exercise, user, instance_obj) == "correct" else 0
+                correct_embedded += 1 if emb_exercise.get_user_evaluation(user, instance_obj) == "correct" else 0
     
     list_item = (node.content, node.id, evaluation, correct_embedded, embedded_count, node.visible, page_count)
     
@@ -377,7 +377,7 @@ def check_answer(request, course, instance, content, revision):
 
     # TODO: Errors, hints, comments in JSON
     t = loader.get_template("courses/exercise-evaluation.html")
-    total_evaluation = exercise.get_user_evaluation(content, user, instance)
+    total_evaluation = exercise.get_user_evaluation(user, instance)
     #print(evaluation)
     
     data = {
@@ -686,7 +686,7 @@ def content(request, course, instance, content, pagenum=None, **kwargs):
             answer_count = content.get_user_answers(content, request.user, instance).count()
         if content_graph and (content_graph.publish_date is None or content_graph.publish_date < datetime.datetime.now()):
             try:
-                evaluation = content.get_user_evaluation(content, request.user, instance)
+                evaluation = content.get_user_evaluation(request.user, instance)
             except NotImplementedError:
                 evaluation = None
         try:
