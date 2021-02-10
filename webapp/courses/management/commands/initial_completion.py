@@ -12,8 +12,10 @@ class Command(BaseCommand):
         for instance in CourseInstance.objects.all():
             print("Instance:", instance.slug)
             instance_tasks = EmbeddedLink.objects.filter(instance=instance).order_by("embedded_page__name")
-            for user in User.objects.all():
-                print("- User:", user)
+            users = User.objects.all()
+            n = users.count()
+            print("Users ({}):".format(n), end="")
+            for user in users:
                 user_results = self._get_results(user, instance_tasks, instance)
                 for slug, result in user_results.items():
                     try:
@@ -30,13 +32,14 @@ class Command(BaseCommand):
                             state=result["result"]
                         )
                         completion.save()
+                print(".", end="", flush=True)
+            print()
                             
     def _get_results(self, user, task_links, instance):
         results = {}
         course = instance.course
         for link in task_links:
             exercise_obj = link.embedded_page.get_type_object()
-            print("-- Exercise:", exercise_obj.slug)
             if link.revision is not None:
                 exercise_obj = Version.objects.get_for_object(exercise_obj).get(revision=link.revision)._object_version.object
                 

@@ -13,7 +13,7 @@ from courses import markupparser
 from routine_exercise.models import *
 from utils.access import ensure_enrolled_or_staff, determine_access
 from utils.archive import find_version_with_filename
-from utils.exercise import render_json_feedback
+from utils.exercise import render_json_feedback, update_completion
 from utils.files import generate_download_response
 
 def _question_context_data(request, course, instance, question):

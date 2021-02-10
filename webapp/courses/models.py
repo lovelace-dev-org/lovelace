@@ -973,12 +973,12 @@ class ContentPage(models.Model):
         elif name == "check_answer":
             type_model = self.get_type_model()
             func = type_model.check_answer
-        elif name == "save_evaluation":
-            type_model = self.get_type_model()
-            func = type_model.save_evaluation
+        # elif name == "save_evaluation":
+        #    type_model = self.get_type_model()
+        #    func = type_model.save_evaluation
         # elif name == "get_user_evaluation":
-            # type_model = self.get_type_model()
-            # func = type_model.get_user_evaluation
+        #    type_model = self.get_type_model()
+        #    func = type_model.get_user_evaluation
         elif name == "get_user_answers":
             type_model = self.get_type_model()
             func = type_model.get_user_answers
@@ -1098,25 +1098,6 @@ class MultipleChoiceExercise(ContentPage):
             
         return {"evaluation": correct, "hints": hints, "comments": comments}
 
-    def get_user_evaluation(self, user, instance, check_group=True):
-        if instance is None:
-            evaluations = Evaluation.objects.filter(useranswer__usermultiplechoiceexerciseanswer__exercise_id=self.id, useranswer__user=user)
-        else:
-            evaluations = Evaluation.objects.filter(useranswer__usermultiplechoiceexerciseanswer__exercise_id=self.id, useranswer__user=user, useranswer__instance=instance)
-            
-        correct = evaluations.filter(correct=True).count() > 0
-        if correct:
-            return "correct"
-        
-        if not self.evaluation_group or not check_group:
-            return "incorrect" if evaluations else "unanswered"
-        
-        group = MultipleChoiceExercise.objects.filter(evaluation_group=self.evaluation_group).exclude(id=self.id)
-        for exercise in group:
-            if exercise.get_user_evaluation(exercise, user, instance, False) == "correct":
-                return "credited"
-        return "incorrect" if evaluations else "unanswered"
-
     def get_user_answers(self, user, instance, ignore_drafts=True):
         # TODO: Take instances into account
         if instance is None:
@@ -1215,35 +1196,6 @@ class CheckboxExercise(ContentPage):
                 chosen.append(choice)
 
         return {"evaluation": correct, "hints": hints, "comments": comments}
-
-    def get_user_evaluation(self, user, instance, check_group=True):
-        # try:
-            # completion = UserTaskCompletion.objects.get(
-                # user=user,
-                # instance=instance,
-                # exercise=self
-            # )
-            # return completion.completion            
-        # except UserTaskCompletion.DoesNotExist:
-            # pass
-        
-        if instance is None:
-            evaluations = Evaluation.objects.filter(useranswer__usercheckboxexerciseanswer__exercise=self, useranswer__user=user)
-        else:
-            evaluations = Evaluation.objects.filter(useranswer__usercheckboxexerciseanswer__exercise=self, useranswer__user=user, useranswer__instance=instance)
-
-        correct = evaluations.filter(correct=True).count() > 0
-        if correct:
-            return "correct"
-        
-        if not self.evaluation_group or not check_group:
-            return "incorrect" if evaluations else "unanswered"
-        
-        group = CheckboxExercise.objects.filter(evaluation_group=self.evaluation_group).exclude(id=self.id)
-        for exercise in group:
-            if exercise.get_user_evaluation(exercise, user, instance, False) == "correct":
-                return "credited"
-        return "incorrect" if evaluations else "unanswered"
 
     def get_user_answers(self, user, instance, ignore_drafts=True):
         if instance is None:
@@ -1366,25 +1318,6 @@ class TextfieldExercise(ContentPage):
         return {"evaluation": correct, "hints": hints, "comments": comments,
                 "errors": errors}
 
-    def get_user_evaluation(self, user, instance, check_group=True):
-        if instance is None:
-            evaluations = Evaluation.objects.filter(useranswer__usertextfieldexerciseanswer__exercise=self, useranswer__user=user)
-        else:
-            evaluations = Evaluation.objects.filter(useranswer__usertextfieldexerciseanswer__exercise=self, useranswer__user=user, useranswer__instance=instance)
-            
-        correct = evaluations.filter(correct=True).count() > 0
-        if correct:
-            return "correct"
-        
-        if not self.evaluation_group or not check_group:
-            return "incorrect" if evaluations else "unanswered"
-        
-        group = TextfieldExercise.objects.filter(evaluation_group=self.evaluation_group).exclude(id=self.id)
-        for exercise in group:
-            if exercise.get_user_evaluation(exercise, user, instance, False) == "correct":
-                return "credited"
-        return "incorrect" if evaluations else "unanswered"
-
     def get_user_answers(self, user, instance, ignore_drafts=True):
         if instance is None:
             answers = UserTextfieldExerciseAnswer.objects.filter(exercise=self, user=user)
@@ -1478,25 +1411,6 @@ class FileUploadExercise(ContentPage):
         )
         return {"task_id": result.task_id}
 
-    def get_user_evaluation(self, user, instance, check_group=True):
-        if instance is None:
-            evaluations = Evaluation.objects.filter(useranswer__userfileuploadexerciseanswer__exercise=self, useranswer__user=user)
-        else:
-            evaluations = Evaluation.objects.filter(useranswer__userfileuploadexerciseanswer__exercise=self, useranswer__user=user, useranswer__instance=instance)            
-
-        correct = evaluations.filter(correct=True).count() > 0
-        if correct:
-            return "correct"
-        
-        if not self.evaluation_group or not check_group:
-            return "incorrect" if evaluations else "unanswered"
-        
-        group = FileUploadExercise.objects.filter(evaluation_group=self.evaluation_group).exclude(id=self.id)
-        for exercise in group:
-            if exercise.get_user_evaluation(exercise, user, instance, False) == "correct":
-                return "credited"
-        return "incorrect" if evaluations else "unanswered"
-
     def get_user_answers(self, user, instance, ignore_drafts=True):
         if instance is None:
             answers = UserFileUploadExerciseAnswer.objects.filter(exercise=self, user=user)
@@ -1571,25 +1485,6 @@ class CodeReplaceExercise(ContentPage):
     def check_answer(self, user, ip, answer, files, answer_object, revision):
         return {}
 
-    def get_user_evaluation(self, user, instance, check_group=True):
-        if instance is None:
-            evaluations = Evaluation.objects.filter(useranswer__usercodereplaceexerciseanswer__exercise=self, useranswer__user=user)
-        else:
-            evaluations = Evaluation.objects.filter(useranswer__usercodereplaceexerciseanswer__exercise=self, useranswer__user=user, useranswer__instance=instance)
-
-        correct = evaluations.filter(correct=True).count() > 0
-        if correct:
-            return "correct"
-        
-        if not self.evaluation_group or not check_group:
-            return "incorrect" if evaluations else "unanswered"
-        
-        group = CodeReplaceExercise.objects.filter(evaluation_group=self.evaluation_group).exclude(id=self.id)
-        for exercise in group:
-            if exercise.get_user_evaluation(exercise, user, instance, False) == "correct":
-                return "credited"
-        return "incorrect" if evaluations else "unanswered"
-    
     def get_user_answers(self, user, instance, ignore_drafts=True):
         if instance is None:
             answers = UserCodeReplaceExerciseAnswer.objects.filter(exercise=self, user=user)
@@ -1634,24 +1529,6 @@ class RepeatedTemplateExercise(ContentPage):
         else:
             answers = UserRepeatedTemplateExerciseAnswer.objects.filter(exercise=self, instance=instance, user=user)
         return answers
-
-    def get_user_evaluation(self, user, instance, check_group=True):
-        if instance is None:
-            evaluations = Evaluation.objects.filter(useranswer__userrepeatedtemplateexerciseanswer__exercise=self, useranswer__user=user)
-        else:
-            evaluations = Evaluation.objects.filter(useranswer__userrepeatedtemplateexerciseanswer__exercise=self, useranswer__user=user, useranswer__instance=instance)
-        correct = evaluations.filter(correct=True).count() > 0
-        if correct:
-            return "correct"
-        
-        if not self.evaluation_group or not check_group:
-            return "incorrect" if evaluations else "unanswered"
-        
-        group = RepeatedTemplateExercise.objects.filter(evaluation_group=self.evaluation_group).exclude(id=self.id)
-        for exercise in group:
-            if exercise.get_user_evaluation(exercise, user, instance, False) == "correct":
-                return "credited"
-        return "incorrect" if evaluations else "unanswered"
 
     def save_answer(self, user, ip, answer, files, instance, revision):
         if "answer" in answer.keys():

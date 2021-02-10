@@ -92,29 +92,6 @@ class RoutineExercise(ContentPage):
             
         return history
 
-    def get_user_evaluation(self, user, instance, check_group=True):
-        try:
-            progress = RoutineExerciseProgress.objects.get(
-                user=user,
-                instance=instance,
-                exercise=self
-            )
-        except RoutineExerciseProgress.DoesNotExist:
-            return "unanswered"
-        
-        if progress.completed:
-            return "correct"
-        
-        if not self.evaluation_group or not check_group:
-            return "incorrect"
-        
-        group = RoutineExercise.objects.filter(evaluation_group=self.evaluation_group).exclude(id=self.id)
-        for exercise in group:
-            if exercise.get_user_evaluation(exercise, user, instance, False) == "correct":
-                return "credited"
-        
-        return "incorrect"
-        
     def save_answer(self, user, ip, answer, files, instance, revision):
         pass
 
