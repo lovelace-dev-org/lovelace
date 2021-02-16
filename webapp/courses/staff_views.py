@@ -10,7 +10,7 @@ from utils.access import ensure_staff
 from utils.management import CourseContentAdmin, clone_instance_files,\
     clone_terms, clone_content_graphs
 from faq.utils import clone_faq_links
-
+from courses import markupparser
 
 # CONTENT EDIT VIEWS
 # |

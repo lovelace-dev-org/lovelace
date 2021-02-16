@@ -100,13 +100,15 @@ def parse_anchor_tag(parsed_string, tag, address, link_text, context):
                 parsed_string += "<span>-- WARNING: BROKEN LINK --</span>"
                 final_address = ""
             else:
-                final_address = reverse("courses:download_embedded_file", kwargs={
-                    "course": context["course"],
-                    "instance": context["instance"],
-                    "mediafile": mediafile
-                })
-        else:
-        
+                if context.get("course"):
+                    final_address = reverse("courses:download_embedded_file", kwargs={
+                        "course": context["course"],
+                        "instance": context["instance"],
+                        "mediafile": mediafile
+                    })
+                else:
+                    final_address = ""
+        else:        
             slugified = slugify(server_side, allow_unicode=True)
             if server_side == slugified and context is not None:
                 # internal address
@@ -115,10 +117,13 @@ def parse_anchor_tag(parsed_string, tag, address, link_text, context):
                 except courses.models.ContentPage.DoesNotExist:
                     parsed_string += "<span>-- WARNING: BROKEN LINK --</span>"
                     final_address = ""
-                else:
-                    final_address = reverse('courses:content', args=[context['course'], context['instance'], content])
-                    if client_side is not None:
-                        final_address = final_address.rstrip('/') + '#' + client_side
+                else:                    
+                    if context.get("course"):
+                        final_address = reverse('courses:content', args=[context['course'], context['instance'], content])
+                        if client_side is not None:
+                            final_address = final_address.rstrip('/') + '#' + client_side
+                    else:
+                        final_address = ""
             else:
                 # external address
                 final_address = address
