@@ -261,6 +261,11 @@ class CourseInstance(models.Model):
         for link in faq_links:
             link.freeze(freeze_to)
                         
+        from assessment.models import AssessmentToExerciseLink
+        assessment_links = AssessmentToExerciseLink.objects.filter(instance=self)
+        for link in assessment_links:
+            link.freeze(freeze_to)
+                        
         contents = ContentGraph.objects.filter(instance=self)
         frontpage = None
         for content_link in contents:

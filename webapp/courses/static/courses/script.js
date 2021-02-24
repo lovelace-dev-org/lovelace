@@ -344,10 +344,36 @@ function submit_ajax_form(form, success_extra_cb) {
             for (const [field, content] of Object.entries(errors)) {
                 content.forEach(function (entry) {
                     let espan = "<span class='ajax-form-error'>" + entry.message + "</span>";
-                    form.find("input[name='" + field + "']").after(espan);
+                    let widget = form.find("input[name='" + field + "']")
+                    if (widget.length) {
+                        widget.after(espan);
+                    }
+                    else {
+                        form.prepend(espan);
+                    }
                 });
                 
             }
+        },
+        complete: function(jqxhr, status) {
+            $("body").css("cursor", "default");
+        }
+    });
+}
+
+function submit_ajax_delete(button, success_extra_cb) {
+    let url = button.attr("data-url");        
+    let csrf = button.attr("data-csrf");
+    $("body").css("cursor", "progress");
+    
+    $.ajax({
+        type: "POST",
+        url: url,
+        data: {csrfmiddlewaretoken: csrf},
+        success: function(data, status, jqxhr) {
+            success_extra_cb(data);
+        },
+        error: function (jqxhr, status, type) {
         },
         complete: function(jqxhr, status) {
             $("body").css("cursor", "default");

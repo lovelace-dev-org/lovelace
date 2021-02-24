@@ -4,12 +4,11 @@
     {% for hook, question, answer in faq_list %}
         <div id="{{ hook }}-question"
               {% if hook in preopened %}
-                onclick="collapse_next_div(this);"
                 class="faq-heading highlight"
               {% else %}
-                onclick="expand_next_div(this);"
                 class="faq-heading"
-              {% endif %}>
+              {% endif %}
+              onclick="expand_next_div(this);">
             <span class="faq-question">{{ question|safe }}</span>
             {% if editable %}
                 <button type="button" 

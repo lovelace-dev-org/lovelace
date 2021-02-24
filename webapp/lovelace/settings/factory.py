@@ -52,6 +52,8 @@ INSTALLED_APPS = (
     'feedback',
     'exercise_admin',
     'routine_exercise',
+    'faq',
+    'assessment',
     #'debug_toolbar',
     'reversion',
     'teacher_tools'

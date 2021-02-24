@@ -1,0 +1,25 @@
+{% load staticfiles %}
+{% load i18n %}
+
+<div class="assessment-panel">
+    <h2 class="assessment-form-title">{{ sheet.title }}</h2>
+
+    <div class="assessment-sheet">
+        <ul class="assessment-sheet">
+            {% for section, info in bullets_by_section.items %}
+                <li class="assessment-section-header">
+                    {{ section }} ({{ info.1 }})
+                </li>
+                <ul class="assessment-section">
+                    {% for bullet in info.0 %}
+                        <li class="assessment-bullet">
+                            <span title="{{ bullet.tooltip }}">
+                                {{ bullet.title }} ({{ bullet.point_value }})
+                            </span>
+                        </li>
+                    {% endfor%}
+                </ul>
+            {% endfor %}
+        </ul>
+    </div>
+</div>

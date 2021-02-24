@@ -1707,7 +1707,6 @@ button.staff-base-button {
     outline: 0;
     vertical-align: middle;
     overflow: hidden;
-    color: #4CAF50;
     background-color: #fff;
     text-align: center;
     cursor: pointer;
@@ -1724,6 +1723,25 @@ div.staff-panel {
     padding: 5px 0px;
 }
 
+div.expand-handle {
+    cursor: pointer;
+    background-color: #caeaca;
+    border: 2px solid #d0d0d0;
+    border-radius: 8px;
+    box-shadow: 1px 1px 2px #285c00;
+    margin: 5px 5px 5px 0px;
+    padding-left: 2px;
+}
+
+button.add-button {
+    color: #4CAF50;
+}
+
+button.delete-button {
+    color: #ff0000;
+    box-shadow: 1px 1px 2px #ff2000;
+}
+   
 button.unlink-button {
     background: no-repeat url("/static/courses/unlink.png") center/18px,
                 #fff;
@@ -1751,3 +1769,12 @@ button.copy-button {
                 #fff;
 }
     
+button.edit-button {
+    background: no-repeat url("/static/courses/edit_icon_pencil.svg") center/18px,
+                #fff;
+}
+
+hr.hr-evenly-spaced {
+    margin-top: 1em;
+    margin-bottom: 1em;
+}

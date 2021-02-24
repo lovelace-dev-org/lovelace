@@ -1,0 +1,91 @@
+{% extends 'courses/base.html' %}
+
+{% load i18n %}
+
+{% block page-content %}
+  <h1>{{ title }}</h1>
+  
+  
+  <table class="assessment-sheet">
+    {% for section, bullets in bullet_by_section.items %}
+      <tr>
+        <td class="assessment-section-header" colspan=2>
+        <td class="assessment-column staff-buttons">
+            <button type="button"
+                    class="staff-base-button ase-button add-button"
+                    title="{% trans 'Add a new assessment bullet to this section' %}"
+                    onclick="ase.fetch_form(event, this);"
+                    data-url="{% url 'assessment:create_bullet' sheet %}"
+                    data-section="{{ section }}">+
+            </button>
+            <button type="button"
+                    class="staff-base-button ase-button rename-button"
+                    title="{% trans 'Rename this assessment section' %}"
+                    onclick="ase.fetch_form(event, this);"
+                    data-url="{% url 'assessment:rename_section' sheet %}"
+                    data-section="{{ section }}">
+            </button>
+        </td>
+      </tr>
+      {% for bullet in bullets %}
+        <tr>
+          <td class="assessment-column bullet-title">
+            {{ bullet.title }}
+            <img class="ase-drag-target drop-before collapsed" 
+                 src="{% static 'courses/drop_before.png' %}"
+                 ondragover="ase.over_drag_target(event);"
+                 ondrop="ase.drop_to_target(event, {{ bullet.id }});"
+                 ondragleave="ase.leave_drag_target(event);"
+                 data-url="{% url 'assessment:move_bullet' bullet 'before' %}"
+                 data-csrf="{{ csrf_token }}">
+
+            <img class="ase-drag-target drop-after collapsed" 
+                 src="{% static 'courses/drop_after.png' %}"
+                 ondragover="ase.over_drag_target(event);"
+                 ondrop="ase.drop_to_target(event, {{ bullet.id }});"
+                 ondragleave="ase.leave_drag_target(event);"
+                 data-url="{% url 'assessment:move_bullet' bullet 'after' %}"
+                 data-csrf="{{ csrf_token }}">
+          </td>
+          <td class="assessment-column bullet-max-points">{{ bullet.point_value }}</td>
+          <td class="assessment-column bullet-tooltip">{{ bullet.tooltip }}</td>
+          <td class="assessment-column staff-buttons">
+            <button type="button"
+                    class="staff-base-button ase-button add-button"
+                    title="{% trans 'Add a new assessment bullet after this bullet' %}"
+                    onclick="ase.fetch_form(event, this);"
+                    data-url="{% url 'assessment:create_bullet' sheet %}"
+                    data-bullet-id="{{ bullet.id }}">+
+            </button>
+            <button type="button"
+                    class="staff-base-button ase-button move-button"
+                    title="{% trans 'Move bullet by dragging this button' %}"
+                    draggable="true"
+                    ondragstart="ase.start_drag(event, {{ bullet.id }});"
+                    ondragend="ase.end_drag(event);"
+                    data-csrf="{{ csrf_token }}">                    
+            </button>
+            <button type="button"
+                    class="staff-base-button ase-button edit-button"
+                    title="{% trans 'Edit this assessment bullet' %}"
+                    onclick="ase.fetch_form(event, this);"
+                    data-url="{% url 'assessment:edit_bullet' bullet %}"
+                    >
+            </button>
+          </td>
+        </tr>
+      {% endfor%}
+    {% endfor %}
+    <tr>
+        <td class="assessment-footer" colspan="3">
+            <button type="button"
+                    class="staff-base-button ase-button add-button"
+                    title="{% trans 'Add a new assessment section' %}"
+                    onclick="ase.fetch_form(event, this);"
+                    data-url="{% url 'assessment:create_section' sheet %}"
+                    data-section="{{ section }}">+
+            </button>
+        </td>
+    </tr>    
+  </table>
+{% endblock %}

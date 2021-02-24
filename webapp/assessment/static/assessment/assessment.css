@@ -1,0 +1,39 @@
+button.ase-button {
+    float: right;
+}
+
+div.assessment-panel {
+}
+
+div.assessment-sheet, div.assessment-edit-form {
+}
+
+div.assessment-panel ul.assessment-sheet {
+    list-style-type: none;
+    padding-left: 0px;
+    margin-left: 0px;
+}
+
+div.assessment-panel ul.assessment-sheet > li.assessment-section-header {
+    background: #caeaca;
+    border: 2px solid #d0d0d0;
+
+    /*background: linear-gradient(to bottom, #caeaca, #eee);*/
+}
+
+div.assessment-panel ul.assessment-section {
+    list-style-image: url("/static/courses/debug-16.png");
+    padding-left: 30px;
+    margin-left: 0px;
+}
+
+ul.assessment-section > li.assessment-bullet {
+}
+
+li.assessment-bullet span {
+    cursor: help;
+}
+
+form.assessment-staff-form {
+    margin-bottom: 5px;
+}
