@@ -31,7 +31,7 @@ class AssessmentSheet(models.Model):
 class AssessmentBullet(models.Model):
     
     sheet = models.ForeignKey("AssessmentSheet", on_delete=models.CASCADE)
-    point_value = models.DecimalField(max_digits=5, decimal_places=2)
+    point_value = models.FloatField(blank=True, null=False)
     ordinal_number = models.PositiveSmallIntegerField()
     
     # Translatable fields

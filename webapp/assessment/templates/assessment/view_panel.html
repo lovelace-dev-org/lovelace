@@ -6,12 +6,12 @@
 
     <div class="assessment-sheet">
         <ul class="assessment-sheet">
-            {% for section, info in bullets_by_section.items %}
+            {% for name, section in bullets_by_section.items %}
                 <li class="assessment-section-header">
-                    {{ section }} ({{ info.1 }})
+                    {{ name }} ({{ section.total_points }})
                 </li>
                 <ul class="assessment-section">
-                    {% for bullet in info.0 %}
+                    {% for bullet in section.bullets %}
                         <li class="assessment-bullet">
                             <span title="{{ bullet.tooltip }}">
                                 {{ bullet.title }} ({{ bullet.point_value }})

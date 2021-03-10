@@ -894,11 +894,20 @@ class ContentPage(models.Model):
     def save_evaluation(self, user, evaluation, answer_object):
         correct = evaluation["evaluation"]
         if correct == True:
-            points = self.default_points
+            if "points" in evaluation:
+                points = evaluation["points"]
+            else:
+                points = self.default_points
         else:
             points = 0
             
-        evaluation_object = Evaluation(correct=correct, points=points)
+        evaluation_object = Evaluation(
+            correct=correct,
+            points=points,
+            evaluator=evaluation.get("evaluator"),
+            test_results=evaluation.get("test_results", ""),
+            feedback=evaluation.get("feedback", ""),
+        )
         evaluation_object.save()
         answer_object.evaluation = evaluation_object
         answer_object.save()
@@ -1406,15 +1415,17 @@ class FileUploadExercise(ContentPage):
                 
         lang_code = translation.get_language()
         if revision == "head": revision = None
-        result = rpc_tasks.run_tests.delay(
-            user_id=user.id,
-            instance_id=answer_object.instance.id,
-            exercise_id=self.id,
-            answer_id=answer_object.id,
-            lang_code=lang_code,
-            revision=revision
-        )
-        return {"task_id": result.task_id}
+        if self.fileexercisetest_set.get_queryset():
+            result = rpc_tasks.run_tests.delay(
+                user_id=user.id,
+                instance_id=answer_object.instance.id,
+                exercise_id=self.id,
+                answer_id=answer_object.id,
+                lang_code=lang_code,
+                revision=revision
+            )
+            return {"task_id": result.task_id}
+        return {}
 
     def get_user_answers(self, user, instance, ignore_drafts=True):
         if instance is None:
@@ -2332,7 +2343,17 @@ class UserTaskCompletion(models.Model):
     exercise = models.ForeignKey(ContentPage, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     instance = models.ForeignKey(CourseInstance, on_delete=models.CASCADE)
-    state = models.CharField(max_length=16)
+    state = models.CharField(
+        max_length=16,
+        choices=(
+            ("unanswered", "The task has not been answered yet"),
+            ("correct", "The task has been answered correctly"),
+            ("incorrect", "The task has not been answered correctly"),
+            ("credited", "The task has been credited by completing another task"),
+            ("submitted", "An answer has been submitted, awaiting assessment"),
+            ("ongoing", "The task has been started")
+        )
+    )
         
 class InvalidExerciseAnswerException(Exception):
     """

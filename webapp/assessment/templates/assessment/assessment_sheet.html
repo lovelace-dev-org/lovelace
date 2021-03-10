@@ -1,91 +1,89 @@
 {% extends 'courses/base.html' %}
 
 {% load i18n %}
+{% load staticfiles %}
+{% load assessment_tags %}
+
+{% block breadcrumb-links %}
+  <li><a href="{% url 'courses:index' %}">{% trans 'Courses' %}</a></li>
+  <div class="separator">»</div>
+  <li><a href="{% url 'courses:course' course instance %}">{{ course.name }}&nbsp;/&nbsp;{{ instance_name }}</a></li>
+  {% if single_linked %}
+    <div class="separator">»</div>
+    <li><a href="{% url 'courses:content' course instance parent %}">{{ parent.name }}</a></li>
+    <div class="separator">»</div>
+    <li><a href="{% url 'courses:content' course instance parent %}#{{ anchor }}">{{ exercise.name }}</a></li>
+  {% else %}
+    <div class="separator">»</div>
+    <li>{{ exercise.name }}</li>
+  {% endif %}
+  <div class="separator">»</div>
+  <li><a href="{% url 'assessment:submission_assessment' course instance exercise user %}">
+    {% blocktrans with username=user.username exercise_name=exercise.name %}
+        {{ username }}’s assessment for {{ exercise_name }}
+    {% endblocktrans %}
+  </a></li>
+{% endblock %}
+
 
 {% block page-content %}
-  <h1>{{ title }}</h1>
-  
-  
-  <table class="assessment-sheet">
-    {% for section, bullets in bullet_by_section.items %}
-      <tr>
-        <td class="assessment-section-header" colspan=2>
-        <td class="assessment-column staff-buttons">
-            <button type="button"
-                    class="staff-base-button ase-button add-button"
-                    title="{% trans 'Add a new assessment bullet to this section' %}"
-                    onclick="ase.fetch_form(event, this);"
-                    data-url="{% url 'assessment:create_bullet' sheet %}"
-                    data-section="{{ section }}">+
-            </button>
-            <button type="button"
-                    class="staff-base-button ase-button rename-button"
-                    title="{% trans 'Rename this assessment section' %}"
-                    onclick="ase.fetch_form(event, this);"
-                    data-url="{% url 'assessment:rename_section' sheet %}"
-                    data-section="{{ section }}">
-            </button>
-        </td>
-      </tr>
-      {% for bullet in bullets %}
-        <tr>
-          <td class="assessment-column bullet-title">
-            {{ bullet.title }}
-            <img class="ase-drag-target drop-before collapsed" 
-                 src="{% static 'courses/drop_before.png' %}"
-                 ondragover="ase.over_drag_target(event);"
-                 ondrop="ase.drop_to_target(event, {{ bullet.id }});"
-                 ondragleave="ase.leave_drag_target(event);"
-                 data-url="{% url 'assessment:move_bullet' bullet 'before' %}"
-                 data-csrf="{{ csrf_token }}">
+    <h1>
+        {% blocktrans with title=sheet.title username=user.username exercise_name=exercise.name %}
+            {{ title }} of {{ username }}'s answer to {{ exercise_name }} 
+        {% endblocktrans %}
+    </h1>
 
-            <img class="ase-drag-target drop-after collapsed" 
-                 src="{% static 'courses/drop_after.png' %}"
-                 ondragover="ase.over_drag_target(event);"
-                 ondrop="ase.drop_to_target(event, {{ bullet.id }});"
-                 ondragleave="ase.leave_drag_target(event);"
-                 data-url="{% url 'assessment:move_bullet' bullet 'after' %}"
-                 data-csrf="{{ csrf_token }}">
-          </td>
-          <td class="assessment-column bullet-max-points">{{ bullet.point_value }}</td>
-          <td class="assessment-column bullet-tooltip">{{ bullet.tooltip }}</td>
-          <td class="assessment-column staff-buttons">
-            <button type="button"
-                    class="staff-base-button ase-button add-button"
-                    title="{% trans 'Add a new assessment bullet after this bullet' %}"
-                    onclick="ase.fetch_form(event, this);"
-                    data-url="{% url 'assessment:create_bullet' sheet %}"
-                    data-bullet-id="{{ bullet.id }}">+
-            </button>
-            <button type="button"
-                    class="staff-base-button ase-button move-button"
-                    title="{% trans 'Move bullet by dragging this button' %}"
-                    draggable="true"
-                    ondragstart="ase.start_drag(event, {{ bullet.id }});"
-                    ondragend="ase.end_drag(event);"
-                    data-csrf="{{ csrf_token }}">                    
-            </button>
-            <button type="button"
-                    class="staff-base-button ase-button edit-button"
-                    title="{% trans 'Edit this assessment bullet' %}"
-                    onclick="ase.fetch_form(event, this);"
-                    data-url="{% url 'assessment:edit_bullet' bullet %}"
-                    >
-            </button>
-          </td>
-        </tr>
-      {% endfor%}
-    {% endfor %}
-    <tr>
-        <td class="assessment-footer" colspan="3">
-            <button type="button"
-                    class="staff-base-button ase-button add-button"
-                    title="{% trans 'Add a new assessment section' %}"
-                    onclick="ase.fetch_form(event, this);"
-                    data-url="{% url 'assessment:create_section' sheet %}"
-                    data-section="{{ section }}">+
-            </button>
-        </td>
-    </tr>    
-  </table>
+    <form class="assessment-form"
+          method="POST"
+          enctype="multipart/form-data"
+          action="{% url 'assessment:submission_assessment' course instance exercise user %}">
+          
+        {% csrf_token %}
+    
+        <table class="assessment-table">
+            <tr>
+                <th colspan="2"></th>
+                <th>points</th>
+                <th>max</th>
+                <th>comment</th>        
+            </tr>
+            
+            {% for name, section in bullets_by_section.items %}
+                <tr class="assessment-section">
+                    <td colspan="2">{{ name }}</td>
+                    <td>{{ section.scored_points }}</td>
+                    <td>{{ section.total_points }}</td>
+                    <td></td>
+                </tr>
+                {% for bullet in section.bullets %}
+                    <tr class="assessment-bullet">
+                        <td><img src="{% static 'courses/debug-16.png' %}"></td>
+                        <td>
+                            <span class="bullet-title" title="{{ bullet.tooltip }}">
+                                {{ bullet.title }}
+                            </span>
+                        </td>
+                        <td>
+                            {{ form|points_widget:bullet }}
+                        </td>
+                        <td>{{ bullet.point_value }}</td>
+                        <td>
+                            {{ form|comment_widget:bullet }}
+                        </td>
+                    </tr>
+                {% endfor %}
+            {% endfor %}
+        </table>
+        
+        <div class="input-label-container">
+            {{ form.correct.label_tag }} {{ form.correct }}
+        </div>
+        <input type="submit" name="submit" value="{% trans 'Save' %}"></input>
+    </form>
+    
+    <script>
+        $(".assessment-form").submit(ase.submit_assessment);
+    </script>
+    
 {% endblock %}
+

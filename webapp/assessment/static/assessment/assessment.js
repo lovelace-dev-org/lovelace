@@ -55,6 +55,13 @@ var ase = {
         submit_ajax_form(form, process_success);
     },
     
+    submit_assessment: function(event) {
+        event.preventDefault();
+        let form = $(this);
+        
+        submit_ajax_form(form, function() {});
+    },
+    
     reload_panel: function(panel_div) {
         let url = panel_div.attr("data-source-url");
         

@@ -193,7 +193,10 @@ def run_tests(self, user_id, instance_id, exercise_id, answer_id, lang_code, rev
 
     evaluation_obj = exercise_object.save_evaluation(
         user_object,
-        {"evaluation": correct},
+        {
+            "evaluation": correct,
+            "test_results": result_string
+        },
         answer_object
     )
 

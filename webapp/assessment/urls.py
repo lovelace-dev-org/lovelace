@@ -8,7 +8,6 @@ app_name = "assessment"
 register_model_converter(AssessmentSheet, name="sheet")
 register_model_converter(AssessmentBullet, name="bullet")
 
-
 urlpatterns = [
     path(
         "<course:course>/<instance:instance>/<content:content>/manage/",
@@ -50,9 +49,23 @@ urlpatterns = [
         name="delete_bullet"
     ),
     path(
-        "<course:course>/<instance:instance>/<content:content>/",
+        "<course:course>/<instance:instance>/<content:content>/view/",
         views.view_assessment,
         name="view_assessment"
     ),
-    
+    path(
+        "<course:course>/<instance:instance>/<content:content>/submissions/",
+        views.view_submissions,
+        name="view_submissions"
+    ),
+    path(
+        "<course:course>/<instance:instance>/<content:exercise>/<user:user>/",
+        views.submission_assessment,
+        name="submission_assessment"
+    ),    
+    path(
+        "<user:user>/<course:course>/<instance:instance>/<content:exercise>/<answer:answer>/",
+        views.view_assessment,
+        name="view_assessment"
+    ),    
 ]

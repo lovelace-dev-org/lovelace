@@ -20,6 +20,9 @@
         {% elif evaluation == "credited" %}
           <img src="{% static 'courses/credited-96.png' %}" width="96" height="96" alt="✔"
              title="{% trans 'You have answered another exercise in this set correctly' %}" class="credited">
+        {% elif evaluation == "submitted" %}
+          <img src="{% static 'courses/submitted-96.png' %}" width="96" height="96" alt="->"
+             title="{% trans 'Your submitted answer is waiting for staff assessment' %}" class="submitted">
         {% endif %}
 
         {% comment %}
@@ -81,6 +84,11 @@
                 {% trans 'Edit this exercise' %}
             </a></div></li>
             {% if content.manually_evaluated %}
+                <li><div>
+                    <a href="{% url 'assessment:view_submissions' course instance content %}">
+                        {% trans 'View Submissions' %}
+                    </a>
+                </div></li>
                 <li><div>
                     <a id="{{ content.slug }}-faq-panel-link"
                        class="assessment-panel-link"

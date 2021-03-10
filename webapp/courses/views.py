@@ -358,10 +358,25 @@ def check_answer(request, course, instance, content, revision):
         if exercise.content_type == "FILE_UPLOAD_EXERCISE":
             task_id = evaluation["task_id"]
             return check_progress(request, course, instance, content, revision, task_id)
-        exercise.save_evaluation(content, user, evaluation, answer_object)
+        else:
+            exercise.save_evaluation(content, user, evaluation, answer_object)
         evaluation["manual"] = False
     else:
         evaluation["manual"] = True
+        try:
+            completion = UserTaskCompletion.objects.get(
+                exercise=content,
+                instance=answer_object.instance,
+                user=user
+            )
+        except UserTaskCompletion.DoesNotExist:
+            completion = UserTaskCompletion(
+                exercise=content,
+                instance=answer_object.instance,
+                user=user
+            )
+            completion.state = "submitted"
+            completion.save()
 
     msg_context = {
         'course_slug': course.slug,

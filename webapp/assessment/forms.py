@@ -63,21 +63,68 @@ class NewBulletForm(TranslationModelForm):
     )
     
 
+_score_errors = {
+    "required": _("required"),
+    "max_value": _("> max"),
+    "min_value": _("< 0"),
+}
+
 class AssessmentForm(forms.Form):
+
+    correct = forms.BooleanField(
+        label=_("Mark this assessment as correct"),
+        required=False
+    )
+    
+    def points_widget(self, bullet):
+        return self["bullet-{}-points".format(bullet.id)]
+        
+    def comment_widget(self, bullet):
+        return self["bullet-{}-comment".format(bullet.id)]
+    
+    def get_initial_for_field(self, field, field_name):
+        default_value = super().get_initial_for_field(field, field_name)
+        if self._assessment:
+            try:
+                _, id_str, ftype = field_name.split("-")
+            except ValueError:
+                if field_name == "correct":
+                    return self._assessment.get("correct", False)
+                return default_value
+                
+            if ftype == "points":
+                default_value = self._assessment["bullet_index"][id_str]["scored_points"]
+            elif ftype == "comment":
+                default_value = self._assessment["bullet_index"][id_str]["comment"]
+            
+        return default_value
     
     def __init__(self, *args, **kwargs):
-        bullets = kwargs.pop("bullets")
+        bullets_by_section = kwargs.pop("by_section")
+        try:
+            self._assessment = kwargs.pop("assessment")
+        except KeyError:
+            self._assessment = {}
         super().__init__(*args, **kwargs)
         
-        for bullet in bullets.order_by("section", "ordinal_number"):
-            self.fields["bullet-{}-points".format(bullet.id)] = fields.DecimalField(
-                max_digits=5,
-                decimal_places=2,
-                label=bullet.title,
-            )
-            self.fields["bullet-{}-comment".format(bullet.id)] = fields.TextField(
-                widget=forms.TextInput,
-            )
+        for name, section in bullets_by_section.items():
+            for bullet in section["bullets"]:
+            
+                self.fields["bullet-{}-points".format(bullet.id)] = fields.FloatField(
+                    max_value= bullet.point_value,
+                    min_value=0,
+                    label=bullet.title,
+                    help_text=bullet.tooltip,
+                    widget=forms.TextInput(attrs={"class": "points-input"}),
+                    required=False,
+                    error_messages=_score_errors
+                )
+                self.fields["bullet-{}-comment".format(bullet.id)] = fields.CharField(
+                    widget=forms.TextInput(attrs={"class": "comment-input"}),
+                    required=False
+                )
+                
+                
 
         
 class AssessmentBulletForm(TranslationModelForm):

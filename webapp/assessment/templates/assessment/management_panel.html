@@ -18,15 +18,15 @@
             <h2 class="assessment-form-title">{{ sheet.title }}</h2>
 
             <ul class="assessment-sheet">
-                {% for section, info in bullets_by_section.items %}
+                {% for name, section in bullets_by_section.items %}
                     <li class="assessment-section-header">
-                        {{ section }} ({{ info.1 }})
+                        {{ name }} ({{ section.total_points }})
                         <button type="button"
                                 class="staff-base-button ase-button add-button"
                                 title="{% trans 'Add a new assessment bullet to this section' %}"
                                 onclick="ase.fetch_form(event, this);"
                                 data-url="{% url 'assessment:create_bullet' course instance sheet %}"
-                                data-section="{{ section }}">+
+                                data-section="{{ name }}">+
                         </button>
                         <button type="button"
                                 class="staff-base-button ase-button delete-button"
@@ -40,11 +40,11 @@
                                 title="{% trans 'Rename this assessment section' %}"
                                 onclick="ase.fetch_form(event, this);"
                                 data-url="{% url 'assessment:rename_section' course instance sheet %}"
-                                data-section="{{ section }}">
+                                data-section="{{ name }}">
                         </button>
                     </li>
                     <ul class="assessment-section">
-                        {% for bullet in info.0 %}                      
+                        {% for bullet in section.bullets %}
                             <li class="assessment-bullet">
                                 <span title="{{ bullet.tooltip }}">
                                     {{ bullet.title }} ({{ bullet.point_value }})
@@ -69,7 +69,7 @@
                                         onclick="ase.fetch_form(event, this);"
                                         data-url="{% url 'assessment:create_bullet' course instance sheet %}"
                                         data-bullet-id="{{ bullet.id }}"
-                                        data-section="{{ section }}">+
+                                        data-section="{{ name }}">+
                                 </button>
                                 <button type="button"
                                         class="staff-base-button ase-button delete-button"
@@ -102,7 +102,7 @@
                     title="{% trans 'Add a new assessment section' %}"
                     onclick="ase.fetch_form(event, this);"
                     data-url="{% url 'assessment:create_section' course instance sheet %}"
-                    data-section="{{ section }}">+
+                    data-section="{{ name }}">+
             </button>
         </div>
     {% endif %}

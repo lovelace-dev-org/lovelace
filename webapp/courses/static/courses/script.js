@@ -135,6 +135,8 @@ function build_toc(static_root_url) {
                 icon = static_root_url + "unanswered-16.png";
             else if (status == "credited")
                 icon = static_root_url + "credited-16.png";
+            else if (status == "submitted")
+                icon = static_root_url + "submitted-16.png";
             icon_img = $(document.createElement("img"));
             icon_img.attr("src", icon);
         }
@@ -326,6 +328,7 @@ function expand_next_div(caller) {
 function submit_ajax_form(form, success_extra_cb) {
     let url = form.attr('action');
     $("body").css("cursor", "progress");
+    $(".ajax-form-error").remove();
     
     $.ajax({
         type: form.attr('method'),
@@ -352,7 +355,6 @@ function submit_ajax_form(form, success_extra_cb) {
                         form.prepend(espan);
                     }
                 });
-                
             }
         },
         complete: function(jqxhr, status) {

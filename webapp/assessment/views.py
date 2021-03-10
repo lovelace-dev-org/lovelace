@@ -1,36 +1,36 @@
+import json
 import redis
 import reversion
 from django.conf import settings
-from django.http import HttpResponse, HttpResponseNotFound, JsonResponse
+from django.db.models import Prefetch
+from django.http import HttpResponse, HttpResponseForbidden, HttpResponseNotFound, JsonResponse
 from django.shortcuts import render
 from django.template import Template, loader, engines
 from django.urls import reverse
 from django.utils.translation import ugettext as _
 
+from courses.models import Evaluation, UserAnswer, UserTaskCompletion
+
 from assessment.models import *
 from assessment.forms import *
-from assessment.utils import get_bullets_by_section
+from assessment.utils import get_sectioned_sheet, serializable_assessment
 
 from utils.access import is_course_staff, ensure_owner_or_staff, ensure_enrolled_or_staff, ensure_staff
 from utils.archive import get_archived_instances
 
-# Create your views here.
-@ensure_staff
-def evaluate_submission(request, user, course, instance, content):
-    pass
-    
 def view_assessment(request, course, instance, content):
-    link = AssessmentToExerciseLink.objects.filter(
+    sheet_link = AssessmentToExerciseLink.objects.filter(
         exercise=content,
         instance=instance,
     ).first()
-    if link:
-        by_section = get_bullets_by_section(link)
+    if sheet_link:
+        sheet, by_section = get_sectioned_sheet(sheet_link)
     else:
         by_section = {}
+        sheet = None
     panel_t = loader.get_template("assessment/view_panel.html")
     panel_c = {
-        "sheet": link.sheet,
+        "sheet": sheet,
         "bullets_by_section": by_section
     }
     return HttpResponse(panel_t.render(panel_c, request))
@@ -39,7 +39,7 @@ def view_assessment(request, course, instance, content):
 @ensure_staff
 def manage_assessment(request, course, instance, content):
     course_sheets = AssessmentSheet.objects.filter(course=course)
-    link = AssessmentToExerciseLink.objects.filter(
+    sheet_link = AssessmentToExerciseLink.objects.filter(
         exercise=content,
         instance=instance,
     ).first()
@@ -58,16 +58,16 @@ def manage_assessment(request, course, instance, content):
                         setattr(sheet, field, form.cleaned_data[field])
                     sheet.save()
                     reversion.set_user(request.user)
-            if not link:
-                link = AssessmentToExerciseLink(
+            if not sheet_link:
+                sheet_link = AssessmentToExerciseLink(
                     exercise=content,
                     instance=instance,
                     sheet=sheet,
                     revision=None
                 )
             else:
-                link.sheet = sheet                
-            link.save()
+                sheet_link.sheet = sheet                
+            sheet_link.save()
             return JsonResponse({"status": "ok"})
         else:
             errors = form.errors.as_json()
@@ -87,17 +87,18 @@ def manage_assessment(request, course, instance, content):
             "disclaimer": _("Add a new or existing assessment sheet to be used for this exercise.")
         }
         form_html = form_t.render(form_c, request)
-        if link:
-            by_section = get_bullets_by_section(link)
+        if sheet_link:
+            sheet, by_section = get_sectioned_sheet(sheet_link)
         else:
             by_section = {}
+            sheet = None
         panel_t = loader.get_template("assessment/management_panel.html")
         panel_c = {
             "course": course,
             "instance": instance,
             "exercise": content,
             "top_form": form_html,
-            "sheet": link.sheet,
+            "sheet": sheet,
             "bullets_by_section": by_section
         }
         return HttpResponse(panel_t.render(panel_c, request))
@@ -305,9 +306,123 @@ def delete_bullet(request, course, instance, sheet, bullet):
         return HttpResponseNotAllowed(["POST"])
     
 @ensure_staff
-def view_submissions(request, course, instance, exercise):
-    pass
+def view_submissions(request, course, instance, content):
+    users = instance.enrolled_users.get_queryset().order_by(
+        "last_name", "first_name", "username"
+    ).all()
+    all = UserTaskCompletion.objects.filter(
+        instance=instance,
+        exercise=content,
+    ).prefetch_related(Prefetch("user", queryset=users))
+    assessed = []
+    unassessed = []
+    for completion in all:
+        entry = {}
+        entry["students"] = "{} {} ({})".format(
+            completion.user.last_name,
+            completion.user.first_name,
+            completion.user.username
+        )
+        href_args = {
+            "user": completion.user,
+            "course": course,
+            "instance": instance,
+            "exercise": content
+        }
+        entry["answers_url"] = reverse("courses:show_answers", kwargs=href_args)
+        entry["assessment_url"] = reverse("assessment:submission_assessment", kwargs=href_args)
+        if completion.state in ["correct", "incorrect"]:
+            evaluated_answer = UserAnswer.get_task_answers(
+                content, instance, completion.user
+            ).exclude(evaluation=None).latest("answer_date")
+            entry["total_points"] = evaluated_answer.evaluation.points
+            assessed.append(entry)
+        else:
+            unassessed.append(entry)
+        
+    t = loader.get_template("assessment/submissions.html")
+    c = {
+        "course": course,
+        "instance": instance,
+        "exercise": content,
+        "assessed": assessed,
+        "unassessed": unassessed,        
+    }
+    return HttpResponse(t.render(c, request))
+            
+@ensure_staff
+def submission_assessment(request, course, instance, exercise, user):
+    try:
+        sheet_link = AssessmentToExerciseLink.objects.get(
+            instance=instance,
+            exercise=exercise
+        )
+    except AssessmentToExerciseLink.DoesNotExist:
+        return HttpResponseNotFound(_("Assessment sheet for this exercise doesn't exist"))
     
+    sheet, by_section = get_sectioned_sheet(sheet_link)
+
+    if request.method == "POST":
+        form = AssessmentForm(request.POST, by_section=by_section)
+        if form.is_valid():
+            assessment = serializable_assessment(
+                request.user, sheet, by_section, form.cleaned_data
+            )
+            answer_object = UserAnswer.get_task_answers(exercise, instance, user).latest("answer_date")
+            exercise.save_evaluation(
+                user,
+                {
+                    "evaluation": form.cleaned_data.get("correct", False),
+                    "evaluator": request.user,
+                    "points": assessment["total_score"],
+                    "feedback": json.dumps(assessment)
+                },
+                answer_object
+            )
+            return JsonResponse({"status": "ok"})
+        else:
+            errors = form.errors.as_json()
+            return JsonResponse({"errors": errors}, status=400)
+    else:
+        try:
+            evaluated_answer = UserAnswer.get_task_answers(
+                exercise, instance, user
+            ).exclude(evaluation=None).latest("answer_date")
+            assessment = json.loads(evaluated_answer.evaluation.feedback)
+        except (UserAnswer.DoesNotExist, json.JSONDecodeError):
+            evaluated_answer = None
+            assessment = {}
     
+        form = AssessmentForm(by_section=by_section, assessment=assessment)
+        c = {
+            "course": course,
+            "instance": instance,
+            "exercise": exercise,
+            "user": user,
+            "sheet": sheet,
+            "bullets_by_section": by_section,
+            "assessment": assessment,
+            "form": form,
+        }
+            
+        t = loader.get_template("assessment/assessment_sheet.html")
+        return HttpResponse(t.render(c, request))
     
+@ensure_owner_or_staff
+def view_assessment(request, user, course, instance, exercise, answer):
+    if not exercise.manually_evaluated:
+        return HttpResponseNotFound(_("This exercise does not have manual assessment."))
+    
+    try:
+        assessment = json.loads(answer.evaluation.feedback)
+    except AttributeError:
+        return HttpResponseNotFound(_("This answer has not been evaluated"))
+    except json.JSONDecodeError:
+        return HttpResponseNotFound(_("Assessment not found"))
+        
+    t = loader.get_template("assessment/assessment_view.html")
+    c = {
+        "document" : assessment
+    }
+    return HttpResponse(t.render(c, request))
     

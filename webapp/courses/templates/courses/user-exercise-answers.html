@@ -113,11 +113,18 @@
       {% else %}
         <span title="{% trans 'Unknown' %}">?</span>
       {% endif %}
-      {% if answer.evaluation.test_results %}
+      {% if answer.evaluation.feedback %}
+        <a href="{% url 'assessment:view_assessment' student course instance exercise answer %}"
+               onclick="show_results(event, this, 'results-{{ answer.id }}');">
+               {% trans 'View assessment' %}
+        </a>        
+      {% elif answer.evaluation.test_results %}
         <a href="{% url 'courses:get_file_exercise_evaluation' student course instance exercise answer %}"
-           onclick="show_results(event, this, 'results-{{ answer.id }}');">{% trans 'View results' %}</a>
-        <div class="popup"><div class="results-view" id="results-{{ answer.id }}"></div></div>
+               onclick="show_results(event, this, 'results-{{ answer.id }}');">
+               {% trans 'View results' %}
+        </a>
       {% endif %}
+      <div class="popup"><div class="results-view" id="results-{{ answer.id }}"></div></div>
     </td>
     <td class="permalink">
       <a href="#{{ answer.id }}">&para;</a> | <a target="_blank" rel="noopener noreferrer" href="mailto:{{ instance_email }}?subject={{ instance_name|urlencode }}%20-%20{{ exercise_title|urlencode }}{% autoescape off %}&body={% endautoescape %}{{ answers_url|urlencode }}%23{{ answer.id }}" title="{% trans 'Send course staff a question about this answer' %}">{% trans 'Help!' %}</a>

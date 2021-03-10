@@ -92,7 +92,6 @@ var toc = {
         submit_ajax_form(form, process_success);
     },
         
-    
     start_drag: function(event, node_id) {
         $(".toc-form").remove();
         
@@ -103,7 +102,6 @@ var toc = {
                 
         $(".toc-drag-target").removeClass("collapsed");
         event.dataTransfer.setData("node", node_id);
-        console.log($(event.target).parent());
         toc.dragged_li = $(event.target).parent();
         event.dataTransfer.effectAllowed = "move";
     },
@@ -113,14 +111,12 @@ var toc = {
     },
     
     over_drag_target: function(event) {        
-        
         event.preventDefault();
         $(event.target).addClass("highlighted");
         event.dataTransfer.dropEffect = "move";
     },
 
-    leave_drag_target: function(event) {        
-        
+    leave_drag_target: function(event) {
         event.preventDefault();
         $(event.target).removeClass("highlighted");
     },
