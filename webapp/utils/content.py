@@ -39,6 +39,15 @@ def get_course_instance_tasks(instance, deadline_before=None):
 
     return task_pages
 
+def get_embedded_parent(content, instance):
+    try:
+        link = cm.EmbeddedLink.objects.get(embedded_page=content, instance=instance)
+    except cm.EmbeddedLink.MultipleObjectsReturned:
+        return None, False
+    else:
+        return link.parent, True
+    
+
 # Modified from reversion.models.Revision.revert
 def get_archived_instances(main_obj, revision_id):
     revision = Revision.objects.get(id=revision_id)

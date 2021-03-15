@@ -41,38 +41,51 @@
         {% csrf_token %}
     
         <table class="assessment-table">
-            <tr>
-                <th colspan="2"></th>
-                <th>points</th>
-                <th>max</th>
-                <th>comment</th>        
-            </tr>
-            
-            {% for name, section in bullets_by_section.items %}
-                <tr class="assessment-section">
-                    <td colspan="2">{{ name }}</td>
-                    <td>{{ section.scored_points }}</td>
-                    <td>{{ section.total_points }}</td>
+            <thead>
+                <tr>
+                    <th></th>
+                    <th></th>
+                    <th>points</th>
+                    <th>max</th>
+                    <th>comment</th>        
+                </tr>
+            </thead>
+            <tbody>
+                {% for name, section in bullets_by_section.items %}
+                    <tr class="assessment-section">
+                        <td colspan="2">{{ name }}</td>
+                        <td class="center-align">{{ section.section_points }}</td>
+                        <td class="center-align">{{ section.total_points }}</td>
+                        <td></td>
+                    </tr>
+                    {% for bullet in section.bullets %}
+                        <tr class="assessment-bullet">
+                            <td><img src="{% static 'courses/debug-16.png' %}"></td>
+                            <td>
+                                <span class="bullet-title" title="{{ bullet.tooltip }}">
+                                    {{ bullet.title }}
+                                </span>
+                            </td>
+                            <td>
+                                {{ form|points_widget:bullet }}
+                            </td>
+                            <td class="center-align">{{ bullet.point_value }}</td>
+                            <td>
+                                {{ form|comment_widget:bullet }}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td class="center-align">{{ total_score }}</td>
+                    <td class="center-align">{{ max_score }}</td>
                     <td></td>
                 </tr>
-                {% for bullet in section.bullets %}
-                    <tr class="assessment-bullet">
-                        <td><img src="{% static 'courses/debug-16.png' %}"></td>
-                        <td>
-                            <span class="bullet-title" title="{{ bullet.tooltip }}">
-                                {{ bullet.title }}
-                            </span>
-                        </td>
-                        <td>
-                            {{ form|points_widget:bullet }}
-                        </td>
-                        <td>{{ bullet.point_value }}</td>
-                        <td>
-                            {{ form|comment_widget:bullet }}
-                        </td>
-                    </tr>
-                {% endfor %}
-            {% endfor %}
+            </tfoot>
         </table>
         
         <div class="input-label-container">
@@ -83,6 +96,7 @@
     
     <script>
         $(".assessment-form").submit(ase.submit_assessment);
+        $(".points-input").change(ase.update_section_score);
     </script>
     
 {% endblock %}

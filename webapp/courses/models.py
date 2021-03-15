@@ -911,6 +911,7 @@ class ContentPage(models.Model):
         evaluation_object.save()
         answer_object.evaluation = evaluation_object
         answer_object.save()
+        
         try:
             completion = UserTaskCompletion.objects.get(
                 exercise=self,
@@ -923,7 +924,10 @@ class ContentPage(models.Model):
                 instance=answer_object.instance,
                 user=user
             )
-            completion.state = ["incorrect", "correct"][correct]
+            if evaluation["manual"]:
+                completion.state = "submitted"
+            else:
+                completion.state = ["incorrect", "correct"][correct]
             completion.save()
         else:
             if completion.state != "correct":

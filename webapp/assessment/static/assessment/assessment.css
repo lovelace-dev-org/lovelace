@@ -43,15 +43,62 @@ form.assessment-staff-form {
 }
 
 input.points-input {
-    width: 4em;
+    width: 100%;
+    text-align: center;
 }
 
 input.comment-input {
     width: 100%;
 }
 
-table.assessment-table td:last-child {
+div.assessment-sheet table.assessment-table,
+form.assessment-form table.assessment-table {
+    table-layout: fixed;
     width: 100%;
+    border-collapse: collapse;
+    border: none;
+}
+
+div.assessment-sheet table.assessment-table td,
+div.assessment-sheet table.assessment-table th,
+form.assessment-form table.assessment-table td,
+form.assessment-form table.assessment-table th {
+    border: none;
+}
+
+table.assessment-table tr.assessment-section {
+    background: #caeaca;
+    border: 2px solid #d0d0d0;
+} 
+
+table.assessment-table th:nth-child(1) {
+    width: 25px;
+}
+
+table.assessment-table th:nth-child(2) {
+    width: 25%;
+}
+
+table.assessment-table th:nth-child(3) {
+    text-align: center;
+    width: 7%;
+}
+
+table.assessment-table th:nth-child(4) {
+    text-align: center;
+    width: 5%;
+}
+
+table.assessment-table th:nth-child(5) {
+    width: 55%;
+}
+
+table.assessment-table .center-align {
+    text-align: center;
+}
+
+table.assessment-table tfoot td {
+    font-weight: bold;
 }
 
 

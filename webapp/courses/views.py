@@ -49,7 +49,7 @@ from django.shortcuts import redirect
 
 from utils.access import is_course_staff, determine_media_access, ensure_enrolled_or_staff, ensure_owner_or_staff, determine_access, ensure_staff
 from utils.archive import find_version_with_filename
-from utils.content import first_title_from_content
+from utils.content import first_title_from_content, get_embedded_parent
 from utils.files import generate_download_response
 from utils.management import CourseContentAdmin
 from utils.notify import send_error_report, send_welcome_email
@@ -291,6 +291,7 @@ def check_answer_sandboxed(request, content_slug):
             'result': str(e)
         })
     evaluation = exercise.check_answer(user, ip, answer, files, answer_object)
+
     if not exercise.manually_evaluated:
         if exercise.content_type == "FILE_UPLOAD_EXERCISE":
             task_id = evaluation["task_id"]
@@ -353,30 +354,21 @@ def check_answer(request, course, instance, content, revision):
         return JsonResponse({
             'result': str(e)
         })
+    
     evaluation = exercise.check_answer(content, user, ip, answer, files, answer_object, revision)
-    if not exercise.manually_evaluated:
+    if exercise.manually_evaluated:
+        evaluation["manual"] = True
+        evaluation["correct"] = False
+        if exercise.content_type == "FILE_UPLOAD_EXERCISE":
+            task_id = evaluation["task_id"]
+            return check_progress(request, course, instance, content, revision, task_id)        
+    else:    
+        evaluation["manual"] = False
         if exercise.content_type == "FILE_UPLOAD_EXERCISE":
             task_id = evaluation["task_id"]
             return check_progress(request, course, instance, content, revision, task_id)
         else:
-            exercise.save_evaluation(content, user, evaluation, answer_object)
-        evaluation["manual"] = False
-    else:
-        evaluation["manual"] = True
-        try:
-            completion = UserTaskCompletion.objects.get(
-                exercise=content,
-                instance=answer_object.instance,
-                user=user
-            )
-        except UserTaskCompletion.DoesNotExist:
-            completion = UserTaskCompletion(
-                exercise=content,
-                instance=answer_object.instance,
-                user=user
-            )
-            completion.state = "submitted"
-            completion.save()
+            exercise.save_evaluation(user, evaluation, answer_object)
 
     msg_context = {
         'course_slug': course.slug,
@@ -1062,15 +1054,8 @@ def show_answers(request, user, course, instance, exercise):
 
     answers = answers.order_by('-answer_date')
 
-    try:
-        link = EmbeddedLink.objects.get(embedded_page=exercise, instance=instance)
-    except EmbeddedLink.MultipleObjectsReturned:
-        parent = None
-        single_linked = False
-    else:
-        parent = link.parent
-        single_linked = True
-
+    parent, single_linked = get_embedded_parent(exercise, instance)
+    
     title, anchor = first_title_from_content(exercise.content)
 
     # TODO: Own subtemplates for each of the exercise types.

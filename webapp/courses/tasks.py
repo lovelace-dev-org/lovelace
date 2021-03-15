@@ -195,7 +195,8 @@ def run_tests(self, user_id, instance_id, exercise_id, answer_id, lang_code, rev
         user_object,
         {
             "evaluation": correct,
-            "test_results": result_string
+            "test_results": result_string,
+            "manual": exercise_object.manually_evaluated
         },
         answer_object
     )

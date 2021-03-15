@@ -16,12 +16,13 @@ def get_sectioned_sheet(link):
     by_section = {}
     if link.revision is None:
         sheet = link.sheet
-        bullets = sheet.assessmentbullet_set.get_queryset().order_by("section", "ordinal_number")
+        bullets = list(sheet.assessmentbullet_set.get_queryset().all())
     else:
         old_sheet = get_archived_instances(link.sheet, link.revision)
         sheet = old_sheet["self"]
         bullets = old_sheet["assessmentbullet_set"]
-        bullets.sort(key=lambda b: (b.section, b.ordinal_number))
+        
+    bullets.sort(key=lambda b: (b.section, b.ordinal_number))
     
     for bullet in bullets:
         try:
@@ -47,9 +48,10 @@ def serializable_assessment(user, sheet, bullets_by_section, cleaned_data):
         "sections": [],
         "bullet_index": {},
         "total_score": 0,
+        "max_total": 0,
         "correct": cleaned_data["correct"],
     }
-    
+        
     for name, section in bullets_by_section.items():
         section_doc = {
             "name": name,
@@ -71,6 +73,6 @@ def serializable_assessment(user, sheet, bullets_by_section, cleaned_data):
                         
         document["total_score"] += section_doc["section_points"]
         document["sections"].append(section_doc)
+        document["max_total"] += section["total_points"]
         
-    return document
-        
+    return document        

@@ -167,5 +167,20 @@ var ase = {
             }
         });
     },
+    
+    update_section_score: function(event) {
+        let widget = $(this);
+        let section = widget.parent().parent().prevAll(".assessment-section").first();
+        let bullets = section.nextUntil("tr.assessment-section");
+        let total = 0;
+        bullets.each(function (bullet) {
+            let points = $(this).find("input").first().val();
+            if (points) {
+                total += parseFloat(points);
+            }
+        });
+        console.log(total);
+        section.children("td").eq(1).html(total);
+    }
 }
 
