@@ -367,8 +367,8 @@ def check_answer(request, course, instance, content, revision):
         if exercise.content_type == "FILE_UPLOAD_EXERCISE":
             task_id = evaluation["task_id"]
             return check_progress(request, course, instance, content, revision, task_id)
-        else:
-            exercise.save_evaluation(user, evaluation, answer_object)
+    
+    exercise.save_evaluation(user, evaluation, answer_object)
 
     msg_context = {
         'course_slug': course.slug,
@@ -392,10 +392,14 @@ def check_answer(request, course, instance, content, revision):
         'hints': hints,
         'evaluation': evaluation.get("evaluation"),
         'answer_count_str': answer_count_str,
-        'next_instance': evaluation.get('next_instance', None),
-        'total_instances': evaluation.get('total_instances', None),
         'total_evaluation': total_evaluation,
+        'manual': exercise.manually_evaluated
     }
+    if "next_instance" in evaluation:
+        data["next_instance"] = evaluation["next_instance"]
+    if "total_instances" in evaluation:
+        data["total_instances"] = evaluation["next_instance"]
+    
     return JsonResponse(data)
 
 
@@ -560,6 +564,7 @@ def file_exercise_evaluation(request, course, instance, content, revision, task_
             send_error_report(instance, content, revision, errors, answer_url)
         
     data["answer_count_str"] = answer_count_str
+    data["manual"] = content.manually_evaluated
     
     return JsonResponse(data)
 
@@ -596,8 +601,10 @@ def compile_evaluation_data(request, evaluation_tree, evaluation_obj, context=No
     t_exercise = loader.get_template("courses/exercise-evaluation.html")
     c_exercise = {
         'evaluation': evaluation_obj.correct,
+        'manual': context["content_page"].manually_evaluated
     }
     t_messages = loader.get_template('courses/exercise-evaluation-messages.html')
+
     data = {
         'file_tabs': t_file.render(c_file, request),
         'result': t_exercise.render(c_exercise),

@@ -170,7 +170,7 @@ var ase = {
     
     update_section_score: function(event) {
         let widget = $(this);
-        let section = widget.parent().parent().prevAll(".assessment-section").first();
+        let section = widget.parent().parent().prevAll(".assessment-section").first();        
         let bullets = section.nextUntil("tr.assessment-section");
         let total = 0;
         bullets.each(function (bullet) {
@@ -179,8 +179,23 @@ var ase = {
                 total += parseFloat(points);
             }
         });
-        console.log(total);
+        let old_section_score = parseFloat(section.children("td").eq(1).html())
         section.children("td").eq(1).html(total);
-    }
+        let total_td = $("tfoot > tr > td").eq(2)
+        let old_total = parseFloat(total_td.html())
+        total_td.html(old_total - old_section_score + total);
+    },
+    
+    update_exercise(event, caller) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        let button = $(caller);
+        process_success = function(data) {
+            button.after("<div>OK</div>");
+        }
+        
+        submit_ajax_delete(button, process_success)
+    },
 }
 

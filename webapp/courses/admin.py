@@ -200,7 +200,7 @@ class TextfieldExerciseAdmin(CourseContentAdmin, TranslationAdmin, VersionAdmin)
 
     fieldsets = [
         ('Page information',   {'fields': ['name', 'slug', 'content', 'question', 'tags']}),
-        ('Exercise miscellaneous', {'fields': ['default_points', 'evaluation_group'],
+        ('Exercise miscellaneous', {'fields': ['default_points', 'manually_evaluated', 'evaluation_group'],
                                 'classes': ['wide']}),
         ('Feedback settings',  {'fields': ['feedback_questions']}),
     ]

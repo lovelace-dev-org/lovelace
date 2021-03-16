@@ -9,7 +9,7 @@ from django.template import Template, loader, engines
 from django.urls import reverse
 from django.utils.translation import ugettext as _
 
-from courses.models import Evaluation, UserAnswer, UserTaskCompletion
+from courses.models import EmbeddedLink, Evaluation, UserAnswer, UserTaskCompletion
 
 from assessment.models import *
 from assessment.forms import *
@@ -17,6 +17,7 @@ from assessment.utils import get_sectioned_sheet, serializable_assessment
 
 from utils.access import is_course_staff, ensure_owner_or_staff, ensure_enrolled_or_staff, ensure_staff
 from utils.archive import get_archived_instances
+from utils.content import get_embedded_parent
 
 def view_assessment(request, course, instance, content):
     sheet_link = AssessmentToExerciseLink.objects.filter(
@@ -306,6 +307,20 @@ def delete_bullet(request, course, instance, sheet, bullet):
         return HttpResponseNotAllowed(["POST"])
     
 @ensure_staff
+def update_exercise_points(request, course, instance, content, sheet):
+    sheet_link = AssessmentToExerciseLink.objects.filter(
+        exercise=content,
+        instance=instance,
+    ).first()
+
+    with reversion.create_revision():
+        content.default_points = sheet_link.calculate_max_score()
+        content.save()
+        reversion.set_user(request.user)
+    
+    return JsonResponse({"status": "ok"})
+    
+@ensure_staff
 def view_submissions(request, course, instance, content):
     users = instance.enrolled_users.get_queryset().order_by(
         "last_name", "first_name", "username"
@@ -334,17 +349,21 @@ def view_submissions(request, course, instance, content):
         if completion.state in ["correct", "incorrect"]:
             evaluated_answer = UserAnswer.get_task_answers(
                 content, instance, completion.user
-            ).exclude(evaluation=None).latest("answer_date")
+            ).exclude(evaluation=None).exclude(evaluation__feedback="").latest("answer_date")
             entry["total_points"] = evaluated_answer.evaluation.points
             assessed.append(entry)
         else:
             unassessed.append(entry)
         
+    parent, single_linked = get_embedded_parent(content, instance)
+    
     t = loader.get_template("assessment/submissions.html")
     c = {
         "course": course,
         "instance": instance,
         "exercise": content,
+        "parent": parent,
+        "single_linked": single_linked,
         "assessed": assessed,
         "unassessed": unassessed,        
     }
@@ -375,7 +394,8 @@ def submission_assessment(request, course, instance, exercise, user):
                     "evaluation": form.cleaned_data.get("correct", False),
                     "evaluator": request.user,
                     "points": assessment["total_score"],
-                    "feedback": json.dumps(assessment)
+                    "feedback": json.dumps(assessment),
+                    "test_results": answer_object.evaluation.test_results
                 },
                 answer_object
             )
@@ -387,22 +407,37 @@ def submission_assessment(request, course, instance, exercise, user):
         try:
             evaluated_answer = UserAnswer.get_task_answers(
                 exercise, instance, user
-            ).exclude(evaluation=None).latest("answer_date")
+            ).exclude(evaluation=None).exclude(evaluation__feedback="").latest("answer_date")
             assessment = json.loads(evaluated_answer.evaluation.feedback)
         except (UserAnswer.DoesNotExist, json.JSONDecodeError):
             evaluated_answer = None
             assessment = {}
     
+        max_score = 0
+        section_scores = {}
+        for section in assessment.get("sections", []):
+            section_scores[section["name"]] = section["section_points"]
+        
+        for name, section in by_section.items():
+            section["section_points"] = section_scores.get(name, 0)
+            max_score += section["total_points"]
+        
+        parent, single_linked = get_embedded_parent(exercise, instance)
+        
         form = AssessmentForm(by_section=by_section, assessment=assessment)
         c = {
             "course": course,
             "instance": instance,
             "exercise": exercise,
+            "parent": parent,
+            "single_linked": single_linked,
             "user": user,
             "sheet": sheet,
             "bullets_by_section": by_section,
             "assessment": assessment,
             "form": form,
+            "total_score": assessment.get("total_score", 0),
+            "max_score": max_score
         }
             
         t = loader.get_template("assessment/assessment_sheet.html")
@@ -422,7 +457,7 @@ def view_assessment(request, user, course, instance, exercise, answer):
         
     t = loader.get_template("assessment/assessment_view.html")
     c = {
-        "document" : assessment
+        "document" : assessment        
     }
     return HttpResponse(t.render(c, request))
     

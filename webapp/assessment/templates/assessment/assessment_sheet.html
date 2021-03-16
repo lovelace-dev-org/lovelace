@@ -1,5 +1,6 @@
 {% extends 'courses/base.html' %}
 
+{% load l10n %}
 {% load i18n %}
 {% load staticfiles %}
 {% load assessment_tags %}
@@ -54,8 +55,8 @@
                 {% for name, section in bullets_by_section.items %}
                     <tr class="assessment-section">
                         <td colspan="2">{{ name }}</td>
-                        <td class="center-align">{{ section.section_points }}</td>
-                        <td class="center-align">{{ section.total_points }}</td>
+                        <td class="center-align">{{ section.section_points|unlocalize }}</td>
+                        <td class="center-align">{{ section.total_points|unlocalize }}</td>
                         <td></td>
                     </tr>
                     {% for bullet in section.bullets %}
@@ -69,7 +70,7 @@
                             <td>
                                 {{ form|points_widget:bullet }}
                             </td>
-                            <td class="center-align">{{ bullet.point_value }}</td>
+                            <td class="center-align">{{ bullet.point_value|unlocalize }}</td>
                             <td>
                                 {{ form|comment_widget:bullet }}
                             </td>
@@ -81,8 +82,8 @@
                 <tr>
                     <td></td>
                     <td></td>
-                    <td class="center-align">{{ total_score }}</td>
-                    <td class="center-align">{{ max_score }}</td>
+                    <td class="center-align">{{ total_score|unlocalize }}</td>
+                    <td class="center-align">{{ max_score|unlocalize }}</td>
                     <td></td>
                 </tr>
             </tfoot>

@@ -67,5 +67,11 @@ urlpatterns = [
         "<user:user>/<course:course>/<instance:instance>/<content:exercise>/<answer:answer>/",
         views.view_assessment,
         name="view_assessment"
-    ),    
+    ),
+    
+    path(
+        "<course:course>/<instance:instance>/<content:content>/<sheet:sheet>/",
+        views.update_exercise_points,
+        name="update_exercise_points"
+    ),
 ]

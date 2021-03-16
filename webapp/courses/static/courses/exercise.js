@@ -4,6 +4,8 @@ function exercise_success(data, result_div, error_div, form_parent) {
     var comments_div = form_parent.children("div.comments");
     var file_result_div = form_parent.children("div.file-result");
 
+    console.log(data);
+    
     if (data.result) {
         result_div.html(data.result);
         form_parent.children("form").trigger("reset");
@@ -44,7 +46,16 @@ function exercise_success(data, result_div, error_div, form_parent) {
                     }
                 }
             } else {
-                if (data.evaluation === false) {
+                if (data.manual === true ) {
+                    meta_img.attr({
+                        "src": "/static/courses/submitted-96.png",
+                        "class": "submitted"
+                    });
+                    toc_symbol.attr({
+                        "src": "/static/courses/submitted-16.png",
+                    });                    
+                }
+                else if (data.evaluation === false) {
                     meta_img.attr({
                         "src": "/static/courses/incorrect-96.png",
                         "class": "incorrect"

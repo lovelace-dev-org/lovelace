@@ -893,7 +893,7 @@ class ContentPage(models.Model):
 
     def save_evaluation(self, user, evaluation, answer_object):
         correct = evaluation["evaluation"]
-        if correct == True:
+        if correct and not evaluation.get("manual", False):
             if "points" in evaluation:
                 points = evaluation["points"]
             else:
@@ -924,7 +924,7 @@ class ContentPage(models.Model):
                 instance=answer_object.instance,
                 user=user
             )
-            if evaluation["manual"]:
+            if evaluation.get("manual", False):
                 completion.state = "submitted"
             else:
                 completion.state = ["incorrect", "correct"][correct]
