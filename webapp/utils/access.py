@@ -127,3 +127,13 @@ def ensure_owner_or_staff(function):
             return HttpResponseForbidden(_("This view is limited to content owners and staff"))
     return wrap
 
+def ensure_responsible_or_supervisor(function):
+    @wraps(function)
+    def wrap(request, course, instance, group, *args, **kwargs):
+        if request.user in (course.main_responsible, group.supervisor):
+            return function(request, course, instance, group, *args, **kwargs)
+        else:
+            return HttpResponseForbidden(_("This view is limited to group supervisor"))
+    return wrap
+            
+        

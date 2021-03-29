@@ -363,7 +363,7 @@ function submit_ajax_form(form, success_extra_cb) {
     });
 }
 
-function submit_ajax_delete(button, success_extra_cb) {
+function submit_ajax_action(button, success_extra_cb, extra_data) {
     let url = button.attr("data-url");        
     let csrf = button.attr("data-csrf");
     $("body").css("cursor", "progress");
@@ -371,7 +371,7 @@ function submit_ajax_delete(button, success_extra_cb) {
     $.ajax({
         type: "POST",
         url: url,
-        data: {csrfmiddlewaretoken: csrf},
+        data: {csrfmiddlewaretoken: csrf, extra: extra_data},
         success: function(data, status, jqxhr) {
             success_extra_cb(data);
         },

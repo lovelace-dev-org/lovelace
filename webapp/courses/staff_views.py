@@ -2,11 +2,12 @@ from django.conf import settings
 from django.http import HttpResponse, JsonResponse, HttpResponseRedirect,\
     HttpResponseNotFound, HttpResponseForbidden, HttpResponseNotAllowed,\
     HttpResponseServerError, HttpResponseBadRequest
+from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils.translation import ugettext as _
 from courses.models import *
 from courses.forms import *
-from utils.access import ensure_staff
+from utils.access import ensure_staff, ensure_responsible_or_supervisor, ensure_responsible
 from utils.management import CourseContentAdmin, clone_instance_files,\
     clone_terms, clone_content_graphs
 from faq.utils import clone_faq_links
@@ -32,7 +33,7 @@ def freeze_instance(request, course, instance):
             return JsonResponse({"errors": errors}, status=400)
     else:
         form = InstanceFreezeForm()
-        t = loader.get_template("courses/staff-edit-form.html")
+        t = loader.get_template("courses/base-edit-form.html")
         c = {
             "form_object": form,
             "submit_url": reverse("courses:freeze_instance", kwargs={
@@ -40,7 +41,7 @@ def freeze_instance(request, course, instance):
                 "instance": instance
             }),
             "html_id": "instance-freeze-form",
-            "html_class": "toc-form",
+            "html_class": "toc-form staff-only",
             "disclaimer": _("Freeze this instance to reflect its state at the given date. This operation is not intended to be reversible.")
         }
         return HttpResponse(t.render(c, request))
@@ -85,7 +86,7 @@ def clone_instance(request, course, instance):
             instance=instance,
             initial=initial_names
         )
-        t = loader.get_template("courses/staff-edit-form.html")
+        t = loader.get_template("courses/base-edit-form.html")
         c = {
             "form_object": form,
             "submit_url": reverse("courses:clone_instance", kwargs={
@@ -93,7 +94,7 @@ def clone_instance(request, course, instance):
                 "instance": instance
             }),
             "html_id": "instance-clone-form",
-            "html_class": "toc-form",
+            "html_class": "toc-form staff-only",
             "disclaimer": _("Make a clone of this course instance.")
         }
         return HttpResponse(t.render(c, request))
@@ -146,7 +147,7 @@ def instance_settings(request, course, instance):
                 "frontpage": instance.frontpage and instance.frontpage.id
             }
         )
-        t = loader.get_template("courses/staff-edit-form.html")
+        t = loader.get_template("courses/base-edit-form.html")
         c = {
             "form_object": form,
             "submit_url": reverse("courses:instance_settings", kwargs={
@@ -154,7 +155,7 @@ def instance_settings(request, course, instance):
                 "instance": instance
             }),
             "html_id": "instance-settings-form",
-            "html_class": "toc-form",
+            "html_class": "toc-form staff-only",
         }
         return HttpResponse(t.render(c, request))
     
@@ -218,7 +219,7 @@ def create_content_node(request, course, instance):
             return JsonResponse({"errors": errors}, status=400)
     else:
         form = NewContentNodeForm(available_content=available_content)
-        t = loader.get_template("courses/staff-edit-form.html")
+        t = loader.get_template("courses/base-edit-form.html")
         c = {
             "form_object": form,
             "submit_url": reverse("courses:create_content_node", kwargs={
@@ -226,7 +227,7 @@ def create_content_node(request, course, instance):
                 "instance": instance
             }),
             "html_id": "toc-new-node-form",
-            "html_class": "toc-form",
+            "html_class": "toc-form staff-only",
         }
         return HttpResponse(t.render(c, request))
     
@@ -279,7 +280,7 @@ def node_settings(request, course, instance, node_id):
                 "content": node.content.id
             }
         )
-        t = loader.get_template("courses/staff-edit-form.html")
+        t = loader.get_template("courses/base-edit-form.html")
         c = {
             "form_object": form,
             "submit_url": reverse("courses:node_settings", kwargs={
@@ -288,7 +289,7 @@ def node_settings(request, course, instance, node_id):
                 "node_id": node_id
             }),
             "html_id": "toc-node-settings-form",
-            "html_class": "toc-form",
+            "html_class": "toc-form staff-only",
         }
         return HttpResponse(t.render(c, request))
     
@@ -359,10 +360,130 @@ def move_content_node(request, course, instance, target_id, placement):
 # ^
 # |
 # CONTENT EDIT VIEWS
-# OTHER
+# GROUP MANAGEMENT VIEWS
 # |
 # v
 
+
+    
+@ensure_staff
+def group_management(request, course, instance):
+    if request.user == course.main_responsible:
+        groups = StudentGroup.objects.filter(instance=instance).order_by("name")
+        responsible = True
+        staff_members = course.staff_group.user_set.get_queryset().order_by("last_name")
+    else:
+        groups = StudentGroup.objects.filter(
+            instance=instance, supervisor=request.user
+        ).order_by("name")
+        responsible = False
+        select = ""
+    
+    t = loader.get_template("courses/group-management.html")
+    c = {
+        "groups": groups,
+        "course": course,
+        "instance": instance,
+        "is_responsible": responsible,
+        "staff": staff_members,
+    }
+    return HttpResponse(t.render(c, request))
+
+@ensure_responsible
+def create_group(request, course, instance):
+    staff_members = course.staff_group.user_set.get_queryset().order_by("last_name")
+    if request.method == "POST":
+        form = GroupForm(request.POST, staff=staff_members)
+        if form.is_valid():
+            group = form.save(commit=False)
+            group.supervisor = User.objects.get(id=form.cleaned_data["supervisor"])
+            group.instance = instance
+            group.save()
+            return JsonResponse({"status": "ok"})
+        else:
+            errors = form.errors.as_json()
+            return JsonResponse({"errors": errors}, status=400)
+    else:
+        form = GroupForm(staff=staff_members)
+        t = loader.get_template("courses/base-edit-form.html")
+        c = {
+            "form_object": form,
+            "submit_url": request.path,
+            "html_class": "group-staff-form",
+        }
+        return HttpResponse(t.render(c, request))
+    
+@ensure_responsible
+def remove_group(request, course, instance, group):
+    if group.instance == instance:    
+        group.delete()
+        return JsonResponse({"status": "ok"})
+    else:
+        return HttpResponseForbidden()
+    
+@ensure_responsible_or_supervisor
+def add_member(request, course, instance, group):
+    enrolled_students = instance.enrolled_users.get_queryset()
+    if request.method == "POST":
+        form = GroupMemberForm(request.POST, students=enrolled_students)
+        if form.is_valid():
+            user = enrolled_students.get(id=form.cleaned_data["student"])
+            group.members.add(user)            
+            return redirect(reverse("courses:group_management", kwargs={
+                "course": course,
+                "instance": instance
+            }))
+        else:
+            errors = form.errors.as_json()
+            return JsonResponse({"errors": errors}, status=400)
+    else:
+        form = GroupMemberForm(students=enrolled_students)
+        t = loader.get_template("courses/base-edit-form.html")
+        c = {
+            "form_object": form,
+            "submit_url": request.path,
+            "html_class": "group-staff-form",
+        }
+        return HttpResponse(t.render(c, request))
+    
+@ensure_responsible
+def set_supervisor(request, course, instance, group):
+    if group.instance == instance:
+        staff_members = course.staff_group.user_set.get_queryset().order_by("last_name")
+        try:
+            supervisor = staff_members.get(id=request.POST["extra[supervisor]"])
+        except User.DoesNotExist:
+            return HttpResponseForbidden
+        
+        group.supervisor = supervisor
+        group.save()
+        return JsonResponse({"status": "ok"})
+    else:
+        return HttpResponseForbidden
+    
+@ensure_responsible_or_supervisor
+def remove_member(request, course, instance, group, member):
+    group.members.remove(member)
+    return JsonResponse({"status": "ok"})
+       
+@ensure_responsible_or_supervisor
+def rename_group(request, course, instance, group):
+    name = request.POST.get("extra[name]") 
+    if name:
+        group.name = name
+        group.save()
+        return JsonResponse({"status": "ok"})
+    else:
+        return JsonResponse({"status": "error", "reason": "empty"})
+
+        
+        
+# ^
+# |
+# GROUP MANAGEMENT VIEWS
+# OTHER
+# |
+# v
 
 def content_preview(request, field_name):
     if not request.user.is_staff and not request.user.is_superuser:

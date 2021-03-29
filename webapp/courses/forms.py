@@ -7,6 +7,7 @@ from django.forms import fields
 from django.utils.text import slugify
 from django.utils.translation import ugettext as _
 from modeltranslation.forms import TranslationModelForm
+from utils.formatters import display_name
 import courses.models as cm
 
 class TextfieldExerciseForm(forms.Form):
@@ -144,7 +145,7 @@ class InstanceSettingsForm(TranslationModelForm):
 
     class Meta:
         model = cm.CourseInstance
-        fields = ["name", "email", "start_date", "end_date", "primary", "manual_accept", "welcome_message", "content_license", "license_url"]
+        fields = ["name", "email", "start_date", "end_date", "primary", "max_group_size", "manual_accept", "welcome_message", "content_license", "license_url"]
         
     def __init__(self, *args, **kwargs):
         available_content = kwargs.pop("available_content")
@@ -239,4 +240,77 @@ class IndexEntryForm(TranslationModelForm):
         pass
         
         
+class GroupForm(forms.ModelForm):
+    class Meta:
+        model = cm.StudentGroup
+        fields = ["name"]
+        
+    def __init__(self, *args, **kwargs):
+        staff = kwargs.pop("staff")
+        super().__init__(*args, **kwargs)
+
+        self.fields["supervisor"] = forms.ChoiceField(
+            widget = forms.Select,
+            label = _("Choose student to add"),
+            choices = [(0, _('-- no supervisor --')), ] + [(s.id, display_name(s)) for s in staff]
+        )
+        
+        
+class GroupConfigForm(forms.ModelForm):
+    class Meta:
+        model = cm.StudentGroup
+        fields = ["name"]
+        
+class GroupInviteForm(forms.Form):
     
+    def clean(self):
+        cleaned_data = super().clean()
+        i = 0
+        while True:
+            field_name = "invite-{}".format(i)
+            i += 1
+            try:
+                username = cleaned_data[field_name]
+                if not username:
+                    continue
+                user = cm.User.objects.get(username=username)
+                assert cm.CourseEnrollment.objects.filter(
+                    instance=self.valid_for_instance,
+                    student=user
+                ).exists()
+                assert not cm.StudentGroup.objects.filter(
+                    members=user
+                ).exists()
+            except KeyError:
+                break
+            except (cm.User.DoesNotExist, AssertionError):
+                self.add_error(field_name, _("Cannot invite this user"))
+            else:
+                self.invited_users.append(user)
+        
+    def is_valid(self, for_instance=None):
+        self.valid_for_instance = for_instance
+        return super().is_valid()
+    
+    def __init__(self, *args, **kwargs):
+        slots = kwargs.pop("slots")
+        self.invited_users = []
+        super().__init__(*args, **kwargs)
+        
+        for i in range(slots):
+            self.fields["invite-{}".format(i)] = forms.CharField(
+                label=_("Invitee {}").format(i + 1),
+                required=False
+            )
+            
+class GroupMemberForm(forms.Form):
+
+    def __init__(self, *args, **kwargs):
+        students = kwargs.pop("students")
+        super().__init__(*args, **kwargs)
+        
+        self.fields["student"] = forms.ChoiceField(
+            widget = forms.Select,
+            label = _("Choose student to add"),
+            choices = [(s.id, display_name(s)) for s in students]
+        )

@@ -1,4 +1,5 @@
 import time
+from django.urls import reverse
 from django import template
 from datetime import datetime
 from courses.models import Calendar
@@ -134,4 +135,17 @@ def calendar(context, calendar_data):
         "cal_id": calendar.id,
         "cal_reservations": calendar_reservations,
         "reserved_event_ids": reserved_event_ids,
+    }
+
+@register.inclusion_tag("courses/widgets/group_supervisor_select.html", takes_context=True)
+def supervisor_select(context, group):
+    return {
+        "staff": context["staff"],
+        "selected": group.supervisor,
+        "csrf_token": context["csrf_token"],
+        "submit_url": reverse("courses:set_supervisor", kwargs={
+            "course": context["course"],
+            "instance": context["instance"],
+            "group": group,
+        })
     }

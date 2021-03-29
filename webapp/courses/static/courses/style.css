@@ -966,14 +966,34 @@ section.content {
 
     section.content table {
         border-collapse: collapse;
-        border: 1px solid #8a8;
+        border:  none;
         margin-bottom: 1em;
     }
 
-    section.content table th, section.content table td {
-        border: 1px solid #8a8;
-        padding: 2px 4px 2px 4px;
+    section.content table.full-width {
+        table-layout: fixed;
+        width: 100%
     }
+    
+    section.content table thead tr, section.content table tbody tr:last-child {
+        border-bottom: 1px solid;
+    }
+
+    section.content table tr.section-header {
+        background: #caeaca;
+        border: 2px solid #d0d0d0;
+    } 
+    
+    section.content table th, section.content table td {
+        border: none;
+        padding: 2px 4px 2px 4px;
+        text-align: left;
+    }
+    
+    section.content table td.actions-cell {
+        text-align: right;
+    }
+    
 
         section.content div.paragraph > code, section.content td > code,
         section.content li > code, section.content form > code,
@@ -1773,6 +1793,11 @@ button.edit-button {
     background: no-repeat url("/static/courses/edit_icon_pencil.svg") center/18px,
                 #fff;
 }
+
+button.ok-button {
+    background: no-repeat url("/static/courses/correct-16.png") center/18px,
+                #fff;
+}    
 
 hr.hr-evenly-spaced {
     margin-top: 1em;

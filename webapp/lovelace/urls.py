@@ -7,13 +7,16 @@ from django.urls.converters import StringConverter
 from django.urls import register_converter
 
 from model_path_converter import register_model_converter
-from courses.models import Course, CourseInstance, ContentPage, File, User, UserAnswer
+from courses.models import Course, CourseInstance, ContentPage, File, StudentGroup,\
+                           GroupInvitation, User, UserAnswer
 from feedback.models import ContentFeedbackQuestion
 from utils.converters import Utf8SlugConverter, RevisionConverter, InstanceConverter
 
 register_model_converter(Course, field="slug", base=Utf8SlugConverter)
 register_model_converter(ContentPage, name="content", field="slug", base=Utf8SlugConverter)
 register_model_converter(User, field="username", base=StringConverter)
+register_model_converter(StudentGroup, "group")
+register_model_converter(GroupInvitation, "invite")
 register_model_converter(ContentFeedbackQuestion, name="feedback", field="slug", base=Utf8SlugConverter)
 register_model_converter(File, name="file", field="name", base=Utf8SlugConverter)
 register_model_converter(UserAnswer, name="answer")
@@ -33,7 +36,7 @@ urlpatterns = [
     url(r'^teacher/', include('teacher_tools.urls', namespace="teacher")),
     url(r'^routine_exercise/', include('routine_exercise.urls', namespace="routine")),
     url(r'^faq/', include('faq.urls', namespace="faq")),
-    url(r'assessment/', include('assessment.urls', namespace="assessment")),
+    url(r'^assessment/', include('assessment.urls', namespace="assessment")),
 ]
 
 try:

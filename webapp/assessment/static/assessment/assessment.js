@@ -86,7 +86,7 @@ var ase = {
             li.remove();            
         }
         
-        submit_ajax_delete(button, process_success)
+        submit_ajax_action(button, process_success)
     },
 
     delete_bullet: function(event, caller) {
@@ -99,7 +99,7 @@ var ase = {
             li.remove();            
         }
         
-        submit_ajax_delete(button, process_success)
+        submit_ajax_action(button, process_success)
     },
     
     start_drag: function(event, bullet_id) {
@@ -195,7 +195,7 @@ var ase = {
             button.after("<div>OK</div>");
         }
         
-        submit_ajax_delete(button, process_success)
+        submit_ajax_action(button, process_success)
     },
 }
 

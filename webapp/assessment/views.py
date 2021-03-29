@@ -75,7 +75,7 @@ def manage_assessment(request, course, instance, content):
             return JsonResponse({"errors": errors}, status=400)
     else:
         form = AddAssessmentForm(course_sheets=course_sheets)
-        form_t = loader.get_template("courses/staff-edit-form.html")
+        form_t = loader.get_template("courses/base-edit-form.html")
         form_c = {
             "form_object": form,
             "submit_url": reverse("assessment:manage_assessment", kwargs={
@@ -84,7 +84,7 @@ def manage_assessment(request, course, instance, content):
                 "content": content
             }),
             "html_id": content.slug + "-assessment-select",
-            "html_class": "assessment-staff-form",
+            "html_class": "assessment-staff-form staff-only",
             "disclaimer": _("Add a new or existing assessment sheet to be used for this exercise.")
         }
         form_html = form_t.render(form_c, request)
@@ -136,7 +136,7 @@ def create_bullet(request, course, instance, sheet):
             return JsonResponse({"errors": errors}, status=400)
     else:
         form = NewBulletForm()
-        t = loader.get_template("courses/staff-edit-form.html")
+        t = loader.get_template("courses/base-edit-form.html")
         c = {
             "form_object": form,
             "submit_url": reverse("assessment:create_bullet", kwargs={
@@ -145,7 +145,7 @@ def create_bullet(request, course, instance, sheet):
                 "sheet": sheet
             }),
             "html_id": "{}-create-bullet".format(sheet.id),
-            "html_class": "assessment-staff-form",
+            "html_class": "assessment-staff-form staff-only",
         }
         return HttpResponse(t.render(c, request))
     
@@ -167,7 +167,7 @@ def create_section(request, course, instance, sheet):
             return JsonResponse({"errors": errors}, status=400)
     else:
         form = NewSectionForm()
-        t = loader.get_template("courses/staff-edit-form.html")
+        t = loader.get_template("courses/base-edit-form.html")
         c = {
             "form_object": form,
             "submit_url": reverse("assessment:create_section", kwargs={
@@ -176,7 +176,7 @@ def create_section(request, course, instance, sheet):
                 "sheet": sheet
             }),
             "html_id": "{}-create-section".format(sheet.id),
-            "html_class": "assessment-staff-form",
+            "html_class": "assessment-staff-form staff-only",
             "disclaimer": _("Choose section name and properties of the first bullet.")
         }
         return HttpResponse(t.render(c, request))
@@ -203,7 +203,7 @@ def rename_section(request, course, instance, sheet):
             return JsonResponse({"errors": errors}, status=400)        
     else:
         form = RenameSectionForm()
-        t = loader.get_template("courses/staff-edit-form.html")
+        t = loader.get_template("courses/base-edit-form.html")
         c = {
             "form_object": form,
             "submit_url": reverse("assessment:rename_section", kwargs={
@@ -212,7 +212,7 @@ def rename_section(request, course, instance, sheet):
                 "sheet": sheet
             }),
             "html_id": "{}-rename-section".format(sheet.id),
-            "html_class": "assessment-staff-form",
+            "html_class": "assessment-staff-form staff-only",
         }
         return HttpResponse(t.render(c, request))
     
@@ -282,7 +282,7 @@ def edit_bullet(request, course, instance, sheet, bullet):
             return JsonResponse({"errors": errors}, status=400)                
     else:
         form = AssessmentBulletForm(instance=bullet)
-        t = loader.get_template("courses/staff-edit-form.html")
+        t = loader.get_template("courses/base-edit-form.html")
         c = {
             "form_object": form,
             "submit_url": reverse("assessment:edit_bullet", kwargs={
@@ -292,7 +292,7 @@ def edit_bullet(request, course, instance, sheet, bullet):
                 "bullet": bullet
             }),
             "html_id": "{}-edit-bullet".format(bullet.id),
-            "html_class": "assessment-staff-form",
+            "html_class": "assessment-staff-form staff-only",
         }
         return HttpResponse(t.render(c, request))
         

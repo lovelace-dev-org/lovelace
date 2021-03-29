@@ -54,15 +54,6 @@ from utils.files import generate_download_response
 from utils.management import CourseContentAdmin
 from utils.notify import send_error_report, send_welcome_email
 
-try:
-    from shibboleth.app_settings import LOGOUT_URL, LOGOUT_REDIRECT_URL, LOGOUT_SESSION_KEY
-except:
-    # shibboleth not installed 
-    # these are not needed
-    LOGOUT_URL = ""
-    LOGOUT_REDIRECT_URL = ""
-    LOGOUT_SESSION_KEY = ""
-
 JSON_INCORRECT = 0
 JSON_CORRECT = 1
 JSON_INFO = 2
@@ -86,47 +77,6 @@ def cookie_law(view_func):
             request.session["cookies_accepted"] = False
         return view_func(request, *args, **kwargs)
     return func_wrapper
-
-@cookie_law
-def login(request):
-    # template based on allauth login page
-    t = loader.get_template("courses/login.html")
-    c = {
-        'login_form': LoginForm(),
-        'signup_url': reverse("account_signup")
-    }
-
-    if 'shibboleth' in django.conf.settings.INSTALLED_APPS:
-        c['shibboleth_login'] = reverse("shibboleth:login")
-    else:
-        c['shibboleth_login'] = False
-
-    return HttpResponse(t.render(c, request))
-
-@cookie_law    
-def logout(request):
-    # template based on allauth logout page
-    t = loader.get_template("courses/logout.html")   
-    
-    if request.method == "POST":
-        # handle shibboleth logout
-        # from shibboleth login view
-        
-        auth.logout(request)
-        request.session[LOGOUT_SESSION_KEY] = True
-        target = LOGOUT_REDIRECT_URL
-        logout = LOGOUT_URL % target
-        return redirect(logout)        
-    
-    if request.session.get("shib", None):
-        c = {
-            "logout_url": reverse("courses:logout") 
-        }
-    else:
-        c = {
-            "logout_url": reverse("account_logout")
-        }
-    return HttpResponse(t.render(c, request))
 
 @cookie_law
 def index(request):
@@ -884,87 +834,6 @@ def content(request, course, instance, content, pagenum=None, **kwargs):
     else:
         t = loader.get_template("courses/contentpage.html")
         return HttpResponse(t.render(c, request))
-
-def user_profile_save(request):
-    """
-    Save the submitted form.
-    """
-    if not request.user.is_authenticated:
-        return HttpResponseNotFound()
-    if not request.method == "POST":
-        return HttpResponseNotFound()
-    form = request.POST
-    if not set(["first_name", "last_name", "student_id", "study_program"]).issubset(form.keys()):
-        return HttpResponseNotFound()
-
-    profile = UserProfile.objects.get(user=request.user)
-
-    request.user.first_name = form["first_name"][:30]
-    request.user.last_name = form["last_name"][:30]
-    try:
-        profile.student_id = int(form["student_id"])
-    except ValueError:
-        return HttpResponseNotFound()
-    profile.study_program = form["study_program"][:80]
-
-    profile.save()
-    request.user.save   ()
-    return HttpResponseRedirect('/')
-
-def user_profile(request):
-    """
-    Allow the user to change information in their profile.
-    """
-    if not request.user.is_authenticated:
-        return HttpResponseNotFound()
-
-    profile = UserProfile.objects.get(user=request.user)
-
-    t = loader.get_template("courses/userprofile.html")
-    c = {
-        'username': request.user.username,
-        'first_name': request.user.first_name,
-        'last_name': request.user.last_name,
-        'email': request.user.email,
-        'student_id': profile.student_id,
-        'study_program': profile.study_program,
-    }
-    return HttpResponse(t.render(c, request))
-
-def user(request, user_name):
-    """
-    Shows user information to the requesting user. The amount of information
-    depends on who the requesting user is.
-    """
-    user = request.user
-
-    if not (user.is_authenticated and user.is_active): # Don't allow anons to view anything
-        return HttpResponseForbidden(_("Please log in to view your information."))
-    elif user.is_staff: # Allow admins to view useful information regarding the user they've requested
-        pass
-    elif user.username != user_name: # Allow the user to view their own info
-        return HttpResponseForbidden(_("You are only allowed to view your own information."))
-
-    try:
-        target_user = User.objects.get(username=user_name)
-    except User.DoesNotExist as e:
-        return HttpReponseNotFound("No such user {}".format(user_name))
-    
-    checkboxexercise_answers = UserCheckboxExerciseAnswer.objects.filter(user=target_user)
-    multiplechoiceexercise_answers = UserMultipleChoiceExerciseAnswer.objects.filter(user=target_user)
-    textfieldexercise_answers = UserTextfieldExerciseAnswer.objects.filter(user=target_user)
-    fileexercise_answers = UserFileUploadExerciseAnswer.objects.filter(user=target_user)
-    repeatedtemplateexercise_answers = UserRepeatedTemplateExerciseAnswer.objects.filter(user=target_user)
-
-    t = loader.get_template("courses/userinfo.html")
-    c = {
-        'checkboxexercise_answers': checkboxexercise_answers,
-        'multiplechoiceexercise_answers': multiplechoiceexercise_answers,
-        'textfieldexercise_answers': textfieldexercise_answers,
-        'fileexercise_answers': fileexercise_answers,
-        'repeatedtemplateexercise_answers': repeatedtemplateexercise_answers,
-    }
-    return HttpResponse(t.render(c, request))
 
 # TODO: calendars should be tied to instances
 def calendar_post(request, calendar_id, event_id):

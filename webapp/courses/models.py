@@ -76,8 +76,28 @@ post_save.connect(create_user_profile, sender=User, dispatch_uid="create_user_pr
 
 # TODO: A user group system for allowing users to form groups
 # - max users / group
+class StudentGroup(models.Model):
+    
+    name = models.CharField(max_length=64, blank=True, null=True)
+    instance = models.ForeignKey("CourseInstance", on_delete=models.CASCADE)
+    supervisor = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, related_name="supervised_group"
+    )
+    members = models.ManyToManyField(User)
+
+
+class GroupInvitation(models.Model):
+
+    class Meta:
+        unique_together = ("group", "user")
+
+    group = models.ForeignKey("StudentGroup", on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sent_invitation")
 
 # TODO: Abstract the exercise model to allow "an answering entity" to give the answer, be it a group or a student
+
+
 
 
 #@reversion.register()
@@ -170,14 +190,14 @@ class CourseInstance(models.Model):
     manual_accept = models.BooleanField(verbose_name='Teachers accept enrollments manually',
                                         default=False)
     
-    frontpage = models.ForeignKey('Lecture', blank=True, null=True, on_delete=models.SET_NULL) # TODO: Create one automatically!
-    # contents = models.ManyToManyField('ContentGraph', blank=True)   # TODO: Rethink the content graph system!
+    frontpage = models.ForeignKey('Lecture', blank=True, null=True, on_delete=models.SET_NULL) 
     frozen = models.BooleanField(verbose_name="Freeze this instance", default=False)
     visible = models.BooleanField(verbose_name="Is this course visible to students", default=True)
     content_license = models.CharField(max_length=255, blank=True)
     license_url = models.CharField(max_length=255, blank=True)
     primary = models.BooleanField(verbose_name="Set this instance as primary.", default=False)
     welcome_message = models.TextField(verbose_name="Automatic welcome message for accepted enrollments", blank=True)
+    max_group_size = models.PositiveSmallIntegerField(null=True, blank=True)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

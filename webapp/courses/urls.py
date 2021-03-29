@@ -1,15 +1,72 @@
 from django.conf.urls import include, url
 from django.urls import path
 
-from . import views, staff_views
+from . import views, staff_views, user_views
 
 app_name = "courses"
 
 urlpatterns = [
     path("", views.index, name="index"),
-    path("login/", views.login, name="login"),
-    path("logout/", views.logout, name="logout"),
+    path("login/", user_views.login, name="login"),
+    path("logout/", user_views.logout, name="logout"),
 
+    path(
+        "groups/<course:course>/<instance:instance>/",
+        user_views.group_info,
+        name="group_info"
+    ),
+    path(
+        "groups/<course:course>/<instance:instance>/create/",
+        staff_views.create_group,
+        name="create_group"
+    ),
+    path(
+        "groups/<course:course>/<instance:instance>/manage/",
+        staff_views.group_management,
+        name="group_management"
+    ),    
+    path(
+        "groups/<course:course>/<instance:instance>/<group:group>/invite/",
+        user_views.invite_members,
+        name="invite_members"
+    ),
+    path(
+        "groups/<course:course>/<instance:instance>/<group:group>/rename/",
+        staff_views.rename_group,
+        name="rename_group"
+    ),
+    path(
+        "groups/<course:course>/<instance:instance>/<group:group>/remove/",
+        staff_views.remove_group,
+        name="remove_group"
+    ),
+    path(
+        "groups/<course:course>/<instance:instance>/<group:group>/add_member/",
+        staff_views.add_member,
+        name="add_member"
+    ),
+    path(
+        "groups/<course:course>/<instance:instance>/<group:group>/set_supervisor/",
+        staff_views.set_supervisor,
+        name="set_supervisor"
+    ),
+    path(
+        "groups/<course:course>/<instance:instance>/<group:group>/<user:member>/remove/",
+        staff_views.remove_member,
+        name="remove_member"
+    ),
+    path(
+        "groups/<course:course>/<instance:instance>/<invite:invite>/accept/",
+        user_views.accept_invitation,
+        name="accept_invitation"
+    ),
+    path(
+        "groups/<course:course>/<instance:instance>/<group:group>/<invite:invite>/cancel/",
+        user_views.cancel_invitation,
+        name="cancel_invitation"
+    ),
+        
+    
     # For viewing and changing user information
     path("answers/<user:user>/<course:course>/<instance:instance>/<content:exercise>/<answer:answer>/",
         views.get_file_exercise_evaluation, name="get_file_exercise_evaluation"),
@@ -17,9 +74,9 @@ urlpatterns = [
         views.show_answers, name="show_answers"),
     path("answers/<user:user>/<course:course>/<instance:instance>/<answer:answer>/<str:filename>/show/",
          views.show_answer_file_content, name="show_answer_file"),
-    path("user/<user:user>/", views.user),
-    path("profile/", views.user_profile),
-    path("profile/save/", views.user_profile_save),
+    path("user/<user:user>/", user_views.user),
+    path("profile/", user_views.user_profile),
+    path("profile/save/", user_views.user_profile_save),
 
     # For calendar POST requests
     path("calendar/<int:calendar_id>/<int:event_id>/", views.calendar_post, name="calendar_post",),
