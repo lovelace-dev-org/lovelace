@@ -167,7 +167,7 @@ def routine_progress(request, course, instance, content, task_id):
             data = render_json_feedback(info["data"]["log"], request, course, instance)
             if progress.completed:
                 data["evaluation"] = True
-                update_completion(content, instance, request.user, True)
+                update_completion(content, instance, request.user, data["evaluation"])
             data["next_instance"] = True
             data["progress"] = progress.progress
             next_question = info["data"].get("next")

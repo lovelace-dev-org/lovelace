@@ -39,8 +39,19 @@
   <h1>
     {% blocktrans with name=student.oname instance=instance.name %}
       {{ name }}'s completion of {{ instance }}
-    {% endblocktrans %}
+    {% endblocktrans %}  
+    {% comment %}
+    <select class="instance-select heading-widget">
+        <option selected disabled>{% trans 'change instance' %}</option>
+        {% for o_instance in enrolled_instances %}
+          <option value="{% url 'teacher_tools:student_completion' course o_instance user %}">
+            {{ o_instance.name }}
+          </option>
+        {% endfor %}
+    </select>
+    {% endcomment %}
   </h1>
+  
 
   <div class="paragraph">
     {% blocktrans with missing=total_missing points=total_points available=total_points_available %}
@@ -62,6 +73,19 @@
           {% endfor %}
         </ul>
       {% endfor %}
+    </ul>
+  </div>
+  
+  <div class="other-instances">
+    {% trans 'Completion in other instances' %}
+    <ul>
+        {% for o_instance in enrolled_instances %}
+          <li>
+            <a href="{% url 'teacher_tools:student_completion' course o_instance user %}">
+                {{ o_instance.name }}
+            </a>
+          </li>
+        {% endfor %}
     </ul>
   </div>
 

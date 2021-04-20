@@ -1,6 +1,7 @@
 import json
 import redis
 import reversion
+from operator import itemgetter
 from django.conf import settings
 from django.db.models import Prefetch
 from django.http import HttpResponse, HttpResponseForbidden, HttpResponseNotFound, JsonResponse
@@ -9,7 +10,7 @@ from django.template import Template, loader, engines
 from django.urls import reverse
 from django.utils.translation import ugettext as _
 
-from courses.models import EmbeddedLink, Evaluation, UserAnswer, UserTaskCompletion
+from courses.models import EmbeddedLink, Evaluation, UserAnswer, UserTaskCompletion, StudentGroup
 
 from assessment.models import *
 from assessment.forms import *
@@ -18,6 +19,7 @@ from assessment.utils import get_sectioned_sheet, serializable_assessment
 from utils.access import is_course_staff, ensure_owner_or_staff, ensure_enrolled_or_staff, ensure_staff
 from utils.archive import get_archived_instances
 from utils.content import get_embedded_parent
+from utils.formatters import display_name
 
 def view_assessment(request, course, instance, content):
     sheet_link = AssessmentToExerciseLink.objects.filter(
@@ -331,13 +333,38 @@ def view_submissions(request, course, instance, content):
     ).prefetch_related(Prefetch("user", queryset=users))
     assessed = []
     unassessed = []
+    skip = []
     for completion in all:
+        if completion.user.id in skip:
+            continue
+            
         entry = {}
-        entry["students"] = "{} {} ({})".format(
-            completion.user.last_name,
-            completion.user.first_name,
-            completion.user.username
-        )
+        if content.group_submission:
+            try:
+                group = StudentGroup.objects.get(members=completion.user, instance=instance)
+            except StudentGroup.DoesNotExist:
+                entry["group"] = "-"
+                entry["students"] = "{} {} ({})".format(
+                    completion.user.last_name,
+                    completion.user.first_name,
+                    completion.user.username
+                )
+            else:
+                entry["group"] = group.name
+                member_list = []
+                for member in group.members.get_queryset():
+                    member_list.append(display_name(member))
+                    skip.append(member.id)
+                entry["students"] = "\n".join(member_list)
+                
+        else:
+            entry["group"] = "-"
+            entry["students"] = "{} {} ({})".format(
+                completion.user.last_name,
+                completion.user.first_name,
+                completion.user.username
+            )
+        
         href_args = {
             "user": completion.user,
             "course": course,
@@ -355,17 +382,20 @@ def view_submissions(request, course, instance, content):
         else:
             unassessed.append(entry)
         
+    assessed.sort(key=itemgetter("group"))
+    unassessed.sort(key=itemgetter("group"))
     parent, single_linked = get_embedded_parent(content, instance)
     
     t = loader.get_template("assessment/submissions.html")
     c = {
         "course": course,
         "instance": instance,
+        "course_staff": True,
         "exercise": content,
         "parent": parent,
         "single_linked": single_linked,
         "assessed": assessed,
-        "unassessed": unassessed,        
+        "unassessed": unassessed,
     }
     return HttpResponse(t.render(c, request))
             
@@ -388,14 +418,13 @@ def submission_assessment(request, course, instance, exercise, user):
                 request.user, sheet, by_section, form.cleaned_data
             )
             answer_object = UserAnswer.get_task_answers(exercise, instance, user).latest("answer_date")
-            exercise.save_evaluation(
+            exercise.update_evaluation(
                 user,
                 {
                     "evaluation": form.cleaned_data.get("correct", False),
                     "evaluator": request.user,
                     "points": assessment["total_score"],
                     "feedback": json.dumps(assessment),
-                    "test_results": answer_object.evaluation.test_results
                 },
                 answer_object
             )
@@ -428,6 +457,7 @@ def submission_assessment(request, course, instance, exercise, user):
         c = {
             "course": course,
             "instance": instance,
+            "course_staff": True,
             "exercise": exercise,
             "parent": parent,
             "single_linked": single_linked,

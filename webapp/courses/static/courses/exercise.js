@@ -12,7 +12,9 @@ function exercise_success(data, result_div, error_div, form_parent) {
     }
     if (data.evaluation === true || data.evaluation === false) {
         // Get the symbol in meta
-        var meta_img = form_parent.parent().find("div.task-meta > img");
+        let meta_div = form_parent.parent().find("div.task-meta");
+        
+        var meta_img = meta_div.children("img");
 
         // Get the symbol in ToC
         var exercise_id = form_parent.parent().find("span.anchor-offset").attr("id");
@@ -39,7 +41,7 @@ function exercise_success(data, result_div, error_div, form_parent) {
                         toc_symbol.attr({
                             "src": "/static/courses/correct-16.png",
                         });
-                        let eval_group = "embedded_page__evaluation_group";
+                        let eval_group = meta_div.attr("data-eval-group");
                         if (eval_group != "") {
                             credit_eval_group(eval_group);
                         }
@@ -71,7 +73,7 @@ function exercise_success(data, result_div, error_div, form_parent) {
                     toc_symbol.attr({
                         "src": "/static/courses/correct-16.png",
                     });
-                    let eval_group = "embedded_page__evaluation_group";
+                    let eval_group = meta_div.attr("data-eval-group");
                     if (eval_group != "") {
                         credit_eval_group(eval_group);
                     }

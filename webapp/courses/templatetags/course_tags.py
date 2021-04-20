@@ -2,9 +2,14 @@ import time
 from django.urls import reverse
 from django import template
 from datetime import datetime
-from courses.models import Calendar
+from courses.models import Calendar, StudentGroup
+from utils.formatters import display_name
 
 register = template.Library()
+
+@register.filter
+def full_name(user):
+    return display_name(user)
 
 @register.filter
 def enrolled(user, instance):
@@ -105,33 +110,53 @@ def calendar(context, calendar_data):
     ).first()
         
     cal_dates = calendar.calendardate_set.get_queryset().order_by("start_time")
-    calendar_reservations = [
-        (
-            cal_date, 
-            [cal_date.calendarreservation_set.get_queryset(), False]
-        )
-        for cal_date in cal_dates
-    ]
+    calendar_reservations = []
+    
     user = context["user"]
     user_has_slot = False
     reserved_event_ids = []
+    
+    for cal_date in cal_dates:        
+        date_reservations = []
+        for reservation in cal_date.calendarreservation_set.get_queryset():
+            entry = {}
+            if context.get("course_staff"):
+                entry["reserver"] = display_name(reservation.user)
+                try:
+                    entry["group"] = StudentGroup.objects.get(members=user).name
+                except StudentGroup.DoesNotExist:
+                    entry["group"] = "-"
+                if calendar.related_content:
+                    entry["answers_url"] = reverse("courses:show_answers", kwargs={
+                        "user": reservation.user,
+                        "course": context["course"],
+                        "instance": context["instance"],
+                        "exercise": calendar.related_content
+                    })
+                else:
+                    entry["answers_url"] = reverse("teacher:student_completion", kwargs={
+                        "user": reservation.user,
+                        "course": context["course"],
+                        "instance": context["instance"],
+                    })                        
+            
+            date_reservations.append(entry)            
+            if reservation.user == user:
+                user_has_slot = True
+                reserved_event_ids.append(cal_date.id)
+        
+        calendar_reservations.append((
+            cal_date,
+            date_reservations
+        ))
 
-    if user.is_authenticated:
-        for cal_date, cal_reservations in calendar_reservations:
-            try:
-                found = cal_reservations[0].get(user=user)
-            except:
-                continue
-            cal_reservations[1] = True
-            user_has_slot = True
-            reserved_event_ids.append(found.calendar_date.id)
-    
+    can_reserve = True
     if user_has_slot and not calendar.allow_multiple:
-        for cal_date, cal_reservations in calendar_reservations:
-            cal_reservations[1] = True
-    
+        can_reserve = False
+                
     return {
         "user": user,
+        "can_reserve": can_reserve,
         "cal_id": calendar.id,
         "cal_reservations": calendar_reservations,
         "reserved_event_ids": reserved_event_ids,

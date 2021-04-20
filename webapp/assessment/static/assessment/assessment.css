@@ -98,5 +98,20 @@ table.assessment-table tfoot td {
     font-weight: bold;
 }
 
+table.submissions-table td.preserve-white {
+    white-space: pre-wrap;
+}
 
+table.submissions-table th:nth-child(2) {
+    width: 40%;
+}
 
+table.submissions-table th:last-child,  
+table.submissions-table td:last-child {
+    text-align: right;
+    width: 10%;
+}
+
+table.submissions-table tbody tr:nth-child(odd) {
+    background: #caeaca;
+}

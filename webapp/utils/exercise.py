@@ -56,8 +56,9 @@ def render_json_feedback(log, request, course, instance):
     }
     return feedback
 
-def update_completion(exercise, instance, user, correct):
+def update_completion(exercise, instance, user, evaluation):
     changed = False
+    correct = evaluation["evaluation"]
     try:
         completion = cm.UserTaskCompletion.objects.get(
             exercise=exercise,
@@ -68,17 +69,23 @@ def update_completion(exercise, instance, user, correct):
         completion = cm.UserTaskCompletion(
             exercise=exercise,
             instance=instance,
-            user=user
+            user=user,
+            points=evaluation.get("points", 0)
         )
-        completion.state = ["incorrect", "correct"][correct]
+        if evaluation.get("manual", False):
+            completion.state = "submitted"
+        else:
+            completion.state = ["incorrect", "correct"][correct]
         completion.save()
         changed = True
     else:
         if completion.state != "correct":
-            completion.state = "correct"
-            completion.save()
+            completion.state = ["incorrect", "correct"][correct]
             changed = True
-            
+        if correct:
+            completion.points = evaluation.get("points", 0)
+        completion.save()
+
     if changed and correct and exercise.evaluation_group:
         others = cm.ContentPage.objects.filter(
             evaluation_group=exercise.evaluation_group
@@ -102,3 +109,4 @@ def update_completion(exercise, instance, user, correct):
                 if completion.state not in ["correct", "credited"]:
                     completion.state = "credited"
                     completion.save()
+

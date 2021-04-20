@@ -19,6 +19,8 @@
     <li>{{ exercise.name }}</li>
   {% endif %}
   <div class="separator">»</div>
+  <li><a href="{% url 'assessment:view_submissions' course instance exercise %}">{% trans 'Submissions' %}</a></li>
+  <div class="separator">»</div>
   <li><a href="{% url 'assessment:submission_assessment' course instance exercise user %}">
     {% blocktrans with username=user.username exercise_name=exercise.name %}
         {{ username }}’s assessment for {{ exercise_name }}

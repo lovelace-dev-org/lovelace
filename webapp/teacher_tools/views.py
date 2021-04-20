@@ -156,6 +156,7 @@ def student_course_completion(request, course, instance, user):
 
     tasks_by_page = get_course_instance_tasks(instance)
     results_by_page, total_points, total_missing, total_points_available = compile_student_results(user, instance, tasks_by_page)
+    
     t = loader.get_template("teacher_tools/student_completion.html")
     c = {
         "student": user,
@@ -165,7 +166,12 @@ def student_course_completion(request, course, instance, user):
         "total_missing": total_missing,
         "total_points": total_points,
         "total_points_available": total_points_available,
-        "course_staff": True
+        "course_staff": True,
+        "enrolled_instances": CourseEnrollment.get_enrolled_instances(
+            instance,
+            user,
+            exclude_current=True
+        ),
     }
     return HttpResponse(t.render(c, request))
 

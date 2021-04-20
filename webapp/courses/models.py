@@ -37,7 +37,9 @@ from lovelace.celery import app as celery_app
 import feedback.models
 
 from utils.files import *
+from utils.exercise import update_completion
 from utils.archive import get_archived_field, get_single_archived, find_latest_version
+from utils.users import get_group_members
 
 class RollbackRevert(Exception):
     pass
@@ -167,6 +169,17 @@ class CourseEnrollment(models.Model):
 
     def is_enrolled(self):
         return True if self.enrollment_state == 'ACCEPTED' else False
+        
+    @staticmethod
+    def get_enrolled_instances(instance, user, exclude_current=False):
+        enrollments = CourseEnrollment.objects.filter(
+            student=user,
+            instance__course=instance.course,
+        ).select_related("instance")
+        if exclude_current:
+            enrollments = enrollments.exclude(instance=instance)
+        return [e.instance for e in enrollments]
+        
 
 #@reversion.register()
 class CourseInstance(models.Model):
@@ -511,6 +524,7 @@ class Calendar(models.Model):
     """A multi purpose calendar for course events markups, time reservations etc."""
     name = models.CharField(verbose_name='Name for reference in content', max_length=200, unique=True)
     allow_multiple = models.BooleanField(verbose_name='Allow multiple reservation', default=False)
+    related_content = models.ForeignKey("ContentPage", on_delete=models.SET_NULL, null=True, blank=True)    
 
     def __str__(self):
         return self.name
@@ -528,10 +542,9 @@ class CalendarDate(models.Model):
         return self.event_name
 
     def get_users(self):
-        return self.calendarreservation_set.all().values(
-            'user__username', 'user__first_name',
-            'user__last_name', 'user__userprofile__student_id', 'user__email'
-        )
+        
+        
+        return self.calendarreservation_set.all().values_list("user")
     
     def duration(self):
         return self.end_time - self.start_time
@@ -610,6 +623,7 @@ class ContentPage(models.Model):
     # Exercise fields
     question = models.TextField(blank=True, default="") # Translate
     manually_evaluated = models.BooleanField(verbose_name="This exercise is evaluated by hand", default=False)
+    group_submission = models.BooleanField(verbose_name="Answers can be submitted as a group", default=False)
     ask_collaborators = models.BooleanField(verbose_name="Ask the student to list collaborators", default=False)
     allowed_filenames = ArrayField( # File upload exercise specific
         base_field=models.CharField(max_length=32, blank=True),
@@ -912,12 +926,14 @@ class ContentPage(models.Model):
             return True
 
     def save_evaluation(self, user, evaluation, answer_object):
+        instance = answer_object.instance
         correct = evaluation["evaluation"]
         if correct and not evaluation.get("manual", False):
             if "points" in evaluation:
                 points = evaluation["points"]
             else:
                 points = self.default_points
+                evaluation["points"] = points
         else:
             points = 0
             
@@ -932,30 +948,31 @@ class ContentPage(models.Model):
         answer_object.evaluation = evaluation_object
         answer_object.save()
         
-        try:
-            completion = UserTaskCompletion.objects.get(
-                exercise=self,
-                instance=answer_object.instance,
-                user=user
-            )
-        except UserTaskCompletion.DoesNotExist:
-            completion = UserTaskCompletion(
-                exercise=self,
-                instance=answer_object.instance,
-                user=user
-            )
-            if evaluation.get("manual", False):
-                completion.state = "submitted"
-            else:
-                completion.state = ["incorrect", "correct"][correct]
-            completion.save()
-        else:
-            if completion.state != "correct":
-                completion.state = "correct"
-                completion.save()
-                
+        answer_object.refresh_from_db()
+        
+        update_completion(self, instance, user, evaluation)
+        if self.group_submission:
+            for member in get_group_members(user, instance):
+                answer_object.pk = None
+                answer_object.useranswer_ptr = None
+                answer_object.user = member
+                answer_object.save()
+                update_completion(self, instance, member, evaluation)
+        
         return evaluation_object
 
+    def update_evaluation(self, user, evaluation, answer_object):
+        instance = answer_object.instance
+        answer_object.evaluation.correct = evaluation["evaluation"]
+        answer_object.evaluation.points = evaluation["points"]
+        answer_object.evaluation.feedback = evaluation["feedback"]
+        answer_object.evaluation.evaluator = evaluation["evaluator"]
+        answer_object.evaluation.save()
+        update_completion(self, instance, user, evaluation)
+        if self.group_submission:
+            for member in get_group_members(user, instance):
+                update_completion(self, instance, member, evaluation)
+    
     def get_user_evaluation(self, user, instance, check_group=True):
         try:
             completion = UserTaskCompletion.objects.get(
@@ -2183,7 +2200,7 @@ class UserAnswer(models.Model):
     exercises. The answers will then be kept even when the exercise is deleted.
     """
     instance = models.ForeignKey(CourseInstance, null=True, on_delete=models.SET_NULL)
-    evaluation = models.OneToOneField(Evaluation, null=True, blank=True, on_delete=models.SET_NULL)
+    evaluation = models.ForeignKey(Evaluation, null=True, blank=True, on_delete=models.SET_NULL)
     revision = models.PositiveIntegerField() # The revision info is always required!
     language_code = models.CharField(max_length=7) # TODO: choices=all language codes
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -2367,6 +2384,7 @@ class UserTaskCompletion(models.Model):
     exercise = models.ForeignKey(ContentPage, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     instance = models.ForeignKey(CourseInstance, on_delete=models.CASCADE)
+    points = models.PositiveSmallIntegerField(default=0)
     state = models.CharField(
         max_length=16,
         choices=(

@@ -29,8 +29,12 @@ class Command(BaseCommand):
                             exercise=result["eo"],
                             instance=instance,
                             user=user,
-                            state=result["result"]
+                            state=result["result"],
                         )
+                        if result["result"] == "correct":
+                            completion.points = result["eo"].default_points
+                        else:
+                            completion.points = 0
                         completion.save()
                 print(".", end="", flush=True)
             print()

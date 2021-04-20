@@ -1263,7 +1263,7 @@ class TableMarkup(Markup):
     @classmethod
     def block(cls, block, settings, state):
         if not state["table"]:
-            yield '<table>'
+            yield '<table class="content-table">'
             state["table"] = True
         
         for line in block:

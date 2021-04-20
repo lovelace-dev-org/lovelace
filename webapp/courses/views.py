@@ -846,30 +846,59 @@ def calendar_post(request, calendar_id, event_id):
     event_id = int(event_id)
 
     try:
+        calendar = Calendar.objects.get(id=calendar_id)
         calendar_date = CalendarDate.objects.get(id=event_id)
-    except CalendarDate.DoesNotExist:
+    except (Calendar.DoesNotExist, CalendarDate.DoesNotExist):
         return HttpResponseNotFound("Error: the selected calendar does not exist.")
 
+    reservations = CalendarReservation.objects.filter(calendar_date_id=event_id)
+    reserved_slots = reservations.count()
+    total_slots = calendar_date.reservable_slots
     if "reserve" in form.keys() and int(form["reserve"]) == 1:
         # TODO: How to make this atomic? Use with transaction.atomic
-        reservations = CalendarReservation.objects.filter(calendar_date_id=event_id)
-        if reservations.count() >= calendar_date.reservable_slots:
-            return HttpResponse(_("This event is already full."))
+        if reserved_slots >= total_slots:
+            return JsonResponse(
+                {
+                    "msg": _("This event is already full.")
+                }, 
+                status=400
+            )
         user_reservations = reservations.filter(user=request.user)
         if user_reservations.count() >= 1:
-            return HttpResponse(_("You have already reserved a slot in this event."))
-
+            return JsonResponse(
+                {
+                    "msg": _("You have already reserved a slot in this event.")
+                },
+                status=400
+            )
         new_reservation = CalendarReservation(calendar_date_id=event_id, user=request.user)
         new_reservation.save()
         # TODO: Check that we didn't overfill the event
-        return HttpResponse(_("Slot reserved!"))
+        return JsonResponse({
+            "msg": _("Slot reserved!"),
+            "slots": "{} / {}".format(reserved_slots + 1, total_slots),
+            "full": reserved_slots + 1 >= total_slots,
+            "can_reserve": calendar.allow_multiple
+        })
     elif "reserve" in form.keys() and int(form["reserve"]) == 0:
-        user_reservations = CalendarReservation.objects.filter(calendar_date_id=event_id, user=request.user)
+        user_reservations = CalendarReservation.objects.filter(
+            calendar_date_id=event_id, user=request.user
+        )
         if user_reservations.count() >= 1:
             user_reservations.delete()
-            return HttpResponse(_("Reservation cancelled."))
+            return JsonResponse({
+                "msg": _("Reservation cancelled."),
+                "slots": "{} / {}".format(reserved_slots - 1, total_slots),
+                "full": reserved_slots - 1 >= total_slots,
+                "can_reserve": True
+            })
         else:
-            return HttpResponse(_("Reservation already cancelled."))
+            return HttpResponse({
+                "msg": _("Reservation already cancelled."),
+                "slots": "{} / {}".format(reserved_slots, total_slots),
+                "full": reserved_slots >= total_slots,
+                "can_reserve": True
+            })
     else:
         return HttpResponseForbidden()
 
@@ -953,8 +982,13 @@ def show_answers(request, user, course, instance, exercise):
         "answers": answers,
         "student": user,
         "username": user.username,
-        "course_staff": user.is_staff
-    }
+        "course_staff": is_course_staff(request.user, instance),
+        "enrolled_instances": CourseEnrollment.get_enrolled_instances(
+            instance,
+            user,
+            exclude_current=True
+        ),
+    }   
     return HttpResponse(t.render(c, request))
 
 @ensure_owner_or_staff

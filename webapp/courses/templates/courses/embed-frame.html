@@ -6,7 +6,7 @@
 <div class="embedded-page">
 {% if user.is_active %}
   <div class="task-meta-container">
-    <div class="task-meta" data-eval-group="{{ content.eval_group }}">
+    <div class="task-meta" data-eval-group="{{ content.evaluation_group }}">
       {% if not sandboxed %}
         {% if evaluation == "unanswered" %}
           <img src="{% static 'courses/unanswered-96.png' %}" width="96" height="96" alt="?"

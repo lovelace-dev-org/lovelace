@@ -975,8 +975,12 @@ section.content {
         width: 100%
     }
     
-    section.content table thead tr, section.content table tbody tr:last-child {
+    /*section.content table thead tr, section.content table tbody tr:last-child {
         border-bottom: 1px solid;
+    }*/
+
+    section.content table.content-table tr:first-child {
+        border-top: 1px solid;
     }
 
     section.content table tr.section-header {
@@ -994,6 +998,9 @@ section.content {
         text-align: right;
     }
     
+    section.content table td.grey-bg {
+        background: #e2e2e2;        
+    }
 
         section.content div.paragraph > code, section.content td > code,
         section.content li > code, section.content form > code,
@@ -1579,8 +1586,16 @@ section.content {
             padding: 0 2px;
         }
         div.calendar div.datetime {
+            background: #caeeca;
+            border: 1px solid #888;
+            /*background: #d7d7d7;*/
+        }
+        
+        div.calendar div.datetime.event-full {
+            border: 1px solid #888;
             background: #d7d7d7;
         }
+        
         div.calendar div.description {
             background: #e0e0e0;
             font-style: italic;
@@ -1591,6 +1606,11 @@ section.content {
             list-style-type: square;
             background: #e0e0e0;
         }
+        
+        div.calendar table tr {
+            border: none !important;
+        }
+        
         div.calendar div.reservation-result {
             border: 1px solid #888;
             background: #f0f099;
@@ -1721,6 +1741,23 @@ td.routine-meta {
 
 /* editing stuff */
 
+a.button-style {
+    appearance: button;
+    text-decoration: none;
+    width: 25px;
+    height: 25px;
+    outline: 0;
+    vertical-align: middle;
+    overflow: hidden;
+    background-color: #fff;
+    text-align: center;
+    cursor: pointer;
+    border: 0px solid #42860e;
+    border-radius: 8px;
+    box-shadow: 1px 1px 2px #285c00;
+    margin: 0px 5px 0px 5px !important;
+}
+
 button.staff-base-button {
     width: 25px;
     height: 25px;
@@ -1799,7 +1836,26 @@ button.ok-button {
                 #fff;
 }    
 
+.mail-button {
+    background: no-repeat url("/static/courses/mail.png") center/18px,
+                #fff;
+}
+
+.inspect-button {
+    background: no-repeat url("/static/courses/debug-16.png") center/16px,
+                #fff;
+}    
+
 hr.hr-evenly-spaced {
     margin-top: 1em;
     margin-bottom: 1em;
+}
+
+.heading-widget {
+    float: right;
+    margin-top: -1em;   
+}
+
+.right-float {
+    float: right;
 }

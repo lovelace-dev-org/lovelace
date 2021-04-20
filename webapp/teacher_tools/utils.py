@@ -1,4 +1,5 @@
 from django.urls import reverse
+import courses.models as cm
 from reversion.models import Version
 
 def check_user_completion(user, task_links, instance, include_links=True):
@@ -9,12 +10,20 @@ def check_user_completion(user, task_links, instance, include_links=True):
         if link.revision is not None:
             exercise_obj = Version.objects.get_for_object(exercise_obj).get(revision=link.revision)._object_version.object
 
-        result = exercise_obj.get_user_evaluation(user, instance)
+        try:
+            completion = cm.UserTaskCompletion.objects.get(
+                exercise=exercise_obj,
+                instance=instance,
+                user=user
+            )
+            result = completion.state
+        except cm.UserTaskCompletion.DoesNotExist:
+            result = "unanswered"
 
         points = 0
         if result == "correct":
             correct = True
-            points = exercise_obj.default_points
+            points = completion.points
         elif result == "credited":
             correct = True
         else:
@@ -44,7 +53,7 @@ def get_missing_and_points(results):
     for result in results:
         points_available += result["eo"].default_points
         if result["correct"]:
-            points += result["eo"].default_points
+            points += result["points"]
         else:
             missing += 1
     

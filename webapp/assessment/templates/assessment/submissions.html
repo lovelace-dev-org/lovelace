@@ -36,9 +36,7 @@
     <div class="separator">»</div>
     <li>
         <a href="{% url 'assessment:view_submissions' course instance exercise %}">
-            {% blocktrans %}
-                {{ exercise.name }} submissions
-            {% endblocktrans %}
+            {% trans 'Submissions' %}
         </a>
     </li>
 {% endblock %}
@@ -51,37 +49,13 @@
     </h1>
     
     <h2>
-        {% trans 'Quick Search Student Submission' %}
-    </h2>
-    
-    <form class="student-finder"
-          method="POST"
-          enctype="multipart/form-data"
-          action="{{ submit_url }}">
-          
-        {% csrf_token %}
-    
-        {% for field in search_form.hidden_fields %}
-            {{ field }}
-        {% endfor %}
-        
-        {% for field in seach_form.visible_fields %}
-          <div class="input-label-container">
-            {{ field.errors }}
-            {{ field.label_tag }} {{ field }}
-          </div>
-        {% endfor %}
-          
-        <input type="submit" name="submit" value="{% trans 'Save' %}"></input>
-    </form>
-    
-    <h2>
         {% trans 'Unassessed Submissions' %}
     </h2>
     
-    <table class="submissions-table">
+    <table class="submissions-table full-width">
         <thead>
             <tr>
+                <th>{% trans 'Group' %}</th>
                 <th>{% trans 'Student(s)' %}</th>
                 <th>{% trans 'Answer Link' %}</th>
                 <th>{% trans 'Assessment Link' %}</th>
@@ -91,7 +65,8 @@
         <tbody>
             {% for entry in unassessed %}
                 <tr>
-                    <td>{{ entry.students }}</td>
+                    <td>{{ entry.group }}</td>
+                    <td class="preserve-white">{{ entry.students }}</td>
                     <td><a href="{{ entry.answers_url }}">{% trans 'view answers' %}</a></td>
                     <td><a href="{{ entry.assessment_url }}">{% trans 'assess' %}</a></td>
                     <td>-</td>
@@ -104,9 +79,10 @@
         {% trans 'Assessed Submissions' %}
     </h2>
     
-    <table class="submissions-table">
+    <table class="submissions-table full-width">
         <thead>
             <tr>
+                <th>{% trans 'Group' %}</th>
                 <th>{% trans 'Student(s)' %}</th>
                 <th>{% trans 'Answer Link' %}</th>
                 <th>{% trans 'Assessment Link' %}</th>
@@ -116,7 +92,8 @@
         <tbody>
             {% for entry in assessed %}
                 <tr>
-                    <td>{{ entry.students }}</td>
+                    <td>{{ entry.group }}</td>
+                    <td class="preserve-white">{{ entry.students }}</td>
                     <td><a href="{{ entry.answers_url }}">{% trans 'view answers' %}</a></td>
                     <td><a href="{{ entry.assessment_url }}">{% trans 'view assessment' %}</a></td>
                     <td>{{ entry.total_points }}</td>

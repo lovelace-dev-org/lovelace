@@ -4,6 +4,11 @@
 {% load staticfiles %}
 {% load course_tags %}
 
+{% block extra-static %}
+<link rel="stylesheet" href="{% static 'courses/answers.css' %}">
+<script src="{% static 'courses/answers.js' %}"></script>
+{% endblock %}
+
 {% block page-title %}{% blocktrans %}{{ username }}’s answers to {{ exercise_title }}{% endblocktrans %}{% endblock %}
 
 {% block breadcrumb-links %}
@@ -35,12 +40,6 @@
   </h1>
   
 <table class="fixed">
-<colgroup>
-  <col class="answer-date">
-  <col class="answer">
-  <col class="evaluation">
-  <col class="permalink">
-</colgroup>
 <caption>
   {% blocktrans count answercount=answers.count %}
     {{ answercount }} entered answer for this exercise
