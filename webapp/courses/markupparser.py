@@ -487,7 +487,6 @@ class EmbeddedFileMarkup(Markup):
         except cm.File.DoesNotExist as e:
             # TODO: Modular errors
             yield '<div>File %s not found.</div>' % settings["file_slug"]
-            raise StopIteration
 
         file_path = file_object.fileinfo.path
         link_only = settings.get("link_only", "") == "True"
@@ -500,14 +499,12 @@ class EmbeddedFileMarkup(Markup):
             except ValueError as e:
                 # TODO: Modular errors
                 yield "<div>Unable to decode file %s with utf-8.</div>" % settings["file_slug"]
-                raise StopIteration
 
             try:
                 lexer = guess_lexer_for_filename(file_path, file_contents)
             except pygments.util.ClassNotFound:
                 # TODO: Modular errors
                 yield '<div>Unable to find lexer for file %s.</div>' % settings['file_slug']
-                raise StopIteration
 
             highlighted = pygments.highlight(
                 file_contents, lexer, HtmlFormatter(nowrap=True)
@@ -731,7 +728,6 @@ class EmbeddedScriptMarkup(Markup):
         except cm.File.DoesNotExist as e:
             # TODO: Modular errors
             yield '<div>File %s not found.</div>' % settings["script_slug"]
-            raise StopIteration
 
         includes = []
         image_urls = []
@@ -743,7 +739,6 @@ class EmbeddedScriptMarkup(Markup):
             except ValueError:
                 # TODO: Modular errors
                 yield '<div>Erroneous form {} in a script markup.</div>'.format(unparsed_include)
-                raise StopIteration
 
             try:
                 if incl_type == "image":                
@@ -753,7 +748,6 @@ class EmbeddedScriptMarkup(Markup):
             except (cm.File.DoesNotExist, cm.Image.DoesNotExist) as e:
                 # TODO: Modular errors
                 yield '<div>{} {} not found.</div>'.format(incl_type.capitalize(), incl_name)
-                raise StopIteration
 
             incl_addr = escape(incl_obj.fileinfo.url)
 
@@ -912,7 +906,6 @@ class EmbeddedVideoMarkup(Markup):
         except cm.VideoLink.DoesNotExist as e:
             # TODO: Modular errors
             yield '<div>Video link %s not found.</div>' % settings["video_slug"]
-            raise StopIteration
 
         video_url = videolink.link
         tag = '<iframe src="%s"' % video_url
@@ -1027,7 +1020,6 @@ class ImageMarkup(Markup):
         except cm.Image.DoesNotExist as e:
             # TODO: Modular errors
             yield '<div>File %s not found.</div>' % settings["image_name"]
-            raise StopIteration
 
         image_url = image_object.fileinfo.url
         w = image_object.fileinfo.width
