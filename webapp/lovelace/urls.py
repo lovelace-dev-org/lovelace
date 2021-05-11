@@ -8,7 +8,7 @@ from django.urls import register_converter
 
 from model_path_converter import register_model_converter
 from courses.models import Course, CourseInstance, ContentPage, File, StudentGroup,\
-                           GroupInvitation, User, UserAnswer
+                           GroupInvitation, User, UserAnswer, Calendar, CalendarDate
 from feedback.models import ContentFeedbackQuestion
 from utils.converters import Utf8SlugConverter, RevisionConverter, InstanceConverter
 
@@ -22,6 +22,8 @@ register_model_converter(File, name="file", field="name", base=Utf8SlugConverter
 register_model_converter(UserAnswer, name="answer")
 register_converter(RevisionConverter, "revision")
 register_converter(InstanceConverter, "instance")
+register_model_converter(Calendar, name="calendar")
+register_model_converter(CalendarDate, name="event")
 
 # TODO: Design the url hierarchy from scratch
 urlpatterns = [

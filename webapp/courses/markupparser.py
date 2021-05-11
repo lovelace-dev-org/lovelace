@@ -1022,7 +1022,7 @@ class ImageMarkup(Markup):
             image_object = get_embedded_media_image(
                 settings["image_name"],
                 instance,
-                state["context"]["content"]
+                state["context"].get("content")
             )
         except cm.Image.DoesNotExist as e:
             # TODO: Modular errors

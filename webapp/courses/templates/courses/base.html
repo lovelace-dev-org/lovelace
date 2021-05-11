@@ -112,12 +112,12 @@
               <div class="user-settings">
                 <a href="/profile/">{% trans 'Settings' %}</a>
               </div>
-              {% if course and instance %}
-              <div class="user-settings">
-                <a href="{% url 'courses:group_info' course instance %}">
-                    {% trans 'Group info' %}
-                </a>
-              </div>
+              {% if course and instance and instance.max_group_size %}
+                  <div class="user-settings">
+                    <a href="{% url 'courses:group_info' course instance %}">
+                        {% trans 'Group info' %}
+                    </a>
+                  </div>
               {% endif %}
               {% if user.is_staff %}
                 <div class="user-tools">
@@ -129,12 +129,14 @@
                   <a href="{% url 'teacher_tools:manage_enrollments' course instance %}">
                     {% trans 'Manage enrollments' %}
                   </a>
-                </div>                
-                <div class="user-tools">
-                  <a href="{% url 'courses:group_management' course instance %}">
-                    {% trans 'Manage groups' %}
-                  </a>
-                </div>                
+                </div>        
+                {% if instance.max_group_size %}
+                    <div class="user-tools">
+                      <a href="{% url 'courses:group_management' course instance %}">
+                        {% trans 'Manage groups' %}
+                      </a>
+                    </div>    
+                {% endif %}
                 <div class="user-tools">
                   <a href="{% url 'teacher_tools:completion' course instance %}">
                     {% trans 'Course completion' %}
@@ -203,6 +205,7 @@
           {% if course_staff %}
             <div class="vertical-separator"></div>
             <button type="button"
+                    id="staff-view-toggle"
                     class="nav-bar-button"
                     title="{% trans 'Toggle between student and staff view' %}"
                     onclick="toggle_staff_widgets(event, this);"
@@ -279,6 +282,17 @@
       
       {% block floating-elements %}
         <div class="arrow-container">
+        </div>
+      {% endblock %}
+
+      {% block side-panels %}
+        <div class="side-panel" id="message-panel">
+            <button type="button"
+                    class="side-panel-closer"
+                    title="{% trans 'Close the panel' %}"
+                    onclick="hide_panel(event, 'message-panel');"
+            >&lt;&lt;</button>
+            <div class="panel-container"></div>
         </div>
       {% endblock %}
 

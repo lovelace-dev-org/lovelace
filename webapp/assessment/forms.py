@@ -5,6 +5,7 @@ from django.forms import fields
 from django.utils.translation import ugettext as _
 from modeltranslation.forms import TranslationModelForm
 from assessment.models import *
+from utils.management import add_translated_charfields
 
 class AddAssessmentForm(forms.Form):
 
@@ -27,12 +28,13 @@ class AddAssessmentForm(forms.Form):
         course_sheets = kwargs.pop("course_sheets")
         super().__init__(*args, **kwargs)
         
-        for lang_code, lang_name in settings.LANGUAGES:
-            self.fields["title_" + lang_code] = forms.CharField(
-                label=_("Title for a new assessment sheet ({lang}):").format(lang=lang_code),
-                required=False
-            )
-        
+        add_translated_charfields(
+            self,
+            "title",
+            _("Default sheet title ({lang}):"),
+            _("Alternative sheet title ({lang}):"),
+            require_default=False
+        )
         self.fields["sheet"] = forms.ChoiceField(
             widget = forms.Select,
             label = _("Choose sheet to use"),
@@ -92,10 +94,13 @@ class AssessmentForm(forms.Form):
                     return self._assessment.get("correct", False)
                 return default_value
                 
-            if ftype == "points":
-                default_value = self._assessment["bullet_index"][id_str]["scored_points"]
-            elif ftype == "comment":
-                default_value = self._assessment["bullet_index"][id_str]["comment"]
+            try:
+                if ftype == "points":
+                    default_value = self._assessment["bullet_index"][id_str]["scored_points"]
+                elif ftype == "comment":
+                    default_value = self._assessment["bullet_index"][id_str]["comment"]
+            except KeyError:
+                default_value = None
             
         return default_value
     

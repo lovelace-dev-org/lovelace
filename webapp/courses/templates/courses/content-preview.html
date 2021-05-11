@@ -24,7 +24,7 @@
         {% else %}
           {% for block_type, block_data in content_blocks %}
             {% if block_type == "calendar" %}
-              {% calendar block_data %}
+              {% calendar_preview block_data %}
             {% elif block_type == "embedded" %}
               {% embed_frame_preview block_data %}
             {% else %}

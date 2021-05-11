@@ -50,7 +50,7 @@
               <div>
                 <a id="{{ content.slug }}-faq-panel-link"
                    class="assessment-panel-link"
-                   href="{% url 'assessment:view_assessment' course instance content %}"
+                   href="{% url 'assessment:view_assessment_sheet' course instance content %}"
                    title="{% trans 'View assessment sheet' %}"
                    onclick="show_panel(event, this, 'assessment-view', '{{ content.slug }}-panel');"
                    data-querystring=""
@@ -89,15 +89,17 @@
                         {% trans 'View Submissions' %}
                     </a>
                 </div></li>
-                <li><div>
-                    <a id="{{ content.slug }}-faq-panel-link"
-                       class="assessment-panel-link"
-                       href="{% url 'assessment:manage_assessment' course instance content %}"
-                       title="{% trans 'Open the assessment edit panel' %}"
-                       onclick="show_panel(event, this, 'assessment-manage', '{{ content.slug }}-panel');"
-                       data-querystring=""
-                    >{% trans 'Edit Assessment' %}</a>
-                </div></li>
+                {% if revision is None %}
+                    <li><div>
+                        <a id="{{ content.slug }}-faq-panel-link"
+                           class="assessment-panel-link"
+                           href="{% url 'assessment:manage_assessment' course instance content %}"
+                           title="{% trans 'Open the assessment edit panel' %}"
+                           onclick="show_panel(event, this, 'assessment-manage', '{{ content.slug }}-panel');"
+                           data-querystring=""
+                        >{% trans 'Edit Assessment' %}</a>
+                    </div></li>
+                {% endif %}
             {% endif %}
             {% comment %}
               <li><div><a href="TODO">{% trans 'View reference answer' %}</a></div></li>

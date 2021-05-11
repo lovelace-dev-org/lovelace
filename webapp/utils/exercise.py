@@ -109,4 +109,6 @@ def update_completion(exercise, instance, user, evaluation):
                 if completion.state not in ["correct", "credited"]:
                     completion.state = "credited"
                     completion.save()
+                    
+    return completion.state
 

@@ -50,8 +50,8 @@ urlpatterns = [
     ),
     path(
         "<course:course>/<instance:instance>/<content:content>/view/",
-        views.view_assessment,
-        name="view_assessment"
+        views.view_assessment_sheet,
+        name="view_assessment_sheet"
     ),
     path(
         "<course:course>/<instance:instance>/<content:content>/submissions/",

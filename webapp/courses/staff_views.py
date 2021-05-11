@@ -13,6 +13,8 @@ from utils.management import CourseContentAdmin, clone_instance_files,\
 from faq.utils import clone_faq_links
 from assessment.utils import clone_assessment_links
 from courses import markupparser
+from utils.formatters import display_name
+from utils.notify import send_email
 
 # CONTENT EDIT VIEWS
 # |
@@ -484,6 +486,40 @@ def rename_group(request, course, instance, group):
 # OTHER
 # |
 # v
+
+@ensure_staff
+def send_message(request, course, instance, user):
+    if request.method == "POST":
+        form = MessageForm(request.POST)
+        enrolled_students = instance.enrolled_users.get_queryset()
+        if enrolled_students.filter(id=user.id).exists():
+            if form.is_valid():
+                send_email(
+                    [user],
+                    request.user,
+                    form.cleaned_data["title"],
+                    form.cleaned_data["content"],
+                )
+                return JsonResponse({"status": "ok"})
+            else:
+                errors = form.errors.as_json()
+                return JsonResponse({"errors": errors}, status=400)
+        else:
+            return HttpResponseNotAllowed()
+    else:
+        form_object = MessageForm()
+        form_t = loader.get_template("courses/base-edit-form.html")
+        form_c = {
+            "form_object": form_object,
+            "submit_url": request.path,
+            "html_class": "message-form",
+            "disclaimer": _("Send a message to {user}").format(user=display_name(user))
+        }
+        t = loader.get_template("courses/direct-message-panel.html")
+        c = {
+            "form": form_t.render(form_c, request)
+        }
+        return HttpResponse(t.render(c, request))
 
 def content_preview(request, field_name):
     if not request.user.is_staff and not request.user.is_superuser:

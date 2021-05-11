@@ -24,11 +24,11 @@ def first_title_from_content(content_text):
 
 def get_course_instance_tasks(instance, deadline_before=None):
 
-    all_embedded_links = cm.EmbeddedLink.objects.filter(instance=instance).order_by("embedded_page__name")
+    all_embedded_links = cm.EmbeddedLink.objects.filter(instance=instance).order_by("embedded_page__name").select_related("embedded_page")
 
     task_pages = []
 
-    content_links = cm.ContentGraph.objects.filter(instance=instance, scored=True, visible=True).order_by("ordinal_number")
+    content_links = cm.ContentGraph.objects.filter(instance=instance, scored=True, visible=True).order_by("ordinal_number").select_related("content")
     if deadline_before is not None:
         content_links = content_links.filter(deadline__lt=deadline_before)
 

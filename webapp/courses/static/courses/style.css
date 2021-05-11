@@ -980,7 +980,6 @@ section.content {
     }*/
 
     section.content table.content-table tr:first-child {
-        border-top: 1px solid;
     }
 
     section.content table tr.section-header {
@@ -1778,6 +1777,7 @@ div.staff-panel {
     border-radius: 8px;
     margin: 5px 0px;
     padding: 5px 0px;
+    border: 2px solid #d0d0d0;
 }
 
 div.expand-handle {
@@ -1790,48 +1790,53 @@ div.expand-handle {
     padding-left: 2px;
 }
 
-button.add-button {
+.add-button {
     color: #4CAF50;
 }
 
-button.delete-button {
+.delete-button {
     color: #ff0000;
     box-shadow: 1px 1px 2px #ff2000;
 }
+
+.link-button {
+    background: no-repeat url("/static/courses/link.png") center/18px,
+                #fff;
+}
    
-button.unlink-button {
+.unlink-button {
     background: no-repeat url("/static/courses/unlink.png") center/18px,
                 #fff;
     color: #ff0000;
     box-shadow: 1px 1px 2px #ff2000;
 }
 
-button.settings-button {
+.settings-button {
     background: no-repeat url("/static/courses/settings.png") center/18px,
                 #fff;
 }
 
-button.move-button {
+.move-button {
     background: no-repeat url("/static/courses/move.png") center/18px,
                 #fff;
 }
 
-button.freeze-button {
+.freeze-button {
     background: no-repeat url("/static/courses/freeze.png") center/18px,
                 #fff;
 }
 
-button.copy-button {
+.copy-button {
     background: no-repeat url("/static/courses/copy.png") center/18px,
                 #fff;
 }
     
-button.edit-button {
+.edit-button {
     background: no-repeat url("/static/courses/edit_icon_pencil.svg") center/18px,
                 #fff;
 }
 
-button.ok-button {
+.ok-button {
     background: no-repeat url("/static/courses/correct-16.png") center/18px,
                 #fff;
 }    
@@ -1844,7 +1849,18 @@ button.ok-button {
 .inspect-button {
     background: no-repeat url("/static/courses/debug-16.png") center/16px,
                 #fff;
-}    
+}
+
+.log-button {
+    background: no-repeat url("/static/courses/log.png") center/18px,
+                #fff;
+}
+
+.report-button {
+    background: no-repeat url("/static/courses/assessment.png") center/18px,
+                #fff;
+}
+
 
 hr.hr-evenly-spaced {
     margin-top: 1em;

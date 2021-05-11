@@ -21,7 +21,7 @@ from utils.archive import get_archived_instances
 from utils.content import get_embedded_parent
 from utils.formatters import display_name
 
-def view_assessment(request, course, instance, content):
+def view_assessment_sheet(request, course, instance, content):
     sheet_link = AssessmentToExerciseLink.objects.filter(
         exercise=content,
         instance=instance,
@@ -359,11 +359,7 @@ def view_submissions(request, course, instance, content):
                 
         else:
             entry["group"] = "-"
-            entry["students"] = "{} {} ({})".format(
-                completion.user.last_name,
-                completion.user.first_name,
-                completion.user.username
-            )
+            entry["students"] = display_name(completion.user)
         
         href_args = {
             "user": completion.user,
@@ -374,11 +370,15 @@ def view_submissions(request, course, instance, content):
         entry["answers_url"] = reverse("courses:show_answers", kwargs=href_args)
         entry["assessment_url"] = reverse("assessment:submission_assessment", kwargs=href_args)
         if completion.state in ["correct", "incorrect"]:
-            evaluated_answer = UserAnswer.get_task_answers(
-                content, instance, completion.user
-            ).exclude(evaluation=None).exclude(evaluation__feedback="").latest("answer_date")
-            entry["total_points"] = evaluated_answer.evaluation.points
-            assessed.append(entry)
+            try:
+                evaluated_answer = UserAnswer.get_task_answers(
+                    content, instance, completion.user
+                ).exclude(evaluation=None).exclude(evaluation__feedback="").latest("answer_date")
+            except UserAnswer.DoesNotExist:
+                unassessed.append(entry)
+            else:
+                entry["total_points"] = evaluated_answer.evaluation.points
+                assessed.append(entry)
         else:
             unassessed.append(entry)
         

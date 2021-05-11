@@ -1,0 +1,13 @@
+{% load staticfiles %}
+{% load i18n %}
+
+<div class="messaging-panel"
+     data-source-url="">
+     
+    {{ form|safe }}
+</div>
+
+<script>
+    $("#message-panel form").submit(submit_message);
+</script>
+    

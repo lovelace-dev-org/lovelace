@@ -1,7 +1,7 @@
 from django.conf.urls import include, url
 from django.urls import path
 
-from . import views, staff_views, user_views
+from . import views, staff_views, user_views, calendar_views
 
 app_name = "courses"
 
@@ -79,7 +79,31 @@ urlpatterns = [
     path("profile/save/", user_views.user_profile_save),
 
     # For calendar POST requests
-    path("calendar/<int:calendar_id>/<int:event_id>/", views.calendar_post, name="calendar_post",),
+    path(
+        "calendar/<calendar:calendar>/<event:event>/",
+        calendar_views.calendar_reservation,
+        name="calendar_reservation",
+    ),    
+    path(
+        "calendar/<course:course>/<instance:instance>/<calendar:calendar>/config/",
+        calendar_views.calendar_config,
+        name="calendar_config",
+    ),
+    path(
+        "calendar/<course:course>/<instance:instance>/<calendar:calendar>/schedule/",
+        calendar_views.calendar_scheduling,
+        name="calendar_scheduling",
+    ),
+    path(
+        "calendar/<course:course>/<instance:instance>/<calendar:calendar>/message/",
+        calendar_views.message_reservers,
+        name="message_reservers",
+    ),
+    path(
+        "calendar/<course:course>/<instance:instance>/<event:event>/slots/<str:action>/",
+        calendar_views.adjust_slots,
+        name="adjust_calendar_slots",
+    ),
 
     # Sandbox: admin view & answer for content pages without saved results
     # currently disabled
@@ -124,6 +148,12 @@ urlpatterns = [
         staff_views.move_content_node,
         name="move_content_node"
     ),
+    path(
+        "staff/<course:course>/<instance:instance>/<user:user>/",
+        staff_views.send_message,
+        name="send_message"
+    ),
+    
     
     # Help pages
     path("help/", views.help_list, name="help_list",),

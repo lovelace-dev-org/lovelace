@@ -1,6 +1,7 @@
 import os.path
 import re
 import django.conf
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django import forms
 from django.forms import fields
@@ -8,6 +9,7 @@ from django.utils.text import slugify
 from django.utils.translation import ugettext as _
 from modeltranslation.forms import TranslationModelForm
 from utils.formatters import display_name
+from utils.management import add_translated_charfields
 import courses.models as cm
 
 class TextfieldExerciseForm(forms.Form):
@@ -173,13 +175,13 @@ class InstanceCloneForm(forms.ModelForm):
         
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
-        for lang_code, lang_name in django.conf.settings.LANGUAGES:
-            self.fields["name_" + lang_code] = forms.CharField(
-                label=_("Name for the instance clone ({lang}):").format(lang=lang_code),
-                required=True
-            )
-        
+
+        add_translated_charfields(
+            self,
+            "name",
+            _("Instance default name ({lang})"),
+            _("Alternative name ({lang})"),
+        )
     
 class NewContentNodeForm(forms.ModelForm):
 
@@ -250,9 +252,9 @@ class GroupForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
         self.fields["supervisor"] = forms.ChoiceField(
-            widget = forms.Select,
-            label = _("Choose student to add"),
-            choices = [(0, _('-- no supervisor --')), ] + [(s.id, display_name(s)) for s in staff]
+            widget=forms.Select,
+            label=_("Choose student to add"),
+            choices=[(0, _('-- no supervisor --')), ] + [(s.id, display_name(s)) for s in staff]
         )
         
         
@@ -310,7 +312,70 @@ class GroupMemberForm(forms.Form):
         super().__init__(*args, **kwargs)
         
         self.fields["student"] = forms.ChoiceField(
-            widget = forms.Select,
-            label = _("Choose student to add"),
-            choices = [(s.id, display_name(s)) for s in students]
+            widget=forms.Select,
+            label=_("Choose student to add"),
+            choices=[(s.id, display_name(s)) for s in students]
         )
+
+
+class CalendarConfigForm(forms.ModelForm):
+    
+    class Meta:
+        model = cm.Calendar
+        fields = ["allow_multiple"]
+    
+
+    def __init__(self, *args, **kwargs):
+        available_content = kwargs.pop("available_content")
+        super().__init__(*args, **kwargs)
+        self.fields["related_content"] = forms.ChoiceField(
+            widget = forms.Select,
+            label = _("Choose content to link"),
+            choices = [(0, _('-- no content --')), ] + [(c.id, c.name) for c in available_content]
+        )
+    
+    
+class CalendarSchedulingForm(forms.Form):
+    start = forms.DateTimeField(
+        label=_("Starting date and time"),
+        required=True,
+        input_formats=["%Y-%m-%dT%H:%M"],
+        widget=forms.widgets.DateTimeInput(
+            attrs={"type": "datetime-local"}
+        )
+    )
+    event_duration = forms.DurationField(
+        label=_("Duration of each event (minutes)"),
+        required=True,
+        widget=forms.widgets.NumberInput()
+    )
+    event_slots = forms.IntegerField(
+        label=_("Number of slots per event"),
+        required=True,
+    )
+    event_count = forms.IntegerField(
+        label=_("Number of events to add"),
+        required=True
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        add_translated_charfields(
+            self,
+            "event_name",
+            _("Default name ({lang}):"),
+            _("Alternative name ({lang}):")
+        )
+
+    
+class MessageForm(forms.Form):
+    title = forms.CharField(
+        label=_("Message title"),
+        required=True,
+    )
+    content = forms.CharField(
+        label=_("Message content"),
+        required=True,
+        widget=forms.Textarea(attrs={"class": "generic-textfield", "rows": 5})
+    )

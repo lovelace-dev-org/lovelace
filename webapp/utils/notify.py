@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.core.mail import get_connection, EmailMessage
 from django.utils import translation
+from utils.formatters import display_name
 
 def send_error_report(instance, content, revision, errors, answer_url):
     recipient = instance.email
@@ -57,3 +58,14 @@ def send_welcome_email(instance, user=None, lang_code=None, userlist=None):
         )
         mail.send()
     
+def send_email(recipients, sender, title, body):
+
+    connection = get_connection()
+    mail = EmailMessage(
+        title, 
+        body, 
+        '"{name}" <{email}>'.format(name=display_name(sender), email=sender.email),
+        [r.email for r in recipients],
+        connection=connection
+    )
+    mail.send()

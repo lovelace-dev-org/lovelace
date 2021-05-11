@@ -1,12 +1,17 @@
+from django.conf import settings
 from django.contrib import admin
 from django.db.models import Q
 from django.db import transaction 
-from django.forms import Textarea
+from django import forms
+from django.forms import Textarea, ModelForm
 from reversion.models import Version
+from modeltranslation.fields import TranslationField
+from modeltranslation.translator import translator
 from courses.models import Course, CourseInstance, ContentPage, ContentGraph,\
     InstanceIncludeFile, Term, TermToInstanceLink, InstanceIncludeFileToInstanceLink
 from courses.widgets import ContentPreviewWidget
 from utils.access import determine_access, determine_media_access
+
 
 #TODO: There's a loophole where staff members of any course A can gain access
 #      to any course B's pages by embedding the course B page to a course A 
@@ -191,6 +196,11 @@ class CourseMediaAdmin(admin.ModelAdmin):
         
         return False
 
+class DefaultFirstTranslationForm(ModelForm):
+
+    pass
+
+        
 def clone_instance_files(instance):
     instance_files = InstanceIncludeFile.objects.filter(course=instance.course)
     for ifile in instance_files:
@@ -227,6 +237,35 @@ def clone_content_graphs(old_instance, new_instance):
         child_node.parentnode = new_parent
         child_node.save()
     
+def add_translated_charfields(form, field_name, default_label, alternative_label, require_default=True):
+    languages = sorted(
+        settings.LANGUAGES,
+        key=lambda x: x[0] == settings.MODELTRANSLATION_DEFAULT_LANGUAGE,
+        reverse=True
+    )
+    for lang_code, lang_name in languages:
+        if lang_code == settings.MODELTRANSLATION_DEFAULT_LANGUAGE:
+            form.fields[field_name + "_" + lang_code] = forms.CharField(
+                label=default_label.format(lang=lang_code),
+                required=require_default
+            )
+        else:
+            form.fields[field_name + "_" + lang_code] = forms.CharField(
+                label=alternative_label.format(lang=lang_code),
+                required=False
+            )
+                
+def save_translated_field(model_instance, field_name, value):
+    lang = translation.get_language()
+    default_lang = settings.MODELTRANSLATION_DEFAULT_LANGUAGE
+    if lang == default_lang:
+        setattr(model_instance, field_name + "_" + lang, value)
+    else:
+        if not getattr(model_instance, field_name + "_" + default_lang):
+            setattr(model_instance, field_name + "_" + default_lang, value)
+        else:
+            setattr(model_instance, field_name + "_" + lang, value)
+        
     
     
     

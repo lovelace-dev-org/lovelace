@@ -85,6 +85,7 @@ def embed_frame(context, content_data):
         "emb": content_data,
         "embedded": True,
         "meta": content_data["urls"],
+        "revision": content_data["revision"],
         "user": context["user"],
         "enrolled": context["enrolled"],
         "course_staff": context["course_staff"],
@@ -123,9 +124,16 @@ def calendar(context, calendar_data):
             if context.get("course_staff"):
                 entry["reserver"] = display_name(reservation.user)
                 try:
-                    entry["group"] = StudentGroup.objects.get(members=user).name
+                    group = StudentGroup.objects.get(members=user)
                 except StudentGroup.DoesNotExist:
                     entry["group"] = "-"
+                else:
+                    memberlist = []
+                    for member in group.members.get_queryset().exclude(id=reservation.user.id):
+                        memberlist.append(display_name(member))
+                    entry["group"] = "({})\n".format(group.name)
+                    entry["group"] += "\n".join(memberlist)
+                    
                 if calendar.related_content:
                     entry["answers_url"] = reverse("courses:show_answers", kwargs={
                         "user": reservation.user,
@@ -138,7 +146,12 @@ def calendar(context, calendar_data):
                         "user": reservation.user,
                         "course": context["course"],
                         "instance": context["instance"],
-                    })                        
+                    })
+                entry["message_url"] = reverse("courses:send_message", kwargs={
+                        "user": reservation.user,
+                        "course": context["course"],
+                        "instance": context["instance"],
+                })
             
             date_reservations.append(entry)            
             if reservation.user == user:
@@ -155,12 +168,37 @@ def calendar(context, calendar_data):
         can_reserve = False
                 
     return {
+        "course": context["course"],
+        "instance": context["instance"],
         "user": user,
         "can_reserve": can_reserve,
-        "cal_id": calendar.id,
+        "calendar": calendar,
+        "course_staff": context["course_staff"],
         "cal_reservations": calendar_reservations,
         "reserved_event_ids": reserved_event_ids,
     }
+    
+@register.inclusion_tag("courses/calendar-preview.html", takes_context=False)
+def calendar_preview(calendar_data):
+    calendar = Calendar.objects.filter(
+        name=calendar_data["calendar"]
+    ).prefetch_related(
+        "calendardate_set"
+    ).first()
+    
+    cal_dates = calendar.calendardate_set.get_queryset().order_by("start_time")
+    calendar_reservations = []
+    for cal_date in cal_dates:        
+        date_reservations = []
+        calendar_reservations.append((
+            cal_date,
+            date_reservations
+        ))
+    return {
+        "calendar": calendar,
+        "cal_reservations": calendar_reservations,
+    }
+    
 
 @register.inclusion_tag("courses/widgets/group_supervisor_select.html", takes_context=True)
 def supervisor_select(context, group):

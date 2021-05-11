@@ -14,12 +14,23 @@
             {{ field }}
         {% endfor %}
         
+        
+        <table class="edit-form-table">
         {% for field in form_object.visible_fields %}
-          <div class="input-label-container">
-            {{ field.errors }}
-            {{ field.label_tag }} {{ field }}
-          </div>
+          <tr>
+            <td colspan="2">{{ field.errors }}</td>
+          </tr>
+          <tr>
+            <td>
+                {% if field.field.required %}
+                    <b>{{ field.label_tag }}</b>
+                {% else %}
+                    {{ field.label_tag }}
+                {% endif %}
+            </td> 
+            <td>{{ field }}</td>
+          </tr>
         {% endfor %}
-    
+        </table>
         <input type="submit" name="submit" value="{% trans 'Save' %}"></input>
 </form>

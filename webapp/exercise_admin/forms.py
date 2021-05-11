@@ -208,6 +208,7 @@ class CreateFileUploadExerciseForm(forms.Form):
     exercise_feedback_questions = SimpleArrayField(forms.IntegerField(), required=False)
     #exercise_question = forms.CharField(required=False) # Translate
     exercise_manually_evaluated = forms.BooleanField(required=False)
+    exercise_group_submission = forms.BooleanField(required=False)
     exercise_ask_collaborators = forms.BooleanField(required=False)
     exercise_allowed_filenames = forms.CharField(required=False)
     version_comment = forms.CharField(required=False, strip=True)

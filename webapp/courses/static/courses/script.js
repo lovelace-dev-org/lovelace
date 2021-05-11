@@ -383,6 +383,14 @@ function submit_ajax_action(button, success_extra_cb, extra_data) {
     });
 }
 
+function submit_message(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    let form = $(this);
+    submit_ajax_form(form, function() {});    
+}
+
 function submit_enrollment(event) {
     event.preventDefault();
     
@@ -432,7 +440,7 @@ function withdraw_enrollment(event) {
     });
 }
 
-function show_panel(event, caller, panel_type, panel_id) {
+function show_panel(event, caller, panel_type, panel_id, refresh) {
     event.preventDefault();
     event.stopPropagation();
     
@@ -441,7 +449,7 @@ function show_panel(event, caller, panel_type, panel_id) {
     let a = $(caller);
     let url = a.attr("href") + "?" + a.attr("data-querystring");
     
-    if (container.html() == "" || panel.attr("data-panel-type") != panel_type) {
+    if (refresh || container.html() == "" || panel.attr("data-panel-type") != panel_type) {
         $.ajax({
             type: "GET",
             url: url,
@@ -509,6 +517,12 @@ function toggle_staff_widgets(event, caller) {
     $(".staff-only").toggleClass("collapsed");
     $(".student-only").toggleClass("collapsed");
     $(caller).toggleClass("pressed");
+    if (sessionStorage.getItem("staff_view") == "1") {
+        sessionStorage.setItem("staff_view", "0");
+    }
+    else {
+        sessionStorage.setItem("staff_view", "1");
+    }
 }
 
 $(document).ready(function() {
@@ -524,5 +538,10 @@ $(document).ready(function() {
     
     $('.enroll-form').submit(submit_enrollment);
     $('.withdraw-form').submit(withdraw_enrollment);
+    if (sessionStorage.getItem("staff_view") == "1") {
+        $(".staff-only").toggleClass("collapsed");
+        $(".student-only").toggleClass("collapsed");
+        $("#staff-view-toggle").toggleClass("pressed");
+    }
 });
 
