@@ -61,7 +61,7 @@ def _run_command(args, test_dir):
             universal_newlines=False
         )
     except (FileNotFoundError, PermissionError) as e:
-        proc_results.update({
+        proc_results.update({ 
             "retval": None,
             "timedout": False,
             "killed": False,
@@ -192,7 +192,12 @@ def check_answer(self, user_id, instance_id, exercise_id, question_id, answer_id
             with open(os.path.join(test_dir, backend.filename), "wb") as f:
                 f.write(contents)
 
-        args = shlex.split(exercise.routineexercisebackendcommand.command)
+        command = get_instance_revision(
+            RoutineExerciseBackendCommand,
+            exercise.routineexercisebackendcommand.id,
+            revision
+        )
+        args = shlex.split(command.command)
         fn = "".join(random.choice(string.ascii_lowercase) for i in range(24)) + ".json"
         data = {
             "answer": answer.given_answer,
