@@ -145,7 +145,12 @@ def generate_question(self, user_id, instance_id, exercise_id, lang_code, revisi
         }
         with open(os.path.join(test_dir, fn), "w") as f:
             json.dump(data, f)
-        args = shlex.split(exercise.routineexercisebackendcommand.command)
+        command = get_instance_revision(
+            RoutineExerciseBackendCommand,
+            exercise.routineexercisebackendcommand.id,
+            revision
+        )
+        args = shlex.split(command.command)
         args.append("--request-params")
         args.append(fn)
         proc_results = _run_command(args, test_dir)

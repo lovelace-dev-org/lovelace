@@ -624,6 +624,7 @@ class EmbeddedPageMarkup(Markup):
                 "course": state["context"].get("course"),
                 "instance": state["context"].get("instance"),
                 "choices": choices,
+                "revision": revision
             }            
             embedded_content = page.get_rendered_content(page, c)
             question = page.get_question(page, c)
