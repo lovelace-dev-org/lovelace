@@ -15,6 +15,7 @@ from utils.access import ensure_enrolled_or_staff, determine_access
 from utils.archive import find_version_with_filename
 from utils.exercise import render_json_feedback, update_completion
 from utils.files import generate_download_response
+from utils.notify import send_error_report
 
 def _question_context_data(request, course, instance, question):
     template_context = {
@@ -141,6 +142,18 @@ def routine_progress(request, course, instance, content, task_id):
     task = celery_app.AsyncResult(id=task_id)
     if task.ready():
         info = task.info
+        if info.get("status", "fail") == "fail":
+            answer_url = reverse("courses:show_answers", kwargs={
+                "user": request.user,
+                "course": course,
+                "instance": instance,
+                "exercise": content
+            }) + "#" + str(info["answer_id"])
+            send_error_report(instance, content, info["revision"], [info["error"]], answer_url)
+            data = {
+                "errors": _("Operation failed. Course staff has been notified.")
+            }
+            return JsonResponse(data)
 
         if instance.id != info["instance_id"] or content.id != info["exercise_id"] or request.user.id != info["user_id"]:
             return HttpResponse(status=409)

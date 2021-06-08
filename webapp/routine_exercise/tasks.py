@@ -101,15 +101,19 @@ def _run_command(args, test_dir):
 
     stdout.seek(0)
     output = stdout.read()
-    try:
-        proc_results["data"] = json.loads(output.decode("utf-8"))
-    except json.JSONDecodeError as e:
-        stderr.seek(0)
+    stderr.seek(0)
+    errors = stderr.read()
+    
+    if errors:
         proc_results["fail"] = True
-        proc_results["error"] = stderr.read().decode("utf-8")
+        proc_results["error"] = errors.decode("utf-8")
     else:
-        stderr.seek(0)
-        print(stderr.read())
+        try:
+            proc_results["data"] = json.loads(output.decode("utf-8"))            
+        except json.JSONDecodeError as e:
+            stderr.seek(0)
+            proc_results["fail"] = True
+            proc_results["error"] = str(e)
 
     return proc_results
 
@@ -162,7 +166,9 @@ def generate_question(self, user_id, instance_id, exercise_id, lang_code, revisi
             "error": proc_results["error"],
             "instance_id": instance_id,
             "exercise_id": exercise_id,
-            "user_id": user_id
+            "user_id": user_id,
+            "lang_code": lang_code,
+            "revision": revision
         }
 
     return {
@@ -214,7 +220,17 @@ def check_answer(self, user_id, instance_id, exercise_id, question_id, answer_id
         proc_results = _run_command(args, test_dir)
 
     if proc_results.get("fail") or proc_results.get("killed") or proc_results.get("timedout"):
-        return {"task": "generate", "status": "fail", "error": proc_results["error"]}
+        return {
+                "task": "check",
+                "status": "fail",
+                "error": proc_results["error"],
+                "exercise_id": exercise_id,
+                "instance_id": instance_id,
+                "answer_id": answer_id,
+                "user_id": user_id,
+                "lang_code": lang_code,
+                "revision": revision
+        }
 
     return {
         "task": "check",
