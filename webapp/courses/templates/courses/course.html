@@ -62,7 +62,6 @@
 {% endif %}
 
 
-{% if content_tree %}
   <div class="course-contents">
     <h2 class="content-heading">{% trans 'Course Contents' %}<span id="course-contents" class="anchor-offset"></span><a href="#course-contents" class="permalink" title="Permalink to Course Contents">&para;</a></h2>
     
@@ -167,7 +166,6 @@
       {% endif %}
     {% endfor %}
   </div>
-{% endif %}
 
 {% if rendered_content %}
   {% if content.is_answerable %}

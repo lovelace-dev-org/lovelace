@@ -99,6 +99,12 @@ class CourseContentAdmin(admin.ModelAdmin):
             #obj.update_embedded_links(context["instance"])
         
     def formfield_for_dbfield(self, db_field, request, **kwargs):
+        """
+        Sets widgets for content and tags fields. Content in particular gets
+        the preview widget which is capable of showing a rendered preview
+        without saving the content first.
+        """
+        
         formfield = super().formfield_for_dbfield(db_field, request, **kwargs)
         if db_field.name in ('content'):
             formfield.widget = ContentPreviewWidget(attrs={'rows':25, 'cols':120})
@@ -107,11 +113,23 @@ class CourseContentAdmin(admin.ModelAdmin):
         return formfield
         
     def save_model(self, request, obj, form, change):
+        """
+        Sets the post_save method to be called after transaction commit when
+        the model is saved.
+        """
+        
         super().save_model(request, obj, form, change)
         self.current = obj
         transaction.on_commit(self.post_save)
         
     def post_save(self):
+        """
+        When any type of content is saved, any associated cached data needs to
+        be regenerated. As caching is done per lecture page, this will either
+        regenerate cache for the page itself if it was a lecture, or for the
+        parent if the page was an embedded task.
+        """
+        
         parents = ContentPage.objects.filter(embedded_pages=self.current).distinct()
         for instance in CourseInstance.objects.filter(Q(contentgraph__content=self.current) | Q(contentgraph__content__embedded_pages=self.current), frozen=False).distinct():
             self.current.update_embedded_links(instance)
@@ -202,6 +220,10 @@ class DefaultFirstTranslationForm(ModelForm):
 
         
 def clone_instance_files(instance):
+    """
+    Creates cloned links to all instance files in a course instance.
+    """
+
     instance_files = InstanceIncludeFile.objects.filter(course=instance.course)
     for ifile in instance_files:
         link = InstanceIncludeFileToInstanceLink(
@@ -212,6 +234,10 @@ def clone_instance_files(instance):
         link.save()
         
 def clone_terms(instance):
+    """
+    Creates cloned links to all terms in a course instance.
+    """
+
     terms = Term.objects.filter(course=instance.course)
     for term in terms:
         link = TermToInstanceLink(
@@ -222,6 +248,12 @@ def clone_terms(instance):
         link.save()
     
 def clone_content_graphs(old_instance, new_instance):
+    """
+    Creates cloned links to all content nodes in a course instance. This is
+    done in two passes. First all nodes are copied, and then the parents nodes
+    are set updated to point to the matching cloned node.
+    """
+
     content_graphs = ContentGraph.objects.filter(instance=old_instance)
     for graph in content_graphs:
         graph.pk = None
@@ -238,6 +270,14 @@ def clone_content_graphs(old_instance, new_instance):
         child_node.save()
     
 def add_translated_charfields(form, field_name, default_label, alternative_label, require_default=True):
+    """
+    Adds charfields to a form for all languages. Used in generating many admin
+    forms. Will treat MODELTRANSLATION_DEFAULT_LANGUAGE as the primary language
+    and other languages as secondary that are always optional. The primary can
+    be set to optional for fields that are optional. Labels need to be given
+    separately for the default field, and for alternative fields.
+    """
+    
     languages = sorted(
         settings.LANGUAGES,
         key=lambda x: x[0] == settings.MODELTRANSLATION_DEFAULT_LANGUAGE,
@@ -255,7 +295,16 @@ def add_translated_charfields(form, field_name, default_label, alternative_label
                 required=False
             )
                 
+# NOTE: not used currently because it introduced new problems
+#       leaving this here in case the solution is revisited
 def save_translated_field(model_instance, field_name, value):
+    """
+    Reads a translated charfield and saves it in one of two ways. If it is
+    the default language field, it will be saved as is. If it is not the
+    default lang, it will still be saved into the default lang attribute
+    if it's currently empty.
+    """
+
     lang = translation.get_language()
     default_lang = settings.MODELTRANSLATION_DEFAULT_LANGUAGE
     if lang == default_lang:

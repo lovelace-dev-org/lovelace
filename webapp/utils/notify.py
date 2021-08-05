@@ -4,6 +4,18 @@ from django.utils import translation
 from utils.formatters import display_name
 
 def send_error_report(instance, content, revision, errors, answer_url):
+    """
+    Sends an error report to course staff about a checking program crashing.
+    The report is sent to the email address listed in the course instance
+    attributes. The email shows context information about the checking
+    * content name
+    * course instance 
+    * revision used
+    
+    A link to the student's answers where the answer that triggered the error
+    is highlighted is also provided.
+    """
+
     recipient = instance.email
     mailfrom = "{}-notices@{}".format(instance.slug, settings.ALLOWED_HOSTS[0])
     title = "[LOVELACE NOTIFY] Checker error in {}".format(content.name)
@@ -32,6 +44,13 @@ def send_error_report(instance, content, revision, errors, answer_url):
     mail.send()
     
 def send_welcome_email(instance, user=None, lang_code=None, userlist=None):
+    """
+    Sends a welcome email if one is specified for the course instance. Can be
+    sent to either one user, or a list of users. If language code is not
+    provided, the current language will be used for selecting the translated
+    field.
+    """
+    
     if not instance.welcome_message:
         return
     
@@ -43,7 +62,6 @@ def send_welcome_email(instance, user=None, lang_code=None, userlist=None):
             recipients = [user.email]
         else:
             recipients = userlist.values_list("email", flat=True)
-            print(recipients)
             
         mailfrom = "{}-notices@{}".format(instance.slug, settings.ALLOWED_HOSTS[0])
         title = "[{}]".format(instance.course.name)
@@ -59,6 +77,9 @@ def send_welcome_email(instance, user=None, lang_code=None, userlist=None):
         mail.send()
     
 def send_email(recipients, sender, title, body):
+    """
+    Generic email sending utility function. 
+    """
 
     connection = get_connection()
     mail = EmailMessage(

@@ -67,7 +67,6 @@
     <td class="answer-date">{{ answer.answer_date|answer_date }}
        <div class="popup"><div class="results-view" id="results-{{ answer.id }}"></div></div>
        <div class="popup"><div class="results-view" id="assessment-{{ answer.id }}"></div></div>
-       <div class="popup"><pre class="fileview"></pre></div>
     </td>
     {% if exercise.content_type == "TEXTFIELD_EXERCISE" %}
       <td class="answer render-white-space monospace">{{ answer.given_answer }}</td>
@@ -92,6 +91,7 @@
               {% endif %}
               <br />
           {% endfor %}
+          <div class="popup"><pre class="fileview"></pre></div>         
       </td>
     {% elif exercise.content_type == "REPEATED_TEMPLATE_EXERCISE" %}
       <td class="answer">

@@ -71,9 +71,12 @@ def get_single_archived(model_instance, revision_id):
     get_archived_instances or get_archived_field.
     """
 
-    return Version.objects.get_for_object(model_instance)\
-        .get(revision=revision_id)\
-        ._object_version.object
+    try:
+        return Version.objects.get_for_object(model_instance)\
+            .get(revision=revision_id)\
+            ._object_version.object
+    except Version.DoesNotExist:
+        return model_instance
 
 def find_version_with_filename(model_instance, field, name):
     """
@@ -89,6 +92,12 @@ def find_version_with_filename(model_instance, field, name):
         return None
         
 def find_latest_version(model_instance, before=None):
+    """
+    Finds the latest version object for the given model instance. If the
+    optional before (DateTime instance) parameter is set, the returned
+    version will be the latest revision that is dated before the given time.
+    """
+    
     versions = Version.objects.get_for_object(model_instance)
     if before:
         versions = versions.filter(revision__date_created__lte=before)

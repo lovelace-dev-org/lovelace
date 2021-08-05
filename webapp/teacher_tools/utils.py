@@ -50,8 +50,14 @@ def get_missing_and_points(results):
     missing = 0
     points = 0
     points_available = 0
+    groups_counted = []
     for result in results:
-        points_available += result["eo"].default_points
+        if result["eo"].evaluation_group:
+            if result["eo"].evaluation_group not in groups_counted:
+                points_available += result["eo"].default_points
+                groups_counted.append(result["eo"].evaluation_group)
+        else:
+            points_available += result["eo"].default_points
         if result["correct"]:
             points += result["points"]
         else:

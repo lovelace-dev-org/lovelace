@@ -330,6 +330,8 @@ def view_submissions(request, course, instance, content):
     all = UserTaskCompletion.objects.filter(
         instance=instance,
         exercise=content,
+    ).exclude(
+        state="credited"
     ).prefetch_related(Prefetch("user", queryset=users))
     assessed = []
     unassessed = []

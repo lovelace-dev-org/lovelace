@@ -68,7 +68,13 @@
                                      </div>
                                   {% endif %}
                                 {% elif enroll_status == "WITHDRAWN" %}
-                                  <p><button id="{{ instance.slug }}-enroll-button" onclick="show_popup(event, '{{ instance.slug }}-enrollment-application-popup')">{% trans 'Re-Enroll' %}</button></p>
+                                  {% if instance.is_active %}
+                                    <p><button id="{{ instance.slug }}-enroll-button" onclick="show_popup(event, '{{ instance.slug }}-enrollment-application-popup')">{% trans 'Re-Enroll' %}</button></p>
+                                  {% else %}
+                                     <div>
+                                      <span class="instance-userinfo">{% trans 'Enrollment period for this course instance has closed.' %}</span>
+                                     </div>
+                                  {% endif %}
                                 {% endif %}
                             {% endif %}
                           </div>

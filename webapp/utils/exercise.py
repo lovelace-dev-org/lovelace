@@ -1,5 +1,6 @@
 from django.template import loader
 from courses import markupparser
+from utils.archive import get_single_archived
 import courses.models as cm
 
 
@@ -15,6 +16,15 @@ LINT_E = 13 #13
 
 
 def render_json_feedback(log, request, course, instance):
+    """
+    Renders execise feedback from the exercise log JSON format. Parses
+    messages, hints, triggers, and the final result from the log and returns
+    them as a dictionary. 
+    
+    Messages and hints are ran through the markupparser, which makes it
+    possible to include any markup in the log. 
+    """
+
     # render all individual messages in the log tree
     triggers = []
     hints = []
@@ -86,11 +96,23 @@ def update_completion(exercise, instance, user, evaluation):
             completion.points = evaluation.get("points", 0)
         completion.save()
 
-    if changed and correct and exercise.evaluation_group:
+    link = cm.EmbeddedLink.objects.filter(
+        instance=instance,
+        embedded_page=exercise
+    ).first()
+    eval_group = get_single_archived(exercise, link.revision).evaluation_group
+    
+    if changed and correct and eval_group:
         others = cm.ContentPage.objects.filter(
-            evaluation_group=exercise.evaluation_group
+            evaluation_group=eval_group
         ).exclude(id=exercise.id)
         for task in others:
+            link = cm.EmbeddedLink.objects.filter(
+                instance=instance,
+                embedded_page=task
+            ).first()
+            if get_single_archived(task, link.revision).evaluation_group != eval_group:
+                continue
             try:
                 completion = cm.UserTaskCompletion.objects.get(
                     exercise=task,

@@ -23,6 +23,16 @@ def first_title_from_content(content_text):
     return title, anchor
 
 def get_course_instance_tasks(instance, deadline_before=None):
+    """
+    Goes through all the content links in the given course instance to compile
+    a list of tasks in the instance, grouped by content page. The tasks are
+    returned as a list of tuples where
+    # first item is the parent page object
+    # second item is the embedded task object
+    
+    If deadline_before (DateTime) is set, will only include tasks from pages
+    that had a deadline before the given date.
+    """
 
     all_embedded_links = cm.EmbeddedLink.objects.filter(instance=instance).order_by("embedded_page__name").select_related("embedded_page")
 
@@ -40,6 +50,12 @@ def get_course_instance_tasks(instance, deadline_before=None):
     return task_pages
 
 def get_embedded_parent(content, instance):
+    """
+    Gets the embedded parent of a content object. Returns two values: the
+    parent content object or None, and boolean value that tells whether there
+    was a parent or not.
+    """
+    
     try:
         link = cm.EmbeddedLink.objects.get(embedded_page=content, instance=instance)
     except cm.EmbeddedLink.MultipleObjectsReturned:
@@ -49,6 +65,7 @@ def get_embedded_parent(content, instance):
     
 
 # Modified from reversion.models.Revision.revert
+# NOTE: Outdated, functions in utils.archive should be used.
 def get_archived_instances(main_obj, revision_id):
     revision = Revision.objects.get(id=revision_id)
     archived_objects = set()
@@ -66,9 +83,10 @@ def get_archived_instances(main_obj, revision_id):
         by_model[obj.__class__.__name__].append(obj)
         
     return by_model
+
     
+# NOTE: Outdated, functions in utils.archive should be used.
 def get_instance_revision(model_class, instance_id, revision):
-    print(revision)
     instance_obj = model_class.objects.get(id=instance_id)
     if revision is not None:
         return Version.objects.get_for_object(instance_obj).get(revision=revision)._object_version.object
@@ -100,6 +118,13 @@ def compile_json_feedback(log):
     return feedback
 
 def get_embedded_media_file(name, instance, parent):
+    """
+    Gets an embedded media file within a given instance context. Will return
+    either the current version, or the revision specified in the media link.
+    Will accept None as instance or parent. In these cases the current version
+    will always be returned.
+    """
+
     try:
         link = cm.CourseMediaLink.objects.get(
             media__name=name,
@@ -121,6 +146,13 @@ def get_embedded_media_file(name, instance, parent):
     return file_object
     
 def get_embedded_media_image(name, instance, parent):
+    """
+    Gets an embedded media image within a given instance context. Will return
+    either the current version, or the revision specified in the media link.
+    Will accept None as instance or parent. In these cases the current version
+    will always be returned.
+    """
+
     try:
         link = cm.CourseMediaLink.objects.get(
             media__name=name,
@@ -140,8 +172,3 @@ def get_embedded_media_image(name, instance, parent):
             # from the version object?
             image_object.name = revision_object.field_dict["name"]
     return image_object
-    
-    
-    
-    
-    

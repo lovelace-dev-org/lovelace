@@ -81,7 +81,7 @@
     <ul>
         {% for o_instance in enrolled_instances %}
           <li>
-            <a href="{% url 'teacher_tools:student_completion' course o_instance user %}">
+            <a href="{% url 'teacher_tools:student_completion' course o_instance student %}">
                 {{ o_instance.name }}
             </a>
           </li>

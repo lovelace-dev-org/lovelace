@@ -481,7 +481,9 @@ def file_exercise_evaluation(request, course, instance, content, revision, task_
     evaluation_id = task.get()
     task.forget() # TODO: IMPORTANT! Also forget all the subtask results somehow? in tasks.py?
     evaluation_obj = Evaluation.objects.get(id=evaluation_id)
-    answer_count = content.get_user_answers(content, request.user, instance).count()
+    answers = content.get_user_answers(content, request.user, instance)
+    answer_count = answers.count()
+    evaluated_answer = answers.get(evaluation=evaluation_obj)
     answer_count_str = get_answer_count_meta(answer_count)
 
     r = redis.StrictRedis(**settings.REDIS_RESULT_CONFIG)
@@ -510,7 +512,7 @@ def file_exercise_evaluation(request, course, instance, content, revision, task_
                 "course": course,
                 "instance": instance,
                 "exercise": content
-            }) + "#" + str(evaluation_obj.useranswer.id)
+            }) + "#" + str(evaluated_answer.id)
             send_error_report(instance, content, revision, errors, answer_url)
         
     data["answer_count_str"] = answer_count_str
