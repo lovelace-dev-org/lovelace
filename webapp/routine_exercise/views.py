@@ -2,6 +2,7 @@ import os
 import random
 import routine_exercise.tasks as routine_tasks
 
+from django.db import transaction
 from django.http import JsonResponse, HttpResponse
 from django.utils import translation
 from django.utils.translation import ugettext as _
@@ -40,18 +41,26 @@ def _save_question(task_info, data):
     )
     pick = random.randint(0, templates.count() - 1)
     template = templates.all()[pick]
-    question = RoutineExerciseQuestion(
-        instance_id=task_info["instance_id"],
-        exercise_id=task_info["exercise_id"],
-        user_id=task_info["user_id"],
-        language_code=task_info["lang_code"],
-        revision=task_info["revision"],
-        question_class=data["question_class"],
-        generated_json=data,
-        date_generated=datetime.datetime.now(),
-        template=template
-    )
-    question.save()
+    with transaction.atomic():
+        RoutineExerciseQuestion.objects.filter(
+            instance_id=task_info["instance_id"],
+            exercise_id=task_info["exercise_id"],
+            user_id=task_info["user_id"],
+            revision=task_info["revision"],
+            routineexerciseanswer=None
+        ).delete()
+        question = RoutineExerciseQuestion(
+            instance_id=task_info["instance_id"],
+            exercise_id=task_info["exercise_id"],
+            user_id=task_info["user_id"],
+            language_code=task_info["lang_code"],
+            revision=task_info["revision"],
+            question_class=data["question_class"],
+            generated_json=data,
+            date_generated=datetime.datetime.now(),
+            template=template
+        )
+        question.save()
     return question
 
 def _save_evaluation(task_info):

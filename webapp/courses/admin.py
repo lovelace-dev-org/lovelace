@@ -245,7 +245,7 @@ class RepeatedTemplateExerciseBackendFileInline(admin.StackedInline):
     extra = 1
     form = RepeatedTemplateExerciseBackendForm
     formfield_overrides = {
-        models.FileField: {'widget': AdminFileWidget}
+        models.FileField: {'widget': AdminTemplateBackendFileWidget}
     }
 
 class RepeatedTemplateExerciseBackendCommandInline(TranslationStackedInline):

@@ -14,6 +14,10 @@ li.task-bullet-credited {
     list-style-image: url("/static/courses/credited-16.png");
 }
 
+li.task-bullet-submitted {
+    list-style-image: url("/static/courses/submitted-16.png");
+}
+
 li.tasks-expanded {
     cursor: pointer;
     list-style-image: url("/static/courses/collapse-16.png");

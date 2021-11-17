@@ -380,6 +380,7 @@ def group_management(request, course, instance):
         ).order_by("name")
         responsible = False
         select = ""
+        staff_members = User.objects.none()
     
     t = loader.get_template("courses/group-management.html")
     c = {

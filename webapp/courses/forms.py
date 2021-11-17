@@ -187,7 +187,7 @@ class NewContentNodeForm(forms.ModelForm):
 
     class Meta:
         model = cm.ContentGraph
-        fields = ["publish_date", "deadline", "scored", "visible"]
+        fields = ["publish_date", "deadline", "scored", "visible", "evergreen"]
         
     make_child = forms.BooleanField(
         label=_("Make this node a child of the selected node"),
@@ -219,7 +219,7 @@ class NodeSettingsForm(forms.ModelForm):
     
     class Meta:
         model = cm.ContentGraph
-        fields = ["publish_date", "deadline", "scored", "visible"]
+        fields = ["publish_date", "deadline", "scored", "visible", "evergreen"]
         
     active_node = forms.IntegerField(
         widget=forms.HiddenInput,
@@ -281,7 +281,8 @@ class GroupInviteForm(forms.Form):
                     student=user
                 ).exists()
                 assert not cm.StudentGroup.objects.filter(
-                    members=user
+                    members=user,
+                    instance=self.valid_for_instance,
                 ).exists()
             except KeyError:
                 break

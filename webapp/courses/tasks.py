@@ -499,7 +499,6 @@ def run_test(self, test_id, answer_id, instance_id, exercise_id, student=False, 
             if f.file_settings.purpose not in ("INPUT", "WRAPPER", "TEST", "LIBRARY"):
                 continue
             
-            print(name)
             fpath = os.path.join(test_dir, f.file_settings.name)
             with open(fpath, "wb") as fd:
                 fd.write(f.get_file_contents())

@@ -167,7 +167,7 @@ def group_info(request, course, instance):
         slots = instance.max_group_size
         invites = []
         invited_to = GroupInvitation.objects.filter(user=request.user, group__instance=instance)
-        is_supervisor = request.uesr == course.main_responsible
+        is_supervisor = request.user == course.main_responsible
 
     if request.method == "POST":
         form = GroupConfigForm(request.POST, instance=group)

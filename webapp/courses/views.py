@@ -310,13 +310,15 @@ def check_answer(request, course, instance, content, revision):
         evaluation["manual"] = True
         evaluation["correct"] = False
         if exercise.content_type == "FILE_UPLOAD_EXERCISE":
-            task_id = evaluation["task_id"]
-            return check_progress(request, course, instance, content, revision, task_id)        
+            task_id = evaluation.get("task_id")
+            if task_id is not None:
+                return check_progress(request, course, instance, content, revision, task_id)        
     else:    
         evaluation["manual"] = False
         if exercise.content_type == "FILE_UPLOAD_EXERCISE":
-            task_id = evaluation["task_id"]
-            return check_progress(request, course, instance, content, revision, task_id)
+            task_id = evaluation.get("task_id")
+            if task_id is not None:
+                return check_progress(request, course, instance, content, revision, task_id)
     
     exercise.save_evaluation(user, evaluation, answer_object)
 

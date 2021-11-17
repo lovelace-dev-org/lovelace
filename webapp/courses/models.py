@@ -37,9 +37,7 @@ from lovelace.celery import app as celery_app
 import feedback.models
 
 from utils.files import *
-from utils.exercise import update_completion
 from utils.archive import get_archived_field, get_single_archived, find_latest_version
-from utils.users import get_group_members
 
 class RollbackRevert(Exception):
     pass
@@ -149,6 +147,10 @@ class Course(models.Model):
         return self.name
 
 class CourseEnrollment(models.Model):
+
+    class Meta:
+        unique_together = ("instance", "student")
+    
     instance = models.ForeignKey('CourseInstance', on_delete=models.CASCADE)
     student = models.ForeignKey(User, on_delete=models.CASCADE)
 
@@ -338,11 +340,15 @@ class ContentGraph(models.Model):
     ordinal_number = models.PositiveSmallIntegerField() # TODO: Enforce min=1
     visible = models.BooleanField(verbose_name='Is this content visible to students', default=True)
     revision = models.PositiveIntegerField(verbose_name='The spesific revision of the content', blank=True, null=True) # null = current
+    evergreen = models.BooleanField(verbose_name='This content should not be frozen', default=False)
 
     def get_revision_str(self):
         return "rev. {}".format(self.revision) if self.revision is not None else "newest"
     
     def freeze(self, freeze_to=None):
+        if self.evergreen:
+            return
+            
         try:
             version = find_latest_version(self.content, freeze_to)
         except Version.DoesNotExist:
@@ -699,7 +705,7 @@ class ContentPage(models.Model):
                     blocks = []
                 else:
                     blocks.append(("plain", segment))
-                    blocks.append(chunk)                
+                    blocks.append(chunk)
                     segment = ""
                     
             if segment:
@@ -926,6 +932,9 @@ class ContentPage(models.Model):
             return True
 
     def save_evaluation(self, user, evaluation, answer_object):
+        from utils.exercise import update_completion
+        from utils.users import get_group_members
+        
         instance = answer_object.instance
         correct = evaluation["evaluation"]
         if correct and not evaluation.get("manual", False):
@@ -962,6 +971,9 @@ class ContentPage(models.Model):
         return evaluation_object
 
     def update_evaluation(self, user, evaluation, answer_object):
+        from utils.exercise import update_completion
+        from utils.users import get_group_members
+
         instance = answer_object.instance
         answer_object.evaluation.correct = evaluation["evaluation"]
         answer_object.evaluation.points = evaluation["points"]
@@ -1466,7 +1478,10 @@ class FileUploadExercise(ContentPage):
                 revision=revision
             )
             return {"task_id": result.task_id}
-        return {}
+        return {
+            "evaluation": True,
+            "manual": self.manually_evaluated
+        }
 
     def get_user_answers(self, user, instance, ignore_drafts=True):
         if instance is None:

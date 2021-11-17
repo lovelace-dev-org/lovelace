@@ -58,6 +58,7 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_hin
     e_tags = [tag for key, tag in sorted(form_data.items()) if key.startswith('exercise_tag')] # TODO: Do this in clean
     e_feedback_questions = form_data.get('exercise_feedback_questions') or []
     #e_question = form_data['exercise_question']
+    e_group_submission = form_data['exercise_group_submission']
     e_manually_evaluated = form_data['exercise_manually_evaluated']
     e_ask_collaborators = form_data['exercise_ask_collaborators']
     e_allowed_filenames = form_data['exercise_allowed_filenames']
@@ -79,6 +80,7 @@ def save_file_upload_exercise(exercise, form_data, order_hierarchy_json, old_hin
     exercise.evaluation_group = e_evaluation_group
     exercise.tags = e_tags
     #exercise.question = e_question
+    exercise.group_submission = e_group_submission
     exercise.manually_evaluated = e_manually_evaluated
     exercise.ask_collaborators = e_ask_collaborators
     exercise.allowed_filenames = e_allowed_filenames

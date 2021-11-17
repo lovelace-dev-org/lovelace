@@ -8,12 +8,12 @@ function exercise_success(data, result_div, error_div, form_parent) {
     
     if (data.result) {
         result_div.html(data.result);
-        form_parent.children("form").trigger("reset");
+        // form_parent.children("form").trigger("reset");
+        form_parent.children("form").find("input[type=file]").val("");
     }
     if (data.evaluation === true || data.evaluation === false) {
         // Get the symbol in meta
-        let meta_div = form_parent.parent().find("div.task-meta");
-        
+        let meta_div = form_parent.parent().find("div.task-meta");        
         var meta_img = meta_div.children("img");
 
         // Get the symbol in ToC
