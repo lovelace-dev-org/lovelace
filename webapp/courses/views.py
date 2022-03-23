@@ -478,7 +478,6 @@ def get_answer_count_meta(answer_count):
     
     
 def file_exercise_evaluation(request, course, instance, content, revision, task_id, task=None):
-    def file_exercise_evaluation(request, course, instance, content, revision, task_id, task=None):
     r = redis.StrictRedis(**settings.REDIS_RESULT_CONFIG)
     if task is None:
         task = AsyncResult(task_id)
