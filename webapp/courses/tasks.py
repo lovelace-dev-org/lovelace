@@ -122,8 +122,8 @@ def run_tests(self, user_id, instance_id, exercise_id, answer_id, lang_code, rev
         exercise_object = cm.FileUploadExercise.objects.get(id=exercise_id)
 
         if revision is not None:
-            old_exercise_object = get_archived_instances(exercise_object, revision)
-            exercise_object = old_exercise_object["self"]
+            old_exercise_object = Version.objects.get_for_object(exercise_object).get(revision=revision)._object_version.object
+            exercise_object = old_exercise_object
     except cm.FileUploadExercise.DoesNotExist as e:
         # TODO: Log weird request
         return # TODO: Find a way to signal the failure to the user
@@ -146,18 +146,11 @@ def run_tests(self, user_id, instance_id, exercise_id, answer_id, lang_code, rev
         self.update_state(state="PROGRESS", meta={"current": i, "total": len(tests)})
 
         # TODO: The student's code can be run in parallel with the reference
-        results, all_json = run_test(
-            test.id, answer_id, instance_id, exercise_id,
-            student=True,
-            revision=revision
-        )
+        results, all_json = run_test(test.id, answer_id, instance_id, exercise_id, student=True, revision=revision)
         student_results.update(results)
 
         if not all_json:
-            results, all_json = run_test(
-                test.id, answer_id, instance_id, exercise_id,
-                revision=revision
-            )
+            results, all_json = run_test(test.id, answer_id, instance_id, exercise_id, revision=revision)
 
         # if reference is not needed just put the student results there
         # TODO: change generate results to not depend on reference existing
@@ -177,36 +170,32 @@ def run_tests(self, user_id, instance_id, exercise_id, answer_id, lang_code, rev
     # Save the rendered results into Redis
     task_id = self.request.id
     r = redis.StrictRedis(**django_settings.REDIS_RESULT_CONFIG)
-    r.set(task_id, json.dumps(evaluation), ex=django_settings.REDIS_RESULT_EXPIRE)
-
-    # Save the results to database
-    result_string = json.dumps(results)
-    correct = evaluation["correct"]
-    points = exercise_object.default_points
-    
     
     try:
         answer_object = cm.UserFileUploadExerciseAnswer.objects.get(id=answer_id)
     except cm.UserFileUploadExerciseAnswer.DoesNotExist as e:
-        # TODO: Log weird request
-        return # TODO: Find a way to signal the failure to the user
-
-    evaluation_obj = exercise_object.save_evaluation(
-        user_object,
-        {
-            "evaluation": correct,
-            "test_results": result_string,
-            "manual": exercise_object.manually_evaluated
-        },
-        answer_object
-    )
-
-    return evaluation_obj.id
+        return
     
-    # TODO: Should we:
-    # - return the results? (no)
-    # - save the results directly into db? (is this worker contained enough?)
-    # - send the results to a more privileged Celery worker for saving into db?
+    evaluation.update(
+                        result = results
+                )
+    evaluation.update(
+                        answer = answer_object.id
+                )
+    evaluation.update(
+                        user = user_object.id
+                )
+    evaluation.update(
+                        points = exercise_object.default_points
+                )
+    evaluation.update(
+                        exercise = exercise_id
+                )
+    
+    r.set(task_id, json.dumps(evaluation), ex=django_settings.REDIS_RESULT_EXPIRE)
+
+    return
+
 
 def generate_results(results, exercise_id):
     evaluation = {}
