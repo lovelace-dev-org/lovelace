@@ -478,19 +478,35 @@ def get_answer_count_meta(answer_count):
     
     
 def file_exercise_evaluation(request, course, instance, content, revision, task_id, task=None):
+    def file_exercise_evaluation(request, course, instance, content, revision, task_id, task=None):
+    r = redis.StrictRedis(**settings.REDIS_RESULT_CONFIG)
     if task is None:
         task = AsyncResult(task_id)
-    evaluation_id = task.get()
+    task.get()
+
+    evaluation_json = r.get(task_id).decode("utf-8")
+    evaluation_tree = json.loads(evaluation_json)
+    user_object = User.objects.get(id=evaluation_tree["user"])
+    exercise_object = FileUploadExercise.objects.get(id=evaluation_tree["exercise"])
+    answer_object = UserFileUploadExerciseAnswer.objects.get(id=evaluation_tree["answer"])
+
+    evaluation_obj = exercise_object.save_evaluation(
+        user_object,
+        {
+            "evaluation": evaluation_tree["correct"],
+            "test_results": json.dumps(evaluation_tree["result"]),
+            "manual": exercise_object.manually_evaluated
+        },
+        answer_object
+    )
+
     task.forget() # TODO: IMPORTANT! Also forget all the subtask results somehow? in tasks.py?
-    evaluation_obj = Evaluation.objects.get(id=evaluation_id)
+
     answers = content.get_user_answers(content, request.user, instance)
     answer_count = answers.count()
     evaluated_answer = answers.get(evaluation=evaluation_obj)
     answer_count_str = get_answer_count_meta(answer_count)
 
-    r = redis.StrictRedis(**settings.REDIS_RESULT_CONFIG)
-    evaluation_json = r.get(task_id).decode("utf-8")
-    evaluation_tree = json.loads(evaluation_json)
     r.delete(task_id)
     task.forget()
 
@@ -506,9 +522,9 @@ def file_exercise_evaluation(request, course, instance, content, revision, task_
     errors = evaluation_tree['test_tree'].get('errors', [])
     if errors:
         if evaluation_tree['timedout']:
-            data['errors'] = _("The program took too long to execute and was terminated. Check your code for too slow solutions.")
+            data['errors'] = _("The program took too long to execute and was terminated. Check your code>
         else:
-            data['errors'] = _("Checking program was unable to finish due to an error. Contact course staff.")
+            data['errors'] = _("Checking program was unable to finish due to an error. Contact course st>
             answer_url = reverse("courses:show_answers", kwargs={
                 "user": request.user,
                 "course": course,
@@ -516,11 +532,12 @@ def file_exercise_evaluation(request, course, instance, content, revision, task_
                 "exercise": content
             }) + "#" + str(evaluated_answer.id)
             send_error_report(instance, content, revision, errors, answer_url)
-        
+
     data["answer_count_str"] = answer_count_str
     data["manual"] = content.manually_evaluated
     
     return JsonResponse(data)
+
 
 def compile_evaluation_data(request, evaluation_tree, evaluation_obj, context=None):
     log = evaluation_tree["test_tree"].get("log", [])
