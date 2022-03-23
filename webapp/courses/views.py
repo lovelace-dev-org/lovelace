@@ -521,9 +521,9 @@ def file_exercise_evaluation(request, course, instance, content, revision, task_
     errors = evaluation_tree['test_tree'].get('errors', [])
     if errors:
         if evaluation_tree['timedout']:
-            data['errors'] = _("The program took too long to execute and was terminated. Check your code>
+            data['errors'] = _("The program took too long to execute and was terminated. Check your code for too slow solutions.")
         else:
-            data['errors'] = _("Checking program was unable to finish due to an error. Contact course st>
+            data['errors'] = _("Checking program was unable to finish due to an error. Contact course staff.")
             answer_url = reverse("courses:show_answers", kwargs={
                 "user": request.user,
                 "course": course,
@@ -531,7 +531,7 @@ def file_exercise_evaluation(request, course, instance, content, revision, task_
                 "exercise": content
             }) + "#" + str(evaluated_answer.id)
             send_error_report(instance, content, revision, errors, answer_url)
-
+        
     data["answer_count_str"] = answer_count_str
     data["manual"] = content.manually_evaluated
     
