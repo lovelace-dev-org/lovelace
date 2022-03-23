@@ -122,8 +122,8 @@ def run_tests(self, user_id, instance_id, exercise_id, answer_id, lang_code, rev
         exercise_object = cm.FileUploadExercise.objects.get(id=exercise_id)
 
         if revision is not None:
-            old_exercise_object = Version.objects.get_for_object(exercise_object).get(revision=revision)._object_version.object
-            exercise_object = old_exercise_object
+            old_exercise_object = get_archived_instances(exercise_object, revision)
+            exercise_object = old_exercise_object["self"]
     except cm.FileUploadExercise.DoesNotExist as e:
         # TODO: Log weird request
         return # TODO: Find a way to signal the failure to the user
@@ -146,11 +146,18 @@ def run_tests(self, user_id, instance_id, exercise_id, answer_id, lang_code, rev
         self.update_state(state="PROGRESS", meta={"current": i, "total": len(tests)})
 
         # TODO: The student's code can be run in parallel with the reference
-        results, all_json = run_test(test.id, answer_id, instance_id, exercise_id, student=True, revision=revision)
+        results, all_json = run_test(
+            test.id, answer_id, instance_id, exercise_id,
+            student=True,
+            revision=revision
+        )
         student_results.update(results)
 
         if not all_json:
-            results, all_json = run_test(test.id, answer_id, instance_id, exercise_id, revision=revision)
+            results, all_json = run_test(
+                test.id, answer_id, instance_id, exercise_id,
+                revision=revision
+            )
 
         # if reference is not needed just put the student results there
         # TODO: change generate results to not depend on reference existing
