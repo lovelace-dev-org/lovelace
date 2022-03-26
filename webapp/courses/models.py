@@ -1473,9 +1473,9 @@ class FileUploadExercise(ContentPage):
         if self.fileexercisetest_set.get_queryset():
             result = rpc_tasks.run_tests.delay(
                 user=model_to_dict(user),
-+               instance=model_to_dict(answer_object.instance),
-+               exercise=model_to_dict(self),
-+               answer=model_to_dict(answer_object),
+                instance=model_to_dict(answer_object.instance),
+                exercise=model_to_dict(self),
+                answer=model_to_dict(answer_object),
                 lang_code=lang_code,
                 revision=revision
             )
