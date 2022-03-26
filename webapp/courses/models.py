@@ -6,6 +6,7 @@
 import datetime
 import itertools
 import operator
+import json
 import re
 import os
 from fnmatch import fnmatch
@@ -25,6 +26,7 @@ from django.utils import translation
 from django.utils.text import slugify
 from django.contrib.postgres.fields import ArrayField, JSONField
 import django.conf
+from django.forms.models import model_to_dict
 
 from reversion import revisions as reversion
 from reversion.models import Version
@@ -1470,10 +1472,10 @@ class FileUploadExercise(ContentPage):
         if revision == "head": revision = None
         if self.fileexercisetest_set.get_queryset():
             result = rpc_tasks.run_tests.delay(
-                user_id=user.id,
-                instance_id=answer_object.instance.id,
-                exercise_id=self.id,
-                answer_id=answer_object.id,
+                user=model_to_dict(user),
++               instance=model_to_dict(answer_object.instance),
++               exercise=model_to_dict(self),
++               answer=model_to_dict(answer_object),
                 lang_code=lang_code,
                 revision=revision
             )
