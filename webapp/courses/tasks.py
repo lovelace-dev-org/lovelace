@@ -93,13 +93,12 @@ def add(a, b):
     return a+b
 
 @shared_task(name="courses.run-fileexercise-tests", bind=True)
-def run_tests(self, user, instance, exercise, answer, lang_code, revision):
+def run_tests(self, user, instance, exercise, answer, lang_code, revision, combined):
     task_id = self.request.id
 
     r = redis.StrictRedis(**django_settings.REDIS_RESULT_CONFIG)
-    id_AAA = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
-    combined_data = r.get(id_AAA).decode("utf-8")
-    transfered_data = json.loads(combined_data)
+    
+    transfered_data = json.loads(combined)
 
     translation.activate(lang_code)
 
