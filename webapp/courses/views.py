@@ -306,7 +306,121 @@ def check_answer(request, course, instance, content, revision):
             'result': str(e)
         })
     
-    evaluation = exercise.check_answer(content, user, ip, answer, files, answer_object, revision)
+    exercise = FileUploadExercise.objects.get(id=content.id)
+    exercise_file_objects_list = exercise.fileexercisetestincludefile_set.get_queryset()
+
+    exercise_files_list = []
+    #Tassa otetaan required_exercise files kirjoittamista varten
+    for f in exercise_file_objects_list:
+        exec_content = {}
+        purpose_files = {}
+        if f.file_settings.purpose == "REFERENCE":
+            purpose_files.update(
+                name=f.file_settings.name,
+                file=f.get_file_contents().decode()
+                #ADDED DECODE ^
+            )
+            files_to_check_system.append(purpose_files)
+        if f.file_settings.purpose not in ("INPUT", "WRAPPER", "TEST", "LIBRARY"):
+            continue
+        exec_content.update(
+        file=f.get_file_contents().decode(),
+        #ADDED DECODE ^
+        name=f.file_settings.name,
+        info=f.fileinfo,
+        chmod=f.file_settings.chmod_settings,
+        chown=f.file_settings.chown_settings,
+        chgrp=f.file_settings.chgrp_settings
+        )
+        exercise_files_list.append(exec_content)
+
+    instance_file_links = exercise.instanceincludefiletoexerciselink_set.get_queryset()
+    instance_file_links_list = []
+
+    for if_link in instance_file_links:
+        insta_file_content = {}
+        #Used to loop the queryset trough
+        if "equals"=="equals":
+            settingss = if_link.file_settings
+            if settingss.purpose not in ("INPUT", "WRAPPER", "TEST", "LIBRARY"):
+                continue
+            name = settingss.name
+            ii_link = cm.InstanceIncludeFileToInstanceLink.objects.get(
+                    include_file=if_link.include_file,
+                    instance__id=instance.id
+                )
+            if ii_link.revision is None:
+                file_obj = if_link.include_file
+            else:
+                try:
+                    file_obj = get_single_archived(if_link.include_file, revision)
+                except Version.DoesNotExist:
+                    # use latest version even though it may not work
+                    file_obj = if_link.include_file
+            contents = file_obj.get_file_contents()
+            insta_file_content.update(
+            filename=name,
+            filecontent=contents.decode(),
+            fileinfo=file_obj.fileinfo,
+            chmod=settingss.chmod_settings,
+            chown=settingss.chown_settings,
+            chgrp=settingss.chgrp_settings
+            )
+            instance_file_links_list.append(insta_file_content)
+
+    exercise_object = FileUploadExercise.objects.get(id=content.id)
+    answer_object = UserFileUploadExerciseAnswer.objects.get(id=exercise_object.id)
+
+    exercise = FileUploadExercise.objects.get(id=exercise_object.id)
+    instance_file_links = exercise.instanceincludefiletoexerciselink_set.get_queryset()
+    instance_list = []
+
+    for i, instance_file in enumerate(instance_file_links):
+        instance_list.append(model_to_dict(instance_file))
+    files_to_check_correct = {}
+    files_to_check = answer_object.get_returned_files_raw()
+    for filesname, filescontent in files_to_check.items():
+        files_to_check_correct = {
+            filesname : filescontent.decode()
+        }
+
+    exec_list = []
+    exercise_file_objects = exercise_object.fileexercisetestincludefile_set.get_queryset()
+
+    for i, exec_object in enumerate(exercise_file_objects):
+        exec_list.append(model_to_dict(exec_object))
+
+    tests = exercise_object.fileexercisetest_set.all()
+    commands = FileExerciseTestCommand.objects.filter(stage=exercise_object.id)
+    tests_lists = []
+    commands_list = []
+
+    for i, test in enumerate(tests):
+        stages = test.fileexerciseteststage_set.get_queryset()
+        list_of_reqs = []
+        for i, single_command in enumerate(commands):
+            commands_list.append(model_to_dict(single_command))
+
+        for requs in model_to_dict(test)["required_instance_files"]:
+            list_of_reqs.append(model_to_dict(requs))
+
+        test = model_to_dict(test)
+        test["required_instance_files"] = list_of_reqs
+        tests_lists.append(test)
+
+    #Contains the needed information to test files without fetching it from the database
+    combined = {}
+    combined.update(
+        tests=tests_lists,
+        commands=commands_list,
+        files_to_ch=files_to_check,
+        exercise_list=exercise_files_list,
+        instances_list=instance_list,
+        instance_file_links=instance_file_links_list,
+        files_to_check_correct=files_to_check_correct
+    )
+    
+    evaluation = exercise.check_answer(content, user, ip, answer, files, answer_object, revision, json.dumps(combined, default=str))
     if exercise.manually_evaluated:
         evaluation["manual"] = True
         evaluation["correct"] = False
@@ -451,125 +565,6 @@ def get_repeated_template_session(request, course, instance, content, revision):
 
 @ensure_enrolled_or_staff
 def check_progress(request, course, instance, content, revision, task_id):
-    task_id_a = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
-    r = redis.StrictRedis(**settings.REDIS_RESULT_CONFIG)
-
-    exercise = FileUploadExercise.objects.get(id=content.id)
-    exercise_file_objects_list = exercise.fileexercisetestincludefile_set.get_queryset()
-
-    exercise_files_list = []
-    #Tassa otetaan required_exercise files kirjoittamista varten
-    for f in exercise_file_objects_list:
-        exec_content = {}
-        purpose_files = {}
-        if f.file_settings.purpose == "REFERENCE":
-            purpose_files.update(
-                name=f.file_settings.name,
-                file=f.get_file_contents().decode()
-                #ADDED DECODE ^
-            )
-            files_to_check_system.append(purpose_files)
-        if f.file_settings.purpose not in ("INPUT", "WRAPPER", "TEST", "LIBRARY"):
-            continue
-        exec_content.update(
-        file=f.get_file_contents().decode(),
-        #ADDED DECODE ^
-        name=f.file_settings.name,
-        info=f.fileinfo,
-        chmod=f.file_settings.chmod_settings,
-        chown=f.file_settings.chown_settings,
-        chgrp=f.file_settings.chgrp_settings
-        )
-        exercise_files_list.append(exec_content)
-
-    instance_file_links = exercise.instanceincludefiletoexerciselink_set.get_queryset()
-    instance_file_links_list = []
-
-    for if_link in instance_file_links:
-        insta_file_content = {}
-        #Used to loop the queryset trough
-        if "equals"=="equals":
-            settingss = if_link.file_settings
-            if settingss.purpose not in ("INPUT", "WRAPPER", "TEST", "LIBRARY"):
-                continue
-            name = settingss.name
-            ii_link = cm.InstanceIncludeFileToInstanceLink.objects.get(
-                    include_file=if_link.include_file,
-                    instance__id=instance.id
-                )
-            if ii_link.revision is None:
-                file_obj = if_link.include_file
-            else:
-                try:
-                    file_obj = get_single_archived(if_link.include_file, revision)
-                except Version.DoesNotExist:
-                    # use latest version even though it may not work
-                    file_obj = if_link.include_file
-            contents = file_obj.get_file_contents()
-            insta_file_content.update(
-            filename=name,
-            filecontent=contents.decode(),
-            fileinfo=file_obj.fileinfo,
-            chmod=settingss.chmod_settings,
-            chown=settingss.chown_settings,
-            chgrp=settingss.chgrp_settings
-            )
-            instance_file_links_list.append(insta_file_content)
-
-    exercise_object = FileUploadExercise.objects.get(id=content.id)
-    answer_object = UserFileUploadExerciseAnswer.objects.get(id=exercise_object.id)
-
-    exercise = FileUploadExercise.objects.get(id=exercise_object.id)
-    instance_file_links = exercise.instanceincludefiletoexerciselink_set.get_queryset()
-    instance_list = []
-
-    for i, instance_file in enumerate(instance_file_links):
-        instance_list.append(model_to_dict(instance_file))
-    files_to_check_correct = {}
-    files_to_check = answer_object.get_returned_files_raw()
-    for filesname, filescontent in files_to_check.items():
-        files_to_check_correct = {
-            filesname : filescontent.decode()
-        }
-
-    exec_list = []
-    exercise_file_objects = exercise_object.fileexercisetestincludefile_set.get_queryset()
-
-    for i, exec_object in enumerate(exercise_file_objects):
-        exec_list.append(model_to_dict(exec_object))
-
-    tests = exercise_object.fileexercisetest_set.all()
-    commands = FileExerciseTestCommand.objects.filter(stage=exercise_object.id)
-    tests_lists = []
-    commands_list = []
-
-    for i, test in enumerate(tests):
-        stages = test.fileexerciseteststage_set.get_queryset()
-        list_of_reqs = []
-        for i, single_command in enumerate(commands):
-            commands_list.append(model_to_dict(single_command))
-
-        for requs in model_to_dict(test)["required_instance_files"]:
-            list_of_reqs.append(model_to_dict(requs))
-
-        test = model_to_dict(test)
-        test["required_instance_files"] = list_of_reqs
-        tests_lists.append(test)
-
-    #Contains the needed information to test files without fetching it from the database
-    combined = {}
-    combined.update(
-        tests=tests_lists,
-        commands=commands_list,
-        files_to_ch=files_to_check,
-        exercise_list=exercise_files_list,
-        instances_list=instance_list,
-        instance_file_links=instance_file_links_list,
-        files_to_check_correct=files_to_check_correct
-)
-
-    r.set(task_id_a, json.dumps(combined, default=str), ex=settings.REDIS_RESULT_EXPIRE)
-
     task = celery_app.AsyncResult(id=task_id)
     info = task.info
     if task.ready():
