@@ -201,10 +201,12 @@ def run_tests(self, user, instance, exercise, answer, lang_code, revision):
                 file_to_check_correct.append(key)
 
             for i, cmd in enumerate(commands):
+                cmd_dict = cmd
                 results = run_command_chainable(
                     {
                         "id": cmd["id"],
                         "input_text": cmd["input_text"],
+                        "command_dict": cmd_dict,
                         "return_value": cmd["return_value"]
                     },
                     temp_dir_prefix,
@@ -775,7 +777,7 @@ def run_stage(self, stage_id, test_dir, temp_dir_prefix, files_to_check, revisio
 
 @shared_task(name="courses.run-command-chain-block")
 def run_command_chainable(cmd, temp_dir_prefix, test_dir, files_to_check, stage_results=None, revision=None):
-    cmd_id, cmd_input_text, cmd_return_value = cmd["id"], cmd["input_text"], cmd["return_value"]
+    cmd_id, cmd_input_text, cmd_return_value, cmd_dict = cmd["id"], cmd["input_text"], cmd["return_value"], cmd["command_dict"]
     if stage_results is None or "commands" not in stage_results.keys():
         stage_results = {"commands": {}}
 
@@ -786,7 +788,7 @@ def run_command_chainable(cmd, temp_dir_prefix, test_dir, files_to_check, stage_
     stdin.seek(0)
     
     proc_results = run_command(
-        cmd_id, stdin, stdout, stderr, test_dir, files_to_check,
+        cmd_dict, stdin, stdout, stderr, test_dir, files_to_check,
         revision=revision
     )
     
@@ -824,13 +826,13 @@ def run_command_chainable(cmd, temp_dir_prefix, test_dir, files_to_check, stage_
     return stage_results
 
 @shared_task(name="courses.run-command")
-def run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check, revision=None):
+def run_command(cmd_dict, stdin, stdout, stderr, test_dir, files_to_check, revision=None):
     """
     Runs the current command of this stage by automated fork & exec.
     """
     
     try:
-        command = cm.FileExerciseTestCommand.objects.get(id=cmd_id)
+        command = cmd_dict["command_line"]
 
         if revision is not None:
             old_command = get_archived_instances(command, revision)
@@ -840,14 +842,14 @@ def run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check, revisio
         return # TODO: Find a way to signal the failure to the user
 
     # TODO: More codes (e.g., $TRANSLATION)
-    cmd = command.command_line.replace(
+    cmd = command.replace(
         "$RETURNABLES",
         " ".join(shlex.quote(f) for f in files_to_check)
     ).replace(
         "$CWD",
         test_dir
     )
-    timeout = command.timeout.total_seconds()
+    timeout = sum(multiplier * int(time_unit) for multiplier, time_unit in zip([3600, 60, 1], cmd_dict["timeout"].split(":")))
     env = django_settings.CHECKING_ENV
     env["PWD"] = test_dir
     
@@ -856,12 +858,12 @@ def run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check, revisio
     shell_like_cmd = " ".join(shlex.quote(arg) for arg in args)
 
     proc_results = {
-        'ordinal_number': command.ordinal_number,
-        'expected_retval': command.return_value,
-        'input_text': command.input_text,
-        'significant_stdout': command.significant_stdout,
-        'significant_stderr': command.significant_stderr,
-        'json_output': command.json_output,
+        'ordinal_number': cmd_dict["ordinal_number"],
+        'expected_retval': cmd_dict["return_value"],
+        'input_text': cmd_dict["input_text"],
+        'significant_stdout': cmd_dict["significant_stdout"],
+        'significant_stderr': cmd_dict["significant_stderr"],
+        'json_output': cmd_dict["json_output"],
         'command_line': shell_like_cmd,
     }
     print("Running: {cmdline}".format(cmdline=shell_like_cmd))
