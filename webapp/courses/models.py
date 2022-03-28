@@ -1465,7 +1465,7 @@ class FileUploadExercise(ContentPage):
     def get_admin_change_url(self):
         return reverse("exercise_admin:file_upload_change", args=(self.id,))
 
-    def check_answer(self, user, ip, answer, files, answer_object, revision):
+    def check_answer(self, user, ip, answer, files, answer_object, revision, combined):
         import courses.tasks as rpc_tasks
                 
         lang_code = translation.get_language()
@@ -1477,7 +1477,8 @@ class FileUploadExercise(ContentPage):
                 exercise=model_to_dict(self),
                 answer=model_to_dict(answer_object),
                 lang_code=lang_code,
-                revision=revision
+                revision=revision,
+                combined=combined
             )
             return {"task_id": result.task_id}
         return {
