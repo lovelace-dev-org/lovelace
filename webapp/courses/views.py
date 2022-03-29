@@ -7,7 +7,7 @@ from html import escape
 from collections import namedtuple
 
 import redis
-
+import base64
 import magic
 
 from django.http import HttpResponse, JsonResponse, HttpResponseRedirect,\
