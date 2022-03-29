@@ -102,14 +102,7 @@ def run_tests(self, user, instance, exercise, answer, lang_code, revision, combi
 
     translation.activate(lang_code)
 
-    try:
-        exercise_object = exercise
-
-        if revision is not None:
-            old_exercise_object = get_archived_instances(exercise_object, revision)
-            exercise_object = old_exercise_object["self"]
-    except cm.FileUploadExercise.DoesNotExist as e:
-        return
+    exercise_object = exercise
 
     self.update_state(state="PROGRESS", meta={"current":4, "total":10})
     user_object = user
