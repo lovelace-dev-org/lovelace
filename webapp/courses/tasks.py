@@ -144,8 +144,8 @@ def run_tests(self, user, instance, exercise, answer, lang_code, revision, combi
 
             for name, contents in files_to_check_correct.items():
                 fpath = os.path.join(test_dir, name)
-                with open(fpath, "w") as fd:
-                    fd.write(contents)
+                with open(fpath, "wb") as fd:
+                    fd.write(base64.b64decode(contents))
                 print("Wrote file under test %s" % (fpath))
                 os.chmod(fpath, 0o660)
                 os.chown(fpath, student_uid, student_gid)
@@ -155,8 +155,8 @@ def run_tests(self, user, instance, exercise, answer, lang_code, revision, combi
         # Write the exercise files required by this test
             for f in exercise_file_objects:
                 fpath = os.path.join(test_dir, f["name"])
-                with open(fpath, "w") as fd:
-                    fd.write(f["file"])
+                with open(fpath, "wb") as fd:
+                    fd.write(base64.b64decode(f["file"]))
                 print("Wrote required exercise file {} from {}".format(fpath, f["info"]))
                 os.chmod(fpath, chmod_parse(f["chmod"]))
                 if "OWNED" in (f["chown"], f["chgrp"]):
@@ -170,8 +170,8 @@ def run_tests(self, user, instance, exercise, answer, lang_code, revision, combi
                 contents = if_link["filecontent"]
                 fpath = os.path.join(test_dir, if_link["filename"])
 
-                with open(fpath, "w") as fd:
-                    fd.write(contents)
+                with open(fpath, "wb") as fd:
+                    fd.write(base64.b64decode(contents))
                 print("Wrote required instance file {} from {}".format(
                     fpath, if_link["fileinfo"]
                 ))
