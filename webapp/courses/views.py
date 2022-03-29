@@ -317,14 +317,14 @@ def check_answer(request, course, instance, content, revision):
         if f.file_settings.purpose == "REFERENCE":
             purpose_files.update(
                 name=f.file_settings.name,
-                file=f.get_file_contents().decode()
+                file=base64.b64encode(f.get_file_contents()).decode("utf-8")
                 #ADDED DECODE ^
             )
             files_to_check_system.append(purpose_files)
         if f.file_settings.purpose not in ("INPUT", "WRAPPER", "TEST", "LIBRARY"):
             continue
         exec_content.update(
-        file=f.get_file_contents().decode(),
+        file=base64.b64encode(f.get_file_contents()).decode("utf-8"),
         #ADDED DECODE ^
         name=f.file_settings.name,
         info=f.fileinfo,
@@ -360,7 +360,7 @@ def check_answer(request, course, instance, content, revision):
             contents = file_obj.get_file_contents()
             insta_file_content.update(
             filename=name,
-            filecontent=contents.decode(),
+            filecontent=base64.b64encode(contents).decode("utf-8"),
             fileinfo=file_obj.fileinfo,
             chmod=settingss.chmod_settings,
             chown=settingss.chown_settings,
@@ -381,7 +381,7 @@ def check_answer(request, course, instance, content, revision):
     files_to_check = answer_object.get_returned_files_raw()
     for filesname, filescontent in files_to_check.items():
         files_to_check_correct = {
-            filesname : filescontent.decode()
+            filesname : base64.b64encode(filescontent).decode("utf-8")
         }
 
     exec_list = []
