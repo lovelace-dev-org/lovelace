@@ -90,8 +90,11 @@ def update_completion(exercise, instance, user, evaluation):
         changed = True
     else:
         if completion.state != "correct":
-            completion.state = ["incorrect", "correct"][correct]
-            changed = True
+            if evaluation.get("manual", False):
+                completion.state = "submitted"
+            else:
+                completion.state = ["incorrect", "correct"][correct]
+                changed = True
         if correct:
             completion.points = evaluation.get("points", 0)
         completion.save()

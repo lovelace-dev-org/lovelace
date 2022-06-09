@@ -465,7 +465,7 @@ class TermAdmin(TranslationAdmin, VersionAdmin):
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)
         lang_list = django.conf.settings.LANGUAGES
-        for instance in CourseInstance.objects.filter(course=obj.course):       
+        for instance in CourseInstance.objects.filter(course=obj.course, frozen=False):       
             instance_slug = instance.slug
             for lang, _ in lang_list:
                 cache.set('termbank_contents_{instance}_{lang}'.format(instance=instance_slug, lang=lang), None, timeout=None)

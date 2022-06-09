@@ -66,7 +66,7 @@ def answer_date(t):
 @register.filter
 def event_duration(td):
     seconds = td.total_seconds()
-    if seconds > 3600:
+    if seconds >= 3600:
         return time.strftime("%Hh %Mmin", time.gmtime(seconds))
     else:
         return time.strftime("%Mmin", time.gmtime(seconds))

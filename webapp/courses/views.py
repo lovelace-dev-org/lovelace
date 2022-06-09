@@ -312,7 +312,7 @@ def check_answer(request, course, instance, content, revision):
         if exercise.content_type == "FILE_UPLOAD_EXERCISE":
             task_id = evaluation.get("task_id")
             if task_id is not None:
-                return check_progress(request, course, instance, content, revision, task_id)        
+                return check_progress(request, course, instance, content, revision, task_id)
     else:    
         evaluation["manual"] = False
         if exercise.content_type == "FILE_UPLOAD_EXERCISE":
@@ -806,7 +806,6 @@ def content(request, course, instance, content, pagenum=None, **kwargs):
     embed_dict = {}
     for link in embedded_links:
         embed_dict[link.embedded_page.slug] = link.embedded_page
-            
 
     c = {
         'course': course,
