@@ -13,6 +13,7 @@ from django.db import IntegrityError, transaction
 from django.utils import translation
 from django.conf import settings as django_settings
 from django.contrib.auth.models import User
+from django.forms.models import model_to_dict
 
 from reversion import revisions as reversion
 from reversion.models import Version
@@ -92,121 +93,161 @@ def add(a, b):
     return a+b
 
 @shared_task(name="courses.run-fileexercise-tests", bind=True)
-def run_tests(self, user_id, instance_id, exercise_id, answer_id, lang_code, revision):
-    # TODO: Actually, just receive the relevant ids for fetching the Django
-    #       models here instead of in the Django view.
-    # http://celery.readthedocs.org/en/latest/userguide/tasks.html#database-transactions
+def run_tests(self, user, instance, exercise, answer, lang_code, revision, combined):
+    task_id = self.request.id
 
-    #def run_tests(tests, test_files, student_files, reference_files):
-    # tests: the metadata for all the tests
-    # test_files: the files that are integral for the tests
-    # student_files: the files the student uploaded - these will be tested
-    # reference_files: the reference files - these will be tested the same way
-    #                  as the student's files
+    r = redis.StrictRedis(**django_settings.REDIS_RESULT_CONFIG)
+    
+    transfered_data = json.loads(combined)
 
-    # TODO: Check if any input generators are used. If yes, find a way to supply
-    #       the same generated input to both the student's and reference codes.
-    #       Some possibilities:
-    #       - Generate a seed _here_ and pass it on (wastes CPU time?)
-    #       - Generate the inputs _here_ and pass them on (best guess)
-    #       - Generate the inputs during the code evaluation process and have
-    #         the other code set depend on them (complicated to implement)
-    # TODO: Input generator targets:
-    #       - stdin
-    #       - readable file
-    #       - as command line parameters!
-    #       - in env?
     translation.activate(lang_code)
 
-    try:
-        exercise_object = cm.FileUploadExercise.objects.get(id=exercise_id)
-
-        if revision is not None:
-            old_exercise_object = get_archived_instances(exercise_object, revision)
-            exercise_object = old_exercise_object["self"]
-    except cm.FileUploadExercise.DoesNotExist as e:
-        # TODO: Log weird request
-        return # TODO: Find a way to signal the failure to the user
+    exercise_object = exercise
 
     self.update_state(state="PROGRESS", meta={"current":4, "total":10})
-    user_object = User.objects.get(id=user_id)
-    print("user: %s" % (user_object.username))
-    
-    # Get the test data
-    # TODO: Use prefetch_related?
-    
-    #tests = cm.FileExerciseTest.objects.filter(exercise=exercise_id)
-    tests = exercise_object.fileexercisetest_set.all()
+    user_object = user
+
+    tests = transfered_data["tests"]
+
+    commands = transfered_data["commands"]
+
+    files_to_check = transfered_data["files_to_ch"]
+
+    files_to_check_correct = transfered_data["files_to_check_correct"]
+
+    exercise_file_objects = transfered_data["exercise_list"]
+
+    instance_file_links = transfered_data["instance_file_links"]
+
+    answer_object = answer
 
     student_results = {}
     reference_results = {}
-    
-    # Run all the tests for both the returned and reference code
+
+    server_uid, server_gid = sec.get_uid_gid(django_settings.WORKER_USERNAME)
+    student_uid, student_gid = sec.get_uid_gid(django_settings.RESTRICTED_USERNAME)
+    uid = {
+        "OWNED": student_uid,
+        "NOT_OWNED": server_uid
+    }
+    gid = {
+        "OWNED": student_gid,
+        "NOT_OWNED": server_gid
+    }
+
+# Run all the tests for both the returned and reference code
     for i, test in enumerate(tests):
         self.update_state(state="PROGRESS", meta={"current": i, "total": len(tests)})
 
-        # TODO: The student's code can be run in parallel with the reference
-        results, all_json = run_test(
-            test.id, answer_id, instance_id, exercise_id,
-            student=True,
-            revision=revision
-        )
-        student_results.update(results)
+        temp_dir_prefix = os.path.join("/", "tmp")
+        with tempfile.TemporaryDirectory(dir=temp_dir_prefix) as test_dir:
 
-        if not all_json:
-            results, all_json = run_test(
-                test.id, answer_id, instance_id, exercise_id,
-                revision=revision
-            )
+            for name, contents in files_to_check_correct.items():
+                fpath = os.path.join(test_dir, name)
+                with open(fpath, "wb") as fd:
+                    fd.write(base64.b64decode(contents))
+                print("Wrote file under test %s" % (fpath))
+                os.chmod(fpath, 0o660)
+                os.chown(fpath, student_uid, student_gid)
 
-        # if reference is not needed just put the student results there
-        # TODO: change generate results to not depend on reference existing
-        reference_results.update(results)
+            required_files = test["required_files"]
 
-    #print(student_results.items())
-    #print(reference_results.items())
+        # Write the exercise files required by this test
+            for f in exercise_file_objects:
+                fpath = os.path.join(test_dir, f["name"])
+                with open(fpath, "wb") as fd:
+                    fd.write(base64.b64decode(f["file"]))
+                print("Wrote required exercise file {} from {}".format(fpath, f["info"]))
+                os.chmod(fpath, chmod_parse(f["chmod"]))
+                if "OWNED" in (f["chown"], f["chgrp"]):
+                    os.chown(
+                        fpath,
+                        uid[f["chown"]],
+                        gid[f["chgrp"]]
+                    )
 
-    results = {"student": student_results, "reference": reference_results}
+            for if_link in instance_file_links:
+                contents = if_link["filecontent"]
+                fpath = os.path.join(test_dir, if_link["filename"])
 
-    # TODO: Make the comparisons to determine correct status
-    # Ultimate encoding: http://en.wikipedia.org/wiki/Code_page_437
-    # Determine the result and generate JSON accordingly
-    # TODO: Do this concurrently, interleaved with the actual test running!
-    evaluation = generate_results(results, exercise_id)
+                with open(fpath, "wb") as fd:
+                    fd.write(base64.b64decode(contents))
+                print("Wrote required instance file {} from {}".format(
+                    fpath, if_link["fileinfo"]
+                ))
+                os.chmod(fpath, chmod_parse(if_link["chmod"]))
+                if "OWNED" in (if_link["chown"], if_link["chgrp"]):
+                    os.chown(
+                        fpath,
+                        uid[if_link["chown"]],
+                        gid[if_link["chgrp"]]
+                    )
+
+            stage_results = {
+                "fail": False,
+                "commands": {},
+            }
+
+            file_to_check_correct = []
+            for key, value in files_to_check.items():
+                file_to_check_correct.append(key)
+
+            for i, cmd in enumerate(commands):
+                cmd_dict = cmd
+                results = run_command_chainable(
+                    {
+                        "id": cmd["id"],
+                        "input_text": cmd["input_text"],
+                        "command_dict": cmd_dict,
+                        "return_value": cmd["return_value"]
+                    },
+                    temp_dir_prefix,
+                    test_dir,
+                    file_to_check_correct,
+                    stage_results=stage_results,
+                    revision=revision
+                )
+                print(results)
+                stage_results.update(results)
+                student_results.update(stage_results)
+                reference_results.update(stage_results)
+
+                if not cmd["json_output"]:
+                    all_json = False
+
+                if results.get('fail'):
+                    stage_results['fail'] = True
+                    break
+
+            print("Finished")
+
+        results = {"student": student_results, "reference": reference_results}
+        evaluation = generate_results(results, exercise["id"])
 
     # Save the rendered results into Redis
-    task_id = self.request.id
-    r = redis.StrictRedis(**django_settings.REDIS_RESULT_CONFIG)
-    r.set(task_id, json.dumps(evaluation), ex=django_settings.REDIS_RESULT_EXPIRE)
+        task_id = self.request.id
+        
+        evaluation.update(
 
-    # Save the results to database
-    result_string = json.dumps(results)
-    correct = evaluation["correct"]
-    points = exercise_object.default_points
-    
-    
-    try:
-        answer_object = cm.UserFileUploadExerciseAnswer.objects.get(id=answer_id)
-    except cm.UserFileUploadExerciseAnswer.DoesNotExist as e:
-        # TODO: Log weird request
-        return # TODO: Find a way to signal the failure to the user
+                            result = results
+                    )
+        evaluation.update(
+                            answer = answer_object["id"]
+                    )
+        evaluation.update(
+                            user = user_object["id"]
+                    )
+        evaluation.update(
+                            points = exercise_object["default_points"]
+                    )
+        evaluation.update(
+                            exercise = exercise["id"]
+                    )
 
-    evaluation_obj = exercise_object.save_evaluation(
-        user_object,
-        {
-            "evaluation": correct,
-            "test_results": result_string,
-            "manual": exercise_object.manually_evaluated
-        },
-        answer_object
-    )
+        r.set(task_id, json.dumps(evaluation), ex=django_settings.REDIS_RESULT_EXPIRE)
+        
+        return
 
-    return evaluation_obj.id
-    
-    # TODO: Should we:
-    # - return the results? (no)
-    # - save the results directly into db? (is this worker contained enough?)
-    # - send the results to a more privileged Celery worker for saving into db?
 
 def generate_results(results, exercise_id):
     evaluation = {}
@@ -728,7 +769,7 @@ def run_stage(self, stage_id, test_dir, temp_dir_prefix, files_to_check, revisio
 
 @shared_task(name="courses.run-command-chain-block")
 def run_command_chainable(cmd, temp_dir_prefix, test_dir, files_to_check, stage_results=None, revision=None):
-    cmd_id, cmd_input_text, cmd_return_value = cmd["id"], cmd["input_text"], cmd["return_value"]
+    cmd_id, cmd_input_text, cmd_return_value, cmd_dict = cmd["id"], cmd["input_text"], cmd["return_value"], cmd["command_dict"]
     if stage_results is None or "commands" not in stage_results.keys():
         stage_results = {"commands": {}}
 
@@ -739,7 +780,7 @@ def run_command_chainable(cmd, temp_dir_prefix, test_dir, files_to_check, stage_
     stdin.seek(0)
     
     proc_results = run_command(
-        cmd_id, stdin, stdout, stderr, test_dir, files_to_check,
+        cmd_dict, stdin, stdout, stderr, test_dir, files_to_check,
         revision=revision
     )
     
@@ -777,13 +818,13 @@ def run_command_chainable(cmd, temp_dir_prefix, test_dir, files_to_check, stage_
     return stage_results
 
 @shared_task(name="courses.run-command")
-def run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check, revision=None):
+def run_command(cmd_dict, stdin, stdout, stderr, test_dir, files_to_check, revision=None):
     """
     Runs the current command of this stage by automated fork & exec.
     """
     
     try:
-        command = cm.FileExerciseTestCommand.objects.get(id=cmd_id)
+        command = cmd_dict["command_line"]
 
         if revision is not None:
             old_command = get_archived_instances(command, revision)
@@ -793,14 +834,14 @@ def run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check, revisio
         return # TODO: Find a way to signal the failure to the user
 
     # TODO: More codes (e.g., $TRANSLATION)
-    cmd = command.command_line.replace(
+    cmd = command.replace(
         "$RETURNABLES",
         " ".join(shlex.quote(f) for f in files_to_check)
     ).replace(
         "$CWD",
         test_dir
     )
-    timeout = command.timeout.total_seconds()
+    timeout = sum(multiplier * int(time_unit) for multiplier, time_unit in zip([3600, 60, 1], cmd_dict["timeout"].split(":")))
     env = django_settings.CHECKING_ENV
     env["PWD"] = test_dir
     
@@ -809,12 +850,12 @@ def run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check, revisio
     shell_like_cmd = " ".join(shlex.quote(arg) for arg in args)
 
     proc_results = {
-        'ordinal_number': command.ordinal_number,
-        'expected_retval': command.return_value,
-        'input_text': command.input_text,
-        'significant_stdout': command.significant_stdout,
-        'significant_stderr': command.significant_stderr,
-        'json_output': command.json_output,
+        'ordinal_number': cmd_dict["ordinal_number"],
+        'expected_retval': cmd_dict["return_value"],
+        'input_text': cmd_dict["input_text"],
+        'significant_stdout': cmd_dict["significant_stdout"],
+        'significant_stderr': cmd_dict["significant_stderr"],
+        'json_output': cmd_dict["json_output"],
         'command_line': shell_like_cmd,
     }
     print("Running: {cmdline}".format(cmdline=shell_like_cmd))
