@@ -92,7 +92,7 @@ def add(a, b):
     return a+b
 
 @shared_task(name="courses.run-fileexercise-tests", bind=True)
-def run_tests(self, user_id, instance_id, exercise_id, answer_id, lang_code, revision):
+def run_tests(self, payload):
     # TODO: Actually, just receive the relevant ids for fetching the Django
     #       models here instead of in the Django view.
     # http://celery.readthedocs.org/en/latest/userguide/tasks.html#database-transactions
@@ -116,27 +116,15 @@ def run_tests(self, user_id, instance_id, exercise_id, answer_id, lang_code, rev
     #       - readable file
     #       - as command line parameters!
     #       - in env?
-    translation.activate(lang_code)
-
-    try:
-        exercise_object = cm.FileUploadExercise.objects.get(id=exercise_id)
-
-        if revision is not None:
-            old_exercise_object = get_archived_instances(exercise_object, revision)
-            exercise_object = old_exercise_object["self"]
-    except cm.FileUploadExercise.DoesNotExist as e:
-        # TODO: Log weird request
-        return # TODO: Find a way to signal the failure to the user
-
+    
     self.update_state(state="PROGRESS", meta={"current":4, "total":10})
-    user_object = User.objects.get(id=user_id)
-    print("user: %s" % (user_object.username))
     
     # Get the test data
     # TODO: Use prefetch_related?
     
     #tests = cm.FileExerciseTest.objects.filter(exercise=exercise_id)
-    tests = exercise_object.fileexercisetest_set.all()
+    tests = payload["tests"]
+    resources = payload["resources"]
 
     student_results = {}
     reference_results = {}
@@ -147,16 +135,14 @@ def run_tests(self, user_id, instance_id, exercise_id, answer_id, lang_code, rev
 
         # TODO: The student's code can be run in parallel with the reference
         results, all_json = run_test(
-            test.id, answer_id, instance_id, exercise_id,
-            student=True,
-            revision=revision
+            test, resources,
+            student=True
         )
         student_results.update(results)
 
         if not all_json:
             results, all_json = run_test(
-                test.id, answer_id, instance_id, exercise_id,
-                revision=revision
+                test, resources
             )
 
         # if reference is not needed just put the student results there
@@ -172,43 +158,15 @@ def run_tests(self, user_id, instance_id, exercise_id, answer_id, lang_code, rev
     # Ultimate encoding: http://en.wikipedia.org/wiki/Code_page_437
     # Determine the result and generate JSON accordingly
     # TODO: Do this concurrently, interleaved with the actual test running!
-    evaluation = generate_results(results, exercise_id)
+    evaluation = generate_results(results)
 
     # Save the rendered results into Redis
     task_id = self.request.id
     r = redis.StrictRedis(**django_settings.REDIS_RESULT_CONFIG)
     r.set(task_id, json.dumps(evaluation), ex=django_settings.REDIS_RESULT_EXPIRE)
+    return
 
-    # Save the results to database
-    result_string = json.dumps(results)
-    correct = evaluation["correct"]
-    points = exercise_object.default_points
-    
-    
-    try:
-        answer_object = cm.UserFileUploadExerciseAnswer.objects.get(id=answer_id)
-    except cm.UserFileUploadExerciseAnswer.DoesNotExist as e:
-        # TODO: Log weird request
-        return # TODO: Find a way to signal the failure to the user
-
-    evaluation_obj = exercise_object.save_evaluation(
-        user_object,
-        {
-            "evaluation": correct,
-            "test_results": result_string,
-            "manual": exercise_object.manually_evaluated
-        },
-        answer_object
-    )
-
-    return evaluation_obj.id
-    
-    # TODO: Should we:
-    # - return the results? (no)
-    # - save the results directly into db? (is this worker contained enough?)
-    # - send the results to a more privileged Celery worker for saving into db?
-
-def generate_results(results, exercise_id):
+def generate_results(results):
     evaluation = {}
     correct = True
     timedout = False
@@ -389,75 +347,21 @@ def generate_results(results, exercise_id):
     return evaluation
 
 @shared_task(name="courses.run-test", bind=True)
-def run_test(self, test_id, answer_id, instance_id, exercise_id, student=False, revision=None):
+def run_test(self, test, resources, student=False):
     """
     Runs all the stages of the given test.
     """
-    
-    print("Revision:", revision)
-    
-    try:
-        test = cm.FileExerciseTest.objects.get(id=test_id)
-        if revision is not None:
-            old_test = get_archived_instances(test, revision)
-            test = old_test["self"]
-    except cm.FileExerciseTest.DoesNotExist as e:
-        # TODO: Log weird request
-        return # TODO: Find a way to signal the failure to the user
 
-    try:
-        if revision is None:
-            stages = test.fileexerciseteststage_set.get_queryset()
-        else:
-            stages = old_test["fileexerciseteststage_set"]
-    except cm.FileExerciseTestStage.DoesNotExist as e:
-        # TODO: Log weird request
-        return # TODO: Find a way to signal the failure to the user
-
-    try:
-        exercise = cm.FileUploadExercise.objects.get(id=exercise_id)
-        if revision is not None:
-            old_exercise = get_archived_instances(exercise, revision)
-            exercise = old_exercise["self"]
-        
-        # TODO: Fallback file names for those that don't have translations?
-        if revision is None:
-            exercise_file_objects = exercise.fileexercisetestincludefile_set.get_queryset()
-        else:
-            exercise_file_objects = old_exercise["fileexercisetestincludefile_set"]
-    except cm.FileExerciseTestIncludeFile.DoesNotExist as e:
-        # TODO: Log weird request
-        return # TODO: Find a way to signal the failure to the user
-
-    try:
-        if revision is None:
-            instance_file_links = exercise.instanceincludefiletoexerciselink_set.get_queryset()
-        else:
-            instance_file_links = old_exercise["instanceincludefiletoexerciselink_set"]
-            
-            # MONKEY PATCH FOR BROKEN ARCHIVED EXERCISES
-            if not instance_file_links:
-                instance_file_links = exercise.instanceincludefiletoexerciselink_set.get_queryset()
-        
-    except cm.InstanceIncludeFileToExerciseLink.DoesNotExist as e:
-        # TODO: Log weird request
-        return # TODO: Find a way to signal the failure to the user
+    stages = test["stages"]
+    required_files = test["required_files"]
 
     # Note: requires a shared/cloned file system!
     if student:
-        try:
-            answer_object = cm.UserFileUploadExerciseAnswer.objects.get(id=answer_id)
-        except cm.UserFileUploadExerciseAnswer.DoesNotExist as e:
-            # TODO: Log weird request
-            return # TODO: Find a way to signal the failure to the user
-        
-        files_to_check = answer_object.get_returned_files_raw()
-        #print("".join("%s:\n%s" % (n, c) for n, c in files_to_check.items()))
+        files_to_check = resources["files_to_check"]    
     else:
-        files_to_check = {f.file_settings.name: f.get_file_contents()
-                          for f in exercise_file_objects
-                          if f.file_settings.purpose == "REFERENCE"}
-        #print("".join("%s:\n%s" % (n, c) for n, c in files_to_check.items()))
+        files_to_check = [
+            req_file for req_file in required_files if req_file["purpose"] == "REFERENCE"
+        ]
 
     # TODO: Replace with the directory of the ramdisk
     temp_dir_prefix = os.path.join("/", "tmp")
@@ -473,7 +377,7 @@ def run_test(self, test_id, answer_id, instance_id, exercise_id, student=False, 
         "NOT_OWNED": server_gid
     }
     
-    test_results = {test_id: {"fail": True, "name": test.name, "stages": {}}}
+    test_results = {test["test_id"]: {"fail": True, "name": test["name"], "stages": {}}}
     with tempfile.TemporaryDirectory(dir=temp_dir_prefix) as test_dir:
 
         # Write the files under test
@@ -481,106 +385,36 @@ def run_test(self, test_id, answer_id, instance_id, exercise_id, student=False, 
         for name, contents in files_to_check.items():
             fpath = os.path.join(test_dir, name)
             with open(fpath, "wb") as fd:
-                fd.write(contents)
+                fd.write(base64.b64decode(contents))
             print("Wrote file under test %s" % (fpath))
             os.chmod(fpath, 0o660)
             os.chown(fpath, student_uid, student_gid)
 
-        if revision is None:
-            required_files = test.required_files.all()
-        else:
-            required_files = old_test["required_files"]
-        
         # Write the exercise files required by this test
-        for f in exercise_file_objects:
-            if f not in required_files:
+        for f_handle in required_files:
+            f_resource = resources["checker_files"][f_handle]
+            if f_resource["purpose"] not in ("INPUT", "WRAPPER", "TEST", "LIBRARY"):
                 continue
             
-            if f.file_settings.purpose not in ("INPUT", "WRAPPER", "TEST", "LIBRARY"):
-                continue
-            
-            fpath = os.path.join(test_dir, f.file_settings.name)
+            fpath = os.path.join(test_dir, f_resource["name"])
             with open(fpath, "wb") as fd:
-                fd.write(f.get_file_contents())
-            print("Wrote required exercise file {} from {}".format(fpath, f.fileinfo))
-            os.chmod(fpath, chmod_parse(f.file_settings.chmod_settings))
-            if "OWNED" in (f.file_settings.chown_settings, f.file_settings.chgrp_settings):
-                os.chown(
-                    fpath,
-                    uid[f.file_settings.chown_settings],
-                    gid[f.file_settings.chgrp_settings]
-                )
-
-        if revision is None:
-            required_instance_files = test.required_instance_files.all()
-        else:
-            required_instance_files = old_test["required_instance_files"]
-
-            # MONKEY PATCH FOR BROKEN ARCHIVED EXERCISES
-            if not required_instance_files:
-                required_instance_files = test.required_instance_files.all()
-            
-        for if_link in instance_file_links:
-            if if_link.include_file in required_instance_files:
-                settings = if_link.file_settings
-                if settings.purpose not in ("INPUT", "WRAPPER", "TEST", "LIBRARY"):
-                    continue
-                    
-                name = settings.name
-                
-                ii_link = cm.InstanceIncludeFileToInstanceLink.objects.get(
-                    include_file=if_link.include_file,
-                    instance__id=instance_id
-                )
-                
-                if ii_link.revision is None:
-                    file_obj = if_link.include_file
-                else:
-                    try:
-                        file_obj = get_single_archived(if_link.include_file, revision)
-                    except Version.DoesNotExist:
-                        # use latest version even though it may not work
-                        file_obj = if_link.include_file
-                        
-                contents = file_obj.get_file_contents()
-                fpath = os.path.join(test_dir, name)
-                
-                with open(fpath, "wb") as fd:
-                    fd.write(contents)
-                print("Wrote required instance file {} from {}".format(
-                    fpath, file_obj.fileinfo
-                ))
-                os.chmod(fpath, chmod_parse(settings.chmod_settings))
-                if "OWNED" in (settings.chown_settings, settings.chgrp_settings):
-                    os.chown(
-                        fpath,
-                        uid[settings.chown_settings],
-                        gid[settings.chgrp_settings]
-                    )
-                
+                fd.write(base64.b64decode(f_resource["content"]))
+            print("Wrote required exercise file {} from {}".format(fpath, f_handle))
+            os.chmod(fpath, chmod_parse(f_resource["chmod"]))
 
         all_json = True
 
-        # temporary for testing
-        #os.chmod(test_dir, 0o777)
-        #for name in os.listdir(test_dir):
-            #full = os.path.join(test_dir, name)
-            #os.chmod(full, 0o666)
-            ##st = os.stat(full)
-            ##print(st.st_mode)
-
         # TODO: Replace with chaining
-        for i, stage in enumerate(stages):
+        for i, stage in enumerate(test["stages"]):
             #self.update_state(state="PROGRESS",
                               #meta={"current": i, "total": len(stages)})
             stage_results, stage_json = run_stage(
-                stage.id, test_dir, temp_dir_prefix,
+                stage, test_dir, temp_dir_prefix,
                 list(files_to_check.keys()),
-                revision=revision
             )
-            test_results[test_id]["stages"][stage.id] = stage_results
-            test_results[test_id]["stages"][stage.id]["name"] = stage.name
-            test_results[test_id]["stages"][stage.id]["ordinal_number"] = stage.ordinal_number
+            test_results[test["test_id"]]["stages"][stage["id"]] = stage_results
+            test_results[test["test_id"]]["stages"][stage["id"]]["name"] = stage["name"]
+            test_results[test["test_id"]]["stages"][stage["id"]]["ordinal_number"] = stage["ordinal"]
 
             if not stage_json:
                 all_json = False
@@ -596,7 +430,7 @@ def run_test(self, test_id, answer_id, instance_id, exercise_id, student=False, 
                     with open(fp, "rb") as fd:
                         contents = fd.read()
         else:
-            test_results[test_id]["fail"] = False
+            test_results[test["test_id"]]["fail"] = False
 
         # TODO: Read the expected output files (check the cache first?)
         test_dir_contents = os.listdir(test_dir)
@@ -604,25 +438,15 @@ def run_test(self, test_id, answer_id, instance_id, exercise_id, student=False, 
     return test_results, all_json
 
 @shared_task(name="courses.run-stage", bind=True)
-def run_stage(self, stage_id, test_dir, temp_dir_prefix, files_to_check, revision=None):
+def run_stage(self, stage, test_dir, temp_dir_prefix, files_to_check, revision=None):
     """
+    
     Runs all the commands of this stage and collects the return values and the
     outputs.
     """
 
     all_json = True
-
-    try:
-        if revision is None:
-            commands = cm.FileExerciseTestCommand.objects.filter(stage=stage_id)
-        else:
-            stage = cm.FileExerciseTestStage.objects.get(id=stage_id)
-            old_stage = get_archived_instances(stage, revision)
-            commands = old_stage["fileexercisetestcommand_set"]
-    except (cm.FileExerciseTestCommand.DoesNotExist, cm.FileExerciseTestStage.DoesNotExist) as e:
-        # TODO: Log weird request
-        return # TODO: Find a way to signal the failure to the user
-
+    commands = stage["commands"]
     stage_results = {
         "fail": False,
         "commands": {},
@@ -649,22 +473,17 @@ def run_stage(self, stage_id, test_dir, temp_dir_prefix, files_to_check, revisio
         print("exception at run_stage pokemon exception!")
     """
     # DEBUG #
-    for i, cmd in enumerate(commands):
+    for i, command in enumerate(commands):
         results = run_command_chainable(
-            {
-                "id": cmd.id,
-                "input_text": cmd.input_text,
-                "return_value": cmd.return_value
-            },
+            command,
             temp_dir_prefix,
             test_dir,
             files_to_check,
             stage_results=stage_results,
-            revision=revision
         )
         stage_results.update(results)
         
-        if not cmd.json_output:
+        if not command["json_output"]:
             all_json = False
 
         if results.get('fail'):
@@ -727,20 +546,18 @@ def run_stage(self, stage_id, test_dir, temp_dir_prefix, files_to_check, revisio
 
 
 @shared_task(name="courses.run-command-chain-block")
-def run_command_chainable(cmd, temp_dir_prefix, test_dir, files_to_check, stage_results=None, revision=None):
-    cmd_id, cmd_input_text, cmd_return_value = cmd["id"], cmd["input_text"], cmd["return_value"]
+def run_command_chainable(command, temp_dir_prefix, test_dir, files_to_check, stage_results=None):
     if stage_results is None or "commands" not in stage_results.keys():
         stage_results = {"commands": {}}
 
     stdout = tempfile.TemporaryFile(dir=temp_dir_prefix)
     stderr = tempfile.TemporaryFile(dir=temp_dir_prefix)
     stdin = tempfile.TemporaryFile(dir=temp_dir_prefix)
-    stdin.write(bytearray(cmd_input_text, "utf-8"))
+    stdin.write(bytearray(command["input_text"], "utf-8"))
     stdin.seek(0)
     
     proc_results = run_command(
-        cmd_id, stdin, stdout, stderr, test_dir, files_to_check,
-        revision=revision
+        command, stdin, stdout, stderr, test_dir, files_to_check,
     )
     
     stdout.seek(0)
@@ -769,7 +586,7 @@ def run_command_chainable(cmd, temp_dir_prefix, test_dir, files_to_check, stage_
         stage_results['fail'] = True
 
     # TODO: Use ordinal number istead of id?
-    stage_results["commands"][cmd_id] = proc_results
+    stage_results["commands"][command["ordinal"]] = proc_results
 
     #if cmd_return_value is not None and cmd_return_value != proc_results["retval"]:
         #raise Exception()
@@ -777,30 +594,20 @@ def run_command_chainable(cmd, temp_dir_prefix, test_dir, files_to_check, stage_
     return stage_results
 
 @shared_task(name="courses.run-command")
-def run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check, revision=None):
+def run_command(command, stdin, stdout, stderr, test_dir, files_to_check):
     """
     Runs the current command of this stage by automated fork & exec.
     """
     
-    try:
-        command = cm.FileExerciseTestCommand.objects.get(id=cmd_id)
-
-        if revision is not None:
-            old_command = get_archived_instances(command, revision)
-            command = old_command["self"]
-    except cm.FileExerciseTestCommand.DoesNotExist as e:
-        # TODO: Log weird request
-        return # TODO: Find a way to signal the failure to the user
-
     # TODO: More codes (e.g., $TRANSLATION)
-    cmd = command.command_line.replace(
+    cmd = command["cmd"].replace(
         "$RETURNABLES",
         " ".join(shlex.quote(f) for f in files_to_check)
     ).replace(
         "$CWD",
         test_dir
     )
-    timeout = command.timeout.total_seconds()
+    timeout = command["timeout"]
     env = django_settings.CHECKING_ENV
     env["PWD"] = test_dir
     
@@ -809,12 +616,12 @@ def run_command(cmd_id, stdin, stdout, stderr, test_dir, files_to_check, revisio
     shell_like_cmd = " ".join(shlex.quote(arg) for arg in args)
 
     proc_results = {
-        'ordinal_number': command.ordinal_number,
-        'expected_retval': command.return_value,
-        'input_text': command.input_text,
-        'significant_stdout': command.significant_stdout,
-        'significant_stderr': command.significant_stderr,
-        'json_output': command.json_output,
+        'ordinal_number': command["ordinal"],
+        'expected_retval': command["return_value"],
+        'input_text': command["input_text"],
+        'significant_stdout': command["stdout"],
+        'significant_stderr': command["stderr"],
+        'json_output': command["json_output"],
         'command_line': shell_like_cmd,
     }
     print("Running: {cmdline}".format(cmdline=shell_like_cmd))

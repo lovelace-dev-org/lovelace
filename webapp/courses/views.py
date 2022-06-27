@@ -482,10 +482,9 @@ def file_exercise_evaluation(request, course, instance, content, revision, task_
         task = AsyncResult(task_id)
     evaluation_id = task.get()
     task.forget() # TODO: IMPORTANT! Also forget all the subtask results somehow? in tasks.py?
-    evaluation_obj = Evaluation.objects.get(id=evaluation_id)
     answers = content.get_user_answers(content, request.user, instance)
     answer_count = answers.count()
-    evaluated_answer = answers.get(evaluation=evaluation_obj)
+    evaluated_answer = answers.get(task_id=task_id)
     answer_count_str = get_answer_count_meta(answer_count)
 
     r = redis.StrictRedis(**settings.REDIS_RESULT_CONFIG)
@@ -493,6 +492,15 @@ def file_exercise_evaluation(request, course, instance, content, revision, task_
     evaluation_tree = json.loads(evaluation_json)
     r.delete(task_id)
     task.forget()
+    evaluation_obj = content.save_evaluation(
+        request.user,
+        {
+            "evaluation": evaluation_tree["correct"],
+            "test_results": evaluation_json,
+            "manual": content.manually_evaluated
+        },
+        evaluated_answer
+    )
 
     msg_context = {
         'course_slug': course.slug,
@@ -576,9 +584,7 @@ def get_file_exercise_evaluation(request, user, course, instance, exercise, answ
     from .tasks import generate_results
 
     results_json = answer.evaluation.test_results
-    results_dict = json.loads(results_json)
-
-    evaluation_tree = generate_results(results_dict, 0)
+    evaluation_tree = json.loads(results_json)
     evaluation_obj = answer.evaluation
 
     msg_context = {
@@ -590,7 +596,7 @@ def get_file_exercise_evaluation(request, user, course, instance, exercise, answ
 
     data = compile_evaluation_data(request, evaluation_tree, evaluation_obj, msg_context)
 
-    if not request.user.is_staff:
+    if not request.user.is_staff:   
         data["triggers"] = []
 
     t_view = loader.get_template("courses/view-answer-results.html")

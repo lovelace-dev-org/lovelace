@@ -1,3 +1,4 @@
+import base64
 import magic
 import os
 import re
@@ -74,6 +75,10 @@ def get_file_contents(model_instance):
         file_contents = f.read()
     return file_contents
 
+def get_file_contents_b64(model_instance):
+    bytes = get_file_contents(model_instance)
+    return base64.b64encode(bytes).decode("utf-8")
+
 def get_testfile_path(instance, filename):
     """
     Gets the path for exercise files.
@@ -131,3 +136,4 @@ def chmod_parse(modstring):
     """
 
     return int(re.sub(mod_pat, "1", modstring).replace("-", "0"), 2)
+

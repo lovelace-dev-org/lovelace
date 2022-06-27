@@ -39,6 +39,7 @@ import feedback.models
 from utils.files import *
 from utils.archive import get_archived_field, get_single_archived, find_latest_version
 
+
 class RollbackRevert(Exception):
     pass
 
@@ -1465,18 +1466,26 @@ class FileUploadExercise(ContentPage):
 
     def check_answer(self, user, ip, answer, files, answer_object, revision):
         import courses.tasks as rpc_tasks
-                
+        from utils.exercise import compile_payload
+        
         lang_code = translation.get_language()
-        if revision == "head": revision = None
+        if revision == "head":
+            revision = None
+
         if self.fileexercisetest_set.get_queryset():
-            result = rpc_tasks.run_tests.delay(
-                user_id=user.id,
-                instance_id=answer_object.instance.id,
-                exercise_id=self.id,
-                answer_id=answer_object.id,
-                lang_code=lang_code,
-                revision=revision
+            filelist = files.getlist('file')
+            payload = compile_payload(
+                self,
+                filelist,
+                answer_object.instance,
+                revision
             )
+
+            result = rpc_tasks.run_tests.delay(
+                payload=payload
+            )
+            answer_object.task_id = result.task_id
+            answer_object.save()
             return {"task_id": result.task_id}
         return {
             "evaluation": True,
@@ -2222,6 +2231,7 @@ class UserAnswer(models.Model):
     answer_date = models.DateTimeField(verbose_name='Date and time of when the user answered this exercise',
                                        auto_now_add=True)
     answerer_ip = models.GenericIPAddressField()
+    task_id = models.CharField(max_length=36, null=True, blank=True)
 
     # TODO: Think about an arrayfield for collaborators. Maybe have a group system, where
     # the users form groups based on usernames, after which those usernames can be added
