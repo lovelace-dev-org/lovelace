@@ -141,14 +141,13 @@ class RoutineExerciseQuestion(models.Model):
     generated_json = JSONField()
     date_generated = models.DateTimeField()
 
-
 class RoutineExerciseAnswer(models.Model):
 
     question = models.OneToOneField(RoutineExerciseQuestion, on_delete=models.CASCADE)
     correct = models.NullBooleanField(null=True)
     answer_date = models.DateTimeField()
     given_answer = models.TextField(blank=True)
-
+    task_id = models.CharField(max_length=36, null=True, blank=True)
 
 class RoutineExerciseProgress(models.Model):
     exercise = models.ForeignKey(RoutineExercise, on_delete=models.CASCADE)

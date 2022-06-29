@@ -13,9 +13,9 @@ from courses import markupparser
 
 from routine_exercise.models import *
 from utils.access import ensure_enrolled_or_staff, determine_access
-from utils.archive import find_version_with_filename
+from utils.archive import find_version_with_filename, get_archived_instances, get_single_archived
 from utils.exercise import render_json_feedback, update_completion
-from utils.files import generate_download_response
+from utils.files import generate_download_response, get_file_contents_b64
 from utils.notify import send_error_report
 
 def _question_context_data(request, course, instance, question):
@@ -34,27 +34,29 @@ def _question_context_data(request, course, instance, question):
     }
     return data
 
-def _save_question(task_info, data):
+def _save_question(user, instance, content, task_info, data):
+    lang_code = translation.get_language()
+    revision = instance.embeddedlink_set.get_queryset().get(embedded_page=content).revision
     templates = RoutineExerciseTemplate.objects.filter(
-        exercise_id=task_info["exercise_id"],
+        exercise=content,
         question_class=data["question_class"],
     )
     pick = random.randint(0, templates.count() - 1)
     template = templates.all()[pick]
     with transaction.atomic():
         RoutineExerciseQuestion.objects.filter(
-            instance_id=task_info["instance_id"],
-            exercise_id=task_info["exercise_id"],
-            user_id=task_info["user_id"],
-            revision=task_info["revision"],
+            instance=instance,
+            exercise=content,
+            user=user,
+            revision=revision,
             routineexerciseanswer=None
-        ).delete()
+        )
         question = RoutineExerciseQuestion(
-            instance_id=task_info["instance_id"],
-            exercise_id=task_info["exercise_id"],
-            user_id=task_info["user_id"],
-            language_code=task_info["lang_code"],
-            revision=task_info["revision"],
+            instance=instance,
+            exercise=content,
+            user=user,
+            revision=revision,
+            language_code=lang_code,
             question_class=data["question_class"],
             generated_json=data,
             date_generated=datetime.datetime.now(),
@@ -63,10 +65,10 @@ def _save_question(task_info, data):
         question.save()
     return question
 
-def _save_evaluation(task_info):
+def _save_evaluation(user, instance, content, task_id, task_info):
     try:
         answer = RoutineExerciseAnswer.objects.get(
-            id=task_info["answer_id"]
+            task_id=task_id
         )
     except RoutineExerciseAnswer.DoesNotExist as e:
         return HttpResponse(404)
@@ -74,14 +76,62 @@ def _save_evaluation(task_info):
     answer.correct = task_info["data"]["correct"]
     answer.save()
     progress = RoutineExerciseProgress.objects.get(
-        instance_id=task_info["instance_id"],
-        exercise_id=task_info["exercise_id"],
-        user_id=task_info["user_id"]
+        instance=instance,
+        exercise=content,
+        user=user
     )
     progress.progress = task_info["data"]["progress"]
     progress.completed = task_info["data"]["completed"]
     progress.save()
     return progress
+
+def _routine_payload(user, instance, content, revision, progress, answer=None):
+    payload = {
+        "resources": {
+            "backends": []
+        },
+        "meta": {
+        },
+    }
+    
+    if revision is not None:
+        archived = get_archived_instances(content, revision)
+        backends = archived["routineexercisebackendfile_set"]
+        command = archived["routineexercisebackendcommand"]
+    else:
+        backends = content.routineexercisebackendfile_set.get_queryset()
+        command = content.routineexercisebackendcommand
+    
+    payload["command"] = command.command
+        
+    for backend in backends:
+        if revision is not None:
+            backend = get_single_archived(backend, revision)
+        
+        payload["resources"]["backends"].append({
+            "name": backend.filename,
+            "handle": backend.fileinfo.name,
+            "content": get_file_contents_b64(backend)
+        })
+
+    answers = RoutineExerciseAnswer.objects.filter(
+        question__user=user,
+        question__instance=instance,
+        question__exercise=content
+    ).order_by("answer_date")
+    
+    payload["meta"]["history"] = [(answer.question.question_class, answer.correct) for answer in answers]
+    payload["meta"]["completed"] = progress.completed
+    payload["meta"]["progress"] = progress.progress
+    
+    if answer is not None:
+        payload["answer"] = answer.given_answer
+        payload["question"] = {
+            "class": answer.question.question_class,
+            "data": answer.question.generated_json
+        }
+    
+    return payload
 
 @ensure_enrolled_or_staff
 def get_routine_question(request, course, instance, content, revision):
@@ -113,13 +163,9 @@ def get_routine_question(request, course, instance, content, revision):
     ).first()
     
     if question is None:
+        payload = _routine_payload(request.user, instance, content, revision, progress)
         task = routine_tasks.generate_question.delay(
-            request.user.id,
-            instance.id,
-            content.id,
-            lang_code,
-            revision,
-            progress.completed,
+            payload
         )
         progress_url = reverse(
             "routine_exercise:task_progress",
@@ -164,11 +210,8 @@ def routine_progress(request, course, instance, content, task_id):
             }
             return JsonResponse(data)
 
-        if instance.id != info["instance_id"] or content.id != info["exercise_id"] or request.user.id != info["user_id"]:
-            return HttpResponse(status=409)
-
         if info["task"] == "generate":
-            question = _save_question(info, info["data"])
+            question = _save_question(request.user, instance, content, info, info["data"])
             try:
                 data = _question_context_data(request, course, instance, question)
             except Exception as e:
@@ -185,7 +228,7 @@ def routine_progress(request, course, instance, content, task_id):
             data["progress"] = progress.progress
             return JsonResponse(data)
         elif info["task"] == "check":
-            progress = _save_evaluation(info)
+            progress = _save_evaluation(request.user, instance, content, task_id, info)
             data = render_json_feedback(info["data"]["log"], request, course, instance)
             if progress.completed:
                 data["evaluation"] = True
@@ -194,7 +237,7 @@ def routine_progress(request, course, instance, content, task_id):
             data["progress"] = progress.progress
             next_question = info["data"].get("next")
             if next_question:
-                _save_question(info, info["data"]["next"])
+                _save_question(request.user, instance, content, info, info["data"]["next"])
 
             return JsonResponse(data)
     else:
@@ -237,16 +280,20 @@ def check_routine_question(request, course, instance, content, revision):
         answer_date=datetime.datetime.now(),
         given_answer=answer_str
     )
-    answer.save()
-    task = routine_tasks.check_answer.delay(
-        request.user.id,
-        instance.id,
-        content.id,
-        question.id,
-        answer.id,
-        lang_code,
-        revision
+    progress = RoutineExerciseProgress.objects.get(
+        user=request.user,
+        instance=instance,
+        exercise=content,
     )
+    payload = _routine_payload(request.user, instance, content, revision, progress, answer)
+
+    task = routine_tasks.check_answer.delay(
+        payload
+    )
+    
+    answer.task_id = task.task_id
+    answer.save()
+
     progress_url = reverse(
         "routine_exercise:task_progress",
         kwargs={

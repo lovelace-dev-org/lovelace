@@ -17,7 +17,7 @@ LINT_W = 12 #12
 LINT_E = 13 #13
 
 # NOTE: the amount of reverts caused by this is disgusting.
-def compile_payload(exercise, student_files, instance, revision=None):
+def file_upload_payload(exercise, student_files, instance, revision=None):
     payload = {
         "resources": {
             "files_to_check": {},

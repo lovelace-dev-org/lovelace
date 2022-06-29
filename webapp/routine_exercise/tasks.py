@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+import base64
 import csv
 import io
 import json
@@ -126,35 +127,30 @@ def _answer_history(user_id, instance_id, exercise_id):
     return [(answer.question.question_class, answer.correct) for answer in answers]
 
 @shared_task(name="routine_exercise.generate_question", bind=True)
-def generate_question(self, user_id, instance_id, exercise_id, lang_code, revision, completed):
-    translation.activate(lang_code)
-    exercise = get_instance_revision(RoutineExercise, exercise_id, revision)
-    progress = RoutineExerciseProgress.objects.get(exercise=exercise, user__id=user_id, instance__id=instance_id)
+def generate_question(self, payload):
+    progress = payload["meta"]["progress"]
     
     with tempfile.TemporaryDirectory(dir=settings.TMP_PATH) as test_dir:
 
         # prepare backend files
-        for backend in RoutineExerciseBackendFile.objects.filter(exercise=exercise):
-            backend = get_instance_revision(RoutineExerciseBackendFile, backend.id, revision)
-            contents = get_file_contents(backend)
-            with open(os.path.join(test_dir, backend.filename), "wb") as f:
-                f.write(contents)
-            print("Wrote {} from {}".format(backend.filename, backend.fileinfo))
+        for backend in payload["resources"]["backends"]:
+            
+            fpath = os.path.join(test_dir, backend["name"])
+            with open(fpath, "wb") as fd:
+                fd.write(base64.b64decode(backend["content"]))
+            print("Wrote {} from {}".format(backend["name"], backend["handle"]))
 
         fn = "".join(random.choice(string.ascii_lowercase) for i in range(24)) + ".json"
         data = {
-            "history": _answer_history(user_id, instance_id, exercise_id),
-            "completed": completed,
-            "progress": progress.progress,
+            "history": payload["meta"]["history"],
+            "completed": payload["meta"]["completed"],
+            "progress": progress,
         }
         with open(os.path.join(test_dir, fn), "w") as f:
             json.dump(data, f)
-        command = get_instance_revision(
-            RoutineExerciseBackendCommand,
-            exercise.routineexercisebackendcommand.id,
-            revision
-        )
-        args = shlex.split(command.command)
+            
+        command = payload["command"]
+        args = shlex.split(command)
         args.append("--request-params")
         args.append(fn)
         proc_results = _run_command(args, test_dir)
@@ -164,84 +160,58 @@ def generate_question(self, user_id, instance_id, exercise_id, lang_code, revisi
             "task": "generate",
             "status": "fail",
             "error": proc_results["error"],
-            "instance_id": instance_id,
-            "exercise_id": exercise_id,
-            "user_id": user_id,
-            "lang_code": lang_code,
-            "revision": revision
         }
 
     return {
         "task": "generate",
         "status": "success",
         "data": proc_results["data"],
-        "exercise_id": exercise_id,
-        "instance_id": instance_id,
-        "user_id": user_id,
-        "lang_code": lang_code,
-        "revision": revision
     }
 
 @shared_task(name="routine_exercise.check_answer", bind=True)
-def check_answer(self, user_id, instance_id, exercise_id, question_id, answer_id, lang_code, revision):
-    translation.activate(lang_code)
-    exercise = get_instance_revision(RoutineExercise, exercise_id, revision)
-    answer = RoutineExerciseAnswer.objects.get(id=answer_id)
-    progress = RoutineExerciseProgress.objects.get(exercise=exercise, user__id=user_id, instance__id=instance_id)
-
+def check_answer(self, payload):
+    answer = payload["answer"]
+    progress = payload["meta"]["progress"]
+    
     with tempfile.TemporaryDirectory(dir=settings.TMP_PATH) as test_dir:
 
         # prepare backend files
-        for backend in RoutineExerciseBackendFile.objects.filter(exercise=exercise):
-            backend = get_instance_revision(RoutineExerciseBackendFile, backend.id, revision)
-            contents = get_file_contents(backend)
-            with open(os.path.join(test_dir, backend.filename), "wb") as f:
-                f.write(contents)
+        for backend in payload["resources"]["backends"]:
+            
+            fpath = os.path.join(test_dir, backend["name"])
+            with open(fpath, "wb") as fd:
+                fd.write(base64.b64decode(backend["content"]))
+            print("Wrote {} from {}".format(backend["name"], backend["handle"]))
 
-        command = get_instance_revision(
-            RoutineExerciseBackendCommand,
-            exercise.routineexercisebackendcommand.id,
-            revision
-        )
-        args = shlex.split(command.command)
         fn = "".join(random.choice(string.ascii_lowercase) for i in range(24)) + ".json"
         data = {
-            "answer": answer.given_answer,
-            "history": _answer_history(user_id, instance_id, exercise_id),
-            "question_class": answer.question.question_class,
-            "params": answer.question.generated_json,
-            "progress": progress.progress,
-            "completed": progress.completed
+            "answer": answer,
+            "question_class": payload["question"]["class"],
+            "params": payload["question"]["data"],
+            "history": payload["meta"]["history"],
+            "completed": payload["meta"]["completed"],
+            "progress": progress,
         }
         with open(os.path.join(test_dir, fn), "w") as f:
             json.dump(data, f)
+            
+        command = payload["command"]
+        args = shlex.split(command)
         args.append("--check")
         args.append(fn)
         proc_results = _run_command(args, test_dir)
 
     if proc_results.get("fail") or proc_results.get("killed") or proc_results.get("timedout"):
         return {
-                "task": "check",
-                "status": "fail",
-                "error": proc_results["error"],
-                "exercise_id": exercise_id,
-                "instance_id": instance_id,
-                "answer_id": answer_id,
-                "user_id": user_id,
-                "lang_code": lang_code,
-                "revision": revision
+            "task": "check",
+            "status": "fail",
+            "error": proc_results["error"],
         }
 
     return {
         "task": "check",
         "status": "success",
         "data": proc_results["data"],
-        "exercise_id": exercise_id,
-        "instance_id": instance_id,
-        "answer_id": answer_id,
-        "user_id": user_id,
-        "lang_code": lang_code,
-        "revision": revision
     }
 
     

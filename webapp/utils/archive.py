@@ -20,7 +20,7 @@ def get_archived_instances(main_obj, revision_id):
     Gets archived instances of a model and any models listed in its follow
     options. This approach is modeled after how reversion's version history
     admin fetches history information: it reverts the database to a given
-    revision, reads all the model instances into memory, and finally causes a
+    revision, reads all there model instances into memory, and finally causes a
     rollback to restore the database to the most recent state.
     
     Returns a dictionary that contains each related set as a list (using the

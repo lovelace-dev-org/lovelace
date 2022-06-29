@@ -1466,7 +1466,7 @@ class FileUploadExercise(ContentPage):
 
     def check_answer(self, user, ip, answer, files, answer_object, revision):
         import courses.tasks as rpc_tasks
-        from utils.exercise import compile_payload
+        from utils.exercise import file_upload_payload
         
         lang_code = translation.get_language()
         if revision == "head":
@@ -1474,7 +1474,7 @@ class FileUploadExercise(ContentPage):
 
         if self.fileexercisetest_set.get_queryset():
             filelist = files.getlist('file')
-            payload = compile_payload(
+            payload = file_upload_payload(
                 self,
                 filelist,
                 answer_object.instance,
