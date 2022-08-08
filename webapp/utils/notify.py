@@ -1,5 +1,5 @@
 from django.conf import settings
-from django.core.mail import get_connection, EmailMessage
+from django.core.mail import get_connection, EmailMessage, send_mass_mail
 from django.utils import translation
 from utils.formatters import display_name
 
@@ -82,11 +82,17 @@ def send_email(recipients, sender, title, body):
     """
 
     connection = get_connection()
-    mail = EmailMessage(
-        title, 
-        body, 
-        '"{name}" <{email}>'.format(name=display_name(sender), email=sender.email),
-        [r.email for r in recipients],
+    sender = '"{name}" <{email}>'.format(name=display_name(sender), email=sender.email),
+    messages = []
+    for recipient in recipients:
+        messages.append((
+            title,
+            body,
+            sender,
+            [recipient],
+        ))
+    send_mass_mail(
+        messages,
         connection=connection
     )
-    mail.send()
+    

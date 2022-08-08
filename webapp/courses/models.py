@@ -13,7 +13,7 @@ from html import escape
 
 from django.conf import settings
 from django.db import models, transaction
-from django.db.models import Q, Max
+from django.db.models import Q, Max, JSONField
 from django.contrib.auth.models import User, Group
 from django.db.models.signals import post_save
 from django.urls import reverse
@@ -23,7 +23,7 @@ from django.core.exceptions import ValidationError
 from django.template import loader
 from django.utils import translation
 from django.utils.text import slugify
-from django.contrib.postgres.fields import ArrayField, JSONField
+from django.contrib.postgres.fields import ArrayField
 import django.conf
 
 from reversion import revisions as reversion

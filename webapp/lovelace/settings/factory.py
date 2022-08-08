@@ -120,6 +120,7 @@ DATABASES = {
         'PORT': '5432',
     }
 }
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 
 # E-mail backend settings
 #EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'

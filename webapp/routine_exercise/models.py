@@ -2,8 +2,8 @@ import datetime
 
 from django.conf import settings
 from django.db import models
-from django.db.models import Q
-from django.contrib.postgres.fields import ArrayField, JSONField
+from django.db.models import Q, JSONField
+from django.contrib.postgres.fields import ArrayField
 from django.template import loader
 from django.urls import reverse
 from django.utils.text import slugify
@@ -144,7 +144,7 @@ class RoutineExerciseQuestion(models.Model):
 class RoutineExerciseAnswer(models.Model):
 
     question = models.OneToOneField(RoutineExerciseQuestion, on_delete=models.CASCADE)
-    correct = models.NullBooleanField(null=True)
+    correct = models.BooleanField(null=True)
     answer_date = models.DateTimeField()
     given_answer = models.TextField(blank=True)
     task_id = models.CharField(max_length=36, null=True, blank=True)
