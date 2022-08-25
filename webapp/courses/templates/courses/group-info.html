@@ -87,13 +87,14 @@
                 </table>
             </div>
         {% endif %}
-        {% if slots %}            
+        {% if slots %}
             <h2>{% trans 'Invite members' %}</h2>
             <div class="group-invite-form">
                 {{ invite_form|safe }}
             </div>
         {% endif %}
-    {% else %}
+    {% endif %}
+    {% if invited_to %}
         <h1>{% trans 'Join a group you have been invited to' %}</h1>
         <div class="invited-to-list">
             <table class="group-member-table">

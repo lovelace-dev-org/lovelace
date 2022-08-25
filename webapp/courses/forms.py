@@ -3,6 +3,7 @@ import re
 import django.conf
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.db.models import Count
 from django import forms
 from django.forms import fields
 from django.utils.text import slugify
@@ -280,13 +281,15 @@ class GroupInviteForm(forms.Form):
                     instance=self.valid_for_instance,
                     student=user
                 ).exists()
-                assert not cm.StudentGroup.objects.filter(
+                assert not cm.StudentGroup.objects.annotate(member_count=Count("members")).filter(
+                    member_count__gte=2,
                     members=user,
                     instance=self.valid_for_instance,
                 ).exists()
             except KeyError:
                 break
-            except (cm.User.DoesNotExist, AssertionError):
+            except (cm.User.DoesNotExist, AssertionError) as e:
+                print(e)
                 self.add_error(field_name, _("Cannot invite this user"))
             else:
                 self.invited_users.append(user)

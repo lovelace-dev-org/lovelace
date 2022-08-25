@@ -15,6 +15,7 @@ from courses.models import *
 from courses.forms import GroupConfigForm, GroupInviteForm
 from courses.views import cookie_law
 from utils.access import is_course_staff, ensure_staff, ensure_enrolled_or_staff, ensure_responsible_or_supervisor
+from utils.users import get_group_members
 
 try:
     from shibboleth.app_settings import LOGOUT_URL, LOGOUT_REDIRECT_URL, LOGOUT_SESSION_KEY
@@ -159,16 +160,15 @@ def group_info(request, course, instance):
         members = group.members.count()
         invites = GroupInvitation.objects.filter(group=group)
         slots = instance.max_group_size - members - invites.count()
-        invited_to = []
         is_supervisor = request.user in (group.supervisor, course.main_responsible)
     except StudentGroup.DoesNotExist:
         group = None
         members = 0
         slots = instance.max_group_size
         invites = []
-        invited_to = GroupInvitation.objects.filter(user=request.user, group__instance=instance)
         is_supervisor = request.user == course.main_responsible
 
+    invited_to = GroupInvitation.objects.filter(user=request.user, group__instance=instance)
     if request.method == "POST":
         form = GroupConfigForm(request.POST, instance=group)
         if form.is_valid():
@@ -255,6 +255,15 @@ def accept_invitation(request, course, instance, invite):
     if invite.user != request.user:
         return HttpResponseNotFound()
         
+    other_group_members = get_group_members(request.user, instance)
+    if other_group_members.count() >= 1:
+        return HttpResponseNotAllowed(_("Can't accept invitation, already a member of another group"))
+
+    StudentGroup.objects.filter(
+        instance=instance,
+        members=request.user
+    ).delete()
+
     invite.group.members.add(request.user)
     GroupInvitation.objects.filter(user=request.user).delete()
     return redirect(reverse("courses:group_info", kwargs={
