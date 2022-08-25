@@ -12,7 +12,7 @@ class Command(BaseCommand):
         for ev in evaluations:
             try:
                 jsonres = json.loads(ev.test_results)
-                res = generate_results(jsonres, 0)
+                res = generate_results(jsonres)
             except Exception as e:
                 pass
             else:

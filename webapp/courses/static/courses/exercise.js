@@ -4,7 +4,7 @@ function exercise_success(data, result_div, error_div, form_parent) {
     var comments_div = form_parent.children("div.comments");
     var file_result_div = form_parent.children("div.file-result");
 
-    // console.log(data);
+    console.log(data);
     
     if (data.result) {
         result_div.html(data.result);
@@ -101,6 +101,11 @@ function exercise_success(data, result_div, error_div, form_parent) {
     if (data.answer_count_str) {
         form_parent.parent().find('div.task-meta > div > a.user-answers-link').html(data.answer_count_str);
     }
+
+    if (data.evaluation === true && data.score) {
+        form_parent.parent().find('div.task-meta > div.task-meta-score > span').first().html(data.score);
+    }
+
     if (data.hints && data.evaluation != true) {
         let all_hints = "<ul>\n";
         for (let hint of data.hints) {

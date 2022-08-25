@@ -335,6 +335,7 @@ class ContentGraph(models.Model):
     responsible = models.ManyToManyField(User, blank=True)
     compulsory = models.BooleanField(verbose_name='Must be answered correctly before proceeding to next exercise', default=False)
     deadline = models.DateTimeField(verbose_name='The due date for completing this exercise',blank=True,null=True)
+    late_rule = models.CharField(max_length=50, blank=True, null=True, verbose_name='Score reduction formula to use for late submissions')
     publish_date = models.DateTimeField(verbose_name='When does this exercise become available',blank=True,null=True)
     scored = models.BooleanField(verbose_name='Does this exercise affect scoring', default=True)
     require_correct_embedded = models.BooleanField(verbose_name='Embedded exercises must be answered correctly in order to mark this item as correct',default=True)
@@ -950,6 +951,7 @@ class ContentPage(models.Model):
         evaluation_object = Evaluation(
             correct=correct,
             points=points,
+            max_points=evaluation.get("max", self.default_points),
             evaluator=evaluation.get("evaluator"),
             test_results=evaluation.get("test_results", ""),
             feedback=evaluation.get("feedback", ""),
@@ -960,14 +962,14 @@ class ContentPage(models.Model):
         
         answer_object.refresh_from_db()
         
-        update_completion(self, instance, user, evaluation)
+        update_completion(self, instance, user, evaluation, answer_object.answer_date)
         if self.group_submission:
             for member in get_group_members(user, instance):
                 answer_object.pk = None
                 answer_object.useranswer_ptr = None
                 answer_object.user = member
                 answer_object.save()
-                update_completion(self, instance, member, evaluation)
+                update_completion(self, instance, member, evaluation, answer_object.answer_date)
         
         return evaluation_object
 
@@ -978,13 +980,14 @@ class ContentPage(models.Model):
         instance = answer_object.instance
         answer_object.evaluation.correct = evaluation["evaluation"]
         answer_object.evaluation.points = evaluation["points"]
+        answer_object.evaluation.max_points = evaluation.get("max", self.default_points)
         answer_object.evaluation.feedback = evaluation["feedback"]
         answer_object.evaluation.evaluator = evaluation["evaluator"]
         answer_object.evaluation.save()
-        update_completion(self, instance, user, evaluation)
+        update_completion(self, instance, user, evaluation, answer_object.answer_date)
         if self.group_submission:
             for member in get_group_members(user, instance):
-                update_completion(self, instance, member, evaluation)
+                update_completion(self, instance, member, evaluation, answer_object.answer_date)
     
     def get_user_evaluation(self, user, instance, check_group=True):
         try:
@@ -993,9 +996,9 @@ class ContentPage(models.Model):
                 instance=instance,
                 exercise=self
             )
-            return completion.state
+            return completion.state, completion.points
         except UserTaskCompletion.DoesNotExist:
-            return "unanswered"
+            return "unanswered", 0
 
     def get_user_answers(self, user, instance, ignore_drafts=True):
         raise NotImplementedError("base type has no method 'get_user_answers'")
@@ -2206,7 +2209,10 @@ class RepeatedTemplateExerciseSessionInstanceAnswer(models.Model):
 class Evaluation(models.Model):
     """Evaluation of a student's answer to an exercise."""
     correct = models.BooleanField(default=False)
-    points = models.IntegerField(default=0)
+    points = models.DecimalField(default=0, max_digits=5, decimal_places=2)
+
+    # max_points is separate from the task's default_points to allow for flexibility in changing the point value's of tasks.
+    max_points = models.IntegerField(default=1)
 
     # Note: Evaluation should not be translated. The teacher should know which
     # language the student used and give an evaluation using that language.
@@ -2409,7 +2415,7 @@ class UserTaskCompletion(models.Model):
     exercise = models.ForeignKey(ContentPage, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     instance = models.ForeignKey(CourseInstance, on_delete=models.CASCADE)
-    points = models.PositiveSmallIntegerField(default=0)
+    points = models.DecimalField(default=0, max_digits=5, decimal_places=2)
     state = models.CharField(
         max_length=16,
         choices=(

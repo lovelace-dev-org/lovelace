@@ -1,7 +1,7 @@
 function show_file(e, elem) {
     e.preventDefault();
     var url = elem.href;  
-    var popup = $(elem).siblings(".popup");
+    var popup = $(elem).next(".popup");
     var pre = popup.children("pre");
     
     if (!pre.html()) {

@@ -170,6 +170,8 @@ def generate_results(results):
     evaluation = {}
     correct = True
     timedout = False
+    points = 0
+    max_points = 1
 
     student = results["student"]
     reference = results["reference"]
@@ -191,6 +193,8 @@ def generate_results(results):
     }
 
     #### GO THROUGH ALL TESTS
+    #NOTE bad design here, an exercise can essentially only have one json output test.
+    #     this is fine by itself, the code just gives a false impression right now.
     for test_id, student_t, reference_t in ((k, student[k], reference[k]) for k in matched):
         current_test = {
             "test_id": test_id,
@@ -263,6 +267,7 @@ def generate_results(results):
                         test_tree['errors'].append("JSONDecodeError: {}".format(str(e)))
                         print("Error decoding JSON output: {}".format(str(e)))
                         correct = False
+                        json_results = {}
                     else:
                         tester = json_results.get('tester', "")
                         test_tree['log'] = json_results.get('tests', [])
@@ -293,6 +298,13 @@ def generate_results(results):
                     if student_c['stderr']:
                         test_tree['errors'].append(student_c['stderr'])
                         correct = False
+
+                    # override old style result determination with new style
+                    if "result" in json_results:
+                        cmd_correct = json_results["result"]["correct"]
+                        points = json_results["result"]["score"]
+                        max_points = json_results["result"]["max"]
+
                 else:
                     # Handle stdout
 
@@ -338,12 +350,18 @@ def generate_results(results):
     # return unique hints and triggers only
     test_tree["hints"] = list(test_tree["hints"])
     test_tree["triggers"] = list(test_tree["triggers"])
-    
+
+    if correct and points == 0:
+        points = max_points
+
     evaluation.update({
         "correct": correct,
         "timedout": timedout,
         "test_tree": test_tree,
+        "points": points,
+        "max": max_points,
     })
+
     return evaluation
 
 @shared_task(name="courses.run-test", bind=True)
@@ -731,8 +749,9 @@ def run_command(command, stdin, stdout, stderr, test_dir, files_to_check):
 def get_celery_worker_status():
     ERROR_KEY = "errors"
     try:
-        from celery.task.control import inspect
-        insp = inspect()
+        from lovelace.celery import app as celery_app
+
+        insp = celery_app.control.inspect()
         d = insp.stats()
         if not d:
             d = { ERROR_KEY: 'No running Celery workers were found.' }

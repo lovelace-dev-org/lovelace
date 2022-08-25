@@ -14,7 +14,7 @@ from django.conf import settings
 from django.core.cache import cache
 from django.core.mail import get_connection, EmailMessage
 from django.urls import reverse
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 from smtplib import SMTPException
 
 from courses.models import Course, CourseInstance, UserFileUploadExerciseAnswer

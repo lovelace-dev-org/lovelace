@@ -525,6 +525,19 @@ function toggle_staff_widgets(event, caller) {
     }
 }
 
+function copy_link(event, caller) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    let a = $(caller);
+    navigator.clipboard.writeText(a.attr("href"));
+    a.next().css({"visibility": "visible"});
+    setTimeout(function() {
+        a.next().css({"visibility": "hidden"});
+    }, 2000);
+}
+
+
 $(document).ready(function() {
     $('.popup').click(function() {
         $(this).css({"opacity":"0", "pointer-events":"none"});

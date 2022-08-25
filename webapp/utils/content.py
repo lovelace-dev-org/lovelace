@@ -92,6 +92,12 @@ def get_instance_revision(model_class, instance_id, revision):
         return Version.objects.get_for_object(instance_obj).get(revision=revision)._object_version.object
     return instance_obj
 
+def get_parent_context(exercise, instance):
+    return ContentGraph.objects.filter(
+        content__embdedded_pages=exercise, instance=instance
+    ).distinct("id").first()
+
+
 def compile_json_feedback(log):
     # render all individual messages in the log tree
     triggers = []

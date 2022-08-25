@@ -2,7 +2,7 @@ from django.http import HttpResponse, JsonResponse, \
     HttpResponseNotFound, HttpResponseForbidden, HttpResponseRedirect,\
     HttpResponseNotAllowed
 from django.urls import reverse
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 from courses.forms import CalendarConfigForm, CalendarSchedulingForm, MessageForm
 from courses.models import *
 from utils.access import ensure_staff

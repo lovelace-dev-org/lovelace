@@ -23,7 +23,7 @@ def check_user_completion(user, task_links, instance, include_links=True):
         points = 0
         if result == "correct":
             correct = True
-            points = completion.points
+            points = completion.points * exercise_obj.default_points
         elif result == "credited":
             correct = True
         else:

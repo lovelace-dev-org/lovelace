@@ -10,6 +10,15 @@
     {% elif evaluation == False %}
       {% trans "Incorrect answer!" %}
     {% endif %}
+    {% if answer_url %}
+      <a class="button-style clipboard-button"
+         title="{% trans 'Copy the link to your answer to the clipboard' %}"
+         onclick="copy_link(event, this);"
+         href="{{ answer_url }}">
+      </a>
+      <span class="confirm-tag">{% trans 'Link copied!' %}</span>
+    {% endif %}
+
   </div>
   {% if comments %}
     <div class="exercise-comments">

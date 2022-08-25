@@ -1743,6 +1743,7 @@ td.routine-meta {
 a.button-style {
     appearance: button;
     text-decoration: none;
+    display: inline-block;
     width: 25px;
     height: 25px;
     outline: 0;
@@ -1861,6 +1862,23 @@ div.expand-handle {
                 #fff;
 }
 
+.clipboard-button {
+
+}
+
+div.task-meta-score {
+    display: block;
+    font-size: 1.2em;
+
+}
+
+span.confirm-tag {
+    visibility: hidden;
+}
+
+.tag--is-visible {
+    visibility: visible;
+}
 
 hr.hr-evenly-spaced {
     margin-top: 1em;

@@ -1,6 +1,6 @@
 from django import forms
 from django.conf import settings
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 from teacher_tools.models import MossSettings, ReminderTemplate
 
 class MossnetForm(forms.ModelForm):

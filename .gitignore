@@ -4,6 +4,8 @@ webapp/db.sqlite3
 webapp/lib/
 webapp/pyvenv.cfg
 **/migrations/**
-webapp/lovelace/settings/__init__.py
+webapp/lovelace/settings/
+!webapp/lovelace/factory.py
 !**/migrations
 !**/migrations/__init__.py
+upload

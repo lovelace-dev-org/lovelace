@@ -8,7 +8,7 @@ from django.http import HttpResponse, HttpResponseForbidden, HttpResponseNotFoun
 from django.shortcuts import render
 from django.template import Template, loader, engines
 from django.urls import reverse
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 
 from courses.models import EmbeddedLink, Evaluation, UserAnswer, UserTaskCompletion, StudentGroup
 
@@ -426,6 +426,7 @@ def submission_assessment(request, course, instance, exercise, user):
                     "evaluation": form.cleaned_data.get("correct", False),
                     "evaluator": request.user,
                     "points": assessment["total_score"],
+                    "max": sheet_link.calculate_max_score(),
                     "feedback": json.dumps(assessment),
                 },
                 answer_object

@@ -12,7 +12,7 @@ from django.db import transaction, IntegrityError
 from django.conf import settings
 from django.urls import reverse # Django 1.10
 from django.core import serializers
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 #from django.core.urlresolvers import reverse # Django 1.9
 
 from reversion import revisions as reversion
@@ -393,7 +393,7 @@ def file_upload_exercise(request, exercise_id=None, action=None):
                 cmd_list = []
                 commands = FileExerciseTestCommand.objects.filter(stage=stage).order_by("ordinal_number")
                 for cmd in commands:
-                    expected_outputs = FileExerciseTestExpectedOutput.objects.filter(command=cmd).order_by("ordinal_number")
+                    expected_outputs = FileExerciseTestExpectedOutput.objects.filter(command=cmd)
                     cmd_list.append((cmd, expected_outputs))
                 stage_list.append((stage, cmd_list))
             test_list.append((test, stage_list))

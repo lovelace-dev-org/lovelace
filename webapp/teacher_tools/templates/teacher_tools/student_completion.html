@@ -69,7 +69,7 @@
         {% endblocktrans %}
         <ul class="student-task-list">
           {% for task in results.tasks_list %}
-            <li class="task-bullet-{{ task.result }}"><a href="{{ task.answers_link }}">{{ task.eo.name }}</a></li>
+            <li class="task-bullet-{{ task.result }}"><a href="{{ task.answers_link }}">{{ task.eo.name }}</a> ({{ task.points }} / {{ task.eo.default_points }})</li>
           {% endfor %}
         </ul>
       {% endfor %}

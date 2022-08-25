@@ -76,10 +76,11 @@ def embed_frame(context, content_data):
     page = context["embedded_pages"][content_data["slug"]]
     if context["user"].is_active:
         answer_count = page.get_user_answers(page, context["user"], context["instance"]).count()
-        evaluation = page.get_user_evaluation(context["user"], context["instance"])
+        evaluation, quotient = page.get_user_evaluation(context["user"], context["instance"])
     else:
         answer_count = 0
         evaluation = None
+        quotient = 0
     
     return {
         "emb": content_data,
@@ -93,7 +94,9 @@ def embed_frame(context, content_data):
         "instance": context["instance"],
         "content": page,
         "answer_count": answer_count,
-        "evaluation": evaluation
+        "evaluation": evaluation,
+        "score": quotient * content_data["max_points"],
+        "max_points": content_data["max_points"]
     }
 
 @register.inclusion_tag("courses/embed-frame-preview.html", takes_context=False)

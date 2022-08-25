@@ -4,7 +4,7 @@ from django.http import HttpResponse, JsonResponse, HttpResponseRedirect,\
     HttpResponseServerError, HttpResponseBadRequest
 from django.shortcuts import redirect
 from django.urls import reverse
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 from courses.models import *
 from courses.forms import *
 from utils.access import ensure_staff, ensure_responsible_or_supervisor, ensure_responsible

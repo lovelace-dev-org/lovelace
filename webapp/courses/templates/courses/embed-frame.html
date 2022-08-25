@@ -25,6 +25,11 @@
              title="{% trans 'Your submitted answer is waiting for staff assessment' %}" class="submitted">
         {% endif %}
 
+        <div class="task-meta-score">
+          <span>{{ score }}</span> <span>/ {{ max_points }}</span>
+        </div>
+
+
         {% comment %}
         <hr>
         Deadline: yyyy-mm-dd
@@ -32,6 +37,7 @@
         {% endcomment %}
 
         {% if not sandboxed %}
+          <hr>
           <div><a href="{% url 'courses:show_answers' user course instance content %}"
                   class="user-answers-link"
                   title="{% trans 'View your previous answers' %}">

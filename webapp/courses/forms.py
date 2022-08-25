@@ -6,7 +6,7 @@ from django.core.exceptions import ValidationError
 from django import forms
 from django.forms import fields
 from django.utils.text import slugify
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 from modeltranslation.forms import TranslationModelForm
 from utils.formatters import display_name
 from utils.management import add_translated_charfields
@@ -219,7 +219,7 @@ class NodeSettingsForm(forms.ModelForm):
     
     class Meta:
         model = cm.ContentGraph
-        fields = ["publish_date", "deadline", "scored", "visible", "evergreen"]
+        fields = ["publish_date", "deadline", "scored", "late_rule", "visible", "evergreen"]
         
     active_node = forms.IntegerField(
         widget=forms.HiddenInput,

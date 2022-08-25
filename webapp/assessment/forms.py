@@ -2,7 +2,7 @@ from django import forms
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.forms import fields
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 from modeltranslation.forms import TranslationModelForm
 from assessment.models import *
 from utils.management import add_translated_charfields

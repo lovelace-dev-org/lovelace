@@ -4,7 +4,7 @@ from django.conf import settings
 from django.db import models
 from django.dispatch import receiver
 from django.contrib.postgres.fields import ArrayField
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 
 from courses.models import Course, CourseInstance, User, FileUploadExercise
 from utils.files import get_moss_basefile_path

@@ -23,7 +23,7 @@ from django.urls import reverse
 from django.utils import timezone, translation
 from django.utils.text import slugify
 from django.utils.safestring import mark_safe
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 from django.contrib import messages
 
 from reversion import revisions as reversion
@@ -48,7 +48,7 @@ from django.contrib import auth
 from django.shortcuts import redirect
 
 from utils.access import is_course_staff, determine_media_access, ensure_enrolled_or_staff, ensure_owner_or_staff, determine_access, ensure_staff
-from utils.archive import find_version_with_filename
+from utils.archive import find_version_with_filename, get_single_archived
 from utils.content import first_title_from_content, get_embedded_parent
 from utils.files import generate_download_response
 from utils.management import CourseContentAdmin
@@ -289,14 +289,14 @@ def check_answer(request, course, instance, content, revision):
     answer = request.POST
     files = request.FILES
 
-    exercise = content
-    
     if revision == "head":
         latest = Version.objects.get_for_object(content).latest("revision__date_created")
         answered_revision = latest.revision_id
         revision = None
+        exercise = content
     else:
         answered_revision = revision
+        exercise = get_single_archived(content, revision)
 
     try:
         answer_object = exercise.save_answer(content, user, ip, answer, files, instance, answered_revision)
@@ -336,7 +336,8 @@ def check_answer(request, course, instance, content, revision):
 
     # TODO: Errors, hints, comments in JSON
     t = loader.get_template("courses/exercise-evaluation.html")
-    total_evaluation = exercise.get_user_evaluation(user, instance)
+    total_evaluation, quotient = exercise.get_user_evaluation(user, instance)
+    score = quotient * exercise.default_points
     #print(evaluation)
     
     data = {
@@ -345,7 +346,8 @@ def check_answer(request, course, instance, content, revision):
         'evaluation': evaluation.get("evaluation"),
         'answer_count_str': answer_count_str,
         'total_evaluation': total_evaluation,
-        'manual': exercise.manually_evaluated
+        'manual': exercise.manually_evaluated,
+        'score': score
     }
     if "next_instance" in evaluation:
         data["next_instance"] = evaluation["next_instance"]
@@ -455,7 +457,10 @@ def check_progress(request, course, instance, content, revision, task_id):
     task = celery_app.AsyncResult(id=task_id)
     info = task.info
     if task.ready():
-        return file_exercise_evaluation(request, course, instance, content, revision, task_id, task)
+        try:
+            return file_exercise_evaluation(request, course, instance, content, revision, task_id, task)
+        except Exception as e:
+            print(e)
     else:
         celery_status = get_celery_worker_status()
         if "errors" in celery_status:
@@ -482,6 +487,8 @@ def file_exercise_evaluation(request, course, instance, content, revision, task_
         task = AsyncResult(task_id)
     evaluation_id = task.get()
     task.forget() # TODO: IMPORTANT! Also forget all the subtask results somehow? in tasks.py?
+    if revision != "head":
+        content = get_single_archived(content, revision)
     answers = content.get_user_answers(content, request.user, instance)
     answer_count = answers.count()
     evaluated_answer = answers.get(task_id=task_id)
@@ -497,16 +504,27 @@ def file_exercise_evaluation(request, course, instance, content, revision, task_
         {
             "evaluation": evaluation_tree["correct"],
             "test_results": evaluation_json,
-            "manual": content.manually_evaluated
+            "manual": content.manually_evaluated,
+            "points": evaluation_tree["points"],
+            "max": evaluation_tree["max"]
         },
         evaluated_answer
     )
+
+    answer_url = reverse("courses:show_answers", kwargs={
+        "user": request.user,
+        "course": course,
+        "instance": instance,
+        "exercise": content
+    }) + "#" + str(evaluated_answer.id)
+    answer_url = request.build_absolute_uri(answer_url)
 
     msg_context = {
         'course_slug': course.slug,
         'instance_slug': instance.slug,
         'instance': instance,
-        'content_page': content
+        'content_page': content,
+        'answer_url': answer_url
     }
 
     data = compile_evaluation_data(request, evaluation_tree, evaluation_obj, msg_context)
@@ -517,17 +535,16 @@ def file_exercise_evaluation(request, course, instance, content, revision, task_
             data['errors'] = _("The program took too long to execute and was terminated. Check your code for too slow solutions.")
         else:
             data['errors'] = _("Checking program was unable to finish due to an error. Contact course staff.")
-            answer_url = reverse("courses:show_answers", kwargs={
-                "user": request.user,
-                "course": course,
-                "instance": instance,
-                "exercise": content
-            }) + "#" + str(evaluated_answer.id)
             send_error_report(instance, content, revision, errors, answer_url)
-        
+
+    total_evaluation, quotient = content.get_user_evaluation(request.user, instance)
+    score = quotient * content.default_points
+
     data["answer_count_str"] = answer_count_str
     data["manual"] = content.manually_evaluated
-    
+    data["total_evaluation"] = total_evaluation,
+    data["score"] = score
+
     return JsonResponse(data)
 
 def compile_evaluation_data(request, evaluation_tree, evaluation_obj, context=None):
@@ -563,7 +580,8 @@ def compile_evaluation_data(request, evaluation_tree, evaluation_obj, context=No
     t_exercise = loader.get_template("courses/exercise-evaluation.html")
     c_exercise = {
         'evaluation': evaluation_obj.correct,
-        'manual': context["content_page"].manually_evaluated
+        'manual': context["content_page"].manually_evaluated,
+        'answer_url': context.get("answer_url", "")
     }
     t_messages = loader.get_template('courses/exercise-evaluation-messages.html')
 

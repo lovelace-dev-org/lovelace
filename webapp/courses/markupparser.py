@@ -635,6 +635,7 @@ class EmbeddedPageMarkup(Markup):
             settings["question"] = question
             settings["form"] = rendered_form
             settings["revision"] = revision
+            settings["max_points"] = page.default_points
             if instance is not None:
                 settings["urls"] = {
                     "stats_url": reverse("stats:single_exercise", kwargs={

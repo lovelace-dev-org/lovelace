@@ -88,10 +88,10 @@
                 {{ file.0 }}
               {% else %}
                 <a class="fileview-link" href="{% url 'courses:show_answer_file' student course instance answer file.0 %}" onclick="show_file(event, this);">{{ file.0 }}</a>
+                <div class="popup"><pre class="fileview"></pre></div>
               {% endif %}
               <br />
           {% endfor %}
-          <div class="popup"><pre class="fileview"></pre></div>         
       </td>
     {% elif exercise.content_type == "REPEATED_TEMPLATE_EXERCISE" %}
       <td class="answer">
@@ -113,7 +113,7 @@
       {% else %}
         <span title="{% trans 'Unknown' %}">?</span>
       {% endif %}
-      {{ answer.evaluation.points }} / {{ exercise.default_points }}
+      {{ answer.evaluation.points }} / {{ answer.evaluation.max_points }}
     </td>
     <td class="actions-cell">
       <a class="button-style link-button" 

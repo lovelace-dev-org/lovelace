@@ -4,7 +4,7 @@ from django.core.cache import cache
 from django.http import HttpResponse, HttpResponseNotFound, HttpResponseForbidden, HttpResponseBadRequest, JsonResponse
 from django.template import loader
 from django.utils import translation
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 from courses import markupparser
 from faq.models import FaqQuestion, FaqToInstanceLink
 from faq.forms import FaqQuestionForm, FaqLinkForm

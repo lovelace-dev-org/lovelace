@@ -174,9 +174,36 @@ def render_json_feedback(log, request, course, instance):
     }
     return feedback
 
-def update_completion(exercise, instance, user, evaluation):
+def apply_late_rule(evaluation, rule):
+    print("applying rule", rule)
+    quotient = evaluation.get("points", 0) / evaluation.get("max", 1)
+    return eval(rule.format(
+        p=evaluation.get("points", 0),
+        m=evaluation.get("max", 1),
+        q=quotient
+    ))
+
+
+def update_completion(exercise, instance, user, evaluation, answer_date):
+    link = cm.EmbeddedLink.objects.filter(
+        instance=instance,
+        embedded_page=exercise
+    ).first()
+    parent_graph = link.parent.contentgraph_set.get_queryset().get(instance=instance)
+    late = parent_graph.deadline and (answer_date > parent_graph.deadline)
+    print(late, parent_graph.late_rule)
+
+
     changed = False
     correct = evaluation["evaluation"]
+    if correct:
+        if late and parent_graph.late_rule:
+            quotient = apply_late_rule(evaluation, parent_graph.late_rule)
+        else:
+            quotient = evaluation.get("points", 0) / evaluation.get("max", 1)
+    else:
+        quotient = 0
+
     try:
         completion = cm.UserTaskCompletion.objects.get(
             exercise=exercise,
@@ -188,7 +215,7 @@ def update_completion(exercise, instance, user, evaluation):
             exercise=exercise,
             instance=instance,
             user=user,
-            points=evaluation.get("points", 0)
+            points=quotient
         )
         if evaluation.get("manual", False):
             completion.state = "submitted"
@@ -204,15 +231,13 @@ def update_completion(exercise, instance, user, evaluation):
                 completion.state = ["incorrect", "correct"][correct]
                 changed = True
         if correct:
-            completion.points = evaluation.get("points", 0)
+            if quotient > completion.points:
+                completion.points = quotient
         completion.save()
 
-    link = cm.EmbeddedLink.objects.filter(
-        instance=instance,
-        embedded_page=exercise
-    ).first()
+
     eval_group = get_single_archived(exercise, link.revision).evaluation_group
-    
+
     if changed and correct and eval_group:
         others = cm.ContentPage.objects.filter(
             evaluation_group=eval_group

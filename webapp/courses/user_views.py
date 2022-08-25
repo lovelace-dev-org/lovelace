@@ -4,7 +4,7 @@ from django.http import HttpResponse, JsonResponse, \
 from django.template import Template, loader, engines
 from django.conf import settings
 from django.urls import reverse
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 from django.contrib import messages, auth
 from django.shortcuts import redirect
 from django.db.utils import IntegrityError

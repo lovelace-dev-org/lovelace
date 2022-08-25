@@ -1,4 +1,4 @@
-from django.conf.urls import include, url
+from django.conf.urls import include
 from django.urls import path
 
 from . import views, staff_views, user_views, calendar_views
@@ -173,8 +173,8 @@ urlpatterns = [
 
     # Download views
     path("file-download/embedded/<course:course>/<instance:instance>/<file:mediafile>/", views.download_embedded_file, name="download_embedded_file"),
-    url(r"^file-download/media/(?P<file_slug>[^/]+)/(?P<field_name>[^/]+)/(?P<filename>[^/]+)/", views.download_media_file, name="download_media_file"),
-    url(r"^file-download/template-backend/(?P<exercise_id>\d+)/(?P<field_name>[^/]+)/(?P<filename>[^/]+)/$",
+    path("file-download/media/<slug:file_slug>/<str:field_name>/<str:filename>/", views.download_media_file, name="download_media_file"),
+    path("file-download/template-backend/<int:exercise_id>/<str:field_name>/<str:filename>/",
         views.download_template_exercise_backend, name="download_template_exercise_backend"),
 
 

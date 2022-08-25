@@ -5,7 +5,7 @@ import routine_exercise.tasks as routine_tasks
 from django.db import transaction
 from django.http import JsonResponse, HttpResponse
 from django.utils import translation
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 
 from lovelace.celery import app as celery_app
 
@@ -198,12 +198,17 @@ def routine_progress(request, course, instance, content, task_id):
     if task.ready():
         info = task.info
         if info.get("status", "fail") == "fail":
+            try:
+                answer_id = RoutineExerciseAnswer.objects.get(task_id=task_id).id
+            except RoutineExercise.DoesNotExist:
+                answer_id = 0
+
             answer_url = reverse("courses:show_answers", kwargs={
                 "user": request.user,
                 "course": course,
                 "instance": instance,
                 "exercise": content
-            }) + "#" + str(info["answer_id"])
+            }) + "#" + str(answer_id)
             send_error_report(instance, content, info["revision"], [info["error"]], answer_url)
             data = {
                 "errors": _("Operation failed. Course staff has been notified.")
@@ -232,6 +237,7 @@ def routine_progress(request, course, instance, content, task_id):
             data = render_json_feedback(info["data"]["log"], request, course, instance)
             if progress.completed:
                 data["evaluation"] = True
+                data["score"] = content.default_points
                 update_completion(content, instance, request.user, data)
             data["next_instance"] = True
             data["progress"] = progress.progress

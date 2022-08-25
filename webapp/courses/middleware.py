@@ -1,6 +1,6 @@
 from django import forms
 from django.http import HttpResponseBadRequest
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 import django.conf
 
 if 'shibboleth' in django.conf.settings.INSTALLED_APPS:

@@ -1,10 +1,10 @@
 from django.conf import settings
-from django.conf.urls import include, url
+from django.conf.urls import include
 from django.contrib import admin
 from django.views.generic import RedirectView
 from django.urls.converters import StringConverter
 
-from django.urls import register_converter
+from django.urls import path, register_converter
 
 from model_path_converter import register_model_converter
 from courses.models import Course, CourseInstance, ContentPage, File, StudentGroup,\
@@ -27,30 +27,30 @@ register_model_converter(CalendarDate, name="event")
 
 # TODO: Design the url hierarchy from scratch
 urlpatterns = [
-    url(r'^admin/courses/fileuploadexercise/add', RedirectView.as_view(pattern_name='exercise_admin:file_upload_add')),
-    url(r'^admin/courses/fileuploadexercise/(?P<exercise_id>\d+)/change', RedirectView.as_view(pattern_name='exercise_admin:file_upload_change')),
-    url(r'^admin/', admin.site.urls),
-    url(r'^exercise-admin/', include('exercise_admin.urls', namespace="exercise_admin")),
-    url(r'^stats/', include('stats.urls', namespace="stats")),
-    url(r'^feedback/', include('feedback.urls', namespace="feedback")),
-    url(r'^i18n/', include('django.conf.urls.i18n')),
-    url(r'^accounts/', include('allauth.urls')),
-    url(r'^teacher/', include('teacher_tools.urls', namespace="teacher")),
-    url(r'^routine_exercise/', include('routine_exercise.urls', namespace="routine")),
-    url(r'^faq/', include('faq.urls', namespace="faq")),
-    url(r'^assessment/', include('assessment.urls', namespace="assessment")),
+    path('admin/courses/fileuploadexercise/add', RedirectView.as_view(pattern_name='exercise_admin:file_upload_add')),
+    path('admin/courses/fileuploadexercise/<int:exercise_id>>/change', RedirectView.as_view(pattern_name='exercise_admin:file_upload_change')),
+    path('admin/', admin.site.urls),
+    path('exercise-admin/', include('exercise_admin.urls', namespace="exercise_admin")),
+    path('stats/', include('stats.urls', namespace="stats")),
+    path('feedback/', include('feedback.urls', namespace="feedback")),
+    path('i18n/', include('django.conf.urls.i18n')),
+    path('accounts/', include('allauth.urls')),
+    path('teacher/', include('teacher_tools.urls', namespace="teacher")),
+    path('routine_exercise/', include('routine_exercise.urls', namespace="routine")),
+    path('faq/', include('faq.urls', namespace="faq")),
+    path('assessment/', include('assessment.urls', namespace="assessment")),
 ]
 
 try:
     urlpatterns.append(
-        url(r'^shib/', include('shibboleth.urls'))
+        path('shib/', include('shibboleth.urls'))
     )
 except ImportError:
     # shibboleth is not installed
     pass
 finally:
     urlpatterns.append(
-        url(r'^', include('courses.urls', namespace="courses")),
+        path('', include('courses.urls', namespace="courses")),
     )
 
 if settings.DEBUG:
@@ -61,6 +61,6 @@ if settings.DEBUG:
         pass
     else:
         urlpatterns = [
-            url(r'^__debug__/', include(debug_toolbar.urls)),
+            path('__debug__/', include(debug_toolbar.urls)),
         ] + urlpatterns
 
