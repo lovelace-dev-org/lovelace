@@ -1,5 +1,6 @@
 import base64
 from django.template import loader
+from django.urls import reverse
 from courses import markupparser
 from utils.archive import get_single_archived, get_archived_instances
 from utils.files import get_file_contents_b64
@@ -38,34 +39,15 @@ def file_upload_payload(exercise, student_files, instance, revision=None):
         tests = exercise.fileexercisetest_set.get_queryset()
         exercise_files = exercise.fileexercisetestincludefile_set.get_queryset()
         instance_file_links = exercise.instanceincludefiletoexerciselink_set.get_queryset()
-    
+
     # Resources
     for a_file in student_files:
         a_file.seek(0)
         payload["resources"]["files_to_check"][a_file.name] = base64.b64encode(a_file.read()).decode("utf-8")
-    
-    for ex_file in exercise_files:
-        payload["resources"]["checker_files"][ex_file.fileinfo.name] = {
-            "content": get_file_contents_b64(ex_file),
-            "purpose": ex_file.file_settings.purpose,
-            "name": ex_file.file_settings.name,
-            "chmod": ex_file.file_settings.chmod_settings,
-        }
-    
-    instance_links = instance.instanceincludefiletoinstancelink_set.get_queryset()
-    for if_link in instance_file_links:
-        ii_link = instance_links.get(include_file=if_link.include_file)
-        if ii_link.revision is not None:
-            i_file = get_single_archived(if_link.include_file, ii_link.revision)
-        else:
-            i_file = if_link.include_file
-        payload["resources"]["checker_files"][i_file.fileinfo.name] = {
-            "content": get_file_contents_b64(i_file),
-            "purpose": if_link.file_settings.purpose,
-            "name": if_link.file_settings.name,
-            "chmod": if_link.file_settings.chmod_settings
-        }   
-    
+
+    all_required_exercise = set()
+    all_required_instance = set()
+
     # Tests
     for i, test in enumerate(tests):
         test_payload = {
@@ -84,12 +66,14 @@ def file_upload_payload(exercise, student_files, instance, revision=None):
             stages = test.fileexerciseteststage_set.get_queryset()
             required_files = test.required_files.all()
             required_instance_files = test.required_instance_files.all()
-            
+
         for req_file in required_files:
-            test_payload["required_files"].append(req_file.fileinfo.name)
+            all_required_exercise.add(req_file)
+            test_payload["required_files"].append(str(req_file.id))
         for req_file in required_instance_files:
-            test_payload["required_files"].append(req_file.fileinfo.name)
-            
+            all_required_instance.add(req_file.id)
+            test_payload["required_files"].append(str(req_file.id))
+
         for stage in stages:
             if revision is not None:
                 archived = get_archived_instances(stage, revision)
@@ -97,7 +81,7 @@ def file_upload_payload(exercise, student_files, instance, revision=None):
                 commands = archived["fileexercisetestcommand_set"]
             else:
                 commands = stage.fileexercisetestcommand_set.all()
-                
+
             command_list = []
             for command in commands:
                 command_list.append({
@@ -110,27 +94,54 @@ def file_upload_payload(exercise, student_files, instance, revision=None):
                     "stdout": command.significant_stdout,
                     "stderr": command.significant_stderr,
                 })
-                
+
             test_payload["stages"].append({
                 "id": stage.id,
                 "ordinal": stage.ordinal_number,
                 "name": stage.name,
                 "commands": command_list
             })
-        
+
         payload["tests"].append(test_payload)
-        
+
+    for ex_file in all_required_exercise:
+        payload["resources"]["checker_files"][ex_file.id] = {
+            "content": get_file_contents_b64(ex_file),
+            "purpose": ex_file.file_settings.purpose,
+            "name": ex_file.file_settings.name,
+            "chmod": ex_file.file_settings.chmod_settings,
+        }
+
+    instance_links = instance.instanceincludefiletoinstancelink_set.get_queryset()
+    for if_link in instance_file_links:
+        ii_link = instance_links.get(include_file=if_link.include_file)
+        if ii_link.revision is not None:
+            i_file = get_single_archived(if_link.include_file, ii_link.revision)
+        else:
+            i_file = if_link.include_file
+
+        if i_file.id in all_required_instance:
+            payload["resources"]["checker_files"][i_file.id] = {
+                "content": get_file_contents_b64(i_file),
+                "purpose": if_link.file_settings.purpose,
+                "name": if_link.file_settings.name,
+                "chmod": if_link.file_settings.chmod_settings
+            }
+
+    #import json
+    #print(json.dumps(payload, indent=4))
+
     return payload
 
 
-def render_json_feedback(log, request, course, instance):
+def render_json_feedback(log, request, course, instance, content, answer_id=None):
     """
     Renders execise feedback from the exercise log JSON format. Parses
     messages, hints, triggers, and the final result from the log and returns
-    them as a dictionary. 
-    
+    them as a dictionary.
+
     Messages and hints are ran through the markupparser, which makes it
-    possible to include any markup in the log. 
+    possible to include any markup in the log.
     """
 
     # render all individual messages in the log tree
@@ -160,11 +171,18 @@ def render_json_feedback(log, request, course, instance):
 
         test["runs"].sort(key=lambda run: run["correct"])
 
+    answer_url = reverse("courses:show_answers", kwargs={
+        "user": request.user,
+        "course": course,
+        "instance": instance,
+        "exercise": content
+    }) + "#" + str(answer_id)
 
     t_messages = loader.get_template('courses/exercise-evaluation-messages.html')
     t_exercise = loader.get_template("courses/exercise-evaluation.html")
     c_exercise = {
-        'evaluation': correct
+        'evaluation': correct,
+        'answer_url': request.build_absolute_uri(answer_url)
     }
     feedback = {
         "messages": t_messages.render({'log': log["tests"]}),
@@ -191,8 +209,6 @@ def update_completion(exercise, instance, user, evaluation, answer_date):
     ).first()
     parent_graph = link.parent.contentgraph_set.get_queryset().get(instance=instance)
     late = parent_graph.deadline and (answer_date > parent_graph.deadline)
-    print(late, parent_graph.late_rule)
-
 
     changed = False
     correct = evaluation["evaluation"]
@@ -267,6 +283,6 @@ def update_completion(exercise, instance, user, evaluation, answer_date):
                 if completion.state not in ["correct", "credited"]:
                     completion.state = "credited"
                     completion.save()
-                    
+
     return completion.state
 

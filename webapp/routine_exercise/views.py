@@ -209,7 +209,13 @@ def routine_progress(request, course, instance, content, task_id):
                 "instance": instance,
                 "exercise": content
             }) + "#" + str(answer_id)
-            send_error_report(instance, content, info["revision"], [info["error"]], answer_url)
+
+            send_error_report(
+                instance,
+                content,
+                info["revision"],
+                [info["error"]],
+                request.build_absolute_uri(answer_url))
             data = {
                 "errors": _("Operation failed. Course staff has been notified.")
             }
@@ -232,13 +238,21 @@ def routine_progress(request, course, instance, content, task_id):
             progress.save()
             data["progress"] = progress.progress
             return JsonResponse(data)
+
         elif info["task"] == "check":
+            try:
+                answer = RoutineExerciseAnswer.objects.get(task_id=task_id)
+            except RoutineExercise.DoesNotExist:
+                return JsonResponse({"error": _(
+                    "Unable to find matching answer."
+                )})
+
             progress = _save_evaluation(request.user, instance, content, task_id, info)
-            data = render_json_feedback(info["data"]["log"], request, course, instance)
+            data = render_json_feedback(info["data"]["log"], request, course, instance, content, answer.id)
             if progress.completed:
                 data["evaluation"] = True
                 data["score"] = content.default_points
-                update_completion(content, instance, request.user, data)
+                update_completion(content, instance, request.user, data, answer.answer_date)
             data["next_instance"] = True
             data["progress"] = progress.progress
             next_question = info["data"].get("next")

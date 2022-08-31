@@ -2415,7 +2415,7 @@ class UserTaskCompletion(models.Model):
     exercise = models.ForeignKey(ContentPage, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     instance = models.ForeignKey(CourseInstance, on_delete=models.CASCADE)
-    points = models.DecimalField(default=0, max_digits=5, decimal_places=2)
+    points = models.DecimalField(default=0, max_digits=8, decimal_places=5)
     state = models.CharField(
         max_length=16,
         choices=(

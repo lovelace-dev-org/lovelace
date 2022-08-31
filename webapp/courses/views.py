@@ -333,13 +333,20 @@ def check_answer(request, course, instance, content, revision):
 
     answer_count = exercise.get_user_answers(exercise, user, instance).count()
     answer_count_str = get_answer_count_meta(answer_count)
+    answer_url = reverse("courses:show_answers", kwargs={
+        "user": request.user,
+        "course": course,
+        "instance": instance,
+        "exercise": content
+    }) + "#" + str(answer_object.id)
+    evaluation["answer_url"] = request.build_absolute_uri(answer_url)
 
     # TODO: Errors, hints, comments in JSON
     t = loader.get_template("courses/exercise-evaluation.html")
     total_evaluation, quotient = exercise.get_user_evaluation(user, instance)
     score = quotient * exercise.default_points
     #print(evaluation)
-    
+
     data = {
         'result': t.render(evaluation),
         'hints': hints,
@@ -347,7 +354,7 @@ def check_answer(request, course, instance, content, revision):
         'answer_count_str': answer_count_str,
         'total_evaluation': total_evaluation,
         'manual': exercise.manually_evaluated,
-        'score': score
+        'score': score,
     }
     if "next_instance" in evaluation:
         data["next_instance"] = evaluation["next_instance"]
