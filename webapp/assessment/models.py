@@ -20,12 +20,14 @@ class AssessmentToExerciseLink(models.Model):
         self.save()
             
     def calculate_max_score(self):
+
         if self.revision is None:
             q = self.sheet.assessmentbullet_set.get_queryset().aggregate(
                 max_score=models.Sum("point_value")
             )
             return q["max_score"]
         else:
+            old_sheet = get_archived_instances(self.sheet, self.revision)
             bullets = old_sheet["assessmentbullet_set"]
             return sum(bullet.point_value for bullet in bullets)
         

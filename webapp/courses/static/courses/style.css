@@ -1863,7 +1863,8 @@ div.expand-handle {
 }
 
 .clipboard-button {
-
+    background: no-repeat url("/static/courses/copy.png") center/18px,
+                #fff;
 }
 
 div.task-meta-score {
