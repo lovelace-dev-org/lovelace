@@ -128,7 +128,7 @@ def calendar(context, calendar_data):
                 entry["reserver"] = display_name(reservation.user)
                 try:
                     group = StudentGroup.objects.get(
-                        members=reservation.user
+                        members=reservation.user,
                         instance=context["instance"]
                     )
                 except StudentGroup.DoesNotExist:
