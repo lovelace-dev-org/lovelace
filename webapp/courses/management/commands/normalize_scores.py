@@ -14,7 +14,7 @@ class Command(BaseCommand):
 
             for record in paginator.page(page).object_list.iterator():
                 if record.points > 1:
-                    quotient = record.points / record.exercise.default_points
+                    quotient = record.points / max(record.exercise.default_points, 1)
                     record.points = quotient
                     record.save()
                     counter += 1

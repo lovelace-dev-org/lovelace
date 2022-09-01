@@ -370,7 +370,7 @@ def move_content_node(request, course, instance, target_id, placement):
     
 @ensure_staff
 def group_management(request, course, instance):
-    if request.user == course.main_responsible:
+    if request.user == course.main_responsible or request.user.is_superuser:
         groups = StudentGroup.objects.filter(instance=instance).order_by("name")
         responsible = True
         staff_members = course.staff_group.user_set.get_queryset().order_by("last_name")
