@@ -43,7 +43,7 @@ urlpatterns = [
 
 try:
     urlpatterns.append(
-        path('shib/', include('shibboleth.urls'))
+        path('shib/', include('shibboleth.urls', namespace="shibboleth"))
     )
 except ImportError:
     # shibboleth is not installed
