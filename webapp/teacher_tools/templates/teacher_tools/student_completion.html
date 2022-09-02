@@ -54,7 +54,7 @@
   
 
   <div class="paragraph">
-    {% blocktrans with missing=total_missing points=total_points available=total_points_available %}
+    {% blocktrans with missing=total_missing points=total_points|floatformat:"2" available=total_points_available %}
       <div class="paragraph">Total missing: {{ missing }}</div>
       <div class="paragraph">Total points: {{ points }} / {{ available }}</div>
     {% endblocktrans %}
@@ -64,12 +64,12 @@
     {% trans 'Page results' %}
     <ul class="results-page-list">
       {% for results in results_by_page %}
-        {% blocktrans with name=results.page.name done=results.done_count tasks=results.task_count points=results.points available=results.points_available %}
+        {% blocktrans with name=results.page.name done=results.done_count tasks=results.task_count points=results.points|floatformat:"2" available=results.points_available %}
           <li class="results-page-bullet tasks-collapsed" onclick="expand_task_list(this)">{{ name }} (Done: {{ done }}/{{ tasks }} | Points: {{ points }}/{{ available }})</li>
         {% endblocktrans %}
         <ul class="student-task-list">
           {% for task in results.tasks_list %}
-            <li class="task-bullet-{{ task.result }}"><a href="{{ task.answers_link }}">{{ task.eo.name }}</a> ({{ task.points }} / {{ task.eo.default_points }})</li>
+            <li class="task-bullet-{{ task.result }}"><a href="{{ task.answers_link }}">{{ task.eo.name }}</a> ({{ task.points|floatformat:"2" }} / {{ task.eo.default_points }})</li>
           {% endfor %}
         </ul>
       {% endfor %}

@@ -18,13 +18,12 @@ from utils.access import is_course_staff, ensure_staff, ensure_enrolled_or_staff
 from utils.users import get_group_members
 
 try:
-    from shibboleth.app_settings import LOGOUT_URL, LOGOUT_REDIRECT_URL, LOGOUT_SESSION_KEY
+    from shibboleth.app_settings import LOGOUT_URL, LOGOUT_REDIRECT_URL
 except:
     # shibboleth not installed 
     # these are not needed
     LOGOUT_URL = ""
     LOGOUT_REDIRECT_URL = ""
-    LOGOUT_SESSION_KEY = ""
 
 
 @cookie_law
@@ -53,10 +52,9 @@ def logout(request):
         # from shibboleth login view
         
         auth.logout(request)
-        request.session[LOGOUT_SESSION_KEY] = True
         target = LOGOUT_REDIRECT_URL
         logout = LOGOUT_URL % target
-        return redirect(logout)        
+        return redirect(logout)
     
     if request.session.get("shib", None):
         c = {
