@@ -464,22 +464,7 @@ def check_progress(request, course, instance, content, revision, task_id):
     task = celery_app.AsyncResult(id=task_id)
     info = task.info
     if task.ready():
-        try:
-            raise TyprError
-            return file_exercise_evaluation(request, course, instance, content, revision, task_id, task)
-        except Exception as e:
-            import sys
-            import io
-            import traceback
-            etype, evalue, etrace = sys.exc_info()
-            traceout = io.StringIO()
-            traceback.print_tb(etrace, file=traceout)
-            traceout.seek(0)
-            error_msg = evalue.__class__.__name__ + ": " + str(evalue)
-            error_msg += "\n\n"
-            error_msg += traceout.read()
-            send_error_report(instance, content, revision, [error_msg], answer_url="")
-            return HttpResponseServerError()
+        return file_exercise_evaluation(request, course, instance, content, revision, task_id, task)
     else:
         celery_status = get_celery_worker_status()
         if "errors" in celery_status:
