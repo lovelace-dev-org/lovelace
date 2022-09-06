@@ -58,3 +58,4 @@ class ReminderForm(forms.ModelForm):
         label=_("Save template for this instance"),
         required=False
     )
+

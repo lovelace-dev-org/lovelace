@@ -14,9 +14,6 @@ from django.utils import translation
 from django.conf import settings as django_settings
 from django.contrib.auth.models import User
 
-from reversion import revisions as reversion
-from reversion.models import Version
-
 import redis
 
 import json
@@ -377,9 +374,11 @@ def run_test(self, test, resources, student=False):
     if student:
         files_to_check = resources["files_to_check"]    
     else:
-        files_to_check = [
-            req_file for req_file in required_files if req_file["purpose"] == "REFERENCE"
-        ]
+        files_to_check = {}
+        for req_file_handle in required_files:
+            file_info = resources["checker_files"][req_file_handle]
+            if file_info["purpose"] == "REFERENCE":
+                files_to_check[file_info["name"]] = file_info["content"]
 
     # TODO: Replace with the directory of the ramdisk
     temp_dir_prefix = os.path.join("/", "tmp")
@@ -754,7 +753,7 @@ def get_celery_worker_status():
         insp = celery_app.control.inspect()
         d = insp.stats()
         if not d:
-            d = { ERROR_KEY: 'No running Celery workers were found.' }
+            d = { ERROR_KEY: _('No running Celery workers were found.') }
     except IOError as e:
         from errno import errorcode
         msg = "Error connecting to the backend: " + str(e)

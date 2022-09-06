@@ -76,6 +76,7 @@ def send_welcome_email(instance, user=None, lang_code=None, userlist=None):
         )
         mail.send()
     
+
 def send_email(recipients, sender, title, body):
     """
     Generic email sending utility function. 
@@ -95,4 +96,17 @@ def send_email(recipients, sender, title, body):
         messages,
         connection=connection
     )
-    
+
+def send_bcc_email(instance, recipients, sender, title, body):
+    mailfrom = "{}-notices@{}".format(instance.slug, settings.ALLOWED_HOSTS[0])
+    connection = get_connection()
+    mail = EmailMessage(
+        title, body, mailfrom,
+        bcc=recipients,
+        cc=[sender.email],
+        reply_to=[instance.email],
+        connection=connection
+    )
+    mail.send()
+
+

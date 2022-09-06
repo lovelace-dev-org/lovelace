@@ -11,7 +11,7 @@ from django.conf import settings
 from django.core.cache import cache
 from django.db import transaction
 from django.http import HttpResponse, HttpResponseForbidden, HttpResponseGone, JsonResponse
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.utils.translation import gettext as _
 from django.template import loader
 from django.urls import reverse
@@ -19,9 +19,10 @@ from lovelace.celery import app as celery_app
 
 from utils.access import determine_access, is_course_staff, ensure_responsible
 from utils.content import get_course_instance_tasks
-from utils.notify import send_welcome_email
+from utils.notify import send_welcome_email, send_bcc_email
 
 from courses.models import *
+from courses.forms import MessageForm
 from teacher_tools.utils import *
 from teacher_tools.models import *
 from teacher_tools.forms import MossnetForm, ReminderForm
@@ -234,6 +235,27 @@ def course_completion(request, course, instance):
     return HttpResponse(t.render(c, request))
 
 @ensure_responsible
+def mass_email(request, course, instance):
+    if request.method == "POST":
+        form = MessageForm(request.POST)
+        if form.is_valid():
+            title = form.cleaned_data.get("title")
+            content = form.cleaned_data.get("content")
+            recipients = instance.enrolled_users.get_queryset().values_list("email", flat=True)
+            send_bcc_email(instance, recipients, request.user, title, content)
+            return redirect(request.path)
+    else:
+        form = MessageForm()
+        t = loader.get_template("teacher_tools/mass_email.html")
+        c = {
+            "course": course,
+            "instance": instance,
+            "form": form,
+            "course_staff": True,
+        }
+        return HttpResponse(t.render(c, request))
+
+@ensure_responsible
 def manage_reminders(request, course, instance):
     saved_template = ReminderTemplate.objects.filter(instance=instance).first()
     if request.method == "POST":
@@ -397,3 +419,4 @@ def moss_progress(request, course, instance, content, task_id):
         data = {"state": task.state, "metadata": task.info, "redirect": progress_url}
         return JsonResponse(data)
         
+

@@ -121,7 +121,7 @@
               {% endif %}
               {% if user.is_staff %}
                 <div class="user-tools">
-                    <a href="{% url 'admin:index' %}">{% trans 'Teacher’s tools' %}</a>
+                    <a href="{% url 'admin:index' %}">{% trans 'Management panel' %}</a>
                 </div>
               {% endif %}
               {% if course_staff and course and instance %}
@@ -137,6 +137,11 @@
                       </a>
                     </div>    
                 {% endif %}
+                <div class="user-tools">
+                  <a href="{% url 'teacher_tools:mass_email' course instance %}">
+                    {% trans 'Mass email' %}
+                  </a>
+                </div>
                 <div class="user-tools">
                   <a href="{% url 'teacher_tools:completion' course instance %}">
                     {% trans 'Course completion' %}

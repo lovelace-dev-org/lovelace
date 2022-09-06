@@ -190,7 +190,7 @@ def course_tree(tree, node, user, instance_obj):
             for emb_exercise in embedded_links.filter(embedded_page__evaluation_group="").values_list('embedded_page', flat=True):
                 emb_exercise = ContentPage.objects.get(id=emb_exercise)
                 #print(emb_exercise.name)
-                correct_embedded += 1 if emb_exercise.get_user_evaluation(user, instance_obj) == "correct" else 0
+                correct_embedded += 1 if emb_exercise.get_user_evaluation(user, instance_obj)[0] == "correct" else 0
     
     list_item = (node.content, node.id, evaluation, correct_embedded, embedded_count, node.visible, page_count)
     
