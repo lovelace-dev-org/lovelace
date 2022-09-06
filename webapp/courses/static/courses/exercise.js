@@ -106,7 +106,7 @@ function exercise_success(data, result_div, error_div, form_parent) {
         form_parent.parent().find('div.task-meta > div.task-meta-score > span').first().html(data.score);
     }
 
-    if (data.hints && data.evaluation != true) {
+    if (data.hints) {
         let all_hints = "<ul>\n";
         for (let hint of data.hints) {
             let hint_text = "<li>" + hint + "</li>\n";
@@ -139,7 +139,9 @@ function exercise_success(data, result_div, error_div, form_parent) {
         }
         let panel = form_parent.children(".side-panel");
         let handle = form_parent.parent().find("a.faq-panel-link");
-        faq.handle_triggers(panel, handle, data.triggers);
+        if (data.has_faq) {
+            faq.handle_triggers(panel, handle, data.triggers);
+        }
     }
     if (data.messages) {
         msgs_div.find('div.msgs-list').html(data.messages);

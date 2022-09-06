@@ -8,6 +8,12 @@ from faq.forms import FaqQuestionForm, FaqLinkForm
 from utils.access import is_course_staff
 from utils.archive import get_single_archived
 
+def has_faq(instance, exercise):
+    return FaqToInstanceLink.objects.filter(
+        instance=instance,
+        exercise=exercise,
+    ).exists()
+
 
 def cache_panel(instance, exercise, lang_code):
     faq_links = FaqToInstanceLink.objects.filter(

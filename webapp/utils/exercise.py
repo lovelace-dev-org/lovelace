@@ -69,10 +69,10 @@ def file_upload_payload(exercise, student_files, instance, revision=None):
 
         for req_file in required_files:
             all_required_exercise.add(req_file)
-            test_payload["required_files"].append(str(req_file.id))
+            test_payload["required_files"].append(f"ex-{req_file.id}")
         for req_file in required_instance_files:
             all_required_instance.add(req_file.id)
-            test_payload["required_files"].append(str(req_file.id))
+            test_payload["required_files"].append(f"in-{req_file.id}")
 
         for stage in stages:
             if revision is not None:
@@ -105,7 +105,7 @@ def file_upload_payload(exercise, student_files, instance, revision=None):
         payload["tests"].append(test_payload)
 
     for ex_file in all_required_exercise:
-        payload["resources"]["checker_files"][ex_file.id] = {
+        payload["resources"]["checker_files"][f"ex-{ex_file.id}"] = {
             "content": get_file_contents_b64(ex_file),
             "purpose": ex_file.file_settings.purpose,
             "name": ex_file.file_settings.name,
@@ -121,7 +121,7 @@ def file_upload_payload(exercise, student_files, instance, revision=None):
             i_file = if_link.include_file
 
         if i_file.id in all_required_instance:
-            payload["resources"]["checker_files"][i_file.id] = {
+            payload["resources"]["checker_files"][f"in-{i_file.id}"] = {
                 "content": get_file_contents_b64(i_file),
                 "purpose": if_link.file_settings.purpose,
                 "name": if_link.file_settings.name,

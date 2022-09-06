@@ -35,6 +35,7 @@ from courses.tasks import get_celery_worker_status
 
 from courses.models import *
 from courses.forms import *
+import faq.utils as faq_utils
 from feedback.models import *
 
 from routine_exercise.models import RoutineExerciseAnswer
@@ -328,9 +329,6 @@ def check_answer(request, course, instance, content, revision):
         'instance': instance,
         'content_page': content
     }
-    hints = ["".join(markupparser.MarkupParser.parse(msg, request, msg_context)).strip()
-             for msg in evaluation.get('hints', [])]
-
     answer_count = exercise.get_user_answers(exercise, user, instance).count()
     answer_count_str = get_answer_count_meta(answer_count)
     answer_url = reverse("courses:show_answers", kwargs={
@@ -347,6 +345,12 @@ def check_answer(request, course, instance, content, revision):
     score = quotient * exercise.default_points
     #print(evaluation)
 
+    if score < exercise.default_points:
+        hints = ["".join(markupparser.MarkupParser.parse(msg, request, msg_context)).strip()
+             for msg in evaluation.get('hints', [])]
+    else:
+        hints = []
+
     data = {
         'result': t.render(evaluation),
         'hints': hints,
@@ -354,7 +358,7 @@ def check_answer(request, course, instance, content, revision):
         'answer_count_str': answer_count_str,
         'total_evaluation': total_evaluation,
         'manual': exercise.manually_evaluated,
-        'score': score,
+        'score': f"{score:.2f}",
     }
     if "next_instance" in evaluation:
         data["next_instance"] = evaluation["next_instance"]
@@ -547,7 +551,8 @@ def file_exercise_evaluation(request, course, instance, content, revision, task_
     data["answer_count_str"] = answer_count_str
     data["manual"] = content.manually_evaluated
     data["total_evaluation"] = total_evaluation,
-    data["score"] = score
+    data["score"] = f"{score:.2f}"
+    data["has_faq"] = faq_utils.has_faq(instance, content)
 
     return JsonResponse(data)
 
