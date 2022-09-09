@@ -337,6 +337,10 @@ class ContentGraph(models.Model):
     deadline = models.DateTimeField(verbose_name='The due date for completing this exercise',blank=True,null=True)
     late_rule = models.CharField(max_length=50, blank=True, null=True, verbose_name='Score reduction formula to use for late submissions')
     publish_date = models.DateTimeField(verbose_name='When does this exercise become available',blank=True,null=True)
+    require_enroll = models.BooleanField(
+        verbose_name='Content can only be viewed by enrolled users',
+        default=False
+    )
     scored = models.BooleanField(verbose_name='Does this exercise affect scoring', default=True)
     require_correct_embedded = models.BooleanField(verbose_name='Embedded exercises must be answered correctly in order to mark this item as correct',default=True)
     ordinal_number = models.PositiveSmallIntegerField() # TODO: Enforce min=1

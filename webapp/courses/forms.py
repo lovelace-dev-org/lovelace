@@ -220,7 +220,7 @@ class NodeSettingsForm(forms.ModelForm):
     
     class Meta:
         model = cm.ContentGraph
-        fields = ["publish_date", "deadline", "scored", "late_rule", "visible", "evergreen"]
+        fields = ["publish_date", "require_enroll", "deadline", "scored", "late_rule", "visible", "evergreen"]
         
     active_node = forms.IntegerField(
         widget=forms.HiddenInput,

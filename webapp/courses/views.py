@@ -135,12 +135,12 @@ def course(request, course, instance):
             parentnode=None
         ).order_by('ordinal_number')
         context["course_staff"] = True
-        content_access = CourseContentAdmin.content_access_list(request, ContentPage, "LECTURE")
-        available_content = content_access.defer("content").all()
-        try:
-            frontpage_id = instance.frontpage.id
-        except AttributeError:
-            frontpage_id = 0
+        #content_access = CourseContentAdmin.content_access_list(request, ContentPage, "LECTURE")
+        #available_content = content_access.defer("content").all()
+        #try:
+        #    frontpage_id = instance.frontpage.id
+        #except AttributeError:
+        #    frontpage_id = 0
     else:
         contents = ContentGraph.objects.filter(
             instance=instance,
@@ -150,18 +150,20 @@ def course(request, course, instance):
         ).order_by('ordinal_number')
         context["course_staff"] = False 
     
+    enrolled = instance.user_enroll_status(request.user) in ["ACCEPTED", "COMPLETED"]
+
     if len(contents) > 0:
         tree = []
         tree.append((mark_safe('>'), None, None, None, None, None, 0))
         for content_ in contents:
-            course_tree(tree, content_, request.user, instance)
+            course_tree(tree, content_, request.user, instance, enrolled, context["course_staff"])
         tree.append((mark_safe('<'), None, None, None, None, None, 0))
         context["content_tree"] = tree
 
     t = loader.get_template("courses/course.html")
     return HttpResponse(t.render(context, request))
 
-def course_tree(tree, node, user, instance_obj):
+def course_tree(tree, node, user, instance_obj, enrolled=False, staff=False):
     embedded_links = EmbeddedLink.objects.filter(parent=node.content.id, instance=instance_obj)
     embedded_count = len(embedded_links)
     page_count = node.content.count_pages(instance_obj)
@@ -193,6 +195,10 @@ def course_tree(tree, node, user, instance_obj):
                 #print(emb_exercise.name)
                 correct_embedded += 1 if emb_exercise.get_user_evaluation(user, instance_obj)[0] == "correct" else 0
     
+    if node.require_enroll:
+        if not (enrolled or staff):
+            return
+
     list_item = (node.content, node.id, evaluation, correct_embedded, embedded_count, node.visible, page_count)
     
     if list_item not in tree:
@@ -206,7 +212,7 @@ def course_tree(tree, node, user, instance_obj):
     if len(children) > 0:
         tree.append((mark_safe('>'), None, None, None, None, None, 0))
         for child in children:
-            course_tree(tree, child, user, instance_obj)
+            course_tree(tree, child, user, instance_obj, enrolled, staff)
         tree.append((mark_safe('<'), None, None, None, None, None, 0))
 
 def check_answer_sandboxed(request, content_slug):
@@ -698,6 +704,10 @@ def content(request, course, instance, content, pagenum=None, **kwargs):
         if is_course_staff(request.user, instance):
             course_staff = True
             
+    if content_graph.require_enroll:
+        if not (enrolled or course_staff):
+            return HttpResponseNotFound(_("This content is only available to enrolled users"))
+
     revision = content_graph.revision
     
     content_type = content.content_type

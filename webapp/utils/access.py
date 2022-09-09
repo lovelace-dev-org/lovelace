@@ -100,6 +100,7 @@ def is_course_staff(user, instance, responsible_only=False):
 # |
 # v
     
+
 def ensure_staff(function):
     """
     Decorator for limiting access to a function to course staff only. Returns

@@ -210,10 +210,11 @@ def routine_progress(request, course, instance, content, task_id):
                 "exercise": content
             }) + "#" + str(answer_id)
 
+            revision = instance.embeddedlink_set.get_queryset().get(embedded_page=content).revision
             send_error_report(
                 instance,
                 content,
-                info["revision"],
+                revision,
                 [info["error"]],
                 request.build_absolute_uri(answer_url))
             data = {
@@ -259,6 +260,7 @@ def routine_progress(request, course, instance, content, task_id):
             if next_question:
                 _save_question(request.user, instance, content, info, info["data"]["next"])
 
+            data["score"] = "{:.2f}".format(data.get("score", 0))
             return JsonResponse(data)
     else:
         progress_url = reverse(
