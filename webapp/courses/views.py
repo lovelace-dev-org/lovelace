@@ -677,7 +677,7 @@ def content(request, course, instance, content, pagenum=None, **kwargs):
     revision = None
     #if "frontpage" not in kwargs:
     try:
-        content_graph = ContentGraph.objects.get(instance=instance, content=content)
+        content_graph = ContentGraph.objects.filter(instance=instance, content=content).first()
     except ContentGraph.DoesNotExist:
         return HttpResponseNotFound("Content {} is not linked to course {}!".format(content.slug, course.slug))
     else:

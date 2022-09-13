@@ -330,7 +330,7 @@ class ContentGraph(models.Model):
     # TODO: Take embedded content into account! (Maybe: automatically make content nodes from embedded content)
     # TODO: "Allow answering after deadline has passed" flag.
     parentnode = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL)
-    content = models.ForeignKey('ContentPage', null=True, blank=True, on_delete=models.SET_NULL)
+    content = models.ForeignKey('ContentPage', null=True, blank=True, on_delete=models.RESTRICT)
     instance = models.ForeignKey('CourseInstance', null=False, blank=False, on_delete=models.CASCADE)
     responsible = models.ManyToManyField(User, blank=True)
     compulsory = models.BooleanField(verbose_name='Must be answered correctly before proceeding to next exercise', default=False)
