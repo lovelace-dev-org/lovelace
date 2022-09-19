@@ -252,7 +252,7 @@ def routine_progress(request, course, instance, content, task_id):
             data = render_json_feedback(info["data"]["log"], request, course, instance, content, answer.id)
             if progress.completed:
                 data["evaluation"] = True
-                data["score"] = content.default_points
+                data["points"] = content.default_points
                 update_completion(content, instance, request.user, data, answer.answer_date)
             data["next_instance"] = True
             data["progress"] = progress.progress
@@ -260,7 +260,7 @@ def routine_progress(request, course, instance, content, task_id):
             if next_question:
                 _save_question(request.user, instance, content, info, info["data"]["next"])
 
-            data["score"] = "{:.2f}".format(data.get("score", 0))
+            data["score"] = "{:.2f}".format(data.get("points", 0))
             return JsonResponse(data)
     else:
         progress_url = reverse(
