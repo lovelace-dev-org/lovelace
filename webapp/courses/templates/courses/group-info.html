@@ -125,12 +125,12 @@
                 </tbody>
             </table>
         </div>
+    {% else %}
         <h1>{% trans 'Create a new group' %}</h1>
     
         <div>
             {{ config_form|safe }}
         </div>
-        
     {% endif %}
     
     <script>
