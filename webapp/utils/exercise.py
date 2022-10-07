@@ -216,7 +216,10 @@ def update_completion(exercise, instance, user, evaluation, answer_date):
             days_late = (answer_date - parent_graph.deadline).days + 1
             quotient = apply_late_rule(evaluation, parent_graph.late_rule, days_late)
         else:
-            quotient = evaluation.get("points", 0) / evaluation.get("max", exercise.default_points)
+            try:
+                quotient = evaluation.get("points", 0) / evaluation.get("max", exercise.default_points)
+            except ZeroDivisionError:
+                quotient = 1
     else:
         quotient = 0
 

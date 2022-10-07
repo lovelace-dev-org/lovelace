@@ -186,7 +186,7 @@ def course_tree(tree, node, user, instance_obj, enrolled=False, staff=False):
             for link in group_repr:
                 if link.embedded_page.get_user_evaluation(
                     user, instance_obj
-                    ) in ("correct", "credited"):
+                    )[0] in ("correct", "credited"):
                     
                     correct_embedded += 1
             
