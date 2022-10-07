@@ -100,6 +100,7 @@ function exercise_success(data, result_div, error_div, form_parent) {
     }
     if (data.answer_count_str) {
         form_parent.parent().find('div.task-meta > div > a.user-answers-link').html(data.answer_count_str);
+        form_parent.find('div.answer_limit span').first().html(data.answer_count_str);
     }
 
     if (data.evaluation === true && data.score) {

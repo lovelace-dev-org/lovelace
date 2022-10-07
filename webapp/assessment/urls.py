@@ -7,6 +7,7 @@ app_name = "assessment"
 
 register_model_converter(AssessmentSheet, name="sheet")
 register_model_converter(AssessmentBullet, name="bullet")
+register_model_converter(AssessmentSection, name="section")
 
 urlpatterns = [
     path(
@@ -16,7 +17,7 @@ urlpatterns = [
     ),
     path(
         "<course:course>/<instance:instance>/<sheet:sheet>/create_section/",
-        views.create_section,
+        views.edit_section,
         name="create_section"
     ),
     path(
@@ -25,16 +26,16 @@ urlpatterns = [
         name="create_bullet"
     ),
     path(
-        "<course:course>/<instance:instance>/<sheet:sheet>/rename_section/",
-        views.rename_section,
+        "<course:course>/<instance:instance>/<sheet:sheet>/rename_section/<section:section>/",
+        views.edit_section,
         name="rename_section"
     ),
     path(
-        "<course:course>/<instance:instance>/<sheet:sheet>/delete_section/<str:section>/",
+        "<course:course>/<instance:instance>/<sheet:sheet>/delete_section/<section:section>/",
         views.delete_section,
         name="delete_section"
     ),
-    path(        "<course:course>/<instance:instance>/<sheet:sheet>/<bullet:target_bullet>/move/<str:placement>/",
+    path("<course:course>/<instance:instance>/<sheet:sheet>/<bullet:target_bullet>/move/<str:placement>/",
         views.move_bullet,
         name="move_bullet"
     ),

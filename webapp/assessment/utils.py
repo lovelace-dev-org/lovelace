@@ -17,24 +17,26 @@ def get_sectioned_sheet(link):
     if link.revision is None:
         sheet = link.sheet
         bullets = list(sheet.assessmentbullet_set.get_queryset().all())
+        sections = list(sheet.assessmentsection_set.get_queryset().all())
     else:
         old_sheet = get_archived_instances(link.sheet, link.revision)
         sheet = old_sheet["self"]
         bullets = old_sheet["assessmentbullet_set"]
-        
-    bullets.sort(key=lambda b: (b.section, b.ordinal_number))
+        sections = old_sheet["assessmentsection_set"]
+
+    sections.sort(key=lambda s: s.ordinal_number)
+    bullets.sort(key=lambda b: b.ordinal_number)
+
+    for section in sections:
+        by_section[section]= {
+            "bullets": [],
+            "total_points": 0
+        }
     
     for bullet in bullets:
-        try:
-            by_section[bullet.section]["bullets"].append(bullet)
-            by_section[bullet.section]["total_points"] += bullet.point_value
-        except KeyError:
-            by_section[bullet.section]= {
-                "bullets": [bullet],
-                "total_points": bullet.point_value
-            }
-            
-    
+        by_section[bullet.section]["bullets"].append(bullet)
+        by_section[bullet.section]["total_points"] += bullet.point_value
+
     return sheet, by_section
 
 def serializable_assessment(user, sheet, bullets_by_section, cleaned_data):

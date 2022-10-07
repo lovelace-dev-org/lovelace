@@ -94,6 +94,7 @@ def embed_frame(context, content_data):
         "instance": context["instance"],
         "content": page,
         "answer_count": answer_count,
+        "attempts_left": page.answer_limit and page.answer_limit - answer_count,
         "evaluation": evaluation,
         "score": quotient * content_data["max_points"],
         "max_points": content_data["max_points"]

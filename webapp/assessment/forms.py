@@ -5,7 +5,7 @@ from django.forms import fields
 from django.utils.translation import gettext as _
 from modeltranslation.forms import TranslationModelForm
 from assessment.models import *
-from utils.management import add_translated_charfields
+from utils.management import add_translated_charfields, TranslationStaffForm
 
 class AddAssessmentForm(forms.Form):
 
@@ -42,14 +42,14 @@ class AddAssessmentForm(forms.Form):
             required=False
         )
 
-class NewSectionForm(TranslationModelForm):
+class SectionForm(TranslationStaffForm):
 
     class Meta:
-        model = AssessmentBullet
-        fields = ["section", "title", "tooltip", "point_value"]
+        model = AssessmentSection
+        fields = ["title", "ordinal_number"]
         
         
-class NewBulletForm(TranslationModelForm):
+class NewBulletForm(TranslationStaffForm):
 
     class Meta:
         model = AssessmentBullet
@@ -63,6 +63,7 @@ class NewBulletForm(TranslationModelForm):
         widget=forms.HiddenInput,
         required=True
     )
+
     
 
 _score_errors = {
@@ -128,34 +129,16 @@ class AssessmentForm(forms.Form):
                     widget=forms.TextInput(attrs={"class": "comment-input"}),
                     required=False
                 )
-                
-                
-
         
-class AssessmentBulletForm(TranslationModelForm):
+class AssessmentBulletForm(TranslationStaffForm):
     class Meta:
         model = AssessmentBullet
         fields = ["title", "tooltip", "point_value"]
-        
-    
-class RenameSectionForm(forms.Form):
-    
-    name = forms.CharField(
-        required=True
-    )
-    active_section = forms.CharField(
-        widget=forms.HiddenInput,
-        required=True
-    )
 
-    def clean_name(self):
-        name = self.cleaned_data["name"]
-        if name in self.sections:
-            raise ValidationError(_("Section name is already used in this assessment sheet."))
     
-    def __init__(self, *args, **kwargs):
-        if "sections" in kwargs:
-            self.sections = kwargs.pop("sections")
-        super().__init__(*args, **kwargs)
+
+
+
+
         
         

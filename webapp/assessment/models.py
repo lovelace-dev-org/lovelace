@@ -40,6 +40,15 @@ class AssessmentSheet(models.Model):
     course = models.ForeignKey("courses.Course", on_delete=models.CASCADE)
     
     
+class AssessmentSection(models.Model):
+
+    sheet = models.ForeignKey("AssessmentSheet", on_delete=models.CASCADE)
+    title = models.CharField(max_length=255)
+    ordinal_number = models.PositiveSmallIntegerField()
+
+    def __str__(self):
+        return self.title
+
 class AssessmentBullet(models.Model):
     
     sheet = models.ForeignKey("AssessmentSheet", on_delete=models.CASCADE)
@@ -47,6 +56,6 @@ class AssessmentBullet(models.Model):
     ordinal_number = models.PositiveSmallIntegerField()
     
     # Translatable fields
-    section = models.CharField(max_length=255)
+    section = models.ForeignKey("AssessmentSection", on_delete=models.CASCADE)
     title = models.CharField(max_length=255)
     tooltip = models.TextField(blank=True, default="")

@@ -393,7 +393,7 @@ class CourseMediaLink(models.Model):
     """
     
     media = models.ForeignKey(CourseMedia, on_delete=models.CASCADE)
-    parent = models.ForeignKey("ContentPage", on_delete=models.CASCADE, null=True)
+    parent = models.ForeignKey("ContentPage", on_delete=models.RESTRICT, null=True)
     instance = models.ForeignKey(CourseInstance, verbose_name="Course instance", on_delete=models.CASCADE)
     revision = models.PositiveIntegerField(verbose_name="Revision to display", blank=True, null=True)
     
@@ -570,7 +570,7 @@ class CalendarReservation(models.Model):
 
 class EmbeddedLink(models.Model):
     parent = models.ForeignKey('ContentPage', related_name='emb_parent', on_delete=models.CASCADE)
-    embedded_page = models.ForeignKey('ContentPage', related_name='emb_embedded', on_delete=models.CASCADE)
+    embedded_page = models.ForeignKey('ContentPage', related_name='emb_embedded', on_delete=models.RESTRICT)
     revision = models.PositiveIntegerField(blank=True, null=True)
     ordinal_number = models.PositiveSmallIntegerField()
     instance = models.ForeignKey('CourseInstance', on_delete=models.CASCADE)
@@ -635,6 +635,10 @@ class ContentPage(models.Model):
     # Exercise fields
     question = models.TextField(blank=True, default="") # Translate
     manually_evaluated = models.BooleanField(verbose_name="This exercise is evaluated by hand", default=False)
+    answer_limit = models.PositiveSmallIntegerField(
+        verbose_name="Limit number of allowed attempts to",
+        blank=True, null=True
+    )
     group_submission = models.BooleanField(verbose_name="Answers can be submitted as a group", default=False)
     ask_collaborators = models.BooleanField(verbose_name="Ask the student to list collaborators", default=False)
     allowed_filenames = ArrayField( # File upload exercise specific

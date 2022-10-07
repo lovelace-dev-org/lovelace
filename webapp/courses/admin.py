@@ -169,7 +169,7 @@ class CheckboxExerciseAdmin(CourseContentAdmin, TranslationAdmin, VersionAdmin):
 
     fieldsets = [
         ('Page information',   {'fields': ['name', 'slug', 'content', 'question', 'tags']}),
-        ('Exercise miscellaneous', {'fields': ['default_points', 'evaluation_group'],
+        ('Exercise miscellaneous', {'fields': ['default_points', 'evaluation_group', 'answer_limit'],
                                 'classes': ['wide']}),
         ('Feedback settings',  {'fields': ['feedback_questions']}),
     ]
@@ -200,8 +200,13 @@ class TextfieldExerciseAdmin(CourseContentAdmin, TranslationAdmin, VersionAdmin)
 
     fieldsets = [
         ('Page information',   {'fields': ['name', 'slug', 'content', 'question', 'tags']}),
-        ('Exercise miscellaneous', {'fields': ['default_points', 'manually_evaluated', 'group_submission', 'evaluation_group'],
-                                'classes': ['wide']}),
+        ('Exercise miscellaneous', {
+            'fields': [
+                'default_points', 'answer_limit', 'manually_evaluated',
+                'group_submission', 'evaluation_group'
+            ],
+            'classes': ['wide']
+        }),
         ('Feedback settings',  {'fields': ['feedback_questions']}),
     ]
     inlines = [TextfieldExerciseAnswerInline, HintInline]

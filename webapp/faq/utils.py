@@ -106,7 +106,10 @@ def clone_faq_links(instance):
     for link in active_links:
         link.id = None
         link.instance=instance
-        link.save()
+        try:
+            link.save()
+        except IntegrityError:
+            pass
     
     
     

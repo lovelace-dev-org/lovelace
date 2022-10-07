@@ -6,6 +6,10 @@ from assessment.models import *
 class AssessmentSheetTranslationOptions(TranslationOptions):
     fields = ("title",)
     
+@register(AssessmentSection)
+class AssessmentSectionTranslationOptions(TranslationOptions):
+    fields = ("title",)
+
 @register(AssessmentBullet)
 class AssessmentBulletTranslationOptions(TranslationOptions):
-    fields = ("section", "title", "tooltip")
+    fields = ("title", "tooltip")

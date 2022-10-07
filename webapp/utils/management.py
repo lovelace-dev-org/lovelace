@@ -4,6 +4,7 @@ from django.db.models import Q
 from django.db import transaction 
 from django import forms
 from django.forms import Textarea, ModelForm
+from django.utils.translation import gettext as _
 from reversion.models import Version
 from modeltranslation.fields import TranslationField
 from modeltranslation.translator import translator
@@ -317,4 +318,60 @@ def save_translated_field(model_instance, field_name, value):
         
     
     
-    
+class TranslationStaffForm(ModelForm):
+
+    def get_initial_for_field(self, field, field_name):
+        if self._instance:
+            if field_name in self._translated_field_names:
+                return getattr(self._instance, field_name)
+
+        return super().get_initial_for_field(field, field_name)
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        for lang_field_name in self._translated_field_names:
+            setattr(instance, lang_field_name, self.cleaned_data.get(lang_field_name, ""))
+        if commit:
+            instance.save()
+            self.save_m2m()
+        else:
+            return instance
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._instance = kwargs.get("instance")
+        self._translated_field_names = []
+        model = self.Meta.model
+        translated = translator.get_options_for_model(model).get_field_names()
+        languages = sorted(
+            settings.LANGUAGES,
+            key=lambda x: x[0] == settings.MODELTRANSLATION_DEFAULT_LANGUAGE,
+            reverse=True
+        )
+        for field_name in self.Meta.fields[:]:
+            if field_name in translated:
+                field = getattr(model, field_name).field
+                for lang_code, lang_name in languages:
+                    lang_field_name = f"{field_name}_{lang_code}"
+                    if lang_code == settings.MODELTRANSLATION_DEFAULT_LANGUAGE:
+                        self.fields[lang_field_name] = forms.CharField(
+                            label=f"{field.verbose_name} (default)",
+                            required=not field.blank
+                        )
+                    else:
+                        self.fields[lang_field_name] = forms.CharField(
+                            label=f"{field.verbose_name} ({lang_code})",
+                            required=False
+                        )
+                    self._translated_field_names.append(lang_field_name)
+                self.fields.pop(field_name)
+
+
+
+
+
+
+
+
+
+

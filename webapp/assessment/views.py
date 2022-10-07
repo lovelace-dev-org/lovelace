@@ -118,7 +118,7 @@ def create_bullet(request, course, instance, sheet):
                 new_bullet.section = active.section
                 new_bullet.ordinal_number = active.ordinal_number + 1
             else:
-                new_bullet.section = form.cleaned_data["active_section"]
+                new_bullet.section_id = form.cleaned_data["active_section"]
                 new_bullet.ordinal_number = 1
             bullets_after = AssessmentBullet.objects.filter(
                 sheet=sheet,
@@ -152,51 +152,14 @@ def create_bullet(request, course, instance, sheet):
         return HttpResponse(t.render(c, request))
     
 @ensure_staff
-def create_section(request, course, instance, sheet):
+def edit_section(request, course, instance, sheet, section=None):
     if request.method == "POST":
-        form = NewSectionForm(request.POST)
+        form = SectionForm(request.POST, instance=section)
         if form.is_valid():
             with reversion.create_revision():
-                bullet = form.save(commit=False)
-                bullet.ordinal_number = 1
-                bullet.sheet = sheet
-                bullet.save()
-                sheet.save()
-                reversion.set_user(request.user)
-            return JsonResponse({"status": "ok"})
-        else:
-            errors = form.errors.as_json()
-            return JsonResponse({"errors": errors}, status=400)
-    else:
-        form = NewSectionForm()
-        t = loader.get_template("courses/base-edit-form.html")
-        c = {
-            "form_object": form,
-            "submit_url": reverse("assessment:create_section", kwargs={
-                "course": course,
-                "instance": instance,
-                "sheet": sheet
-            }),
-            "html_id": "{}-create-section".format(sheet.id),
-            "html_class": "assessment-staff-form staff-only",
-            "disclaimer": _("Choose section name and properties of the first bullet.")
-        }
-        return HttpResponse(t.render(c, request))
-            
-    
-@ensure_staff
-def rename_section(request, course, instance, sheet):
-    if request.method == "POST":
-        sections = AssessmentBullet.objects.filter(
-            sheet=sheet        
-        ).distinct("section").values_list("section", flat=True)
-        form = RenameSectionForm(request.POST, sections=sections)
-        if form.is_valid():
-            bullets = AssessmentBullet.objects.filter(section=form.cleaned_data["active_section"])
-            with reversion.create_revision():
-                for bullet in bullets:
-                    bullet.section = form.cleaned_data["name"]
-                    bullet.save()
+                section = form.save(commit=False)
+                section.sheet = sheet
+                section.save()
                 sheet.save()
                 reversion.set_user(request.user)
             return JsonResponse({"status": "ok"})
@@ -204,15 +167,19 @@ def rename_section(request, course, instance, sheet):
             errors = form.errors.as_json()
             return JsonResponse({"errors": errors}, status=400)        
     else:
-        form = RenameSectionForm()
+        form = SectionForm(instance=section)
+        submit_key = section and "assessment:rename_section" or "assessment:create_section"
+        submit_args = {
+            "course": course,
+            "instance": instance,
+            "sheet": sheet,
+        }
+        if section:
+            submit_args["section"] = section
         t = loader.get_template("courses/base-edit-form.html")
         c = {
             "form_object": form,
-            "submit_url": reverse("assessment:rename_section", kwargs={
-                "course": course,
-                "instance": instance,
-                "sheet": sheet
-            }),
+            "submit_url": reverse(submit_key, kwargs=submit_args),
             "html_id": "{}-rename-section".format(sheet.id),
             "html_class": "assessment-staff-form staff-only",
         }
@@ -319,7 +286,11 @@ def update_exercise_points(request, course, instance, content, sheet):
         content.default_points = sheet_link.calculate_max_score()
         content.save()
         reversion.set_user(request.user)
-    
+
+    embed_links = EmbeddedLink.objects.filter(embedded_page=content, instance=instance)
+    for link in embed_links:
+        link.parent.regenerate_cache(instance)
+
     return JsonResponse({"status": "ok"})
     
 @ensure_staff
@@ -337,9 +308,14 @@ def view_submissions(request, course, instance, content):
     unassessed = []
     skip = []
     for completion in all:
-        if completion.user.id in skip:
+        try:
+            if completion.user.id in skip:
+                continue
+        except UserTaskCompletion.user.RelatedObjectDoesNotExist:
+            # this ignores completion objects from users that are not enrolled
+            # e.g. staff members
             continue
-            
+
         entry = {}
         if content.group_submission:
             try:

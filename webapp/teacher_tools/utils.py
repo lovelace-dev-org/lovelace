@@ -51,17 +51,23 @@ def get_missing_and_points(results):
     points = 0
     points_available = 0
     groups_counted = []
+    group_scores = {}
     for result in results:
         if result["eo"].evaluation_group:
-            if result["eo"].evaluation_group not in groups_counted:
+            evalgroup = result["eo"].evaluation_group
+            if evalgroup not in groups_counted:
                 points_available += result["eo"].default_points
-                groups_counted.append(result["eo"].evaluation_group)
+                groups_counted.append(evalgroup)
+            group_scores[evalgroup] = max(result["points"], group_scores.get(evalgroup, 0))
         else:
             points_available += result["eo"].default_points
-        if result["correct"]:
-            points += result["points"]
-        else:
-            missing += 1
+            if result["correct"]:
+                points += result["points"]
+            else:
+                missing += 1
+
+    for group in groups_counted:
+        points += group_scores[group]
     
     return missing, points, points_available
 

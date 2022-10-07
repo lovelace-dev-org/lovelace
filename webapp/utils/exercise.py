@@ -192,15 +192,14 @@ def render_json_feedback(log, request, course, instance, content, answer_id=None
     }
     return feedback
 
-def apply_late_rule(evaluation, rule):
-    print("applying rule", rule)
+def apply_late_rule(evaluation, rule, days_late):
     quotient = evaluation.get("points", 0) / evaluation.get("max", 1)
     return eval(rule.format(
         p=evaluation.get("points", 0),
         m=evaluation.get("max", 1),
-        q=quotient
+        q=quotient,
+        d=days_late,
     ))
-
 
 def update_completion(exercise, instance, user, evaluation, answer_date):
     link = cm.EmbeddedLink.objects.filter(
@@ -214,9 +213,10 @@ def update_completion(exercise, instance, user, evaluation, answer_date):
     correct = evaluation["evaluation"]
     if correct:
         if late and parent_graph.late_rule:
-            quotient = apply_late_rule(evaluation, parent_graph.late_rule)
+            days_late = (answer_date - parent_graph.deadline).days + 1
+            quotient = apply_late_rule(evaluation, parent_graph.late_rule, days_late)
         else:
-            quotient = evaluation.get("points", 0) / evaluation.get("max", 1)
+            quotient = evaluation.get("points", 0) / evaluation.get("max", exercise.default_points)
     else:
         quotient = 0
 

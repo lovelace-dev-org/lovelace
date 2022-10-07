@@ -26,7 +26,7 @@
         {% endif %}
 
         <div class="task-meta-score">
-          <span>{{ score|floatformat:"2" }}</span> <span>/ {{ max_points }}</span>
+          <span>{{ score|floatformat:"2" }}</span> <span> / {{ max_points }}</span>
         </div>
 
 
@@ -148,18 +148,37 @@
     
     {{ emb.form|safe }}
     
-    {% if enrolled or course_staff %}
-      <input type="submit" name="submit" value="{% trans 'Send answer' %}">
+    {% if content.answer_limit %}
+    {% endif %}
+
+    {% if course_staff or enrolled %}
+      {% if content.answer_limit %}
+        {% if answer_count >= content.answer_limit %}
+          <input type="submit" name="submit" value="{% trans 'Send answer' %}" disabled>
+        {% else %}
+          <input type="submit" name="submit" value="{% trans 'Send answer' %}">
+        {% endif %}
+        <div class="answer-limit">
+          {% trans "Attempts:" %}
+          <span>{{ answer_count }}</span>
+          <span> / {{ content.answer_limit }}</span>
+        </div>
+      {% else %}
+        <input type="submit" name="submit" value="{% trans 'Send answer' %}">
+      {% endif %}
     {% else %}
-      <input type="submit" name="submit" value="{% trans 'Send answer' %}" disabled>
+      {% if not user.is_authenticated %}
+        <div class="auth-warning">
+          {% trans "Warning: You have not logged in. You cannot answer." %}
+        </div>
+      {% else %}
+        <div class="auth-warning">
+          {% trans "Warning: You have not enrolled to this course instance. You cannot answer." %}
+        </div>
+        <input type="submit" name="submit" value="{% trans 'Send answer' %}" disabled>
+      {% endif %}
     {% endif %}
-    
-    {% if not user.is_authenticated %}
-      <div class="auth-warning">{% trans "Warning: You have not logged in. You cannot answer." %}</div>
-    {% elif not enrolled and not course_staff %}
-      <div class="auth-warning">{% trans "Warning: You have not enrolled to this course instance. You cannot answer." %}</div>
-    {% endif %}
-    
+
     {% if evaluation == "unanswered" %}
       <div class="answered-status"></div>
     {% elif evaluation == "incorrect" %}

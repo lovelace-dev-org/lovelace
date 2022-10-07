@@ -193,7 +193,8 @@ def course_tree(tree, node, user, instance_obj, enrolled=False, staff=False):
             for emb_exercise in embedded_links.filter(embedded_page__evaluation_group="").values_list('embedded_page', flat=True):
                 emb_exercise = ContentPage.objects.get(id=emb_exercise)
                 #print(emb_exercise.name)
-                correct_embedded += 1 if emb_exercise.get_user_evaluation(user, instance_obj)[0] == "correct" else 0
+                if emb_exercise.get_user_evaluation(user, instance_obj)[0] in ["correct", "credited"]:
+                    correct_embedded += 1
     
     if node.require_enroll:
         if not (enrolled or staff):
@@ -305,13 +306,20 @@ def check_answer(request, course, instance, content, revision):
         answered_revision = revision
         exercise = get_single_archived(content, revision)
 
+    answer_count = exercise.get_user_answers(exercise, user, instance).count()
+    if exercise.answer_limit is not None and answer_count >= exercise.answer_limit:
+        return JsonResponse({
+            "result": _("You don't have any more attempts left for this task.")
+        })
+
     try:
         answer_object = exercise.save_answer(content, user, ip, answer, files, instance, answered_revision)
     except InvalidExerciseAnswerException as e:
         return JsonResponse({
             'result': str(e)
         })
-    
+
+    answer_count += 1
     evaluation = exercise.check_answer(content, user, ip, answer, files, answer_object, revision)
     if exercise.manually_evaluated:
         evaluation["manual"] = True
@@ -351,7 +359,7 @@ def check_answer(request, course, instance, content, revision):
     score = quotient * exercise.default_points
     #print(evaluation)
 
-    if score < exercise.default_points:
+    if not evaluation["evaluation"] or score < exercise.default_points:
         hints = ["".join(markupparser.MarkupParser.parse(msg, request, msg_context)).strip()
              for msg in evaluation.get('hints', [])]
     else:
@@ -362,6 +370,7 @@ def check_answer(request, course, instance, content, revision):
         'hints': hints,
         'evaluation': evaluation.get("evaluation"),
         'answer_count_str': answer_count_str,
+        'attempts_left': exercise.answer_limit and exercise.answer_limit - answer_count,
         'total_evaluation': total_evaluation,
         'manual': exercise.manually_evaluated,
         'score': f"{score:.2f}",
@@ -555,6 +564,7 @@ def file_exercise_evaluation(request, course, instance, content, revision, task_
     score = quotient * content.default_points
 
     data["answer_count_str"] = answer_count_str
+    data["attempts_left"] = content.answer_limit and content.answer_limit - answer_count,
     data["manual"] = content.manually_evaluated
     data["total_evaluation"] = total_evaluation,
     data["score"] = f"{score:.2f}"
@@ -704,6 +714,9 @@ def content(request, course, instance, content, pagenum=None, **kwargs):
         if is_course_staff(request.user, instance):
             course_staff = True
             
+    if not content_graph.visible and not course_staff:
+        return HttpResponseNotFound(_("This content is only available to course staff"))
+
     if content_graph.require_enroll:
         if not (enrolled or course_staff):
             return HttpResponseNotFound(_("This content is only available to enrolled users"))
@@ -887,6 +900,11 @@ def show_answers(request, user, course, instance, exercise):
     Show the user's answers for a specific exercise on a specific course.
     """
 
+    try:
+        parent, single_linked = get_embedded_parent(exercise, instance)
+    except EmbeddedLink.DoesNotExist:
+        return HttpResponseNotFound(_("The task was not linked on the requested course instance"))
+
     content_type = exercise.content_type
     question = exercise.question
     choices = exercise.get_choices(exercise)
@@ -938,8 +956,6 @@ def show_answers(request, user, course, instance, exercise):
 
     answers = answers.order_by('-answer_date')
 
-    parent, single_linked = get_embedded_parent(exercise, instance)
-    
     title, anchor = first_title_from_content(exercise.content)
 
     # TODO: Own subtemplates for each of the exercise types.

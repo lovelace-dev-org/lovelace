@@ -200,7 +200,7 @@ def routine_progress(request, course, instance, content, task_id):
         if info.get("status", "fail") == "fail":
             try:
                 answer_id = RoutineExerciseAnswer.objects.get(task_id=task_id).id
-            except RoutineExercise.DoesNotExist:
+            except RoutineExerciseAnswer.DoesNotExist:
                 answer_id = 0
 
             answer_url = reverse("courses:show_answers", kwargs={
@@ -223,6 +223,11 @@ def routine_progress(request, course, instance, content, task_id):
             return JsonResponse(data)
 
         if info["task"] == "generate":
+            if info["data"].get("over", False):
+                return JsonResponse({"error": _(
+                    "No more questions available."
+                )})
+
             question = _save_question(request.user, instance, content, info, info["data"])
             try:
                 data = _question_context_data(request, course, instance, question)
@@ -253,14 +258,21 @@ def routine_progress(request, course, instance, content, task_id):
             if progress.completed:
                 data["evaluation"] = True
                 data["points"] = content.default_points
+                data["max"] = content.default_points
                 update_completion(content, instance, request.user, data, answer.answer_date)
+                total_evaluation, quotient = content.get_user_evaluation(request.user, instance)
+                data["score"] = f"{quotient * content.default_points:.2f}"
+                data["total_evaluation"] = total_evaluation
+            else:
+                data["score"] = f"{0:.2f}"
+                data["total_evaluation"] = "ongoing"
             data["next_instance"] = True
             data["progress"] = progress.progress
             next_question = info["data"].get("next")
             if next_question:
                 _save_question(request.user, instance, content, info, info["data"]["next"])
 
-            data["score"] = "{:.2f}".format(data.get("points", 0))
+
             return JsonResponse(data)
     else:
         progress_url = reverse(

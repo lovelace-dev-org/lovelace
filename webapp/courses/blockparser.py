@@ -59,6 +59,7 @@ tags = {
     "kbd":    Tag("kbd", "`", "`", re.compile(r"`(?P<kbd>.+?)`")),
     "hint":   Tag("mark", "[!hint=hint_id!]", "[!hint!]", re.compile(r"\[\!hint\=(?P<hint_id>[^!]+)\!\](?P<hint_text>.+?)\[\!hint\!\]")),
     "term":   Tag("div", '[!term=term_name!]', '[!term!]', re.compile(r"\[\!term\=(?P<term_name>[^!]+)\!\](?P<term_text>.+?)\[\!term\!\]")),
+    "dl":     Tag("span", "[!dl=page_slug!]", "[!dl!]", re.compile(r"\[\!dl\=(?P<page_slug>[^!]+)\!\]")),
 }
 
 def parse_pre_tag(parsed_string, tag, hilite, match):
@@ -160,10 +161,24 @@ def parse_term_tag(parsed_string, tag, term_name, term_text, context):
     parsed_string += tag.htmlend()
     return parsed_string
 
+def parse_dl_tag(parsed_string, tag, page_slug, context):
+    parsed_string += tag.htmlbegin({"class": "date-display"})
+    try:
+        parsed_string += courses.models.ContentGraph.objects.get(
+            content__slug=page_slug,
+            instance=context.get("instance", None)
+        ).deadline.strftime("%Y-%m-%d %H:%M")
+    except KeyboardInterrupt:
+        parsed_string += ""
+    except courses.models.ContentGraph.DoesNotExist:
+        parsed_string += "-- WARNING: BROKEN LINK --"
+    parsed_string += tag.htmlend()
+    return parsed_string
+
 def parsetag(tagname, unparsed_string, context=None):
     """Parses one tag and applies it's settings. Generates the HTML."""
     tag = tags[tagname]
-    hilite = address = link_text = hint_id = hint_text = term_name = term_text = None
+    hilite = address = link_text = hint_id = hint_text = term_name = term_text = page_slug = None
     parsed_string = ""
     cursor = 0
     for m in re.finditer(tag.re, unparsed_string):
@@ -194,6 +209,11 @@ def parsetag(tagname, unparsed_string, context=None):
             term_text = m.group("term_text")
         except IndexError:
             pass
+
+        try:
+            page_slug = m.group("page_slug")
+        except IndexError:
+            pass
         
         if hilite:
             parsed_string = parse_pre_tag(parsed_string, tag, hilite, m)
@@ -203,6 +223,8 @@ def parsetag(tagname, unparsed_string, context=None):
             parsed_string = parse_hint_tag(parsed_string, tag, hint_id, hint_text)
         elif term_name:
             parsed_string = parse_term_tag(parsed_string, tag, term_name, term_text, context)
+        elif page_slug:
+            parsed_string = parse_dl_tag(parsed_string, tag, page_slug, context)
         else:
             contents = m.group(0)[tag.lb():-tag.le()]
 
@@ -248,6 +270,7 @@ def parseblock(blockstring, context=None):
     parsed_string = parsetag("anchor", parsed_string, context)
     parsed_string = parsetag("hint", parsed_string)
     parsed_string = parsetag("term", parsed_string, context)
+    parsed_string = parsetag("dl", parsed_string, context)
     parsed_string = parsed_string.replace("'", "&#x27;")
 
     return parsed_string
