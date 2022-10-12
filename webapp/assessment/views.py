@@ -427,7 +427,7 @@ def submission_assessment(request, course, instance, exercise, user):
             section_scores[section["name"]] = section["section_points"]
         
         for name, section in by_section.items():
-            section["section_points"] = section_scores.get(name, 0)
+            section["section_points"] = section_scores.get(name.title, 0)
             max_score += section["total_points"]
         
         parent, single_linked = get_embedded_parent(exercise, instance)

@@ -56,7 +56,7 @@ def serializable_assessment(user, sheet, bullets_by_section, cleaned_data):
         
     for name, section in bullets_by_section.items():
         section_doc = {
-            "name": name,
+            "name": name.title,
             "section_points": 0,
             "max_points": section["total_points"],
             "bullets": []

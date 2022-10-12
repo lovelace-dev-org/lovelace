@@ -78,7 +78,7 @@
                                         onclick="ase.fetch_form(event, this);"
                                         data-url="{% url 'assessment:create_bullet' course instance sheet %}"
                                         data-bullet-id="{{ bullet.id }}"
-                                        data-section="{{ name }}">+
+                                        data-section="{{ section.id }}">+
                                 </button>
                                 <button type="button"
                                         class="staff-base-button ase-button delete-button"
