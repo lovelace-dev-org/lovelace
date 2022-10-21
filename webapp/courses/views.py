@@ -51,6 +51,7 @@ from django.shortcuts import redirect
 from utils.access import is_course_staff, determine_media_access, ensure_enrolled_or_staff, ensure_owner_or_staff, determine_access, ensure_staff
 from utils.archive import find_version_with_filename, get_single_archived
 from utils.content import first_title_from_content, get_embedded_parent
+from utils.exercise import best_result
 from utils.files import generate_download_response
 from utils.management import CourseContentAdmin
 from utils.notify import send_error_report, send_welcome_email
@@ -154,10 +155,14 @@ def course(request, course, instance):
 
     if len(contents) > 0:
         tree = []
-        tree.append((mark_safe('>'), None, None, None, None, None, 0))
+        tree.append({
+            "content": mark_safe(">")
+        })
         for content_ in contents:
             course_tree(tree, content_, request.user, instance, enrolled, context["course_staff"])
-        tree.append((mark_safe('<'), None, None, None, None, None, 0))
+        tree.append({
+            "content": mark_safe("<")
+        })
         context["content_tree"] = tree
 
     t = loader.get_template("courses/course.html")
@@ -169,6 +174,8 @@ def course_tree(tree, node, user, instance_obj, enrolled=False, staff=False):
     page_count = node.content.count_pages(instance_obj)
     
     correct_embedded = 0
+    page_score = 0
+    page_max = 0
     
     evaluation = ""
     if user.is_authenticated:
@@ -178,30 +185,49 @@ def course_tree(tree, node, user, instance_obj, enrolled=False, staff=False):
         if embedded_count > 0:
             
             grouped = embedded_links.exclude(embedded_page__evaluation_group="")
-            group_repr = grouped.order_by("embedded_page__evaluation_group")\
-                .distinct("embedded_page__evaluation_group")
-            
-            embedded_count -= (grouped.count() - group_repr.count())
-            
-            for link in group_repr:
-                if link.embedded_page.get_user_evaluation(
-                    user, instance_obj
-                    )[0] in ("correct", "credited"):
-                    
+            group_tags = grouped.order_by(
+                "embedded_page__evaluation_group"
+            ).distinct(
+                "embedded_page__evaluation_group"
+            ).values_list("embedded_page__evaluation_group", flat=True)
+
+            embedded_count -= (grouped.count() - len(group_tags))
+
+            for tag in group_tags:
+                group_score, representative = best_result(user, instance_obj, tag)
+                if group_score > -1:
                     correct_embedded += 1
-            
-            for emb_exercise in embedded_links.filter(embedded_page__evaluation_group="").values_list('embedded_page', flat=True):
-                emb_exercise = ContentPage.objects.get(id=emb_exercise)
-                #print(emb_exercise.name)
-                if emb_exercise.get_user_evaluation(user, instance_obj)[0] in ["correct", "credited"]:
+                    try:
+                        link = grouped.get(embedded_page=representative)
+                    except EmbeddedLink.DoesNotExist:
+                        continue
+                    page_score += group_score * node.score_weight
+                    page_max += representative.default_points * node.score_weight
+
+            for emb_link in embedded_links.filter(embedded_page__evaluation_group=""):
+                emb_exercise = emb_link.embedded_page
+                correct, score = emb_exercise.get_user_evaluation(user, instance_obj)
+                page_max += emb_exercise.default_points * node.score_weight
+                if correct == "correct":
                     correct_embedded += 1
+                    page_score += score * node.score_weight
     
     if node.require_enroll:
         if not (enrolled or staff):
             return
 
-    list_item = (node.content, node.id, evaluation, correct_embedded, embedded_count, node.visible, page_count)
-    
+    list_item = {
+        "node_id": node.id,
+        "content": node.content,
+        "evaluation": evaluation,
+        "correct_embedded": correct_embedded,
+        "embedded_count": embedded_count,
+        "page_score": f"{page_score:.2f}",
+        "page_max": f"{page_max:.2f}",
+        "visible": node.visible,
+        "page_count": page_count
+    }
+
     if list_item not in tree:
         tree.append(list_item)
 
@@ -211,10 +237,14 @@ def course_tree(tree, node, user, instance_obj, enrolled=False, staff=False):
         children = ContentGraph.objects.filter(parentnode=node, instance=instance_obj, visible=True).order_by('ordinal_number')
     
     if len(children) > 0:
-        tree.append((mark_safe('>'), None, None, None, None, None, 0))
+        tree.append({
+            "content": mark_safe(">")
+        })
         for child in children:
             course_tree(tree, child, user, instance_obj, enrolled, staff)
-        tree.append((mark_safe('<'), None, None, None, None, None, 0))
+        tree.append({
+            "content": mark_safe("<")
+        })
 
 def check_answer_sandboxed(request, content_slug):
     """
@@ -352,6 +382,7 @@ def check_answer(request, course, instance, content, revision):
         "exercise": content
     }) + "#" + str(answer_object.id)
     evaluation["answer_url"] = request.build_absolute_uri(answer_url)
+    evaluation["max"] = evaluation.get("max") or exercise.default_points
 
     # TODO: Errors, hints, comments in JSON
     t = loader.get_template("courses/exercise-evaluation.html")

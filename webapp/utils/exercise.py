@@ -289,3 +289,21 @@ def update_completion(exercise, instance, user, evaluation, answer_date):
 
     return completion.state
 
+def best_result(user, instance, group_tag):
+    grouped_tasks = cm.ContentPage.objects.filter(
+        evaluation_group=group_tag
+    )
+    best_score = 0
+    best_task = None
+    for task in grouped_tasks:
+        correct, score = task.get_user_evaluation(user, instance)
+        if correct == "correct":
+            if score > best_score:
+                best_score = score
+                best_task = task
+        elif correct != "credited":
+            return -1, task
+    return best_score, best_task
+
+
+

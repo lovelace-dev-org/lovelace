@@ -1,3 +1,37 @@
+table.completion-table {
+    display: block;
+    overflow-x: auto;
+}
+
+table.completion-table colgroup {
+}
+
+table.completion-table tbody, table.completion-table thead {
+}
+
+table.completion-table th {
+    position: sticky;
+    background: #eee;
+    top: 0px;
+    z-index: 1;
+    cursor: pointer;
+}
+
+.sticky-left {
+    position: sticky;
+    left: 0px;
+    z-index: 2;
+    background: inherit;
+}
+
+.sticky-right {
+    position: sticky;
+    right: 0px;
+    z-index: 2;
+    background: inherit;
+}
+
+
 li.task-bullet-correct {
     list-style-image: url("/static/courses/correct-16.png");
 }
@@ -31,3 +65,30 @@ li.tasks-collapsed {
 ul.student-task-list {
     display: none;
 }
+
+col.name {
+    width: 250px;
+}
+
+col.page-results {
+    width: 470px;
+}
+
+col.course-results {
+    width: 60px;
+}
+
+col.actions-cell {
+    width: 100px;
+}
+
+th.vertical-th {
+    writing-mode: vertical-lr;
+    text-orientation: sideways;
+    vertical-align: bottom;
+}
+
+th.horizontal-th {
+    vertical-align: bottom;
+}
+

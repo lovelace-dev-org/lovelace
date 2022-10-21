@@ -105,12 +105,23 @@ class ContentForm(forms.ModelForm):
     
     def clean(self):
         cleaned_data = super().clean()
-        for lang_code, _ in django.conf.settings.LANGUAGES:
+        for lang_code, lang_name in django.conf.settings.LANGUAGES:
             try:
                 self._validate_links(cleaned_data["content_" + lang_code], lang_code)
             except ValidationError as e:
                 self.add_error("content_" + lang_code, e)
-    
+
+        default_lang = django.conf.settings.LANGUAGE_CODE
+        from courses.models import ContentPage
+        slug = slugify(cleaned_data[f"name_{default_lang}"], allow_unicode=True)
+        if self._instance is None:
+            if ContentPage.objects.filter(slug=slug).exists():
+                self.add_error("name_" + default_lang, _("Name causes slug conflict"))
+
+    def __init__(self, *args, **kwargs):
+        self._instance = kwargs.get("instance")
+        super().__init__(*args, **kwargs)
+
         
 class TextfieldAnswerForm(forms.ModelForm):
     
@@ -142,6 +153,7 @@ class InstanceForm(forms.ModelForm):
         slug = slugify(cleaned_data.get("name_{}".format(default_lang)), allow_unicode=True)
         if slug == cleaned_data["course"].slug:
             raise ValidationError("Instance cannot have the same slug as its course")
+
 
             
 class InstanceSettingsForm(TranslationModelForm):
@@ -188,7 +200,7 @@ class NewContentNodeForm(forms.ModelForm):
 
     class Meta:
         model = cm.ContentGraph
-        fields = ["publish_date", "deadline", "scored", "visible", "evergreen"]
+        fields = ["visible", "publish_date", "require_enroll", "scored", "score_weight", "deadline", "late_rule", "evergreen"]
         
     make_child = forms.BooleanField(
         label=_("Make this node a child of the selected node"),
@@ -220,7 +232,7 @@ class NodeSettingsForm(forms.ModelForm):
     
     class Meta:
         model = cm.ContentGraph
-        fields = ["publish_date", "require_enroll", "deadline", "scored", "late_rule", "visible", "evergreen"]
+        fields = ["visible", "publish_date", "require_enroll", "scored", "score_weight", "deadline", "late_rule", "evergreen"]
         
     active_node = forms.IntegerField(
         widget=forms.HiddenInput,

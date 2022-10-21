@@ -333,19 +333,48 @@ class ContentGraph(models.Model):
     content = models.ForeignKey('ContentPage', null=True, blank=True, on_delete=models.RESTRICT)
     instance = models.ForeignKey('CourseInstance', null=False, blank=False, on_delete=models.CASCADE)
     responsible = models.ManyToManyField(User, blank=True)
-    compulsory = models.BooleanField(verbose_name='Must be answered correctly before proceeding to next exercise', default=False)
-    deadline = models.DateTimeField(verbose_name='The due date for completing this exercise',blank=True,null=True)
-    late_rule = models.CharField(max_length=50, blank=True, null=True, verbose_name='Score reduction formula to use for late submissions')
-    publish_date = models.DateTimeField(verbose_name='When does this exercise become available',blank=True,null=True)
+    compulsory = models.BooleanField(
+        verbose_name='Must be answered correctly before proceeding to next exercise',
+        default=False
+    )
+    deadline = models.DateTimeField(
+        verbose_name='The due date for completing this exercise',
+        blank=True,
+        null=True
+    )
+    late_rule = models.CharField(
+        verbose_name='Score reduction formula to use for late submissions',
+        max_length=50,
+        blank=True,
+        null=True,
+    )
+    score_weight = models.DecimalField(
+        verbose_name="Weight multiplier to use in scoring for tasks on this page",
+        default=1,
+        max_digits=5,
+        decimal_places=2,
+    )
+    publish_date = models.DateTimeField(
+        verbose_name='When does this exercise become available',
+        blank=True,
+        null=True
+    )
     require_enroll = models.BooleanField(
         verbose_name='Content can only be viewed by enrolled users',
         default=False
     )
     scored = models.BooleanField(verbose_name='Does this exercise affect scoring', default=True)
-    require_correct_embedded = models.BooleanField(verbose_name='Embedded exercises must be answered correctly in order to mark this item as correct',default=True)
-    ordinal_number = models.PositiveSmallIntegerField() # TODO: Enforce min=1
+    require_correct_embedded = models.BooleanField(
+        verbose_name='Embedded tasks must be answered correctly in order to mark this item as correct',
+        default=True
+    )
+    ordinal_number = models.PositiveSmallIntegerField()
     visible = models.BooleanField(verbose_name='Is this content visible to students', default=True)
-    revision = models.PositiveIntegerField(verbose_name='The spesific revision of the content', blank=True, null=True) # null = current
+    revision = models.PositiveIntegerField(
+        verbose_name='The specific revision of the content',
+        blank=True,
+        null=True # null = current
+    )
     evergreen = models.BooleanField(verbose_name='This content should not be frozen', default=False)
 
     def get_revision_str(self):
@@ -649,10 +678,6 @@ class ContentPage(models.Model):
 
     template = "courses/blank.html"
     
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)        
-        
-
     def rendered_markup(self,
                         request=None,
                         context=None,

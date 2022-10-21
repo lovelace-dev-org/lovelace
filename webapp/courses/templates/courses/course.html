@@ -79,16 +79,16 @@
     </div>
     {% endif %}
     
-    {% for list_direction, node_id, result, correct_emb, emb_count, visible, page_count in content_tree %}
-      {% if list_direction == '>' %}
+    {% for item in content_tree %}
+      {% if item.content == '>' %}
         <ul>
-      {% elif list_direction == '<' %}
+      {% elif item.content == '<' %}
         </ul>
       {% else %}
-        <li{% if visible == False %} class="admin-visible-content"{% endif %}>
-          <a href="{% url 'courses:content' course instance list_direction %}">{{ list_direction.name }}</a>
+        <li{% if item.visible == False %} class="admin-visible-content"{% endif %}>
+          <a href="{% url 'courses:content' course instance item.content %}">{{ item.content.name }}</a>
           {% comment %}
-          {% if page_count > 0 %}
+          {% if item.page_count > 0 %}
             <img class="course-pagination-icon" src="{% static 'courses/pagination.png' %}" alt="{% trans 'View as paginated' %}">
           {% endif %}
           {% endcomment %}
@@ -98,25 +98,25 @@
             <img class="toc-drag-target drop-before collapsed" 
                  src="{% static 'courses/drop_before.png' %}"
                  ondragover="toc.over_drag_target(event);"
-                 ondrop="toc.drop_to_target(event, {{ node_id }});"
+                 ondrop="toc.drop_to_target(event, {{ item.node_id }});"
                  ondragleave="toc.leave_drag_target(event);"
-                 data-url="{% url 'courses:move_content_node' course instance node_id 'before' %}"
+                 data-url="{% url 'courses:move_content_node' course instance item.node_id 'before' %}"
                  data-csrf="{{ csrf_token }}">
 
             <img class="toc-drag-target drop-as-child collapsed" 
                  src="{% static 'courses/drop_as_child.png' %}"
                  ondragover="toc.over_drag_target(event);"
-                 ondrop="toc.drop_to_target(event, {{ node_id }});"
+                 ondrop="toc.drop_to_target(event, {{ item.node_id }});"
                  ondragleave="toc.leave_drag_target(event);"
-                 data-url="{% url 'courses:move_content_node' course instance node_id 'child' %}"
+                 data-url="{% url 'courses:move_content_node' course instance item.node_id 'child' %}"
                  data-csrf="{{ csrf_token }}">
           
             <img class="toc-drag-target drop-after collapsed" 
                  src="{% static 'courses/drop_after.png' %}"
                  ondragover="toc.over_drag_target(event);"
-                 ondrop="toc.drop_to_target(event, {{ node_id }});"
+                 ondrop="toc.drop_to_target(event, {{ item.node_id }});"
                  ondragleave="toc.leave_drag_target(event);"
-                 data-url="{% url 'courses:move_content_node' course instance node_id 'after' %}"
+                 data-url="{% url 'courses:move_content_node' course instance item.node_id 'after' %}"
                  data-csrf="{{ csrf_token }}">
             
             <button type="button"
@@ -124,42 +124,46 @@
                     title="{% trans 'Add a new content node after or inside this node' %}"
                     onclick="toc.fetch_form(event, this);"
                     data-url="{% url 'courses:create_content_node' course instance %}"
-                    data-node-id="{{ node_id }}">+
+                    data-node-id="{{ item.node_id }}">+
             </button>
             <button type="button"
                     class="staff-base-button toc-button unlink-button staff-only collapsed"
                     title="{% trans 'Remove this node from the course instance' %}"
-                    onclick="toc.remove_node(event, this, {{ node_id }});"
-                    data-url="{% url 'courses:remove_content_node' course instance node_id %}"
+                    onclick="toc.remove_node(event, this, {{ item.node_id }});"
+                    data-url="{% url 'courses:remove_content_node' course instance item.node_id %}"
                     data-csrf="{{ csrf_token }}">
             </button>
             <button type="button"
                     class="staff-base-button toc-button settings-button staff-only collapsed"
                     title="{% trans 'Edit node settings' %}"
                     onclick="toc.fetch_form(event, this);"
-                    data-url="{% url 'courses:node_settings' course instance node_id %}"
-                    data-node-id="{{ node_id }}">
+                    data-url="{% url 'courses:node_settings' course instance item.node_id %}"
+                    data-node-id="{{ item.node_id }}">
             </button>
             <button type="button"
                     class="staff-base-button toc-button move-button staff-only collapsed"
                     title="{% trans 'Move node by dragging this button' %}"
                     draggable="true"
-                    ondragstart="toc.start_drag(event, {{ node_id }});"
+                    ondragstart="toc.start_drag(event, {{ item.node_id }});"
                     ondragend="toc.end_drag(event);"
                     data-csrf="{{ csrf_token }}">&nbsp;
             </button>
             
-            {% if emb_count > 0 %}
+            {% if item.embedded_count > 0 %}
               <progress class="course-contents-progress student-only" 
-                        value="{{ correct_emb }}" max="{{ emb_count }}"
-                        title="{% trans 'Completed' %} {{ correct_emb }} / {{ emb_count }}">
+                        value="{{ item.correct_embedded }}" max="{{ item.embedded_count }}"
+                        title="{% trans 'Completed' %} {{ item.correct_embedded }} / {{ item.embedded_count }}">
+              </progress>
+              <div class="node-score student-only">{{ item.page_score }} / {{ item.page_max }}</div>
             {% endif %}
 
           {% else %}
-            {% if emb_count > 0 %}
+            {% if item.embedded_count > 0 %}
               <progress class="course-contents-progress" 
-                        value="{{ correct_emb }}" max="{{ emb_count }}"
-                        title="{% trans 'Completed' %} {{ correct_emb }} / {{ emb_count }}">
+                        value="{{ item.correct_embedded }}" max="{{ item.embedded_count }}"
+                        title="{% trans 'Completed' %} {{ item.correct_embedded }} / {{ item.embedded_count }}">
+              </progress>
+              <div class="node-score">{{ item.page_score }} / {{ item.page_max }}</div>
             {% endif %}
           {% endif %}
         </li>

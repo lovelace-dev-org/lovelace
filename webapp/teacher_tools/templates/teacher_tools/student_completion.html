@@ -56,7 +56,7 @@
   <div class="paragraph">
     {% blocktrans with missing=total_missing points=total_points|floatformat:"2" available=total_points_available %}
       <div class="paragraph">Total missing: {{ missing }}</div>
-      <div class="paragraph">Total points: {{ points }} / {{ available }}</div>
+      <div class="paragraph">Total score: {{ points }} / {{ available }}</div>
     {% endblocktrans %}
   </div>
 
@@ -64,8 +64,8 @@
     {% trans 'Page results' %}
     <ul class="results-page-list">
       {% for results in results_by_page %}
-        {% blocktrans with name=results.page.name done=results.done_count tasks=results.task_count points=results.points|floatformat:"2" available=results.points_available %}
-          <li class="results-page-bullet tasks-collapsed" onclick="expand_task_list(this)">{{ name }} (Done: {{ done }}/{{ tasks }} | Points: {{ points }}/{{ available }})</li>
+        {% blocktrans with name=results.page.name done=results.done_count tasks=results.task_count points=results.points|floatformat:"2" available=results.points_available score=results.score|floatformat:"2" %}
+          <li class="results-page-bullet tasks-collapsed" onclick="expand_task_list(this)">{{ name }} (Done: {{ done }}/{{ tasks }} | Points: {{ points }}/{{ available }} | Score: {{ score }})</li>
         {% endblocktrans %}
         <ul class="student-task-list">
           {% for task in results.tasks_list %}

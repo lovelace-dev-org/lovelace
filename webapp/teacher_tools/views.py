@@ -156,7 +156,9 @@ def manage_enrollments(request, course, instance):
 def student_course_completion(request, course, instance, user):    
 
     tasks_by_page = get_course_instance_tasks(instance)
-    results_by_page, total_points, total_missing, total_points_available = compile_student_results(user, instance, tasks_by_page)
+    results_by_page, total_points, total_missing, total_points_available = compile_student_results(
+        user, instance, tasks_by_page
+    )
     
     t = loader.get_template("teacher_tools/student_completion.html")
     c = {
@@ -175,6 +177,27 @@ def student_course_completion(request, course, instance, user):
         ),
     }
     return HttpResponse(t.render(c, request))
+
+@ensure_responsible
+def calculate_grades(request, course, instance):
+    tasks_by_page = get_course_instance_tasks(instance)
+    users = instance.enrolled_users.get_queryset()
+
+    grades_by_id = {}
+
+    for user in users:
+        by_page, total_points, total_missing, total_points_available = compile_student_results(
+            user, instance, tasks_by_page,
+            summary=True
+        )
+        grades_by_id[user.id] = {
+            "missing": total_missing,
+            "score": f"{total_points:.2f}",
+            "grade": "n/a",
+            "page_results": by_page
+        }
+
+    return JsonResponse(grades_by_id)
 
 @ensure_responsible
 def course_completion_csv(request, course, instance):

@@ -71,16 +71,28 @@ def get_missing_and_points(results):
     
     return missing, points, points_available
 
-def compile_student_results(user, instance, tasks_by_page):
+def compile_student_results(user, instance, tasks_by_page, summary=False):
     results_by_page = []
     total_missing = 0
     total_points = 0
     total_points_available = 0
-    for page, task_links in tasks_by_page:
+    for context, task_links in tasks_by_page:
+        page = context.content
         page_stats = check_user_completion(user, task_links, instance)
         missing, page_points, page_points_available = get_missing_and_points(page_stats)
-        total_points += page_points
-        total_points_available += page_points_available
+        total_points += page_points * context.score_weight
+        total_points_available += page_points_available * context.score_weight
         total_missing += missing
-        results_by_page.append({"page": page, "done_count": len(task_links) - missing, "task_count": len(task_links), "points": page_points, "points_available": page_points_available, "tasks_list": page_stats})
+        page_results = {
+            "page": page.name,
+            "done_count": len(task_links) - missing,
+            "task_count": len(task_links),
+            "points": page_points,
+            "points_available": page_points_available,
+            "score": page_points * context.score_weight,
+        }
+        if not summary:
+            page_results["page"] = page
+            page_results["tasks_list"] = page_stats
+        results_by_page.append(page_results)
     return results_by_page, total_points, total_missing, total_points_available

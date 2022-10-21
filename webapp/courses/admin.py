@@ -150,6 +150,7 @@ class MultipleChoiceExerciseAdmin(CourseContentAdmin, TranslationAdmin, VersionA
     list_display = ("name", "slug",)
     list_per_page = 500
     save_on_top = True
+    save_as = True
 
 
 class CheckboxExerciseAnswerInline(TranslationTabularInline):
@@ -158,7 +159,6 @@ class CheckboxExerciseAnswerInline(TranslationTabularInline):
     formset = SoftDeleteFormSet
 
 class CheckboxExerciseAdmin(CourseContentAdmin, TranslationAdmin, VersionAdmin):
-    
     change_form_template = "courses/admin-checkbox.html"
 
     content_type = "CHECKBOX_EXERCISE"
@@ -179,6 +179,7 @@ class CheckboxExerciseAdmin(CourseContentAdmin, TranslationAdmin, VersionAdmin):
     list_display = ("name", "slug",)
     list_per_page = 500
     save_on_top = True
+    save_as = True
 
 
 class TextfieldExerciseAnswerInline(TranslationStackedInline):

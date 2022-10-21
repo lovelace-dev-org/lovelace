@@ -802,12 +802,22 @@ section.content {
         -webkit-appearance: none;
         position: absolute;
         right: 24px;
-        top: 0.65em;
+        top: 0.35em;
         width: 220px;
         height: 8px;
         border: 1px solid #ccc;
         background-color: #eee;
     }
+
+    div.course-contents div.node-score {
+        position: absolute;
+        right: 24px;
+        bottom: 0.01em;
+        font-size: 0.75rem;
+
+    }
+
+
     div.course-contents progress.course-contents-progress[value] {
         -webkit-appearance: none;
     }
@@ -1894,3 +1904,13 @@ hr.hr-evenly-spaced {
 .right-float {
     float: right;
 }
+
+table.fixed {
+    table-layout: fixed;
+    width: 100%;
+}
+table.alternate-green > tbody > tr:nth-child(odd) {
+    /*background: #caeaca;*/
+    background: #daeeda;
+}
+
