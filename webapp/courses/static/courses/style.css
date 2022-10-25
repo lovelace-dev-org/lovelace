@@ -1910,7 +1910,9 @@ table.fixed {
     width: 100%;
 }
 table.alternate-green > tbody > tr:nth-child(odd) {
-    /*background: #caeaca;*/
     background: #daeeda;
 }
 
+table.alternate-green > tbody > tr:nth-child(even) {
+    background: #eee;
+}

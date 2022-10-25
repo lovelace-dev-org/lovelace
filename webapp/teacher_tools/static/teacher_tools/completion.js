@@ -84,7 +84,7 @@ function process_grades(data) {
         page_results.forEach(function(page_result) {
             if (first) {
                 let th = $("<th class='vertical-th'>" + page_result.page + "</th>");
-                th.attr("onclick", "sort_grades(event, this, " + idx + ", 1)");
+                th.attr("onclick", "sort_table(event, this, " + idx + ", 1)");
                 $("th#missing-th").before(th);
                 idx += 1
             }
@@ -97,16 +97,20 @@ function process_grades(data) {
             first = false;
         }
     }
-    $("th#missing-th").attr("onclick", "sort_grades(event, this, " + idx + ", 1)");
-    $("th#score-th").attr("onclick", "sort_grades(event, this, " + (idx + 1) + ", 1)");
-    $("th#grade-th").attr("onclick", "sort_grades(event, this, " + (idx + 2) + ", 1)");
+    $("th#missing-th").attr("onclick", "sort_table(event, this, " + idx + ", 1)");
+    $("th#score-th").attr("onclick", "sort_table(event, this, " + (idx + 1) + ", 1)");
+    $("th#grade-th").attr("onclick", "sort_table(event, this, " + (idx + 2) + ", 1)");
 }
 
 // http://blog.niklasottosson.com/?p=1914
-function sort_grades(event, caller, field, order) {
+function sort_table(event, caller, field, order) {
     event.preventDefault();
 
-    let rows = $("table.completion-table tbody tr").get();
+    let th = $(caller);
+    let table = th.parent().parent().parent()
+    let rows = table.children("tbody").children("tr").get();
+
+    //let rows = $("table.completion-table tbody tr").get();
 
     rows.sort(function(a, b) {
         let A = $(a).children("td").eq(field).text().toUpperCase();
@@ -124,13 +128,13 @@ function sort_grades(event, caller, field, order) {
     });
 
     if (order == 1) {
-        $(caller).attr("onclick", "sort_grades(event, this, " + field + ", -1)");
+        $(caller).attr("onclick", "sort_table(event, this, " + field + ", -1)");
     }
     else {
-        $(caller).attr("onclick", "sort_grades(event, this, " + field + ", 1)");
+        $(caller).attr("onclick", "sort_table(event, this, " + field + ", 1)");
     }
 
     rows.forEach(function(row) {
-        $("table.completion-table").children("tbody").append(row);
+        table.children("tbody").append(row);
     });
 }

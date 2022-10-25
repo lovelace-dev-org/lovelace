@@ -85,7 +85,14 @@
                     {% trans 'Check plagiarism' %}
                   </a>
                 </div></li>
+              {% else %}
+                <li><div>
+                  <a href="{{ meta.summary_url }}">
+                    {% trans 'Answer summary' %}
+                  </a>
+                </div></li>
               {% endif %}
+
             <li><div><a href="{{ meta.edit_url }}">
                 {% trans 'Edit this exercise' %}
             </a></div></li>

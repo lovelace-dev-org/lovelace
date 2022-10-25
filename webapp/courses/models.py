@@ -664,6 +664,10 @@ class ContentPage(models.Model):
     # Exercise fields
     question = models.TextField(blank=True, default="") # Translate
     manually_evaluated = models.BooleanField(verbose_name="This exercise is evaluated by hand", default=False)
+    delayed_evaluation = models.BooleanField(
+        verbose_name="This exercise is not immediately evaluated",
+        default=False
+    )
     answer_limit = models.PositiveSmallIntegerField(
         verbose_name="Limit number of allowed attempts to",
         blank=True, null=True
@@ -678,6 +682,19 @@ class ContentPage(models.Model):
 
     template = "courses/blank.html"
     
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = self.get_url_name()
+        else:
+            self.slug = slugify(self.slug, allow_unicode=True)
+
+        # TODO: Run through content parser
+        #       - Check for & report errors (all errors on same notice)
+        #       - Put into Redis cache
+        #       - Automatically link embedded pages (create/update an
+        #         EmbeddedContentLink object)
+        super(ContentPage, self).save(*args, **kwargs)
+
     def rendered_markup(self,
                         request=None,
                         context=None,
@@ -960,6 +977,21 @@ class ContentPage(models.Model):
         # Blank function for types that don't require this
         #pass
 
+    def get_answer_model(self):
+        from routine_exercise.models import RoutineExerciseAnswer
+        answer_models = {
+            'LECTURE': None,
+            'TEXTFIELD_EXERCISE': UserTextfieldExerciseAnswer,
+            'MULTIPLE_CHOICE_EXERCISE': UserMultipleChoiceExerciseAnswer,
+            'CHECKBOX_EXERCISE': UserCheckboxExerciseAnswer,
+            'FILE_UPLOAD_EXERCISE': UserFileUploadExerciseAnswer,
+            'CODE_INPUT_EXERCISE': None,
+            'CODE_REPLACE_EXERCISE': UserCodeReplaceExerciseAnswer,
+            'REPEATED_TEMPLATE_EXERCISE': UserRepeatedTemplateExerciseAnswer,
+            'ROUTINE_EXERCISE': RoutineExerciseAnswer
+        }
+        return answer_models[self.content_type]
+
     def is_answerable(self):
         if self.content_type == "LECTURE":
             return False
@@ -1035,19 +1067,6 @@ class ContentPage(models.Model):
 
     def get_user_answers(self, user, instance, ignore_drafts=True):
         raise NotImplementedError("base type has no method 'get_user_answers'")
-
-    def save(self, *args, **kwargs):
-        if not self.slug:
-            self.slug = self.get_url_name()
-        else:
-            self.slug = slugify(self.slug, allow_unicode=True)
-
-        # TODO: Run through content parser
-        #       - Check for & report errors (all errors on same notice)
-        #       - Put into Redis cache
-        #       - Automatically link embedded pages (create/update an
-        #         EmbeddedContentLink object)
-        super(ContentPage, self).save(*args, **kwargs)
         
     def get_feedback_questions(self):
         return [q.get_type_object() for q in self.feedback_questions.all()]

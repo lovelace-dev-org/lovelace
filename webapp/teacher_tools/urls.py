@@ -5,6 +5,7 @@ app_name = "teacher_tools"
 
 urlpatterns = [
     path("<course:course>/<instance:instance>/<content:content>/download_answers/", views.download_answers, name="download_answers"),
+    path("<course:course>/<instance:instance>/<content:content>/answer_summary/", views.answer_summary, name="answer_summary"),
     path("<course:course>/<instance:instance>/enrollments/", views.manage_enrollments, name="manage_enrollments"),
     path("<course:course>/<instance:instance>/completion/<user:user>/", views.student_course_completion, name="student_completion"),
     path("<course:course>/<instance:instance>/completion/", views.course_completion, name="completion"),

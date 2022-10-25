@@ -650,6 +650,11 @@ class EmbeddedPageMarkup(Markup):
                         "instance": instance,
                         "content": page
                     }),
+                    "summary_url": reverse("teacher_tools:answer_summary", kwargs={
+                        "course": instance.course,
+                        "instance": instance,
+                        "content": page
+                    }),
                     "edit_url": page.get_admin_change_url(),
                     "submit_url": reverse("courses:check", kwargs={
                         "course": instance.course,

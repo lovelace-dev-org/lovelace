@@ -168,7 +168,7 @@ def parse_dl_tag(parsed_string, tag, page_slug, context):
             content__slug=page_slug,
             instance=context.get("instance", None)
         ).deadline.strftime("%Y-%m-%d %H:%M")
-    except KeyboardInterrupt:
+    except AttributeError:
         parsed_string += ""
     except courses.models.ContentGraph.DoesNotExist:
         parsed_string += "-- WARNING: BROKEN LINK --"

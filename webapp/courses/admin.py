@@ -140,8 +140,10 @@ class MultipleChoiceExerciseAdmin(CourseContentAdmin, TranslationAdmin, VersionA
 
     fieldsets = [
         ('Page information',   {'fields': ['name', 'slug', 'content', 'question', 'tags'],}),
-        ('Exercise miscellaneous', {'fields': ['default_points', 'evaluation_group'],
-                                'classes': ['wide']}),
+        ('Exercise miscellaneous', {
+            'fields': ['default_points', 'evaluation_group', 'delayed_evaluation', 'answer_limit'],
+            'classes': ['wide']
+        }),
         ('Feedback settings',  {'fields': ['feedback_questions']}),
     ]
     inlines = [MultipleChoiceExerciseAnswerInline, HintInline]
@@ -169,7 +171,7 @@ class CheckboxExerciseAdmin(CourseContentAdmin, TranslationAdmin, VersionAdmin):
 
     fieldsets = [
         ('Page information',   {'fields': ['name', 'slug', 'content', 'question', 'tags']}),
-        ('Exercise miscellaneous', {'fields': ['default_points', 'evaluation_group', 'answer_limit'],
+        ('Exercise miscellaneous', {'fields': ['default_points', 'evaluation_group', 'delayed_evaluation', 'answer_limit'],
                                 'classes': ['wide']}),
         ('Feedback settings',  {'fields': ['feedback_questions']}),
     ]
@@ -203,7 +205,7 @@ class TextfieldExerciseAdmin(CourseContentAdmin, TranslationAdmin, VersionAdmin)
         ('Page information',   {'fields': ['name', 'slug', 'content', 'question', 'tags']}),
         ('Exercise miscellaneous', {
             'fields': [
-                'default_points', 'answer_limit', 'manually_evaluated',
+                'default_points', 'answer_limit', 'manually_evaluated', 'delayed_evaluation',
                 'group_submission', 'evaluation_group'
             ],
             'classes': ['wide']

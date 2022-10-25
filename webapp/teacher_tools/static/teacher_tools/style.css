@@ -20,7 +20,7 @@ table.completion-table th {
 .sticky-left {
     position: sticky;
     left: 0px;
-    z-index: 2;
+    z-index: 2 !important;
     background: inherit;
 }
 

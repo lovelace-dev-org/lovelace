@@ -59,7 +59,7 @@
     </caption>
     <thead>
       <tr>
-        <th class="sticky-left horizontal-th" onclick="sort_grades(event, this, 0, 1);">{% trans 'Name' %}</th>
+        <th class="sticky-left horizontal-th" onclick="sort_table(event, this, 0, 1);">{% trans 'Name' %}</th>
         <th class="vertical-th page-result-placeholder"></th>
         <th class="vertical-th" id="missing-th">{% trans 'Miss' %}</th>
         <th class="vertical-th" id="score-th">{% trans 'Weighted Score' %}</th>
@@ -70,7 +70,7 @@
     <tbody>
       {% for user in users %}
         <tr id="{{ user.id }}">
-          <td class="sticky-left">{{ user.last_name }} {{ user.first_name }}</td>
+          <td class="sticky-left">{{ user|full_name }}</td>
           <td class="page-result-placeholder"></td>
           <td class="grade-missing"></td>
           <td class="grade-score"></td>

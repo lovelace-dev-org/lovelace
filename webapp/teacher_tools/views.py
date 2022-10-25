@@ -17,8 +17,8 @@ from django.template import loader
 from django.urls import reverse
 from lovelace.celery import app as celery_app
 
-from utils.access import determine_access, is_course_staff, ensure_responsible
-from utils.content import get_course_instance_tasks
+from utils.access import determine_access, is_course_staff, ensure_responsible, ensure_staff
+from utils.content import get_course_instance_tasks, get_embedded_parent
 from utils.notify import send_welcome_email, send_bcc_email
 
 from courses.models import *
@@ -151,8 +151,33 @@ def manage_enrollments(request, course, instance):
         }
         
         return HttpResponse(t.render(c, request))
+
+@ensure_staff
+def answer_summary(request, course, instance, content):
+    try:
+        parent, single_linked = get_embedded_parent(content, instance)
+    except EmbeddedLink.DoesNotExist:
+        return HttpResponseNotFound(_("The task was not linked on the requested course instance"))
+
+    answer_model = content.get_answer_model()
+    answers = answer_model.objects.filter(
+        exercise=content,
+        instance=instance,
+    ).order_by("user", "answer_date").distinct("user")
+
+    t = loader.get_template("teacher_tools/answer_summary.html")
+    c = {
+        "course": course,
+        "instance": instance,
+        "content": content,
+        "parent": parent,
+        "single_linked": single_linked,
+        "answers": answers,
+        "course_staff": True
+    }
+    return HttpResponse(t.render(c, request))
         
-@ensure_responsible
+@ensure_staff
 def student_course_completion(request, course, instance, user):    
 
     tasks_by_page = get_course_instance_tasks(instance)
@@ -243,7 +268,7 @@ def course_completion_csv_download(request, course, instance, task_id):
             _("Completion CSV generation (task id: %s) has already been downloaded." % task_id)
         )
 
-@ensure_responsible
+@ensure_staff
 def course_completion(request, course, instance):
     users = instance.enrolled_users.get_queryset().order_by("last_name", "first_name", "username")
 
@@ -254,7 +279,6 @@ def course_completion(request, course, instance):
         "users": users,
         "course_staff": True
     }
-
     return HttpResponse(t.render(c, request))
 
 @ensure_responsible
