@@ -73,7 +73,7 @@ def compile_student_results(user, instance, tasks_by_page, summary=False):
     total_points_available = 0
     completion_qs = cm.UserTaskCompletion.objects.filter(
         user=user,
-        instance=instanc
+        instance=instance
     )
     for context, task_links in tasks_by_page:
         page = context.content
