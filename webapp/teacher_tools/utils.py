@@ -2,19 +2,14 @@ from django.urls import reverse
 import courses.models as cm
 from reversion.models import Version
 
-def check_user_completion(user, task_links, instance, include_links=True):
+def check_user_completion(user, tasks, instance, completion_qs, include_links=True):
     results = []
     course = instance.course
-    for link in task_links:
-        exercise_obj = link.embedded_page.get_type_object()
-        if link.revision is not None:
-            exercise_obj = Version.objects.get_for_object(exercise_obj).get(revision=link.revision)._object_version.object
-
+    for link in tasks:
+        exercise_obj = link.embedded_page
         try:
-            completion = cm.UserTaskCompletion.objects.get(
+            completion = completion_qs.get(
                 exercise=exercise_obj,
-                instance=instance,
-                user=user
             )
             result = completion.state
         except cm.UserTaskCompletion.DoesNotExist:
@@ -76,9 +71,13 @@ def compile_student_results(user, instance, tasks_by_page, summary=False):
     total_missing = 0
     total_points = 0
     total_points_available = 0
+    completion_qs = cm.UserTaskCompletion.objects.filter(
+        user=user,
+        instance=instanc
+    )
     for context, task_links in tasks_by_page:
         page = context.content
-        page_stats = check_user_completion(user, task_links, instance)
+        page_stats = check_user_completion(user, task_links, instance, completion_qs)
         missing, page_points, page_points_available = get_missing_and_points(page_stats)
         total_points += page_points * context.score_weight
         total_points_available += page_points_available * context.score_weight

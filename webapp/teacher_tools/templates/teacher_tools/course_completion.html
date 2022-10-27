@@ -47,6 +47,12 @@
     </a>
   </div>
 
+  <div class="paragraph">
+    {% blocktrans with students=users|length %}
+      Number of students: {{ students }}
+    {% endblocktrans %}
+  </div>
+
   <table class="fixed alternate-green completion-table">
     <colgroup>
       <col class="name">

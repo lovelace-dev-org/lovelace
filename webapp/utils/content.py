@@ -34,11 +34,13 @@ def get_course_instance_tasks(instance, deadline_before=None):
     that had a deadline before the given date.
     """
 
-    all_embedded_links = cm.EmbeddedLink.objects.filter(instance=instance).order_by("embedded_page__name").select_related("embedded_page")
+    all_embedded_links = cm.EmbeddedLink.objects.filter(instance=instance).order_by(
+        "embedded_page__name"
+    ).select_related("embedded_page").defer("embedded_page__content")
 
     task_pages = []
 
-    content_links = cm.ContentGraph.objects.filter(instance=instance, scored=True, visible=True).order_by("ordinal_number").select_related("content")
+    content_links = cm.ContentGraph.objects.filter(instance=instance, scored=True, visible=True).order_by("ordinal_number").select_related("content").defer("content__content")
     if deadline_before is not None:
         content_links = content_links.filter(deadline__lt=deadline_before)
 

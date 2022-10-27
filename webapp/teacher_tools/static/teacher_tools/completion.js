@@ -84,7 +84,7 @@ function process_grades(data) {
         page_results.forEach(function(page_result) {
             if (first) {
                 let th = $("<th class='vertical-th'>" + page_result.page + "</th>");
-                th.attr("onclick", "sort_table(event, this, " + idx + ", 1)");
+                th.attr("onclick", "sort_table(event, this, " + idx + ", 1, true)");
                 $("th#missing-th").before(th);
                 idx += 1
             }
@@ -97,13 +97,13 @@ function process_grades(data) {
             first = false;
         }
     }
-    $("th#missing-th").attr("onclick", "sort_table(event, this, " + idx + ", 1)");
-    $("th#score-th").attr("onclick", "sort_table(event, this, " + (idx + 1) + ", 1)");
-    $("th#grade-th").attr("onclick", "sort_table(event, this, " + (idx + 2) + ", 1)");
+    $("th#missing-th").attr("onclick", "sort_table(event, this, " + idx + ", 1, true)");
+    $("th#score-th").attr("onclick", "sort_table(event, this, " + (idx + 1) + ", 1, true)");
+    $("th#grade-th").attr("onclick", "sort_table(event, this, " + (idx + 2) + ", 1, true)");
 }
 
 // http://blog.niklasottosson.com/?p=1914
-function sort_table(event, caller, field, order) {
+function sort_table(event, caller, field, order, is_number) {
     event.preventDefault();
 
     let th = $(caller);
@@ -113,8 +113,13 @@ function sort_table(event, caller, field, order) {
     //let rows = $("table.completion-table tbody tr").get();
 
     rows.sort(function(a, b) {
-        let A = $(a).children("td").eq(field).text().toUpperCase();
-        let B = $(b).children("td").eq(field).text().toUpperCase();
+        if (is_number) {
+            let A = parseFloat($(a).children("td").eq(field).text());
+            let B = parseFloat($(b).children("td").eq(field).text());
+        } else {
+            let A = $(a).children("td").eq(field).text().toUpperCase();
+            let B = $(b).children("td").eq(field).text().toUpperCase();
+        }
 
         if (A < B) {
             return -1 * order;
