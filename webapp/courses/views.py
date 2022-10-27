@@ -201,7 +201,7 @@ def course_tree(tree, node, user, instance_obj, enrolled=False, staff=False):
                         link = grouped.get(embedded_page=representative)
                     except EmbeddedLink.DoesNotExist:
                         continue
-                    page_score += group_score * node.score_weight
+                    page_score += group_score * representative.default_points * node.score_weight
                 page_max += representative.default_points * node.score_weight
 
             for emb_link in embedded_links.filter(embedded_page__evaluation_group=""):
@@ -210,7 +210,7 @@ def course_tree(tree, node, user, instance_obj, enrolled=False, staff=False):
                 page_max += emb_exercise.default_points * node.score_weight
                 if correct == "correct":
                     correct_embedded += 1
-                    page_score += score * node.score_weight
+                    page_score += score * emb_exercise.default_points * node.score_weight
     
     if node.require_enroll:
         if not (enrolled or staff):
