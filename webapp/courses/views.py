@@ -578,7 +578,7 @@ def file_exercise_evaluation(request, course, instance, content, revision, task_
         'instance_slug': instance.slug,
         'instance': instance,
         'content_page': content,
-        'answer_url': answer_url
+        'answer_url': answer_url,
     }
 
     data = compile_evaluation_data(request, evaluation_tree, evaluation_obj, msg_context)
@@ -637,7 +637,9 @@ def compile_evaluation_data(request, evaluation_tree, evaluation_obj, context=No
     c_exercise = {
         'evaluation': evaluation_obj.correct,
         'manual': context["content_page"].manually_evaluated,
-        'answer_url': context.get("answer_url", "")
+        'answer_url': context.get("answer_url", ""),
+        'points': evaluation_tree["points"],
+        'max': evaluation_tree["max"]
     }
     t_messages = loader.get_template('courses/exercise-evaluation-messages.html')
 

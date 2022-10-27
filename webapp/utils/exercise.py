@@ -301,8 +301,8 @@ def best_result(user, instance, group_tag):
             if score > best_score:
                 best_score = score
                 best_task = task
-        elif correct != "credited":
-            return -1, task
+    else:
+        return -1, task
     return best_score, best_task
 
 
