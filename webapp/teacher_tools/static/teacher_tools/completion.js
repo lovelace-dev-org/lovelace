@@ -114,11 +114,11 @@ function sort_table(event, caller, field, order, is_number) {
 
     rows.sort(function(a, b) {
         if (is_number) {
-            let A = parseFloat($(a).children("td").eq(field).text());
-            let B = parseFloat($(b).children("td").eq(field).text());
+            A = parseFloat($(a).children("td").eq(field).text());
+            B = parseFloat($(b).children("td").eq(field).text());
         } else {
-            let A = $(a).children("td").eq(field).text().toUpperCase();
-            let B = $(b).children("td").eq(field).text().toUpperCase();
+            A = $(a).children("td").eq(field).text().toUpperCase();
+            B = $(b).children("td").eq(field).text().toUpperCase();
         }
 
         if (A < B) {
