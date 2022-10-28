@@ -293,16 +293,14 @@ def best_result(user, instance, group_tag):
     grouped_tasks = cm.ContentPage.objects.filter(
         evaluation_group=group_tag
     )
-    best_score = 0
-    best_task = None
+    best_score = -1
+    best_task = grouped_tasks[0]
     for task in grouped_tasks:
         correct, score = task.get_user_evaluation(user, instance)
         if correct == "correct":
             if score > best_score:
                 best_score = score
                 best_task = task
-    else:
-        return -1, task
     return best_score, best_task
 
 
