@@ -354,6 +354,11 @@ class ContentGraph(models.Model):
         max_digits=5,
         decimal_places=2,
     )
+    scoring_group = models.CharField(
+        max_length=32,
+        help_text="Scoring group identifier, used for binding together mutually exclusive pages.",
+        blank=True
+    )
     publish_date = models.DateTimeField(
         verbose_name='When does this exercise become available',
         blank=True,
@@ -364,10 +369,6 @@ class ContentGraph(models.Model):
         default=False
     )
     scored = models.BooleanField(verbose_name='Does this exercise affect scoring', default=True)
-    require_correct_embedded = models.BooleanField(
-        verbose_name='Embedded tasks must be answered correctly in order to mark this item as correct',
-        default=True
-    )
     ordinal_number = models.PositiveSmallIntegerField()
     visible = models.BooleanField(verbose_name='Is this content visible to students', default=True)
     revision = models.PositiveIntegerField(
@@ -999,6 +1000,16 @@ class ContentPage(models.Model):
             return True
 
     def save_evaluation(self, user, evaluation, answer_object):
+        """
+        Evaluation dictionary:
+        - *evaluation: bool
+        - points: float (0)
+        - max: float (exercise.default_points)
+        - manual: bool (False)
+        - evaluator: User (None)
+        - test_results: string ("")
+        - feedback: string ("")
+        """
         from utils.exercise import update_completion
         from utils.users import get_group_members
         
@@ -1046,8 +1057,8 @@ class ContentPage(models.Model):
         answer_object.evaluation.correct = evaluation["evaluation"]
         answer_object.evaluation.points = evaluation["points"]
         answer_object.evaluation.max_points = evaluation.get("max", self.default_points)
-        answer_object.evaluation.feedback = evaluation["feedback"]
-        answer_object.evaluation.evaluator = evaluation["evaluator"]
+        answer_object.evaluation.feedback = evaluation.get("feedback", "")
+        answer_object.evaluation.evaluator = evaluation.get("evaluator", None)
         answer_object.evaluation.save()
         update_completion(self, instance, user, evaluation, answer_object.answer_date)
         if self.group_submission:
@@ -1409,7 +1420,8 @@ class TextfieldExercise(ContentPage):
                     errors.append("Contact staff, regexp error '{}' from regexp: {}".format(e, answer.answer))
                 else:
                     errors.append("Contact staff! Regexp error '{}' in exercise '{}'.".format(e, self.name))
-                correct = False
+                if answer.correct:
+                    correct = False
                 continue
 
             sub = lambda text: text

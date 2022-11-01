@@ -88,7 +88,11 @@ function process_grades(data) {
                 $("th#missing-th").before(th);
                 idx += 1
             }
-            row.children("td.grade-missing").before("<td class='grade-page-score'>" + parseFloat(page_result.points).toFixed(2) + "</td>");
+            let score = parseFloat(page_result.points).toFixed(2)
+            let td = $("<td class='grade-page-score'>" + score + "</td>");
+            td.attr("data-score", score);
+            td.attr("data-missing", page_result.task_count - page_result.done_count);
+            row.children("td.grade-missing").before(td);
         });
 
         if (first) {
@@ -100,6 +104,15 @@ function process_grades(data) {
     $("th#missing-th").attr("onclick", "sort_table(event, this, " + idx + ", 1, true)");
     $("th#score-th").attr("onclick", "sort_table(event, this, " + (idx + 1) + ", 1, true)");
     $("th#grade-th").attr("onclick", "sort_table(event, this, " + (idx + 2) + ", 1, true)");
+    $("div.table-controls").removeClass("collapsed");
+}
+
+function toggle_cell_data(event, caller, mode) {
+    event.preventDefault();
+    $("td.grade-page-score").each(function(index) {
+        td = $(this);
+        td.html(td.attr(mode));
+    });
 }
 
 // http://blog.niklasottosson.com/?p=1914

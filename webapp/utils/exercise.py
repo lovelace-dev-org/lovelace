@@ -202,6 +202,14 @@ def apply_late_rule(evaluation, rule, days_late):
     ))
 
 def update_completion(exercise, instance, user, evaluation, answer_date):
+    """
+    Evaluation dictionary:
+    - *evaluation: bool
+    - points: float (0)
+    - max: float (exercise.default_points)
+    - manual: bool (False)
+    """
+
     link = cm.EmbeddedLink.objects.filter(
         instance=instance,
         embedded_page=exercise

@@ -54,7 +54,7 @@
   
 
   <div class="paragraph">
-    {% blocktrans with missing=total_missing points=total_points|floatformat:"2" available=total_points_available %}
+    {% blocktrans with missing=total_missing points=total_points|floatformat:"2" available=total_points_available|floatformat:"2" %}
       <div class="paragraph">Total missing: {{ missing }}</div>
       <div class="paragraph">Total score: {{ points }} / {{ available }}</div>
     {% endblocktrans %}

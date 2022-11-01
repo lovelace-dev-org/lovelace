@@ -305,23 +305,6 @@ def check_answer(request, course, instance, content, revision):
     if request.method != "POST":
         return HttpResponseNotAllowed(['POST'])
 
-    # TODO: Ensure that the content revision really belongs to the course instance
-
-    # Check if a deadline exists and if it has already passed
-    try:
-        content_graph = ContentGraph.objects.get(instance=instance, content=content)
-    except ContentGraph.DoesNotExist as e:
-        pass
-    else:
-        if content_graph is not None:
-            if not content_graph.deadline or datetime.datetime.now() < content_graph.deadline:
-                pass
-            else:
-                # TODO: Use a template!
-                return JsonResponse({
-                    'result': _('The deadline for this exercise (%s) has passed. Your answer will not be evaluated!') % (content_graph.deadline)
-                })
-
     user = request.user
     ip = request.META.get('REMOTE_ADDR')
     answer = request.POST
@@ -350,20 +333,27 @@ def check_answer(request, course, instance, content, revision):
         })
 
     answer_count += 1
-    evaluation = exercise.check_answer(content, user, ip, answer, files, answer_object, revision)
-    if exercise.manually_evaluated:
-        evaluation["manual"] = True
-        evaluation["correct"] = False
-        if exercise.content_type == "FILE_UPLOAD_EXERCISE":
-            task_id = evaluation.get("task_id")
-            if task_id is not None:
-                return check_progress(request, course, instance, content, revision, task_id)
-    else:    
-        evaluation["manual"] = False
-        if exercise.content_type == "FILE_UPLOAD_EXERCISE":
-            task_id = evaluation.get("task_id")
-            if task_id is not None:
-                return check_progress(request, course, instance, content, revision, task_id)
+
+    if exercise.delayed_evaluation:
+        evaluation = {
+            "evaluation": False,
+            "manual": True
+        }
+    else:
+        evaluation = exercise.check_answer(content, user, ip, answer, files, answer_object, revision)
+        if exercise.manually_evaluated:
+            evaluation["manual"] = True
+            evaluation["evaluation"] = False
+            if exercise.content_type == "FILE_UPLOAD_EXERCISE":
+                task_id = evaluation.get("task_id")
+                if task_id is not None:
+                    return check_progress(request, course, instance, content, revision, task_id)
+        else:
+            evaluation["manual"] = False
+            if exercise.content_type == "FILE_UPLOAD_EXERCISE":
+                task_id = evaluation.get("task_id")
+                if task_id is not None:
+                    return check_progress(request, course, instance, content, revision, task_id)
     
     exercise.save_evaluation(user, evaluation, answer_object)
 
@@ -403,7 +393,7 @@ def check_answer(request, course, instance, content, revision):
         'answer_count_str': answer_count_str,
         'attempts_left': exercise.answer_limit and exercise.answer_limit - answer_count,
         'total_evaluation': total_evaluation,
-        'manual': exercise.manually_evaluated,
+        'manual': exercise.manually_evaluated or exercise.delayed_evaluation,
         'score': f"{score:.2f}",
     }
     if "next_instance" in evaluation:
@@ -726,7 +716,7 @@ def content(request, course, instance, content, pagenum=None, **kwargs):
     else:
         if content_graph is None:
             return HttpResponseNotFound("Content {} is not linked to course {}!".format(content.slug, course.slug))
-        
+
     evaluation = None
     answer_count = None
     enrolled = False

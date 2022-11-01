@@ -63,6 +63,10 @@
       </colgroup>
       <caption>
         {% trans 'Results table' %}
+        <div class="table-controls collapsed">
+          <button class="button" onclick="toggle_cell_data(event, this, 'data-score');">Show Score</button>
+          <button class="button" onclick="toggle_cell_data(event, this, 'data-missing');">Show Missing</button>
+        </div>
       </caption>
       <thead>
         <tr>

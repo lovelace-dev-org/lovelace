@@ -15,6 +15,7 @@ from django.shortcuts import render, redirect
 from django.utils.translation import gettext as _
 from django.template import loader
 from django.urls import reverse
+from django.utils import translation
 from lovelace.celery import app as celery_app
 
 from utils.access import determine_access, is_course_staff, ensure_responsible, ensure_staff
@@ -163,7 +164,7 @@ def answer_summary(request, course, instance, content):
     answers = answer_model.objects.filter(
         exercise=content,
         instance=instance,
-    ).order_by("user", "answer_date").distinct("user")
+    ).order_by("user", "-answer_date").distinct("user")
 
     t = loader.get_template("teacher_tools/answer_summary.html")
     c = {
@@ -384,7 +385,7 @@ def manage_reminders(request, course, instance):
 def load_reminders(request, course, instance):
     reminder_cache = cache.get("{}_reminders".format(instance.slug))
     if reminder_cache is None:
-        return HttpNotFOund(_("Unable to retrieve cached reminders."))
+        return HttpResponseNotFound(_("Unable to retrieve cached reminders."))
 
     return JsonResponse({"reminders": reminder_cache["reminders"], "submit_text": _("Send emails")})
 
@@ -408,6 +409,106 @@ def reminders_progress(request, course, instance, task_id):
 
         data = {"state": task.state, "metadata": task.info, "redirect": progress_url}
         return JsonResponse(data)
+
+@ensure_responsible
+def batch_grade_task(request, course, instance, content):
+    if content.content_type not in ["TEXTFIELD_EXERCISE", "CHECKBOX_EXERCISE", "MULTIPLE_CHOICE_EXERCISE"]:
+        return HttpResponseForbidden(_("Batch grading is not supported for this task type"))
+
+    if content.manually_evaluated:
+        return HttpResponseForbidden(_("Batch grading is not possible for manually evaluated tasks"))
+
+    try:
+        parent, single_linked = get_embedded_parent(content, instance)
+    except EmbeddedLink.DoesNotExist:
+        return HttpResponseNotFound(_("The task was not linked on the requested course instance"))
+
+    try:
+        link = EmbeddedLink.objects.get(instance=instance, embedded_page=content)
+    except EmbeddedLink.DoesNotExist:
+        return HttpResponseNotFound(_("Task is not linked to this course"))
+
+    if link.revision is None:
+        exercise = content
+    else:
+        exercise = get_single_archived(content, link.revision)
+
+    answer_model = content.get_answer_model()
+    answers = answer_model.objects.filter(
+        exercise=content,
+        instance=instance,
+    ).order_by("user", "-answer_date").all()
+    users = instance.enrolled_users.get_queryset().filter(courseenrollment__enrollment_state="ACCEPTED")
+
+    current_lang = translation.get_language()
+
+    log = []
+
+    for user in users:
+        user_answers = answers.filter(user=user)
+        if not user_answers:
+            continue
+
+        for answer in user_answers:
+            translation.activate(answer.language_code)
+            answer_form = reconstruct_answer_form(exercise.content_type, answer)
+
+            evaluation = exercise.check_answer(
+                content, user, answer.answerer_ip, answer_form, [],
+                answer, link.revision
+            )
+            if evaluation["evaluation"]:
+                evaluation["points"] = exercise.default_points
+                exercise.update_evaluation(user, evaluation, answer)
+                log.append(answer)
+                break
+        else:
+            evaluation["points"] = 0
+            exercise.update_evaluation(user, evaluation, user_answers[0])
+            log.append(user_answers[0])
+
+    translation.activate(current_lang)
+
+    t = loader.get_template("teacher_tools/answer_summary.html")
+    c = {
+        "course": course,
+        "instance": instance,
+        "content": content,
+        "parent": parent,
+        "single_linked": single_linked,
+        "answers": log,
+        "course_staff": True
+    }
+    return HttpResponse(t.render(c, request))
+
+@ensure_responsible
+def reset_completion(request, course, instance, content):
+    if content.content_type not in ["TEXTFIELD_EXERCISE", "CHECKBOX_EXERCISE", "MULTIPLE_CHOICE_EXERCISE"]:
+        return HttpResponseForbidden(_("Completion reset is not supported for this task type"))
+
+    if content.manually_evaluated:
+        return HttpResponseForbidden(_("Completion reset is not possible for manually evaluated tasks"))
+
+    try:
+        parent, single_linked = get_embedded_parent(content, instance)
+    except EmbeddedLink.DoesNotExist:
+        return HttpResponseNotFound(_("The task was not linked on the requested course instance"))
+
+    count, objects = UserTaskCompletion.objects.filter(
+        instance=instance,
+        exercise=content
+    ).delete()
+    t = loader.get_template("teacher_tools/reset_completion.html")
+    c = {
+        "course": course,
+        "instance": instance,
+        "content": content,
+        "parent": parent,
+        "single_linked": single_linked,
+        "count": count,
+        "course_staff": True
+    }
+    return HttpResponse(t.render(c, request))
 
 @ensure_responsible
 def exercise_plagiarism(request, course, instance, content):

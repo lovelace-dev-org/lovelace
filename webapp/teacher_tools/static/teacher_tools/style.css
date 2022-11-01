@@ -9,6 +9,18 @@ table.completion-table {
     height: 100vh;
 }
 
+section.content table.completion-table td {
+    text-align: center;
+}
+
+section.content table.completion-table td:first-child {
+    text-align: left;
+}
+
+section.content table.completion-table td:last-child {
+    text-align: left;
+}
+
 table.completion-table colgroup {
 }
 
@@ -93,9 +105,10 @@ col.actions-cell {
 }
 
 th.vertical-th {
-    writing-mode: vertical-lr;
+    writing-mode: vertical-rl;
     text-orientation: sideways;
-    vertical-align: bottom;
+    vertical-align: top;
+    transform: rotate(180deg);
 }
 
 th.horizontal-th {

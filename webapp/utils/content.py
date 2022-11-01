@@ -22,6 +22,15 @@ def first_title_from_content(content_text):
 
     return title, anchor
 
+def _parent_ordinal_sort(pair):
+    node = pair[0]
+    ordinals = [node.ordinal_number]
+    parent_node = node.parentnode
+    while parent_node != None:
+        ordinals.insert(0, parent_node.ordinal_number)
+        parent_node = parent_node.parentnode
+    return ordinals
+
 def get_course_instance_tasks(instance, deadline_before=None):
     """
     Goes through all the content links in the given course instance to compile
@@ -40,7 +49,12 @@ def get_course_instance_tasks(instance, deadline_before=None):
 
     task_pages = []
 
-    content_links = cm.ContentGraph.objects.filter(instance=instance, scored=True, visible=True).order_by("ordinal_number").select_related("content").defer("content__content")
+    content_links = cm.ContentGraph.objects.filter(
+        instance=instance,
+        scored=True,
+        visible=True
+    ).order_by("ordinal_number").select_related("content").defer("content__content")
+
     if deadline_before is not None:
         content_links = content_links.filter(deadline__lt=deadline_before)
 
@@ -49,6 +63,7 @@ def get_course_instance_tasks(instance, deadline_before=None):
         if page_task_links:
             task_pages.append((content_link, page_task_links))
 
+    task_pages.sort(key=_parent_ordinal_sort)
     return task_pages
 
 def get_embedded_parent(content, instance):

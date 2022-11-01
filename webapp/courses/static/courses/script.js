@@ -166,9 +166,11 @@ function update_progress_bar() {
     var correct_other = $('div.task-meta[data-eval-group=""] img.correct').length;
     var incorrect_other = $('div.task-meta[data-eval-group=""] img.incorrect').length;
     var unanswered_other = $('div.task-meta[data-eval-group=""] img.unanswered').length;
+    var submitted_other = $('div.task-meta[data-eval-group=""] img.submitted').length;
+    var ongoing_other = $('div.task-meta[data-eval-group=""] img.ongoing').length;
 
     var completed = correct_other + correct_groups;
-    var total = group_names.size + correct_other + incorrect_other + unanswered_other;
+    var total = group_names.size + correct_other + incorrect_other + unanswered_other + submitted_other + ongoing_other;
 
     completed_elem.html(completed);
     total_elem.html(total);

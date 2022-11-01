@@ -333,8 +333,6 @@ def move_content_node(request, course, instance, target_id, placement):
         active_node.save()
         return JsonResponse({"status": "ok"})
     else:
-
-
         if placement == "after":
             new_ordinal = target_node.ordinal_number + 1
         elif placement == "before":

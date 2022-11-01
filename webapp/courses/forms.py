@@ -200,7 +200,7 @@ class NewContentNodeForm(forms.ModelForm):
 
     class Meta:
         model = cm.ContentGraph
-        fields = ["visible", "publish_date", "require_enroll", "scored", "score_weight", "deadline", "late_rule", "evergreen"]
+        fields = ["visible", "require_enroll", "scored", "score_weight", "scoring_group", "deadline", "late_rule", "evergreen"]
         
     make_child = forms.BooleanField(
         label=_("Make this node a child of the selected node"),
@@ -232,7 +232,7 @@ class NodeSettingsForm(forms.ModelForm):
     
     class Meta:
         model = cm.ContentGraph
-        fields = ["visible", "publish_date", "require_enroll", "scored", "score_weight", "deadline", "late_rule", "evergreen"]
+        fields = ["visible", "require_enroll", "scored", "score_weight", "scoring_group", "deadline", "late_rule", "evergreen"]
         
     active_node = forms.IntegerField(
         widget=forms.HiddenInput,

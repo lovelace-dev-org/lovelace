@@ -75,13 +75,29 @@ def compile_student_results(user, instance, tasks_by_page, summary=False):
         user=user,
         instance=instance
     )
+
+    grouped_page_scores = {}
+    grouped_page_max = {}
+    grouped_missing = {}
+
     for context, task_links in tasks_by_page:
         page = context.content
         page_stats = check_user_completion(user, task_links, instance, completion_qs)
         missing, page_points, page_points_available = get_missing_and_points(page_stats)
-        total_points += page_points * context.score_weight
-        total_points_available += page_points_available * context.score_weight
-        total_missing += missing
+        if context.scoring_group:
+            grouped_page_scores[context.scoring_group] = max(
+                grouped_page_scores.get(context.scoring_group, 0), page_points
+            ) * context.score_weight
+            grouped_page_max[context.scoring_group] = max(
+                grouped_page_max.get(context.scoring_group, 0), page_points_available
+            ) * context.score_weight
+            grouped_missing[context.scoring_group] = max(
+                grouped_missing.get(context.scoring_group, 0), missing
+            )
+        else:
+            total_points += page_points * context.score_weight
+            total_points_available += page_points_available * context.score_weight
+            total_missing += missing
         page_results = {
             "page": page.name,
             "done_count": len(task_links) - missing,
@@ -94,4 +110,26 @@ def compile_student_results(user, instance, tasks_by_page, summary=False):
             page_results["page"] = page
             page_results["tasks_list"] = page_stats
         results_by_page.append(page_results)
+
+    for group, max_score in grouped_page_max.items():
+        total_points_available += max_score
+        total_points += grouped_page_scores[group]
+        total_missing += grouped_missing[group]
+
     return results_by_page, total_points, total_missing, total_points_available
+
+# NOTE: this REALLy should not be needed
+def reconstruct_answer_form(task_type, answer):
+    if task_type == "TEXTFIELD_EXERCISE":
+        return {
+            "answer": answer.given_answer
+        }
+    elif task_type == "MULTIPLE_CHOICE_EXERCISE":
+        return {
+            "-radio": answer.chosen_answer_id
+        }
+    elif task_type == "CHECKBOX_EXERCISE":
+        return dict((str(a.id), a.id) for a in answer.chosen_answers.all())
+
+
+
