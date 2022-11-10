@@ -193,6 +193,7 @@ def delete_section(request, course, instance, sheet, section):
                 sheet=sheet,
                 section=section
             ).delete()
+            section.delete()
             sheet.save()
             reversion.set_user(request.user)
         return HttpResponse(status=204)
@@ -322,11 +323,7 @@ def view_submissions(request, course, instance, content):
                 group = StudentGroup.objects.get(members=completion.user, instance=instance)
             except StudentGroup.DoesNotExist:
                 entry["group"] = "-"
-                entry["students"] = "{} {} ({})".format(
-                    completion.user.last_name,
-                    completion.user.first_name,
-                    completion.user.username
-                )
+                entry["students"] = display_name(completion.user)
             else:
                 entry["group"] = group.name
                 member_list = []
@@ -334,7 +331,6 @@ def view_submissions(request, course, instance, content):
                     member_list.append(display_name(member))
                     skip.append(member.id)
                 entry["students"] = "\n".join(member_list)
-                
         else:
             entry["group"] = "-"
             entry["students"] = display_name(completion.user)

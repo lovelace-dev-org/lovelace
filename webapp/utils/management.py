@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.contrib import admin
 from django.db.models import Q
-from django.db import transaction 
+from django.db import models, transaction
 from django import forms
 from django.forms import Textarea, ModelForm
 from django.utils.translation import gettext as _
@@ -248,6 +248,15 @@ def clone_terms(instance):
         )
         link.save()
     
+def clone_grades(old_instance, new_instance):
+
+    grades = GradeThreshold.filter(instance=old_instance)
+    for grade in grades:
+        grade.pk = None
+        grade.instance = new_instance
+        grade.save()
+
+
 def clone_content_graphs(old_instance, new_instance):
     """
     Creates cloned links to all content nodes in a course instance. This is
@@ -362,6 +371,10 @@ class TranslationStaffForm(ModelForm):
                         self.fields[lang_field_name] = forms.CharField(
                             label=f"{field.verbose_name} ({lang_code})",
                             required=False
+                        )
+                    if isinstance(field, models.TextField):
+                        self.fields[lang_field_name].widget = forms.Textarea(
+                            attrs={"class": "generic-textfield", "rows": 5}
                         )
                     self._translated_field_names.append(lang_field_name)
                 self.fields.pop(field_name)

@@ -79,7 +79,7 @@ post_save.connect(create_user_profile, sender=User, dispatch_uid="create_user_pr
 # - max users / group
 class StudentGroup(models.Model):
     
-    name = models.CharField(max_length=64, blank=True, null=True)
+    name = models.CharField(max_length=64)
     instance = models.ForeignKey("CourseInstance", on_delete=models.CASCADE)
     supervisor = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, related_name="supervised_group"
@@ -322,6 +322,16 @@ class CourseInstance(models.Model):
     
     
     #link the content graph nodes to this instead
+
+class GradeThreshold(models.Model):
+
+    instance = models.ForeignKey('CourseInstance', null=False, blank=False, on_delete=models.CASCADE)
+    threshold = models.PositiveSmallIntegerField(
+        verbose_name='Score threshold'
+    )
+    grade = models.CharField(
+        max_length=4,
+    )
 
 
 class ContentGraph(models.Model):

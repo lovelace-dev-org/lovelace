@@ -103,7 +103,7 @@ function process_grades(data) {
     }
     $("th#missing-th").attr("onclick", "sort_table(event, this, " + idx + ", 1, true)");
     $("th#score-th").attr("onclick", "sort_table(event, this, " + (idx + 1) + ", 1, true)");
-    $("th#grade-th").attr("onclick", "sort_table(event, this, " + (idx + 2) + ", 1, true)");
+    $("th#grade-th").attr("onclick", "sort_table(event, this, " + (idx + 2) + ", 1, false)");
     $("div.table-controls").removeClass("collapsed");
 }
 
@@ -146,10 +146,10 @@ function sort_table(event, caller, field, order, is_number) {
     });
 
     if (order == 1) {
-        $(caller).attr("onclick", "sort_table(event, this, " + field + ", -1)");
+        $(caller).attr("onclick", "sort_table(event, this, " + field + ", -1, " + is_number + ")");
     }
     else {
-        $(caller).attr("onclick", "sort_table(event, this, " + field + ", 1)");
+        $(caller).attr("onclick", "sort_table(event, this, " + field + ", 1, " + is_number + ")");
     }
 
     rows.forEach(function(row) {

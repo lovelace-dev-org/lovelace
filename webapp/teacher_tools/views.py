@@ -208,7 +208,7 @@ def student_course_completion(request, course, instance, user):
 def calculate_grades(request, course, instance):
     tasks_by_page = get_course_instance_tasks(instance)
     users = instance.enrolled_users.get_queryset()
-
+    grade_thresholds = GradeThreshold.objects.filter(instance=instance).order_by("-threshold").all()
     grades_by_id = {}
 
     for user in users:
@@ -216,10 +216,16 @@ def calculate_grades(request, course, instance):
             user, instance, tasks_by_page,
             summary=True
         )
+        met_threshold = grade_thresholds.filter(threshold__lte=total_points).first()
+        if met_threshold:
+            grade = met_threshold.grade
+        else:
+            grade = ""
+
         grades_by_id[user.id] = {
             "missing": total_missing,
             "score": f"{total_points:.2f}",
-            "grade": "n/a",
+            "grade": grade,
             "page_results": by_page
         }
 

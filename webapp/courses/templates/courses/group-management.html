@@ -23,7 +23,9 @@
     
     <table class="full-width">
         <thead>
-        
+            {% blocktrans with groups=groups|length %}
+              Number of groups: {{ groups }}
+            {% endblocktrans %}
         </thead>
         <tbody>
             {% for group in groups %}

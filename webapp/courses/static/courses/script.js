@@ -539,6 +539,15 @@ function copy_link(event, caller) {
     }, 2000);
 }
 
+function duplicate_subform(event, caller) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    let form_idx = $("input[id$='TOTAL_FORMS'").val();
+    $('.edit-form-table tbody').append("<tr>" + $('#empty_form').html().replace(/__prefix__/g, form_idx) + "</tr>");
+    $("input[id$='TOTAL_FORMS'").val(parseInt(form_idx) + 1);
+}
+
 
 $(document).ready(function() {
     $('.popup').click(function() {

@@ -129,6 +129,11 @@ urlpatterns = [
         name="clone_instance"
     ),    
     path(
+        "staff/<course:course>/<instance:instance>/edit_grading/",
+        staff_views.edit_grading,
+        name="edit_grading"
+    ),
+    path(
         "staff/<course:course>/<instance:instance>/create_content_node/",
         staff_views.create_content_node,
         name="create_content_node"

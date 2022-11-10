@@ -60,6 +60,7 @@ tags = {
     "hint":   Tag("mark", "[!hint=hint_id!]", "[!hint!]", re.compile(r"\[\!hint\=(?P<hint_id>[^!]+)\!\](?P<hint_text>.+?)\[\!hint\!\]")),
     "term":   Tag("div", '[!term=term_name!]', '[!term!]', re.compile(r"\[\!term\=(?P<term_name>[^!]+)\!\](?P<term_text>.+?)\[\!term\!\]")),
     "dl":     Tag("span", "[!dl=page_slug!]", "[!dl!]", re.compile(r"\[\!dl\=(?P<page_slug>[^!]+)\!\]")),
+    "thold":  Tag("span", "[!threshold=grade!]", "[!threshold!]", re.compile(r"\[\!threshold\=(?P<grade>[^!]+)\!\]")),
 }
 
 def parse_pre_tag(parsed_string, tag, hilite, match):
@@ -171,14 +172,26 @@ def parse_dl_tag(parsed_string, tag, page_slug, context):
     except AttributeError:
         parsed_string += ""
     except courses.models.ContentGraph.DoesNotExist:
-        parsed_string += "-- WARNING: BROKEN LINK --"
+        parsed_string += "-- WARNING: BROKEN REFERENCE --"
+    parsed_string += tag.htmlend()
+    return parsed_string
+
+def parse_threshold_tag(parsed_string, tag, grade, context):
+    parsed_string += tag.htmlbegin({"class": "grade-threshold-display"})
+    try:
+        parsed_string += str(courses.models.GradeThreshold.objects.get(
+            instance=context.get("instance", None),
+            grade=grade
+        ).threshold)
+    except courses.models.GradeThreshold.DoesNotExist:
+        parsed_string += "-- WARNING: BROKEN REFERENCE --"
     parsed_string += tag.htmlend()
     return parsed_string
 
 def parsetag(tagname, unparsed_string, context=None):
     """Parses one tag and applies it's settings. Generates the HTML."""
     tag = tags[tagname]
-    hilite = address = link_text = hint_id = hint_text = term_name = term_text = page_slug = None
+    hilite = address = link_text = hint_id = hint_text = term_name = term_text = page_slug = grade = None
     parsed_string = ""
     cursor = 0
     for m in re.finditer(tag.re, unparsed_string):
@@ -214,6 +227,11 @@ def parsetag(tagname, unparsed_string, context=None):
             page_slug = m.group("page_slug")
         except IndexError:
             pass
+
+        try:
+            grade = m.group("grade")
+        except IndexError:
+            pass
         
         if hilite:
             parsed_string = parse_pre_tag(parsed_string, tag, hilite, m)
@@ -225,6 +243,8 @@ def parsetag(tagname, unparsed_string, context=None):
             parsed_string = parse_term_tag(parsed_string, tag, term_name, term_text, context)
         elif page_slug:
             parsed_string = parse_dl_tag(parsed_string, tag, page_slug, context)
+        elif grade:
+            parsed_string = parse_threshold_tag(parsed_string, tag, grade, context)
         else:
             contents = m.group(0)[tag.lb():-tag.le()]
 
@@ -271,6 +291,7 @@ def parseblock(blockstring, context=None):
     parsed_string = parsetag("hint", parsed_string)
     parsed_string = parsetag("term", parsed_string, context)
     parsed_string = parsetag("dl", parsed_string, context)
+    parsed_string = parsetag("thold", parsed_string, context)
     parsed_string = parsed_string.replace("'", "&#x27;")
 
     return parsed_string

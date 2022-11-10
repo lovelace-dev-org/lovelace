@@ -196,6 +196,17 @@ class InstanceCloneForm(forms.ModelForm):
             _("Alternative name ({lang})"),
         )
     
+
+
+
+InstanceGradingForm = forms.inlineformset_factory(
+    cm.CourseInstance, cm.GradeThreshold,
+    fields=["grade", "threshold"],
+    extra=1,
+)
+
+
+
 class NewContentNodeForm(forms.ModelForm):
 
     class Meta:

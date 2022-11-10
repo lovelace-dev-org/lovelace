@@ -9,7 +9,7 @@ from courses.models import *
 from courses.forms import *
 from utils.access import ensure_staff, ensure_responsible_or_supervisor, ensure_responsible
 from utils.management import CourseContentAdmin, clone_instance_files,\
-    clone_terms, clone_content_graphs
+    clone_terms, clone_content_graphs, clone_grades
 from faq.utils import clone_faq_links
 from assessment.utils import clone_assessment_links
 from courses import markupparser
@@ -67,6 +67,7 @@ def clone_instance(request, course, instance):
             new_instance.refresh_from_db()
             old_instance = CourseInstance.objects.get(id=old_pk)
             clone_content_graphs(old_instance, new_instance)
+            clone_grades(old_instance, new_instance)
             clone_instance_files(new_instance)
             clone_terms(new_instance)
             clone_faq_links(new_instance)
@@ -161,6 +162,39 @@ def instance_settings(request, course, instance):
         }
         return HttpResponse(t.render(c, request))
     
+
+@ensure_responsible
+def edit_grading(request, course, instance):
+    if request.method == "POST":
+        form = InstanceGradingForm(
+            request.POST,
+            instance=instance,
+        )
+        if form.is_valid():
+            form.save()
+            return JsonResponse({"status": "ok"})
+        else:
+            errors = form.errors.as_json()
+            return JsonResponse({"errors": errors}, status=400)
+    else:
+        #grades = GradeThreshold.objects.filter(instance=instance).order_by("threshold")
+        form = InstanceGradingForm(
+            instance=instance,
+        )
+        t = loader.get_template("courses/base-multi-form.html")
+        c = {
+            "form_object": form,
+            "submit_url": reverse("courses:edit_grading", kwargs={
+                "course": course,
+                "instance": instance
+            }),
+            "html_id": "instance-grading-form",
+            "html_class": "toc-form staff-only",
+        }
+        return HttpResponse(t.render(c, request))
+
+
+
 
 @ensure_staff
 def create_content_node(request, course, instance):

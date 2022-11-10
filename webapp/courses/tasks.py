@@ -11,6 +11,7 @@ from itertools import chain as iterchain
 
 from django.db import IntegrityError, transaction
 from django.utils import translation
+from django.utils.translation import gettext as _
 from django.conf import settings as django_settings
 from django.contrib.auth.models import User
 

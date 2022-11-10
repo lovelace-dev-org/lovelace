@@ -57,6 +57,12 @@
                 onclick="toc.fetch_form(event, this);"
                 data-url="{% url 'courses:clone_instance' course instance %}">
         </button>
+        <button type="button"
+                class="staff-base-button grades-button"
+                title="{% trans 'Edit course grading for this instance' %}"
+                onclick="toc.fetch_form(event, this);"
+                data-url="{% url 'courses:edit_grading' course instance %}">
+        </button>
     </div>
   </div>
 {% endif %}
