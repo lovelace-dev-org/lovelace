@@ -224,6 +224,9 @@ def update_completion(exercise, instance, user, evaluation, answer_date):
     else:
         quotient = 0
 
+    if quotient > 1:
+        raise ValueError("Quotient cannot be higher than 1")
+
     try:
         completion = cm.UserTaskCompletion.objects.get(
             exercise=exercise,

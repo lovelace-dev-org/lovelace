@@ -8,7 +8,7 @@ from django.utils.translation import gettext as _
 from reversion.models import Version
 from modeltranslation.fields import TranslationField
 from modeltranslation.translator import translator
-from courses.models import Course, CourseInstance, ContentPage, ContentGraph,\
+from courses.models import Course, CourseInstance, ContentPage, ContentGraph, GradeThreshold,\
     InstanceIncludeFile, Term, TermToInstanceLink, InstanceIncludeFileToInstanceLink
 from courses.widgets import ContentPreviewWidget
 from utils.access import determine_access, determine_media_access
@@ -250,7 +250,7 @@ def clone_terms(instance):
     
 def clone_grades(old_instance, new_instance):
 
-    grades = GradeThreshold.filter(instance=old_instance)
+    grades = GradeThreshold.objects.filter(instance=old_instance)
     for grade in grades:
         grade.pk = None
         grade.instance = new_instance

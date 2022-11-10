@@ -6,7 +6,7 @@ from courses.tasks import generate_results
 
 class Command(BaseCommand):
     help = "Updates stored file upload exercise evaluations to new format"
-    
+
     def handle(self, *args, **options):
         paginator = Paginator(Evaluation.objects.all(), 200)
         counter = 0
@@ -24,7 +24,7 @@ class Command(BaseCommand):
                     ev.test_results = json.dumps(res)
                     ev.save()
                     counter += 1
-        
+
         print(f"Updated {counter} evaluation(s)")
 
 
