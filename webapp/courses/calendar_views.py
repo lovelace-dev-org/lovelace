@@ -7,7 +7,7 @@ from courses.forms import CalendarConfigForm, CalendarSchedulingForm, MessageFor
 from courses.models import *
 from utils.access import ensure_staff
 from utils.management import CourseContentAdmin
-from utils.notify import send_email
+from utils.notify import send_email, send_bcc_email
 
 @ensure_staff
 def calendar_scheduling(request, course, instance, calendar):
@@ -113,8 +113,9 @@ def message_reservers(request, course, instance, calendar):
                 for reservation in cal_date.calendarreservation_set.get_queryset().select_related(
                     "user"
                 ):
-                    reservers.add(reservation.user)
-            send_email(
+                    reservers.add(reservation.user.email)
+            send_bcc_email(
+                instance,
                 reservers,
                 request.user,
                 form.cleaned_data["title"],
