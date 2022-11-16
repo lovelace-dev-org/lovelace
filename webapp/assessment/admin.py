@@ -6,7 +6,7 @@ from assessment.models import *
 
 # Register your models here.
 reversion.register(AssessmentSheet, follow=[
-    "assessmentbullet_set"
+    "assessmentbullet_set",
     "assessmentsection_set"
 ])
 reversion.register(AssessmentBullet)
