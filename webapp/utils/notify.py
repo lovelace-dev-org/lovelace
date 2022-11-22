@@ -90,7 +90,7 @@ def send_email(recipients, sender, title, body):
             title,
             body,
             sender,
-            [recipient],
+            [(display_name(recipient), recipient.email)],
         ))
     send_mass_mail(
         messages,

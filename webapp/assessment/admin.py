@@ -10,6 +10,7 @@ reversion.register(AssessmentSheet, follow=[
     "assessmentsection_set"
 ])
 reversion.register(AssessmentBullet)
+reversion.register(AssessmentSection)
 
 class AssessmentBulletInline(TranslationTabularInline):
     model = AssessmentBullet

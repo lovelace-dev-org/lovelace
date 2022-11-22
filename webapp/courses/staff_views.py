@@ -528,7 +528,7 @@ def send_message(request, course, instance, user):
         if enrolled_students.filter(id=user.id).exists():
             if form.is_valid():
                 send_email(
-                    [user],
+                    [user.email],
                     request.user,
                     form.cleaned_data["title"],
                     form.cleaned_data["content"],
