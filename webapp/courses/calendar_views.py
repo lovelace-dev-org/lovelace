@@ -5,6 +5,7 @@ from django.urls import reverse
 from django.utils.translation import gettext as _
 from courses.forms import CalendarConfigForm, CalendarSchedulingForm, MessageForm
 from courses.models import *
+import courses.message_views as messaging
 from utils.access import ensure_staff
 from utils.management import CourseContentAdmin
 from utils.notify import send_email, send_bcc_email
@@ -104,43 +105,21 @@ def calendar_config(request, course, instance, calendar):
     
 @ensure_staff
 def message_reservers(request, course, instance, calendar):
-    if request.method == "POST":
-        form = MessageForm(request.POST)
-        if form.is_valid():
-            cal_dates = calendar.calendardate_set.get_queryset()
-            reservers = set()
-            for cal_date in cal_dates:
-                for reservation in cal_date.calendarreservation_set.get_queryset().select_related(
-                    "user"
-                ):
-                    reservers.add(reservation.user.email)
-            send_bcc_email(
-                instance,
-                reservers,
-                request.user,
-                form.cleaned_data["title"],
-                form.cleaned_data["content"],
-            )
-            return JsonResponse({"status": "ok"})            
-        else:
-            errors = form.errors.as_json()
-            return JsonResponse({"errors": errors}, status=400)
-    else:
-        form_object = MessageForm()
-        form_t = loader.get_template("courses/base-edit-form.html")
-        form_c = {
-            "form_object": form_object,
-            "submit_url": request.path,
-            "html_class": "message-form",
-            "disclaimer": _("Send message to all reservers")
-        }
-        t = loader.get_template("courses/direct-message-panel.html")
-        c = {
-            "form": form_t.render(form_c, request)
-        }
-        return HttpResponse(t.render(c, request))
-        
-    
+    cal_dates = calendar.calendardate_set.get_queryset()
+    reservers = set()
+    for cal_date in cal_dates:
+        for reservation in cal_date.calendarreservation_set.get_queryset().select_related(
+            "user"
+        ):
+            reservers.add(reservation.user)
+
+    return messaging.process_message_form(
+        request, course, instance,
+        recipients=reservers,
+        form_label=_("Send message to all reservers"),
+        use_bcc=True
+    )
+
     
 # TODO: calendars should be tied to instances
 def calendar_reservation(request, calendar, event):

@@ -52,6 +52,7 @@ def serializable_assessment(user, sheet, bullets_by_section, cleaned_data):
         "total_score": 0,
         "max_total": 0,
         "correct": cleaned_data["correct"],
+        "complete": cleaned_data["complete"],
     }
         
     for name, section in bullets_by_section.items():

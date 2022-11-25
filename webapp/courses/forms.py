@@ -10,7 +10,7 @@ from django.utils.text import slugify
 from django.utils.translation import gettext as _
 from modeltranslation.forms import TranslationModelForm
 from utils.formatters import display_name
-from utils.management import add_translated_charfields
+from utils.management import add_translated_charfields, TranslationStaffForm
 import courses.models as cm
 
 class TextfieldExerciseForm(forms.Form):
@@ -312,7 +312,6 @@ class GroupInviteForm(forms.Form):
             except KeyError:
                 break
             except (cm.User.DoesNotExist, AssertionError) as e:
-                print(e)
                 self.add_error(field_name, _("Cannot invite this user"))
             else:
                 self.invited_users.append(user)
@@ -394,15 +393,65 @@ class CalendarSchedulingForm(forms.Form):
             _("Default name ({lang}):"),
             _("Alternative name ({lang}):")
         )
-
     
-class MessageForm(forms.Form):
-    title = forms.CharField(
-        label=_("Message title"),
-        required=True,
+
+class MessageForm(TranslationStaffForm):
+
+    class Meta:
+        model = cm.SavedMessage
+        fields = ["title", "content", "handle"]
+
+    confirm_save = forms.BooleanField(
+        label=_("Save this message"),
+        initial=False,
+        required=False
     )
-    content = forms.CharField(
-        label=_("Message content"),
-        required=True,
-        widget=forms.Textarea(attrs={"class": "generic-textfield", "rows": 5})
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if cleaned_data["confirm_save"]:
+            if not cleaned_data["handle"]:
+                self.add_error("handle", _("Cannot save without a name"))
+
+            if self._saved_msgs.filter(
+                handle=cleaned_data["handle"]
+            ).exclude(id=cleaned_data["saved_msgs"]).exists():
+                self.add_error("handle", _("Can't overwrite a saved message unless it was loaded"))
+
+    def __init__(self, *args, **kwargs):
+        load_url = kwargs.pop("load_url")
+        self._saved_msgs = kwargs.pop("saved")
+        super().__init__(*args, **kwargs)
+        self.fields["handle"].required = False
+        self.fields["saved_msgs"] = forms.ChoiceField(
+            widget=forms.Select(attrs={
+                "data-url": load_url,
+            }),
+            label=_("Load message"),
+            choices=[(0, _("-- no message --")), ] + [(msg.id, msg.handle) for msg in self._saved_msgs],
+            required=False
+        )
+        ordinal_map = {
+            "saved_msgs": 0,
+            "confirm_save": 10,
+            "handle": 20
+        }
+        field_items = list(self.fields.items())
+
+        def ordinal_sort(field_tuple):
+            return ordinal_map.get(field_tuple[0], 5)
+
+        field_items.sort(key=ordinal_sort)
+        self.fields = dict(field_items)
+
+
+class CacheRegenForm(forms.Form):
+
+    regen_archived = forms.BooleanField(
+        label=_("Regenerate archived content. This can break old course instances."),
+        initial=False,
+        required=False
     )
+
+
+

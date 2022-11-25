@@ -401,7 +401,8 @@ def submission_assessment(request, course, instance, exercise, user):
                     "max": sheet_link.calculate_max_score(),
                     "feedback": json.dumps(assessment),
                 },
-                answer_object
+                answer_object,
+                complete=form.cleaned_data.get("complete", False)
             )
             return JsonResponse({"status": "ok"})
         else:

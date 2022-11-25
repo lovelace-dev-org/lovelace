@@ -26,7 +26,7 @@ from courses.models import *
 from courses.forms import MessageForm
 from teacher_tools.utils import *
 from teacher_tools.models import *
-from teacher_tools.forms import MossnetForm, ReminderForm
+from teacher_tools.forms import MossnetForm, ReminderForm, BatchGradingForm
 
 
 def download_answers(request, course, instance, content):
@@ -289,27 +289,6 @@ def course_completion(request, course, instance):
     return HttpResponse(t.render(c, request))
 
 @ensure_responsible
-def mass_email(request, course, instance):
-    if request.method == "POST":
-        form = MessageForm(request.POST)
-        if form.is_valid():
-            title = form.cleaned_data.get("title")
-            content = form.cleaned_data.get("content")
-            recipients = instance.enrolled_users.get_queryset().values_list("email", flat=True)
-            send_bcc_email(instance, recipients, request.user, title, content)
-            return redirect(request.path)
-    else:
-        form = MessageForm()
-        t = loader.get_template("teacher_tools/mass_email.html")
-        c = {
-            "course": course,
-            "instance": instance,
-            "form": form,
-            "course_staff": True,
-        }
-        return HttpResponse(t.render(c, request))
-
-@ensure_responsible
 def manage_reminders(request, course, instance):
     saved_template = ReminderTemplate.objects.filter(instance=instance).first()
     if request.method == "POST":
@@ -424,68 +403,90 @@ def batch_grade_task(request, course, instance, content):
     if content.manually_evaluated:
         return HttpResponseForbidden(_("Batch grading is not possible for manually evaluated tasks"))
 
-    try:
-        parent, single_linked = get_embedded_parent(content, instance)
-    except EmbeddedLink.DoesNotExist:
-        return HttpResponseNotFound(_("The task was not linked on the requested course instance"))
+    if request.method == "POST":
+        form = BatchGradingForm(request.POST)
+        if not form.is_valid():
+            errors = form.errors.as_json()
+            return JsonResponse({"errors": errors}, status=400)
 
-    try:
-        link = EmbeddedLink.objects.get(instance=instance, embedded_page=content)
-    except EmbeddedLink.DoesNotExist:
-        return HttpResponseNotFound(_("Task is not linked to this course"))
+        try:
+            parent, single_linked = get_embedded_parent(content, instance)
+        except EmbeddedLink.DoesNotExist:
+            return HttpResponseNotFound(_("The task was not linked on the requested course instance"))
 
-    if link.revision is None:
-        exercise = content
-    else:
-        exercise = get_single_archived(content, link.revision)
+        try:
+            link = EmbeddedLink.objects.get(instance=instance, embedded_page=content)
+        except EmbeddedLink.DoesNotExist:
+            return HttpResponseNotFound(_("Task is not linked to this course"))
 
-    answer_model = content.get_answer_model()
-    answers = answer_model.objects.filter(
-        exercise=content,
-        instance=instance,
-    ).order_by("user", "-answer_date").all()
-    users = instance.enrolled_users.get_queryset().filter(courseenrollment__enrollment_state="ACCEPTED")
-
-    current_lang = translation.get_language()
-
-    log = []
-
-    for user in users:
-        user_answers = answers.filter(user=user)
-        if not user_answers:
-            continue
-
-        for answer in user_answers:
-            translation.activate(answer.language_code)
-            answer_form = reconstruct_answer_form(exercise.content_type, answer)
-
-            evaluation = exercise.check_answer(
-                content, user, answer.answerer_ip, answer_form, [],
-                answer, link.revision
-            )
-            if evaluation["evaluation"]:
-                evaluation["points"] = exercise.default_points
-                exercise.update_evaluation(user, evaluation, answer)
-                log.append(answer)
-                break
+        if link.revision is None:
+            exercise = content
         else:
-            evaluation["points"] = 0
-            exercise.update_evaluation(user, evaluation, user_answers[0])
-            log.append(user_answers[0])
+            exercise = get_single_archived(content, link.revision)
 
-    translation.activate(current_lang)
+        answer_model = content.get_answer_model()
+        answers = answer_model.objects.filter(
+            exercise=content,
+            instance=instance,
+        ).order_by("user", "-answer_date").all()
+        users = instance.enrolled_users.get_queryset().filter(courseenrollment__enrollment_state="ACCEPTED")
 
-    t = loader.get_template("teacher_tools/answer_summary.html")
-    c = {
-        "course": course,
-        "instance": instance,
-        "content": content,
-        "parent": parent,
-        "single_linked": single_linked,
-        "answers": log,
-        "course_staff": True
-    }
-    return HttpResponse(t.render(c, request))
+        current_lang = translation.get_language()
+
+        log = []
+
+        for user in users:
+            user_answers = answers.filter(user=user)
+            if form.cleaned_data["mode"] == "latest":
+                user_answers = [user_answers.first()]
+
+            if not user_answers:
+                continue
+
+            for answer in user_answers:
+                translation.activate(answer.language_code)
+                answer_form = reconstruct_answer_form(exercise.content_type, answer)
+
+                evaluation = exercise.check_answer(
+                    content, user, answer.answerer_ip, answer_form, [],
+                    answer, link.revision
+                )
+                if evaluation["evaluation"]:
+                    evaluation["points"] = exercise.default_points
+                    exercise.update_evaluation(user, evaluation, answer)
+                    log.append(answer)
+                    break
+            else:
+                evaluation["points"] = 0
+                exercise.update_evaluation(user, evaluation, user_answers[0])
+                log.append(user_answers[0])
+
+        translation.activate(current_lang)
+
+        t = loader.get_template("teacher_tools/answer_summary.html")
+        c = {
+            "course": course,
+            "instance": instance,
+            "content": content,
+            "parent": parent,
+            "single_linked": single_linked,
+            "answers": log,
+            "course_staff": True
+        }
+        return HttpResponse(t.render(c, request))
+    else:
+        form = BatchGradingForm()
+        form_t = loader.get_template("courses/base-edit-form.html")
+        form_c = {
+            "form_object": form,
+            "submit_url": request.path,
+            "html_class": "side-panel-form",
+            "disclaimer": _(f"Perform batch grading for {content.name}"),
+            "submit_label": _("Execute"),
+        }
+        return HttpResponse(form_t.render(form_c, request))
+
+
 
 @ensure_responsible
 def reset_completion(request, course, instance, content):

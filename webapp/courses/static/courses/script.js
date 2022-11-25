@@ -340,8 +340,11 @@ function submit_ajax_form(form, success_extra_cb) {
         contentType: false, 
         dataType: 'json', 
         success: function(data, status, jqxhr) {
-            let okspan = "<span class='ajax-form-success'>OK</span>";
+            let okspan = $("<span class='ajax-form-success'>OK</span>");
             form.find("input[type='submit']").after(okspan);
+            setTimeout(function() {
+                okspan.remove();
+            }, 2000);
             success_extra_cb(data);
         },
         error: function(jqxhr, status, type) {
@@ -391,6 +394,24 @@ function submit_message(event) {
     
     let form = $(this);
     submit_ajax_form(form, function() {});    
+}
+
+function load_saved_fields(event) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    let select = $(this);
+
+    $.ajax({
+        type: "GET",
+        url: select.attr("data-url").replace("0", select.val()),
+        success: function(data, status, jqxhr) {
+            let form = select.closest("form");
+            for (const field_key in data) {
+                $("form #id_" + field_key).val(data[field_key]);
+            }
+        }
+    });
 }
 
 function submit_enrollment(event) {

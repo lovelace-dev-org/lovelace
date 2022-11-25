@@ -59,3 +59,15 @@ class ReminderForm(forms.ModelForm):
         required=False
     )
 
+class BatchGradingForm(forms.Form):
+
+    mode = forms.ChoiceField(
+        widget=forms.RadioSelect,
+        label=_("Grading mode"),
+        required=True,
+        choices=(
+            ("latest", _("Only grade latest answer")),
+            ("all", _("Grade all answers")),
+        ),
+        initial="latest"
+    )

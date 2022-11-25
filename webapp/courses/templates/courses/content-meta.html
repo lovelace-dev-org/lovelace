@@ -38,6 +38,15 @@
         <ul>
           <li><div><a href="{% url 'stats:single_exercise' content %}">{% trans 'Statistics' %}</a></div></li>
           <li><div><a href="{% url 'feedback:statistics' instance content %}">{% trans 'Feedback' %}</a></div></li>
+          <li><div>
+            <a id="{{ content.slug }}-regen-panel-link"
+               class="regen-panel-link"
+               href="{% url 'courses:regen_page_cache' course instance content %}"
+               title="{% trans 'Open cache regen panel' %}"
+               onclick="show_panel(event, this, 'regen-panel', 'message-panel');"
+               data-querystring=""
+            >{% trans 'Regenerate cache' %}</a>
+          </div></li>
           {% with type=content.get_human_readable_type %}
             {% if type == "file upload exercise" %}
               <li><div>

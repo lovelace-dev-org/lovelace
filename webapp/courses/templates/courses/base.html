@@ -138,9 +138,13 @@
                     </div>    
                 {% endif %}
                 <div class="user-tools">
-                  <a href="{% url 'teacher_tools:mass_email' course instance %}">
-                    {% trans 'Mass email' %}
-                  </a>
+                  <a id="{{ content.slug }}-email-panel-link"
+                     class="email-panel-link"
+                     href="{% url 'courses:mass_email' course instance %}"
+                     title="{% trans 'Open the mass email panel' %}"
+                     onclick="show_panel(event, this, 'email-panel', 'message-panel');"
+                     data-querystring=""
+                  >{% trans 'Mass email' %}</a>
                 </div>
                 <div class="user-tools">
                   <a href="{% url 'teacher_tools:completion' course instance %}">

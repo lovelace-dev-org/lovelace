@@ -78,6 +78,10 @@ class AssessmentForm(forms.Form):
         label=_("Mark this assessment as correct"),
         required=False
     )
+    complete = forms.BooleanField(
+        label=_("This assessment is complete"),
+        required=False
+    )
     
     def points_widget(self, bullet):
         return self["bullet-{}-points".format(bullet.id)]
@@ -93,6 +97,8 @@ class AssessmentForm(forms.Form):
             except ValueError:
                 if field_name == "correct":
                     return self._assessment.get("correct", False)
+                if field_name == "complete":
+                    return self._assessment.get("complete", False)
                 return default_value
                 
             try:

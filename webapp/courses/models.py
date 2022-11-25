@@ -99,6 +99,53 @@ class GroupInvitation(models.Model):
 # TODO: Abstract the exercise model to allow "an answering entity" to give the answer, be it a group or a student
 
 
+class SavedMessage(models.Model):
+
+    class Meta:
+        unique_together = ("course", "handle")
+
+    course = models.ForeignKey('Course', null=True, on_delete=models.SET_NULL)
+    author = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
+    handle = models.CharField(
+        max_length=127,
+        verbose_name="Save as"
+    )
+    title = models.CharField(max_length=255, blank=True, default="") # Translate
+    content = models.TextField(blank=True, default="") # Translate
+
+    def serialize_translated(self):
+        data = {
+            "handle": self.handle,
+        }
+        for lang_code, lang_name in settings.LANGUAGES:
+            data[f"title_{lang_code}"] = getattr(self, f"title_{lang_code}", "")
+            data[f"content_{lang_code}"] = getattr(self, f"content_{lang_code}", "")
+        return data
+
+    def _join_translated_fields(self, field, separator):
+        languages = sorted(
+            settings.LANGUAGES,
+            key=lambda x: x[0] == settings.MODELTRANSLATION_DEFAULT_LANGUAGE,
+            reverse=True
+        )
+        values = []
+        for lang_code, __ in languages:
+            content = getattr(self, f"{field}_{lang_code}", "")
+            if content:
+                values.append(content)
+        return separator.join(values)
+
+    def render_title(self, lang_code=None):
+        if lang_code is None:
+            return self._join_translated_fields("title", " / ")
+        else:
+            return getattr(self, f"title_{lang_code}", "")
+
+    def render_content(self, lang_code=None):
+        if lang_code is None:
+            return self._join_translated_fields("content", "\n\n--\n\n")
+        else:
+            return getattr(self, f"title_{lang_code}", "")
 
 
 #@reversion.register()
@@ -1059,7 +1106,7 @@ class ContentPage(models.Model):
         
         return evaluation_object
 
-    def update_evaluation(self, user, evaluation, answer_object):
+    def update_evaluation(self, user, evaluation, answer_object, complete=True):
         from utils.exercise import update_completion
         from utils.users import get_group_members
 
@@ -1070,10 +1117,11 @@ class ContentPage(models.Model):
         answer_object.evaluation.feedback = evaluation.get("feedback", "")
         answer_object.evaluation.evaluator = evaluation.get("evaluator", None)
         answer_object.evaluation.save()
-        update_completion(self, instance, user, evaluation, answer_object.answer_date)
-        if self.group_submission:
-            for member in get_group_members(user, instance):
-                update_completion(self, instance, member, evaluation, answer_object.answer_date)
+        if complete:
+            update_completion(self, instance, user, evaluation, answer_object.answer_date)
+            if self.group_submission:
+                for member in get_group_members(user, instance):
+                    update_completion(self, instance, member, evaluation, answer_object.answer_date)
     
     def get_user_evaluation(self, user, instance, check_group=True):
         try:

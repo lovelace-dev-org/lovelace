@@ -92,9 +92,13 @@
                   </a>
                 </div></li>
                 <li><div>
-                  <a href="{{ meta.batch_url }}">
-                    {% trans 'Batch grading' %}
-                  </a>
+                  <a id="{{ content.slug }}-batch-panel-link"
+                     class="batch-panel-link"
+                     href="{{ meta.batch_url }}"
+                     title="{% trans 'Open the batch grading panel' %}"
+                     onclick="show_panel(event, this, 'batch-panel', '{{ content.slug }}-panel');"
+                     data-querystring=""
+                  >{% trans 'Batch grading' %}</a>
                 </div></li>
               {% endif %}
 
@@ -109,7 +113,7 @@
                 </div></li>
                 {% if revision is None %}
                     <li><div>
-                        <a id="{{ content.slug }}-faq-panel-link"
+                        <a id="{{ content.slug }}-assessment-panel-link"
                            class="assessment-panel-link"
                            href="{% url 'assessment:manage_assessment' course instance content %}"
                            title="{% trans 'Open the assessment edit panel' %}"

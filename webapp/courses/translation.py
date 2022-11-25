@@ -1,6 +1,6 @@
 from modeltranslation.translator import register, TranslationOptions
 
-from courses.models import Course, CourseInstance,\
+from courses.models import SavedMessage, Course, CourseInstance,\
     \
     CourseMedia, File, Image, VideoLink, CalendarDate,\
     Term, TermTab, TermLink, TermAlias, TermTag,\
@@ -16,6 +16,16 @@ from courses.models import Course, CourseInstance,\
     CheckboxExerciseAnswer, CodeInputExerciseAnswer,\
     CodeReplaceExerciseAnswer, RepeatedTemplateExerciseTemplate,\
     RepeatedTemplateExerciseBackendCommand
+
+
+## Generic
+
+@register(SavedMessage)
+class SavedMessageTranslationOptions(TranslationOptions):
+    fields = ("title", "content", )
+
+
+
 
 
 ## Course related

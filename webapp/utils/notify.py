@@ -102,7 +102,7 @@ def send_bcc_email(instance, recipients, sender, title, body):
     connection = get_connection()
     mail = EmailMessage(
         title, body, mailfrom,
-        bcc=recipients,
+        bcc=[recipient.email for recipient in recipients],
         cc=[sender.email],
         reply_to=[instance.email],
         connection=connection

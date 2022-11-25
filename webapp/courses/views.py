@@ -928,6 +928,9 @@ def show_answers(request, user, course, instance, exercise):
     except EmbeddedLink.DoesNotExist:
         return HttpResponseNotFound(_("The task was not linked on the requested course instance"))
 
+    completion = UserTaskCompletion.objects.filter(
+        user=user, instance=instance, exercise=exercise
+    ).first()
     content_type = exercise.content_type
     question = exercise.question
     choices = exercise.get_choices(exercise)
@@ -998,6 +1001,7 @@ def show_answers(request, user, course, instance, exercise):
         "anchor": anchor,
         "answers_url": request.build_absolute_uri(),
         "answers": answers,
+        "completion": completion,
         "student": user,
         "username": user.username,
         "course_staff": is_course_staff(request.user, instance),

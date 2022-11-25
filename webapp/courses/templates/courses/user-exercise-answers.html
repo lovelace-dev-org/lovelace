@@ -105,16 +105,22 @@
       <td class="answer">
       </td>
     {% endif %}
-    <td class="evaluation {% if answer.evaluation.correct == True %}correct{% elif answer.evaluation.correct == False %}incorrect{% else %}unknown{% endif %}">
-      {% if answer.evaluation.correct == True %}
-        <span title="{% trans 'Correct' %}">✔</span>
-      {% elif answer.evaluation.correct == False %}
-        <span title="{% trans 'Incorrect' %}">✘</span>
-      {% else %}
-        <span title="{% trans 'Unknown' %}">?</span>
-      {% endif %}
-      {{ answer.evaluation.points }} / {{ answer.evaluation.max_points }}
-    </td>
+    {% if completion.state == "correct" or completion.state == "incorrect" %}
+      <td class="evaluation {% if answer.evaluation.correct == True %}correct{% elif answer.evaluation.correct == False %}incorrect{% else %}unknown{% endif %}">
+        {% if answer.evaluation.correct == True %}
+          <span title="{% trans 'Correct' %}">✔</span>
+        {% elif answer.evaluation.correct == False %}
+          <span title="{% trans 'Incorrect' %}">✘</span>
+        {% else %}
+          <span title="{% trans 'Unknown' %}">?</span>
+        {% endif %}
+        {{ answer.evaluation.points }} / {{ answer.evaluation.max_points }}
+      </td>
+    {% else %}
+      <td class="evaluation unknown">
+      <span title="{% trans 'Unknown' %}">?</span>
+      {{ 0 }} / {{ answer.evaluation.max_points }}
+    {% endif %}
     <td class="actions-cell">
       <a class="button-style link-button" 
          href="#{{ answer.id }}"
@@ -124,7 +130,7 @@
          rel="noopener noreferrer" 
          href="mailto:{{ instance_email }}?subject={{ instance_name|urlencode }}%20-%20{{ exercise_title|urlencode }}{% autoescape off %}&body={% endautoescape %}{{ answers_url|urlencode }}%23{{ answer.id }}" 
          title="{% trans 'Send course staff a question about this answer' %}"></a>
-      {% if answer.evaluation.feedback %}
+      {% if completion.state == "correct" or completion.state == "incorrect" and answer.evaluation.feedback %}
         <a class="button-style report-button"
            href="{% url 'assessment:view_assessment' student course instance exercise answer %}"
            onclick="show_results(event, this, 'assessment-{{ answer.id }}');"

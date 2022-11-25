@@ -1,7 +1,7 @@
 from django.conf.urls import include
 from django.urls import path
 
-from . import views, staff_views, user_views, calendar_views
+from . import views, staff_views, user_views, calendar_views, message_views
 
 app_name = "courses"
 
@@ -155,11 +155,34 @@ urlpatterns = [
     ),
     path(
         "staff/<course:course>/<instance:instance>/<user:user>/",
-        staff_views.send_message,
+        message_views.direct_message,
         name="send_message"
     ),
-    
-    
+    path(
+        "staff/<course:course>/<instance:instance>/<content:content>/regen_cache",
+        staff_views.regen_page_cache,
+        name="regen_page_cache"
+    ),
+    path(
+        "staff/<course:course>/<instance:instance>/regen_cache",
+        staff_views.regen_instance_cache,
+        name="regen_instance_cache"
+    ),
+
+
+
+    # Staff URLs for messages
+    path(
+        "staff/<course:course>/<instance:instance>/mass_email/",
+        message_views.mass_email,
+        name="mass_email"
+    ),
+    path(
+        "staff/<course:course>/<instance:instance>/load_message/<int:msgid>/",
+        message_views.load_message,
+        name="load_message"
+    ),
+
     # Help pages
     path("help/", views.help_list, name="help_list",),
     path("help/markup/", views.markup_help, name="markup_help",),

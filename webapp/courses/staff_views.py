@@ -194,6 +194,63 @@ def edit_grading(request, course, instance):
         return HttpResponse(t.render(c, request))
 
 
+@ensure_responsible
+def regen_instance_cache(request, course, instance):
+    if request.method == "POST":
+        form = CacheRegenForm(request.POST)
+        if form.is_valid():
+            nodes = ContentGraph.objects.filter(instance=instance)
+            if not form.cleaned_data["regen_archived"]:
+                nodes = nodes.filter(revision=None)
+            for node in nodes:
+                node.content.regenerate_cache(instance)
+            return JsonResponse({"status": "ok"})
+        else:
+            errors = form.errors.as_json()
+            return JsonResponse({"errors": errors}, status=400)
+    else:
+        form = CacheRegenForm()
+        form_t = loader.get_template("courses/base-edit-form.html")
+        form_c = {
+            "form_object": form,
+            "submit_url": request.path,
+            "html_id": "instance-regenerate-form",
+            "html_class": "toc-form staff-only",
+            "disclaimer": _(f"Regenerate cache for all pages in the course. Please use sparingly."),
+            "submit_label": _("Execute"),
+        }
+        return HttpResponse(form_t.render(form_c, request))
+
+@ensure_responsible
+def regen_page_cache(request, course, instance, content):
+    if request.method == "POST":
+        form = CacheRegenForm(request.POST)
+        if form.is_valid():
+            node = ContentGraph.objects.get(
+                instance=instance,
+                content=content
+            )
+            if node.revision is None or form.cleaned_data["regen_archived"]:
+                content.regenerate_cache(instance)
+            return redirect(reverse("courses:content", kwargs={
+                "course": course,
+                "instance": instance,
+                "content": content
+            }))
+        else:
+            errors = form.errors.as_json()
+            return JsonResponse({"errors": errors}, status=400)
+    else:
+        form = CacheRegenForm()
+        form_t = loader.get_template("courses/base-edit-form.html")
+        form_c = {
+            "form_object": form,
+            "submit_url": request.path,
+            "html_class": "side-panel-form",
+            "disclaimer": _(f"Regenerate cache for {content.name}"),
+            "submit_label": _("Execute"),
+        }
+        return HttpResponse(form_t.render(form_c, request))
 
 
 @ensure_staff
@@ -389,7 +446,9 @@ def move_content_node(request, course, instance, target_id, placement):
         active_node.save()
         
         return JsonResponse({"status": "ok"})
-        
+
+
+
     
 # ^
 # |
@@ -464,10 +523,10 @@ def add_member(request, course, instance, group):
         if form.is_valid():
             user = enrolled_students.get(id=form.cleaned_data["student"])
             group.members.add(user)            
-            return redirect(reverse("courses:group_management", kwargs={
+            return JsonResponse({"redirect": reverse("courses:group_management", kwargs={
                 "course": course,
                 "instance": instance
-            }))
+            })})
         else:
             errors = form.errors.as_json()
             return JsonResponse({"errors": errors}, status=400)
@@ -520,39 +579,6 @@ def rename_group(request, course, instance, group):
 # |
 # v
 
-@ensure_staff
-def send_message(request, course, instance, user):
-    if request.method == "POST":
-        form = MessageForm(request.POST)
-        enrolled_students = instance.enrolled_users.get_queryset()
-        if enrolled_students.filter(id=user.id).exists():
-            if form.is_valid():
-                send_email(
-                    [user.email],
-                    request.user,
-                    form.cleaned_data["title"],
-                    form.cleaned_data["content"],
-                )
-                return JsonResponse({"status": "ok"})
-            else:
-                errors = form.errors.as_json()
-                return JsonResponse({"errors": errors}, status=400)
-        else:
-            return HttpResponseNotAllowed()
-    else:
-        form_object = MessageForm()
-        form_t = loader.get_template("courses/base-edit-form.html")
-        form_c = {
-            "form_object": form_object,
-            "submit_url": request.path,
-            "html_class": "message-form",
-            "disclaimer": _("Send a message to {user}").format(user=display_name(user))
-        }
-        t = loader.get_template("courses/direct-message-panel.html")
-        c = {
-            "form": form_t.render(form_c, request)
-        }
-        return HttpResponse(t.render(c, request))
 
 def content_preview(request, field_name):
     if not request.user.is_staff and not request.user.is_superuser:

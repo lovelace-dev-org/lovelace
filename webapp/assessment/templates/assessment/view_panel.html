@@ -1,25 +1,44 @@
-{% load static %}
 {% load i18n %}
+{% load static %}
 
 <div class="assessment-panel">
     <h2 class="assessment-form-title">{{ sheet.title }}</h2>
 
-    <div class="assessment-sheet">
-        <ul class="assessment-sheet">
-            {% for name, section in bullets_by_section.items %}
-                <li class="assessment-section-header">
-                    {{ name }} ({{ section.total_points }})
-                </li>
-                <ul class="assessment-section">
-                    {% for bullet in section.bullets %}
-                        <li class="assessment-bullet">
-                            <span title="{{ bullet.tooltip }}">
-                                {{ bullet.title }} ({{ bullet.point_value }})
-                            </span>
-                        </li>
-                    {% endfor%}
-                </ul>
-            {% endfor %}
-        </ul>
+    <div class="">
+        <table class="assessment-side-table">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th></th>
+                    <th>points</th>
+                    <th>details</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for section, meta in bullets_by_section.items %}
+                    <tr class="assessment-section">
+                        <td colspan="2">{{ section }}</td>
+                        <td class="center-align">{{ meta.total_points }}</td>
+                        <td></td>
+                    </tr>
+                    {% for bullet in meta.bullets %}
+                        <tr class="assessment-bullet">
+                            <td style="{width: 20px}"><img src="{% static 'courses/debug-16.png' %}"></td>
+                            <td>
+                                <span class="bullet-title" title="{{ bullet.tooltip }}">
+                                    {{ bullet.title }}
+                                </span>
+                            </td>
+                            <td class="center-align">
+                                {{ bullet.point_value }}
+                            </td>
+                            <td>
+                                {{ bullet.tooltip }}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>

@@ -52,12 +52,14 @@ input.comment-input {
 }
 
 div.assessment-sheet table.assessment-table,
-form.assessment-form table.assessment-table {
+form.assessment-form table.assessment-table,
+table.assessment-side-table {
     table-layout: fixed;
     width: 100%;
 }
 
-table.assessment-table tr.assessment-section {
+table.assessment-table tr.assessment-section,
+table.assessment-side-table tr.assessment-section {
     background: #caeaca;
     border: 2px solid #d0d0d0;
 } 
@@ -87,6 +89,20 @@ table.assessment-table th:nth-child(5) {
 table.assessment-table .center-align {
     text-align: center;
 }
+
+table.assessment-side-table th:nth-child(1) {
+    width: 25px;
+}
+
+table.assessment-side-table th:nth-child(2) {
+    width: 35%;
+}
+
+table.assessment-side-table th:nth-child(3) {
+    text-align: center;
+    width: 12%;
+}
+
 
 
 form.assessment-form table.assessment-table tbody tr:last-child,

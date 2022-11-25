@@ -1783,7 +1783,7 @@ button.staff-base-button {
     margin: 0px 5px 0px 5px;
 }
 
-div.staff-panel {
+div.staff-panel, .side-panel-form {
     background: #cec;
     border-radius: 8px;
     margin: 5px 0px;
@@ -1874,6 +1874,16 @@ div.expand-handle {
 
 .clipboard-button {
     background: no-repeat url("/static/courses/copy.png") center/18px,
+                #fff;
+}
+
+.grades-button {
+    background: no-repeat url("/static/courses/grading.png") center/18px,
+                #fff;
+}
+
+.refresh-button {
+    background: no-repeat url("/static/courses/ongoing-16.png") center/16px,
                 #fff;
 }
 
