@@ -22,6 +22,7 @@ from django.core.files.storage import FileSystemStorage
 from django.core.exceptions import ValidationError
 from django.template import loader
 from django.utils import translation
+from django.utils.translation import gettext as _
 from django.utils.text import slugify
 from django.contrib.postgres.fields import ArrayField
 import django.conf
@@ -79,7 +80,7 @@ post_save.connect(create_user_profile, sender=User, dispatch_uid="create_user_pr
 # - max users / group
 class StudentGroup(models.Model):
     
-    name = models.CharField(max_length=64)
+    name = models.CharField(max_length=64, verbose_name=_("Group name"))
     instance = models.ForeignKey("CourseInstance", on_delete=models.CASCADE)
     supervisor = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, related_name="supervised_group"
@@ -386,6 +387,9 @@ class ContentGraph(models.Model):
     # TODO: Rethink the content graph system! Maybe directed graph is the best choice...
     # TODO: Take embedded content into account! (Maybe: automatically make content nodes from embedded content)
     # TODO: "Allow answering after deadline has passed" flag.
+    class Meta:
+        unique_together=("content", "instance")
+
     parentnode = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL)
     content = models.ForeignKey('ContentPage', null=True, blank=True, on_delete=models.RESTRICT)
     instance = models.ForeignKey('CourseInstance', null=False, blank=False, on_delete=models.CASCADE)

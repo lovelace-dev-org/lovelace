@@ -437,11 +437,11 @@ def batch_grade_task(request, course, instance, content):
 
         for user in users:
             user_answers = answers.filter(user=user)
-            if form.cleaned_data["mode"] == "latest":
-                user_answers = [user_answers.first()]
-
             if not user_answers:
                 continue
+
+            if form.cleaned_data["mode"] == "latest":
+                user_answers = [user_answers.first()]
 
             for answer in user_answers:
                 translation.activate(answer.language_code)

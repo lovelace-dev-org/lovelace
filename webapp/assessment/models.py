@@ -52,7 +52,7 @@ class AssessmentSection(models.Model):
 class AssessmentBullet(models.Model):
     
     sheet = models.ForeignKey("AssessmentSheet", on_delete=models.CASCADE)
-    point_value = models.FloatField(blank=True, null=False)
+    point_value = models.FloatField(blank=False, null=False)
     ordinal_number = models.PositiveSmallIntegerField()
     
     # Translatable fields

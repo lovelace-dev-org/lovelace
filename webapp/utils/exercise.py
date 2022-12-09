@@ -220,7 +220,7 @@ def update_completion(exercise, instance, user, evaluation, answer_date):
             try:
                 quotient = evaluation.get("points", 0) / evaluation.get("max", exercise.default_points)
             except ZeroDivisionError:
-                quotient = 1
+                quotient = 0
     else:
         quotient = 0
 
