@@ -85,7 +85,7 @@ def direct_message(request, course, instance, user):
             form_label=_("Send a message to {user}").format(user=display_name(user))
         )
     else:
-        return HttpResponseNotAllowed()
+        return HttpResponseForbidden(_("User is not enrolled to this course instance"))
 
 @ensure_responsible
 def mass_email(request, course, instance):

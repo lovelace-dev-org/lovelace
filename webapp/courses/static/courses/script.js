@@ -569,6 +569,48 @@ function duplicate_subform(event, caller) {
     $("input[id$='TOTAL_FORMS'").val(parseInt(form_idx) + 1);
 }
 
+// http://blog.niklasottosson.com/?p=1914
+function sort_table(event, caller, field, order, is_number) {
+    event.preventDefault();
+
+    let th = $(caller);
+    let table = th.parent().parent().parent()
+    let rows = table.children("tbody").children("tr").get();
+
+    //let rows = $("table.completion-table tbody tr").get();
+
+    rows.sort(function(a, b) {
+        if (is_number) {
+            A = parseFloat($(a).children("td").eq(field).text());
+            B = parseFloat($(b).children("td").eq(field).text());
+        } else {
+            A = $(a).children("td").eq(field).text().toUpperCase();
+            B = $(b).children("td").eq(field).text().toUpperCase();
+        }
+
+        if (A < B) {
+            return -1 * order;
+        }
+        else if (A > B) {
+            return 1 * order;
+        }
+        else {
+            return 0;
+        }
+    });
+
+    if (order == 1) {
+        $(caller).attr("onclick", "sort_table(event, this, " + field + ", -1, " + is_number + ")");
+    }
+    else {
+        $(caller).attr("onclick", "sort_table(event, this, " + field + ", 1, " + is_number + ")");
+    }
+
+    rows.forEach(function(row) {
+        table.children("tbody").append(row);
+    });
+}
+
 
 $(document).ready(function() {
     $('.popup').click(function() {

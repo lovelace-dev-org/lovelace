@@ -53,6 +53,8 @@ def get_missing_and_points(results):
             if evalgroup not in groups_counted:
                 points_available += result["eo"].default_points
                 groups_counted.append(evalgroup)
+            if not result["correct"]:
+                missing += 1
             group_scores[evalgroup] = max(result["points"], group_scores.get(evalgroup, 0))
         else:
             points_available += result["eo"].default_points

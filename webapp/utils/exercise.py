@@ -258,7 +258,6 @@ def update_completion(exercise, instance, user, evaluation, answer_date):
                 completion.points = quotient
         completion.save()
 
-
     eval_group = get_single_archived(exercise, link.revision).evaluation_group
 
     if changed and correct and eval_group:

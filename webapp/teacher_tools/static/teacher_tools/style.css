@@ -39,6 +39,10 @@ table.completion-table th:first-child {
     z-index: 2;
 }
 
+table.enrollments-table th {
+    cursor: pointer;
+}
+
 .sticky-left {
     position: sticky;
     left: 0px;
@@ -88,7 +92,15 @@ ul.student-task-list {
     display: none;
 }
 
+col.selector {
+    width: 20px;
+}
+
 col.name {
+    width: 250px;
+}
+
+col.username {
     width: 250px;
 }
 

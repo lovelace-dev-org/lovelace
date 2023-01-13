@@ -212,7 +212,8 @@ class CourseEnrollment(models.Model):
         ('EXPELLED', 'Expelled'),
         ('DENIED', 'Denied'),
         ('WITHDRAWN', 'Withdrawn'),
-        ('COMPLETED', 'Completed')
+        ('COMPLETED', 'Completed'),
+        ('TRANSFERED', 'Transfered'),
     )
     enrollment_state = models.CharField(max_length=11, default='WAITING',
                                         choices=ENROLLMENT_STATE_CHOICES)
@@ -1137,6 +1138,22 @@ class ContentPage(models.Model):
             return completion.state, completion.points
         except UserTaskCompletion.DoesNotExist:
             return "unanswered", 0
+
+    def re_evaluate(self, user, instance):
+        from utils.exercise import update_completion
+
+        best_answer = self.get_user_answers(self, user, instance).filter(
+            evaluation__correct=True
+        ).order_by("-evaluation__points").first()
+        if not best_answer:
+            return
+
+        evaluation = {
+            "evaluation": True,
+            "points": best_answer.evaluation.points,
+            "max": self.default_points,
+        }
+        update_completion(self, instance, user, evaluation, best_answer.answer_date)
 
     def get_user_answers(self, user, instance, ignore_drafts=True):
         raise NotImplementedError("base type has no method 'get_user_answers'")
@@ -2538,6 +2555,9 @@ class UserCodeReplaceExerciseAnswer(UserAnswer):
         return given_answer
 
 class UserTaskCompletion(models.Model):
+    class Meta:
+        unique_together = ("exercise", "instance", "user")
+
     exercise = models.ForeignKey(ContentPage, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     instance = models.ForeignKey(CourseInstance, on_delete=models.CASCADE)

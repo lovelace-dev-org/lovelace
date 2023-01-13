@@ -92,6 +92,31 @@ class RoutineExercise(ContentPage):
             
         return history
 
+    def re_evaluate(self, user, instance):
+        from utils.exercise import update_completion
+        try:
+            progress = RoutineExerciseProgress.objects.get(
+                exercise=self,
+                user=user,
+                instance=instance,
+                completed=True
+            )
+        except RoutineExerciseProgress.DoesNotExist:
+            return
+
+        evaluation = {
+            "evaluation": True,
+            "points": self.default_points,
+            "max": self.default_points,
+        }
+        answer_date = RoutineExerciseAnswer.objects.filter(
+            question__exercise=self,
+            question__user=user,
+            question__instance=instance,
+            correct=True
+        ).order_by("-answer_date").first().answer_date
+        update_completion(self, instance, user, evaluation, answer_date)
+
     def save_answer(self, user, ip, answer, files, instance, revision):
         pass
 
@@ -150,6 +175,9 @@ class RoutineExerciseAnswer(models.Model):
     task_id = models.CharField(max_length=36, null=True, blank=True)
 
 class RoutineExerciseProgress(models.Model):
+    class Meta:
+        unique_together = ("exercise", "instance", "user")
+
     exercise = models.ForeignKey(RoutineExercise, on_delete=models.CASCADE)
     instance = models.ForeignKey(CourseInstance, null=True, on_delete=models.SET_NULL)
     user = models.ForeignKey(User, on_delete=models.CASCADE)

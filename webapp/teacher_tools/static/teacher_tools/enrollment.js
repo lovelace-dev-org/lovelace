@@ -51,20 +51,18 @@ function change_state(username, new_state) {
     state_cell.html(new_state);
     
     if (new_state === "ACCEPTED") {
-        controls_cell.html(
-            '<button class="enrollment-expel-button" onclick="process_one(event, this, \'expelled\')">expel</button></td>'
-        );            
+        controls_cell.children(".add-button").addClass("collapsed");
+        controls_cell.children(".delete-button").removeClass("collapsed");
     }
     else if (new_state === "WAITING") {
-        controls_cell.html(
-            '<button class="enrollment-accept-button" onclick="process_one(event, this, \'accepted\')">accept</button><button class="enrollment-deny-button" onclick="process_one(event, this, \'denied\')">deny</button>'
-        );
+        controls_cell.children(".add-button").removeClass("collapsed");
+        controls_cell.children(".deny-button").removeClass("collapsed");
     }
     else {
-        controls_cell.html(
-            '<button class="enrollment-accept-button" onclick="process_one(event, this, \'accepted\')">accept</button>'
-        );
-    }        
+        controls_cell.children(".add-button").removeClass("collapsed");
+        controls_cell.children(".deny-button").addClass("collapsed");
+        controls_cell.children(".delete-button").addClass("collapsed");
+    }
 }
     
 function process_success_one(response, status, jqxhr_obj) {

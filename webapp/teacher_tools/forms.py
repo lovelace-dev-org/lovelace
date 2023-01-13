@@ -71,3 +71,32 @@ class BatchGradingForm(forms.Form):
         ),
         initial="latest"
     )
+
+class TransferRecordsForm(forms.Form):
+
+    #mode = forms.ChoiceField(
+        #widget=forms.RadioSelect,
+        #label=_("Transfer action"),
+        #required=True,
+        #choices=(
+            #("move", _("Move records")),
+            #("copy", _("Copy records")),
+        #),
+        #initial="copy"
+    #)
+    recalculate = forms.BooleanField(
+        label=_("Recalculate points"),
+        required=False,
+    )
+
+    def __init__(self, *args, **kwargs):
+        other_instances = kwargs.pop("instances")
+        super().__init__(*args, **kwargs)
+
+        self.fields["target_instance"] = forms.ChoiceField(
+            widget = forms.Select,
+            label = _("Choose target instance"),
+            choices = [(c.id, c.name) for c in other_instances]
+        )
+
+

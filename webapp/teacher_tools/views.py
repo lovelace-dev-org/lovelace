@@ -9,7 +9,7 @@ import teacher_tools.tasks as teacher_tasks
 
 from django.conf import settings
 from django.core.cache import cache
-from django.db import transaction
+from django.db import transaction, IntegrityError
 from django.http import HttpResponse, HttpResponseForbidden, HttpResponseGone, JsonResponse
 from django.shortcuts import render, redirect
 from django.utils.translation import gettext as _
@@ -26,7 +26,7 @@ from courses.models import *
 from courses.forms import MessageForm
 from teacher_tools.utils import *
 from teacher_tools.models import *
-from teacher_tools.forms import MossnetForm, ReminderForm, BatchGradingForm
+from teacher_tools.forms import MossnetForm, ReminderForm, BatchGradingForm, TransferRecordsForm
 
 
 def download_answers(request, course, instance, content):
@@ -152,6 +152,70 @@ def manage_enrollments(request, course, instance):
         }
         
         return HttpResponse(t.render(c, request))
+
+@ensure_responsible
+def transfer_records(request, course, instance, user):
+    other_instances = CourseInstance.objects.filter(course=course).exclude(id=instance.id)
+    if request.method == "POST":
+        form = TransferRecordsForm(request.POST, instances=other_instances)
+        if not form.is_valid():
+            errors = form.errors.as_json()
+            return JsonResponse({"errors": errors}, status=400)
+
+        target_instance = CourseInstance.objects.get(id=form.cleaned_data["target_instance"])
+        model_classes = [
+            UserAnswer,
+            UserTaskCompletion,
+        ]
+        # NOTE: this should be replaced with a system that gets classes from registered task modules
+        from routine_exercise.models import RoutineExercise, RoutineExerciseProgress, RoutineExerciseQuestion
+        model_classes.extend((RoutineExerciseQuestion, RoutineExerciseProgress))
+
+        for model in model_classes:
+            to_update = model.objects.filter(user=user, instance=instance).all()
+            for obj in to_update:
+                obj.instance = target_instance
+                try:
+                    obj.save()
+                except IntegrityError:
+                    obj.delete()
+
+        CourseEnrollment.objects.filter(student=user, instance=instance).update(
+            enrollment_state="TRANSFERED"
+        )
+        try:
+            new_enrollment = CourseEnrollment.objects.get(student=user, instance=target_instance)
+            new_enrollment.enrolled_state = "ACCEPTED"
+        except CourseEnrollment.DoesNotExist:
+            new_enrollment = CourseEnrollment(
+                student=user,
+                instance=target_instance,
+                enrollment_state="ACCEPTED"
+            )
+        new_enrollment.save()
+
+        if form.cleaned_data["recalculate"]:
+            for page, task_links in get_course_instance_tasks(target_instance):
+                for task_link in task_links:
+                    content = task_link.embedded_page.get_type_object()
+                    content.re_evaluate(user, target_instance)
+
+        return redirect(reverse("teacher_tools:manage_enrollments", kwargs={
+            "course": course,
+            "instance": instance
+        }))
+    else:
+        form = TransferRecordsForm(instances=other_instances)
+        form_t = loader.get_template("courses/base-edit-form.html")
+        form_c = {
+            "form_object": form,
+            "submit_url": request.path,
+            "html_class": "side-panel-form",
+            "disclaimer": _(f"Transfer records of {user.username} from {instance.name}"),
+            "submit_label": _("Execute"),
+        }
+        return HttpResponse(form_t.render(form_c, request))
+
 
 @ensure_staff
 def answer_summary(request, course, instance, content):

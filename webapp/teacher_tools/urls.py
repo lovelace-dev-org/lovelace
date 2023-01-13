@@ -9,6 +9,7 @@ urlpatterns = [
     path("<course:course>/<instance:instance>/<content:content>/batch_grade/", views.batch_grade_task, name="batch_grade"),
     path("<course:course>/<instance:instance>/<content:content>/reset_completion/", views.reset_completion, name="reset_completion"),
     path("<course:course>/<instance:instance>/enrollments/", views.manage_enrollments, name="manage_enrollments"),
+    path("<course:course>/<instance:instance>/records/<user:user>", views.transfer_records, name="transfer_records"),
     path("<course:course>/<instance:instance>/completion/<user:user>/", views.student_course_completion, name="student_completion"),
     path("<course:course>/<instance:instance>/completion/", views.course_completion, name="completion"),
     path("<course:course>/<instance:instance>/completion-csv/", views.course_completion_csv, name="completion_csv"),
