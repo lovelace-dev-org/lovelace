@@ -178,7 +178,7 @@ def ensure_responsible_or_supervisor(function):
 
     @wraps(function)
     def wrap(request, course, instance, group, *args, **kwargs):
-        if request.user in (course.main_responsible, group.supervisor):
+        if request.user.is_superuser or request.user in (course.main_responsible, group.supervisor):
             return function(request, course, instance, group, *args, **kwargs)
         else:
             return HttpResponseForbidden(_("This view is limited to group supervisor"))

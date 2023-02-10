@@ -90,7 +90,7 @@ def render_panel(request, course, instance, exercise, preopened=[]):
     if is_staff:
         unlinked_questions = FaqQuestion.objects.filter(
             faqtoinstancelink__instance=instance
-        ).exclude(faqtoinstancelink__exercise=exercise)
+        ).exclude(faqtoinstancelink__exercise=exercise).distinct("hook")
         edit_form = FaqQuestionForm()
         link_form = FaqLinkForm(available_questions=unlinked_questions)
         c["edit_form"] = edit_form
@@ -104,7 +104,7 @@ def clone_faq_links(instance):
         revision=None
     ).distinct("question")
     for link in active_links:
-        link.id = None
+        link.pk = None
         link.instance=instance
         try:
             link.save()

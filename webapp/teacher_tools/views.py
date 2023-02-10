@@ -155,7 +155,13 @@ def manage_enrollments(request, course, instance):
 
 @ensure_responsible
 def transfer_records(request, course, instance, user):
-    other_instances = CourseInstance.objects.filter(course=course).exclude(id=instance.id)
+    other_instances = (
+        CourseInstance.objects
+        .filter(course=course)
+        .exclude(id=instance.id)
+        .order_by("start_date")
+    )
+
     if request.method == "POST":
         form = TransferRecordsForm(request.POST, instances=other_instances)
         if not form.is_valid():
@@ -478,9 +484,8 @@ def batch_grade_task(request, course, instance, content):
         except EmbeddedLink.DoesNotExist:
             return HttpResponseNotFound(_("The task was not linked on the requested course instance"))
 
-        try:
-            link = EmbeddedLink.objects.get(instance=instance, embedded_page=content)
-        except EmbeddedLink.DoesNotExist:
+        link = EmbeddedLink.objects.filter(instance=instance, embedded_page=content).first()
+        if link is None:
             return HttpResponseNotFound(_("Task is not linked to this course"))
 
         if link.revision is None:

@@ -53,8 +53,8 @@ def get_missing_and_points(results):
             if evalgroup not in groups_counted:
                 points_available += result["eo"].default_points
                 groups_counted.append(evalgroup)
-            if not result["correct"]:
-                missing += 1
+                if not result["correct"]:
+                    missing += 1
             group_scores[evalgroup] = max(result["points"], group_scores.get(evalgroup, 0))
         else:
             points_available += result["eo"].default_points
@@ -88,13 +88,16 @@ def compile_student_results(user, instance, tasks_by_page, summary=False):
         missing, page_points, page_points_available = get_missing_and_points(page_stats)
         if context.scoring_group:
             grouped_page_scores[context.scoring_group] = max(
-                grouped_page_scores.get(context.scoring_group, 0), page_points
-            ) * context.score_weight
+                grouped_page_scores.get(context.scoring_group, 0) * context.score_weight,
+                page_points * context.score_weight
+            )
             grouped_page_max[context.scoring_group] = max(
-                grouped_page_max.get(context.scoring_group, 0), page_points_available
-            ) * context.score_weight
+                grouped_page_max.get(context.scoring_group, 0) * context.score_weight,
+                page_points_available * context.score_weight
+            )
             grouped_missing[context.scoring_group] = max(
-                grouped_missing.get(context.scoring_group, 0), missing
+                grouped_missing.get(context.scoring_group, 0) * context.score_weight,
+                missing  * context.score_weight
             )
         else:
             total_points += page_points * context.score_weight

@@ -34,6 +34,7 @@ def process_message_form(request, course, instance, recipients, form_label="", u
 
             message = form.save(commit=False)
             if form.cleaned_data["confirm_save"] and message.handle:
+                message.course = course
                 if original_handle == message.handle:
                     message.save()
                 else:

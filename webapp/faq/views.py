@@ -42,7 +42,7 @@ def save_question(request, course, instance, exercise):
                     exercise=exercise,
                 )
                 link.save()
-            regenerate_cache(instance, exercise)            
+            regenerate_cache(instance, exercise)
             content = render_panel(request, course, instance, exercise)
             return JsonResponse({"content": content})
         else:
@@ -69,7 +69,6 @@ def link_question(request, course, instance, exercise):
     try:
         question = FaqQuestion.objects.get(
             hook=request.POST["question_select"],
-            faqtoinstancelink__instance=instance
         )
     except FaqQuestion.DoesNotExist:
         return HttpResponseNotFound()
@@ -80,7 +79,7 @@ def link_question(request, course, instance, exercise):
         question=question,
     )
     link.save()
-    regenerate_cache(instance, exercise)            
+    regenerate_cache(instance, exercise)
     content = render_panel(request, course, instance, exercise)
     return JsonResponse({"content": content})
     

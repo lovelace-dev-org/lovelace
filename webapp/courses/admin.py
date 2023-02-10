@@ -127,6 +127,7 @@ class MultipleChoiceExerciseAnswerInline(TranslationTabularInline):
     model = MultipleChoiceExerciseAnswer
     extra = 1
     formset = SoftDeleteFormSet 
+    ordering = ("ordinal", )
 
 class MultipleChoiceExerciseAdmin(CourseContentAdmin, TranslationAdmin, VersionAdmin):
     
@@ -159,6 +160,7 @@ class CheckboxExerciseAnswerInline(TranslationTabularInline):
     model = CheckboxExerciseAnswer
     extra = 1
     formset = SoftDeleteFormSet
+    ordering = ("ordinal", )
 
 class CheckboxExerciseAdmin(CourseContentAdmin, TranslationAdmin, VersionAdmin):
     change_form_template = "courses/admin-checkbox.html"
@@ -559,6 +561,17 @@ class CourseAdmin(TranslationAdmin, VersionAdmin):
     #formfield_overrides = {models.ManyToManyField: {'widget':}}
     search_fields = ('name',)
     readonly_fields = ('slug',)
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        """
+        Only show courses where the editor is marked as main responsible.
+        """
+
+        if db_field.name == 'main_responsible':
+            kwargs['queryset'] = User.objects.filter(is_staff=True)
+
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
 
 admin.site.register(Course, CourseAdmin)
 

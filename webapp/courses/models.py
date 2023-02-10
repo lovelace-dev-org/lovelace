@@ -578,7 +578,7 @@ class Term(models.Model):
         # blank=True
     # )
     
-    tags = models.ManyToManyField("TermTag")
+    tags = models.ManyToManyField("TermTag", blank=True)
     
     def __str__(self):
         return self.name
@@ -980,6 +980,10 @@ class ContentPage(models.Model):
             
             self.rendered_markup(instance, context, lang_code=lang_code, revision=revision)
         translation.activate(current_lang)
+
+        from faq.utils import regenerate_cache
+        regenerate_cache(instance, self)
+
                 
     # TODO: -> @property human_readable_type
     def get_human_readable_type(self):
@@ -1250,9 +1254,10 @@ class MultipleChoiceExercise(ContentPage):
 
     def get_choices(self, revision=None):
         if revision is None:
-            choices = self.multiplechoiceexerciseanswer_set.get_queryset()
+            choices = self.multiplechoiceexerciseanswer_set.get_queryset().order_by("ordinal")
         else:
             choices = get_archived_field(self, revision, "multiplechoiceexerciseanswer_set")
+            choices.sort(key=operator.attrgetter("ordinal"))
         return choices
 
     def get_rendered_content(self, context):
@@ -1338,9 +1343,10 @@ class CheckboxExercise(ContentPage):
 
     def get_choices(self, revision=None):
         if revision is None:
-            choices = self.checkboxexerciseanswer_set.get_queryset()
+            choices = self.checkboxexerciseanswer_set.get_queryset().order_by("ordinal")
         else:
             choices = get_archived_field(self, revision, "checkboxexerciseanswer_set")
+            choices.sort(key=operator.attrgetter("ordinal"))
         return choices
  
     def get_rendered_content(self, context):
@@ -2229,6 +2235,7 @@ class TextfieldExerciseAnswer(models.Model):
 class MultipleChoiceExerciseAnswer(models.Model):
     exercise = models.ForeignKey(MultipleChoiceExercise, null=True, on_delete=models.SET_NULL)
     correct = models.BooleanField(default=False)
+    ordinal = models.PositiveIntegerField()
     answer = models.TextField() # Translate
     hint = models.TextField(blank=True) # Translate
     comment = models.TextField(verbose_name='Extra comment given upon selection of this answer',blank=True) # Translate
@@ -2240,6 +2247,7 @@ class MultipleChoiceExerciseAnswer(models.Model):
 class CheckboxExerciseAnswer(models.Model):
     exercise = models.ForeignKey(CheckboxExercise, null=True, on_delete=models.SET_NULL)
     correct = models.BooleanField(default=False)
+    ordinal = models.PositiveIntegerField()
     answer = models.TextField() # Translate
     hint = models.TextField(blank=True) # Translate
     comment = models.TextField(verbose_name='Extra comment given upon selection of this answer',blank=True) # Translate
