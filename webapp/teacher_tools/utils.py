@@ -96,8 +96,8 @@ def compile_student_results(user, instance, tasks_by_page, summary=False):
                 page_points_available * context.score_weight
             )
             grouped_missing[context.scoring_group] = max(
-                grouped_missing.get(context.scoring_group, 0) * context.score_weight,
-                missing  * context.score_weight
+                grouped_missing.get(context.scoring_group, 0),
+                missing
             )
         else:
             total_points += page_points * context.score_weight
@@ -123,7 +123,7 @@ def compile_student_results(user, instance, tasks_by_page, summary=False):
 
     return results_by_page, total_points, total_missing, total_points_available
 
-# NOTE: this REALLy should not be needed
+# NOTE: this REALLY should not be needed
 def reconstruct_answer_form(task_type, answer):
     if task_type == "TEXTFIELD_EXERCISE":
         return {
