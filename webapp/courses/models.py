@@ -1257,7 +1257,7 @@ class MultipleChoiceExercise(ContentPage):
             choices = self.multiplechoiceexerciseanswer_set.get_queryset().order_by("ordinal")
         else:
             choices = get_archived_field(self, revision, "multiplechoiceexerciseanswer_set")
-            choices.sort(key=operator.attrgetter("ordinal"))
+            choices.sort(key=lambda c: c.ordinal or c.id)
         return choices
 
     def get_rendered_content(self, context):
@@ -1346,7 +1346,7 @@ class CheckboxExercise(ContentPage):
             choices = self.checkboxexerciseanswer_set.get_queryset().order_by("ordinal")
         else:
             choices = get_archived_field(self, revision, "checkboxexerciseanswer_set")
-            choices.sort(key=operator.attrgetter("ordinal"))
+            choices.sort(key=lambda c: c.ordinal or c.id)
         return choices
  
     def get_rendered_content(self, context):
@@ -2235,7 +2235,7 @@ class TextfieldExerciseAnswer(models.Model):
 class MultipleChoiceExerciseAnswer(models.Model):
     exercise = models.ForeignKey(MultipleChoiceExercise, null=True, on_delete=models.SET_NULL)
     correct = models.BooleanField(default=False)
-    ordinal = models.PositiveIntegerField()
+    ordinal = models.PositiveIntegerField(null=True)
     answer = models.TextField() # Translate
     hint = models.TextField(blank=True) # Translate
     comment = models.TextField(verbose_name='Extra comment given upon selection of this answer',blank=True) # Translate
@@ -2247,7 +2247,7 @@ class MultipleChoiceExerciseAnswer(models.Model):
 class CheckboxExerciseAnswer(models.Model):
     exercise = models.ForeignKey(CheckboxExercise, null=True, on_delete=models.SET_NULL)
     correct = models.BooleanField(default=False)
-    ordinal = models.PositiveIntegerField()
+    ordinal = models.PositiveIntegerField(null=True)
     answer = models.TextField() # Translate
     hint = models.TextField(blank=True) # Translate
     comment = models.TextField(verbose_name='Extra comment given upon selection of this answer',blank=True) # Translate

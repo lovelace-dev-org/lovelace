@@ -219,3 +219,12 @@ def supervisor_select(context, group):
             "group": group,
         })
     }
+
+@register.inclusion_tag("courses/widgets/enroll_widget.html", takes_context=True)
+def enroll_widget(context, course, instance, enroll_status):
+    return {
+        "course": course,
+        "instance": instance,
+        "user_authenticated": context["user"].is_authenticated,
+        "enroll_status": enroll_status,
+    }

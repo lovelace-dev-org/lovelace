@@ -35,6 +35,10 @@
 {% block page-content %}
 <h1 class="content-heading">{{ course.name }}<span id="{{ course.slug }}" class="anchor-offset"></span><a href="#{{ course.slug }}" class="permalink" title="Permalink to {{ course.name }}">&para;</a></h1>
 
+<div class="sub-header-container">
+  {% enroll_widget course instance enroll_state %}
+</div>
+
 {% if course_staff %}
   <div class="staff-panel staff-only collapsed">
     <div>
@@ -97,7 +101,10 @@
       {% elif item.content == '<' %}
         </ul>
       {% else %}
-        <li{% if item.visible == False %} class="admin-visible-content"{% endif %}>
+        <li class="
+          {% if item.visible == False %}admin-visible-content{% endif %}
+          {% if course_staff and item.require_enroll %}enroll-locked-content{% endif %}
+        ">
           <a href="{% url 'courses:content' course instance item.content %}">{{ item.content.name }}</a>
           {% comment %}
           {% if item.page_count > 0 %}

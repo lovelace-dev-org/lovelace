@@ -796,6 +796,9 @@ section.content {
         font-size: 0.55rem;
         color: #333;
     }
+    div.course-contents li.enroll-locked-content {
+        list-style-type: "🔒";
+    }
 
     div.course-contents progress.course-contents-progress {
         -moz-appearance: none;
@@ -1925,4 +1928,13 @@ table.alternate-green > tbody > tr:nth-child(odd) {
 
 table.alternate-green > tbody > tr:nth-child(even) {
     background: #eee;
+}
+
+div.enroll-widget {
+    font-size: 0.8em;
+}
+
+div.sub-header-container {
+    margin-bottom: 1em;
+    margin-top: -1.8em;
 }

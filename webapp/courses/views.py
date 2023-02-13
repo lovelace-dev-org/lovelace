@@ -151,7 +151,9 @@ def course(request, course, instance):
         ).order_by('ordinal_number')
         context["course_staff"] = False 
     
-    enrolled = instance.user_enroll_status(request.user) in ["ACCEPTED", "COMPLETED"]
+    enroll_state = instance.user_enroll_status(request.user)
+    enrolled = enroll_state in ["ACCEPTED", "COMPLETED"]
+    context["enroll_state"] = enroll_state
 
     if len(contents) > 0:
         tree = []
@@ -225,6 +227,7 @@ def course_tree(tree, node, user, instance_obj, enrolled=False, staff=False):
         "page_score": f"{page_score:.2f}",
         "page_max": f"{page_max:.2f}",
         "visible": node.visible,
+        "require_enroll": node.require_enroll,
         "page_count": page_count
     }
 
