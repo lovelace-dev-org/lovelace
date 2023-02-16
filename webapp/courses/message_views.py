@@ -90,7 +90,7 @@ def direct_message(request, course, instance, user):
 
 @ensure_responsible
 def mass_email(request, course, instance):
-    recipients = instance.enrolled_users.get_queryset()
+    recipients = instance.enrolled_users.get_queryset().filter(courseenrollment__enrollment_state="ACCEPTED")
     return process_message_form(
         request, course, instance,
         recipients=recipients,

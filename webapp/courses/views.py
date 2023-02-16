@@ -82,7 +82,7 @@ def cookie_law(view_func):
 
 @cookie_law
 def index(request):
-    course_list = Course.objects.all()
+    course_list = Course.objects.order_by("name").all()
     
     t = loader.get_template("courses/index.html")
     c = {

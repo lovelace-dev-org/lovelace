@@ -3,6 +3,10 @@
 {% load i18n %}
 {% load course_tags %}
 
+{% block extra-static %}
+  <link rel="stylesheet" href="{% static 'courses/index.css' %}">
+{% endblock %}
+
 {% block page-title %}{% trans 'Available courses' %}{% endblock %}
 
 {% block breadcrumb-links %}
@@ -14,40 +18,64 @@
 {% block page-content %}
 {% if course_list %}
   <h1>{% trans 'Available courses' %}</h1>
-  <ul>
+  <ul class="index-list">
     {% for course in course_list %}
-      <li>
-        <div>
-          <div>
-            {#<a href="{% url 'courses:course_instances' course %}">#}{{ course.name }}{#</a>#}
-            {% if course.code %}– {{ course.code }}{% endif %}
-            {% if course.credits %}/ {{ course.credits }} {% trans 'credits' %}{% endif %}
+      <li class="index-bullet">
+        <div class="index-container">
+          <div class="index-course-header" onclick="toggle_inactive_instances(this);">
+            <span class="index-course-name">{{ course.name }}</span>
+            {% if course.code %}
+              <span class="index-course-extra">– {{ course.code }}</span>
+            {% endif %}
+            {% if course.credits %}
+              <span class="index-course-extra">/ {{ course.credits }}</span> {% trans 'credits' %}
+            {% endif %}
           </div>
-          {% if course.description %}<div>{{ course.description }}</div>{% endif %}
+          <div class="index-course-wrapper">
+            {% for instance in course.get_instances %}
+              {% with request.user|enrolled:instance as enroll_status %}
+                {% if instance.is_active or enroll_status == "ACCEPTED" or request.user.is_staff %}
+                  <div class="
+                       index-course-instance
+                       {% if not instance.is_active%} inactive collapsed {% endif %}
+                       "
+                  >
+                    <a href="{% url 'courses:course' course instance %}">{{ instance.name }}</a>
+                    <div>
+                      {% for tag in instance.split_notes %}
+                        <span class="index-instance-tag">{{ tag }}</span>
+                      {% endfor %}
+                    </div>
+                    {% enroll_widget course instance enroll_status %}
+                  </div>
+                {% endif %}
+              {% endwith %}
+            {% endfor %}
+          </div>
+
+          {% comment %}
           <div>
             <ul>
               {% for instance in course.get_instances %}
                 {% with request.user|enrolled:instance as enroll_status %}
                 {% if instance.is_active or enroll_status == "ACCEPTED" or request.user.is_staff %}
-                  <li>
+                  <li {% if not instance.is_active%} class="inactive collapsed" {% endif %}>
                     <div>
                       <a href="{% url 'courses:course' course instance %}">{{ instance.name }}</a>
                     </div>
                     {% enroll_widget course instance enroll_status %}
 
-                    {% comment %}
                     <div>
                       <span class="instance-userinfo">Your progress: </span>
                       <progress max="5" value="3" title="3/5 completed"></progress>
                     </div>
-                    {% endcomment %}
                   </li>
                 {% endif %}
                 {% endwith %}
               {% endfor %}
             </ul>
           </div>
-        </div>
+        {% endcomment %}
       </li>
     {% endfor %}
   </ul>

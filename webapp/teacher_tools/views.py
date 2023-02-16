@@ -347,7 +347,11 @@ def course_completion_csv_download(request, course, instance, task_id):
 
 @ensure_staff
 def course_completion(request, course, instance):
-    users = instance.enrolled_users.get_queryset().order_by("last_name", "first_name", "username")
+    users = (
+        instance.enrolled_users.get_queryset()
+        .filter(courseenrollment__enrollment_state="ACCEPTED")
+        .order_by("last_name", "first_name", "username")
+    )
 
     t = loader.get_template("teacher_tools/course_completion.html")
     c = {

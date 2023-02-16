@@ -323,6 +323,10 @@ function show_collapsed() {
     $(".collapsed").removeClass("collapsed");
 }
 
+function toggle_inactive_instances(caller) {
+    $(caller).nextAll("div").first().find("div.inactive").toggleClass("collapsed");
+}
+
 function expand_next_div(caller) {
     $(caller).nextAll("div").first().toggleClass("collapsed");
 }

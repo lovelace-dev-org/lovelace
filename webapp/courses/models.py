@@ -182,7 +182,7 @@ class Course(models.Model):
         return slugify(self.name, allow_unicode=True)
 
     def get_instances(self):
-        return self.courseinstance_set.all().order_by('start_date')
+        return self.courseinstance_set.all().order_by('-start_date')
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -248,7 +248,7 @@ class CourseInstance(models.Model):
     end_date = models.DateTimeField(verbose_name='Date and time on which the course ends',blank=True,null=True)
     active = models.BooleanField(verbose_name='Force this instance active',default=False)
 
-    notes = models.TextField(verbose_name='Notes for this instance', blank=True) # Translate
+    notes = models.CharField(max_length=256, verbose_name='Tags for this instance (comma-separated)', blank=True) # Translate
     enrolled_users = models.ManyToManyField(User, blank=True,
                                             through='CourseEnrollment',
                                             through_fields=('instance', 'student'))
@@ -367,6 +367,12 @@ class CourseInstance(models.Model):
     @property
     def get_identifying_str(self):
         return "{} / {}".format(self.course.name, self.name)
+
+    @property
+    def split_notes(self):
+        if self.notes:
+            return self.notes.split(",")
+        return []
     
     
     

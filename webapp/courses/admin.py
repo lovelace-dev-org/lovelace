@@ -625,7 +625,7 @@ class CourseInstanceAdmin(TranslationAdmin, VersionAdmin):
     """    
     
     fieldsets = [
-        (None,                {'fields': ['name', 'email', 'course', 'frontpage']}),
+        (None,                {'fields': ['name', 'email', 'course', 'frontpage', 'notes']}),
         ('Schedule settings', {'fields': ['start_date', 'end_date', 'active', 'visible', 'primary']}),
         ('Enrollment',        {'fields': ['manual_accept', 'welcome_message']}),
         ('Content license',   {'fields': ['content_license', 'license_url']}),

@@ -160,7 +160,7 @@ class InstanceSettingsForm(TranslationModelForm):
 
     class Meta:
         model = cm.CourseInstance
-        fields = ["name", "email", "start_date", "end_date", "primary", "max_group_size", "manual_accept", "welcome_message", "content_license", "license_url"]
+        fields = ["name", "notes", "email", "start_date", "end_date", "primary", "max_group_size", "manual_accept", "welcome_message", "content_license", "license_url"]
         
     def __init__(self, *args, **kwargs):
         available_content = kwargs.pop("available_content")
