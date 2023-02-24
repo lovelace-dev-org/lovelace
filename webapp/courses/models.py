@@ -171,6 +171,11 @@ class Course(models.Model):
                                            blank=True)
     staff_group = models.ForeignKey(Group, null=True, on_delete=models.SET_NULL)
     main_responsible = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
+    staff_course = models.BooleanField(
+        default=False,
+        verbose_name="Staff only course",
+        help_text="Staff only courses will not be shown on the front page unless the user is staff"
+    )
 
     # TODO: Create an instance automatically, if none exists
 

@@ -555,7 +555,7 @@ class CourseAdmin(TranslationAdmin, VersionAdmin):
     fieldsets = [
         (None,             {'fields': ['name', 'slug',]}),
         ('Course outline', {'fields': ['description', 'code', 'credits']}),
-        ('Administration', {'fields': ['staff_group', 'main_responsible']}),
+        ('Administration', {'fields': ['staff_group', 'main_responsible', 'staff_course']}),
         #('Settings for start date and end date of the course', {'fields': ['start_date','end_date'], 'classes': ['collapse']}),
     ]
     #formfield_overrides = {models.ManyToManyField: {'widget':}}
