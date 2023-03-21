@@ -88,15 +88,15 @@ def compile_student_results(user, instance, tasks_by_page, summary=False):
         missing, page_points, page_points_available = get_missing_and_points(page_stats)
         if context.scoring_group:
             grouped_page_scores[context.scoring_group] = max(
-                grouped_page_scores.get(context.scoring_group, 0) * context.score_weight,
+                grouped_page_scores.get(context.scoring_group, 0),
                 page_points * context.score_weight
             )
             grouped_page_max[context.scoring_group] = max(
-                grouped_page_max.get(context.scoring_group, 0) * context.score_weight,
+                grouped_page_max.get(context.scoring_group, 0),
                 page_points_available * context.score_weight
             )
-            grouped_missing[context.scoring_group] = max(
-                grouped_missing.get(context.scoring_group, 0),
+            grouped_missing[context.scoring_group] = min(
+                grouped_missing.get(context.scoring_group, 9999),
                 missing
             )
         else:
