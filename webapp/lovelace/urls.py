@@ -27,8 +27,14 @@ register_model_converter(CalendarDate, name="event")
 
 # TODO: Design the url hierarchy from scratch
 urlpatterns = [
-    path('admin/courses/fileuploadexercise/add', RedirectView.as_view(pattern_name='exercise_admin:file_upload_add')),
-    path('admin/courses/fileuploadexercise/<int:exercise_id>>/change', RedirectView.as_view(pattern_name='exercise_admin:file_upload_change')),
+    path(
+        'admin/courses/fileuploadexercise/add/',
+        RedirectView.as_view(pattern_name='exercise_admin:file_upload_add')
+    ),
+    path(
+        'admin/courses/fileuploadexercise/<int:exercise_id>/change/',
+        RedirectView.as_view(pattern_name='exercise_admin:file_upload_change')
+    ),
     path('admin/', admin.site.urls),
     path('exercise-admin/', include('exercise_admin.urls', namespace="exercise_admin")),
     path('stats/', include('stats.urls', namespace="stats")),
