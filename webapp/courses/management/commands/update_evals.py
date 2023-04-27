@@ -1,8 +1,9 @@
 import json
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 from django.core.paginator import Paginator
 from courses.models import Evaluation
 from courses.tasks import generate_results
+
 
 class Command(BaseCommand):
     help = "Updates stored file upload exercise evaluations to new format"
@@ -26,5 +27,3 @@ class Command(BaseCommand):
                     counter += 1
 
         print(f"Updated {counter} evaluation(s)")
-
-

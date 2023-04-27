@@ -9,3 +9,4 @@ webapp/lovelace/settings/
 !**/migrations
 !**/migrations/__init__.py
 upload
+*kate-swp

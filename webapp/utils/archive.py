@@ -3,18 +3,18 @@ from collections import defaultdict
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models, transaction
 from django.db.models.query import QuerySet
-from reversion.models import Version, Revision
+from reversion.models import Version
 from reversion import revisions
+
 
 class CancelRevert(Exception):
     """
     An exception used to cause a rollback after reading data from the
     reverted database state.
     """
-    
-    pass
 
-# TODO: add support to use prefetch_related on followed sets.    
+
+# TODO: add support to use prefetch_related on followed sets.
 def get_archived_instances(main_obj, revision_id):
     """
     Gets archived instances of a model and any models listed in its follow
@@ -22,7 +22,7 @@ def get_archived_instances(main_obj, revision_id):
     admin fetches history information: it reverts the database to a given
     revision, reads all there model instances into memory, and finally causes a
     rollback to restore the database to the most recent state.
-    
+
     Returns a dictionary that contains each related set as a list (using the
     set's attribute name as the key), and the archived version of the parent
     object (using "self" as the key)
@@ -48,8 +48,9 @@ def get_archived_instances(main_obj, revision_id):
             raise CancelRevert
     except CancelRevert:
         pass
-    
+
     return by_model
+
 
 def get_archived_field(main_obj, revision_id, field):
     """
@@ -60,7 +61,8 @@ def get_archived_field(main_obj, revision_id, field):
 
     archive_copy = get_archived_instances(main_obj, revision_id)
     return archive_copy[field]
-    
+
+
 def get_single_archived(model_instance, revision_id):
     """
     Gets an archived instance of a model instance without doing a
@@ -72,11 +74,14 @@ def get_single_archived(model_instance, revision_id):
     """
 
     try:
-        return Version.objects.get_for_object(model_instance)\
-            .get(revision=revision_id)\
+        return (
+            Version.objects.get_for_object(model_instance)
+            .get(revision=revision_id)
             ._object_version.object
+        )
     except Version.DoesNotExist:
         return model_instance
+
 
 def find_version_with_filename(model_instance, field, name):
     """
@@ -88,16 +93,16 @@ def find_version_with_filename(model_instance, field, name):
     for version in Version.objects.get_for_object(model_instance):
         if os.path.basename(version.field_dict[field].name) == name:
             return version
-    else:
-        return None
-        
+    return None
+
+
 def find_latest_version(model_instance, before=None):
     """
     Finds the latest version object for the given model instance. If the
     optional before (DateTime instance) parameter is set, the returned
     version will be the latest revision that is dated before the given time.
     """
-    
+
     versions = Version.objects.get_for_object(model_instance)
     if before:
         versions = versions.filter(revision__date_created__lte=before)

@@ -15,7 +15,6 @@ import courses.markupparser as markupparser
 
 
 class RoutineExercise(ContentPage):
-
     template = "routine_exercise/routine-exercise.html"
     answers_template = "routine_exercise/user-answers.html"
 
@@ -31,16 +30,16 @@ class RoutineExercise(ContentPage):
 
         self.content_type = "ROUTINE_EXERCISE"
         super().save(*args, **kwargs)
-        RoutineExerciseQuestion.objects.filter(
-            exercise=self,
-            routineexerciseanswer=None
-        ).delete()
+        RoutineExerciseQuestion.objects.filter(exercise=self, routineexerciseanswer=None).delete()
         instances = CourseInstance.objects.filter(
             Q(contentgraph__content=self) | Q(contentgraph__content__embedded_pages=self),
-            frozen=False
+            frozen=False,
         )
         parents = ContentPage.objects.filter(embedded_pages=self).distinct()
-        for instance in CourseInstance.objects.filter(Q(contentgraph__content=self) | Q(contentgraph__content__embedded_pages=self), frozen=False).distinct():
+        for instance in CourseInstance.objects.filter(
+            Q(contentgraph__content=self) | Q(contentgraph__content__embedded_pages=self),
+            frozen=False,
+        ).distinct():
             self.update_embedded_links(instance)
             for parent in parents:
                 parent.regenerate_cache(instance)
@@ -63,43 +62,38 @@ class RoutineExercise(ContentPage):
     def get_user_answers(self, user, instance, ignore_drafts=True):
         if instance is None:
             answers = RoutineExerciseAnswer.objects.filter(
-                question__exercise=self,
-                question__user=user
+                question__exercise=self, question__user=user
             ).prefetch_related("question", "question__template")
         else:
             answers = RoutineExerciseAnswer.objects.filter(
-                question__exercise=self,
-                question__user=user,
-                question__instance=instance
+                question__exercise=self, question__user=user, question__instance=instance
             ).prefetch_related("question", "question__template")
-            
+
         return answers
-            
+
         history = []
         for answer in answers:
             rendered_text = answer.question.template.content.format(
                 **answer.question.generated_json["formatdict"]
             )
-            marked_text = "".join(
-                markupparser.MarkupParser.parse(rendered_text)
-            ).strip()
-            history.append({
-                "question": marked_text,
-                "answer": answer.given_answer,
-                "correct": answer.correct,
-                "answer_date": answer.date_answered,
-            })
-            
+            marked_text = "".join(markupparser.MarkupParser.parse(rendered_text)).strip()
+            history.append(
+                {
+                    "question": marked_text,
+                    "answer": answer.given_answer,
+                    "correct": answer.correct,
+                    "answer_date": answer.date_answered,
+                }
+            )
+
         return history
 
     def re_evaluate(self, user, instance):
         from utils.exercise import update_completion
+
         try:
             progress = RoutineExerciseProgress.objects.get(
-                exercise=self,
-                user=user,
-                instance=instance,
-                completed=True
+                exercise=self, user=user, instance=instance, completed=True
             )
         except RoutineExerciseProgress.DoesNotExist:
             return
@@ -109,12 +103,17 @@ class RoutineExercise(ContentPage):
             "points": self.default_points,
             "max": self.default_points,
         }
-        answer_date = RoutineExerciseAnswer.objects.filter(
-            question__exercise=self,
-            question__user=user,
-            question__instance=instance,
-            correct=True
-        ).order_by("-answer_date").first().answer_date
+        answer_date = (
+            RoutineExerciseAnswer.objects.filter(
+                question__exercise=self,
+                question__user=user,
+                question__instance=instance,
+                correct=True,
+            )
+            .order_by("-answer_date")
+            .first()
+            .answer_date
+        )
         update_completion(self, instance, user, evaluation, answer_date)
 
     def save_answer(self, user, ip, answer, files, instance, revision):
@@ -162,17 +161,18 @@ class RoutineExerciseQuestion(models.Model):
     revision = models.PositiveIntegerField(null=True)
     language_code = models.CharField(max_length=7)
     question_class = models.PositiveIntegerField()
-    template=models.ForeignKey(RoutineExerciseTemplate, null=True, on_delete=models.SET_NULL)
+    template = models.ForeignKey(RoutineExerciseTemplate, null=True, on_delete=models.SET_NULL)
     generated_json = JSONField()
     date_generated = models.DateTimeField()
 
-class RoutineExerciseAnswer(models.Model):
 
+class RoutineExerciseAnswer(models.Model):
     question = models.OneToOneField(RoutineExerciseQuestion, on_delete=models.CASCADE)
     correct = models.BooleanField(null=True)
     answer_date = models.DateTimeField()
     given_answer = models.TextField(blank=True)
     task_id = models.CharField(max_length=36, null=True, blank=True)
+
 
 class RoutineExerciseProgress(models.Model):
     class Meta:
@@ -183,4 +183,3 @@ class RoutineExerciseProgress(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     completed = models.BooleanField(default=False)
     progress = models.CharField(max_length=255)
-

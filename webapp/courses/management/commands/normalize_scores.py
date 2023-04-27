@@ -1,6 +1,7 @@
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 from django.core.paginator import Paginator
 from courses.models import UserTaskCompletion
+
 
 class Command(BaseCommand):
     help = "Normalizes scores from an integer to a quotient of the task's default points value"
@@ -20,7 +21,3 @@ class Command(BaseCommand):
                     counter += 1
 
         print(f"Updated {counter} evaluation(s)")
-
-
-
-

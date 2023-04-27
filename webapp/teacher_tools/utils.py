@@ -2,6 +2,7 @@ from django.urls import reverse
 import courses.models as cm
 from reversion.models import Version
 
+
 def check_user_completion(user, tasks, instance, completion_qs, include_links=True):
     results = []
     course = instance.course
@@ -24,22 +25,21 @@ def check_user_completion(user, tasks, instance, completion_qs, include_links=Tr
         else:
             correct = False
 
-        result_dict = {
-            "eo": exercise_obj,
-            "correct": correct,
-            "points": points,
-            "result": result
-        }
+        result_dict = {"eo": exercise_obj, "correct": correct, "points": points, "result": result}
         if include_links:
-            result_dict["answers_link"] = reverse("courses:show_answers", kwargs={
-                "user": user,
-                "course": course,
-                "instance": instance,
-                "exercise": exercise_obj
-            })
+            result_dict["answers_link"] = reverse(
+                "courses:show_answers",
+                kwargs={
+                    "user": user,
+                    "course": course,
+                    "instance": instance,
+                    "exercise": exercise_obj,
+                },
+            )
         results.append(result_dict)
 
     return results
+
 
 def get_missing_and_points(results):
     missing = 0
@@ -65,18 +65,16 @@ def get_missing_and_points(results):
 
     for group in groups_counted:
         points += group_scores[group]
-    
+
     return missing, points, points_available
+
 
 def compile_student_results(user, instance, tasks_by_page, summary=False):
     results_by_page = []
     total_missing = 0
     total_points = 0
     total_points_available = 0
-    completion_qs = cm.UserTaskCompletion.objects.filter(
-        user=user,
-        instance=instance
-    )
+    completion_qs = cm.UserTaskCompletion.objects.filter(user=user, instance=instance)
 
     grouped_page_scores = {}
     grouped_page_max = {}
@@ -89,15 +87,14 @@ def compile_student_results(user, instance, tasks_by_page, summary=False):
         if context.scoring_group:
             grouped_page_scores[context.scoring_group] = max(
                 grouped_page_scores.get(context.scoring_group, 0),
-                page_points * context.score_weight
+                page_points * context.score_weight,
             )
             grouped_page_max[context.scoring_group] = max(
                 grouped_page_max.get(context.scoring_group, 0),
-                page_points_available * context.score_weight
+                page_points_available * context.score_weight,
             )
             grouped_missing[context.scoring_group] = min(
-                grouped_missing.get(context.scoring_group, 9999),
-                missing
+                grouped_missing.get(context.scoring_group, 9999), missing
             )
         else:
             total_points += page_points * context.score_weight
@@ -123,18 +120,12 @@ def compile_student_results(user, instance, tasks_by_page, summary=False):
 
     return results_by_page, total_points, total_missing, total_points_available
 
+
 # NOTE: this REALLY should not be needed
 def reconstruct_answer_form(task_type, answer):
     if task_type == "TEXTFIELD_EXERCISE":
-        return {
-            "answer": answer.given_answer
-        }
+        return {"answer": answer.given_answer}
     elif task_type == "MULTIPLE_CHOICE_EXERCISE":
-        return {
-            "-radio": answer.chosen_answer_id
-        }
+        return {"-radio": answer.chosen_answer_id}
     elif task_type == "CHECKBOX_EXERCISE":
         return dict((str(a.id), a.id) for a in answer.chosen_answers.all())
-
-
-

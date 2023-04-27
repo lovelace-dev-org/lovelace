@@ -2,6 +2,7 @@
 Contains formatting utils for making various strings that are used often.
 """
 
+
 def display_name(user):
     """
     Returns a user's name as lastname firstname, provided that the user object
@@ -11,5 +12,4 @@ def display_name(user):
 
     if user.last_name:
         return user.last_name + " " + (user.first_name or "")
-    else:
-        return user.username
+    return user.username

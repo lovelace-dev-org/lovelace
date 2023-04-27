@@ -1,4 +1,5 @@
 import base64
+import json
 from django.template import loader
 from django.urls import reverse
 from courses import markupparser
@@ -12,38 +13,33 @@ CORRECT = 1
 INFO = 2
 ERROR = 3
 DEBUG = 4
-LINT_C = 10 #10
-LINT_R = 11 #11
-LINT_W = 12 #12
-LINT_E = 13 #13
+LINT_C = 10  # 10
+LINT_R = 11  # 11
+LINT_W = 12  # 12
+LINT_E = 13  # 13
+
 
 # NOTE: the amount of reverts caused by this is disgusting.
 def file_upload_payload(exercise, student_files, instance, revision=None):
-    payload = {
-        "resources": {
-            "files_to_check": {},
-            "checker_files": {}
-        },
-        "tests": []
-    }
+    payload = {"resources": {"files_to_check": {}, "checker_files": {}}, "tests": []}
     if revision is not None:
         archived = get_archived_instances(exercise, revision)
         exercise = archived["self"]
         tests = archived["fileexercisetest_set"]
-        exercise_files = archived["fileexercisetestincludefile_set"]
         instance_file_links = archived["instanceincludefiletoexerciselink_set"]
         # MONKEY PATCH FOR BROKEN ARCHIVED EXERCISES
         if not instance_file_links:
             instance_file_links = exercise.instanceincludefiletoexerciselink_set.get_queryset()
     else:
         tests = exercise.fileexercisetest_set.get_queryset()
-        exercise_files = exercise.fileexercisetestincludefile_set.get_queryset()
         instance_file_links = exercise.instanceincludefiletoexerciselink_set.get_queryset()
 
     # Resources
     for a_file in student_files:
         a_file.seek(0)
-        payload["resources"]["files_to_check"][a_file.name] = base64.b64encode(a_file.read()).decode("utf-8")
+        payload["resources"]["files_to_check"][a_file.name] = base64.b64encode(
+            a_file.read()
+        ).decode("utf-8")
 
     all_required_exercise = set()
     all_required_instance = set()
@@ -84,23 +80,27 @@ def file_upload_payload(exercise, student_files, instance, revision=None):
 
             command_list = []
             for command in commands:
-                command_list.append({
-                    "input_text": command.input_text,
-                    "return_value": command.return_value,
-                    "cmd": command.command_line,
-                    "ordinal": command.ordinal_number,
-                    "timeout": command.timeout.total_seconds(),
-                    "json_output": command.json_output,
-                    "stdout": command.significant_stdout,
-                    "stderr": command.significant_stderr,
-                })
+                command_list.append(
+                    {
+                        "input_text": command.input_text,
+                        "return_value": command.return_value,
+                        "cmd": command.command_line,
+                        "ordinal": command.ordinal_number,
+                        "timeout": command.timeout.total_seconds(),
+                        "json_output": command.json_output,
+                        "stdout": command.significant_stdout,
+                        "stderr": command.significant_stderr,
+                    }
+                )
 
-            test_payload["stages"].append({
-                "id": stage.id,
-                "ordinal": stage.ordinal_number,
-                "name": stage.name,
-                "commands": command_list
-            })
+            test_payload["stages"].append(
+                {
+                    "id": stage.id,
+                    "ordinal": stage.ordinal_number,
+                    "name": stage.name,
+                    "commands": command_list,
+                }
+            )
 
         payload["tests"].append(test_payload)
 
@@ -125,13 +125,64 @@ def file_upload_payload(exercise, student_files, instance, revision=None):
                 "content": get_file_contents_b64(i_file),
                 "purpose": if_link.file_settings.purpose,
                 "name": if_link.file_settings.name,
-                "chmod": if_link.file_settings.chmod_settings
+                "chmod": if_link.file_settings.chmod_settings,
             }
 
-    #import json
-    #print(json.dumps(payload, indent=4))
+    # import json
+    # print(json.dumps(payload, indent=4))
 
     return payload
+
+
+def compile_evaluation_data(request, evaluation_tree, evaluation_obj, context=None):
+    log = evaluation_tree["test_tree"].get("log", [])
+
+    # render all individual messages in the log tree
+    for test in log:
+        test["title"] = "".join(
+            markupparser.MarkupParser.parse(test["title"], request, context)
+        ).strip()
+        test["runs"].sort(key=lambda run: run["correct"])
+        for run in test["runs"]:
+            for output in run["output"]:
+                output["msg"] = "".join(
+                    markupparser.MarkupParser.parse(output["msg"], request, context)
+                ).strip()
+
+    debug_json = json.dumps(evaluation_tree, indent=4)
+
+    hints = [
+        "".join(markupparser.MarkupParser.parse(msg, request, context)).strip()
+        for msg in evaluation_tree["test_tree"].get("hints", [])
+    ]
+    triggers = evaluation_tree["test_tree"].get("triggers", [])
+
+    t_file = loader.get_template("courses/file-exercise-evaluation.html")
+    c_file = {
+        "debug_json": debug_json,
+        "evaluation_tree": evaluation_tree["test_tree"],
+    }
+    t_exercise = loader.get_template("courses/exercise-evaluation.html")
+    c_exercise = {
+        "evaluation": evaluation_obj.correct,
+        "manual": context["content_page"].manually_evaluated,
+        "answer_url": context.get("answer_url", ""),
+        "points": evaluation_tree["points"],
+        "max": evaluation_tree["max"],
+    }
+    t_messages = loader.get_template("courses/exercise-evaluation-messages.html")
+
+    data = {
+        "file_tabs": t_file.render(c_file, request),
+        "result": t_exercise.render(c_exercise),
+        "evaluation": evaluation_obj.correct,
+        "points": evaluation_obj.points,
+        "messages": t_messages.render({"log": log}),
+        "hints": hints,
+        "triggers": triggers,
+    }
+
+    return data
 
 
 def render_json_feedback(log, request, course, instance, content, answer_id=None):
@@ -149,17 +200,18 @@ def render_json_feedback(log, request, course, instance, content, answer_id=None
     hints = []
     correct = True
 
-    context = {
-        "course_slug": course.slug,
-        "instance_slug": instance.slug
-    }
+    context = {"course_slug": course.slug, "instance_slug": instance.slug}
 
     for test in log["tests"]:
-        test["title"] = "".join(markupparser.MarkupParser.parse(test["title"], request, context)).strip()
+        test["title"] = "".join(
+            markupparser.MarkupParser.parse(test["title"], request, context)
+        ).strip()
         for run in test["runs"]:
             run["correct"] = True
             for output in run["output"]:
-                output["msg"] = "".join(markupparser.MarkupParser.parse(output["msg"], request, context)).strip()
+                output["msg"] = "".join(
+                    markupparser.MarkupParser.parse(output["msg"], request, context)
+                ).strip()
                 triggers.extend(output.get("triggers", []))
                 hints.extend(
                     "".join(markupparser.MarkupParser.parse(msg, request, context)).strip()
@@ -171,42 +223,46 @@ def render_json_feedback(log, request, course, instance, content, answer_id=None
 
         test["runs"].sort(key=lambda run: run["correct"])
 
-    answer_url = reverse("courses:show_answers", kwargs={
-        "user": request.user,
-        "course": course,
-        "instance": instance,
-        "exercise": content
-    }) + "#" + str(answer_id)
+    answer_url = (
+        reverse(
+            "courses:show_answers",
+            kwargs={
+                "user": request.user,
+                "course": course,
+                "instance": instance,
+                "exercise": content,
+            },
+        )
+        + "#"
+        + str(answer_id)
+    )
 
-    t_messages = loader.get_template('courses/exercise-evaluation-messages.html')
+    t_messages = loader.get_template("courses/exercise-evaluation-messages.html")
     t_exercise = loader.get_template("courses/exercise-evaluation.html")
-    c_exercise = {
-        'evaluation': correct,
-        'answer_url': request.build_absolute_uri(answer_url)
-    }
+    c_exercise = {"evaluation": correct, "answer_url": request.build_absolute_uri(answer_url)}
     feedback = {
-        "messages": t_messages.render({'log': log["tests"]}),
+        "messages": t_messages.render({"log": log["tests"]}),
         "hints": hints,
         "triggers": triggers,
-        "result": t_exercise.render(c_exercise)
+        "result": t_exercise.render(c_exercise),
     }
     return feedback
 
+
 def apply_late_rule(exercise, evaluation, rule, days_late):
     quotient = evaluation.get("points", 0) / evaluation.get("max", exercise.default_points)
-    return eval(rule.format(
-        p=evaluation.get("points", 0),
-        m=evaluation.get("max", exercise.default_points),
-        q=quotient,
-        d=days_late,
-    ))
+    return eval(
+        rule.format(
+            p=evaluation.get("points", 0),
+            m=evaluation.get("max", exercise.default_points),
+            q=quotient,
+            d=days_late,
+        )
+    )
+
 
 def update_completion(exercise, instance, user, evaluation, answer_date):
-
-    link = cm.EmbeddedLink.objects.filter(
-        instance=instance,
-        embedded_page=exercise
-    ).first()
+    link = cm.EmbeddedLink.objects.filter(instance=instance, embedded_page=exercise).first()
     parent_graph = link.parent.contentgraph_set.get_queryset().get(instance=instance)
     late = parent_graph.deadline and (answer_date > parent_graph.deadline)
 
@@ -218,7 +274,9 @@ def update_completion(exercise, instance, user, evaluation, answer_date):
             quotient = apply_late_rule(exercise, evaluation, parent_graph.late_rule, days_late)
         else:
             try:
-                quotient = evaluation.get("points", 0) / evaluation.get("max", exercise.default_points)
+                quotient = evaluation.get("points", 0) / evaluation.get(
+                    "max", exercise.default_points
+                )
             except ZeroDivisionError:
                 quotient = 0
     else:
@@ -229,16 +287,11 @@ def update_completion(exercise, instance, user, evaluation, answer_date):
 
     try:
         completion = cm.UserTaskCompletion.objects.get(
-            exercise=exercise,
-            instance=instance,
-            user=user
+            exercise=exercise, instance=instance, user=user
         )
     except cm.UserTaskCompletion.DoesNotExist:
         completion = cm.UserTaskCompletion(
-            exercise=exercise,
-            instance=instance,
-            user=user,
-            points=quotient
+            exercise=exercise, instance=instance, user=user, points=quotient
         )
         if evaluation.get("manual", False):
             completion.state = "submitted"
@@ -261,28 +314,17 @@ def update_completion(exercise, instance, user, evaluation, answer_date):
     eval_group = get_single_archived(exercise, link.revision).evaluation_group
 
     if changed and correct and eval_group:
-        others = cm.ContentPage.objects.filter(
-            evaluation_group=eval_group
-        ).exclude(id=exercise.id)
+        others = cm.ContentPage.objects.filter(evaluation_group=eval_group).exclude(id=exercise.id)
         for task in others:
-            link = cm.EmbeddedLink.objects.filter(
-                instance=instance,
-                embedded_page=task
-            ).first()
+            link = cm.EmbeddedLink.objects.filter(instance=instance, embedded_page=task).first()
             if get_single_archived(task, link.revision).evaluation_group != eval_group:
                 continue
             try:
                 completion = cm.UserTaskCompletion.objects.get(
-                    exercise=task,
-                    instance=instance,
-                    user=user
+                    exercise=task, instance=instance, user=user
                 )
             except cm.UserTaskCompletion.DoesNotExist:
-                completion = cm.UserTaskCompletion(
-                    exercise=task,
-                    instance=instance,
-                    user=user
-                )
+                completion = cm.UserTaskCompletion(exercise=task, instance=instance, user=user)
                 completion.state = "credited"
                 completion.save()
             else:
@@ -292,10 +334,9 @@ def update_completion(exercise, instance, user, evaluation, answer_date):
 
     return completion.state
 
+
 def best_result(user, instance, group_tag):
-    grouped_tasks = cm.ContentPage.objects.filter(
-        evaluation_group=group_tag
-    )
+    grouped_tasks = cm.ContentPage.objects.filter(evaluation_group=group_tag)
     best_score = -1
     best_task = grouped_tasks[0]
     for task in grouped_tasks:
@@ -305,6 +346,3 @@ def best_result(user, instance, group_tag):
                 best_score = score
                 best_task = task
     return best_score, best_task
-
-
-

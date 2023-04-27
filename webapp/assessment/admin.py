@@ -5,21 +5,16 @@ from modeltranslation.admin import TranslationAdmin, TranslationTabularInline
 from assessment.models import *
 
 # Register your models here.
-reversion.register(AssessmentSheet, follow=[
-    "assessmentbullet_set",
-    "assessmentsection_set"
-])
+reversion.register(AssessmentSheet, follow=["assessmentbullet_set", "assessmentsection_set"])
 reversion.register(AssessmentBullet)
 reversion.register(AssessmentSection)
+
 
 class AssessmentBulletInline(TranslationTabularInline):
     model = AssessmentBullet
     extra = 1
-    
+
 
 class AssessmentAdmin(TranslationAdmin, VersionAdmin):
-    
-    list_display = ("title", )
+    list_display = ("title",)
     inlines = [AssessmentBulletInline]
-    
-    

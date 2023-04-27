@@ -3,11 +3,17 @@ from django.conf import settings
 from django.utils.translation import gettext as _
 from teacher_tools.models import MossSettings, ReminderTemplate
 
+
 class MossnetForm(forms.ModelForm):
-    
     class Meta:
         model = MossSettings
-        fields = ["language", "file_extensions", "exclude_filenames", "exclude_subfolders", "matches"]
+        fields = [
+            "language",
+            "file_extensions",
+            "exclude_filenames",
+            "exclude_subfolders",
+            "matches",
+        ]
 
     matches = forms.IntegerField(label=_("Number of matches to show"))
     base_files = forms.FileField(
@@ -20,13 +26,10 @@ class MossnetForm(forms.ModelForm):
         label=_("Choose which version(s) of the answers are analysed"),
         choices=(
             ("newest", _("Latest version only (recommended)")),
-            ("all", _("Include all versions (NOTE: they will match amongst themselves)"))
+            ("all", _("Include all versions (NOTE: they will match amongst themselves)")),
         ),
     )
-    save_settings = forms.BooleanField(
-        label=_("Save settings for this exercise"),
-        required=False
-    )
+    save_settings = forms.BooleanField(label=_("Save settings for this exercise"), required=False)
 
     def __init__(self, *args, **kwargs):
         other_instances = kwargs.pop("other_instances")
@@ -35,12 +38,11 @@ class MossnetForm(forms.ModelForm):
         self.fields["include_instances"] = forms.MultipleChoiceField(
             choices=((instance.slug, instance.name) for instance in other_instances),
             label=_("Include answers from other instances"),
-            required=False
+            required=False,
         )
 
 
 class ReminderForm(forms.ModelForm):
-
     class Meta:
         model = ReminderTemplate
         fields = ["title", "header", "footer"]
@@ -52,15 +54,12 @@ class ReminderForm(forms.ModelForm):
     reminder_action = forms.ChoiceField(
         widget=forms.HiddenInput,
         choices=(("generate", "generate"), ("send", "send")),
-        initial="generate"
+        initial="generate",
     )
-    save_template = forms.BooleanField(
-        label=_("Save template for this instance"),
-        required=False
-    )
+    save_template = forms.BooleanField(label=_("Save template for this instance"), required=False)
+
 
 class BatchGradingForm(forms.Form):
-
     mode = forms.ChoiceField(
         widget=forms.RadioSelect,
         label=_("Grading mode"),
@@ -69,21 +68,21 @@ class BatchGradingForm(forms.Form):
             ("latest", _("Only grade latest answer")),
             ("all", _("Grade all answers")),
         ),
-        initial="latest"
+        initial="latest",
     )
 
-class TransferRecordsForm(forms.Form):
 
-    #mode = forms.ChoiceField(
-        #widget=forms.RadioSelect,
-        #label=_("Transfer action"),
-        #required=True,
-        #choices=(
-            #("move", _("Move records")),
-            #("copy", _("Copy records")),
-        #),
-        #initial="copy"
-    #)
+class TransferRecordsForm(forms.Form):
+    # mode = forms.ChoiceField(
+    # widget=forms.RadioSelect,
+    # label=_("Transfer action"),
+    # required=True,
+    # choices=(
+    # ("move", _("Move records")),
+    # ("copy", _("Copy records")),
+    # ),
+    # initial="copy"
+    # )
     recalculate = forms.BooleanField(
         label=_("Recalculate points"),
         required=False,
@@ -94,9 +93,7 @@ class TransferRecordsForm(forms.Form):
         super().__init__(*args, **kwargs)
 
         self.fields["target_instance"] = forms.ChoiceField(
-            widget = forms.Select,
-            label = _("Choose target instance"),
-            choices = [(c.id, c.name) for c in other_instances]
+            widget=forms.Select,
+            label=_("Choose target instance"),
+            choices=[(c.id, c.name) for c in other_instances],
         )
-
-

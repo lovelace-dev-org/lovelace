@@ -5,7 +5,7 @@ from celery.result import AsyncResult
 
 from time import sleep
 
-os.environ['DJANGO_SETTINGS_MODULE'] = 'lovelace.settings'
+os.environ["DJANGO_SETTINGS_MODULE"] = "lovelace.settings"
 
 from courses.models import UserFileTaskAnswer
 
@@ -22,7 +22,7 @@ print(as_res2.get(no_ack=False))
 print(async_result is as_res2)
 
 # Detect whether a task has been given an evaluation
-#if userfiletaskanswer.evaluation.correct is None
+# if userfiletaskanswer.evaluation.correct is None
 
 
 # parent tasks have been mentioned in the docs

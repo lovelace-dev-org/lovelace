@@ -5,6 +5,7 @@ import os
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "lovelace.settings")
 
 import django
+
 django.setup()
 
 from django.db import transaction
@@ -13,10 +14,10 @@ from courses.models import Term, CourseInstance
 
 
 def select_instance():
-    instances = CourseInstance.objects.all().order_by('id').values_list('id', 'name_fi')
+    instances = CourseInstance.objects.all().order_by("id").values_list("id", "name_fi")
 
     if len(instances) == 0:
-        print("Error: No course instances. Create a course instance first.", file=sys.stderr) 
+        print("Error: No course instances. Create a course instance first.", file=sys.stderr)
         sys.exit(1)
 
     ids = set()
@@ -51,7 +52,7 @@ def load_terms(filename):
     # Create a set out of terms to prevent name collisions
     terms_ = set((k, v) for k, v in dict(terms).items())
     return terms_
-        
+
 
 def main(filename):
     terms = load_terms(filename)

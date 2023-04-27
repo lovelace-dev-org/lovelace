@@ -2,16 +2,15 @@ import datetime
 from assessment.models import *
 from utils.archive import get_archived_instances
 
+
 def clone_assessment_links(old_instance, new_instance):
-    links = AssessmentToExerciseLink.objects.filter(
-        instance=old_instance
-    )
+    links = AssessmentToExerciseLink.objects.filter(instance=old_instance)
     for link in links:
         link.id = None
         link.instance = new_instance
         link.save()
-        
-        
+
+
 def get_sectioned_sheet(link):
     by_section = {}
     if link.revision is None:
@@ -28,16 +27,14 @@ def get_sectioned_sheet(link):
     bullets.sort(key=lambda b: b.ordinal_number)
 
     for section in sections:
-        by_section[section]= {
-            "bullets": [],
-            "total_points": 0
-        }
-    
+        by_section[section] = {"bullets": [], "total_points": 0}
+
     for bullet in bullets:
         by_section[bullet.section]["bullets"].append(bullet)
         by_section[bullet.section]["total_points"] += bullet.point_value
 
     return sheet, by_section
+
 
 def serializable_assessment(user, sheet, bullets_by_section, cleaned_data):
     document = {
@@ -54,13 +51,13 @@ def serializable_assessment(user, sheet, bullets_by_section, cleaned_data):
         "correct": cleaned_data["correct"],
         "complete": cleaned_data["complete"],
     }
-        
+
     for name, section in bullets_by_section.items():
         section_doc = {
             "name": name.title,
             "section_points": 0,
             "max_points": section["total_points"],
-            "bullets": []
+            "bullets": [],
         }
         for bullet in section["bullets"]:
             score = cleaned_data["bullet-{}-points".format(bullet.id)] or 0
@@ -73,9 +70,9 @@ def serializable_assessment(user, sheet, bullets_by_section, cleaned_data):
                 "scored_points": score,
                 "comment": cleaned_data["bullet-{}-comment".format(bullet.id)],
             }
-                        
+
         document["total_score"] += section_doc["section_points"]
         document["sections"].append(section_doc)
         document["max_total"] += section["total_points"]
-        
-    return document        
+
+    return document

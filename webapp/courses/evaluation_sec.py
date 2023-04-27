@@ -8,16 +8,15 @@ safe environment to run unsafe code in.
 
 import os
 import pwd
-import signal
 import resource
 
-from signal import SIGKILL, SIGSTOP
 from django.conf import settings
 
 _CONCURRENT_PROCESSES = 40
 _NUMBER_OF_FILES = 100
-_FILE_SIZE = 4 * (1024 ** 2)  # 4 MiB
+_FILE_SIZE = 4 * (1024**2)  # 4 MiB
 _CPU_TIME = 20
+
 
 def get_uid_gid(username):
     pwrec = pwd.getpwnam(username)
@@ -25,13 +24,16 @@ def get_uid_gid(username):
     gid = pwrec.pw_gid
     return uid, gid
 
-def get_demote_process_fun(concurrent_processes=_CONCURRENT_PROCESSES,
-                           number_of_files=_NUMBER_OF_FILES,
-                           file_size=_FILE_SIZE,
-                           cpu_time=_CPU_TIME):
+
+def get_demote_process_fun(
+    concurrent_processes=_CONCURRENT_PROCESSES,
+    number_of_files=_NUMBER_OF_FILES,
+    file_size=_FILE_SIZE,
+    cpu_time=_CPU_TIME,
+):
     """
     Creates and returns a function that demotes the process based on given
-    arguments. Allows setting of custom limits based on, e.g., database values. 
+    arguments. Allows setting of custom limits based on, e.g., database values.
     """
 
     def demote_process():
@@ -39,16 +41,20 @@ def get_demote_process_fun(concurrent_processes=_CONCURRENT_PROCESSES,
         Execute a number of security measures to limit the possible scope of harm
         available for the spawned processes to exploit.
         """
-        #close_fds()
+        # close_fds()
         drop_privileges()
-        limit_resources(concurrent_processes=concurrent_processes,
-                        number_of_files=number_of_files,
-                        file_size=file_size,
-                        cpu_time=cpu_time)
+        limit_resources(
+            concurrent_processes=concurrent_processes,
+            number_of_files=number_of_files,
+            file_size=file_size,
+            cpu_time=cpu_time,
+        )
 
     return demote_process
 
+
 default_demote_process = get_demote_process_fun()
+
 
 def close_fds():
     """
@@ -56,6 +62,7 @@ def close_fds():
     input, output and error streams to ensure that the forked process doesn't
     have access to data it shouldn't have.
     """
+
 
 def drop_privileges():
     """
@@ -78,16 +85,16 @@ def drop_privileges():
         print(
             "Unable to drop privileges to "
             "GID: (r:{s_gid}, e:{s_gid}, s:{s_gid}), "
-            "UID: (r:{s_uid}, e:{s_uid}, s:{s_uid})".format(
-                s_gid=student_gid, s_uid=student_uid
-            )
+            "UID: (r:{s_uid}, e:{s_uid}, s:{s_uid})".format(s_gid=student_gid, s_uid=student_uid)
         )
 
 
-def limit_resources(concurrent_processes=_CONCURRENT_PROCESSES,
-                    number_of_files=_NUMBER_OF_FILES,
-                    file_size=_FILE_SIZE,
-                    cpu_time=_CPU_TIME):
+def limit_resources(
+    concurrent_processes=_CONCURRENT_PROCESSES,
+    number_of_files=_NUMBER_OF_FILES,
+    file_size=_FILE_SIZE,
+    cpu_time=_CPU_TIME,
+):
     """
     Use resource.setrlimit to define soft and hard limits for different
     resources available to the forked process.
@@ -119,6 +126,7 @@ def limit_resources(concurrent_processes=_CONCURRENT_PROCESSES,
     # in seconds
     resource.setrlimit(resource.RLIMIT_CPU, (cpu_time, cpu_time))
 
+
 def secure_kill(pid):
     """
     Use SIGSTOP and SIGKILL signals to clean up any remaining processes. In
@@ -140,16 +148,9 @@ def secure_kill(pid):
 
     [1] https://linux.die.net/man/3/kill
     """
-    # DEBUG
-    user = settings.RESTRICTED_USERNAME
-    timeout = 5
-
-    kill_age = timeout + 5
-
-    # Iterate through the processes and issue SIGSTOP
-    os.system("killall -STOP --verbose --user {user} --younger-than {kill_age}s".format(user=user, kill_age=kill_age))
-
-    # Iterate through the processes again and issue SIGKILL
-    os.system("killall -KILL --verbose --user {user} --younger-than {kill_age}s".format(user=user, kill_age=kill_age))
-    
-    
+    os.system(
+        f"pkill --signal SIGSTOP -s {pid}"
+    )
+    os.system(
+        f"pkill --signal SIGKILL -s {pid}"
+    )
