@@ -4,10 +4,10 @@ from __future__ import absolute_import
 import csv
 import io
 import os
-import redis
 import subprocess
 import tempfile
 import time
+from smtplib import SMTPException
 
 from celery import shared_task
 from django.conf import settings
@@ -15,7 +15,6 @@ from django.core.cache import cache
 from django.core.mail import get_connection, EmailMessage
 from django.urls import reverse
 from django.utils.translation import gettext as _
-from smtplib import SMTPException
 
 from courses.models import Course, CourseInstance, UserFileUploadExerciseAnswer
 from utils.content import get_course_instance_tasks
@@ -51,10 +50,10 @@ def generate_completion_csv(self, course_slug, instance_slug):
 
         for i, user in enumerate(users, start=1):
             (
-                results_by_page,
+                __,
                 total_points,
                 total_missing,
-                total_points_available,
+                __,
             ) = compile_student_results(user, instance, tasks_by_page)
             results_url = reverse(
                 "teacher_tools:student_completion",
@@ -82,10 +81,9 @@ def generate_completion_csv(self, course_slug, instance_slug):
 
 @shared_task(name="teacher_tools.send_reminder_emails", bind=True)
 def send_reminder_emails(self, course_slug, instance_slug, title, header, footer):
-    course = Course.objects.get(slug=course_slug)
     instance = CourseInstance.objects.get(slug=instance_slug)
 
-    reminder_cache = cache.get("{}_reminders".format(instance.slug))
+    reminder_cache = cache.get(f"{instance.slug}_reminders")
     reminder_list = reminder_cache["reminders"]
     users_n = len(reminder_list)
 
@@ -94,7 +92,7 @@ def send_reminder_emails(self, course_slug, instance_slug, title, header, footer
     self.update_state(state="PROGRESS", meta={"current": 0, "total": users_n})
 
     connection = get_connection()
-    mailfrom = "{}-reminders@{}".format(instance.slug, settings.ALLOWED_HOSTS[0])
+    mailfrom = f"{instance.slug}-reminders@{settings.ALLOWED_HOSTS[0]}"
     reply_to = instance.email
 
     for i, reminder in enumerate(reminder_list[progress:], start=progress):
@@ -126,7 +124,7 @@ def send_reminder_emails(self, course_slug, instance_slug, title, header, footer
             except Exception:
                 reminder_cache["progress"] = i
                 cache.set(
-                    "{}_reminders".format(instance.slug),
+                    f"{instance.slug}_reminders",
                     reminder_cache,
                     timeout=settings.REDIS_LONG_EXPIRE,
                 )
@@ -138,33 +136,9 @@ def send_reminder_emails(self, course_slug, instance_slug, title, header, footer
 
         self.update_state(state="PROGRESS", meta={"current": i + 1, "total": users_n})
 
-    cache.delete("{}_reminders".format(instance.slug))
+    cache.delete("{instance.slug}_reminders")
 
     return {"current": users_n, "total": users_n}
-
-
-def crawl(folder):
-    content = os.listdir(folder)
-    if content and all(fn.isdigit() for fn in content):
-        content.sort()
-        if newest_only:
-            newest = content[-1]
-            crawl(os.path.join(folder, newest))
-        else:
-            for fn in content:
-                crawl(os.path.join(folder, fn))
-    else:
-        for fn in content:
-            path = os.path.join(folder, fn)
-
-            # this branch identifies files to submit
-            if os.path.splitext(fn)[-1] in extensions:
-                if not fn in exclude_files:
-                    files_to_submit.append('"' + path + '"')
-            else:
-                if os.path.isdir(path):
-                    if not any(fn.startswith(e) for e in exclude_subfolders):
-                        crawl(path)
 
 
 @shared_task(name="teacher_tools.order_moss_report", bind=True)
@@ -215,6 +189,7 @@ def order_moss_report(self, course_slug, instance_slug, exercise_slug, submit_fo
         users_n += len(answerers)
 
     for islug, answerers in answerers_by_instance:
+        i = 0
         for i, student in enumerate(answerers):
             self.update_state(
                 state="PROGRESS", meta={"phase": "CHOOSE_FILES", "current": i + 1, "total": users_n}
@@ -281,6 +256,6 @@ def order_moss_report(self, course_slug, instance_slug, exercise_slug, submit_fo
     out = stdout.read().decode("utf-8")
     url = out.rstrip().split("\n")[-1]
 
-    cache.set("{}_moss_result".format(exercise_slug), url, timeout=settings.REDIS_LONG_EXPIRE)
+    cache.set(f"{exercise_slug}_moss_result", url, timeout=settings.REDIS_LONG_EXPIRE)
 
     return {"result": "success", "url": url}

@@ -3,8 +3,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.forms import fields
 from django.utils.translation import gettext as _
-from modeltranslation.forms import TranslationModelForm
-from assessment.models import *
+from assessment.models import AssessmentBullet, AssessmentSection
 from utils.management import add_translated_charfields, TranslationStaffForm
 
 
@@ -15,9 +14,7 @@ class AddAssessmentForm(forms.Form):
         default_title = cleaned_data.get("title_" + settings.MODELTRANSLATION_DEFAULT_LANGUAGE)
         if not (sheet or default_title):
             raise ValidationError(
-                _(
-                    "Either title in default language ({lang})" " or existing sheet must be filled"
-                ).format(lang=settings.MODELTRANSLATION_DEFAULT_LANGUAGE)
+                _(f"Either title in default language, or existing sheet must be filled")
             )
         if sheet and default_title:
             raise ValidationError(
@@ -73,10 +70,10 @@ class AssessmentForm(forms.Form):
     complete = forms.BooleanField(label=_("This assessment is complete"), required=False)
 
     def points_widget(self, bullet):
-        return self["bullet-{}-points".format(bullet.id)]
+        return self[f"bullet-{bullet.id}-points"]
 
     def comment_widget(self, bullet):
-        return self["bullet-{}-comment".format(bullet.id)]
+        return self[f"bullet-{bullet.id}-comment"]
 
     def get_initial_for_field(self, field, field_name):
         default_value = super().get_initial_for_field(field, field_name)
@@ -110,7 +107,7 @@ class AssessmentForm(forms.Form):
 
         for name, section in bullets_by_section.items():
             for bullet in section["bullets"]:
-                self.fields["bullet-{}-points".format(bullet.id)] = fields.FloatField(
+                self.fields[f"bullet-{bullet.id}-points"] = fields.FloatField(
                     max_value=bullet.point_value,
                     min_value=0,
                     label=bullet.title,
@@ -119,7 +116,7 @@ class AssessmentForm(forms.Form):
                     required=False,
                     error_messages=_score_errors,
                 )
-                self.fields["bullet-{}-comment".format(bullet.id)] = fields.CharField(
+                self.fields[f"bullet-{bullet.id}-comment"] = fields.CharField(
                     widget=forms.TextInput(attrs={"class": "comment-input"}), required=False
                 )
 

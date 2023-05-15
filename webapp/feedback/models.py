@@ -29,29 +29,36 @@ class ContentFeedbackQuestion(models.Model):
 
     def get_url_name(self):
         """Creates a URL and HTML5 ID field friendly version of the name."""
-        # TODO: Ensure uniqueness!
         default_lang = django.conf.settings.LANGUAGE_CODE
-        return slugify(getattr(self, "question_{}".format(default_lang)), allow_unicode=True)
+        return slugify(getattr(self, f"question_{default_lang}"), allow_unicode=True)
 
     def get_type_object(self):
-        """Returns the actual type object of the question object that is the child of ContentFeedbackQuestion."""
-        TYPE_MODELS = {
+        """
+        Returns the actual type object of the question object that
+        is the child of ContentFeedbackQuestion.
+        """
+
+        type_models = {
             "THUMB_FEEDBACK": ThumbFeedbackQuestion,
             "STAR_FEEDBACK": StarFeedbackQuestion,
             "MULTIPLE_CHOICE_FEEDBACK": MultipleChoiceFeedbackQuestion,
             "TEXTFIELD_FEEDBACK": TextfieldFeedbackQuestion,
         }
-        return TYPE_MODELS[self.question_type].objects.get(id=self.id)
+        return type_models[self.question_type].objects.get(id=self.id)
 
     def get_answer_model(self):
-        """Returns the corresponding answer model of the question object that is the child of ContentFeedbackQuestion."""
-        ANSWER_MODELS = {
+        """
+        Returns the corresponding answer model of the question object
+        that is the child of ContentFeedbackQuestion.
+        """
+
+        answer_models = {
             "THUMB_FEEDBACK": ThumbFeedbackUserAnswer,
             "STAR_FEEDBACK": StarFeedbackUserAnswer,
             "MULTIPLE_CHOICE_FEEDBACK": MultipleChoiceFeedbackUserAnswer,
             "TEXTFIELD_FEEDBACK": TextfieldFeedbackUserAnswer,
         }
-        return ANSWER_MODELS[self.question_type]
+        return answer_models[self.question_type]
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -59,7 +66,7 @@ class ContentFeedbackQuestion(models.Model):
         else:
             self.slug = slugify(self.slug, allow_unicode=True)
 
-        super(ContentFeedbackQuestion, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     def save_answer(self, instance, content, user, ip, answer):
         pass
@@ -81,8 +88,7 @@ class ContentFeedbackQuestion(models.Model):
         answers = self.get_user_answers_by_content(user, instance, content)
         if answers:
             return answers.latest()
-        else:
-            return None
+        return None
 
     def get_latest_answers_by_content(self, instance, content):
         return (
@@ -107,7 +113,7 @@ class TextfieldFeedbackQuestion(ContentFeedbackQuestion):
     def save(self, *args, **kwargs):
         self.slug = self.get_url_name()
         self.question_type = "TEXTFIELD_FEEDBACK"
-        super(TextfieldFeedbackQuestion, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     def save_answer(self, instance, content, user, ip, answer):
         if "text-feedback" in answer.keys():
@@ -140,26 +146,21 @@ class ThumbFeedbackQuestion(ContentFeedbackQuestion):
     def save(self, *args, **kwargs):
         self.slug = self.get_url_name()
         self.question_type = "THUMB_FEEDBACK"
-        super(ThumbFeedbackQuestion, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     def save_answer(self, instance, content, user, ip, answer):
-        if "choice" in answer.keys():
+        try:
             choice = answer["choice"]
-        else:
+        except KeyError as e:
             raise InvalidFeedbackAnswerException(
                 "Error: failed to read the selected feedback option!"
-            )
-
-        if choice == "up":
-            thumb_up = True
-        else:
-            thumb_up = False
+            ) from e
 
         answer_object = ThumbFeedbackUserAnswer(
             question=self,
             content=content,
             instance=instance,
-            thumb_up=thumb_up,
+            thumb_up=choice == "up",
             user=user,
             answerer_ip=ip,
         )
@@ -175,13 +176,15 @@ class StarFeedbackQuestion(ContentFeedbackQuestion):
     def save(self, *args, **kwargs):
         self.slug = self.get_url_name()
         self.question_type = "STAR_FEEDBACK"
-        super(StarFeedbackQuestion, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     def save_answer(self, instance, content, user, ip, answer):
-        if "choice" in answer.keys():
+        try:
             rating = int(answer["choice"])
-        else:
-            raise InvalidFeedbackAnswerException("Error: failed to read the selected rating!")
+        except KeyError as e:
+            raise InvalidFeedbackAnswerException(
+                "Error: failed to read the selected rating!"
+            ) from e
 
         answer_object = StarFeedbackUserAnswer(
             question=self,
@@ -203,13 +206,13 @@ class MultipleChoiceFeedbackQuestion(ContentFeedbackQuestion):
     def save(self, *args, **kwargs):
         self.slug = self.get_url_name()
         self.question_type = "MULTIPLE_CHOICE_FEEDBACK"
-        super(MultipleChoiceFeedbackQuestion, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     def save_answer(self, instance, content, user, ip, answer):
-        if "choice" in answer.keys():
+        try:
             choice = int(answer["choice"])
-        else:
-            raise InvalidFeedbackAnswerException("Error: failed to read the chosen answer!")
+        except KeyError as e:
+            raise InvalidFeedbackAnswerException("Error: failed to read the chosen answer!") from e
 
         answer_object = MultipleChoiceFeedbackUserAnswer(
             question=self,
@@ -232,8 +235,6 @@ class MultipleChoiceFeedbackQuestion(ContentFeedbackQuestion):
 
 
 class MultipleChoiceFeedbackAnswer(models.Model):
-    # TODO: is there a need for setting maximum count of answer choices per feedback question?
-
     question = models.ForeignKey(MultipleChoiceFeedbackQuestion, on_delete=models.CASCADE)
     answer = models.TextField(blank=False)
 
@@ -293,12 +294,8 @@ class InvalidFeedbackAnswerException(Exception):
     This exception is cast when a feedback answer cannot be processed.
     """
 
-    pass
-
 
 class DatabaseBackendException(Exception):
     """
     This exception is cast when the database backend does not support the attempted operation.
     """
-
-    pass

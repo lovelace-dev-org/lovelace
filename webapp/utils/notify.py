@@ -69,7 +69,12 @@ def send_welcome_email(instance, user=None, lang_code=None, userlist=None):
 
         connection = get_connection()
         mail = EmailMessage(
-            title, body, mailfrom, recipients, headers={"Reply-to": reply_to}, connection=connection
+            title,
+            body,
+            mailfrom,
+            recipients,
+            headers={"Reply-to": reply_to},
+            connection=connection,
         )
         mail.send()
 

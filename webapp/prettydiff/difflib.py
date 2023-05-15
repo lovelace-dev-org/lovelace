@@ -1915,7 +1915,10 @@ class HtmlDiff(object):
         # make space non-breakable so they don't get compressed or line wrapped
         text = text.replace(" ", "&nbsp;").rstrip()
 
-        return '<td class="diff-linenum">%s</td><td class="diff-text">%s</td>' % (linenum, text)
+        return '<td class="diff-linenum">%s</td><td class="diff-text">%s</td>' % (
+            linenum,
+            text,
+        )
 
     def _make_prefix(self):
         """Create unique anchor prefixes"""
@@ -1952,7 +1955,10 @@ class HtmlDiff(object):
                     # at the beginning of a change, drop a link to the next
                     # change
                     num_chg += 1
-                    next_href[last] = '<a href="#difflib_chg_%s_%d">n</a>' % (toprefix, num_chg)
+                    next_href[last] = '<a href="#difflib_chg_%s_%d">n</a>' % (
+                        toprefix,
+                        num_chg,
+                    )
             else:
                 in_change = False
         # check for cases where there is no content to avoid exceptions
@@ -2006,7 +2012,11 @@ class HtmlDiff(object):
         else:
             context_lines = None
         diffs = _mdiff(
-            fromlines, tolines, context_lines, linejunk=self._linejunk, charjunk=self._charjunk
+            fromlines,
+            tolines,
+            context_lines,
+            linejunk=self._linejunk,
+            charjunk=self._charjunk,
         )
 
         # set up iterator to wrap lines that exceed desired width

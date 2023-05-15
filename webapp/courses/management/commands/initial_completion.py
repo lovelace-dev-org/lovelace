@@ -1,6 +1,12 @@
 from django.core.management.base import BaseCommand
 from reversion.models import Version
-from courses.models import CourseInstance, EmbeddedLink, User, UserAnswer, UserTaskCompletion
+from courses.models import (
+    CourseInstance,
+    EmbeddedLink,
+    User,
+    UserAnswer,
+    UserTaskCompletion,
+)
 from routine_exercise.models import RoutineExerciseProgress
 
 
@@ -58,13 +64,22 @@ class Command(BaseCommand):
                     pass
                 else:
                     if progress.completed:
-                        results[exercise_obj.slug] = {"eo": exercise_obj, "result": "correct"}
+                        results[exercise_obj.slug] = {
+                            "eo": exercise_obj,
+                            "result": "correct",
+                        }
                     else:
-                        results[exercise_obj.slug] = {"eo": exercise_obj, "result": "incorrect"}
+                        results[exercise_obj.slug] = {
+                            "eo": exercise_obj,
+                            "result": "incorrect",
+                        }
             else:
                 answers = UserAnswer.get_task_answers(exercise_obj, instance=instance, user=user)
                 if answers.filter(evaluation__correct=True).count():
-                    results[exercise_obj.slug] = {"eo": exercise_obj, "result": "correct"}
+                    results[exercise_obj.slug] = {
+                        "eo": exercise_obj,
+                        "result": "correct",
+                    }
                     if exercise_obj.evaluation_group:
                         group = self._get_group(task_links, exercise_obj)
                         for task in group:
@@ -73,7 +88,10 @@ class Command(BaseCommand):
                             else:
                                 results[task.slug] = {"eo": task, "result": "credited"}
                 elif answers.count():
-                    results[exercise_obj.slug] = {"eo": exercise_obj, "result": "incorrect"}
+                    results[exercise_obj.slug] = {
+                        "eo": exercise_obj,
+                        "result": "incorrect",
+                    }
         return results
 
     def _get_group(self, task_links, task):

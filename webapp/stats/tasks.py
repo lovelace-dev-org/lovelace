@@ -3,19 +3,14 @@ from __future__ import absolute_import
 
 import datetime
 import json
-import redis
 import statistics
 
 from celery import shared_task
-from django.conf import settings
 from django.core.cache import cache
 
 from courses.models import ContentGraph, CourseInstance, UserAnswer
-from .models import *
-
 from utils.content import get_course_instance_tasks
-
-from time import sleep
+from .models import StudentTaskStats, TaskSummary
 
 
 @shared_task(name="stats.generate-instance-user-stats")
@@ -85,7 +80,7 @@ def generate_instance_tasks_summary(instance_slug):
 
     TaskSummary.objects.filter(instance=instance).delete()
 
-    for page, task_links in task_pages:
+    for __, task_links in task_pages:
         for link in task_links:
             task = link.embedded_page.get_type_object()
             records = StudentTaskStats.objects.filter(instance=instance, task=task).exclude(
@@ -155,6 +150,6 @@ def generate_instance_tasks_summary(instance_slug):
 @shared_task(name="stats.finalize-instance-stats", bind=True)
 def finalize_instance_stats(self, timestamp, instance_slug):
     cache.set(
-        "{}_stat_meta".format(instance_slug),
+        f"{instance_slug}_stat_meta",
         json.dumps({"task_id": self.request.id, "completed": timestamp}),
     )

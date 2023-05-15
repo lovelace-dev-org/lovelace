@@ -14,6 +14,7 @@ import courses.markupparser
 
 from utils.parsing import BrokenLinkWarning, parse_link_url
 
+
 class Tag:
     """One markup tag type."""
 
@@ -38,7 +39,8 @@ class Tag:
             option_string = " ".join(f'{key}="{value}"' for key, value in options.items())
         else:
             option_string = " ".join(
-                f'{key}="{value}"' for key, value in dict(self.options.items() + options.items()).items()
+                f'{key}="{value}"'
+                for key, value in dict(self.options.items() + options.items()).items()
             )
         return f"<{self.name} {option_string}>"
 
@@ -82,7 +84,10 @@ tags = {
         re.compile(r"\[\!term\=(?P<term_name>[^!]+)\!\](?P<term_text>.+?)\[\!term\!\]"),
     ),
     "dl": Tag(
-        "span", "[!dl=page_slug!]", "[!dl!]", re.compile(r"\[\!dl\=(?P<page_slug>[^!]+)\!\]")
+        "span",
+        "[!dl=page_slug!]",
+        "[!dl!]",
+        re.compile(r"\[\!dl\=(?P<page_slug>[^!]+)\!\]"),
     ),
     "thold": Tag(
         "span",

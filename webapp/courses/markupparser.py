@@ -327,7 +327,6 @@ class CalendarMarkup(Markup):
         else:
             yield f"<div>Calendar {settings['calendar_name']} not found.</div>"
 
-
     @classmethod
     def settings(cls, matchobj, state):
         settings = {"calendar_name": matchobj.group("calendar_name")}
@@ -561,23 +560,40 @@ class EmbeddedPageMarkup(Markup):
                 settings["urls"] = {
                     "stats_url": reverse("stats:single_exercise", kwargs={"exercise": page}),
                     "feedback_url": reverse(
-                        "feedback:statistics", kwargs={"instance": instance, "content": page}
+                        "feedback:statistics",
+                        kwargs={"instance": instance, "content": page},
                     ),
                     "download_url": reverse(
                         "teacher_tools:download_answers",
-                        kwargs={"course": instance.course, "instance": instance, "content": page},
+                        kwargs={
+                            "course": instance.course,
+                            "instance": instance,
+                            "content": page,
+                        },
                     ),
                     "summary_url": reverse(
                         "teacher_tools:answer_summary",
-                        kwargs={"course": instance.course, "instance": instance, "content": page},
+                        kwargs={
+                            "course": instance.course,
+                            "instance": instance,
+                            "content": page,
+                        },
                     ),
                     "batch_url": reverse(
                         "teacher_tools:batch_grade",
-                        kwargs={"course": instance.course, "instance": instance, "content": page},
+                        kwargs={
+                            "course": instance.course,
+                            "instance": instance,
+                            "content": page,
+                        },
                     ),
                     "reset_url": reverse(
                         "teacher_tools:reset_completion",
-                        kwargs={"course": instance.course, "instance": instance, "content": page},
+                        kwargs={
+                            "course": instance.course,
+                            "instance": instance,
+                            "content": page,
+                        },
                     ),
                     "edit_url": page.get_admin_change_url(),
                     "submit_url": reverse(
@@ -657,12 +673,18 @@ class EmbeddedScriptMarkup(Markup):
 
             if incl_type == "script":
                 includes.append(
-                    ("script", incl_name, "type", "text/javascript", "src", incl_addr, where)
+                    (
+                        "script",
+                        incl_name,
+                        "type",
+                        "text/javascript",
+                        "src",
+                        incl_addr,
+                        where,
+                    )
                 )
             elif incl_type == "style":
-                includes.append(
-                    ("link", incl_name, "rel", "stylesheet", "href", incl_addr, where)
-                )
+                includes.append(("link", incl_name, "rel", "stylesheet", "href", incl_addr, where))
             elif incl_type == "image":
                 image_urls.append((incl_name, incl_addr, where))
 
@@ -1131,7 +1153,10 @@ class SvgMarkup(Markup):
 
     @classmethod
     def settings(cls, matchobj, state):
-        return {"width": matchobj.group("svg_width"), "height": matchobj.group("svg_height")}
+        return {
+            "width": matchobj.group("svg_width"),
+            "height": matchobj.group("svg_height"),
+        }
 
 
 markups.append(SvgMarkup)

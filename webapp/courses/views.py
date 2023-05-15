@@ -87,6 +87,7 @@ JSON_DEBUG = 4
 # |
 # v
 
+
 @cookie_law
 def index(request):
     course_list = Course.objects.order_by("name").all()
@@ -116,17 +117,12 @@ def course(request, course, instance):
 
     if is_course_staff(request.user, instance):
         contents = ContentGraph.objects.filter(
-            instance=instance,
-            ordinal_number__gt=0,
-            parentnode=None
+            instance=instance, ordinal_number__gt=0, parentnode=None
         ).order_by("ordinal_number")
         context["course_staff"] = True
     else:
         contents = ContentGraph.objects.filter(
-            instance=instance,
-            ordinal_number__gt=0,
-            visible=True,
-            parentnode=None
+            instance=instance, ordinal_number__gt=0, visible=True, parentnode=None
         ).order_by("ordinal_number")
         context["course_staff"] = False
 
@@ -154,12 +150,16 @@ def content(request, course, instance, content, pagenum=None, **kwargs):
         content_graph = ContentGraph.objects.filter(instance=instance, content=content).first()
     except ContentGraph.DoesNotExist:
         return HttpResponseNotFound(
-            _(f"Content {content.slug} is not linked to course {course.slug}!")
+            _("Content {content} is not linked to course {course}!").format(
+                content=content.slug, course=course.slug
+            )
         )
     else:
         if content_graph is None:
             return HttpResponseNotFound(
-                _(f"Content {content.slug} is not linked to course {course.slug}!")
+                _("Content {content} is not linked to course {course}!").format(
+                    content=content.slug, course=course.slug
+                )
             )
 
     evaluation = None
@@ -449,6 +449,7 @@ def check_answer(request, course, instance, content, revision):
 
     return JsonResponse(data)
 
+
 # Legacy task type intended to be entirely phased out and replaced by routine exercise
 @ensure_enrolled_or_staff
 def get_repeated_template_session(request, course, instance, content, revision):
@@ -702,7 +703,6 @@ def get_file_exercise_evaluation(request, user, course, instance, exercise, answ
     return HttpResponse(t_view.render(data, request))
 
 
-
 @ensure_owner_or_staff
 def show_answer_file_content(request, user, course, instance, answer, filename):
     try:
@@ -754,7 +754,7 @@ def download_embedded_file(request, course, instance, mediafile):
 
     file_link = CourseMediaLink.objects.filter(media=mediafile, instance=instance).first()
     if file_link is None:
-        return HttpResponseNotFound(_(f"No such file {mediafile.name}"))
+        return HttpResponseNotFound(_("No such file {mediafile}").format(mediafile=mediafile.name))
 
     if file_link.revision is None:
         file_object = file_link.media.file

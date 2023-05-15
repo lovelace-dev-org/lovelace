@@ -80,7 +80,11 @@
       <div id="cookie-law-message">
         <div class="cookie-law-container">
           <p>{% url 'courses:terms' as terms_url %}
-            {% blocktrans %}This site uses cookies. Learn more about our <a href="{{ terms_url }}">terms and conditions</a>.{% endblocktrans %}</p>
+            {% blocktrans %}
+              This site uses cookies.
+              Learn more about our <a href="{{ terms_url }}">terms and conditions</a>.
+            {% endblocktrans %}
+          </p>
           <button onclick="accept_cookies();">{% trans 'Accept' %}</button>
         </div>
       </div>
@@ -143,8 +147,8 @@
                      href="{% url 'courses:mass_email' course instance %}"
                      title="{% trans 'Open the mass email panel' %}"
                      onclick="show_panel(event, this, 'email-panel', 'message-panel');"
-                     data-querystring=""
-                  >{% trans 'Mass email' %}</a>
+                     data-querystring="">{% trans 'Mass email' %}
+                  </a>
                 </div>
                 <div class="user-tools">
                   <a href="{% url 'teacher_tools:completion' course instance %}">
@@ -205,7 +209,8 @@
               {% get_available_languages as LANGUAGES %}
               {% get_language_info_list for LANGUAGES as languages %}
               {% for language in languages %}
-                <option value="{{ language.code }}"{% if language.code == LANGUAGE_CODE %} selected="selected"{% endif %}>
+                <option value="{{ language.code }}"{% if language.code == LANGUAGE_CODE %}
+                        selected="selected"{% endif %}>
                   {{ language.name_local }} ({{ language.code }})
                 </option>
               {% endfor %}
@@ -217,8 +222,8 @@
                     id="staff-view-toggle"
                     class="nav-bar-button"
                     title="{% trans 'Toggle between student and staff view' %}"
-                    onclick="toggle_staff_widgets(event, this);"
-            >{% trans 'staff view' %}</button>
+                    onclick="toggle_staff_widgets(event, this);">{% trans 'staff view' %}
+            </button>
           {% endif %}          
         </div>
         </div>
@@ -228,11 +233,16 @@
       {% block termbank %}
         {% if termbank_contents %}
           <div class="termbank" id="termbank">
-            <button class="expand-box" onclick="expand_box(this);" title="{% trans 'Hide/Show the termbank' %}">◀</button>
+            <button class="expand-box"
+                    onclick="expand_box(this);"
+                    title="{% trans 'Hide/Show the termbank' %}"
+            >◀</button>
             <div class="termbank-contents" id="termbank-contents">
               <div class="termbank-heading" id="termbank-heading">{% trans "Termbank" %}</div>
               <div class="termbank-search-div">
-                <input id="termbank-search" type="search" oninput="filter_termbank_contents($(this).val());"
+                <input id="termbank-search"
+                       type="search"
+                       oninput="filter_termbank_contents($(this).val());"
                        placeholder="{% trans 'Search for a term…' %}">
               </div>
               <div id="termbank-list-div" class="list-div">
@@ -245,7 +255,10 @@
                           <li class="term-list-item">
                             {% if term.alias %}<span class="term-alias">{{ term.alias }}</span> → {% endif %}
                             <div class="term-container"
-                                 onmouseenter="show_term_description_during_hover(this, event, '#{{ term.slug }}-term-div');"
+                                 onmouseenter="
+                                   show_term_description_during_hover
+                                   (this, event, '#{{ term.slug }}-term-div');
+                                 "
                                  onmouseleave="hide_tooltip('#{{ term.slug }}-term-div');">
                               <span class="term">{{ term.name }}</span>
                             </div>
@@ -265,7 +278,10 @@
 
       {% block toc %}
         <div class="toc-box">
-          <button class="expand-box" onclick="expand_box(this);" title="{% trans 'Hide/Show the table of contents' %}">◀</button>
+          <button class="expand-box"
+                  onclick="expand_box(this);"
+                  title="{% trans 'Hide/Show the table of contents' %}"
+          >◀</button>
           <nav class="toc" id="toc">
             <div class="toc-box-heading">{% trans "Table of Contents" %}</div>
             <div class="list-div">
@@ -275,7 +291,10 @@
           </nav>
           {% block progress %}
             <div class="progress-container">
-              <div class="toc-box-progress-info">{% trans "Completed:" %} <span id="completed-exercises"></span>/<span id="total-exercises"></span> {% trans "exercises" %}</div>
+              <div class="toc-box-progress-info">
+                {% trans "Completed:" %} <span id="completed-exercises"></span>/
+                <span id="total-exercises"></span> {% trans "exercises" %}
+              </div>
               <progress id="exercises-progress" value="0" max="0"></progress>
             </div>
           {% endblock %}
@@ -299,8 +318,8 @@
             <button type="button"
                     class="side-panel-closer"
                     title="{% trans 'Close the panel' %}"
-                    onclick="hide_panel(event, 'message-panel');"
-            >&lt;&lt;</button>
+                    onclick="hide_panel(event, 'message-panel');">&lt;&lt;
+            </button>
             <div class="panel-container"></div>
         </div>
       {% endblock %}
@@ -316,7 +335,9 @@
                 <div class="term-grace-area"></div>
                 {% if term.tabs %}
                   <ol class="term-tab-titles">
-                    <li onclick="show_term_tab(this);" class="term-tab-active">{% trans 'Description' %}</li>
+                    <li onclick="show_term_tab(this);" class="term-tab-active">
+                      {% trans 'Description' %}
+                    </li>
                     {% for tab_title, _ in term.tabs %}
                       <li onclick="show_term_tab(this);">{{ tab_title }}</li>
                     {% endfor %}
@@ -349,7 +370,10 @@
 
       <footer>
         <div class="column0">
-          <p>Content license for this course: <a href="{{ instance.license_url }}">{{ instance.content_license }}</a></p>
+          <p>
+            Content license for this course:
+            <a href="{{ instance.license_url }}">{{ instance.content_license }}</a>
+          </p>
           <p>Site design &amp; backend by Miikka Salminen</p>
         </div>
         <div class="column1">

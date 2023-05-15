@@ -10,25 +10,29 @@
       {% if not sandboxed %}
         {% if evaluation == "unanswered" %}
           <img src="{% static 'courses/unanswered-96.png' %}" width="96" height="96" alt="?"
-             title="{% trans 'You haven’t answered this exercise yet' %}" class="unanswered">
+             title="{% trans 'You haven’t answered this exercise yet' %}"
+             class="unanswered">
         {% elif evaluation == "incorrect" %}
           <img src="{% static 'courses/incorrect-96.png' %}" width="96" height="96" alt="✘"
-             title="{% trans 'You have answered this exercise incorrectly' %}" class="incorrect">
+             title="{% trans 'You have answered this exercise incorrectly' %}"
+             class="incorrect">
         {% elif evaluation == "correct" %}
           <img src="{% static 'courses/correct-96.png' %}" width="96" height="96" alt="✔"
-             title="{% trans 'You have answered this exercise correctly' %}" class="correct">
+             title="{% trans 'You have answered this exercise correctly' %}"
+             class="correct">
         {% elif evaluation == "credited" %}
           <img src="{% static 'courses/credited-96.png' %}" width="96" height="96" alt="✔"
-             title="{% trans 'You have answered another exercise in this set correctly' %}" class="credited">
+             title="{% trans 'You have answered another exercise in this set correctly' %}"
+             class="credited">
         {% elif evaluation == "submitted" %}
           <img src="{% static 'courses/submitted-96.png' %}" width="96" height="96" alt="->"
-             title="{% trans 'Your submitted answer is waiting for staff assessment' %}" class="submitted">
+             title="{% trans 'Your submitted answer is waiting for staff assessment' %}"
+             class="submitted">
         {% endif %}
 
         <div class="task-meta-score">
           <span>{{ score|floatformat:"2" }}</span> <span> / {{ max_points }}</span>
         </div>
-
 
         {% comment %}
         <hr>
@@ -38,19 +42,25 @@
 
         {% if not sandboxed %}
           <hr>
-          <div><a href="{% url 'courses:show_answers' user course instance content %}"
-                  class="user-answers-link"
-                  title="{% trans 'View your previous answers' %}">
-                    {% blocktrans count counter=answer_count %}<span class="answer-count">{{ counter }}</span> answer{% plural %}<span class="answer-count">{{ counter }}</span> answers{% endblocktrans %}
-          </a></div>
+          <div>
+            <a href="{% url 'courses:show_answers' user course instance content %}"
+               class="user-answers-link"
+               title="{% trans 'View your previous answers' %}">
+              {% blocktrans count counter=answer_count %}
+                <span class="answer-count">{{ counter }}</span>
+                answer{% plural %}
+                <span class="answer-count">{{ counter }}</span>
+                answers{% endblocktrans %}
+            </a>
+          </div>
           <div>
             <a id="{{ content.slug }}-faq-panel-link"
                class="faq-panel-link"
                href="{% url 'faq:faq_panel' course instance content %}"
                title="{% trans 'Open the FAQ panel' %}"
                onclick="show_panel(event, this, 'faq', '{{ content.slug }}-panel');"
-               data-querystring=""
-            >{% trans 'Frequently Asked Questions' %}</a>
+               data-querystring="">{% trans 'Frequently Asked Questions' %}
+            </a>
           </div>
           {% if content.manually_evaluated %}
               <div>
@@ -59,8 +69,8 @@
                    href="{% url 'assessment:view_assessment_sheet' course instance content %}"
                    title="{% trans 'View assessment sheet' %}"
                    onclick="show_panel(event, this, 'assessment-view', '{{ content.slug }}-panel');"
-                   data-querystring=""
-                >{% trans 'Assessment Criteria' %}</a>
+                   data-querystring="">{% trans 'Assessment Criteria' %}
+                </a>
               </div>
           {% endif %}          
         {% endif %}
@@ -97,8 +107,8 @@
                      href="{{ meta.batch_url }}"
                      title="{% trans 'Open the batch grading panel' %}"
                      onclick="show_panel(event, this, 'batch-panel', '{{ content.slug }}-panel');"
-                     data-querystring=""
-                  >{% trans 'Batch grading' %}</a>
+                     data-querystring="">{% trans 'Batch grading' %}
+                  </a>
                 </div></li>
               {% endif %}
 
@@ -118,14 +128,18 @@
                            href="{% url 'assessment:manage_assessment' course instance content %}"
                            title="{% trans 'Open the assessment edit panel' %}"
                            onclick="show_panel(event, this, 'assessment-manage', '{{ content.slug }}-panel');"
-                           data-querystring=""
-                        >{% trans 'Edit Assessment' %}</a>
+                           data-querystring="">{% trans 'Edit Assessment' %}
+                        </a>
                     </div></li>
                 {% endif %}
             {% endif %}
             {% comment %}
               <li><div><a href="TODO">{% trans 'View reference answer' %}</a></div></li>
-              <li><div><a href="{% url 'courses:sandbox' content.slug %}">{% trans 'View separately' %}</a></div></li>
+              <li>
+                <div>
+                  <a href="{% url 'courses:sandbox' content.slug %}">{% trans 'View separately' %}</a>
+                </div>
+              </li>
             {% endcomment %}
           </ul>
         </div>
@@ -135,7 +149,9 @@
 {% endif %}
 
 {% if emb.revision and emb.revision > 0 and course_staff %}
-<div class="revision-info-embedded">This is an old revision № {{ emb.revision }} of this embedded page!</div>
+  <div class="revision-info-embedded">
+    This is an old revision № {{ emb.revision }} of this embedded page!
+  </div>
 {% endif %}
 
 <div>{{ emb.content|safe }}</div>
@@ -157,7 +173,11 @@
     </div>
   {% endblock %}
   
-  <form id="{{ content.slug }}-form" class="exercise-form" method="POST" enctype="multipart/form-data" action="{{ meta.submit_url }}">
+  <form id="{{ content.slug }}-form"
+        class="exercise-form"
+        method="POST"
+        enctype="multipart/form-data"
+        action="{{ meta.submit_url }}">
     
     {% csrf_token %}
     {% if emb.question %}{{ emb.question|safe }}{% endif %}
@@ -198,9 +218,17 @@
     {% if evaluation == "unanswered" %}
       <div class="answered-status"></div>
     {% elif evaluation == "incorrect" %}
-      <div class="answered-status"><span class="incorrect">{% trans "You have previously answered this task incorrectly." %}</span></div>
+      <div class="answered-status">
+        <span class="incorrect">
+          {% trans "You have previously answered this task incorrectly." %}
+        </span>
+      </div>
     {% elif evaluation == "correct" %}
-      <div class="answered-status"><span class="correct">{% trans "You have already answered this task correctly." %}</span></div>
+      <div class="answered-status">
+        <span class="correct">
+          {% trans "You have already answered this task correctly." %}
+        </span>
+      </div>
     {% endif %}
 
   </form>

@@ -29,6 +29,4 @@ urlpatterns = [
     path("instance_files/edit/", views.edit_instance_files, name="edit_instance_files"),
     path("feedback-questions/", views.get_feedback_questions, name="get_feedback_questions"),
     path("feedback-questions/edit/", views.edit_feedback_questions, name="edit_feedback_questions"),
-    # TODO: For administration (add/edit) of other exercise types
-    # ...
 ]

@@ -187,7 +187,6 @@ class FileUploadExerciseTranslationOptions(TranslationOptions):
     )
 
 
-
 @register(CodeReplaceExercise)
 class CodeReplaceExerciseTranslationOptions(TranslationOptions):
     fields = (

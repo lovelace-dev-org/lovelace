@@ -53,7 +53,12 @@
                 </button>                
             {% endif %}
           </div>
-          <div><span>{{ event.duration|event_duration }}</span><span class="right-float">{{ reservations|length }}&nbsp;/&nbsp;{{ event.reservable_slots }}</span></div>
+          <div>
+            <span>{{ event.duration|event_duration }}</span>
+            <span class="right-float">
+              {{ reservations|length }}&nbsp;/&nbsp;{{ event.reservable_slots }}
+            </span>
+          </div>
         </div>
         {% if event.event_description %}
             <div class="description">{{ event.event_description }}</div>
@@ -96,7 +101,9 @@
 
         {% if user.is_authenticated and can_reserve %}
             {% if user.is_authenticated and event.id in reserved_event_ids %}
-              <div class="reservation-result">{% trans "You have been reserved a slot in" %} {{ event.event_name }}.</div>
+              <div class="reservation-result">
+                {% trans "You have been reserved a slot in" %} {{ event.event_name }}.
+              </div>
               <div><input type="submit"
                            value="{% trans 'Cancel reservation' %}"
                            onClick="cal.reserve_slot(event, this);return false;"
@@ -123,7 +130,9 @@
             </div>
           {% endif %}
         {% elif user.is_authenticated and event.id in reserved_event_ids %}
-          <div class="reservation-result">{% trans "You have been reserved a slot in" %} {{ event.event_name }}.</div>
+          <div class="reservation-result">
+            {% trans "You have been reserved a slot in" %} {{ event.event_name }}.
+          </div>
           <div><input type="submit"
                       value="{% trans 'Cancel reservation' %}"
                       onClick="cal.reserve_slot(event, this);return false;"

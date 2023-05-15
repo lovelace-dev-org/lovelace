@@ -1,5 +1,3 @@
-import feedback.models
-import courses.models
 from reversion.models import Version
 
 from django.http import (
@@ -11,6 +9,8 @@ from django.http import (
 )
 from django.template import loader
 
+import feedback.models
+import courses.models
 from utils.content import first_title_from_content
 
 
@@ -93,16 +93,14 @@ def content_feedback_stats(request, instance, content):
         else:
             single_linked = False
             parent = None
-        embedded = True
     else:
         try:
             link = courses.models.ContentGraph.objects.get(instance=instance, content=content)
             parent = None
             single_linked = True
-            embedded = False
         except courses.models.ContentGraph.DoesNotExist:
             return HttpResponseNotFound(
-                "Content {} is not linked to course instance {}".format(content_slug, instance_slug)
+                f"Content {content.slug} is not linked to course instance {instance.slug}"
             )
 
     if link.revision is None:
@@ -116,10 +114,10 @@ def content_feedback_stats(request, instance, content):
             )
         except Version.DoesNotExist as e:
             return HttpResponseNotFound(
-                "The requested revision for {} is not available".format(content.slug)
+                f"The requested revision for {content.slug} is not available"
             )
 
-    title, anchor = first_title_from_content(content.content)
+    __, anchor = first_title_from_content(content.content)
 
     questions = content.get_feedback_questions()
     ctx = {
@@ -171,9 +169,6 @@ def receive(request, instance, content, question):
     if not request.user.is_active:
         return JsonResponse({"result": "Only logged in users can send feedback!"})
 
-    # TODO: Check that the user has successfully enrolled to the course instance.
-    # TODO: Take the revision into account.
-
     user = request.user
     ip = request.META.get("REMOTE_ADDR")
     answer = request.POST
@@ -181,7 +176,7 @@ def receive(request, instance, content, question):
     question = question.get_type_object()
 
     try:
-        answer_object = question.save_answer(instance, content, user, ip, answer)
+        question.save_answer(instance, content, user, ip, answer)
     except feedback.models.InvalidFeedbackAnswerException as e:
         return JsonResponse({"error": str(e)})
 

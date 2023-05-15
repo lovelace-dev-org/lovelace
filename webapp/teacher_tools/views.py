@@ -1,17 +1,20 @@
-import csv
 import datetime
 import os.path
-import redis
 import tempfile
 import zipfile
 
-import teacher_tools.tasks as teacher_tasks
 
 from django.conf import settings
 from django.core.cache import cache
 from django.db import transaction, IntegrityError
-from django.http import HttpResponse, HttpResponseForbidden, HttpResponseGone, JsonResponse
-from django.shortcuts import render, redirect
+from django.http import (
+    HttpResponse,
+    HttpResponseForbidden,
+    HttpResponseGone,
+    HttpResponseNotFound,
+    JsonResponse,
+)
+from django.shortcuts import redirect
 from django.utils.translation import gettext as _
 from django.template import loader
 from django.urls import reverse
@@ -19,13 +22,31 @@ from django.utils import translation
 from lovelace.celery import app as celery_app
 
 from utils.access import determine_access, is_course_staff, ensure_responsible, ensure_staff
+from utils.archive import get_single_archived
 from utils.content import get_course_instance_tasks, get_embedded_parent
-from utils.notify import send_welcome_email, send_bcc_email
+from utils.notify import send_welcome_email
 
-from courses.models import *
-from courses.forms import MessageForm
-from teacher_tools.utils import *
-from teacher_tools.models import *
+from courses.models import (
+    CourseEnrollment,
+    CourseInstance,
+    EmbeddedLink,
+    FileUploadExerciseReturnFile,
+    GradeThreshold,
+    User,
+    UserAnswer,
+    UserTaskCompletion,
+)
+import teacher_tools.tasks as teacher_tasks
+from teacher_tools.utils import (
+    check_user_completion,
+    compile_student_results,
+    reconstruct_answer_form,
+)
+from teacher_tools.models import (
+    MossBaseFile,
+    MossSettings,
+    ReminderTemplate,
+)
 from teacher_tools.forms import MossnetForm, ReminderForm, BatchGradingForm, TransferRecordsForm
 
 
@@ -62,12 +83,12 @@ def download_answers(request, course, instance, content):
 
             if errors:
                 error_str = "Zipping failed for these files:\n\n" + "\n".join(errors)
-                content_zip.writestr("{}/error_manifest".format(parts[2]), error_str)
+                content_zip.writestr(os.path.join(parts[2], "error_manifest"), error_str)
 
         temp_storage.seek(0)
         response = HttpResponse(temp_storage.read(), content_type="application/zip")
 
-    response["Content-Disposition"] = "attachment; filename={}_answers.zip".format(content.slug)
+    response["Content-Disposition"] = f"attachment; filename={content.slug}_answers.zip"
     return response
 
 
@@ -96,8 +117,8 @@ def manage_enrollments(request, course, instance):
                     enrollment.enrollment_state = form.get("action").upper()
                     enrollment.save()
                     response["msg"] = _(
-                        "Enrollment status of {} changed to {}".format(username, form.get("action"))
-                    )
+                        "Enrollment status of {username} changed to {action}"
+                    ).format(username=username, action=form.get("action"))
                     response["new_state"] = form.get("action").upper()
                     response["user"] = username
                     affected.append(username)
@@ -108,8 +129,8 @@ def manage_enrollments(request, course, instance):
             affected = []
             response["users-skipped"] = []
             response["affected-title"] = _(
-                "Set enrollment state to {} for the following users.".format(action)
-            )
+                "Set enrollment state to {action} for the following users."
+            ).format(action)
             response["skipped-title"] = _("The operation was not applicable for these users.")
             response["new_state"] = action.upper()
 
@@ -146,26 +167,23 @@ def manage_enrollments(request, course, instance):
 
         return JsonResponse(response)
 
-    else:
-        users = instance.enrolled_users.get_queryset().order_by(
-            "last_name", "first_name", "username"
-        )
+    users = instance.enrolled_users.get_queryset().order_by("last_name", "first_name", "username")
 
-        enrollment_list = []
+    enrollment_list = []
 
-        for user in users:
-            enrollment = CourseEnrollment.objects.get(student=user, instance=instance)
-            enrollment_list.append((user, enrollment))
+    for user in users:
+        enrollment = CourseEnrollment.objects.get(student=user, instance=instance)
+        enrollment_list.append((user, enrollment))
 
-        t = loader.get_template("teacher_tools/manage_enrollments.html")
-        c = {
-            "course": course,
-            "instance": instance,
-            "enrollments": enrollment_list,
-            "course_staff": True,
-        }
+    t = loader.get_template("teacher_tools/manage_enrollments.html")
+    c = {
+        "course": course,
+        "instance": instance,
+        "enrollments": enrollment_list,
+        "course_staff": True,
+    }
 
-        return HttpResponse(t.render(c, request))
+    return HttpResponse(t.render(c, request))
 
 
 @ensure_responsible
@@ -187,7 +205,6 @@ def transfer_records(request, course, instance, user):
         ]
         # NOTE: this should be replaced with a system that gets classes from registered task modules
         from routine_exercise.models import (
-            RoutineExercise,
             RoutineExerciseProgress,
             RoutineExerciseQuestion,
         )
@@ -216,7 +233,7 @@ def transfer_records(request, course, instance, user):
         new_enrollment.save()
 
         if form.cleaned_data["recalculate"]:
-            for page, task_links in get_course_instance_tasks(target_instance):
+            for __, task_links in get_course_instance_tasks(target_instance):
                 for task_link in task_links:
                     content = task_link.embedded_page.get_type_object()
                     content.re_evaluate(user, target_instance)
@@ -226,17 +243,20 @@ def transfer_records(request, course, instance, user):
                 "teacher_tools:manage_enrollments", kwargs={"course": course, "instance": instance}
             )
         )
-    else:
-        form = TransferRecordsForm(instances=other_instances)
-        form_t = loader.get_template("courses/base-edit-form.html")
-        form_c = {
-            "form_object": form,
-            "submit_url": request.path,
-            "html_class": "side-panel-form",
-            "disclaimer": _(f"Transfer records of {user.username} from {instance.name}"),
-            "submit_label": _("Execute"),
-        }
-        return HttpResponse(form_t.render(form_c, request))
+
+    form = TransferRecordsForm(instances=other_instances)
+    form_t = loader.get_template("courses/base-edit-form.html")
+    form_c = {
+        "form_object": form,
+        "submit_url": request.path,
+        "html_class": "side-panel-form",
+        "disclaimer": _("Transfer records of {user} from {instance}").format(
+            user=user.username,
+            instance=instance.name,
+        ),
+        "submit_label": _("Execute"),
+    }
+    return HttpResponse(form_t.render(form_c, request))
 
 
 @ensure_staff
@@ -301,7 +321,7 @@ def calculate_grades(request, course, instance):
     grades_by_id = {}
 
     for user in users:
-        by_page, total_points, total_missing, total_points_available = compile_student_results(
+        by_page, total_points, total_missing, __ = compile_student_results(
             user, instance, tasks_by_page, summary=True
         )
         met_threshold = grade_thresholds.filter(threshold__lte=total_points).first()
@@ -329,14 +349,7 @@ def course_completion_csv(request, course, instance):
 @ensure_responsible
 def course_completion_csv_progress(request, course, instance, task_id):
     task = celery_app.AsyncResult(id=task_id)
-    if task.ready():
-        download_url = reverse(
-            "teacher_tools:completion_csv_download",
-            kwargs={"course": course, "instance": instance, "task_id": task_id},
-        )
-        data = {"state": task.state, "metadata": task.info, "redirect": download_url}
-        return JsonResponse(data)
-    else:
+    if not task.ready():
         progress_url = reverse(
             "teacher_tools:completion_csv_progress",
             kwargs={"course": course, "instance": instance, "task_id": task_id},
@@ -345,23 +358,32 @@ def course_completion_csv_progress(request, course, instance, task_id):
         data = {"state": task.state, "metadata": task.info, "redirect": progress_url}
         return JsonResponse(data)
 
+    download_url = reverse(
+        "teacher_tools:completion_csv_download",
+        kwargs={"course": course, "instance": instance, "task_id": task_id},
+    )
+    data = {"state": task.state, "metadata": task.info, "redirect": download_url}
+    return JsonResponse(data)
+
 
 @ensure_responsible
 def course_completion_csv_download(request, course, instance, task_id):
     task = celery_app.AsyncResult(id=task_id)
-    if task.ready():
-        csv_str = cache.get(task_id)
-        cache.delete(task_id)
-        task.forget()
-        response = HttpResponse(content=csv_str, content_type="text/csv")
-        response["Content-Disposition"] = "attachment; filename={}_completion_{}.csv".format(
-            instance.slug, datetime.date.today().strftime("%Y-%m-%d")
-        )
-        return response
-    else:
+    if not task.ready():
         return HttpResponseGone(
-            _("Completion CSV generation (task id: %s) has already been downloaded." % task_id)
+            _("Completion CSV generation (task id: {}) has already been downloaded.").format(
+                task_id
+            )
         )
+
+    csv_str = cache.get(task_id)
+    cache.delete(task_id)
+    task.forget()
+    response = HttpResponse(content=csv_str, content_type="text/csv")
+    response[
+        "Content-Disposition"
+    ] = f"attachment; filename={instance.slug}_completion_{datetime.date.today():%Y-%m-%d}.csv"
+    return response
 
 
 @ensure_staff
@@ -380,99 +402,101 @@ def course_completion(request, course, instance):
 @ensure_responsible
 def manage_reminders(request, course, instance):
     saved_template = ReminderTemplate.objects.filter(instance=instance).first()
-    if request.method == "POST":
+    if request.method != "POST":
         form = ReminderForm(request.POST, instance=saved_template)
-        if form.is_valid():
-            if form.cleaned_data["reminder_action"] == "generate":
-                if form.cleaned_data.get("save_template"):
-                    template = form.save(commit=False)
-                    template.instance = instance
-                    template.save()
+        if not form.is_valid():
+            errors = form.errors.as_json()
+            return JsonResponse({"errors": errors}, status=400)
 
-                users = (
-                    instance.enrolled_users.get_queryset()
-                    .filter(courseenrollment__enrollment_state="ACCEPTED")
-                    .order_by("last_name", "first_name", "username")
-                )
+        if form.cleaned_data["reminder_action"] == "generate":
+            if form.cleaned_data.get("save_template"):
+                template = form.save(commit=False)
+                template.instance = instance
+                template.save()
 
-                tasks_by_page = get_course_instance_tasks(instance, datetime.datetime.now())
+            users = (
+                instance.enrolled_users.get_queryset()
+                .filter(courseenrollment__enrollment_state="ACCEPTED")
+                .order_by("last_name", "first_name", "username")
+            )
 
-                reminder_list = []
-                for i, user in enumerate(users, start=1):
-                    missing_str = ""
-                    missing_count = 0
-                    for page, task_links in tasks_by_page:
-                        page_stats = check_user_completion(
-                            user, task_links, instance, include_links=False
-                        )
-                        missing_list = []
-                        for result in page_stats:
-                            if not result["correct"]:
-                                missing_list.append(result["eo"])
-                                missing_count += 1
-                        if missing_list:
-                            missing_str += " / ".join(
-                                getattr(page, "name_" + code) or ""
-                                for code, lang in settings.LANGUAGES
-                            ).lstrip(" /")
-                            task_strs = []
-                            for task in missing_list:
-                                task_strs.append(
-                                    " / ".join(
-                                        getattr(task, "name_" + code) or ""
-                                        for code, lang in settings.LANGUAGES
-                                    ).lstrip(" /")
-                                )
-                            missing_str += "\n  " + "\n  ".join(task_strs) + "\n"
-                    if missing_str:
-                        reminder_data = {
-                            "username": user.username,
-                            "email": user.email,
-                            "first_name": user.first_name,
-                            "last_name": user.last_name,
-                            "missing_count": missing_count,
-                            "missing_str": missing_str,
-                        }
-                        reminder_list.append(reminder_data)
+            tasks_by_page = get_course_instance_tasks(instance, datetime.datetime.now())
 
-                reminder_cache = {
-                    "generated": datetime.date.today().strftime("%Y-%m-%d"),
-                    "reminders": reminder_list,
-                    "progress": 0,
-                }
-                cache.set(
-                    "{}_reminders".format(instance.slug),
-                    reminder_cache,
-                    timeout=settings.REDIS_LONG_EXPIRE,
-                )
+            reminder_list = []
+            for user in users:
+                missing_str = ""
+                missing_count = 0
+                completion_qs = UserTaskCompletion.objects.filter(user=user, instance=instance)
+                for page, task_links in tasks_by_page:
+                    page_stats = check_user_completion(
+                        user, task_links, instance, completion_qs, include_links=False
+                    )
+                    missing_list = []
+                    for result in page_stats:
+                        if not result["correct"]:
+                            missing_list.append(result["eo"])
+                            missing_count += 1
+                    if missing_list:
+                        missing_str += " / ".join(
+                            getattr(page, "name_" + code) or "" for code, lang in settings.LANGUAGES
+                        ).lstrip(" /")
+                        task_strs = []
+                        for task in missing_list:
+                            task_strs.append(
+                                " / ".join(
+                                    getattr(task, "name_" + code) or ""
+                                    for code, lang in settings.LANGUAGES
+                                ).lstrip(" /")
+                            )
+                        missing_str += "\n  " + "\n  ".join(task_strs) + "\n"
+                if missing_str:
+                    reminder_data = {
+                        "username": user.username,
+                        "email": user.email,
+                        "first_name": user.first_name,
+                        "last_name": user.last_name,
+                        "missing_count": missing_count,
+                        "missing_str": missing_str,
+                    }
+                    reminder_list.append(reminder_data)
 
-                return JsonResponse({"reminders": reminder_list, "submit_text": _("Send emails")})
+            reminder_cache = {
+                "generated": datetime.date.today().strftime("%Y-%m-%d"),
+                "reminders": reminder_list,
+                "progress": 0,
+            }
+            cache.set(
+                f"{instance.slug}_reminders",
+                reminder_cache,
+                timeout=settings.REDIS_LONG_EXPIRE,
+            )
 
-            elif form.cleaned_data["reminder_action"] == "send":
-                title = form.cleaned_data.get("title", "")
-                header = form.cleaned_data.get("header", "")
-                footer = form.cleaned_data.get("footer", "")
-                task = teacher_tasks.send_reminder_emails.delay(
-                    course.slug, instance.slug, title, header, footer
-                )
-                return reminders_progress(request, course, instance, task.id)
-    else:
-        form = ReminderForm(instance=saved_template)
-        reminders = cache.get("{}_reminders".format(instance.slug))
-        t = loader.get_template("teacher_tools/manage_reminders.html")
-        c = {
-            "course": course,
-            "instance": instance,
-            "form": form,
-            "course_staff": True,
-            "cached_reminders": reminders,
-        }
-        return HttpResponse(t.render(c, request))
+            return JsonResponse({"reminders": reminder_list, "submit_text": _("Send emails")})
+
+        title = form.cleaned_data.get("title", "")
+        header = form.cleaned_data.get("header", "")
+        footer = form.cleaned_data.get("footer", "")
+        task = teacher_tasks.send_reminder_emails.delay(
+            course.slug, instance.slug, title, header, footer
+        )
+        return reminders_progress(request, course, instance, task.id)
+
+    form = ReminderForm(instance=saved_template)
+    reminders = cache.get(f"{instance.slug}_reminders")
+    t = loader.get_template("teacher_tools/manage_reminders.html")
+    c = {
+        "course": course,
+        "instance": instance,
+        "form": form,
+        "course_staff": True,
+        "cached_reminders": reminders,
+    }
+    return HttpResponse(t.render(c, request))
 
 
 @ensure_responsible
 def load_reminders(request, course, instance):
-    reminder_cache = cache.get("{}_reminders".format(instance.slug))
+    reminder_cache = cache.get(f"{instance.slug}_reminders")
     if reminder_cache is None:
         return HttpResponseNotFound(_("Unable to retrieve cached reminders."))
 
@@ -481,7 +505,7 @@ def load_reminders(request, course, instance):
 
 @ensure_responsible
 def discard_reminders(request, course, instance):
-    cache.delete("{}_reminders".format(instance.slug))
+    cache.delete(f"{instance.slug}_reminders")
     return JsonResponse({"success": True, "submit_text": _("Generate reminders")})
 
 
@@ -491,14 +515,14 @@ def reminders_progress(request, course, instance, task_id):
     if task.ready():
         data = {"state": task.state, "metadata": task.info}
         return JsonResponse(data)
-    else:
-        progress_url = reverse(
-            "teacher_tools:reminders_progress",
-            kwargs={"course": course, "instance": instance, "task_id": task_id},
-        )
 
-        data = {"state": task.state, "metadata": task.info, "redirect": progress_url}
-        return JsonResponse(data)
+    progress_url = reverse(
+        "teacher_tools:reminders_progress",
+        kwargs={"course": course, "instance": instance, "task_id": task_id},
+    )
+
+    data = {"state": task.state, "metadata": task.info, "redirect": progress_url}
+    return JsonResponse(data)
 
 
 @ensure_responsible
@@ -592,17 +616,17 @@ def batch_grade_task(request, course, instance, content):
             "course_staff": True,
         }
         return HttpResponse(t.render(c, request))
-    else:
-        form = BatchGradingForm()
-        form_t = loader.get_template("courses/base-edit-form.html")
-        form_c = {
-            "form_object": form,
-            "submit_url": request.path,
-            "html_class": "side-panel-form",
-            "disclaimer": _(f"Perform batch grading for {content.name}"),
-            "submit_label": _("Execute"),
-        }
-        return HttpResponse(form_t.render(form_c, request))
+
+    form = BatchGradingForm()
+    form_t = loader.get_template("courses/base-edit-form.html")
+    form_c = {
+        "form_object": form,
+        "submit_url": request.path,
+        "html_class": "side-panel-form",
+        "disclaimer": _("Perform batch grading for {content}").format(content=content.name),
+        "submit_label": _("Execute"),
+    }
+    return HttpResponse(form_t.render(form_c, request))
 
 
 @ensure_responsible
@@ -624,7 +648,7 @@ def reset_completion(request, course, instance, content):
     except EmbeddedLink.DoesNotExist:
         return HttpResponseNotFound(_("The task was not linked on the requested course instance"))
 
-    count, objects = UserTaskCompletion.objects.filter(instance=instance, exercise=content).delete()
+    count, __ = UserTaskCompletion.objects.filter(instance=instance, exercise=content).delete()
     t = loader.get_template("teacher_tools/reset_completion.html")
     c = {
         "course": course,
@@ -642,41 +666,44 @@ def reset_completion(request, course, instance, content):
 def exercise_plagiarism(request, course, instance, content):
     saved_settings = MossSettings.objects.filter(exercise=content).first()
     other_instances = CourseInstance.objects.filter(course=course).exclude(pk=instance.pk)
-    current_url = cache.get("{}_moss_result".format(content.slug))
+    current_url = cache.get(f"{content.slug}_moss_result")
 
     if request.method == "POST":
         form = MossnetForm(request.POST, other_instances=other_instances, instance=saved_settings)
-        if form.is_valid():
+        if not form.is_valid():
+            errors = form.errors.as_json()
+            return JsonResponse({"errors": errors}, status=400)
+
+        if form.cleaned_data["save_settings"]:
+            settings = form.save(commit=False)
+            settings.exercise = content
+            settings.save()
+
+        if request.FILES:
             if form.cleaned_data["save_settings"]:
-                settings = form.save(commit=False)
-                settings.exercise = content
-                settings.save()
-
-            if request.FILES:
+                MossBaseFile.objects.filter(moss_settings=settings).delete()
+            for f in request.FILES.getlist("base_files"):
+                base_file = MossBaseFile(fileinfo=f, exercise=content)
                 if form.cleaned_data["save_settings"]:
-                    MossBaseFile.objects.filter(moss_settings=settings).delete()
-                for f in request.FILES.getlist("base_files"):
-                    base_file = MossBaseFile(fileinfo=f, exercise=content)
-                    if form.cleaned_data["save_settings"]:
-                        base_file.moss_settings = settings
-                    base_file.save()
+                    base_file.moss_settings = settings
+                base_file.save()
 
-            task = teacher_tasks.order_moss_report.delay(
-                course.slug, instance.slug, content.slug, form.cleaned_data
-            )
-            return moss_progress(request, course, instance, content, task.id)
-    else:
-        form = MossnetForm(other_instances=other_instances, instance=saved_settings)
-        t = loader.get_template("teacher_tools/exercise_plagiarism.html")
-        c = {
-            "course": course,
-            "instance": instance,
-            "exercise": content,
-            "course_staff": True,
-            "form": form,
-            "current_url": current_url,
-        }
-        return HttpResponse(t.render(c, request))
+        task = teacher_tasks.order_moss_report.delay(
+            course.slug, instance.slug, content.slug, form.cleaned_data
+        )
+        return moss_progress(request, course, instance, content, task.id)
+
+    form = MossnetForm(other_instances=other_instances, instance=saved_settings)
+    t = loader.get_template("teacher_tools/exercise_plagiarism.html")
+    c = {
+        "course": course,
+        "instance": instance,
+        "exercise": content,
+        "course_staff": True,
+        "form": form,
+        "current_url": current_url,
+    }
+    return HttpResponse(t.render(c, request))
 
 
 @ensure_responsible
@@ -685,10 +712,10 @@ def moss_progress(request, course, instance, content, task_id):
     if task.ready():
         data = {"state": task.state, "metadata": task.info}
         return JsonResponse(data)
-    else:
-        progress_url = reverse(
-            "teacher_tools:moss_progress",
-            kwargs={"course": course, "instance": instance, "content": content, "task_id": task_id},
-        )
-        data = {"state": task.state, "metadata": task.info, "redirect": progress_url}
-        return JsonResponse(data)
+
+    progress_url = reverse(
+        "teacher_tools:moss_progress",
+        kwargs={"course": course, "instance": instance, "content": content, "task_id": task_id},
+    )
+    data = {"state": task.state, "metadata": task.info, "redirect": progress_url}
+    return JsonResponse(data)

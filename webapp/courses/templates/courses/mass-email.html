@@ -14,7 +14,11 @@
 {% block breadcrumb-links %}
   <li><a href="{% url 'courses:index' %}">{% trans 'Courses' %}</a></li>
   <div class="separator">»</div>
-  <li><a href="{% url 'courses:course' course instance %}">{{ course.name }}&nbsp;/&nbsp;{{ instance.name }}</a></li>
+  <li>
+    <a href="{% url 'courses:course' course instance %}">
+      {{ course.name }}&nbsp;/&nbsp;{{ instance.name }}
+    </a>
+  </li>
 {% endblock %}
 
 {% block page-content %}
@@ -25,7 +29,9 @@
     {% endblocktrans %}
   </h1>
 
-  <div class="paragraph">{% trans 'This utility can be used to send mass email to all students' %}</div>
+  <div class="paragraph">
+    {% trans 'This utility can be used to send mass email to all students' %}
+  </div>
 
   {{ panel|safe}}
 

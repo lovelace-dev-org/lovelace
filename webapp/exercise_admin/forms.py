@@ -1,12 +1,12 @@
-import re
 import itertools
 
 from django.contrib.postgres.forms import SimpleArrayField
 from django import forms
-from .utils import get_default_lang, get_lang_list
 
 import feedback.models
 import courses.models as c_models
+
+from .utils import get_default_lang, get_lang_list
 
 
 def lang_code_in_field_name(lang_code, field_name):
@@ -20,15 +20,15 @@ def validate_chmod(chmod_str):
     """
     if len(chmod_str) != 9:
         return False
-    else:
-        return False not in (
-            False for i in range(9) if chmod_str[i] != "rwx"[i % 3] and chmod_str[i] != "-"
-        )
+
+    return False not in (
+        False for i in range(9) if chmod_str[i] != "rwx"[i % 3] and chmod_str[i] != "-"
+    )
 
 
 class CreateFeedbackQuestionsForm(forms.Form):
     def __init__(self, feedback_questions, new_question_ids, data, *args, **kwargs):
-        super(CreateFeedbackQuestionsForm, self).__init__(data, *args, **kwargs)
+        super().__init__(data, *args, **kwargs)
 
         default_lang = get_default_lang()
         lang_list = get_lang_list()
@@ -46,7 +46,7 @@ class CreateFeedbackQuestionsForm(forms.Form):
     ):
         model_field_readable = model_field.replace("_", " ")
 
-        for lang_code, _ in lang_list:
+        for lang_code, __ in lang_list:
             if lang_code_in_field_name(lang_code, field_name):
                 break
 
@@ -57,18 +57,14 @@ class CreateFeedbackQuestionsForm(forms.Form):
                 and v == field_val
                 and k != field_name
             ):
-                error_msg = "Duplicate {field} in language {lang}!".format(
-                    field=model_field_readable, lang=lang_code
-                )
-                error_code = "duplicate_{}".format(model_field)
+                error_msg = f"Duplicate {model_field_readable} in language {lang_code}!"
+                error_code = f"duplicate_{model_field}"
                 field_error = forms.ValidationError(error_msg, code=error_code)
                 self.add_error(field_name, field_error)
 
     def _add_fields(self, question_id, data, default_lang, lang_list):
         for lang_code, _ in lang_list:
-            question_field = "feedback_question_[{id}]_{lang}".format(
-                id=question_id, lang=lang_code
-            )
+            question_field = f"feedback_question_[{question_id}]_{lang_code}"
 
             if lang_code == default_lang:
                 self.fields[question_field] = forms.CharField(
@@ -79,9 +75,7 @@ class CreateFeedbackQuestionsForm(forms.Form):
                     max_length=100, required=False, strip=True
                 )
 
-            choice_field_prefix = "feedback_choice_[{id}]_{lang}".format(
-                id=question_id, lang=lang_code
-            )
+            choice_field_prefix = f"feedback_choice_[{question_id}]_{lang_code}"
             choice_fields = sorted([k for k in data.keys() if k.startswith(choice_field_prefix)])
             for i, choice_field in enumerate(choice_fields):
                 if i < 2 and lang_code == default_lang:
@@ -89,13 +83,13 @@ class CreateFeedbackQuestionsForm(forms.Form):
                 else:
                     self.fields[choice_field] = forms.CharField(required=False, strip=True)
 
-        type_field = "feedback_type_[{id}]".format(id=question_id)
+        type_field = f"feedback_type_[{question_id}]"
         self.fields[type_field] = forms.ChoiceField(
             choices=feedback.models.QUESTION_TYPE_CHOICES, required=True
         )
 
     def clean(self):
-        cleaned_data = super(CreateFeedbackQuestionsForm, self).clean()
+        cleaned_data = super().clean()
         lang_list = get_lang_list()
 
         for field_name in self.fields.keys():
@@ -112,14 +106,14 @@ class CreateFeedbackQuestionsForm(forms.Form):
                 self._clean_duplicates_of_field(
                     field_name,
                     field_val,
-                    "feedback_choice_[{}]".format(question_id),
+                    f"feedback_choice_[{question_id}]",
                     "choice",
                     cleaned_data,
                     lang_list,
                 )
 
             if field_name.startswith("choice_field"):
-                type_field_name = "type_field_[{}]".format(question_id)
+                type_field_name = f"type_field_[{question_id}]"
                 if (
                     type_field_name in cleaned_data
                     and cleaned_data[type_field_name] != "MULTIPLE_CHOICE_FEEDBACK"
@@ -133,7 +127,7 @@ class CreateFeedbackQuestionsForm(forms.Form):
 
 class CreateInstanceIncludeFilesForm(forms.Form):
     def __init__(self, instance_files, new_file_ids, data, files, *args, **kwargs):
-        super(CreateInstanceIncludeFilesForm, self).__init__(data, files, *args, **kwargs)
+        super().__init__(data, files, *args, **kwargs)
 
         default_lang = get_default_lang()
         lang_list = get_lang_list()
@@ -147,13 +141,9 @@ class CreateInstanceIncludeFilesForm(forms.Form):
 
     def _add_file_fields(self, file_id, default_lang, lang_list):
         for lang_code, _ in lang_list:
-            file_field = "instance_file_file_[{id}]_{lang}".format(id=file_id, lang=lang_code)
-            default_name_field = "instance_file_default_name_[{id}]_{lang}".format(
-                id=file_id, lang=lang_code
-            )
-            description_field = "instance_file_description_[{id}]_{lang}".format(
-                id=file_id, lang=lang_code
-            )
+            file_field = f"instance_file_file_[{file_id}]_{lang_code}"
+            default_name_field = f"instance_file_default_name_[{file_id}]_{lang_code}"
+            description_field = f"instance_file_description_[{file_id}]_{lang_code}"
 
             if lang_code == default_lang and file_id.startswith("new"):
                 self.fields[file_field] = forms.FileField(max_length=255, required=True)
@@ -161,11 +151,9 @@ class CreateInstanceIncludeFilesForm(forms.Form):
                 self.fields[file_field] = forms.FileField(max_length=255, required=False)
 
             if lang_code == default_lang:
-                course_field = "instance_file_instance_[{id}]_{lang}".format(
-                    id=file_id, lang=lang_code
-                )
+                course_field = f"instance_file_instance_[{file_id}]_{lang_code}"
                 course_choices = [
-                    (course.id, getattr(course, "name_{}".format(default_lang)))
+                    (course.id, getattr(course, f"name_{default_lang}"))
                     for course in c_models.Course.objects.all()
                 ]
                 self.fields[default_name_field] = forms.CharField(
@@ -195,15 +183,13 @@ class CreateInstanceIncludeFilesForm(forms.Form):
                 and v == field_val
                 and k != field_name
             ):
-                error_msg = "Duplicate {field} in language {lang}!".format(
-                    field=model_field_readable, lang=lang_code
-                )
-                error_code = "duplicate_{}".format(model_field)
+                error_msg = f"Duplicate {model_field_readable} in language {lang_code}!"
+                error_code = f"duplicate_{model_field}"
                 field_error = forms.ValidationError(error_msg, code=error_code)
                 self.add_error(field_name, field_error)
 
     def clean(self):
-        cleaned_data = super(CreateInstanceIncludeFilesForm, self).clean()
+        cleaned_data = super().clean()
         lang_list = get_lang_list()
 
         for field_name in self.fields.keys():
@@ -286,26 +272,25 @@ class CreateFileUploadExerciseForm(forms.Form):
     def __init__(
         self, tag_fields, hint_ids, ef_ids, if_ids, order_hierarchy, data, files, *args, **kwargs
     ):
-        super(CreateFileUploadExerciseForm, self).__init__(data, files, *args, **kwargs)
+        super().__init__(data, files, *args, **kwargs)
 
         # Translated fields
-        # TODO: How to get these dynamically?
         default_lang = get_default_lang()
         lang_list = get_lang_list()
         for lang_code, _ in lang_list:
             # For required fields
             if lang_code == default_lang:
-                self.fields["exercise_name_{}".format(lang_code)] = forms.CharField(
+                self.fields[f"exercise_name_{lang_code}"] = forms.CharField(
                     max_length=255, required=True, strip=True
                 )
             else:
-                self.fields["exercise_name_{}".format(lang_code)] = forms.CharField(
+                self.fields[f"exercise_name_{lang_code}"] = forms.CharField(
                     max_length=255, required=False, strip=True
                 )
 
             # For other fields
-            self.fields["exercise_content_{}".format(lang_code)] = forms.CharField(required=False)
-            self.fields["exercise_question_{}".format(lang_code)] = forms.CharField(required=False)
+            self.fields[f"exercise_content_{lang_code}"] = forms.CharField(required=False)
+            self.fields[f"exercise_question_{lang_code}"] = forms.CharField(required=False)
 
         # Other dynamic fields
 
@@ -317,54 +302,46 @@ class CreateFileUploadExerciseForm(forms.Form):
         for hint_id in hint_ids:
             for lang_code, _ in lang_list:
                 if lang_code == default_lang:
-                    self.fields[
-                        "hint_content_[{}]_{}".format(hint_id, lang_code)
-                    ] = forms.CharField(required=True, strip=True)
+                    self.fields[f"hint_content_[{hint_id}]_{lang_code}"] = forms.CharField(
+                        required=True, strip=True
+                    )
                 else:
-                    self.fields[
-                        "hint_content_[{}]_{}".format(hint_id, lang_code)
-                    ] = forms.CharField(required=False, strip=True)
+                    self.fields[f"hint_content_[{hint_id}]_{lang_code}"] = forms.CharField(
+                        required=False, strip=True
+                    )
 
-            self.fields["hint_tries_[{}]".format(hint_id)] = forms.IntegerField(
-                min_value=0, required=True
-            )
+            self.fields[f"hint_tries_[{hint_id}]"] = forms.IntegerField(min_value=0, required=True)
 
         # Exercise included files
 
-        # TODO: Rework the names to the form exercise_file_{id}_{subitem}_{lang}
         ef_template = "included_file_{}_[{}]"
 
         for ef_id in ef_ids:
             for lang_code, _ in lang_list:
                 if lang_code == default_lang:
                     self.fields[
-                        ef_template.format("default_name", ef_id) + "_{}".format(lang_code)
+                        ef_template.format("default_name", ef_id) + f"_{lang_code}"
                     ] = forms.CharField(required=True)
                     self.fields[
-                        ef_template.format("description", ef_id) + "_{}".format(lang_code)
+                        ef_template.format("description", ef_id) + f"_{lang_code}"
                     ] = forms.CharField(required=False)
                     self.fields[
-                        ef_template.format("name", ef_id) + "_{}".format(lang_code)
+                        ef_template.format("name", ef_id) + f"_{lang_code}"
                     ] = forms.CharField(required=True)
-                    if ef_id.startswith("new"):
-                        self.fields[
-                            "included_file_[{}]_{}".format(ef_id, lang_code)
-                        ] = forms.FileField(required=True)
-                    else:
-                        self.fields[
-                            "included_file_[{}]_{}".format(ef_id, lang_code)
-                        ] = forms.FileField(required=False)
+                    self.fields[f"included_file_[{ef_id}]_{lang_code}"] = forms.FileField(
+                        required=ef_id.startswith("new")
+                    )
                 else:
                     self.fields[
-                        ef_template.format("default_name", ef_id) + "_{}".format(lang_code)
+                        ef_template.format("default_name", ef_id) + f"_{lang_code}"
                     ] = forms.CharField(required=False)
                     self.fields[
-                        ef_template.format("description", ef_id) + "_{}".format(lang_code)
+                        ef_template.format("description", ef_id) + f"_{lang_code}"
                     ] = forms.CharField(required=False)
                     self.fields[
-                        ef_template.format("name", ef_id) + "_{}".format(lang_code)
+                        ef_template.format("name", ef_id) + f"_{lang_code}"
                     ] = forms.CharField(required=False)
-                    self.fields["included_file_[{}]_{}".format(ef_id, lang_code)] = forms.FileField(
+                    self.fields[f"included_file_[{ef_id}]_{lang_code}"] = forms.FileField(
                         required=False
                     )
 
@@ -377,7 +354,7 @@ class CreateFileUploadExerciseForm(forms.Form):
 
         for if_id in if_ids:
             for lang_code, _ in lang_list:
-                name_field = "instance_file_name_[{id}]_{lang}".format(id=if_id, lang=lang_code)
+                name_field = f"instance_file_name_[{if_id}]_{lang_code}"
                 if lang_code == default_lang:
                     self.fields[name_field] = forms.CharField(
                         max_length=255, required=True, strip=True
@@ -387,10 +364,10 @@ class CreateFileUploadExerciseForm(forms.Form):
                         max_length=255, required=False, strip=True
                     )
 
-            purpose_field = "instance_file_purpose_[{id}]".format(id=if_id)
-            chown_field = "instance_file_chown_[{id}]".format(id=if_id)
-            chgrp_field = "instance_file_chgrp_[{id}]".format(id=if_id)
-            chmod_field = "instance_file_chmod_[{id}]".format(id=if_id)
+            purpose_field = f"instance_file_purpose_[{if_id}]"
+            chown_field = f"instance_file_chown_[{if_id}]"
+            chgrp_field = f"instance_file_chgrp_[{if_id}]"
+            chmod_field = f"instance_file_chmod_[{if_id}]"
             self.fields[purpose_field] = forms.ChoiceField(
                 choices=c_models.IncludeFileSettings.FILE_PURPOSE_CHOICES, required=False
             )
@@ -425,7 +402,7 @@ class CreateFileUploadExerciseForm(forms.Form):
         for stage_id in stage_ids:
             for lang_code, _ in lang_list:
                 stage_name_kwargs = {}
-                stage_name_field = stage_template.format(stage_id, "name_{}".format(lang_code))
+                stage_name_field = stage_template.format(stage_id, f"name_{lang_code}")
                 if lang_code != default_lang:
                     stage_name_kwargs["required"] = False
                 self.fields[stage_name_field] = forms.CharField(
@@ -441,7 +418,7 @@ class CreateFileUploadExerciseForm(forms.Form):
             for lang_code, _ in lang_list:
                 command_line_kwargs = {}
                 command_command_line_field = command_template.format(
-                    command_id, "command_line_{}".format(lang_code)
+                    command_id, f"command_line_{lang_code}"
                 )
                 if lang_code == default_lang:
                     self.fields[command_command_line_field] = forms.CharField(
@@ -454,7 +431,7 @@ class CreateFileUploadExerciseForm(forms.Form):
                     command_line_kwargs["required"] = False
 
                 command_input_text_field = command_template.format(
-                    command_id, "input_text_{}".format(lang_code)
+                    command_id, f"input_text_{lang_code}"
                 )
                 self.fields[command_input_text_field] = forms.CharField(required=False, strip=False)
 
@@ -489,10 +466,8 @@ class CreateFileUploadExerciseForm(forms.Form):
                 and v == field_val
                 and k != field_name
             ):
-                error_msg = "Duplicate {field} in language {lang}!".format(
-                    field=model_field_readable, lang=lang_code
-                )
-                error_code = "duplicate_{}".format(model_field)
+                error_msg = f"Duplicate {model_field_readable} in language {lang_code}!"
+                error_code = f"duplicate_{model_field}"
                 field_error = forms.ValidationError(error_msg, code=error_code)
                 self.add_error(field_name, field_error)
 
@@ -504,8 +479,8 @@ class CreateFileUploadExerciseForm(forms.Form):
         validation error.
         """
 
-        import courses.blockparser as blockparser
-        import courses.markupparser as markupparser
+        from courses import blockparser
+        from courses import markupparser
         from courses.models import ContentPage, CourseMedia, Term
 
         missing_pages = []
@@ -517,28 +492,28 @@ class CreateFileUploadExerciseForm(forms.Form):
         for link in page_links:
             if not ContentPage.objects.filter(slug=link):
                 missing_pages.append(link)
-                messages.append("Content matching {} does not exist".format(link))
+                messages.append(f"Content matching {link} does not exist")
 
         for link in media_links:
             if not CourseMedia.objects.filter(name=link):
                 missing_media.append(link)
-                messages.append("Media matching {} does not exist".format(link))
+                messages.append(f"Media matching {link} does not exist")
 
         term_re = blockparser.tags["term"].re
 
-        term_links = set([match.group("term_name") for match in term_re.finditer(value)])
+        term_links = {match.group("term_name") for match in term_re.finditer(value)}
 
         for link in term_links:
             if not Term.objects.filter(**{"name_" + lang: link}):
                 missing_terms.append(link)
-                messages.append("Term matching {} does not exist".format(link))
+                messages.append(f"Term matching {link} does not exist")
 
         if messages:
             field_error = forms.ValidationError(messages)
-            self.add_error("exercise_content_" + lang, field_error)
+            self.add_error(f"exercise_content_{lang}", field_error)
 
     def clean(self):
-        cleaned_data = super(CreateFileUploadExerciseForm, self).clean()
+        cleaned_data = super().clean()
         lang_list = get_lang_list()
 
         for field_name in self.fields.keys():
@@ -552,7 +527,10 @@ class CreateFileUploadExerciseForm(forms.Form):
                 )
 
             if field_name.startswith("instance_file_chmod") and not validate_chmod(field_val):
-                error_msg = "File access mode was of incorrect format! Give 9 character, each either r, w, x or -!"
+                error_msg = (
+                    "File access mode was of incorrect format! "
+                    "Give 9 character, each either r, w, x or -!"
+                )
                 error_code = "invalid_chmod"
                 field_error = forms.ValidationError(error_msg, code=error_code)
                 self.add_error(field_name, field_error)

@@ -1,7 +1,10 @@
 from django.conf import settings
 from django.core.cache import cache
+from django.db import IntegrityError
+from django.http import HttpResponseNotFound
 from django.template import loader
 from django.utils import translation
+from django.utils.translation import gettext as _
 from courses import markupparser
 from faq.models import FaqQuestion, FaqToInstanceLink
 from faq.forms import FaqQuestionForm, FaqLinkForm
@@ -42,9 +45,7 @@ def cache_panel(instance, exercise, lang_code):
             exercise_faq.append((faq.hook, faq.question, answer_body))
 
     cache.set(
-        "{slug}_faq_{instance}_{lang}".format(
-            slug=exercise.slug, instance=instance.slug, lang=lang_code
-        ),
+        f"{exercise.slug}_faq_{instance.slug}_{lang_code}",
         exercise_faq,
         timeout=None,
     )
@@ -54,20 +55,14 @@ def cache_panel(instance, exercise, lang_code):
 
 def regenerate_cache(instance, exercise):
     for lang_code, _ in settings.LANGUAGES:
-        faq_key = "{slug}_faq_{instance}_{lang}".format(
-            slug=exercise.slug, instance=instance.slug, lang=lang_code
-        )
+        faq_key = f"{exercise.slug}_faq_{instance.slug}_{lang_code}"
         cache.delete(faq_key)
         cache_panel(instance, exercise, lang_code)
 
 
-def render_panel(request, course, instance, exercise, preopened=[]):
+def render_panel(request, course, instance, exercise, preopened=tuple()):
     lang_code = translation.get_language()
-    faq_list = cache.get(
-        "{slug}_faq_{instance}_{lang}".format(
-            slug=exercise.slug, instance=instance.slug, lang=lang_code
-        )
-    )
+    faq_list = cache.get(f"{exercise.slug}_faq_{instance.slug}_{lang_code}")
     if not faq_list:
         try:
             faq_list = cache_panel(instance, exercise, lang_code)

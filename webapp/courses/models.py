@@ -149,6 +149,7 @@ class SavedMessage(models.Model):
             return self._join_translated_fields("content", "\n\n--\n\n")
         return getattr(self, f"title_{lang_code}", "")
 
+
 # ^
 # |
 # USER RELATED
@@ -777,7 +778,6 @@ class ContentPage(models.Model):
         base_field=models.CharField(max_length=32, blank=True), default=list, blank=True
     )
 
-
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = self.get_url_name()
@@ -985,6 +985,7 @@ class ContentPage(models.Model):
         translation.activate(current_lang)
 
         from faq.utils import regenerate_cache
+
         regenerate_cache(instance, self)
 
     def get_human_readable_type(self):
@@ -1190,7 +1191,6 @@ class ContentPage(models.Model):
         return func
 
 
-
 # ^
 # |
 # CONTENT BASE
@@ -1234,7 +1234,6 @@ class Lecture(ContentPage):
 
 
 class MultipleChoiceExercise(ContentPage):
-
     class Meta:
         verbose_name = "multiple choice exercise"
         proxy = True
@@ -1325,7 +1324,6 @@ class MultipleChoiceExercise(ContentPage):
 
 # @reversion.register(follow=["checkboxexerciseanswer_set"])
 class CheckboxExercise(ContentPage):
-
     class Meta:
         verbose_name = "checkbox exercise"
         proxy = True
@@ -1420,7 +1418,6 @@ class CheckboxExercise(ContentPage):
 
 
 class TextfieldExercise(ContentPage):
-
     class Meta:
         verbose_name = "text field exercise"
         proxy = True
@@ -1494,13 +1491,9 @@ class TextfieldExercise(ContentPage):
                 match, m = validate(answer.answer, given_answer)
             except re.error as e:
                 if user.is_staff:
-                    errors.append(
-                        f"Contact staff, regexp error '{e}' from regexp: {answer.answer}"
-                    )
+                    errors.append(f"Contact staff, regexp error '{e}' from regexp: {answer.answer}")
                 else:
-                    errors.append(
-                        f"Contact staff! Regexp error '{e}' in exercise '{self.name}'."
-                    )
+                    errors.append(f"Contact staff! Regexp error '{e}' in exercise '{self.name}'.")
                 if answer.correct:
                     correct = False
                 continue
@@ -1508,9 +1501,7 @@ class TextfieldExercise(ContentPage):
             sub = lambda text: text
             if m is not None and m.groupdict():
                 groups = {
-                    re.escape(f"{{{k}}}"): v
-                    for k, v in m.groupdict().items()
-                    if v is not None
+                    re.escape(f"{{{k}}}"): v for k, v in m.groupdict().items() if v is not None
                 }
                 if groups:
                     pattern = re.compile(
@@ -1550,7 +1541,6 @@ class TextfieldExercise(ContentPage):
 
 
 class FileUploadExercise(ContentPage):
-
     class Meta:
         verbose_name = "file upload exercise"
         proxy = True
@@ -1647,7 +1637,6 @@ class FileUploadExercise(ContentPage):
 
 # Placeholder for a textfield exercise variant where the answer is run as code in the backend
 class CodeInputExercise(ContentPage):
-
     class Meta:
         verbose_name = "code input exercise"
         proxy = True
@@ -1672,10 +1661,10 @@ class CodeInputExercise(ContentPage):
     def check_answer(self, user, ip, answer, files, answer_object, revision):
         return {}
 
+
 # Placeholder for a textfield exercise variant where the student is allowed to modify part of
 # a given code while the rest is kept fixed.
 class CodeReplaceExercise(ContentPage):
-
     class Meta:
         verbose_name = "code replace exercise"
         proxy = True
@@ -1733,7 +1722,6 @@ class CodeReplaceExercise(ContentPage):
 
 # Legacy task type only kept for compatibility, use routine exercise instead
 class RepeatedTemplateExercise(ContentPage):
-
     class Meta:
         verbose_name = "repeated template exercise"
         proxy = True
@@ -1875,22 +1863,16 @@ class RepeatedTemplateExercise(ContentPage):
                 match, m = validate(answer.answer, given_answer)
             except re.error as e:
                 if user.is_staff:
-                    errors.append(
-                        f"Contact staff, regexp error '{e}' from regexp: {answer.answer}"
-                    )
+                    errors.append(f"Contact staff, regexp error '{e}' from regexp: {answer.answer}")
                 else:
-                    errors.append(
-                        f"Contact staff! Regexp error '{e}' in exercise '{self.name}'."
-                    )
+                    errors.append(f"Contact staff! Regexp error '{e}' in exercise '{self.name}'.")
                 correct = False
                 continue
 
             sub = lambda text: text
             if m is not None and m.groupdict():
                 groups = {
-                    re.escape(f"{{{k}}}"): v
-                    for k, v in m.groupdict().items()
-                    if v is not None
+                    re.escape(f"{{{k}}}"): v for k, v in m.groupdict().items() if v is not None
                 }
                 if groups:
                     pattern = re.compile(
@@ -2118,7 +2100,6 @@ class FileExerciseTestExpectedOutput(models.Model):
 
 
 class FileExerciseTestExpectedStdout(FileExerciseTestExpectedOutput):
-
     class Meta:
         verbose_name = "expected output"
         proxy = True
@@ -2159,7 +2140,6 @@ class InstanceIncludeFileToExerciseLink(models.Model):
 
 
 class InstanceIncludeFileToInstanceLink(models.Model):
-
     class Meta:
         unique_together = ("instance", "include_file")
 
@@ -2253,7 +2233,6 @@ class FileExerciseTestIncludeFile(models.Model):
 
 
 class IncludeFileSettings(models.Model):
-
     FILE_OWNERSHIP_CHOICES = (
         ("OWNED", "Owned by the tested program"),
         ("NOT_OWNED", "Not owned by the tested program"),
@@ -2674,9 +2653,7 @@ class UserRepeatedTemplateExerciseAnswer(UserAnswer):
     )
 
     def __str__(self):
-        return (
-            f"Repeated template exercise answers by {self.user.username} to {self.exercise.name}"
-        )
+        return f"Repeated template exercise answers by {self.user.username} to {self.exercise.name}"
 
     def get_instance_answers(self):
         return UserRepeatedTemplateInstanceAnswer.objects.filter(answer=self)
@@ -2750,4 +2727,3 @@ class InvalidExerciseAnswerException(Exception):
     """
     This exception is cast when an exercise answer cannot be processed.
     """
-

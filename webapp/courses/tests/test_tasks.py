@@ -289,7 +289,8 @@ class TaskTests(TestCase):
         self.r.delete(result.task_id)
         self.assertEqual(result_json["test_tree"]["log"], [])
         self.assertEqual(
-            result_json["test_tree"]["tests"][0]["stages"][0]["commands"][0]["timedout"], True
+            result_json["test_tree"]["tests"][0]["stages"][0]["commands"][0]["timedout"],
+            True,
         )
 
     def test_file_upload_answer_broken_checker(self):

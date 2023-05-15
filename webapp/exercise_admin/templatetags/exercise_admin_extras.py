@@ -25,7 +25,9 @@ def feedback_question_tr(question, jstemplate=False):
         def __init__(self):
             for lang_code, _ in lang_list:
                 setattr(
-                    self, "question_{}".format(lang_code), "SAMPLE_QUESTION_{}".format(lang_code)
+                    self,
+                    "question_{}".format(lang_code),
+                    "SAMPLE_QUESTION_{}".format(lang_code),
                 )
 
     return {"question": TemplateFeedbackQuestion()}
@@ -45,7 +47,9 @@ def feedback_question_popup_tr(checked):
                 self.id = "SAMPLE_ID"
             for lang_code, _ in lang_list:
                 setattr(
-                    self, "question_{}".format(lang_code), "SAMPLE_QUESTION_{}".format(lang_code)
+                    self,
+                    "question_{}".format(lang_code),
+                    "SAMPLE_QUESTION_{}".format(lang_code),
                 )
 
     return {"question": TemplateFeedbackQuestion(checked), "checked": checked}
@@ -63,7 +67,9 @@ def feedback_edit_div():
         def __init__(self):
             for lang_code, _ in lang_list:
                 setattr(
-                    self, "question_{}".format(lang_code), "SAMPLE_QUESTION_{}".format(lang_code)
+                    self,
+                    "question_{}".format(lang_code),
+                    "SAMPLE_QUESTION_{}".format(lang_code),
                 )
 
     return {"question": TemplateFeedbackQuestion()}
@@ -86,7 +92,11 @@ def feedback_choice_div(required):
             else:
                 self.id = "SAMPLE_CHOICE_ID"
             for lang_code, _ in lang_list:
-                setattr(self, "answer_{}".format(lang_code), "SAMPLE_ANSWER_{}".format(lang_code))
+                setattr(
+                    self,
+                    "answer_{}".format(lang_code),
+                    "SAMPLE_ANSWER_{}".format(lang_code),
+                )
 
     return {
         "question": TemplateFeedbackQuestion(),
@@ -192,7 +202,11 @@ def include_file_tr(include_file, jstemplate=False):
 
         def __init__(self):
             for lang_code, _ in lang_list:
-                setattr(self, "name_{}".format(lang_code), "SAMPLE_NAME_{}".format(lang_code))
+                setattr(
+                    self,
+                    "name_{}".format(lang_code),
+                    "SAMPLE_NAME_{}".format(lang_code),
+                )
 
     class TemplateIncludeFile:
         id = "SAMPLE_ID"
@@ -261,13 +275,19 @@ def instance_file_tr(instance_file_link, jstemplate=False):
         def __init__(self):
             self.get_purpose_display = "SAMPLE_GET_PURPOSE_DISPLAY"
             for lang_code, _ in lang_list:
-                setattr(self, "name_{}".format(lang_code), "SAMPLE_NAME_{}".format(lang_code))
+                setattr(
+                    self,
+                    "name_{}".format(lang_code),
+                    "SAMPLE_NAME_{}".format(lang_code),
+                )
 
     class TemplateCourseInstance:
         def __init__(self):
             for lang_code, _ in lang_list:
                 setattr(
-                    self, "name_{}".format(lang_code), "SAMPLE_INSTANCE_NAME_{}".format(lang_code)
+                    self,
+                    "name_{}".format(lang_code),
+                    "SAMPLE_INSTANCE_NAME_{}".format(lang_code),
                 )
 
     class TemplateInstanceFile:
@@ -397,16 +417,26 @@ def instance_file_popup_tr(linked):
                     "description_{}".format(lang_code),
                     "SAMPLE_DESCRIPTION_{}".format(lang_code),
                 )
-                setattr(self, "fileinfo_{}".format(lang_code), TemplateFileInfo(linked, lang_code))
                 setattr(
-                    self, "instance_{}".format(lang_code), "SAMPLE_INSTANCE_{}".format(lang_code)
+                    self,
+                    "fileinfo_{}".format(lang_code),
+                    TemplateFileInfo(linked, lang_code),
+                )
+                setattr(
+                    self,
+                    "instance_{}".format(lang_code),
+                    "SAMPLE_INSTANCE_{}".format(lang_code),
                 )
 
     class TemplateFileSettings:
         def __init__(self, linked):
             if linked:
                 for lang_code, _ in lang_list:
-                    setattr(self, "name_{}".format(lang_code), "SAMPLE_NAME_{}".format(lang_code))
+                    setattr(
+                        self,
+                        "name_{}".format(lang_code),
+                        "SAMPLE_NAME_{}".format(lang_code),
+                    )
             else:
                 for lang_code, _ in lang_list:
                     setattr(self, "name_{}".format(lang_code), "")

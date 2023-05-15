@@ -147,6 +147,7 @@ class CopyingGroupAdmin(GroupAdmin):
 
 admin.site.register(Group, CopyingGroupAdmin)
 
+
 class HintInline(TranslationTabularInline):
     model = Hint
     fk_name = "exercise"
@@ -220,7 +221,10 @@ class CheckboxExerciseAdmin(CourseContentAdmin, TranslationAdmin, VersionAdmin):
     form = ContentForm
 
     fieldsets = [
-        ("Page information", {"fields": ["name", "slug", "content", "question", "tags"]}),
+        (
+            "Page information",
+            {"fields": ["name", "slug", "content", "question", "tags"]},
+        ),
         (
             "Exercise miscellaneous",
             {
@@ -260,7 +264,10 @@ class TextfieldExerciseAdmin(CourseContentAdmin, TranslationAdmin, VersionAdmin)
     form = ContentForm
 
     fieldsets = [
-        ("Page information", {"fields": ["name", "slug", "content", "question", "tags"]}),
+        (
+            "Page information",
+            {"fields": ["name", "slug", "content", "question", "tags"]},
+        ),
         (
             "Exercise miscellaneous",
             {
@@ -297,7 +304,10 @@ class CodeReplaceExerciseAdmin(CourseContentAdmin, TranslationAdmin, VersionAdmi
     content_type = "CODE_REPLACE_EXERCISE"
 
     fieldsets = [
-        ("Page information", {"fields": ["name", "slug", "content", "question", "tags"]}),
+        (
+            "Page information",
+            {"fields": ["name", "slug", "content", "question", "tags"]},
+        ),
         (
             "Exercise miscellaneous",
             {"fields": ["default_points", "evaluation_group"], "classes": ["wide"]},
@@ -336,7 +346,10 @@ class RepeatedTemplateExerciseAdmin(CourseContentAdmin, TranslationAdmin, Versio
     form = ContentForm
 
     fieldsets = [
-        ("Page information", {"fields": ["name", "slug", "content", "question", "tags"]}),
+        (
+            "Page information",
+            {"fields": ["name", "slug", "content", "question", "tags"]},
+        ),
         (
             "Exercise miscellaneous",
             {"fields": ["default_points", "evaluation_group"], "classes": ["wide"]},
@@ -365,9 +378,7 @@ class FileExerciseTestCommandAdmin(admin.TabularInline):
     extra = 1
 
     def formfield_for_dbfield(self, db_field, request, **kwargs):
-        formfield = super().formfield_for_dbfield(
-            db_field, request, **kwargs
-        )
+        formfield = super().formfield_for_dbfield(db_field, request, **kwargs)
         if db_field.name == "command_line":
             formfield.widget = TextInput(attrs={"size": 120})
         return formfield
@@ -589,7 +600,14 @@ class ContentGraphAdmin(admin.ModelAdmin):
         "ordinal_number",
     )
 
-    fields = ("parentnode", "content", "deadline", "scored", "ordinal_number", "visible")
+    fields = (
+        "parentnode",
+        "content",
+        "deadline",
+        "scored",
+        "ordinal_number",
+        "visible",
+    )
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         """
@@ -644,7 +662,10 @@ class CourseAdmin(TranslationAdmin, VersionAdmin):
             },
         ),
         ("Course outline", {"fields": ["description", "code", "credits"]}),
-        ("Administration", {"fields": ["staff_group", "main_responsible", "staff_course"]}),
+        (
+            "Administration",
+            {"fields": ["staff_group", "main_responsible", "staff_course"]},
+        ),
     ]
     search_fields = ("name",)
     readonly_fields = ("slug",)

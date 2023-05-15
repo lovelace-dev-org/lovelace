@@ -9,7 +9,6 @@ from django.urls import path, register_converter
 from model_path_converter import register_model_converter
 from courses.models import (
     Course,
-    CourseInstance,
     ContentPage,
     File,
     StudentGroup,
@@ -37,7 +36,6 @@ register_converter(InstanceConverter, "instance")
 register_model_converter(Calendar, name="calendar")
 register_model_converter(CalendarDate, name="event")
 
-# TODO: Design the url hierarchy from scratch
 urlpatterns = [
     path(
         "admin/courses/fileuploadexercise/add/",

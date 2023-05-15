@@ -1,4 +1,3 @@
-from django.conf.urls import include
 from django.urls import path
 
 from . import views
@@ -7,7 +6,8 @@ app_name = "routine_exercise"
 
 urlpatterns = [
     path(
-        "<course:course>/<instance:instance>/<content:content>/<revision:revision>/routine-question/",
+        "<course:course>/<instance:instance>/<content:content>"
+        "/<revision:revision>/routine-question/",
         views.get_routine_question,
         name="get_routine_question",
     ),

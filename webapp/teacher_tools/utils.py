@@ -1,6 +1,5 @@
 from django.urls import reverse
 import courses.models as cm
-from reversion.models import Version
 
 
 def check_user_completion(user, tasks, instance, completion_qs, include_links=True):
@@ -125,7 +124,8 @@ def compile_student_results(user, instance, tasks_by_page, summary=False):
 def reconstruct_answer_form(task_type, answer):
     if task_type == "TEXTFIELD_EXERCISE":
         return {"answer": answer.given_answer}
-    elif task_type == "MULTIPLE_CHOICE_EXERCISE":
+    if task_type == "MULTIPLE_CHOICE_EXERCISE":
         return {"-radio": answer.chosen_answer_id}
-    elif task_type == "CHECKBOX_EXERCISE":
+    if task_type == "CHECKBOX_EXERCISE":
         return dict((str(a.id), a.id) for a in answer.chosen_answers.all())
+    raise ValueError("Unsupported task type")

@@ -81,7 +81,9 @@ urlpatterns = [
         name="reminders_progress",
     ),
     path(
-        "<course:course>/<instance:instance>/reminders/", views.manage_reminders, name="reminders"
+        "<course:course>/<instance:instance>/reminders/",
+        views.manage_reminders,
+        name="reminders",
     ),
     path(
         "<course:course>/<instance:instance>/<content:content>/plagiarism/",

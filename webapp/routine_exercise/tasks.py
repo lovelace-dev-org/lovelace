@@ -1,12 +1,9 @@
 from __future__ import absolute_import
 
 import base64
-import csv
-import io
 import json
 import os
 import random
-import redis
 import resource
 import shlex
 import string
@@ -16,15 +13,8 @@ import time
 
 from celery import shared_task
 from django.conf import settings
-from django.core.cache import cache
-from django.urls import reverse
-from django.utils import translation
 
 from courses import evaluation_sec as sec
-from courses.models import Course, CourseInstance, UserFileUploadExerciseAnswer
-from routine_exercise.models import *
-from utils.content import get_instance_revision
-from utils.files import get_file_contents
 
 
 def _run_command(args, test_dir):
@@ -121,15 +111,6 @@ def _run_command(args, test_dir):
     return proc_results
 
 
-def _answer_history(user_id, instance_id, exercise_id):
-    answers = RoutineExerciseAnswer.objects.filter(
-        question__user_id=user_id,
-        question__instance_id=instance_id,
-        question__exercise_id=exercise_id,
-    ).order_by("answer_date")
-    return [(answer.question.question_class, answer.correct) for answer in answers]
-
-
 @shared_task(name="routine_exercise.generate_question", bind=True)
 def generate_question(self, payload):
     progress = payload["meta"]["progress"]
@@ -140,7 +121,7 @@ def generate_question(self, payload):
             fpath = os.path.join(test_dir, backend["name"])
             with open(fpath, "wb") as fd:
                 fd.write(base64.b64decode(backend["content"]))
-            print("Wrote {} from {}".format(backend["name"], backend["handle"]))
+            print(f"Wrote {backend['name' ]} from {backend['handle']}")
 
         fn = "".join(random.choice(string.ascii_lowercase) for i in range(24)) + ".json"
         data = {
@@ -148,7 +129,7 @@ def generate_question(self, payload):
             "completed": payload["meta"]["completed"],
             "progress": progress,
         }
-        with open(os.path.join(test_dir, fn), "w") as f:
+        with open(os.path.join(test_dir, fn), "w", encoding="utf-8") as f:
             json.dump(data, f)
 
         command = payload["command"]
@@ -182,7 +163,7 @@ def check_answer(self, payload):
             fpath = os.path.join(test_dir, backend["name"])
             with open(fpath, "wb") as fd:
                 fd.write(base64.b64decode(backend["content"]))
-            print("Wrote {} from {}".format(backend["name"], backend["handle"]))
+            print(f"Wrote {backend['name']} from {backend['handle']}")
 
         fn = "".join(random.choice(string.ascii_lowercase) for i in range(24)) + ".json"
         data = {
@@ -193,7 +174,7 @@ def check_answer(self, payload):
             "completed": payload["meta"]["completed"],
             "progress": progress,
         }
-        with open(os.path.join(test_dir, fn), "w") as f:
+        with open(os.path.join(test_dir, fn), "w", encoding="utf-8") as f:
             json.dump(data, f)
 
         command = payload["command"]

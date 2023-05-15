@@ -187,7 +187,7 @@ def compile_evaluation_data(request, evaluation_tree, evaluation_obj, context=No
 
 def render_json_feedback(log, request, course, instance, content, answer_id=None):
     """
-    Renders execise feedback from the exercise log JSON format. Parses
+    Renders exercise feedback from the exercise log JSON format. Parses
     messages, hints, triggers, and the final result from the log and returns
     them as a dictionary.
 

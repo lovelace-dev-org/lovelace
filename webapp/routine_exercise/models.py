@@ -1,17 +1,12 @@
-import datetime
-
-from django.conf import settings
 from django.db import models
 from django.db.models import Q, JSONField
-from django.contrib.postgres.fields import ArrayField
 from django.template import loader
 from django.urls import reverse
 from django.utils.text import slugify
 
-from courses.models import ContentPage, CourseInstance, Evaluation, User
+from courses.models import ContentPage, CourseInstance, User
 
 from utils.files import get_testfile_path, upload_storage
-import courses.markupparser as markupparser
 
 
 class RoutineExercise(ContentPage):
@@ -31,10 +26,6 @@ class RoutineExercise(ContentPage):
         self.content_type = "ROUTINE_EXERCISE"
         super().save(*args, **kwargs)
         RoutineExerciseQuestion.objects.filter(exercise=self, routineexerciseanswer=None).delete()
-        instances = CourseInstance.objects.filter(
-            Q(contentgraph__content=self) | Q(contentgraph__content__embedded_pages=self),
-            frozen=False,
-        )
         parents = ContentPage.objects.filter(embedded_pages=self).distinct()
         for instance in CourseInstance.objects.filter(
             Q(contentgraph__content=self) | Q(contentgraph__content__embedded_pages=self),
@@ -57,7 +48,7 @@ class RoutineExercise(ContentPage):
 
     def get_admin_change_url(self):
         adminized_type = self.content_type.replace("_", "").lower()
-        return reverse("admin:routine_exercise_%s_change" % (adminized_type), args=(self.id,))
+        return reverse(f"admin:routine_exercise_{adminized_type}_change", args=(self.id,))
 
     def get_user_answers(self, user, instance, ignore_drafts=True):
         if instance is None:
@@ -71,31 +62,12 @@ class RoutineExercise(ContentPage):
 
         return answers
 
-        history = []
-        for answer in answers:
-            rendered_text = answer.question.template.content.format(
-                **answer.question.generated_json["formatdict"]
-            )
-            marked_text = "".join(markupparser.MarkupParser.parse(rendered_text)).strip()
-            history.append(
-                {
-                    "question": marked_text,
-                    "answer": answer.given_answer,
-                    "correct": answer.correct,
-                    "answer_date": answer.date_answered,
-                }
-            )
-
-        return history
-
     def re_evaluate(self, user, instance):
         from utils.exercise import update_completion
 
-        try:
-            progress = RoutineExerciseProgress.objects.get(
-                exercise=self, user=user, instance=instance, completed=True
-            )
-        except RoutineExerciseProgress.DoesNotExist:
+        if not RoutineExerciseProgress.objects.filter(
+            exercise=self, user=user, instance=instance, completed=True
+        ).exists:
             return
 
         evaluation = {

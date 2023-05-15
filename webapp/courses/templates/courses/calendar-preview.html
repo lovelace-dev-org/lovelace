@@ -10,7 +10,12 @@
           <div>
             <strong>{{ event.start_time|date:"l, Y-m-d, H:i" }}</strong>
           </div>
-          <div><span>{{ event.duration|event_duration }}</span><span class="right-float">{{ reservations|length }}&nbsp;/&nbsp;{{ event.reservable_slots }}</span></div>
+          <div>
+            <span>{{ event.duration|event_duration }}</span>
+            <span class="right-float">
+              {{ reservations|length }}&nbsp;/&nbsp;{{ event.reservable_slots }}
+            </span>
+          </div>
         </div>
         {% if event.event_description %}
             <div class="description">{{ event.event_description }}</div>

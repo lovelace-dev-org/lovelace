@@ -255,7 +255,11 @@ def ex_check_file_answer(task, files={}, answer=None):
             "errors": errors,
         }
         tests.append(test)
-        expected[ft_test_name] = {"outputs": outputs, "outputfiles": output_files, "errors": errors}
+        expected[ft_test_name] = {
+            "outputs": outputs,
+            "outputfiles": output_files,
+            "errors": errors,
+        }
 
     results = None
 

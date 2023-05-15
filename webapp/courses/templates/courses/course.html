@@ -13,14 +13,20 @@
 {% block breadcrumb-links %}
   <li><a href="{% url 'courses:index' %}">{% trans 'Courses' %}</a></li>
   <div class="separator">»</div>
-  <li><a href="{% url 'courses:course' course instance %}">{{ instance.get_identifying_str }}</a></li>
+  <li>
+    <a href="{% url 'courses:course' course instance %}">
+      {{ instance.get_identifying_str }}
+    </a>
+  </li>
 {% endblock %}
 
 {% block toc %}{% endblock %}
 
 {% block course-completion-link %}
   {% if not sandboxed %}
-    <a href="{% url 'teacher_tools:completion' course instance %}">{% trans 'Course completion' %}</a>
+    <a href="{% url 'teacher_tools:completion' course instance %}">
+      {% trans 'Course completion' %}
+    </a>
   {% endif %}
 {% endblock %}
 
@@ -29,11 +35,17 @@
 {% endblock %}
 
 {% block course-enrollments-link %}
-  <a href="{% url 'teacher:manage_enrollments' course instance %}">{% trans 'Manage enrollments' %}</a>
+  <a href="{% url 'teacher:manage_enrollments' course instance %}">
+    {% trans 'Manage enrollments' %}
+  </a>
 {% endblock %}
 
 {% block page-content %}
-<h1 class="content-heading">{{ course.name }}<span id="{{ course.slug }}" class="anchor-offset"></span><a href="#{{ course.slug }}" class="permalink" title="Permalink to {{ course.name }}">&para;</a></h1>
+<h1 class="content-heading">
+  {{ course.name }}
+  <span id="{{ course.slug }}" class="anchor-offset"></span>
+  <a href="#{{ course.slug }}" class="permalink" title="Permalink to {{ course.name }}">&para;</a>
+</h1>
 
 <div class="sub-header-container">
   {% enroll_widget course instance enroll_state %}
@@ -46,8 +58,7 @@
                 class="staff-base-button settings-button"
                 title="{% trans 'Course instance settings' %}"
                 onclick="toc.fetch_form(event, this);"
-                data-url="{% url 'courses:instance_settings' course instance %}"
-                >
+                data-url="{% url 'courses:instance_settings' course instance %}">
         </button>
         <button type="button"
                 class="staff-base-button freeze-button"
@@ -79,7 +90,11 @@
 
 
   <div class="course-contents">
-    <h2 class="content-heading">{% trans 'Course Contents' %}<span id="course-contents" class="anchor-offset"></span><a href="#course-contents" class="permalink" title="Permalink to Course Contents">&para;</a></h2>
+    <h2 class="content-heading">
+      {% trans 'Course Contents' %}
+      <span id="course-contents" class="anchor-offset"></span>
+      <a href="#course-contents" class="permalink" title="Permalink to Course Contents">&para;</a>
+    </h2>
     
     {% if course_staff %}
     <div class="toc-staff-top-row staff-only collapsed">
@@ -105,10 +120,14 @@
           {% if item.visible == False %}admin-visible-content{% endif %}
           {% if course_staff and item.require_enroll %}enroll-locked-content{% endif %}
         ">
-          <a href="{% url 'courses:content' course instance item.content %}">{{ item.content.name }}</a>
+          <a href="{% url 'courses:content' course instance item.content %}">
+            {{ item.content.name }}
+          </a>
           {% comment %}
           {% if item.page_count > 0 %}
-            <img class="course-pagination-icon" src="{% static 'courses/pagination.png' %}" alt="{% trans 'View as paginated' %}">
+            <img class="course-pagination-icon"
+                 src="{% static 'courses/pagination.png' %}"
+                 alt="{% trans 'View as paginated' %}">
           {% endif %}
           {% endcomment %}
           
@@ -165,13 +184,16 @@
                     draggable="true"
                     ondragstart="toc.start_drag(event, {{ item.node_id }});"
                     ondragend="toc.end_drag(event);"
-                    data-csrf="{{ csrf_token }}">&nbsp;
+                    data-csrf="{{ csrf_token }}">&nbsp;&nbsp;&nbsp;&nbsp;
             </button>
             
             {% if item.embedded_count > 0 %}
               <progress class="course-contents-progress student-only" 
                         value="{{ item.correct_embedded }}" max="{{ item.embedded_count }}"
-                        title="{% trans 'Completed' %} {{ item.correct_embedded }} / {{ item.embedded_count }}">
+                        title="
+                          {% trans 'Completed' %}
+                          {{ item.correct_embedded }} / {{ item.embedded_count }}
+                        ">
               </progress>
               <div class="node-score student-only">{{ item.page_score }} / {{ item.page_max }}</div>
             {% endif %}
@@ -180,7 +202,10 @@
             {% if item.embedded_count > 0 %}
               <progress class="course-contents-progress" 
                         value="{{ item.correct_embedded }}" max="{{ item.embedded_count }}"
-                        title="{% trans 'Completed' %} {{ item.correct_embedded }} / {{ item.embedded_count }}">
+                        title="
+                          {% trans 'Completed' %}
+                          {{ item.correct_embedded }} / {{ item.embedded_count }}
+                        ">
               </progress>
               <div class="node-score">{{ item.page_score }} / {{ item.page_max }}</div>
             {% endif %}

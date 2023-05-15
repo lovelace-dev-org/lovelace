@@ -10,7 +10,11 @@ urlpatterns = [
     path("", views.index, name="index"),
     path("login/", user_views.login, name="login"),
     path("logout/", user_views.logout, name="logout"),
-    path("groups/<course:course>/<instance:instance>/", user_views.group_info, name="group_info"),
+    path(
+        "groups/<course:course>/<instance:instance>/",
+        user_views.group_info,
+        name="group_info",
+    ),
     path(
         "groups/<course:course>/<instance:instance>/create/",
         staff_views.create_group,
@@ -209,7 +213,11 @@ urlpatterns = [
     ),
     path("<course:course>/", views.course_instances, name="course_instances"),
     path("<course:course>/<instance:instance>/", views.course, name="course"),
-    path("<course:course>/<instance:instance>/<content:content>/", views.content, name="content"),
+    path(
+        "<course:course>/<instance:instance>/<content:content>/",
+        views.content,
+        name="content",
+    ),
     path(
         "<course:course>/<instance:instance>/<content:content>/<int:pagenum>/",
         views.content,

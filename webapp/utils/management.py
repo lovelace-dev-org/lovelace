@@ -267,7 +267,9 @@ def clone_content_graphs(old_instance, new_instance):
         graph.save()
         graph.content.update_embedded_links(new_instance, graph.revision)
 
-    for child_node in cm.ContentGraph.objects.filter(instance=new_instance).exclude(parentnode=None):
+    for child_node in cm.ContentGraph.objects.filter(instance=new_instance).exclude(
+        parentnode=None
+    ):
         new_parent = cm.ContentGraph.objects.get(
             content=child_node.parentnode.content, instance=new_instance
         )
@@ -354,6 +356,17 @@ class TranslationStaffForm(ModelForm):
             return self.save_m2m()
         return instance
 
+    def visible_fields(self):
+        def meta_listing_index(field):
+            for i, field_name in enumerate(self.Meta.fields):
+                if field.name.startswith(field_name):
+                    return i
+            return len(self.Meta.fields)
+
+        fields = super().visible_fields()
+        fields.sort(key=meta_listing_index)
+        return fields
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._instance = kwargs.get("instance")
@@ -365,18 +378,20 @@ class TranslationStaffForm(ModelForm):
             key=lambda x: x[0] == settings.MODELTRANSLATION_DEFAULT_LANGUAGE,
             reverse=True,
         )
-        for field_name in self.Meta.fields[:]:
+        for field_name in self.Meta.fields:
             if field_name in translated:
                 field = getattr(model, field_name).field
                 for lang_code, __ in languages:
                     lang_field_name = f"{field_name}_{lang_code}"
                     if lang_code == settings.MODELTRANSLATION_DEFAULT_LANGUAGE:
                         self.fields[lang_field_name] = forms.CharField(
-                            label=f"{field.verbose_name} (default)", required=not field.blank
+                            label=f"{field.verbose_name} (default)".capitalize(),
+                            required=not field.blank,
                         )
                     else:
                         self.fields[lang_field_name] = forms.CharField(
-                            label=f"{field.verbose_name} ({lang_code})", required=False
+                            label=f"{field.verbose_name} ({lang_code})".capitalize(),
+                            required=False
                         )
                     if isinstance(field, models.TextField):
                         self.fields[lang_field_name].widget = forms.Textarea(
@@ -384,3 +399,4 @@ class TranslationStaffForm(ModelForm):
                         )
                     self._translated_field_names.append(lang_field_name)
                 self.fields.pop(field_name)
+

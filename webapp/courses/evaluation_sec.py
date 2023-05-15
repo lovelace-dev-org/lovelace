@@ -148,9 +148,5 @@ def secure_kill(pid):
 
     [1] https://linux.die.net/man/3/kill
     """
-    os.system(
-        f"pkill --signal SIGSTOP -s {pid}"
-    )
-    os.system(
-        f"pkill --signal SIGKILL -s {pid}"
-    )
+    os.system(f"pkill --signal SIGSTOP -s {pid}")
+    os.system(f"pkill --signal SIGKILL -s {pid}")

@@ -1,9 +1,17 @@
+import datetime
 import os
 import random
-import routine_exercise.tasks as routine_tasks
 
+from django.conf import settings
 from django.db import transaction
-from django.http import JsonResponse, HttpResponse
+from django.http import (
+    HttpResponse,
+    HttpResponseForbidden,
+    HttpResponseNotAllowed,
+    HttpResponseNotFound,
+    JsonResponse,
+)
+from django.urls import reverse
 from django.utils import translation
 from django.utils.translation import gettext as _
 
@@ -11,7 +19,16 @@ from lovelace.celery import app as celery_app
 
 from courses import markupparser
 
-from routine_exercise.models import *
+from routine_exercise.models import (
+    RoutineExercise,
+    RoutineExerciseAnswer,
+    RoutineExerciseBackendFile,
+    RoutineExerciseProgress,
+    RoutineExerciseQuestion,
+    RoutineExerciseTemplate,
+)
+import routine_exercise.tasks as routine_tasks
+
 from utils.access import ensure_enrolled_or_staff, determine_access
 from utils.archive import find_version_with_filename, get_archived_instances, get_single_archived
 from utils.exercise import render_json_feedback, update_completion
@@ -136,7 +153,6 @@ def _routine_payload(user, instance, content, revision, progress, answer=None):
 @ensure_enrolled_or_staff
 def get_routine_question(request, course, instance, content, revision):
     content = content.get_type_object()
-    lang_code = translation.get_language()
     if revision == "head":
         revision = None
 
@@ -176,7 +192,11 @@ def get_routine_question(request, course, instance, content, revision):
         data = _question_context_data(request, course, instance, question)
     except Exception as e:
         return JsonResponse(
-            {"error": _("Question retrieval failed. Contact teaching staff (reason: %s)") % e}
+            {
+                "error": _(
+                    "Question retrieval failed. Contact teaching staff (reason: {e})"
+                ).format(e=e)
+            }
         )
     data["progress"] = progress.progress
     return JsonResponse(data)
@@ -185,92 +205,95 @@ def get_routine_question(request, course, instance, content, revision):
 @ensure_enrolled_or_staff
 def routine_progress(request, course, instance, content, task_id):
     task = celery_app.AsyncResult(id=task_id)
-    if task.ready():
-        info = task.info
-        if info.get("status", "fail") == "fail":
-            try:
-                answer_id = RoutineExerciseAnswer.objects.get(task_id=task_id).id
-            except RoutineExerciseAnswer.DoesNotExist:
-                answer_id = 0
-
-            answer_url = (
-                reverse(
-                    "courses:show_answers",
-                    kwargs={
-                        "user": request.user,
-                        "course": course,
-                        "instance": instance,
-                        "exercise": content,
-                    },
-                )
-                + "#"
-                + str(answer_id)
-            )
-
-            revision = instance.embeddedlink_set.get_queryset().get(embedded_page=content).revision
-            send_error_report(
-                instance, content, revision, [info["error"]], request.build_absolute_uri(answer_url)
-            )
-            data = {"errors": _("Operation failed. Course staff has been notified.")}
-            return JsonResponse(data)
-
-        if info["task"] == "generate":
-            if info["data"].get("over", False):
-                return JsonResponse({"error": _("No more questions available.")})
-
-            question = _save_question(request.user, instance, content, info, info["data"])
-            try:
-                data = _question_context_data(request, course, instance, question)
-            except Exception as e:
-                return JsonResponse(
-                    {
-                        "error": _("Question retrieval failed. Contact teaching staff (reason: %s)")
-                        % e
-                    }
-                )
-            progress = RoutineExerciseProgress.objects.get(
-                instance=instance, exercise=content, user=request.user
-            )
-            progress.progress = info["data"]["progress"]
-            progress.save()
-            data["progress"] = progress.progress
-            return JsonResponse(data)
-
-        elif info["task"] == "check":
-            try:
-                answer = RoutineExerciseAnswer.objects.get(task_id=task_id)
-            except RoutineExercise.DoesNotExist:
-                return JsonResponse({"error": _("Unable to find matching answer.")})
-
-            progress = _save_evaluation(request.user, instance, content, task_id, info)
-            data = render_json_feedback(
-                info["data"]["log"], request, course, instance, content, answer.id
-            )
-            if progress.completed:
-                data["evaluation"] = True
-                data["points"] = content.default_points
-                data["max"] = content.default_points
-                update_completion(content, instance, request.user, data, answer.answer_date)
-                total_evaluation, quotient = content.get_user_evaluation(request.user, instance)
-                data["score"] = f"{quotient * content.default_points:.2f}"
-                data["total_evaluation"] = total_evaluation
-            else:
-                data["score"] = f"{0:.2f}"
-                data["total_evaluation"] = "ongoing"
-            data["next_instance"] = True
-            data["progress"] = progress.progress
-            next_question = info["data"].get("next")
-            if next_question:
-                _save_question(request.user, instance, content, info, info["data"]["next"])
-
-            return JsonResponse(data)
-    else:
+    if not task.ready():
         progress_url = reverse(
             "routine_exercise:task_progress",
             kwargs={"course": course, "instance": instance, "content": content, "task_id": task.id},
         )
         data = {"state": task.state, "metadata": task.info, "redirect": progress_url}
         return JsonResponse(data)
+
+    info = task.info
+    if info.get("status", "fail") == "fail":
+        try:
+            answer_id = RoutineExerciseAnswer.objects.get(task_id=task_id).id
+        except RoutineExerciseAnswer.DoesNotExist:
+            answer_id = 0
+
+        answer_url = (
+            reverse(
+                "courses:show_answers",
+                kwargs={
+                    "user": request.user,
+                    "course": course,
+                    "instance": instance,
+                    "exercise": content,
+                },
+            )
+            + "#"
+            + str(answer_id)
+        )
+
+        revision = instance.embeddedlink_set.get_queryset().get(embedded_page=content).revision
+        send_error_report(
+            instance, content, revision, [info["error"]], request.build_absolute_uri(answer_url)
+        )
+        data = {"errors": _("Operation failed. Course staff has been notified.")}
+        return JsonResponse(data)
+
+    if info["task"] == "generate":
+        if info["data"].get("over", False):
+            return JsonResponse({"error": _("No more questions available.")})
+
+        question = _save_question(request.user, instance, content, info, info["data"])
+        try:
+            data = _question_context_data(request, course, instance, question)
+        except Exception as e:
+            return JsonResponse(
+                {
+                    "error": _(
+                        "Question retrieval failed. Contact teaching staff (reason: {e})"
+                    ).format(e=e)
+                }
+            )
+        progress = RoutineExerciseProgress.objects.get(
+            instance=instance, exercise=content, user=request.user
+        )
+        progress.progress = info["data"]["progress"]
+        progress.save()
+        data["progress"] = progress.progress
+        return JsonResponse(data)
+
+    if info["task"] == "check":
+        try:
+            answer = RoutineExerciseAnswer.objects.get(task_id=task_id)
+        except RoutineExercise.DoesNotExist:
+            return JsonResponse({"error": _("Unable to find matching answer.")})
+
+        progress = _save_evaluation(request.user, instance, content, task_id, info)
+        data = render_json_feedback(
+            info["data"]["log"], request, course, instance, content, answer.id
+        )
+        if progress.completed:
+            data["evaluation"] = True
+            data["points"] = content.default_points
+            data["max"] = content.default_points
+            update_completion(content, instance, request.user, data, answer.answer_date)
+            total_evaluation, quotient = content.get_user_evaluation(request.user, instance)
+            data["score"] = f"{quotient * content.default_points:.2f}"
+            data["total_evaluation"] = total_evaluation
+        else:
+            data["score"] = f"{0:.2f}"
+            data["total_evaluation"] = "ongoing"
+        data["next_instance"] = True
+        data["progress"] = progress.progress
+        next_question = info["data"].get("next")
+        if next_question:
+            _save_question(request.user, instance, content, info, info["data"]["next"])
+
+        return JsonResponse(data)
+
+    return JsonResponse({"error": _("Invalid task type.")})
 
 
 @ensure_enrolled_or_staff
@@ -279,7 +302,6 @@ def check_routine_question(request, course, instance, content, revision):
         return HttpResponseNotAllowed(["POST"])
 
     content = content.get_type_object()
-    lang_code = translation.get_language()
     if revision == "head":
         revision = None
 
@@ -320,7 +342,6 @@ def check_routine_question(request, course, instance, content, revision):
     return JsonResponse(data)
 
 
-# TODO: limit to owner and course staff
 def download_routine_exercise_backend(request, exercise_id, field_name, filename):
     try:
         exercise_object = RoutineExercise.objects.get(id=exercise_id)
@@ -330,7 +351,8 @@ def download_routine_exercise_backend(request, exercise_id, field_name, filename
     if not determine_access(request.user, exercise_object):
         return HttpResponseForbidden(
             _(
-                "Only course main responsible teachers are allowed to download files through this interface."
+                "Only course main responsible teachers are allowed "
+                "to download files through this interface."
             )
         )
 
@@ -342,13 +364,13 @@ def download_routine_exercise_backend(request, exercise_id, field_name, filename
                     settings.PRIVATE_STORAGE_FS_PATH, getattr(fileobject, field_name).name
                 )
                 break
-            else:
-                # Archived file was requested
-                version = find_version_with_filename(fileobject, field_name, filename)
-                if version:
-                    filename = version.field_dict[field_name].name
-                    fs_path = os.path.join(settings.PRIVATE_STORAGE_FS_PATH, filename)
-                    break
+
+            # Archived file was requested
+            version = find_version_with_filename(fileobject, field_name, filename)
+            if version:
+                filename = version.field_dict[field_name].name
+                fs_path = os.path.join(settings.PRIVATE_STORAGE_FS_PATH, filename)
+                break
         else:
             return HttpResponseNotFound(_("Requested file does not exist."))
     except AttributeError as e:

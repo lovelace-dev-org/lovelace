@@ -751,7 +751,6 @@ def generate_repeated_template_session(
 # v
 
 
-
 @shared_task(name="courses.deploy-backend", bind=True)
 def deploy_backend(self, course, instance, source_path, target_name, lang, exercise=None):
     """

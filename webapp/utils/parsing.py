@@ -2,8 +2,10 @@ from django.urls import reverse
 from django.utils.text import slugify
 import courses.models as cm
 
+
 class BrokenLinkWarning(Exception):
     pass
+
 
 def parse_link_url(address, context=None):
     try:

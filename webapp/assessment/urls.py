@@ -1,7 +1,7 @@
 from django.urls import path
 from model_path_converter import register_model_converter
 from . import views
-from .models import *
+from .models import AssessmentBullet, AssessmentSection, AssessmentSheet
 
 app_name = "assessment"
 
@@ -36,7 +36,8 @@ urlpatterns = [
         name="delete_section",
     ),
     path(
-        "<course:course>/<instance:instance>/<sheet:sheet>/<bullet:target_bullet>/move/<str:placement>/",
+        "<course:course>/<instance:instance>/<sheet:sheet>/"
+        "<bullet:target_bullet>/move/<str:placement>/",
         views.move_bullet,
         name="move_bullet",
     ),

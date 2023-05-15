@@ -150,7 +150,8 @@ def calendar_reservation(request, calendar, event):
             user_reservations = reservations.filter(user=request.user)
             if user_reservations.count() >= 1:
                 return JsonResponse(
-                    {"msg": _("You have already reserved a slot in this event.")}, status=400
+                    {"msg": _("You have already reserved a slot in this event.")},
+                    status=400,
                 )
             new_reservation = CalendarReservation(calendar_date=event, user=request.user)
             new_reservation.save()

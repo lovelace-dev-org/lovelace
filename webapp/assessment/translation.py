@@ -1,6 +1,6 @@
 from modeltranslation.translator import register, TranslationOptions
 
-from assessment.models import *
+from assessment.models import AssessmentBullet, AssessmentSection, AssessmentSheet
 
 
 @register(AssessmentSheet)

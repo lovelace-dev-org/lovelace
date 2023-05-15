@@ -23,7 +23,7 @@ https://docs.djangoproject.com/en/dev/ref/settings/
 import os
 from kombu import Exchange, Queue
 
-# to prevent accidents, unit tests will not run unless started with a settings
+# To prevent accidents, unit tests will not run unless started with a settings
 # file where this flag is set to True.
 TEST_SETTINGS = False
 
@@ -32,9 +32,13 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True # Use True when viewing through web browser
 
+# Change to your hostname for production or network development installations
 ALLOWED_HOSTS = ["localhost"]
 
 # Applications
+# If you want to use debug toolbar, copy this to your development settings file
+# and uncomment the debug_toolbar line, then copy the MIDDLEWARE definition and
+# uncomment the DebugToolbarMiddleware line
 INSTALLED_APPS = (
     'modeltranslation',
     'django.contrib.admin',
@@ -59,9 +63,6 @@ INSTALLED_APPS = (
     'teacher_tools'
 )
 
-SITE_ID = 1
-LOGIN_REDIRECT_URL = '/'
-
 MIDDLEWARE = (
     #'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.middleware.security.SecurityMiddleware',
@@ -74,8 +75,9 @@ MIDDLEWARE = (
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 )
 
+SITE_ID = 1
+LOGIN_REDIRECT_URL = '/'
 ROOT_URLCONF = 'lovelace.urls'
-
 TEMPLATES = (
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -107,6 +109,9 @@ AUTHENTICATION_BACKENDS = (
     "allauth.account.auth_backends.AuthenticationBackend",
 )
 
+# Extended UserProfile settings
+AUTH_PROFILE_MODULE = 'courses.UserProfile'
+
 
 # Database
 # https://docs.djangoproject.com/en/dev/ref/settings/#databases
@@ -123,7 +128,10 @@ DATABASES = {
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 
 # E-mail backend settings
-#EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# Copy into your settings file and fill in your email server
+# details
+# Uncomment EMAIL_BACKEND if you want to log email into console instead for development
+# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 EMAIL_HOST = 'localhost'
 EMAIL_PORT = 25
 EMAIL_HOST_USER = ''
@@ -131,13 +139,10 @@ EMAIL_HOST_PASSWORD = ''
 
 # E-mail settings
 EMAIL_SUBJECT_PREFIX = '[Lovelace] '
-DEFAULT_FROM_EMAIL = 'lovelace-accounts@' # TODO: Fill!
-#ADMINS = ( # TODO: Fill!
-    #('Admin Name', 'admin@email'),
-    #('Admin 2 Name', 'admin2@email'),
-#)
+DEFAULT_FROM_EMAIL = 'lovelace-accounts@'
 
 # Allauth settings
+# For production, password min length of 32 or more recommended
 ACCOUNT_EMAIL_SUBJECT_PREFIX = '[Lovelace] '
 ACCOUNT_PASSWORD_MIN_LENGTH = 8
 ACCOUNT_EMAIL_REQUIRED = True
@@ -172,6 +177,7 @@ USE_L10N = True
 # If you set this to False, Django will not use timezone-aware datetimes.
 USE_TZ = False
 
+# Set your available languages
 LANGUAGES = (
     ('en', 'English'),
     ('fi', 'suomi'),
@@ -181,14 +187,14 @@ LOCALE_PATHS = (
     os.path.join(BASE_DIR, 'locale'),
 )
 
+# Set the default language for modeltranslation
+# This language will be used as the fallback content when translated content
+# is not available
 MODELTRANSLATION_DEFAULT_LANGUAGE = 'en'
 
 # URL prefix for static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/dev/howto/static-files/
 STATIC_URL = '/static/'
-
-# Extended UserProfile settings
-AUTH_PROFILE_MODULE = 'courses.UserProfile'
 
 # Absolute filesystem path to the directory that will hold user-uploaded files.
 # Example: "/home/media/media.lawrence.com/media/"
@@ -221,12 +227,16 @@ TMP_PATH = "/tmp"
 # Make this unique, and don't share it with anybody.
 SECRET_KEY = '$34r(o@3yfyr-=v8*ndtqm6^ti0=p%cyt&amp;a*giv-1w%q21r4ae'
 
-# Redis settings
+# Redis settings for storing checking results
+# If you change these in a configuration file,
+# remember to also include the CELERY_RESULT_BACKEND definition to update it
 REDIS_RESULT_CONFIG = {"host": "localhost", "port": 6379, "db": 0}
 REDIS_RESULT_EXPIRE = 60
 REDIS_LONG_EXPIRE = 60 * 60 * 24 * 7
 
 # Celery settings
+# The default queue is used for checkers while the privileged queue is used
+# for tasks that have elevated access and do not run any external code
 CELERY_BROKER_URL = 'amqp://guest:guest@localhost:5672//'
 CELERY_RESULT_BACKEND = 'redis://{host}:{port}/{db}'.format(**REDIS_RESULT_CONFIG)
 CELERY_TASK_DEFAULT_QUEUE = "default"
@@ -249,6 +259,8 @@ CELERY_ROUTES = {
 }
 
 # Cache settings
+# If using the same redis server, use a different DB to keep it separate
+# from checker results
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
@@ -259,13 +271,20 @@ CACHES = {
     }
 }
 
+# Stats generation is a time-consuming task. This configuration key allows you
+# to determine what hour of the day stats runs start
 STAT_GENERATION_HOUR = None
 
+# environment variables that are used when running student code in the checker
 CHECKING_ENV = {
     'PATH': '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
     'LC_CTYPE': 'en_US.UTF-8',
 }
 
+# Usernames that are used by the checker to restrict what student code can do.
+# Worker username is the worker's own identity which it is demoted to immediately
+# upon starting
+# Restricted username is the user all student code is run as.
 WORKER_USERNAME = "nobody"
 RESTRICTED_USERNAME = "nobody"
 
@@ -282,6 +301,7 @@ RESTRICTED_USERNAME = "nobody"
 PRIVATE_STORAGE_FS_PATH = MEDIA_ROOT
 PRIVATE_STORAGE_X_SENDFILE = False
 
+# Mossnet settings for code plagiarism checks
 MOSSNET_SUBMIT_PATH = None
 MOSSNET_LANGUAGES = []
 

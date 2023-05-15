@@ -18,9 +18,7 @@ def render_content(content, request=None, context=None, revision=None, lang_code
 
     # Check cache
     if page is not None:
-        cached_content = cache.get(
-            f"{content.slug}_contents_{instance.slug}_{lang_code}_{page}"
-        )
+        cached_content = cache.get(f"{content.slug}_contents_{instance.slug}_{lang_code}_{page}")
     else:
         cached_content = cache.get(f"{content.slug}_contents_{instance.slug}_{lang_code}")
 
@@ -74,8 +72,6 @@ def render_content(content, request=None, context=None, revision=None, lang_code
     if page is not None:
         return pages[page - 1]
     return full
-
-
 
 
 def render_terms(request, instance, context):

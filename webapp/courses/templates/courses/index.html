@@ -38,9 +38,10 @@
                   {% if instance.is_active or enroll_status == "ACCEPTED" or request.user.is_staff %}
                     <div class="
                         index-course-instance
-                        {% if not instance.is_active and enroll_status != 'ACCEPTED' %} inactive collapsed {% endif %}
-                        "
-                    >
+                        {% if not instance.is_active and enroll_status != 'ACCEPTED' %}
+                          inactive collapsed
+                        {% endif %}
+                        ">
                       <a href="{% url 'courses:course' course instance %}">{{ instance.name }}</a>
                       <div>
                         {% for tag in instance.split_notes %}

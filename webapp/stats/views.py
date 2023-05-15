@@ -1,39 +1,40 @@
+import colorsys
+import datetime
+import itertools
 import json
 import re
 import math
 import statistics
-import django
-import redis
 
 from celery import chain
 from django.conf import settings
 from django.core.cache import cache
 from django.http import HttpResponse, HttpResponseNotFound, HttpResponseForbidden, JsonResponse
 from django.template import loader
-from django.urls import reverse
-from django.utils import timezone
-from django.utils.safestring import mark_safe
 from django.utils.translation import gettext as _
 from lovelace.celery import app as celery_app
 
-import datetime
 
-from courses.models import *
-from .models import *
-import stats.tasks as stat_tasks
-
+from courses.models import (
+    CheckboxExerciseAnswer,
+    ContentPage,
+    Course,
+    CourseInstance,
+    EmbeddedLink,
+    Evaluation,
+    MultipleChoiceExerciseAnswer,
+    User,
+    UserCheckboxExerciseAnswer,
+    UserFileUploadExerciseAnswer,
+    UserMultipleChoiceExerciseAnswer,
+    UserRepeatedTemplateExerciseAnswer,
+    UserRepeatedTemplateInstanceAnswer,
+    UserTextfieldExerciseAnswer,
+)
 from utils.access import ensure_responsible
 
-# TODO: A view that displays statistics of a page that has embedded pages.
-#       E.g. the average completion status, how many of total course
-#       participants have done how much etc.
-#       - links to the stats of individual exercises
-#           * sorting by completion rate
-#           * sorting by total tries, average tries before correct etc.
-
-###########################################################
-# Some helper functions which won't be needed after the course enrollment of
-# users and the course instances have been implemented.
+import stats.tasks as stat_tasks
+from .models import TaskSummary
 
 
 NO_USERS_MSG = "No users to calculate!"
@@ -65,7 +66,6 @@ def course_exercises_with_color(course, instance):
 def course_instance_exercises(course_inst):
     exercises = []
 
-    # TODO: course has no contents, use instance
     parent_pages = course_inst.contents.select_related("content").order_by("ordinal_number")
 
     for p in parent_pages:
@@ -82,7 +82,6 @@ def filter_users_enrolled(users, course_inst):
 
 
 def course_instances_linked(exercise):
-    linked = []
     links = EmbeddedLink.objects.filter(embedded_page=exercise)
     return [link.instance for link in links]
 
@@ -94,7 +93,6 @@ def textfield_eval(given, answers):
     given_answer = given.replace("\r", "")
     correct = False
     hinted = False
-    commented = False
     matches = []
 
     re_validate = lambda db_ans, given_ans: re.match(db_ans, given_ans) is not None
@@ -106,21 +104,17 @@ def textfield_eval(given, answers):
         try:
             match = validate(answer.answer, given_answer)
         except re.error as e:
-            matches.append((answer.answer, "{}".format(e)))
+            matches.append((answer.answer, e))
             correct = False
             continue
 
         if match and answer.correct:
             correct = True
             matches.append((answer.answer, ""))
-            if answer.comment:
-                commented = True
         elif match and not answer.correct:
             matches.append((answer.answer, ""))
             if answer.hint:
                 hinted = True
-            if answer.comment:
-                commented = True
 
     return (correct, hinted, matches)
 
@@ -132,8 +126,8 @@ def answers_average(answer_count, user_count):
 
     try:
         return round(answer_count / user_count, 2)
-    except ZeroDivisionError:
-        raise ZeroUsersException("No users to calculate average answer count!")
+    except ZeroDivisionError as e:
+        raise ZeroUsersException("No users to calculate average answer count!") from e
 
 
 def answers_standard_distrib(user_count, answers_avg, answer_counts):
@@ -144,8 +138,8 @@ def answers_standard_distrib(user_count, answers_avg, answer_counts):
     deviations_squared = ((ac - answers_avg) ** 2 for ac in answer_counts)
     try:
         variance = (1 / user_count) * sum(deviations_squared)
-    except ZeroDivisionError:
-        raise ZeroUsersException("No users to calculate standard deviation!")
+    except ZeroDivisionError as e:
+        raise ZeroUsersException("No users to calculate standard deviation!") from e
     return round(math.sqrt(variance), 2)
 
 
@@ -159,11 +153,11 @@ def exercise_answer_piechart(correct, incorrect, not_answered, canvas_id):
         correct_pct = correct / total
         incorrect_pct = incorrect / total
         not_answered_pct = not_answered / total
-    except ZeroDivisionError:
-        raise ZeroUsersException("No users to create piechart!")
-    correct_deg = round(correct_pct * 360)
-    incorrect_deg = round(incorrect_pct * 360)
-    not_answered_deg = 360 - correct_deg - incorrect_deg
+    except ZeroDivisionError as e:
+        raise ZeroUsersException("No users to create piechart!") from e
+    # correct_deg = round(correct_pct * 360)
+    # incorrect_deg = round(incorrect_pct * 360)
+    # not_answered_deg = 360 - correct_deg - incorrect_deg
 
     return {
         "correct_n": correct,
@@ -363,10 +357,9 @@ def repeated_template_exercise(exercise, users, course_inst=None, revision=None)
     )
 
     correct_answers = answer_instances.filter(correct=True)
-    incorrect_answers = answer_instances.filter(correct=False)
 
     answer_data = []
-    for answer_instance in correct_answers:
+    for __ in correct_answers:
         answer_data.append(())
 
     hint_coverage_unique = 0.0
@@ -436,24 +429,24 @@ def single_exercise(request, exercise):
         return exercise_answer_stats(
             request, ctx, exercise, checkbox_exercise, "checkbox-stats.html"
         )
-    elif tasktype == "MULTIPLE_CHOICE_EXERCISE":
+    if tasktype == "MULTIPLE_CHOICE_EXERCISE":
         return exercise_answer_stats(
             request, ctx, exercise, multiple_choice_exercise, "multiple-choice-stats.html"
         )
-    elif tasktype == "TEXTFIELD_EXERCISE":
+    if tasktype == "TEXTFIELD_EXERCISE":
         return exercise_answer_stats(
             request, ctx, exercise, textfield_exercise, "textfield-stats.html"
         )
-    elif tasktype == "FILE_UPLOAD_EXERCISE":
+    if tasktype == "FILE_UPLOAD_EXERCISE":
         return exercise_answer_stats(
             request, ctx, exercise, file_upload_exercise, "file-upload-stats.html"
         )
-    elif tasktype == "REPEATED_TEMPLATE_EXERCISE":
+    if tasktype == "REPEATED_TEMPLATE_EXERCISE":
         return exercise_answer_stats(
             request, ctx, exercise, repeated_template_exercise, "repeated-template-stats.html"
         )
-    else:
-        return HttpResponseNotFound("No stats for exercise {} found!".format(exercise.slug))
+
+    return HttpResponseNotFound(f"No stats for exercise {exercise.slug} found!")
 
 
 def user_task(request, user_name, task_name):
@@ -463,10 +456,7 @@ def user_task(request, user_name, task_name):
 
     content = ContentPage.objects.get(slug=task_name)
 
-    exercise = content_page  # content_page.get_type_object()
-    tasktype = content_page.content_type
-    question = content.question
-    choices = answers = exercise.get_choices(exercise)
+    tasktype = content.content_type
 
     ruser = User.objects.get(username=user_name)
 
@@ -501,17 +491,13 @@ def all_exercises(request, course_name):
 
     tasks = ContentPage.objects.all()
     staff = User.objects.filter(is_staff=True)
-    non_staff = User.objects.filter(is_staff=False)
 
     task_infos = []
     for task in tasks:
         taskname = task.name
         taskurl = "/" + course_name + "/" + task.slug
 
-        exercise = task.get_type_object()
         tasktype = task.content_type
-        question = task.question
-        choices = answers = exercise.get_choices()
 
         if tasktype == "CHECKBOX_EXERCISE":
             all_evaluations = Evaluation.objects.filter(
@@ -555,7 +541,9 @@ def all_exercises(request, course_name):
 
 
 def course_users(request, course_slug, content_to_search, year, month, day):
-    """Admin view that shows a table of all users and the tasks they've done on a particular course."""
+    """
+    Admin view that shows a table of all users and the tasks they've done on a particular course.
+    """
     if (
         not request.user.is_authenticated
         and not request.user.is_active
@@ -563,7 +551,6 @@ def course_users(request, course_slug, content_to_search, year, month, day):
     ):
         return HttpResponseNotFound()
 
-    selected_course = Training.objects.get(name=course_slug)
     users = User.objects.all()
     # content_nodes = selected_course.contents.all()
     # contents = [cn.content for cn in content_nodes]
@@ -571,7 +558,7 @@ def course_users(request, course_slug, content_to_search, year, month, day):
     cns = ContentPage.objects.get(slug=content_to_search).content.splitlines()
     content_names = []
     for line in cns:
-        mo = re.match("^\[\[\[(?P<embname>.+)\]\]\]", line)
+        mo = re.match(r"^\[\[\[(?P<embname>.+)\]\]\]", line)
         if mo:
             content_names.append(mo.group("embname"))
     deadline = datetime.datetime(int(year), int(month), int(day))
@@ -596,8 +583,6 @@ def course_users(request, course_slug, content_to_search, year, month, day):
         for content in contents:
             exercise = content.get_type_object()
             tasktype = content.content_type
-            question = content.question
-            choices = answers = exercise.get_choices()
             if tasktype == "CHECKBOX_EXERCISE":
                 db_evaluations = db_user_evaluations.filter(
                     useranswer__usercheckboxexerciseanswer__exercise=content
@@ -656,14 +641,11 @@ def users_all(request):
 
 
 def color_generator(total_colors):
-    import colorsys
-
     saturation = 0.35
     value = 1.0
     for hue in range(0, 360, int(360 / total_colors)):
         r, g, b = [255 * result for result in colorsys.hsv_to_rgb(hue / 360, saturation, value)]
-        # yield '#{:x}{:x}{:x}'.format(int(r), int(g), int(b))
-        yield "rgba({},{},{},0.65)".format(int(r), int(g), int(b))
+        yield f"rgba({r:.0f},{g:.0f},{b:.0f},0.65)"
 
 
 def users_course(request, course_slug, instance_slug):
@@ -706,11 +688,13 @@ class ZeroUsersException(Exception):
 
 @ensure_responsible
 def instance_console(request, course, instance):
-    task_meta = cache.get("{}_stat_meta".format(instance.slug))
+    task_meta = cache.get(f"{instance.slug}_stat_meta")
     task_meta = task_meta and json.loads(task_meta)
     if task_meta and task_meta["completed"]:
         gen_timestamp = task_meta["completed"]
-        stat_status = _("Last generated: %s" % gen_timestamp)
+        stat_status = _("Last generated: {gen_timestamp}").format(
+            gen_timestamp=task_meta["completed"]
+        )
     elif task_meta:
         gen_timestamp = None
         stat_status = _("Generation of new stats has been requested.")
@@ -732,13 +716,15 @@ def instance_console(request, course, instance):
 
 @ensure_responsible
 def generate_instance_stats(request, course, instance):
-    task_meta = cache.get("{}_stat_meta".format(instance.slug))
+    task_meta = cache.get(f"{instance.slug}_stat_meta")
     task_meta = task_meta and json.loads(task_meta)
     if task_meta and task_meta["completed"] is None:
         task = celery_app.AsyncResult(id=task_meta["task_id"])
         if task.state in ("PENDING", "STARTED"):
             return HttpResponse(
-                _("Stats generation for '%s' has already been requested." % instance.name),
+                _("Stats generation for '{instance}' has already been requested.").format(
+                    instance=instance.name
+                ),
                 status=409,
             )
 
@@ -761,7 +747,7 @@ def generate_instance_stats(request, course, instance):
         data["eta"] = eta.strftime("%Y-%m-%d %H:%M:%S")
 
     cache.set(
-        "{}_stat_meta".format(instance.slug),
+        f"{instance.slug}_stat_meta",
         json.dumps({"task_id": task.task_id, "completed": None}),
     )
     return JsonResponse(data)

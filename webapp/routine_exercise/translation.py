@@ -1,6 +1,11 @@
 from modeltranslation.translator import register, TranslationOptions
 
-from .models import *
+from .models import (
+    RoutineExercise,
+    RoutineExerciseBackendCommand,
+    RoutineExerciseProgress,
+    RoutineExerciseTemplate,
+)
 
 
 @register(RoutineExercise)

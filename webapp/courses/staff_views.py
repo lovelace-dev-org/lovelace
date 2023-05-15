@@ -264,7 +264,7 @@ def regen_page_cache(request, course, instance, content):
         "form_object": form,
         "submit_url": request.path,
         "html_class": "side-panel-form",
-        "disclaimer": _(f"Regenerate cache for {content.name}"),
+        "disclaimer": _("Regenerate cache for {content}").format(content=content.name),
         "submit_label": _("Execute"),
     }
     return HttpResponse(form_t.render(form_c, request))

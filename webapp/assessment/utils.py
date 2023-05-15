@@ -1,5 +1,5 @@
 import datetime
-from assessment.models import *
+from assessment.models import AssessmentToExerciseLink
 from utils.archive import get_archived_instances
 
 
@@ -60,7 +60,7 @@ def serializable_assessment(user, sheet, bullets_by_section, cleaned_data):
             "bullets": [],
         }
         for bullet in section["bullets"]:
-            score = cleaned_data["bullet-{}-points".format(bullet.id)] or 0
+            score = cleaned_data[f"bullet-{bullet.id}-points"] or 0
             section_doc["bullets"].append(str(bullet.id))
             section_doc["section_points"] += score
             document["bullet_index"][str(bullet.id)] = {
@@ -68,7 +68,7 @@ def serializable_assessment(user, sheet, bullets_by_section, cleaned_data):
                 "tooltip": bullet.tooltip,
                 "max_points": bullet.point_value,
                 "scored_points": score,
-                "comment": cleaned_data["bullet-{}-comment".format(bullet.id)],
+                "comment": cleaned_data[f"bullet-{bullet.id}-comment"],
             }
 
         document["total_score"] += section_doc["section_points"]

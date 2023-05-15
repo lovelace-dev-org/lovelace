@@ -67,7 +67,8 @@ def create_text_file():
 
 def create_image():
     testimage_file_object = files.images.ImageFile(
-        open(os.path.join(settings.STATIC_ROOT, "courses", "correct-96.png"), "rb"), "testimage.png"
+        open(os.path.join(settings.STATIC_ROOT, "courses", "correct-96.png"), "rb"),
+        "testimage.png",
     )
     testimage = cm.Image(name="testimage", description="test image", fileinfo=testimage_file_object)
     testimage.save()
@@ -147,7 +148,8 @@ def create_multiple_choice_exercise():
 def create_multiple_choice_exercise_page():
     create_multiple_choice_exercise()
     page = cm.Lecture(
-        name="multiple choice exercise page", content="<!page=test-multiple-choice-exercise>"
+        name="multiple choice exercise page",
+        content="<!page=test-multiple-choice-exercise>",
     )
     page.save()
     return page

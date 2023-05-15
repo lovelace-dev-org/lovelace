@@ -7,7 +7,9 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "--frozen", action="store_true", help="Regenerate for frozen instances as well"
+            "--frozen",
+            action="store_true",
+            help="Regenerate for frozen instances as well",
         )
 
     def handle(self, *args, **options):

@@ -196,6 +196,7 @@ def get_embedded_media_image(name, instance, parent):
             image_object.name = revision_object.field_dict["name"]
     return image_object
 
+
 def cookie_law(view_func):
     """
     To comply with the European Union cookie law, display a warning about the

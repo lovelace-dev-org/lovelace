@@ -1,6 +1,6 @@
 from django.contrib.admin import StackedInline
 from django.contrib import admin
-from django.forms import Textarea
+from django.db import models
 
 from reversion.admin import VersionAdmin
 from reversion import revisions as reversion
@@ -8,9 +8,13 @@ from reversion import revisions as reversion
 from modeltranslation.admin import TranslationAdmin, TranslationStackedInline
 
 from courses.forms import RepeatedTemplateExerciseBackendForm, ContentForm
-from courses.widgets import ContentPreviewWidget
 
-from routine_exercise.models import *
+from routine_exercise.models import (
+    RoutineExercise,
+    RoutineExerciseBackendCommand,
+    RoutineExerciseBackendFile,
+    RoutineExerciseTemplate,
+)
 from routine_exercise.widgets import AdminRoutineBackendFileWidget
 
 from utils.management import CourseContentAdmin

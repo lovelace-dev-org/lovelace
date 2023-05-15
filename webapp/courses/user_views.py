@@ -138,14 +138,10 @@ def user(request, user):
         return HttpResponseForbidden(_("You are only allowed to view your own information."))
 
     checkboxexercise_answers = UserCheckboxExerciseAnswer.objects.filter(user=user)
-    multiplechoiceexercise_answers = UserMultipleChoiceExerciseAnswer.objects.filter(
-        user=user
-    )
+    multiplechoiceexercise_answers = UserMultipleChoiceExerciseAnswer.objects.filter(user=user)
     textfieldexercise_answers = UserTextfieldExerciseAnswer.objects.filter(user=user)
     fileexercise_answers = UserFileUploadExerciseAnswer.objects.filter(user=user)
-    repeatedtemplateexercise_answers = UserRepeatedTemplateExerciseAnswer.objects.filter(
-        user=user
-    )
+    repeatedtemplateexercise_answers = UserRepeatedTemplateExerciseAnswer.objects.filter(user=user)
 
     t = loader.get_template("courses/userinfo.html")
     c = {

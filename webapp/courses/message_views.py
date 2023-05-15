@@ -49,9 +49,7 @@ def process_message_form(request, course, instance, recipients, form_label="", u
                 message.render_content(),
             )
         else:
-            send_email(
-                recipients, request.user, message.render_title(), message.render_content()
-            )
+            send_email(recipients, request.user, message.render_title(), message.render_content())
         return JsonResponse({"status": "ok"})
 
     form_object = MessageForm(load_url=load_url, saved=saved_msgs)

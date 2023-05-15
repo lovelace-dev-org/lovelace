@@ -3,6 +3,11 @@
 
 <script>
     (function() {
-      $(document.currentScript).parent().parent().parent(".embedded-page").find("form :input").prop("disabled", "true");
+      $(document.currentScript)
+      .parent()
+      .parent()
+      .parent(".embedded-page")
+      .find("form :input")
+      .prop("disabled", "true");
     })();
 </script>

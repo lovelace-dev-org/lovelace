@@ -14,7 +14,9 @@ class FaqQuestionForm(TranslationModelForm):
         }
 
     action = forms.ChoiceField(
-        widget=forms.HiddenInput, choices=(("create", "create"), ("edit", "edit")), initial="create"
+        widget=forms.HiddenInput,
+        choices=(("create", "create"), ("edit", "edit")),
+        initial="create",
     )
 
 

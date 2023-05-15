@@ -9,7 +9,14 @@
     ></a>
   </header>
   {% if show_content %}
-    <pre><code class="highlight">{% for line in content_lines %}<span class="line" style="width: 100%;">{{ line|safe }}</span>
-{% endfor %}</code></pre>
+    <pre>
+      <code class="highlight">
+        {% for line in content_lines %}
+          <span class="line" style="width: 100%;">
+          {{ line|safe }}
+          </span>
+        {% endfor %}
+      </code>
+    </pre>
   {% endif %}
 </div>

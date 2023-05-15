@@ -3,7 +3,10 @@ from django.utils.translation import gettext as _
 import django.conf
 
 if "shibboleth" in django.conf.settings.INSTALLED_APPS:
-    from shibboleth.middleware import ShibbolethRemoteUserMiddleware, ShibbolethValidationError
+    from shibboleth.middleware import (
+        ShibbolethRemoteUserMiddleware,
+        ShibbolethValidationError,
+    )
     from courses.models import UserProfile
 
     class LovelaceShibbolethRemoteUser(ShibbolethRemoteUserMiddleware):
@@ -17,7 +20,7 @@ if "shibboleth" in django.conf.settings.INSTALLED_APPS:
             else:
                 profile.save()
 
-    class ShibbolethExceptionReporter():
+    class ShibbolethExceptionReporter:
         def __init__(self, get_response):
             self.get_response = get_response
 

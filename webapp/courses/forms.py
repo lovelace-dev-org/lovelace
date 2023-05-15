@@ -71,7 +71,6 @@ class ContentForm(forms.ModelForm):
         validation error.
         """
 
-
         missing_pages = []
         missing_media = []
         missing_terms = []
@@ -151,7 +150,7 @@ class InstanceForm(forms.ModelForm):
             raise ValidationError("Instance cannot have the same slug as its course")
 
 
-class InstanceSettingsForm(TranslationModelForm):
+class InstanceSettingsForm(TranslationStaffForm):
     class Meta:
         model = cm.CourseInstance
         fields = [
@@ -183,7 +182,14 @@ class InstanceSettingsForm(TranslationModelForm):
 
 
 class InstanceFreezeForm(forms.Form):
-    freeze_to = forms.DateField(label=_("Freeze instance contents to date:"), required=True)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.fields["freeze_to"] = forms.DateField(
+            label=_("Freeze instance contents to date:"),
+            required=True
+        )
 
 
 class InstanceCloneForm(forms.ModelForm):
@@ -351,7 +357,7 @@ class GroupInviteForm(forms.Form):
 
         for i in range(slots):
             self.fields[f"invite-{i}"] = forms.CharField(
-                label=_(f"Invitee {i + 1}"), required=False
+                label=_("Invitee {}").format(i + 1), required=False
             )
 
 

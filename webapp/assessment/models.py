@@ -1,4 +1,3 @@
-from courses.models import CourseInstance, ContentPage
 from django.db import models
 from reversion.models import Version
 from utils.archive import find_latest_version, get_archived_instances
@@ -26,10 +25,10 @@ class AssessmentToExerciseLink(models.Model):
                 max_score=models.Sum("point_value")
             )
             return q["max_score"]
-        else:
-            old_sheet = get_archived_instances(self.sheet, self.revision)
-            bullets = old_sheet["assessmentbullet_set"]
-            return sum(bullet.point_value for bullet in bullets)
+
+        old_sheet = get_archived_instances(self.sheet, self.revision)
+        bullets = old_sheet["assessmentbullet_set"]
+        return sum(bullet.point_value for bullet in bullets)
 
 
 # Create your models here.

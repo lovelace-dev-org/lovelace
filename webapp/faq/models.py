@@ -10,7 +10,7 @@ class FaqQuestion(models.Model):
     hook = models.SlugField(max_length=255, blank=False, allow_unicode=True, unique=True)
 
     def __str__(self):
-        return "({}) {}".format(self.hook, self.question)
+        return f"({self.hook}) {self.question}"
 
 
 class FaqToInstanceLink(models.Model):
@@ -25,8 +25,6 @@ class FaqToInstanceLink(models.Model):
         unique_together = ("instance", "question", "exercise")
 
     def freeze(self, freeze_to=None):
-        from faq.utils import regenerate_cache
-
         if self.revision is None:
             latest = Version.objects.get_for_object(self.question).latest("revision__date_created")
             self.revision = latest.revision_id

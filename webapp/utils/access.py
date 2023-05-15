@@ -7,6 +7,7 @@ from django.utils.translation import gettext as _
 from reversion.models import Version
 import courses.models as cm
 
+
 def determine_access(user, content, responsible_only=False):
     """
     Determines whether user has access to staff only functions of a content
@@ -191,7 +192,10 @@ def ensure_responsible_or_supervisor(function):
 
     @wraps(function)
     def wrap(request, course, instance, group, *args, **kwargs):
-        if request.user.is_superuser or request.user in (course.main_responsible, group.supervisor):
+        if request.user.is_superuser or request.user in (
+            course.main_responsible,
+            group.supervisor,
+        ):
             return function(request, course, instance, group, *args, **kwargs)
         return HttpResponseForbidden(_("This view is limited to group supervisor"))
 

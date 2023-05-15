@@ -1,9 +1,6 @@
 import collections
 import json
-import string
-import random
 import os
-import magic
 
 from django.http import (
     HttpResponse,
@@ -24,28 +21,21 @@ from django.utils.translation import gettext as _
 from reversion import revisions as reversion
 
 # Other needed models
-from courses.models import ContentGraph, EmbeddedLink
 
 # The editable models
 from courses.models import (
     Course,
     ContentPage,
-    CourseInstance,
     FileUploadExercise,
     FileExerciseTest,
     FileExerciseTestStage,
     FileExerciseTestCommand,
     FileExerciseTestExpectedOutput,
-    FileExerciseTestExpectedStdout,
-    FileExerciseTestExpectedStderr,
     FileExerciseTestIncludeFile,
     IncludeFileSettings,
     Hint,
     InstanceIncludeFile,
     InstanceIncludeFileToExerciseLink,
-    File,
-    RepeatedTemplateExercise,
-    RepeatedTemplateExerciseBackendFile,
 )
 from feedback.models import (
     ContentFeedbackQuestion,
@@ -55,6 +45,8 @@ from feedback.models import (
     MultipleChoiceFeedbackQuestion,
     MultipleChoiceFeedbackAnswer,
 )
+from utils.access import determine_access
+from utils.files import generate_download_response
 
 # Forms
 from .forms import (
@@ -63,9 +55,6 @@ from .forms import (
     CreateFileUploadExerciseForm,
 )
 from .utils import get_default_lang, get_lang_list
-
-from utils.access import determine_access, is_course_staff, determine_media_access
-from utils.files import generate_download_response
 
 
 def index(request):
@@ -106,9 +95,7 @@ def save_file_upload_exercise(
     # e_content = form_data['exercise_content']
     e_default_points = form_data["exercise_default_points"]
     e_evaluation_group = form_data["exercise_evaluation_group"]
-    e_tags = [
-        tag for key, tag in sorted(form_data.items()) if key.startswith("exercise_tag")
-    ]  # TODO: Do this in clean
+    e_tags = [tag for key, tag in sorted(form_data.items()) if key.startswith("exercise_tag")]
     e_feedback_questions = form_data.get("exercise_feedback_questions") or []
     # e_question = form_data['exercise_question']
     e_group_submission = form_data["exercise_group_submission"]
@@ -118,14 +105,14 @@ def save_file_upload_exercise(
 
     lang_list = get_lang_list()
     for lang_code, _ in lang_list:
-        e_name = form_data["exercise_name_{}".format(lang_code)]
-        setattr(exercise, "name_{}".format(lang_code), e_name)
+        e_name = form_data[f"exercise_name_{lang_code}"]
+        setattr(exercise, f"name_{lang_code}", e_name)
 
-        e_content = form_data["exercise_content_{}".format(lang_code)]
-        setattr(exercise, "content_{}".format(lang_code), e_content)
+        e_content = form_data[f"exercise_content_{lang_code}"]
+        setattr(exercise, f"content_{lang_code}", e_content)
 
-        e_question = form_data["exercise_question_{}".format(lang_code)]
-        setattr(exercise, "question_{}".format(lang_code), e_question)
+        e_question = form_data[f"exercise_question_{lang_code}"]
+        setattr(exercise, f"question_{lang_code}", e_question)
 
     # exercise.name = e_name
     # exercise.content = e_content
@@ -141,8 +128,6 @@ def save_file_upload_exercise(
     # save() first so that m2m can be used (when adding a new exercise)
     exercise.feedback_questions.set(e_feedback_questions)
     exercise.save()
-
-    # TODO! Check for all existing foreignkey relations: must not be linked to a different exercise previously!
 
     # Hints
 
@@ -162,10 +147,10 @@ def save_file_upload_exercise(
             current_hint = Hint.objects.get(id=int(hint_id))
 
         for lang_code, _ in lang_list:
-            h_content = form_data["hint_content_[{}]_{}".format(hint_id, lang_code)]
-            setattr(current_hint, "hint_{}".format(lang_code), h_content)
+            h_content = form_data[f"hint_content_[{hint_id}]_{lang_code}"]
+            setattr(current_hint, f"hint_{lang_code}", h_content)
 
-        current_hint.tries_to_unlock = form_data["hint_tries_[{}]".format(hint_id)]
+        current_hint.tries_to_unlock = form_data[f"hint_tries_[{hint_id}]"]
         current_hint.save()
         edited_hints[hint_id] = current_hint
 
@@ -189,28 +174,20 @@ def save_file_upload_exercise(
             current_ef = FileExerciseTestIncludeFile.objects.get(id=int(ef_id))
 
         for lang_code, _ in lang_list:
-            ef_default_name = form_data[
-                "included_file_default_name_[{}]_{}".format(ef_id, lang_code)
-            ]
-            ef_description = form_data["included_file_description_[{}]_{}".format(ef_id, lang_code)]
-            ef_name = form_data["included_file_name_[{}]_{}".format(ef_id, lang_code)]
-            ef_fileinfo = form_data["included_file_[{}]_{}".format(ef_id, lang_code)]
-            setattr(current_ef, "default_name_{}".format(lang_code), ef_default_name)
-            setattr(current_ef, "description_{}".format(lang_code), ef_description)
-            setattr(current_ef.file_settings, "name_{}".format(lang_code), ef_name)
+            ef_default_name = form_data[f"included_file_default_name_[{ef_id}]_{lang_code}"]
+            ef_description = form_data[f"included_file_description_[{ef_id}]_{lang_code}"]
+            ef_name = form_data[f"included_file_name_[{ef_id}]_{lang_code}"]
+            ef_fileinfo = form_data[f"included_file_[{ef_id}]_{lang_code}"]
+            setattr(current_ef, f"default_name_{lang_code}", ef_default_name)
+            setattr(current_ef, f"description_{lang_code}", ef_description)
+            setattr(current_ef.file_settings, f"name_{lang_code}", ef_name)
             if ef_fileinfo is not None:
-                setattr(current_ef, "fileinfo_{}".format(lang_code), ef_fileinfo)
+                setattr(current_ef, f"fileinfo_{lang_code}", ef_fileinfo)
 
-        current_ef.file_settings.purpose = form_data["included_file_purpose_[{}]".format(ef_id)]
-        current_ef.file_settings.chown_settings = form_data[
-            "included_file_chown_[{}]".format(ef_id)
-        ]
-        current_ef.file_settings.chgrp_settings = form_data[
-            "included_file_chgrp_[{}]".format(ef_id)
-        ]
-        current_ef.file_settings.chmod_settings = form_data[
-            "included_file_chmod_[{}]".format(ef_id)
-        ]
+        current_ef.file_settings.purpose = form_data[f"included_file_purpose_[{ef_id}]"]
+        current_ef.file_settings.chown_settings = form_data[f"included_file_chown_[{ef_id}]"]
+        current_ef.file_settings.chgrp_settings = form_data[f"included_file_chgrp_[{ef_id}]"]
+        current_ef.file_settings.chmod_settings = form_data[f"included_file_chmod_[{ef_id}]"]
 
         current_ef.file_settings.save()
         current_ef.file_settings = (
@@ -219,8 +196,6 @@ def save_file_upload_exercise(
         current_ef.save()
 
         edited_exercise_files[ef_id] = current_ef
-
-    # TODO: Instance include file links
 
     for removed_if_link_id in sorted(
         old_if_ids - {if_id for if_id in if_ids if not if_id.startswith("new")}
@@ -244,24 +219,15 @@ def save_file_upload_exercise(
             current_if_link = InstanceIncludeFileToExerciseLink.objects.filter(
                 include_file=int(if_id), exercise=exercise
             )[0]
-            # TODO: use get and some smart error handling if multiple links are returned
 
         for lang_code, _ in lang_list:
-            if_name = form_data["instance_file_name_[{}]_{}".format(if_id, lang_code)]
-            setattr(current_if_link.file_settings, "name_{}".format(lang_code), if_name)
+            if_name = form_data[f"instance_file_name_[{if_id}]_{lang_code}"]
+            setattr(current_if_link.file_settings, "name_{lang_code}", if_name)
 
-        current_if_link.file_settings.purpose = form_data[
-            "instance_file_purpose_[{}]".format(if_id)
-        ]
-        current_if_link.file_settings.chown_settings = form_data[
-            "instance_file_chown_[{}]".format(if_id)
-        ]
-        current_if_link.file_settings.chgrp_settings = form_data[
-            "instance_file_chgrp_[{}]".format(if_id)
-        ]
-        current_if_link.file_settings.chmod_settings = form_data[
-            "instance_file_chmod_[{}]".format(if_id)
-        ]
+        current_if_link.file_settings.purpose = form_data[f"instance_file_purpose_[{if_id}]"]
+        current_if_link.file_settings.chown_settings = form_data[f"instance_file_chown_[{if_id}]"]
+        current_if_link.file_settings.chgrp_settings = form_data[f"instance_file_chgrp_[{if_id}]"]
+        current_if_link.file_settings.chmod_settings = form_data[f"instance_file_chmod_[{if_id}]"]
 
         current_if_link.file_settings.save()
         current_if_link.file_settings = current_if_link.file_settings
@@ -276,18 +242,14 @@ def save_file_upload_exercise(
     for removed_test_id in sorted(
         old_test_ids - {int(test_id) for test_id in test_ids if not test_id.startswith("newt")}
     ):
-        print(
-            "Test with id={} was removed!".format(removed_test_id)
-        )  # TODO: Some kind of real admin logging
         removed_test = FileExerciseTest.objects.get(id=removed_test_id)
-        # TODO: Reversion magic! Seems like it's taken care of automatically? Test.
         deletion = removed_test.delete()
         deletions.append(deletion)
 
     edited_tests = {}
     for test_id in test_ids:
-        t_name = form_data["test_{}_name".format(test_id)]
-        required_files = [i.split("_") for i in form_data["test_{}_required_files".format(test_id)]]
+        t_name = form_data[f"test_{test_id}_name"]
+        required_files = [i.split("_") for i in form_data[f"test_{test_id}_required_files"]]
         t_required_ef = [edited_exercise_files[i[1]] for i in required_files if i[0] == "ef"]
         t_required_if = [int(i[1]) for i in required_files if i[0] == "if" and i[1] in if_ids]
 
@@ -315,12 +277,10 @@ def save_file_upload_exercise(
         old_stage_ids
         - {int(stage_id) for stage_id in new_stages.keys() if not stage_id.startswith("news")}
     ):
-        print("Stage with id={} was removed!".format(removed_stage_id))
         try:
             removed_stage = FileExerciseTestStage.objects.get(id=removed_stage_id)
         except FileExerciseTestStage.DoesNotExist:
             pass  # Probably taken care of by test deletion cascade
-        # TODO: Reversion magic!
         else:
             deletion = removed_stage.delete()
             deletions.append(deletion)
@@ -328,7 +288,7 @@ def save_file_upload_exercise(
     stage_count = len(new_stages)
     edited_stages = {}
     for stage_id, stage_info in new_stages.items():
-        s_depends_on = form_data["stage_{}_depends_on".format(stage_id)]
+        s_depends_on = form_data[f"stage_{stage_id}_depends_on"]
 
         if stage_id.startswith("news"):
             current_stage = FileExerciseTestStage()
@@ -336,8 +296,8 @@ def save_file_upload_exercise(
             current_stage = FileExerciseTestStage.objects.get(id=int(stage_id))
 
         for lang_code, _ in lang_list:
-            s_name = form_data["stage_{}_name_{}".format(stage_id, lang_code)]
-            setattr(current_stage, "name_{}".format(lang_code), s_name)
+            s_name = form_data[f"stage_{stage_id}_name_{lang_code}"]
+            setattr(current_stage, "name_{lang_code}", s_name)
 
         current_stage.test = edited_tests[stage_info.test]
         current_stage.depends_on = s_depends_on
@@ -360,26 +320,22 @@ def save_file_upload_exercise(
             if not command_id.startswith("newc")
         }
     ):
-        print("Command with id={} was removed!".format(removed_command_id))
         try:
             removed_command = FileExerciseTestCommand.objects.get(id=removed_command_id)
         except FileExerciseTestCommand.DoesNotExist:
             pass  # Probably taken care of by test or stage deletion cascade
-            # TODO: Reversion magic!
         else:
             deletion = removed_command.delete()
             deletions.append(deletion)
 
-    print("Total deletions: {}".format(repr(deletions)))
-
     command_count = len(new_commands)
     edited_commands = {}
     for command_id, command_info in new_commands.items():
-        c_significant_stdout = form_data["command_{}_significant_stdout".format(command_id)]
-        c_significant_stderr = form_data["command_{}_significant_stderr".format(command_id)]
-        c_json_output = form_data["command_{}_json_output".format(command_id)]
-        c_return_value = form_data["command_{}_return_value".format(command_id)]
-        c_timeout = form_data["command_{}_timeout".format(command_id)]
+        c_significant_stdout = form_data[f"command_{command_id}_significant_stdout"]
+        c_significant_stderr = form_data[f"command_{command_id}_significant_stderr"]
+        c_json_output = form_data[f"command_{command_id}_json_output"]
+        c_return_value = form_data[f"command_{command_id}_return_value"]
+        c_timeout = form_data[f"command_{command_id}_timeout"]
 
         if command_id.startswith("newc"):
             current_command = FileExerciseTestCommand()
@@ -387,10 +343,10 @@ def save_file_upload_exercise(
             current_command = FileExerciseTestCommand.objects.get(id=int(command_id))
 
         for lang_code, _ in lang_list:
-            c_command_line = form_data["command_{}_command_line_{}".format(command_id, lang_code)]
-            c_input_text = form_data["command_{}_input_text_{}".format(command_id, lang_code)]
-            setattr(current_command, "command_line_{}".format(lang_code), c_command_line)
-            setattr(current_command, "input_text_{}".format(lang_code), c_input_text)
+            c_command_line = form_data[f"command_{command_id}_command_line_{lang_code}"]
+            c_input_text = form_data[f"command_{command_id}_input_text_{lang_code}"]
+            setattr(current_command, f"command_line_{lang_code}", c_command_line)
+            setattr(current_command, f"input_text_{lang_code}", c_input_text)
 
         current_command.stage = edited_stages[command_info.stage]
         current_command.significant_stdout = c_significant_stdout
@@ -446,9 +402,9 @@ def file_upload_exercise(request, exercise_id=None, action=None):
 
                 def __init__(self):
                     for lang_code, _ in lang_list:
-                        setattr(self, "name_{}".format(lang_code), "")
-                        setattr(self, "content_{}".format(lang_code), "")
-                        setattr(self, "question_{}".format(lang_code), "")
+                        setattr(self, f"name_{lang_code}", "")
+                        setattr(self, f"content_{lang_code}", "")
+                        setattr(self, f"question_{lang_code}", "")
 
             exercise = FakeExercise()
         elif request.method == "POST":
@@ -469,9 +425,7 @@ def file_upload_exercise(request, exercise_id=None, action=None):
         try:
             exercise = FileUploadExercise.objects.get(id=exercise_id)
         except FileUploadExercise.DoesNotExist as e:
-            return HttpResponseNotFound(
-                "File upload exercise with id={} not found.".format(exercise_id)
-            )
+            return HttpResponseNotFound(f"File upload exercise with id={exercise_id} not found.")
 
         # Get the configurable hints linked to this exercise
         hints = Hint.objects.filter(exercise=exercise)
@@ -511,16 +465,14 @@ def file_upload_exercise(request, exercise_id=None, action=None):
         form_contents = request.POST
         files = request.FILES
 
-        print("POST key-value pairs:")
         for k, v in sorted(form_contents.lists()):
             if k == "order_hierarchy":
                 order_hierarchy_json = json.loads(v[0])
                 print("order_hierarchy:")
                 print(json.dumps(order_hierarchy_json, indent=4))
             else:
-                print("{}: '{}'".format(k, v))
+                print(f"{k}: '{v}'")
 
-        print(files)
         new_stages = {}
         for test_id, stage_list in order_hierarchy_json["stages_of_tests"].items():
             for i, stage_id in enumerate(stage_list):
@@ -560,78 +512,64 @@ def file_upload_exercise(request, exercise_id=None, action=None):
         data.pop("csrfmiddlewaretoken")
         tag_fields = [k for k in data.keys() if k.startswith("exercise_tag")]
         hint_ids = [k.split("_")[2][1:-1] for k in data.keys() if k.startswith("hint_tries")]
-        # TODO: included_file-fields to included_file_file-fields
-        ef_ids = set(
-            [k.split("_")[3][1:-1] for k in data.keys() if k.startswith("included_file_name")]
-        )
-        if_ids = set(
-            [k.split("_")[3][1:-1] for k in data.keys() if k.startswith("instance_file_purpose")]
-        )
+        ef_ids = {k.split("_")[3][1:-1] for k in data.keys() if k.startswith("included_file_name")}
+        if_ids = {
+            k.split("_")[3][1:-1] for k in data.keys() if k.startswith("instance_file_purpose")
+        }
 
         form = CreateFileUploadExerciseForm(
             tag_fields, hint_ids, ef_ids, if_ids, order_hierarchy_json, data, files
         )
 
-        if form.is_valid():
-            print("DEBUG: the form is valid")
-            cleaned_data = form.cleaned_data
-
-            # create/update the form
-            updated_ids = {}
-            try:
-                with transaction.atomic(), reversion.create_revision():
-                    new_objects = save_file_upload_exercise(
-                        exercise,
-                        cleaned_data,
-                        order_hierarchy_json,
-                        old_hint_ids,
-                        old_ef_ids,
-                        old_if_ids,
-                        old_test_ids,
-                        old_stage_ids,
-                        old_cmd_ids,
-                        new_stages,
-                        new_commands,
-                        hint_ids,
-                        ef_ids,
-                        if_ids,
-                    )
-                    reversion.set_user(request.user)
-                    reversion.set_comment(cleaned_data["version_comment"])
-            except IntegrityError as e:
-                # TODO: Do something useful
-                raise e
-
-            # TODO ########################################################
-            # TODO: POSTing here should be idempotent!
-            # TODO: Send the proper ids and replace the 'new...'-starting ids in javascript
-            # TODO: to prevent addition of _even newer_ files, tests, stages, commands etc.!
-            # TODO ########################################################
-
-            if action == "add":
-                redirect_url = reverse(
-                    "exercise_admin:file_upload_change",
-                    kwargs={"exercise_id": exercise.id, "action": "change"},
-                )
-            else:
-                redirect_url = ""
-
-            return JsonResponse(
-                {
-                    "yeah!": "everything went ok",
-                    "redirect_url": redirect_url,
-                    "new_objects": new_objects,
-                }
-            )
-        else:
-            print("DEBUG: the form is not valid")
-            print(repr(form.errors))
+        if not form.is_valid():
             return JsonResponse(
                 status=400,
                 data={
                     "errors": form.errors,
                 },
             )
+
+        cleaned_data = form.cleaned_data
+
+        # create/update the form
+        try:
+            with transaction.atomic(), reversion.create_revision():
+                new_objects = save_file_upload_exercise(
+                    exercise,
+                    cleaned_data,
+                    order_hierarchy_json,
+                    old_hint_ids,
+                    old_ef_ids,
+                    old_if_ids,
+                    old_test_ids,
+                    old_stage_ids,
+                    old_cmd_ids,
+                    new_stages,
+                    new_commands,
+                    hint_ids,
+                    ef_ids,
+                    if_ids,
+                )
+                reversion.set_user(request.user)
+                reversion.set_comment(cleaned_data["version_comment"])
+        except IntegrityError as e:
+            raise e
+
+        if action == "add":
+            redirect_url = reverse(
+                "exercise_admin:file_upload_change",
+                kwargs={"exercise_id": exercise.id, "action": "change"},
+            )
+        else:
+            redirect_url = ""
+
+        return JsonResponse(
+            {
+                "yeah!": "everything went ok",
+                "redirect_url": redirect_url,
+                "new_objects": new_objects,
+            }
+        )
 
     t = loader.get_template("exercise_admin/file-upload-exercise-change.html")
     c = {
@@ -666,14 +604,14 @@ def get_feedback_questions(request):
             "choices": [],
         }
         for lang_code, _ in lang_list:
-            question_attr = "question_{}".format(lang_code)
+            question_attr = f"question_{lang_code}"
             question_json["questions"][lang_code] = getattr(question, question_attr) or ""
         if question.question_type == "MULTIPLE_CHOICE_FEEDBACK":
             choices = question.get_choices()
             for choice in choices:
                 choice_json = {}
                 for lang_code, _ in lang_list:
-                    answer_attr = "answer_{}".format(lang_code)
+                    answer_attr = f"answer_{lang_code}"
                     choice_json[lang_code] = getattr(choice, answer_attr) or ""
                 question_json["choices"].append(choice_json)
         result.append(question_json)
@@ -685,14 +623,14 @@ def edit_choices(q_obj, choice_val_dict, lang_list):
     existing_choices = q_obj.get_choices()
     existing_choice_count = len(existing_choices)
 
-    for i, (choice_id, choice_values) in enumerate(sorted(choice_val_dict.items())):
+    for i, (__, choice_values) in enumerate(sorted(choice_val_dict.items())):
         if existing_choice_count <= i:
             # New choices
             choice_obj = MultipleChoiceFeedbackAnswer(question=q_obj)
             for lang_code, _ in lang_list:
                 if lang_code in choice_values:
                     answer = choice_values[lang_code]
-                    setattr(choice_obj, "answer_{}".format(lang_code), answer)
+                    setattr(choice_obj, f"answer_{lang_code}", answer)
                     choice_obj.save()
         else:
             # Existing choices
@@ -702,8 +640,8 @@ def edit_choices(q_obj, choice_val_dict, lang_list):
                     answer = choice_values[lang_code]
                 else:
                     continue
-                if getattr(choice_obj, "answer_{}".format(lang_code)) != answer:
-                    setattr(choice_obj, "answer_{}".format(lang_code), answer)
+                if getattr(choice_obj, f"answer_{lang_code}") != answer:
+                    setattr(choice_obj, f"answer_{lang_code}", answer)
                     choice_obj.save()
 
     for i, choice_obj in enumerate(existing_choices):
@@ -750,10 +688,8 @@ def edit_feedback_questions(request):
             q_obj = q_obj.get_type_object()
             choice_val_dict = {}
             for lang_code, _ in lang_list:
-                question = cleaned_data[
-                    "feedback_question_[{id}]_{lang}".format(id=q_obj.id, lang=lang_code)
-                ]
-                choice_prefix = "feedback_choice_[{id}]_{lang}".format(id=q_obj.id, lang=lang_code)
+                question = cleaned_data[f"feedback_question_[{q_obj.id}]_{lang_code}"]
+                choice_prefix = f"feedback_choice_[{q_obj.id}]_{lang_code}"
                 for field, val in cleaned_data.items():
                     if field.startswith(choice_prefix) and val:
                         choice_id = field[field.index("(") + 1 : field.index(")")]
@@ -763,7 +699,7 @@ def edit_feedback_questions(request):
                             choice_val_dict[choice_id] = {lang_code: val}
 
                 if q_obj.question != question:
-                    setattr(q_obj, "question_{}".format(lang_code), question)
+                    setattr(q_obj, f"question_{lang_code}", question)
                     q_obj.save()
 
             if q_obj.question_type == "MULTIPLE_CHOICE_FEEDBACK":
@@ -772,13 +708,13 @@ def edit_feedback_questions(request):
         # Add new feedback questions
         new_feedbacks = [
             field
-            for field in cleaned_data.keys()
+            for field in cleaned_data
             if field.startswith("feedback_question_[new") and default_lang in field
         ]
         for question_field in new_feedbacks:
             question_id = question_field[question_field.index("[") + 1 : question_field.index("]")]
             choices = {}
-            question_type = cleaned_data["feedback_type_[{}]".format(question_id)]
+            question_type = cleaned_data[f"feedback_type_[{question_id}]"]
 
             if question_type == "THUMB_FEEDBACK":
                 q_obj = ThumbFeedbackQuestion()
@@ -788,7 +724,7 @@ def edit_feedback_questions(request):
                 q_obj = MultipleChoiceFeedbackQuestion()
                 choice_fields = [
                     field
-                    for field in cleaned_data.keys()
+                    for field in cleaned_data
                     if field.startswith("feedback_choice_[new") and default_lang in field
                 ]
                 for choice_field in choice_fields:
@@ -800,17 +736,13 @@ def edit_feedback_questions(request):
                 continue
 
             for lang_code, _ in lang_list:
-                question = cleaned_data[
-                    "feedback_question_[{id}]_{lang}".format(id=question_id, lang=lang_code)
-                ]
-                setattr(q_obj, "question_{}".format(lang_code), question)
+                question = cleaned_data[f"feedback_question_[{question_id}]_{lang_code}"]
+                setattr(q_obj, f"question_{lang_code}", question)
                 for choice_id, choice_obj in choices.items():
-                    choice_field = "feedback_choice_[{q_id}]_{lang}_({c_id})".format(
-                        q_id=question_id, lang=lang_code, c_id=choice_id
-                    )
+                    choice_field = f"feedback_choice_[{question_id}]_{lang_code}_({choice_id})"
                     if choice_field in cleaned_data:
                         answer = cleaned_data[choice_field]
-                        setattr(choice_obj, "answer_{}".format(lang_code), answer)
+                        setattr(choice_obj, f"answer_{lang_code}", answer)
             q_obj.save()
             for choice_obj in choices.values():
                 choice_obj.question = q_obj
@@ -846,10 +778,10 @@ def get_instance_files(request):
         }
 
         for lang_code, _ in lang_list:
-            default_name_attr = "default_name_{}".format(lang_code)
-            description_attr = "description_{}".format(lang_code)
-            fileinfo_attr = "fileinfo_{}".format(lang_code)
-            name_attr = "name_{}".format(lang_code)
+            default_name_attr = f"default_name_{lang_code}"
+            description_attr = f"description_{lang_code}"
+            fileinfo_attr = f"fileinfo_{lang_code}"
+            name_attr = f"name_{lang_code}"
             try:
                 url = getattr(instance_file, fileinfo_attr).url
             except ValueError:
@@ -913,39 +845,30 @@ def edit_instance_files(request):
             with reversion.create_revision():
                 for lang_code, _ in lang_list:
                     fileinfo = cleaned_data.get(
-                        "instance_file_file_[{id}]_{lang}".format(
-                            id=instance_file.id, lang=lang_code
-                        )
+                        f"instance_file_file_[{instance_file.id}]_{lang_code}"
                     )
                     default_name = cleaned_data.get(
-                        "instance_file_default_name_[{id}]_{lang}".format(
-                            id=instance_file.id, lang=lang_code
-                        )
+                        f"instance_file_default_name_[{instance_file.id}]_{lang_code}"
                     )
                     description = cleaned_data.get(
-                        "instance_file_description_[{id}]_{lang}".format(
-                            id=instance_file.id, lang=lang_code
-                        )
+                        f"instance_file_description_[{instance_file.id}]_{lang_code}"
                     )
 
-                    if getattr(instance_file, "default_name_{}".format(lang_code)) != default_name:
-                        setattr(instance_file, "default_name_{}".format(lang_code), default_name)
+                    if getattr(instance_file, f"default_name_{lang_code}") != default_name:
+                        setattr(instance_file, f"default_name_{lang_code}", default_name)
                         file_changed = True
                     if fileinfo is not None:
-                        setattr(instance_file, "fileinfo_{}".format(lang_code), fileinfo)
+                        setattr(instance_file, f"fileinfo_{lang_code}", fileinfo)
                         file_changed = True
                     if (
                         description is not None
-                        and getattr(instance_file, "description_{}".format(lang_code))
-                        != description
+                        and getattr(instance_file, f"description_{lang_code}") != description
                     ):
-                        setattr(instance_file, "description_{}".format(lang_code), description)
+                        setattr(instance_file, f"description_{lang_code}", description)
                         file_changed = True
 
                 course_id = cleaned_data.get(
-                    "instance_file_instance_[{id}]_{lang}".format(
-                        id=instance_file.id, lang=default_lang
-                    )
+                    f"instance_file_instance_[{instance_file.id}]_{lang_code}"
                 )
                 if str(instance_file.course.id) != course_id:
                     instance_file.course_id = course_id
@@ -961,33 +884,25 @@ def edit_instance_files(request):
             with reversion.create_revision():
                 instance_file = InstanceIncludeFile()
                 for lang_code, _ in lang_list:
-                    fileinfo_field = "instance_file_file_[{id}]_{lang}".format(
-                        id=file_id, lang=lang_code
-                    )
-                    default_name_field = "instance_file_default_name_[{id}]_{lang}".format(
-                        id=file_id, lang=lang_code
-                    )
-                    description_field = "instance_file_description_[{id}]_{lang}".format(
-                        id=file_id, lang=lang_code
-                    )
+                    fileinfo_field = f"instance_file_file_[{file_id}]_{lang_code}"
+                    default_name_field = f"instance_file_default_name_[{file_id}]_{lang_code}"
+                    description_field = f"instance_file_description_[{file_id}]_{lang_code}"
                     setattr(
                         instance_file,
-                        "fileinfo_{}".format(lang_code),
+                        f"fileinfo_{lang_code}",
                         cleaned_data.get(fileinfo_field),
                     )
                     setattr(
                         instance_file,
-                        "default_name_{}".format(lang_code),
+                        f"default_name_{lang_code}",
                         cleaned_data.get(default_name_field),
                     )
                     setattr(
                         instance_file,
-                        "description_{}".format(lang_code),
+                        f"description_{lang_code}",
                         cleaned_data.get(description_field),
                     )
-                instance_field = "instance_file_instance_[{id}]_{lang}".format(
-                    id=file_id, lang=default_lang
-                )
+                instance_field = f"instance_file_instance_[{file_id}]_{default_lang}"
                 instance_file.course_id = cleaned_data.get(instance_field)
                 instance_file.save()
                 new_instance_files[file_id] = instance_file.id
@@ -1019,7 +934,7 @@ def download_exercise_file(request, exercise_id, file_id, lang_code):
     try:
         fs_path = os.path.join(
             getattr(settings, "PRIVATE_STORAGE_FS_PATH", settings.MEDIA_ROOT),
-            getattr(fileobject, "fileinfo_{}".format(lang_code)).name,
+            getattr(fileobject, f"fileinfo_{lang_code}").name,
         )
     except AttributeError:
         return HttpResponseNotFound(_("Requested file does not exist."))
