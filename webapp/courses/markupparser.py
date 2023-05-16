@@ -878,7 +878,7 @@ class HeadingMarkup(Markup):
         for line in block:
             heading += escape(line.strip("= \r\n\t"))
         slug = slugify(heading, allow_unicode=True)
-        yield "<h{settings['heading_level']} class='content-heading'>"
+        yield f"<h{settings['heading_level']} class='content-heading'>"
         yield heading
         if not "tooltip" in state["context"]:
             yield f"<span id='{slug}' class='anchor-offset'></span>"
