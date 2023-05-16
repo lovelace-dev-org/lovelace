@@ -825,20 +825,26 @@ class ContentPage(models.Model):
             segment = ""
             pages = []
             for chunk in markup_gen:
-                if isinstance(chunk, str):
-                    segment += chunk
-                elif isinstance(chunk, markupparser.PageBreak):
-                    blocks.append(("plain", segment))
-                    segment = ""
+                if isinstance(chunk, markupparser.PageBreak):
                     pages.append(blocks)
                     blocks = []
                 else:
-                    blocks.append(("plain", segment))
                     blocks.append(chunk)
-                    segment = ""
 
-            if segment:
-                blocks.append(("plain", segment))
+                #if isinstance(chunk, str):
+                    #segment += chunk
+                #if isinstance(chunk, markupparser.PageBreak):
+                    #blocks.append(("plain", segment))
+                    #segment = ""
+                    #pages.append(blocks)
+                    #blocks = []
+                #else:
+                    #blocks.append(("plain", segment))
+                    #blocks.append(chunk)
+                    #segment = ""
+
+            #if segment:
+                #blocks.append(("plain", segment))
 
             pages.append(blocks)
 
@@ -861,6 +867,9 @@ class ContentPage(models.Model):
                 return pages[page - 1]
             return full
 
+        for render in cached_content:
+            print(render)
+
         return cached_content
 
     def _get_rendered_content(self, context):
@@ -870,7 +879,7 @@ class ContentPage(models.Model):
         markup_gen = markupparser.MarkupParser.parse(self.content, context=context)
         for chunk in markup_gen:
             try:
-                embedded_content += chunk
+                embedded_content += chunk[1]
             except ValueError as e:
                 raise markupparser.EmbeddedObjectNotAllowedError(
                     "embedded pages are not allowed inside embedded pages"

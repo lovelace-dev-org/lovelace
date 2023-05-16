@@ -95,6 +95,7 @@ class MarkupParser:
     _block_re = None
     _inline_re = None
     _ready = False
+    _current_matchobj = None
 
     @classmethod
     def add(cls, *markups):
@@ -162,10 +163,11 @@ class MarkupParser:
         wide object point to the current regex-state instead of _block_re.
         """
         matchobj = cls._block_re.match(line)
-        return getattr(matchobj, "lastgroup", "paragraph"), matchobj
+        cls._current_matchobj = matchobj
+        return getattr(matchobj, "lastgroup", "paragraph")
 
     @classmethod
-    def parse(cls, text, request=None, context=None, embedded_pages=None):
+    def parse(cls, text, request=None, context=None, embedded_pages=None, editable=False):
         """
         A generator that gets the text written in the markup language, splits
         it at newlines and yields the parsed text until the whole text has
@@ -194,32 +196,38 @@ class MarkupParser:
             "table": False,
         }
 
-        for (block_type, matchobj), block in itertools.groupby(lines, cls._get_line_kind):
+        for block_type, group in itertools.groupby(lines, cls._get_line_kind):
             block_markup = cls._markups[block_type]
             block_func = block_markup.block
-
-            # TODO: Modular cleanup of indent, ul, ol, table etc.
             if block_type != "list":
                 for undent_lvl in reversed(state["list"]):
-                    yield f"</{undent_lvl}>"
+                    yield ("cleanup", f"</{undent_lvl}>")
                 state["list"] = []
             if block_type != "table" and state["table"]:
-                yield "</table>\n"
+                yield ("cleanup", "</table>\n")
                 state["table"] = False
 
-            block = cls.inline_parse(block) if block_markup.allow_inline else block
-
+            block_content = ""
             try:
-                settings = cls._markups[block_type].settings(matchobj, state)
-                yield from block_func(block, settings, state)
+                settings = cls._markups[block_type].settings(cls._current_matchobj, state)
+                for result in block_func(group, settings, state):
+                    if isinstance(result, str):
+                        block_content += result
+                    else:
+                        block_result = result
+                        break
+                else:
+                    block_result = ("plain", block_content)
             except MarkupError as e:
-                yield e.html()
+                yield ("error", e.html())
+            else:
+                yield block_result
 
         # Clean up the remaining open tags (pop everything from stack)
         for undent_lvl in reversed(state["list"]):
-            yield f"</{undent_lvl}>"
+            yield ("cleanup", f"</{undent_lvl}>")
         if state["table"]:
-            yield "</table>\n"
+            yield ("cleanup", "</table>\n")
 
 
 markups = []
@@ -246,14 +254,14 @@ class LinkParser(MarkupParser):
 
         lines = iter(re.split(r"\r\n|\n\r", text))
 
-        for (block_type, matchobj), block in itertools.groupby(lines, cls._get_line_kind):
+        for block_type, group in itertools.groupby(lines, cls._get_line_kind):
             try:
                 block_markup = cls._markups[block_type]
             except KeyError:
                 pass
             else:
                 link_func = block_markup.build_links
-                link_func(block, matchobj, instance, page_links, media_links)
+                link_func(groupx    , cls._current_matchobj, instance, page_links, media_links)
 
         return page_links, media_links
 
@@ -878,7 +886,7 @@ class HeadingMarkup(Markup):
         for line in block:
             heading += escape(line.strip("= \r\n\t"))
         slug = slugify(heading, allow_unicode=True)
-        yield "<h{settings['heading_level']} class='content-heading'>"
+        yield f"<h{settings['heading_level']} class='content-heading'>"
         yield heading
         if not "tooltip" in state["context"]:
             yield f"<span id='{slug}' class='anchor-offset'></span>"

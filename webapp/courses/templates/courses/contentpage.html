@@ -66,6 +66,13 @@
     {% elif block_type == "embedded" %}
       {% embed_frame block_data %}
     {% else %}
+      {% if course_staff and block_type == "plain" and block_data %}
+        <img class="content-edit-button staff-only collapsed"
+          src="{% static 'courses/edit.png' %}"
+          onclick=""
+          data-url=""
+          data-csrf="{{ csrf_token }}">
+      {% endif %}
       {{ block_data|safe }}
     {% endif %}
   {% endfor %}

@@ -598,20 +598,22 @@ def content_preview(request, field_name):
         blocks = []
 
         for chunk in markup_gen:
-            if isinstance(chunk, str):
-                segment += chunk
-            elif isinstance(chunk, markupparser.PageBreak):
-                blocks.append(("plain", segment))
-                segment = ""
-                pages.append(blocks)
-                blocks = []
-            else:
-                blocks.append(("plain", segment))
-                blocks.append(chunk)
-                segment = ""
+            blocks.append(chunk)
 
-        if segment:
-            blocks.append(("plain", segment))
+            #if isinstance(chunk, str):
+                #segment += chunk
+            #elif isinstance(chunk, markupparser.PageBreak):
+                #blocks.append(("plain", segment))
+                #segment = ""
+                #pages.append(blocks)
+                #blocks = []
+            #else:
+                #blocks.append(("plain", segment))
+                #blocks.append(chunk)
+                #segment = ""
+
+        #if segment:
+            #blocks.append(("plain", segment))
 
         pages.append(blocks)
         full = [block for page in pages for block in page]
