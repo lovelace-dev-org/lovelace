@@ -498,8 +498,8 @@ class CourseMediaLink(models.Model):
     Context model for embedded media.
     """
 
-    media = models.ForeignKey(CourseMedia, on_delete=models.CASCADE)
-    parent = models.ForeignKey("ContentPage", on_delete=models.RESTRICT, null=True)
+    media = models.ForeignKey(CourseMedia, on_delete=models.RESTRICT)
+    parent = models.ForeignKey("ContentPage", on_delete=models.CASCADE, null=True)
     instance = models.ForeignKey(
         CourseInstance, verbose_name="Course instance", on_delete=models.CASCADE
     )
@@ -561,7 +561,7 @@ class VideoLink(CourseMedia):
 
 
 class TermToInstanceLink(models.Model):
-    term = models.ForeignKey("Term", on_delete=models.CASCADE)
+    term = models.ForeignKey("Term", on_delete=models.RESTRICT)
     instance = models.ForeignKey(
         CourseInstance, verbose_name="Course instance", on_delete=models.CASCADE
     )
