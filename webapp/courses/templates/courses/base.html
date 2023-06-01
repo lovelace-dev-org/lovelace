@@ -26,6 +26,7 @@
     <script src="{% static 'courses/script.js' %}"></script>
     <script src="{% static 'courses/embedded-file.js' %}"></script>
     <script src="{% static 'courses/exercise.js' %}"></script>
+    <script src="{% static 'courses/editing.js' %}"></script>
     <script src="{% static 'courses/calendar.js' %}"></script>
     <script src="{% static 'feedback/script.js' %}"></script>
     <script src="{% static 'faq/faq.js' %}"></script>
@@ -322,6 +323,14 @@
             </button>
             <div class="panel-container"></div>
         </div>
+        <div class="side-panel" id="edit-panel">
+            <button type="button"
+                    class="side-panel-closer"
+                    title="{% trans 'Close the panel' %}"
+                    onclick="editing.hide_widget_panel(event);">&lt;&lt;
+            </button>
+            <div class="panel-container"></div>
+        </div>
       {% endblock %}
 
       {% block term-descriptions %}
@@ -374,7 +383,7 @@
             Content license for this course:
             <a href="{{ instance.license_url }}">{{ instance.content_license }}</a>
           </p>
-          <p>Site design &amp; backend by Miikka Salminen</p>
+          <p>Site design &amp; backend by Miikka Salminen & Mika Oja</p>
         </div>
         <div class="column1">
           <p>Powered by Python, Django and jQuery.</p>

@@ -60,18 +60,25 @@
   {% if user.is_staff and user.is_active %}
     {% content_meta %}
   {% endif %}
-  {% for block_type, block_data in content_blocks %}
+  {% for block_type, block_data, line_idx, line_count in content_blocks %}
     {% if block_type == "calendar" %}
       {% calendar block_data %}
     {% elif block_type == "embedded" %}
       {% embed_frame block_data %}
     {% else %}
-      {% if course_staff and block_type == "plain" and block_data %}
-        <img class="content-edit-button staff-only collapsed"
-          src="{% static 'courses/edit.png' %}"
-          onclick=""
-          data-url=""
-          data-csrf="{{ csrf_token }}">
+      {% if course_staff and block_type not in uneditable_markups %}
+       <span>
+          <a class="staff-only collapsed"
+            href="{{ edit_content_url }}"
+            onclick="editing.show_widget_panel(event, this)"
+            data-querystring="line={{ line_idx }}&block={{ block_type }}&size={{ line_count }}"
+            data-csrf="{{ csrf_token }}"><img src="{% static 'courses/edit.png' %}"></a>
+          <a class="staff-only collapsed"
+            href="{{ add_content_url }}"
+            onclick="editing.show_widget_panel(event, this)"
+            data-querystring="line={{ line_idx }}&size={{ line_count }}"
+            data-csrf="{{ csrf_token }}"><img src="{% static 'courses/expand-16.png' %}"></a>
+        </span>
       {% endif %}
       {{ block_data|safe }}
     {% endif %}

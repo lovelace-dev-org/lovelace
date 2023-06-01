@@ -242,6 +242,18 @@ def content(request, course, instance, content, pagenum=None, **kwargs):
         "revision": revision,
         "enrolled": enrolled,
         "course_staff": course_staff,
+        "uneditable_markups": settings.UNEDITABLE_MARKUPS,
+        "edit_content_url": reverse("courses:content_edit_form", kwargs={
+            "course": course,
+            "instance": instance,
+            "content": content,
+            "action": "edit",
+        }),
+        "add_content_url": reverse("courses:content_add_form", kwargs={
+            "course": course,
+            "instance": instance,
+            "content": content,
+        }),
     }
     if "frontpage" in kwargs:
         return c

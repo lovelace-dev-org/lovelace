@@ -38,3 +38,9 @@
           <input type="submit" name="submit" value="{% trans 'Save' %}"></input>
         {% endif %}
 </form>
+
+{% if submit_override %}
+  <script>
+      $("#{{ html_id }}").submit({{ submit_override }})
+  </script>
+{% endif %}

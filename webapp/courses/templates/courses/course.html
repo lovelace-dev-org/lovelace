@@ -219,12 +219,19 @@
   {% if content.is_answerable %}
     {% include "courses/task.html" %}
   {% elif not content.is_answerable %}
-    {% for block_type, block_data in content_blocks %}
+    {% for block_type, block_data, line_idx in content_blocks %}
       {% if block_type == "calendar" %}
         {% calendar block_data %}
       {% elif block_type == "embedded" %}
-        {% embed_frame block_data %}    
+        {% embed_frame block_data %}
       {% else %}
+        {% if course_staff and block_type not in uneditable_markups %}
+          <img class="content-edit-button staff-only collapsed"
+            src="{% static 'courses/edit.png' %}"
+            onclick=""
+            data-line-idx="{{ line_idx }}"
+            data-csrf="{{ csrf_token }}">
+        {% endif %}
         {{ block_data|safe }}
       {% endif %}
     {% endfor %}

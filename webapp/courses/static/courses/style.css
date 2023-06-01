@@ -980,7 +980,6 @@ section.content {
 
     section.content table {
         border-collapse: collapse;
-        border:  none;
         margin-bottom: 1em;
     }
 
@@ -1946,4 +1945,12 @@ div.index-course-header {
 
 .content-edit-button {
     left: -60px;
+}
+
+svg {
+    display: block;
+}
+
+.edit-highlight {
+    border: dashed black;
 }

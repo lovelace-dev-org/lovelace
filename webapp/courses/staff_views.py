@@ -19,6 +19,7 @@ from reversion import revisions as reversion
 
 from courses import blockparser
 from courses import markupparser
+import courses.models as cm
 from courses.models import (
     CourseInstance,
     ContentGraph,
@@ -38,7 +39,19 @@ from courses.forms import (
     NewContentNodeForm,
     NodeSettingsForm,
 )
-from utils.access import ensure_staff, ensure_responsible_or_supervisor, ensure_responsible
+from courses.edit_forms import (
+    get_form,
+    save_form,
+    place_into_content,
+    BlockTypeSelectForm,
+)
+from utils.access import (
+    determine_media_access,
+    ensure_responsible_or_supervisor,
+    ensure_responsible,
+    ensure_staff,
+)
+from utils.archive import find_latest_version
 from utils.management import (
     CourseContentAdmin,
     clone_instance_files,
@@ -442,6 +455,108 @@ def move_content_node(request, course, instance, target_id, placement):
     active_node.save()
 
     return JsonResponse({"status": "ok"})
+
+
+@ensure_staff
+def edit_form(request, course, instance, content, action):
+    context = {
+        "course": course,
+        "instance": instance,
+        "content": content,
+        "request": request,
+    }
+
+    if request.method == "POST":
+        block_type = request.POST.get("block_type")
+        position = {
+            "line_idx": int(request.POST.get("line_idx")),
+            "line_count": int(request.POST.get("line_count")),
+            "placement": request.POST.get("placement")
+        }
+        form = get_form(
+            block_type, position, context, action, request.POST, request.FILES,
+        )
+        if not form.is_valid():
+            errors = form.errors.as_json()
+            return JsonResponse({"errors": errors}, status=400)
+
+        with reversion.create_revision():
+            save_form(form)
+            place_into_content(content, form)
+            reversion.set_user(request.user)
+        for cg in ContentGraph.objects.filter(content=content, revision=None):
+            content.regenerate_cache(cg.instance, active_only=True)
+        return JsonResponse({"status": "ok"})
+
+    block_type = request.GET.get("block")
+    position = {
+        "line_idx": int(request.GET.get("line")),
+        "line_count": int(request.GET.get("size")),
+        "placement": request.GET.get("placement", "replace")
+    }
+    form =get_form(
+        block_type, position, context, action
+    )
+    form_t = loader.get_template("courses/base-edit-form.html")
+    form_id = f"line-edit-form"
+    form_c = {
+        "html_id": form_id,
+        "form_object": form,
+        "submit_url": request.path,
+        "html_class": "side-panel-form edit-form-widget",
+        "submit_label": _("Save"),
+        "submit_override": "editing.submit_form"
+    }
+    return HttpResponse(form_t.render(form_c, request))
+
+
+@ensure_staff
+def add_form(request, course, instance, content):
+    if request.method == "POST":
+        line_idx = int(request.POST.get("line_idx"))
+        line_count = int(request.POST.get("line_count"))
+        form = BlockTypeSelectForm(request.POST, line_idx=line_idx)
+        if not form.is_valid():
+            errors = form.errors.as_json()
+            return JsonResponse({"errors": errors}, status=400)
+
+        query = (
+            f"?line={form.cleaned_data['line_idx']}"
+            f"&block={form.cleaned_data['block_type']}"
+            f"&placement={form.cleaned_data['placement']}"
+            f"&size={form.cleaned_data['line_count']}"
+        )
+        if form.cleaned_data["mode"] == "create":
+            action = "add"
+        else:
+            action = "include"
+
+        form_url = reverse(
+            "courses:content_edit_form",
+            kwargs={
+                "course": course,
+                "instance": instance,
+                "content": content,
+                "action": action,
+            }
+        )
+        return JsonResponse({"status": "ok", "form_url": form_url + query})
+
+    line_idx = int(request.GET.get("line"))
+    line_count = int(request.GET.get("size"))
+    form = BlockTypeSelectForm(line_idx=line_idx, line_count=line_count)
+    form_t = loader.get_template("courses/base-edit-form.html")
+    form_id = f"line-add-form"
+    form_c = {
+        "html_id": form_id,
+        "form_object": form,
+        "submit_url": request.path,
+        "html_class": "side-panel-form",
+        "submit_label": _("Get form"),
+        "submit_override": "editing.get_form_url"
+    }
+    return HttpResponse(form_t.render(form_c, request))
+
 
 
 # ^

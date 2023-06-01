@@ -96,6 +96,7 @@ class MarkupParser:
     _inline_re = None
     _ready = False
     _current_matchobj = None
+    _state = {}
 
     @classmethod
     def add(cls, *markups):
@@ -139,6 +140,10 @@ class MarkupParser:
         cls._ready = True
 
     @classmethod
+    def editable_markups(cls):
+        return [key for (key, item) in cls._markups.items() if item.is_editable]
+
+    @classmethod
     def get_markups(cls):
         return copy.deepcopy(cls._markups)
 
@@ -164,7 +169,22 @@ class MarkupParser:
         """
         matchobj = cls._block_re.match(line)
         cls._current_matchobj = matchobj
-        return getattr(matchobj, "lastgroup", "paragraph")
+        try:
+            block_type = getattr(matchobj, "lastgroup")
+        except AttributeError:
+            block_type = cls._state["open_block"]
+        else:
+            markup = cls._markups[block_type]
+            if cls._state["open"]:
+                block_type = cls._state["open_block"]
+                if markup is BlockCloseMarkup:
+                    cls._state["open_block"] = "paragraph"
+                    cls._state["open"] = False
+            elif markup.is_open:
+                cls._state["open_block"] = block_type
+                cls._state["open"] = True
+
+        return block_type
 
     @classmethod
     def parse(cls, text, request=None, context=None, embedded_pages=None, editable=False):
@@ -176,6 +196,8 @@ class MarkupParser:
         if not cls._ready:
             raise ParserUninitializedError("compile() not called")
 
+        cls._current_matchobj = None
+
         if context is None:
             context = {}
         if embedded_pages is None:
@@ -184,50 +206,53 @@ class MarkupParser:
         # TODO: Generator version of splitter to avoid memory & CPU overhead of
         # first creating a complete list and afterwards iterating through it.
         # I.e. reduce from O(2n) to O(n)
-        # Note! pypi regex has regex.splititer
-        lines = iter(re.split(r"\r\n|\r|\n", text))
+        lines = iter(text.splitlines())
 
-        state = {
+        cls._state = {
             "lines": lines,
             "request": request,
             "context": context,
             "list": [],
             "embedded_pages": embedded_pages,
             "table": False,
+            "open_block": "paragraph",
+            "open": False
         }
 
+        line_idx = 0
         for block_type, group in itertools.groupby(lines, cls._get_line_kind):
             block_markup = cls._markups[block_type]
             block_func = block_markup.block
             if block_type != "list":
-                for undent_lvl in reversed(state["list"]):
-                    yield ("cleanup", f"</{undent_lvl}>")
-                state["list"] = []
-            if block_type != "table" and state["table"]:
-                yield ("cleanup", "</table>\n")
-                state["table"] = False
+                for undent_lvl in reversed(cls._state["list"]):
+                    yield ("cleanup", f"</{undent_lvl}>", line_idx, 1)
+                cls._state["list"] = []
+            if block_type != "table" and cls._state["table"]:
+                yield ("cleanup", "</table>\n", line_idx, 1)
+                cls._state["table"] = False
 
             block_content = ""
             try:
-                settings = cls._markups[block_type].settings(cls._current_matchobj, state)
-                for result in block_func(group, settings, state):
+                settings = cls._markups[block_type].settings(cls._current_matchobj, cls._state)
+                group = list(group)
+                line_count = len(group)
+                for result in block_func(group, settings, cls._state):
                     if isinstance(result, str):
                         block_content += result
                     else:
-                        block_result = result
-                        break
-                else:
-                    block_result = ("plain", block_content)
+                        yield (*result, line_idx, line_count)
+                if block_content:
+                    yield (block_type, block_content, line_idx, line_count)
             except MarkupError as e:
-                yield ("error", e.html())
-            else:
-                yield block_result
+                yield ("error", e.html(), line_idx, 1)
+
+            line_idx += line_count
 
         # Clean up the remaining open tags (pop everything from stack)
-        for undent_lvl in reversed(state["list"]):
-            yield ("cleanup", f"</{undent_lvl}>")
-        if state["table"]:
-            yield ("cleanup", "</table>\n")
+        for undent_lvl in reversed(cls._state["list"]):
+            yield ("cleanup", f"</{undent_lvl}>", line_idx, 1)
+        if cls._state["table"]:
+            yield ("cleanup", "</table>\n", line_idx, 1)
 
 
 markups = []
@@ -254,6 +279,11 @@ class LinkParser(MarkupParser):
 
         lines = iter(re.split(r"\r\n|\n\r", text))
 
+        cls._state = {
+            "open_block": "paragraph",
+            "open": False
+        }
+
         for block_type, group in itertools.groupby(lines, cls._get_line_kind):
             try:
                 block_markup = cls._markups[block_type]
@@ -261,7 +291,7 @@ class LinkParser(MarkupParser):
                 pass
             else:
                 link_func = block_markup.build_links
-                link_func(groupx    , cls._current_matchobj, instance, page_links, media_links)
+                link_func(group, cls._current_matchobj, instance, page_links, media_links)
 
         return page_links, media_links
 
@@ -285,6 +315,8 @@ class Markup:
     states = {}
     inline = False
     allow_inline = False
+    is_editable = False
+    is_open = False
 
     @classmethod
     def block(cls, block, settings, state):
@@ -293,6 +325,23 @@ class Markup:
     @classmethod
     def settings(cls, matchobj, state):
         pass
+
+
+class BlockCloseMarkup(Markup):
+    name = "Close"
+    shortname = "close"
+    description = "Closer for open-block markups"
+    regexp = r"^[}]{3}\s*$"
+
+    @classmethod
+    def block(cls, block, settings, state):
+        yield ""
+
+    @classmethod
+    def settings(cls, matchobj, state):
+        pass
+
+markups.append(BlockCloseMarkup)
 
 
 class BoldMarkup(Markup):
@@ -364,11 +413,13 @@ class CodeMarkup(Markup):
     states = {}
     inline = False
     allow_inline = False
+    is_editable = True
+    is_open = True
 
     @classmethod
     def block(cls, block, settings, state):
         highlight = settings["highlight"]
-        yield '<pre class="normal">'
+        yield "<div><pre class='normal'>"
         text = ""
         if highlight:
             try:
@@ -379,19 +430,15 @@ class CodeMarkup(Markup):
             else:
                 yield f"<code class='highlight {highlight}-lang-highlight'>"
 
-        try:
-            line = next(state["lines"])
-            while not line.startswith("}}}"):
-                text += line + "\n"
-                line = next(state["lines"])
-        except StopIteration:
-            yield "Warning: unclosed code block!\n"
+        for line in block[1:-1]:
+            text += line + "\n"
+
         if highlight:
             highlighted = pygments.highlight(text[:-1], lexer, HtmlFormatter(nowrap=True))
             yield f"{highlighted}</code>"
         else:
             yield text
-        yield "</pre>\n"
+        yield "</pre></div>\n"
 
     @classmethod
     def settings(cls, matchobj, state):
@@ -402,6 +449,16 @@ class CodeMarkup(Markup):
             except IndexError as e:
                 pass
         return settings
+
+    @classmethod
+    def markup_from_dict(cls, form_data):
+        markup = "{{{"
+        if form_data.get("highlight"):
+            markup += f"highlight={form_data['highlight']}"
+        markup += "\n"
+        markup += form_data["content"]
+        markup += "\n}}}"
+        return markup
 
 
 markups.append(CodeMarkup)
@@ -417,6 +474,7 @@ class EmbeddedFileMarkup(Markup):
     states = {}
     inline = False
     allow_inline = False
+    is_editable = True
 
     @classmethod
     def block(cls, block, settings, state):
@@ -482,6 +540,16 @@ class EmbeddedFileMarkup(Markup):
     def build_links(cls, block, matchobj, instance, page_links, media_links):
         slug = matchobj.group("file_slug")
         media_links.append(slug)
+
+
+    @classmethod
+    def markup_from_dict(cls, form_data):
+        markup = f"<!file={form_data['file_slug']}"
+        if form_data.get("link_only"):
+            markup += f"|link_only=True"
+        markup += ">"
+        return markup
+
 
 
 markups.append(EmbeddedFileMarkup)
@@ -916,6 +984,7 @@ class ImageMarkup(Markup):
     example = "<!image=name-of-some-image.png|alt=alternative text|caption=caption text>"
     inline = False
     allow_inline = False
+    is_editable = True
 
     @classmethod
     def block(cls, block, settings, state):
@@ -990,6 +1059,18 @@ class ImageMarkup(Markup):
         slug = matchobj.group("image_name")
         media_links.append(slug)
 
+    @classmethod
+    def markup_from_dict(cls, form_data):
+        markup = f"<!image={form_data['image_name']}"
+        if form_data.get("alt_text"):
+            markup += f"|alt={form_data['alt_text']}"
+        if form_data.get("caption_text"):
+            markup += f"|caption={form_data['caption_text']}"
+        if form_data.get("align"):
+            markup += f"|align={form_data['align']}"
+        markup += ">"
+        return markup
+
 
 markups.append(ImageMarkup)
 link_markups.append(ImageMarkup)
@@ -1062,7 +1143,7 @@ class PageBreakMarkup(Markup):
 
     @classmethod
     def block(cls, block, settings, state):
-        yield PageBreak()
+        yield ("pagebreak", PageBreak())
 
     @classmethod
     def settings(cls, matchobj, state):
@@ -1146,17 +1227,13 @@ class SvgMarkup(Markup):
     example = ""
     inline = False
     allow_inline = False
+    is_open = True
 
     @classmethod
     def block(cls, block, settings, state):
         yield "<svg width='{width}' height='{height}'>\n".format(**settings)
-        try:
-            line = next(state["lines"])
-            while not line.startswith("}}}"):
-                yield line + "\n"
-                line = next(state["lines"])
-        except StopIteration:
-            yield "Warning: unclosed SVG block!\n"
+        for line in block[1:-1]:
+            yield line + "\n"
         yield "</svg>\n"
 
     @classmethod
@@ -1210,22 +1287,18 @@ class TeXMarkup(Markup):
     description = (
         "TeX markup with KaTeX: https://github.com/Khan/KaTeX/wiki/Function-Support-in-KaTeX"
     )
-    regexp = r"^[<]math[>]\s*$"
+    regexp = r"^[{]{3}math\s*$"
     markup_class = ""
-    example = "<math>\nx = \\dfrac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}\n</math>"
+    example = "{{{math\nx = \\dfrac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}\n}}}"
     inline = False
     allow_inline = False
+    is_open = True
 
     @classmethod
     def block(cls, block, settings, state):
         yield '<div class="tex">'
-        try:
-            line = next(state["lines"])
-            while not line.startswith("</math>"):
-                yield escape(line, quote=False) + "\n"
-                line = next(state["lines"])
-        except StopIteration:
-            yield "Warning: unclosed TeX block!\n"
+        for line in block[1:-1]:
+            yield escape(line, quote=False) + "\n"
         yield "</div>\n"
 
     @classmethod

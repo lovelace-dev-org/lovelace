@@ -349,7 +349,7 @@ function submit_ajax_form (form, success_extra_cb) {
 
     $.ajax({
         type: form.attr("method"),
-        url,
+        url: url,
         data: new FormData(form[0]),
         processData: false,
         contentType: false,
@@ -389,7 +389,7 @@ function submit_ajax_action (button, success_extra_cb, extra_data) {
 
     $.ajax({
         type: "POST",
-        url,
+        url: url,
         data: { csrfmiddlewaretoken: csrf, extra: extra_data },
         success: function (data, status, jqxhr) {
             success_extra_cb(data)
@@ -414,11 +414,11 @@ function load_saved_fields (event) {
     event.preventDefault()
     event.stopPropagation()
 
-    const select = $(this)
+    const select = $(event.target)
 
     $.ajax({
         type: "GET",
-        url: select.attr("data-url").replace("0", select.val()),
+        url: select.attr("data-url").replace("/0/", "/" + select.val() + "/"),
         success: function (data, status, jqxhr) {
             const form = select.closest("form")
             for (const field_key in data) {
@@ -436,7 +436,7 @@ function submit_enrollment (event) {
 
     $.ajax({
         type: form.attr("method"),
-        url,
+        url: url,
         data: new FormData(form[0]),
         processData: false,
         contentType: false,

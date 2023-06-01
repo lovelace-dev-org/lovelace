@@ -483,7 +483,7 @@ class CourseMedia(models.Model):
     """
 
     name = models.CharField(
-        verbose_name="Name for reference in content", max_length=200, unique=True
+        verbose_name="Unique name identifier", max_length=200, unique=True
     )
 
     def save(self, *args, **kwargs):
@@ -539,6 +539,16 @@ class Image(CourseMedia):
 
     def __str__(self):
         return self.name
+
+    def serialize_translated(self):
+        data = {
+            "name": self.name,
+        }
+        for lang_code, __ in settings.LANGUAGES:
+            data[f"description{lang_code}"] = getattr(self, f"description{lang_code}", "")
+            data[f"fileinfo_{lang_code}"] = str(getattr(self, f"fileinfo_{lang_code}", ""))
+        return data
+
 
 
 class VideoLink(CourseMedia):
@@ -791,6 +801,15 @@ class ContentPage(models.Model):
         #         EmbeddedContentLink object)
         super().save(*args, **kwargs)
 
+    def replace_lines(self, line_idx, new_lines, delete_count=1):
+        lines = self.content.splitlines()
+        del lines[line_idx:line_idx + delete_count]
+        for i, line in enumerate(new_lines):
+            lines.insert(line_idx + i, line)
+
+        self.content = "\n".join(lines)
+        self.save()
+
     def rendered_markup(self, request=None, context=None, revision=None, lang_code=None, page=None):
         """
         Uses the included MarkupParser library to render the page content into
@@ -975,12 +994,15 @@ class ContentPage(models.Model):
                 link_obj.save()
                 link_obj.embedded_page.update_embedded_links(instance)
 
-    def regenerate_cache(self, instance):
+    def regenerate_cache(self, instance, active_only=False):
         context = {"instance": instance, "course": instance.course, "content_page": self}
-        try:
-            revision = ContentGraph.objects.get(content=self, instance=instance).revision
-        except ContentGraph.DoesNotExist:
-            return
+        if not active_only:
+            try:
+                revision = ContentGraph.objects.get(content=self, instance=instance).revision
+            except ContentGraph.DoesNotExist:
+                return
+        else:
+            revision = None
 
         current_lang = translation.get_language()
 
@@ -994,7 +1016,6 @@ class ContentPage(models.Model):
         translation.activate(current_lang)
 
         from faq.utils import regenerate_cache
-
         regenerate_cache(instance, self)
 
     def get_human_readable_type(self):
