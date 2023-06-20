@@ -44,7 +44,7 @@ def parse_link_url(address, context=None):
                 # internal address
                 try:
                     content = cm.ContentPage.objects.get(slug=slugified)
-                except cm.ContentPage.DoesNotExist:
+                except cm.ContentPage.DoesNotExist as e:
                     raise BrokenLinkWarning from e
                 else:
                     if context.get("course"):

@@ -134,6 +134,7 @@
           {% if course_staff %}
 
             <img class="toc-drag-target drop-before collapsed" 
+                 id="drop-before-{{ item.node_id }}"
                  src="{% static 'courses/drop_before.png' %}"
                  ondragover="toc.over_drag_target(event);"
                  ondrop="toc.drop_to_target(event, {{ item.node_id }});"
@@ -142,6 +143,7 @@
                  data-csrf="{{ csrf_token }}">
 
             <img class="toc-drag-target drop-as-child collapsed" 
+                 id="drop-inside-{{ item.node_id }}"
                  src="{% static 'courses/drop_as_child.png' %}"
                  ondragover="toc.over_drag_target(event);"
                  ondrop="toc.drop_to_target(event, {{ item.node_id }});"
@@ -150,6 +152,7 @@
                  data-csrf="{{ csrf_token }}">
           
             <img class="toc-drag-target drop-after collapsed" 
+                 id="drop-after-{{ item.node_id }}"
                  src="{% static 'courses/drop_after.png' %}"
                  ondragover="toc.over_drag_target(event);"
                  ondrop="toc.drop_to_target(event, {{ item.node_id }});"

@@ -95,6 +95,12 @@ tags = {
         "[!threshold!]",
         re.compile(r"\[\!threshold\=(?P<grade>[^!]+)\!\]"),
     ),
+    "color": Tag(
+        "span",
+        "[!color=value!]",
+        "[!color!]",
+        re.compile(r"\[\!color\=(?P<color>[^!]+)\!\](?P<colored_text>.+?)\[\!color\!\]"),
+    )
 }
 
 
@@ -197,12 +203,20 @@ def parse_threshold_tag(parsed_string, tag, grade, context):
     return parsed_string
 
 
+def parse_color_tag(parsed_string, tag, color, text):
+    parsed_string += tag.htmlbegin({"style": f"color: {color}"})
+    parsed_string += text
+    parsed_string += tag.htmlend()
+    return parsed_string
+
+
+
 def parsetag(tagname, unparsed_string, context=None):
     """Parses one tag and applies it's settings. Generates the HTML."""
     tag = tags[tagname]
     hilite = (
         address
-    ) = link_text = hint_id = hint_text = term_name = term_text = page_slug = grade = None
+    ) = link_text = hint_id = hint_text = term_name = term_text = page_slug = grade = color = None
     parsed_string = ""
     cursor = 0
     for m in re.finditer(tag.re, unparsed_string):
@@ -244,6 +258,12 @@ def parsetag(tagname, unparsed_string, context=None):
         except IndexError:
             pass
 
+        try:
+            color = m.group("color")
+            text = m.group("colored_text")
+        except IndexError:
+            pass
+
         if hilite:
             parsed_string = parse_pre_tag(parsed_string, tag, hilite, m)
         elif address:
@@ -256,6 +276,8 @@ def parsetag(tagname, unparsed_string, context=None):
             parsed_string = parse_dl_tag(parsed_string, tag, page_slug, context)
         elif grade:
             parsed_string = parse_threshold_tag(parsed_string, tag, grade, context)
+        elif color:
+            parsed_string = parse_color_tag(parsed_string, tag, color, text)
         else:
             contents = m.group(0)[tag.lb() : -tag.le()]
 
@@ -299,6 +321,7 @@ def parseblock(blockstring, context=None):
     parsed_string = parsetag("term", parsed_string, context)
     parsed_string = parsetag("dl", parsed_string, context)
     parsed_string = parsetag("thold", parsed_string, context)
+    parsed_string = parsetag("color", parsed_string, context)
     parsed_string = parsed_string.replace("'", "&#x27;")
 
     return parsed_string

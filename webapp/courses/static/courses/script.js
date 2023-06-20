@@ -286,14 +286,15 @@ function show_term_tab (elem) {
     item.siblings().removeClass("term-tab-active")
     item.addClass("term-tab-active")
     // Calculate the ordinal of this element in the parent <ol>
-    const index = item.parent().children().index(item)
+    const index = item.parent().children("li").index(item)
+    let i = 0
     item.parent().parent().children(".term-desc-contents").each(function () {
-        const PRECEDING_ELEMENTS = 2
-        if ($(this).index() - PRECEDING_ELEMENTS === index) {
+        if (i === index) {
             $(this).show()
         } else {
             $(this).hide()
         }
+        i++
     })
 }
 
@@ -365,6 +366,7 @@ function submit_ajax_form (form, success_extra_cb) {
         error: function (jqxhr, status, type) {
             const errors = JSON.parse(JSON.parse(jqxhr.responseText).errors)
             for (const [field, content] of Object.entries(errors)) {
+                console.log(field, content)
                 content.forEach(function (entry) {
                     const espan = "<span class='ajax-form-error'>" + entry.message + "</span>"
                     const widget = form.find("input[name='" + field + "']")
@@ -572,7 +574,7 @@ function copy_link (event, caller) {
     }, 2000)
 }
 
-function duplicate_subform (event, caller) {
+function duplicate_subform_tr (event, caller) {
     event.preventDefault()
     event.stopPropagation()
 
@@ -582,6 +584,21 @@ function duplicate_subform (event, caller) {
             .replace(/__prefix__/g, form_idx) + "</tr>")
     $("input[id$='TOTAL_FORMS'").val(parseInt(form_idx) + 1)
 }
+
+function duplicate_subform_table (event, caller) {
+    event.preventDefault()
+    event.stopPropagation()
+
+    const form_idx = $("input[id$='TOTAL_FORMS'").val()
+
+    $(".edit-form-inline").last()
+        .after("<table class='edit-form-inline sub-rectangle'>"
+        + $("#empty_form").html().replace(/__prefix__/g, form_idx)
+        + "</table>"
+        )
+    $("input[id$='TOTAL_FORMS'").val(parseInt(form_idx) + 1)
+}
+
 
 // http://blog.niklasottosson.com/?p=1914
 function sort_table (event, caller, field, order, is_number) {

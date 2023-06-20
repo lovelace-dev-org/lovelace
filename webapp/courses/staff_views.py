@@ -51,7 +51,8 @@ from utils.access import (
     ensure_responsible,
     ensure_staff,
 )
-from utils.archive import find_latest_version
+from utils.archive import find_latest_version, squash_revisions
+from utils.content import regenerate_nearest_cache
 from utils.management import (
     CourseContentAdmin,
     clone_instance_files,
@@ -413,6 +414,9 @@ def move_content_node(request, course, instance, target_id, placement):
     except ContentGraph.DoesNotExist:
         return HttpResponseNotFound()
 
+    if active_node == target_node:
+        return HttpResponseBadRequest(_("Cannot move a node to itself"))
+
     parent = target_node.parentnode
     while parent is not None:
         if parent == active_node:
@@ -484,8 +488,8 @@ def edit_form(request, course, instance, content, action):
             save_form(form)
             place_into_content(content, form)
             reversion.set_user(request.user)
-        for cg in ContentGraph.objects.filter(content=content, revision=None):
-            content.regenerate_cache(cg.instance, active_only=True)
+        regenerate_nearest_cache(content)
+        squash_revisions(content, 1)
         return JsonResponse({"status": "ok"})
 
     block_type = request.GET.get("block")
@@ -526,10 +530,13 @@ def add_form(request, course, instance, content):
             f"&placement={form.cleaned_data['placement']}"
             f"&size={form.cleaned_data['line_count']}"
         )
+        disclaimer = ""
         if form.cleaned_data["mode"] == "create":
             action = "add"
-        else:
+        elif form.cleaned_data["block_type"] in markupparser.MarkupParser.include_forms:
             action = "include"
+        else:
+            action = "add"
 
         form_url = reverse(
             "courses:content_edit_form",
@@ -538,7 +545,7 @@ def add_form(request, course, instance, content):
                 "instance": instance,
                 "content": content,
                 "action": action,
-            }
+            },
         )
         return JsonResponse({"status": "ok", "form_url": form_url + query})
 

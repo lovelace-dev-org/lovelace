@@ -367,7 +367,7 @@ class TranslationStaffForm(ModelForm):
         fields.sort(key=meta_listing_index)
         return fields
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, requires=True, **kwargs):
         super().__init__(*args, **kwargs)
         self._instance = kwargs.get("instance")
         self._translated_field_names = []
@@ -386,7 +386,7 @@ class TranslationStaffForm(ModelForm):
                     if lang_code == settings.MODELTRANSLATION_DEFAULT_LANGUAGE:
                         self.fields[lang_field_name] = field.formfield(
                             label=f"{field.verbose_name} (default)".capitalize(),
-                            required=not field.blank,
+                            required=requires and not field.blank,
                         )
                     else:
                         self.fields[lang_field_name] = field.formfield(

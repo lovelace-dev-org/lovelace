@@ -101,7 +101,7 @@ TEMPLATES = (
     },
 )
 
-UNEDITABLE_MARKUPS = ["empty", "cleanup", "error"]
+UNEDITABLE_MARKUPS = ["empty", "cleanup", "error", "embedded", "calendar"]
 
 # Python dotted path to the WSGI application used by Django's runserver.
 WSGI_APPLICATION = 'lovelace.wsgi.application'

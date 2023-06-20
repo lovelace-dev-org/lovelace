@@ -340,8 +340,12 @@
           </div>
           {% if term_div_data %}
             {% for term in term_div_data %}
-              <div class="term-description" id="{{ term.slug }}-term-div">
+               <div class="term-description" id="{{ term.slug }}-term-div">
                 <div class="term-grace-area"></div>
+                {% if course_staff %}
+                  <a class="staff-only collapsed"
+                     href="{{ term.edit_url }}"><img src="{% static 'courses/edit.png' %}"></a>
+                {% endif %}
                 {% if term.tabs %}
                   <ol class="term-tab-titles">
                     <li onclick="show_term_tab(this);" class="term-tab-active">

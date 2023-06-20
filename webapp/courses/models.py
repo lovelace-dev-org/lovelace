@@ -729,9 +729,10 @@ class ContentPage(models.Model):
         ("MULTIPLE_CHOICE_EXERCISE", "Multiple choice exercise"),
         ("CHECKBOX_EXERCISE", "Checkbox exercise"),
         ("FILE_UPLOAD_EXERCISE", "File upload exercise"),
-        ("CODE_INPUT_EXERCISE", "Code input exercise"),
-        ("CODE_REPLACE_EXERCISE", "Code replace exercise"),
+#        ("CODE_INPUT_EXERCISE", "Code input exercise"),
+#        ("CODE_REPLACE_EXERCISE", "Code replace exercise"),
         ("REPEATED_TEMPLATE_EXERCISE", "Repeated template exercise"),
+        ("ROUTINE_EXERCISE", "Routine exercise"),
     )
     template = "courses/blank.html"
 
@@ -886,13 +887,24 @@ class ContentPage(models.Model):
                 return pages[page - 1]
             return full
 
-        for render in cached_content:
-            print(render)
+        #for render in cached_content:
+            #print(render)
 
         return cached_content
 
     def _get_rendered_content(self, context):
         from courses import markupparser
+
+        embedded_content = []
+        markup_gen = markupparser.MarkupParser.parse(self.content, context=context)
+        for chunk in markup_gen:
+            try:
+                embedded_content.append(chunk)
+            except ValueError as e:
+                raise markupparser.EmbeddedObjectNotAllowedError(
+                    "embedded pages are not allowed inside embedded pages"
+                )
+        return embedded_content
 
         embedded_content = ""
         markup_gen = markupparser.MarkupParser.parse(self.content, context=context)
@@ -1774,7 +1786,7 @@ class RepeatedTemplateExercise(ContentPage):
     def get_rendered_content(self, context):
         content = ContentPage._get_rendered_content(self, context)
         t = loader.get_template("courses/repeated-template-content-extra.html")
-        return content + t.render(context)
+        return content + [("extra", t.render(context), -1, 0)]
 
     def get_question(self, context):
         return ContentPage._get_question(self, context)

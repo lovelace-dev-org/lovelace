@@ -99,7 +99,7 @@ const toc = {
             toc.active_button = null
         }
 
-        $(".toc-drag-target").removeClass("collapsed")
+        $(".toc-drag-target").not("img[id$=" + node_id + "]").removeClass("collapsed")
         event.dataTransfer.setData("node", node_id)
         toc.dragged_li = $(event.target).parent()
         event.dataTransfer.effectAllowed = "move"

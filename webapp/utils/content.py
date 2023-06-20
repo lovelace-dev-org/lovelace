@@ -89,6 +89,14 @@ def get_course_instance_tasks(instance, deadline_before=None):
     return task_pages
 
 
+def regenerate_nearest_cache(content):
+    for cg in cm.ContentGraph.objects.filter(content=content, revision=None):
+        content.regenerate_cache(cg.instance, active_only=True)
+    else:
+        for embed in cm.EmbeddedLink.objects.filter(embedded_page=content):
+            embed.parent.regenerate_cache(embed.instance, active_only=True)
+
+
 def get_embedded_parent(content, instance):
     """
     Gets the embedded parent of a content object. Returns two values: the

@@ -97,6 +97,8 @@ class MarkupParser:
     _ready = False
     _current_matchobj = None
     _state = {}
+    edit_forms = {}
+    include_forms = {}
 
     @classmethod
     def add(cls, *markups):
@@ -107,6 +109,13 @@ class MarkupParser:
         """
         cls._ready = False
         cls._markups.update((markup.shortname, markup) for markup in markups)
+
+    @classmethod
+    def register_form(cls, markup, action, form):
+        if action == "include":
+            cls.include_forms[markup] = form
+        else:
+            cls.edit_forms[markup] = form
 
     @classmethod
     def compile(cls):
@@ -254,6 +263,9 @@ class MarkupParser:
         if cls._state["table"]:
             yield ("cleanup", "</table>\n", line_idx, 1)
 
+        if line_idx == 0:
+            yield ("empty", "", 0, 0)
+
 
 markups = []
 link_markups = []
@@ -277,7 +289,7 @@ class LinkParser(MarkupParser):
         page_links = []
         media_links = []
 
-        lines = iter(re.split(r"\r\n|\n\r", text))
+        lines = iter(text.splitlines())
 
         cls._state = {
             "open_block": "paragraph",
@@ -317,6 +329,7 @@ class Markup:
     allow_inline = False
     is_editable = False
     is_open = False
+    has_reference = False
 
     @classmethod
     def block(cls, block, settings, state):
@@ -475,6 +488,7 @@ class EmbeddedFileMarkup(Markup):
     inline = False
     allow_inline = False
     is_editable = True
+    has_reference = True
 
     @classmethod
     def block(cls, block, settings, state):
@@ -565,6 +579,8 @@ class EmbeddedPageMarkup(Markup):
     example = "<!page=slug-of-some-exercise>"
     inline = False
     allow_inline = False
+    is_editable = True
+    has_reference = True
 
     @classmethod
     def block(cls, block, settings, state):
@@ -681,6 +697,23 @@ class EmbeddedPageMarkup(Markup):
                             "revision": revision or "head",
                         },
                     ),
+                    "edit_content_url": reverse("courses:content_edit_form", kwargs={
+                        "course": instance.course,
+                        "instance": instance,
+                        "content": page,
+                        "action": "edit",
+                    }),
+                    "delete_content_url": reverse("courses:content_edit_form", kwargs={
+                        "course": instance.course,
+                        "instance": instance,
+                        "content": page,
+                        "action": "delete",
+                    }),
+                    "add_content_url": reverse("courses:content_add_form", kwargs={
+                        "course": instance.course,
+                        "instance": instance,
+                        "content": page,
+                    }),
                 }
 
         return settings
@@ -689,6 +722,10 @@ class EmbeddedPageMarkup(Markup):
     def build_links(cls, block, matchobj, instance, page_links, media_links):
         slug = matchobj.group("page_slug")
         page_links.append(slug)
+
+    @classmethod
+    def markup_from_dict(cls, form_data):
+        return f"<!page={form_data['page_slug']}>"
 
 
 markups.append(EmbeddedPageMarkup)
@@ -710,6 +747,8 @@ class EmbeddedScriptMarkup(Markup):
     states = {}
     inline = False
     allow_inline = False
+    is_editable = True
+    has_reference = True
 
     @classmethod
     def block(cls, block, settings, state):
@@ -842,9 +881,33 @@ class EmbeddedScriptMarkup(Markup):
         slugs = [matchobj.group("script_slug")] + [
             m.split("=")[1] for m in matchobj.group("include").split(",")
         ]
-
         for slug in slugs:
             media_links.append(slug)
+
+    @classmethod
+    def markup_from_dict(cls, form_data):
+        print(form_data)
+        markup = f"<!script={form_data['script_slug']}"
+        markup += f"|width={form_data['script_width']}"
+        markup += f"|height={form_data['script_height']}"
+        if form_data.get("border"):
+            markup += f"|border={form_data['border']}"
+        total_forms = form_data["include_files-TOTAL_FORMS"]
+        if total_forms:
+            markup += "|include="
+            markup += ",".join(
+                "{where}:{itype}={slug}".format(
+                    where=form_data[f"include_files-{i}-where"],
+                    itype=form_data[f"include_files-{i}-type"],
+                    slug=(
+                        form_data[f"include_files-{i}-name"]
+                        or form_data[f"include_files-{i}-existing"]
+                    ),
+                )
+                for i in range(total_forms) if not form_data[f"include_files-{i}-delete"]
+            )
+        markup += ">"
+        return markup
 
 
 markups.append(EmbeddedScriptMarkup)
@@ -864,6 +927,8 @@ class EmbeddedVideoMarkup(Markup):
     states = {}
     inline = False
     allow_inline = False
+    is_editable = True
+    has_reference = True
 
     @classmethod
     def block(cls, block, settings, state):
@@ -903,6 +968,16 @@ class EmbeddedVideoMarkup(Markup):
     def build_links(cls, block, matchobj, instance, page_links, media_links):
         slug = matchobj.group("video_slug")
         media_links.append(slug)
+
+    @classmethod
+    def markup_from_dict(cls, form_data):
+        markup = f"<!video={form_data['video_slug']}"
+        if form_data.get("video_width"):
+            markup += f"|width={form_data['video_width']}"
+        if form_data.get("video_height"):
+            markup += f"|height={form_data['video_height']}"
+        markup += ">"
+        return markup
 
 
 markups.append(EmbeddedVideoMarkup)
@@ -947,6 +1022,7 @@ class HeadingMarkup(Markup):
     )
     inline = False
     allow_inline = False
+    is_editable = True
 
     @classmethod
     def block(cls, block, settings, state):
@@ -965,6 +1041,13 @@ class HeadingMarkup(Markup):
     def settings(cls, matchobj, state):
         settings = {"heading_level": len(matchobj.group("level"))}
         return settings
+
+    @classmethod
+    def markup_from_dict(cls, form_data):
+        markup = "=" * form_data["level"]
+        markup += f" {form_data['content']} "
+        markup += "=" * form_data["level"]
+        return markup
 
 
 markups.append(HeadingMarkup)
@@ -985,6 +1068,7 @@ class ImageMarkup(Markup):
     inline = False
     allow_inline = False
     is_editable = True
+    has_reference = True
 
     @classmethod
     def block(cls, block, settings, state):
@@ -1089,43 +1173,44 @@ class ListMarkup(Markup):
     states = {"list": []}
     inline = False
     allow_inline = True
+    is_editable = True
 
     @classmethod
     def block(cls, block, settings, state):
-        tag = settings["tag"]
-
-        if len(state["list"]) < settings["level"]:
-            for __ in range(settings["level"] - len(state["list"])):
-                state["list"].append(tag)
-                yield f"<{tag}>"
-        elif len(state["list"]) > settings["level"]:
-            for __ in range(len(state["list"]) - settings["level"]):
-                top_tag = state["list"].pop()
-                yield f"</{top_tag}>"
-
-        if len(state["list"]) == settings["level"]:
-            if state["list"][-1] != tag:
-                top_tag = state["list"].pop()
-                yield f"</{top_tag}>"
-
-                state["list"].append(tag)
-                yield f"<{tag}>"
-
         for line in block:
+            state_level = len(state["list"])
             parse_result = blockparser.parseblock(
                 escape(line.strip("*#").strip(), quote=False), state["context"]
             )
+            line_level = re.match(cls.regexp, line).group("list_level")
+            tag = "ul" if line_level[-1] == "*" else "ol"
+            new_level = len(line_level)
+            if new_level > state_level:
+                for __ in range(new_level - state_level):
+                    state["list"].append(tag)
+                    yield f"<{tag}>"
+            elif new_level < state_level:
+                for __ in range(state_level - new_level):
+                    top_tag = state["list"].pop()
+                    yield f"</{top_tag}>"
+
+            if len(state["list"]) == new_level:
+                if state["list"][-1] != tag:
+                    top_tag = state["list"].pop()
+                    yield f"</{top_tag}>"
+
+                    state["list"].append(tag)
+                    yield f"<{tag}>"
+
             yield f"<li>{parse_result}</li>"
 
     @classmethod
     def settings(cls, matchobj, state):
-        list_level = matchobj.group("list_level")
-        settings = {
-            "level": len(list_level),
-            # "text" : matchobj.group("text").strip(),
-            "tag": "ul" if list_level[-1] == "*" else "ol",
-        }
-        return settings
+        pass
+
+    @classmethod
+    def markup_from_dict(cls, form_data):
+        return form_data["content"]
 
 
 markups.append(ListMarkup)
@@ -1162,6 +1247,7 @@ class ParagraphMarkup(Markup):
     example = "Text without any of the block level markups."
     inline = False
     allow_inline = True
+    is_editable = True
 
     @classmethod
     def block(cls, block, settings, state):
@@ -1191,6 +1277,11 @@ class ParagraphMarkup(Markup):
                 if tag[0].startswith("file:"):
                     media_links.append(tag[0].split("file:")[1])
 
+    @classmethod
+    def markup_from_dict(cls, form_data):
+        return form_data["content"]
+
+
 
 markups.append(ParagraphMarkup)
 link_markups.append(ParagraphMarkup)
@@ -1205,6 +1296,7 @@ class SeparatorMarkup(Markup):
     example = "--"
     inline = False
     allow_inline = False
+    is_editable = True
 
     @classmethod
     def block(cls, block, settings, state):
@@ -1213,6 +1305,10 @@ class SeparatorMarkup(Markup):
     @classmethod
     def settings(cls, matchobj, state):
         pass
+
+    @classmethod
+    def markup_from_dict(cls, form_data):
+        return "--"
 
 
 markups.append(SeparatorMarkup)
@@ -1228,6 +1324,7 @@ class SvgMarkup(Markup):
     inline = False
     allow_inline = False
     is_open = True
+    is_editable = True
 
     @classmethod
     def block(cls, block, settings, state):
@@ -1243,6 +1340,18 @@ class SvgMarkup(Markup):
             "height": matchobj.group("svg_height"),
         }
 
+    @classmethod
+    def markup_from_dict(cls, form_data):
+        markup = "{{{svg"
+        if form_data.get("svg_width"):
+            markup += f"|width={form_data['svg_width']}"
+        if form_data.get("svg_height"):
+            markup += f"|height={form_data['svg_height']}"
+        markup += "\n"
+        markup += form_data["content"]
+        markup += "\n}}}"
+        return markup
+
 
 markups.append(SvgMarkup)
 
@@ -1251,12 +1360,13 @@ class TableMarkup(Markup):
     name = "Table"
     shortname = "table"
     description = "A table for representing tabular information."
-    regexp = r"^[|]{2}([^|]+[|]{2})+\s*$"
+    regexp = r"^[|]{2}(.+[|]{2})+\s*$"
     markup_class = ""
     example = "|| Heading 1 || Heading 2 ||"
     states = {}
     inline = False
     allow_inline = False
+    is_editable = True
 
     @classmethod
     def block(cls, block, settings, state):
@@ -1277,6 +1387,10 @@ class TableMarkup(Markup):
     def settings(cls, matchobj, state):
         pass
 
+    @classmethod
+    def markup_from_dict(cls, form_data):
+        return form_data["content"]
+
 
 markups.append(TableMarkup)
 
@@ -1293,6 +1407,7 @@ class TeXMarkup(Markup):
     inline = False
     allow_inline = False
     is_open = True
+    is_editable = True
 
     @classmethod
     def block(cls, block, settings, state):
@@ -1304,6 +1419,14 @@ class TeXMarkup(Markup):
     @classmethod
     def settings(cls, matchobj, state):
         pass
+
+    @classmethod
+    def markup_from_dict(cls, form_data):
+        markup = "{{{math"
+        markup += "\n"
+        markup += form_data["content"]
+        markup += "\n}}}"
+        return markup
 
 
 markups.append(TeXMarkup)
