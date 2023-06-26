@@ -95,10 +95,12 @@ class MarkupParser:
     _block_re = None
     _inline_re = None
     _ready = False
-    _current_matchobj = None
-    _state = {}
     edit_forms = {}
     include_forms = {}
+
+    def __init__(self):
+        self._current_matchobj = None
+        self._state = {}
 
     @classmethod
     def add(cls, *markups):
@@ -156,13 +158,11 @@ class MarkupParser:
     def get_markups(cls):
         return copy.deepcopy(cls._markups)
 
-    @classmethod
-    def inline_parse(cls, block):
+    def inline_parse(self, block):
         # yield from
         return block
 
-    @classmethod
-    def _get_line_kind(cls, line):
+    def _get_line_kind(self, line):
         """
         Key function for itertools.groupby(...)
 
@@ -176,36 +176,35 @@ class MarkupParser:
         TODO: The state selection could be implemented here; just have a class-
         wide object point to the current regex-state instead of _block_re.
         """
-        matchobj = cls._block_re.match(line)
-        cls._current_matchobj = matchobj
+        matchobj = self._block_re.match(line)
+        self._current_matchobj = matchobj
         try:
             block_type = getattr(matchobj, "lastgroup")
         except AttributeError:
-            block_type = cls._state["open_block"]
+            block_type = self._state["open_block"]
         else:
-            markup = cls._markups[block_type]
-            if cls._state["open"]:
-                block_type = cls._state["open_block"]
+            markup = self._markups[block_type]
+            if self._state["open"]:
+                block_type = self._state["open_block"]
                 if markup is BlockCloseMarkup:
-                    cls._state["open_block"] = "paragraph"
-                    cls._state["open"] = False
+                    self._state["open_block"] = "paragraph"
+                    self._state["open"] = False
             elif markup.is_open:
-                cls._state["open_block"] = block_type
-                cls._state["open"] = True
+                self._state["open_block"] = block_type
+                self._state["open"] = True
 
         return block_type
 
-    @classmethod
-    def parse(cls, text, request=None, context=None, embedded_pages=None, editable=False):
+    def parse(self, text, request=None, context=None, embedded_pages=None, editable=False):
         """
         A generator that gets the text written in the markup language, splits
         it at newlines and yields the parsed text until the whole text has
         been parsed.
         """
-        if not cls._ready:
+        if not self._ready:
             raise ParserUninitializedError("compile() not called")
 
-        cls._current_matchobj = None
+        self._current_matchobj = None
 
         if context is None:
             context = {}
@@ -217,7 +216,7 @@ class MarkupParser:
         # I.e. reduce from O(2n) to O(n)
         lines = iter(text.splitlines())
 
-        cls._state = {
+        self._state = {
             "lines": lines,
             "request": request,
             "context": context,
@@ -229,23 +228,23 @@ class MarkupParser:
         }
 
         line_idx = 0
-        for block_type, group in itertools.groupby(lines, cls._get_line_kind):
-            block_markup = cls._markups[block_type]
+        for block_type, group in itertools.groupby(lines, self._get_line_kind):
+            block_markup = self._markups[block_type]
             block_func = block_markup.block
             if block_type != "list":
-                for undent_lvl in reversed(cls._state["list"]):
+                for undent_lvl in reversed(self._state["list"]):
                     yield ("cleanup", f"</{undent_lvl}>", line_idx, 1)
-                cls._state["list"] = []
-            if block_type != "table" and cls._state["table"]:
+                self._state["list"] = []
+            if block_type != "table" and self._state["table"]:
                 yield ("cleanup", "</table>\n", line_idx, 1)
-                cls._state["table"] = False
+                self._state["table"] = False
 
             block_content = ""
             try:
-                settings = cls._markups[block_type].settings(cls._current_matchobj, cls._state)
+                settings = self._markups[block_type].settings(self._current_matchobj, self._state)
                 group = list(group)
                 line_count = len(group)
-                for result in block_func(group, settings, cls._state):
+                for result in block_func(group, settings, self._state):
                     if isinstance(result, str):
                         block_content += result
                     else:
@@ -258,21 +257,20 @@ class MarkupParser:
             line_idx += line_count
 
         # Clean up the remaining open tags (pop everything from stack)
-        for undent_lvl in reversed(cls._state["list"]):
+        for undent_lvl in reversed(self._state["list"]):
             yield ("cleanup", f"</{undent_lvl}>", line_idx, 1)
-        if cls._state["table"]:
+        if self._state["table"]:
             yield ("cleanup", "</table>\n", line_idx, 1)
 
         if line_idx == 0:
             yield ("empty", "", 0, 0)
 
 
-    @classmethod
-    def replace(cls, text, replace_in, replaces):
-        if not cls._ready:
+    def replace(self, text, replace_in, replaces):
+        if not self._ready:
             raise ParserUninitializedError("compile() not called")
 
-        cls._state = {
+        self._state = {
             "open_block": "paragraph",
             "open": False
         }
@@ -286,7 +284,7 @@ class MarkupParser:
             for old, new in replaces
         ]
 
-        for block_type, group in itertools.groupby(lines, cls._get_line_kind):
+        for block_type, group in itertools.groupby(lines, self._get_line_kind):
             if block_type in replace_in:
                 for line in group:
                     for old_re, new in replaces:
@@ -312,9 +310,8 @@ class LinkParser(MarkupParser):
 
     _markups = {}
 
-    @classmethod
-    def parse(cls, text, instance=None):
-        if not cls._ready:
+    def parse(self, text, instance=None):
+        if not self._ready:
             raise ParserUninitializedError("compile() not called")
 
         page_links = []
@@ -322,19 +319,19 @@ class LinkParser(MarkupParser):
 
         lines = iter(text.splitlines())
 
-        cls._state = {
+        self._state = {
             "open_block": "paragraph",
             "open": False
         }
 
-        for block_type, group in itertools.groupby(lines, cls._get_line_kind):
+        for block_type, group in itertools.groupby(lines, self._get_line_kind):
             try:
-                block_markup = cls._markups[block_type]
+                block_markup = self._markups[block_type]
             except KeyError:
                 pass
             else:
                 link_func = block_markup.build_links
-                link_func(group, cls._current_matchobj, instance, page_links, media_links)
+                link_func(group, self._current_matchobj, instance, page_links, media_links)
 
         return page_links, media_links
 
@@ -605,7 +602,7 @@ class EmbeddedPageMarkup(Markup):
     name = "Embedded page"
     shortname = "embedded_page"
     description = "A lecture or exercise, embedded into the page in question."
-    regexp = r"^\<\!page\=(?P<page_slug>[^|>]+)(\|rev\=(?P<revision>\d+))?\>\s*$"
+    regexp = r"^\<\!page\=(?P<page_slug>[^|>]+)\>\s*$"
     markup_class = "embedded item"
     example = "<!page=slug-of-some-exercise>"
     inline = False
@@ -625,12 +622,8 @@ class EmbeddedPageMarkup(Markup):
         settings = {"slug": matchobj.group("page_slug")}
         revision = None
         instance = state["context"].get("instance")
-        try:
-            revision = int(matchobj.group("revision"))
-        except AttributeError:
-            pass
-        except TypeError:
-            pass
+
+        print(state["context"])
 
         try:
             try:

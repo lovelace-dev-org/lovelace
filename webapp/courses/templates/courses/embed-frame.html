@@ -159,7 +159,7 @@
     {% if block_type == "extra" %}
       {{ block_data|safe }}
     {% else %}
-      {% if course_staff %}
+      {% if course_staff and revision is None %}
         <span>
           {% if block_type not in uneditable_markups %}
             <a class="staff-only collapsed"

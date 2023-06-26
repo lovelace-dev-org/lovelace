@@ -473,6 +473,14 @@ def edit_form(request, course, instance, content, action):
         "request": request,
     }
 
+    try:
+        node = ContentGraph.objects.get(instance=instance, content=content)
+    except ContentGraph.DoesNotExist:
+        node = EmbeddedLink.objects.get(instance=instance, embedded_page=content)
+
+    if node.revision is not None:
+        return HttpResponse(_("Cannot edit content through archived pages"))
+
     if request.method == "POST":
         block_type = request.POST.get("block_type")
         position = {
@@ -594,9 +602,10 @@ def termify(request, course, instance):
             cg.content for cg in
             ContentGraph.objects.filter(instance=instance)
         ]
+        parser = markupparser.MarkupParser()
         with reversion.create_revision():
             for page in embeds + pages:
-                termified_lines = markupparser.MarkupParser.replace(
+                termified_lines = parser.replace(
                     page.content,
                     form.cleaned_data["replace_in"],
                     replaces

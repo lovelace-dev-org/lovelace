@@ -819,6 +819,8 @@ class ContentPage(models.Model):
         """
         from courses import markupparser
 
+        parser = markupparser.MarkupParser()
+
         blocks = []
         embedded_pages = []
         instance = context["instance"]
@@ -841,7 +843,7 @@ class ContentPage(models.Model):
             # Render the page
             context["content"] = self
             context["lang_code"] = lang_code
-            markup_gen = markupparser.MarkupParser.parse(content, request, context, embedded_pages)
+            markup_gen = parser.parse(content, request, context, embedded_pages)
             segment = ""
             pages = []
             for chunk in markup_gen:
@@ -896,21 +898,11 @@ class ContentPage(models.Model):
         from courses import markupparser
 
         embedded_content = []
-        markup_gen = markupparser.MarkupParser.parse(self.content, context=context)
+        parser = markupparser.MarkupParser()
+        markup_gen = parser.parse(self.content, context=context)
         for chunk in markup_gen:
             try:
                 embedded_content.append(chunk)
-            except ValueError as e:
-                raise markupparser.EmbeddedObjectNotAllowedError(
-                    "embedded pages are not allowed inside embedded pages"
-                )
-        return embedded_content
-
-        embedded_content = ""
-        markup_gen = markupparser.MarkupParser.parse(self.content, context=context)
-        for chunk in markup_gen:
-            try:
-                embedded_content += chunk[1]
             except ValueError as e:
                 raise markupparser.EmbeddedObjectNotAllowedError(
                     "embedded pages are not allowed inside embedded pages"
