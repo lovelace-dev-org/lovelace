@@ -84,6 +84,12 @@
                 onclick="toc.fetch_form(event, this);"
                 data-url="{% url 'courses:regen_instance_cache' course instance %}">
         </button>
+        <button type="button"
+                class="staff-base-button termify-button"
+                title="{% trans 'Termify words in this instance' %}"
+                onclick="toc.fetch_form(event, this);"
+                data-url="{% url 'courses:termify' course instance %}">
+        </button>
     </div>
   </div>
 {% endif %}
@@ -222,19 +228,33 @@
   {% if content.is_answerable %}
     {% include "courses/task.html" %}
   {% elif not content.is_answerable %}
-    {% for block_type, block_data, line_idx in content_blocks %}
+    {% for block_type, block_data, line_idx, line_count in content_blocks %}
       {% if block_type == "calendar" %}
         {% calendar block_data %}
       {% elif block_type == "embedded" %}
         {% embed_frame block_data %}
       {% else %}
-        {% if course_staff and block_type not in uneditable_markups %}
-          <img class="content-edit-button staff-only collapsed"
-            src="{% static 'courses/edit.png' %}"
-            onclick=""
-            data-line-idx="{{ line_idx }}"
-            data-csrf="{{ csrf_token }}">
-        {% endif %}
+          {% if course_staff %}
+            <span>
+              {% if block_type not in uneditable_markups %}
+                <a class="staff-only collapsed"
+                  href="{{ edit_content_url }}"
+                  onclick="editing.show_widget_panel(event, this)"
+                  data-querystring="line={{ line_idx }}&block={{ block_type }}&size={{ line_count }}"
+                  data-csrf="{{ csrf_token }}"><img src="{% static 'courses/edit.png' %}"></a>
+              {% endif %}
+              <a class="staff-only collapsed"
+                href="{{ delete_content_url }}"
+                onclick="editing.show_widget_panel(event, this)"
+                data-querystring="line={{ line_idx }}&block={{ block_type }}&size={{ line_count }}"
+                data-csrf="{{ csrf_token }}"><img src="{% static 'courses/delete-16.png' %}"></a>
+              <a class="staff-only collapsed"
+                href="{{ add_content_url }}"
+                onclick="editing.show_widget_panel(event, this)"
+                data-querystring="line={{ line_idx }}&size={{ line_count }}"
+                data-csrf="{{ csrf_token }}"><img src="{% static 'courses/expand-16.png' %}"></a>
+            </span>
+          {% endif %}
         {{ block_data|safe }}
       {% endif %}
     {% endfor %}

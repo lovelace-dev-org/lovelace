@@ -791,6 +791,35 @@ class BlockTypeSelectForm(forms.Form):
             required=True
         )
 
+
+class TermifyForm(forms.Form):
+
+    baseword = forms.CharField(label=_("Base word"), required=True)
+    inflections = forms.CharField(label=_("Inflections (comma sep.)"), required=False)
+
+    def __init__(self, *args, **kwargs):
+        terms = kwargs.pop("course_terms")
+        super().__init__(*args, **kwargs)
+        self.fields["replace_in"] = forms.MultipleChoiceField(
+            widget=forms.CheckboxSelectMultiple,
+            label=_("Replace in"),
+            choices=[
+                ("list", "List"),
+                ("paragraph", "Paragraph"),
+                ("table", "Table"),
+            ],
+            required=False
+        )
+        self.fields["term"] = forms.ChoiceField(
+            widget=forms.Select,
+            label=_("Term"),
+            choices=[(term.name, term.name) for term in terms]
+        )
+
+
+
+
+
 markupparser.MarkupParser.register_form("code", "edit", CodeEditForm)
 markupparser.MarkupParser.register_form("embedded_page", "edit", TaskCreateForm)
 markupparser.MarkupParser.register_form("embedded_page", "include", TaskIncludeForm)

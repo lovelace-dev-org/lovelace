@@ -267,6 +267,37 @@ class MarkupParser:
             yield ("empty", "", 0, 0)
 
 
+    @classmethod
+    def replace(cls, text, replace_in, replaces):
+        if not cls._ready:
+            raise ParserUninitializedError("compile() not called")
+
+        cls._state = {
+            "open_block": "paragraph",
+            "open": False
+        }
+        lines = iter(text.splitlines())
+        lines_out = []
+
+        replaces = [
+            (re.compile(
+                f"(?P<prefix>\\b)[{old[0].upper()}{old[0]}]{old[1:]}(?P<punct>[- .?!;:])"
+            ), new)
+            for old, new in replaces
+        ]
+
+        for block_type, group in itertools.groupby(lines, cls._get_line_kind):
+            if block_type in replace_in:
+                for line in group:
+                    for old_re, new in replaces:
+                        line = old_re.sub(f"\\g<prefix>{new}\\g<punct>", line)
+                    lines_out.append(line)
+            else:
+                lines_out.extend(list(group))
+
+        return lines_out
+
+
 markups = []
 link_markups = []
 

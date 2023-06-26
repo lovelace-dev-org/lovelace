@@ -184,6 +184,11 @@ urlpatterns = [
         staff_views.regen_instance_cache,
         name="regen_instance_cache",
     ),
+    path(
+        "staff/<course:course>/<instance:instance>/termify/",
+        staff_views.termify,
+        name="termify",
+    ),
     # Staff URLs for messages
     path(
         "staff/<course:course>/<instance:instance>/mass_email/",

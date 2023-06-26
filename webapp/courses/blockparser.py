@@ -156,7 +156,7 @@ def parse_term_tag(parsed_string, tag, term_name, term_text, context):
         return parsed_string
 
     if context is not None and context.get("instance") is None:
-        parsed_string += f"<span class='term'>{term_text}</span>"
+        parsed_string += f'<span class="term">{term_text}</span>'
         return parsed_string
 
     div_id = f"#{slugify(term_name, allow_unicode=True)}-term-div"
@@ -170,7 +170,7 @@ def parse_term_tag(parsed_string, tag, term_name, term_text, context):
             "onmouseleave": on_mouse_leave,
         }
     )
-    parsed_string += f"<span class='term'>{term_text}</span>"
+    parsed_string += f'<span class="term">{term_text}</span>'
     parsed_string += tag.htmlend()
     return parsed_string
 

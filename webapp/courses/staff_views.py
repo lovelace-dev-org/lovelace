@@ -24,8 +24,10 @@ from courses.models import (
     CourseInstance,
     ContentGraph,
     ContentPage,
+    EmbeddedLink,
     Lecture,
     StudentGroup,
+    Term,
     User,
 )
 from courses.forms import (
@@ -44,6 +46,7 @@ from courses.edit_forms import (
     save_form,
     place_into_content,
     BlockTypeSelectForm,
+    TermifyForm,
 )
 from utils.access import (
     determine_media_access,
@@ -564,6 +567,62 @@ def add_form(request, course, instance, content):
     }
     return HttpResponse(form_t.render(form_c, request))
 
+
+@ensure_staff
+def termify(request, course, instance):
+    terms = Term.objects.filter(course=course)
+    if request.method == "POST":
+        form = TermifyForm(request.POST, course_terms=terms)
+        if not form.is_valid():
+            errors = form.errors.as_json()
+            return JsonResponse({"errors": errors}, status=400)
+
+        words_to_replace = [form.cleaned_data["baseword"]]
+        if form.cleaned_data["inflections"]:
+            words_to_replace.extend(form.cleaned_data["inflections"].split(","))
+
+        replaces = []
+        for word in words_to_replace:
+            word = word.strip()
+            replaces.append((word, f"[!term={form.cleaned_data['term']}!]{word}[!term!]"))
+
+        embeds = [
+            link.embedded_page for link in
+            EmbeddedLink.objects.filter(instance=instance)
+        ]
+        pages = [
+            cg.content for cg in
+            ContentGraph.objects.filter(instance=instance)
+        ]
+        with reversion.create_revision():
+            for page in embeds + pages:
+                termified_lines = markupparser.MarkupParser.replace(
+                    page.content,
+                    form.cleaned_data["replace_in"],
+                    replaces
+                )
+                page.content = "\n".join(termified_lines)
+                page.save()
+            reversion.set_user(request.user)
+
+        for page in pages:
+            regenerate_nearest_cache(page)
+            squash_revisions(page, 1)
+
+        for page in embeds:
+            squash_revisions(page, 1)
+        return JsonResponse({"status": "ok"})
+
+    form = TermifyForm(course_terms=terms)
+    form_t = loader.get_template("courses/base-edit-form.html")
+    form_c = {
+        "form_object": form,
+        "submit_url": request.path,
+        "html_id": "instance-settings-form",
+        "html_class": "toc-form staff-only",
+        "disclaimer": "Termify a word in all pages"
+    }
+    return HttpResponse(form_t.render(form_c, request))
 
 
 # ^
