@@ -8,7 +8,7 @@ from django.utils import translation
 from reversion.models import Version
 from modeltranslation.translator import translator
 import courses.models as cm
-from courses.widgets import ContentPreviewWidget
+from courses.widgets import ContentPreviewWidget, AdminFileWidget
 from utils.access import determine_access, determine_media_access
 from utils.archive import find_latest_version
 
@@ -367,7 +367,7 @@ class TranslationStaffForm(ModelForm):
         fields.sort(key=meta_listing_index)
         return fields
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, requires=True, **kwargs):
         super().__init__(*args, **kwargs)
         self._instance = kwargs.get("instance")
         self._translated_field_names = []
@@ -384,12 +384,12 @@ class TranslationStaffForm(ModelForm):
                 for lang_code, __ in languages:
                     lang_field_name = f"{field_name}_{lang_code}"
                     if lang_code == settings.MODELTRANSLATION_DEFAULT_LANGUAGE:
-                        self.fields[lang_field_name] = forms.CharField(
+                        self.fields[lang_field_name] = field.formfield(
                             label=f"{field.verbose_name} (default)".capitalize(),
-                            required=not field.blank,
+                            required=requires and not field.blank,
                         )
                     else:
-                        self.fields[lang_field_name] = forms.CharField(
+                        self.fields[lang_field_name] = field.formfield(
                             label=f"{field.verbose_name} ({lang_code})".capitalize(),
                             required=False
                         )
@@ -397,6 +397,9 @@ class TranslationStaffForm(ModelForm):
                         self.fields[lang_field_name].widget = forms.Textarea(
                             attrs={"class": "generic-textfield", "rows": 5}
                         )
+                    elif isinstance(field, models.FileField):
+                        self.fields[lang_field_name].widget = forms.ClearableFileInput()
                     self._translated_field_names.append(lang_field_name)
                 self.fields.pop(field_name)
+
 

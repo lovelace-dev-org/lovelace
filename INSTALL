@@ -1,175 +1,358 @@
-Deploying Lovelace
-==================
+# Deploying Lovelace in Ubuntu for Development
 
-Short guide for minimal deployment on Ubuntu server 14.04.
+## Install and setup packages
 
-Firstly, update your packages.
-sudo apt-get update && sudo apt-get dist-upgrade
+This assumes installing all components on the same machine for development.
+For production, installing all main services on separate machines is recommeneded.
+
+```
+sudo apt install git
+sudo apt install rabbitmq-server
+sudo apt install redis-server
+sudo apt install postgresql
+sudo apt install python3-10
+```
+
+Start and enable Postgres
+
+```
+sudo service postgresql start
+sudo service postgresql enable
+```
 
 
-Postgresql
-––––––––––
+## Create database and user
 
-sudo apt-get install postgresql
-
-
-Creating a postgresql database and user
----------------------------------------
-
+```
 sudo -u postgres createuser -P lovelace
-<Enter the desired password>
 sudo -u postgres createdb --owner=lovelace lovelace
+```
 
 
-Configuring postgresql
-----------------------
+## Setting up users and groups
 
-Note! Instead of 10.0.0.1, use your desired LAN accessible IP.
+We're going to create users for lovelace and the checker. The checker users can be skipped for
+development installations. In production installations they are used to limit privileges so that
+student code cannot access anything outside its temporary folder.
 
-sudo vim /etc/postgresql/9.3/main/postgresql.conf
-listen_addresses = 'localhost,10.0.0.1'
-
-sudo vim /etc/postgresql/9.3/main/pg_hba.conf
-host    lovelace        lovelace        10.0.0.1/24              md5
-
-
-Testing postgresql
-------------------
-
-psql --host=10.0.0.1 --dbname=lovelace --username=lovelace --password
+```
+useradd --system lovelace
+useradd --system checker
+useradd --system student
+```
 
 
-Python 3.4
-––––––––––
 
-Cloning the repository
-----------------------
+## Cloning the Lovelace repository
 
-Install git
-
-sudo apt-get install git
-
-Clone the repository
-
-mkdir lovelace
-cd lovelace
-git clone https://github.com/miikkas/lovelace.git
+```
+sudo git clone https://github.com/lovelace-dev-org/lovelace.git /opt/lovelace
+sudo chown lovelace:lovelace /opt/lovelace
+```
 
 
-Installing pip
---------------
+## Making a virtual environment
 
-sudo apt-get install python3-pip
+```
+virtualenv /opt/lovelace/venv
+source opt/lovelace/venv/bin/activate
+pip install -r /opt/lovelace/requirements.txt
+```
 
+## Configure Lovelace
 
-Fixing Python 3.4 venv in Ubuntu
---------------------------------
+Make a new file e.g. development.py or production.py to
+```
+/opt/lovelace/webapp/lovelace/settings/
+```
 
-- Download python 3.4 sources from http://www.python.org
-- Unpack them
-  * tar -Jxf sources.tar.xz
-- Copy ensurepip module to distribution's Python library
-  * sudo cp -r Lib/ensurepip /usr/lib/python3.4/
+Start the file with to copy all factory settings
+```
+from lovelace.settings.factory import *
+```
 
+Override any setting variables that you need to change. See the factory.py configuration file
+for all available options and instructions on how to set them.
 
-Creating and activating venv
-----------------------------
-
-Create a virtualenv
-
-mkdir /path/to/your/lovelace/venv
-pyvenv-3.4 /path/to/your/lovelace/venv/
-
-Activate the virtualenv
-
-cd /path/to/your/lovelace
-source venv/bin/activate
-
-Note! You shouldn't create the virtualenv root into the 'webapp' directory,
-since this will cause problems with manage.py makemessages.
+If you want to make your configuration the default, edit /opt/lovelace/webapp/lovelace/settings/__init__.py
+file to import your settings.
 
 
-Installing the dependencies
----------------------------
+## Initialize the database
 
-Install the dependencies' dependencies
-
-sudo apt-get install postgresql-server-dev-all libpq-dev
-sudo apt-get install libjpeg-dev
-sudo apt-get install redis-server redis-tools
-sudo apt-get install rabbitmq-server
-
-Install the Python packages
-
-pip install python-magic
-pip install psycopg2
-pip install pygments
-pip install pillow
-pip install django
-pip install django-redis
-pip install celery[redis]
-pip install django-allauth
-pip install django-modeltranslation
-pip install django-reversion
-#pip install django-smuggler
-#pip install django-nested-inline
-
-
-Edit the configuration
-----------------------
-
-Edit /path/to/your/lovelace/webapp/lovelace/settings.py
-
-Change the database engine to postgresql by following this guide:
-https://docs.djangoproject.com/en/dev/ref/settings/#databases
-
-Also set the user to lovelace, name to lovelace and password to the
-password you entered for postgresql.
-
-
-Initialize the database
------------------------
-
+```
 python manage.py makemigrations
 python manage.py migrate
-python manage.py syncdb
+python manage.py createsuperuser
+```
 
+## Initialize the static & uploaded files
 
-Initialize the static & uploaded files
---------------------------------------
-
-mkdir /path/to/your/lovelace/webapp/static
+```
 python manage.py collectstatic
+mkdir -p /path/to/your/media/root/upload/images
+sudo chown -R www-data /path/to/your/media/root/upload/
+```
 
-mkdir -p /path/to/your/lovelace/webapp/upload/images
-sudo chown -R www-data /path/to/your/lovelace/webapp/upload/
+## Running the development server
 
-
-Apache
-––––––
-
-Install Apache
-
-sudo apt-get install apache2
-
-Install mod_wsgi for Apache2 and Python 3
-
-sudo apt-get install libapache2-mod-wsgi-py3
+```
+python manage.py runserver
+```
 
 
-Configuring Apache
-------------------
+## Configuring celery
 
-Run the automatic configuration generator
+```
+sudo systemctl start rabbitmq-server
+sudo systemctl enable rabbitmq-server
+```
 
-cd /path/to/your/lovelace
-python create_apache_conf.py
+Run a worker from screen
 
-Copy & paste the settings to your Apache conf
+```
+screen -S checker1
+celery -A lovelace worker -Q default --loglevel=info -n checker1@%h
+```
 
-sudo vim /etc/apache2/apache2.conf
 
-Restart apache
 
-sudo service apache2 restart
+# Production Installation with Apache
+
+## Installing/compiling mod_wsgi
+
+If running in production with Apache, you will need mod_wsgi
+
+```
+apt install libapache2-mod-wsgi-python3
+```
+
+Restart apache. After doing this check /var/log/httpd/error_log to see if there's a warning for differing python versions
+e.g.
+
+```
+[wsgi:warn] [pid xxxxx] mod_wsgi: Compiled for Python/3.10.5.
+[wsgi:warn] [pid xxxxx] mod_wsgi: Runtime using Python/3.10.6.
+```
+
+If this is the case you need to compile mod_wsgi manually, so remove it
+
+apt remove libapache2-mod-wsgi-python3
+
+Download the latest mod_wsgi source code
+https://github.com/GrahamDumpleton/mod_wsgi/releases
+
+Extract and cd into the folder:
+./configure --with-python=/usr/bin/python3.10
+make
+make install
+
+Create a new file /etc/httpd/conf.modules.d/10-mod_wsgi.conf
+with the following contents
+
+LoadModule wsgi_module modules/mod_wsgi.so
+
+Restart apache, check the error log and there should be no warning
+
+
+## Configuring apache
+
+Create a configuration file for your site in /etc/httpd/conf.d, e.g. lovelace.conf
+See example configuration at the end of this file.
+
+
+## Access control and SELinux
+
+wsgi.py needs to be executable
+```
+chmod a+x /var/lovelace/lovelace/webapp/lovelace/wsgi.py
+```
+
+If using SELinux (targeted mode), Lovelace needs a bunch of permissions to work.
+
+
+```
+chcon -R -t httpd_user_content_t /var/lovelace/lovelace
+chcon -R -t httpd_sys_script_exec_t /var/lovelace/venv/lib64/python3.5/site-packages
+
+setsebool -P httpd_can_network_connect 1
+setsebool -P httpd_can_network_connect_db 1
+setsebool -P httpd_can_sendmail 1
+```
+
+
+
+
+
+## Optional: SSL
+
+Make a certificate signing request and get a certificate from your CA. If your organization does not
+have a certificate provider, use Let's Encrypt (https://letsencrypt.org/getting-started/).
+
+Put the certificate file(s) and your generated key into
+```
+/etc/pki/tls/certs
+```
+
+If SELinux is in use, do the following to make sure they have the proper context:
+
+```
+chcon --reference /etc/pki/tls/certs/localhost.crt /etc/pki/tls/certs/your_certificate.crt
+```
+
+Edit /etc/httpd/conf.d/ssl.conf
+Change the following directives to point at your files
+
+```
+SSLCertificateFile
+SSLCertificateKeyFile
+```
+
+Cut and paste your sites configuration under the VirtualHost directive in ssl.conf
+
+Replace your HTTP configuration with
+
+```
+<VirtualHost *:80>
+
+  ServerName your.server.somewhere
+  Redirect permanent / https://your.server.somewhere
+
+</VirtualHost>
+```
+
+## Optional: Shibboleth
+
+Lovelace support Shibboleth authentication for organizations that use it.
+
+1. Install shibboleth and mod_shib
+
+Install django-shibboleth-remoteuser:
+pip install git+https://github.com/Brown-University-Library/django-shibboleth-remoteuser.git
+
+2. generate certificates if needed
+
+3. Configure shibboleth (/etc/shibboleth/shibboleth2.xml)
+fill in ApplicationDefaults entityID (e.g. http://your.server.org/shibboleth)
+fill in SSO entityID (from your IdP)
+
+fill in MetaDataProvider as instructed by your IdP
+check that CredentialResolver points to your certificates
+
+generate metadata
+
+```
+./metagen.sh -c your_cert -h server_url -o organization_name -u organization_url -a admin_info > sp-metadata.xml
+```
+
+where admin_info is "first_name/last_name/email"
+
+4. send the metadata to your IdP and request the attributes you want
+
+5. edit attribute-map.xml to extract the attributes you want
+
+6. wait for your IdP to add your metadata
+
+7. activate shibboleth
+
+```
+systemctl start shibd
+apachectl restart
+```
+
+try
+https://your.server.org/Shibboleth.SSO/Login
+https://your.server.org/Shibboleth.SSO/Session
+
+the latter should show all of your attributes
+
+8. setup apache to give you shibboleth headers
+
+add
+```
+<Location />
+    AuthType shibboleth
+    Require shibboleth
+</Location>
+```
+to your apache configuration - this makes shibboleth attributes available
+
+9. setup lovelace to support shibboleth
+
+Edit /opt/lovelace/webapp/lovelace/yoursettings.py
+
+add 'shibboleth.backends.ShibbolethRemoteUserBackend' to AUTHENTICATION_BACKENDS
+
+AND
+
+add 'shibboleth.middleware.ShibbolethRemoteUserMiddleware' to MIDDLEWARE_CLASSES after 'django.contrib.auth.middleware.AuthenticationMiddleware'
+
+OR
+
+add 'courses.middleware.LovelaceShibbolethRemoteUser' instead if you want to
+get student_id from Shibboleth (supports schacPersonalUniqueCode)
+
+set
+```
+LOGIN_URL = 'https://your.server.org/Shibboleth.sso/Login'
+SHIBBOLETH_LOGOUT_URL = 'https://your.server.org/Shibboleth.sso/Logout?return=%s'
+SHIBBOLETH_LOGOUT_REDIRECT_URL = 'https://your.server.org'
+```
+
+make
+```
+SHIBBOLETH_ATTRIBUTE_MAP = {
+    "shib-user": (True, "username"),
+    "shib-given-name": (True, "first_name"),
+    "shib-sn": (True, "last_name"),
+    "shib-mail": (False, "email"),
+}
+```
+
+replacing "shib-user" etc. with the attribute names from /Shibboleth.sso/Session
+
+add 'shibboleth' to INSTALLED_APPS
+
+add these two lines to the settings file
+```
+ACCOUNT_USERNAME_VALIDATORS = "courses.adapter.username_validators"
+ACCOUNT_ADAPTER = "courses.adapter.LovelaceAccountAdapter"
+```
+
+
+
+# Appendix 1. Example apache configuration
+
+WSGIPythonPath /opt/lovelace/venv/lib64/python3.10/site-packages:/opt/lovelace/webapp
+
+<VirtualHost *:80>
+
+  ServerName your.server.somewhere
+  ServerAdmin admin@somewhere
+  UseCanonicalName On
+
+  Alias /media/ /var/www/lovelace/upload/
+  Alias /static/ /var/www/lovelace/static/
+
+  <Directory /var/www/lovelace/static>
+      Order deny,allow
+      Allow from all
+  </Directory>
+
+  <Directory /var/www/lovelace//upload>
+      Order deny,allow
+      Allow from all
+  </Directory>
+
+  WSGIScriptAlias / /opt/lovelace/webapp/lovelace/wsgi.py
+
+  <Directory /opt/lovelace/webapp/lovelace>
+    <Files wsgi.py>
+      Order allow,deny
+      Allow from all
+      Require all granted
+    </Files>
+  </Directory>
+
+</VirtualHost>
 

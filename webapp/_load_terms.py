@@ -17,7 +17,10 @@ def select_instance():
     instances = CourseInstance.objects.all().order_by("id").values_list("id", "name_fi")
 
     if len(instances) == 0:
-        print("Error: No course instances. Create a course instance first.", file=sys.stderr)
+        print(
+            "Error: No course instances. Create a course instance first.",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     ids = set()
