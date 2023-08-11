@@ -1,4 +1,5 @@
 from django.core.cache import cache
+from django.urls import reverse
 from django.utils import translation
 from django.utils.text import slugify
 from reversion.models import Version
@@ -106,13 +107,17 @@ def render_terms(request, instance, context):
         for term in terms:
             slug = slugify(term.name, allow_unicode=True)
             description = "".join(
-                markupparser.MarkupParser.parse(term.description, request, term_context)
+                block[1] for block in markupparser.MarkupParser.parse(
+                    term.description, request, term_context
+                )
             ).strip()
             tabs = [
                 (
                     tab.title,
                     "".join(
-                        markupparser.MarkupParser.parse(tab.description, request, term_context)
+                        block[1] for block in markupparser.MarkupParser.parse(
+                            tab.description, request, term_context
+                        )
                     ).strip(),
                 )
                 for tab in term.termtab_set.all().order_by("id")
@@ -130,6 +135,7 @@ def render_terms(request, instance, context):
                     "description": description,
                     "tabs": tabs,
                     "links": final_links,
+                    "edit_url": reverse(f"admin:courses_term_change", args=(term.id,))
                 }
             )
             term_data = {

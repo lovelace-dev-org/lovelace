@@ -57,10 +57,31 @@
 
 {% block page-content %}
 {% if not content.is_answerable %}
-  {% if user.is_staff and user.is_active %}
+  {% if course_staff %}
     {% content_meta %}
   {% endif %}
-  {% for block_type, block_data in content_blocks %}
+  {% for block_type, block_data, line_idx, line_count in content_blocks %}
+    {% if course_staff and revision is None %}
+      <span>
+        {% if block_type not in uneditable_markups %}
+          <a class="staff-only collapsed"
+            href="{{ edit_content_url }}"
+            onclick="editing.show_widget_panel(event, this)"
+            data-querystring="line={{ line_idx }}&block={{ block_type }}&size={{ line_count }}"
+            data-csrf="{{ csrf_token }}"><img src="{% static 'courses/edit.png' %}"></a>
+        {% endif %}
+        <a class="staff-only collapsed"
+          href="{{ delete_content_url }}"
+          onclick="editing.show_widget_panel(event, this)"
+          data-querystring="line={{ line_idx }}&block={{ block_type }}&size={{ line_count }}"
+          data-csrf="{{ csrf_token }}"><img src="{% static 'courses/delete-16.png' %}"></a>
+        <a class="staff-only collapsed"
+          href="{{ add_content_url }}"
+          onclick="editing.show_widget_panel(event, this)"
+          data-querystring="line={{ line_idx }}&size={{ line_count }}"
+          data-csrf="{{ csrf_token }}"><img src="{% static 'courses/expand-16.png' %}"></a>
+      </span>
+    {% endif %}
     {% if block_type == "calendar" %}
       {% calendar block_data %}
     {% elif block_type == "embedded" %}

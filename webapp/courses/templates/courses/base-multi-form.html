@@ -27,7 +27,7 @@
               </tr>
             </thead>
             <tbody>
-          {% endif %}
+            {% endif %}
             <tr>
               {% for field in form.visible_fields %}
                 <td>{{ field }}</td>
@@ -38,7 +38,7 @@
                 {% endfor %}
               </td>
             </tr>
-        {% endfor %}
+          {% endfor %}
           <tr id="empty_form" style="display:none">
             {% for field in form_object.empty_form.visible_fields %}
               <td>{{ field }}</td>
@@ -55,7 +55,7 @@
         <button type="button"
             class="staff-base-button add-button"
             title="{% trans 'Add new' %}"
-            onclick="duplicate_subform(event, this);"
+            onclick="duplicate_subform_tr(event, this);"
             >+
         </button>
       </div>

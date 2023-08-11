@@ -165,14 +165,29 @@ urlpatterns = [
         name="send_message",
     ),
     path(
-        "staff/<course:course>/<instance:instance>/<content:content>/regen_cache",
+        "staff/<course:course>/<instance:instance>/<content:content>/regen_cache/",
         staff_views.regen_page_cache,
         name="regen_page_cache",
     ),
     path(
-        "staff/<course:course>/<instance:instance>/regen_cache",
+        "staff/<course:course>/<instance:instance>/<content:content>/editform/<str:action>/",
+        staff_views.edit_form,
+        name="content_edit_form",
+    ),
+    path(
+        "staff/<course:course>/<instance:instance>/<content:content>/add/",
+        staff_views.add_form,
+        name="content_add_form",
+    ),
+    path(
+        "staff/<course:course>/<instance:instance>/regen_cache/",
         staff_views.regen_instance_cache,
         name="regen_instance_cache",
+    ),
+    path(
+        "staff/<course:course>/<instance:instance>/termify/",
+        staff_views.termify,
+        name="termify",
     ),
     # Staff URLs for messages
     path(

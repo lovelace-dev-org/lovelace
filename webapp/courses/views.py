@@ -190,7 +190,7 @@ def content(request, course, instance, content, pagenum=None, **kwargs):
             course_staff = True
 
     if not content_graph.visible and not course_staff:
-        return HttpResponseNotFound(_("This content is only available to course staff"))
+        return HttpResponseNotFound(_("This content is (currently) only available to course staff"))
 
     if content_graph.require_enroll:
         if not (enrolled or course_staff):
@@ -242,6 +242,24 @@ def content(request, course, instance, content, pagenum=None, **kwargs):
         "revision": revision,
         "enrolled": enrolled,
         "course_staff": course_staff,
+        "uneditable_markups": settings.UNEDITABLE_MARKUPS,
+        "edit_content_url": reverse("courses:content_edit_form", kwargs={
+            "course": course,
+            "instance": instance,
+            "content": content,
+            "action": "edit",
+        }),
+        "delete_content_url": reverse("courses:content_edit_form", kwargs={
+            "course": course,
+            "instance": instance,
+            "content": content,
+            "action": "delete",
+        }),
+        "add_content_url": reverse("courses:content_add_form", kwargs={
+            "course": course,
+            "instance": instance,
+            "content": content,
+        }),
     }
     if "frontpage" in kwargs:
         return c

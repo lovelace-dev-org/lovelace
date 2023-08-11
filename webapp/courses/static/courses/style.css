@@ -980,7 +980,6 @@ section.content {
 
     section.content table {
         border-collapse: collapse;
-        border:  none;
         margin-bottom: 1em;
     }
 
@@ -1113,10 +1112,10 @@ section.content {
         section.content div.embedded-page {
             position: relative;
             left: -120px;
-            border-color: #d0d0d0;
+            /*border-color: #d0d0d0;
             border-style: solid;
             border-width: 2px 0;
-            border: 0;
+            border: 0;*/
             width: 1160px;
             background: #caeaca;
             padding: 1em 40px 2em 120px;
@@ -1891,6 +1890,11 @@ div.expand-handle {
                 #fff;
 }
 
+.termify-button {
+    background: no-repeat url("/static/courses/termify-16.png") center/16px,
+                #fff;
+}
+
 div.task-meta-score {
     display: block;
     font-size: 1.2em;
@@ -1942,4 +1946,22 @@ div.sub-header-container {
 
 div.index-course-header {
     cursor: pointer;
+}
+
+.content-edit-button {
+    left: -60px;
+}
+
+svg, iframe {
+    display: block;
+}
+
+.edit-highlight {
+    border: dashed black;
+}
+
+.sub-rectangle {
+    border: 2px solid #d0d0d0;
+    background: #daeeda;
+    margin: 2px;
 }

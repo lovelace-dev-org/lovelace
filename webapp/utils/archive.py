@@ -1,3 +1,4 @@
+import datetime
 import os.path
 from collections import defaultdict
 from django.core.exceptions import ObjectDoesNotExist
@@ -107,3 +108,19 @@ def find_latest_version(model_instance, before=None):
     if before:
         versions = versions.filter(revision__date_created__lte=before)
     return versions.latest("revision__date_created")
+
+
+def squash_revisions(model_instance, hours):
+    """
+    Finds versions of model_instance that are not older than given number of hours
+    and deletes all but the latest of them. Use this in tools that are likely to create
+    a lot of revisions when content is being edited.
+    """
+
+    now = datetime.datetime.now()
+    span = datetime.timedelta(hours=hours)
+    versions = Version.objects.get_for_object(model_instance)
+    latest = versions.latest("revision__date_created")
+    versions.filter(revision__date_created__gte=now-span).exclude(id=latest.id).delete()
+
+

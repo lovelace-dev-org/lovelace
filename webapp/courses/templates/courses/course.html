@@ -84,6 +84,12 @@
                 onclick="toc.fetch_form(event, this);"
                 data-url="{% url 'courses:regen_instance_cache' course instance %}">
         </button>
+        <button type="button"
+                class="staff-base-button termify-button"
+                title="{% trans 'Termify words in this instance' %}"
+                onclick="toc.fetch_form(event, this);"
+                data-url="{% url 'courses:termify' course instance %}">
+        </button>
     </div>
   </div>
 {% endif %}
@@ -134,6 +140,7 @@
           {% if course_staff %}
 
             <img class="toc-drag-target drop-before collapsed" 
+                 id="drop-before-{{ item.node_id }}"
                  src="{% static 'courses/drop_before.png' %}"
                  ondragover="toc.over_drag_target(event);"
                  ondrop="toc.drop_to_target(event, {{ item.node_id }});"
@@ -142,6 +149,7 @@
                  data-csrf="{{ csrf_token }}">
 
             <img class="toc-drag-target drop-as-child collapsed" 
+                 id="drop-inside-{{ item.node_id }}"
                  src="{% static 'courses/drop_as_child.png' %}"
                  ondragover="toc.over_drag_target(event);"
                  ondrop="toc.drop_to_target(event, {{ item.node_id }});"
@@ -150,6 +158,7 @@
                  data-csrf="{{ csrf_token }}">
           
             <img class="toc-drag-target drop-after collapsed" 
+                 id="drop-after-{{ item.node_id }}"
                  src="{% static 'courses/drop_after.png' %}"
                  ondragover="toc.over_drag_target(event);"
                  ondrop="toc.drop_to_target(event, {{ item.node_id }});"
@@ -219,12 +228,33 @@
   {% if content.is_answerable %}
     {% include "courses/task.html" %}
   {% elif not content.is_answerable %}
-    {% for block_type, block_data in content_blocks %}
+    {% for block_type, block_data, line_idx, line_count in content_blocks %}
       {% if block_type == "calendar" %}
         {% calendar block_data %}
       {% elif block_type == "embedded" %}
-        {% embed_frame block_data %}    
+        {% embed_frame block_data %}
       {% else %}
+          {% if course_staff and revision is None %}
+            <span>
+              {% if block_type not in uneditable_markups %}
+                <a class="staff-only collapsed"
+                  href="{{ edit_content_url }}"
+                  onclick="editing.show_widget_panel(event, this)"
+                  data-querystring="line={{ line_idx }}&block={{ block_type }}&size={{ line_count }}"
+                  data-csrf="{{ csrf_token }}"><img src="{% static 'courses/edit.png' %}"></a>
+              {% endif %}
+              <a class="staff-only collapsed"
+                href="{{ delete_content_url }}"
+                onclick="editing.show_widget_panel(event, this)"
+                data-querystring="line={{ line_idx }}&block={{ block_type }}&size={{ line_count }}"
+                data-csrf="{{ csrf_token }}"><img src="{% static 'courses/delete-16.png' %}"></a>
+              <a class="staff-only collapsed"
+                href="{{ add_content_url }}"
+                onclick="editing.show_widget_panel(event, this)"
+                data-querystring="line={{ line_idx }}&size={{ line_count }}"
+                data-csrf="{{ csrf_token }}"><img src="{% static 'courses/expand-16.png' %}"></a>
+            </span>
+          {% endif %}
         {{ block_data|safe }}
       {% endif %}
     {% endfor %}

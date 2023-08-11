@@ -483,7 +483,7 @@ class CourseMedia(models.Model):
     """
 
     name = models.CharField(
-        verbose_name="Name for reference in content", max_length=200, unique=True
+        verbose_name="Unique name identifier", max_length=200, unique=True
     )
 
     def save(self, *args, **kwargs):
@@ -539,6 +539,16 @@ class Image(CourseMedia):
 
     def __str__(self):
         return self.name
+
+    def serialize_translated(self):
+        data = {
+            "name": self.name,
+        }
+        for lang_code, __ in settings.LANGUAGES:
+            data[f"description{lang_code}"] = getattr(self, f"description{lang_code}", "")
+            data[f"fileinfo_{lang_code}"] = str(getattr(self, f"fileinfo_{lang_code}", ""))
+        return data
+
 
 
 class VideoLink(CourseMedia):
@@ -719,9 +729,10 @@ class ContentPage(models.Model):
         ("MULTIPLE_CHOICE_EXERCISE", "Multiple choice exercise"),
         ("CHECKBOX_EXERCISE", "Checkbox exercise"),
         ("FILE_UPLOAD_EXERCISE", "File upload exercise"),
-        ("CODE_INPUT_EXERCISE", "Code input exercise"),
-        ("CODE_REPLACE_EXERCISE", "Code replace exercise"),
+#        ("CODE_INPUT_EXERCISE", "Code input exercise"),
+#        ("CODE_REPLACE_EXERCISE", "Code replace exercise"),
         ("REPEATED_TEMPLATE_EXERCISE", "Repeated template exercise"),
+        ("ROUTINE_EXERCISE", "Routine exercise"),
     )
     template = "courses/blank.html"
 
@@ -791,6 +802,15 @@ class ContentPage(models.Model):
         #         EmbeddedContentLink object)
         super().save(*args, **kwargs)
 
+    def replace_lines(self, line_idx, new_lines, delete_count=1):
+        lines = self.content.splitlines()
+        del lines[line_idx:line_idx + delete_count]
+        for i, line in enumerate(new_lines):
+            lines.insert(line_idx + i, line)
+
+        self.content = "\n".join(lines)
+        self.save()
+
     def rendered_markup(self, request=None, context=None, revision=None, lang_code=None, page=None):
         """
         Uses the included MarkupParser library to render the page content into
@@ -798,6 +818,8 @@ class ContentPage(models.Model):
         instead.
         """
         from courses import markupparser
+
+        parser = markupparser.MarkupParser()
 
         blocks = []
         embedded_pages = []
@@ -821,24 +843,30 @@ class ContentPage(models.Model):
             # Render the page
             context["content"] = self
             context["lang_code"] = lang_code
-            markup_gen = markupparser.MarkupParser.parse(content, request, context, embedded_pages)
+            markup_gen = parser.parse(content, request, context, embedded_pages)
             segment = ""
             pages = []
             for chunk in markup_gen:
-                if isinstance(chunk, str):
-                    segment += chunk
-                elif isinstance(chunk, markupparser.PageBreak):
-                    blocks.append(("plain", segment))
-                    segment = ""
+                if isinstance(chunk, markupparser.PageBreak):
                     pages.append(blocks)
                     blocks = []
                 else:
-                    blocks.append(("plain", segment))
                     blocks.append(chunk)
-                    segment = ""
 
-            if segment:
-                blocks.append(("plain", segment))
+                #if isinstance(chunk, str):
+                    #segment += chunk
+                #if isinstance(chunk, markupparser.PageBreak):
+                    #blocks.append(("plain", segment))
+                    #segment = ""
+                    #pages.append(blocks)
+                    #blocks = []
+                #else:
+                    #blocks.append(("plain", segment))
+                    #blocks.append(chunk)
+                    #segment = ""
+
+            #if segment:
+                #blocks.append(("plain", segment))
 
             pages.append(blocks)
 
@@ -861,16 +889,20 @@ class ContentPage(models.Model):
                 return pages[page - 1]
             return full
 
+        #for render in cached_content:
+            #print(render)
+
         return cached_content
 
     def _get_rendered_content(self, context):
         from courses import markupparser
 
-        embedded_content = ""
-        markup_gen = markupparser.MarkupParser.parse(self.content, context=context)
+        embedded_content = []
+        parser = markupparser.MarkupParser()
+        markup_gen = parser.parse(self.content, context=context)
         for chunk in markup_gen:
             try:
-                embedded_content += chunk
+                embedded_content.append(chunk)
             except ValueError as e:
                 raise markupparser.EmbeddedObjectNotAllowedError(
                     "embedded pages are not allowed inside embedded pages"
@@ -966,12 +998,15 @@ class ContentPage(models.Model):
                 link_obj.save()
                 link_obj.embedded_page.update_embedded_links(instance)
 
-    def regenerate_cache(self, instance):
+    def regenerate_cache(self, instance, active_only=False):
         context = {"instance": instance, "course": instance.course, "content_page": self}
-        try:
-            revision = ContentGraph.objects.get(content=self, instance=instance).revision
-        except ContentGraph.DoesNotExist:
-            return
+        if not active_only:
+            try:
+                revision = ContentGraph.objects.get(content=self, instance=instance).revision
+            except ContentGraph.DoesNotExist:
+                return
+        else:
+            revision = None
 
         current_lang = translation.get_language()
 
@@ -985,7 +1020,6 @@ class ContentPage(models.Model):
         translation.activate(current_lang)
 
         from faq.utils import regenerate_cache
-
         regenerate_cache(instance, self)
 
     def get_human_readable_type(self):
@@ -1744,7 +1778,7 @@ class RepeatedTemplateExercise(ContentPage):
     def get_rendered_content(self, context):
         content = ContentPage._get_rendered_content(self, context)
         t = loader.get_template("courses/repeated-template-content-extra.html")
-        return content + t.render(context)
+        return content + [("extra", t.render(context), -1, 0)]
 
     def get_question(self, context):
         return ContentPage._get_question(self, context)

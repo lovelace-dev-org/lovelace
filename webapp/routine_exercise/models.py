@@ -38,7 +38,7 @@ class RoutineExercise(ContentPage):
     def get_rendered_content(self, context):
         content = ContentPage._get_rendered_content(self, context)
         t = loader.get_template("routine_exercise/routine-exercise-content-extra.html")
-        return content + t.render(context)
+        return content + [("extra", t.render(context), -1, 0)]
 
     def get_question(self, context):
         return ContentPage._get_question(self, context)

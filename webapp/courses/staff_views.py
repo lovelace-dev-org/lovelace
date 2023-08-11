@@ -19,12 +19,15 @@ from reversion import revisions as reversion
 
 from courses import blockparser
 from courses import markupparser
+import courses.models as cm
 from courses.models import (
     CourseInstance,
     ContentGraph,
     ContentPage,
+    EmbeddedLink,
     Lecture,
     StudentGroup,
+    Term,
     User,
 )
 from courses.forms import (
@@ -38,7 +41,21 @@ from courses.forms import (
     NewContentNodeForm,
     NodeSettingsForm,
 )
-from utils.access import ensure_staff, ensure_responsible_or_supervisor, ensure_responsible
+from courses.edit_forms import (
+    get_form,
+    save_form,
+    place_into_content,
+    BlockTypeSelectForm,
+    TermifyForm,
+)
+from utils.access import (
+    determine_media_access,
+    ensure_responsible_or_supervisor,
+    ensure_responsible,
+    ensure_staff,
+)
+from utils.archive import find_latest_version, squash_revisions
+from utils.content import regenerate_nearest_cache
 from utils.management import (
     CourseContentAdmin,
     clone_instance_files,
@@ -400,6 +417,9 @@ def move_content_node(request, course, instance, target_id, placement):
     except ContentGraph.DoesNotExist:
         return HttpResponseNotFound()
 
+    if active_node == target_node:
+        return HttpResponseBadRequest(_("Cannot move a node to itself"))
+
     parent = target_node.parentnode
     while parent is not None:
         if parent == active_node:
@@ -442,6 +462,176 @@ def move_content_node(request, course, instance, target_id, placement):
     active_node.save()
 
     return JsonResponse({"status": "ok"})
+
+
+@ensure_staff
+def edit_form(request, course, instance, content, action):
+    context = {
+        "course": course,
+        "instance": instance,
+        "content": content,
+        "request": request,
+    }
+
+    try:
+        node = ContentGraph.objects.get(instance=instance, content=content)
+    except ContentGraph.DoesNotExist:
+        node = EmbeddedLink.objects.get(instance=instance, embedded_page=content)
+
+    if node.revision is not None:
+        return HttpResponse(_("Cannot edit content through archived pages"))
+
+    if request.method == "POST":
+        block_type = request.POST.get("block_type")
+        position = {
+            "line_idx": int(request.POST.get("line_idx")),
+            "line_count": int(request.POST.get("line_count")),
+            "placement": request.POST.get("placement")
+        }
+        form = get_form(
+            block_type, position, context, action, request.POST, request.FILES,
+        )
+        if not form.is_valid():
+            errors = form.errors.as_json()
+            return JsonResponse({"errors": errors}, status=400)
+
+        with reversion.create_revision():
+            save_form(form)
+            place_into_content(content, form)
+            reversion.set_user(request.user)
+        regenerate_nearest_cache(content)
+        squash_revisions(content, 1)
+        return JsonResponse({"status": "ok"})
+
+    block_type = request.GET.get("block")
+    position = {
+        "line_idx": int(request.GET.get("line")),
+        "line_count": int(request.GET.get("size")),
+        "placement": request.GET.get("placement", "replace")
+    }
+    form =get_form(
+        block_type, position, context, action
+    )
+    form_t = loader.get_template("courses/base-edit-form.html")
+    form_id = f"line-edit-form"
+    form_c = {
+        "html_id": form_id,
+        "form_object": form,
+        "submit_url": request.path,
+        "html_class": "side-panel-form edit-form-widget",
+        "submit_label": _("Save"),
+        "submit_override": "editing.submit_form"
+    }
+    return HttpResponse(form_t.render(form_c, request))
+
+
+@ensure_staff
+def add_form(request, course, instance, content):
+    if request.method == "POST":
+        line_idx = int(request.POST.get("line_idx"))
+        line_count = int(request.POST.get("line_count"))
+        form = BlockTypeSelectForm(request.POST, line_idx=line_idx)
+        if not form.is_valid():
+            errors = form.errors.as_json()
+            return JsonResponse({"errors": errors}, status=400)
+
+        query = (
+            f"?line={form.cleaned_data['line_idx']}"
+            f"&block={form.cleaned_data['block_type']}"
+            f"&placement={form.cleaned_data['placement']}"
+            f"&size={form.cleaned_data['line_count']}"
+        )
+        disclaimer = ""
+        if form.cleaned_data["mode"] == "create":
+            action = "add"
+        elif form.cleaned_data["block_type"] in markupparser.MarkupParser.include_forms:
+            action = "include"
+        else:
+            action = "add"
+
+        form_url = reverse(
+            "courses:content_edit_form",
+            kwargs={
+                "course": course,
+                "instance": instance,
+                "content": content,
+                "action": action,
+            },
+        )
+        return JsonResponse({"status": "ok", "form_url": form_url + query})
+
+    line_idx = int(request.GET.get("line"))
+    line_count = int(request.GET.get("size"))
+    form = BlockTypeSelectForm(line_idx=line_idx, line_count=line_count)
+    form_t = loader.get_template("courses/base-edit-form.html")
+    form_id = f"line-add-form"
+    form_c = {
+        "html_id": form_id,
+        "form_object": form,
+        "submit_url": request.path,
+        "html_class": "side-panel-form",
+        "submit_label": _("Get form"),
+        "submit_override": "editing.get_form_url"
+    }
+    return HttpResponse(form_t.render(form_c, request))
+
+
+@ensure_staff
+def termify(request, course, instance):
+    terms = Term.objects.filter(course=course)
+    if request.method == "POST":
+        form = TermifyForm(request.POST, course_terms=terms)
+        if not form.is_valid():
+            errors = form.errors.as_json()
+            return JsonResponse({"errors": errors}, status=400)
+
+        words_to_replace = [form.cleaned_data["baseword"]]
+        if form.cleaned_data["inflections"]:
+            words_to_replace.extend(form.cleaned_data["inflections"].split(","))
+
+        replaces = []
+        for word in words_to_replace:
+            word = word.strip()
+            replaces.append((word, f"[!term={form.cleaned_data['term']}!]{word}[!term!]"))
+
+        embeds = [
+            link.embedded_page for link in
+            EmbeddedLink.objects.filter(instance=instance)
+        ]
+        pages = [
+            cg.content for cg in
+            ContentGraph.objects.filter(instance=instance)
+        ]
+        parser = markupparser.MarkupParser()
+        with reversion.create_revision():
+            for page in embeds + pages:
+                termified_lines = parser.replace(
+                    page.content,
+                    form.cleaned_data["replace_in"],
+                    replaces
+                )
+                page.content = "\n".join(termified_lines)
+                page.save()
+            reversion.set_user(request.user)
+
+        for page in pages:
+            regenerate_nearest_cache(page)
+            squash_revisions(page, 1)
+
+        for page in embeds:
+            squash_revisions(page, 1)
+        return JsonResponse({"status": "ok"})
+
+    form = TermifyForm(course_terms=terms)
+    form_t = loader.get_template("courses/base-edit-form.html")
+    form_c = {
+        "form_object": form,
+        "submit_url": request.path,
+        "html_id": "instance-settings-form",
+        "html_class": "toc-form staff-only",
+        "disclaimer": "Termify a word in all pages"
+    }
+    return HttpResponse(form_t.render(form_c, request))
 
 
 # ^
@@ -598,20 +788,22 @@ def content_preview(request, field_name):
         blocks = []
 
         for chunk in markup_gen:
-            if isinstance(chunk, str):
-                segment += chunk
-            elif isinstance(chunk, markupparser.PageBreak):
-                blocks.append(("plain", segment))
-                segment = ""
-                pages.append(blocks)
-                blocks = []
-            else:
-                blocks.append(("plain", segment))
-                blocks.append(chunk)
-                segment = ""
+            blocks.append(chunk)
 
-        if segment:
-            blocks.append(("plain", segment))
+            #if isinstance(chunk, str):
+                #segment += chunk
+            #elif isinstance(chunk, markupparser.PageBreak):
+                #blocks.append(("plain", segment))
+                #segment = ""
+                #pages.append(blocks)
+                #blocks = []
+            #else:
+                #blocks.append(("plain", segment))
+                #blocks.append(chunk)
+                #segment = ""
+
+        #if segment:
+            #blocks.append(("plain", segment))
 
         pages.append(blocks)
         full = [block for page in pages for block in page]

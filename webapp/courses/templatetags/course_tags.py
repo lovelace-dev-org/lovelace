@@ -109,6 +109,7 @@ def embed_frame(context, content_data):
         "evaluation": evaluation,
         "score": quotient * content_data["max_points"],
         "max_points": content_data["max_points"],
+        "uneditable_markups": context["uneditable_markups"],
     }
 
 
