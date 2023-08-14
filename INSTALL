@@ -47,7 +47,7 @@ useradd --system student
 
 ```
 sudo git clone https://github.com/lovelace-dev-org/lovelace.git /opt/lovelace
-sudo chown lovelace:lovelace /opt/lovelace
+sudo chown -R lovelace:lovelace /opt/lovelace
 ```
 
 
