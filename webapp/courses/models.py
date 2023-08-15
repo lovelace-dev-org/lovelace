@@ -934,6 +934,7 @@ class ContentPage(models.Model):
 
         page_links_per_lang = {}
 
+        parser = markupparser.LinkParser()
         for lang_code, _ in settings.LANGUAGES:
             if revision is None:
                 content = getattr(self, f"content_{lang_code}")
@@ -941,7 +942,7 @@ class ContentPage(models.Model):
                 version = Version.objects.get_for_object(self).get(revision_id=revision).field_dict
                 content = version[f"content_{lang_code}"]
 
-            lang_page_links, lang_media_links = markupparser.LinkParser.parse(content, instance)
+            lang_page_links, lang_media_links = parser.parse(content, instance)
             page_links = page_links.union(lang_page_links)
             media_links = media_links.union(lang_media_links)
             page_links_per_lang[lang_code] = lang_page_links
