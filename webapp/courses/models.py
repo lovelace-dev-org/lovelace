@@ -1506,7 +1506,7 @@ class TextfieldExercise(ContentPage):
         comments = []
         errors = []
 
-        if "answer" in answer.keys():
+        if "answer" in user_answer.keys():
             given_answer = user_answer["answer"].replace("\r", "")
         else:
             return {"evaluation": False}

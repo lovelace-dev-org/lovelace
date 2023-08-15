@@ -443,8 +443,11 @@ def check_answer(request, course, instance, content, revision):
     score = quotient * exercise.default_points
 
     if not evaluation["evaluation"] or score < exercise.default_points:
+        parser = markupparser.MarkupParser()
         hints = [
-            "".join(markupparser.MarkupParser.parse(msg, request, msg_context)).strip()
+            "".join(
+                block[1] for block in parser.parse(msg, request, msg_context)
+            ).strip()
             for msg in evaluation.get("hints", [])
         ]
     else:
@@ -565,8 +568,9 @@ def get_repeated_template_session(request, course, instance, content, revision):
         "course_slug": course.slug,
         "instance_slug": instance.slug,
     }
+    parser = markupparser.MarkupParser()
     template_parsed = "".join(
-        markupparser.MarkupParser.parse(rendered_template, request, template_context)
+        block[1] for block in parser.parse(rendered_template, request, template_context)
     ).strip()
 
     data = {
@@ -930,12 +934,15 @@ def markup_help(request):
     markups = markupparser.MarkupParser.get_markups()
     Markup = namedtuple("Markup", ["name", "description", "example", "result", "slug"])
 
+    parser = markupparser.MarkupParser()
     markup_list = (
         Markup(
             m.name,
             m.description,
             m.example,
-            mark_safe("".join(markupparser.MarkupParser.parse(m.example))),
+            mark_safe(
+                "".join(block[1] for block in parser.parse(m.example))
+            ),
             slugify(m.name, allow_unicode=True),
         )
         for _, m in markups.items()
