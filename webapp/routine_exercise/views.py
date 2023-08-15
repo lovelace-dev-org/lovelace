@@ -42,8 +42,9 @@ def _question_context_data(request, course, instance, question):
         "instance_slug": instance.slug,
     }
     rendered_text = question.template.content.format(**question.generated_json["formatdict"])
+    parser = markupparser.MarkupParser()
     marked_text = "".join(
-        markupparser.MarkupParser.parse(rendered_text, request, template_context)
+        block[1] for block in parser.parse(rendered_text, request, template_context)
     ).strip()
 
     data = {

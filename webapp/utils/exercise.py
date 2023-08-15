@@ -138,21 +138,24 @@ def compile_evaluation_data(request, evaluation_tree, evaluation_obj, context=No
     log = evaluation_tree["test_tree"].get("log", [])
 
     # render all individual messages in the log tree
+    parser = markupparser.MarkupParser()
     for test in log:
         test["title"] = "".join(
-            markupparser.MarkupParser.parse(test["title"], request, context)
+            block[1] for block in parser.parse(test["title"], request, context)
         ).strip()
         test["runs"].sort(key=lambda run: run["correct"])
         for run in test["runs"]:
             for output in run["output"]:
                 output["msg"] = "".join(
-                    markupparser.MarkupParser.parse(output["msg"], request, context)
+                    block[1] for block in parser.parse(output["msg"], request, context)
                 ).strip()
 
     debug_json = json.dumps(evaluation_tree, indent=4)
 
     hints = [
-        "".join(markupparser.MarkupParser.parse(msg, request, context)).strip()
+        "".join(
+            block[1] for block in parser.parse(msg, request, context)
+        ).strip()
         for msg in evaluation_tree["test_tree"].get("hints", [])
     ]
     triggers = evaluation_tree["test_tree"].get("triggers", [])
@@ -202,19 +205,22 @@ def render_json_feedback(log, request, course, instance, content, answer_id=None
 
     context = {"course_slug": course.slug, "instance_slug": instance.slug}
 
+    parser = markupparser.MarkupParser()
     for test in log["tests"]:
         test["title"] = "".join(
-            markupparser.MarkupParser.parse(test["title"], request, context)
+            block[1] for block in parser.parse(test["title"], request, context)
         ).strip()
         for run in test["runs"]:
             run["correct"] = True
             for output in run["output"]:
                 output["msg"] = "".join(
-                    markupparser.MarkupParser.parse(output["msg"], request, context)
+                    block[1] for block in parser.parse(output["msg"], request, context)
                 ).strip()
                 triggers.extend(output.get("triggers", []))
                 hints.extend(
-                    "".join(markupparser.MarkupParser.parse(msg, request, context)).strip()
+                    "".join(
+                        block[1] for block in parser.parse(msg, request, context)
+                    ).strip()
                     for msg in output.get("hints", [])
                 )
                 if output["flag"] in (INCORRECT, ERROR):

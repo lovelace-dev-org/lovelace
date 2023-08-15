@@ -15,7 +15,7 @@ function exercise_success (data, result_div, error_div, form_parent) {
 
         // Get the symbol in ToC
         const exercise_id = form_parent.parent().find("span.anchor-offset").attr("id")
-        const toc_symbol = $("nav#toc li a[href='#" + exercise_id + "''").next()
+        const toc_symbol = $("nav#toc li a[href='#" + exercise_id + "'").next()
 
         const previous_status = meta_img.attr("class")
         if (previous_status !== "correct") {

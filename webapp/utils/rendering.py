@@ -32,26 +32,18 @@ def render_content(content, request=None, context=None, revision=None, lang_code
         body = get_single_archived(content, revision).content
 
     # Render the page
+    parser = markupparser.MarkupParser()
     context["content"] = content
     context["lang_code"] = lang_code
-    markup_gen = markupparser.MarkupParser.parse(body, request, context, embedded_pages)
+    markup_gen = parser.parse(body, request, context, embedded_pages)
     segment = ""
     pages = []
     for chunk in markup_gen:
-        if isinstance(chunk, str):
-            segment += chunk
-        elif isinstance(chunk, markupparser.PageBreak):
-            blocks.append(("plain", segment))
-            segment = ""
+        if isinstance(chunk, markupparser.PageBreak):
             pages.append(blocks)
             blocks = []
         else:
-            blocks.append(("plain", segment))
             blocks.append(chunk)
-            segment = ""
-
-    if segment:
-        blocks.append(("plain", segment))
 
     pages.append(blocks)
 
@@ -104,10 +96,11 @@ def render_terms(request, instance, context):
             return item.name
 
         terms.sort(key=sort_by_name)
+        parser = markupparser.MarkupParser()
         for term in terms:
             slug = slugify(term.name, allow_unicode=True)
             description = "".join(
-                block[1] for block in markupparser.MarkupParser.parse(
+                block[1] for block in parser.parse(
                     term.description, request, term_context
                 )
             ).strip()
@@ -115,7 +108,7 @@ def render_terms(request, instance, context):
                 (
                     tab.title,
                     "".join(
-                        block[1] for block in markupparser.MarkupParser.parse(
+                        block[1] for block in parser.parse(
                             tab.description, request, term_context
                         )
                     ).strip(),
