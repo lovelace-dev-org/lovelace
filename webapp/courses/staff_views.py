@@ -128,7 +128,7 @@ def clone_instance(request, course, instance):
         clone_faq_links(new_instance)
         clone_assessment_links(old_instance, new_instance)
         new_url = reverse("courses:course", kwargs={"course": course, "instance": new_instance})
-        return JsonResponse({"status": "ok", "redirect": new_url})
+        return JsonResponse({"status": "ok"})
 
     initial_names = {}
     for lang_code, __ in settings.LANGUAGES:
@@ -592,7 +592,7 @@ def termify(request, course, instance):
         replaces = []
         for word in words_to_replace:
             word = word.strip()
-            replaces.append((word, f"[!term={form.cleaned_data['term']}!]{word}[!term!]"))
+            replaces.append(word)
 
         embeds = [
             link.embedded_page for link in
@@ -605,10 +605,11 @@ def termify(request, course, instance):
         parser = markupparser.MarkupParser()
         with reversion.create_revision():
             for page in embeds + pages:
-                termified_lines = parser.replace(
+                termified_lines = parser.tag(
                     page.content,
                     form.cleaned_data["replace_in"],
-                    replaces
+                    replaces,
+                    (f"[!term={form.cleaned_data['term']}!]", "[!term!]")
                 )
                 page.content = "\n".join(termified_lines)
                 page.save()
@@ -782,7 +783,8 @@ def content_preview(request, field_name):
     embedded_preview = request.POST.get("embedded", False)
 
     with translation.override(lang_code):
-        markup_gen = markupparser.MarkupParser.parse(content)
+        parser = markupparser.MarkupParser()
+        markup_gen = parser.parse(content)
         segment = ""
         pages = []
         blocks = []

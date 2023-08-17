@@ -34,7 +34,7 @@ def _parent_ordinal_sort(pair):
     node = pair[0]
     ordinals = [node.ordinal_number]
     parent_node = node.parentnode
-    while parent_node is None:
+    while parent_node is not None:
         ordinals.insert(0, parent_node.ordinal_number)
         parent_node = parent_node.parentnode
     return ordinals

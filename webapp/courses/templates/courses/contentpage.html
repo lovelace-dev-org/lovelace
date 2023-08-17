@@ -61,7 +61,7 @@
     {% content_meta %}
   {% endif %}
   {% for block_type, block_data, line_idx, line_count in content_blocks %}
-    {% if course_staff and revision is None %}
+    {% if course_staff and revision is None and block_type != "cleanup" %}
       <span>
         {% if block_type not in uneditable_markups %}
           <a class="staff-only collapsed"

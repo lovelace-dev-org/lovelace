@@ -11,8 +11,9 @@ def rendered_question(question):
         rendered_text = question.template.content.format(**question.generated_json["formatdict"])
     except KeyError:
         rendered_text = question.template.content.replace("{{", "{").replace("}}", "}")
+    parser = markupparser.MarkupParser()
     marked_text = (
-        "".join(markupparser.MarkupParser.parse(rendered_text))
+        "".join(block[1] for block in parser.parse(rendered_text))
         .strip()
         .replace("<div", "<span")
         .replace("</div", "</span")

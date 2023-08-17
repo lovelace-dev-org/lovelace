@@ -291,7 +291,10 @@ class HeadingEditForm(LineEditMixin, MarkupEditForm):
 
     def get_initial_for_field(self, field, field_name):
         if field_name == "level":
-            return len(self._settings["level"])
+            try:
+                return len(self._settings["level"])
+            except KeyError:
+                pass
         return super().get_initial_for_field(field, field_name)
 
     def __init__(self, *args, **kwargs):

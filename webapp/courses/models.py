@@ -803,12 +803,18 @@ class ContentPage(models.Model):
         super().save(*args, **kwargs)
 
     def replace_lines(self, line_idx, new_lines, delete_count=1):
-        lines = self.content.splitlines()
+        lang = translation.get_language()
+        if not getattr(self, f"content_{lang}"):
+            field = f"content_{settings.MODELTRANSLATION_DEFAULT_LANGUAGE}"
+        else:
+            field = f"content_{lang}"
+
+        lines = getattr(self, field).splitlines()
         del lines[line_idx:line_idx + delete_count]
         for i, line in enumerate(new_lines):
             lines.insert(line_idx + i, line)
 
-        self.content = "\n".join(lines)
+        setattr(self, field, "\n".join(lines))
         self.save()
 
     def rendered_markup(self, request=None, context=None, revision=None, lang_code=None, page=None):

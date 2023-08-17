@@ -584,8 +584,8 @@ div.popup > div, div.popup > pre {
 div.side-panel {
     position: fixed;
     top: 4rem;
-    left: -40%;
-    width: 40%;
+    left: -768px;
+    width: 768px;
     height: 90%;
     transition: transform 0.3s 0s;
     background: #eee;

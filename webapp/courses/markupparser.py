@@ -266,7 +266,7 @@ class MarkupParser:
             yield ("empty", "", 0, 0)
 
 
-    def replace(self, text, replace_in, replaces):
+    def tag(self, text, replace_in, replaces, tag):
         if not self._ready:
             raise ParserUninitializedError("compile() not called")
 
@@ -278,17 +278,16 @@ class MarkupParser:
         lines_out = []
 
         replaces = [
-            (re.compile(
-                f"(?P<prefix>\\b)[{old[0].upper()}{old[0]}]{old[1:]}(?P<punct>[- .?!;:])"
-            ), new)
-            for old, new in replaces
+            re.compile(
+                f"(?<!{tag[0]})(?P<word>[{old[0].upper()}{old[0]}]{old[1:]})(?P<punct>[- .?!;:])"
+            ) for old in replaces
         ]
 
         for block_type, group in itertools.groupby(lines, self._get_line_kind):
             if block_type in replace_in:
                 for line in group:
-                    for old_re, new in replaces:
-                        line = old_re.sub(f"\\g<prefix>{new}\\g<punct>", line)
+                    for old_re in replaces:
+                        line = old_re.sub(f"{tag[0]}\\g<word>{tag[1]}\\g<punct>", line)
                     lines_out.append(line)
             else:
                 lines_out.extend(list(group))
