@@ -488,7 +488,8 @@ class CreateFileUploadExerciseForm(forms.Form):
         missing_terms = []
         messages = []
 
-        page_links, media_links = markupparser.LinkParser.parse(value)
+        parser = markupparser.LinkParser()
+        page_links, media_links = parser.parse(value)
         for link in page_links:
             if not ContentPage.objects.filter(slug=link):
                 missing_pages.append(link)
