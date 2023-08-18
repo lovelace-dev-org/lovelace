@@ -403,10 +403,8 @@ class CreateFileUploadExerciseForm(forms.Form):
             for lang_code, _ in lang_list:
                 stage_name_kwargs = {}
                 stage_name_field = stage_template.format(stage_id, f"name_{lang_code}")
-                if lang_code != default_lang:
-                    stage_name_kwargs["required"] = False
                 self.fields[stage_name_field] = forms.CharField(
-                    min_length=1, max_length=64, strip=True, **stage_name_kwargs
+                    min_length=1, max_length=64, strip=True, required=False, **stage_name_kwargs
                 )
             stage_depends_on_field = stage_template.format(stage_id, "depends_on")
             self.fields[stage_depends_on_field] = forms.IntegerField(required=False)

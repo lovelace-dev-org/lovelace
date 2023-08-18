@@ -795,11 +795,6 @@ class ContentPage(models.Model):
         else:
             self.slug = slugify(self.slug, allow_unicode=True)
 
-        # TODO: Run through content parser
-        #       - Check for & report errors (all errors on same notice)
-        #       - Put into Redis cache
-        #       - Automatically link embedded pages (create/update an
-        #         EmbeddedContentLink object)
         super().save(*args, **kwargs)
 
     def replace_lines(self, line_idx, new_lines, delete_count=1):
@@ -2055,7 +2050,7 @@ class FileExerciseTestStage(models.Model):
     depends_on = models.ForeignKey(
         "FileExerciseTestStage", null=True, blank=True, on_delete=models.SET_NULL
     )
-    name = models.CharField(max_length=64)  # Translate
+    name = models.CharField(max_length=64, default="stage")  # Translate
     ordinal_number = models.PositiveSmallIntegerField()
 
     def __str__(self):
