@@ -66,8 +66,6 @@ _score_errors = {
 
 
 class AssessmentForm(forms.Form):
-    correct = forms.BooleanField(label=_("Mark this assessment as correct"), required=False)
-    complete = forms.BooleanField(label=_("This assessment is complete"), required=False)
 
     def points_widget(self, bullet):
         return self[f"bullet-{bullet.id}-points"]
@@ -119,6 +117,13 @@ class AssessmentForm(forms.Form):
                 self.fields[f"bullet-{bullet.id}-comment"] = fields.CharField(
                     widget=forms.TextInput(attrs={"class": "comment-input"}), required=False
                 )
+
+        self.fields["correct"] = forms.BooleanField(
+            label=_("Mark this assessment as correct"), required=False
+        )
+        self.fields["complete"] = forms.BooleanField(
+            label=_("This assessment is complete"), required=False
+        )
 
 
 class AssessmentBulletForm(TranslationStaffForm):

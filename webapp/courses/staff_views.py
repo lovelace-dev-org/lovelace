@@ -826,7 +826,6 @@ def content_preview(request, field_name):
             for i, choice in enumerate(request.POST.getlist("choices[]")):
                 if choice:
                     choices.append({"id": i, "answer": choice})
-            print(choices)
             c["embedded_preview"] = True
             c["embed_data"] = {
                 "content": "".join(block[1] for block in full),
@@ -835,7 +834,5 @@ def content_preview(request, field_name):
             }
 
         rendered = t.render(c, request)
-
-        print(rendered)
 
     return HttpResponse(rendered)

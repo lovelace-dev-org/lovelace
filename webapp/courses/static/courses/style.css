@@ -1121,6 +1121,7 @@ section.content {
             padding: 1em 40px 2em 120px;
             /*padding-left: 120px;*/
             margin-bottom: 1em;
+            min-height: 300px;
         }
 
         section.content div.question {

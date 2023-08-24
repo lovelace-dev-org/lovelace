@@ -233,20 +233,18 @@ class NewContentNodeForm(forms.ModelForm):
             "evergreen",
         ]
 
-    make_child = forms.BooleanField(
-        label=_("Make this node a child of the selected node"), required=False
-    )
-
-    new_page_name = forms.CharField(
-        label=_("Name for new page (in default language)"), required=False
-    )
-
     active_node = forms.IntegerField(widget=forms.HiddenInput, required=True)
 
     def __init__(self, *args, **kwargs):
         available_content = kwargs.pop("available_content")
         super().__init__(*args, **kwargs)
 
+        self.fields["make_child"] = forms.BooleanField(
+            label=_("Make this node a child of the selected node"), required=False
+        )
+        self.fields["new_page_name"] = forms.CharField(
+            label=_("Name for new page (in default language)"), required=False
+        )
         self.fields["content"] = forms.ChoiceField(
             widget=forms.Select,
             label=_("Choose content to link"),
@@ -394,25 +392,26 @@ class CalendarConfigForm(forms.ModelForm):
 
 
 class CalendarSchedulingForm(forms.Form):
-    start = forms.DateTimeField(
-        label=_("Starting date and time"),
-        required=True,
-        input_formats=["%Y-%m-%dT%H:%M"],
-        widget=forms.widgets.DateTimeInput(attrs={"type": "datetime-local"}),
-    )
-    event_duration = forms.DurationField(
-        label=_("Duration of each event (minutes)"),
-        required=True,
-        widget=forms.widgets.NumberInput(),
-    )
-    event_slots = forms.IntegerField(
-        label=_("Number of slots per event"),
-        required=True,
-    )
-    event_count = forms.IntegerField(label=_("Number of events to add"), required=True)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        self.fields["start"] = forms.DateTimeField(
+            label=_("Starting date and time"),
+            required=True,
+            input_formats=["%Y-%m-%dT%H:%M"],
+            widget=forms.widgets.DateTimeInput(attrs={"type": "datetime-local"}),
+        )
+        self.fields["event_duration"] = forms.DurationField(
+            label=_("Duration of each event (minutes)"),
+            required=True,
+            widget=forms.widgets.NumberInput(),
+        )
+        self.fields["event_slots"] = forms.IntegerField(
+            label=_("Number of slots per event"),
+            required=True,
+        )
+        self.fields["event_count"] = forms.IntegerField(label=_("Number of events to add"), required=True)
 
         # This will be formatted later
         add_translated_charfields(
@@ -424,8 +423,6 @@ class MessageForm(TranslationStaffForm):
     class Meta:
         model = cm.SavedMessage
         fields = ["title", "content", "handle"]
-
-    confirm_save = forms.BooleanField(label=_("Save this message"), initial=False, required=False)
 
     def clean(self):
         cleaned_data = super().clean()
@@ -444,6 +441,8 @@ class MessageForm(TranslationStaffForm):
         load_url = kwargs.pop("load_url")
         self._saved_msgs = kwargs.pop("saved")
         super().__init__(*args, **kwargs)
+        self.fields["confirm_save"] = forms.BooleanField(label=_("Save this message"), initial=False, required=False)
+
         self.fields["handle"].required = False
         self.fields["saved_msgs"] = forms.ChoiceField(
             widget=forms.Select(
@@ -469,8 +468,11 @@ class MessageForm(TranslationStaffForm):
 
 
 class CacheRegenForm(forms.Form):
-    regen_archived = forms.BooleanField(
-        label=_("Regenerate archived content. This can break old course instances."),
-        initial=False,
-        required=False,
-    )
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["regen_archived"] = forms.BooleanField(
+            label=_("Regenerate archived content. This can break old course instances."),
+            initial=False,
+            required=False,
+        )
+

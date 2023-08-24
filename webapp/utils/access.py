@@ -156,6 +156,8 @@ def ensure_enrolled_or_staff(function):
                 return function(request, course, instance, *args, **kwargs)
         except cm.CourseEnrollment.DoesNotExist:
             pass
+        except TypeError:
+            return HttpResponseForbidden(_("You must be enrolled to perform this action."))
 
         if is_course_staff(request.user, instance):
             return function(request, course, instance, *args, **kwargs)

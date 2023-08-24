@@ -154,8 +154,6 @@ class LineEditMixin:
 class LineDeleteForm(LineEditMixin, forms.Form):
 
     _name = "any"
-    delete = forms.BooleanField(required=True, label=_("Delete block"))
-
     @property
     def reference_changed(self):
         return True
@@ -165,7 +163,7 @@ class LineDeleteForm(LineEditMixin, forms.Form):
         __ = kwargs.pop("lines")
         __ = kwargs.pop("new")
         super().__init__(*args, **kwargs)
-
+        self.fields["delete"] = forms.BooleanField(required=True, label=_("Delete block"))
 
 
 class EmbeddedObjectEditForm(TranslationStaffForm):
@@ -401,10 +399,6 @@ class ScriptFileInline(TranslationStaffForm):
         fields = ["fileinfo", "name"]
         ref_field = "name"
 
-    delete = forms.BooleanField(
-        label=_("Unlink"),
-        required=False,
-    )
     name = forms.CharField(
         required=False,
     )
@@ -477,6 +471,10 @@ class ScriptFileInline(TranslationStaffForm):
             required=True,
             initial=where,
         )
+        self.fields["delete"] = forms.BooleanField(
+            label=_("Unlink"),
+            required=False,
+        )
         if instance:
             self.fields["name"].disabled = True
             self.fields["existing"].disabled = True
@@ -495,10 +493,6 @@ class ScriptEditForm(LineEditMixin, EmbeddedObjectEditForm):
         fields = ["fileinfo"]
         ref_field = "script_slug"
         markup = markupparser.EmbeddedScriptMarkup
-
-    script_width = forms.IntegerField(label=_("iframe width"), required=True)
-    script_height = forms.IntegerField(label=_("iframe height"), required=True)
-    border = forms.CharField(label=_("Border CSS"), required=False)
 
     def get_initial_for_field(self, field, field_name):
         try:
@@ -562,6 +556,9 @@ class ScriptEditForm(LineEditMixin, EmbeddedObjectEditForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, requires=False, **kwargs)
+        self.fields["script_width"] = forms.IntegerField(label=_("iframe width"), required=True)
+        self.fields["script_height"] = forms.IntegerField(label=_("iframe height"), required=True)
+        self.fields["border"] = forms.CharField(label=_("Border CSS"), required=False)
         included_files_str = self._settings.get("include", "")
         included_files = included_files_str.split(",") if included_files_str else []
         self.fields[self.Meta.ref_field].required = False
@@ -656,7 +653,10 @@ class FileEditForm(LineEditMixin, EmbeddedObjectEditForm):
         ref_field = "file_slug"
         markup = markupparser.EmbeddedFileMarkup
 
-    link_only = forms.BooleanField(label=_("No content preview"), required=False)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["link_only"] = forms.BooleanField(label=_("No content preview"), required=False)
 
 
 class FileIncludeForm(LineEditMixin, EmbeddedObjectIncludeForm):
@@ -685,8 +685,10 @@ class VideoEditForm(LineEditMixin, EmbeddedObjectEditForm):
         ref_field = "video_slug"
         markup = markupparser.EmbeddedVideoMarkup
 
-    video_width = forms.IntegerField(label=_("iframe width"), required=True)
-    video_height = forms.IntegerField(label=_("iframe height"), required=True)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["video_width"] = forms.IntegerField(label=_("iframe width"), required=True)
+        self.fields["video_height"] = forms.IntegerField(label=_("iframe height"), required=True)
 
 
 class VideoIncludeForm(LineEditMixin, EmbeddedObjectIncludeForm):
@@ -750,32 +752,30 @@ class TaskIncludeForm(LineEditMixin, EmbeddedObjectIncludeForm):
 
 class BlockTypeSelectForm(forms.Form):
 
-    placement = forms.ChoiceField(
-        widget=forms.RadioSelect,
-        label=_("Placement"),
-        required=True,
-        choices=(
-            ("before", _("Before highlighted content block")),
-            ("after", _("After highlighted content block")),
-        ),
-        initial="after",
-    )
-    mode = forms.ChoiceField(
-        widget=forms.RadioSelect,
-        label=_("Mode (if applicable)"),
-        required=False,
-        choices=(
-            ("create", _("Create a new object")),
-            ("include", _("Include an existing object")),
-        ),
-        initial="create",
-    )
-
-
     def __init__(self, *args, **kwargs):
         line_idx = kwargs.pop("line_idx", 0)
         line_count = kwargs.pop("line_count", 0)
         super().__init__(*args, **kwargs)
+        self.fields["placement"] = forms.ChoiceField(
+            widget=forms.RadioSelect,
+            label=_("Placement"),
+            required=True,
+            choices=(
+                ("before", _("Before highlighted content block")),
+                ("after", _("After highlighted content block")),
+            ),
+            initial="after",
+        )
+        self.fields["mode"] = forms.ChoiceField(
+            widget=forms.RadioSelect,
+            label=_("Mode (if applicable)"),
+            required=False,
+            choices=(
+                ("create", _("Create a new object")),
+                ("include", _("Include an existing object")),
+            ),
+            initial="create",
+        )
         self.fields["line_idx"] = forms.IntegerField(
             widget=forms.HiddenInput,
             initial=line_idx
@@ -797,12 +797,15 @@ class BlockTypeSelectForm(forms.Form):
 
 class TermifyForm(forms.Form):
 
-    baseword = forms.CharField(label=_("Base word"), required=True)
-    inflections = forms.CharField(label=_("Inflections (comma sep.)"), required=False)
 
     def __init__(self, *args, **kwargs):
         terms = kwargs.pop("course_terms")
         super().__init__(*args, **kwargs)
+        self.fields["baseword"] = forms.CharField(label=_("Base word"), required=True)
+        self.fields["inflections"] = forms.CharField(
+            label=_("Inflections (comma sep.)"),
+            required=False
+        )
         self.fields["replace_in"] = forms.MultipleChoiceField(
             widget=forms.CheckboxSelectMultiple,
             label=_("Replace in"),

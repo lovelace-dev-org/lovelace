@@ -1122,7 +1122,7 @@ class ImageMarkup(Markup):
             yield (
                 "<div class='centered-block-outer'>"
                 "<div class='centered-block-middle'>"
-                "<div class='centered-block-inner'>'"
+                "<div class='centered-block-inner'>"
             )
 
         img_cls = "figure-img" if settings.get("caption_text", False) else "content-img"

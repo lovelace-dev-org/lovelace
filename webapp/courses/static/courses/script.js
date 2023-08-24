@@ -591,11 +591,11 @@ function duplicate_subform_table (event, caller) {
 
     const form_idx = $("input[id$='TOTAL_FORMS'").val()
 
-    $(".edit-form-inline").last()
-        .after("<table class='edit-form-inline sub-rectangle'>"
+    $("#empty_form").before(
+        "<table class='edit-form-inline sub-rectangle'>"
         + $("#empty_form").html().replace(/__prefix__/g, form_idx)
         + "</table>"
-        )
+    )
     $("input[id$='TOTAL_FORMS'").val(parseInt(form_idx) + 1)
 }
 
