@@ -15,6 +15,8 @@ if "shibboleth" in django.conf.settings.INSTALLED_APPS:
             profile.user = user
             try:
                 profile.student_id = int(shib_meta.get("student_id", "").rsplit(":", 1)[-1])
+                profile.first_name = str(shib_meta.get("first_name").encode("latin-1"), "utf-8")
+                profile.last_name = str(shib_meta.get("last_name").encode("latin-1"), "utf-8")
             except ValueError:
                 pass
             else:
