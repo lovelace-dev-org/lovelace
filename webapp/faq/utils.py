@@ -34,11 +34,12 @@ def cache_panel(instance, exercise, lang_code):
             else:
                 faq = get_single_archived(link.question, link.revision)
 
-            markup_gen = markupparser.MarkupParser.parse(faq.answer)
+            parser = markupparser.MarkupParser
+            markup_gen = parser.parse(faq.answer)
             answer_body = ""
             for chunk in markup_gen:
                 if isinstance(chunk, str):
-                    answer_body += chunk
+                    answer_body += chunk[1]
                 else:
                     raise ValueError("Embedded content is not allowed in panel content")
 
