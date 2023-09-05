@@ -38,7 +38,7 @@ def cache_panel(instance, exercise, lang_code):
             markup_gen = parser.parse(faq.answer)
             answer_body = ""
             for chunk in markup_gen:
-                if isinstance(chunk, str):
+                if isinstance(chunk[1], str):
                     answer_body += chunk[1]
                 else:
                     raise ValueError("Embedded content is not allowed in panel content")
