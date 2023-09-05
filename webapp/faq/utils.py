@@ -34,7 +34,7 @@ def cache_panel(instance, exercise, lang_code):
             else:
                 faq = get_single_archived(link.question, link.revision)
 
-            parser = markupparser.MarkupParser
+            parser = markupparser.MarkupParser()
             markup_gen = parser.parse(faq.answer)
             answer_body = ""
             for chunk in markup_gen:
