@@ -10,6 +10,22 @@ def clone_assessment_links(old_instance, new_instance):
         link.instance = new_instance
         link.save()
 
+def copy_sheet(source_sheet, new_sheet):
+    bullets = source_sheet.assessmentbullet_set.get_queryset().all()
+    sections = list(source_sheet.assessmentsection_set.get_queryset().all())
+
+    for section in sections:
+        section_bullets = list(bullets.filter(section=section))
+        section.id = None
+        section.sheet = new_sheet
+        section.save()
+        section.refresh_from_db()
+        for bullet in section_bullets:
+            bullet.section = section
+            bullet.sheet = new_sheet
+            bullet.id = None
+            bullet.save()
+
 
 def get_sectioned_sheet(link):
     by_section = {}

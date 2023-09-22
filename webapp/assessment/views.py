@@ -25,7 +25,7 @@ from assessment.forms import (
     NewBulletForm,
     SectionForm,
 )
-from assessment.utils import get_sectioned_sheet, serializable_assessment
+from assessment.utils import get_sectioned_sheet, serializable_assessment, copy_sheet
 
 from utils.access import (
     ensure_owner_or_staff,
@@ -63,6 +63,16 @@ def manage_assessment(request, course, instance, content):
             errors = form.errors.as_json()
             return JsonResponse({"errors": errors}, status=400)
 
+        if form.cleaned_data["copy"]:
+            source_sheet = AssessmentSheet.objects.get(id=form.cleaned_data["sheet"])
+            new_sheet = AssessmentSheet(course=course)
+            for lang_code, __ in settings.LANGUAGES:
+                field = "title_" + lang_code
+                setattr(new_sheet, field, form.cleaned_data[field])
+            with reversion.create_revision():
+                new_sheet.save()
+                copy_sheet(source_sheet, new_sheet)
+                reversion.set_user(request.user)
         try:
             sheet = AssessmentSheet.objects.get(id=form.cleaned_data["sheet"])
         except AssessmentSheet.DoesNotExist:

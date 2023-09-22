@@ -315,6 +315,16 @@ def create_content_node(request, course, instance):
         if form.cleaned_data["content"] == "0":
             with reversion.create_revision():
                 page = Lecture(name=form.cleaned_data["new_page_name"])
+                if form.cleaned_data["multi_language"]:
+                    setattr(
+                        page,
+                        f"content_{settings.MODELTRANSLATION_DEFAULT_LANGUAGE}",
+                        f"= {form.cleaned_data['new_page_name']} ="
+                    )
+                    for lang_code, __ in settings.LANGUAGES:
+                        if lang_code != settings.MODELTRANSLATION_DEFAULT_LANGUAGE:
+                            setattr(page, f"content_{lang_code}", "TBD")
+
                 page.save()
                 reversion.set_user(request.user)
         else:
@@ -476,7 +486,7 @@ def edit_form(request, course, instance, content, action):
     try:
         node = ContentGraph.objects.get(instance=instance, content=content)
     except ContentGraph.DoesNotExist:
-        node = EmbeddedLink.objects.get(instance=instance, embedded_page=content)
+        node = EmbeddedLink.objects.filter(instance=instance, embedded_page=content).first()
 
     if node.revision is not None:
         return HttpResponse(_("Cannot edit content through archived pages"))

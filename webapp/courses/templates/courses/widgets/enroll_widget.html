@@ -3,8 +3,14 @@
 <div class="enroll-widget">
 {% if enroll_status == None %}
     {% if user_authenticated %}
-    <span class="instance-userinfo">{% trans 'You are not enrolled.' %}</span>
-    <p><button id="{{ instance.slug }}-enroll-button" onclick="show_popup(event, '{{ instance.slug }}-enrollment-application-popup')">{% trans 'Enroll' %}</button></p>
+      <span class="instance-userinfo">{% trans 'You are not enrolled.' %}</span>
+      {% if instance.is_active %}
+        <p><button id="{{ instance.slug }}-enroll-button" onclick="show_popup(event, '{{ instance.slug }}-enrollment-application-popup')">{% trans 'Enroll' %}</button></p>
+      {% else %}
+        <div>
+        <span class="instance-userinfo">{% trans 'Enrollment period for this course instance has closed.' %}</span>
+        </div>
+      {% endif %}
     {% else %}
     <span class="instance-userinfo">{% trans 'Log in to enable enrolling.' %}</span>
     {% endif %}

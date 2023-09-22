@@ -7,7 +7,5 @@
     >{% trans 'Preview' %}</a>
 </div>
 <div>
-    <textarea name="{{ widget.name }}"{% include "django/forms/widgets/attrs.html" %}>
-{% if widget.value %}{{ widget.value }}{% endif %}
-    </textarea>
+    <textarea name="{{ widget.name }}"{% include "django/forms/widgets/attrs.html" %}>{% if widget.value %}{{ widget.value }}{% endif %}</textarea>
 </div>

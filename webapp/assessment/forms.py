@@ -16,10 +16,6 @@ class AddAssessmentForm(forms.Form):
             raise ValidationError(
                 _(f"Either title in default language, or existing sheet must be filled")
             )
-        if sheet and default_title:
-            raise ValidationError(
-                _("Title fields cannot be filled when choosing an existing sheet")
-            )
 
     def __init__(self, *args, **kwargs):
         course_sheets = kwargs.pop("course_sheets")
@@ -40,6 +36,10 @@ class AddAssessmentForm(forms.Form):
             ]
             + [(s.id, s.title) for s in course_sheets],
             required=False,
+        )
+        self.fields["copy"] = forms.BooleanField(
+            label=_("Make a copy of selected sheet"),
+            required=False
         )
 
 

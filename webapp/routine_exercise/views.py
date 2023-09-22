@@ -72,7 +72,7 @@ def _save_question(user, instance, content, task_info, data):
             user=user,
             revision=revision,
             routineexerciseanswer=None,
-        )
+        ).delete()
         question = RoutineExerciseQuestion(
             instance=instance,
             exercise=content,

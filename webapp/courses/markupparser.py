@@ -416,6 +416,8 @@ class CalendarMarkup(Markup):
     example = "<!calendar=course-project-demo-calendar>"
     inline = False
     allow_inline = False
+    is_editable = True
+    has_reference = True
 
     @classmethod
     def block(cls, block, settings, state):
@@ -429,6 +431,9 @@ class CalendarMarkup(Markup):
         settings = {"calendar_name": matchobj.group("calendar_name")}
         return settings
 
+    @classmethod
+    def markup_from_dict(cls, form_data):
+        return f"<!calendar={form_data['calendar_name']}>"
 
 markups.append(CalendarMarkup)
 
@@ -621,8 +626,6 @@ class EmbeddedPageMarkup(Markup):
         settings = {"slug": matchobj.group("page_slug")}
         revision = None
         instance = state["context"].get("instance")
-
-        print(state["context"])
 
         try:
             try:

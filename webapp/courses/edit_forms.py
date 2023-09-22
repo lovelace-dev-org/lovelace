@@ -453,7 +453,7 @@ class ScriptFileInline(TranslationStaffForm):
         self.fields["existing"] = forms.ChoiceField(
             widget=forms.Select,
             label=_("Choose existing include"),
-            choices=accessible_files,
+            choices=[("", _("----NOT--SELECTED----"))] + accessible_files,
             required=False,
             initial=instance and instance.name,
         )
@@ -514,9 +514,10 @@ class ScriptEditForm(LineEditMixin, EmbeddedObjectEditForm):
         return False
 
     def clean(self):
+        default_lang = settings.MODELTRANSLATION_DEFAULT_LANGUAGE
         cleaned_data = super().clean()
         if not cleaned_data["existing"]:
-            if not cleaned_data["fileinfo"] or not cleaned_data[self.Meta.ref_field]:
+            if not cleaned_data[f"fileinfo_{default_lang}"] or not cleaned_data[self.Meta.ref_field]:
                 raise ValidationError(_(
                     "Existing file must be chosen, or both fileinfo and "
                     "name must be filled to create a new file"
@@ -582,7 +583,7 @@ class ScriptEditForm(LineEditMixin, EmbeddedObjectEditForm):
         self.fields["existing"] = forms.ChoiceField(
             widget=forms.Select,
             label=_("Choose existing script"),
-            choices=self._accessible_files,
+            choices=[("", _("----NOT--SELECTED----"))] + self._accessible_files,
             required=False,
         )
         self._include_formset = [
@@ -749,6 +750,31 @@ class TaskIncludeForm(LineEditMixin, EmbeddedObjectIncludeForm):
         ))
 
 
+class CalendarCreateForm(LineEditMixin, forms.ModelForm):
+
+    _name = "calendar"
+
+    class Meta:
+        model = cm.Calendar
+        fields = ["name", "allow_multiple"]
+        markup = markupparser.CalendarMarkup
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.save()
+        self.cleaned_data["calendar_name"] = instance.name
+
+    @property
+    def reference_changed(self):
+        return True
+
+    def __init__(self, *args, **kwargs):
+        self._context = kwargs.pop("context")
+        self._markup = self.Meta.markup
+        kwargs.pop("lines")
+        kwargs.pop("new")
+        super().__init__(*args, **kwargs)
+
 
 class BlockTypeSelectForm(forms.Form):
 
@@ -826,6 +852,7 @@ class TermifyForm(forms.Form):
 
 
 
+markupparser.MarkupParser.register_form("calendar", "edit", CalendarCreateForm)
 markupparser.MarkupParser.register_form("code", "edit", CodeEditForm)
 markupparser.MarkupParser.register_form("embedded_page", "edit", TaskCreateForm)
 markupparser.MarkupParser.register_form("embedded_page", "include", TaskIncludeForm)

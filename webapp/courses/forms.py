@@ -219,7 +219,45 @@ InstanceGradingForm = forms.inlineformset_factory(
 )
 
 
-class NewContentNodeForm(forms.ModelForm):
+class ContextNodeForm(forms.ModelForm):
+
+    active_node = forms.IntegerField(widget=forms.HiddenInput, required=True)
+
+    def clean_late_rule(self):
+        rule = self.cleaned_data["late_rule"]
+        if rule:
+            try:
+                dummy_result = eval(rule.format(
+                    p=1,
+                    m=1,
+                    q=1,
+                    d=0,
+                ))
+            except (IndexError, KeyError):
+                self.add_error("late_rule", _("Value contains invalid placeholders"))
+                return
+
+            if not isinstance(dummy_result, (int, float)):
+                self.add_error("late_rule", _("Does not result in a number when evaluated"))
+                return
+            elif dummy_result > 1:
+                self.add_error("late_rule", _("The formula resulst must be between 0 and 1"))
+                return
+
+    def __init__(self, *args, **kwargs):
+        available_content = kwargs.pop("available_content")
+        super().__init__(*args, **kwargs)
+        self.fields["content"] = forms.ChoiceField(
+            widget=forms.Select,
+            label=_("Choose content to link"),
+            choices=[
+                (0, _("----NEW--PAGE----")),
+            ]
+            + [(c.id, c.name) for c in available_content],
+        )
+
+
+class NewContentNodeForm(ContextNodeForm):
     class Meta:
         model = cm.ContentGraph
         fields = [
@@ -233,29 +271,20 @@ class NewContentNodeForm(forms.ModelForm):
             "evergreen",
         ]
 
-    active_node = forms.IntegerField(widget=forms.HiddenInput, required=True)
-
     def __init__(self, *args, **kwargs):
-        available_content = kwargs.pop("available_content")
         super().__init__(*args, **kwargs)
-
         self.fields["make_child"] = forms.BooleanField(
             label=_("Make this node a child of the selected node"), required=False
         )
         self.fields["new_page_name"] = forms.CharField(
             label=_("Name for new page (in default language)"), required=False
         )
-        self.fields["content"] = forms.ChoiceField(
-            widget=forms.Select,
-            label=_("Choose content to link"),
-            choices=[
-                (0, _("----NEW--PAGE----")),
-            ]
-            + [(c.id, c.name) for c in available_content],
+        self.fields["multi_language"] = forms.BooleanField(
+            label=_("Initialize as a multi language page."), required=False
         )
 
 
-class NodeSettingsForm(forms.ModelForm):
+class NodeSettingsForm(ContextNodeForm):
     class Meta:
         model = cm.ContentGraph
         fields = [
@@ -269,20 +298,8 @@ class NodeSettingsForm(forms.ModelForm):
             "evergreen",
         ]
 
-    active_node = forms.IntegerField(widget=forms.HiddenInput, required=True)
-
     def __init__(self, *args, **kwargs):
-        available_content = kwargs.pop("available_content")
         super().__init__(*args, **kwargs)
-
-        self.fields["content"] = forms.ChoiceField(
-            widget=forms.Select,
-            label=_("Choose content to link"),
-            choices=[
-                (0, _("----NEW--PAGE----")),
-            ]
-            + [(c.id, c.name) for c in available_content],
-        )
 
 
 class IndexEntryForm(TranslationModelForm):

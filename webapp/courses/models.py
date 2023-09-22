@@ -300,12 +300,10 @@ class CourseInstance(models.Model):
         self._was_primary = self.primary
 
     def is_active(self):
-        if not self.active:
-            try:
-                return self.start_date <= datetime.datetime.now() <= self.end_date
-            except TypeError:
-                return True
-        return True
+        try:
+            return self.start_date <= datetime.datetime.now() <= self.end_date
+        except TypeError:
+            return True
 
     def get_url_name(self):
         """Creates a URL and HTML5 ID field friendly version of the name."""
@@ -428,6 +426,13 @@ class ContentGraph(models.Model):
     )
     late_rule = models.CharField(
         verbose_name="Score reduction formula to use for late submissions",
+        help_text=_(
+            r"Write a mathematical formula. Four placeholders are available.\n"
+            r"{q} is obtained score as quotient of max points.\n"
+            r"{p} is obtained raw points\n"
+            r"{m} is the task's max points\n"
+            r"{d} is the amount of days since deadline"
+        ),
         max_length=50,
         blank=True,
         null=True,
@@ -1795,7 +1800,7 @@ class RepeatedTemplateExercise(ContentPage):
         return answers
 
     def save_answer(self, user, ip, user_answer, files, instance, revision):
-        if "answer" in answer.keys():
+        if "answer" in user_answer.keys():
             given_answer = user_answer["answer"].replace("\r", "")
         else:
             raise InvalidExerciseAnswerException("Answer missing!")

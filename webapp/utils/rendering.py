@@ -119,7 +119,7 @@ def render_terms(request, instance, context):
 
             final_links = []
             for link in term.termlink_set.all():
-                final_address, __ = parse_link_url(link.url)
+                final_address, __ = parse_link_url(link.url, context)
                 final_links.append({"url": final_address, "text": link.link_text})
 
             term_div_data.append(

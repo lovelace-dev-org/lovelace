@@ -3,7 +3,7 @@
 ## Install and setup packages
 
 This assumes installing all components on the same machine for development.
-For production, installing all main services on separate machines is recommeneded.
+For production, installing all main services on separate machines is recommended.
 
 ```
 sudo apt install git
@@ -201,12 +201,9 @@ chcon --reference /etc/pki/tls/certs/localhost.crt /etc/pki/tls/certs/your_certi
 ```
 
 Edit /etc/httpd/conf.d/ssl.conf
-Change the following directives to point at your files
+Use https://ssl-config.mozilla.org/ to generate a suitable configuration for your server and
+OpenSSL version.
 
-```
-SSLCertificateFile
-SSLCertificateKeyFile
-```
 
 Cut and paste your sites configuration under the VirtualHost directive in ssl.conf
 
