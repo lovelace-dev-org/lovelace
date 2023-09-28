@@ -868,7 +868,7 @@ def edit_instance_files(request):
                         file_changed = True
 
                 course_id = cleaned_data.get(
-                    f"instance_file_instance_[{instance_file.id}]_{lang_code}"
+                    f"instance_file_instance_[{instance_file.id}]_{default_lang}"
                 )
                 if str(instance_file.course.id) != course_id:
                     instance_file.course_id = course_id
