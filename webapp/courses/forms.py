@@ -243,6 +243,7 @@ class ContextNodeForm(forms.ModelForm):
             elif dummy_result > 1:
                 self.add_error("late_rule", _("The formula resulst must be between 0 and 1"))
                 return
+        return rule
 
     def __init__(self, *args, **kwargs):
         available_content = kwargs.pop("available_content")
