@@ -82,7 +82,9 @@
         <div class="cookie-law-container">
           <p>{% url 'courses:terms' as terms_url %}
             {% blocktrans %}
-              This site uses cookies.
+              This site uses cookies. Only cookies that are necessary for the site to
+              work or to remember your settings (like language) are used. This site does
+              not use any tracking cookies.
               Learn more about our <a href="{{ terms_url }}">terms and conditions</a>.
             {% endblocktrans %}
           </p>

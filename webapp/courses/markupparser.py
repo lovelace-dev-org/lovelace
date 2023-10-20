@@ -283,16 +283,18 @@ class MarkupParser:
             ) for old in replaces
         ]
 
+        total_n = 0
         for block_type, group in itertools.groupby(lines, self._get_line_kind):
             if block_type in replace_in:
                 for line in group:
                     for old_re in replaces:
-                        line = old_re.sub(f"{tag[0]}\\g<word>{tag[1]}\\g<punct>", line)
+                        line, n = old_re.subn(f"{tag[0]}\\g<word>{tag[1]}\\g<punct>", line)
                     lines_out.append(line)
+                    total_n += n
             else:
                 lines_out.extend(list(group))
 
-        return lines_out
+        return lines_out, total_n
 
 
 markups = []

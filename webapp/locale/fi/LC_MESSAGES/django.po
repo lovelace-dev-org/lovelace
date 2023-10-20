@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-09-04 14:44+0300\n"
+"POT-Creation-Date: 2023-10-04 15:13+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -339,6 +339,12 @@ msgstr ""
 msgid "Choose existing include"
 msgstr "Valitse olemassaoleva liitettäväksi"
 
+#: courses/edit_forms.py:456 courses/edit_forms.py:586
+#, fuzzy
+#| msgid "----NEW--SHEET----"
+msgid "----NOT--SELECTED----"
+msgstr "---UUSI--LOMAKE---"
+
 #: courses/edit_forms.py:462
 msgid "Include type"
 msgstr ""
@@ -352,7 +358,7 @@ msgstr "Kesto"
 msgid "Unlink"
 msgstr ""
 
-#: courses/edit_forms.py:521
+#: courses/edit_forms.py:522
 msgid ""
 "Existing file must be chosen, or both fileinfo and name must be filled to "
 "create a new file"
@@ -360,71 +366,71 @@ msgstr ""
 "Valitse olemassaoleva tiedosto, tai lataa tiedosto ja täytä nimi-kenttä "
 "luodaksesi uuden tiedoston"
 
-#: courses/edit_forms.py:541
+#: courses/edit_forms.py:542
 msgid "Included files"
 msgstr "Liitetyt tiedostot"
 
-#: courses/edit_forms.py:559 courses/edit_forms.py:690
+#: courses/edit_forms.py:560 courses/edit_forms.py:691
 msgid "iframe width"
 msgstr "iframen leveys"
 
-#: courses/edit_forms.py:560 courses/edit_forms.py:691
+#: courses/edit_forms.py:561 courses/edit_forms.py:692
 msgid "iframe height"
 msgstr "iframen korkeus"
 
-#: courses/edit_forms.py:561
+#: courses/edit_forms.py:562
 msgid "Border CSS"
 msgstr "Reunan tyyli (CSS)"
 
-#: courses/edit_forms.py:584
+#: courses/edit_forms.py:585
 msgid "Choose existing script"
 msgstr "Valitse olemassaoleva skripti"
 
-#: courses/edit_forms.py:659
+#: courses/edit_forms.py:660
 msgid "No content preview"
 msgstr "Älä näytä sisältöä"
 
-#: courses/edit_forms.py:786
+#: courses/edit_forms.py:787
 msgid "Placement"
 msgstr "Sijoitus"
 
-#: courses/edit_forms.py:789
+#: courses/edit_forms.py:790
 msgid "Before highlighted content block"
 msgstr "Valitun blokin yläpuolelle"
 
-#: courses/edit_forms.py:790
+#: courses/edit_forms.py:791
 msgid "After highlighted content block"
 msgstr "Valitun blokin alapuolelle"
 
-#: courses/edit_forms.py:796
+#: courses/edit_forms.py:797
 msgid "Mode (if applicable)"
 msgstr "Toiminto (jos sovellettavissa)"
 
-#: courses/edit_forms.py:799
+#: courses/edit_forms.py:800
 msgid "Create a new object"
 msgstr "Luo uusi objekti"
 
-#: courses/edit_forms.py:800
+#: courses/edit_forms.py:801
 msgid "Include an existing object"
 msgstr "Liitä olemassaoleva objekti"
 
-#: courses/edit_forms.py:814
+#: courses/edit_forms.py:815
 msgid "Block type to add"
 msgstr "Lisättävän blokin tyyppi"
 
-#: courses/edit_forms.py:829
+#: courses/edit_forms.py:830
 msgid "Base word"
 msgstr "Sanan perusmuoto"
 
-#: courses/edit_forms.py:831
+#: courses/edit_forms.py:832
 msgid "Inflections (comma sep.)"
 msgstr "Taivutukset (pilkulla erotettuna)"
 
-#: courses/edit_forms.py:836
+#: courses/edit_forms.py:837
 msgid "Replace in"
 msgstr "Korvaa valituissa"
 
-#: courses/edit_forms.py:846
+#: courses/edit_forms.py:847
 msgid "Term"
 msgstr "Termi"
 
@@ -588,7 +594,7 @@ msgstr ""
 msgid "Group name"
 msgstr "Ryhmän nimi"
 
-#: courses/models.py:432
+#: courses/models.py:430
 #, python-brace-format
 msgid ""
 "Write a mathematical formula. Four placeholders are available.\\n{q} is "
@@ -596,7 +602,7 @@ msgid ""
 "is the task's max points\\n{d} is the amount of days since deadline"
 msgstr ""
 
-#: courses/models.py:1630
+#: courses/models.py:1628
 msgid ""
 "Filename {} is not listed in accepted filenames. Allowed:\n"
 "{}"
@@ -708,129 +714,136 @@ msgstr "Lisää uusi"
 #, python-format
 msgid ""
 "\n"
-"              This site uses cookies.\n"
+"              This site uses cookies. Only cookies that are necessary for "
+"the site to\n"
+"              work or to remember your settings (like language) are used. "
+"This site does\n"
+"              not use any tracking cookies.\n"
 "              Learn more about our <a href=\"%(terms_url)s\">terms and "
 "conditions</a>.\n"
 "            "
 msgstr ""
 "\n"
-"Tämä sivusto käyttää evästeitä. Lue lisää <a "
+"Tämä sivusto käyttää evästeitä. Sivusto käyttää ainoastaan evästeitä, jotka ovat "
+"välttämättömiä sen toiminnan kannalta, tai joita tarvitaan käyttäjän asetusten (kuten kieli) "
+"muistamiseen. Sivusto ei käytä seurantaevästeitä."
+"Lue lisää <a "
 "href=\"%(terms_url)s\">käyttöehdoista</a>."
 
-#: courses/templates/courses/base.html:89
+#: courses/templates/courses/base.html:91
 msgid "Accept"
 msgstr "Hyväksy"
 
-#: courses/templates/courses/base.html:118
+#: courses/templates/courses/base.html:120
 msgid "Settings"
 msgstr "Asetukset"
 
-#: courses/templates/courses/base.html:123
+#: courses/templates/courses/base.html:125
 msgid "Group info"
 msgstr "Ryhmän tiedot"
 
-#: courses/templates/courses/base.html:129
+#: courses/templates/courses/base.html:131
 msgid "Management panel"
 msgstr "Hallintapaneeli"
 
-#: courses/templates/courses/base.html:135
+#: courses/templates/courses/base.html:137
 #: courses/templates/courses/contentpage.html:47
 #: courses/templates/courses/course.html:39
 #: teacher_tools/templates/teacher_tools/student_completion.html:20
 msgid "Manage enrollments"
 msgstr "Kurssi-ilmoittautumiset"
 
-#: courses/templates/courses/base.html:141
+#: courses/templates/courses/base.html:143
 #: courses/templates/courses/group-management.html:26
 msgid "Manage groups"
 msgstr "Ryhmien hallinta"
 
-#: courses/templates/courses/base.html:149
+#: courses/templates/courses/base.html:151
 msgid "Open the mass email panel"
 msgstr "Avaa Massasähköpostipaneeli"
 
-#: courses/templates/courses/base.html:151
+#: courses/templates/courses/base.html:153
 msgid "Mass email"
 msgstr "Massasähköposti"
 
-#: courses/templates/courses/base.html:156
+#: courses/templates/courses/base.html:158
 #: courses/templates/courses/contentpage.html:39
 #: courses/templates/courses/course.html:28
 #: teacher_tools/templates/teacher_tools/student_completion.html:14
 msgid "Course completion"
 msgstr "Suoritustilastot"
 
-#: courses/templates/courses/base.html:161
+#: courses/templates/courses/base.html:163
 msgid "Reminders"
 msgstr "Muistutukset"
 
-#: courses/templates/courses/base.html:166
+#: courses/templates/courses/base.html:168
 #: courses/templates/courses/content-meta.html:53
 #: courses/templates/courses/embed-frame.html:86
 #: courses/templates/courses/embed-meta.html:40
 msgid "Statistics"
 msgstr "Tilastot"
 
-#: courses/templates/courses/base.html:171
+#: courses/templates/courses/base.html:173
 msgid "Log out"
 msgstr "Kirjaudu ulos"
 
-#: courses/templates/courses/base.html:177
+#: courses/templates/courses/base.html:179
 msgid "Log in"
 msgstr "Kirjaudu sisään"
 
-#: courses/templates/courses/base.html:181
+#: courses/templates/courses/base.html:183
 msgid "Sign up"
 msgstr "Luo käyttäjä"
 
-#: courses/templates/courses/base.html:202
-#: courses/templates/courses/base.html:288
+#: courses/templates/courses/base.html:204
+#: courses/templates/courses/base.html:290
 msgid "Table of Contents"
 msgstr "Sisällysluettelo"
 
-#: courses/templates/courses/base.html:226
+#: courses/templates/courses/base.html:228
 msgid "Toggle between student and staff view"
 msgstr "Vaihda henkilökunnan ja opiskelijan näkymän välillä"
 
-#: courses/templates/courses/base.html:227
+#: courses/templates/courses/base.html:229
 msgid "staff view"
 msgstr "opettajatila"
 
-#: courses/templates/courses/base.html:240
+#: courses/templates/courses/base.html:242
 msgid "Hide/Show the termbank"
 msgstr "Piilota/Näytä termipankki"
 
-#: courses/templates/courses/base.html:243
+#: courses/templates/courses/base.html:245
 msgid "Termbank"
 msgstr "Termipankki"
 
-#: courses/templates/courses/base.html:248
+#: courses/templates/courses/base.html:250
 msgid "Search for a term…"
 msgstr "Hae termiä…"
 
-#: courses/templates/courses/base.html:285
+#: courses/templates/courses/base.html:287
 msgid "Hide/Show the table of contents"
 msgstr "Piilota/Näytä sisällysluettelo"
 
-#: courses/templates/courses/base.html:297
+#: courses/templates/courses/base.html:299
 msgid "Completed:"
 msgstr "Ratkaistu:"
 
-#: courses/templates/courses/base.html:298
+#: courses/templates/courses/base.html:300
 msgid "exercises"
 msgstr "tehtävää"
 
-#: courses/templates/courses/base.html:322
-#: courses/templates/courses/base.html:330
+#: courses/templates/courses/base.html:324
+#: courses/templates/courses/base.html:332
 #: courses/templates/courses/embed-frame.html:200
 msgid "Close the panel"
 msgstr "Sulje paneeli"
 
-#: courses/templates/courses/base.html:353
+#: courses/templates/courses/base.html:355
 msgid "Description"
 msgstr "Kuvaus"
 
-#: courses/templates/courses/base.html:395
+#: courses/templates/courses/base.html:397
 #: courses/templates/courses/terms.html:10
 #: courses/templates/courses/terms.html:17
 msgid "Terms and Conditions"
@@ -1310,6 +1323,11 @@ msgid "Group Management"
 msgstr "Ryhmien hallinta"
 
 #: courses/templates/courses/group-management.html:30
+#, fuzzy, python-format
+#| msgid ""
+#| "\n"
+#| "        Number of groups: %(groups)s\n"
+#| "      "
 msgid ""
 "\n"
 "        Number of groups: %(groups)s\n"
@@ -1572,74 +1590,75 @@ msgstr "Esikatselu"
 msgid "You are not enrolled."
 msgstr "Et ole ilmoittautunut."
 
-#: courses/templates/courses/widgets/enroll_widget.html:7
+#: courses/templates/courses/widgets/enroll_widget.html:8
 msgid "Enroll"
 msgstr "Ilmoittaudu"
 
-#: courses/templates/courses/widgets/enroll_widget.html:9
-msgid "Log in to enable enrolling."
-msgstr "Kirjaudu sisään ilmoittautuaksesi."
-
-#: courses/templates/courses/widgets/enroll_widget.html:14
-msgid "You have enrolled"
-msgstr "Olet ilmoittautunut."
-
-#: courses/templates/courses/widgets/enroll_widget.html:16
-msgid "Your application was not accepted"
-msgstr "Osallistumispyyntöäsi ei hyväksytty."
-
-#: courses/templates/courses/widgets/enroll_widget.html:18
-msgid "You have been removed from this course instance"
-msgstr "Sinut on poistettu tältä kurssilta."
-
-#: courses/templates/courses/widgets/enroll_widget.html:20
-msgid "Your enrollment is waiting confirmation"
-msgstr "Osallistumispyyntösi odottaa käsittelyä."
-
-#: courses/templates/courses/widgets/enroll_widget.html:22
-msgid "Your enrollment has been transfered to another instance"
-msgstr "Ilmoittautumisesi on siirretty toiseen kurssitilaan"
-
-#: courses/templates/courses/widgets/enroll_widget.html:24
-msgid "You have withdrawn your enrollment"
-msgstr "Olet peruuttanut ilmoittautumisesi."
-
-#: courses/templates/courses/widgets/enroll_widget.html:32
-msgid "Withdraw"
-msgstr "Peruuta"
-
-#: courses/templates/courses/widgets/enroll_widget.html:36
-#: courses/templates/courses/widgets/enroll_widget.html:44
+#: courses/templates/courses/widgets/enroll_widget.html:11
+#: courses/templates/courses/widgets/enroll_widget.html:42
+#: courses/templates/courses/widgets/enroll_widget.html:50
 msgid "Enrollment period for this course instance has closed."
 msgstr "Ilmoittautumisaika tälle kurssille on sulkeutunut"
 
-#: courses/templates/courses/widgets/enroll_widget.html:41
+#: courses/templates/courses/widgets/enroll_widget.html:15
+msgid "Log in to enable enrolling."
+msgstr "Kirjaudu sisään ilmoittautuaksesi."
+
+#: courses/templates/courses/widgets/enroll_widget.html:20
+msgid "You have enrolled"
+msgstr "Olet ilmoittautunut."
+
+#: courses/templates/courses/widgets/enroll_widget.html:22
+msgid "Your application was not accepted"
+msgstr "Osallistumispyyntöäsi ei hyväksytty."
+
+#: courses/templates/courses/widgets/enroll_widget.html:24
+msgid "You have been removed from this course instance"
+msgstr "Sinut on poistettu tältä kurssilta."
+
+#: courses/templates/courses/widgets/enroll_widget.html:26
+msgid "Your enrollment is waiting confirmation"
+msgstr "Osallistumispyyntösi odottaa käsittelyä."
+
+#: courses/templates/courses/widgets/enroll_widget.html:28
+msgid "Your enrollment has been transfered to another instance"
+msgstr "Ilmoittautumisesi on siirretty toiseen kurssitilaan"
+
+#: courses/templates/courses/widgets/enroll_widget.html:30
+msgid "You have withdrawn your enrollment"
+msgstr "Olet peruuttanut ilmoittautumisesi."
+
+#: courses/templates/courses/widgets/enroll_widget.html:38
+msgid "Withdraw"
+msgstr "Peruuta"
+
+#: courses/templates/courses/widgets/enroll_widget.html:47
 msgid "Re-Enroll"
 msgstr "Ilmoittaudu uudestaan"
 
-#: courses/templates/courses/widgets/enroll_widget.html:53
+#: courses/templates/courses/widgets/enroll_widget.html:59
 msgid "Enroll to"
 msgstr "Ilmoittaudu"
 
-#: courses/templates/courses/widgets/enroll_widget.html:58
+#: courses/templates/courses/widgets/enroll_widget.html:64
 msgid "Enrollments to this course must be accepted by the teacher"
 msgstr "Tälle kurssille osallistuminen vaatii opettajan hyväksynnän"
 
-#: courses/templates/courses/widgets/enroll_widget.html:59
+#: courses/templates/courses/widgets/enroll_widget.html:65
 msgid "You can attach a note to your enrollment application by typing below"
 msgstr ""
 "Voit liittää osallistumispyyntöön viestin kirjoittamalla alla olevaan "
 "laatikkoon"
 
-#: courses/templates/courses/widgets/enroll_widget.html:60
+#: courses/templates/courses/widgets/enroll_widget.html:66
 msgid "Type your application here"
 msgstr "Kirjoita hakemuksesi tähän"
 
-#: courses/templates/courses/widgets/enroll_widget.html:62
+#: courses/templates/courses/widgets/enroll_widget.html:68
 msgid "Enrollments to this course are accepted automatically"
 msgstr "Tämän kurssin ilmoittautumiset hyväksytään automaattisesti"
 
-#: courses/templates/courses/widgets/enroll_widget.html:66
+#: courses/templates/courses/widgets/enroll_widget.html:72
 msgid "Send application"
 msgstr "Lähetä ilmoittautuminen"
 

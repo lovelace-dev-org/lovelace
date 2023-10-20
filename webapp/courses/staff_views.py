@@ -615,14 +615,21 @@ def termify(request, course, instance):
         parser = markupparser.MarkupParser()
         with reversion.create_revision():
             for page in embeds + pages:
-                termified_lines = parser.tag(
-                    page.content,
+                lang = translation.get_language()
+                if not getattr(page, f"content_{lang}"):
+                    field = f"content_{settings.MODELTRANSLATION_DEFAULT_LANGUAGE}"
+                else:
+                    field = f"content_{lang}"
+
+                termified_lines, n = parser.tag(
+                    getattr(page, field),
                     form.cleaned_data["replace_in"],
                     replaces,
                     (f"[!term={form.cleaned_data['term']}!]", "[!term!]")
                 )
-                page.content = "\n".join(termified_lines)
-                page.save()
+                if n:
+                    setattr(page, field, "\n".join(termified_lines))
+                    page.save()
             reversion.set_user(request.user)
 
         for page in pages:
