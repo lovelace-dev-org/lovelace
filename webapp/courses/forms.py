@@ -236,6 +236,9 @@ class ContextNodeForm(forms.ModelForm):
             except (IndexError, KeyError):
                 self.add_error("late_rule", _("Value contains invalid placeholders"))
                 return
+            except SyntaxError:
+                self.add_error("late_rule", _("Value is not a valid Python expression"))
+                return
 
             if not isinstance(dummy_result, (int, float)):
                 self.add_error("late_rule", _("Does not result in a number when evaluated"))
