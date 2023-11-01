@@ -246,7 +246,7 @@ def routine_progress(request, course, instance, content, task_id):
         if info["data"].get("over", False):
             return JsonResponse({"error": _("No more questions available.")})
 
-        question = _save_question(request.user, instance, content, info, info["data"])
+        question = _save_question(request.user, instance, content, info, info["data"]["next"])
         try:
             data = _question_context_data(request, course, instance, question)
         except Exception as e:
@@ -275,10 +275,11 @@ def routine_progress(request, course, instance, content, task_id):
         data = render_json_feedback(
             info["data"]["log"], request, course, instance, content, answer.id
         )
+        data["points"] = info["data"]["score"]
+        data["max"] = info["data"]["max"]
+
         if progress.completed:
             data["evaluation"] = True
-            data["points"] = content.default_points
-            data["max"] = content.default_points
             update_completion(content, instance, request.user, data, answer.answer_date)
             total_evaluation, quotient = content.get_user_evaluation(request.user, instance)
             data["score"] = f"{quotient * content.default_points:.2f}"

@@ -201,7 +201,6 @@ def render_json_feedback(log, request, course, instance, content, answer_id=None
     # render all individual messages in the log tree
     triggers = []
     hints = []
-    correct = True
 
     context = {"course_slug": course.slug, "instance_slug": instance.slug}
 
@@ -225,7 +224,6 @@ def render_json_feedback(log, request, course, instance, content, answer_id=None
                 )
                 if output["flag"] in (INCORRECT, ERROR):
                     run["correct"] = False
-                    correct = False
 
         test["runs"].sort(key=lambda run: run["correct"])
 
@@ -245,7 +243,13 @@ def render_json_feedback(log, request, course, instance, content, answer_id=None
 
     t_messages = loader.get_template("courses/exercise-evaluation-messages.html")
     t_exercise = loader.get_template("courses/exercise-evaluation.html")
-    c_exercise = {"evaluation": correct, "answer_url": request.build_absolute_uri(answer_url)}
+    c_exercise = {
+        "evaluation": log["result"]["correct"],
+        "manual": content.manually_evaluated,
+        "answer_url": request.build_absolute_uri(answer_url),
+        "points": log["result"]["score"],
+        "max": log["result"]["max"],
+    }
     feedback = {
         "messages": t_messages.render({"log": log["tests"]}),
         "hints": hints,
