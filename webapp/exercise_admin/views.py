@@ -27,6 +27,7 @@ from courses.models import (
     Course,
     ContentPage,
     FileUploadExercise,
+    FileExerciseSettings,
     FileExerciseTest,
     FileExerciseTestStage,
     FileExerciseTestCommand,
@@ -90,6 +91,7 @@ def save_file_upload_exercise(
     if_ids,
 ):
     deletions = []
+    extra_settings = exercise.fileexercisesettings
     # Collect the content page data
     # e_name = form_data['exercise_name']
     # e_content = form_data['exercise_content']
@@ -102,6 +104,8 @@ def save_file_upload_exercise(
     e_manually_evaluated = form_data["exercise_manually_evaluated"]
     e_ask_collaborators = form_data["exercise_ask_collaborators"]
     e_allowed_filenames = form_data["exercise_allowed_filenames"]
+    e_max_file_count = form_data["exercise_max_file_count"]
+    e_answer_mode = form_data["exercise_answer_mode"]
 
     lang_list = get_lang_list()
     for lang_code, _ in lang_list:
@@ -114,6 +118,10 @@ def save_file_upload_exercise(
         e_question = form_data[f"exercise_question_{lang_code}"]
         setattr(exercise, f"question_{lang_code}", e_question)
 
+        e_answer_filename = form_data[f"exercise_answer_filename_{lang_code}"]
+        print(e_answer_filename)
+        setattr(extra_settings, f"answer_filename_{lang_code}", e_answer_filename)
+
     # exercise.name = e_name
     # exercise.content = e_content
     exercise.default_points = e_default_points
@@ -123,11 +131,15 @@ def save_file_upload_exercise(
     exercise.group_submission = e_group_submission
     exercise.manually_evaluated = e_manually_evaluated
     exercise.ask_collaborators = e_ask_collaborators
-    exercise.allowed_filenames = e_allowed_filenames
     exercise.save()
     # save() first so that m2m can be used (when adding a new exercise)
     exercise.feedback_questions.set(e_feedback_questions)
     exercise.save()
+
+    extra_settings.allowed_filenames = e_allowed_filenames
+    extra_settings.max_file_count = e_max_file_count
+    extra_settings.answer_mode = e_answer_mode
+    extra_settings.save()
 
     # Hints
 
