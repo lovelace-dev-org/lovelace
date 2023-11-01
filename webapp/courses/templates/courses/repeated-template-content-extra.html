@@ -3,7 +3,11 @@
 <button id="rt-{{ content.id }}"
         onclick="start_repeated_template_session(event);"
         class="rt-interaction"
-        data-url="{% url 'courses:get_repeated_template_session' course instance content 'head' %}"
+        data-url="
+          {% if instance %}
+            {% url 'courses:get_repeated_template_session' course instance content 'head' %}
+          {% endif %}
+        "
         data-start-text="{% trans 'Start exercise session' %}"
         data-next-text="{% trans 'Next' %}"
         data-start-over-text="{% trans 'Start over' %}">

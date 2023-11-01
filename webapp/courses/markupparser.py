@@ -279,7 +279,7 @@ class MarkupParser:
 
         replaces = [
             re.compile(
-                f"(?<!{tag[0]})(?P<word>[{old[0].upper()}{old[0]}]{old[1:]})(?P<punct>[- .?!;:])"
+                f"(?<!{tag[0]})(?P<word>[{old[0].upper()}{old[0]}]{old[1:]})(?P<punct>[- ,.?!;:])"
             ) for old in replaces
         ]
 

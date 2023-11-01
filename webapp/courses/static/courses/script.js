@@ -496,6 +496,7 @@ function show_panel (event, caller, panel_type, panel_id, refresh) {
             success: function (data, status, jqxhr) {
                 container.html(data)
                 panel.attr("data-panel-type", panel_type)
+                container.find("form :input[type!=hidden]").first().focus()
             },
             error: function (jqxhr, status, type) {
                 container.html(jqxhr.responseText)

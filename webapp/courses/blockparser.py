@@ -322,8 +322,6 @@ def parseblock(blockstring, context=None):
     parsed_string = parsetag("dl", parsed_string, context)
     parsed_string = parsetag("thold", parsed_string, context)
     parsed_string = parsetag("color", parsed_string, context)
-    parsed_string = parsed_string.replace("'", "&#x27;")
-
     return parsed_string
 
 

@@ -81,6 +81,10 @@ def event_duration(td):
         return time.strftime("%Hh %Mmin", time.gmtime(seconds))
     return time.strftime("%Mmin", time.gmtime(seconds))
 
+@register.filter
+def preview_escape(block):
+    return block.replace("'", "&#x27;")
+
 
 @register.inclusion_tag("courses/embed-frame.html", takes_context=True)
 def embed_frame(context, content_data):
@@ -247,3 +251,5 @@ def enroll_widget(context, course, instance, enroll_status):
         "user_authenticated": context["user"].is_authenticated,
         "enroll_status": enroll_status,
     }
+
+

@@ -10,7 +10,7 @@
         <link rel="stylesheet" href="{% static 'courses/embedded-file.css' %}">
         <link rel="stylesheet" href="{% static 'courses/katex.min.css' %}">
         <link rel="stylesheet" href="{% static 'courses/latofonts.css' %}"> 
-        <script src="{% static 'courses/jquery.min.js' %}"></script>
+        <script src="{% static 'courses/jquery-3.3.1.min.js' %}"></script>
         <script src="{% static 'courses/jquery.slimscroll.min.js' %}"></script>
         <script src="{% static 'courses/script.js' %}"></script>        
     </head>
@@ -22,13 +22,13 @@
         {% if embedded_preview %}
             {% embed_frame_preview embed_data %}
         {% else %}
-          {% for block_type, block_data, line_idx, line_count in content_blocks %}
+          {% for block_type, block_data, blah, blah2 in content_blocks %}
             {% if block_type == "calendar" %}
               {% calendar_preview block_data %}
             {% elif block_type == "embedded" %}
               {% embed_frame_preview block_data %}
             {% else %}
-              {{ block_data|safe }}
+              {{ block_data|preview_escape|safe }}
             {% endif %}
           {% endfor %}
           

@@ -1,4 +1,5 @@
 {% load i18n %}
+{% load form_tags %}
 
 <form id="{{ html_id }}"
     class="{{ html_class }}"
@@ -29,7 +30,7 @@
                         {{ field.label_tag }}
                     {% endif %}
                 </td>
-                <td>{{ field }}</td>
+                <td>{{ field|tabindex_attr }}</td>
               </tr>
             {% endfor %}
           <tbody>
@@ -94,9 +95,9 @@
         {% endif %}
 
         {% if submit_label %}
-          <input type="submit" name="submit" value="{{ submit_label }}"></input>
+          <input type="submit" name="submit" value="{{ submit_label }}" tabindex="{% tabindex_value %}"></input>
         {% else %}
-          <input type="submit" name="submit" value="{% trans 'Save' %}"></input>
+          <input type="submit" name="submit" value="{% trans 'Save' %}" tabindex="{% tabindex_value %}"></input>
         {% endif %}
 </form>
 

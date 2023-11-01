@@ -27,6 +27,7 @@ const toc = {
                 button.parent().after(form)
                 button.attr("onclick", "toc.close_form(event, this);")
                 toc.active_button = button
+                form.find("input[type!=hidden]").first().focus()
             }
         })
     },

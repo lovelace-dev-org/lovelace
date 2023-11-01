@@ -714,7 +714,7 @@ class TaskCreateForm(LineEditMixin, TranslationStaffForm):
 
     class Meta:
         model = cm.ContentPage
-        fields = ["name", "content_type"]
+        fields = ["name"]
         markup = markupparser.EmbeddedPageMarkup
 
     def save(self, commit=True):
@@ -732,6 +732,13 @@ class TaskCreateForm(LineEditMixin, TranslationStaffForm):
         kwargs.pop("lines")
         kwargs.pop("new")
         super().__init__(*args, **kwargs)
+        self.fields["content_type"] = forms.ChoiceField(
+            widget=forms.Select,
+            choices=(
+                choice for choice in cm.ContentPage.CONTENT_TYPE_CHOICES if choice[0] != "LECTURE"
+            )
+        )
+
 
 
 class TaskIncludeForm(LineEditMixin, EmbeddedObjectIncludeForm):

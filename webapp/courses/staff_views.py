@@ -374,7 +374,9 @@ def create_content_node(request, course, instance):
 def remove_content_node(request, course, instance, node_id):
     if request.method == "POST":
         try:
-            ContentGraph.objects.get(id=node_id, instance=instance).delete()
+            node = ContentGraph.objects.get(id=node_id, instance=instance)
+            EmbeddedLink.objects.filter(parent=node.content, instance=instance).delete()
+            node.delete()
         except ContentGraph.DoesNotExist:
             return HttpResponseNotFound(_("This content node doesn't exist"))
         return HttpResponse(status=204)
@@ -850,7 +852,7 @@ def content_preview(request, field_name):
                     choices.append({"id": i, "answer": choice})
             c["embedded_preview"] = True
             c["embed_data"] = {
-                "content": "".join(block[1] for block in full),
+                "content": full,
                 "question": rendered_question,
                 "form": form.render({"choices": choices}, request),
             }
