@@ -719,6 +719,7 @@ class TaskCreateForm(LineEditMixin, TranslationStaffForm):
 
     def save(self, commit=True):
         instance = super().save(commit=False)
+        instance.content_type = self.cleaned_data["content_type"]
         instance.save()
         self.cleaned_data["page_slug"] = instance.slug
 
