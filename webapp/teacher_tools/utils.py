@@ -1,3 +1,4 @@
+from django.http import QueryDict
 from django.urls import reverse
 import courses.models as cm
 
@@ -128,4 +129,13 @@ def reconstruct_answer_form(task_type, answer):
         return {"-radio": answer.chosen_answer_id}
     if task_type == "CHECKBOX_EXERCISE":
         return dict((str(a.id), a.id) for a in answer.chosen_answers.all())
+    if task_type == "MULTIPLE_CHOICE_EXAM":
+        answer_form = QueryDict(mutable=True)
+        answer_form.update({
+            "attempt_id": answer.attempt.id
+        })
+        for key, choices in answer.answers.items():
+            answer_form.setlist(key, choices)
+        return answer_form
+
     raise ValueError("Unsupported task type")

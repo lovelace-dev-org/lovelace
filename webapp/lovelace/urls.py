@@ -55,6 +55,7 @@ urlpatterns = [
     path("routine_exercise/", include("routine_exercise.urls", namespace="routine")),
     path("faq/", include("faq.urls", namespace="faq")),
     path("assessment/", include("assessment.urls", namespace="assessment")),
+    path("multiexam/", include("multiexam.urls", namespace="multiexam")),
 ]
 
 try:

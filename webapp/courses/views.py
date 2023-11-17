@@ -285,38 +285,9 @@ def show_answers(request, user, course, instance, exercise):
     content_type = exercise.content_type
     question = exercise.question
     choices = exercise.get_choices(exercise)
-    template = "courses/user-exercise-answers.html"
+    template = exercise.answers_template
 
-    answers = []
-
-    if content_type == "MULTIPLE_CHOICE_EXERCISE":
-        answers = UserMultipleChoiceExerciseAnswer.objects.filter(
-            user=user, exercise=exercise, instance=instance
-        )
-    elif content_type == "CHECKBOX_EXERCISE":
-        answers = UserCheckboxExerciseAnswer.objects.filter(
-            user=user, exercise=exercise, instance=instance
-        )
-    elif content_type == "TEXTFIELD_EXERCISE":
-        answers = UserTextfieldExerciseAnswer.objects.filter(
-            user=user, exercise=exercise, instance=instance
-        )
-    elif content_type == "FILE_UPLOAD_EXERCISE":
-        answers = UserFileUploadExerciseAnswer.objects.filter(
-            user=user, exercise=exercise, instance=instance
-        )
-    elif content_type == "CODE_REPLACE_EXERCISE":
-        answers = UserCodeReplaceExerciseAnswer.objects.filter(
-            user=user, exercise=exercise, instance=instance
-        )
-    elif content_type == "REPEATED_TEMPLATE_EXERCISE":
-        answers = UserRepeatedTemplateExerciseAnswer.objects.filter(
-            user=user, exercise=exercise, instance=instance
-        )
-    elif content_type == "ROUTINE_EXERCISE":
-        answers = exercise.get_user_answers(exercise, user, instance)
-        template = "routine_exercise/user-answers.html"
-
+    answers = exercise.get_user_answers(exercise, user, instance)
     answers = answers.order_by("-answer_date")
 
     title, anchor = first_title_from_content(exercise.content)

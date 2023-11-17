@@ -12,6 +12,7 @@ from utils.files import get_testfile_path, upload_storage
 class RoutineExercise(ContentPage):
     template = "routine_exercise/routine-exercise.html"
     answers_template = "routine_exercise/user-answers.html"
+    answer_table_classes = "fixed"
 
     class Meta:
         verbose_name = "routine exercise"

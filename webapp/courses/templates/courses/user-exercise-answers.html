@@ -3,6 +3,7 @@
 {% load i18n %}
 {% load static %}
 {% load course_tags %}
+{% load answer_tags %}
 
 {% block page-title %}
   {% blocktrans %}
@@ -84,38 +85,7 @@
        <div class="popup"><div class="results-view" id="results-{{ answer.id }}"></div></div>
        <div class="popup"><div class="results-view" id="assessment-{{ answer.id }}"></div></div>
     </td>
-    {% if exercise.content_type == "TEXTFIELD_EXERCISE" %}
-      <td class="answer render-white-space monospace">{{ answer.given_answer }}</td>
-    {% elif exercise.content_type == "MULTIPLE_CHOICE_EXERCISE" %}
-      <td class="answer render-white-space">{{ answer.chosen_answer }}</td>
-    {% elif exercise.content_type == "CHECKBOX_EXERCISE" %}
-      <td class="answer">
-        <ul>
-          {% for chosen_answer in answer.chosen_answers.all %}
-            <li>{{ chosen_answer }}</li>
-          {% endfor %}
-        </ul>
-      </td>
-    {% elif exercise.content_type == "FILE_UPLOAD_EXERCISE" %}
-      <td class="answer">
-          {% for file in answer.get_returned_file_list.items %}
-            <a href="{% url 'courses:download_answer_file' student course instance answer file.0 %}"
-               class="file-url"
-               download>
-            </a>
-            {% if file.1.1 == True %}
-                {{ file.0 }}
-              {% else %}
-                <a class="fileview-link"
-                   href="{% url 'courses:show_answer_file' student course instance answer file.0 %}"
-                   onclick="show_file(event, this);">{{ file.0 }}
-                </a>
-                <div class="popup"><pre class="fileview"></pre></div>
-              {% endif %}
-              <br />
-          {% endfor %}
-      </td>
-    {% elif exercise.content_type == "REPEATED_TEMPLATE_EXERCISE" %}
+    {% if exercise.content_type == "REPEATED_TEMPLATE_EXERCISE" %}
       <td class="answer">
         <ul>
           {% for instance_answer in answer.get_instance_answers %}
@@ -124,7 +94,8 @@
         </ul>
       </td>
     {% else %}{# No answers, e.g. files, were sent #}
-      <td class="answer">
+      <td class="answer {{ answer.html_extra_class }}">
+        {% rendered_answer answer %}
       </td>
     {% endif %}
     {% if completion.state == "correct" or completion.state == "incorrect" %}
