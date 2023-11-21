@@ -9,6 +9,7 @@ from fnmatch import fnmatch
 from html import escape
 
 from django.conf import settings
+from django.core.files.base import ContentFile
 from django.db import models
 from django.db.models import Q, Max, JSONField
 from django.contrib.auth.models import User, Group
@@ -789,9 +790,6 @@ class ContentPage(models.Model):
     )
     ask_collaborators = models.BooleanField(
         verbose_name="Ask the student to list collaborators", default=False
-    )
-    allowed_filenames = ArrayField(  # File upload exercise specific
-        base_field=models.CharField(max_length=32, blank=True), default=list, blank=True
     )
 
     def save(self, *args, **kwargs):
@@ -1594,8 +1592,15 @@ class FileUploadExercise(ContentPage):
         else:
             self.slug = slugify(self.slug, allow_unicode=True)
 
+
         self.content_type = "FILE_UPLOAD_EXERCISE"
         super().save(*args, **kwargs)
+
+        # create the extra settings model instance if one doesn't exist yet
+        if not hasattr(self, "fileexercisesettings"):
+            extra_settings = FileExerciseSettings(exercise=self)
+            extra_settings.save()
+
         parents = ContentPage.objects.filter(embedded_pages=self).distinct()
         for instance in CourseInstance.objects.filter(
             Q(contentgraph__content=self) | Q(contentgraph__content__embedded_pages=self),
@@ -1618,21 +1623,38 @@ class FileUploadExercise(ContentPage):
         if files:
             filelist = files.getlist("file")
             for uploaded_file in filelist:
-                if self.allowed_filenames not in ([], [""]):
-                    for fnpat in self.allowed_filenames:
+                if self.fileexercisesettings.allowed_filenames not in ([], [""]):
+                    for fnpat in self.fileexercisesettings.allowed_filenames:
                         if fnmatch(uploaded_file.name, fnpat):
                             break
                     else:
                         raise InvalidExerciseAnswerException(
                             _(
                                 "Filename {} is not listed in accepted filenames. Allowed:\n{}"
-                            ).format(uploaded_file.name, ", ".join(self.allowed_filenames))
+                            ).format(uploaded_file.name, ", ".join(
+                                self.fileexercisesettings.allowed_filenames)
+                            )
                         )
 
                 return_file = FileUploadExerciseReturnFile(
                     answer=answer_object, fileinfo=uploaded_file
                 )
                 return_file.save()
+        elif self.fileexercisesettings.answer_mode == "TEXT":
+            if not self.fileexercisesettings.answer_filename:
+                raise InvalidExerciseAnswerException(
+                    _("Task improperly configured, notify staff!")
+                )
+
+            if "answer" in answer.keys():
+                given_answer = bytes(answer["answer"].replace("\r", ""), encoding="utf-8")
+            else:
+                raise InvalidExerciseAnswerException("Answer missing!")
+
+            uploaded_file = ContentFile(given_answer)
+            return_file = FileUploadExerciseReturnFile(answer=answer_object)
+            return_file.fileinfo.save(self.fileexercisesettings.answer_filename, uploaded_file)
+            return_file.save()
         else:
             raise InvalidExerciseAnswerException("No file was sent!")
         return answer_object
@@ -1658,6 +1680,12 @@ class FileUploadExercise(ContentPage):
 
         if self.fileexercisetest_set.get_queryset():
             filelist = files.getlist("file")
+            if not filelist and self.fileexercisesettings.answer_filename:
+                filelist.append(ContentFile(
+                    bytes(answer["answer"].replace("\r", ""), encoding="utf-8"),
+                    name=self.fileexercisesettings.answer_filename
+                ))
+
             payload = file_upload_payload(self, filelist, answer_object.instance, revision)
 
             result = rpc_tasks.run_tests.delay(payload=payload)
@@ -2017,6 +2045,49 @@ class Hint(models.Model):
 
 def default_fue_timeout():
     return datetime.timedelta(seconds=5)
+
+
+class FileExerciseSettings(models.Model):
+    """
+    A separate extra settings model for file upload exercises. Introduced to prevent
+    contentpage model from expanding unnecessarily.
+    """
+
+    ANSWER_MODE_CHOICES = (
+        ("FILE", "Upload as file"),
+        ("TEXT", "From textbox"),
+    )
+
+    exercise = models.OneToOneField(
+        FileUploadExercise,
+        verbose_name="for file exercise",
+        db_index=True,
+        on_delete=models.CASCADE,
+    )
+    allowed_filenames = ArrayField(  # File upload exercise specific
+        base_field=models.CharField(max_length=32, blank=True), default=list, blank=True
+    )
+    max_file_count = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+    )
+    answer_mode = models.CharField(
+        max_length=12,
+        default="FILE",
+        choices=ANSWER_MODE_CHOICES
+    )
+    answer_filename = models.CharField(
+        max_length=32,
+        null=True,
+        blank=True,
+        verbose_name=_("Filename to use for the answer"),
+        help_text=_(
+            "Required for tasks where answer mode is TEXT. "
+            "For FILE, submitted file is renamed to this name "
+            "unless multiple files are returned. For multiple "
+            "files this does nothing."
+        )
+    )
 
 
 class FileExerciseTest(models.Model):

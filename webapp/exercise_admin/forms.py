@@ -4,7 +4,7 @@ from django.contrib.postgres.forms import SimpleArrayField
 from django import forms
 
 import feedback.models
-import courses.models as c_models
+import courses.models as cm
 
 from .utils import get_default_lang, get_lang_list
 
@@ -154,7 +154,7 @@ class CreateInstanceIncludeFilesForm(forms.Form):
                 course_field = f"instance_file_instance_[{file_id}]_{lang_code}"
                 course_choices = [
                     (course.id, getattr(course, f"name_{default_lang}"))
-                    for course in c_models.Course.objects.all()
+                    for course in cm.Course.objects.all()
                 ]
                 self.fields[default_name_field] = forms.CharField(
                     max_length=255, required=True, strip=True
@@ -267,6 +267,13 @@ class CreateFileUploadExerciseForm(forms.Form):
     exercise_group_submission = forms.BooleanField(required=False)
     exercise_ask_collaborators = forms.BooleanField(required=False)
     exercise_allowed_filenames = forms.CharField(required=False)
+    exercise_max_file_count = forms.IntegerField(required=False)
+    exercise_answer_mode = forms.ChoiceField(
+        required=False,
+        widget=forms.Select,
+        choices=cm.FileExerciseSettings.ANSWER_MODE_CHOICES
+    )
+
     version_comment = forms.CharField(required=False, strip=True)
 
     def __init__(
@@ -291,6 +298,7 @@ class CreateFileUploadExerciseForm(forms.Form):
             # For other fields
             self.fields[f"exercise_content_{lang_code}"] = forms.CharField(required=False)
             self.fields[f"exercise_question_{lang_code}"] = forms.CharField(required=False)
+            self.fields[f"exercise_answer_filename_{lang_code}"] = forms.CharField(required=False)
 
         # Other dynamic fields
 
@@ -369,13 +377,13 @@ class CreateFileUploadExerciseForm(forms.Form):
             chgrp_field = f"instance_file_chgrp_[{if_id}]"
             chmod_field = f"instance_file_chmod_[{if_id}]"
             self.fields[purpose_field] = forms.ChoiceField(
-                choices=c_models.IncludeFileSettings.FILE_PURPOSE_CHOICES, required=False
+                choices=cm.IncludeFileSettings.FILE_PURPOSE_CHOICES, required=False
             )
             self.fields[chown_field] = forms.ChoiceField(
-                choices=c_models.IncludeFileSettings.FILE_OWNERSHIP_CHOICES, required=False
+                choices=cm.IncludeFileSettings.FILE_OWNERSHIP_CHOICES, required=False
             )
             self.fields[chgrp_field] = forms.ChoiceField(
-                choices=c_models.IncludeFileSettings.FILE_OWNERSHIP_CHOICES, required=False
+                choices=cm.IncludeFileSettings.FILE_OWNERSHIP_CHOICES, required=False
             )
             self.fields[chmod_field] = forms.CharField(max_length=10, required=False, strip=True)
 

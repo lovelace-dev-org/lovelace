@@ -10,6 +10,7 @@ from courses.models import (
     CourseInstance,
     CourseMedia,
     File,
+    FileExerciseSettings,
     FileExerciseTestCommand,
     FileExerciseTestIncludeFile,
     FileExerciseTestStage,
@@ -292,3 +293,7 @@ class RepeatedTemplateExerciseTemplateTranslationOptions(TranslationOptions):
 @register(RepeatedTemplateExerciseBackendCommand)
 class RepeatedTemplateExerciseBackendCommandTranslationOptions(TranslationOptions):
     fields = ("command",)
+
+@register(FileExerciseSettings)
+class FileExerciseSettingsTranslationOptions(TranslationOptions):
+    fields = ("answer_filename",)
