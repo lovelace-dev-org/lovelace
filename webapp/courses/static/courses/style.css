@@ -1911,6 +1911,12 @@ div.expand-handle {
                 #fff;
 }
 
+.certainty-button {
+    background: no-repeat url("/static/courses/certain-toggle-16.png") center/16px,
+                #fff;
+}
+
+
 div.task-meta-score {
     display: block;
     font-size: 1.2em;

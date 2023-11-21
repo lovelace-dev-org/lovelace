@@ -38,6 +38,10 @@
       <div class="multiexam-heading multiexam-question-{{ question.answer_state }}"
            onclick="exam.toggle_answer_certainty(event, this)">
         {% trans 'Question' %} {{ forloop.counter }}:
+        <button type="button"
+                class="staff-base-button certainty-button right-float"
+                title="{% trans 'Mark certain/uncertain' %}"
+        </button>
       </div>
       <div class="multiexam-question">
         {{ question.question|safe }}

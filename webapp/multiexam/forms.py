@@ -17,7 +17,6 @@ class ExamAttemptForm(forms.ModelForm):
             "open_to": forms.widgets.DateTimeInput(attrs={"type": "datetime-local"}),
         }
 
-
     def __init__(self, *args, **kwargs):
         students = kwargs.pop("students")
         available_questions = kwargs.pop("available_questions")
@@ -27,7 +26,7 @@ class ExamAttemptForm(forms.ModelForm):
             max_value=available_questions,
             label=_("Number of questions (max: {n})").format(n=available_questions),
         )
-        self.fields["user"] = forms.ChoiceField(
+        self.fields["user_id"] = forms.ChoiceField(
             widget=forms.Select,
             required=False,
             choices=(

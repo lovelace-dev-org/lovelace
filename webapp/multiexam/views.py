@@ -13,6 +13,8 @@ from django.shortcuts import render
 from django.template import loader
 from django.utils.translation import gettext as _
 
+from courses.models import User
+
 from utils.access import ensure_enrolled_or_staff, determine_access, ensure_staff, ensure_responsible
 from utils.archive import find_latest_version
 from utils.content import get_embedded_parent
@@ -98,13 +100,15 @@ def open_new_attempt(request, course, instance, content):
             errors = form.errors_as_json()
             return JsonResponse({"errors": errors}, status=400)
 
+        user = User.objects.get(id=form.cleaned_data["user_id"])
         attempt = form.save(commit=False)
         attempt.instance = instance
         attempt.exam = content
         attempt.questions = generate_attempt_questions(
-            content, instance, form.cleaned_data["question_count"], form.cleaned_data["user"]
+            content, instance, form.cleaned_data["question_count"], user
         )
         attempt.revision = find_latest_version(content).revision_id
+        attempt.user = user
         attempt.save()
         return JsonResponse({"status": "ok"})
 
@@ -139,7 +143,7 @@ def preview_attempt(request, course, instance, attempt):
 @ensure_responsible
 def attempt_settings(request, course, instance, attempt):
     if request.method == "POST":
-        form = ExamAttemptDeleteForm(request.POST, instance=attempt)
+        form = ExamAttemptSettingsForm(request.POST, instance=attempt)
         if not form.is_valid():
             errors = form.errors_as_json()
             return JsonResponse({"errors": errors}, status=400)
@@ -147,6 +151,7 @@ def attempt_settings(request, course, instance, attempt):
         attempt = form.save(commit=False)
         if form.cleaned_data["refresh"]:
             attempt.revision = find_latest_version(attempt.exam).revision_id
+        attempt.save()
 
         return JsonResponse({"status": "ok"})
 

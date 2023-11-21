@@ -16,7 +16,6 @@ const exam = {
             success: function (data, status, jqxhr) {
                 const form = $(data)
                 form.submit(exam.submit_form)
-                //form.dirty({preventLeaving: true})
                 if (button.attr("data-in-table")) {
                     const form_tr = $("<tr class='form-tr'><td colspan='6'></td></tr>")
                     form_tr.children("td").append(form)
@@ -25,6 +24,7 @@ const exam = {
                 else {
                     button.after(form);
                 }
+                form.dirty({preventLeaving: true})
                 form.find("input[type!=hidden]").first().focus()
                 button.attr("onclick", "exam.close_form(event, this)")
             },
@@ -73,6 +73,12 @@ const exam = {
                 }
                 const form = $(data.rendered_form)
                 form.submit(exam.submit_exam)
+                form.dirty({preventLeaving: true})
+                form.keypress(function(event) {
+                    if (event.which == '13') {
+                        event.preventDefault()
+                    }
+                })
                 const form_submit = button.parent().parent().find(
                     ".question > form > input[type='submit']"
                 )
