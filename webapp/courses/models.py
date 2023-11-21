@@ -384,11 +384,9 @@ class CourseInstance(models.Model):
     def __str__(self):
         return self.name
 
-    @property
     def get_identifying_str(self):
         return f"{self.course.name} / {self.name}"
 
-    @property
     def split_notes(self):
         if self.notes:
             return self.notes.split(",")
@@ -739,8 +737,11 @@ class ContentPage(models.Model):
 #        ("CODE_REPLACE_EXERCISE", "Code replace exercise"),
         ("REPEATED_TEMPLATE_EXERCISE", "Repeated template exercise"),
         ("ROUTINE_EXERCISE", "Routine exercise"),
+        ("MULTIPLE_CHOICE_EXAM", "Multiple choice exam"),
     )
     template = "courses/blank.html"
+    answers_template = "courses/user-exercise-answers.html"
+    answer_table_classes ="fixed alternate-green answers-table"
 
     name = models.CharField(max_length=255, help_text="The full name of this page")  # Translate
     slug = models.SlugField(
@@ -1039,6 +1040,9 @@ class ContentPage(models.Model):
         adminized_type = self.content_type.replace("_", "").lower()
         return reverse(f"admin:courses_{adminized_type}_change", args=(self.id,))
 
+    def get_staff_extra(self, context):
+        return []
+
     def get_url_name(self):
         default_lang = django.conf.settings.LANGUAGE_CODE
         return slugify(getattr(self, f"name_{default_lang}"), allow_unicode=True)
@@ -1046,6 +1050,7 @@ class ContentPage(models.Model):
     def get_type_object(self):
         # this seems to lose the revision info?
         from routine_exercise.models import RoutineExercise
+        from multiexam.models import MultipleChoiceExam
 
         type_models = {
             "LECTURE": Lecture,
@@ -1057,11 +1062,13 @@ class ContentPage(models.Model):
             "CODE_REPLACE_EXERCISE": CodeReplaceExercise,
             "REPEATED_TEMPLATE_EXERCISE": RepeatedTemplateExercise,
             "ROUTINE_EXERCISE": RoutineExercise,
+            "MULTIPLE_CHOICE_EXAM": MultipleChoiceExam,
         }
         return type_models[self.content_type].objects.get(id=self.id)
 
     def get_type_model(self):
         from routine_exercise.models import RoutineExercise
+        from multiexam.models import MultipleChoiceExam
 
         type_models = {
             "LECTURE": Lecture,
@@ -1073,11 +1080,13 @@ class ContentPage(models.Model):
             "CODE_REPLACE_EXERCISE": CodeReplaceExercise,
             "REPEATED_TEMPLATE_EXERCISE": RepeatedTemplateExercise,
             "ROUTINE_EXERCISE": RoutineExercise,
+            "MULTIPLE_CHOICE_EXAM": MultipleChoiceExam,
         }
         return type_models[self.content_type]
 
     def get_answer_model(self):
         from routine_exercise.models import RoutineExerciseAnswer
+        from multiexam.models import UserMultipleChoiceExamAnswer
 
         answer_models = {
             "LECTURE": None,
@@ -1089,6 +1098,7 @@ class ContentPage(models.Model):
             "CODE_REPLACE_EXERCISE": UserCodeReplaceExerciseAnswer,
             "REPEATED_TEMPLATE_EXERCISE": UserRepeatedTemplateExerciseAnswer,
             "ROUTINE_EXERCISE": RoutineExerciseAnswer,
+            "MULTIPLE_CHOICE_EXAM": UserMultipleChoiceExamAnswer,
         }
         return answer_models[self.content_type]
 
@@ -1200,34 +1210,29 @@ class ContentPage(models.Model):
     # HACK: Experimental way of implementing a better get_type_object
     # TODO: get rid of this
     def __getattribute__(self, name):
-        if name == "get_choices":
+        normal = [
+            "get_choices",
+            "get_rendered_content",
+            "get_question",
+            "save_answer",
+            "check_answer",
+            "get_user_answers",
+            "get_staff_extra",
+            "template",
+            "answers_template",
+            "answer_table_classes",
+        ]
+
+        if name in normal:
             type_model = self.get_type_model()
-            func = type_model.get_choices
-        elif name == "get_rendered_content":
-            type_model = self.get_type_model()
-            func = type_model.get_rendered_content
-        elif name == "get_question":
-            type_model = self.get_type_model()
-            func = type_model.get_question
+            type_attr = getattr(type_model, name)
         elif name == "get_admin_change_url":
             type_model = self.get_type_model()
             # Can be called from a template (without parameter)
-            func = lambda: type_model.get_admin_change_url(self)
-        elif name == "save_answer":
-            type_model = self.get_type_model()
-            func = type_model.save_answer
-        elif name == "check_answer":
-            type_model = self.get_type_model()
-            func = type_model.check_answer
-        elif name == "get_user_answers":
-            type_model = self.get_type_model()
-            func = type_model.get_user_answers
-        elif name == "template":
-            type_model = self.get_type_model()
-            func = type_model.template
+            type_attr = lambda: type_model.get_admin_change_url(self)
         else:
             return super().__getattribute__(name)
-        return func
+        return type_attr
 
 
 # ^
@@ -1349,7 +1354,12 @@ class MultipleChoiceExercise(ContentPage):
                 if choice.comment:
                     comments.append(choice.comment)
 
-        return {"evaluation": correct, "hints": hints, "comments": comments}
+        return {
+            "evaluation": correct,
+            "hints": hints,
+            "comments": comments,
+            "points": correct * self.default_points,
+        }
 
     def get_user_answers(self, user, instance, ignore_drafts=True):
         if instance is None:
@@ -1444,7 +1454,12 @@ class CheckboxExercise(ContentPage):
                     comments.append(choice.comment)
                 chosen.append(choice)
 
-        return {"evaluation": correct, "hints": hints, "comments": comments}
+        return {
+            "evaluation": correct,
+            "hints": hints,
+            "comments": comments,
+            "points": correct * self.default_points,
+        }
 
     def get_user_answers(self, user, instance, ignore_drafts=True):
         if instance is None:
@@ -1567,7 +1582,13 @@ class TextfieldExercise(ContentPage):
                 if hint:
                     hints.append(hint)
 
-        return {"evaluation": correct, "hints": hints, "comments": comments, "errors": errors}
+        return {
+            "evaluation": correct,
+            "hints": hints,
+            "comments": comments,
+            "errors": errors,
+            "points": correct * self.default_points
+        }
 
     def get_user_answers(self, user, instance, ignore_drafts=True):
         if instance is None:
@@ -1994,6 +2015,7 @@ class RepeatedTemplateExercise(ContentPage):
             "triggers": triggers,
             "next_instance": next_instance,
             "total_instances": total_instances,
+            "points": correct * self.default_points
         }
 
     def save_evaluation(self, user, evaluation, answer_object):
@@ -2610,6 +2632,8 @@ class UserAnswer(models.Model):
     exercises. The answers will then be kept even when the exercise is deleted.
     """
 
+    html_extra_class = ""
+
     instance = models.ForeignKey(CourseInstance, null=True, on_delete=models.SET_NULL)
     evaluation = models.ForeignKey(Evaluation, null=True, blank=True, on_delete=models.SET_NULL)
     revision = models.PositiveIntegerField()  # The revision info is always required!
@@ -2652,6 +2676,9 @@ class UserAnswer(models.Model):
             answers = answers.filter(revision=revision)
 
         return answers.order_by("answer_date")
+
+    def get_html_repr(self, context):
+        return ""
 
 
 class FileUploadExerciseReturnFile(models.Model):
@@ -2743,6 +2770,31 @@ class UserFileUploadExerciseAnswer(UserAnswer):
             returned_files[returned_file.filename()] = type_info
         return returned_files
 
+    def get_html_repr(self, context):
+        returned_files = self.get_returned_file_list()
+        repr_str = ""
+        for fname, (type_info, contents) in returned_files.items():
+            link_kw = {
+                "user": context["student"],
+                "course": context["course"],
+                "instance": context["instance"],
+                "answer": self,
+                "filename": fname
+            }
+            dl_href = reverse("courses:download_answer_file", kwargs=link_kw)
+            view_href = reverse("courses:show_answer_file", kwargs=link_kw)
+            repr_str += f"<a class=\"file-url\" href=\"{dl_href}\" download></a>\n"
+            if not contents:
+                repr_str += (
+                    f"<a class=\nfileview-link href=\"{view_href}\""
+                    f"onclick=\"show_file(event, this)\">{fname}</a>\n"
+                )
+                repr_str += "<div class=\"popup\"><pre class=\"fileview\"></pre></div>"
+            else:
+                repr_str += fname
+            repr_str += "<br />"
+        return repr_str
+
 
 class UserRepeatedTemplateInstanceAnswer(models.Model):
     answer = models.ForeignKey("UserRepeatedTemplateExerciseAnswer", on_delete=models.CASCADE)
@@ -2772,14 +2824,24 @@ class UserRepeatedTemplateExerciseAnswer(UserAnswer):
 
 
 class UserTextfieldExerciseAnswer(UserAnswer):
+
+    html_extra_class = "render-white-space monospace"
+
     exercise = models.ForeignKey(TextfieldExercise, null=True, on_delete=models.SET_NULL)
     given_answer = models.TextField()
+
 
     def __str__(self):
         return self.given_answer
 
+    def get_html_repr(self, context):
+        return self.given_answer
+
 
 class UserMultipleChoiceExerciseAnswer(UserAnswer):
+
+    html_extra_class = "render-white-space"
+
     exercise = models.ForeignKey(MultipleChoiceExercise, null=True, on_delete=models.SET_NULL)
     chosen_answer = models.ForeignKey(
         MultipleChoiceExerciseAnswer, null=True, on_delete=models.SET_NULL
@@ -2791,6 +2853,10 @@ class UserMultipleChoiceExerciseAnswer(UserAnswer):
     def is_correct(self):
         return self.chosen_answer.correct
 
+    def get_html_repr(self, context):
+        return self.chosen_answer
+
+
 
 class UserCheckboxExerciseAnswer(UserAnswer):
     exercise = models.ForeignKey(CheckboxExercise, null=True, on_delete=models.SET_NULL)
@@ -2798,6 +2864,14 @@ class UserCheckboxExerciseAnswer(UserAnswer):
 
     def __str__(self):
         return ", ".join(str(a) for a in self.chosen_answers.all())
+
+    def get_html_repr(self, context):
+        repr_str = "<ul>\n"
+        for chosen_answer in self.chosen_answers.all():
+            repr_str += f"<li>{chosen_answer}</li>\n"
+        repr_str += "</ul>\n"
+        return repr_str
+
 
 
 class CodeReplaceExerciseReplacement(models.Model):

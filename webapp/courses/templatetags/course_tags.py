@@ -116,6 +116,12 @@ def embed_frame(context, content_data):
         "uneditable_markups": context["uneditable_markups"],
     }
 
+@register.inclusion_tag("courses/embed_staff_extra.html", takes_context=True)
+def embed_staff_extra(context, content_data):
+    return {
+        "extra_options": content_data.get_staff_extra(content_data, context)
+    }
+
 
 @register.inclusion_tag("courses/embed-frame-preview.html", takes_context=False)
 def embed_frame_preview(content_data):

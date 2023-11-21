@@ -1,0 +1,75 @@
+{% load i18n %}
+{% load course_tags %}
+{% load exam_tags %}
+
+<div class="multiexam-exam-form">
+  {% if not preview %}
+    <div class="multiexam-summary-container">
+      <progress class="multiexam-progress"
+                value="{{ n_answered }}" max="{{ n_total }}"
+                title="
+                  {% trans 'Answered' %}
+                  {{ n_answered }} / {{ n_total }}
+                ">
+      </progress>
+      <div>
+        <span class="exam-shortcut-unanswered">{% trans 'Unanswered' %}</span>
+        /
+        <span class="exam-shortcut-uncertain">{% trans 'Uncertain' %}
+        {% trans 'Questions' %}:
+      </div>
+      <div>
+        {% for state in question_states %}
+          <span class="exam-shortcut-{{ state }} interactive"
+                id="exam-shortcut-{{ forloop.counter }}"
+                data-shortcut-number="{{ forloop.counter }}"
+                onclick="exam.scroll_to_question(this)">
+            {{ forloop.counter }}
+          </span>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
+  {% for handle, question in attempt_script %}
+    <div class="multiexam-question-container"
+         id="exam-question-{{ forloop.counter }}"
+         data-question-number="{{ forloop.counter }}">
+      <div class="multiexam-heading multiexam-question-{{ question.answer_state }}"
+           onclick="exam.toggle_answer_certainty(event, this)">
+        {% trans 'Question' %} {{ forloop.counter }}:
+        <button type="button"
+                class="staff-base-button certainty-button right-float"
+                title="{% trans 'Mark certain/uncertain' %}"
+        </button>
+      </div>
+      <div class="multiexam-question">
+        {{ question.question|safe }}
+      </div>
+      <div class="multiexam-answer-container">
+        {% for key, label in question.options.items %}
+          <div class="input-label-container">
+            <input type="{{ question.type }}"
+                  name="{{ handle }}"
+                  id="exam-{{ handle}}-{{ key }}"
+                  value="{{ key }}"
+                  class="task_radio"
+                  {% if not preview %}
+                    {% if key in question.answer.0 %}
+                      checked
+                    {% endif %}
+                    onchange="exam.mark_answered(event, this)"
+                  {% else %}
+                    disabled="true"
+                  {% endif %}>
+            <label for="exam-{{ handle}}-{{ key }}">{{ label }}</label>
+          </div>
+        {% endfor %}
+        <input type="hidden" name="{{ handle }}-certainty" value="{{ question.answer.1 }}">
+      </div>
+    </div>
+  {% endfor %}
+  {% if not preview %}
+    <input type="hidden" name="attempt_id" value="{{ attempt_id }}">
+  {% endif %}
+</div>

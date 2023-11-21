@@ -821,6 +821,15 @@ section.content {
 
     }
 
+    div.course-contents div.node-deadline {
+        position: absolute;
+        right: 244px;
+        bottom: 0.01em;
+        font-size: 0.75rem;
+
+    }
+
+
 
     div.course-contents progress.course-contents-progress[value] {
         -webkit-appearance: none;
@@ -1841,6 +1850,12 @@ div.expand-handle {
                 #fff;
 }
 
+.view-button {
+    background: no-repeat url("/static/courses/eye-16.png") center/16px,
+                #fff;
+}
+
+
 .copy-button {
     background: no-repeat url("/static/courses/copy.png") center/18px,
                 #fff;
@@ -1852,7 +1867,7 @@ div.expand-handle {
 }
 
 .ok-button {
-    background: no-repeat url("/static/courses/correct-16.png") center/18px,
+    background: no-repeat url("/static/courses/correct-16.png") center/16px,
                 #fff;
 }    
 
@@ -1895,6 +1910,12 @@ div.expand-handle {
     background: no-repeat url("/static/courses/termify-16.png") center/16px,
                 #fff;
 }
+
+.certainty-button {
+    background: no-repeat url("/static/courses/certain-toggle-16.png") center/16px,
+                #fff;
+}
+
 
 div.task-meta-score {
     display: block;
@@ -1965,4 +1986,8 @@ svg, iframe {
     border: 2px solid #d0d0d0;
     background: #daeeda;
     margin: 2px;
+}
+
+.interactive {
+    cursor: pointer
 }

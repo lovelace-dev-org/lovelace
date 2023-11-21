@@ -51,7 +51,7 @@
     {% endif %}
   </h1>
   
-<table class="fixed">
+<table class="{{ exercise.answer_table_classes }}">
 <caption>
   {% blocktrans count answercount=answers.count %}
     {{ answercount }} entered answer for this exercise

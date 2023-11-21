@@ -1,0 +1,78 @@
+div.multiexam-question-container {
+    border: 2px solid #cacaca;
+    border-radius: 8px;
+    margin-right: 8px;
+}
+
+div.multiexam-heading {
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+}
+
+div.multiexam-question-unanswered {
+    background: linear-gradient(to bottom, #ddd, #ccc);
+}
+
+div.multiexam-question-uncertain {
+    background: linear-gradient(to bottom, #ada, #9c9);
+}
+
+div.multiexam-question-certain {
+    background: linear-gradient(to bottom, #8e8, #7d7);
+}
+
+div.multiexam-question {
+    padding: 2px;
+}
+
+div.multiexam-answer-container {
+    padding: 2px;
+}
+
+div.multiexam-exam-form {
+    max-height: 80vh;
+    overflow: auto;
+    position: relative;
+}
+
+div.multiexam-summary-container {
+    position: sticky;
+    top: 0px;
+    background: #daeeda;
+    border-radius: 10px;
+    border: 4px ridge #cacaca;
+    margin-left: 20px;
+    margin-right: 20px;
+    text-align: center;
+    font-size: 0.7em;
+}
+
+progress.multiexam-progress {
+    width: 95%;
+    height: 6px;
+    border: 1px solid #333;
+    background-color: #eee;
+    position: relative;
+}
+
+
+div.multiexam-summary-container progress::-moz-progress-bar {
+    background-color: #39ad39;
+}
+div.multiexam-summary-container progress::-webkit-progress-bar {
+    background-color: #eee;
+}
+div.multiexam-summary-container progress::-webkit-progress-value {
+    background-color: #39ad39;
+}
+
+span.exam-shortcut-unanswered {
+    color: #ad3939;
+}
+
+span.exam-shortcut-uncertain {
+}
+
+span.exam-shortcut-certain {
+    display: none;
+}

@@ -130,7 +130,7 @@ def manage_enrollments(request, course, instance):
             response["users-skipped"] = []
             response["affected-title"] = _(
                 "Set enrollment state to {action} for the following users."
-            ).format(action)
+            ).format(action=action)
             response["skipped-title"] = _("The operation was not applicable for these users.")
             response["new_state"] = action.upper()
 
@@ -531,6 +531,7 @@ def batch_grade_task(request, course, instance, content):
         "TEXTFIELD_EXERCISE",
         "CHECKBOX_EXERCISE",
         "MULTIPLE_CHOICE_EXERCISE",
+        "MULTIPLE_CHOICE_EXAM",
     ]:
         return HttpResponseForbidden(_("Batch grading is not supported for this task type"))
 
@@ -594,7 +595,6 @@ def batch_grade_task(request, course, instance, content):
                     content, user, answer.answerer_ip, answer_form, [], answer, link.revision
                 )
                 if evaluation["evaluation"]:
-                    evaluation["points"] = exercise.default_points
                     exercise.update_evaluation(user, evaluation, answer)
                     log.append(answer)
                     break
