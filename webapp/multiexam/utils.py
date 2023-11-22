@@ -2,11 +2,11 @@ from collections import defaultdict
 import random
 import yaml
 from courses import markupparser
-from multiexam.models import MultipleChoiceExamAttempt
+from multiexam.models import MultipleQuestionExamAttempt
 
 def get_used_questions(exam, instance, user):
     used_by_category = defaultdict(list)
-    attempts = MultipleChoiceExamAttempt.objects.filter(
+    attempts = MultipleQuestionExamAttempt.objects.filter(
         exam=exam,
         instance=instance,
         user=user,

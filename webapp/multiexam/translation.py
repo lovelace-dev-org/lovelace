@@ -1,9 +1,9 @@
 from modeltranslation.translator import register, TranslationOptions
 
-from multiexam.models import MultipleChoiceExam, ExamQuestionPool
+from multiexam.models import MultipleQuestionExam, ExamQuestionPool
 
-@register(MultipleChoiceExam)
-class MultipleChoiceExamTranslationOptions(TranslationOptions):
+@register(MultipleQuestionExam)
+class MultipleQuestionExamTranslationOptions(TranslationOptions):
     fields = (
         "name",
         "content",

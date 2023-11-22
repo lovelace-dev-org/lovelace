@@ -19,7 +19,7 @@ from utils.access import ensure_enrolled_or_staff, determine_access, ensure_staf
 from utils.archive import find_latest_version
 from utils.content import get_embedded_parent
 
-from multiexam.models import MultipleChoiceExamAttempt, UserMultipleChoiceExamAnswer
+from multiexam.models import MultipleQuestionExamAttempt, UserMultipleQuestionExamAnswer
 from multiexam.forms import ExamAttemptForm, ExamAttemptDeleteForm, ExamAttemptSettingsForm
 from multiexam.utils import generate_attempt_questions, process_questions
 
@@ -28,7 +28,7 @@ from multiexam.utils import generate_attempt_questions, process_questions
 @ensure_enrolled_or_staff
 def get_exam_attempt(request, course, instance, content):
     now = datetime.datetime.now()
-    open_attempts = MultipleChoiceExamAttempt.objects.filter(
+    open_attempts = MultipleQuestionExamAttempt.objects.filter(
         Q(user=None) | Q(user=request.user),
         exam=content,
         instance=instance,
@@ -43,7 +43,7 @@ def get_exam_attempt(request, course, instance, content):
     attempt = open_attempts.first()
     script = attempt.load_exam_script()
 
-    answer = UserMultipleChoiceExamAnswer.objects.filter(
+    answer = UserMultipleQuestionExamAnswer.objects.filter(
         attempt=attempt,
         user=request.user,
     ).order_by("-answer_date").first()
@@ -71,7 +71,7 @@ def get_exam_attempt(request, course, instance, content):
 
 @ensure_responsible
 def manage_attempts(request, course, instance, content):
-    attempts = MultipleChoiceExamAttempt.objects.filter(
+    attempts = MultipleQuestionExamAttempt.objects.filter(
         exam=content,
         instance=instance,
     )
@@ -100,7 +100,10 @@ def open_new_attempt(request, course, instance, content):
             errors = form.errors_as_json()
             return JsonResponse({"errors": errors}, status=400)
 
-        user = User.objects.get(id=form.cleaned_data["user_id"])
+        if form.cleaned_data.get("user_id", None):
+            user = User.objects.get(id=form.cleaned_data["user_id"])
+        else:
+            user = None
         attempt = form.save(commit=False)
         attempt.instance = instance
         attempt.exam = content

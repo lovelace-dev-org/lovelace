@@ -7,13 +7,13 @@ from modeltranslation.admin import TranslationAdmin, TranslationStackedInline
 from utils.management import CourseContentAdmin
 from courses.forms import ContentForm
 from multiexam.models import (
-    MultipleChoiceExam,
+    MultipleQuestionExam,
     ExamQuestionPool,
 )
 
 # Register your models here.
 
-reversion.register(MultipleChoiceExam)
+reversion.register(MultipleQuestionExam)
 reversion.register(ExamQuestionPool)
 
 
@@ -24,7 +24,7 @@ class QuestionPoolInline(TranslationStackedInline):
 
 class MultiExamAdmin(CourseContentAdmin, TranslationAdmin, VersionAdmin):
 
-    content_type = "MULTIPLE_CHOICE_EXAM"
+    content_type = "MULTIPLE_QUESTION_EXAM"
     form = ContentForm
 
     fieldsets = [
@@ -57,5 +57,5 @@ class MultiExamAdmin(CourseContentAdmin, TranslationAdmin, VersionAdmin):
     list_per_page = 500
     save_on_top = True
 
-admin.site.register(MultipleChoiceExam, MultiExamAdmin)
+admin.site.register(MultipleQuestionExam, MultiExamAdmin)
 

@@ -531,7 +531,7 @@ def batch_grade_task(request, course, instance, content):
         "TEXTFIELD_EXERCISE",
         "CHECKBOX_EXERCISE",
         "MULTIPLE_CHOICE_EXERCISE",
-        "MULTIPLE_CHOICE_EXAM",
+        "MULTIPLE_QUESTION_EXAM",
     ]:
         return HttpResponseForbidden(_("Batch grading is not supported for this task type"))
 

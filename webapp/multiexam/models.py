@@ -34,12 +34,12 @@ def querydict_to_answer(attempt, querydict, include_certainty=False):
     return answer_record
 
 
-class MultipleChoiceExam(ContentPage):
+class MultipleQuestionExam(ContentPage):
 
-    template = "multiexam/multiple-choice-exam.html"
+    template = "multiexam/multiple-question-exam.html"
 
     class Meta:
-        verbose_name = "multiple choice exam"
+        verbose_name = "multiple question exam"
         proxy = True
 
     def save(self, *args, **kwargs):
@@ -48,7 +48,7 @@ class MultipleChoiceExam(ContentPage):
         else:
             self.slug = slugify(self.slug, allow_unicode=True)
 
-        self.content_type = "MULTIPLE_CHOICE_EXAM"
+        self.content_type = "MULTIPLE_QUESTION_EXAM"
         super().save(*args, **kwargs)
 
     def get_rendered_content(self, context):
@@ -78,8 +78,8 @@ class MultipleChoiceExam(ContentPage):
 
     def save_answer(self, user, ip, answer, files, instance, revision):
         try:
-            attempt = MultipleChoiceExamAttempt.objects.get(id=answer.get("attempt_id"))
-        except (KeyError, MultipleChoiceExamAttempt.DoesNotExist):
+            attempt = MultipleQuestionExamAttempt.objects.get(id=answer.get("attempt_id"))
+        except (KeyError, MultipleQuestionExamAttempt.DoesNotExist):
             raise InvalidExerciseAnswerException(_("Matching exam attempt was not found"))
 
         now = datetime.datetime.now()
@@ -89,7 +89,7 @@ class MultipleChoiceExam(ContentPage):
         revision = attempt.revision or find_latest_version(self).revision_id
 
         answer_record = querydict_to_answer(attempt, answer, include_certainty=True)
-        answer_object = UserMultipleChoiceExamAnswer(
+        answer_object = UserMultipleQuestionExamAnswer(
             user=user,
             exercise=self,
             instance=instance,
@@ -103,8 +103,8 @@ class MultipleChoiceExam(ContentPage):
 
     def check_answer(self, user, ip, answer, files, answer_object, revision):
         try:
-            attempt = MultipleChoiceExamAttempt.objects.get(id=answer.get("attempt_id"))
-        except (KeyError, MultipleChoiceExamAttempt.DoesNotExist):
+            attempt = MultipleQuestionExamAttempt.objects.get(id=answer.get("attempt_id"))
+        except (KeyError, MultipleQuestionExamAttempt.DoesNotExist):
             raise InvalidExerciseAnswerException("Matching exam attempt was not found")
 
         answer_record = querydict_to_answer(attempt, answer, include_certainty=False)
@@ -127,12 +127,12 @@ class MultipleChoiceExam(ContentPage):
 
     def get_user_answers(self, user, instance, ignore_drafts=True):
         if instance is None:
-            return UserMultipleChoiceExamAnswer.objects.filter(
+            return UserMultipleQuestionExamAnswer.objects.filter(
                 user=user,
                 attempt__exam=self,
             )
         else:
-            return UserMultipleChoiceExamAnswer.objects.filter(
+            return UserMultipleQuestionExamAnswer.objects.filter(
                 attempt__instance=instance,
                 user=user,
                 attempt__exam=self,
@@ -141,7 +141,7 @@ class MultipleChoiceExam(ContentPage):
 
 class ExamQuestionPool(models.Model):
 
-    exercise = models.OneToOneField(MultipleChoiceExam, on_delete=models.CASCADE)
+    exercise = models.OneToOneField(MultipleQuestionExam, on_delete=models.CASCADE)
     fileinfo = models.FileField(max_length=255, upload_to=get_testfile_path, storage=upload_storage)
 
     def question_count(self):
@@ -150,9 +150,9 @@ class ExamQuestionPool(models.Model):
         return n
 
 
-class MultipleChoiceExamAttempt(models.Model):
+class MultipleQuestionExamAttempt(models.Model):
 
-    exam = models.ForeignKey(MultipleChoiceExam, on_delete=models.CASCADE)
+    exam = models.ForeignKey(MultipleQuestionExam, on_delete=models.CASCADE)
     instance = models.ForeignKey(CourseInstance, on_delete=models.CASCADE)
     revision = models.PositiveIntegerField(null=True, blank=True)
     user = models.ForeignKey(User, null=True, on_delete=models.CASCADE)
@@ -183,7 +183,7 @@ class MultipleChoiceExamAttempt(models.Model):
         return script
 
     def answer_count(self):
-        return UserMultipleChoiceExamAnswer.objects.filter(
+        return UserMultipleQuestionExamAnswer.objects.filter(
             attempt=self,
         ).count()
 
@@ -194,15 +194,17 @@ class MultipleChoiceExamAttempt(models.Model):
         return self.questions.keys()
 
 
-class UserMultipleChoiceExamAnswer(UserAnswer):
 
-    exercise = models.ForeignKey(MultipleChoiceExam, on_delete=models.CASCADE)
-    attempt = models.ForeignKey(MultipleChoiceExamAttempt, on_delete=models.CASCADE)
+
+class UserMultipleQuestionExamAnswer(UserAnswer):
+
+    exercise = models.ForeignKey(MultipleQuestionExam, on_delete=models.CASCADE)
+    attempt = models.ForeignKey(MultipleQuestionExamAttempt, on_delete=models.CASCADE)
     answers = models.JSONField()
 
     def get_html_repr(self, context):
         script = self.attempt.load_exam_script()
-        evaluation = json.loads(self.evaluation.test_results)
+        evaluation = json.loads(self.evaluation.test_results or "{}")
         summary = {}
         for handle, question in script:
             chosen = []
@@ -211,7 +213,9 @@ class UserMultipleChoiceExamAnswer(UserAnswer):
             summary[handle] = (question["summary"], chosen, evaluation.get(handle, False))
         t = loader.get_template("multiexam/answered-exam.html")
         c = {
-            "answer_summary": summary.values()
+            "answer_summary": summary.values(),
+            "evaluated": bool(evaluation),
         }
         return t.render(c)
+
 

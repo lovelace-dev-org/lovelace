@@ -737,7 +737,7 @@ class ContentPage(models.Model):
 #        ("CODE_REPLACE_EXERCISE", "Code replace exercise"),
         ("REPEATED_TEMPLATE_EXERCISE", "Repeated template exercise"),
         ("ROUTINE_EXERCISE", "Routine exercise"),
-        ("MULTIPLE_CHOICE_EXAM", "Multiple choice exam"),
+        ("MULTIPLE_QUESTION_EXAM", "Multiple question exam"),
     )
     template = "courses/blank.html"
     answers_template = "courses/user-exercise-answers.html"
@@ -1050,7 +1050,7 @@ class ContentPage(models.Model):
     def get_type_object(self):
         # this seems to lose the revision info?
         from routine_exercise.models import RoutineExercise
-        from multiexam.models import MultipleChoiceExam
+        from multiexam.models import MultipleQuestionExam
 
         type_models = {
             "LECTURE": Lecture,
@@ -1062,13 +1062,13 @@ class ContentPage(models.Model):
             "CODE_REPLACE_EXERCISE": CodeReplaceExercise,
             "REPEATED_TEMPLATE_EXERCISE": RepeatedTemplateExercise,
             "ROUTINE_EXERCISE": RoutineExercise,
-            "MULTIPLE_CHOICE_EXAM": MultipleChoiceExam,
+            "MULTIPLE_QUESTION_EXAM": MultipleQuestionExam,
         }
         return type_models[self.content_type].objects.get(id=self.id)
 
     def get_type_model(self):
         from routine_exercise.models import RoutineExercise
-        from multiexam.models import MultipleChoiceExam
+        from multiexam.models import MultipleQuestionExam
 
         type_models = {
             "LECTURE": Lecture,
@@ -1080,13 +1080,13 @@ class ContentPage(models.Model):
             "CODE_REPLACE_EXERCISE": CodeReplaceExercise,
             "REPEATED_TEMPLATE_EXERCISE": RepeatedTemplateExercise,
             "ROUTINE_EXERCISE": RoutineExercise,
-            "MULTIPLE_CHOICE_EXAM": MultipleChoiceExam,
+            "MULTIPLE_QUESTION_EXAM": MultipleQuestionExam,
         }
         return type_models[self.content_type]
 
     def get_answer_model(self):
         from routine_exercise.models import RoutineExerciseAnswer
-        from multiexam.models import UserMultipleChoiceExamAnswer
+        from multiexam.models import UserMultipleQuestionExamAnswer
 
         answer_models = {
             "LECTURE": None,
@@ -1098,7 +1098,7 @@ class ContentPage(models.Model):
             "CODE_REPLACE_EXERCISE": UserCodeReplaceExerciseAnswer,
             "REPEATED_TEMPLATE_EXERCISE": UserRepeatedTemplateExerciseAnswer,
             "ROUTINE_EXERCISE": RoutineExerciseAnswer,
-            "MULTIPLE_CHOICE_EXAM": UserMultipleChoiceExamAnswer,
+            "MULTIPLE_QUESTION_EXAM": UserMultipleQuestionExamAnswer,
         }
         return answer_models[self.content_type]
 

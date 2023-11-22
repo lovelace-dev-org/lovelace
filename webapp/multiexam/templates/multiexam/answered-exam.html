@@ -7,7 +7,9 @@
     <div>
     <ul class="multiexam-answer-choices">
       {% for answer_text in chosen_answers %}
-        {% if correct %}
+        {% if not evaluated %}
+          <li class="evaluation-msg-unknown">{{ answer_text }}</li>
+        {% elif correct %}
           <li class="evaluation-msg-correct">{{ answer_text }}</li>
         {% else %}
           <li class="evaluation-msg-incorrect">{{ answer_text }}</li>

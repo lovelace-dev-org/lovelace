@@ -3,14 +3,14 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.forms import fields
 from django.utils.translation import gettext as _
-from multiexam.models import MultipleChoiceExamAttempt
+from multiexam.models import MultipleQuestionExamAttempt
 from utils.formatters import display_name
 from utils.management import add_translated_charfields, TranslationStaffForm
 
 class ExamAttemptForm(forms.ModelForm):
 
     class Meta:
-        model = MultipleChoiceExamAttempt
+        model = MultipleQuestionExamAttempt
         fields = ["open_from", "open_to"]
         widgets = {
             "open_from": forms.widgets.DateTimeInput(attrs={"type": "datetime-local"}),
@@ -44,7 +44,7 @@ class ExamAttemptDeleteForm(forms.Form):
 class ExamAttemptSettingsForm(forms.ModelForm):
 
     class Meta:
-        model = MultipleChoiceExamAttempt
+        model = MultipleQuestionExamAttempt
         fields = ["open_from", "open_to"]
         widgets = {
             "open_from": forms.widgets.DateTimeInput(attrs={"type": "datetime-local"}),

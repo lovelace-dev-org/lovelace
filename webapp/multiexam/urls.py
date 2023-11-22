@@ -5,7 +5,7 @@ from . import views, models
 
 app_name = "multiexam"
 
-register_model_converter(models.MultipleChoiceExamAttempt, name="attempt")
+register_model_converter(models.MultipleQuestionExamAttempt, name="attempt")
 
 
 urlpatterns = [
