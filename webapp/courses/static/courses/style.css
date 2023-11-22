@@ -823,9 +823,10 @@ section.content {
 
     div.course-contents div.node-deadline {
         position: absolute;
-        right: 244px;
+        right: 144px;
         bottom: 0.01em;
         font-size: 0.75rem;
+        display: none;
 
     }
 
