@@ -1,3 +1,4 @@
+import datetime
 import json
 import yaml
 from django.db import models
@@ -79,7 +80,11 @@ class MultipleChoiceExam(ContentPage):
         try:
             attempt = MultipleChoiceExamAttempt.objects.get(id=answer.get("attempt_id"))
         except (KeyError, MultipleChoiceExamAttempt.DoesNotExist):
-            raise InvalidExerciseAnswerException("Matching exam attempt was not found")
+            raise InvalidExerciseAnswerException(_("Matching exam attempt was not found"))
+
+        now = datetime.datetime.now()
+        if not (attempt.open_from <= now <= attempt.open_to):
+            raise InvalidExerciseAnswerException(_("This exam is closed"))
 
         revision = attempt.revision or find_latest_version(self).revision_id
 
