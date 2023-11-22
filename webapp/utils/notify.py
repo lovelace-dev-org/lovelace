@@ -85,7 +85,7 @@ def send_email(recipients, sender, title, body):
     """
 
     connection = get_connection()
-    sender = [display_name(sender), (sender.email)]
+    sender = sender.email
     messages = []
     for recipient in recipients:
         messages.append(
