@@ -300,6 +300,8 @@ def course_tree(tree, node, user, instance_obj, enrolled=False, staff=False):
         "visible": node.visible,
         "require_enroll": node.require_enroll,
         "page_count": page_count,
+        "deadline": node.deadline,
+        "urgency": node.get_deadline_urgency(),
     }
 
     if list_item not in tree:

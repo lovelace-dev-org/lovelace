@@ -6,7 +6,7 @@
 table.completion-table {
     display: block;
     overflow-x: auto;
-    height: 100vh;
+    height: 90vh;
 }
 
 section.content table.completion-table td {

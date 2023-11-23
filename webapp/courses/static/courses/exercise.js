@@ -260,6 +260,7 @@ function add_exercise_form_callbacks () {
                 success: function (data, text_status, jqxhr_obj) {
                     submit_element.prop("disabled", false)
                     exercise_success(data, result_div, error_div, form_parent)
+                    form.dirty("setAsClean")
                 },
                 error: function (xhr, status, type) {
                     submit_element.prop("disabled", false)

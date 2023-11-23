@@ -466,6 +466,23 @@ class ContentGraph(models.Model):
             return "newest"
         return f"rev. {self.revision}"
 
+    def get_deadline_urgency(self):
+        if self.deadline is not None:
+            now = datetime.datetime.now()
+            if self.deadline < now:
+                return "past"
+
+            diff = self.deadline - now
+            if diff.days <= 1:
+                return "urgent"
+
+            if diff.days <= 7:
+                return "near"
+
+            return "normal"
+        return ""
+
+
     def freeze(self, freeze_to=None):
         freeze_context_link(self, "content", freeze_to)
 

@@ -18,3 +18,18 @@ form.toc-form {
 img.toc-drag-target.highlighted {
     background: #d4d4d4
 }
+
+div.urgency-past {
+    color: #a0a0a0;
+}
+
+div.urgency-near {
+    color: #ad3939;
+}
+
+div.urgency-urgent {
+    color: #ad3939;
+}
+
+div.urgency-normal {
+}

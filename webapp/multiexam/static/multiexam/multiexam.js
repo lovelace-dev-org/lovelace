@@ -71,7 +71,12 @@ const exam = {
                     errorbox.css("display", "block")
                     errorbox.html(data.error)
                 }
-                const form = $(data.rendered_form)
+                const form_fields = $(data.rendered_form)
+                const form = button.parent().parent().find(".question > form")
+                const form_submit = button.parent().parent().find(
+                    ".question > form > input[type='submit']"
+                )
+                form_submit.before(form_fields)
                 form.submit(exam.submit_exam)
                 form.dirty({preventLeaving: true})
                 form.keypress(function(event) {
@@ -79,10 +84,6 @@ const exam = {
                         event.preventDefault()
                     }
                 })
-                const form_submit = button.parent().parent().find(
-                    ".question > form > input[type='submit']"
-                )
-                form_submit.before(form)
                 button.prop("disabled", true)
                 exam.set_scroll_targets()
             },

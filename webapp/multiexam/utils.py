@@ -48,7 +48,7 @@ def process_questions(request, exam_script, answers):
             )
         ).strip()
         if answers.get(handle):
-            question["answer"] = answers[handle][0]
+            question["answer"] = answers[handle]
             state = (
                 answers[handle][1]
                 .replace("1", "uncertain")
