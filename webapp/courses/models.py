@@ -151,6 +151,16 @@ class SavedMessage(models.Model):
         return getattr(self, f"title_{lang_code}", "")
 
 
+class DeadlineExemption(models.Model):
+
+    class Meta:
+        unique_together = ("user", "contentgraph")
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    contentgraph = models.ForeignKey("ContentGraph", on_delete=models.CASCADE)
+    new_deadline = models.DateTimeField(null=True)
+
+
 # ^
 # |
 # USER RELATED

@@ -26,9 +26,12 @@ from utils.archive import get_single_archived
 from utils.content import get_course_instance_tasks, get_embedded_parent
 from utils.notify import send_welcome_email
 
+from courses.forms import process_delete_confirm_form
 from courses.models import (
+    ContentGraph,
     CourseEnrollment,
     CourseInstance,
+    DeadlineExemption,
     EmbeddedLink,
     FileUploadExerciseReturnFile,
     GradeThreshold,
@@ -47,7 +50,13 @@ from teacher_tools.models import (
     MossSettings,
     ReminderTemplate,
 )
-from teacher_tools.forms import MossnetForm, ReminderForm, BatchGradingForm, TransferRecordsForm
+from teacher_tools.forms import (
+    DeadlineExemptionForm,
+    MossnetForm,
+    ReminderForm,
+    BatchGradingForm,
+    TransferRecordsForm,
+)
 
 
 def download_answers(request, course, instance, content):
@@ -719,3 +728,77 @@ def moss_progress(request, course, instance, content, task_id):
     )
     data = {"state": task.state, "metadata": task.info, "redirect": progress_url}
     return JsonResponse(data)
+
+
+#
+#
+#
+# DEADLINE EXEMPTIONS
+# |
+# v
+
+
+@ensure_responsible
+def manage_exemptions(request, course, instance):
+    exemptions = DeadlineExemption.objects.filter(
+        contentgraph__instance=instance
+    )
+    t = loader.get_template("teacher_tools/deadline-exemptions.html")
+    c = {
+        "course": course,
+        "instance": instance,
+        "course_staff": True,
+        "exemptions": exemptions,
+    }
+    return HttpResponse(t.render(c, request))
+
+@ensure_responsible
+def create_exemption(request, course, instance):
+    students = instance.enrolled_users.get_queryset()
+    graphs = (
+        ContentGraph.objects.filter(instance=instance)
+        .exclude(deadline=None)
+    )
+    if request.method == "POST":
+        form = DeadlineExemptionForm(
+            request.POST,
+            students=students,
+            graphs=graphs,
+        )
+        if not form.is_valid():
+            errors = form.errors_as_json()
+            return JsonResponse({"errors": errors}, status=400)
+
+        form.save(commit=True)
+        return JsonResponse({"status": "ok"})
+
+    form = DeadlineExemptionForm(
+        students=students,
+        graphs=graphs
+    )
+    form_t = loader.get_template("courses/base-edit-form.html")
+    form_c = {
+        "form_object": form,
+        "submit_url": request.path,
+        "html_id": f"create-exemption-form",
+        "html_class": "management-form",
+    }
+    return HttpResponse(form_t.render(form_c, request))
+
+@ensure_responsible
+def delete_exemption(request, course, instance, user, graph_id):
+    def success(form):
+        DeadlineExemption.objects.filter(
+            user=user,
+            contentgraph__id=graph_id,
+        ).delete()
+    return process_delete_confirm_form(request, success)
+
+
+
+
+
+
+
+
+

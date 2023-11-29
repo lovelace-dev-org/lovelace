@@ -1,5 +1,6 @@
 from django import forms
 from django.utils.translation import gettext as _
+import courses.models as cm
 from teacher_tools.models import MossSettings, ReminderTemplate
 
 
@@ -107,3 +108,25 @@ class TransferRecordsForm(forms.Form):
             label=_("Choose target instance"),
             choices=[(c.id, c.name) for c in other_instances],
         )
+
+
+class DeadlineExemptionForm(forms.ModelForm):
+
+    class Meta:
+        model = cm.DeadlineExemption
+        fields = ["user", "contentgraph", "new_deadline"]
+        widgets = {
+            "new_deadline": forms.widgets.DateTimeInput(attrs={"type": "datetime-local"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        students = kwargs.pop("students")
+        available_content = kwargs.pop("graphs")
+        super().__init__(*args, **kwargs)
+        self.fields["contentgraph"].queryset = available_content
+        self.fields["user"].queryset = students
+
+
+
+
+
