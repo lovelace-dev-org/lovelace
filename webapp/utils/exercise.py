@@ -270,11 +270,20 @@ def apply_late_rule(exercise, evaluation, rule, days_late):
         )
     )
 
+def is_late(graph, user, answer_date):
+    exemption = cm.DeadlineExemption.objects.filter(user=user, contentgraph=graph).first()
+    if exemption:
+        deadline = exemption.new_deadline
+    else:
+        deadline = graph.deadline
+
+    return deadline and (answer_date > deadline)
+
 
 def update_completion(exercise, instance, user, evaluation, answer_date):
     link = cm.EmbeddedLink.objects.filter(instance=instance, embedded_page=exercise).first()
     parent_graph = link.parent.contentgraph_set.get_queryset().get(instance=instance)
-    late = parent_graph.deadline and (answer_date > parent_graph.deadline)
+    late = is_late(parent_graph, user, answer_date)
 
     changed = False
     correct = evaluation["evaluation"]

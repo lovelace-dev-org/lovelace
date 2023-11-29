@@ -95,4 +95,19 @@ urlpatterns = [
         views.moss_progress,
         name="moss_progress",
     ),
-]
+    path(
+        "<course:course>/<instance:instance>/exemptions/",
+        views.manage_exemptions,
+        name="exemptions",
+    ),
+    path(
+        "<course:course>/<instance:instance>/create_exemption/",
+        views.create_exemption,
+        name="create_exemption",
+    ),
+    path(
+        "<course:course>/<instance:instance>/delete_exemption/<user:user>/<int:graph_id>/",
+        views.delete_exemption,
+        name="delete_exemption",
+    ),
+ ]

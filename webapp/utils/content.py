@@ -1,3 +1,4 @@
+import datetime
 import re
 from collections import defaultdict
 from functools import wraps
@@ -245,6 +246,10 @@ def check_exercise_accessible(request, course, instance, content):
 
 
 def course_tree(tree, node, user, instance_obj, enrolled=False, staff=False):
+    if node.require_enroll:
+        if not (enrolled or staff):
+            return
+
     embedded_links = cm.EmbeddedLink.objects.filter(parent=node.content.id, instance=instance_obj)
     embedded_count = len(embedded_links)
     page_count = node.content.count_pages(instance_obj)
@@ -285,9 +290,14 @@ def course_tree(tree, node, user, instance_obj, enrolled=False, staff=False):
                     correct_embedded += 1
                     page_score += score * emb_exercise.default_points * node.score_weight
 
-    if node.require_enroll:
-        if not (enrolled or staff):
-            return
+    exemption = cm.DeadlineExemption.objects.filter(
+        user=user,
+        contentgraph=node
+    ).first()
+    if exemption:
+        deadline = exemption.new_deadline
+    else:
+        deadline = node.deadline
 
     list_item = {
         "node_id": node.id,
@@ -300,8 +310,8 @@ def course_tree(tree, node, user, instance_obj, enrolled=False, staff=False):
         "visible": node.visible,
         "require_enroll": node.require_enroll,
         "page_count": page_count,
-        "deadline": node.deadline,
-        "urgency": node.get_deadline_urgency(),
+        "deadline": deadline,
+        "urgency": get_deadline_urgency(deadline),
     }
 
     if list_item not in tree:
@@ -321,3 +331,21 @@ def course_tree(tree, node, user, instance_obj, enrolled=False, staff=False):
         for child in children:
             course_tree(tree, child, user, instance_obj, enrolled, staff)
         tree.append({"content": mark_safe("<")})
+
+
+def get_deadline_urgency(deadline):
+    if deadline is not None:
+        now = datetime.datetime.now()
+        if deadline < now:
+            return "past"
+
+        diff = deadline - now
+        if diff.days <= 1:
+            return "urgent"
+
+        if diff.days <= 7:
+            return "near"
+
+        return "normal"
+    return ""
+
