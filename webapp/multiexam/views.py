@@ -13,7 +13,9 @@ from django.shortcuts import render
 from django.template import loader
 from django.utils.translation import gettext as _
 
+from courses.forms import process_delete_confirm_form
 from courses.models import User
+
 
 from utils.access import ensure_enrolled_or_staff, determine_access, ensure_staff, ensure_responsible
 from utils.archive import find_latest_version
@@ -52,8 +54,6 @@ def get_exam_attempt(request, course, instance, content):
         answered_choices = {}
     else:
         answered_choices = answer.answers
-
-    print(answered_choices)
 
     question_states = process_questions(request, script, answered_choices)
 
@@ -164,36 +164,23 @@ def attempt_settings(request, course, instance, attempt):
         "form_object": form,
         "submit_url": request.path,
         "html_id": f"attempt-settings-form",
-        "html_class": "exam-management-form",
+        "html_class": "management-form",
     }
     return HttpResponse(form_t.render(form_c, request))
 
 @ensure_responsible
 def delete_attempt(request, course, instance, attempt):
-    if request.method == "POST":
-        form = ExamAttemptDeleteForm(request.POST)
-        if not form.is_valid():
-            errors = form.errors_as_json()
-            return JsonResponse({"errors": errors}, status=400)
-
+    def success(form):
         attempt.delete()
-        return JsonResponse({"status": "ok"})
 
-    form = ExamAttemptDeleteForm()
-    form_t = loader.get_template("courses/base-edit-form.html")
-    form_c = {
-        "form_object": form,
-        "submit_url": request.path,
-        "html_id": f"delete-attempt-form",
-        "html_class": "exam-management-form",
+    extra = {
         "disclaimer": _(
             "If an attempt is deleted, all existing answers will be lost. "
             "You can close the attempt by changing its end date if you want to "
             "retain existing answers while making the exam attempt unavailable."
         ),
-        "submit_label": _("Execute"),
     }
-    return HttpResponse(form_t.render(form_c, request))
+    return process_delete_confirm_form(request, success, extra)
 
 
 

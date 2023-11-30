@@ -24,7 +24,6 @@ const exam = {
                 else {
                     button.after(form);
                 }
-                form.dirty({preventLeaving: true})
                 form.find("input[type!=hidden]").first().focus()
                 button.attr("onclick", "exam.close_form(event, this)")
             },

@@ -8,6 +8,7 @@
 
 {% block extra-static %}
   <script src="{% static 'multiexam/multiexam.js' %}"></script>
+  <script src="{% static 'courses/formtools.js' %}"></script>
   <link rel="stylesheet" href="{% static 'multiexam/multiexam.css' %}"></link>
 {% endblock %}
 
@@ -57,11 +58,11 @@
     <table class="fixed alternate-green">
       <thead>
         <tr>
-          <th>{% trans 'Open From' %}</th>
-          <th>{% trans 'Open To' %}</th>
-          <th>{% trans 'Questions' %}</th>
-          <th>{% trans 'Made For' %}</th>
-          <th>{% trans 'Answers' %}</th>
+          <th class="interactive" onclick="sort_table(event, this, 0, 1)">{% trans 'Open From' %}</th>
+          <th class="interactive" onclick="sort_table(event, this, 1, 1)">{% trans 'Open To' %}</th>
+          <th class="interactive" onclick="sort_table(event, this, 2, 1, true)">{% trans 'Questions' %}</th>
+          <th class="interactive" onclick="sort_table(event, this, 3, 1)">{% trans 'Made For' %}</th>
+          <th class="interactive" onclick="sort_table(event, this, 4, 1, true)">{% trans 'Answers' %}</th>
           <th></th>
         </tr>
       </thead>
@@ -84,26 +85,25 @@
                   class="staff-base-button view-button"
                   title="{% trans 'Preview attempt script' %}"
                   onclick="exam.preview_attempt(event, this);"
-                  data-url="{% url 'multiexam:preview_attempt' course instance attempt %}"
-                  data-in-table="true">
+                  data-url="{% url 'multiexam:preview_attempt' course instance attempt %}">
               </button>
               <button type="button"
                   class="staff-base-button settings-button"
                   title="{% trans 'Configure this attempt' %}"
-                  onclick="exam.fetch_form(event, this);"
+                  onclick="formtools.fetch_form(event, this);"
                   data-url="{% url 'multiexam:attempt_settings' course instance attempt %}"
-                  data-in-table="true">
+                  data-in-table="true"
+                  data-colspan="6">
               </button>
               <button type="button"
                   class="staff-base-button delete-button"
                   title="{% trans 'Delete this attempt' %}"
-                  onclick="exam.fetch_form(event, this);"
+                  onclick="formtools.fetch_form(event, this);"
                   data-url="{% url 'multiexam:delete_attempt' course instance attempt %}"
-                  data-in-table="true">x
+                  data-in-table="true"
+                  data-colspan="6">x
               </button>
-
-
-
+            </td>
           </tr>
         {% endfor %}
       </tbody>
@@ -112,7 +112,7 @@
     <button type="button"
         class="staff-base-button add-button"
         title="{% trans 'Open a new attempt for this exam' %}"
-        onclick="exam.fetch_form(event, this);"
+        onclick="formtools.fetch_form(event, this);"
         data-url="{% url 'multiexam:open_attempt' course instance content %}">+
     </button>
 

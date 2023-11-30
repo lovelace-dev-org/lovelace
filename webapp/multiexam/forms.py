@@ -46,9 +46,12 @@ class ExamAttemptSettingsForm(forms.ModelForm):
     class Meta:
         model = MultipleQuestionExamAttempt
         fields = ["open_from", "open_to"]
-        widgets = {
-            "open_from": forms.widgets.DateTimeInput(attrs={"type": "datetime-local"}),
-            "open_to": forms.widgets.DateTimeInput(attrs={"type": "datetime-local"}),
-        }
+
+        # These cannot be currently used because the value attribute of datetime-local
+        # uses a different syntax than what is gotten from the datetime field
+        #widgets = {
+        #    "open_from": forms.widgets.DateTimeInput(attrs={"type": "datetime-local"}),
+        #    "open_to": forms.widgets.DateTimeInput(attrs={"type": "datetime-local"}),
+        #}
 
     refresh = forms.BooleanField(required=False, label=_("Refresh exam to latest version"))

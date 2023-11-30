@@ -507,7 +507,7 @@ class ConfirmDeleteForm(forms.Form):
 
     delete = forms.BooleanField(required=True, label=_("Confirm deletion"))
 
-def process_delete_confirm_form(request, success_callback):
+def process_delete_confirm_form(request, success_callback, extra_context={}):
     if request.method == "POST":
         form = ConfirmDeleteForm(request.POST)
         if not form.is_valid():
@@ -524,7 +524,9 @@ def process_delete_confirm_form(request, success_callback):
         "submit_url": request.path,
         "html_id": f"delete-confirm-form",
         "html_class": "management-form",
+        "submit_label": _("Execute"),
     }
+    form_c.update(extra_context)
     return HttpResponse(form_t.render(form_c, request))
 
 

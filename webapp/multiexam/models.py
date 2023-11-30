@@ -110,9 +110,10 @@ class MultipleQuestionExam(ContentPage):
         answer_record = querydict_to_answer(attempt, answer, include_certainty=False)
         script = attempt.load_exam_script(exclude_correct=False)
         total_score = 0
+        max_score = 0
         results = {}
         for key, question in script:
-
+            max_score += question.get("value", 1)
             if set(answer_record.get(key, "")) == set(question["correct"]):
                 total_score += question.get("value", 1)
                 results[key] = True
@@ -122,6 +123,7 @@ class MultipleQuestionExam(ContentPage):
         return {
             "evaluation": True,
             "points": total_score,
+            "max": max_score,
             "test_results": json.dumps(results),
         }
 
