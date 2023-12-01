@@ -91,7 +91,6 @@ def save_file_upload_exercise(
     if_ids,
 ):
     deletions = []
-    extra_settings = exercise.fileexercisesettings
     # Collect the content page data
     # e_name = form_data['exercise_name']
     # e_content = form_data['exercise_content']
@@ -118,10 +117,6 @@ def save_file_upload_exercise(
         e_question = form_data[f"exercise_question_{lang_code}"]
         setattr(exercise, f"question_{lang_code}", e_question)
 
-        e_answer_filename = form_data[f"exercise_answer_filename_{lang_code}"]
-        print(e_answer_filename)
-        setattr(extra_settings, f"answer_filename_{lang_code}", e_answer_filename)
-
     # exercise.name = e_name
     # exercise.content = e_content
     exercise.default_points = e_default_points
@@ -136,9 +131,16 @@ def save_file_upload_exercise(
     exercise.feedback_questions.set(e_feedback_questions)
     exercise.save()
 
+    extra_settings = exercise.fileexercisesettings
     extra_settings.allowed_filenames = e_allowed_filenames
     extra_settings.max_file_count = e_max_file_count
     extra_settings.answer_mode = e_answer_mode
+
+    for lang_code, _ in lang_list:
+        e_answer_filename = form_data[f"exercise_answer_filename_{lang_code}"]
+        print(e_answer_filename)
+        setattr(extra_settings, f"answer_filename_{lang_code}", e_answer_filename)
+
     extra_settings.save()
 
     # Hints
