@@ -290,14 +290,15 @@ def course_tree(tree, node, user, instance_obj, enrolled=False, staff=False):
                     correct_embedded += 1
                     page_score += score * emb_exercise.default_points * node.score_weight
 
-    exemption = cm.DeadlineExemption.objects.filter(
-        user=user,
-        contentgraph=node
-    ).first()
-    if exemption:
-        deadline = exemption.new_deadline
-    else:
-        deadline = node.deadline
+    deadline = node.deadline
+    if user.is_authenticated:
+        exemption = cm.DeadlineExemption.objects.filter(
+            user=user,
+            contentgraph=node
+        ).first()
+        if exemption:
+            deadline = exemption.new_deadline
+
 
     list_item = {
         "node_id": node.id,
