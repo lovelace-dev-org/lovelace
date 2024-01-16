@@ -676,7 +676,7 @@ class CourseAdmin(TranslationAdmin, VersionAdmin):
         """
 
         if db_field.name == "main_responsible":
-            kwargs["queryset"] = User.objects.filter(is_staff=True)
+            kwargs["queryset"] = User.objects.filter(is_staff=True).order_by("username")
 
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 

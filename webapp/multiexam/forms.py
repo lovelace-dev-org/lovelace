@@ -1,3 +1,4 @@
+import yaml
 from django import forms
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -55,3 +56,27 @@ class ExamAttemptSettingsForm(forms.ModelForm):
         #}
 
     refresh = forms.BooleanField(required=False, label=_("Refresh exam to latest version"))
+
+
+class QuestionPoolForm(forms.ModelForm):
+
+    def _validate_yaml(self, memoryfile):
+        """
+        Validates a regular expression by trying to compile it. Skipped for
+        non-regexp answers.
+        """
+
+        try:
+            if memoryfile:
+                content = yaml.safe_load(memoryfile.file)
+        except yaml.YAMLError as e:
+            raise ValidationError(f"Parsing error in YAML file: {e}") from e
+
+
+    def clean(self):
+        cleaned_data = super().clean()
+        for lang_code, _ in settings.LANGUAGES:
+            try:
+                self._validate_yaml(cleaned_data[f"fileinfo_{lang_code}"])
+            except ValidationError as e:
+                self.add_error(f"fileinfo_{lang_code}", e)

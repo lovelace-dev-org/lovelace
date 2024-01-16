@@ -30,6 +30,7 @@ from courses.forms import GroupConfigForm, GroupInviteForm
 from courses.views import cookie_law
 from utils.access import (
     ensure_enrolled_or_staff,
+    is_course_staff,
 )
 from utils.users import get_group_members
 
@@ -206,6 +207,7 @@ def group_info(request, course, instance):
         "instance": instance,
         "invited_to": invited_to,
         "is_supervisor": is_supervisor,
+        "course_staff": is_course_staff(request.user, instance),
     }
 
     if slots and group:
@@ -273,7 +275,7 @@ def accept_invitation(request, course, instance, invite):
     StudentGroup.objects.filter(instance=instance, members=request.user).delete()
 
     invite.group.members.add(request.user)
-    GroupInvitation.objects.filter(user=request.user).delete()
+    GroupInvitation.objects.filter(user=request.user, instance=instance).delete()
     return redirect(reverse("courses:group_info", kwargs={"course": course, "instance": instance}))
 
 

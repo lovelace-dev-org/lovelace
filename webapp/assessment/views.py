@@ -419,6 +419,7 @@ def submission_assessment(request, course, instance, exercise, user):
             },
             answer_object,
             complete=form.cleaned_data.get("complete", False),
+            overwrite=True
         )
         return JsonResponse({"status": "ok"})
 

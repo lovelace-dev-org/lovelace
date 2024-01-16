@@ -99,6 +99,8 @@ def _save_evaluation(user, instance, content, task_id, task_info):
     progress = RoutineExerciseProgress.objects.get(instance=instance, exercise=content, user=user)
     progress.progress = task_info["data"]["progress"]
     progress.completed = task_info["data"]["completed"]
+    progress.points = task_info["data"]["score"]
+    progress.max_points = task_info["data"]["max"]
     progress.save()
     return progress
 

@@ -388,6 +388,16 @@ class GroupInviteForm(forms.Form):
 
 
 class GroupMemberForm(forms.Form):
+    def clean(self):
+        cleaned_data = super().clean()
+        user = cm.User(id=cleaned_data["student"])
+        if user.studentgroup_set.get_queryset().filter(instance=self.valid_for_instance).exists():
+            self.add_error("student", _("This user is already in a group"))
+
+    def is_valid(self, for_instance=None):
+        self.valid_for_instance = for_instance
+        return super().is_valid()
+
     def __init__(self, *args, **kwargs):
         students = kwargs.pop("students")
         super().__init__(*args, **kwargs)

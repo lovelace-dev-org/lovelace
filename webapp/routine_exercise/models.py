@@ -66,27 +66,33 @@ class RoutineExercise(ContentPage):
     def re_evaluate(self, user, instance):
         from utils.exercise import update_completion
 
-        if not RoutineExerciseProgress.objects.filter(
+        progress = RoutineExerciseProgress.objects.filter(
             exercise=self, user=user, instance=instance, completed=True
-        ).exists:
+        ).first()
+
+        if not progress:
             return
 
         evaluation = {
             "evaluation": True,
-            "points": self.default_points,
-            "max": self.default_points,
+            "points": progress.points,
+            "max": progress.max_points,
         }
-        answer_date = (
-            RoutineExerciseAnswer.objects.filter(
-                question__exercise=self,
-                question__user=user,
-                question__instance=instance,
-                correct=True,
+        try:
+            answer_date = (
+                RoutineExerciseAnswer.objects.filter(
+                    question__exercise=self,
+                    question__user=user,
+                    question__instance=instance,
+                    correct=True,
+                )
+                .order_by("-answer_date")
+                .first()
+                .answer_date
             )
-            .order_by("-answer_date")
-            .first()
-            .answer_date
-        )
+        except AttributeError:
+            return
+
         update_completion(self, instance, user, evaluation, answer_date)
 
     def save_answer(self, user, ip, answer, files, instance, revision):
@@ -156,3 +162,5 @@ class RoutineExerciseProgress(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     completed = models.BooleanField(default=False)
     progress = models.CharField(max_length=255)
+    points = models.DecimalField(default=0, max_digits=5, decimal_places=2)
+    max_points = models.PositiveIntegerField(default=1)

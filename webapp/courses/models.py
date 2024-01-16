@@ -1033,13 +1033,13 @@ class ContentPage(models.Model):
 
     def regenerate_cache(self, instance, active_only=False):
         context = {"instance": instance, "course": instance.course, "content_page": self}
-        if not active_only:
-            try:
-                revision = ContentGraph.objects.get(content=self, instance=instance).revision
-            except ContentGraph.DoesNotExist:
-                return
-        else:
-            revision = None
+        try:
+            revision = ContentGraph.objects.get(content=self, instance=instance).revision
+        except ContentGraph.DoesNotExist:
+            return
+
+        if active_only and revision is not None:
+            return
 
         current_lang = translation.get_language()
 
@@ -1182,7 +1182,7 @@ class ContentPage(models.Model):
 
         return evaluation_object
 
-    def update_evaluation(self, user, evaluation, answer_object, complete=True):
+    def update_evaluation(self, user, evaluation, answer_object, complete=True, overwrite=False):
         from utils.exercise import update_completion
         from utils.users import get_group_members
 
@@ -1194,10 +1194,16 @@ class ContentPage(models.Model):
         answer_object.evaluation.evaluator = evaluation.get("evaluator", None)
         answer_object.evaluation.save()
         if complete:
-            update_completion(self, instance, user, evaluation, answer_object.answer_date)
+            update_completion(
+                self, instance, user, evaluation, answer_object.answer_date,
+                overwrite=overwrite
+            )
             if self.group_submission:
                 for member in get_group_members(user, instance):
-                    update_completion(self, instance, member, evaluation, answer_object.answer_date)
+                    update_completion(
+                        self, instance, member, evaluation, answer_object.answer_date,
+                        overwrite=overwrite
+                    )
 
     def get_user_evaluation(self, user, instance, check_group=True):
         try:

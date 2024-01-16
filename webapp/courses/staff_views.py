@@ -687,6 +687,7 @@ def group_management(request, course, instance):
         "instance": instance,
         "is_responsible": responsible,
         "staff": staff_members,
+        "course_staff": True,
     }
     return HttpResponse(t.render(c, request))
 
@@ -701,7 +702,8 @@ def create_group(request, course, instance):
             return JsonResponse({"errors": errors}, status=400)
 
         group = form.save(commit=False)
-        group.supervisor = User.objects.get(id=form.cleaned_data["supervisor"])
+        if int(form.cleaned_data["supervisor"]):
+            group.supervisor = User.objects.get(id=form.cleaned_data["supervisor"])
         group.instance = instance
         group.save()
         return JsonResponse({"status": "ok"})
@@ -729,11 +731,13 @@ def add_member(request, course, instance, group):
     enrolled_students = instance.enrolled_users.get_queryset()
     if request.method == "POST":
         form = GroupMemberForm(request.POST, students=enrolled_students)
-        if not form.is_valid():
+        if not form.is_valid(instance):
             errors = form.errors.as_json()
             return JsonResponse({"errors": errors}, status=400)
 
         user = enrolled_students.get(id=form.cleaned_data["student"])
+
+
         group.members.add(user)
         return JsonResponse(
             {
@@ -756,13 +760,13 @@ def add_member(request, course, instance, group):
 @ensure_responsible
 def set_supervisor(request, course, instance, group):
     if group.instance != instance:
-        return HttpResponseForbidden
+        return HttpResponseForbidden()
 
     staff_members = course.staff_group.user_set.get_queryset().order_by("last_name")
     try:
         supervisor = staff_members.get(id=request.POST["extra[supervisor]"])
     except User.DoesNotExist:
-        return HttpResponseForbidden
+        return HttpResponseForbidden()
 
     group.supervisor = supervisor
     group.save()

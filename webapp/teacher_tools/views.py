@@ -100,6 +100,13 @@ def download_answers(request, course, instance, content):
     response["Content-Disposition"] = f"attachment; filename={content.slug}_answers.zip"
     return response
 
+#
+#
+#
+# ENROLLMENT MANAGEMENT
+# |
+# v
+
 
 def manage_enrollments(request, course, instance):
     if not is_course_staff(request.user, instance, responsible_only=True):
@@ -198,7 +205,7 @@ def manage_enrollments(request, course, instance):
 @ensure_responsible
 def transfer_records(request, course, instance, user):
     other_instances = (
-        CourseInstance.objects.filter(course=course).exclude(id=instance.id).order_by("start_date")
+        CourseInstance.objects.filter(course=course).exclude(id=instance.id).order_by("name")
     )
 
     if request.method == "POST":
@@ -266,6 +273,14 @@ def transfer_records(request, course, instance, user):
         "submit_label": _("Execute"),
     }
     return HttpResponse(form_t.render(form_c, request))
+
+# ^
+# |
+# ENROLLMENT MANAGEMENT
+# COURSE COMPLETION
+# |
+# v
+
 
 
 @ensure_staff
@@ -408,6 +423,14 @@ def course_completion(request, course, instance):
     return HttpResponse(t.render(c, request))
 
 
+# ^
+# |
+# COURSE COMPLETION
+# REMINDERS
+# |
+# v
+
+
 @ensure_responsible
 def manage_reminders(request, course, instance):
     saved_template = ReminderTemplate.objects.filter(instance=instance).first()
@@ -532,6 +555,14 @@ def reminders_progress(request, course, instance, task_id):
 
     data = {"state": task.state, "metadata": task.info, "redirect": progress_url}
     return JsonResponse(data)
+
+
+# ^
+# |
+# REMINDERS
+# GRADING TOOLS
+# |
+# v
 
 
 @ensure_responsible
@@ -730,9 +761,9 @@ def moss_progress(request, course, instance, content, task_id):
     return JsonResponse(data)
 
 
-#
-#
-#
+# ^
+# |
+# GRADING TOOLS
 # DEADLINE EXEMPTIONS
 # |
 # v

@@ -280,7 +280,7 @@ def is_late(graph, user, answer_date):
     return deadline and (answer_date > deadline)
 
 
-def update_completion(exercise, instance, user, evaluation, answer_date):
+def update_completion(exercise, instance, user, evaluation, answer_date, overwrite=False):
     link = cm.EmbeddedLink.objects.filter(instance=instance, embedded_page=exercise).first()
     parent_graph = link.parent.contentgraph_set.get_queryset().get(instance=instance)
     late = is_late(parent_graph, user, answer_date)
@@ -319,14 +319,14 @@ def update_completion(exercise, instance, user, evaluation, answer_date):
         completion.save()
         changed = True
     else:
-        if completion.state != "correct":
+        if completion.state != "correct" or overwrite:
             if evaluation.get("manual", False):
                 completion.state = "submitted"
             else:
                 completion.state = ["incorrect", "correct"][correct]
                 changed = True
         if correct:
-            if quotient > completion.points:
+            if quotient > completion.points or overwrite:
                 completion.points = quotient
         completion.save()
 
