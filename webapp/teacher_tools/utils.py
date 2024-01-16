@@ -129,7 +129,7 @@ def reconstruct_answer_form(task_type, answer):
         return {"-radio": answer.chosen_answer_id}
     if task_type == "CHECKBOX_EXERCISE":
         return dict((str(a.id), a.id) for a in answer.chosen_answers.all())
-    if task_type == "MULTIPLE_CHOICE_EXAM":
+    if task_type == "MULTIPLE_QUESTION_EXAM":
         answer_form = QueryDict(mutable=True)
         answer_form.update({
             "attempt_id": answer.attempt.id
