@@ -55,7 +55,12 @@ class ExamAttemptSettingsForm(forms.ModelForm):
         #    "open_to": forms.widgets.DateTimeInput(attrs={"type": "datetime-local"}),
         #}
 
-    refresh = forms.BooleanField(required=False, label=_("Refresh exam to latest version"))
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["refresh"] = forms.BooleanField(
+            required=False,
+            label=_("Refresh exam to latest version")
+        )
 
 
 class QuestionPoolForm(forms.ModelForm):
