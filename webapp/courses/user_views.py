@@ -275,7 +275,7 @@ def accept_invitation(request, course, instance, invite):
     StudentGroup.objects.filter(instance=instance, members=request.user).delete()
 
     invite.group.members.add(request.user)
-    GroupInvitation.objects.filter(user=request.user, instance=instance).delete()
+    GroupInvitation.objects.filter(user=request.user, group__instance=instance).delete()
     return redirect(reverse("courses:group_info", kwargs={"course": course, "instance": instance}))
 
 
