@@ -1,13 +1,28 @@
-{% extends 'courses/exercise.html' %}
 {% load i18n %}
 
-{% block exercise-form %}
-  {% if content.ask_collaborators %}
-    <div class="input-label-container"><label for="collaborators" class="file">{% trans "Collaborators:" %}</label><input name="collaborators" type="text" size="60" class="task_file" placeholder="{% trans 'Who did you co-operate with?' %}"></div>
-  {% endif %}
-  {% if content.allowed_filenames %}
-    <p>{% trans "Allowed filenames:" %} {{ content.allowed_filenames|join:", " }}</p>
-  {% endif %}
-  <div class="input-label-container"><label for="file" class="file">{% trans "Submit your files here:" %}</label><input name="file" type="file" class="task_file" multiple="multiple"></div>
-  {% comment %}Use the accept and multiple properties for the file!{% endcomment %}
-{% endblock %}
+{% if content.ask_collaborators %}
+  <div class="input-label-container">
+    <label for="collaborators" class="file">
+      {% trans "Collaborators:" %}
+    </label>
+    <input name="collaborators" type="text" size="60"
+           class="task_file"
+           placeholder="{% trans 'Who did you co-operate with?' %}">
+  </div>
+{% endif %}
+{% if content.fileexercisesettings.allowed_filenames %}
+  <p>{% trans "Allowed filenames:" %} {{ content.fileexercisesettings.allowed_filenames|join:", " }}</p>
+{% endif %}
+  <div class="input-label-container">
+    {% if content.fileexercisesettings.answer_mode == "FILE" %}
+      <label for="file" class="file">{% trans "Submit your files here:" %}</label>
+      <input name="file" type="file" class="task_file" multiple="multiple">
+    {% elif content.fileexercisesettings.answer_mode == "TEXT" %}
+      <textarea name="answer"
+                class="task_text"
+                placeholder="{% trans 'Enter your code here' %}"
+                rows="10"></textarea>
+    {% endif %}
+  </div>
+{% comment %}Use the accept and multiple properties for the file!{% endcomment %}
+

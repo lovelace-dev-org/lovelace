@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-04-23 09:45+0300\n"
+"POT-Creation-Date: 2023-11-21 11:21+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,212 +18,1215 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: courses/templates/courses/base.html:79
+#: assessment/forms.py:17
+msgid "Either title in default language, or existing sheet must be filled"
+msgstr ""
+"Otsikko-kenttä oletuskielellä tai olemassa olevan lomakkeen valinta "
+"vaaditaan."
+
+#: assessment/forms.py:27
+#, python-brace-format
+msgid "Default sheet title ({lang}):"
+msgstr "Lomakkeen oletusotsikko ({lang}):"
+
+#: assessment/forms.py:28
+#, python-brace-format
+msgid "Alternative sheet title ({lang}):"
+msgstr "Vaihtoehtoinen otsikko ({lang}):"
+
+#: assessment/forms.py:33
+msgid "Choose sheet to use"
+msgstr "Valitse käytettävä lomake"
+
+#: assessment/forms.py:35
+msgid "----NEW--SHEET----"
+msgstr "---UUSI--LOMAKE---"
+
+#: assessment/forms.py:41
+msgid "Make a copy of selected sheet"
+msgstr "Tee kopio valitusta taulukosta"
+
+#: assessment/forms.py:62
+msgid "required"
+msgstr "vaadittu"
+
+#: assessment/forms.py:63
+msgid "> max"
+msgstr "> max"
+
+#: assessment/forms.py:64
+msgid "< 0"
+msgstr "< 0"
+
+#: assessment/forms.py:122
+msgid "Mark this assessment as correct"
+msgstr "Merkitse arvostelu hyväksytyksi"
+
+#: assessment/forms.py:125
+msgid "This assessment is complete"
+msgstr "Merkitse arvostelu valmiiksi"
+
+#: assessment/templates/assessment/assessment_sheet.html:9
+#: assessment/templates/assessment/submissions.html:15
+#: courses/templates/courses/answers-base.html:15
+#: courses/templates/courses/contentpage.html:15
+#: courses/templates/courses/course.html:14
+#: courses/templates/courses/group-info.html:11
+#: courses/templates/courses/group-management.html:12
+#: courses/templates/courses/index.html:13
+#: courses/templates/courses/login.html:8
+#: courses/templates/courses/logout.html:5
+#: courses/templates/courses/mass-email.html:15
+#: courses/templates/courses/terms.html:8
+#: courses/templates/courses/user-exercise-answers.html:20
+#: feedback/templates/feedback/feedback-stats.html:17
+#: multiexam/templates/multiexam/manage-attempts.html:16
+#: stats/templates/stats/instance-console.html:15
+#: teacher_tools/templates/teacher_tools/answer_summary.html:18
+#: teacher_tools/templates/teacher_tools/course_completion.html:16
+#: teacher_tools/templates/teacher_tools/exercise_plagiarism.html:11
+#: teacher_tools/templates/teacher_tools/manage_enrollments.html:16
+#: teacher_tools/templates/teacher_tools/manage_reminders.html:15
+#: teacher_tools/templates/teacher_tools/mass_email.html:15
+#: teacher_tools/templates/teacher_tools/reset_completion.html:17
+#: teacher_tools/templates/teacher_tools/student_completion.html:30
+msgid "Courses"
+msgstr "Kurssit"
+
+#: assessment/templates/assessment/assessment_sheet.html:22
+#: assessment/templates/assessment/submissions.html:39
+msgid "Submissions"
+msgstr "Lähetetyt vastaukset"
+
+#: assessment/templates/assessment/assessment_sheet.html:25
 #, python-format
 msgid ""
-"This site uses cookies. Learn more about our <a href=\"%(terms_url)s\">terms "
-"and conditions</a>."
+"\n"
+"        %(username)s’s assessment for %(exercise_name)s\n"
+"    "
 msgstr ""
-"Tämä sivusto käyttää evästeitä. Lue lisää <a href=\"%(terms_url)s"
-"\">käyttöehdoista</a>."
+"\n"
+"        Arvostelu käyttäjän %(username)s vastauksesta tehtävään "
+"%(exercise_name)s\n"
+"    "
 
-#: courses/templates/courses/base.html:80
+#: assessment/templates/assessment/assessment_sheet.html:34
+#, python-format
+msgid ""
+"\n"
+"            %(title)s of %(username)s's answer to %(exercise_name)s \n"
+"        "
+msgstr ""
+"\n"
+"            %(title)s käyttäjän %(username)s vastauksesta tehtävään "
+"%(exercise_name)s \n"
+"         "
+
+#: assessment/templates/assessment/assessment_sheet.html:100
+#: courses/staff_views.py:539 courses/templates/courses/base-edit-form.html:100
+#: courses/templates/courses/base-multi-form.html:62
+#: faq/templates/faq/faq_panel.html:62 faq/templates/faq/faq_panel.html:92
+msgid "Save"
+msgstr "Tallenna"
+
+#: assessment/templates/assessment/management_panel.html:9
+msgid "Add or change assessment sheet"
+msgstr "Lisää uusi lomake tai vaihda lomaketta"
+
+#: assessment/templates/assessment/management_panel.html:18
+msgid "Writes the assessment total point value as the exercise point value"
+msgstr "Päivittää tehtävän maksimipistemäärän vastaamaan arvostelulomaketta"
+
+#: assessment/templates/assessment/management_panel.html:21
+msgid "Update exercise points"
+msgstr "Päivitä tehtävän pisteet"
+
+#: assessment/templates/assessment/management_panel.html:35
+msgid "Add a new assessment bullet to this section"
+msgstr "Lisää uusi arvostelukohde tähän osioon"
+
+#: assessment/templates/assessment/management_panel.html:42
+msgid "Remove this assessment section"
+msgstr "Poista tämä arvosteluosio"
+
+#: assessment/templates/assessment/management_panel.html:49
+msgid "Rename this assessment section"
+msgstr "Uudellennimeä arvosteluosio"
+
+#: assessment/templates/assessment/management_panel.html:77
+msgid "Add a new assessment bullet after this bullet"
+msgstr "Lisää uusi arvostelukohde tämän perään"
+
+#: assessment/templates/assessment/management_panel.html:85
+msgid "Remove this assessment bullet"
+msgstr "Poista tämä arvostelukohde"
+
+#: assessment/templates/assessment/management_panel.html:92
+msgid "Edit this assessment bullet"
+msgstr "Muokkaa tätä arvostelukohdetta"
+
+#: assessment/templates/assessment/management_panel.html:98
+msgid "Move bullet by dragging this button"
+msgstr "Liikuta arvostelukohdetta raahaamalla tätä nappia"
+
+#: assessment/templates/assessment/management_panel.html:111
+msgid "Add a new assessment section"
+msgstr "Lisää uusi arvosteluosio"
+
+#: assessment/templates/assessment/submissions.html:5
+#, python-format
+msgid ""
+"\n"
+"  Submissions for %(exercise)s\n"
+msgstr ""
+"\n"
+"  Lähetetyt vastaukset tehtävään %(exercise)s\n"
+
+#: assessment/templates/assessment/submissions.html:46
+#, python-format
+msgid ""
+"\n"
+"            Submissions for %(exercise)s\n"
+"        "
+msgstr ""
+"\n"
+"      Lähetetyt vastaukset tehtävään %(exercise)s\n"
+"    "
+
+#: assessment/templates/assessment/submissions.html:52
+msgid "Unassessed Submissions"
+msgstr "Arvostelemattomat vastaukset"
+
+#: assessment/templates/assessment/submissions.html:58
+#: assessment/templates/assessment/submissions.html:85
+#: courses/templates/courses/calendar.html:72
+msgid "Group"
+msgstr "Ryhmä"
+
+#: assessment/templates/assessment/submissions.html:59
+#: assessment/templates/assessment/submissions.html:86
+msgid "Student(s)"
+msgstr "Opiskelija(t)"
+
+#: assessment/templates/assessment/submissions.html:60
+#: assessment/templates/assessment/submissions.html:87
+msgid "Answer Link"
+msgstr "Vastauslinkki"
+
+#: assessment/templates/assessment/submissions.html:61
+#: assessment/templates/assessment/submissions.html:88
+msgid "Assessment Link"
+msgstr "Arvostelulinkki"
+
+#: assessment/templates/assessment/submissions.html:62
+#: assessment/templates/assessment/submissions.html:89
+msgid "Points"
+msgstr "Pisteet"
+
+#: assessment/templates/assessment/submissions.html:70
+#: assessment/templates/assessment/submissions.html:97
+msgid "view answers"
+msgstr "katso vastaukset"
+
+#: assessment/templates/assessment/submissions.html:71
+msgid "assess"
+msgstr "arvostele"
+
+#: assessment/templates/assessment/submissions.html:79
+msgid "Assessed Submissions"
+msgstr "Arvostellut vastaukset"
+
+#: assessment/templates/assessment/submissions.html:98
+msgid "view assessment"
+msgstr "katso arvostelu"
+
+#: assessment/views.py:105
+msgid "Add a new or existing assessment sheet to be used for this exercise."
+msgstr "Liitä uusi tai olemassa oleva arvostelulomake tähän tehtävään."
+
+#: assessment/views.py:399
+msgid "Assessment sheet for this exercise doesn't exist"
+msgstr "Tällä tehtävällä ei ole valittua arvostelulomaketta"
+
+#: assessment/views.py:472
+msgid "This exercise does not have manual assessment."
+msgstr "Tehtävä ei ole käsin arvioitava."
+
+#: assessment/views.py:477
+msgid "This answer has not been evaluated"
+msgstr "Tätä vastausta ei ole arvosteltu."
+
+#: assessment/views.py:479
+msgid "Assessment not found"
+msgstr "Arvostelua ei löytynyt"
+
+#: courses/calendar_views.py:131 courses/templates/courses/calendar.html:21
+msgid "Send message to all reservers"
+msgstr "Lähetä viesti kaikille varaajille"
+
+#: courses/calendar_views.py:149
+msgid "This event is already full."
+msgstr "Tapahtuma on jo täynnä."
+
+#: courses/calendar_views.py:153
+msgid "You have already reserved a slot in this event."
+msgstr "Olet jo varannut paikan tähän tapahtumaan."
+
+#: courses/calendar_views.py:160
+msgid "Slot reserved!"
+msgstr "Paikka varattu!"
+
+#: courses/calendar_views.py:174
+msgid "Reservation cancelled."
+msgstr "Varaus peruttu."
+
+#: courses/calendar_views.py:182
+msgid "Reservation already cancelled."
+msgstr "Varaus on jo peruttu."
+
+#: courses/edit_forms.py:115
+msgid "Content has been changed after form was opened. Please re-open the form"
+msgstr ""
+
+#: courses/edit_forms.py:166
+msgid "Delete block"
+msgstr "Poista lohko"
+
+#: courses/edit_forms.py:209
+msgid "Name for new object"
+msgstr "Nimi uudelle objektille"
+
+#: courses/edit_forms.py:240
+msgid "Choose existing object"
+msgstr "Valitse olemassaoleva objekti"
+
+#: courses/edit_forms.py:278
+msgid "Code block content"
+msgstr "Koodiblokin sisältö"
+
+#: courses/edit_forms.py:301
+msgid "Heading text"
+msgstr "Otsikkoteksti"
+
+#: courses/edit_forms.py:318
+msgid "List markup"
+msgstr "Lista"
+
+#: courses/edit_forms.py:333
+msgid "Paragraph markup"
+msgstr "Tekstikappale"
+
+#: courses/edit_forms.py:359
+msgid "SVG markup"
+msgstr "Vektorigrafiikka"
+
+#: courses/edit_forms.py:374
+msgid "Table markup"
+msgstr "Taulukko"
+
+#: courses/edit_forms.py:389
+msgid "KaTeX markup"
+msgstr "KaTeX-lohko"
+
+#: courses/edit_forms.py:415
+msgid "This field or name and fileinfo must be filled"
+msgstr "Joko tämä kenttä, tai nimi sekä tiedosto pitää täyttää"
+
+#: courses/edit_forms.py:421 courses/edit_forms.py:426
+msgid "This field cannot be empty for new files"
+msgstr "Tämä kenttä ei voi olla tyhjä uusille tiedostoille"
+
+#: courses/edit_forms.py:455
+msgid "Choose existing include"
+msgstr "Valitse olemassaoleva liitettäväksi"
+
+#: courses/edit_forms.py:456 courses/edit_forms.py:586
+msgid "----NOT--SELECTED----"
+msgstr "---EI---VALITTU---"
+
+#: courses/edit_forms.py:462
+msgid "Include type"
+msgstr "Liitettävä tyyppi"
+
+#: courses/edit_forms.py:469
+msgid "DOM location"
+msgstr "Sijoituspaikka"
+
+#: courses/edit_forms.py:475
+msgid "Unlink"
+msgstr "Poista"
+
+#: courses/edit_forms.py:522
+msgid ""
+"Existing file must be chosen, or both fileinfo and name must be filled to "
+"create a new file"
+msgstr ""
+"Valitse olemassaoleva tiedosto, tai lataa tiedosto ja täytä nimi-kenttä "
+"luodaksesi uuden tiedoston"
+
+#: courses/edit_forms.py:542
+msgid "Included files"
+msgstr "Liitetyt tiedostot"
+
+#: courses/edit_forms.py:560 courses/edit_forms.py:691
+msgid "iframe width"
+msgstr "iframen leveys"
+
+#: courses/edit_forms.py:561 courses/edit_forms.py:692
+msgid "iframe height"
+msgstr "iframen korkeus"
+
+#: courses/edit_forms.py:562
+msgid "Border CSS"
+msgstr "Reunan tyyli (CSS)"
+
+#: courses/edit_forms.py:585
+msgid "Choose existing script"
+msgstr "Valitse olemassaoleva skripti"
+
+#: courses/edit_forms.py:660
+msgid "No content preview"
+msgstr "Älä näytä sisältöä"
+
+#: courses/edit_forms.py:795
+msgid "Placement"
+msgstr "Sijoitus"
+
+#: courses/edit_forms.py:798
+msgid "Before highlighted content block"
+msgstr "Valitun blokin yläpuolelle"
+
+#: courses/edit_forms.py:799
+msgid "After highlighted content block"
+msgstr "Valitun blokin alapuolelle"
+
+#: courses/edit_forms.py:805
+msgid "Mode (if applicable)"
+msgstr "Toiminto (jos sovellettavissa)"
+
+#: courses/edit_forms.py:808
+msgid "Create a new object"
+msgstr "Luo uusi objekti"
+
+#: courses/edit_forms.py:809
+msgid "Include an existing object"
+msgstr "Liitä olemassaoleva objekti"
+
+#: courses/edit_forms.py:823
+msgid "Block type to add"
+msgstr "Lisättävän blokin tyyppi"
+
+#: courses/edit_forms.py:838
+msgid "Base word"
+msgstr "Sanan perusmuoto"
+
+#: courses/edit_forms.py:840
+msgid "Inflections (comma sep.)"
+msgstr "Taivutukset (pilkulla erotettuna)"
+
+#: courses/edit_forms.py:845
+msgid "Replace in"
+msgstr "Korvaa valituissa"
+
+#: courses/edit_forms.py:855
+msgid "Term"
+msgstr "Termi"
+
+#: courses/forms.py:118
+msgid "Name causes slug conflict"
+msgstr "Nimestä aiheutuu tunnistekonflikti"
+
+#: courses/forms.py:178
+msgid "Choose frontpage"
+msgstr "Valitse etusivu"
+
+#: courses/forms.py:180
+msgid "--NO-FRONTPAGE--"
+msgstr "--EI--ETUSIVUA--"
+
+#: courses/forms.py:192
+msgid "Freeze instance contents to date:"
+msgstr "Jäädytä instanssin sisältö päivämäärään:"
+
+#: courses/forms.py:209
+#, python-brace-format
+msgid "Instance default name ({lang})"
+msgstr "Instanssin oletusnimi ({lang})"
+
+#: courses/forms.py:210
+#, python-brace-format
+msgid "Alternative name ({lang})"
+msgstr "Vaihtoehtoinen nimi ({lang})"
+
+#: courses/forms.py:237
+msgid "Value contains invalid placeholders"
+msgstr "Arvossa on virheellisiä paikanpitimiä"
+
+#: courses/forms.py:240
+msgid "Value is not a valid Python expression"
+msgstr "Arvo ei ole kelvollinen Python-lauseke"
+
+#: courses/forms.py:244
+msgid "Does not result in a number when evaluated"
+msgstr "Lausekkeen lopputulos ei ole numero"
+
+#: courses/forms.py:247
+msgid "The formula results must be between 0 and 1"
+msgstr "Kaavan tuloksen tulee olla välillä 0-1"
+
+#: courses/forms.py:256 courses/forms.py:407
+msgid "Choose content to link"
+msgstr "Valitse liitettävä sisältösivu"
+
+#: courses/forms.py:258
+msgid "----NEW--PAGE----"
+msgstr "----UUSI-SIVU----"
+
+#: courses/forms.py:281
+msgid "Make this node a child of the selected node"
+msgstr "Lisää valitun sivun alasivuksi"
+
+#: courses/forms.py:284
+msgid "Name for new page (in default language)"
+msgstr "Nimi uudelle sivulle (oletuskielellä)"
+
+#: courses/forms.py:287
+msgid "Initialize as a multi language page."
+msgstr ""
+
+#: courses/forms.py:325 courses/forms.py:392
+msgid "Choose student to add"
+msgstr "Valitse lisättävä opiskelija"
+
+#: courses/forms.py:327
+#: courses/templates/courses/widgets/group_supervisor_select.html:8
+msgid "-- no supervisor --"
+msgstr "--- ei ohjaajaa ---"
+
+#: courses/forms.py:366
+msgid "Cannot invite this user"
+msgstr "Käyttäjää ei voitu kutsua."
+
+#: courses/forms.py:381
+msgid "Invitee {}"
+msgstr "Kutsuttu {}"
+
+#: courses/forms.py:409
+msgid "-- no content --"
+msgstr "-- ei sisältöä--"
+
+#: courses/forms.py:421
+msgid "Starting date and time"
+msgstr "Aloituspäivämäärä ja aika"
+
+#: courses/forms.py:427
+msgid "Duration of each event (minutes)"
+msgstr "Yhden tapahtuman kesto (min)"
+
+#: courses/forms.py:432
+msgid "Number of slots per event"
+msgstr "Varausten määrä tapahtumaa kohden"
+
+#: courses/forms.py:435
+msgid "Number of events to add"
+msgstr "Lisättävien tapahtumien määrä"
+
+#: courses/forms.py:439
+#, python-brace-format
+msgid "Default name ({lang}):"
+msgstr "Oletusnimi ({lang}):"
+
+#: courses/forms.py:439
+#, python-brace-format
+msgid "Alternative name ({lang}):"
+msgstr "Vaihtoehtoinen nimi ({lang}):"
+
+#: courses/forms.py:452
+msgid "Cannot save without a name"
+msgstr "Tallennus vaatii nimen"
+
+#: courses/forms.py:459
+msgid "Can't overwrite a saved message unless it was loaded"
+msgstr "Voit päällekirjoittaa viestin vain jos latasit sen"
+
+#: courses/forms.py:465
+msgid "Save this message"
+msgstr "Tallenna viesti"
+
+#: courses/forms.py:474
+msgid "Load message"
+msgstr "Lataa viesti"
+
+#: courses/forms.py:476
+msgid "-- no message --"
+msgstr "--- ei viestiä ---"
+
+#: courses/forms.py:495
+msgid "Regenerate archived content. This can break old course instances."
+msgstr ""
+"Generoi myös arkistoidulle sisällölle. Saattaa rikkoa vanhat kurssitilat."
+
+#: courses/message_views.py:62
+msgid "Send"
+msgstr "Lähetä"
+
+#: courses/message_views.py:78
+#, python-brace-format
+msgid "Send a message to {user}"
+msgstr "Lähetä viesti käyttäjälle {user}"
+
+#: courses/message_views.py:80
+msgid "User is not enrolled to this course instance"
+msgstr "Käyttäjä ei ole ilmoittautunut tähän kurssitilaan"
+
+#: courses/message_views.py:93
+msgid "Send message to all enrolled users"
+msgstr "Lähetä viesti kaikille ilmoittautuneille"
+
+#: courses/middleware.py:37
+msgid ""
+"Remote authentication did not provide an email address. The most likely "
+"cause is a delay between systems. Please wait a few hours and try again."
+msgstr ""
+"Tunnistautumisjärjestelmä ei antanut sähköpostiosoitetta. Todennäköisesti "
+"tämä johtuu viiveestä järjestelmien välillä. Odota pari tuntia ja kokeile "
+"uudestaan"
+
+#: courses/models.py:94
+msgid "Group name"
+msgstr "Ryhmän nimi"
+
+#: courses/models.py:429
+#, python-brace-format
+msgid ""
+"Write a mathematical formula. Four placeholders are available.\\n{q} is "
+"obtained score as quotient of max points.\\n{p} is obtained raw points\\n{m} "
+"is the task's max points\\n{d} is the amount of days since deadline"
+msgstr ""
+"Kirjoita matemaattinen kaava. Neljä paikanpidintä ovat käytettävissä.\\n {q} on "
+"saadut pisteet jaettuna maksimilla.\\n{p} on saatujen pisteiden määrä\\n{m} "
+"on tehtävän maksimipistemäärä\\n{d} on palautuspäivästä kuluneiden päivien lukumäärä"
+
+#: courses/models.py:1654
+msgid ""
+"Filename {} is not listed in accepted filenames. Allowed:\n"
+"{}"
+msgstr ""
+"Tiedoston nimi {} ei kuulu sallittujen nimien joukkoon. Sallittuja ovat:\n"
+"{}"
+
+#: courses/models.py:1667
+msgid "Task improperly configured, notify staff!"
+msgstr "Tehtävä on virheellisesti konfiguroitu, ilmoita henkilökunnalle"
+
+#: courses/models.py:2105
+msgid "Filename to use for the answer"
+msgstr "Tallenna vastaus nimellä"
+
+#: courses/models.py:2107
+msgid ""
+"Required for tasks where answer mode is TEXT. For FILE, submitted file is "
+"renamed to this name unless multiple files are returned. For multiple files "
+"this does nothing."
+msgstr ""
+"Vaaditaan tehtävillä joiden vastaus annetaan tekstinä. Jos tehtävään vastataan "
+"tiedostolla, palautettu tiedosto uudelleennimetään annettuun nimeen, paitsi jos "
+"palautettiin useita tiedostoja, jolloin tällä kentällä ei ole vaikutusta."
+
+#: courses/staff_views.py:99
+msgid ""
+"Freeze this instance to reflect its state at the given date. This operation "
+"is not intended to be reversible."
+msgstr ""
+"Jäädytä kurssitilan sisältö näyttämään annettuna päivämääränä käytössä "
+"olleetversiot. Tätä operaatiota ei ole suunniteltu peruutettavaksi."
+
+#: courses/staff_views.py:146
+msgid "Make a clone of this course instance."
+msgstr "Tee klooni tästä kurssi-instanssista."
+
+#: courses/staff_views.py:254
+msgid "Regenerate cache for all pages in the course. Please use sparingly."
+msgstr "Päivitä välimuisti kaikille kurssin sivuille. Käytä säästeliäästi."
+
+#: courses/staff_views.py:255 courses/staff_views.py:285 multiexam/views.py:191
+#: teacher_tools/views.py:257 teacher_tools/views.py:627
+msgid "Execute"
+msgstr "Suorita"
+
+#: courses/staff_views.py:284
+#, python-brace-format
+msgid "Regenerate cache for {content}"
+msgstr "Uudelleenmuodosta välimuisti sisällölle {content}"
+
+#: courses/staff_views.py:381 courses/staff_views.py:393
+msgid "This content node doesn't exist"
+msgstr "Sisältösilmua ei ole olemassa"
+
+#: courses/staff_views.py:438
+msgid "Cannot move a node to itself"
+msgstr "Sivua ei voi siirtää itseensä"
+
+#: courses/staff_views.py:443
+msgid "Cannot move a node inside its own branch"
+msgstr "Sivua ei voi siirtää omien alasivujensa joukkoon"
+
+#: courses/staff_views.py:499
+msgid "Cannot edit content through archived pages"
+msgstr "Sisällön muokkausta ei voi tehdä arkistoidulta sivulta"
+
+#: courses/staff_views.py:590
+msgid "Get form"
+msgstr "Hae lomake"
+
+#: courses/staff_views.py:798
+msgid "Only staff members can access this view"
+msgstr "Vain henkilökunta pääsee tähän näkymään"
+
+#: courses/staff_views.py:803
+msgid "No content to show"
+msgstr "Ei näytettävää sisältöä"
+
+#: courses/tasks.py:784
+msgid "No running Celery workers were found."
+msgstr "Tarkistimia ei ole käynnissä."
+
+#: courses/templates/courses/answers-base.html:12
+#: courses/templates/courses/answers-base.html:50
+#: courses/templates/courses/user-exercise-answers.html:55
+#, python-format
+msgid "%(username)s’s answers to %(exercise_title)s"
+msgstr "Käyttäjän %(username)s vastaukset tehtävään %(exercise_title)s"
+
+#: courses/templates/courses/answers-base.html:38
+#: courses/templates/courses/user-exercise-answers.html:43
+#, python-format
+msgid "%(username)s’s answers to %(exercise.name)s"
+msgstr "Käyttäjän %(username)s vastaukset tehtävään %(exercise.name)s"
+
+#: courses/templates/courses/answers-base.html:48
+#: courses/templates/courses/user-exercise-answers.html:53
+#, python-format
+msgid "Your answers to %(exercise_title)s"
+msgstr "Vastauksesi tehtävään %(exercise_title)s"
+
+#: courses/templates/courses/answers-base.html:56
+#: courses/templates/courses/user-exercise-answers.html:66
+#, python-format
+msgid ""
+"\n"
+"    %(answercount)s entered answer for this exercise\n"
+"    "
+msgid_plural ""
+"\n"
+"    %(answercount)s entered answers for this exercise\n"
+"  "
+msgstr[0] ""
+"\n"
+"%(answercount)s syötetty vastaus tähän tehtävään"
+msgstr[1] ""
+"\n"
+"%(answercount)s syötettyä vastausta tähän tehtävään"
+
+#: courses/templates/courses/base-edit-form.html:91
+#: courses/templates/courses/base-multi-form.html:57
+msgid "Add new"
+msgstr "Lisää uusi"
+
+#: courses/templates/courses/base.html:85
+#, python-format
+msgid ""
+"\n"
+"              This site uses cookies. Only cookies that are necessary for "
+"the site to\n"
+"              work or to remember your settings (like language) are used. "
+"This site does\n"
+"              not use any tracking cookies.\n"
+"              Learn more about our <a href=\"%(terms_url)s\">terms and "
+"conditions</a>.\n"
+"            "
+msgstr ""
+"\n"
+"Tämä sivusto käyttää evästeitä. Sivusto käyttää ainoastaan evästeitä, jotka "
+"ovat välttämättömiä sen toiminnan kannalta, tai joita tarvitaan käyttäjän "
+"asetusten (kuten kieli) muistamiseen. Sivusto ei käytä seurantaevästeitä.Lue "
+"lisää <a href=\"%(terms_url)s\">käyttöehdoista</a>."
+
+#: courses/templates/courses/base.html:92
 msgid "Accept"
 msgstr "Hyväksy"
 
-#: courses/templates/courses/base.html:109
+#: courses/templates/courses/base.html:121
 msgid "Settings"
 msgstr "Asetukset"
 
-#: courses/templates/courses/base.html:113
-#: courses/templates/courses/content-meta.html:38
-msgid "Teacher’s tools"
-msgstr "Opettajan työkalut"
+#: courses/templates/courses/base.html:126
+msgid "Group info"
+msgstr "Ryhmän tiedot"
 
-#: courses/templates/courses/base.html:119
-#: courses/templates/courses/contentpage.html:38
-#: courses/templates/courses/course.html:26
-#: teacher_tools/templates/teacher_tools/manage_enrollments.html:14
-#: teacher_tools/templates/teacher_tools/manage_enrollments.html:22
-#: teacher_tools/templates/teacher_tools/student_completion.html:14
+#: courses/templates/courses/base.html:132
+msgid "Management panel"
+msgstr "Hallintapaneeli"
+
+#: courses/templates/courses/base.html:138
+#: courses/templates/courses/contentpage.html:47
+#: courses/templates/courses/course.html:39
+#: teacher_tools/templates/teacher_tools/student_completion.html:20
 msgid "Manage enrollments"
 msgstr "Kurssi-ilmoittautumiset"
 
-#: courses/templates/courses/base.html:124
-#: courses/templates/courses/contentpage.html:32
-#: courses/templates/courses/course.html:17
-#: teacher_tools/templates/teacher_tools/manage_enrollments.html:8
-#: teacher_tools/templates/teacher_tools/student_completion.html:8
+#: courses/templates/courses/base.html:144
+#: courses/templates/courses/group-management.html:26
+msgid "Manage groups"
+msgstr "Ryhmien hallinta"
+
+#: courses/templates/courses/base.html:152
+msgid "Open the mass email panel"
+msgstr "Avaa Massasähköpostipaneeli"
+
+#: courses/templates/courses/base.html:154
+msgid "Mass email"
+msgstr "Massasähköposti"
+
+#: courses/templates/courses/base.html:159
+#: courses/templates/courses/contentpage.html:39
+#: courses/templates/courses/course.html:28
+#: teacher_tools/templates/teacher_tools/student_completion.html:14
 msgid "Course completion"
 msgstr "Suoritustilastot"
 
-#: courses/templates/courses/base.html:129
-#: courses/templates/courses/content-meta.html:40
+#: courses/templates/courses/base.html:164
+msgid "Reminders"
+msgstr "Muistutukset"
+
+#: courses/templates/courses/base.html:169
+#: courses/templates/courses/content-meta.html:53
+#: courses/templates/courses/embed-frame.html:86
+#: courses/templates/courses/embed-meta.html:40
 msgid "Statistics"
 msgstr "Tilastot"
 
-#: courses/templates/courses/base.html:134
+#: courses/templates/courses/base.html:174
 msgid "Log out"
 msgstr "Kirjaudu ulos"
 
-#: courses/templates/courses/base.html:140
+#: courses/templates/courses/base.html:180
 msgid "Log in"
 msgstr "Kirjaudu sisään"
 
-#: courses/templates/courses/base.html:144
+#: courses/templates/courses/base.html:184
 msgid "Sign up"
 msgstr "Luo käyttäjä"
 
-#: courses/templates/courses/base.html:177
-#: courses/templates/courses/base.html:225
+#: courses/templates/courses/base.html:205
+#: courses/templates/courses/base.html:291
 msgid "Table of Contents"
 msgstr "Sisällysluettelo"
 
-#: courses/templates/courses/base.html:186
+#: courses/templates/courses/base.html:229
+msgid "Toggle between student and staff view"
+msgstr "Vaihda henkilökunnan ja opiskelijan näkymän välillä"
+
+#: courses/templates/courses/base.html:230
+msgid "staff view"
+msgstr "opettajatila"
+
+#: courses/templates/courses/base.html:243
 msgid "Hide/Show the termbank"
 msgstr "Piilota/Näytä termipankki"
 
-#: courses/templates/courses/base.html:188
+#: courses/templates/courses/base.html:246
 msgid "Termbank"
 msgstr "Termipankki"
 
-#: courses/templates/courses/base.html:191
+#: courses/templates/courses/base.html:251
 msgid "Search for a term…"
 msgstr "Hae termiä…"
 
-#: courses/templates/courses/base.html:223
+#: courses/templates/courses/base.html:288
 msgid "Hide/Show the table of contents"
 msgstr "Piilota/Näytä sisällysluettelo"
 
-#: courses/templates/courses/base.html:233
+#: courses/templates/courses/base.html:300
 msgid "Completed:"
 msgstr "Ratkaistu:"
 
-#: courses/templates/courses/base.html:233
+#: courses/templates/courses/base.html:301
 msgid "exercises"
 msgstr "tehtävää"
 
-#: courses/templates/courses/base.html:258
+#: courses/templates/courses/base.html:325
+#: courses/templates/courses/base.html:333
+#: courses/templates/courses/embed-frame.html:201
+msgid "Close the panel"
+msgstr "Sulje paneeli"
+
+#: courses/templates/courses/base.html:356
 msgid "Description"
 msgstr "Kuvaus"
 
-#: courses/templates/courses/base.html:296
+#: courses/templates/courses/base.html:398
 #: courses/templates/courses/terms.html:10
 #: courses/templates/courses/terms.html:17
 msgid "Terms and Conditions"
 msgstr "Käyttöehdot"
 
-#: courses/templates/courses/code-replace-exercise.html:11
+#: courses/templates/courses/calendar-preview.html:25
+#: courses/templates/courses/calendar.html:110
+#: courses/templates/courses/calendar.html:117
+#: courses/templates/courses/calendar.html:120
+#: courses/templates/courses/calendar.html:126
+#: courses/templates/courses/calendar.html:128
+#: courses/templates/courses/calendar.html:139
+#: courses/templates/courses/calendar.html:145
+#: courses/templates/courses/calendar.html:148
+msgid "Reserve a slot"
+msgstr "Varaa aika"
+
+#: courses/templates/courses/calendar.html:9
+msgid "Calendar settings"
+msgstr "Kalenterin asetukset"
+
+#: courses/templates/courses/calendar.html:15
+msgid "Add calendar events"
+msgstr "Lisää kalenteritapahtumia"
+
+#: courses/templates/courses/calendar.html:42
+msgid "Reduce slots"
+msgstr "Vähennä paikkoja"
+
+#: courses/templates/courses/calendar.html:49
+msgid "Increase slots"
+msgstr "Lisää paikkoja"
+
+#: courses/templates/courses/calendar.html:71
+msgid "Reserver"
+msgstr "Varaaja"
+
+#: courses/templates/courses/calendar.html:84
+msgid "View answers"
+msgstr "Katso vastaukset"
+
+#: courses/templates/courses/calendar.html:88
+msgid "Send message to reserver"
+msgstr "Lähetä viesti varaajalle"
+
+#: courses/templates/courses/calendar.html:98
+msgid "No reservations."
+msgstr "Ei varauksia"
+
+#: courses/templates/courses/calendar.html:105
+#: courses/templates/courses/calendar.html:134
+msgid "You have been reserved a slot in"
+msgstr "Olet varannut paikan tähän tapahtumaan."
+
+#: courses/templates/courses/calendar.html:108
+#: courses/templates/courses/calendar.html:111
+#: courses/templates/courses/calendar.html:121
+#: courses/templates/courses/calendar.html:129
+#: courses/templates/courses/calendar.html:137
+#: courses/templates/courses/calendar.html:140
+#: courses/templates/courses/calendar.html:149
+msgid "Cancel reservation"
+msgstr "Peru varaus"
+
+#: courses/templates/courses/code-replace-exercise.html:7
 #, python-format
 msgid "Line %(line)s in %(file)s"
 msgstr "Rivi %(line)s tiedostossa %(file)s"
 
 #: courses/templates/courses/content-meta.html:8
+#: courses/templates/courses/embed-frame.html:13
+#: courses/templates/courses/embed-meta.html:8
 msgid "You haven’t answered this exercise yet"
 msgstr "Et ole vielä vastannut tähän tehtävään."
 
-#: courses/templates/courses/content-meta.html:11
+#: courses/templates/courses/content-meta.html:12
+#: courses/templates/courses/embed-frame.html:17
+#: courses/templates/courses/embed-meta.html:11
 msgid "You have answered this exercise incorrectly"
 msgstr "Olet aiemmin vastannut tähän tehtävään väärin."
 
-#: courses/templates/courses/content-meta.html:14
+#: courses/templates/courses/content-meta.html:16
+#: courses/templates/courses/embed-frame.html:21
+#: courses/templates/courses/embed-meta.html:14
 msgid "You have answered this exercise correctly"
 msgstr "Olet aiemmin vastannut tähän tehtävään oikein."
 
-#: courses/templates/courses/content-meta.html:17
+#: courses/templates/courses/content-meta.html:20
+#: courses/templates/courses/embed-frame.html:25
+#: courses/templates/courses/embed-meta.html:17
 msgid "You have answered another exercise in this set correctly"
 msgstr "Olet aiemmin vastannut vaihtoehtoiseen tehtävään oikein."
 
-#: courses/templates/courses/content-meta.html:29
+#: courses/templates/courses/content-meta.html:34
+#: courses/templates/courses/embed-frame.html:49
+#: courses/templates/courses/embed-meta.html:29
 msgid "View your previous answers"
 msgstr "Katso edellisiä vastauksiasi"
 
-#: courses/templates/courses/content-meta.html:29
+#: courses/templates/courses/content-meta.html:35
+#, python-format
+msgid ""
+"\n"
+"              <span class=\"answer-count\">%(counter)s</span>\n"
+"              answer"
+msgid_plural ""
+"\n"
+"              <span class=\"answer-count\">%(counter)s</span>\n"
+"              answers"
+msgstr[0] ""
+"\n"
+"<span class=\"answer-count\">%(counter)s</span> vastaus"
+msgstr[1] ""
+"\n"
+"<span class=\"answer-count\">%(counter)s</span> vastausta"
+
+#: courses/templates/courses/content-meta.html:49
+#: courses/templates/courses/embed-frame.html:84
+#: courses/templates/courses/embed-meta.html:38
+msgid "Teacher’s tools"
+msgstr "Opettajan työkalut"
+
+#: courses/templates/courses/content-meta.html:58
+#: courses/templates/courses/embed-frame.html:87
+#: courses/templates/courses/embed-meta.html:41
+#: feedback/templates/feedback/feedback-stats.html:33
+msgid "Feedback"
+msgstr "Palautteet"
+
+#: courses/templates/courses/content-meta.html:65
+msgid "Open cache regen panel"
+msgstr "Avaa välimuistin päivityspaneeli"
+
+#: courses/templates/courses/content-meta.html:67
+msgid "Regenerate cache"
+msgstr "Päivitä välimuisti"
+
+#: courses/templates/courses/content-meta.html:74
+#: courses/templates/courses/embed-frame.html:91
+#: courses/templates/courses/embed-meta.html:45
+msgid "Download answers"
+msgstr "Lataa vastaukset"
+
+#: courses/templates/courses/content-meta.html:79
+#: courses/templates/courses/embed-frame.html:96
+#: courses/templates/courses/embed-meta.html:50
+msgid "Check plagiarism"
+msgstr "Plagiarismitarkistus"
+
+#: courses/templates/courses/content-meta.html:85
+msgid "Edit this lecture"
+msgstr "Muokkaa tätä luentosivua"
+
+#: courses/templates/courses/content-meta.html:87
+msgid "Edit this textfield exercise"
+msgstr "Muokkaa tätä tekstikenttätehtävää"
+
+#: courses/templates/courses/content-meta.html:89
+msgid "Edit this multiple choice exercise"
+msgstr "Muokkaa tätä monivalintatehtävää"
+
+#: courses/templates/courses/content-meta.html:91
+msgid "Edit this checkbox exercise"
+msgstr "Muokkaa tätä valintaruututehtävää"
+
+#: courses/templates/courses/content-meta.html:93
+msgid "Edit this file upload exericse"
+msgstr "Muokkaa tätä tiedoston lähetys -tehtävää"
+
+#: courses/templates/courses/content-meta.html:95
+msgid "Edit this code input exercise"
+msgstr "Muokkaa tätä koodinsyöttötehtävää"
+
+#: courses/templates/courses/content-meta.html:97
+msgid "Edit this code replace exercise"
+msgstr "Muokkaa tätä koodinkorvaustehtävää"
+
+#: courses/templates/courses/content-meta.html:99
+msgid "Edit this repeated template exercise"
+msgstr "Muokkaa tätä mallinkertaustehtävää"
+
+#: courses/templates/courses/content-meta.html:101
+msgid "Edit this routine exercise"
+msgstr "Muokkaa tätä rutiinitehtävää"
+
+#: courses/templates/courses/contentpage.html:32
+#: courses/templates/courses/course.html:34
+msgid "Course statistics"
+msgstr "Kurssin tilastot"
+
+#: courses/templates/courses/course.html:59
+msgid "Course instance settings"
+msgstr "Kurssi-instanssin asetukset"
+
+#: courses/templates/courses/course.html:65
+msgid "Freeze this course instance"
+msgstr "Jäädytä tämä kurssi-instanssi."
+
+#: courses/templates/courses/course.html:71
+msgid "Make a clone of this course instance"
+msgstr "Kloonaa tämä kurssi-instanssi."
+
+#: courses/templates/courses/course.html:77
+msgid "Edit course grading for this instance"
+msgstr "Muokkaa kurssin arvostelua tässä kurssitilassa."
+
+#: courses/templates/courses/course.html:83
+msgid "Regenerate cache for this instance"
+msgstr "Päivitä tämän kurssitilan välimuisti."
+
+#: courses/templates/courses/course.html:89
+msgid "Termify words in this instance"
+msgstr "Muuta sanoja termeiksi tässä kurssitilassa."
+
+#: courses/templates/courses/course.html:100
+msgid "Course Contents"
+msgstr "Kurssin sisältö"
+
+#: courses/templates/courses/course.html:110
+msgid "Add a new content at the beginning"
+msgstr "Lisää uutta sisältöä alkuun"
+
+#: courses/templates/courses/course.html:172
+msgid "Add a new content node after or inside this node"
+msgstr "Lisää uusi sivu tämän sivun jälkeen tai alasivuksi"
+
+#: courses/templates/courses/course.html:179
+msgid "Remove this node from the course instance"
+msgstr "Poista sivu tästä kurssitilasta."
+
+#: courses/templates/courses/course.html:186
+msgid "Edit node settings"
+msgstr "Muuta sivun asetuksia"
+
+#: courses/templates/courses/course.html:193
+msgid "Move node by dragging this button"
+msgstr "Siirrä sivua raahaamalla tätä nappia"
+
+#: courses/templates/courses/course.html:204
+#: courses/templates/courses/course.html:217
+msgid "Completed"
+msgstr "Ratkaistu"
+
+#: courses/templates/courses/embed-frame-preview.html:14
+#: courses/templates/courses/embed-frame.html:225
+#: courses/templates/courses/embed-frame.html:227
+#: courses/templates/courses/embed-frame.html:235
+#: courses/templates/courses/embed-frame.html:246
+#: courses/templates/courses/exercise.html:50
+#: courses/templates/courses/exercise.html:52
+msgid "Send answer"
+msgstr "Lähetä vastaus"
+
+#: courses/templates/courses/embed-frame.html:29
+msgid "Your submitted answer is waiting for staff assessment"
+msgstr "Lähetetty vastauksesi odottaa arvostelua"
+
+#: courses/templates/courses/embed-frame.html:50
+#, python-format
+msgid ""
+"\n"
+"                <span class=\"answer-count\">%(counter)s</span>\n"
+"                answer"
+msgid_plural ""
+"\n"
+"                <span class=\"answer-count\">%(counter)s</span>\n"
+"                answers"
+msgstr[0] ""
+"\n"
+"<span class=\"answer-count\">%(counter)s</span> vastaus"
+msgstr[1] ""
+"\n"
+"<span class=\"answer-count\">%(counter)s</span> vastausta"
+
+#: courses/templates/courses/embed-frame.html:61
+msgid "Open the FAQ panel"
+msgstr "Avaa UKK-paneeli"
+
+#: courses/templates/courses/embed-frame.html:63
+msgid "Frequently Asked Questions"
+msgstr "Usein kysyttyä"
+
+#: courses/templates/courses/embed-frame.html:71
+msgid "View assessment sheet"
+msgstr "Katso arvosteluperusteet"
+
+#: courses/templates/courses/embed-frame.html:73
+msgid "Assessment Criteria"
+msgstr "Arvosteluperusteet"
+
+#: courses/templates/courses/embed-frame.html:102
+msgid "Answer summary"
+msgstr "Vastaustaulukko"
+
+#: courses/templates/courses/embed-frame.html:109
+msgid "Open the batch grading panel"
+msgstr "Avaa massa-arvostelupaneeli"
+
+#: courses/templates/courses/embed-frame.html:111
+msgid "Batch grading"
+msgstr "Massa-arvostelu"
+
+#: courses/templates/courses/embed-frame.html:117
+#: courses/templates/courses/embed-meta.html:55
+msgid "Edit this exercise"
+msgstr "Muokkaa tehtävää"
+
+#: courses/templates/courses/embed-frame.html:122
+msgid "View Submissions"
+msgstr "Katso arvosteltavat"
+
+#: courses/templates/courses/embed-frame.html:130
+msgid "Open the assessment edit panel"
+msgstr "Avaa arvostelun muokkauspaneeli"
+
+#: courses/templates/courses/embed-frame.html:132
+msgid "Edit Assessment"
+msgstr "Muokkaa arvostelua"
+
+#: courses/templates/courses/embed-frame.html:193
+#: courses/templates/courses/exercise.html:29
+#: courses/templates/courses/view-answer-results.html:4
+msgid "Hints"
+msgstr "Vihjeet"
+
+#: courses/templates/courses/embed-frame.html:230
+msgid "Attempts:"
+msgstr "Yritykset:"
+
+#: courses/templates/courses/embed-frame.html:240
+#: courses/templates/courses/exercise.html:56
+msgid "Warning: You have not logged in. You cannot answer."
+msgstr "Varoitus: Et ole kirjautunut sisään. Et voi vastata."
+
+#: courses/templates/courses/embed-frame.html:244
+#: courses/templates/courses/exercise.html:59
+msgid ""
+"Warning: You have not enrolled to this course instance. You cannot answer."
+msgstr "Varoitus: Et ole ilmoittautunut tälle kurssille. Et voi vastata."
+
+#: courses/templates/courses/embed-frame.html:255
+#: courses/templates/courses/exercise.html:67
+msgid "You have previously answered this task incorrectly."
+msgstr "Olet aiemmin vastannut tähän tehtävään väärin."
+
+#: courses/templates/courses/embed-frame.html:261
+#: courses/templates/courses/exercise.html:71
+msgid "You have already answered this task correctly."
+msgstr "Olet aiemmin vastannut tähän tehtävään oikein."
+
+#: courses/templates/courses/embed-frame.html:271
+#: courses/templates/courses/exercise.html:82
+msgid "Messages"
+msgstr "Viestit"
+
+#: courses/templates/courses/embed-meta.html:29
 #, python-format
 msgid "<span class=\"answer-count\">%(counter)s</span> answer"
 msgid_plural "<span class=\"answer-count\">%(counter)s</span> answers"
 msgstr[0] "<span class=\"answer-count\">%(counter)s</span> vastaus"
 msgstr[1] "<span class=\"answer-count\">%(counter)s</span> vastausta"
-
-#: courses/templates/courses/content-meta.html:41
-#: feedback/templates/feedback/feedback-stats.html:33
-msgid "Feedback"
-msgstr "Palautteet"
-
-#: courses/templates/courses/content-meta.html:44
-msgid "Download answers"
-msgstr "Lataa vastaukset"
-
-#: courses/templates/courses/content-meta.html:48
-msgid "Edit this lecture"
-msgstr "Muokkaa tätä luentosivua"
-
-#: courses/templates/courses/content-meta.html:50
-msgid "Edit this textfield exercise"
-msgstr "Muokkaa tätä tekstikenttätehtävää"
-
-#: courses/templates/courses/content-meta.html:52
-msgid "Edit this multiple choice exercise"
-msgstr "Muokkaa tätä monivalintatehtävää"
-
-#: courses/templates/courses/content-meta.html:54
-msgid "Edit this checkbox exercise"
-msgstr "Muokkaa tätä valintaruututehtävää"
-
-#: courses/templates/courses/content-meta.html:56
-msgid "Edit this file upload exericse"
-msgstr "Muokkaa tätä tiedoston lähetys -tehtävää"
-
-#: courses/templates/courses/content-meta.html:58
-msgid "Edit this code input exercise"
-msgstr "Muokkaa tätä koodinsyöttötehtävää"
-
-#: courses/templates/courses/content-meta.html:60
-msgid "Edit this code replace exercise"
-msgstr "Muokkaa tätä koodinkorvaustehtävää"
-
-#: courses/templates/courses/content-meta.html:62
-msgid "Edit this repeated template exercise"
-msgstr "Muokkaa tätä mallinkertaustehtävää"
-
-#: courses/templates/courses/contentpage.html:15
-#: courses/templates/courses/course.html:8
-#: courses/templates/courses/index.html:9
-#: courses/templates/courses/login.html:8
-#: courses/templates/courses/logout.html:5
-#: courses/templates/courses/terms.html:8
-#: courses/templates/courses/user-exercise-answers.html:15
-#: feedback/templates/feedback/feedback-stats.html:17
-#: teacher_tools/templates/teacher_tools/course_completion.html:11
-#: teacher_tools/templates/teacher_tools/manage_enrollments.html:25
-#: teacher_tools/templates/teacher_tools/student_completion.html:26
-msgid "Courses"
-msgstr "Kurssit"
-
-#: courses/templates/courses/contentpage.html:26
-#: courses/templates/courses/course.html:22
-msgid "Course statistics"
-msgstr "Kurssin tilastot"
-
-#: courses/templates/courses/course.html:34
-msgid "Course Contents"
-msgstr "Kurssin sisältö"
-
-#: courses/templates/courses/course.html:45
-msgid "Unanswered"
-msgstr "Vastaamaton"
-
-#: courses/templates/courses/course.html:47
-msgid "Correctly answered"
-msgstr "Oikein vastattu"
-
-#: courses/templates/courses/course.html:49
-msgid "Incorrectly answered"
-msgstr "Väärin vastattu"
-
-#: courses/templates/courses/course.html:54
-msgid "Completed"
-msgstr "Ratkaistu"
 
 #: courses/templates/courses/exercise-evaluation.html:4
 msgid ""
@@ -239,43 +1242,25 @@ msgstr "Oikea vastaus!"
 msgid "Incorrect answer!"
 msgstr "Väärä vastaus!"
 
-#: courses/templates/courses/exercise.html:24
-#: courses/templates/courses/view-answer-results.html:4
-msgid "Hints"
-msgstr "Vihjeet"
+#: courses/templates/courses/exercise-evaluation.html:15
+msgid "Copy the link to your answer to the clipboard"
+msgstr "Kopioi linkki vastaukseesi leikepöydälle"
 
-#: courses/templates/courses/exercise.html:43
-#: courses/templates/courses/exercise.html:45
-msgid "Send answer"
-msgstr "Lähetä vastaus"
+#: courses/templates/courses/exercise-evaluation.html:19
+msgid "Link copied!"
+msgstr "Linkki kopioitu!"
 
-#: courses/templates/courses/exercise.html:49
-msgid "Warning: You have not logged in. You cannot answer."
-msgstr "Varoitus: Et ole kirjautunut sisään. Et voi vastata."
-
-#: courses/templates/courses/exercise.html:51
-msgid "Warning: You have enrolled to this course instance. You cannot answer."
-msgstr "Varoitus: Et ole ilmoittautunut tälle kurssille. Et voi vastata."
-
-#: courses/templates/courses/exercise.html:57
-msgid "You have previously answered this task incorrectly."
-msgstr "Olet aiemmin vastannut tähän tehtävään väärin."
-
-#: courses/templates/courses/exercise.html:59
-msgid "You have already answered this task correctly."
-msgstr "Olet aiemmin vastannut tähän tehtävään oikein."
-
-#: courses/templates/courses/exercise.html:69
-msgid "Messages"
-msgstr "Viestit"
-
-#: courses/templates/courses/file-exercise-evaluation.html:16
-#: courses/templates/courses/user-exercise-answers.html:110
+#: courses/templates/courses/file-exercise-evaluation.html:21
+#: courses/templates/courses/user-exercise-answers.html:109
+#: routine_exercise/templates/routine_exercise/user-answers.html:20
+#: teacher_tools/templates/teacher_tools/answer_summary.html:68
 msgid "Correct"
 msgstr "Oikein"
 
-#: courses/templates/courses/file-exercise-evaluation.html:18
-#: courses/templates/courses/user-exercise-answers.html:112
+#: courses/templates/courses/file-exercise-evaluation.html:23
+#: courses/templates/courses/user-exercise-answers.html:111
+#: routine_exercise/templates/routine_exercise/user-answers.html:22
+#: teacher_tools/templates/teacher_tools/answer_summary.html:70
 msgid "Incorrect"
 msgstr "Väärin"
 
@@ -283,78 +1268,126 @@ msgstr "Väärin"
 msgid "Collaborators:"
 msgstr "Yhteistyökumppanit:"
 
-#: courses/templates/courses/file-upload-exercise.html:6
+#: courses/templates/courses/file-upload-exercise.html:10
 msgid "Who did you co-operate with?"
 msgstr "Kenen kanssa työskentelit?"
 
-#: courses/templates/courses/file-upload-exercise.html:8
+#: courses/templates/courses/file-upload-exercise.html:14
+msgid "Allowed filenames:"
+msgstr "Sallitut tiedostojen nimet"
+
+#: courses/templates/courses/file-upload-exercise.html:18
 msgid "Submit your files here:"
 msgstr "Syötä tiedostosi tänne:"
 
-#: courses/templates/courses/index.html:6
-#: courses/templates/courses/index.html:16
+#: courses/templates/courses/file-upload-exercise.html:23
+msgid "Enter your code here"
+msgstr "Syötä vastauksesi tähän"
+
+#: courses/templates/courses/group-info.html:27
+msgid "group info"
+msgstr "ryhmän tiedot"
+
+#: courses/templates/courses/group-info.html:30
+msgid "Show group settings"
+msgstr "Näytä ryhmän asetukset"
+
+#: courses/templates/courses/group-info.html:39
+msgid "Group Members"
+msgstr "Ryhmän jäsenet"
+
+#: courses/templates/courses/group-info.html:43
+#: courses/templates/courses/group-info.html:66
+msgid "Last Name"
+msgstr "Sukunimi"
+
+#: courses/templates/courses/group-info.html:44
+#: courses/templates/courses/group-info.html:67
+msgid "First Name"
+msgstr "Etunimi"
+
+#: courses/templates/courses/group-info.html:45
+#: courses/templates/courses/group-info.html:68
+msgid "Email"
+msgstr "Sähköposti"
+
+#: courses/templates/courses/group-info.html:61
+msgid "Member invitations"
+msgstr "Jäsenkutsut"
+
+#: courses/templates/courses/group-info.html:81
+msgid "Cancel this invitation"
+msgstr "Peru kutsu"
+
+#: courses/templates/courses/group-info.html:94
+msgid "Invite members"
+msgstr "Kutsu jäseniä"
+
+#: courses/templates/courses/group-info.html:101
+msgid "Join a group you have been invited to"
+msgstr "Liity ryhmään johon sinut on kutsuttu"
+
+#: courses/templates/courses/group-info.html:106
+msgid "Group Name"
+msgstr "Ryhmän nimi"
+
+#: courses/templates/courses/group-info.html:107
+msgid "Invited by"
+msgstr "Kutsuja"
+
+#: courses/templates/courses/group-info.html:119
+msgid "Accept this invitation"
+msgstr "Hyväksy tämä kutsu"
+
+#: courses/templates/courses/group-info.html:132
+#: courses/templates/courses/group-management.html:97
+msgid "Create a new group"
+msgstr "Luo uusi ryhmä"
+
+#: courses/templates/courses/group-management.html:21
+msgid "Group Management"
+msgstr "Ryhmien hallinta"
+
+#: courses/templates/courses/group-management.html:30
+msgid ""
+"\n"
+"        Number of groups: %(groups)s\n"
+"      "
+msgstr ""
+"\n"
+"      Ryhmien lukumäärä %(group)s\n"
+"    "
+
+#: courses/templates/courses/group-management.html:49
+msgid "supervisor:"
+msgstr "ohjaaja:"
+
+#: courses/templates/courses/group-management.html:56
+msgid "Rename this group"
+msgstr "Muuta ryhmän nimi"
+
+#: courses/templates/courses/group-management.html:61
+msgid "Add a member to this group"
+msgstr "Lisää jäsen tähän ryhmään"
+
+#: courses/templates/courses/group-management.html:67
+msgid "Remove this group"
+msgstr "Poista tämä ryhmä"
+
+#: courses/templates/courses/group-management.html:82
+msgid "Remove this member"
+msgstr "Poista tämä jäsen"
+
+#: courses/templates/courses/index.html:10
+#: courses/templates/courses/index.html:20
 msgid "Available courses"
 msgstr "Tarjolla olevat kurssit"
 
-#: courses/templates/courses/index.html:24
+#: courses/templates/courses/index.html:32
 msgid "credits"
 msgstr "op"
 
-#: courses/templates/courses/index.html:39
-msgid "You are not enrolled."
-msgstr "Et ole ilmoittautunut."
-
-#: courses/templates/courses/index.html:40
-msgid "Enroll"
-msgstr "Ilmoittaudu"
-
-#: courses/templates/courses/index.html:42
-msgid "Log in to enable enrolling."
-msgstr "Kirjaudu sisään ilmoittautuaksesi."
-
-#: courses/templates/courses/index.html:47
-msgid "You have enrolled"
-msgstr "Olet ilmoittautunut."
-
-#: courses/templates/courses/index.html:49
-msgid "Your application was not accepted"
-msgstr "Osallistumispyyntöäsi ei hyväksytty."
-
-#: courses/templates/courses/index.html:51
-msgid "You have been removed from this course instance"
-msgstr "Sinut on poistettu tältä kurssilta."
-
-#: courses/templates/courses/index.html:53
-msgid "Your enrollment is waiting confirmation"
-msgstr "Osallistumispyyntösi odottaa käsittelyä."
-
-#: courses/templates/courses/index.html:61
-msgid "Enroll to"
-msgstr "Ilmoittaudu"
-
-#: courses/templates/courses/index.html:66
-msgid "Enrollments to this course must be accepted by the teacher"
-msgstr "Tälle kurssille osallistuminen vaatii opettajan hyväksynnän"
-
-#: courses/templates/courses/index.html:67
-msgid "You can attach a note to your enrollment application by typing below"
-msgstr ""
-"Voit liittää osallistumispyyntöön viestin kirjoittamalla alla olevaan "
-"laatikkoon"
-
-#: courses/templates/courses/index.html:68
-msgid "Type your application here"
-msgstr "Kirjoita hakemuksesi tähän"
-
-#: courses/templates/courses/index.html:70
-msgid "Enrollments to this course are accepted automatically"
-msgstr "Tämän kurssin ilmoittautumiset hyväksytään automaattisesti"
-
-#: courses/templates/courses/index.html:74
-msgid "Send application"
-msgstr "Lähetä ilmoittautuminen"
-
-#: courses/templates/courses/index.html:98
+#: courses/templates/courses/index.html:87
 msgid "No courses available!"
 msgstr "Tarjolla olevia kursseja ei löytynyt!"
 
@@ -391,11 +1424,11 @@ msgstr ""
 "Jos et ole vielä luonut tunnusta\n"
 "  <a href=\"%(signup_url)s\">luo tunnus</a> ensin."
 
-#: courses/templates/courses/login.html:45
+#: courses/templates/courses/login.html:46
 msgid "Forgot Password?"
 msgstr "Unohtunut salasana?"
 
-#: courses/templates/courses/login.html:46
+#: courses/templates/courses/login.html:48
 msgid "Sign In"
 msgstr "Kirjaudu sisään"
 
@@ -412,22 +1445,54 @@ msgstr "Kirjaudu ulos"
 msgid "Are you sure you want to sign out?"
 msgstr "Haluatko varmasti kirjautua ulos"
 
-#: courses/templates/courses/repeated-template-exercise.html:7
-#: courses/templates/courses/repeated-template-exercise.html:10
+#: courses/templates/courses/mass-email.html:6
+#: teacher_tools/templates/teacher_tools/manage_reminders.html:6
+#: teacher_tools/templates/teacher_tools/mass_email.html:6
+#, python-format
+msgid ""
+"\n"
+"  %(instance)s reminders\n"
+msgstr ""
+"\n"
+"  %(instance)s muistutukset\n"
+
+#: courses/templates/courses/mass-email.html:27
+#: teacher_tools/templates/teacher_tools/mass_email.html:23
+#, python-format
+msgid ""
+"\n"
+"      Send mass email to %(instance)s students\n"
+"    "
+msgstr ""
+"\n"
+"      Lähetä massaviesti kurssitilan %(instance)s opiskelijoille\n"
+"    "
+
+#: courses/templates/courses/mass-email.html:33
+#: teacher_tools/templates/teacher_tools/mass_email.html:28
+msgid "This utility can be used to send mass email to all students"
+msgstr "Tällä työkalulla voit lähettää sähköpostin kaikille opiskelijoille"
+
+#: courses/templates/courses/repeated-template-content-extra.html:11
+#: courses/templates/courses/repeated-template-content-extra.html:14
+#: routine_exercise/templates/routine_exercise/routine-exercise-content-extra.html:11
+#: routine_exercise/templates/routine_exercise/routine-exercise-content-extra.html:13
 msgid "Start exercise session"
 msgstr "Aloita harjoitusistunto"
 
-#: courses/templates/courses/repeated-template-exercise.html:8
+#: courses/templates/courses/repeated-template-content-extra.html:12
+#: routine_exercise/templates/routine_exercise/routine-exercise-content-extra.html:12
 msgid "Next"
 msgstr "Seuraava"
 
-#: courses/templates/courses/repeated-template-exercise.html:9
+#: courses/templates/courses/repeated-template-content-extra.html:13
 msgid "Start over"
 msgstr "Aloita alusta"
 
-#: courses/templates/courses/repeated-template-exercise.html:19
+#: courses/templates/courses/repeated-template-exercise.html:2
 #: courses/templates/courses/textfield-exercise.html:5
 #: feedback/templates/feedback/textfield-feedback-question.html:5
+#: routine_exercise/templates/routine_exercise/routine-exercise.html:4
 msgid "Enter your answer here"
 msgstr "Kirjoita vastauksesi tänne"
 
@@ -435,116 +1500,244 @@ msgstr "Kirjoita vastauksesi tänne"
 msgid "Terms and conditions"
 msgstr "Käyttöehdot"
 
-#: courses/templates/courses/terms.html:22
+#: courses/templates/courses/terms.html:24
 msgid ""
 "\n"
 "  \n"
 msgstr ""
 
-#: courses/templates/courses/terms.html:27
+#: courses/templates/courses/terms.html:29
 msgid "Cookies"
 msgstr "Evästeet"
 
-#: courses/templates/courses/terms.html:33
+#: courses/templates/courses/terms.html:35
 msgid ""
-"This site uses cookies to store user information such as whether the user "
-"has logged in or not. Cookies are also used for protecting the user from a "
-"certain type of attack called cross site request forgery."
+"\n"
+"  This site uses cookies to store user information such as whether the user "
+"has logged in or not.\n"
+"  Cookies are also used for protecting the user from a certain type of "
+"attack called\n"
+"  cross site request forgery.\n"
 msgstr ""
+"\n"
 "Tämä sivusto käyttää evästeitä käyttäjätietojen (esimerkiksi sen, onko "
 "käyttäjä kirjautunut sisään vai ei) tallentamiseen. Evästeitä käytetään myös "
 "käyttäjän tietojen suojaamiseksi tietynlaiselta hyökkäykseltä, jota "
-"kutsutaan nimellä Cross Site Request Forgery."
+"kutsutaan nimellä Cross Site Request Forgery.\n"
 
-#: courses/templates/courses/terms.html:36
+#: courses/templates/courses/terms.html:43
 msgid "Registration Document"
 msgstr "Rekisteriseloste"
 
-#: courses/templates/courses/terms.html:41
+#: courses/templates/courses/terms.html:51
 msgid ""
-"You can request a registration document by e-mail from address E-MAIL. It "
-"may take us 14 working days to reply."
+"\n"
+"  You can request a registration document by e-mail from address E-MAIL.\n"
+"  It may take us 14 working days to reply.\n"
 msgstr ""
+"\n"
 "Voit pyytää rekisteriselostetta sähköpostitse osoitteesta E-MAIL. "
-"Vastaamiseen voi kestää 14 arkipäivää."
+"Vastaamiseen voi kestää 14 arkipäivää.\n"
 
-#: courses/templates/courses/user-exercise-answers.html:7
-#: courses/templates/courses/user-exercise-answers.html:28
-#: courses/templates/courses/user-exercise-answers.html:38
-#, python-format
-msgid "%(username)s’s answers to %(exercise_name)s"
-msgstr "Käyttäjän %(username)s vastaukset tehtävään %(exercise_name)s"
-
-#: courses/templates/courses/user-exercise-answers.html:36
-#, python-format
-msgid "Your answers to %(exercise_name)s"
-msgstr "Vastauksesi tehtävään %(exercise_name)s"
-
-#: courses/templates/courses/user-exercise-answers.html:49
+#: courses/templates/courses/user-exercise-answers.html:9
 #, python-format
 msgid ""
 "\n"
-"    %(answercount)s entered answer for this exercise\n"
-"    "
-msgid_plural ""
-"\n"
-"    %(answercount)s entered answers for this exercise\n"
+"    %(username)s’s answers to %(exercise_title)s\n"
 "  "
-msgstr[0] ""
+msgstr ""
 "\n"
-"%(answercount)s syötetty vastaus tähän tehtävään"
-msgstr[1] ""
-"\n"
-"%(answercount)s syötettyä vastausta tähän tehtävään"
+"Käyttäjän %(username)s vastaukset tehtävään %(exercise_title)s"
 
-#: courses/templates/courses/user-exercise-answers.html:57
+#: courses/templates/courses/user-exercise-answers.html:74
+#: routine_exercise/templates/routine_exercise/user-answers.html:9
+#: teacher_tools/templates/teacher_tools/answer_summary.html:53
 msgid "Answer date"
 msgstr "Vastauksen päivämäärä"
 
-#: courses/templates/courses/user-exercise-answers.html:58
+#: courses/templates/courses/user-exercise-answers.html:75
+#: teacher_tools/templates/teacher_tools/answer_summary.html:54
 msgid "Entered answer"
 msgstr "Syötetty vastaus"
 
-#: courses/templates/courses/user-exercise-answers.html:59
+#: courses/templates/courses/user-exercise-answers.html:76
+#: routine_exercise/templates/routine_exercise/user-answers.html:10
+#: teacher_tools/templates/teacher_tools/answer_summary.html:55
 msgid "Evaluation"
 msgstr "Arviointi"
 
-#: courses/templates/courses/user-exercise-answers.html:60
-msgid "Link | e-mail"
-msgstr "Linkki | sähköposti"
-
-#: courses/templates/courses/user-exercise-answers.html:114
+#: courses/templates/courses/user-exercise-answers.html:113
+#: courses/templates/courses/user-exercise-answers.html:119
+#: routine_exercise/templates/routine_exercise/user-answers.html:24
+#: teacher_tools/templates/teacher_tools/answer_summary.html:72
 msgid "Unknown"
 msgstr "Tuntematon"
 
-#: courses/templates/courses/user-exercise-answers.html:118
-msgid "View results"
-msgstr "Katso tuloksia"
+#: courses/templates/courses/user-exercise-answers.html:125
+msgid "Highlight this answer (shareable link)"
+msgstr "Korosta tämä vastaus (jaettava linkki)"
 
-#: courses/templates/courses/user-exercise-answers.html:123
+#: courses/templates/courses/user-exercise-answers.html:130
+#: routine_exercise/templates/routine_exercise/user-answers.html:29
 msgid "Send course staff a question about this answer"
 msgstr "Lähetä kurssin henkilökunnalle kysymys tästä vastauksesta"
 
-#: courses/templates/courses/user-exercise-answers.html:123
-msgid "Help!"
-msgstr "Apua!"
+#: courses/templates/courses/user-exercise-answers.html:135
+msgid "View assessment"
+msgstr "Katso arvostelu"
+
+#: courses/templates/courses/user-exercise-answers.html:142
+msgid "View checker log"
+msgstr "Katso tarkistustulokset"
+
+#: courses/templates/courses/user-exercise-answers.html:148
+msgid "Assess submission"
+msgstr "Arvostele vastaus"
+
+#: courses/templates/courses/user-exercise-answers.html:158
+msgid "Answers in other instances"
+msgstr "Vastaukset muissa instansseissa"
 
 #: courses/templates/courses/view-answer-results.html:24
 msgid "Triggers fired"
 msgstr "Aktivoidut tapahtumat"
 
-#: courses/views.py:305
-#, python-format
-msgid ""
-"The deadline for this exercise (%s) has passed. Your answer will not be "
-"evaluated!"
-msgstr "Tehtävän palautusaika (%s) on mennyt. Vastaustasi ei arvioida!"
+#: courses/templates/courses/widgets/content_preview_widget.html:7
+#: exercise_admin/templates/exercise_admin/base.html:158
+msgid "Preview"
+msgstr "Esikatselu"
 
-#: courses/views.py:395
+#: courses/templates/courses/widgets/enroll_widget.html:6
+msgid "You are not enrolled."
+msgstr "Et ole ilmoittautunut."
+
+#: courses/templates/courses/widgets/enroll_widget.html:8
+msgid "Enroll"
+msgstr "Ilmoittaudu"
+
+#: courses/templates/courses/widgets/enroll_widget.html:11
+#: courses/templates/courses/widgets/enroll_widget.html:42
+#: courses/templates/courses/widgets/enroll_widget.html:50
+msgid "Enrollment period for this course instance has closed."
+msgstr "Ilmoittautumisaika tälle kurssille on sulkeutunut"
+
+#: courses/templates/courses/widgets/enroll_widget.html:15
+msgid "Log in to enable enrolling."
+msgstr "Kirjaudu sisään ilmoittautuaksesi."
+
+#: courses/templates/courses/widgets/enroll_widget.html:20
+msgid "You have enrolled"
+msgstr "Olet ilmoittautunut."
+
+#: courses/templates/courses/widgets/enroll_widget.html:22
+msgid "Your application was not accepted"
+msgstr "Osallistumispyyntöäsi ei hyväksytty."
+
+#: courses/templates/courses/widgets/enroll_widget.html:24
+msgid "You have been removed from this course instance"
+msgstr "Sinut on poistettu tältä kurssilta."
+
+#: courses/templates/courses/widgets/enroll_widget.html:26
+msgid "Your enrollment is waiting confirmation"
+msgstr "Osallistumispyyntösi odottaa käsittelyä."
+
+#: courses/templates/courses/widgets/enroll_widget.html:28
+msgid "Your enrollment has been transfered to another instance"
+msgstr "Ilmoittautumisesi on siirretty toiseen kurssitilaan"
+
+#: courses/templates/courses/widgets/enroll_widget.html:30
+msgid "You have withdrawn your enrollment"
+msgstr "Olet peruuttanut ilmoittautumisesi."
+
+#: courses/templates/courses/widgets/enroll_widget.html:38
+msgid "Withdraw"
+msgstr "Peruuta"
+
+#: courses/templates/courses/widgets/enroll_widget.html:47
+msgid "Re-Enroll"
+msgstr "Ilmoittaudu uudestaan"
+
+#: courses/templates/courses/widgets/enroll_widget.html:59
+msgid "Enroll to"
+msgstr "Ilmoittaudu"
+
+#: courses/templates/courses/widgets/enroll_widget.html:64
+msgid "Enrollments to this course must be accepted by the teacher"
+msgstr "Tälle kurssille osallistuminen vaatii opettajan hyväksynnän"
+
+#: courses/templates/courses/widgets/enroll_widget.html:65
+msgid "You can attach a note to your enrollment application by typing below"
+msgstr ""
+"Voit liittää osallistumispyyntöön viestin kirjoittamalla alla olevaan "
+"laatikkoon"
+
+#: courses/templates/courses/widgets/enroll_widget.html:66
+msgid "Type your application here"
+msgstr "Kirjoita hakemuksesi tähän"
+
+#: courses/templates/courses/widgets/enroll_widget.html:68
+msgid "Enrollments to this course are accepted automatically"
+msgstr "Tämän kurssin ilmoittautumiset hyväksytään automaattisesti"
+
+#: courses/templates/courses/widgets/enroll_widget.html:72
+msgid "Send application"
+msgstr "Lähetä ilmoittautuminen"
+
+#: courses/user_views.py:136
+msgid "Please log in to view your information."
+msgstr "Kirjaudu sisään nähdäksesi tietosi."
+
+#: courses/user_views.py:138
+msgid "You are only allowed to view your own information."
+msgstr "Voit katsoa vain omia tietojasi."
+
+#: courses/user_views.py:160
+msgid "This course instance doesn't allow groups"
+msgstr "Tämä kurssi-instanssi ei salli ryhmiä"
+
+#: courses/user_views.py:216
+msgid "Write the usernames of users you want to invite"
+msgstr "Kirjoita kutsuttavien käyttäjien käyttäjätunnukset"
+
+#: courses/user_views.py:234
+msgid "Can't invite users to groups you're not a member of"
+msgstr "Et voi kutsua käyttäjiä ryhmään jos et ole sen jäsen"
+
+#: courses/user_views.py:270
+msgid "Can't accept invitation, already a member of another group"
+msgstr "Et voi hyväksyä kutsua, koska kuulut jo ryhmään"
+
+#: courses/user_views.py:283
+msgid "Can't manage invitations for groups you're not a member of"
+msgstr "Et voi hallinnoida ryhmän kutsuja jos et ole sen jäsen"
+
+#: courses/views.py:153 courses/views.py:160
+#, python-brace-format
+msgid "Content {content} is not linked to course {course}!"
+msgstr "Sisältöä {content} ei ole liitetty kurssin {course}!"
+
+#: courses/views.py:193
+msgid "This content is (currently) only available to course staff"
+msgstr "Tämä sisältö on rajattu (tällä hetkellä) kurssin henkilökunnalle."
+
+#: courses/views.py:197
+msgid "This content is only available to enrolled users"
+msgstr "Tämä sisältö näkyy vain ilmoittautuneille"
+
+#: courses/views.py:280 teacher_tools/views.py:267 teacher_tools/views.py:553
+#: teacher_tools/views.py:649
+msgid "The task was not linked on the requested course instance"
+msgstr "Tehtävää ei ole yhdistetty tähän kurssitilaan."
+
+#: courses/views.py:355
+msgid "You don't have any more attempts left for this task."
+msgstr "Sinulla ei ole yrityksiä jäljellä tähän tehtävään."
+
+#: courses/views.py:489
 msgid "Error, exercise backend unavailable."
 msgstr "Virhe: tarkistusprosessi ei ole päällä."
 
-#: courses/views.py:508
+#: courses/views.py:646
 msgid ""
 "The program took too long to execute and was terminated. Check your code for "
 "too slow solutions."
@@ -552,97 +1745,136 @@ msgstr ""
 "Ohjelman suoritus kesti liian kauan ja se lopetettiin kesken. Tarkista "
 "koodisi ja korjaa mahdolliset hitaat ratkaisut"
 
-#: courses/views.py:511
+#: courses/views.py:651
 msgid ""
 "Checking program was unable to finish due to an error. Contact course staff."
 msgstr ""
 "Tarkistinohjelma kaatui kesken tarkistuksen. Ota yhteyttä kurssin "
 "henkilökuntaan."
 
-#: courses/views.py:570 courses/views.py:583
-msgid "You're only allowed to view your own answers."
-msgstr "Voit katsoa vain omia vastauksiasi."
-
-#: courses/views.py:895
-msgid "Please log in to view your information."
-msgstr "Kirjaudu sisään nähdäksesi tietosi."
-
-#: courses/views.py:899
-msgid "You are only allowed to view your own information."
-msgstr "Voit katsoa vain omia tietojasi."
-
-#: courses/views.py:941
-msgid "This event is already full."
-msgstr "Tapahtuma on jo täynnä."
-
-#: courses/views.py:944
-msgid "You have already reserved a slot in this event."
-msgstr "Olet jo varannut paikan tähän tapahtumaan."
-
-#: courses/views.py:949
-msgid "Slot reserved!"
-msgstr "Paikka varattu!"
-
-#: courses/views.py:954
-msgid "Reservation cancelled."
-msgstr "Varaus peruttu."
-
-#: courses/views.py:956
-msgid "Reservation already cancelled."
-msgstr "Varaus on jo peruttu."
-
-#: courses/views.py:1051 courses/views.py:1058 courses/views.py:1073
-#: courses/views.py:1080
+#: courses/views.py:704 courses/views.py:711 courses/views.py:729
+#: courses/views.py:738
 msgid "You cannot access this answer."
 msgstr "Et voi ladata tätä vastausta."
 
-#: courses/views.py:1114 courses/views.py:1122 courses/views.py:1146
-#: courses/views.py:1151 exercise_admin/views.py:818
-#: exercise_admin/views.py:823 exercise_admin/views.py:833
+#: courses/views.py:750
+#, python-brace-format
+msgid "No such file {mediafile}"
+msgstr "Tiedostoa {mediafile} ei ole"
+
+#: courses/views.py:769 courses/views.py:789 courses/views.py:791
+#: courses/views.py:826 courses/views.py:828 exercise_admin/views.py:944
+#: exercise_admin/views.py:952 exercise_admin/views.py:961
+#: routine_exercise/views.py:377 routine_exercise/views.py:379
 msgid "Requested file does not exist."
 msgstr "Tiedostoa ei löytynyt"
 
-#: courses/views.py:1117
+#: courses/views.py:774
 msgid ""
 "Only course main responsible teachers are allowed to download media files "
 "through this interface."
 msgstr "Vain kurssien vastuuhenkilöt voivat ladata vastaustiedostot."
 
-#: courses/views.py:1131 courses/views.py:1133
-msgid ""
-"Only course staff members are allowed to download repeated template exercise "
-"backends."
-msgstr "Vain sisäänkirjautuneet käyttäjät voivat vastata tehtäviin."
-
-#: courses/views.py:1138
+#: courses/views.py:800 routine_exercise/views.py:351
 msgid "This exercise does't exist"
 msgstr "Tehtävää ei löytynyt"
 
-#: courses/views.py:1170
+#: courses/views.py:805 routine_exercise/views.py:356
+msgid ""
+"Only course main responsible teachers are allowed to download files through "
+"this interface."
+msgstr "Vain kurssien vastuuhenkilöt voivat ladata tiedostoja tätä kautta."
+
+#: courses/views.py:848
 msgid "Only logged in users can enroll to courses."
 msgstr ""
 "Vain sisäänkirjautuneet käyttäjät voivat lähettää vastauksia "
 "tarkistettavaksi!"
 
-#: courses/views.py:1175
+#: courses/views.py:853
 msgid "You have already enrolled to this course."
 msgstr "Olet aiemmin vastannut tähän tehtävään oikein."
 
-#: courses/views.py:1182
+#: courses/views.py:861
 msgid "Your enrollment has been automatically accepted."
 msgstr "Ilmoittautumisesi on hyväksytty automaattisesti"
 
-#: courses/views.py:1185
+#: courses/views.py:865
 msgid "Your enrollment application has been registered for approval."
 msgstr "Ilmoittautumishakemuksesi on lähetetty hyväksyttäväksi"
 
-#: exercise_admin/views.py:813
+#: courses/views.py:877
+msgid "Only logged in users can manage their enrollments."
+msgstr "Vain sisäänkirjautuneet käyttäjät voivat hallita ilmoittautumisiaan "
+
+#: courses/views.py:882
+msgid "You have not enrolled to this course."
+msgstr "Et voi ilmoittautua tälle kurssille."
+
+#: courses/views.py:889
+msgid "Your enrollment has been withdrawn"
+msgstr "Ilmoittautumisesi on peruttu"
+
+#: exercise_admin/views.py:938
 msgid "Only course staff members are allowed to download exercise files."
 msgstr "Vain kurssien vastuuhenkilöt voivat ladata vastaustiedostot."
 
-#: exercise_admin/views.py:836
+#: exercise_admin/views.py:965
 msgid "Only course staff members are allowed to download instance files."
 msgstr "Vain kurssien vastuuhenkilöt voivat ladata vastaustiedostot."
+
+#: faq/forms.py:30
+msgid "Choose question to link"
+msgstr "Valitse liitettävä kysymys"
+
+#: faq/models.py:8 multiexam/templates/multiexam/answered-exam.html:6
+#: multiexam/templates/multiexam/exam-form.html:40
+msgid "Question"
+msgstr "Kysymys"
+
+#: faq/models.py:9
+msgid "Answer"
+msgstr "Vastaus"
+
+#: faq/templates/faq/faq_panel.html:16
+msgid "Unlink this question from this course instance"
+msgstr "Poista kysymys tästä kurssi-instanssista."
+
+#: faq/templates/faq/faq_panel.html:22
+msgid "Edit this question or answer"
+msgstr "Muokkaa tätä kysymystä tai vastausta"
+
+#: faq/templates/faq/faq_panel.html:38
+msgid "Link an existing question to this exercise"
+msgstr "Liitä olemassaoleva kysymys tähän tehtävään"
+
+#: faq/templates/faq/faq_panel.html:39
+msgid "Link an existing question"
+msgstr "Liitä olemassaoleva kysymys"
+
+#: faq/templates/faq/faq_panel.html:68 faq/templates/faq/faq_panel.html:69
+msgid "Add a new question"
+msgstr "Lisää uusi kysymys"
+
+#: faq/templates/faq/faq_panel.html:94
+msgid "Clear form"
+msgstr "Tyhjää lomake"
+
+#: faq/templates/faq/faq_panel.html:96
+msgid "Clear Form"
+msgstr "Tyhjää lomake"
+
+#: faq/utils.py:71
+msgid "FAQ for this exercise was not found"
+msgstr "Tälle tehtävälle ei löytynyt UKK:ta"
+
+#: faq/views.py:28
+msgid "Cannot edit FAQ for frozen instance"
+msgstr "Jäädytetyn instanssin UKK:ta ei voi muokata"
+
+#: faq/views.py:101
+msgid "The question is not linked"
+msgstr "Kysymystä ei ole liitetty"
 
 #: feedback/templates/feedback/feedbacks.html:10
 #: feedback/templates/feedback/feedbacks.html:14
@@ -662,7 +1894,163 @@ msgstr "Lähetä palaute"
 msgid "You have already answered this feedback."
 msgstr "Olet jo vastannut tähän palautekysymykseen."
 
-#: stats/templates/stats/instance-console.html:13
+#: multiexam/forms.py:27
+msgid "Number of questions (max: {n})"
+msgstr "Kysymysten lukumäärä (max: {n})"
+
+#: multiexam/forms.py:33
+msgid " -- GENERAL EXAM --"
+msgstr " -- YLEINEN TENTTI --"
+
+#: multiexam/forms.py:41
+msgid "Confirm attempt deletion"
+msgstr "Vahvista tämän yrityksen poisto"
+
+#: multiexam/forms.py:54
+msgid "Refresh exam to latest version"
+msgstr "Päivitä tentti uusimpaan versioon"
+
+#: multiexam/models.py:67
+msgid "Manage attempts"
+msgstr "Tenttiyritykset"
+
+#: multiexam/templates/multiexam/exam-form.html:11
+msgid "Answered"
+msgstr "Vastattu"
+
+#: multiexam/templates/multiexam/exam-form.html:16
+msgid "Unanswered"
+msgstr "Vastaamattomat"
+
+#: multiexam/templates/multiexam/exam-form.html:18
+msgid "Uncertain"
+msgstr "Epävarmat"
+
+#: multiexam/templates/multiexam/exam-form.html:19
+#: multiexam/templates/multiexam/manage-attempts.html:62
+msgid "Questions"
+msgstr "Kysymykset"
+
+#: multiexam/templates/multiexam/exam-form.html:43
+msgid "Mark certain/uncertain"
+msgstr "Merkitse varmaksi/epävarmaksi"
+
+#: multiexam/templates/multiexam/manage-attempts.html:5
+msgid ""
+"\n"
+"  Manage attempts for %(exam)s\n"
+msgstr ""
+"\n"
+" Hallinnoi tentin %(exam)s yrityksiä\n"
+
+#: multiexam/templates/multiexam/manage-attempts.html:40
+msgid "Attempts"
+msgstr "Yritykset:"
+
+#: multiexam/templates/multiexam/manage-attempts.html:47
+msgid ""
+"\n"
+"            Manage Attempts for %(exam)s\n"
+"        "
+msgstr ""
+"\n"
+"      Hallinnoi tentin %(exam)s yrityksiä\n\n"
+"    "
+
+#: multiexam/templates/multiexam/manage-attempts.html:53
+msgid "Existing Attempts"
+msgstr "Olemassaolevat yritykset:"
+
+#: multiexam/templates/multiexam/manage-attempts.html:60
+msgid "Open From"
+msgstr "Avautuu"
+
+#: multiexam/templates/multiexam/manage-attempts.html:61
+msgid "Open To"
+msgstr "Sulkeutuu"
+
+#: multiexam/templates/multiexam/manage-attempts.html:63
+msgid "Made For"
+msgstr "Tentin kohde"
+
+#: multiexam/templates/multiexam/manage-attempts.html:64
+msgid "Answers"
+msgstr "Vastaukset"
+
+#: multiexam/templates/multiexam/manage-attempts.html:78
+msgid "General Exam"
+msgstr "Generoi tentti"
+
+#: multiexam/templates/multiexam/manage-attempts.html:85
+msgid "Preview attempt script"
+msgstr "Esikatsele tenttikysymykset"
+
+#: multiexam/templates/multiexam/manage-attempts.html:92
+msgid "Configure this attempt"
+msgstr "Yrityksen asetukset"
+
+#: multiexam/templates/multiexam/manage-attempts.html:99
+msgid "Delete this attempt"
+msgstr "Poista tämä yritys"
+
+#: multiexam/templates/multiexam/manage-attempts.html:114
+msgid "Open a new attempt for this exam"
+msgstr "Avaa uusi yritys tälle tentille."
+
+#: multiexam/templates/multiexam/multiexam-content-extra.html:5
+msgid "Start exam"
+msgstr "Aloita tentti"
+
+#: multiexam/views.py:40
+msgid "You don't have an open attempt for this exam."
+msgstr "Tähän tenttiin ei ole aukiolevaa yritystä."
+
+#: multiexam/views.py:187
+msgid ""
+"If an attempt is deleted, all existing answers will be lost. You can close "
+"the attempt by changing its end date if you want to retain existing answers "
+"while making the exam attempt unavailable."
+msgstr ""
+"Jos yritys poistetaan, kaikki olemassaolevat vastaukset katoavat. Voit poiston "
+"sijaan sulkea tentin muuttamalla sen sulkeutumisaikaa, mikäli haluat sulkea "
+"tentin menettämättä siihen annettuja vastauksia."
+
+#: routine_exercise/views.py:198 routine_exercise/views.py:256
+#, python-brace-format
+msgid "Question retrieval failed. Contact teaching staff (reason: {e})"
+msgstr ""
+"Kysymyksen hakeminen epäonnistui. Ota yhteyttä henkilökuntaan (syy: {e})"
+
+#: routine_exercise/views.py:242
+msgid "Operation failed. Course staff has been notified."
+msgstr "Opeaatio epäonnistui. Henkilökunnalle on lähetetty viesti."
+
+#: routine_exercise/views.py:247
+msgid "No more questions available."
+msgstr "Kysymyksiä ei ole jäljellä"
+
+#: routine_exercise/views.py:272
+msgid "Unable to find matching answer."
+msgstr "Vastausta ei löytynyt"
+
+#: routine_exercise/views.py:298
+msgid "Invalid task type."
+msgstr "Virheellinen tehtävätyyppi"
+
+#: routine_exercise/views.py:320
+msgid "You don't have an unanswered question for this exercise."
+msgstr "Sinulla ei ole vastaamatonta kysymystä tähän tehtävään."
+
+#: stats/templates/stats/instance-console.html:6
+#, python-format
+msgid ""
+"\n"
+"  %(instance)s statistics\n"
+msgstr ""
+"\n"
+"  %(instance)s tilastot\n"
+
+#: stats/templates/stats/instance-console.html:23
 #, python-format
 msgid ""
 "\n"
@@ -673,109 +2061,201 @@ msgstr ""
 "      Kurssin %(instance)s tilastot\n"
 "    "
 
-#: stats/templates/stats/instance-console.html:22
+#: stats/templates/stats/instance-console.html:32
 msgid "Generate Stats"
 msgstr "Generoi tilastot"
 
-#: stats/templates/stats/instance-console.html:37
+#: stats/templates/stats/instance-console.html:47
 msgid "task"
 msgstr "tehtävä"
 
-#: stats/templates/stats/instance-console.html:38
+#: stats/templates/stats/instance-console.html:48
 msgid "answers"
 msgstr "vastauksia"
 
-#: stats/templates/stats/instance-console.html:39
+#: stats/templates/stats/instance-console.html:49
 msgid "tries"
 msgstr "yrityksiä"
 
-#: stats/templates/stats/instance-console.html:40
+#: stats/templates/stats/instance-console.html:50
 msgid "users"
 msgstr "vastaajia"
 
-#: stats/templates/stats/instance-console.html:41
+#: stats/templates/stats/instance-console.html:51
 msgid "done"
-msgstr ""
+msgstr "tehty"
 
-#: stats/templates/stats/instance-console.html:42
+#: stats/templates/stats/instance-console.html:52
 msgid "by DL"
 msgstr "ajallaan"
 
-#: stats/templates/stats/instance-console.html:43
+#: stats/templates/stats/instance-console.html:53
 msgid "late"
 msgstr "myöhässä"
 
-#: stats/templates/stats/instance-console.html:44
+#: stats/templates/stats/instance-console.html:54
 msgid "tries avg"
 msgstr "yritysten ka"
 
-#: stats/templates/stats/instance-console.html:45
+#: stats/templates/stats/instance-console.html:55
 msgid "tries med"
 msgstr "yritysten med"
 
-#: stats/templates/stats/instance-console.html:46
+#: stats/templates/stats/instance-console.html:56
 msgid "time avg"
 msgstr "aika ka"
 
-#: stats/templates/stats/instance-console.html:47
+#: stats/templates/stats/instance-console.html:57
 msgid "time med"
 msgstr "aika med"
 
-#: stats/views.py:642
-#, python-format
-msgid "Last generated: %s"
-msgstr "Viimeksi generoitu: %s"
+#: stats/views.py:695
+#, python-brace-format
+msgid "Last generated: {gen_timestamp}"
+msgstr "Viimeksi generoitu: {gen_timestamp}"
 
-#: stats/views.py:645
+#: stats/views.py:700
 msgid "Generation of new stats has been requested."
 msgstr "Uusien tilastojen generointi on tilattu."
 
-#: stats/views.py:648
+#: stats/views.py:703
 msgid "Stats have not been generated."
 msgstr "Tilastoja ei ole generoitu."
 
-#: stats/views.py:670
-#, python-format
-msgid "Stats generation for '%s' has already been requested."
-msgstr "Kurssin '%s' tilatojen generointi on jo tilattu."
+#: stats/views.py:725
+#, python-brace-format
+msgid "Stats generation for '{instance}' has already been requested."
+msgstr "Kurssitilan '{instance}' tilastojen generointi on jo tilattu."
 
-#: stats/views.py:674
+#: stats/views.py:731
 msgid "Stats requested. Request processing starts approximately:"
 msgstr "Tilastot tilattu. Generointi alkaa arvioilta:"
 
-#: teacher_tools/tasks.py:32
+#: teacher_tools/forms.py:21 teacher_tools/models.py:26
+msgid "Number of matches to show"
+msgstr "Näytettävien osumien määrä"
+
+#: teacher_tools/forms.py:24
+msgid "Upload base files"
+msgstr "Lataa pohjatiedostot"
+
+#: teacher_tools/forms.py:29
+msgid "Choose which version(s) of the answers are analysed"
+msgstr "Valitse vertailtava(t) versio(t)"
+
+#: teacher_tools/forms.py:31
+msgid "Latest version only (recommended)"
+msgstr "Vain viimeisin versio (suositus)"
+
+#: teacher_tools/forms.py:32
+msgid "Include all versions (NOTE: they will match amongst themselves)"
+msgstr "Kaikki versiot (HUOM: tullaan vertaamaan myös toisiinsa)"
+
+#: teacher_tools/forms.py:36
+msgid "Save settings for this exercise"
+msgstr "Tallenna asetukset tälle tehtävälle"
+
+#: teacher_tools/forms.py:41
+msgid "Include answers from other instances"
+msgstr "Sisällytä vastaukset muista instansseista"
+
+#: teacher_tools/forms.py:65
+msgid "Save template for this instance"
+msgstr "Tallenna pohja tälle kurssi-instanssille."
+
+#: teacher_tools/forms.py:75
+msgid "Grading mode"
+msgstr "Arvostelumoodi"
+
+#: teacher_tools/forms.py:78
+msgid "Only grade latest answer"
+msgstr "Arvostele vain uusin vastaus"
+
+#: teacher_tools/forms.py:79
+msgid "Grade all answers"
+msgstr "Arvostele kaikki vastaukset"
+
+#: teacher_tools/forms.py:101
+msgid "Recalculate points"
+msgstr ""
+
+#: teacher_tools/forms.py:107
+msgid "Choose target instance"
+msgstr "Valitse kohdekurssitila"
+
+#: teacher_tools/models.py:30
+msgid "Programming language"
+msgstr "Ohjelmointikieli"
+
+#: teacher_tools/tasks.py:40
 msgid "username"
 msgstr "tunnus"
 
-#: teacher_tools/tasks.py:32
+#: teacher_tools/tasks.py:41
 msgid "last name"
 msgstr "sukunimi"
 
-#: teacher_tools/tasks.py:32
+#: teacher_tools/tasks.py:42
 msgid "first name"
 msgstr "etunimi"
 
-#: teacher_tools/tasks.py:32
+#: teacher_tools/tasks.py:43
 msgid "student id"
 msgstr "opisk.nro"
 
-#: teacher_tools/tasks.py:33
+#: teacher_tools/tasks.py:44
 msgid "points"
 msgstr "pisteet"
 
-#: teacher_tools/tasks.py:33
+#: teacher_tools/tasks.py:45
 msgid "missing"
 msgstr "puuttuvia"
 
-#: teacher_tools/tasks.py:33
+#: teacher_tools/tasks.py:46
 msgid "email"
 msgstr "email"
 
-#: teacher_tools/tasks.py:33
+#: teacher_tools/tasks.py:47
 msgid "results url"
 msgstr "suorituslinkki"
 
-#: teacher_tools/templates/teacher_tools/course_completion.html:19
+#: teacher_tools/tasks.py:134
+msgid "Sending failed. Try again to resume."
+msgstr "Lähettäminen epäonnistui. Yritä uudestaan jatkaaksesi."
+
+#: teacher_tools/templates/teacher_tools/answer_summary.html:7
+#: teacher_tools/templates/teacher_tools/course_completion.html:6
+#: teacher_tools/templates/teacher_tools/reset_completion.html:6
+#, python-format
+msgid ""
+"\n"
+"  Completion statistics of %(instance)s\n"
+msgstr ""
+"\n"
+"      Suoritustilastot kurssista %(instance)s\n"
+
+#: teacher_tools/templates/teacher_tools/answer_summary.html:35
+#, python-format
+msgid ""
+"\n"
+"      Given answers for %(content)s\n"
+"    "
+msgstr ""
+"\n"
+"      Tehtävän %(content)s vastaukset\n"
+"    "
+
+#: teacher_tools/templates/teacher_tools/answer_summary.html:48
+msgid "Answers table"
+msgstr "Vastaustaulukko"
+
+#: teacher_tools/templates/teacher_tools/answer_summary.html:52
+#: teacher_tools/templates/teacher_tools/course_completion.html:74
+#: teacher_tools/templates/teacher_tools/manage_enrollments.html:59
+msgid "Name"
+msgstr "Nimi"
+
+#: teacher_tools/templates/teacher_tools/course_completion.html:24
 #, python-format
 msgid ""
 "\n"
@@ -786,19 +2266,88 @@ msgstr ""
 "      Suoritustilastot kurssista %(instance)s\n"
 "    "
 
-#: teacher_tools/templates/teacher_tools/course_completion.html:24
-msgid "Statistics can be requested as downloadable CSV using the link below"
-msgstr "Tilastot ovat saatavilla ladattavana CSV-tiedostona"
+#: teacher_tools/templates/teacher_tools/course_completion.html:44
+msgid "Scores and grades can be filled into the table using the link below"
+msgstr "Voit laskea pisteet ja arvosanat taulukkoon alla olevalla linkillä"
 
-#: teacher_tools/templates/teacher_tools/course_completion.html:28
-msgid "Generate CSV"
-msgstr "Generoi CSV"
+#: teacher_tools/templates/teacher_tools/course_completion.html:47
+msgid "Calculate grades"
+msgstr "Laske arvosanat"
 
-#: teacher_tools/templates/teacher_tools/course_completion.html:36
-msgid "Detailed student results can be accessed from below"
-msgstr "Opiskelijakohtaisiin tietoihin pääset alla olevista linkeistä"
+#: teacher_tools/templates/teacher_tools/course_completion.html:52
+#, python-format
+msgid ""
+"\n"
+"      Number of students: %(students)s\n"
+"    "
+msgstr ""
+"\n"
+"      Opiskelijoiden lukumäärä: %(students)s\n"
+"    "
 
-#: teacher_tools/templates/teacher_tools/manage_enrollments.html:33
+#: teacher_tools/templates/teacher_tools/course_completion.html:66
+msgid "Results table"
+msgstr "Suoritustaulukko"
+
+#: teacher_tools/templates/teacher_tools/course_completion.html:76
+msgid "Miss"
+msgstr "Puuttuu"
+
+#: teacher_tools/templates/teacher_tools/course_completion.html:77
+msgid "Weighted Score"
+msgstr "Painotetut pisteet"
+
+#: teacher_tools/templates/teacher_tools/course_completion.html:78
+msgid "Grade"
+msgstr "Arvosana"
+
+#: teacher_tools/templates/teacher_tools/course_completion.html:93
+#: teacher_tools/templates/teacher_tools/manage_enrollments.html:94
+msgid "View student completion"
+msgstr "Opiskelijan suoritustiedot"
+
+#: teacher_tools/templates/teacher_tools/exercise_plagiarism.html:24
+#, python-format
+msgid "%(username)s’s answers to %(exercise_name)s"
+msgstr "Käyttäjän %(username)s vastaukset tehtävään %(exercise_name)s"
+
+#: teacher_tools/templates/teacher_tools/exercise_plagiarism.html:30
+#, python-format
+msgid ""
+"\n"
+"      Check software plagiarism for %(exercise_name)s\n"
+"    "
+msgstr ""
+
+#: teacher_tools/templates/teacher_tools/exercise_plagiarism.html:36
+msgid ""
+"This utility uses <a href='http://theory.stanford.edu/~aiken/moss/'>MOSS</a> "
+"- a software-as-a-service provided by the University of Stanford - to "
+"produce a report about code similarity between answers sent to this "
+"exercise. You can customize the search using the options below. Please read "
+"the security and legal considerations regarding MOSS before using. Once the "
+"analysis is complete, you will receive a link to the results page on the "
+"MOSS server. Lovelace does not parse the results in any way."
+msgstr ""
+
+#: teacher_tools/templates/teacher_tools/exercise_plagiarism.html:41
+msgid "Previously generated report for this task"
+msgstr "Aiemmin generoitu raportti tälle tehtävälle"
+
+#: teacher_tools/templates/teacher_tools/exercise_plagiarism.html:62
+msgid "Submit request"
+msgstr "Lähetä pyyntö"
+
+#: teacher_tools/templates/teacher_tools/manage_enrollments.html:6
+#, python-format
+msgid ""
+"\n"
+"  %(instance)s enrollments\n"
+msgstr ""
+"\n"
+"      %(instance)s ilmoittautumiset \n"
+
+#: teacher_tools/templates/teacher_tools/manage_enrollments.html:24
 #, python-format
 msgid ""
 "\n"
@@ -809,63 +2358,135 @@ msgstr ""
 "      %(name)s ilmoittautumiset \n"
 "    "
 
-#: teacher_tools/templates/teacher_tools/manage_enrollments.html:48
+#: teacher_tools/templates/teacher_tools/manage_enrollments.html:39
 msgid "accept"
 msgstr "hyväksy"
 
-#: teacher_tools/templates/teacher_tools/manage_enrollments.html:49
+#: teacher_tools/templates/teacher_tools/manage_enrollments.html:40
 msgid "deny"
 msgstr "evää"
 
-#: teacher_tools/templates/teacher_tools/manage_enrollments.html:50
+#: teacher_tools/templates/teacher_tools/manage_enrollments.html:41
 msgid "expel"
 msgstr "poista"
 
-#: teacher_tools/templates/teacher_tools/manage_enrollments.html:52
+#: teacher_tools/templates/teacher_tools/manage_enrollments.html:43
 msgid "selected users"
 msgstr "valitut käyttäjät"
 
-#: teacher_tools/templates/teacher_tools/manage_enrollments.html:53
+#: teacher_tools/templates/teacher_tools/manage_enrollments.html:44
 msgid "Submit"
 msgstr "Lähetä"
 
 #: teacher_tools/templates/teacher_tools/manage_enrollments.html:62
-msgid "Last name"
-msgstr "Sukunimi"
-
-#: teacher_tools/templates/teacher_tools/manage_enrollments.html:67
-msgid "First name"
-msgstr "Etunimi"
-
-#: teacher_tools/templates/teacher_tools/manage_enrollments.html:72
 msgid "Username"
 msgstr "Käyttäjätunnus"
 
-#: teacher_tools/templates/teacher_tools/manage_enrollments.html:77
-msgid "Email"
-msgstr "Sähköposti"
-
-#: teacher_tools/templates/teacher_tools/manage_enrollments.html:81
+#: teacher_tools/templates/teacher_tools/manage_enrollments.html:65
 msgid "Status"
 msgstr "Tila"
 
-#: teacher_tools/templates/teacher_tools/manage_enrollments.html:85
-msgid "Note"
-msgstr "Viesti"
-
-#: teacher_tools/templates/teacher_tools/manage_enrollments.html:86
+#: teacher_tools/templates/teacher_tools/manage_enrollments.html:67
 msgid "Controls"
 msgstr "Toiminnot"
 
-#: teacher_tools/templates/teacher_tools/student_completion.html:23
-msgid "Student course completion"
-msgstr "Opiskelijan suoritustiedot"
+#: teacher_tools/templates/teacher_tools/manage_enrollments.html:83
+msgid "Show enrollment request"
+msgstr ""
 
-#: teacher_tools/templates/teacher_tools/student_completion.html:30
+#: teacher_tools/templates/teacher_tools/manage_enrollments.html:88
+msgid "Send message to student"
+msgstr "Lähetä viesti opiskelijalle"
+
+#: teacher_tools/templates/teacher_tools/manage_enrollments.html:99
+msgid "Transfer records to another instance"
+msgstr "Siirrä suoritukset toiseen kurssitilaan"
+
+#: teacher_tools/templates/teacher_tools/manage_enrollments.html:105
+msgid "Expel student"
+msgstr "Poista opiskelija"
+
+#: teacher_tools/templates/teacher_tools/manage_enrollments.html:110
+msgid "Accept enrollment"
+msgstr "Hyväksy ilmoittautuminen"
+
+#: teacher_tools/templates/teacher_tools/manage_enrollments.html:115
+msgid "Deny enrollment"
+msgstr "Evää ilmoittautuminen"
+
+#: teacher_tools/templates/teacher_tools/manage_reminders.html:23
+#, python-format
+msgid ""
+"\n"
+"      Manage Reminders for %(instance)s\n"
+"    "
+msgstr ""
+"\n"
+"      Kurssin %(instance)s muistutukset\n"
+"    "
+
+#: teacher_tools/templates/teacher_tools/manage_reminders.html:28
+msgid "This utility can be used to remind students about late assignments"
+msgstr ""
+"Tällä työkalulla voit lähettää muistutuksia opiskelijoille myöhästyneistä "
+"tehtävistä"
+
+#: teacher_tools/templates/teacher_tools/manage_reminders.html:54
+#: teacher_tools/templates/teacher_tools/manage_reminders.html:61
+#: teacher_tools/views.py:509
+msgid "Generate reminders"
+msgstr "Generoi muistutukset"
+
+#: teacher_tools/templates/teacher_tools/manage_reminders.html:55
+#, python-format
+msgid ""
+"\n"
+"        <p>This instance has cached reminders (generated: %(date)s - sent: "
+"%(sent)s). Choose what to do with them:</p>\n"
+"      "
+msgstr ""
+
+#: teacher_tools/templates/teacher_tools/manage_reminders.html:58
+msgid "load"
+msgstr "lataa"
+
+#: teacher_tools/templates/teacher_tools/manage_reminders.html:59
+msgid "discard"
+msgstr "hylkää"
+
+#: teacher_tools/templates/teacher_tools/manage_reminders.html:64
+msgid "Reminders will be sent to the following students"
+msgstr "Muistutukset lähetetään seuraaville käyttäjille"
+
+#: teacher_tools/templates/teacher_tools/mass_email.html:53
+msgid "Send email"
+msgstr "Lähetä sähköposti"
+
+#: teacher_tools/templates/teacher_tools/reset_completion.html:34
+#, python-format
+msgid ""
+"\n"
+"      Reset completion for %(content)s\n"
+"    "
+msgstr ""
+"\n"
+"      Nollaa tehtävän %(content)s suoritukset\n"
+"    "
+
+#: teacher_tools/templates/teacher_tools/student_completion.html:7
+#, python-format
+msgid ""
+"\n"
+"  %(name)s's completion of %(instance)s\n"
+msgstr ""
+"\n"
+"      %(name)s suoritukset kurssista %(instance)s \n"
+
+#: teacher_tools/templates/teacher_tools/student_completion.html:34
 msgid "Completion"
 msgstr "Suoritukset"
 
-#: teacher_tools/templates/teacher_tools/student_completion.html:36
+#: teacher_tools/templates/teacher_tools/student_completion.html:40
 #, python-format
 msgid ""
 "\n"
@@ -876,12 +2497,12 @@ msgstr ""
 "      %(name)s suoritukset kurssista %(instance)s \n"
 "    "
 
-#: teacher_tools/templates/teacher_tools/student_completion.html:42
+#: teacher_tools/templates/teacher_tools/student_completion.html:58
 #, python-format
 msgid ""
 "\n"
 "      <div class=\"paragraph\">Total missing: %(missing)s</div>\n"
-"      <div class=\"paragraph\">Total points: %(points)s / %(available)s</"
+"      <div class=\"paragraph\">Total score: %(points)s / %(available)s</"
 "div>\n"
 "    "
 msgstr ""
@@ -891,55 +2512,98 @@ msgstr ""
 "div>\n"
 "    "
 
-#: teacher_tools/templates/teacher_tools/student_completion.html:49
+#: teacher_tools/templates/teacher_tools/student_completion.html:65
 msgid "Page results"
 msgstr "Suoritukset sivuittain"
 
-#: teacher_tools/templates/teacher_tools/student_completion.html:52
+#: teacher_tools/templates/teacher_tools/student_completion.html:68
 #, python-format
 msgid ""
 "\n"
-"          <li class=\"results-page-bullet tasks-collapsed\" onclick="
-"\"expand_task_list(this)\">%(name)s (Done: %(done)s/%(tasks)s | Points: "
-"%(points)s/%(available)s)</li>\n"
+"          <li class=\"results-page-bullet tasks-collapsed\" "
+"onclick=\"expand_task_list(this)\">%(name)s (Done: %(done)s/%(tasks)s | "
+"Points: %(points)s/%(available)s | Score: %(score)s)</li>\n"
 "        "
 msgstr ""
 "\n"
-"          <li class=\"results-page-bullet tasks-collapsed\" onclick="
-"\"expand_task_list(this)\">%(name)s (Tehty: %(done)s/%(tasks)s | Pisteet: "
-"%(points)s/%(available)s)</li>\n"
+"          <li class=\"results-page-bullet tasks-collapsed\" "
+"onclick=\"expand_task_list(this)\">%(name)s (Tehty: %(done)s/%(tasks)s | "
+"Pisteet: %(points)s/%(available)s | Painotettu: %(score)s)</li>\n"
 "        "
 
-#: teacher_tools/views.py:29
+#: teacher_tools/templates/teacher_tools/student_completion.html:81
+msgid "Completion in other instances"
+msgstr "Suoritukset muissa instansseissa"
+
+#: teacher_tools/views.py:56
 msgid ""
 "Only course main responsible teachers are allowed to download answer files."
 msgstr "Vain kurssien vastuuhenkilöt voivat ladata vastaustiedostot."
 
-#: teacher_tools/views.py:66
+#: teacher_tools/views.py:98
 msgid ""
 "Only course main responsible teachers are allowed to manage enrollments."
 msgstr "Vain kurssien vastuuhenkilöt voivat ladata vastaustiedostot."
 
-#: teacher_tools/views.py:79
+#: teacher_tools/views.py:115
 msgid "Enrollment for the student does not exist."
 msgstr "Tämä opiskelija ei ole ilmoittautunut"
 
-#: teacher_tools/views.py:83
-msgid "Enrollment status of {} changed to {}"
-msgstr "Opiskelijan {} ilmoittautumisen tilaksi muutettu: {}"
+#: teacher_tools/views.py:120
+#, python-brace-format
+msgid "Enrollment status of {username} changed to {action}"
+msgstr "Opiskelijan {username} ilmoittautumisen tilaksi muutettu: {action}"
 
-#: teacher_tools/views.py:92
-msgid "Set enrollment state to {} for the following users."
-msgstr "Asetettiin ilmoittautumisen tilaksi {} seuraaville käyttäjille"
+#: teacher_tools/views.py:132
+#, python-brace-format
+msgid "Set enrollment state to {action} for the following users."
+msgstr "Asetettiin ilmoittautumisen tilaksi {action} seuraaville käyttäjille"
 
-#: teacher_tools/views.py:93
+#: teacher_tools/views.py:134
 msgid "The operation was not applicable for these users."
 msgstr "Operaatiota ei voitu suorittaa näille käyttäjille"
 
-#: teacher_tools/views.py:200
-#, python-format
-msgid "Completion CSV generation (task id: %s) has already been downloaded."
-msgstr "CSV-suoritustiedot (task id: %s) on jo ladattu."
+#: teacher_tools/views.py:253
+#, python-brace-format
+msgid "Transfer records of {user} from {instance}"
+msgstr "Siirrä käyttäjän {user} suoritukset kurssitilasta {instance}"
+
+#: teacher_tools/views.py:374
+msgid "Completion CSV generation (task id: {}) has already been downloaded."
+msgstr "CSV-suoritustiedot (task id: {}) on jo ladattu."
+
+#: teacher_tools/views.py:474 teacher_tools/views.py:503
+msgid "Send emails"
+msgstr "Lähetä sähköpostit"
+
+#: teacher_tools/views.py:501
+msgid "Unable to retrieve cached reminders."
+msgstr "Tallennettujen muistutusten haku epäonnistui"
+
+#: teacher_tools/views.py:536
+msgid "Batch grading is not supported for this task type"
+msgstr ""
+
+#: teacher_tools/views.py:540
+msgid "Batch grading is not possible for manually evaluated tasks"
+msgstr ""
+
+#: teacher_tools/views.py:558
+msgid "Task is not linked to this course"
+msgstr "Tehtävää ei ole liitetty kurssitilaan."
+
+#: teacher_tools/views.py:626
+#, python-brace-format
+msgid "Perform batch grading for {content}"
+msgstr "Suorita massa-arvostelu tehtävälle {content}"
+
+#: teacher_tools/views.py:639
+msgid "Completion reset is not supported for this task type"
+msgstr "Suoritusten nollausta ei voi tehdä tälle tehtävätyypille"
+
+#: teacher_tools/views.py:643
+msgid "Completion reset is not possible for manually evaluated tasks"
+msgstr "Suoritusten nollausta ei voi tehdä käsin arvosteltaville tehtäville"
 
 #: templates/account/base.html:35
 msgid "Menu:"
@@ -998,21 +2662,97 @@ msgstr ""
 msgid "Please correct the errors below."
 msgstr ""
 
-#: utils/access.py:92
+#: utils/access.py:122
 msgid "This view is limited to course staff."
 msgstr "Tämä näkymä on rajattu kurssin henkilökunnalle."
 
-#: utils/access.py:101
+#: utils/access.py:138
 msgid "This view is limited to main responsible teacher."
 msgstr "Tämä näkymä on rajattu kurssin vastuuopettajalle."
 
-#: utils/access.py:114
+#: utils/access.py:160 utils/access.py:165
 msgid "You must be enrolled to perform this action."
 msgstr "Vain ilmoittautuneet käyttäjät voivat suorittaa tämän toiminnon."
 
-#: utils/access.py:123
+#: utils/access.py:182
 msgid "This view is limited to content owners and staff"
 msgstr "Tämä näkymä on rajattu omistajalle ja henkilökunnalle"
+
+#: utils/access.py:202
+msgid "This view is limited to group supervisor"
+msgstr "Tämä näkymä on rajattu ryhmän ohjaajalle."
+
+#~ msgid "Title fields cannot be filled when choosing an existing sheet"
+#~ msgstr ""
+#~ "Otsikkokenttä ei voi täyttää jos käytetään olemassa olevaa lomaketta"
+
+#~ msgid "Last name"
+#~ msgstr "Sukunimi"
+
+#~ msgid "First name"
+#~ msgstr "Etunimi"
+
+#~ msgid "Note"
+#~ msgstr "Viesti"
+
+#~ msgid "Message title"
+#~ msgstr "Viestin otsikko"
+
+#, fuzzy
+#~| msgid "Messages"
+#~ msgid "Message content"
+#~ msgstr "Viestin sisältö"
+
+#~ msgid "View Assessment"
+#~ msgstr "Katso arvostelu"
+
+#~ msgid "Section name is already used in this assessment sheet."
+#~ msgstr "Osion nimi on jo käytössä tässä lomakkeessa."
+
+#~ msgid "Choose section name and properties of the first bullet."
+#~ msgstr "Valitse osion nimi ja täytä ensimmäisen kohteen tiedot."
+
+#, python-format
+#~ msgid ""
+#~ "The deadline for this exercise (%s) has passed. Your answer will not be "
+#~ "evaluated!"
+#~ msgstr "Tehtävän palautusaika (%s) on mennyt. Vastaustasi ei arvioida!"
+
+#~ msgid "Generate CSV"
+#~ msgstr "Generoi CSV"
+
+#~ msgid "Detailed student results can be accessed from below"
+#~ msgstr "Opiskelijakohtaisiin tietoihin pääset alla olevista linkeistä"
+
+#~ msgid "Reserved/total slots:"
+#~ msgstr "Varatut/kaikki ajat"
+
+#~ msgid "The following users have reserved a slot:"
+#~ msgstr "Seuraavat käyttäjä ovat varanneet ajan"
+
+#~ msgid "Correctly answered"
+#~ msgstr "Oikein vastattu"
+
+#~ msgid "Incorrectly answered"
+#~ msgstr "Väärin vastattu"
+
+#~ msgid "Link | e-mail"
+#~ msgstr "Linkki | sähköposti"
+
+#~ msgid "View results"
+#~ msgstr "Katso tuloksia"
+
+#~ msgid "Help!"
+#~ msgstr "Apua!"
+
+#~ msgid "You're only allowed to view your own answers."
+#~ msgstr "Voit katsoa vain omia vastauksiasi."
+
+#~ msgid ""
+#~ "Only course staff members are allowed to download repeated template "
+#~ "exercise backends."
+#~ msgstr ""
+#~ "Vain henkilökunnan jäsenet voivat ladata toistotehtävien backend-koodeja"
 
 #~ msgid "View reference answer"
 #~ msgstr "Katso mallivastausta"
@@ -1027,13 +2767,7 @@ msgstr "Tämä näkymä on rajattu omistajalle ja henkilökunnalle"
 
 #~ msgid ""
 #~ "Only logged in users are allowed to answer repeated template exercises."
-#~ msgstr "Vain sisäänkirjautuneet käyttäjät voivat vastata tehtäviin."
-
-#~ msgid "This course instance does't exist"
-#~ msgstr "Kurssi-instanssia ei löytynyt"
-
-#~ msgid "You cannot enroll to this course."
-#~ msgstr "Et voi ladata tätä vastausta."
+#~ msgstr "Vain sisäänkirjautuneet käyttäjät voivat vastata toistotehtäviin."
 
 #~ msgid "Download CSV"
 #~ msgstr "Lataa tilastot"
@@ -1042,7 +2776,7 @@ msgstr "Tämä näkymä on rajattu omistajalle ja henkilökunnalle"
 #~ msgstr "Kurssia ei löytynyt"
 
 #~ msgid "This course instance does not exist."
-#~ msgstr "Kurssi-instanssi ei löytynyt"
+#~ msgstr "Kurssi-instanssia ei löytynyt"
 
 #~ msgid ""
 #~ "Only course main responsible teachers are allowed to view completion "

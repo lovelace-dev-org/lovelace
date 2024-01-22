@@ -1,0 +1,125 @@
+{% load static %}
+{% load i18n %}
+
+<div class="assessment-panel"
+     data-source-url="{% url 'assessment:manage_assessment' course instance exercise %}">
+     
+    <div class="expand-handle"
+         onclick="expand_next_div(this);"
+    >{% trans 'Add or change assessment sheet' %}</div>
+    <div class="collapsed">
+        {{ top_form|safe }}
+    </div>
+       
+    {% if sheet %}
+
+    <div class="expand-handle"
+         onclick="ase.update_exercise(event, this);"
+         title="{% trans 'Writes the assessment total point value as the exercise point value' %}"
+         data-url="{% url 'assessment:update_exercise_points' course instance exercise sheet %}"
+         data-csrf="{{ csrf_token }}"
+    >{% trans 'Update exercise points' %}</div>
+    
+
+    <hr class="hr-evenly-spaced">
+    
+        <div class="assessment-edit-form">
+            <h2 class="assessment-form-title">{{ sheet.title }}</h2>
+
+            <ul class="assessment-sheet">
+                {% for section, meta in bullets_by_section.items %}
+                    <li class="assessment-section-header">
+                        {{ section }} ({{ meta.total_points }})
+                        <button type="button"
+                                class="staff-base-button ase-button add-button"
+                                title="{% trans 'Add a new assessment bullet to this section' %}"
+                                onclick="ase.fetch_form(event, this);"
+                                data-url="{% url 'assessment:create_bullet' course instance sheet %}"
+                                data-section="{{ section.id }}">+
+                        </button>
+                        <button type="button"
+                                class="staff-base-button ase-button delete-button"
+                                title="{% trans 'Remove this assessment section' %}"
+                                onclick="ase.delete_section(event, this);"
+                                data-url="{% url 'assessment:delete_section' course instance sheet section %}"
+                                data-csrf="{{ csrf_token }}">X
+                        </button>
+                        <button type="button"
+                                class="staff-base-button ase-button edit-button"
+                                title="{% trans 'Rename this assessment section' %}"
+                                onclick="ase.fetch_form(event, this);"
+                                data-url="{% url 'assessment:rename_section' course instance sheet section %}"
+                                data-section="{{ section.id }}">
+                        </button>
+                    </li>
+                    <ul class="assessment-section">
+                        {% for bullet in meta.bullets %}
+                            <li class="assessment-bullet">
+                                <span title="{{ bullet.tooltip }}">
+                                    {{ bullet.title }} ({{ bullet.point_value }})
+                                </span>
+                                <img class="drag-target drop-before collapsed" 
+                                     src="{% static 'courses/drop_before.png' %}"
+                                     ondragover="ase.over_drag_target(event);"
+                                     ondrop="ase.drop_to_target(event);"
+                                     ondragleave="ase.leave_drag_target(event);"
+                                     data-url="{% url 'assessment:move_bullet' course instance sheet bullet 'before' %}"
+                                     data-csrf="{{ csrf_token }}">
+                                <img class="drag-target drop-after collapsed" 
+                                     src="{% static 'courses/drop_after.png' %}"
+                                     ondragover="ase.over_drag_target(event);"
+                                     ondrop="ase.drop_to_target(event);"
+                                     ondragleave="ase.leave_drag_target(event);"
+                                     data-url="{% url 'assessment:move_bullet' course instance sheet bullet 'after' %}"
+                                     data-csrf="{{ csrf_token }}">
+                                <button type="button"
+                                        class="staff-base-button ase-button add-button"
+                                        title="{% trans 'Add a new assessment bullet after this bullet' %}"
+                                        onclick="ase.fetch_form(event, this);"
+                                        data-url="{% url 'assessment:create_bullet' course instance sheet %}"
+                                        data-bullet-id="{{ bullet.id }}"
+                                        data-section="{{ section.id }}">+
+                                </button>
+                                <button type="button"
+                                        class="staff-base-button ase-button delete-button"
+                                        title="{% trans 'Remove this assessment bullet' %}"
+                                        onclick="ase.delete_bullet(event, this);"
+                                        data-url="{% url 'assessment:delete_bullet' course instance sheet bullet %}"
+                                        data-csrf="{{ csrf_token }}">X
+                                </button>
+                                <button type="button"
+                                        class="staff-base-button ase-button edit-button"
+                                        title="{% trans 'Edit this assessment bullet' %}"
+                                        onclick="ase.fetch_form(event, this);"
+                                        data-url="{% url 'assessment:edit_bullet' course instance sheet bullet %}">
+                                </button>
+                                <button type="button"
+                                        class="staff-base-button ase-button move-button"
+                                        title="{% trans 'Move bullet by dragging this button' %}"
+                                        draggable="true"
+                                        ondragstart="ase.start_drag(event, {{ bullet.id }});"
+                                        ondragend="ase.end_drag(event);"
+                                        data-csrf="{{ csrf_token }}">&nbsp;
+                                </button>
+                            </li>
+                        {% endfor%}
+                    </ul>
+                {% endfor %}
+            </ul>
+            <button type="button"
+                    class="staff-base-button ase-button add-button"
+                    title="{% trans 'Add a new assessment section' %}"
+                    onclick="ase.fetch_form(event, this);"
+                    data-url="{% url 'assessment:create_section' course instance sheet %}"
+                    data-section="{{ name }}">+
+            </button>
+        </div>
+    {% endif %}
+    
+    <script>
+        $("#{{ exercise.slug }}-assessment-select").submit(ase.submit_form);
+    </script>
+    
+    
+    
+</div>

@@ -1,21 +1,16 @@
-{% extends 'courses/exercise.html' %}
-{% load i18n %}
-
-{% block exercise-form %}
-  {% for replace_file, lineiter in choices %}
-    <div>
-      <div class="code-replace-filename">{{ replace_file }}</div>
-      {% for _, replace_line, id in lineiter %}
-        <div class="input-label-container code-replace">
-          <label for="cre-{{ id }}" class="code-replace-label"
-                 title="{% blocktrans with line=replace_line file=replace_file %}Line {{ line }} in {{ file }}{% endblocktrans %}"
-                 onmouseover="highlight_code_line('{{ replace_file }}', {{ replace_line }});"
-                 onmouseout="unhighlight_code_line('{{ replace_file }}', {{ replace_line }});">
-            {{ replace_line }}
-          </label>
-          <input id="cre-{{ id }}" name="cre-{{ id }}" type="text" class="code-replace-input">
-        </div>
-      {% endfor %}
+{% for replace_file, lineiter in choices %}
+<div>
+  <div class="code-replace-filename">{{ replace_file }}</div>
+  {% for _, replace_line, id in lineiter %}
+    <div class="input-label-container code-replace">
+      <label for="cre-{{ id }}" class="code-replace-label"
+             title="{% blocktrans with line=replace_line file=replace_file %}Line {{ line }} in {{ file }}{% endblocktrans %}"
+             onmouseover="highlight_code_line('{{ replace_file }}', {{ replace_line }});"
+             onmouseout="unhighlight_code_line('{{ replace_file }}', {{ replace_line }});">
+        {{ replace_line }}
+      </label>
+      <input id="cre-{{ id }}" name="cre-{{ id }}" type="text" class="code-replace-input">
     </div>
   {% endfor %}
-{% endblock %}
+</div>
+{% endfor %}

@@ -1,20 +1,24 @@
-{% load staticfiles %}
+{% load static %}
 {% load i18n %}
 <div class="task-meta-container">
   <div class="task-meta" data-eval-group="{{ content.evaluation_group }}">
     {% if content.content_type != "LECTURE" and not sandboxed %}
       {% if evaluation == "unanswered" %}
         <img src="{% static 'courses/unanswered-96.png' %}" width="96" height="96" alt="?"
-             title="{% trans 'You haven’t answered this exercise yet' %}" class="unanswered">
+             title="{% trans 'You haven’t answered this exercise yet' %}"
+             class="unanswered">
       {% elif evaluation == "incorrect" %}
         <img src="{% static 'courses/incorrect-96.png' %}" width="96" height="96" alt="✘"
-             title="{% trans 'You have answered this exercise incorrectly' %}" class="incorrect">
+             title="{% trans 'You have answered this exercise incorrectly' %}"
+             class="incorrect">
       {% elif evaluation == "correct" %}
         <img src="{% static 'courses/correct-96.png' %}" width="96" height="96" alt="✔"
-             title="{% trans 'You have answered this exercise correctly' %}" class="correct">
+             title="{% trans 'You have answered this exercise correctly' %}"
+             class="correct">
       {% elif evaluation == "credited" %}
         <img src="{% static 'courses/credited-96.png' %}" width="96" height="96" alt="✔"
-             title="{% trans 'You have answered another exercise in this set correctly' %}" class="credited">
+             title="{% trans 'You have answered another exercise in this set correctly' %}"
+             class="credited">
       {% endif %}
 
       {% comment %}
@@ -24,11 +28,18 @@
       {% endcomment %}
 
       {% if not sandboxed %}
-        <div><a href="{% url 'courses:show_answers' user course instance content %}"
-                title="{% trans 'View your previous answers' %}">{% blocktrans count counter=answer_count %}<span class="answer-count">{{ counter }}</span> answer{% plural %}<span class="answer-count">{{ counter }}</span> answers{% endblocktrans %}</a></div>
+        <div>
+          <a href="{% url 'courses:show_answers' user course instance content %}"
+             title="{% trans 'View your previous answers' %}">
+            {% blocktrans count counter=answer_count %}
+              <span class="answer-count">{{ counter }}</span>
+              answer{% plural %}
+              <span class="answer-count">{{ counter }}</span>
+              answers{% endblocktrans %}
+          </a>
+        </div>
       {% endif %}
     {% endif %}
-
 
     {% if user.is_active and user.is_staff %}
       <hr>
@@ -36,8 +47,25 @@
       <div class="admin-tools">
         <div><b>{% trans "Teacher’s tools" %}</b></div>
         <ul>
-          <li><div><a href="{% url 'stats:single_exercise' content %}">{% trans 'Statistics' %}</a></div></li>
-          <li><div><a href="{% url 'feedback:statistics' instance content %}">{% trans 'Feedback' %}</a></div></li>
+          <li>
+            <div>
+              <a href="{% url 'stats:single_exercise' content %}">{% trans 'Statistics' %}</a>
+            </div>
+          </li>
+          <li>
+            <div>
+              <a href="{% url 'feedback:statistics' instance content %}">{% trans 'Feedback' %}</a>
+            </div>
+          </li>
+          <li><div>
+            <a id="{{ content.slug }}-regen-panel-link"
+               class="regen-panel-link"
+               href="{% url 'courses:regen_page_cache' course instance content %}"
+               title="{% trans 'Open cache regen panel' %}"
+               onclick="show_panel(event, this, 'regen-panel', 'message-panel');"
+               data-querystring="">{% trans 'Regenerate cache' %}
+            </a>
+          </div></li>
           {% with type=content.get_human_readable_type %}
             {% if type == "file upload exercise" %}
               <li><div>
@@ -68,12 +96,18 @@
                 {% trans 'Edit this code replace exercise' %}
               {% elif type == "repeated template exercise" %}
                 {% trans 'Edit this repeated template exercise' %}
+              {% elif type == "routine exercise" %}
+                {% trans 'Edit this routine exercise' %}
               {% endif %}
             </a></div></li>
           {% endwith %}
           {% comment %}
             <li><div><a href="TODO">{% trans 'View reference answer' %}</a></div></li>
-            <li><div><a href="{% url 'courses:sandbox' content.slug %}">{% trans 'View separately' %}</a></div></li>
+            <li>
+              <div>
+                <a href="{% url 'courses:sandbox' content.slug %}">{% trans 'View separately' %}</a>
+              </div>
+            </li>
           {% endcomment %}
         </ul>
       </div>

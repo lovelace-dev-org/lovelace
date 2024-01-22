@@ -51,7 +51,7 @@
           <option value="OUTPUT" {% if instance_file_link.file_settings.purpose == "OUTPUT" %}selected{% endif %}>Expected output file</option>
         </optgroup>
         <optgroup label="Executable files">
-          <option value="LIBRARY"{% if include_file.file_settings.purpose == "LIBRARY" %} selected="selected"{% endif %}>Library file</option>
+          <option value="LIBRARY" {% if instance_file_link.file_settings.purpose == "LIBRARY" %} selected{% endif %}>Library file</option>
           <option value="REFERENCE" {% if instance_file_link.file_settings.purpose == "REFERENCE" %}selected{% endif %}>Reference implementation</option>
           <option value="INPUTGEN" {% if instance_file_link.file_settings.purpose == "INPUTGEN" %}selected{% endif %}>Input generator</option>
           <option value="WRAPPER" {% if instance_file_link.file_settings.purpose == "WRAPPER" %}selected{% endif %}>Wrapper for uploaded code</option>

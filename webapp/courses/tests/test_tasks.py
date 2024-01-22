@@ -1,19 +1,20 @@
 import datetime
 import json
-import redis
+import os
 import shutil
-import time
+
+import redis
 from django.core import files
 from django.conf import settings
 from django.test import TestCase
 from django.utils import translation
-from courses.models import *
-from courses.tasks import add, run_tests
-from courses.tests.testhelpers import *
 from reversion import revisions as reversion
+from reversion.models import Version
 
-from celery.contrib.testing.worker import start_worker
-from celery import Celery
+import courses.models as cm
+from courses.tasks import add, run_tests
+import courses.tests.testhelpers as helpers
+
 
 TEST_CHECKER_CODE = """
 import importlib
@@ -78,80 +79,80 @@ def answer():
 """
 
 
-
 class TaskTimeoutError(Exception):
-    
     pass
+
 
 def create_answerable_exercise():
     with reversion.create_revision():
-        exercise = FileUploadExercise(
+        exercise = cm.FileUploadExercise(
             name="answerable file upload exercise",
             content="some content",
             default_points=1,
         )
         exercise.save()
 
-        checker = FileExerciseTestIncludeFile()
-        checker.exercise = exercise    
-        file_settings = IncludeFileSettings()
-        
+        checker = cm.FileExerciseTestIncludeFile()
+        checker.exercise = exercise
+        file_settings = cm.IncludeFileSettings()
+
         checker.default_name = "test_checker.py"
         checker.fileinfo = files.base.ContentFile(TEST_CHECKER_CODE, "test_checker.py")
-        
+
         file_settings.name = "test_checker.py"
         file_settings.purpose = "TEST"
-        
+
         file_settings.save()
-        
+
         checker.file_settings = file_settings
         checker.save()
-        
-        test = FileExerciseTest()
+
+        test = cm.FileExerciseTest()
         test.exercise = exercise
         test.name = "test_test"
         test.save()
         test.required_files.set([checker])
         test.save()
-        
-        stage = FileExerciseTestStage()
+
+        stage = cm.FileExerciseTestStage()
         stage.test = test
         stage.name = "test test stage"
         stage.ordinal_number = 1
         stage.save()
-        
-        command = FileExerciseTestCommand()
+
+        command = cm.FileExerciseTestCommand()
         command.stage = stage
         command.command_line = "python3 test_checker.py $RETURNABLES"
         command.json_output = True
         command.ordinal_number = 1
         command.save()
-    
+
     revision = Version.objects.get_for_object(exercise).latest("revision__date_created").revision_id
-    
+
     return exercise, revision
 
+
 def create_answerable_file_upload_exercise_page(exercise):
-    page = Lecture(
+    page = cm.Lecture(
         name="answerable upload exercise page",
-        content="<!page={}>".format(exercise.slug),
+        content=f"<!page={exercise.slug}>",
     )
     page.save()
     return page
 
 
 def create_answer(answer_code, user, instance, exercise, revision):
-    answer = UserFileUploadExerciseAnswer(
+    answer = cm.UserFileUploadExerciseAnswer(
         instance=instance,
         exercise=exercise,
         revision=revision,
         user=user,
         answer_date=datetime.datetime.now(),
-        answerer_ip="127.0.0.1"
+        answerer_ip="127.0.0.1",
     )
     answer.save()
-    
-    returnfile = FileUploadExerciseReturnFile()
+
+    returnfile = cm.FileUploadExerciseReturnFile()
     returnfile.fileinfo = files.base.ContentFile(answer_code, "test_answer.py")
     returnfile.answer = answer
     returnfile.save()
@@ -160,24 +161,23 @@ def create_answer(answer_code, user, instance, exercise, revision):
 
 
 class TaskTests(TestCase):
-
     @classmethod
     def setUpClass(cls):
         """
         Aborts testing if the settings file has not been explicitly marked as
         test configuration settings. This is a safeguard against accidentally
-        wiping a dev or production media root empty at teardown. 
+        wiping a dev or production media root empty at teardown.
         """
-        
+
         if getattr(settings, "TEST_SETTINGS", False):
             super().setUpClass()
         else:
-            raise TestSettingsNotUsed(
+            raise helpers.TestSettingsNotUsed(
                 "Using a settings file without TEST_SETTINGS set to True is not allowed."
             )
-        
+
         cls.r = redis.StrictRedis(**settings.REDIS_RESULT_CONFIG)
-    
+
     @classmethod
     def tearDownClass(cls):
         """
@@ -185,32 +185,32 @@ class TaskTests(TestCase):
         Needed to clean up files written to disk when creating media models for
         tests.
         """
-        
+
         super().tearDownClass()
         if getattr(settings, "TEST_SETTINGS", False):
             shutil.rmtree(settings.MEDIA_ROOT)
             os.rmdir(os.path.dirname(settings.MEDIA_ROOT))
-        #cls.celery_worker.__exit__()
-        
+        # cls.celery_worker.__exit__()
+
     @classmethod
     def setUpTestData(cls):
         """
         Sets up an answerable file upload exercise
         """
-        
-        user = create_admin_user()
-        test_frontpage = create_frontpage()
-        exercise, revision = create_answerable_exercise()
-        test_page_file_upload = create_answerable_file_upload_exercise_page(exercise)
-        #test_page_template = create_template_exercise_page()
-        test_course, test_instance = create_course_with_instance()
-        add_content_graph(test_frontpage, test_instance, 0)
-        add_content_graph(test_page_file_upload, test_instance, 6)
-        #add_content_graph(test_page_template, test_instance, 7)
+
+        user = helpers.create_admin_user()
+        test_frontpage = helpers.create_frontpage()
+        exercise, revision = helpers.create_answerable_exercise()
+        test_page_file_upload = helpers.create_answerable_file_upload_exercise_page(exercise)
+        # test_page_template = create_template_exercise_page()
+        __, test_instance = helpers.create_course_with_instance()
+        helpers.add_content_graph(test_frontpage, test_instance, 0)
+        helpers.add_content_graph(test_page_file_upload, test_instance, 6)
+        # add_content_graph(test_page_template, test_instance, 7)
         test_instance.frontpage = test_frontpage
         test_instance.save()
-        #cls.timeout_answer = create_answer(TEST_ANSWER_TIMEOUT, user, test_instance, exercise, revision)
-        #cls.exc_answer = create_answer(TEST_ANSWER_EXC, user, test_instance, exercise, revision)
+        # cls.timeout_answer = create_answer(TEST_ANSWER_TIMEOUT, user, test_instance, exercise, revision)
+        # cls.exc_answer = create_answer(TEST_ANSWER_EXC, user, test_instance, exercise, revision)
         cls.instance = test_instance
         cls.exercise = exercise
         cls.user = user
@@ -227,15 +227,21 @@ class TaskTests(TestCase):
             exercise_id=self.exercise.id,
             answer_id=answer_id,
             lang_code=translation.get_language(),
-            revision=None
+            revision=None,
         ).apply()
         evaluation_id = result.get()
         result.forget()
-        evaluation_obj = Evaluation.objects.get(id=evaluation_id)
+        evaluation_obj = cm.Evaluation.objects.get(id=evaluation_id)
         return result, evaluation_obj
 
     def test_file_upload_answering_correct(self):
-        answer = create_answer(TEST_ANSWER_CODE.format(answer="correct"), self.user, self.instance, self.exercise, self.revision)
+        answer = create_answer(
+            TEST_ANSWER_CODE.format(answer="correct"),
+            self.user,
+            self.instance,
+            self.exercise,
+            self.revision,
+        )
         result, evaluation_obj = self._submit_file_upload_answer(answer.id)
         self.assertEqual(evaluation_obj.correct, True)
         result_json = json.loads(self.r.get(result.task_id).decode("utf-8"))
@@ -244,7 +250,13 @@ class TaskTests(TestCase):
         self.assertEqual(log[0]["runs"][0]["output"][0]["flag"], 1)
 
     def test_file_upload_answering_incorrect(self):
-        answer = create_answer(TEST_ANSWER_CODE.format(answer="incorrect"), self.user, self.instance, self.exercise, self.revision)
+        answer = create_answer(
+            TEST_ANSWER_CODE.format(answer="incorrect"),
+            self.user,
+            self.instance,
+            self.exercise,
+            self.revision,
+        )
         result, evaluation_obj = self._submit_file_upload_answer(answer.id)
         self.assertEqual(evaluation_obj.correct, False)
         result_json = json.loads(self.r.get(result.task_id).decode("utf-8"))
@@ -253,7 +265,13 @@ class TaskTests(TestCase):
         self.assertEqual(log[0]["runs"][0]["output"][0]["flag"], 0)
 
     def test_file_upload_answering_error(self):
-        answer = create_answer(TEST_ANSWER_CODE.format(answer="error"), self.user, self.instance, self.exercise, self.revision)
+        answer = create_answer(
+            TEST_ANSWER_CODE.format(answer="error"),
+            self.user,
+            self.instance,
+            self.exercise,
+            self.revision,
+        )
         result, evaluation_obj = self._submit_file_upload_answer(answer.id)
         self.assertEqual(evaluation_obj.correct, False)
         result_json = json.loads(self.r.get(result.task_id).decode("utf-8"))
@@ -262,13 +280,18 @@ class TaskTests(TestCase):
         self.assertEqual(log[0]["runs"][0]["output"][0]["flag"], 3)
 
     def test_file_upload_answer_timeout(self):
-        answer = create_answer(TEST_ANSWER_TIMEOUT, self.user, self.instance, self.exercise, self.revision)
+        answer = create_answer(
+            TEST_ANSWER_TIMEOUT, self.user, self.instance, self.exercise, self.revision
+        )
         result, evaluation_obj = self._submit_file_upload_answer(answer.id)
         self.assertEqual(evaluation_obj.correct, False)
         result_json = json.loads(self.r.get(result.task_id).decode("utf-8"))
         self.r.delete(result.task_id)
         self.assertEqual(result_json["test_tree"]["log"], [])
-        self.assertEqual(result_json["test_tree"]["tests"][0]["stages"][0]["commands"][0]["timedout"], True)
+        self.assertEqual(
+            result_json["test_tree"]["tests"][0]["stages"][0]["commands"][0]["timedout"],
+            True,
+        )
 
     def test_file_upload_answer_broken_checker(self):
         """
@@ -276,7 +299,9 @@ class TaskTests(TestCase):
         exceptions caused by the answer code.
         """
 
-        answer = create_answer(TEST_ANSWER_EXC, self.user, self.instance, self.exercise, self.revision)
+        answer = create_answer(
+            TEST_ANSWER_EXC, self.user, self.instance, self.exercise, self.revision
+        )
         result, evaluation_obj = self._submit_file_upload_answer(answer.id)
         self.assertEqual(evaluation_obj.correct, False)
         result_json = json.loads(self.r.get(result.task_id).decode("utf-8"))
@@ -287,31 +312,16 @@ class TaskTests(TestCase):
     def test_file_upload_answer_prints(self):
         """
         Tests priting into the std output inside a checker that doesn't catch
-        output of the answer code. Currently this breaks the checker because 
+        output of the answer code. Currently this breaks the checker because
         its output is no longer parseable JSON.
         """
 
-        answer = create_answer(TEST_ANSWER_PRINTS, self.user, self.instance, self.exercise, self.revision)
+        answer = create_answer(
+            TEST_ANSWER_PRINTS, self.user, self.instance, self.exercise, self.revision
+        )
         result, evaluation_obj = self._submit_file_upload_answer(answer.id)
         self.assertEqual(evaluation_obj.correct, False)
         result_json = json.loads(self.r.get(result.task_id).decode("utf-8"))
         self.r.delete(result.task_id)
         self.assertEqual(result_json["test_tree"]["log"], [])
         self.assertEqual(len(result_json["test_tree"]["errors"]), 1)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

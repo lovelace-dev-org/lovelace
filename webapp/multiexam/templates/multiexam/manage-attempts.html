@@ -1,0 +1,122 @@
+{% extends 'courses/base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block page-title %}{% blocktrans with exam=content.name %}
+  Manage attempts for {{ exam }}
+{% endblocktrans %}{% endblock %}
+
+{% block extra-static %}
+  <script src="{% static 'multiexam/multiexam.js' %}"></script>
+  <script src="{% static 'courses/formtools.js' %}"></script>
+  <link rel="stylesheet" href="{% static 'multiexam/multiexam.css' %}"></link>
+{% endblock %}
+
+{% block breadcrumb-links %}
+    <li>
+        <a href="{% url 'courses:index' %}">{% trans 'Courses' %}</a>
+    </li>
+    <div class="separator">»</div>
+    <li>
+        <a href="{% url 'courses:course' course instance %}">
+            {{ course.name }}&nbsp;/&nbsp;{{ instance.name }}
+        </a>
+    </li>
+    {% if single_linked %}
+        <div class="separator">»</div>
+        <li>
+            <a href="{% url 'courses:content' course instance parent %}">{{ parent.name }}</a>
+        </li>
+        <div class="separator">»</div>
+        <li>
+            <a href="{% url 'courses:content' course instance parent %}#{{ anchor }}">{{ exercise_title }}</a>
+        </li>
+    {% else %}
+        <div class="separator">»</div>
+        <li>{{ content.name }}</li>
+    {% endif %}
+    <div class="separator">»</div>
+    <li>
+        <a href="{% url 'multiexam:manage_attempts' course instance content %}">
+            {% trans 'Attempts' %}
+        </a>
+    </li>
+{% endblock %}
+
+{% block page-content %}
+    <h1>
+        {% blocktrans with exam=content.name %}
+            Manage Attempts for {{ exam }}
+        {% endblocktrans %}
+    </h1>
+
+    <h2>
+        {% trans 'Existing Attempts' %}
+    </h2>
+
+
+    <table class="fixed alternate-green">
+      <thead>
+        <tr>
+          <th class="interactive" onclick="sort_table(event, this, 0, 1)">{% trans 'Open From' %}</th>
+          <th class="interactive" onclick="sort_table(event, this, 1, 1)">{% trans 'Open To' %}</th>
+          <th class="interactive" onclick="sort_table(event, this, 2, 1, true)">{% trans 'Questions' %}</th>
+          <th class="interactive" onclick="sort_table(event, this, 3, 1)">{% trans 'Made For' %}</th>
+          <th class="interactive" onclick="sort_table(event, this, 4, 1, true)">{% trans 'Answers' %}</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for attempt in attempts %}
+          <tr>
+            <td>{{ attempt.open_from|date:"Y-m-d, H:i" }}</td>
+            <td>{{ attempt.open_to|date:"Y-m-d, H:i" }}</td>
+            <td>{{ attempt.question_count }}</td>
+            <td>
+              {% if attempt.user %}
+                {{ attempt.user }}
+              {% else %}
+                {% trans 'General Exam' %}
+              {% endif %}
+            </td>
+            <td>{{ attempt.answer_count }}</td>
+            <td>
+              <button type="button"
+                  class="staff-base-button view-button"
+                  title="{% trans 'Preview attempt script' %}"
+                  onclick="exam.preview_attempt(event, this);"
+                  data-url="{% url 'multiexam:preview_attempt' course instance attempt %}">
+              </button>
+              <button type="button"
+                  class="staff-base-button settings-button"
+                  title="{% trans 'Configure this attempt' %}"
+                  onclick="formtools.fetch_form(event, this);"
+                  data-url="{% url 'multiexam:attempt_settings' course instance attempt %}"
+                  data-in-table="true"
+                  data-colspan="6">
+              </button>
+              <button type="button"
+                  class="staff-base-button delete-button"
+                  title="{% trans 'Delete this attempt' %}"
+                  onclick="formtools.fetch_form(event, this);"
+                  data-url="{% url 'multiexam:delete_attempt' course instance attempt %}"
+                  data-in-table="true"
+                  data-colspan="6">x
+              </button>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <button type="button"
+        class="staff-base-button add-button"
+        title="{% trans 'Open a new attempt for this exam' %}"
+        onclick="formtools.fetch_form(event, this);"
+        data-url="{% url 'multiexam:open_attempt' course instance content %}">+
+    </button>
+
+    <div class="attempt-preview popup"></div>
+
+{% endblock %}
+

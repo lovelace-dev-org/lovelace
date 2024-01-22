@@ -10,10 +10,7 @@ sudo apt-get update && sudo apt-get dist-upgrade
 Postgresql
 ––––––––––
 
-sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt/ xenial-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
-wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
-sudo apt-get update
-sudo apt-get install postgresql-9.5 pwgen
+sudo apt install postgresql pwgen
 
 
 Creating a postgresql database and user
@@ -35,10 +32,10 @@ Configuring postgresql
 
 Note! Instead of 10.0.0.1, use your desired LAN accessible IP.
 
-sudo vim /etc/postgresql/9.5/main/postgresql.conf
+sudo vim /etc/postgresql/12/main/postgresql.conf
 listen_addresses = 'localhost,10.0.0.1'
 
-sudo vim /etc/postgresql/9.5/main/pg_hba.conf
+sudo vim /etc/postgresql/12/main/pg_hba.conf
 host    lovelace        lovelace        10.0.0.1/24              md5
 
 sudo service postgresql restart
@@ -50,27 +47,35 @@ Testing postgresql
 psql --host=10.0.0.1 --dbname=lovelace --username=lovelace --password
 
 
-Python 3.5
-----------
+Setting up users and groups
+---------------------------
+
+We're going to create users for lovelace and the checker
+
+useradd --system lovelace
+useradd --system lovelace_celery
+
+Python 3
+--------
+
+Should be installed (>=3.7 recommended)
 
 Cloning the repository
 ----------------------
 
 Install git
 
-sudo apt-get install git
+sudo apt install git
 
 Clone the repository
 
-mkdir lovelace
-cd lovelace
-git clone https://github.com/miikkas/lovelace.git
+git clone https://github.com/lovelace-dev-org/lovelace.git 
 
 
 Installing pip
 --------------
 
-sudo apt-get install python3.5-venv python3.5-dev python3-pip
+Should be installed
 
 
 Creating and activating venv
@@ -78,12 +83,11 @@ Creating and activating venv
 
 Create a virtualenv
 
-mkdir /path/to/your/lovelace/venv
-pyvenv-3.5 /path/to/your/lovelace/venv/
+sudo python3 -m venv /opt/lovelace/venv
 
 Activate the virtualenv
 
-cd /path/to/your/lovelace
+cd /opt/lovelace/
 source venv/bin/activate
 
 Note! You shouldn't create the virtualenv root into the 'webapp' directory,
@@ -95,32 +99,40 @@ Installing the dependencies
 
 Install the dependencies' dependencies
 
-sudo apt-get install postgresql-server-dev-9.5
-#sudo apt-get install build-essential libz-dev libreadline-dev libssl-dev libsqlite3-dev libbz2-dev # if you compile python
-sudo apt-get install libjpeg-dev
-sudo apt-get install redis-server redis-tools
-sudo apt-get install rabbitmq-server
+sudo apt install postgresql-server-dev-9.5
+#sudo apt install build-essential libz-dev libreadline-dev libssl-dev libsqlite3-dev libbz2-dev 
+#if you compile python
+sudo apt install libjpeg-dev
+sudo apt install redis-server redis-tools
+sudo apt install rabbitmq-server
 
 Install the Python packages
 
-pip install python-magic
-pip install psycopg2
-pip install pygments
-pip install pillow
-pip install django
-pip install django-redis
-pip install celery[redis]
-pip install django-allauth
-pip install django-modeltranslation
-pip install django-reversion
-pip install django-debug-toolbar
-pip install ipython
+pip3 install python-magic
+pip3 install psycopg2
+pip3 install pygments
+pip3 install pillow
+pip3 install django<=3.0
+pip3 install django-redis
+pip3 install celery[redis]
+pip3 install django-allauth
+pip3 install django-modeltranslation
+pip3 install django-model-path-converter
+pip3 install django-reversion
+pip3 install django-nested-inline
 
 
 Edit the configuration
 ----------------------
 
-Edit /path/to/your/lovelace/webapp/lovelace/settings.py
+Make a new file in /opt/lovelace/lovelace/webapp/lovelace/settings/
+e.g. dev.py with the following line
+
+from lovelace.settings.factory import *
+
+Then write overrides for settings you want to change. Copy the setting
+from factory.py and change it in your settings file.
+
 
 Change the database engine to postgresql by following this guide:
 https://docs.djangoproject.com/en/dev/ref/settings/#databases
@@ -128,13 +140,38 @@ https://docs.djangoproject.com/en/dev/ref/settings/#databases
 Also set the user to lovelace, name to lovelace and password to the
 password you entered for postgresql. Remember to set host and port.
 
+Optional: Change STATIC_ROOT and MEDIA_ROOT to folders that are under /var/www, e.g.
+
+STATIC_ROOT = "/var/www/lovelace/static"
+MEDIA_ROOT = "/var/www/lovelace/upload"
+
+Doing this will avoid a lot of dancing around with security policies and access contol
+if using SELinux. 
+
+For production, set PRIVATE_STORAGE_FS_PATH to a folder *outside* /var/www, e.g.
+PRIVATE_STORAGE_FS_PATH = "/opt/lovelace/lovelace/upload/"
+
+NOTE: If you did this then you have to do collectstatic (see below) whenever updating the system in
+order to make sure you all static files are also updated.
+
+Also recommended, to turn on email verification for production:
+
+ACCOUNT_EMAIL_VERIFICATION = "mandatory"
+
+After creating a settings file, change the settings/__init__py to import configuration
+from your new settings file, e.g.
+
+from lovelace.settings.dev import *
+
+This makes dev.py the default configuration file. 
+
 
 Initialize the database
 -----------------------
 
-python manage.py makemigrations
-python manage.py migrate
-python manage.py createsuperuser
+python3 manage.py makemigrations
+python3 manage.py migrate
+python3 manage.py createsuperuser
 
 
 Initialize the static & uploaded files
@@ -147,19 +184,210 @@ mkdir -p /path/to/your/lovelace/webapp/upload/images
 sudo chown -R www-data /path/to/your/lovelace/webapp/upload/
 
 
+Test Run
+--------
+
+python3 manage.py runserver
+
+If you are only looking to develop Lovelace, this will be sufficient
+You can also test the checking server by running celery
+
+celery -A lovelace worker -Q default --loglevel=info -n checker1@%h
+
+
+
+
+
 Apache
 ––––––
 
 Install Apache
 
-sudo apt-get install apache2 apache2-dev
+sudo apt install apache2 apache2-dev
 
 Install mod_wsgi for Apache2 and Python 3
 
 pip install mod_wsgi
 
 
-Configuring Apache
+Configuring apache
 ------------------
 
-Review: https://pypi.python.org/pypi/mod_wsgi
+Create a configuration file for your site in /etc/httpd/conf.d, e.g. lovelace.conf
+
+See example configuration at the end of this file. 
+
+
+Access control and SELinux
+--------------------------
+
+wsgi.py needs to be executable
+
+chmod a+x /var/lovelace/lovelace/webapp/lovelace/wsgi.py
+
+
+If using SELinux (targeted mode), Lovelace needs a bunch of permissions to work. 
+
+chcon -R -t httpd_user_content_t /var/lovelace/lovelace
+chcon -R -t httpd_sys_script_exec_t /var/lovelace/venv/lib64/python3.5/site-packages
+
+setsebool -P httpd_can_network_connect 1
+setsebool -P httpd_can_network_connect_db 1
+setsebool -P httpd_can_sendmail 1
+
+
+Optional: SSL
+-------------
+
+Make a certificate signing request and get a certificate from your CA. 
+(see https://www.sslshopper.com/how-to-order-an-ssl-certificate.html)
+
+Put the certificate file(s) and your generated key into
+/etc/pki/tls/certs
+
+If SELinux is in use, do the following to make sure they have the proper context:
+
+chcon --reference /etc/pki/tls/certs/localhost.crt /etc/pki/tls/certs/your_certificate.crt 
+
+Edit /etc/httpd/conf.d/ssl.conf 
+Change the following directives to point at your files
+SSLCertificateFile
+SSLCertificateKeyFile
+
+Cut and paste your sites configuration under the VirtualHost directive in ssl.conf
+
+Replace your HTTP configuration with
+
+<VirtualHost *:80>
+  
+  ServerName your.server.somewhere
+  Redirect permanent / https://your.server.somewhere
+
+</VirtualHost>
+
+Optional: Shibboleth
+--------------------
+
+1) Install shibboleth and mod_shib
+(I do not remember how, good luck)
+
+Install django-shibboleth-remoteuser:
+pip install git+https://github.com/Brown-University-Library/django-shibboleth-remoteuser.git
+
+2) generate certificates if needed
+
+3) Configure shibboleth (/etc/shibboleth/shibboleth2.xml)
+fill in ApplicationDefaults entityID (e.g. http://your.server.org/shibboleth)
+fill in SSO entityID (from your IdP)
+
+fill in MetaDataProvider as instructed by your IdP
+check that CredentialResolver points to your certificates
+
+generate metadata
+
+./metagen.sh -c your_cert -h server_url -o organization_name -u organization_url -a admin_info > sp-metadata.xml
+
+where admin_info is "first_name/last_name/email"
+
+4) send the metadata to your IdP and request the attributes you want 
+
+5) edit attribute-map.xml to extract the attributes you want
+
+6) wait for your IdP to add your metadata
+
+7) activate shibboleth
+
+systemctl start shibd
+apachectl restart
+
+try 
+https://your.server.org/Shibboleth.SSO/Login
+https://your.server.org/Shibboleth.SSO/Session
+
+the latter should show all of your attributes
+
+8) setup apache to give you shibboleth headers
+
+add 
+<Location />
+    AuthType shibboleth
+    Require shibboleth
+</Location>
+
+to your apache configuration - this makes shibboleth attributes available
+
+9) setup lovelace to support shibboleth
+
+Edit /var/lovelace/lovelace/webapp/lovelace/settings.py 
+
+add 'shibboleth.backends.ShibbolethRemoteUserBackend' to AUTHENTICATION_BACKENDS
+
+AND
+
+add 'shibboleth.middleware.ShibbolethRemoteUserMiddleware' to MIDDLEWARE_CLASSES after 'django.contrib.auth.middleware.AuthenticationMiddleware'
+
+OR
+
+add 'courses.middleware.LovelaceShibbolethRemoteUser' instead if you want to 
+get student_id from Shibboleth (supports schacPersonalUniqueCode)
+
+set 
+LOGIN_URL = 'https://your.server.org/Shibboleth.sso/Login'
+SHIBBOLETH_LOGOUT_URL = 'https://your.server.org/Shibboleth.sso/Logout?return=%s'
+SHIBBOLETH_LOGOUT_REDIRECT_URL = 'https://your.server.org'
+
+make
+SHIBBOLETH_ATTRIBUTE_MAP = {
+    "shib-user": (True, "username"),
+    "shib-given-name": (True, "first_name"),
+    "shib-sn": (True, "last_name"),
+    "shib-mail": (False, "email"),
+}
+
+replacing "shib-user" etc. with the attribute names from /Shibboleth.sso/Session
+
+add 'shibboleth' to INSTALLED_APPS
+
+add these two lines to settings.py
+ACCOUNT_USERNAME_VALIDATORS = "courses.adapter.username_validators"
+ACCOUNT_ADAPTER = "courses.adapter.LovelaceAccountAdapter"
+
+
+
+
+Appendix 1. Example apache configuration
+========================================
+
+WSGIPythonPath /var/lovelace/venv/lib64/python3.5/site-packages:/var/lovelace/lovelace/webapp
+
+<VirtualHost *:80>
+
+  ServerName your.server.somewhere
+  ServerAdmin admin@somewhere
+  UseCanonicalName On
+
+  Alias /media/ /var/www/lovelace/upload/
+  Alias /static/ /var/www/lovelace/static/
+
+  <Directory /var/www/lovelace/static>
+      Order deny,allow
+      Allow from all
+  </Directory>
+
+  <Directory /var/www/lovelace//upload>
+      Order deny,allow
+      Allow from all
+  </Directory>
+
+  WSGIScriptAlias / /var/lovelace/lovelace/webapp/lovelace/wsgi.py
+
+  <Directory /var/lovelace/lovelace/webapp/lovelace>
+    <Files wsgi.py>
+      Order allow,deny
+      Allow from all
+      Require all granted
+    </Files>
+  </Directory>
+
+</VirtualHost>
+

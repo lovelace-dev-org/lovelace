@@ -1,0 +1,23 @@
+{% extends 'admin/change_form.html' %}
+{% load static %}
+
+{% block after_field_sets %}
+    <div class="popup">
+        <div class="content-preview" id="{{ widget.name }}-preview"></div>
+    </div>
+{% endblock %}
+
+{% block admin_change_form_document_ready %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{% static 'courses/popup.css' %}">
+    <script src="{% static 'courses/textfield-admin.js' %}"></script>
+    <script>
+        $('.popup').click(function() {
+            $(this).css({"opacity":"0", "pointer-events":"none"});
+        });
+        $('.popup > div').click(function(event) {
+            event.stopPropagation();
+        });
+    </script>
+{% endblock %}
+

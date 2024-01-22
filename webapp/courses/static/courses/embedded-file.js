@@ -9,7 +9,7 @@ function add_line_numbers() {
                 return '<span class="line">' + line + '</span>';
             }).join("\n"));
         });
-    }
+    }   
 }
 
 function set_line_widths() {

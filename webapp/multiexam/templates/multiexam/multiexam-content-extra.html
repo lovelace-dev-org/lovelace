@@ -1,0 +1,6 @@
+{% load i18n %}
+
+  <button id="exam-{{ content.id }}" onclick="exam.start_exam(event, this);" class="exam-interaction"
+            data-url="{% url 'multiexam:get_exam_attempt' course instance content %}">
+  {% trans 'Start exam' %}
+  </button>

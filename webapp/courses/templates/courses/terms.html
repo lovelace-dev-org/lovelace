@@ -1,5 +1,5 @@
 {% extends 'courses/base.html' %}
-{% load staticfiles %}
+{% load static %}
 {% load i18n %}
 
 {% block page-title %}{% trans 'Terms and conditions' %}{% endblock %}
@@ -16,7 +16,9 @@
 <h1 class="content-heading">
   {% trans 'Terms and Conditions' %}
   <span id="terms-and-conditions" class="anchor-offset"></span>
-  <a href="#terms-and-conditions" class="permalink" title="Permalink to Terms and Conditions">&para;</a>
+  <a href="#terms-and-conditions" class="permalink" title="Permalink to Terms and Conditions">
+    &para;
+  </a>
 </h1>
 
 <p>{% blocktrans %}
@@ -30,13 +32,25 @@
 </h2>
 
 <p>
-{% blocktrans %}This site uses cookies to store user information such as whether the user has logged in or not. Cookies are also used for protecting the user from a certain type of attack called cross site request forgery.{% endblocktrans %}</p>
+{% blocktrans %}
+  This site uses cookies to store user information such as whether the user has logged in or not.
+  Cookies are also used for protecting the user from a certain type of attack called
+  cross site request forgery.
+{% endblocktrans %}
+</p>
 
 <h2 class="content-heading">
   {% trans 'Registration Document' %}
   <span id="registration-document" class="anchor-offset"></span>
-  <a href="#registration-document" class="permalink" title="Permalink to Registration Document">&para;</a>
+  <a href="#registration-document" class="permalink" title="Permalink to Registration Document">
+    &para;
+  </a>
 </h2>
 
-<p>{% blocktrans %}You can request a registration document by e-mail from address E-MAIL. It may take us 14 working days to reply.{% endblocktrans %}</p>
+<p>
+{% blocktrans %}
+  You can request a registration document by e-mail from address E-MAIL.
+  It may take us 14 working days to reply.
+{% endblocktrans %}
+</p>
 {% endblock %}

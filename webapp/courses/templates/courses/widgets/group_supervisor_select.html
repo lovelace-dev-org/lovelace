@@ -1,0 +1,16 @@
+{% load i18n %}
+
+<select class="user-select"
+        onchange="grp.set_supervisor(event, this);"
+        data-url="{{ submit_url }}"
+        data-csrf="{{ csrf_token }}"
+>
+    <option value="0">{% trans '-- no supervisor --' %}</option>
+    {% for member in staff %}
+        {% if member == selected %}
+            <option value="{{ member.id }}" selected="selected">{{ member.last_name }} {{ member.first_name }}</option>
+        {% else %}
+            <option value="{{ member.id }}">{{ member.last_name }} {{ member.first_name }}</option>
+        {% endif %}
+    {% endfor %}
+</select>

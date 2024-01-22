@@ -1,0 +1,32 @@
+{% load i18n %}
+{% load course_tags %}
+
+<div class="calendar">
+  {% for event, reservations in cal_reservations %}
+    <form method="POST" action="">
+      <fieldset>
+        <legend>{{ event.event_name }}</legend>
+        <div class="datetime">
+          <div>
+            <strong>{{ event.start_time|date:"l, Y-m-d, H:i" }}</strong>
+          </div>
+          <div>
+            <span>{{ event.duration|event_duration }}</span>
+            <span class="right-float">
+              {{ reservations|length }}&nbsp;/&nbsp;{{ event.reservable_slots }}
+            </span>
+          </div>
+        </div>
+        {% if event.event_description %}
+            <div class="description">{{ event.event_description }}</div>
+        {% endif %}
+      <div class="reservation-result collapsed"></div>
+      <div><input type="submit" 
+                  value="{% trans 'Reserve a slot' %}"
+                  onClick="cal.reserve_slot(event, this);return false;"
+                  disabled="disabled"
+      </div>
+      </fieldset>
+    </form>
+  {% endfor %}
+</div>

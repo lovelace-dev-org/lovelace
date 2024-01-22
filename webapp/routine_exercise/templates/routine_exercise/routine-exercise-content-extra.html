@@ -1,0 +1,19 @@
+{% load i18n %}
+
+  <button id="rt-{{ content.id }}" onclick="get_routine_question(event);" class="rt-interaction"
+            data-url="
+            {% if revision %}
+              {% url 'routine_exercise:get_routine_question' course instance content revision %}
+            {% elif instance %}
+              {% url 'routine_exercise:get_routine_question' course instance content "head" %}
+            {% endif %}
+            "
+            data-start-text="{% trans 'Start exercise session' %}"
+            data-next-text="{% trans 'Next' %}">
+  {% trans 'Start exercise session' %}
+  </button>
+  <div class="rt-question-area">
+    <div class="rt-progress"><span class="rt-progress-tag">{{ progress }}</span></div>
+    <div class="routine-template">{{ rendered_template }}</div>
+    <div class="error" style="display: none"></div>
+  </div>

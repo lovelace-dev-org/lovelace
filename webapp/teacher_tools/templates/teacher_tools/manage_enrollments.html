@@ -1,5 +1,5 @@
 {% extends 'courses/base.html' %}
-{% load staticfiles %}
+{% load static %}
 {% load i18n %}
 {% load course_tags %}
 
@@ -8,6 +8,7 @@
 {% endblocktrans %}{% endblock %}
 
 {% block extra-static %}
+  <link rel="stylesheet" href="{% static 'teacher_tools/style.css' %}">
   <script src="{% static 'teacher_tools/enrollment.js' %}"></script>
 {% endblock %}
 
@@ -43,36 +44,26 @@
       <input type="submit" value="{% trans 'Submit' %}">
     </div>
   
-    <table class="enrollments-table">
+    <table class="fixed alternate-green enrollments-table">
+      <colgroup>
+        <col class="selector">
+        <col class="name">
+        <col class="username">
+        <col class="enrollment-state">
+        <col class="">
+      </colgroup>
       <thead>
         <tr class="enrollments-headers">
-        
           <th></th>
-          <th>
-            {% trans 'Last name' %}
-            <button class="sort-ascending-button" onclick="sort_enrollments(event, 1, 1)">↑</button>
-            <button class="sort-descending-button" onclick="sort_enrollments(event, 1, -1)">↓</button>          
+          <th onclick="sort_table(event, this, 1, 1);">
+            {% trans 'Name' %}
           </th>
-          <th>
-            {% trans 'First name' %}
-            <button class="sort-ascending-button" onclick="sort_enrollments(event, 2, 1)">↑</button>
-            <button class="sort-descending-button" onclick="sort_enrollments(event, 2, -1)">↓</button>
-          </th>
-          <th>
+          <th onclick="sort_table(event, this, 2, 1);">
             {% trans 'Username' %}
-            <button class="sort-ascending-button" onclick="sort_enrollments(event, 3, 1)">↑</button>
-            <button class="sort-descending-button" onclick="sort_enrollments(event, 3, -1)">↓</button>
-          </th>          
-          <th>
-            {% trans 'Email' %}
-            <button class="sort-ascending-button" onclick="sort_enrollments(event, 4, 1)">↑</button>
-            <button class="sort-descending-button" onclick="sort_enrollments(event, 4, -1)">↓</button>        
           </th>
-          <th>{% trans 'Status' %}
-            <button class="sort-ascending-button" onclick="sort_enrollments(event, 5, 1)">↑</button>
-            <button class="sort-descending-button" onclick="sort_enrollments(event, 5, -1)">↓</button>        
+          <th onclick="sort_table(event, this, 3, 1);">
+            {% trans 'Status' %}
           </th>
-          <th>{% trans 'Note' %}</th>
           <th>{% trans 'Controls' %}</th>
         </tr>
       </thead>
@@ -80,26 +71,50 @@
         {% for user, enrollment in enrollments %}
           <tr class="enrollment-row {{ enrollment.enrollment_state.lower }}" id="{{ user.username }}-tr">
             <td class="select-cell"><input type="checkbox" name="selected-users" value="{{ user.username }}"></td>
-            <td class="last-name-cell">{{ user.last_name }}</td>
-            <td class="first-name-cell">{{ user.first_name }}</td>
+            <td class="name-cell">{{ user|full_name }}</td>
             <td class="username-cell">{{ user.username }}</td>
-            <td class="email-cell">{{ user.email }}</td>
             <td class="state-cell">{{ enrollment.enrollment_state }}</td>
-            <td class="note-cell">
-              <button class="enrollment-note-button" onclick="show_popup(event, '{{ user.username }}-enrollment-note')">show</button>
+            <td class="controls-cell">
               <div class="popup" id="{{ user.username }}-enrollment-note">
                 <div>{{ enrollment.application_note }}</div>
               </div>
-            </td>
-            <td class="controls-cell">
-              {% if enrollment.enrollment_state == "ACCEPTED" %}
-                <button class="enrollment-expel-button" onclick="process_one(event, this, 'expelled')">expel</button>
-                <a class="enrollment-user-completion-link" href="{% url 'teacher:student_completion' course instance user %}">completion</a>
-              {% elif enrollment.enrollment_state == "WAITING" %}
-                <button class="enrollment-accept-button" onclick="process_one(event, this, 'accepted')">accept</button>
-                <button class="enrollment-deny-button" onclick="process_one(event, this, 'denied')">deny</button>
-              {% else %}
-                <button class="enrollment-accept-button" onclick="process_one(event, this, 'accepted')">accept</button>
+              <button class="staff-base-button report-button"
+                type="button"
+                title="{% trans 'Show enrollment request' %}"
+                onclick="show_popup(event, '{{ user.username }}-enrollment-note')">
+              </button>
+              <a class="button-style mail-button"
+                  href="{% url 'courses:send_message' course instance user %}"
+                  title="{% trans 'Send message to student' %}"
+                  onclick="show_panel(event, this, 'message', 'message-panel', true);"
+                  deta-querystring="">
+              </a>
+              <a class="button-style inspect-button"
+                href="{% url 'teacher_tools:student_completion' course instance user %}"
+                title="{% trans 'View student completion' %}">
+              </a>
+              {% if enrollment.enrollment_state != 'TRANSFERED' %}
+                <a class="button-style copy-button"
+                    href="{% url 'teacher_tools:transfer_records' course instance user %}"
+                    title="{% trans 'Transfer records to another instance' %}"
+                    onclick="show_panel(event, this, 'transfer-records', 'message-panel', true);"
+                    deta-querystring="">
+                </a>
+                <button class="staff-base-button delete-button {% if enrollment.enrollment_state != 'ACCEPTED' %}collapsed{% endif %}"
+                  type="button"
+                  title="{% trans 'Expel student' %}"
+                  onclick="process_one(event, this, 'expelled')">X
+                </button>
+                <button class="staff-base-button add-button {% if enrollment.enrollment_state == 'ACCEPTED' %}collapsed{% endif %}"
+                  type="button"
+                  title="{% trans 'Accept enrollment' %}"
+                  onclick="process_one(event, this, 'accepted')">✔
+                </button>
+                <button class="staff-base-button deny-button {% if enrollment.enrollment_state != 'WAITING' %}collapsed{% endif %}"
+                  type="button"
+                  title="{% trans 'Deny enrollment' %}"
+                  onclick="process_one(event, this, 'denied')">
+                </button>
               {% endif %}
             </td>
           </tr>

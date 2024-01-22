@@ -1,5 +1,5 @@
 {% extends 'courses/base.html' %}
-{% load staticfiles %}
+{% load static %}
 
 {% block page-title %}Markup help{% endblock %}
 
@@ -8,7 +8,13 @@
 {# TODO: Group by markup class #}
 {% for markup in markups %}
   <div>
-    <h2 class="content-heading">{{ markup.name }}<span id="{{ markup.slug }}" class="anchor-offset"></span><a href="#{{ markup.slug }}" class="permalink" title="Permalink to {{ markup.name }}">&para;</a></h2>
+    <h2 class="content-heading">
+      {{ markup.name }}
+      <span id="{{ markup.slug }}" class="anchor-offset"></span>
+      <a href="#{{ markup.slug }}" class="permalink" title="Permalink to {{ markup.name }}">
+        &para;
+      </a>
+    </h2>
     <p>{{ markup.description }}</p>
     <h4>Example</h4>
     <pre class="normal">{{ markup.example }}</pre>

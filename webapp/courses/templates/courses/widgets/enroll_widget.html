@@ -1,0 +1,77 @@
+{% load i18n %}
+
+<div class="enroll-widget">
+{% if enroll_status == None %}
+    {% if user_authenticated %}
+      <span class="instance-userinfo">{% trans 'You are not enrolled.' %}</span>
+      {% if instance.is_active %}
+        <p><button id="{{ instance.slug }}-enroll-button" onclick="show_popup(event, '{{ instance.slug }}-enrollment-application-popup')">{% trans 'Enroll' %}</button></p>
+      {% else %}
+        <div>
+        <span class="instance-userinfo">{% trans 'Enrollment period for this course instance has closed.' %}</span>
+        </div>
+      {% endif %}
+    {% else %}
+    <span class="instance-userinfo">{% trans 'Log in to enable enrolling.' %}</span>
+    {% endif %}
+{% else %}
+    <span class="instance-userinfo">
+    {% if enroll_status == "ACCEPTED" %}
+        {% trans 'You have enrolled' %}
+    {% elif enroll_status == "DENIED" %}
+        {% trans 'Your application was not accepted' %}
+    {% elif enroll_status == "EXPELLED" %}
+        {% trans 'You have been removed from this course instance' %}
+    {% elif enroll_status == "WAITING" %}
+        {% trans 'Your enrollment is waiting confirmation' %}
+    {% elif enroll_status == "TRANSFERED" %}
+        {% trans 'Your enrollment has been transfered to another instance' %}
+    {% elif enroll_status == "WITHDRAWN" %}
+        {% trans 'You have withdrawn your enrollment' %}
+    {% endif %}
+    </span>
+    {% if enroll_status == "ACCEPTED" or enroll_status == "WAITING" %}
+        {% if instance.is_active %}
+            <form id="{{ instance.slug }}-withdraw-form" class="withdraw-form" method="POST" enctype="multipart/form-data" action="{% url 'courses:withdraw' course instance %}">
+            {% csrf_token %}
+            <input type="hidden" class="instance-hint" name="instance-slug" value="{{ instance.slug }}">
+            <input type="submit" name="submit" value="{% trans 'Withdraw' %}"></input>
+            </form>
+        {% else %}
+            <div>
+            <span class="instance-userinfo">{% trans 'Enrollment period for this course instance has closed.' %}</span>
+            </div>
+        {% endif %}
+    {% elif enroll_status == "WITHDRAWN" %}
+        {% if instance.is_active %}
+        <p><button id="{{ instance.slug }}-enroll-button" onclick="show_popup(event, '{{ instance.slug }}-enrollment-application-popup')">{% trans 'Re-Enroll' %}</button></p>
+        {% else %}
+            <div>
+            <span class="instance-userinfo">{% trans 'Enrollment period for this course instance has closed.' %}</span>
+            </div>
+        {% endif %}
+    {% endif %}
+{% endif %}
+</div>
+{% if enroll_status == None or enroll_status == "WITHDRAWN" %}
+<div class="popup" id="{{ instance.slug }}-enrollment-application-popup">
+    <div>
+    <h2>{% trans 'Enroll to' %} {{ instance.name }}</h2>
+    <form id="{{ instance.slug }}-enroll-form" class="enroll-form" method="POST" enctype="multipart/form-data" action="{% url 'courses:enroll' course instance %}">
+        {% csrf_token %}
+
+        {% if instance.manual_accept %}
+        <div class="paragraph">{% trans 'Enrollments to this course must be accepted by the teacher' %}</div>
+        <div class="paragraph">{% trans 'You can attach a note to your enrollment application by typing below' %}</div>
+        <textarea name="application-note" class="generic-textfield" placeholder="{% trans 'Type your application here' %}" rows="3"></textarea>
+        {% else %}
+        <div class="paragraph">{% trans 'Enrollments to this course are accepted automatically' %}</div>
+        {% endif %}
+
+        <input type="hidden" class="instance-hint" name="instance-slug" value="{{ instance.slug }}">
+        <input type="submit" name="submit" value="{% trans 'Send application' %}"></input>
+    </form>
+    <div class="enroll-status-msg" id="{{ instance.slug }}-enroll-status-msg"></div>
+    </div>
+</div>
+{% endif %}

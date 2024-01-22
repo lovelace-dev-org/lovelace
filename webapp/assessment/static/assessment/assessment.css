@@ -1,0 +1,133 @@
+button.ase-button {
+    float: right;
+}
+
+div.assessment-panel {
+}
+
+div.assessment-sheet, div.assessment-edit-form {
+}
+
+div.assessment-panel ul.assessment-sheet {
+    list-style-type: none;
+    padding-left: 0px;
+    margin-left: 0px;
+}
+
+div.assessment-panel ul.assessment-sheet > li.assessment-section-header {
+    background: #caeaca;
+    border: 2px solid #d0d0d0;
+
+    /*background: linear-gradient(to bottom, #caeaca, #eee);*/
+}
+
+div.assessment-panel ul.assessment-section {
+    list-style-image: url("/static/courses/debug-16.png");
+    padding-left: 30px;
+    margin-left: 0px;
+}
+
+ul.assessment-section > li.assessment-bullet {
+}
+
+li.assessment-bullet span {
+    cursor: help;
+}
+
+span.bullet-title {
+    cursor: help;
+}
+
+form.assessment-staff-form {
+    margin-bottom: 5px;
+}
+
+input.points-input {
+    width: 100%;
+    text-align: center;
+}
+
+input.comment-input {
+    width: 100%;
+}
+
+div.assessment-sheet table.assessment-table,
+form.assessment-form table.assessment-table,
+table.assessment-side-table {
+    table-layout: fixed;
+    width: 100%;
+}
+
+table.assessment-table tr.assessment-section,
+table.assessment-side-table tr.assessment-section {
+    background: #caeaca;
+    border: 2px solid #d0d0d0;
+} 
+
+table.assessment-table th:nth-child(1) {
+    width: 25px;
+}
+
+table.assessment-table th:nth-child(2) {
+    width: 25%;
+}
+
+table.assessment-table th:nth-child(3) {
+    text-align: center;
+    width: 7%;
+}
+
+table.assessment-table th:nth-child(4) {
+    text-align: center;
+    width: 5%;
+}
+
+table.assessment-table th:nth-child(5) {
+    width: 55%;
+}
+
+table.assessment-table .center-align {
+    text-align: center;
+}
+
+table.assessment-side-table th:nth-child(1) {
+    width: 25px;
+}
+
+table.assessment-side-table th:nth-child(2) {
+    width: 35%;
+}
+
+table.assessment-side-table th:nth-child(3) {
+    text-align: center;
+    width: 12%;
+}
+
+
+
+form.assessment-form table.assessment-table tbody tr:last-child,
+div.assessment-sheet table.assessment-table tbody tr:last-child {
+    border: none;
+}
+
+table.assessment-table tfoot td {
+    font-weight: bold;
+}
+
+table.submissions-table td.preserve-white {
+    white-space: pre-wrap;
+}
+
+table.submissions-table th:nth-child(2) {
+    width: 40%;
+}
+
+table.submissions-table th:last-child,  
+table.submissions-table td:last-child {
+    text-align: right;
+    width: 10%;
+}
+
+table.submissions-table tbody tr:nth-child(odd) {
+    background: #daeeda;
+}

@@ -1,0 +1,63 @@
+{% load i18n %}
+
+<form id="{{ html_id }}"
+    class="{{ html_class }}"
+    method="POST"
+    enctype="multipart/form-data"
+    action="{{ submit_url }}">
+
+        <div class="form-disclaimer">{{ disclaimer }}</div>
+
+        {% csrf_token %}
+
+        {% for field in form_object.hidden_fields %}
+            {{ field }}
+        {% endfor %}
+
+        {{ form_object.management_form }}
+
+        <table class="edit-form-table">
+          {% for form in form_object %}
+            {% if forloop.first %}
+            <thead>
+              <tr>
+                {% for field in form.visible_fields %}
+                  <th>{{ field.label_tag }}</th>
+                {% endfor %}
+              </tr>
+            </thead>
+            <tbody>
+            {% endif %}
+            <tr>
+              {% for field in form.visible_fields %}
+                <td>{{ field }}</td>
+              {% endfor %}
+              <td>
+                {% for field in form.hidden_fields %}
+                  {{ field }}
+                {% endfor %}
+              </td>
+            </tr>
+          {% endfor %}
+          <tr id="empty_form" style="display:none">
+            {% for field in form_object.empty_form.visible_fields %}
+              <td>{{ field }}</td>
+            {% endfor %}
+            <td>
+              {% for field in form_object.empty_form.hidden_fields %}
+                {{ field }}
+              {% endfor %}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <div>
+        <button type="button"
+            class="staff-base-button add-button"
+            title="{% trans 'Add new' %}"
+            onclick="duplicate_subform_tr(event, this);"
+            >+
+        </button>
+      </div>
+      <input type="submit" name="submit" value="{% trans 'Save' %}"></input>
+</form>

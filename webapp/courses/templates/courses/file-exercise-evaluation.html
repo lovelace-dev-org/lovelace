@@ -1,5 +1,5 @@
 {% load i18n %}
-{% load staticfiles %}
+{% load static %}
 
 {% if debug_json_ and user.is_staff %}
   <pre style="background-color: #cbb;">
@@ -10,23 +10,34 @@
 <div class="file-evaluation-widget">
   {# Tab selector for tests #}
   <div class="test-tab-selector-box">
-    {% for test_info in evaluation_tree.tests|dictsort:"test_id" %}<div class="test-tab-selector {% if test_info.correct %}correct-test{% else %}incorrect-test{% endif %}" onclick="activate_test_tab({{ test_info.test_id }}, this);">
+    {% for test_info in evaluation_tree.tests|dictsort:"test_id" %}
+      <div class="
+            test-tab-selector
+            {% if test_info.correct %}correct-test{% else %}incorrect-test{% endif %}
+          "
+          onclick="activate_test_tab({{ test_info.test_id }}, this);">
         
         {% if test_info.correct %}
           <img src="{% static 'courses/correct-16.png' %}" alt="{% trans 'Correct' %}">
         {% else %}
           <img src="{% static 'courses/incorrect-16.png' %}" alt="{% trans 'Incorrect' %}">
-          {% endif %}
-          {{ test_info.name }}
-      </div>{% endfor %}
+        {% endif %}
+        {{ test_info.name }}
+      </div>
+    {% endfor %}
   </div>
 
   {% for test_info in evaluation_tree.tests|dictsort:"test_id" %}
     {# One tab, named after the test name, for each test #}
-    <div class="test-evaluation-tab" id="file-test-{{ test_info.test_id }}" style="display: {% if forloop.first %}block{% else %}none{% endif %};">
+    <div class="test-evaluation-tab"
+         id="file-test-{{ test_info.test_id }}"
+         style="display: {% if forloop.first %}block{% else %}none{% endif %};">
       {% for stage_info in test_info.stages|dictsort:"ordinal_number" %}
         <div class="test-evaluation-stage">
-          <div class="test-evaluation-stage-name{% if stage_info.fail %} test-evaluation-stage-fail{% endif %}">{{ stage_info.name }}</div>
+          <div class="
+                 test-evaluation-stage-name{% if stage_info.fail %} test-evaluation-stage-fail{% endif %}
+               ">{{ stage_info.name }}
+          </div>
         
           {% for cmd_info in stage_info.commands|dictsort:"ordinal_number" %}
             <div class="test-evaluation-heading">Command</div>
@@ -39,25 +50,42 @@
             {% endif %}
 
             {% if cmd_info.expected_retval != None %}
-              <div class="test-evaluation-msg {% if cmd_info.retval != cmd_info.expected_retval %}test-evaluation-msg-attention{% endif %}">
+              <div class="
+                     test-evaluation-msg
+                     {% if cmd_info.retval != cmd_info.expected_retval %}test-evaluation-msg-attention{% endif %}
+                   ">
                 {% if cmd_info.retval == None %}
                   Was terminated without a return value,
                 {% else %}
-                  Exited with return value <span class="retval {% if cmd_info.retval == cmd_info.expected_retval %}retval-correct{% else %}retval-incorrect{% endif %}">{{ cmd_info.retval }}</span>,
+                  Exited with return value
+                  <span class="
+                          retval
+                          {% if cmd_info.retval == cmd_info.expected_retval %}
+                            retval-correct
+                          {% else %}
+                            retval-incorrect
+                          {% endif %}
+                        ">{{ cmd_info.retval }}
+                  </span>,
                 {% endif %}
-                while the expected return value was <span class="retval">{{ cmd_info.expected_retval }}</span>.
+                while the expected return value was
+                <span class="retval">{{ cmd_info.expected_retval }}</span>.
               </div>
             {% endif %}
 
             {% if cmd_info.timedout %}
               <div class="test-evaluation-msg test-evaluation-msg-attention">
-                Stopped responding and timed out after <span class="cmd-runtime">{{ cmd_info.runtime|floatformat:2 }}</span> seconds.
+                Stopped responding and timed out after
+                <span class="cmd-runtime">{{ cmd_info.runtime|floatformat:2 }}</span>
+                seconds.
               </div>
             {% endif %}
 
             {% if cmd_info.killed %}
               <div class="test-evaluation-msg test-evaluation-msg-attention">
-                Refused TERM signal and was KILLED after <span class="cmd-runtime">{{ cmd_info.runtime|floatformat:2 }}</span> seconds.
+                Refused TERM signal and was KILLED after
+                <span class="cmd-runtime">{{ cmd_info.runtime|floatformat:2 }}</span>
+                seconds.
               </div>
             {% endif %}
             

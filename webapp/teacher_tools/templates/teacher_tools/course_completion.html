@@ -1,5 +1,5 @@
 {% extends 'courses/base.html' %}
-{% load staticfiles %}
+{% load static %}
 {% load i18n %}
 {% load course_tags %}
 
@@ -8,6 +8,7 @@
 {% endblocktrans %}{% endblock %}
 
 {% block extra-static %}
+  <link rel="stylesheet" href="{% static 'teacher_tools/style.css' %}">
   <script src="{% static 'teacher_tools/completion.js' %}"></script>
 {% endblock %}
 
@@ -25,6 +26,7 @@
     {% endblocktrans %}
   </h1>
 
+  {% comment %}
   <div class="paragraph">{% trans 'Statistics can be requested as downloadable CSV using the link below' %}</div>
   
   <div class="csv-request">
@@ -36,15 +38,66 @@
   <div class="task-progress"></div>
   
   <div class="csv-download"></div>
-  
-  <div class="paragraph">{% trans 'Detailed student results can be accessed from below' %}</div>
-  
-  <ul class="student-list">
-    {% for user in users %}
-      <li class="student-bullet"><a href="{% url 'teacher_tools:student_completion' course instance user %}">{{ user.last_name }} {{ user.first_name }} ({{ user.username }})</a></li>
-    {% endfor %}
-  </ul>
+  {% endcomment %}
+
+  <div class="paragraph">{% trans 'Scores and grades can be filled into the table using the link below' %}</div>
+  <div class="csv-request">
+    <a href="{% url 'teacher_tools:request_grades' course instance %}" onclick="request_grades(event, this)">
+      {% trans 'Calculate grades' %}
+    </a>
+  </div>
+
+  <div class="paragraph">
+    {% blocktrans with students=users|length %}
+      Number of students: {{ students }}
+    {% endblocktrans %}
+  </div>
+
+  <div class="large-table-container">
+    <table class="fixed alternate-green completion-table">
+      <colgroup>
+        <col class="name">
+        <col class="page-results" span="1">
+        <col class="course-results" span="3">
+        <col class="actions-cell">
+      </colgroup>
+      <caption>
+        {% trans 'Results table' %}
+        <div class="table-controls collapsed">
+          <button class="button" onclick="toggle_cell_data(event, this, 'data-score');">Show Score</button>
+          <button class="button" onclick="toggle_cell_data(event, this, 'data-missing');">Show Missing</button>
+        </div>
+      </caption>
+      <thead>
+        <tr>
+          <th class="sticky-left horizontal-th" onclick="sort_table(event, this, 0, 1);">{% trans 'Name' %}</th>
+          <th class="vertical-th page-result-placeholder"></th>
+          <th class="vertical-th" id="missing-th">{% trans 'Miss' %}</th>
+          <th class="vertical-th" id="score-th">{% trans 'Weighted Score' %}</th>
+          <th class="vertical-th" id="grade-th">{% trans 'Grade' %}</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for user in users %}
+          <tr id="{{ user.id }}">
+            <td class="sticky-left">{{ user|full_name }}</td>
+            <td class="page-result-placeholder"></td>
+            <td class="grade-missing"></td>
+            <td class="grade-score"></td>
+            <td class="grade-grade"></td>
+            <td>
+              <a class="button-style inspect-button"
+                href="{% url 'teacher_tools:student_completion' course instance user %}"
+                title="{% trans 'View student completion' %}">
+              </a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 {% endblock %}
-  
+
     
 

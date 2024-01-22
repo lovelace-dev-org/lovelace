@@ -1,0 +1,144 @@
+{% extends 'courses/base.html' %}
+
+{% load i18n %}
+{% load static %}
+{% load course_tags %}
+
+{% block extra-static %}
+<script src="{% static 'courses/groups.js' %}"></script>
+{% endblock %}
+
+{% block breadcrumb-links %}
+  <li><a href="{% url 'courses:index' %}">{% trans 'Courses' %}</a></li>
+  <div class="separator">»</div>
+  <li>
+    <a href="{% url 'courses:course' course instance %}">
+      {{ course.name }}&nbsp;/&nbsp;{{ instance_name }}
+    </a>
+  </li>
+  <div class="separator">»</div>
+  {% if group %}
+  <li><a href="{% url 'courses:group_info' course instance %}">{{ group.name }}</a></li>
+  {% endif %}
+{% endblock %}
+
+
+{% block page-content %}
+  {% if group %}
+    <h1>{{ group.name }} {% trans 'group info' %}</h1>
+
+    <div class="expand-handle" onclick="expand_next_div(this);">
+      {% trans 'Show group settings' %}
+    </div>
+    <div class="collapsed">
+      {{ config_form|safe }}
+    </div>
+
+    <hr class="hr-evenly-spaced">
+
+    <div class="group-members">
+      <h2>{% trans 'Group Members' %} ({{ member_count }} / {{ max_members }})</h2>
+      <table class="group-member-table full-width">
+        <thead>
+          <tr>
+            <th>{% trans 'Last Name' %}</th>
+            <th>{% trans 'First Name' %}</th>
+            <th>{% trans 'Email' %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for member in group.members.get_queryset %}
+            <tr>
+              <td>{{ member.last_name }}</td>
+              <td>{{ member.first_name }}</td>
+              <td>{{ member.email }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if invites %}
+      <h2>{% trans 'Member invitations' %}</h2>
+      <div class="group-invite-list">
+        <table class="group-member-table full-width">
+          <thead>
+            <tr>
+              <th>{% trans 'Last Name' %}</th>
+              <th>{% trans 'First Name' %}</th>
+              <th>{% trans 'Email' %}</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for invite in invites %}
+              <tr>
+                <td>{{ invite.user.last_name }}</td>
+                <td>{{ invite.user.first_name }}</td>
+                <td>{{ invite.user.email }}</td>
+                <td class="actions-cell">
+                  <button type="button"
+                      class="staff-base-button delete-button"
+                      title="{% trans 'Cancel this invitation' %}"
+                      onclick="grp.process_invite(event, this);"
+                      data-url="{% url 'courses:cancel_invitation' course instance group invite %}"
+                      data-csrf="{{ csrf_token }}">X
+                  </button>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+    {% if slots %}
+      <h2>{% trans 'Invite members' %}</h2>
+      <div class="group-invite-form">
+        {{ invite_form|safe }}
+      </div>
+    {% endif %}
+  {% endif %}
+  {% if invited_to %}
+    <h1>{% trans 'Join a group you have been invited to' %}</h1>
+    <div class="invited-to-list">
+      <table class="group-member-table full-width">
+        <thead>
+          <tr>
+            <th>{% trans 'Group Name' %}</th>
+            <th>{% trans 'Invited by' %}</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for invite in invited_to %}
+            <tr>
+              <td>{{ invite.group.name }}</td>
+              <td>{{ invite.sender|full_name }}</td>
+              <td>
+                <button type="button"
+                    title="{% trans 'Accept this invitation' %}"
+                    onclick="grp.process_invite(event, this);"
+                    data-url="{% url 'courses:accept_invitation' course instance invite %}"
+                    data-csrf="{{ csrf_token }}">{% trans 'Accept' %}
+                </button>
+
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <h1>{% trans 'Create a new group' %}</h1>
+
+    <div>
+      {{ config_form|safe }}
+    </div>
+  {% endif %}
+
+  <script>
+    $(".invite-form").submit(grp.submit_form);
+  </script>
+
+{% endblock %}
+

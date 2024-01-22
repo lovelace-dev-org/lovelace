@@ -1,0 +1,68 @@
+{% load i18n %}
+{% load static %}
+{% load assessment_tags %}
+
+<div class="assessment-panel">
+    <h2 class="assessment-form-title">{{ document.title }}</h2>
+
+    <div class="assessment-info">
+        <span class="assessment-time">
+            {{ document.assessment_date }} @ {{ document.assessment_time }}
+        </span>
+        <span class="assessment-author">
+            {{ document.author_fn }} {{ document.author_ln }}
+        </span>    
+    </div>
+    
+    <div class="assessment-sheet">
+        <table class="assessment-table">            
+            <thead>
+                <tr>
+                    <th></th>
+                    <th></th>
+                    <th>points</th>
+                    <th>max</th>
+                    <th>comment</th>        
+                </tr>
+            </thead>
+            <tbody>
+                {% for section in document.sections %}
+                    <tr class="assessment-section">
+                        <td colspan="2">{{ section.name }}</td>
+                        <td class="center-align">{{ section.section_points }}</td>
+                        <td class="center-align">{{ section.max_points }}</td>
+                        <td></td>
+                    </tr>
+                    {% for bullet_id in section.bullets %}
+                        {% with bullet=document.bullet_index|bullet_lookup:bullet_id %}
+                            <tr class="assessment-bullet">
+                                <td><img src="{% static 'courses/debug-16.png' %}"></td>
+                                <td>
+                                    <span class="bullet-title" title="{{ bullet.tooltip }}">
+                                        {{ bullet.title }}
+                                    </span>
+                                </td>
+                                <td class="center-align">
+                                    {{ bullet.scored_points }}
+                                </td>
+                                <td class="center-align">{{ bullet.max_points }}</td>
+                                <td>
+                                    {{ bullet.comment }}
+                                </td>
+                            </tr>
+                        {% endwith %}
+                    {% endfor %}
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td class="center-align">{{ document.total_score }}</td>
+                    <td class="center-align">{{ document.max_total }}</td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>

@@ -4,28 +4,42 @@ table.fixed {
     table-layout: fixed;
     width: 100%;
 }
+table.answers-table > tbody > tr:nth-child(odd) {
+    /*background: #caeaca;*/
+    background: #daeeda;
+}
+
 col.answer-date {
-    width: 130px;
+    width: 15%;
 }
 col.answer {}
+
 col.evaluation {
-    width: 114px;
+    width: 12%;
 }
-col.permalink {
-    width: 117px;
+
+col.actions-cell {
+    width: 20%
 }
 
 tr:target {
-    background: #efc;
+    background: #efc !important; 
 }
 
 td.answer-date {
     text-align: center;
 }
 td.answer {}
+
 td.answer.render-white-space {
     white-space: pre-wrap;
 }
+
+td.answer.monospace {
+    font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
+    font-size: 1.2rem;    
+}
+
 td.evaluation {
     text-align: center;
 }

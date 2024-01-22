@@ -1,29 +1,13 @@
-{% extends 'courses/exercise.html' %}
 {% load i18n %}
-{% load staticfiles %}
+<textarea name="answer" class="task_text" placeholder="{% trans 'Enter your answer here' %}" rows="3"></textarea><br>
 
-{% block extra-content %}
-  <button id="rt-{{ content.id }}" onclick="start_repeated_template_session(event);" class="rt-interaction"
-            data-url="{% url 'courses:get_repeated_template_session' course instance content "head" %}"
-            data-start-text="{% trans 'Start exercise session' %}" 
-            data-next-text="{% trans 'Next' %}"
-            data-start-over-text="{% trans 'Start over' %}">
-  {% trans 'Start exercise session' %}
-  </button>
-  <div class="rt-question-area">
-    <div class="rt-progress"><span class="rt-progress-tag">{{ progress }}</span></div>
-    <div class="repeated-template">{{ rendered_template }}</div>
-  </div>
-{% endblock %}
-
-{% block exercise-form %}
-  <textarea name="answer" class="task_text" placeholder="{% trans 'Enter your answer here' %}" rows="3"></textarea><br>
-{% endblock %}
-
-{% block exercise-form-extra %}
-  <script>
+<script>
     (function() {
-      $(document.currentScript).parent().parent().parent().find("form :input").prop("disabled", "true");
+      $(document.currentScript)
+      .parent()
+      .parent()
+      .parent(".embedded-page")
+      .find("form :input")
+      .prop("disabled", "true");
     })();
-  </script>
-{% endblock %}
+</script>

@@ -1,0 +1,279 @@
+{% load static %}
+{% load i18n %}
+{% load course_tags %}
+
+
+<div class="embedded-page">
+{% if user.is_active %}
+  <div class="task-meta-container">
+    <div class="task-meta" data-eval-group="{{ content.evaluation_group }}">
+      {% if not sandboxed %}
+        {% if evaluation == "unanswered" %}
+          <img src="{% static 'courses/unanswered-96.png' %}" width="96" height="96" alt="?"
+             title="{% trans 'You haven’t answered this exercise yet' %}"
+             class="unanswered">
+        {% elif evaluation == "incorrect" %}
+          <img src="{% static 'courses/incorrect-96.png' %}" width="96" height="96" alt="✘"
+             title="{% trans 'You have answered this exercise incorrectly' %}"
+             class="incorrect">
+        {% elif evaluation == "correct" %}
+          <img src="{% static 'courses/correct-96.png' %}" width="96" height="96" alt="✔"
+             title="{% trans 'You have answered this exercise correctly' %}"
+             class="correct">
+        {% elif evaluation == "credited" %}
+          <img src="{% static 'courses/credited-96.png' %}" width="96" height="96" alt="✔"
+             title="{% trans 'You have answered another exercise in this set correctly' %}"
+             class="credited">
+        {% elif evaluation == "submitted" %}
+          <img src="{% static 'courses/submitted-96.png' %}" width="96" height="96" alt="->"
+             title="{% trans 'Your submitted answer is waiting for staff assessment' %}"
+             class="submitted">
+        {% endif %}
+
+        <div class="task-meta-score">
+          <span>{{ score|floatformat:"2" }}</span> <span> / {{ max_points }}</span>
+        </div>
+
+        {% comment %}
+        <hr>
+        Deadline: yyyy-mm-dd
+        <hr>
+        {% endcomment %}
+
+        {% if not sandboxed %}
+          <hr>
+          <div>
+            <a href="{% url 'courses:show_answers' user course instance content %}"
+               class="user-answers-link"
+               title="{% trans 'View your previous answers' %}">
+              {% blocktrans count counter=answer_count %}
+                <span class="answer-count">{{ counter }}</span>
+                answer{% plural %}
+                <span class="answer-count">{{ counter }}</span>
+                answers{% endblocktrans %}
+            </a>
+          </div>
+          <div>
+            <a id="{{ content.slug }}-faq-panel-link"
+               class="faq-panel-link"
+               href="{% url 'faq:faq_panel' course instance content %}"
+               title="{% trans 'Open the FAQ panel' %}"
+               onclick="show_panel(event, this, 'faq', '{{ content.slug }}-panel');"
+               data-querystring="">{% trans 'Frequently Asked Questions' %}
+            </a>
+          </div>
+          {% if content.manually_evaluated %}
+              <div>
+                <a id="{{ content.slug }}-faq-panel-link"
+                   class="assessment-panel-link"
+                   href="{% url 'assessment:view_assessment_sheet' course instance content %}"
+                   title="{% trans 'View assessment sheet' %}"
+                   onclick="show_panel(event, this, 'assessment-view', '{{ content.slug }}-panel');"
+                   data-querystring="">{% trans 'Assessment Criteria' %}
+                </a>
+              </div>
+          {% endif %}          
+        {% endif %}
+      {% endif %}
+
+      {% if user.is_active and user.is_staff %}
+        <hr>
+      
+        <div class="admin-tools">
+          <div><b>{% trans "Teacher’s tools" %}</b></div>
+          <ul>
+            <li><div><a href="{{ meta.stats_url }}">{% trans 'Statistics' %}</a></div></li>
+            <li><div><a href="{{ meta.feedback_url }}">{% trans 'Feedback' %}</a></div></li>
+              {% if content.content_type == "FILE_UPLOAD_EXERCISE" %}
+                <li><div>
+                  <a href="{{ meta.download_url }}">
+                    {% trans 'Download answers' %}
+                  </a>
+                </div></li>
+                <li><div>
+                  <a href="{{ meta.plagiarism_url }}">
+                    {% trans 'Check plagiarism' %}
+                  </a>
+                </div></li>
+              {% else %}
+                <li><div>
+                  <a href="{{ meta.summary_url }}">
+                    {% trans 'Answer summary' %}
+                  </a>
+                </div></li>
+                <li><div>
+                  <a id="{{ content.slug }}-batch-panel-link"
+                     class="batch-panel-link"
+                     href="{{ meta.batch_url }}"
+                     title="{% trans 'Open the batch grading panel' %}"
+                     onclick="show_panel(event, this, 'batch-panel', '{{ content.slug }}-panel');"
+                     data-querystring="">{% trans 'Batch grading' %}
+                  </a>
+                </div></li>
+              {% endif %}
+
+            <li><div><a href="{{ meta.edit_url }}">
+                {% trans 'Edit this exercise' %}
+            </a></div></li>
+            {% if content.manually_evaluated %}
+                <li><div>
+                    <a href="{% url 'assessment:view_submissions' course instance content %}">
+                        {% trans 'View Submissions' %}
+                    </a>
+                </div></li>
+                {% if revision is None %}
+                    <li><div>
+                        <a id="{{ content.slug }}-assessment-panel-link"
+                           class="assessment-panel-link"
+                           href="{% url 'assessment:manage_assessment' course instance content %}"
+                           title="{% trans 'Open the assessment edit panel' %}"
+                           onclick="show_panel(event, this, 'assessment-manage', '{{ content.slug }}-panel');"
+                           data-querystring="">{% trans 'Edit Assessment' %}
+                        </a>
+                    </div></li>
+                {% endif %}
+            {% endif %}
+            {% embed_staff_extra content %}
+            {% comment %}
+              <li><div><a href="TODO">{% trans 'View reference answer' %}</a></div></li>
+              <li>
+                <div>
+                  <a href="{% url 'courses:sandbox' content.slug %}">{% trans 'View separately' %}</a>
+                </div>
+              </li>
+            {% endcomment %}
+          </ul>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+{% endif %}
+
+{% if emb.revision and emb.revision > 0 and course_staff %}
+  <div class="revision-info-embedded">
+    This is an old revision № {{ emb.revision }} of this embedded page!
+  </div>
+{% endif %}
+
+<div>
+  {% for block_type, block_data, line_idx, line_count in emb.content %}
+    {% if block_type == "extra" %}
+      {{ block_data|safe }}
+    {% else %}
+      {% if course_staff and revision is None and block_type != "cleanup" %}
+        <span>
+          {% if block_type not in uneditable_markups %}
+            <a class="staff-only collapsed"
+              href="{{ meta.edit_content_url }}"
+              onclick="editing.show_widget_panel(event, this)"
+              data-querystring="line={{ line_idx }}&block={{ block_type }}&size={{ line_count }}"
+              data-csrf="{{ csrf_token }}"><img src="{% static 'courses/edit.png' %}"></a>
+          {% endif %}
+          <a class="staff-only collapsed"
+            href="{{ meta.delete_content_url }}"
+            onclick="editing.show_widget_panel(event, this)"
+            data-querystring="line={{ line_idx }}&block={{ block_type }}&size={{ line_count }}"
+            data-csrf="{{ csrf_token }}"><img src="{% static 'courses/delete-16.png' %}"></a>
+          <a class="staff-only collapsed"
+            href="{{ meta.add_content_url }}"
+            onclick="editing.show_widget_panel(event, this)"
+            data-querystring="line={{ line_idx }}&size={{ line_count }}"
+            data-csrf="{{ csrf_token }}"><img src="{% static 'courses/expand-16.png' %}"></a>
+        </span>
+      {% endif %}
+      {{ block_data|safe }}
+    {% endif %}
+  {% endfor %}
+</div>
+
+<div class="question">
+  <div class="results-box hints" style="display: none">
+    <span class="results-header">{% trans 'Hints' %}</span>
+    <div class="hints-list"></div>
+  </div>
+
+  {% block panel %}
+    <div class="side-panel" id="{{ content.slug }}-panel">
+        <button type="button"
+                class="side-panel-closer"
+                title="{% trans 'Close the panel' %}"
+                onclick="hide_panel(event, '{{ content.slug }}-panel');"
+        >&lt;&lt;</button>
+        <div class="panel-container"></div>
+    </div>
+  {% endblock %}
+  
+  <form id="{{ content.slug }}-form"
+        class="exercise-form"
+        method="POST"
+        enctype="multipart/form-data"
+        action="{{ meta.submit_url }}">
+    
+    {% csrf_token %}
+    {% if emb.question %}{{ emb.question|safe }}{% endif %}
+    
+    {{ emb.form|safe }}
+    
+    {% if content.answer_limit %}
+    {% endif %}
+
+    {% if course_staff or enrolled %}
+      {% if content.answer_limit %}
+        {% if answer_count >= content.answer_limit %}
+          <input type="submit" name="submit" value="{% trans 'Send answer' %}" disabled>
+        {% else %}
+          <input type="submit" name="submit" value="{% trans 'Send answer' %}">
+        {% endif %}
+        <div class="answer-limit">
+          {% trans "Attempts:" %}
+          <span>{{ answer_count }}</span>
+          <span> / {{ content.answer_limit }}</span>
+        </div>
+      {% else %}
+        <input type="submit" name="submit" value="{% trans 'Send answer' %}">
+      {% endif %}
+    {% else %}
+      {% if not user.is_authenticated %}
+        <div class="auth-warning">
+          {% trans "Warning: You have not logged in. You cannot answer." %}
+        </div>
+      {% else %}
+        <div class="auth-warning">
+          {% trans "Warning: You have not enrolled to this course instance. You cannot answer." %}
+        </div>
+        <input type="submit" name="submit" value="{% trans 'Send answer' %}" disabled>
+      {% endif %}
+    {% endif %}
+
+    {% if evaluation == "unanswered" %}
+      <div class="answered-status"></div>
+    {% elif evaluation == "incorrect" %}
+      <div class="answered-status">
+        <span class="incorrect">
+          {% trans "You have previously answered this task incorrectly." %}
+        </span>
+      </div>
+    {% elif evaluation == "correct" %}
+      <div class="answered-status">
+        <span class="correct">
+          {% trans "You have already answered this task correctly." %}
+        </span>
+      </div>
+    {% endif %}
+
+  </form>
+  <div class="results-box error" style="display: none"></div>
+  <div class="results-box result" style="display: none"></div>
+  <div class="results-box file-result" style="display: none"></div>
+  <div class="results-box msgs" style="display: none">
+    <span class="results-header">{% trans 'Messages' %}</span>
+    <div class="msgs-list"></div>
+  </div>
+  <div class="results-box comments" style="display: none"></div>
+</div>
+
+{% block feedback %}
+  {% feedbacks %}
+{% endblock %}
+</div>
+    

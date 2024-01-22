@@ -1,0 +1,17 @@
+{% load i18n %}
+{% load static %}
+
+  <textarea name="answer" class="task_text" placeholder="{% trans 'Enter your answer here' %}" rows="3"></textarea><br>
+
+    <script src="{% static 'routine_exercise/routine.js' %}"></script>  
+    <script>
+    (function() {
+      $(document.currentScript).parent().parent().find("form :input").prop("disabled", "true");
+      {% if revision %}
+        $(document.currentScript).parent().parent().find("form").prop("action", "{% url 'routine_exercise:check_routine_question' course instance content revision %}");
+      {% elif instance %}
+        $(document.currentScript).parent().parent().find("form").prop("action", "{% url 'routine_exercise:check_routine_question' course instance content 'head' %}");
+      {% endif %}
+    })();
+   </script>
+

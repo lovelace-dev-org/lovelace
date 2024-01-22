@@ -2,47 +2,154 @@
 {% load course_tags %}
 
 <div class="calendar">
+    {% if course_staff %}
+        <div class="staff-panel staff-only collapsed">
+            <button type="button"
+                    class="staff-base-button settings-button"
+                    title="{% trans 'Calendar settings' %}"
+                    onclick="cal.fetch_form(event, this);"
+                    data-url="{% url 'courses:calendar_config' course instance calendar %}">
+            </button>
+            <button type="button"
+                    class="staff-base-button add-button"
+                    title="{% trans 'Add calendar events' %}"
+                    onclick="cal.fetch_form(event, this);"
+                    data-url="{% url 'courses:calendar_scheduling' course instance calendar %}">+
+            </button>
+            <a class="button-style mail-button"
+               href="{% url 'courses:message_reservers' course instance calendar %}"
+               title="{% trans 'Send message to all reservers' %}"
+               onclick="show_panel(event, this, 'message', 'message-panel', true);"
+               deta-querystring="">
+            </a>
+        </div>
+    {% endif %}
+
   {% for event, reservations in cal_reservations %}
-    <form method="POST" action="{% url 'courses:calendar_post' cal_id event.id %}">
+    <form method="POST" action="{% url 'courses:calendar_reservation' calendar event %}">
       {% csrf_token %}
-      <input type="hidden" name="reserve" value="{% if reservations.1 %}0{% else %}1{% endif %}">
+      <input type="hidden" 
+             name="reserve" 
+             value="{% if event.id in reserved_event_ids %}0{% else %}1{% endif %}">
       <fieldset>
         <legend>{{ event.event_name }}</legend>
-        <div class="datetime">
-          <div><strong>{% trans "From" %}: {{ event.start_time|date:"l, Y-m-d, H:i" }}</strong></div>
-          <div>{% trans "Duration" %}: {{ event.duration|event_duration }}</div>
+        <div class="datetime {% if reservations|length >= event.reservable_slots %}event-full{% endif %}">
+          <div>
+            <strong>{{ event.start_time|date:"l, Y-m-d, H:i" }}</strong>
+            {% if course_staff %}
+                <button type="button"
+                        class="staff-base-button delete-button staff-only collapsed right-float"
+                        title="{% trans 'Reduce slots' %}"
+                        onclick="cal.adjust_slots(event, this);"
+                        data-csrf="{{ csrf_token }}"
+                        data-url="{% url 'courses:adjust_calendar_slots' course instance event 'decr' %}">-
+                </button>
+                <button type="button"
+                        class="staff-base-button add-button staff-only collapsed right-float"
+                        title="{% trans 'Increase slots' %}"
+                        onclick="cal.adjust_slots(event, this);"
+                        data-csrf="{{ csrf_token }}"
+                        data-url="{% url 'courses:adjust_calendar_slots' course instance event 'incr' %}">+
+                </button>                
+            {% endif %}
+          </div>
+          <div>
+            <span>{{ event.duration|event_duration }}</span>
+            <span class="right-float">
+              {{ reservations|length }}&nbsp;/&nbsp;{{ event.reservable_slots }}
+            </span>
+          </div>
         </div>
-        <div class="description">{{ event.event_description }}</div>
-        <div class="{% if reservations|length >= event.reservable_slots %}full-cal{% else %}free-cal{% endif %}">{% trans "Reserved/total slots:" %} {{ reservations.0|length }}&nbsp;/&nbsp;{{ event.reservable_slots }}</div>
-
-        {% if user.is_staff %}
-          {% if reservations.0 %}
-            <div>{% trans "The following users have reserved a slot:" %}</div>
-            <ul>
-              {% for e_user in event.get_users %}
-                <li>{{ e_user.user__first_name }} {{ e_user.user__last_name }}, {{ e_user.user__userprofile__student_id }}, {{ e_user.user__username }}, {{ e_user.user__email }}</li>
-              {% endfor %}
-            </ul>
+        {% if event.event_description %}
+            <div class="description">{{ event.event_description }}</div>
+        {% endif %}
+        {% if course_staff %}
+          {% if reservations %}
+            <table class="full-width staff-only collapsed">
+                <thead>
+                    <tr>
+                        <th>{% trans 'Reserver' %}</th>
+                        <th>{% trans 'Group' %}</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in reservations %}
+                        <tr>
+                            <td>{{ entry.reserver }}</td>
+                            <td class="preserve-white">{{ entry.group }}</td>
+                            <td class="actions-cell">
+                                <a class="button-style inspect-button"
+                                   href="{{ entry.answers_url }}"
+                                   title="{% trans 'View answers' %}">
+                                </a>
+                                <a class="button-style mail-button"
+                                   href="{{ entry.message_url }}"
+                                   title="{% trans 'Send message to reserver' %}"
+                                   onclick="show_panel(event, this, 'message', 'message-panel', true);"
+                                   deta-querystring="">
+                                </a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>             
+            </table>
           {% else %}
-            <div>{% trans "No reservations." %}</div>
+            <div class="staff-only collapsed">{% trans "No reservations." %}</div>
           {% endif %}
         {% endif %}
 
-        {% if user.is_authenticated and not reservations.1 %}
-          <div class="reservation-result"></div>
-          {% if reservations.0|length >= event.reservable_slots %}
-            <div><input type="submit" value="{% trans 'Reserve a slot' %}" disabled="disabled"></div>
+        {% if user.is_authenticated and can_reserve %}
+            {% if user.is_authenticated and event.id in reserved_event_ids %}
+              <div class="reservation-result">
+                {% trans "You have been reserved a slot in" %} {{ event.event_name }}.
+              </div>
+              <div><input type="submit"
+                           value="{% trans 'Cancel reservation' %}"
+                           onClick="cal.reserve_slot(event, this);return false;"
+                           data-reserve-text="{% trans 'Reserve a slot' %}"
+                           data-cancel-text="{% trans 'Cancel reservation' %}">
+              </div>
+         
+          {% elif reservations|length >= event.reservable_slots %}
+            <div class="reservation-result collapsed"></div>
+            <div><input type="submit"
+                        value="{% trans 'Reserve a slot' %}"
+                        onClick="cal.reserve_slot(event, this);return false;"
+                        disabled="disabled"
+                        data-reserve-text="{% trans 'Reserve a slot' %}"
+                        data-cancel-text="{% trans 'Cancel reservation' %}">
+            </div>
           {% else %}
-            <div><input type="submit" value="{% trans 'Reserve a slot' %}" onClick="reserve_slot(event, this);return false;"></div>
+            <div class="reservation-result collapsed"></div>
+            <div><input type="submit" 
+                        value="{% trans 'Reserve a slot' %}"
+                        onClick="cal.reserve_slot(event, this);return false;"
+                        data-reserve-text="{% trans 'Reserve a slot' %}"
+                        data-cancel-text="{% trans 'Cancel reservation' %}">
+            </div>
           {% endif %}
-        {% elif user.is_authenticated and reservations.1 and event.id in reserved_event_ids %}
-          <div class="reservation-result">{% trans "You have been reserved a slot in" %} {{ event.event_name }}.</div>
-          <div><input type="submit" value="{% trans 'Cancel reservation' %}" onClick="reserve_slot(event, this);return false;"></div>
+        {% elif user.is_authenticated and event.id in reserved_event_ids %}
+          <div class="reservation-result">
+            {% trans "You have been reserved a slot in" %} {{ event.event_name }}.
+          </div>
+          <div><input type="submit"
+                      value="{% trans 'Cancel reservation' %}"
+                      onClick="cal.reserve_slot(event, this);return false;"
+                      data-reserve-text="{% trans 'Reserve a slot' %}"
+                      data-cancel-text="{% trans 'Cancel reservation' %}">
+          </div>
         {% else %}
-          <div><input type="submit" value="{% trans 'Reserve a slot' %}" disabled="disabled"></div>
+          <div class="reservation-result collapsed"></div>
+          <div><input type="submit" 
+                      value="{% trans 'Reserve a slot' %}"
+                      onClick="cal.reserve_slot(event, this);return false;"
+                      disabled="disabled"
+                      data-reserve-text="{% trans 'Reserve a slot' %}"
+                      data-cancel-text="{% trans 'Cancel reservation' %}">
+          </div>
         {% endif %}
       </fieldset>
     </form>
   {% endfor %}
 </div>
-
