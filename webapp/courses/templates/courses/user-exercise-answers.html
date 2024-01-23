@@ -94,9 +94,7 @@
         </ul>
       </td>
     {% else %}{# No answers, e.g. files, were sent #}
-      <td class="answer {{ answer.html_extra_class }}">
-        {% rendered_answer answer %}
-      </td>
+      <td class="answer {{ answer.html_extra_class }}">{% rendered_answer answer %}</td>
     {% endif %}
     {% if completion.state == "correct" or completion.state == "incorrect" %}
       <td class="

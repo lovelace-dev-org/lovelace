@@ -602,6 +602,8 @@ def batch_grade_task(request, course, instance, content):
         else:
             exercise = get_single_archived(content, link.revision)
 
+        print(exercise)
+
         answer_model = content.get_answer_model()
         answers = (
             answer_model.objects.filter(

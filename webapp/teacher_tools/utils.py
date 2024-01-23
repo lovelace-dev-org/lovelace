@@ -134,7 +134,7 @@ def reconstruct_answer_form(task_type, answer):
         answer_form.update({
             "attempt_id": answer.attempt.id
         })
-        for key, choices in answer.answers.items():
+        for key, (choices, certainty) in answer.answers.items():
             answer_form.setlist(key, choices)
         return answer_form
 

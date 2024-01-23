@@ -1192,6 +1192,7 @@ class ContentPage(models.Model):
         answer_object.evaluation.max_points = evaluation.get("max", self.default_points)
         answer_object.evaluation.feedback = evaluation.get("feedback", "")
         answer_object.evaluation.evaluator = evaluation.get("evaluator", None)
+        answer_object.evaluation.test_results = evaluation.get("test_results", "")
         answer_object.evaluation.save()
         if complete:
             update_completion(
