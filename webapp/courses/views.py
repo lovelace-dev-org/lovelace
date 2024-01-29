@@ -337,7 +337,7 @@ def check_answer(request, course, instance, content, revision):
         return HttpResponseNotAllowed(["POST"])
 
     user = request.user
-    ip = request.META.get("REMOTE_ADDR")
+    ip = request.META.get("HTTP_X_REAL_IP") or request.META.get("REMOTE_ADDR")
     answer = request.POST
     files = request.FILES
 
