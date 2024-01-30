@@ -20,6 +20,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/dev/ref/settings/
 """
 
+import json
 import os
 from kombu import Exchange, Queue
 from dotenv import load_dotenv, find_dotenv
@@ -287,10 +288,7 @@ CACHES = {
 STAT_GENERATION_HOUR = None
 
 # environment variables that are used when running student code in the checker
-CHECKING_ENV = {
-    "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
-    "LC_CTYPE": "en_US.UTF-8",
-}
+CHECKING_ENV = json.loads(os.environ["LOVELACE_CHECKER_ENV"])
 
 # Usernames that are used by the checker to restrict what student code can do.
 # Worker username is the worker"s own identity which it is demoted to immediately
