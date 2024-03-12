@@ -24,7 +24,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         superuser = User.objects.filter(is_superuser=True).first()
         if options["responsible"]:
-            responsible = User.object.get(username=options["responsible"])
+            responsible = User.objects.get(username=options["responsible"])
         else:
             responsible = superuser
 
