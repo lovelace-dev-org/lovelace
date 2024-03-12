@@ -11,6 +11,7 @@ import courses.models as cm
 from courses.widgets import ContentPreviewWidget, AdminFileWidget
 from utils.access import determine_access, determine_media_access
 from utils.archive import find_latest_version
+from utils.data import serialize_single_python, export_json
 
 
 # TODO: There's a loophole where staff members of any course A can gain access
@@ -338,7 +339,8 @@ def process_delete_confirm_form(request, success_callback):
     }
     return HttpResponse(form_t.render(form_c, request))
 
-
+def check_import_permission(imported_object, instance):
+    return True
 
 
 # NOTE: not used currently because it introduced new problems
@@ -426,3 +428,12 @@ class TranslationStaffForm(ModelForm):
                 self.fields.pop(field_name)
 
 
+class ExportImportMixin:
+
+    def natural_key(self):
+        raise NotImplementedError
+
+    def export(self, instance, export_target):
+        document = serialize_single_python(self)
+        name = "_".join(self.natural_key())
+        export_json(document, name, export_target)

@@ -22,8 +22,6 @@ from courses.models import (
     CalendarDate,
     CheckboxExercise,
     CheckboxExerciseAnswer,
-    CodeInputExerciseAnswer,
-    CodeReplaceExerciseAnswer,
     ContentGraph,
     ContentPage,
     Course,
@@ -84,8 +82,6 @@ reversion.register(
     ContentPage,
     follow=[
         "checkboxexerciseanswer_set",
-        "codeinputexerciseanswer_set",
-        "codereplaceexerciseanswer_set",
         "fileexercisetest_set",
         "fileexercisetestincludefile_set",
         "hint_set",
@@ -115,8 +111,6 @@ reversion.register(IncludeFileSettings)
 reversion.register(CourseMedia)
 reversion.register(TermTab)
 reversion.register(TermLink)
-reversion.register(CodeInputExerciseAnswer)
-reversion.register(CodeReplaceExerciseAnswer)
 reversion.register(RepeatedTemplateExerciseTemplate)
 reversion.register(RepeatedTemplateExerciseBackendFile)
 reversion.register(RepeatedTemplateExerciseBackendCommand)
@@ -285,36 +279,6 @@ class TextfieldExerciseAdmin(CourseContentAdmin, TranslationAdmin, VersionAdmin)
         ("Feedback settings", {"fields": ["feedback_questions"]}),
     ]
     inlines = [TextfieldExerciseAnswerInline, HintInline]
-    search_fields = ("name",)
-    readonly_fields = ("slug",)
-    list_display = (
-        "name",
-        "slug",
-    )
-    list_per_page = 500
-    save_on_top = True
-
-
-class CodeReplaceExerciseAnswerInline(admin.StackedInline):
-    model = CodeReplaceExerciseAnswer
-    extra = 1
-
-
-class CodeReplaceExerciseAdmin(CourseContentAdmin, TranslationAdmin, VersionAdmin):
-    content_type = "CODE_REPLACE_EXERCISE"
-
-    fieldsets = [
-        (
-            "Page information",
-            {"fields": ["name", "slug", "content", "question", "tags"]},
-        ),
-        (
-            "Exercise miscellaneous",
-            {"fields": ["default_points", "evaluation_group"], "classes": ["wide"]},
-        ),
-        ("Feedback settings", {"fields": ["feedback_questions"]}),
-    ]
-    inlines = [CodeReplaceExerciseAnswerInline, HintInline]
     search_fields = ("name",)
     readonly_fields = ("slug",)
     list_display = (

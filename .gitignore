@@ -3,10 +3,8 @@ webapp/bin/
 webapp/db.sqlite3
 webapp/lib/
 webapp/pyvenv.cfg
-**/migrations/**
-webapp/lovelace/settings/
-!webapp/lovelace/factory.py
-!**/migrations
-!**/migrations/__init__.py
 upload
 *kate-swp
+.env
+.pg_service.conf
+.lovelace_pgpass

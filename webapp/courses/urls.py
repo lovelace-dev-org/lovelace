@@ -189,6 +189,17 @@ urlpatterns = [
         staff_views.termify,
         name="termify",
     ),
+    path(
+        "staff/<course:course>/<instance:instance>/export/",
+        staff_views.export_instance,
+        name="export",
+    ),
+    path(
+        "staff/<course:course>/<instance:instance>/import/",
+        staff_views.import_instance,
+        name="import",
+    ),
+
     # Staff URLs for messages
     path(
         "staff/<course:course>/<instance:instance>/mass_email/",

@@ -48,7 +48,6 @@ from courses.models import (
     RepeatedTemplateExerciseSession,
     RepeatedTemplateExerciseSessionInstance,
     UserCheckboxExerciseAnswer,
-    UserCodeReplaceExerciseAnswer,
     UserFileUploadExerciseAnswer,
     UserMultipleChoiceExerciseAnswer,
     UserRepeatedTemplateExerciseAnswer,

@@ -4,7 +4,6 @@ from courses.models import (
     CalendarDate,
     CheckboxExercise,
     CheckboxExerciseAnswer,
-    CodeReplaceExercise,
     ContentPage,
     Course,
     CourseInstance,
@@ -181,15 +180,6 @@ class TextfieldExerciseTranslationOptions(TranslationOptions):
 
 @register(FileUploadExercise)
 class FileUploadExerciseTranslationOptions(TranslationOptions):
-    fields = (
-        "name",
-        "content",
-        "question",
-    )
-
-
-@register(CodeReplaceExercise)
-class CodeReplaceExerciseTranslationOptions(TranslationOptions):
     fields = (
         "name",
         "content",

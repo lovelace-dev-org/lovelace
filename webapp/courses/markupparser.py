@@ -253,6 +253,7 @@ class MarkupParser:
                     yield (block_type, block_content, line_idx, line_count)
             except MarkupError as e:
                 yield ("error", e.html(), line_idx, 1)
+                line_count = 1
 
             line_idx += line_count
 
@@ -423,10 +424,10 @@ class CalendarMarkup(Markup):
 
     @classmethod
     def block(cls, block, settings, state):
-        if cm.Calendar.objects.filter(name=settings["calendar_name"]).exists():
-            yield ("calendar", {"calendar": settings["calendar_name"]})
-        else:
-            yield f"<div>Calendar {settings['calendar_name']} not found.</div>"
+        if not cm.Calendar.objects.filter(name=settings["calendar_name"]).exists():
+            new_calendar = cm.Calendar(name=settings["calendar_name"])
+            new_calendar.save()
+        yield ("calendar", {"calendar": settings["calendar_name"]})
 
     @classmethod
     def settings(cls, matchobj, state):

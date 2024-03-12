@@ -1,6 +1,7 @@
 import datetime
 import json
 import yaml
+from django.core import serializers
 from django.db import models
 from django.db.models import Q, JSONField
 from django.template import loader
@@ -14,7 +15,11 @@ from courses.models import (
 )
 
 from utils.archive import get_single_archived, find_latest_version
+from utils.data import (
+    export_json, export_files, serialize_single_python, serialize_many_python
+)
 from utils.files import get_testfile_path, upload_storage
+from utils.management import ExportImportMixin
 
 
 # Create your models here.
@@ -41,6 +46,15 @@ class MultipleQuestionExam(ContentPage):
     class Meta:
         verbose_name = "multiple question exam"
         proxy = True
+
+    @classmethod
+    def new_from_import(cls, document, instance, pk_map):
+        new = cls(**document["fields"])
+        document["question_pool"]["fields"]["exercise"] = new
+        pool = ExamQuestionPool(**document["question_pool"]["fields"])
+
+        print(f"Would add {cls.__name__} {new.name}")
+        return new
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -140,6 +154,15 @@ class MultipleQuestionExam(ContentPage):
                 attempt__exam=self,
             )
 
+    def export(self, instance, export_target):
+        super(ContentPage, self).export(instance, export_target)
+        export_json(
+            serialize_single_python(self.examquestionpool),
+            f"{self.slug}_question_pool",
+            export_target,
+        )
+        export_files(self.examquestionpool, export_target, "backend", translate=True)
+
 
 class ExamQuestionPool(models.Model):
 
@@ -221,3 +244,15 @@ class UserMultipleQuestionExamAnswer(UserAnswer):
         return t.render(c)
 
 
+ContentPage.register_content_type(
+    "MULTIPLE_QUESTION_EXAM", MultipleQuestionExam, UserMultipleQuestionExamAnswer
+)
+
+def export_models(instance, export_target):
+    pass
+
+def get_import_list():
+    return [
+        MultipleQuestionExam,
+        ExamQuestionPool,
+    ]

@@ -1,4 +1,8 @@
 from html import escape
+import json
+import os
+import tempfile
+import zipfile
 
 from django.conf import settings
 from django.http import (
@@ -35,7 +39,9 @@ from courses.forms import (
     GroupForm,
     GroupMemberForm,
     InstanceCloneForm,
+    InstanceExportForm,
     InstanceFreezeForm,
+    InstanceImportForm,
     InstanceGradingForm,
     InstanceSettingsForm,
     NewContentNodeForm,
@@ -56,6 +62,7 @@ from utils.access import (
 )
 from utils.archive import find_latest_version, squash_revisions
 from utils.content import regenerate_nearest_cache
+from utils.data import field_serializer, import_from_zip
 from utils.management import (
     CourseContentAdmin,
     clone_instance_files,
@@ -66,87 +73,12 @@ from utils.management import (
 from faq.utils import clone_faq_links
 from assessment.utils import clone_assessment_links
 
+from lovelace import plugins as lovelace_plugins
 
-# CONTENT EDIT VIEWS
+
+# INSTANCE MANAGEMENT VIEWS
 # |
 # v
-
-
-@ensure_staff
-def freeze_instance(request, course, instance):
-    if request.method == "POST":
-        form = InstanceFreezeForm(
-            request.POST,
-        )
-        if not form.is_valid():
-            errors = form.errors.as_json()
-            return JsonResponse({"errors": errors}, status=400)
-
-        instance.freeze(freeze_to=form.cleaned_data["freeze_to"])
-        instance.save()
-        return JsonResponse({"status": "ok"})
-
-    form = InstanceFreezeForm()
-    t = loader.get_template("courses/base-edit-form.html")
-    c = {
-        "form_object": form,
-        "submit_url": reverse(
-            "courses:freeze_instance", kwargs={"course": course, "instance": instance}
-        ),
-        "html_id": "instance-freeze-form",
-        "html_class": "toc-form staff-only",
-        "disclaimer": _(
-            "Freeze this instance to reflect its state at the given date. "
-            "This operation is not intended to be reversible."
-        ),
-    }
-    return HttpResponse(t.render(c, request))
-
-
-@ensure_staff
-def clone_instance(request, course, instance):
-    if request.method == "POST":
-        old_pk = instance.id
-        form = InstanceCloneForm(request.POST, instance=instance)
-        if not form.is_valid():
-            errors = form.errors.as_json()
-            return JsonResponse({"errors": errors}, status=400)
-
-        new_instance = form.save(commit=False)
-        new_instance.pk = None
-        new_instance.primary = False
-        for lang_code, __ in settings.LANGUAGES:
-            field = f"name_{lang_code}"
-            setattr(new_instance, field, form.cleaned_data[field])
-        new_instance.save()
-        new_instance.refresh_from_db()
-        old_instance = CourseInstance.objects.get(id=old_pk)
-        clone_content_graphs(old_instance, new_instance)
-        clone_grades(old_instance, new_instance)
-        clone_instance_files(new_instance)
-        clone_terms(new_instance)
-        clone_faq_links(new_instance)
-        clone_assessment_links(old_instance, new_instance)
-        new_url = reverse("courses:course", kwargs={"course": course, "instance": new_instance})
-        return JsonResponse({"status": "ok"})
-
-    initial_names = {}
-    for lang_code, __ in settings.LANGUAGES:
-        initial_names[f"name_{lang_code}"] = getattr(instance, f"name_{lang_code}")
-
-    form = InstanceCloneForm(instance=instance, initial=initial_names)
-    t = loader.get_template("courses/base-edit-form.html")
-    c = {
-        "form_object": form,
-        "submit_url": reverse(
-            "courses:clone_instance", kwargs={"course": course, "instance": instance}
-        ),
-        "html_id": "instance-clone-form",
-        "html_class": "toc-form staff-only",
-        "disclaimer": _("Make a clone of this course instance."),
-    }
-    return HttpResponse(t.render(c, request))
-
 
 @ensure_staff
 def instance_settings(request, course, instance):
@@ -196,6 +128,85 @@ def instance_settings(request, course, instance):
         ),
         "html_id": "instance-settings-form",
         "html_class": "toc-form staff-only",
+        "submit_override": "toc.submit_form",
+    }
+    return HttpResponse(t.render(c, request))
+
+
+@ensure_staff
+def freeze_instance(request, course, instance):
+    if request.method == "POST":
+        form = InstanceFreezeForm(
+            request.POST,
+        )
+        if not form.is_valid():
+            errors = form.errors.as_json()
+            return JsonResponse({"errors": errors}, status=400)
+
+        instance.freeze(freeze_to=form.cleaned_data["freeze_to"])
+        instance.save()
+        return JsonResponse({"status": "ok"})
+
+    form = InstanceFreezeForm()
+    t = loader.get_template("courses/base-edit-form.html")
+    c = {
+        "form_object": form,
+        "submit_url": reverse(
+            "courses:freeze_instance", kwargs={"course": course, "instance": instance}
+        ),
+        "html_id": "instance-freeze-form",
+        "html_class": "toc-form staff-only",
+        "disclaimer": _(
+            "Freeze this instance to reflect its state at the given date. "
+            "This operation is not intended to be reversible."
+        ),
+        "submit_override": "toc.submit_form",
+    }
+    return HttpResponse(t.render(c, request))
+
+
+@ensure_staff
+def clone_instance(request, course, instance):
+    if request.method == "POST":
+        old_pk = instance.id
+        form = InstanceCloneForm(request.POST, instance=instance)
+        if not form.is_valid():
+            errors = form.errors.as_json()
+            return JsonResponse({"errors": errors}, status=400)
+
+        new_instance = form.save(commit=False)
+        new_instance.pk = None
+        new_instance.primary = False
+        for lang_code, __ in settings.LANGUAGES:
+            field = f"name_{lang_code}"
+            setattr(new_instance, field, form.cleaned_data[field])
+        new_instance.save()
+        new_instance.refresh_from_db()
+        old_instance = CourseInstance.objects.get(id=old_pk)
+        clone_content_graphs(old_instance, new_instance)
+        clone_grades(old_instance, new_instance)
+        clone_instance_files(new_instance)
+        clone_terms(new_instance)
+        clone_faq_links(new_instance)
+        clone_assessment_links(old_instance, new_instance)
+        new_url = reverse("courses:course", kwargs={"course": course, "instance": new_instance})
+        return JsonResponse({"status": "ok"})
+
+    initial_names = {}
+    for lang_code, __ in settings.LANGUAGES:
+        initial_names[f"name_{lang_code}"] = getattr(instance, f"name_{lang_code}")
+
+    form = InstanceCloneForm(instance=instance, initial=initial_names)
+    t = loader.get_template("courses/base-edit-form.html")
+    c = {
+        "form_object": form,
+        "submit_url": reverse(
+            "courses:clone_instance", kwargs={"course": course, "instance": instance}
+        ),
+        "html_id": "instance-clone-form",
+        "html_class": "toc-form staff-only",
+        "disclaimer": _("Make a clone of this course instance."),
+        "submit_override": "toc.submit_form",
     }
     return HttpResponse(t.render(c, request))
 
@@ -225,6 +236,7 @@ def edit_grading(request, course, instance):
         ),
         "html_id": "instance-grading-form",
         "html_class": "toc-form staff-only",
+        "submit_override": "toc.submit_form",
     }
     return HttpResponse(t.render(c, request))
 
@@ -253,38 +265,147 @@ def regen_instance_cache(request, course, instance):
         "html_class": "toc-form staff-only",
         "disclaimer": _("Regenerate cache for all pages in the course. Please use sparingly."),
         "submit_label": _("Execute"),
+        "submit_override": "toc.submit_form",
     }
     return HttpResponse(form_t.render(form_c, request))
 
 
-@ensure_responsible
-def regen_page_cache(request, course, instance, content):
+@ensure_staff
+def termify(request, course, instance):
+    terms = Term.objects.filter(course=course)
     if request.method == "POST":
-        form = CacheRegenForm(request.POST)
+        form = TermifyForm(request.POST, course_terms=terms)
         if not form.is_valid():
             errors = form.errors.as_json()
             return JsonResponse({"errors": errors}, status=400)
 
-        node = ContentGraph.objects.get(instance=instance, content=content)
-        if node.revision is None or form.cleaned_data["regen_archived"]:
-            content.regenerate_cache(instance)
-        return redirect(
-            reverse(
-                "courses:content",
-                kwargs={"course": course, "instance": instance, "content": content},
-            )
-        )
+        words_to_replace = [form.cleaned_data["baseword"]]
+        if form.cleaned_data["inflections"]:
+            words_to_replace.extend(form.cleaned_data["inflections"].split(","))
 
-    form = CacheRegenForm()
+        replaces = []
+        for word in words_to_replace:
+            word = word.strip()
+            replaces.append(word)
+
+        embeds = [
+            link.embedded_page for link in
+            EmbeddedLink.objects.filter(instance=instance)
+        ]
+        pages = [
+            cg.content for cg in
+            ContentGraph.objects.filter(instance=instance)
+        ]
+        parser = markupparser.MarkupParser()
+        with reversion.create_revision():
+            for page in embeds + pages:
+                lang = translation.get_language()
+                if not getattr(page, f"content_{lang}"):
+                    field = f"content_{settings.MODELTRANSLATION_DEFAULT_LANGUAGE}"
+                else:
+                    field = f"content_{lang}"
+
+                termified_lines, n = parser.tag(
+                    getattr(page, field),
+                    form.cleaned_data["replace_in"],
+                    replaces,
+                    (f"[!term={form.cleaned_data['term']}!]", "[!term!]")
+                )
+                if n:
+                    setattr(page, field, "\n".join(termified_lines))
+                    page.save()
+            reversion.set_user(request.user)
+
+        for page in pages:
+            regenerate_nearest_cache(page)
+            squash_revisions(page, 1)
+
+        for page in embeds:
+            squash_revisions(page, 1)
+        return JsonResponse({"status": "ok"})
+
+    form = TermifyForm(course_terms=terms)
     form_t = loader.get_template("courses/base-edit-form.html")
     form_c = {
         "form_object": form,
         "submit_url": request.path,
-        "html_class": "side-panel-form",
-        "disclaimer": _("Regenerate cache for {content}").format(content=content.name),
-        "submit_label": _("Execute"),
+        "html_id": "instance-settings-form",
+        "html_class": "toc-form staff-only",
+        "disclaimer": "Termify a word in all pages"
     }
     return HttpResponse(form_t.render(form_c, request))
+
+
+@ensure_staff
+def export_instance(request, course, instance):
+    if request.method == "POST":
+        form = InstanceExportForm(request.POST)
+        if not form.is_valid():
+            errors = form.errors.as_json()
+            return JsonResponse({"errors": errors}, status=400)
+
+        data = []
+        temp_dir_prefix = os.path.join("/", "tmp")
+        with tempfile.TemporaryFile() as temp_storage:
+            with zipfile.ZipFile(temp_storage, "w") as export_zip:
+                instance.export(export_zip)
+
+            temp_storage.seek(0)
+            response = HttpResponse(temp_storage.read(), content_type="application/zip")
+            response["Content-Disposition"] = f"attachment; filename={instance.slug}_export.zip"
+            return response
+
+    form = InstanceExportForm()
+    t = loader.get_template("courses/base-edit-form.html")
+    c = {
+        "form_object": form,
+        "submit_url": request.path,
+        "html_id": "toc-export-form",
+        "html_class": "toc-form staff-only",
+    }
+    return HttpResponse(t.render(c, request))
+
+
+
+@ensure_responsible
+def import_instance(request, course, instance):
+    if request.method == "POST":
+        form = InstanceImportForm(request.POST, request.FILES)
+        if not form.is_valid():
+            errors = form.errors.as_json()
+            return JsonResponse({"errors": errors}, status=400)
+
+        source = form.cleaned_data["import_file"]
+        zf = zipfile.ZipFile(source)
+        imported_instance, errors = import_from_zip(
+            zf, request.user, course.main_responsible, course.staff_group,
+            target_instance=instance
+        )
+        nodes = ContentGraph.objects.filter(instance=imported_instance, revision=None)
+        for node in nodes:
+            node.content.regenerate_cache(instance)
+
+        return JsonResponse({"status": "ok", "errors": errors})
+
+    form = InstanceImportForm()
+    t = loader.get_template("courses/base-edit-form.html")
+    c = {
+        "form_object": form,
+        "submit_url": request.path,
+        "html_id": "toc-export-form",
+        "html_class": "toc-form staff-only",
+        "submit_override": "toc.submit_form",
+    }
+    return HttpResponse(t.render(c, request))
+
+
+# ^
+# |
+# INSTANCE MANAGEMENT VIEWS
+# CONTENT NODE MANAGEMENT VIEWS
+# |
+# v
+
 
 
 @ensure_staff
@@ -366,6 +487,7 @@ def create_content_node(request, course, instance):
         ),
         "html_id": "toc-new-node-form",
         "html_class": "toc-form staff-only",
+        "submit_override": "toc.submit_form",
     }
     return HttpResponse(t.render(c, request))
 
@@ -419,6 +541,7 @@ def node_settings(request, course, instance, node_id):
         ),
         "html_id": "toc-node-settings-form",
         "html_class": "toc-form staff-only",
+        "submit_override": "toc.submit_form",
     }
     return HttpResponse(t.render(c, request))
 
@@ -479,6 +602,47 @@ def move_content_node(request, course, instance, target_id, placement):
     active_node.save()
 
     return JsonResponse({"status": "ok"})
+
+
+# ^
+# |
+# CONTENT NODE MANAGEMENT VIEWS
+# PAGE CONTENT MANAGEMENT VIEWS
+# |
+# v
+
+
+
+
+@ensure_responsible
+def regen_page_cache(request, course, instance, content):
+    if request.method == "POST":
+        form = CacheRegenForm(request.POST)
+        if not form.is_valid():
+            errors = form.errors.as_json()
+            return JsonResponse({"errors": errors}, status=400)
+
+        node = ContentGraph.objects.get(instance=instance, content=content)
+        if node.revision is None or form.cleaned_data["regen_archived"]:
+            content.regenerate_cache(instance)
+        return redirect(
+            reverse(
+                "courses:content",
+                kwargs={"course": course, "instance": instance, "content": content},
+            )
+        )
+
+    form = CacheRegenForm()
+    form_t = loader.get_template("courses/base-edit-form.html")
+    form_c = {
+        "form_object": form,
+        "submit_url": request.path,
+        "html_class": "side-panel-form",
+        "disclaimer": _("Regenerate cache for {content}").format(content=content.name),
+        "submit_label": _("Execute"),
+        "submit_override": "toc.submit_form",
+    }
+    return HttpResponse(form_t.render(form_c, request))
 
 
 @ensure_staff
@@ -593,75 +757,9 @@ def add_form(request, course, instance, content):
     return HttpResponse(form_t.render(form_c, request))
 
 
-@ensure_staff
-def termify(request, course, instance):
-    terms = Term.objects.filter(course=course)
-    if request.method == "POST":
-        form = TermifyForm(request.POST, course_terms=terms)
-        if not form.is_valid():
-            errors = form.errors.as_json()
-            return JsonResponse({"errors": errors}, status=400)
-
-        words_to_replace = [form.cleaned_data["baseword"]]
-        if form.cleaned_data["inflections"]:
-            words_to_replace.extend(form.cleaned_data["inflections"].split(","))
-
-        replaces = []
-        for word in words_to_replace:
-            word = word.strip()
-            replaces.append(word)
-
-        embeds = [
-            link.embedded_page for link in
-            EmbeddedLink.objects.filter(instance=instance)
-        ]
-        pages = [
-            cg.content for cg in
-            ContentGraph.objects.filter(instance=instance)
-        ]
-        parser = markupparser.MarkupParser()
-        with reversion.create_revision():
-            for page in embeds + pages:
-                lang = translation.get_language()
-                if not getattr(page, f"content_{lang}"):
-                    field = f"content_{settings.MODELTRANSLATION_DEFAULT_LANGUAGE}"
-                else:
-                    field = f"content_{lang}"
-
-                termified_lines, n = parser.tag(
-                    getattr(page, field),
-                    form.cleaned_data["replace_in"],
-                    replaces,
-                    (f"[!term={form.cleaned_data['term']}!]", "[!term!]")
-                )
-                if n:
-                    setattr(page, field, "\n".join(termified_lines))
-                    page.save()
-            reversion.set_user(request.user)
-
-        for page in pages:
-            regenerate_nearest_cache(page)
-            squash_revisions(page, 1)
-
-        for page in embeds:
-            squash_revisions(page, 1)
-        return JsonResponse({"status": "ok"})
-
-    form = TermifyForm(course_terms=terms)
-    form_t = loader.get_template("courses/base-edit-form.html")
-    form_c = {
-        "form_object": form,
-        "submit_url": request.path,
-        "html_id": "instance-settings-form",
-        "html_class": "toc-form staff-only",
-        "disclaimer": "Termify a word in all pages"
-    }
-    return HttpResponse(form_t.render(form_c, request))
-
-
 # ^
 # |
-# CONTENT EDIT VIEWS
+# PAGE CONTENT MANAGEMENT VIEWS
 # GROUP MANAGEMENT VIEWS
 # |
 # v

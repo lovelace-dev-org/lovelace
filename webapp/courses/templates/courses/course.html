@@ -90,6 +90,18 @@
                 onclick="toc.fetch_form(event, this);"
                 data-url="{% url 'courses:termify' course instance %}">
         </button>
+        <button type="button"
+                class="staff-base-button export-button"
+                title="{% trans 'Export this instance' %}"
+                onclick="toc.fetch_form(event, this);"
+                data-url="{% url 'courses:export' course instance %}">
+        </button>
+        <button type="button"
+                class="staff-base-button import-button"
+                title="{% trans 'Import into this instance' %}"
+                onclick="toc.fetch_form(event, this);"
+                data-url="{% url 'courses:import' course instance %}">
+        </button>
     </div>
   </div>
 {% endif %}

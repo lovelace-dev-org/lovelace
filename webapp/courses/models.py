@@ -9,8 +9,9 @@ from fnmatch import fnmatch
 from html import escape
 
 from django.conf import settings
+from django.core import serializers
 from django.core.files.base import ContentFile
-from django.db import models
+from django.db import models, transaction
 from django.db.models import Q, Max, JSONField
 from django.contrib.auth.models import User, Group
 from django.db.models.signals import post_save
@@ -18,17 +19,22 @@ from django.urls import reverse
 from django.core.cache import cache
 from django.template import loader
 from django.utils import translation
-from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy as _
 from django.utils.text import slugify
 from django.contrib.postgres.fields import ArrayField
 import django.conf
 
+from model_utils.managers import InheritanceManager
 from reversion.models import Version
 
 import pygments
 import magic
 
 import feedback.models
+from lovelace import plugins as lovelace_plugins
+from utils.data import (
+    export_json, export_files, serialize_single_python, serialize_many_python
+)
 from utils.files import (
     get_answerfile_path,
     get_file_upload_path,
@@ -38,7 +44,7 @@ from utils.files import (
     upload_storage,
 )
 from utils.archive import get_archived_field, get_single_archived
-from utils.management import freeze_context_link
+from utils.management import freeze_context_link, check_import_permission, ExportImportMixin
 
 
 class RollbackRevert(Exception):
@@ -168,11 +174,18 @@ class DeadlineExemption(models.Model):
 # |
 # V
 
+class SlugManager(models.Manager):
+
+    def get_by_natural_key(self, slug):
+        return self.get(slug=slug)
+
 
 class Course(models.Model):
     """
     Describes the metadata for a course.
     """
+
+    objects = SlugManager()
 
     name = models.CharField(max_length=255)  # Translate
     code = models.CharField(
@@ -207,6 +220,9 @@ class Course(models.Model):
 
     # TODO: Create an instance automatically, if none exists
 
+    def natural_key(self):
+        return (self.slug, )
+
     def get_url_name(self):
         """Creates a URL and HTML5 ID field friendly version of the name."""
         return slugify(self.name, allow_unicode=True)
@@ -224,6 +240,7 @@ class Course(models.Model):
 
     def __str__(self):
         return self.name
+
 
 
 class CourseEnrollment(models.Model):
@@ -271,6 +288,8 @@ class CourseInstance(models.Model):
     dates of the course.
     """
 
+    objects = SlugManager()
+
     name = models.CharField(max_length=255, unique=True)  # Translate
     email = models.EmailField(blank=True)  # Translate
     slug = models.SlugField(max_length=255, allow_unicode=True, blank=False)
@@ -304,6 +323,9 @@ class CourseInstance(models.Model):
         verbose_name="Automatic welcome message for accepted enrollments", blank=True
     )
     max_group_size = models.PositiveSmallIntegerField(null=True, blank=True)
+
+    def natural_key(self):
+        return (self.slug, )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -391,6 +413,52 @@ class CourseInstance(models.Model):
         self.frontpage = frontpage
         self.frozen = True
 
+    def export(self, export_target):
+        document = serialize_single_python(self)
+        export_json(document, self.slug, export_target)
+        export_json(
+            serialize_single_python(self.course),
+            self.course.slug,
+            export_target
+        )
+
+        for cg in ContentGraph.objects.filter(instance=self):
+            cg.export(export_target)
+
+        for term_link in TermToInstanceLink.objects.filter(instance=self):
+            term_link.term.export(self, export_target)
+            term_link.export(self, export_target)
+
+        for ifile_link in InstanceIncludeFileToInstanceLink.objects.filter(instance=self):
+            ifile_link.export(self, export_target)
+            ifile_link.include_file.export(self, export_target)
+
+        embeds = (
+            EmbeddedLink.objects.filter(instance=self)
+            .order_by("embedded_page__id")
+            .distinct("embedded_page__id")
+        )
+        media = (
+            CourseMediaLink.objects.filter(instance=self)
+            .order_by("media__id")
+            .distinct("media__id")
+        )
+        for embed_link in embeds:
+            embed_link.export(self, export_target)
+            embed_link.embedded_page.export(embed_link.embedded_page, self, export_target)
+        for media_link in media:
+            media_link.export(self, export_target)
+            media_link.media.export(self, export_target)
+            CourseMedia.objects.get_subclass(id=media_link.media.id).export(self, export_target)
+
+        for module in lovelace_plugins["export"]:
+            module.models.export_models(self, export_target)
+
+
+
+    def finalize_import(self, document, pk_map):
+        pass
+
     def __str__(self):
         return self.name
 
@@ -413,6 +481,12 @@ class GradeThreshold(models.Model):
     )
 
 
+class ContextLinkManager(models.Manager):
+
+    def get_by_natural_key(self, instance_slug, content_slug):
+        return self.get(instance__slug=instance_slug, content__slug=content_slug)
+
+
 class ContentGraph(models.Model):
     """A node in the course tree/graph. Links content into a course."""
 
@@ -420,6 +494,8 @@ class ContentGraph(models.Model):
         unique_together = ("content", "instance")
         verbose_name = "content to course link"
         verbose_name_plural = "content to course links"
+
+    objects = ContextLinkManager()
 
     parentnode = models.ForeignKey("self", null=True, blank=True, on_delete=models.SET_NULL)
     content = models.ForeignKey("ContentPage", null=True, blank=True, on_delete=models.RESTRICT)
@@ -471,6 +547,9 @@ class ContentGraph(models.Model):
     )
     evergreen = models.BooleanField(verbose_name="This content should not be frozen", default=False)
 
+    def natural_key(self):
+        return (self.instance.slug, self.content.slug)
+
     def get_revision_str(self):
         if self.revision is None:
             return "newest"
@@ -496,6 +575,18 @@ class ContentGraph(models.Model):
     def freeze(self, freeze_to=None):
         freeze_context_link(self, "content", freeze_to)
 
+    def export(self, export_target):
+        document = serialize_single_python(self)
+        export_json(
+            document,
+            "_".join(self.natural_key()),
+            export_target
+        )
+        self.content.export(self.content, self.instance, export_target)
+
+    def set_instance(self, instance):
+        self.instance = instance
+
     def __str__(self):
         return f"No. {self.ordinal_number} – {self.content.slug} ({self.get_revision_str()})"
 
@@ -507,15 +598,25 @@ class ContentGraph(models.Model):
 # |
 # V
 
+class MediaManager(InheritanceManager):
 
-class CourseMedia(models.Model):
+    def get_by_natural_key(self, name):
+        return self.get(name=name)
+
+
+class CourseMedia(models.Model, ExportImportMixin):
     """
     Top level model for embedded media.
     """
 
+    objects = MediaManager()
+
     name = models.CharField(
         verbose_name="Unique name identifier", max_length=200, unique=True
     )
+
+    def natural_key(self):
+        return (self.name, )
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
@@ -524,10 +625,21 @@ class CourseMedia(models.Model):
                 link.parent.regenerate_cache(link.instance)
 
 
-class CourseMediaLink(models.Model):
+class MediaLinkManager(models.Manager):
+
+    def get_by_natural_key(self, parent_slug, media_name, instance_slug):
+        return self.get(
+            parent__slug=parent_slug, media__name=media_name, instance__slug=instance_slug
+        )
+
+
+
+class CourseMediaLink(models.Model, ExportImportMixin):
     """
     Context model for embedded media.
     """
+
+    objects = MediaLinkManager()
 
     media = models.ForeignKey(CourseMedia, on_delete=models.RESTRICT)
     parent = models.ForeignKey("ContentPage", on_delete=models.CASCADE, null=True)
@@ -538,11 +650,17 @@ class CourseMediaLink(models.Model):
         verbose_name="Revision to display", blank=True, null=True
     )
 
+    def natural_key(self):
+        return [self.parent.slug, self.media.name, self.instance.slug]
+
     class Meta:
         unique_together = ("instance", "media", "parent")
 
     def freeze(self, freeze_to=None):
         freeze_context_link(self, "media", freeze_to)
+
+    def set_instance(self):
+        self.instance = instance
 
 
 class File(CourseMedia):
@@ -556,8 +674,22 @@ class File(CourseMedia):
         verbose_name="Default name for the download dialog", max_length=200, null=True, blank=True
     )
 
+    @classmethod
+    def new_from_import(cls, document, instance, pk_map):
+        ptr = document["fields"].pop("coursemedia_ptr")
+        document["fields"]["name"] = ptr[0]
+        new = cls(**document["fields"])
+        if check_import_permission(new, instance):
+            new.save()
+        print(f"Would add File {new.name}")
+        return new
+
     def __str__(self):
         return self.name
+
+    def export(self, instance, export_target):
+        super().export(instance, export_target)
+        export_files(self, export_target, "media", translate=True)
 
 
 class Image(CourseMedia):
@@ -567,6 +699,14 @@ class Image(CourseMedia):
     date_uploaded = models.DateTimeField(verbose_name="date uploaded", auto_now_add=True)
     description = models.CharField(max_length=500)  # Translate
     fileinfo = models.ImageField(upload_to=get_image_upload_path)  # Translate
+
+    @classmethod
+    def new_from_import(cls, document, instance, pk_map):
+        new = deserialize_python(document)
+        if check_import_permission(new.object, instance):
+            new.save()
+        print(f"Would add Image {new.name}")
+        return new
 
     def __str__(self):
         return self.name
@@ -580,6 +720,9 @@ class Image(CourseMedia):
             data[f"fileinfo_{lang_code}"] = str(getattr(self, f"fileinfo_{lang_code}", ""))
         return data
 
+    def export(self, instance, export_target):
+        super().export(instance, export_target)
+        export_files(self, export_target, "media", translate=True)
 
 
 class VideoLink(CourseMedia):
@@ -588,6 +731,14 @@ class VideoLink(CourseMedia):
     # TODO: Make the adding user the default and don't allow it to change
     link = models.URLField()  # Translate
     description = models.CharField(max_length=500)  # Translate
+
+    @classmethod
+    def new_from_import(cls, document, instance, pk_map):
+        new = deserialize_python(document)
+        if check_import_permission(new.object, instance):
+            new.save()
+        print(f"Would add VideoLink {new.name}")
+        return new
 
     def __str__(self):
         return self.name
@@ -601,7 +752,24 @@ class VideoLink(CourseMedia):
 # V
 
 
-class TermToInstanceLink(models.Model):
+class TermManager(models.Manager):
+
+    def get_by_natural_key(self, name, course_slug):
+        return self.get(name=name, course__slug=course_slug)
+
+
+class TermLinkManager(models.Manager):
+
+    def get_by_natural_key(self, term_name, course_slug, instance_slug):
+        return self.get(term__name=term_name, term__course__slug=course_slug, instance__slug=instance_slug)
+
+
+class TermToInstanceLink(models.Model, ExportImportMixin):
+    class Meta:
+        unique_together = ("instance", "term")
+
+    objects = TermLinkManager()
+
     term = models.ForeignKey("Term", on_delete=models.RESTRICT)
     instance = models.ForeignKey(
         CourseInstance, verbose_name="Course instance", on_delete=models.CASCADE
@@ -610,19 +778,53 @@ class TermToInstanceLink(models.Model):
         verbose_name="Revision to display", blank=True, null=True
     )
 
-    class Meta:
-        unique_together = ("instance", "term")
+    def natural_key(self):
+        return self.term.natural_key() + self.instance.natural_key()
 
     def freeze(self, freeze_to=None):
         freeze_context_link(self, "term", freeze_to)
 
+    def set_instance(self, instance):
+        self.instance = instance
 
-class Term(models.Model):
+
+class Term(models.Model, ExportImportMixin):
+    class Meta:
+        unique_together = (
+            "course",
+            "name",
+        )
+
+    objects = TermManager()
+
     course = models.ForeignKey(Course, verbose_name="Course", null=True, on_delete=models.SET_NULL)
     name = models.CharField(verbose_name="Term", max_length=200)  # Translate
     description = models.TextField()  # Translate
 
     tags = models.ManyToManyField("TermTag", blank=True)
+
+    @classmethod
+    def new_from_import(cls, document, instance, pk_map):
+        new = deserialize_python(document)
+        if check_import_permission(new.object, instance):
+            new.save()
+        child_imports = [
+            TermAlias, document["aliases"],
+            TermLink, document["links"],
+            TermTab, document["tabs"],
+            TermTag, document["tags"],
+        ]
+        for model_class, document_list in child_imports:
+            for child_doc in document_list:
+                child_doc["fields"]["term"] = new
+                obj = deserialize_python(child_doc)
+                obj.save()
+
+        print(f"Would add Term {new.name}")
+        return new
+
+    def natural_key(self):
+        return (self.name, self.course.slug)
 
     def __str__(self):
         return self.name
@@ -634,20 +836,54 @@ class Term(models.Model):
                 link = TermToInstanceLink(instance=instance, revision=None, term=self)
                 link.save()
 
-    class Meta:
-        unique_together = (
-            "course",
-            "name",
+    def export(self, instance, export_target):
+        super().export(instance, export_target)
+        export_json(
+            serialize_many_python(self.termalias_set.get_queryset()),
+            f"{self.name}_aliases",
+            export_target,
         )
+        export_json(
+            serialize_many_python(self.tags.get_queryset()),
+            f"{self.name}_tags",
+            export_target,
+        )
+        export_json(
+            serialize_many_python(self.termtab_set.get_queryset()),
+            f"{self.name}_tabs",
+            export_target,
+        )
+        export_json(
+            serialize_many_python(self.termlink_set.get_queryset()),
+            f"{self.name}_links",
+            export_target,
+        )
+
+    def set_instance(self, instance):
+        self.course = instance.course
 
 
 class TermAlias(models.Model):
-    term = models.ForeignKey(Term, null=False, on_delete=models.CASCADE)
+    term = models.ForeignKey(Term, null=True, on_delete=models.CASCADE)
     name = models.CharField(verbose_name="Term", max_length=200)  # Translate
+
+    def natural_key(self):
+        return self.term.natural_key() + [self.name]
+
+
+class TermTagManager(models.Manager):
+
+    def get_by_natural_key(self, name):
+        return self.get(name=name)
 
 
 class TermTag(models.Model):
+    objects = TermTagManager()
+
     name = models.CharField(verbose_name="Term", max_length=200)  # Translate
+
+    def natural_key(self):
+        return [self.name]
 
     def __str__(self):
         return self.name
@@ -658,6 +894,9 @@ class TermTab(models.Model):
     title = models.CharField(verbose_name="Title of this tab", max_length=100)  # Translate
     description = models.TextField()  # Translate
 
+    def natural_key(self):
+        return self.term.natural_key() + [self.title]
+
     def __str__(self):
         return self.title
 
@@ -666,6 +905,10 @@ class TermLink(models.Model):
     term = models.ForeignKey(Term, on_delete=models.CASCADE)
     url = models.CharField(verbose_name="URL", max_length=300)  # Translate
     link_text = models.CharField(verbose_name="Link text", max_length=80)  # Translate
+
+    def natural_key(self):
+        return self.term.natural_key() + [self.url]
+
 
 
 # ^
@@ -676,7 +919,7 @@ class TermLink(models.Model):
 # V
 
 
-class Calendar(models.Model):
+class Calendar(models.Model, ExportImportMixin):
     """A multi purpose calendar for course events markups, time reservations etc."""
 
     name = models.CharField(
@@ -686,6 +929,9 @@ class Calendar(models.Model):
     related_content = models.ForeignKey(
         "ContentPage", on_delete=models.SET_NULL, null=True, blank=True
     )
+
+    def natural_key(self):
+        return [self.name]
 
     def __str__(self):
         return self.name
@@ -727,8 +973,19 @@ class CalendarReservation(models.Model):
 # |
 # V
 
+class EmbeddedLinkManager(models.Manager):
 
-class EmbeddedLink(models.Model):
+    def get_by_natural_key(self, instance_slug, parent_slug, content_slug):
+        return self.get(
+            instance__slug=instance_slug,
+            parent__slug=parent_slug,
+            embedded_page__slug=content_slug,
+        )
+
+
+class EmbeddedLink(models.Model, ExportImportMixin):
+    objects = EmbeddedLinkManager()
+
     parent = models.ForeignKey("ContentPage", related_name="emb_parent", on_delete=models.CASCADE)
     embedded_page = models.ForeignKey(
         "ContentPage", related_name="emb_embedded", on_delete=models.RESTRICT
@@ -740,11 +997,17 @@ class EmbeddedLink(models.Model):
     class Meta:
         ordering = ["ordinal_number"]
 
+    def natural_key(self):
+        return (self.instance.slug, self.parent.slug, self.embedded_page.slug)
+
     def freeze(self, freeze_to=None):
         freeze_context_link(self, "embedded_page", freeze_to)
 
+    def set_instance(self, instance):
+        self.instance = instance
 
-class ContentPage(models.Model):
+
+class ContentPage(models.Model, ExportImportMixin):
     """
     A single content containing page of a course.
     The used content pages (Lecture and Exercise) and their
@@ -753,6 +1016,8 @@ class ContentPage(models.Model):
 
     class Meta:
         ordering = ("name",)
+
+    objects = SlugManager()
 
     CONTENT_TYPE_CHOICES = (
         ("LECTURE", "Lecture"),
@@ -766,6 +1031,7 @@ class ContentPage(models.Model):
         ("ROUTINE_EXERCISE", "Routine exercise"),
         ("MULTIPLE_QUESTION_EXAM", "Multiple question exam"),
     )
+    content_type_models = {}
     template = "courses/blank.html"
     answers_template = "courses/user-exercise-answers.html"
     answer_table_classes ="fixed alternate-green answers-table"
@@ -819,6 +1085,27 @@ class ContentPage(models.Model):
     ask_collaborators = models.BooleanField(
         verbose_name="Ask the student to list collaborators", default=False
     )
+
+    @classmethod
+    def new_from_import(cls, document, instance, pk_map):
+        content_type = document["fields"]["content_type"]
+        content_class = cls.content_type_models[content_type]
+        return content_class.new_from_import(document, instance, pk_map)
+
+    @classmethod
+    def register_content_type(cls, constant_name, type_class, answer_class=None):
+        if not issubclass(type_class, cls):
+            raise TypeError(
+                _("Class {type_class} is not a subclass of {cls}").format(
+                    type_class=type_class,
+                    cls=cls
+                )
+            )
+
+        cls.content_type_models[constant_name] = type_class
+
+    def natural_key(self):
+        return (self.slug, )
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -1085,12 +1372,11 @@ class ContentPage(models.Model):
             "MULTIPLE_CHOICE_EXERCISE": MultipleChoiceExercise,
             "CHECKBOX_EXERCISE": CheckboxExercise,
             "FILE_UPLOAD_EXERCISE": FileUploadExercise,
-            "CODE_INPUT_EXERCISE": CodeInputExercise,
-            "CODE_REPLACE_EXERCISE": CodeReplaceExercise,
             "REPEATED_TEMPLATE_EXERCISE": RepeatedTemplateExercise,
             "ROUTINE_EXERCISE": RoutineExercise,
             "MULTIPLE_QUESTION_EXAM": MultipleQuestionExam,
         }
+
         return type_models[self.content_type].objects.get(id=self.id)
 
     def get_type_model(self):
@@ -1103,8 +1389,6 @@ class ContentPage(models.Model):
             "MULTIPLE_CHOICE_EXERCISE": MultipleChoiceExercise,
             "CHECKBOX_EXERCISE": CheckboxExercise,
             "FILE_UPLOAD_EXERCISE": FileUploadExercise,
-            "CODE_INPUT_EXERCISE": CodeInputExercise,
-            "CODE_REPLACE_EXERCISE": CodeReplaceExercise,
             "REPEATED_TEMPLATE_EXERCISE": RepeatedTemplateExercise,
             "ROUTINE_EXERCISE": RoutineExercise,
             "MULTIPLE_QUESTION_EXAM": MultipleQuestionExam,
@@ -1121,8 +1405,6 @@ class ContentPage(models.Model):
             "MULTIPLE_CHOICE_EXERCISE": UserMultipleChoiceExerciseAnswer,
             "CHECKBOX_EXERCISE": UserCheckboxExerciseAnswer,
             "FILE_UPLOAD_EXERCISE": UserFileUploadExerciseAnswer,
-            "CODE_INPUT_EXERCISE": None,
-            "CODE_REPLACE_EXERCISE": UserCodeReplaceExerciseAnswer,
             "REPEATED_TEMPLATE_EXERCISE": UserRepeatedTemplateExerciseAnswer,
             "ROUTINE_EXERCISE": RoutineExerciseAnswer,
             "MULTIPLE_QUESTION_EXAM": UserMultipleQuestionExamAnswer,
@@ -1254,6 +1536,7 @@ class ContentPage(models.Model):
             "template",
             "answers_template",
             "answer_table_classes",
+            "export",
         ]
 
         if name in normal:
@@ -1284,6 +1567,14 @@ class Lecture(ContentPage):
         proxy = True
 
     template = "courses/lecture.html"
+
+    @classmethod
+    def new_from_import(cls, document, instance, pk_map):
+        new = deserialize_python(document).object
+        if check_import_permission(new, instance):
+            new.save()
+        print(f"Would add {cls.__name__} {new.name}")
+        return new
 
     def get_choices(self, revision=None):
         pass
@@ -1316,6 +1607,18 @@ class MultipleChoiceExercise(ContentPage):
         proxy = True
 
     template = "courses/multiple-choice-exercise.html"
+
+    @classmethod
+    def new_from_import(cls, document, instance, pk_map):
+        new = deserialize_python(document).object
+        if check_import_permission(new, instance):
+            new.save()
+        for choice_doc in document["choices"]:
+            choice = deserialize_python(choice_doc)
+            choice.save()
+
+        print(f"Would add {cls.__name__} {new.name}")
+        return new
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -1403,6 +1706,14 @@ class MultipleChoiceExercise(ContentPage):
             )
         return answers
 
+    def export(self, instance, export_target):
+        super(ContentPage, self).export(instance, export_target)
+        export_json(
+            serialize_many_python(self.get_choices(self)),
+            f"{self.slug}_choices",
+            export_target,
+        )
+
 
 # @reversion.register(follow=["checkboxexerciseanswer_set"])
 class CheckboxExercise(ContentPage):
@@ -1411,6 +1722,18 @@ class CheckboxExercise(ContentPage):
         proxy = True
 
     template = "courses/checkbox-exercise.html"
+
+    @classmethod
+    def new_from_import(cls, document, instance, pk_map):
+        new = deserialize_python(document).object
+        if check_import_permission(new, instance):
+            new.save()
+        for choice_doc in document["choices"]:
+            choice = deserialize_python(choice_doc)
+            choice.save()
+
+        print(f"Would add {cls.__name__} {new.name}")
+        return new
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -1503,6 +1826,14 @@ class CheckboxExercise(ContentPage):
             )
         return answers
 
+    def export(self, instance, export_target):
+        super(ContentPage, self).export(instance, export_target)
+        export_json(
+            serialize_many_python(self.get_choices(self)),
+            f"{self.slug}_choices",
+            export_target,
+        )
+
 
 class TextfieldExercise(ContentPage):
     class Meta:
@@ -1510,6 +1841,18 @@ class TextfieldExercise(ContentPage):
         proxy = True
 
     template = "courses/textfield-exercise.html"
+
+    @classmethod
+    def new_from_import(cls, document, instance, pk_map):
+        new = deserialize_python(document).object
+        if check_import_permission(new, instance):
+            new.save()
+        for choice_doc in document["choices"]:
+            choice = deserialize_python(choice_doc)
+            choice.save()
+
+        print(f"Would add {cls.__name__} {new.name}")
+        return new
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -1632,6 +1975,14 @@ class TextfieldExercise(ContentPage):
             )
         return answers
 
+    def export(self, instance, export_target):
+        super(ContentPage, self).export(instance, export_target)
+        export_json(
+            serialize_many_python(self.get_choices(self)),
+            f"{self.slug}_choices",
+            export_target,
+        )
+
 
 class FileUploadExercise(ContentPage):
     class Meta:
@@ -1639,6 +1990,24 @@ class FileUploadExercise(ContentPage):
         proxy = True
 
     template = "courses/file-upload-exercise.html"
+
+    @classmethod
+    def new_from_import(cls, document, instance, pk_map):
+        new = deserialize_python(document).object
+        if check_import_permission(new, instance):
+            new.save()
+
+        settings = deserialize_python(document["settings"])
+        settings.save()
+        for file_doc in document["files"]:
+            file_doc["fields"]["exercise"] = new
+            file_obj = FileExerciseTestIncludeFile.new_from_import(file_doc, instance, pk_map)
+        for test_doc in document["tests"]:
+            test_doc["fields"]["exercise"] = new
+            test = FileExerciseTest.new_from_import(test_doc, instance, pk_map)
+
+        print(f"Would add {cls.__name__} {new.name}")
+        return new
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -1757,90 +2126,17 @@ class FileUploadExercise(ContentPage):
             )
         return answers
 
-
-# Placeholder for a textfield exercise variant where the answer is run as code in the backend
-class CodeInputExercise(ContentPage):
-    class Meta:
-        verbose_name = "code input exercise"
-        proxy = True
-
-    template = "courses/code-input-exercise.html"
-
-    def save(self, *args, **kwargs):
-        if not self.slug:
-            self.slug = self.get_url_name()
-        else:
-            self.slug = slugify(self.slug, allow_unicode=True)
-
-        self.content_type = "CODE_INPUT_EXERCISE"
-        super().save(*args, **kwargs)
-
-    def get_user_answers(self, user, instance, ignore_drafts=True):
-        return UserAnswer.objects.none()
-
-    def save_answer(self, user, ip, answer, files, instance, revision):
-        pass
-
-    def check_answer(self, user, ip, answer, files, answer_object, revision):
-        return {}
-
-
-# Placeholder for a textfield exercise variant where the student is allowed to modify part of
-# a given code while the rest is kept fixed.
-class CodeReplaceExercise(ContentPage):
-    class Meta:
-        verbose_name = "code replace exercise"
-        proxy = True
-
-    template = "courses/code-replace-exercise.html"
-
-    def save(self, *args, **kwargs):
-        if not self.slug:
-            self.slug = self.get_url_name()
-        else:
-            self.slug = slugify(self.slug, allow_unicode=True)
-
-        self.content_type = "CODE_REPLACE_EXERCISE"
-        super().save(*args, **kwargs)
-        parents = ContentPage.objects.filter(embedded_pages=self).distinct()
-        for instance in CourseInstance.objects.filter(
-            Q(contentgraph__content=self) | Q(contentgraph__content__embedded_pages=self),
-            frozen=False,
-        ).distinct():
-            self.update_embedded_links(instance)
-            for parent in parents:
-                parent.regenerate_cache(instance)
-
-    def get_choices(self, revision=None):
-        choices = (
-            CodeReplaceExerciseAnswer.objects.filter(exercise=self)
-            .values_list("replace_file", "replace_line", "id")
-            .order_by("replace_file", "replace_line")
+    def export(self, instance, export_target):
+        super(ContentPage, self).export(instance, export_target)
+        export_json(
+            serialize_single_python(self.fileexercisesettings),
+            f"{self.slug}_settings",
+            export_target,
         )
-        choices = itertools.groupby(choices, operator.itemgetter(0))
-        # Django templates don't like groupby, so evaluate iterators:
-        return [(a, list(b)) for a, b in choices]
-
-    def get_rendered_content(self, context):
-        return ContentPage._get_rendered_content(self, context)
-
-    def get_question(self, context):
-        return ContentPage._get_question(self, context)
-
-    def save_answer(self, user, ip, answer, files, instance, revision):
-        pass
-
-    def check_answer(self, user, ip, answer, files, answer_object, revision):
-        return {}
-
-    def get_user_answers(self, user, instance, ignore_drafts=True):
-        if instance is None:
-            answers = UserCodeReplaceExerciseAnswer.objects.filter(exercise=self, user=user)
-        else:
-            answers = UserCodeReplaceExerciseAnswer.objects.filter(
-                exercise=self, instance=instance, user=user
-            )
-        return answers
+        for testfile in self.fileexercisetestincludefile_set.get_queryset():
+            testfile.export(instance, export_target)
+        for test in self.fileexercisetest_set.get_queryset():
+            test.export(instance, export_target)
 
 
 # Legacy task type only kept for compatibility, use routine exercise instead
@@ -1986,7 +2282,7 @@ class RepeatedTemplateExercise(ContentPage):
                 match, m = validate(answer.answer, given_answer)
             except re.error as e:
                 if user.is_staff:
-                    errors.append(f"Contact staff, regexp error '{e}' from regexp: {answer.answer}")
+                    errors.append(f"Regexp error '{e}' from regexp: {answer.answer}")
                 else:
                     errors.append(f"Contact staff! Regexp error '{e}' in exercise '{self.name}'.")
                 correct = False
@@ -2102,6 +2398,13 @@ def default_fue_timeout():
     return datetime.timedelta(seconds=5)
 
 
+
+class ExerciseOneToOneManager(models.Manager):
+
+    def get_by_natural_key(self, exercise_slug):
+        return self.get(exercise__slug=exercise_slug)
+
+
 class FileExerciseSettings(models.Model):
     """
     A separate extra settings model for file upload exercises. Introduced to prevent
@@ -2113,13 +2416,15 @@ class FileExerciseSettings(models.Model):
         ("TEXT", "From textbox"),
     )
 
+    objects = ExerciseOneToOneManager()
+
     exercise = models.OneToOneField(
         FileUploadExercise,
         verbose_name="for file exercise",
         db_index=True,
         on_delete=models.CASCADE,
     )
-    allowed_filenames = ArrayField(  # File upload exercise specific
+    allowed_filenames = ArrayField(
         base_field=models.CharField(max_length=32, blank=True), default=list, blank=True
     )
     max_file_count = models.PositiveIntegerField(
@@ -2144,8 +2449,21 @@ class FileExerciseSettings(models.Model):
         )
     )
 
+    def natural_key(self):
+        return (self.exercise.slug, )
 
-class FileExerciseTest(models.Model):
+
+class FileExerciseTestManager(models.Manager):
+
+    def get_by_natural_key(self, exercise_slug, name):
+        return self.get(exercise__slug=exercise_slug, name=name)
+
+class FileExerciseTest(models.Model, ExportImportMixin):
+    class Meta:
+        verbose_name = "file exercise test"
+
+    objects = FileExerciseTestManager()
+
     exercise = models.ForeignKey(
         FileUploadExercise,
         verbose_name="for file exercise",
@@ -2162,20 +2480,51 @@ class FileExerciseTest(models.Model):
         "InstanceIncludeFile", verbose_name="instance files required by this test", blank=True
     )
 
+    @classmethod
+    def new_from_import(cls, document, instance, pk_map):
+        required_files = document["fields"].pop("required_files")
+        required_instance = document["fields"].pop("required_instance_files")
+        new = cls(**document["fields"])
+        if check_import_permission(new, instance):
+            new.save()
+        for stage_doc in document["stages"]:
+            stage_doc["fields"]["test"] = new
+            stage = FileExerciseTestStage.new_from_import(stage_doc, instance, pk_map)
+
+        # ADD REQUIRED FILES
+
+        print(f"Would add {cls.__name__} {new.name}")
+
+    def natural_key(self):
+        return (self.exercise.slug, self.name)
+
     def __str__(self):
         return self.name
 
-    class Meta:
-        verbose_name = "file exercise test"
+    def export(self, instance, export_target):
+        super().export(instance, export_target)
+        for stage in self.fileexerciseteststage_set.get_queryset():
+            stage.export(instance, export_target)
 
 
-class FileExerciseTestStage(models.Model):
+class FileExerciseTestStageManager(models.Manager):
+
+    def get_by_natural_key(self, exercise_slug, test_name, ordinal):
+        return self.get(
+            test__exercise__slug=exercise_slug,
+            test__name=test_name,
+            ordinal_number=ordinal
+        )
+
+class FileExerciseTestStage(models.Model, ExportImportMixin):
     """A stage – a named sequence of commands to run in a file exercise test."""
 
     class Meta:
         # Deferred constraints: https://code.djangoproject.com/ticket/20581
         unique_together = ("test", "ordinal_number")
         ordering = ["ordinal_number"]
+
+    objects = FileExerciseTestStageManager()
 
     test = models.ForeignKey(FileExerciseTest, on_delete=models.CASCADE)
     depends_on = models.ForeignKey(
@@ -2184,11 +2533,42 @@ class FileExerciseTestStage(models.Model):
     name = models.CharField(max_length=64, default="stage")  # Translate
     ordinal_number = models.PositiveSmallIntegerField()
 
+    @classmethod
+    def new_from_import(cls, document, instance, pk_map):
+        new = cls(**document["fields"])
+        if check_import_permission(new, instance):
+            new.save()
+        for command_doc in document["commands"]:
+            command_doc["fields"]["stage"] = new
+            command = FileExerciseTestCommand.new_from_import(command_doc, instance, pk_map)
+
+        print(f"Would add {cls.__name__} {new.name}")
+
+    def natural_key(self):
+        return (self.test.exercise.slug, self.test.name, str(self.ordinal_number))
+
     def __str__(self):
         return f"{self.test.name}: {self.ordinal_number:02} - {self.name}"
 
+    def export(self, instance, export_target):
+        super().export(instance, export_target)
+        for command in self.fileexercisetestcommand_set.get_queryset():
+            command.export(instance, export_target)
 
-class FileExerciseTestCommand(models.Model):
+
+class FileExerciseTestCommandManager(models.Manager):
+
+    def get_by_natural_key(self, exercise_slug, test_name, stage_ordinal, ordinal):
+        return self.get(
+            stage__test__exercise__slug=exercise_slug,
+            stage__test__name=test_name,
+            stage__ordinal_number=stage_ordinal,
+            ordinal_number=ordinal
+        )
+
+
+
+class FileExerciseTestCommand(models.Model, ExportImportMixin):
     """A command that shall be executed on the test machine."""
 
     class Meta:
@@ -2203,6 +2583,8 @@ class FileExerciseTestCommand(models.Model):
         ("SIGINT", "Interrupt signal (same as Ctrl-C)"),
         ("SIGTERM", "Terminate signal"),
     )
+
+    objects = FileExerciseTestCommandManager()
 
     stage = models.ForeignKey(FileExerciseTestStage, on_delete=models.CASCADE)
     command_line = models.CharField(max_length=255)  # Translate
@@ -2246,8 +2628,44 @@ class FileExerciseTestCommand(models.Model):
     return_value = models.IntegerField(verbose_name="Expected return value", blank=True, null=True)
     ordinal_number = models.PositiveSmallIntegerField()  # TODO: Enforce min=1
 
+    @classmethod
+    def new_from_import(cls, document, instance, pk_map):
+        new = cls(**document["fields"])
+        if check_import_permission(new, instance):
+            new.save()
+        for out_doc in document["expected_output"]:
+            out_doc["fields"]["command"] = new
+            expected_out = FileExerciseTestExpectedStdout(**out_doc["fields"])
+            expected_out.save()
+        for err_doc in document["expected_err"]:
+            err_doc["fields"]["command"] = new
+            expected_err = FileExerciseTestExpectedStderr(**err_doc["fields"])
+            expected_err.save()
+        print(f"Would add {cls.__name__} {new.command_line} ")
+
+    def natural_key(self):
+        return list(self.stage.natural_key()) + [str(self.ordinal_number)]
+
     def __str__(self):
         return f"{self.ordinal_number:02}: {self.command_line}"
+
+    def export(self, instance, export_target):
+        super().export(instance, export_target)
+        name = "_".join(self.natural_key())
+        export_json(
+            serialize_many_python(
+                FileExerciseTestExpectedOutput.objects.filter(command=self, output_type="STDOUT")
+            ),
+            f"{name}_exp_stdout",
+            export_target,
+        )
+        export_json(
+            serialize_many_python(
+                FileExerciseTestExpectedOutput.objects.filter(command=self, output_type="STDERR")
+            ),
+            f"{name}_exp_stderr",
+            export_target,
+        )
 
 
 class FileExerciseTestExpectedOutput(models.Model):
@@ -2294,28 +2712,62 @@ class FileExerciseTestExpectedStderr(FileExerciseTestExpectedOutput):
 # V
 
 
-class InstanceIncludeFileToExerciseLink(models.Model):
+class InstanceFileExerciseLinkManager(models.Manager):
+
+    def get_by_natural_key(self, exercise_slug, file_name):
+        return self.get(exercise__slug=exercise_slug, include_file__default_name=file_name)
+
+class InstanceIncludeFileToExerciseLink(models.Model, ExportImportMixin):
     """
     Context model for shared course files for file exercises.
     """
+
+    objects = InstanceFileExerciseLinkManager()
 
     include_file = models.ForeignKey("InstanceIncludeFile", on_delete=models.CASCADE)
     exercise = models.ForeignKey("ContentPage", on_delete=models.CASCADE)
 
     # The settings are determined per exercise basis
-    file_settings = models.OneToOneField("IncludeFileSettings", on_delete=models.CASCADE)
+    file_settings = models.ForeignKey("IncludeFileSettings", on_delete=models.CASCADE)
+
+    def natural_key(self):
+        return (self.exercise.slug, self.include_file.default_name)
 
 
-class InstanceIncludeFileToInstanceLink(models.Model):
+
+class InstanceFileLinkManager(models.Manager):
+
+    def get_by_natural_key(self, instance_slug, file_name):
+        return self.get(instance__slug=instance_slug, include_file__default_name=file_name)
+
+
+class InstanceIncludeFileToInstanceLink(models.Model, ExportImportMixin):
     class Meta:
         unique_together = ("instance", "include_file")
+
+    objects = InstanceFileLinkManager()
 
     revision = models.PositiveIntegerField(blank=True, null=True)
     instance = models.ForeignKey("CourseInstance", on_delete=models.CASCADE)
     include_file = models.ForeignKey("InstanceIncludeFile", on_delete=models.CASCADE)
 
+    def natural_key(self):
+        return [self.instance.slug, self.include_file.default_name]
+
     def freeze(self, freeze_to=None):
         freeze_context_link(self, "include_file", freeze_to)
+
+    def set_instance(self, instance):
+        self.instance = instance
+
+
+
+
+
+class InstanceFileManager(models.Manager):
+
+    def get_by_natural_key(self, course_slug, default_name):
+        return self.get(course__slug=course_slug, default_name=default_name)
 
 
 class InstanceIncludeFile(models.Model):
@@ -2323,6 +2775,8 @@ class InstanceIncludeFile(models.Model):
     A file that's linked to a course and can be included in any exercise
     that needs it. (File upload, code input, code replace, ...)
     """
+
+    objects = InstanceFileManager()
 
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     exercises = models.ManyToManyField(
@@ -2336,6 +2790,18 @@ class InstanceIncludeFile(models.Model):
     fileinfo = models.FileField(
         max_length=255, upload_to=get_instancefile_path, storage=upload_storage
     )  # Translate
+
+    @classmethod
+    def new_from_import(cls, document, instance, pk_map):
+        new = deserialize_python(document)
+        if check_import_permission(new.object, instance):
+            new.save()
+
+        print(f"Would add {cls.__name__} {new.default_name}")
+        return new
+
+    def natural_key(self):
+        return (self.course.slug, self.default_name)
 
     def save(self, *args, **kwargs):
         new = False
@@ -2359,6 +2825,10 @@ class InstanceIncludeFile(models.Model):
             )
             link.save()
 
+    def export(self, instance, export_target):
+        document = serialize_single_python(self)
+        export_json(document, self.default_name, export_target)
+        export_files(self, export_target, "backend", translate=True)
 
 # ^
 # |
@@ -2367,6 +2837,11 @@ class InstanceIncludeFile(models.Model):
 # |
 # V
 
+
+class IncludeFileManager(models.Manager):
+
+    def get_by_natural_key(self, exercise_slug, default_name):
+        return self.get(exercise__slug=exercise_slug, default_name=default_name)
 
 class FileExerciseTestIncludeFile(models.Model):
     """
@@ -2378,13 +2853,31 @@ class FileExerciseTestIncludeFile(models.Model):
     class Meta:
         verbose_name = "included file"
 
+    objects = IncludeFileManager()
+
     exercise = models.ForeignKey(FileUploadExercise, on_delete=models.CASCADE)
-    file_settings = models.OneToOneField("IncludeFileSettings", on_delete=models.CASCADE)
+    file_settings = models.ForeignKey("IncludeFileSettings", on_delete=models.CASCADE)
     default_name = models.CharField(verbose_name="Default name", max_length=255)  # Translate
     description = models.TextField(blank=True, null=True)  # Translate
     fileinfo = models.FileField(
         max_length=255, upload_to=get_testfile_path, storage=upload_storage
     )  # Translate
+
+
+    @classmethod
+    def new_from_import(cls, document, instance, pk_map):
+        settings = IncludeFileSettings(**document["settings"]["fields"])
+        settings.save()
+        document["fields"]["file_settings"] = settings
+        new = cls(**document["fields"])
+        if check_import_permission(new, instance):
+            new.save()
+
+        print(f"Would add {cls.__name__} {new.default_name}")
+        return new
+
+    def natural_key(self):
+        return (self.exercise.slug, self.default_name)
 
     def __str__(self):
         return f"{self.file_settings.purpose} - {self.default_name}"
@@ -2397,6 +2890,34 @@ class FileExerciseTestIncludeFile(models.Model):
         with open(self.fileinfo.path, "rb") as f:
             file_contents = f.read()
         return file_contents
+
+    def export(self, instance, export_target):
+        document = serialize_single_python(self)
+        name = "_".join(self.natural_key())
+        export_json(
+            document,
+            name,
+            export_target,
+        )
+        export_json(
+            serialize_single_python(self.file_settings),
+            f"{name}_settings",
+            export_target,
+        )
+        export_files(self, export_target, "backend", translate=True)
+
+
+
+# This is technically not safe
+# However the current model is impossible to import/export with
+# natural keys
+class FileSettingsManager(models.Manager):
+
+    def get_by_natural_key(self, name, purpose):
+        return self.get(
+            name=name,
+            purpose=purpose
+        )
 
 
 class IncludeFileSettings(models.Model):
@@ -2418,6 +2939,9 @@ class IncludeFileSettings(models.Model):
             ),
         ),
     )
+
+    objects = FileSettingsManager()
+
     # Default order: reference, inputgen, wrapper, test
     name = models.CharField(verbose_name="File name during test", max_length=255)  # Translate
     purpose = models.CharField(
@@ -2439,10 +2963,16 @@ class IncludeFileSettings(models.Model):
         verbose_name="File access mode", max_length=10, default="rw-rw-rw-"
     )
 
+    def natural_key(self):
+        return (
+            self.name,
+            self.purpose
+        )
+
 
 # ^
 # |
-# INSTANCE FILES
+# EXERCISE FILES
 # ANSWER MODELS
 # |
 # V
@@ -2494,19 +3024,6 @@ class CheckboxExerciseAnswer(models.Model):
 
     def __str__(self):
         return self.answer
-
-
-class CodeInputExerciseAnswer(models.Model):
-    exercise = models.ForeignKey(CodeInputExercise, on_delete=models.CASCADE)
-    answer = models.TextField()  # Translate
-
-
-class CodeReplaceExerciseAnswer(models.Model):
-    exercise = models.ForeignKey(CodeReplaceExercise, on_delete=models.CASCADE)
-    answer = models.TextField()  # Translate
-    # replace_file = models.ForeignKey()
-    replace_file = models.TextField()  # DEBUG
-    replace_line = models.PositiveIntegerField()
 
 
 # ^
@@ -2907,19 +3424,6 @@ class UserCheckboxExerciseAnswer(UserAnswer):
 
 
 
-class CodeReplaceExerciseReplacement(models.Model):
-    answer = models.ForeignKey("UserCodeReplaceExerciseAnswer", on_delete=models.CASCADE)
-    target = models.ForeignKey(CodeReplaceExerciseAnswer, null=True, on_delete=models.SET_NULL)
-    replacement = models.TextField()
-
-
-class UserCodeReplaceExerciseAnswer(UserAnswer):
-    exercise = models.ForeignKey(CodeReplaceExercise, null=True, on_delete=models.SET_NULL)
-    given_answer = models.TextField()
-
-    def __str__(self):
-        return self.given_answer
-
 
 class UserTaskCompletion(models.Model):
     class Meta:
@@ -2946,3 +3450,52 @@ class InvalidExerciseAnswerException(Exception):
     """
     This exception is cast when an exercise answer cannot be processed.
     """
+
+
+ContentPage.register_content_type("LECTURE", Lecture)
+ContentPage.register_content_type(
+    "MULTIPLE_CHOICE_EXERCISE", MultipleChoiceExercise, UserMultipleChoiceExerciseAnswer
+)
+ContentPage.register_content_type(
+    "CHECKBOX_EXERCISE", CheckboxExercise, UserCheckboxExerciseAnswer
+)
+ContentPage.register_content_type(
+    "TEXTFIELD_EXERCISE", TextfieldExercise, UserTextfieldExerciseAnswer
+)
+ContentPage.register_content_type(
+    "FILE_UPLOAD_EXERCISE", FileUploadExercise, UserFileUploadExerciseAnswer
+)
+
+def get_import_list():
+    return [
+        Course,
+        CourseInstance,
+        Term,
+        TermAlias,
+        TermLink,
+        TermTab,
+        TermTag,
+        CourseMedia,
+        File,
+        Image,
+        VideoLink,
+        InstanceIncludeFile,
+        ContentPage,
+        CheckboxExerciseAnswer,
+        MultipleChoiceExerciseAnswer,
+        TextfieldExerciseAnswer,
+        FileExerciseSettings,
+        FileExerciseTestIncludeFile,
+        IncludeFileSettings,
+        FileExerciseTest,
+        FileExerciseTestStage,
+        FileExerciseTestCommand,
+        FileExerciseTestExpectedOutput,
+        ContentGraph,
+        EmbeddedLink,
+        CourseMediaLink,
+        InstanceIncludeFileToInstanceLink,
+        TermToInstanceLink,
+    ]
+
+

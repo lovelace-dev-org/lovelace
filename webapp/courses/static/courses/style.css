@@ -1916,6 +1916,16 @@ div.expand-handle {
                 #fff;
 }
 
+.export-button {
+    background: no-repeat url("/static/courses/export-16.png") center/16px,
+                #fff;
+}
+
+.import-button {
+    background: no-repeat url("/static/courses/import-16.png") center/16px,
+                #fff;
+}
+
 
 div.task-meta-score {
     display: block;

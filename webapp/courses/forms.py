@@ -11,7 +11,7 @@ from django.http import (
 )
 from django.template import loader
 from django.utils.text import slugify
-from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy as _
 from modeltranslation.forms import TranslationModelForm
 from utils.formatters import display_name
 from utils.management import add_translated_charfields, TranslationStaffForm
@@ -214,6 +214,24 @@ class InstanceCloneForm(forms.ModelForm):
             _("Instance default name ({lang})"),
             _("Alternative name ({lang})"),
         )
+
+
+class InstanceExportForm(forms.Form):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["export"] = forms.BooleanField(
+            label=_("Confirm export"),
+            required=True
+        )
+
+
+class InstanceImportForm(forms.Form):
+
+    import_file = forms.FileField(
+        label=_("Upload exported zip file"),
+        required=True
+    )
 
 
 InstanceGradingForm = forms.inlineformset_factory(
