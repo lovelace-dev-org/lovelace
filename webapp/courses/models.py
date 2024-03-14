@@ -3347,6 +3347,7 @@ def get_import_list():
         EmbeddedLink,
         CourseMediaLink,
         InstanceIncludeFileToInstanceLink,
+        InstanceIncludeFileToExerciseLink,
         TermToInstanceLink,
     ]
 
