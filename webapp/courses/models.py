@@ -838,17 +838,18 @@ class TermAlias(models.Model):
 
 class TermTagManager(models.Manager):
 
-    def get_by_natural_key(self, name):
-        return self.get(name=name)
+    def get_by_natural_key(self, export_id):
+        return self.get(export_id=export_id)
 
 
 class TermTag(models.Model):
     objects = TermTagManager()
 
     name = models.CharField(verbose_name="Term", max_length=200)  # Translate
+    export_id = models.UUIDField(default=uuid.uuid4, editable=False)
 
     def natural_key(self):
-        return [self.name]
+        return [self.export_id]
 
     def __str__(self):
         return self.name
