@@ -4,6 +4,7 @@ import json
 import math
 import os
 import shutil
+import uuid
 from collections import defaultdict
 from decimal import Decimal
 from datetime import date, datetime
@@ -21,6 +22,9 @@ def field_serializer(obj):
         return obj.isoformat()
 
     if isinstance(obj, Decimal):
+        return str(obj)
+
+    if isinstance(obj, uuid.UUID):
         return str(obj)
 
     raise TypeError ("Type %s not serializable" % type(obj))

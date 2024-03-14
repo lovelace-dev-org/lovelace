@@ -1,10 +1,12 @@
 from django.core import serializers
 from django.db import models
 from reversion.models import Version
+from courses.models import SlugManager
 from utils.archive import find_latest_version, get_archived_instances
 from utils.data import (
     export_json, serialize_single_python, serialize_many_python
 )
+from utils.management import get_prefixed_slug
 
 
 class AssessmentToExerciseLink(models.Model):
@@ -46,30 +48,22 @@ class AssessmentToExerciseLink(models.Model):
         self.instance = instance
 
 
-class AssessmentSheetManager(models.Manager):
-
-    def get_by_natural_key(self, course_slug, title):
-        return self.get(course__slug=course_slug, title=title)
-
 class AssessmentSheet(models.Model):
     # Translatable fields
-    objects = AssessmentSheetManager()
+    objects = SlugManager()
 
     title = models.CharField(max_length=255)
-    course = models.ForeignKey("courses.Course", on_delete=models.CASCADE)
+    origin = models.ForeignKey("courses.Course", on_delete=models.CASCADE)
+    slug = models.SlugField(
+        max_length=255, db_index=True, unique=True, blank=False, allow_unicode=True
+    )
 
-    @classmethod
-    def new_from_import(cls, document, instance, pk_map):
-        new = cls(**document["fields"])
-        for section_doc in document["sections"]:
-            section_doc["fields"]["sheet"] = new.pk
-            section = AssessmentSection.new_from_import(section_doc, instance, pk_map)
-
-        print(f"Would add {cls.__name__} {new.title}")
-        return new
+    def save(self, *args, **kwargs):
+        self.slug = get_prefixed_slug(self, self.origin, "title")
+        super().save(*args, **kwargs)
 
     def natural_key(self):
-        return [self.course.slug, self.title]
+        return [self.slug]
 
     def export(self, instance, export_target):
         document = serialize_single_python(self)
@@ -87,10 +81,9 @@ class AssessmentSheet(models.Model):
 
 class AssessmentSectionManager(models.Manager):
 
-    def get_by_natural_key(self, course_slug, sheet_title, ordinal):
+    def get_by_natural_key(self, sheet_slug, ordinal):
         return self.get(
-            sheet__course__slug=course_slug,
-            sheet__title=sheet_title,
+            sheet__slug=sheet_slug,
             ordinal_number=ordinal
         )
 
@@ -101,17 +94,6 @@ class AssessmentSection(models.Model):
     sheet = models.ForeignKey("AssessmentSheet", on_delete=models.CASCADE)
     title = models.CharField(max_length=255)
     ordinal_number = models.PositiveSmallIntegerField()
-
-    @classmethod
-    def new_from_import(cls, document, instance, pk_map):
-        new = cls(**document["fields"])
-        for bullet_doc in document["sections"]:
-            bullet = AssessmentBullet(**bullet_doc["fields"])
-            bullet.sheet = new.sheet
-            bullet.section = new
-
-        print(f"Would add {cls.__name__} {new.title}")
-        return new
 
     def natural_key(self):
         return self.sheet.natural_key() + [str(self.ordinal_number)]
@@ -132,10 +114,9 @@ class AssessmentSection(models.Model):
 
 class AssessmentBulletManager(models.Manager):
 
-    def get_by_natural_key(self, course_slug, sheet_title, section_ordinal, ordinal):
+    def get_by_natural_key(self, sheet_slug, section_ordinal, ordinal):
         return self.get(
-            sheet__course__slug=course_slug,
-            sheet__title=sheet_title,
+            sheet__slug=sheet_slug,
             section__ordinal_number=section_ordinal,
             ordinal_number=ordinal
         )

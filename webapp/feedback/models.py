@@ -34,6 +34,7 @@ class ContentFeedbackQuestion(models.Model, ExportImportMixin):
     question_type = models.CharField(
         max_length=28, default="TEXTFIELD_FEEDBACK", choices=QUESTION_TYPE_CHOICES
     )
+    origin = models.ForeignKey("courses.Course", null=True, on_delete=models.SET_NULL)
     slug = models.SlugField(max_length=255, db_index=True, unique=True, allow_unicode=True)
 
     def natural_key(self):
@@ -44,8 +45,7 @@ class ContentFeedbackQuestion(models.Model, ExportImportMixin):
 
     def get_url_name(self):
         """Creates a URL and HTML5 ID field friendly version of the name."""
-        default_lang = django.conf.settings.LANGUAGE_CODE
-        return slugify(getattr(self, f"question_{default_lang}"), allow_unicode=True)
+        return get_prefixed_slug(self, self.course, "question")
 
     def get_type_object(self):
         """

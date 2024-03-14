@@ -2,33 +2,30 @@ from django.core import serializers
 from django.db import models
 from django.utils.translation import gettext as _
 from reversion.models import Version
-from courses.models import ContentPage, CourseInstance
+from courses.models import ContentPage, CourseInstance, SlugManager
 from utils.data import (
     export_json, serialize_single_python, serialize_many_python
 )
 from utils.management import ExportImportMixin
 
-class FaqManager(models.Manager):
-
-    def get_by_natural_key(self, hook):
-        return self.get(hook=hook)
-
 
 class FaqQuestion(models.Model, ExportImportMixin):
-    objects = FaqManager()
+    objects = SlugManager()
 
     question = models.TextField(verbose_name=_("Question"))
     answer = models.TextField(verbose_name=_("Answer"))
     hook = models.SlugField(max_length=255, blank=False, allow_unicode=True, unique=True)
-
-    @classmethod
-    def new_from_import(cls, document, instance, pk_map):
-        new = cls(**document["fields"])
-        print(f"Would add {cls.__name__} {new.name}")
-        return new
+    origin = models.ForeignKey("courses.Course", null=True, on_delete=models.SET_NULL)
+    slug = models.SlugField(
+        max_length=255, db_index=True, unique=True, blank=False, allow_unicode=True
+    )
 
     def natural_key(self):
-        return (self.hook, )
+        return (self.slug, )
+
+    def save(self, *args, **kwargs):
+        self.slug = get_prefixed_slug(self, self.origin, "hook", translated=False)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"({self.hook}) {self.question}"
@@ -36,11 +33,11 @@ class FaqQuestion(models.Model, ExportImportMixin):
 
 class FaqLinkManager(models.Manager):
 
-    def get_by_natural_key(self, exercise_slug, instance_slug, question_hook):
+    def get_by_natural_key(self, exercise_slug, instance_slug, question_slug):
         return self.get(
             exercise__slug=exercise_slug,
             instance__slug=instance_slug,
-            question__hook=question_hook,
+            question__slug=question_slug,
         )
 
 
@@ -58,7 +55,7 @@ class FaqToInstanceLink(models.Model, ExportImportMixin):
         unique_together = ("instance", "question", "exercise")
 
     def natural_key(self):
-        return [self.exercise.slug, self.instance.slug, self.question.hook]
+        return [self.exercise.slug, self.instance.slug, self.question.slug]
 
     def freeze(self, freeze_to=None):
         if self.revision is None:

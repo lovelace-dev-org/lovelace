@@ -47,15 +47,6 @@ class MultipleQuestionExam(ContentPage):
         verbose_name = "multiple question exam"
         proxy = True
 
-    @classmethod
-    def new_from_import(cls, document, instance, pk_map):
-        new = cls(**document["fields"])
-        document["question_pool"]["fields"]["exercise"] = new
-        pool = ExamQuestionPool(**document["question_pool"]["fields"])
-
-        print(f"Would add {cls.__name__} {new.name}")
-        return new
-
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = self.get_url_name()

@@ -5,6 +5,7 @@ import itertools
 import operator
 import re
 import os
+import uuid
 from fnmatch import fnmatch
 from html import escape
 
@@ -44,7 +45,12 @@ from utils.files import (
     upload_storage,
 )
 from utils.archive import get_archived_field, get_single_archived
-from utils.management import freeze_context_link, check_import_permission, ExportImportMixin
+from utils.management import (
+    ExportImportMixin,
+    check_import_permission,
+    freeze_context_link,
+    get_prefixed_slug,
+)
 
 
 class RollbackRevert(Exception):
@@ -217,11 +223,12 @@ class Course(models.Model):
         verbose_name="Staff only course",
         help_text="Staff only courses will not be shown on the front page unless the user is staff",
     )
+    prefix = models.CharField(max_length=4)
 
     # TODO: Create an instance automatically, if none exists
 
     def natural_key(self):
-        return (self.slug, )
+        return [self.slug]
 
     def get_url_name(self):
         """Creates a URL and HTML5 ID field friendly version of the name."""
@@ -292,7 +299,9 @@ class CourseInstance(models.Model):
 
     name = models.CharField(max_length=255, unique=True)  # Translate
     email = models.EmailField(blank=True)  # Translate
-    slug = models.SlugField(max_length=255, allow_unicode=True, blank=False)
+    slug = models.SlugField(
+        max_length=255, db_index=True, unique=True, blank=False, allow_unicode=True
+    )
     course = models.ForeignKey("Course", on_delete=models.CASCADE)
 
     start_date = models.DateTimeField(
@@ -325,7 +334,7 @@ class CourseInstance(models.Model):
     max_group_size = models.PositiveSmallIntegerField(null=True, blank=True)
 
     def natural_key(self):
-        return (self.slug, )
+        return [self.slug]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -340,8 +349,7 @@ class CourseInstance(models.Model):
 
     def get_url_name(self):
         """Creates a URL and HTML5 ID field friendly version of the name."""
-        default_lang = django.conf.settings.LANGUAGE_CODE
-        return slugify(getattr(self, f"name_{default_lang}"), allow_unicode=True)
+        return get_prefixed_slug(self, self.course, "name")
 
     def user_enroll_status(self, user):
         if not user.is_active:
@@ -600,8 +608,8 @@ class ContentGraph(models.Model):
 
 class MediaManager(InheritanceManager):
 
-    def get_by_natural_key(self, name):
-        return self.get(name=name)
+    def get_by_natural_key(self, slug):
+        return self.get(slug=slug)
 
 
 class CourseMedia(models.Model, ExportImportMixin):
@@ -614,11 +622,16 @@ class CourseMedia(models.Model, ExportImportMixin):
     name = models.CharField(
         verbose_name="Unique name identifier", max_length=200, unique=True
     )
+    origin = models.ForeignKey("Course", null=True, on_delete=models.SET_NULL)
+    slug = models.SlugField(
+        max_length=255, db_index=True, unique=True, blank=False, allow_unicode=True
+    )
 
     def natural_key(self):
-        return (self.name, )
+        return (self.slug, )
 
     def save(self, *args, **kwargs):
+        self.slug = get_prefixed_slug(self, self.origin, "name", translated=False)
         super().save(*args, **kwargs)
         for link in self.coursemedialink_set.get_queryset():
             if not link.instance.frozen:
@@ -627,9 +640,9 @@ class CourseMedia(models.Model, ExportImportMixin):
 
 class MediaLinkManager(models.Manager):
 
-    def get_by_natural_key(self, parent_slug, media_name, instance_slug):
+    def get_by_natural_key(self, parent_slug, media_slug, instance_slug):
         return self.get(
-            parent__slug=parent_slug, media__name=media_name, instance__slug=instance_slug
+            parent__slug=parent_slug, media__slug=media_slug, instance__slug=instance_slug
         )
 
 
@@ -651,7 +664,7 @@ class CourseMediaLink(models.Model, ExportImportMixin):
     )
 
     def natural_key(self):
-        return [self.parent.slug, self.media.name, self.instance.slug]
+        return [self.parent.slug, self.media.slug, self.instance.slug]
 
     class Meta:
         unique_together = ("instance", "media", "parent")
@@ -674,16 +687,6 @@ class File(CourseMedia):
         verbose_name="Default name for the download dialog", max_length=200, null=True, blank=True
     )
 
-    @classmethod
-    def new_from_import(cls, document, instance, pk_map):
-        ptr = document["fields"].pop("coursemedia_ptr")
-        document["fields"]["name"] = ptr[0]
-        new = cls(**document["fields"])
-        if check_import_permission(new, instance):
-            new.save()
-        print(f"Would add File {new.name}")
-        return new
-
     def __str__(self):
         return self.name
 
@@ -699,14 +702,6 @@ class Image(CourseMedia):
     date_uploaded = models.DateTimeField(verbose_name="date uploaded", auto_now_add=True)
     description = models.CharField(max_length=500)  # Translate
     fileinfo = models.ImageField(upload_to=get_image_upload_path)  # Translate
-
-    @classmethod
-    def new_from_import(cls, document, instance, pk_map):
-        new = deserialize_python(document)
-        if check_import_permission(new.object, instance):
-            new.save()
-        print(f"Would add Image {new.name}")
-        return new
 
     def __str__(self):
         return self.name
@@ -732,14 +727,6 @@ class VideoLink(CourseMedia):
     link = models.URLField()  # Translate
     description = models.CharField(max_length=500)  # Translate
 
-    @classmethod
-    def new_from_import(cls, document, instance, pk_map):
-        new = deserialize_python(document)
-        if check_import_permission(new.object, instance):
-            new.save()
-        print(f"Would add VideoLink {new.name}")
-        return new
-
     def __str__(self):
         return self.name
 
@@ -752,16 +739,10 @@ class VideoLink(CourseMedia):
 # V
 
 
-class TermManager(models.Manager):
-
-    def get_by_natural_key(self, name, course_slug):
-        return self.get(name=name, course__slug=course_slug)
-
-
 class TermLinkManager(models.Manager):
 
-    def get_by_natural_key(self, term_name, course_slug, instance_slug):
-        return self.get(term__name=term_name, term__course__slug=course_slug, instance__slug=instance_slug)
+    def get_by_natural_key(self, term_slug, instance_slug):
+        return self.get(term__slug=term_slug, instance__slug=instance_slug)
 
 
 class TermToInstanceLink(models.Model, ExportImportMixin):
@@ -791,47 +772,31 @@ class TermToInstanceLink(models.Model, ExportImportMixin):
 class Term(models.Model, ExportImportMixin):
     class Meta:
         unique_together = (
-            "course",
+            "origin",
             "name",
         )
 
-    objects = TermManager()
+    objects = SlugManager()
 
-    course = models.ForeignKey(Course, verbose_name="Course", null=True, on_delete=models.SET_NULL)
     name = models.CharField(verbose_name="Term", max_length=200)  # Translate
+    origin = models.ForeignKey(Course, verbose_name="Course", null=True, on_delete=models.SET_NULL)
+    slug = models.SlugField(
+        max_length=255, db_index=True, unique=True, blank=False, allow_unicode=True
+    )
     description = models.TextField()  # Translate
 
     tags = models.ManyToManyField("TermTag", blank=True)
 
-    @classmethod
-    def new_from_import(cls, document, instance, pk_map):
-        new = deserialize_python(document)
-        if check_import_permission(new.object, instance):
-            new.save()
-        child_imports = [
-            TermAlias, document["aliases"],
-            TermLink, document["links"],
-            TermTab, document["tabs"],
-            TermTag, document["tags"],
-        ]
-        for model_class, document_list in child_imports:
-            for child_doc in document_list:
-                child_doc["fields"]["term"] = new
-                obj = deserialize_python(child_doc)
-                obj.save()
-
-        print(f"Would add Term {new.name}")
-        return new
-
     def natural_key(self):
-        return (self.name, self.course.slug)
+        return [self.slug]
 
     def __str__(self):
         return self.name
 
     def save(self, *args, **kwargs):
+        self.slug = get_prefixed_slug(self, self.origin, "name")
         super().save(*args, **kwargs)
-        for instance in CourseInstance.objects.filter(course=self.course, frozen=False):
+        for instance in CourseInstance.objects.filter(course=self.origin, frozen=False):
             if not TermToInstanceLink.objects.filter(instance=instance, term=self):
                 link = TermToInstanceLink(instance=instance, revision=None, term=self)
                 link.save()
@@ -860,7 +825,7 @@ class Term(models.Model, ExportImportMixin):
         )
 
     def set_instance(self, instance):
-        self.course = instance.course
+        self.origin = instance.course
 
 
 class TermAlias(models.Model):
@@ -922,6 +887,8 @@ class TermLink(models.Model):
 class Calendar(models.Model, ExportImportMixin):
     """A multi purpose calendar for course events markups, time reservations etc."""
 
+    objects = SlugManager()
+
     name = models.CharField(
         verbose_name="Name for reference in content", max_length=200, unique=True
     )
@@ -929,9 +896,16 @@ class Calendar(models.Model, ExportImportMixin):
     related_content = models.ForeignKey(
         "ContentPage", on_delete=models.SET_NULL, null=True, blank=True
     )
+    origin = models.ForeignKey(Course, verbose_name="Course", null=True, on_delete=models.SET_NULL)
+    slug = models.SlugField(max_length=255, allow_unicode=True, blank=False)
 
     def natural_key(self):
         return [self.name]
+
+    def save(self, *args, **kwargs):
+        self.slug = get_prefixed_slug(self, self.origin, "name", translated=False)
+        super().save(*args, **kwargs)
+
 
     def __str__(self):
         return self.name
@@ -1037,6 +1011,7 @@ class ContentPage(models.Model, ExportImportMixin):
     answer_table_classes ="fixed alternate-green answers-table"
 
     name = models.CharField(max_length=255, help_text="The full name of this page")  # Translate
+    origin = models.ForeignKey(Course, verbose_name="Course", null=True, on_delete=models.SET_NULL)
     slug = models.SlugField(
         max_length=255, db_index=True, unique=True, blank=False, allow_unicode=True
     )
@@ -1085,12 +1060,6 @@ class ContentPage(models.Model, ExportImportMixin):
     ask_collaborators = models.BooleanField(
         verbose_name="Ask the student to list collaborators", default=False
     )
-
-    @classmethod
-    def new_from_import(cls, document, instance, pk_map):
-        content_type = document["fields"]["content_type"]
-        content_class = cls.content_type_models[content_type]
-        return content_class.new_from_import(document, instance, pk_map)
 
     @classmethod
     def register_content_type(cls, constant_name, type_class, answer_class=None):
@@ -1358,8 +1327,7 @@ class ContentPage(models.Model, ExportImportMixin):
         return []
 
     def get_url_name(self):
-        default_lang = django.conf.settings.LANGUAGE_CODE
-        return slugify(getattr(self, f"name_{default_lang}"), allow_unicode=True)
+        return get_prefixed_slug(self, self.origin, "name")
 
     def get_type_object(self):
         # this seems to lose the revision info?
@@ -1568,14 +1536,6 @@ class Lecture(ContentPage):
 
     template = "courses/lecture.html"
 
-    @classmethod
-    def new_from_import(cls, document, instance, pk_map):
-        new = deserialize_python(document).object
-        if check_import_permission(new, instance):
-            new.save()
-        print(f"Would add {cls.__name__} {new.name}")
-        return new
-
     def get_choices(self, revision=None):
         pass
 
@@ -1607,18 +1567,6 @@ class MultipleChoiceExercise(ContentPage):
         proxy = True
 
     template = "courses/multiple-choice-exercise.html"
-
-    @classmethod
-    def new_from_import(cls, document, instance, pk_map):
-        new = deserialize_python(document).object
-        if check_import_permission(new, instance):
-            new.save()
-        for choice_doc in document["choices"]:
-            choice = deserialize_python(choice_doc)
-            choice.save()
-
-        print(f"Would add {cls.__name__} {new.name}")
-        return new
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -1722,18 +1670,6 @@ class CheckboxExercise(ContentPage):
         proxy = True
 
     template = "courses/checkbox-exercise.html"
-
-    @classmethod
-    def new_from_import(cls, document, instance, pk_map):
-        new = deserialize_python(document).object
-        if check_import_permission(new, instance):
-            new.save()
-        for choice_doc in document["choices"]:
-            choice = deserialize_python(choice_doc)
-            choice.save()
-
-        print(f"Would add {cls.__name__} {new.name}")
-        return new
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -1841,18 +1777,6 @@ class TextfieldExercise(ContentPage):
         proxy = True
 
     template = "courses/textfield-exercise.html"
-
-    @classmethod
-    def new_from_import(cls, document, instance, pk_map):
-        new = deserialize_python(document).object
-        if check_import_permission(new, instance):
-            new.save()
-        for choice_doc in document["choices"]:
-            choice = deserialize_python(choice_doc)
-            choice.save()
-
-        print(f"Would add {cls.__name__} {new.name}")
-        return new
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -1990,24 +1914,6 @@ class FileUploadExercise(ContentPage):
         proxy = True
 
     template = "courses/file-upload-exercise.html"
-
-    @classmethod
-    def new_from_import(cls, document, instance, pk_map):
-        new = deserialize_python(document).object
-        if check_import_permission(new, instance):
-            new.save()
-
-        settings = deserialize_python(document["settings"])
-        settings.save()
-        for file_doc in document["files"]:
-            file_doc["fields"]["exercise"] = new
-            file_obj = FileExerciseTestIncludeFile.new_from_import(file_doc, instance, pk_map)
-        for test_doc in document["tests"]:
-            test_doc["fields"]["exercise"] = new
-            test = FileExerciseTest.new_from_import(test_doc, instance, pk_map)
-
-        print(f"Would add {cls.__name__} {new.name}")
-        return new
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -2480,21 +2386,6 @@ class FileExerciseTest(models.Model, ExportImportMixin):
         "InstanceIncludeFile", verbose_name="instance files required by this test", blank=True
     )
 
-    @classmethod
-    def new_from_import(cls, document, instance, pk_map):
-        required_files = document["fields"].pop("required_files")
-        required_instance = document["fields"].pop("required_instance_files")
-        new = cls(**document["fields"])
-        if check_import_permission(new, instance):
-            new.save()
-        for stage_doc in document["stages"]:
-            stage_doc["fields"]["test"] = new
-            stage = FileExerciseTestStage.new_from_import(stage_doc, instance, pk_map)
-
-        # ADD REQUIRED FILES
-
-        print(f"Would add {cls.__name__} {new.name}")
-
     def natural_key(self):
         return (self.exercise.slug, self.name)
 
@@ -2532,17 +2423,6 @@ class FileExerciseTestStage(models.Model, ExportImportMixin):
     )
     name = models.CharField(max_length=64, default="stage")  # Translate
     ordinal_number = models.PositiveSmallIntegerField()
-
-    @classmethod
-    def new_from_import(cls, document, instance, pk_map):
-        new = cls(**document["fields"])
-        if check_import_permission(new, instance):
-            new.save()
-        for command_doc in document["commands"]:
-            command_doc["fields"]["stage"] = new
-            command = FileExerciseTestCommand.new_from_import(command_doc, instance, pk_map)
-
-        print(f"Would add {cls.__name__} {new.name}")
 
     def natural_key(self):
         return (self.test.exercise.slug, self.test.name, str(self.ordinal_number))
@@ -2628,21 +2508,6 @@ class FileExerciseTestCommand(models.Model, ExportImportMixin):
     return_value = models.IntegerField(verbose_name="Expected return value", blank=True, null=True)
     ordinal_number = models.PositiveSmallIntegerField()  # TODO: Enforce min=1
 
-    @classmethod
-    def new_from_import(cls, document, instance, pk_map):
-        new = cls(**document["fields"])
-        if check_import_permission(new, instance):
-            new.save()
-        for out_doc in document["expected_output"]:
-            out_doc["fields"]["command"] = new
-            expected_out = FileExerciseTestExpectedStdout(**out_doc["fields"])
-            expected_out.save()
-        for err_doc in document["expected_err"]:
-            err_doc["fields"]["command"] = new
-            expected_err = FileExerciseTestExpectedStderr(**err_doc["fields"])
-            expected_err.save()
-        print(f"Would add {cls.__name__} {new.command_line} ")
-
     def natural_key(self):
         return list(self.stage.natural_key()) + [str(self.ordinal_number)]
 
@@ -2714,8 +2579,8 @@ class FileExerciseTestExpectedStderr(FileExerciseTestExpectedOutput):
 
 class InstanceFileExerciseLinkManager(models.Manager):
 
-    def get_by_natural_key(self, exercise_slug, file_name):
-        return self.get(exercise__slug=exercise_slug, include_file__default_name=file_name)
+    def get_by_natural_key(self, exercise_slug, file_slug):
+        return self.get(exercise__slug=exercise_slug, include_file__slug=file_slug)
 
 class InstanceIncludeFileToExerciseLink(models.Model, ExportImportMixin):
     """
@@ -2731,7 +2596,7 @@ class InstanceIncludeFileToExerciseLink(models.Model, ExportImportMixin):
     file_settings = models.ForeignKey("IncludeFileSettings", on_delete=models.CASCADE)
 
     def natural_key(self):
-        return (self.exercise.slug, self.include_file.default_name)
+        return (self.exercise.slug, self.include_file.slug)
 
 
 
@@ -2764,11 +2629,6 @@ class InstanceIncludeFileToInstanceLink(models.Model, ExportImportMixin):
 
 
 
-class InstanceFileManager(models.Manager):
-
-    def get_by_natural_key(self, course_slug, default_name):
-        return self.get(course__slug=course_slug, default_name=default_name)
-
 
 class InstanceIncludeFile(models.Model):
     """
@@ -2776,7 +2636,7 @@ class InstanceIncludeFile(models.Model):
     that needs it. (File upload, code input, code replace, ...)
     """
 
-    objects = InstanceFileManager()
+    objects = SlugManager()
 
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     exercises = models.ManyToManyField(
@@ -2786,27 +2646,22 @@ class InstanceIncludeFile(models.Model):
         through_fields=("include_file", "exercise"),
     )
     default_name = models.CharField(verbose_name="Default name", max_length=255)  # Translate
+    slug = models.SlugField(
+        max_length=255, db_index=True, unique=True, blank=False, allow_unicode=True
+    )
     description = models.TextField(blank=True, null=True)  # Translate
     fileinfo = models.FileField(
         max_length=255, upload_to=get_instancefile_path, storage=upload_storage
     )  # Translate
 
-    @classmethod
-    def new_from_import(cls, document, instance, pk_map):
-        new = deserialize_python(document)
-        if check_import_permission(new.object, instance):
-            new.save()
-
-        print(f"Would add {cls.__name__} {new.default_name}")
-        return new
-
     def natural_key(self):
-        return (self.course.slug, self.default_name)
+        return [self.slug]
 
     def save(self, *args, **kwargs):
         new = False
         if self.pk is None:
             new = True
+        self.slug = get_prefixed_slug(self, self.couse, "default_name")
         super().save(*args, **kwargs)
         if new:
             self.create_instance_links()
@@ -2864,18 +2719,6 @@ class FileExerciseTestIncludeFile(models.Model):
     )  # Translate
 
 
-    @classmethod
-    def new_from_import(cls, document, instance, pk_map):
-        settings = IncludeFileSettings(**document["settings"]["fields"])
-        settings.save()
-        document["fields"]["file_settings"] = settings
-        new = cls(**document["fields"])
-        if check_import_permission(new, instance):
-            new.save()
-
-        print(f"Would add {cls.__name__} {new.default_name}")
-        return new
-
     def natural_key(self):
         return (self.exercise.slug, self.default_name)
 
@@ -2908,15 +2751,13 @@ class FileExerciseTestIncludeFile(models.Model):
 
 
 
-# This is technically not safe
-# However the current model is impossible to import/export with
+# Export ID needed to be added for this to be importable with
 # natural keys
 class FileSettingsManager(models.Manager):
 
-    def get_by_natural_key(self, name, purpose):
+    def get_by_natural_key(self, export_id):
         return self.get(
-            name=name,
-            purpose=purpose
+            export_id=export_id
         )
 
 
@@ -2944,6 +2785,7 @@ class IncludeFileSettings(models.Model):
 
     # Default order: reference, inputgen, wrapper, test
     name = models.CharField(verbose_name="File name during test", max_length=255)  # Translate
+    export_id = models.UUIDField(default=uuid.uuid4, editable=False)
     purpose = models.CharField(
         verbose_name="Used as", max_length=10, default="REFERENCE", choices=FILE_PURPOSE_CHOICES
     )
@@ -2964,10 +2806,7 @@ class IncludeFileSettings(models.Model):
     )
 
     def natural_key(self):
-        return (
-            self.name,
-            self.purpose
-        )
+        return [self.export_id]
 
 
 # ^

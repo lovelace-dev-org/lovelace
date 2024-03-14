@@ -104,6 +104,7 @@ TEMPLATES = (
 )
 
 UNEDITABLE_MARKUPS = ["empty", "cleanup", "error", "embedded", "calendar"]
+ORPHAN_PREFIX = "null"
 
 # Python dotted path to the WSGI application used by Django"s runserver.
 WSGI_APPLICATION = "lovelace.wsgi.application"

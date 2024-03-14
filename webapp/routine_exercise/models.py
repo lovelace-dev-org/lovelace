@@ -21,22 +21,6 @@ class RoutineExercise(ContentPage):
         verbose_name = "routine exercise"
         proxy = True
 
-    @classmethod
-    def new_from_import(cls, document, instance, pk_map):
-        new = cls(**document["fields"])
-        for file_doc in document["backends"]:
-            file_doc["fields"]["exercise"] = new
-            file_obj = RoutineExerciseBackendFile(**file_doc["fields"])
-        for tmpl_doc in document["templates"]:
-            tmpl_doc["fields"]["exercise"] = new
-            tmpl = RoutineExerciseTemplate(**tmpl_doc["fields"])
-        document["command"]["fields"]["exercise"] = new
-        command = RoutineExerciseBackendCommand(**document["command"]["fields"])
-
-        print(f"Would add {cls.__name__} {new.name}")
-        return new
-
-
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = self.get_url_name()

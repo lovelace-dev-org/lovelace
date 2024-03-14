@@ -5,6 +5,7 @@ from django.db import models, transaction
 from django import forms
 from django.forms import Textarea, ModelForm
 from django.utils import translation
+from django.utils.text import slugify
 from reversion.models import Version
 from modeltranslation.translator import translator
 import courses.models as cm
@@ -437,3 +438,20 @@ class ExportImportMixin:
         document = serialize_single_python(self)
         name = "_".join(self.natural_key())
         export_json(document, name, export_target)
+
+def get_prefixed_slug(model_instance, origin, source_field, translated=True):
+    default_lang = settings.MODELTRANSLATION_DEFAULT_LANGUAGE
+    if origin is None:
+        prefix = settings.ORPHAN_PREFIX
+    else:
+        prefix = origin.prefix
+
+    if translated:
+        main_slug = slugify(getattr(model_instance, f"{source_field}_{default_lang}"), allow_unicode=True)
+    else:
+        main_slug = slugify(getattr(model_instance, f"{source_field}"), allow_unicode=True)
+
+    # don't double the prefix if it's already used in the source field (legacy naming habit)
+    main_slug = main_slug.removeprefix(f"{prefix}-")
+
+    return f"{prefix}-{main_slug}"

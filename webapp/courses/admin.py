@@ -470,9 +470,9 @@ class TermAdmin(TranslationAdmin, VersionAdmin):
     search_fields = ("name",)
     list_display = (
         "name",
-        "course",
+        "origin",
     )
-    list_filter = ("course",)
+    list_filter = ("origin",)
     list_per_page = 500
     ordering = ("name",)
 
@@ -491,7 +491,7 @@ class TermAdmin(TranslationAdmin, VersionAdmin):
         )
 
         return qs.filter(
-            Q(id__in=list(edited)) | Q(course__staff_group__user=request.user)
+            Q(id__in=list(edited)) | Q(origin__staff_group__user=request.user)
         ).distinct()
 
     def has_change_permission(self, request, obj=None):
@@ -501,7 +501,7 @@ class TermAdmin(TranslationAdmin, VersionAdmin):
             if obj:
                 return (
                     Version.objects.get_for_object(obj).filter(revision__user=request.user).exists()
-                    or request.user in obj.course.staff_group.user_set.get_queryset()
+                    or request.user in obj.origin.staff_group.user_set.get_queryset()
                 )
             return True
         return False
@@ -513,7 +513,7 @@ class TermAdmin(TranslationAdmin, VersionAdmin):
             if obj:
                 return (
                     Version.objects.get_for_object(obj).filter(revision__user=request.user).exists()
-                    or request.user in obj.course.staff_group.user_set.get_queryset()
+                    or request.user in obj.origin.staff_group.user_set.get_queryset()
                 )
             return True
         return False
@@ -521,7 +521,7 @@ class TermAdmin(TranslationAdmin, VersionAdmin):
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)
         lang_list = django.conf.settings.LANGUAGES
-        for instance in CourseInstance.objects.filter(course=obj.course, frozen=False):
+        for instance in CourseInstance.objects.filter(course=obj.origin, frozen=False):
             instance_slug = instance.slug
             for lang, __ in lang_list:
                 cache.set(

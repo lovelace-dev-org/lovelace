@@ -2,6 +2,7 @@ import datetime
 import re
 from collections import defaultdict
 from functools import wraps
+import django.conf
 from django.http import HttpResponseNotFound
 from django.template import engines, loader
 from django.utils.safestring import mark_safe
