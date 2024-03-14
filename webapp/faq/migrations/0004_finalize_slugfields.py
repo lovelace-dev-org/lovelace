@@ -13,7 +13,7 @@ class Migration(migrations.Migration):
             model_name="faqquestion",
             name="slug",
             field=models.SlugField(
-                allow_unicode=True, null=True, max_length=255, unique=True
+                allow_unicode=True, null=False, max_length=255, unique=True
             ),
         ),
     ]
