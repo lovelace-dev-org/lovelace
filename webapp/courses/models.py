@@ -2044,6 +2044,8 @@ class FileUploadExercise(ContentPage):
             testfile.export(instance, export_target)
         for test in self.fileexercisetest_set.get_queryset():
             test.export(instance, export_target)
+        for ifile_link in self.instanceincludefiletoexerciselink_set.get_queryset():
+            ifile_link.export(instance, export_target)
 
 
 # Legacy task type only kept for compatibility, use routine exercise instead
@@ -2599,6 +2601,15 @@ class InstanceIncludeFileToExerciseLink(models.Model, ExportImportMixin):
     def natural_key(self):
         return (self.exercise.slug, self.include_file.slug)
 
+    def export(self, instance, export_target):
+        document = serialize_single_python(self)
+        name = "_".join(self.natural_key()) + "_link"
+        export_json(document, name, export_target)
+        export_json(
+            serialize_single_python(self.file_settings),
+            f"{name}_settings",
+            export_target,
+        )
 
 
 class InstanceFileLinkManager(models.Manager):
@@ -2683,7 +2694,8 @@ class InstanceIncludeFile(models.Model):
 
     def export(self, instance, export_target):
         document = serialize_single_python(self)
-        export_json(document, self.default_name, export_target)
+        name = self.slug
+        export_json(document, name, export_target)
         export_files(self, export_target, "backend", translate=True)
 
 # ^
@@ -2737,7 +2749,7 @@ class FileExerciseTestIncludeFile(models.Model):
 
     def export(self, instance, export_target):
         document = serialize_single_python(self)
-        name = "_".join(self.natural_key())
+        name = f"{self.default_name}_{self.export_id}"
         export_json(
             document,
             name,
