@@ -2696,8 +2696,8 @@ class InstanceIncludeFile(models.Model):
 
 class IncludeFileManager(models.Manager):
 
-    def get_by_natural_key(self, exercise_slug, default_name):
-        return self.get(exercise__slug=exercise_slug, default_name=default_name)
+    def get_by_natural_key(self, export_id):
+        return self.get(export_id=export_id)
 
 class FileExerciseTestIncludeFile(models.Model):
     """
@@ -2710,8 +2710,8 @@ class FileExerciseTestIncludeFile(models.Model):
         verbose_name = "included file"
 
     objects = IncludeFileManager()
-
     exercise = models.ForeignKey(FileUploadExercise, on_delete=models.CASCADE)
+    export_id = models.UUIDField(default=uuid.uuid4, editable=False)
     file_settings = models.ForeignKey("IncludeFileSettings", on_delete=models.CASCADE)
     default_name = models.CharField(verbose_name="Default name", max_length=255)  # Translate
     description = models.TextField(blank=True, null=True)  # Translate
@@ -2721,7 +2721,7 @@ class FileExerciseTestIncludeFile(models.Model):
 
 
     def natural_key(self):
-        return (self.exercise.slug, self.default_name)
+        return [self.export_id]
 
     def __str__(self):
         return f"{self.file_settings.purpose} - {self.default_name}"
