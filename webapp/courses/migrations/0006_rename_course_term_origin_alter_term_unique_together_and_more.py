@@ -74,7 +74,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="includefilesettings",
             name="export_id",
-            field=models.UUIDField(default=uuid.uuid4, editable=False),
+            field=models.UUIDField(default=uuid.uuid4, editable=False, unique=True),
         ),
         migrations.AddField(
             model_name="instanceincludefile",

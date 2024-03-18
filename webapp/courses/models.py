@@ -444,18 +444,18 @@ class CourseInstance(models.Model):
         embeds = (
             EmbeddedLink.objects.filter(instance=self)
             .order_by("embedded_page__id")
-            .distinct("embedded_page__id")
         )
         media = (
             CourseMediaLink.objects.filter(instance=self)
             .order_by("media__id")
-            .distinct("media__id")
         )
         for embed_link in embeds:
             embed_link.export(self, export_target)
+        for embed_link in embeds.distinct("embedded_page__id"):
             embed_link.embedded_page.export(embed_link.embedded_page, self, export_target)
         for media_link in media:
             media_link.export(self, export_target)
+        for media_link in media.distinct("media__id"):
             media_link.media.export(self, export_target)
             CourseMedia.objects.get_subclass(id=media_link.media.id).export(self, export_target)
 
@@ -846,7 +846,7 @@ class TermTag(models.Model):
     objects = TermTagManager()
 
     name = models.CharField(verbose_name="Term", max_length=200)  # Translate
-    export_id = models.UUIDField(default=uuid.uuid4, editable=False)
+    export_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
 
     def natural_key(self):
         return [self.export_id]
@@ -2723,7 +2723,7 @@ class FileExerciseTestIncludeFile(models.Model):
 
     objects = IncludeFileManager()
     exercise = models.ForeignKey(FileUploadExercise, on_delete=models.CASCADE)
-    export_id = models.UUIDField(default=uuid.uuid4, editable=False)
+    export_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     file_settings = models.ForeignKey("IncludeFileSettings", on_delete=models.CASCADE)
     default_name = models.CharField(verbose_name="Default name", max_length=255)  # Translate
     description = models.TextField(blank=True, null=True)  # Translate
@@ -2798,7 +2798,7 @@ class IncludeFileSettings(models.Model):
 
     # Default order: reference, inputgen, wrapper, test
     name = models.CharField(verbose_name="File name during test", max_length=255)  # Translate
-    export_id = models.UUIDField(default=uuid.uuid4, editable=False)
+    export_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     purpose = models.CharField(
         verbose_name="Used as", max_length=10, default="REFERENCE", choices=FILE_PURPOSE_CHOICES
     )

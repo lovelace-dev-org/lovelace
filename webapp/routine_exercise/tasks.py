@@ -26,7 +26,7 @@ def _run_command(args, test_dir):
     start_rusage = resource.getrusage(resource.RUSAGE_CHILDREN)
     start_time = time.time()
 
-    env = django_settings.CHECKING_ENV
+    env = settings.CHECKING_ENV
     env["PWD"] = test_dir
 
     proc_results = {"command_line": " ".join(shlex.quote(arg) for arg in args)}
