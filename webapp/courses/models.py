@@ -204,7 +204,6 @@ class Course(models.Model):
         verbose_name="Staff only course",
         help_text="Staff only courses will not be shown on the front page unless the user is staff",
     )
-
     # TODO: Create an instance automatically, if none exists
 
     def get_url_name(self):

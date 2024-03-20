@@ -178,6 +178,7 @@ class MultipleQuestionExamAttempt(models.Model):
         script = []
         for handle, alt_idx in self.questions.items():
             chosen = pool[handle]["alternatives"][int(alt_idx)].copy()
+            chosen["value"] = pool[handle].get("value", 1)
             if exclude_correct:
                 chosen.pop("correct")
             script.append((handle, chosen))

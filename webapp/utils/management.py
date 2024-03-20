@@ -318,27 +318,6 @@ def add_translated_charfields(
             )
 
 
-def process_delete_confirm_form(request, success_callback):
-    if request.method == "POST":
-        form = ConfirmDeleteForm(request.POST)
-        if not form.is_valid():
-            errors = form.errors_as_json()
-            return JsonResponse({"errors": errors}, status=400)
-
-        success_callback(form)
-        return JsonResponse({"status": "ok"})
-
-    form = ConfirmDeleteForm()
-    form_t = loader.get_template("courses/base-edit-form.html")
-    form_c = {
-        "form_object": form,
-        "submit_url": request.path,
-        "html_id": f"delete-confirm-form",
-        "html_class": "management-form",
-    }
-    return HttpResponse(form_t.render(form_c, request))
-
-
 
 
 # NOTE: not used currently because it introduced new problems

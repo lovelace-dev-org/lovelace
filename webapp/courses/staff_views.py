@@ -67,7 +67,7 @@ from faq.utils import clone_faq_links
 from assessment.utils import clone_assessment_links
 
 
-# CONTENT EDIT VIEWS
+# INSTANCE MANAGEMENT VIEWS
 # |
 # v
 
@@ -479,6 +479,14 @@ def move_content_node(request, course, instance, target_id, placement):
     active_node.save()
 
     return JsonResponse({"status": "ok"})
+
+# ^
+# |
+# INSTANCE MANAGEMENT VIEWS
+# CONTENT EDIT VIEWS
+# |
+# v
+
 
 
 @ensure_staff

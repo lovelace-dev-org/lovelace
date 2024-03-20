@@ -4,9 +4,15 @@ webapp/db.sqlite3
 webapp/lib/
 webapp/pyvenv.cfg
 **/migrations/**
-webapp/lovelace/settings/
-!webapp/lovelace/factory.py
+webapp/lovelace/settings/dev.py
+webapp/lovelace/settings/unittest.py
+webapp/lovelace/settings/__init__.py
 !**/migrations
 !**/migrations/__init__.py
 upload
 *kate-swp
+webapp/package*.json
+.eslintrc.yml
+.pylintrc
+node_modules
+django.mo

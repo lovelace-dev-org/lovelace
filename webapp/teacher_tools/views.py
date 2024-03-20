@@ -799,7 +799,7 @@ def create_exemption(request, course, instance):
             graphs=graphs,
         )
         if not form.is_valid():
-            errors = form.errors_as_json()
+            errors = form.errors.as_json()
             return JsonResponse({"errors": errors}, status=400)
 
         form.save(commit=True)

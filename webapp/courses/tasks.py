@@ -782,7 +782,6 @@ def get_celery_worker_status():
         d = insp.stats()
         if not d:
             d = {ERROR_KEY: _("No running Celery workers were found.")}
-            raise KeyboardInterrupt
     except IOError as e:
         from errno import errorcode
 
