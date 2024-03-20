@@ -53,12 +53,12 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "matches",
-                    models.IntegerField(verbose_name="Näytettävien osumien määrä"),
+                    models.IntegerField(verbose_name="Number of matches to show"),
                 ),
                 (
                     "language",
                     models.CharField(
-                        choices=[], max_length=32, verbose_name="Ohjelmointikieli"
+                        choices=[], max_length=32, verbose_name="Programming language"
                     ),
                 ),
                 (

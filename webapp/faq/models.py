@@ -1,6 +1,6 @@
 from django.core import serializers
 from django.db import models
-from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy as _
 from reversion.models import Version
 from courses.models import ContentPage, CourseInstance, SlugManager
 from utils.data import (
