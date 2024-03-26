@@ -1648,10 +1648,11 @@ class FileUploadExercise(ContentPage):
 
 
         self.content_type = "FILE_UPLOAD_EXERCISE"
-        super().save(*args, **kwargs)
 
+        super().save(*args, **kwargs)
         # create the extra settings model instance if one doesn't exist yet
         if not hasattr(self, "fileexercisesettings"):
+            print("Creating settings")
             extra_settings = FileExerciseSettings(exercise=self)
             extra_settings.save()
 

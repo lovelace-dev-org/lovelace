@@ -236,7 +236,7 @@ def save_file_upload_exercise(
 
         for lang_code, _ in lang_list:
             if_name = form_data[f"instance_file_name_[{if_id}]_{lang_code}"]
-            setattr(current_if_link.file_settings, "name_{lang_code}", if_name)
+            setattr(current_if_link.file_settings, f"name_{lang_code}", if_name)
 
         current_if_link.file_settings.purpose = form_data[f"instance_file_purpose_[{if_id}]"]
         current_if_link.file_settings.chown_settings = form_data[f"instance_file_chown_[{if_id}]"]
@@ -482,10 +482,11 @@ def file_upload_exercise(request, exercise_id=None, action=None):
         for k, v in sorted(form_contents.lists()):
             if k == "order_hierarchy":
                 order_hierarchy_json = json.loads(v[0])
-                print("order_hierarchy:")
-                print(json.dumps(order_hierarchy_json, indent=4))
+                # print("order_hierarchy:")
+                # print(json.dumps(order_hierarchy_json, indent=4))
             else:
-                print(f"{k}: '{v}'")
+                pass
+                # print(f"{k}: '{v}'")
 
         new_stages = {}
         for test_id, stage_list in order_hierarchy_json["stages_of_tests"].items():
@@ -588,6 +589,7 @@ def file_upload_exercise(request, exercise_id=None, action=None):
     t = loader.get_template("exercise_admin/file-upload-exercise-change.html")
     c = {
         "add_or_edit": add_or_edit,
+        "answer_mode_choices": FileExerciseSettings.ANSWER_MODE_CHOICES,
         "exercise": exercise,
         "hints": hints,
         "instances": instances,
@@ -681,7 +683,7 @@ def edit_feedback_questions(request):
 
     data = request.POST.dict()
     data.pop("csrfmiddlewaretoken")
-    print(data)
+    # print(data)
 
     feedback_questions = ContentFeedbackQuestion.objects.all()
     new_question_str = data.pop("new_questions")
