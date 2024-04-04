@@ -659,7 +659,7 @@ def file_exercise_evaluation(request, course, instance, content, revision, task_
     data["manual"] = content.manually_evaluated
     data["total_evaluation"] = (total_evaluation,)
     data["score"] = f"{score:.2f}"
-    data["has_faq"] = faq_utils.has_faq(instance, content)
+    data["has_faq"] = faq_utils.has_faq(instance, content, data["triggers"])
 
     return JsonResponse(data)
 

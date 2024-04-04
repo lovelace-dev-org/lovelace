@@ -14,7 +14,7 @@ from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from modeltranslation.forms import TranslationModelForm
 from utils.formatters import display_name
-from utils.management import add_translated_charfields, TranslationStaffForm
+from utils.management import add_translated_charfields, TranslationStaffForm, get_prefixed_slug
 from courses import blockparser
 from courses import markupparser
 import courses.models as cm
@@ -115,11 +115,13 @@ class ContentForm(forms.ModelForm):
                 self.add_error("content_" + lang_code, e)
 
         default_lang = django.conf.settings.LANGUAGE_CODE
-        from courses.models import ContentPage
 
-        slug = slugify(cleaned_data[f"name_{default_lang}"], allow_unicode=True)
         if self._instance is None:
-            if ContentPage.objects.filter(slug=slug).exists():
+            origin = cleaned_data["origin"]
+            base_slug = slugify(cleaned_data[f"name_{default_lang}"])
+            base_slug = base_slug.removeprefix(f"{origin.prefix}-")
+            slug = f"{origin.prefix}-{base_slug}"
+            if cm.ContentPage.objects.filter(slug=slug).exists():
                 self.add_error(f"name_{default_lang}", _("Name causes slug conflict"))
 
     def __init__(self, *args, **kwargs):

@@ -184,6 +184,8 @@ class EmbeddedObjectEditForm(TranslationStaffForm):
         instance = super().save(commit=False)
         instance.name = self.cleaned_data[self.Meta.ref_field]
         if commit:
+            instance = super().save(commit=False)
+            instance.origin = self._context["course"]
             instance.save()
             return self.save_m2m()
         return instance
@@ -429,7 +431,9 @@ class ScriptFileInline(TranslationStaffForm):
     def save(self, commit=True):
         if self._save_ok:
             if not self.cleaned_data["existing"]:
-                super().save(True)
+                instance = super().save(commit=False)
+                instance.origin = self._context["course"]
+                instance.save()
 
         return None
 
@@ -527,7 +531,9 @@ class ScriptEditForm(LineEditMixin, EmbeddedObjectEditForm):
         if self.cleaned_data["existing"]:
             self.cleaned_data["script_slug"] = self.cleaned_data["existing"]
         else:
-            super().save(commit)
+            instance = super().save(commit=False)
+            instance.origin = self._context["course"]
+            instance.save()
         for inline in self._include_formset:
             inline.save(commit)
 
@@ -720,6 +726,7 @@ class TaskCreateForm(LineEditMixin, TranslationStaffForm):
     def save(self, commit=True):
         instance = super().save(commit=False)
         instance.content_type = self.cleaned_data["content_type"]
+        instance.origin = self._context["course"]
         instance.save()
         self.cleaned_data["page_slug"] = instance.slug
 

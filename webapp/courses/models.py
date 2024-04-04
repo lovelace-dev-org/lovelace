@@ -223,7 +223,7 @@ class Course(models.Model):
         verbose_name="Staff only course",
         help_text="Staff only courses will not be shown on the front page unless the user is staff",
     )
-    prefix = models.CharField(max_length=4)
+    prefix = models.CharField(max_length=4, unique=True)
 
     # TODO: Create an instance automatically, if none exists
 
@@ -991,6 +991,7 @@ class ContentPage(models.Model, ExportImportMixin):
 
     class Meta:
         ordering = ("name",)
+        unique_together = ("name", "origin")
 
     objects = SlugManager()
 
@@ -1012,7 +1013,9 @@ class ContentPage(models.Model, ExportImportMixin):
     answer_table_classes ="fixed alternate-green answers-table"
 
     name = models.CharField(max_length=255, help_text="The full name of this page")  # Translate
-    origin = models.ForeignKey(Course, verbose_name="Course", null=True, on_delete=models.SET_NULL)
+    origin = models.ForeignKey(
+        Course, verbose_name="Origin course", null=True, on_delete=models.SET_NULL
+    )
     slug = models.SlugField(
         max_length=255, db_index=True, unique=True, blank=False, allow_unicode=True
     )
@@ -2673,7 +2676,7 @@ class InstanceIncludeFile(models.Model):
         new = False
         if self.pk is None:
             new = True
-        self.slug = get_prefixed_slug(self, self.couse, "default_name")
+        self.slug = get_prefixed_slug(self, self.course, "default_name")
         super().save(*args, **kwargs)
         if new:
             self.create_instance_links()

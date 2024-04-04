@@ -6,7 +6,7 @@ from courses.models import ContentPage, CourseInstance, SlugManager
 from utils.data import (
     export_json, serialize_single_python, serialize_many_python
 )
-from utils.management import ExportImportMixin
+from utils.management import ExportImportMixin, get_prefixed_slug
 
 
 class FaqQuestion(models.Model, ExportImportMixin):

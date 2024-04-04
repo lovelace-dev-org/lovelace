@@ -44,26 +44,27 @@ ALLOWED_HOSTS = [os.environ["LOVELACE_HOSTNAME"], os.environ["LOVELACE_HOSTADDR"
 # and uncomment the debug_toolbar line, then copy the MIDDLEWARE definition and
 # uncomment the DebugToolbarMiddleware line
 INSTALLED_APPS = (
-    "modeltranslation",
-    "django.contrib.admin",
-    "django.contrib.auth",
-    "django.contrib.contenttypes",
-    "django.contrib.sessions",
-    "django.contrib.sites", # Required by allauth
-    "django.contrib.messages",
-    "django.contrib.staticfiles",
-    "allauth",
-    "allauth.account",
-    "allauth.socialaccount",
-    "courses",
-    "stats",
-    "feedback",
-    "exercise_admin",
-    "routine_exercise",
-    "faq",
-    "assessment",
-    "reversion",
-    "teacher_tools"
+    'modeltranslation',
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.sites', # Required by allauth
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'courses',
+    'stats',
+    'feedback',
+    'routine_exercise',
+    'faq',
+    'assessment',
+    'exercise_admin',
+    'multiexam',
+    'reversion',
+    'teacher_tools',
 )
 
 MIDDLEWARE = (

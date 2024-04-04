@@ -186,7 +186,6 @@ def save_file_upload_exercise(
             current_ef.file_settings = ef_settings
         else:
             current_ef = FileExerciseTestIncludeFile.objects.get(id=int(ef_id))
-            ef_settings = current_ef.file_settings
 
         for lang_code, _ in lang_list:
             ef_default_name = form_data[f"included_file_default_name_[{ef_id}]_{lang_code}"]
@@ -195,17 +194,21 @@ def save_file_upload_exercise(
             ef_fileinfo = form_data[f"included_file_[{ef_id}]_{lang_code}"]
             setattr(current_ef, f"default_name_{lang_code}", ef_default_name)
             setattr(current_ef, f"description_{lang_code}", ef_description)
-            setattr(ef_settings, f"name_{lang_code}", ef_name)
+            setattr(current_ef.file_settings, f"name_{lang_code}", ef_name)
             if ef_fileinfo is not None:
                 setattr(current_ef, f"fileinfo_{lang_code}", ef_fileinfo)
 
-        ef_settings.purpose = form_data[f"included_file_purpose_[{ef_id}]"]
-        ef_settings.chown_settings = form_data[f"included_file_chown_[{ef_id}]"]
-        ef_settings.chgrp_settings = form_data[f"included_file_chgrp_[{ef_id}]"]
-        ef_settings.chmod_settings = form_data[f"included_file_chmod_[{ef_id}]"]
+        current_ef.file_settings.purpose = form_data[f"included_file_purpose_[{ef_id}]"]
+        current_ef.file_settings.chown_settings = form_data[f"included_file_chown_[{ef_id}]"]
+        current_ef.file_settings.chgrp_settings = form_data[f"included_file_chgrp_[{ef_id}]"]
+        current_ef.file_settings.chmod_settings = form_data[f"included_file_chmod_[{ef_id}]"]
 
+        current_ef.file_settings.save()
+        current_ef.file_settings = (
+            current_ef.file_settings
+        )  # Otherwise 'file_settings_id' doesn't exist :P
         current_ef.save()
-        ef_settings.save()
+
         edited_exercise_files[ef_id] = current_ef
 
     for removed_if_link_id in sorted(
@@ -233,7 +236,7 @@ def save_file_upload_exercise(
 
         for lang_code, _ in lang_list:
             if_name = form_data[f"instance_file_name_[{if_id}]_{lang_code}"]
-            setattr(current_if_link.file_settings, "name_{lang_code}", if_name)
+            setattr(current_if_link.file_settings, f"name_{lang_code}", if_name)
 
         current_if_link.file_settings.purpose = form_data[f"instance_file_purpose_[{if_id}]"]
         current_if_link.file_settings.chown_settings = form_data[f"instance_file_chown_[{if_id}]"]
@@ -585,6 +588,7 @@ def file_upload_exercise(request, exercise_id=None, action=None):
     t = loader.get_template("exercise_admin/file-upload-exercise-change.html")
     c = {
         "add_or_edit": add_or_edit,
+        "answer_mode_choices": FileExerciseSettings.ANSWER_MODE_CHOICES,
         "exercise": exercise,
         "hints": hints,
         "instances": instances,

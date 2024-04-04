@@ -172,7 +172,7 @@ class MultipleChoiceExerciseAdmin(CourseContentAdmin, TranslationAdmin, VersionA
         (
             "Page information",
             {
-                "fields": ["name", "slug", "content", "question", "tags"],
+                "fields": ["name", "origin", "slug", "content", "question", "tags"],
             },
         ),
         (
@@ -217,7 +217,9 @@ class CheckboxExerciseAdmin(CourseContentAdmin, TranslationAdmin, VersionAdmin):
     fieldsets = [
         (
             "Page information",
-            {"fields": ["name", "slug", "content", "question", "tags"]},
+            {
+                "fields": ["name", "origin", "slug", "content", "question", "tags"],
+            },
         ),
         (
             "Exercise miscellaneous",
@@ -260,7 +262,9 @@ class TextfieldExerciseAdmin(CourseContentAdmin, TranslationAdmin, VersionAdmin)
     fieldsets = [
         (
             "Page information",
-            {"fields": ["name", "slug", "content", "question", "tags"]},
+            {
+                "fields": ["name", "origin", "slug", "content", "question", "tags"],
+            },
         ),
         (
             "Exercise miscellaneous",
@@ -366,7 +370,7 @@ class LectureAdmin(CourseContentAdmin, TranslationAdmin, VersionAdmin):
     content_type = "LECTURE"
     form = ContentForm
     fieldsets = [
-        ("Page information", {"fields": ["name", "content"]}),
+        ("Page information", {"fields": ["name", "content", "origin"]}),
         ("Feedback", {"fields": ["feedback_questions"]}),
     ]
 
@@ -429,12 +433,14 @@ class CalendarAdmin(admin.ModelAdmin):
 
 class FileAdmin(CourseMediaAdmin, TranslationAdmin, VersionAdmin):
     search_fields = ("name",)
+    readonly_fields = ("slug",)
     form = FileEditForm
     formfield_overrides = {models.FileField: {"widget": AdminFileWidget}}
 
 
 class ImageAdmin(CourseMediaAdmin, TranslationAdmin, VersionAdmin):
     search_fields = ("name",)
+    readonly_fields = ("slug",)
     list_display = (
         "name",
         "description",
@@ -444,6 +450,7 @@ class ImageAdmin(CourseMediaAdmin, TranslationAdmin, VersionAdmin):
 
 class VideoLinkAdmin(CourseMediaAdmin, TranslationAdmin, VersionAdmin):
     search_fields = ("name",)
+    readonly_fields = ("slug",)
     list_display = (
         "name",
         "description",
@@ -472,6 +479,7 @@ class TermAdmin(TranslationAdmin, VersionAdmin):
         "name",
         "origin",
     )
+    readonly_fields = ("slug",)
     list_filter = ("origin",)
     list_per_page = 500
     ordering = ("name",)
@@ -622,6 +630,7 @@ class CourseAdmin(TranslationAdmin, VersionAdmin):
                 "fields": [
                     "name",
                     "slug",
+                    "prefix",
                 ]
             },
         ),
@@ -825,7 +834,7 @@ class CourseInstanceAdmin(TranslationAdmin, VersionAdmin):
                 )
                 link.save()
 
-            terms = Term.objects.filter(course=obj.course)
+            terms = Term.objects.filter(origin=obj.course)
             for term in terms:
                 link = TermToInstanceLink(revision=None, term=term, instance=obj)
                 link.save()

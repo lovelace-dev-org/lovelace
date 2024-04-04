@@ -30,7 +30,12 @@ class MultiExamAdmin(CourseContentAdmin, TranslationAdmin, VersionAdmin):
     form = ContentForm
 
     fieldsets = [
-        ("Page information", {"fields": ["name", "slug", "content", "tags"]}),
+        (
+            "Page information",
+            {
+                "fields": ["name", "origin", "slug", "content", "question", "tags"],
+            },
+        ),
         (
             "Exercise miscellaneous",
             {

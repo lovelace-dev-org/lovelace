@@ -435,7 +435,7 @@ def create_content_node(request, course, instance):
 
         if form.cleaned_data["content"] == "0":
             with reversion.create_revision():
-                page = Lecture()
+                page = Lecture(origin=course)
                 setattr(
                     page,
                     f"name_{settings.MODELTRANSLATION_DEFAULT_LANGUAGE}",
