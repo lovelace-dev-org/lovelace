@@ -140,6 +140,10 @@ DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 # details
 # Uncomment EMAIL_BACKEND if you want to log email into console instead for development
 # EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+EMAIL_BACKEND = os.environ.get(
+    "LOVELACE_EMAIL_BACKEND",
+    "django.core.mail.backends.smtp.EmailBackend"
+)
 EMAIL_HOST = os.environ.get("LOVELACE_EMAIL_HOST", "localhost")
 EMAIL_PORT = os.environ.get("LOVELACE_EMAIL_PORT", 25)
 EMAIL_HOST_USER = os.environ.get("LOVELACE_EMAIL_USER", "")
