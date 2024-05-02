@@ -1,6 +1,6 @@
-
 import itertools
 import json
+import logging
 import math
 import os
 import shutil
@@ -14,6 +14,8 @@ from django.core import serializers
 from django.utils.translation import gettext as _
 from lovelace import plugins as lovelace_plugins
 import courses.models as cm
+
+logger = logging.getLogger(__name__)
 
 def field_serializer(obj):
     """JSON serializer for objects not serializable by default json code"""
@@ -174,12 +176,11 @@ def import_from_zip(import_source, user, responsible, staff_group, target_instan
                 with open(path, "wb") as target:
                     target.write(import_source.read(name))
         else:
-            print(f"Processing model {block_type}")
             for name in group:
                 try:
                     import_model(json.loads(import_source.read(name)), course, instance)
                 except Exception as e:
-                    print(f"Error while handling file {name}")
+                    logger.warning(f"Error while handling file {name} under model {block_type}")
                     raise e
 
     for obj in deferred:

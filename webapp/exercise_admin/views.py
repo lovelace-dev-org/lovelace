@@ -1,5 +1,6 @@
 import collections
 import json
+import logging
 import os
 
 from django.http import (
@@ -57,6 +58,8 @@ from .forms import (
 )
 from .utils import get_default_lang, get_lang_list
 
+
+logger = logging.getLogger(__name__)
 
 def index(request):
     return HttpResponseNotFound()
@@ -138,7 +141,6 @@ def save_file_upload_exercise(
 
     for lang_code, _ in lang_list:
         e_answer_filename = form_data[f"exercise_answer_filename_{lang_code}"]
-        print(e_answer_filename)
         setattr(extra_settings, f"answer_filename_{lang_code}", e_answer_filename)
 
     extra_settings.save()
@@ -482,10 +484,10 @@ def file_upload_exercise(request, exercise_id=None, action=None):
         for k, v in sorted(form_contents.lists()):
             if k == "order_hierarchy":
                 order_hierarchy_json = json.loads(v[0])
-                print("order_hierarchy:")
-                print(json.dumps(order_hierarchy_json, indent=4))
+                logger.debug("order_hierarchy:")
+                logger.debug(json.dumps(order_hierarchy_json, indent=4))
             else:
-                print(f"{k}: '{v}'")
+                logger.debug(f"{k}: '{v}'")
 
         new_stages = {}
         for test_id, stage_list in order_hierarchy_json["stages_of_tests"].items():
@@ -682,7 +684,6 @@ def edit_feedback_questions(request):
 
     data = request.POST.dict()
     data.pop("csrfmiddlewaretoken")
-    print(data)
 
     feedback_questions = ContentFeedbackQuestion.objects.all()
     new_question_str = data.pop("new_questions")
@@ -764,7 +765,7 @@ def edit_feedback_questions(request):
                 choice_obj.save()
 
     else:
-        print(repr(form.errors))
+        logger.debug(repr(form.errors))
         return JsonResponse({"error": form.errors})
 
     return get_feedback_questions(request)

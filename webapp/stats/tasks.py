@@ -1,6 +1,8 @@
 # Celery tasks
 from __future__ import absolute_import
 
+import logging
+
 import datetime
 import json
 import statistics
@@ -12,6 +14,7 @@ from courses.models import ContentGraph, CourseInstance, UserAnswer
 from utils.content import get_course_instance_tasks
 from .models import StudentTaskStats, TaskSummary
 
+logger = logging.getLogger(__name__)
 
 @shared_task(name="stats.generate-instance-user-stats")
 def generate_instance_user_stats(instance_slug):
@@ -23,16 +26,16 @@ def generate_instance_user_stats(instance_slug):
     students = instance.enrolled_users.get_queryset()
 
     for user in students:
-        print("Processing user", user.username)
+        logger.debug("Processing user", user.username)
         for page, task_links in task_pages:
-            print("Processing page", page.name)
+            logger("Processing page", page.name)
             deadline = (
                 ContentGraph.objects.filter(courseinstance=instance, content=page).first().deadline
             )
 
             for link in task_links:
                 task = link.embedded_page.get_type_object()
-                print("Processing task", task.name)
+                logger.debug("Processing task", task.name)
                 answers = UserAnswer.get_task_answers(task, user=user, instance=instance)
                 total = answers.count()
 

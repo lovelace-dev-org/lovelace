@@ -216,8 +216,6 @@ def order_moss_report(self, course_slug, instance_slug, exercise_slug, submit_fo
     command.extend(base_includes)
     command.extend(files_to_submit)
 
-    print(command)
-
     # for base_file in MossBaseFile.objects.filter(moss_settings__exercise__slug=exercise_slug):
     # command += " -b {path}".format(
     # path=fs_path = os.path.join(settings.MEDIA_ROOT, base_file.fileinfo.name)

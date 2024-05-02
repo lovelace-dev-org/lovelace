@@ -6,12 +6,11 @@ contents of this file with:
 
 from lovelace.settings.factory import *
 
-Then overwrite or modify the values you need to. You should also edit the
-__init__.py in this folder to import the settings file you wish to use as the
-default. When running manage.py you can change the settings file with the 
---settings option, e.g.
-
 python manage.py --settings lovelace.settings.yoursettings
+
+or use environ variable
+
+export DJANGO_SETTINGS_MODULE=lovelace.settings.yoursettings
 
 For more information on this file, see
 https://docs.djangoproject.com/en/dev/topics/settings/
@@ -121,6 +120,16 @@ AUTH_PROFILE_MODULE = "courses.UserProfile"
 
 # Database
 # https://docs.djangoproject.com/en/dev/ref/settings/#databases
+if os.getenv("LOVELACE_DB_USE_SSL"):
+    _DB_OPTIONS = {
+        "sslmode": "require",
+        "sslcert": os.environ["LOVELACE_CLIENT_CERT"],
+        "sslkey": os.environ["LOVELACE_CLIENT_KEY"],
+        "sslrootcert": os.environ["LOVELACE_CLIENT_CA"],
+    }
+else:
+    _DB_OPTIONS = {}
+
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
@@ -129,6 +138,7 @@ DATABASES = {
         "PASSWORD": os.environ["LOVELACE_DB_PASS"],
         "HOST": os.environ["LOVELACE_DB_HOST"],
         "PORT": os.environ["LOVELACE_DB_PORT"],
+        "OPTIONS": _DB_OPTIONS,
     }
 }
 
@@ -140,14 +150,14 @@ DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 # details
 # Uncomment EMAIL_BACKEND if you want to log email into console instead for development
 # EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-EMAIL_BACKEND = os.environ.get(
+EMAIL_BACKEND = os.getenv(
     "LOVELACE_EMAIL_BACKEND",
     "django.core.mail.backends.smtp.EmailBackend"
 )
-EMAIL_HOST = os.environ.get("LOVELACE_EMAIL_HOST", "localhost")
-EMAIL_PORT = os.environ.get("LOVELACE_EMAIL_PORT", 25)
-EMAIL_HOST_USER = os.environ.get("LOVELACE_EMAIL_USER", "")
-EMAIL_HOST_PASSWORD = os.environ.get("LOVELACE_EMAIL_PWD", "")
+EMAIL_HOST = os.getenv("LOVELACE_EMAIL_HOST", "localhost")
+EMAIL_PORT = os.getenv("LOVELACE_EMAIL_PORT", 25)
+EMAIL_HOST_USER = os.getenv("LOVELACE_EMAIL_USER", "")
+EMAIL_HOST_PASSWORD = os.getenv("LOVELACE_EMAIL_PWD", "")
 
 # E-mail settings
 EMAIL_SUBJECT_PREFIX = "[Lovelace] "
@@ -244,19 +254,30 @@ SECRET_KEY = os.environ["LOVELACE_SECRET_KEY"]
 # Redis settings for storing checking results
 # If you change these in a configuration file,
 # remember to also include the CELERY_RESULT_BACKEND definition to update it
-REDIS_RESULT_CONFIG = {
-    "host": os.environ["LOVELACE_REDIS_HOST"],
-    "port": os.environ["LOVELACE_REDIS_PORT"],
-    "db": os.environ["LOVELACE_REDIS_RESULT_DB"],
-}
 REDIS_RESULT_EXPIRE = 60
 REDIS_LONG_EXPIRE = 60 * 60 * 24 * 7
 
 # Celery settings
 # The default queue is used for checkers while the privileged queue is used
 # for tasks that have elevated access and do not run any external code
+import ssl
+
 CELERY_BROKER_URL = os.environ["LOVELACE_CELERY_BROKER"]
-CELERY_RESULT_BACKEND = "redis://{host}:{port}/{db}".format(**REDIS_RESULT_CONFIG)
+CELERY_RESULT_BACKEND = os.environ["LOVELACE_CELERY_RESULT"]
+if os.getenv("LOVELACE_CELERY_USE_SSL"):
+    CELERY_BROKER_USE_SSL = {
+        "cert_reqs": ssl.CERT_REQUIRED,
+        "keyfile": os.environ["LOVELACE_CLIENT_KEY"],
+        "certfile": os.environ["LOVELACE_CLIENT_CERT"],
+        "ca_certs": os.environ["LOVELACE_CLIENT_CA"],
+    }
+    CELERY_RESULT_BACKEND += (
+        "?ssl_cert_reqs=required"
+        f"&ssl_ca_certs={os.environ['LOVELACE_CLIENT_CA']}"
+        f"&ssl_certfile={os.environ['LOVELACE_CLIENT_CERT']}"
+        f"&ssl_keyfile={os.environ['LOVELACE_CLIENT_KEY']}"
+    )
+
 CELERY_TASK_DEFAULT_QUEUE = "default"
 CELERY_TASK_DEFAULT_ROUTING_KEY = "default"
 CELERY_QUEUES = (
@@ -279,12 +300,25 @@ CELERY_ROUTES = {
 # Cache settings
 # If using the same redis server, use a different DB to keep it separate
 # from checker results
+
+if os.getenv("LOVELACE_CACHE_USE_SSL"):
+    _CACHE_CONNECTION_POOL_KWARGS = {
+        "ssl_cert_reqs": "required",
+        "ssl_ca_certs": os.environ["LOVELACE_CLIENT_CA"],
+        "ssl_certfile": os.environ["LOVELACE_CLIENT_CERT"],
+        "ssl_keyfile": os.environ["LOVELACE_CLIENT_KEY"],
+    }
+else:
+    _CACHE_CONNECTION_POOL_KWARGS = {}
+
+
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
         "LOCATION": os.environ["LOVELACE_REDIS_CACHE"],
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "CONNECTION_POOL_KWARGS": _CACHE_CONNECTION_POOL_KWARGS,
         }
     }
 }
@@ -300,8 +334,8 @@ CHECKING_ENV = json.loads(os.environ["LOVELACE_CHECKER_ENV"])
 # Worker username is the worker"s own identity which it is demoted to immediately
 # upon starting
 # Restricted username is the user all student code is run as.
-WORKER_USERNAME = os.environ.get("LOVELACE_WORKER_USER", "nobody")
-RESTRICTED_USERNAME = os.environ.get("LOVELACE_RESTRICTED_USER", "nobody")
+WORKER_USERNAME = os.getenv("LOVELACE_WORKER_USER", "nobody")
+RESTRICTED_USERNAME = os.getenv("LOVELACE_RESTRICTED_USER", "nobody")
 
 # Shibboleth related options - uncomment if using Shibboleth
 # First one makes emails invalid usernames when creating accounts
@@ -313,7 +347,7 @@ RESTRICTED_USERNAME = os.environ.get("LOVELACE_RESTRICTED_USER", "nobody")
 # inaccessible through URLs
 # Set PRIVATE_STORAGE_X_SENDFILE to True if your configuration supports
 # mod_xsendfile 
-PRIVATE_STORAGE_FS_PATH = os.environ.get("LOVELACE_PRIVATE_STORAGE", MEDIA_ROOT)
+PRIVATE_STORAGE_FS_PATH = os.getenv("LOVELACE_PRIVATE_STORAGE", MEDIA_ROOT)
 PRIVATE_STORAGE_X_SENDFILE = False
 
 # Mossnet settings for code plagiarism checks

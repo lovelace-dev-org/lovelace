@@ -563,7 +563,6 @@ def course_users(request, course_slug, content_to_search, year, month, day):
             content_names.append(mo.group("embname"))
     deadline = datetime.datetime(int(year), int(month), int(day))
     contents = ContentPage.objects.filter(slug__in=content_names)
-    print(content_names)
 
     user_evaluations = []
     for user in users:
@@ -575,10 +574,6 @@ def course_users(request, course_slug, content_to_search, year, month, day):
                 useranswer__user=user, points__gt=0.0, useranswer__answer_date__lt=deadline
             )
         evaluations = []
-
-        print(
-            username,
-        )
 
         for content in contents:
             exercise = content.get_type_object()

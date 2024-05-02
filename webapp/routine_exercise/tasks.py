@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 import base64
 import json
+import logging
 import os
 import random
 import resource
@@ -16,6 +17,7 @@ from django.conf import settings
 
 from courses import evaluation_sec as sec
 
+logger = logging.getLogger(__name__)
 
 def _run_command(args, test_dir):
     # preparations to run the backend
@@ -118,7 +120,7 @@ def generate_question(self, payload):
             fpath = os.path.join(test_dir, backend["name"])
             with open(fpath, "wb") as fd:
                 fd.write(base64.b64decode(backend["content"]))
-            print(f"Wrote {backend['name' ]} from {backend['handle']}")
+            logger.info(f"Wrote {backend['name' ]} from {backend['handle']}")
 
         fn = "".join(random.choice(string.ascii_lowercase) for i in range(24)) + ".json"
         data = {
@@ -160,7 +162,7 @@ def check_answer(self, payload):
             fpath = os.path.join(test_dir, backend["name"])
             with open(fpath, "wb") as fd:
                 fd.write(base64.b64decode(backend["content"]))
-            print(f"Wrote {backend['name']} from {backend['handle']}")
+            logger.info(f"Wrote {backend['name']} from {backend['handle']}")
 
         fn = "".join(random.choice(string.ascii_lowercase) for i in range(24)) + ".json"
         data = {

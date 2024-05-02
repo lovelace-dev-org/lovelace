@@ -1181,9 +1181,6 @@ class ContentPage(models.Model, ExportImportMixin):
                 return pages[page - 1]
             return full
 
-        #for render in cached_content:
-            #print(render)
-
         return cached_content
 
     def _get_rendered_content(self, context):

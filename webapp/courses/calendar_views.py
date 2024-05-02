@@ -24,7 +24,6 @@ from utils.management import CourseContentAdmin
 def calendar_scheduling(request, course, instance, calendar):
     if request.method == "POST":
         form = CalendarSchedulingForm(request.POST)
-        print(request.POST["start"])
         if not form.is_valid():
             errors = form.errors.as_json()
             return JsonResponse({"errors": errors}, status=400)

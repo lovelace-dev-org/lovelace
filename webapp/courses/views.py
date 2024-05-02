@@ -3,6 +3,7 @@ Django views for rendering the course contents and checking exercises.
 """
 import datetime
 import json
+import logging
 import os
 from html import escape
 from collections import namedtuple
@@ -81,6 +82,8 @@ JSON_CORRECT = 1
 JSON_INFO = 2
 JSON_ERROR = 3
 JSON_DEBUG = 4
+
+logger = logging.getLogger(__name__)
 
 # PAGE VIEWS
 # |
@@ -587,8 +590,6 @@ def check_progress(request, course, instance, content, revision, task_id):
 def file_exercise_evaluation(request, course, instance, content, revision, task_id, task=None):
     if task is None:
         task = celery_app.AsyncResult(task_id)
-    evaluation_id = task.get()
-    task.forget()
     if revision != "head":
         content = get_single_archived(content, revision)
     answers = content.get_user_answers(content, request.user, instance)
@@ -596,10 +597,8 @@ def file_exercise_evaluation(request, course, instance, content, revision, task_
     evaluated_answer = answers.get(task_id=task_id)
     answer_count_str = get_answer_count_meta(answer_count)
 
-    r = redis.StrictRedis(**settings.REDIS_RESULT_CONFIG)
-    evaluation_json = r.get(task_id).decode("utf-8")
+    evaluation_json = task.info["data"]
     evaluation_tree = json.loads(evaluation_json)
-    r.delete(task_id)
     task.forget()
     evaluation_obj = content.save_evaluation(
         request.user,

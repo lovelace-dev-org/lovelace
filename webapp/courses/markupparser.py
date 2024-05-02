@@ -915,7 +915,6 @@ class EmbeddedScriptMarkup(Markup):
 
     @classmethod
     def markup_from_dict(cls, form_data):
-        print(form_data)
         markup = f"<!script={form_data['script_slug']}"
         markup += f"|width={form_data['script_width']}"
         markup += f"|height={form_data['script_height']}"

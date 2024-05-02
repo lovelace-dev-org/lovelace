@@ -6,6 +6,7 @@ and limiting the OS resources available to the processes to provide a reasonably
 safe environment to run unsafe code in.
 """
 
+import logging
 import os
 import pwd
 import resource
@@ -17,6 +18,7 @@ _NUMBER_OF_FILES = 100
 _FILE_SIZE = 4 * (1024**2)  # 4 MiB
 _CPU_TIME = 20
 
+logger = logging.getLogger(__name__)
 
 def get_uid_gid(username):
     pwrec = pwd.getpwnam(username)
@@ -82,7 +84,7 @@ def drop_privileges():
         os.setresgid(student_gid, student_gid, student_gid)
         os.setresuid(student_uid, student_uid, student_uid)
     except OSError:
-        print(
+        logger.error(
             "Unable to drop privileges to "
             "GID: (r:{s_gid}, e:{s_gid}, s:{s_gid}), "
             "UID: (r:{s_uid}, e:{s_uid}, s:{s_uid})".format(s_gid=student_gid, s_uid=student_uid)

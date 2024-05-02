@@ -453,7 +453,6 @@ class ScriptFileInline(TranslationStaffForm):
         instance = cm.File.objects.filter(name=slug).first()
         kwargs["instance"] = instance
         super().__init__(*args, requires=False, **kwargs)
-        print(f"Bound: {self.is_bound}")
         self.fields["existing"] = forms.ChoiceField(
             widget=forms.Select,
             label=_("Choose existing include"),
