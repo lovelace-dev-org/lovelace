@@ -597,8 +597,8 @@ def file_exercise_evaluation(request, course, instance, content, revision, task_
     evaluated_answer = answers.get(task_id=task_id)
     answer_count_str = get_answer_count_meta(answer_count)
 
-    evaluation_json = task.info["data"]
-    evaluation_tree = json.loads(evaluation_json)
+    evaluation_tree = task.info["data"]
+    evaluation_json = json.dumps(evaluation_tree)
     task.forget()
     evaluation_obj = content.save_evaluation(
         request.user,
