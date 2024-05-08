@@ -2815,7 +2815,7 @@ class IncludeFileSettings(models.Model):
         choices=FILE_OWNERSHIP_CHOICES,
     )
     chmod_settings = models.CharField(
-        verbose_name="File access mode", max_length=10, default="rw-rw-rw-"
+        verbose_name="File access mode", max_length=10, default="rw-rw-r--"
     )
 
     def natural_key(self):

@@ -52,8 +52,9 @@ def demote_server(**kwargs):
 
     server_uid, server_gid = sec.get_uid_gid(django_settings.WORKER_USERNAME)
     student_uid, student_gid = sec.get_uid_gid(django_settings.RESTRICTED_USERNAME)
-    os.setresgid(server_gid, student_gid, student_gid)
-    os.setresuid(server_uid, student_uid, student_uid)
+    os.setresgid(server_gid, server_gid, student_gid)
+    os.setresuid(server_uid, server_uid, student_uid)
+    logger.debug(f"Worker demoted to: {os.getuid()}")
 
 
 @shared_task(name="add")
@@ -67,6 +68,7 @@ def add(a, b):
 
 @shared_task(name="courses.run-fileexercise-tests", bind=True)
 def run_tests(self, payload):
+    logger.debug(f"Starting task as: {os.getuid()}")
     self.update_state(state="PROGRESS", meta={"current": 4, "total": 10})
 
     tests = payload["tests"]
@@ -316,13 +318,9 @@ def run_test(self, test, resources, student=False):
 
     temp_dir_prefix = os.path.join("/", "tmp")
 
-    server_uid, server_gid = sec.get_uid_gid(django_settings.WORKER_USERNAME)
-    student_uid, student_gid = sec.get_uid_gid(django_settings.RESTRICTED_USERNAME)
-    uid = {"OWNED": student_uid, "NOT_OWNED": server_uid}
-    gid = {"OWNED": student_gid, "NOT_OWNED": server_gid}
-
     test_results = {test["test_id"]: {"fail": True, "name": test["name"], "stages": {}}}
     with tempfile.TemporaryDirectory(dir=temp_dir_prefix) as test_dir:
+        os.chmod(test_dir, 0o777)
         # Write the files under test
         # Do this first to prevent overwriting of included/instance files
         for name, contents in files_to_check.items():
@@ -330,8 +328,7 @@ def run_test(self, test, resources, student=False):
             with open(fpath, "wb") as fd:
                 fd.write(base64.b64decode(contents))
             logger.info(f"Wrote file under test {fpath}")
-            os.chmod(fpath, 0o660)
-            os.chown(fpath, student_uid, student_gid)
+            os.chmod(fpath, 0o664)
 
         # Write the exercise files required by this test
         for f_handle in required_files:

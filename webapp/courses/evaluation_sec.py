@@ -89,7 +89,12 @@ def drop_privileges():
             "GID: (r:{s_gid}, e:{s_gid}, s:{s_gid}), "
             "UID: (r:{s_uid}, e:{s_uid}, s:{s_uid})".format(s_gid=student_gid, s_uid=student_uid)
         )
-
+    else:
+        logger.debug(
+            "Dropped privileges to "
+            "GID: (r:{s_gid}, e:{s_gid}, s:{s_gid}), "
+            "UID: (r:{s_uid}, e:{s_uid}, s:{s_uid})".format(s_gid=student_gid, s_uid=student_uid)
+        )
 
 def limit_resources(
     concurrent_processes=_CONCURRENT_PROCESSES,
