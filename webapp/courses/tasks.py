@@ -796,6 +796,6 @@ def get_celery_worker_status():
         if len(e.args) > 0 and errorcode.get(e.args[0]) == "ECONNREFUSED":
             msg += " Check that the RabbitMQ server is running."
         d = {ERROR_KEY: msg}
-    except ImportError as e:
-        d = {ERROR_KEY: str(e)}
+    except Exception as e:
+        d = {ERROR_KEY: "Uknown error: " + str(e)}
     return d
