@@ -2,7 +2,7 @@ from django.utils.text import slugify
 from django.db import models
 from django.contrib.auth.models import User
 import django.conf
-from utils.management import ExportImportMixin
+from utils.management import ExportImportMixin, get_prefixed_slug
 
 # from courses.models import ContentPage # prevent circular import
 

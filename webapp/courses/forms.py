@@ -534,10 +534,20 @@ class CacheRegenForm(forms.Form):
 
 
 class ConfirmDeleteForm(forms.Form):
-
     delete = forms.BooleanField(required=True, label=_("Confirm deletion"))
 
+
 def process_delete_confirm_form(request, success_callback, extra_context={}):
+    """
+    Convenience function for displaying and processing a ConfirmDeleteForm. Can be used to reduce
+    boilerplate in delete views. The calling end simply needs to define a success callback that
+    carries out the deletion once the user has confirmed the operation.
+
+    :param Request request: request object
+    :param function success_callback: function that takes a form object as its argument
+    :param dict extra_context: extra context data to be added to the form template's rendering
+    """
+
     if request.method == "POST":
         form = ConfirmDeleteForm(request.POST)
         if not form.is_valid():

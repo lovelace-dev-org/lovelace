@@ -47,7 +47,6 @@ from utils.files import (
 from utils.archive import get_archived_field, get_single_archived
 from utils.management import (
     ExportImportMixin,
-    check_import_permission,
     freeze_context_link,
     get_prefixed_slug,
 )
@@ -72,7 +71,7 @@ class UserProfile(models.Model):
     # http://stackoverflow.com/questions/44109/extending-the-user-model-with-custom-fields-in-django
     user = models.OneToOneField(User, on_delete=models.CASCADE)
 
-    student_id = models.IntegerField(verbose_name="Student number", blank=True, null=True)
+    student_id = models.CharField(max_length=36, verbose_name="Student ID", blank=True, null=True)
     study_program = models.CharField(
         verbose_name="Study program", max_length=80, blank=True, null=True
     )
@@ -620,7 +619,7 @@ class CourseMedia(models.Model, ExportImportMixin):
     objects = MediaManager()
 
     name = models.CharField(
-        verbose_name="Unique name identifier", max_length=200, unique=True
+        verbose_name="Unique name identifier", max_length=200
     )
     origin = models.ForeignKey("Course", null=True, on_delete=models.SET_NULL)
     slug = models.SlugField(
@@ -984,9 +983,19 @@ class EmbeddedLink(models.Model, ExportImportMixin):
 
 class ContentPage(models.Model, ExportImportMixin):
     """
-    A single content containing page of a course.
-    The used content pages (Lecture and Exercise) and their
-    child classes all inherit from this class.
+    This class determines the base for all content in Lovelace. All pages that can be displayed
+    as course content or embedded into other pages must be created as proxy models of this class.
+
+    This class handles base behavior for all pages, consisting of
+    - rendering markup
+    - caching rendered markup
+    - doing replace operations on markup
+    - saving and handling evaluations
+    - managing embedded links in the markup
+
+    Content types must be registered after definition using the register_content_type class method.
+    This class contains black sorcery that delegates certain method calls to child classes based
+    on the content type attribute. See __getattribute__ for details.
     """
 
     class Meta:
@@ -995,23 +1004,34 @@ class ContentPage(models.Model, ExportImportMixin):
 
     objects = SlugManager()
 
+    # This will ideally be deprecated and replaced by a list generated dynamically from
+    # registered content types.
     CONTENT_TYPE_CHOICES = (
         ("LECTURE", "Lecture"),
         ("TEXTFIELD_EXERCISE", "Textfield exercise"),
         ("MULTIPLE_CHOICE_EXERCISE", "Multiple choice exercise"),
         ("CHECKBOX_EXERCISE", "Checkbox exercise"),
         ("FILE_UPLOAD_EXERCISE", "File upload exercise"),
-#        ("CODE_INPUT_EXERCISE", "Code input exercise"),
-#        ("CODE_REPLACE_EXERCISE", "Code replace exercise"),
         ("REPEATED_TEMPLATE_EXERCISE", "Repeated template exercise"),
         ("ROUTINE_EXERCISE", "Routine exercise"),
         ("MULTIPLE_QUESTION_EXAM", "Multiple question exam"),
     )
+
+    # Dynamically registered content types go here.
     content_type_models = {}
+
+    # Template to use for rendering this content type, all content type models must set their own.
     template = "courses/blank.html"
+
+    # Template for answers page for tasks of this type, override if the default is not suitable.
     answers_template = "courses/user-exercise-answers.html"
+
+    # Classes to include for the answers table. Override if needed.
     answer_table_classes ="fixed alternate-green answers-table"
 
+
+    # Model fields that are shared by all content types.
+    # v
     name = models.CharField(max_length=255, help_text="The full name of this page")  # Translate
     origin = models.ForeignKey(
         Course, verbose_name="Origin course", null=True, on_delete=models.SET_NULL
@@ -1047,7 +1067,6 @@ class ContentPage(models.Model, ExportImportMixin):
     )
     feedback_questions = models.ManyToManyField(feedback.models.ContentFeedbackQuestion, blank=True)
 
-    # Exercise fields
     question = models.TextField(blank=True, default="")  # Translate
     manually_evaluated = models.BooleanField(
         verbose_name="This exercise is evaluated by hand", default=False
@@ -1064,6 +1083,7 @@ class ContentPage(models.Model, ExportImportMixin):
     ask_collaborators = models.BooleanField(
         verbose_name="Ask the student to list collaborators", default=False
     )
+    # ^
 
     @classmethod
     def register_content_type(cls, constant_name, type_class, answer_class=None):
@@ -1089,6 +1109,16 @@ class ContentPage(models.Model, ExportImportMixin):
         super().save(*args, **kwargs)
 
     def replace_lines(self, line_idx, new_lines, delete_count=1):
+        """
+        Replaces one or more lines in the page's markup, in the content field of the currently
+        active language. If currently active language is empty, changes the default language
+        content field instead.
+
+        Always use this method to edit markup when creating content editing tools. The calling
+        end is expected to know how many lines are being replaced. This information is available
+        as the content data's block size value.
+        """
+
         lang = translation.get_language()
         if not getattr(self, f"content_{lang}"):
             field = f"content_{settings.MODELTRANSLATION_DEFAULT_LANGUAGE}"
@@ -1106,9 +1136,15 @@ class ContentPage(models.Model, ExportImportMixin):
     def rendered_markup(self, request=None, context=None, revision=None, lang_code=None, page=None):
         """
         Uses the included MarkupParser library to render the page content into
-        HTML. If a rendered version already exists in the cache, use that
-        instead.
+        a data format that can be used by templates and safely cached. If a rendered version
+        already exists in the cache, use that instead. If page breaks are used, creates both
+        paginated and full versions of the content, but only returns the requested markup (either
+        1 page or full content).
+
+        This version of rendering is only used for top-level pages.
         """
+
+        # This import needs to be here until circular import issues are fully sorted out.
         from courses import markupparser
 
         parser = markupparser.MarkupParser()
@@ -1145,21 +1181,6 @@ class ContentPage(models.Model, ExportImportMixin):
                 else:
                     blocks.append(chunk)
 
-                #if isinstance(chunk, str):
-                    #segment += chunk
-                #if isinstance(chunk, markupparser.PageBreak):
-                    #blocks.append(("plain", segment))
-                    #segment = ""
-                    #pages.append(blocks)
-                    #blocks = []
-                #else:
-                    #blocks.append(("plain", segment))
-                    #blocks.append(chunk)
-                    #segment = ""
-
-            #if segment:
-                #blocks.append(("plain", segment))
-
             pages.append(blocks)
 
             if len(pages) > 1:
@@ -1184,6 +1205,18 @@ class ContentPage(models.Model, ExportImportMixin):
         return cached_content
 
     def _get_rendered_content(self, context):
+        """
+        This method renders markup for embedded pages. It is called from within the markup parser
+        when it encounters an embedded page. Child models are expected to have a public version of
+        this method get_rendered_content, and it is expected to call this method first, then
+        provide its additions to the rendered markup as needed.
+
+        See routine exercise or multiexam content types for examples of tasks that have their
+        own includes to the rendered content. As extra content is not editable, it should always
+        be a content block that has the 'extra' type, line index of -1, and line count of 0.
+        e.g. ["extra", "rendered content string", -1, 0]
+        """
+
         from courses import markupparser
 
         embedded_content = []
@@ -1199,17 +1232,36 @@ class ContentPage(models.Model, ExportImportMixin):
         return embedded_content
 
     def _get_question(self, context):
+        """
+        This method is for rendering the questions box of a task. Similarly to _get_rendered_content
+        it is called from within the markup parser as it encounters embedded pages. Also similarly,
+        child models are expected to have the public version of this method that calls this method,
+        and then makes its own additions to the question box as needed.
+        """
+
         from courses import blockparser
 
         question = blockparser.parseblock(escape(self.question, quote=False), context)
         return question
 
     def count_pages(self, instance):
+        """
+        Counts the number of pages the content has been paginated to. Uses cache keys to avoid
+        needing to read the content for page breaks.
+        """
+
         lang_code = translation.get_language()
         content_key = f"{self.slug}_contents_{instance.slug}_{lang_code}"
         keys = cache.keys(content_key + "*")
+
+        # Return -1 because the full page is cached separately.
         return len(keys) - 1
 
+    # NOTE: This method was separated from the normal parsing of markup for legacy reasons
+    #       Because the this only needs to be done when the content has changed whereas
+    #       before caching, the content rendering was done much more frequently.
+    #       Presently only manual cache regen renders the content without a need to run this
+    #       process, so there is sufficient basis for combining this into the rendering process.
     def update_embedded_links(self, instance, revision=None):
         """
         Uses LinkMarkupParser to discover all embedded page links
@@ -1289,6 +1341,11 @@ class ContentPage(models.Model, ExportImportMixin):
                 link_obj.embedded_page.update_embedded_links(instance)
 
     def regenerate_cache(self, instance, active_only=False):
+        """
+        Forcibly regenerates content page's cache for the given course instance. If active_only
+        is set to true, the process will be skipped if the page is archived.
+        """
+
         context = {"instance": instance, "course": instance.course, "content_page": self}
         try:
             revision = ContentGraph.objects.get(content=self, instance=instance).revision
@@ -1321,14 +1378,223 @@ class ContentPage(models.Model, ExportImportMixin):
         return dashed_type
 
     def get_admin_change_url(self):
+        """
+        Forms change URL to modify this content from the management panel. Because
+        app name is part of the URL, this method needs to be overridden in all child
+        models that are defined in separate apps.
+        """
+
         adminized_type = self.content_type.replace("_", "").lower()
         return reverse(f"admin:courses_{adminized_type}_change", args=(self.id,))
 
     def get_staff_extra(self, context):
+        """
+        Overriding this method allows content types to include additional staff tools in the
+        left hand context menu. This method needs to return a list with (link text, link url)
+        tuples as its values.
+        """
+
         return []
 
     def get_url_name(self):
         return get_prefixed_slug(self, self.origin, "name")
+
+    def is_answerable(self):
+        return self.content_type != "LECTURE"
+
+    def save_evaluation(self, user, evaluation, answer_object):
+        """
+        Saves evaluation. This method has been designed in a way that it is generally compatible
+        with all task types as it simply saves an evaluation that has been generated by the task
+        itself.
+
+        This method also takes care of updating completion, and updating the evaluation for
+        group members when applicable, and making a copy of the answer for each of them.
+
+        Evaluation dictionary and its default values are defined as follows:
+        - *evaluation: bool
+        - points: float (0)
+        - max: float (exercise.default_points)
+        - manual: bool (False)
+        - evaluator: User (None)
+        - test_results: string ("")
+        - feedback: string ("")
+        """
+
+        from utils.exercise import update_completion
+        from utils.users import get_group_members
+
+        instance = answer_object.instance
+        correct = evaluation["evaluation"]
+        if correct and not evaluation.get("manual", False):
+            if "points" in evaluation:
+                points = evaluation["points"]
+            else:
+                points = self.default_points
+                evaluation["points"] = points
+        else:
+            points = 0
+
+        evaluation_object = Evaluation(
+            correct=correct,
+            points=points,
+            max_points=evaluation.get("max", self.default_points),
+            evaluator=evaluation.get("evaluator"),
+            test_results=evaluation.get("test_results", ""),
+            feedback=evaluation.get("feedback", ""),
+        )
+        evaluation_object.save()
+        answer_object.evaluation = evaluation_object
+        answer_object.save()
+
+        answer_object.refresh_from_db()
+
+        update_completion(self, instance, user, evaluation, answer_object.answer_date)
+        if self.group_submission:
+            for member in get_group_members(user, instance):
+                answer_object.pk = None
+                answer_object.useranswer_ptr = None
+                answer_object.user = member
+                answer_object.save()
+                update_completion(self, instance, member, evaluation, answer_object.answer_date)
+
+        return evaluation_object
+
+    def update_evaluation(self, user, evaluation, answer_object, complete=True, overwrite=False):
+        """
+        Updates an existing evaluation based on a new evaluation dictionary. See save_evaluation.
+        This is used by tasks that use manual assesssment, or delayed evaluation.
+        As default behavior completion is only updated if the new evaluation is better than the
+        existing one. This can be overridden by settings overwrite to True.
+        """
+
+        from utils.exercise import update_completion
+        from utils.users import get_group_members
+
+        instance = answer_object.instance
+        answer_object.evaluation.correct = evaluation["evaluation"]
+        answer_object.evaluation.points = evaluation["points"]
+        answer_object.evaluation.max_points = evaluation.get("max", self.default_points)
+        answer_object.evaluation.feedback = evaluation.get("feedback", "")
+        answer_object.evaluation.evaluator = evaluation.get("evaluator", None)
+        answer_object.evaluation.save()
+        if complete:
+            update_completion(
+                self, instance, user, evaluation, answer_object.answer_date,
+                overwrite=overwrite
+            )
+            if self.group_submission:
+                for member in get_group_members(user, instance):
+                    update_completion(
+                        self, instance, member, evaluation, answer_object.answer_date,
+                        overwrite=overwrite
+                    )
+
+    def get_user_evaluation(self, user, instance, check_group=True):
+        """
+        Gets a user's evaluation for this content. In the present day it only serves as a proxy to
+        get the completion state.
+        """
+
+        try:
+            completion = UserTaskCompletion.objects.get(user=user, instance=instance, exercise=self)
+            return completion.state, completion.points
+        except UserTaskCompletion.DoesNotExist:
+            return "unanswered", 0
+
+    def re_evaluate(self, user, instance):
+        """
+        Re-evaluates a task by picking the user's best result, and updating completion based on it.
+        This method is primarily used when transfering records between instances that have different
+        scoring rules.
+        """
+
+        from utils.exercise import update_completion
+
+        best_answer = (
+            self.get_user_answers(self, user, instance)
+            .filter(evaluation__correct=True)
+            .order_by("-evaluation__points")
+            .first()
+        )
+        if not best_answer:
+            return
+
+        evaluation = {
+            "evaluation": True,
+            "points": best_answer.evaluation.points,
+            "max": self.default_points,
+        }
+        update_completion(self, instance, user, evaluation, best_answer.answer_date)
+
+
+    # Abstract methods that proxy model classes need to implement.
+    # v
+
+    def get_user_answers(self, user, instance, ignore_drafts=True):
+        """
+        Method that all task content types need to implement. Should return a queryset.
+        """
+        raise NotImplementedError("base type has no method 'get_user_answers'")
+
+
+    def get_choices(self, revision=None):
+        """
+        Method that all task content types need to implement. Should return an iterable, or
+        None if not applicable to the task type. The name says 'choices' for legacy reasons but it
+        also includes things like textfield task answers.
+        """
+        raise NotImplementedError("base type has no method 'get_choices'")
+
+    def save_answer(self, user, ip, answer, files, instance, revision):
+        """
+        Method that all task content types need to implement if they use the standard check_answer
+        view for processing answers (generally recommended unless behavior needs to be entirely
+        different, e.g. routine exercise). The saved answer should be a child model of UserAnswer.
+
+        :param User user: instance of User
+        :param str ip: IP address the answer was sent from (saved to the answer model instance)
+        :param querydict answer: has the contents of the answer form as a Django querydict
+        :param dict files: a dictionary-like object that contains UploadedFile instances
+        :param CourseInstance instance: context where the answer was given
+        :param int revision: revision the answer was submitted for
+
+        :return: the created answer object (instance of UserAnswer child class)
+        """
+        raise NotImplementedError("base type has no method 'save_answer'")
+
+    def check_answer(self, user, ip, answer, files, answer_object, revision):
+        """
+        A follow-up method for save_answer, similarly mandatory if using standard views. This
+        function checks the answer and return an evaluation dictionary that should conform to the
+        format shown in save_evaluation docstring. When using standard views it should not save
+        the evaluation.
+
+        :param User user: instance of User
+        :param str ip: IP address the answer was sent from (saved to the answer model instance)
+        :param querydict answer: has the contents of the answer form as a Django querydict
+        :param dict files: a dictionary-like object that contains UploadedFile instances
+        :param UserAnswer answer_object: saved instance of UserAnswer child class
+        :param int revision: revision the answer was submitted for
+
+        :return: evaluation as dictionary
+        """
+        raise NotImplementedError("base type has no method 'save_answer'")
+
+    # ^
+
+
+    def get_feedback_questions(self):
+        return [q.get_type_object() for q in self.feedback_questions.all()]
+
+    def __str__(self):
+        return self.name
+
+    # Everything past here is part of the machinations that allow content to be referenced
+    # as a common type and handled as if they were the same, and also have their own behaviors
+    # at the same time. This whole mechanism needs to be revised but proxy models aren't making
+    # it easy.
+    # v
 
     def get_type_object(self):
         # this seems to lose the revision info?
@@ -1380,120 +1646,14 @@ class ContentPage(models.Model, ExportImportMixin):
         }
         return answer_models[self.content_type]
 
-    def is_answerable(self):
-        return self.content_type != "LECTURE"
-
-    def save_evaluation(self, user, evaluation, answer_object):
-        """
-        Evaluation dictionary:
-        - *evaluation: bool
-        - points: float (0)
-        - max: float (exercise.default_points)
-        - manual: bool (False)
-        - evaluator: User (None)
-        - test_results: string ("")
-        - feedback: string ("")
-        """
-        from utils.exercise import update_completion
-        from utils.users import get_group_members
-
-        instance = answer_object.instance
-        correct = evaluation["evaluation"]
-        if correct and not evaluation.get("manual", False):
-            if "points" in evaluation:
-                points = evaluation["points"]
-            else:
-                points = self.default_points
-                evaluation["points"] = points
-        else:
-            points = 0
-
-        evaluation_object = Evaluation(
-            correct=correct,
-            points=points,
-            max_points=evaluation.get("max", self.default_points),
-            evaluator=evaluation.get("evaluator"),
-            test_results=evaluation.get("test_results", ""),
-            feedback=evaluation.get("feedback", ""),
-        )
-        evaluation_object.save()
-        answer_object.evaluation = evaluation_object
-        answer_object.save()
-
-        answer_object.refresh_from_db()
-
-        update_completion(self, instance, user, evaluation, answer_object.answer_date)
-        if self.group_submission:
-            for member in get_group_members(user, instance):
-                answer_object.pk = None
-                answer_object.useranswer_ptr = None
-                answer_object.user = member
-                answer_object.save()
-                update_completion(self, instance, member, evaluation, answer_object.answer_date)
-
-        return evaluation_object
-
-    def update_evaluation(self, user, evaluation, answer_object, complete=True, overwrite=False):
-        from utils.exercise import update_completion
-        from utils.users import get_group_members
-
-        instance = answer_object.instance
-        answer_object.evaluation.correct = evaluation["evaluation"]
-        answer_object.evaluation.points = evaluation["points"]
-        answer_object.evaluation.max_points = evaluation.get("max", self.default_points)
-        answer_object.evaluation.feedback = evaluation.get("feedback", "")
-        answer_object.evaluation.evaluator = evaluation.get("evaluator", None)
-        answer_object.evaluation.save()
-        if complete:
-            update_completion(
-                self, instance, user, evaluation, answer_object.answer_date,
-                overwrite=overwrite
-            )
-            if self.group_submission:
-                for member in get_group_members(user, instance):
-                    update_completion(
-                        self, instance, member, evaluation, answer_object.answer_date,
-                        overwrite=overwrite
-                    )
-
-    def get_user_evaluation(self, user, instance, check_group=True):
-        try:
-            completion = UserTaskCompletion.objects.get(user=user, instance=instance, exercise=self)
-            return completion.state, completion.points
-        except UserTaskCompletion.DoesNotExist:
-            return "unanswered", 0
-
-    def re_evaluate(self, user, instance):
-        from utils.exercise import update_completion
-
-        best_answer = (
-            self.get_user_answers(self, user, instance)
-            .filter(evaluation__correct=True)
-            .order_by("-evaluation__points")
-            .first()
-        )
-        if not best_answer:
-            return
-
-        evaluation = {
-            "evaluation": True,
-            "points": best_answer.evaluation.points,
-            "max": self.default_points,
-        }
-        update_completion(self, instance, user, evaluation, best_answer.answer_date)
-
-    def get_user_answers(self, user, instance, ignore_drafts=True):
-        raise NotImplementedError("base type has no method 'get_user_answers'")
-
-    def get_feedback_questions(self):
-        return [q.get_type_object() for q in self.feedback_questions.all()]
-
-    def __str__(self):
-        return self.name
-
     # HACK: Experimental way of implementing a better get_type_object
-    # TODO: get rid of this
     def __getattribute__(self, name):
+        """
+        Defines when attribute access needs to be delegated to a child model. Note that
+        this results in methods being returned as functions, so they must be called with the
+        model instance as the first argument.
+        """
+
         normal = [
             "get_choices",
             "get_rendered_content",
@@ -1519,6 +1679,7 @@ class ContentPage(models.Model, ExportImportMixin):
             return super().__getattribute__(name)
         return type_attr
 
+    # ^
 
 # ^
 # |
@@ -3053,6 +3214,7 @@ class UserAnswer(models.Model):
     checked = models.BooleanField(verbose_name="This answer has been checked", default=False)
     draft = models.BooleanField(verbose_name="This answer is a draft", default=False)
 
+    # NOTE: This should be obsolete and replaced by content page's get_user_answers
     @staticmethod
     def get_task_answers(task, instance=None, user=None, revision=None):
         if task.content_type == "CHECKBOX_EXERCISE":
@@ -3080,6 +3242,13 @@ class UserAnswer(models.Model):
         return answers.order_by("answer_date")
 
     def get_html_repr(self, context):
+        """
+        A method that needs to be implemented by child classes to display answers in various
+        answer tables (e.g. user answers and answer summary). Returns an HTML string. Receives
+        the rendering context that is used for rendering the template itself. Refer to the
+        embed_frame tag documentation in course_tags for more details about this context.
+        """
+
         return ""
 
 

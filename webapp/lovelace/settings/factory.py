@@ -42,7 +42,7 @@ ALLOWED_HOSTS = [os.environ["LOVELACE_HOSTNAME"], os.environ["LOVELACE_HOSTADDR"
 # If you want to use debug toolbar, copy this to your development settings file
 # and uncomment the debug_toolbar line, then copy the MIDDLEWARE definition and
 # uncomment the DebugToolbarMiddleware line
-INSTALLED_APPS = (
+INSTALLED_APPS = [
     'modeltranslation',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -64,7 +64,15 @@ INSTALLED_APPS = (
     'multiexam',
     'reversion',
     'teacher_tools',
-)
+]
+
+if os.getenv("ENABLE_MANAGEMENT_API"):
+    ENABLE_MANAGEMENT_API = True
+    INSTALLED_APPS.append("api")
+    MANAGEMENT_API_KEY = os.environ["LOVELACE_MANAGEMENT_API_KEY"]
+else:
+    ENABLE_MANAGEMENT_API = False
+
 
 MIDDLEWARE = (
     "django.middleware.security.SecurityMiddleware",
@@ -213,7 +221,10 @@ LOCALE_PATHS = (
 # This language will be used as the fallback content when translated content
 # is not available
 MODELTRANSLATION_DEFAULT_LANGUAGE = LANGUAGE_CODE
-MODELTRANSLATION_FALLBACK_LANGUAGES = [LANGUAGE_CODE] + [lang[0] for lang in LANGUAGES]
+MODELTRANSLATION_FALLBACK_LANGUAGES = (
+    [LANGUAGE_CODE]
+    + [lang[0] for lang in LANGUAGES if lang[0] != LANGUAGE_CODE]
+)
 
 # URL prefix for static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/dev/howto/static-files/

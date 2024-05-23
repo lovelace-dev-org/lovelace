@@ -12,6 +12,7 @@ from django.apps import apps
 from django.conf import settings
 from django.core import serializers
 from django.utils.translation import gettext as _
+from modeltranslation.translator import translator, NotRegistered
 from lovelace import plugins as lovelace_plugins
 import courses.models as cm
 
@@ -88,6 +89,35 @@ def import_allowed(obj, user, instance):
 
     return True
 
+def fix_default_lang_fields(obj):
+    """
+    Fixes default language fields when importing content from an instance with a different
+    default language setting. The process takes the value from the first fallback field
+    that has content and moves it to the default language field if the default language field
+    is empty.
+
+    The current solution will result in weird behavior if there are multiple filled fields
+    but the default is empty.
+    """
+
+    model = obj.__class__
+    try:
+        translated = translator.get_options_for_model(model).get_field_names()
+    except NotRegistered:
+        return
+
+    languages = settings.LANGUAGES
+    default = settings.MODELTRANSLATION_DEFAULT_LANGUAGE
+    fallbacks = settings.MODELTRANSLATION_FALLBACK_LANGUAGES[1:]
+    for field in translated:
+        default_value =  getattr(obj, f"{field}_{default}")
+        if not default_value:
+            for lang_code in fallbacks:
+                value = getattr(obj, f"{field}_{lang_code}")
+                if value:
+                    setattr(obj, f"{field}_{default}", value)
+                    setattr(obj, f"{field}_{lang_code}", default_value)
+                    break
 
 def import_from_zip(import_source, user, responsible, staff_group, target_instance=None):
     deferred = []
@@ -127,6 +157,7 @@ def import_from_zip(import_source, user, responsible, staff_group, target_instan
                 ))
                 continue
 
+            fix_default_lang_fields(obj.object)
             obj.save()
             imported.append(obj.object)
             if obj.deferred_fields is not None:

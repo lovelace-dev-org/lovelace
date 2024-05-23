@@ -92,6 +92,12 @@ def get_course_instance_tasks(instance, deadline_before=None):
 
 
 def regenerate_nearest_cache(content):
+    """
+    Executes a cache regen for content. As caching is done by actual page, this means either
+    regenerating cache of the content itself if it is a top-level page, or its embed parent if
+    it's an embedded page.
+    """
+
     for cg in cm.ContentGraph.objects.filter(content=content, revision=None):
         content.regenerate_cache(cg.instance, active_only=True)
     else:

@@ -68,6 +68,9 @@ finally:
         path("", include("courses.urls", namespace="courses")),
     )
 
+if settings.ENABLE_MANAGEMENT_API:
+    urlpatterns.append(path("api/", include("api.urls", namespace="api")))
+
 if settings.DEBUG:
     try:
         import debug_toolbar
