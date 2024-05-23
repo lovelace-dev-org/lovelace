@@ -38,7 +38,7 @@ class UserCollection(View):
                 enrollment_year=data.get("enrollment_year")
             )
         except KeyError as e:
-            logger.warning("Missing key in API request: {e}")
+            logger.warning(f"Missing key in API request: {e}")
             return HttpResponse(status=400)
 
         try:
@@ -46,7 +46,7 @@ class UserCollection(View):
             profile.user = user
             profile.save()
         except Exception as e:
-            logger.warning("Unable to create user: {e}")
+            logger.warning(f"Unable to create user: {e}")
             return HttpResponse(status=400)
 
         return HttpResponse(status=201)
