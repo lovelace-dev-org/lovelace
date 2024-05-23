@@ -1,4 +1,5 @@
 import json
+import logging
 from django.conf import settings
 from django.contrib.auth.hashers import make_password
 from django.shortcuts import render
@@ -12,6 +13,7 @@ from api.utils import management_api
 # Create your views here.
 
 decorators = [management_api, csrf_exempt]
+logger = logging.getLogger(__name__)
 
 @method_decorator(decorators, name="dispatch")
 class UserCollection(View):
@@ -35,14 +37,16 @@ class UserCollection(View):
                 study_program=data.get("program"),
                 enrollment_year=data.get("enrollment_year")
             )
-        except KeyError:
+        except KeyError as e:
+            logger.warning("Missing key in API request: {e}")
             return HttpResponse(status=400)
 
         try:
             user.save()
             profile.user = user
             profile.save()
-        except:
+        except Exception as e:
+            logger.warning("Unable to create user: {e}")
             return HttpResponse(status=400)
 
         return HttpResponse(status=201)
