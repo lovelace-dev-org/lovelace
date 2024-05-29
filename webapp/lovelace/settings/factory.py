@@ -33,7 +33,7 @@ TEST_SETTINGS = False
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True # Use True when viewing through web browser
+DEBUG = False # Use True when viewing through web browser
 
 # Change to your hostname for production or network development installations
 ALLOWED_HOSTS = [os.environ["LOVELACE_HOSTNAME"], os.environ["LOVELACE_HOSTADDR"]]
@@ -74,7 +74,7 @@ else:
     ENABLE_MANAGEMENT_API = False
 
 
-MIDDLEWARE = (
+MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",
@@ -83,7 +83,7 @@ MIDDLEWARE = (
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-)
+]
 
 SITE_ID = 1
 LOGIN_REDIRECT_URL = "/"
