@@ -31,7 +31,6 @@ def first_title_from_content(content_text):
 
     return title, anchor
 
-
 def _parent_ordinal_sort(pair):
     node = pair[0]
     ordinals = [node.ordinal_number]
@@ -257,8 +256,10 @@ def course_tree(tree, node, user, instance_obj, enrolled=False, staff=False):
         if not (enrolled or staff):
             return
 
-    embedded_links = cm.EmbeddedLink.objects.filter(parent=node.content.id, instance=instance_obj)
-    embedded_count = len(embedded_links)
+    embedded_links = (
+        cm.EmbeddedLink.objects.filter(parent=node.content.id, instance=instance_obj)
+    )
+    embedded_count = embedded_links.count()
     page_count = node.content.count_pages(instance_obj)
 
     correct_embedded = 0
@@ -305,7 +306,6 @@ def course_tree(tree, node, user, instance_obj, enrolled=False, staff=False):
         ).first()
         if exemption:
             deadline = exemption.new_deadline
-
 
     list_item = {
         "node_id": node.id,

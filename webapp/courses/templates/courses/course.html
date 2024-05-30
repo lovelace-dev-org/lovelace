@@ -1,3 +1,4 @@
+
 {% extends 'courses/base.html' %}
 {% load static %}
 {% load i18n %}
@@ -138,8 +139,8 @@
           {% if item.visible == False %}admin-visible-content{% endif %}
           {% if course_staff and item.require_enroll %}enroll-locked-content{% endif %}
         ">
-          <a href="{% url 'courses:content' course instance item.content %}">
-            {{ item.content.name }}
+          <a href="{{ item.url }}">
+            {{ item.content }}
           </a>
           {% comment %}
           {% if item.page_count > 0 %}

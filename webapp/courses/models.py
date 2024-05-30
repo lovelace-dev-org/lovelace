@@ -20,6 +20,7 @@ from django.urls import reverse
 from django.core.cache import cache
 from django.template import loader
 from django.utils import translation
+from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 from django.utils.text import slugify
 from django.contrib.postgres.fields import ArrayField
@@ -367,6 +368,85 @@ class CourseInstance(models.Model):
             for instance in CourseInstance.objects.filter(course=self.course).exclude(pk=self.pk):
                 instance.primary = False
                 instance.save()
+
+
+    def get_content_tree(self, lang_code=None, staff=False):
+        current_lang = translation.get_language()
+        if lang_code is not None:
+            translation.activate(lang_code)
+        else:
+            lang_code = current_lang
+
+        cache_key = f"{self.slug}_tree_{lang_code}"
+        if staff:
+            cache_key += "_staff"
+
+        cached_tree = cache.get(cache_key)
+        if cached_tree:
+            return cached_tree
+
+        if staff:
+            nodes = ContentGraph.objects.filter(instance=self, ordinal_number__gt=0)
+        else:
+            nodes = ContentGraph.objects.filter(instance=self, ordinal_number__gt=0, visible=True)
+
+        nodes = nodes.select_related("parentnode", "content").defer("content__content")
+
+        nodes = list(nodes.order_by("parentnode"))
+        ordered = []
+        for node in nodes:
+            ordinals = [node.ordinal_number]
+            parent_node = node.parentnode
+            while parent_node is not None:
+                ordinals.insert(0, parent_node.ordinal_number)
+                parent_node = parent_node.parentnode
+
+            ordered.append((ordinals, node))
+
+        ordered.sort()
+        tree = []
+        level = 0
+        for ordinals, node in ordered:
+            if len(ordinals) > level:
+                tree.append({"content": mark_safe(">")})
+                level += 1
+            elif len(ordinals) < level:
+                tree.append({"content": mark_safe("<")})
+                level -= 1
+
+            page_count = node.content.count_pages(self)
+
+            tree.append({
+                "node_id": node.id,
+                "content": node.content.name,
+                "url": reverse("courses:content", kwargs={
+                    "course": self.course,
+                    "instance": self,
+                    "content": node.content
+                }),
+                "visible": node.visible,
+                "require_enroll": node.require_enroll,
+                "page_count": page_count,
+                "deadline": node.deadline,
+            })
+        while level > 0:
+            tree.append({"content": mark_safe("<")})
+            level -= 1
+
+        cache.set(cache_key, tree, timeout=None)
+
+        if lang_code is not None:
+            translation.activate(current_lang)
+
+        return tree
+
+    def clear_content_tree_cache(self, regen_frozen=False):
+        if self.frozen and not regen_frozen:
+            return
+
+        for lang_code, _ in settings.LANGUAGES:
+            cache.delete(f"{self.slug}_tree_{lang_code}")
+            cache.delete(f"{self.slug}_tree_{lang_code}_staff")
 
     def freeze(self, freeze_to=None):
         """
