@@ -16,7 +16,7 @@ def has_faq(instance, exercise, triggers):
     return FaqToInstanceLink.objects.filter(
         instance=instance,
         exercise=exercise,
-        hook__in=triggers,
+        question__hook__in=triggers,
     ).exists()
 
 
