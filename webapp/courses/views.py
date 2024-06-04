@@ -102,9 +102,18 @@ def index(request):
 @cookie_law
 def about(request):
     local_about = About.objects.first()
+    parser = markupparser.MarkupParser()
+    markup_gen = parser.parse(local_about.content)
+    local_about_body = ""
+    for chunk in markup_gen:
+        if isinstance(chunk[1], str):
+            local_about_body += chunk[1]
+        else:
+            raise ValueError("Embedded content is not allowed about page content")
+
     t = loader.get_template("courses/about.html")
     c = {
-        "about_instance": local_about,
+        "about_instance": local_about_body,
     }
     return HttpResponse(t.render(c, request))
 
