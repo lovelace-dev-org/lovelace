@@ -45,6 +45,15 @@ class RollbackRevert(Exception):
     pass
 
 
+
+class About(models.Model):
+
+    content = models.TextField(blank=True, null=True)
+
+
+# ^
+# |
+# META
 # USER RELATED
 # |
 # V

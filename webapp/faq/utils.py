@@ -12,10 +12,11 @@ from utils.access import is_course_staff
 from utils.archive import get_single_archived
 
 
-def has_faq(instance, exercise):
+def has_faq(instance, exercise, triggers):
     return FaqToInstanceLink.objects.filter(
         instance=instance,
         exercise=exercise,
+        hook__in=triggers,
     ).exists()
 
 

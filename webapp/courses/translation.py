@@ -1,6 +1,7 @@
 from modeltranslation.translator import register, TranslationOptions
 
 from courses.models import (
+    About,
     CalendarDate,
     CheckboxExercise,
     CheckboxExerciseAnswer,
@@ -47,6 +48,12 @@ class SavedMessageTranslationOptions(TranslationOptions):
         "content",
     )
 
+
+@register(About)
+class AboutTranslationOptions(TranslationOptions):
+    fields = (
+        "content",
+    )
 
 ## Course related
 

@@ -391,16 +391,17 @@
 
       <footer>
         <div class="column0">
-          <p>
-            Content license for this course:
-            <a href="{{ instance.license_url }}">{{ instance.content_license }}</a>
-          </p>
-          <p>Site design &amp; backend by Miikka Salminen & Mika Oja</p>
-        </div>
-        <div class="column1">
-          <p>Powered by Python, Django and jQuery.</p>
+          <p><a href="{% url 'courses:about' %}">{% trans 'About Lovelace' %}</a></p>
           <p><a href="{% url 'courses:terms' %}">{% trans 'Terms and Conditions' %}</a></p>
         </div>
+        {% if instance %}
+          <div class="column1">
+            <p>
+              <p>Content license for this course:</p>
+              <p><a href="{{ instance.license_url }}">{{ instance.content_license }}</a></p>
+            </p>
+          </div>
+        {% endif %}
       </footer>
     </div>{# end container #}
   </body>

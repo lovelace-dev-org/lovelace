@@ -33,6 +33,7 @@ import courses.tasks as rpc_tasks
 from courses import markupparser
 from courses import blockparser
 from courses.models import (
+    About,
     Course,
     CourseEnrollment,
     CourseInstance,
@@ -97,6 +98,16 @@ def index(request):
         "course_list": course_list,
     }
     return HttpResponse(t.render(c, request))
+
+@cookie_law
+def about(request):
+    local_about = About.objects.first()
+    t = loader.get_template("courses/about.html")
+    c = {
+        "about_instance": local_about,
+    }
+    return HttpResponse(t.render(c, request))
+
 
 
 @cookie_law
@@ -660,7 +671,7 @@ def file_exercise_evaluation(request, course, instance, content, revision, task_
     data["manual"] = content.manually_evaluated
     data["total_evaluation"] = (total_evaluation,)
     data["score"] = f"{score:.2f}"
-    data["has_faq"] = faq_utils.has_faq(instance, content)
+    data["has_faq"] = faq_utils.has_faq(instance, content, data["triggers"])
 
     return JsonResponse(data)
 

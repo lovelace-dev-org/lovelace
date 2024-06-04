@@ -18,6 +18,7 @@ from reversion.models import Version
 from reversion import revisions as reversion
 
 from courses.models import (
+    About,
     Calendar,
     CalendarDate,
     CheckboxExercise,
@@ -128,6 +129,10 @@ admin.site.unregister(User)
 admin.site.unregister(Group)
 
 
+class AboutAdmin(TranslationAdmin):
+    model = About
+
+
 class UserProfileInline(admin.StackedInline):
     model = UserProfile
 
@@ -138,6 +143,7 @@ class UserProfileAdmin(UserAdmin):
     ]
 
 
+admin.site.register(About, AboutAdmin)
 admin.site.register(User, UserProfileAdmin)
 
 
