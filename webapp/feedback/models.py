@@ -45,7 +45,7 @@ class ContentFeedbackQuestion(models.Model, ExportImportMixin):
 
     def get_url_name(self):
         """Creates a URL and HTML5 ID field friendly version of the name."""
-        return get_prefixed_slug(self, self.course, "question")
+        return get_prefixed_slug(self, self.origin, "question")
 
     def get_type_object(self):
         """
