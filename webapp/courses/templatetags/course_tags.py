@@ -3,6 +3,7 @@ from datetime import datetime
 from django.urls import reverse
 from django import template
 from courses.models import Calendar, StudentGroup
+from utils.base import get_deadline_urgency
 from utils.formatters import display_name
 
 register = template.Library()
@@ -84,7 +85,6 @@ def event_duration(td):
 @register.filter
 def preview_escape(block):
     return block.replace("'", "&#x27;")
-
 
 @register.inclusion_tag("courses/embed-frame.html", takes_context=True)
 def embed_frame(context, content_data):
@@ -248,7 +248,6 @@ def supervisor_select(context, group):
         ),
     }
 
-
 @register.inclusion_tag("courses/widgets/enroll_widget.html", takes_context=True)
 def enroll_widget(context, course, instance, enroll_status):
     return {
@@ -257,5 +256,47 @@ def enroll_widget(context, course, instance, enroll_status):
         "user_authenticated": context["user"].is_authenticated,
         "enroll_status": enroll_status,
     }
+
+@register.inclusion_tag("courses/widgets/progress_widget.html", takes_context=True)
+def progress_widget(context, node_item):
+    page_score = 0
+    page_correct = 0
+    for group, tasks in node_item["embeds"].items():
+        if group == "":
+            for task_id, point_value in tasks:
+                if task_id in context["student_results"]:
+                    quotient = context["student_results"][task_id]["points"]
+                    page_correct += bool(quotient)
+                    page_score += point_value * quotient
+        else:
+            best_result = 0
+            for task_id, point_value in tasks:
+                if task_id in context["student_results"]:
+                    best_result = max(
+                        context["student_results"][task_id]["points"] * point_value, best_result
+                    )
+            page_correct += bool(best_result)
+            page_score += best_result
+
+
+    deadline = context["exemptions"].get(node_item["node_id"], node_item["deadline"])
+    urgency = get_deadline_urgency(deadline, context["time_now"])
+    if deadline:
+        dl_string = deadline.strftime("%Y-%m-%d, %H:%M")
+    else:
+        dl_string = ""
+
+    return {
+        "correct_embedded": page_correct,
+        "embedded_count": node_item["embedded_count"],
+        "page_max": f"{node_item['page_score']:.2f}",
+        "page_score": f"{page_score:.2f}",
+        "deadline": dl_string,
+        "dl_urgency": urgency
+    }
+
+
+
+
 
 

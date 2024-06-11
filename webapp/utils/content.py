@@ -341,19 +341,3 @@ def course_tree(tree, node, user, instance_obj, enrolled=False, staff=False):
         tree.append({"content": mark_safe("<")})
 
 
-def get_deadline_urgency(deadline):
-    if deadline is not None:
-        now = datetime.datetime.now()
-        if deadline < now:
-            return "past"
-
-        diff = deadline - now
-        if diff.days <= 1:
-            return "urgent"
-
-        if diff.days <= 7:
-            return "near"
-
-        return "normal"
-    return ""
-

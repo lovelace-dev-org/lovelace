@@ -137,6 +137,7 @@ class CourseContentAdmin(admin.ModelAdmin):
                 self.current.regenerate_cache(instance)
             for parent in parents:
                 parent.regenerate_cache(instance)
+            instance.clear_content_tree_cache()
 
     def _find_contexts(self, obj):
         """

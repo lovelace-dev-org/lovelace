@@ -6,6 +6,7 @@ import operator
 import re
 import os
 import uuid
+from collections import defaultdict
 from fnmatch import fnmatch
 from html import escape
 
@@ -391,6 +392,22 @@ class CourseInstance(models.Model):
             nodes = ContentGraph.objects.filter(instance=self, ordinal_number__gt=0, visible=True)
 
         nodes = nodes.select_related("parentnode", "content").defer("content__content")
+        embed_links = (
+            EmbeddedLink.objects.filter(instance=self)
+            .select_related("embedded_page")
+            .defer("embedded_page__content")
+        )
+        embeds_by_parent = defaultdict(dict)
+        for link in embed_links:
+            task_group = link.embedded_page.evaluation_group
+            try:
+                embeds_by_parent[link.parent_id][task_group].append(
+                    (link.embedded_page_id, link.embedded_page.default_points)
+                )
+            except KeyError:
+                embeds_by_parent[link.parent_id][task_group] = [
+                    (link.embedded_page_id, link.embedded_page.default_points)
+                ]
 
         nodes = list(nodes.order_by("parentnode"))
         ordered = []
@@ -415,6 +432,12 @@ class CourseInstance(models.Model):
                 level -= 1
 
             page_count = node.content.count_pages(self)
+            embeds = embeds_by_parent[node.content_id]
+            embedded_count = max(len(embeds) - 1, 0) + len(embeds.get("", []))
+            page_score = (
+                sum(task[1] for task in embeds.get("", []))
+                + sum(embeds[tag][0][1] for tag in embeds if tag)
+            )
 
             tree.append({
                 "node_id": node.id,
@@ -428,6 +451,10 @@ class CourseInstance(models.Model):
                 "require_enroll": node.require_enroll,
                 "page_count": page_count,
                 "deadline": node.deadline,
+                "embedded_count": embedded_count,
+                "page_score": page_score,
+                "embeds": embeds,
+                "weight": node.score_weight,
             })
         while level > 0:
             tree.append({"content": mark_safe("<")})

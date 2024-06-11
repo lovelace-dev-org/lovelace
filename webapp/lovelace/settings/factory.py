@@ -65,15 +65,6 @@ INSTALLED_APPS = [
     'reversion',
     'teacher_tools',
 ]
-
-if os.getenv("ENABLE_MANAGEMENT_API"):
-    ENABLE_MANAGEMENT_API = True
-    INSTALLED_APPS.append("api")
-    MANAGEMENT_API_KEY = os.environ["LOVELACE_MANAGEMENT_API_KEY"]
-else:
-    ENABLE_MANAGEMENT_API = False
-
-
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -84,6 +75,24 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+
+if os.getenv("ENABLE_MANAGEMENT_API"):
+    ENABLE_MANAGEMENT_API = True
+    INSTALLED_APPS.append("api")
+    MANAGEMENT_API_KEY = os.environ["LOVELACE_MANAGEMENT_API_KEY"]
+else:
+    ENABLE_MANAGEMENT_API = False
+
+
+if os.getenv("LOVELACE_PROMETHEUS_EXPORT"):
+    INSTALLED_APPS.append("django_prometheus")
+    MIDDLEWARE.insert(0, "django_prometheus.middleware.PrometheusBeforeMiddleware")
+    MIDDLEWARE.append("django_prometheus.middleware.PrometheusAfterMiddleware")
+    PROMETHEUS_ENABLED = True
+else:
+    PROMETHEUS_ENABLED = False
+
+
 
 SITE_ID = 1
 LOGIN_REDIRECT_URL = "/"
@@ -177,6 +186,9 @@ ACCOUNT_EMAIL_SUBJECT_PREFIX = "[Lovelace] "
 ACCOUNT_PASSWORD_MIN_LENGTH = 8
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_SESSION_REMEMBER = True
+
+if os.getenv("LOVELACE_DISABLE_SIGNUP"):
+    ACCOUNT_ADAPTER = "courses.adapter.PreventManualAccountsAdapter"
 
 _FOUR_MONTHS = 10368000
 

@@ -39,6 +39,7 @@ from courses.models import (
     CourseInstance,
     CourseMediaLink,
     ContentGraph,
+    DeadlineExemption,
     EmbeddedLink,
     File,
     FileExerciseTestIncludeFile,
@@ -133,7 +134,23 @@ def course(request, course, instance):
     context["enroll_state"] = enroll_state
 
     context["content_tree"] = instance.get_content_tree(staff=context["course_staff"])
+    if request.user.is_authenticated:
+        user_results = dict(
+            (entry["exercise_id"], entry) for entry in
+            UserTaskCompletion.objects.filter(user=request.user, instance=instance).values()
+        )
+        exemptions = dict(
+            (entry["contentgraph_id"], entry["new_deadline"]) for entry in
+            DeadlineExemption.objects.filter(user=request.user).values()
+        )
+    else:
+        user_results = {}
+        exemptions = {}
 
+
+    context["student_results"] = user_results
+    context["exemptions"] = exemptions
+    context["time_now"] = datetime.datetime.now()
     t = loader.get_template("courses/course.html")
     return HttpResponse(t.render(context, request))
 
