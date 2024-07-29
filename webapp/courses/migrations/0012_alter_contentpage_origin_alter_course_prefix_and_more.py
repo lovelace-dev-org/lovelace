@@ -6,7 +6,7 @@ import django.db.models.deletion
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("courses", "0011_fileexercisetestincludefile_export_id"),
+        ("courses", "0011_generate_uuids"),
     ]
 
     operations = [
@@ -28,5 +28,15 @@ class Migration(migrations.Migration):
         migrations.AlterUniqueTogether(
             name="contentpage",
             unique_together={("name", "origin")},
+        ),
+        migrations.AlterField(
+            model_name="termtag",
+            name="export_id",
+            field=models.UUIDField(editable=False, unique=True, null=False),
+        ),
+        migrations.AlterField(
+            model_name="fileexercisetestincludefile",
+            name="export_id",
+            field=models.UUIDField(editable=False, unique=True, null=False),
         ),
     ]

@@ -85,7 +85,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-SITE_ID = 1
+SITE_ID = int(os.getenv("LOVELACE_SITE_ID", 1))
 LOGIN_REDIRECT_URL = "/"
 ROOT_URLCONF = "lovelace.urls"
 TEMPLATES = (

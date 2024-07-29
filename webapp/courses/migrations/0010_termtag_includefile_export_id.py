@@ -13,6 +13,11 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="termtag",
             name="export_id",
-            field=models.UUIDField(default=uuid.uuid4, editable=False, unique=True),
+            field=models.UUIDField(editable=False, null=True),
+        ),
+        migrations.AddField(
+            model_name="fileexercisetestincludefile",
+            name="export_id",
+            field=models.UUIDField(editable=False, null=True),
         ),
     ]

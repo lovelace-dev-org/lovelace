@@ -15,7 +15,7 @@ def initialize_faqs(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("courses", "0007_guess_prefixes"),
+        ("courses", "0007_guess_prefixes_generate_uuids"),
         ("faq", "0002_faqquestion_origin_faqquestion_slug"),
     ]
 

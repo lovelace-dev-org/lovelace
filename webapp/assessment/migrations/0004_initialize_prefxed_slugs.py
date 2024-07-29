@@ -13,7 +13,7 @@ def initialize_sheets(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("courses", "0007_guess_prefixes"),
+        ("courses", "0007_guess_prefixes_generate_uuids"),
         ("assessment", "0003_rename_course_assessmentsheet_origin_and_more"),
     ]
 
