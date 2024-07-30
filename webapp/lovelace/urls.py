@@ -58,6 +58,14 @@ urlpatterns = [
     path("multiexam/", include("multiexam.urls", namespace="multiexam")),
 ]
 
+if settings.ENABLE_MANAGEMENT_API:
+    urlpatterns.append(path("api/", include("api.urls", namespace="api")))
+
+if settings.PROMETHEUS_ENABLED:
+    urlpatterns.append(
+        path("prometheus/", include("django_prometheus.urls"))
+    ),
+
 try:
     urlpatterns.append(path("shib/", include("shibboleth.urls", namespace="shibboleth")))
 except ImportError:
@@ -67,9 +75,6 @@ finally:
     urlpatterns.append(
         path("", include("courses.urls", namespace="courses")),
     )
-
-if settings.ENABLE_MANAGEMENT_API:
-    urlpatterns.append(path("api/", include("api.urls", namespace="api")))
 
 if settings.DEBUG:
     try:
@@ -81,3 +86,4 @@ if settings.DEBUG:
         urlpatterns = [
             path("__debug__/", include(debug_toolbar.urls)),
         ] + urlpatterns
+

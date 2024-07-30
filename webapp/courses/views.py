@@ -39,6 +39,7 @@ from courses.models import (
     CourseInstance,
     CourseMediaLink,
     ContentGraph,
+    DeadlineExemption,
     EmbeddedLink,
     File,
     FileExerciseTestIncludeFile,
@@ -118,28 +119,38 @@ def course(request, course, instance):
     context["instance"] = instance
 
     if is_course_staff(request.user, instance):
-        contents = ContentGraph.objects.filter(
-            instance=instance, ordinal_number__gt=0, parentnode=None
-        ).order_by("ordinal_number")
+        content_qs = ContentGraph.objects.filter(
+            instance=instance, ordinal_number__gt=0
+        )
         context["course_staff"] = True
     else:
-        contents = ContentGraph.objects.filter(
-            instance=instance, ordinal_number__gt=0, visible=True, parentnode=None
-        ).order_by("ordinal_number")
+        content_qs = ContentGraph.objects.filter(
+            instance=instance, ordinal_number__gt=0, visible=True
+        )
         context["course_staff"] = False
 
     enroll_state = instance.user_enroll_status(request.user)
     enrolled = enroll_state in ["ACCEPTED", "COMPLETED"]
     context["enroll_state"] = enroll_state
 
-    if len(contents) > 0:
-        tree = []
-        tree.append({"content": mark_safe(">")})
-        for content_ in contents:
-            course_tree(tree, content_, request.user, instance, enrolled, context["course_staff"])
-        tree.append({"content": mark_safe("<")})
-        context["content_tree"] = tree
+    context["content_tree"] = instance.get_content_tree(staff=context["course_staff"])
+    if request.user.is_authenticated:
+        user_results = dict(
+            (entry["exercise_id"], entry) for entry in
+            UserTaskCompletion.objects.filter(user=request.user, instance=instance).values()
+        )
+        exemptions = dict(
+            (entry["contentgraph_id"], entry["new_deadline"]) for entry in
+            DeadlineExemption.objects.filter(user=request.user).values()
+        )
+    else:
+        user_results = {}
+        exemptions = {}
 
+
+    context["student_results"] = user_results
+    context["exemptions"] = exemptions
+    context["time_now"] = datetime.datetime.now()
     t = loader.get_template("courses/course.html")
     return HttpResponse(t.render(context, request))
 

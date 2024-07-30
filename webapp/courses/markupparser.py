@@ -266,6 +266,15 @@ class MarkupParser:
         if line_idx == 0:
             yield ("empty", "", 0, 0)
 
+    def parse_to_string(self, text, request=None, context=None, embedded_pages=None, editable=False):
+        parsed_string = ""
+        for block in self.parse(text, request, context, embedded_pages, editable):
+            if isinstance(block[1], str):
+                parsed_string += block[1]
+            else:
+                raise ValueError("Embedded content is not allowed when parsing to string")
+
+        return parsed_string
 
     def tag(self, text, replace_in, replaces, tag):
         if not self._ready:

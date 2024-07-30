@@ -1,3 +1,4 @@
+
 {% extends 'courses/base.html' %}
 {% load static %}
 {% load i18n %}
@@ -138,8 +139,8 @@
           {% if item.visible == False %}admin-visible-content{% endif %}
           {% if course_staff and item.require_enroll %}enroll-locked-content{% endif %}
         ">
-          <a href="{% url 'courses:content' course instance item.content %}">
-            {{ item.content.name }}
+          <a href="{{ item.url }}">
+            {{ item.content }}
           </a>
           {% comment %}
           {% if item.page_count > 0 %}
@@ -209,28 +210,12 @@
             </button>
             
             {% if item.embedded_count > 0 %}
-              <progress class="course-contents-progress student-only" 
-                        value="{{ item.correct_embedded }}" max="{{ item.embedded_count }}"
-                        title="
-                          {% trans 'Completed' %}
-                          {{ item.correct_embedded }} / {{ item.embedded_count }}
-                        ">
-              </progress>
-              <div class="node-deadline student-only urgency-{{ item.urgency }}" >{{ item.deadline|date:"Y-m-d, H:i"}}</div>
-              <div class="node-score student-only">{{ item.page_score }} / {{ item.page_max }}</div>
+              {% progress_widget item %}
             {% endif %}
 
           {% else %}
             {% if item.embedded_count > 0 %}
-              <progress class="course-contents-progress" 
-                        value="{{ item.correct_embedded }}" max="{{ item.embedded_count }}"
-                        title="
-                          {% trans 'Completed' %}
-                          {{ item.correct_embedded }} / {{ item.embedded_count }}
-                        ">
-              </progress>
-              <div class="node-deadline urgency-{{ .itemurgency }}">{{ item.deadline|date:"Y-m-d, H:i"}}</div>
-              <div class="node-score">{{ item.page_score }} / {{ item.page_max }}</div>
+              {% progress_widget item %}
             {% endif %}
           {% endif %}
         </li>

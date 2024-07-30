@@ -31,7 +31,6 @@ def first_title_from_content(content_text):
 
     return title, anchor
 
-
 def _parent_ordinal_sort(pair):
     node = pair[0]
     ordinals = [node.ordinal_number]
@@ -257,8 +256,10 @@ def course_tree(tree, node, user, instance_obj, enrolled=False, staff=False):
         if not (enrolled or staff):
             return
 
-    embedded_links = cm.EmbeddedLink.objects.filter(parent=node.content.id, instance=instance_obj)
-    embedded_count = len(embedded_links)
+    embedded_links = (
+        cm.EmbeddedLink.objects.filter(parent=node.content.id, instance=instance_obj)
+    )
+    embedded_count = embedded_links.count()
     page_count = node.content.count_pages(instance_obj)
 
     correct_embedded = 0
@@ -306,7 +307,6 @@ def course_tree(tree, node, user, instance_obj, enrolled=False, staff=False):
         if exemption:
             deadline = exemption.new_deadline
 
-
     list_item = {
         "node_id": node.id,
         "content": node.content,
@@ -340,20 +340,4 @@ def course_tree(tree, node, user, instance_obj, enrolled=False, staff=False):
             course_tree(tree, child, user, instance_obj, enrolled, staff)
         tree.append({"content": mark_safe("<")})
 
-
-def get_deadline_urgency(deadline):
-    if deadline is not None:
-        now = datetime.datetime.now()
-        if deadline < now:
-            return "past"
-
-        diff = deadline - now
-        if diff.days <= 1:
-            return "urgent"
-
-        if diff.days <= 7:
-            return "near"
-
-        return "normal"
-    return ""
 
