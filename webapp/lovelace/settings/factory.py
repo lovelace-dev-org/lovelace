@@ -1,16 +1,9 @@
 """
-Django settings for Lovelace project. Do not modify this file. In order to make
-your own settings file(s), create them in the same folder with appropriate
-names (recommended: development.py, production.py, unittest.py) and import the
-contents of this file with: 
+Django settings for Lovelace project. Do not modify this file.
 
-from lovelace.settings.factory import *
-
-python manage.py --settings lovelace.settings.yoursettings
-
-or use environ variable
-
-export DJANGO_SETTINGS_MODULE=lovelace.settings.yoursettings
+This file takes all base settings from environment variables. The actual
+DJANGO_SETTINGS_FILE environment variable should point to either dev.py or
+production.py depending on your setup.
 
 For more information on this file, see
 https://docs.djangoproject.com/en/dev/topics/settings/
@@ -77,6 +70,31 @@ MIDDLEWARE = [
 ]
 
 SITE_ID = int(os.getenv("LOVELACE_SITE_ID", 1))
+
+# Shibboleth related options
+if os.getenv("LOVELACE_USE_SHIBBOLETH"):
+    ACCOUNT_USERNAME_VALIDATORS = "courses.adapter.username_validators"
+    ACCOUNT_ADAPTER = "courses.adapter.LovelaceAccountAdapter"
+    SHIBBOLETH_ATTRIBUTE_MAP = {
+        "eppn": (True, "username"),
+        "givenName": (True, "first_name"),
+        "sn": (True, "last_name"),
+        "mail": (True, "email"),
+        "schacPersonalUniqueCode": (False, "student_id")
+    }
+    LOGIN_URL = "https://lovelace.oulu.fi/Shibboleth.sso/Login"
+
+    #SHIBBOLETH_LOGOUT_URL = "https://login.oulu.fi/idp/logout?return=%s"
+    SHIBBOLETH_LOGOUT_URL = "https://lovelace.oulu.fi/Shibboleth.sso/Logout?return=%s"
+    SHIBBOLETH_LOGOUT_REDIRECT_URL = "https://lovelace.oulu.fi"
+
+    INSTALLED_APPS.append("shibboleth")
+    MIDDLEWARE.insert(
+        MIDDLEWARE.index("django.contrib.auth.middleware.AuthenticationMiddleware") + 1,
+        "courses.middleware.LovelaceShibbolethRemoteUser"
+    )
+    MIDDLEWARE.append("courses.middleware.ShibbolethExceptionReporter")
+
 
 if os.getenv("ENABLE_MANAGEMENT_API"):
     ENABLE_MANAGEMENT_API = True
@@ -361,11 +379,6 @@ CHECKING_ENV = json.loads(os.environ["LOVELACE_CHECKER_ENV"])
 WORKER_USERNAME = os.getenv("LOVELACE_WORKER_USER", "nobody")
 RESTRICTED_USERNAME = os.getenv("LOVELACE_RESTRICTED_USER", "nobody")
 
-# Shibboleth related options - uncomment if using Shibboleth
-# First one makes emails invalid usernames when creating accounts
-# Second one is required for Shibboleth logout to work properly
-#ACCOUNT_USERNAME_VALIDATORS = "courses.adapter.username_validators"
-#ACCOUNT_ADAPTER = "courses.adapter.LovelaceAccountAdapter"
 
 # Set PRIVATE_STORAGE_FS_PATH outside www root to make uploaded files
 # inaccessible through URLs
