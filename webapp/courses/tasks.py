@@ -366,6 +366,9 @@ def run_test(self, test, resources, student=False):
         else:
             test_results[test["test_id"]]["fail"] = False
 
+        # Run chmod on all files owned by the child process so that they can be cleaned up
+        sec.chmod_child_files(test_dir)
+
     return test_results, all_json
 
 

@@ -10,6 +10,7 @@ import logging
 import os
 import pwd
 import resource
+import subprocess
 
 from django.conf import settings
 
@@ -132,6 +133,27 @@ def limit_resources(
     # Prevent arbitrary use of computing power by limiting the amount of CPU time
     # in seconds
     resource.setrlimit(resource.RLIMIT_CPU, (cpu_time, cpu_time))
+
+
+def chmod_child_files(test_dir):
+    """
+    Makes sure everything created during the checking can be removed by the parent process
+    when it's cleaning up the temporary directory. Achieved by running chmod as the child.
+    """
+
+    proc = subprocess.run(
+        ("chmod", "-R", "a+rw", "."),
+        bufsize=-1,
+        executable=None,
+        timeout=5,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        preexec_fn=default_demote_process,  # Demote before fork
+        start_new_session=True,
+        close_fds=True,  # Don't inherit fds
+        shell=False,  # Don't run in shell
+        cwd=test_dir,
+    )
 
 
 def secure_kill(pid):

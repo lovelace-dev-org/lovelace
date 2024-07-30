@@ -115,12 +115,15 @@ def generate_question(self, payload):
     progress = payload["meta"]["progress"]
 
     with tempfile.TemporaryDirectory(dir=settings.TMP_PATH) as test_dir:
+        os.chmod(test_dir, 0o777)
+
         # prepare backend files
         for backend in payload["resources"]["backends"]:
             fpath = os.path.join(test_dir, backend["name"])
             with open(fpath, "wb") as fd:
                 fd.write(base64.b64decode(backend["content"]))
             logger.info(f"Wrote {backend['name' ]} from {backend['handle']}")
+            os.chmod(fpath, 0o664)
 
         fn = "".join(random.choice(string.ascii_lowercase) for i in range(24)) + ".json"
         data = {
@@ -136,6 +139,8 @@ def generate_question(self, payload):
         args.append("--request-params")
         args.append(fn)
         proc_results = _run_command(args, test_dir)
+
+        sec.chmod_child_files(test_dir)
 
     if proc_results.get("fail") or proc_results.get("killed") or proc_results.get("timedout"):
         return {
