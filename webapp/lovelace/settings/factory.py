@@ -69,6 +69,13 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",
+    "allauth.account.auth_backends.AuthenticationBackend",
+]
+
+
+
 SITE_ID = int(os.getenv("LOVELACE_SITE_ID", 1))
 
 # Shibboleth related options
@@ -94,6 +101,7 @@ if os.getenv("LOVELACE_USE_SHIBBOLETH"):
         "courses.middleware.LovelaceShibbolethRemoteUser"
     )
     MIDDLEWARE.append("courses.middleware.ShibbolethExceptionReporter")
+    AUTHENTICATION_BACKENDS.append("shibboleth.backends.ShibbolethRemoteUserBackend")
 
 
 if os.getenv("ENABLE_MANAGEMENT_API"):
@@ -144,11 +152,6 @@ ORPHAN_PREFIX = "null"
 
 # Python dotted path to the WSGI application used by Django"s runserver.
 WSGI_APPLICATION = "lovelace.wsgi.application"
-
-AUTHENTICATION_BACKENDS = (
-    "django.contrib.auth.backends.ModelBackend",
-    "allauth.account.auth_backends.AuthenticationBackend",
-)
 
 # Extended UserProfile settings
 AUTH_PROFILE_MODULE = "courses.UserProfile"
