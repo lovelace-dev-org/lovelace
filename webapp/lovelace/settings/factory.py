@@ -197,7 +197,7 @@ EMAIL_HOST_PASSWORD = os.getenv("LOVELACE_EMAIL_PWD", "")
 
 # E-mail settings
 EMAIL_SUBJECT_PREFIX = "[Lovelace] "
-DEFAULT_FROM_EMAIL = "lovelace-notify@"
+DEFAULT_FROM_EMAIL = os.getenv("LOVELACE_EMAIL_FROM", "lovelace-notify")
 
 # Allauth settings
 # For production, password min length of 32 or more recommended
