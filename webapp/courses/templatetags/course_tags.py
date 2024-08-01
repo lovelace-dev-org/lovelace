@@ -264,6 +264,7 @@ def progress_widget(context, node_item):
     for group, tasks in node_item["embeds"].items():
         if group == "":
             for task_id, point_value in tasks:
+                point_value = point_value * node_item["weight"]
                 if task_id in context["student_results"]:
                     quotient = context["student_results"][task_id]["points"]
                     page_correct += bool(quotient)
@@ -271,6 +272,7 @@ def progress_widget(context, node_item):
         else:
             best_result = 0
             for task_id, point_value in tasks:
+                point_value = point_value * node_item["weight"]
                 if task_id in context["student_results"]:
                     best_result = max(
                         context["student_results"][task_id]["points"] * point_value, best_result
@@ -289,7 +291,7 @@ def progress_widget(context, node_item):
     return {
         "correct_embedded": page_correct,
         "embedded_count": node_item["embedded_count"],
-        "page_max": f"{node_item['page_score']:.2f}",
+        "page_max": f"{node_item['page_score'] * node_item['weight']:.2f}",
         "page_score": f"{page_score:.2f}",
         "deadline": dl_string,
         "dl_urgency": urgency
