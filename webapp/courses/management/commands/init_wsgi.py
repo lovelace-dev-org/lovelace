@@ -4,9 +4,10 @@ from django.core.management.base import BaseCommand
 
 template = \
 """
-from lovelace import lovelace_wsgi
-
-application = lovelace_wsgi.init_wsgi("{env_path}")
+import dotenv
+from django.core.wsgi import get_wsgi_application
+dotenv.load_dotenv("{env_path}")
+application = get_wsgi_application()
 """
 
 
