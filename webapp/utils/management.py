@@ -238,7 +238,7 @@ def clone_terms(instance):
     Creates cloned links to all terms in a course instance.
     """
 
-    terms = cm.Term.objects.filter(course=instance.course)
+    terms = cm.Term.objects.filter(origin=instance.course)
     for term in terms:
         link = cm.TermToInstanceLink(revision=None, term=term, instance=instance)
         link.save()
