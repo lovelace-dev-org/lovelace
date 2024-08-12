@@ -203,13 +203,23 @@ class MultipleQuestionExam(ContentPage):
         export_files(self.examquestionpool, export_target, "backend", translate=True)
 
 
+class QuestionPoolManager(models.Manager):
+
+    def get_by_natural_key(self, exercise_slug):
+        return self.get(exercise__slug=exercise_slug)
+
+
 class ExamQuestionPool(models.Model):
     """
     The exam question pool submodel for multiexams.
     """
+    objects = QuestionPoolManager()
 
     exercise = models.OneToOneField(MultipleQuestionExam, on_delete=models.CASCADE)
     fileinfo = models.FileField(max_length=255, upload_to=get_testfile_path, storage=upload_storage)
+
+    def natural_key(self):
+        return [self.exercise.slug]
 
     def question_count(self):
         """

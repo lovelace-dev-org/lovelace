@@ -9,8 +9,11 @@ def re_save_templates(apps, schema_editor):
             previous = RoutineExerciseTemplate.objects.filter(
                 exercise=template.exercise,
                 question_class=template.question_class
-            ).order_by("-variant").first()
-            template.variant = previous and previous.variant or 0
+            ).exclude(variant=None).order_by("-variant").first()
+            if previous and previous.variant is not None:
+                template.variant = previous.variant + 1
+            else:
+                template.variant = 0
             template.save()
 
 

@@ -3098,7 +3098,15 @@ class IncludeFileSettings(models.Model):
 # V
 
 
+class AnswerModelManager(models.Manager):
+
+    def get_by_natural_key(self, exercise_slug, ordinal):
+        return self.get(exercise__slug=exercise_slug, ordinal=ordinal)
+
+
 class TextfieldExerciseAnswer(models.Model):
+    objects = AnswerModelManager()
+
     exercise = models.ForeignKey(TextfieldExercise, on_delete=models.CASCADE)
     correct = models.BooleanField(default=False)
     regexp = models.BooleanField(default=True)
@@ -3107,21 +3115,35 @@ class TextfieldExerciseAnswer(models.Model):
     comment = models.TextField(
         verbose_name="Extra comment given upon entering a matching answer", blank=True
     )  # Translate
+    ordinal = models.PositiveIntegerField()
 
     def __str__(self):
         if len(self.answer) > 76:
             return self.answer[0:76] + " ..."
         return self.answer
 
+    def natural_key(self):
+        return [self.exercise.slug, self.ordinal]
+
     def save(self, *args, **kwargs):
         self.answer = self.answer.replace("\r", "")
+        if self.ordinal is None:
+            previous = TextfieldExerciseAnswer.objects.filter(
+                exercise=self.exercise,
+            ).order_by("-ordinal").first()
+            if previous and previous.ordinal is not None:
+                self.ordinal = previous.ordinal + 1
+            else:
+                self.ordinal = 1
         super().save(*args, **kwargs)
 
 
 class MultipleChoiceExerciseAnswer(models.Model):
+    objects = AnswerModelManager()
+
     exercise = models.ForeignKey(MultipleChoiceExercise, null=True, on_delete=models.SET_NULL)
     correct = models.BooleanField(default=False)
-    ordinal = models.PositiveIntegerField(null=True)
+    ordinal = models.PositiveIntegerField()
     answer = models.TextField()  # Translate
     hint = models.TextField(blank=True)  # Translate
     comment = models.TextField(
@@ -3130,12 +3152,17 @@ class MultipleChoiceExerciseAnswer(models.Model):
 
     def __str__(self):
         return self.answer
+
+    def natural_key(self):
+        return [self.exercise.slug, self.ordinal]
 
 
 class CheckboxExerciseAnswer(models.Model):
+    objects = AnswerModelManager()
+
     exercise = models.ForeignKey(CheckboxExercise, null=True, on_delete=models.SET_NULL)
     correct = models.BooleanField(default=False)
-    ordinal = models.PositiveIntegerField(null=True)
+    ordinal = models.PositiveIntegerField()
     answer = models.TextField()  # Translate
     hint = models.TextField(blank=True)  # Translate
     comment = models.TextField(
@@ -3145,6 +3172,8 @@ class CheckboxExerciseAnswer(models.Model):
     def __str__(self):
         return self.answer
 
+    def natural_key(self):
+        return [self.exercise.slug, self.ordinal]
 
 # ^
 # |

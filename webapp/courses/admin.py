@@ -251,6 +251,7 @@ class TextfieldExerciseAnswerInline(TranslationStackedInline):
     model = TextfieldExerciseAnswer
     extra = 1
     form = TextfieldAnswerForm
+    fields = ["correct", "regexp", "answer", "hint", "comment"]
 
 
 class TextfieldExerciseAdmin(CourseContentAdmin, TranslationAdmin, VersionAdmin):

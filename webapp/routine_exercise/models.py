@@ -189,7 +189,10 @@ class RoutineExerciseTemplate(models.Model):
                 exercise=self.exercise,
                 question_class=self.question_class
             ).order_by("-variant").first()
-            self.variant = previous and previous.variant or 0
+            if previous and previous.variant is not None:
+                self.variant = previous.variant + 1
+            else:
+                self.variant = 0
         super().save(*args, **kwargs)
 
 

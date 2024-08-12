@@ -150,6 +150,11 @@ def import_from_zip(import_source, user, responsible, staff_group, target_instan
     def import_model(source_doc, target_course=None, target_instance=None):
         imported = []
 
+        for serialized_dict in source_doc:
+            if "pk" in serialized_dict:
+                logger.error(f"Serialized data contains pk, importing aborted.")
+                raise ValueError("Imported data is not allowed to define pk")
+
         for obj in deserialize_python(source_doc):
             if not import_allowed(obj, user, target_instance):
                 errors.append(_("Import of {obj_str} failed - no overwrite permission").format(
