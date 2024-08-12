@@ -2,6 +2,7 @@ import datetime
 import re
 from collections import defaultdict
 from functools import wraps
+import django.conf
 from django.http import HttpResponseNotFound
 from django.template import engines, loader
 from django.utils.safestring import mark_safe
@@ -29,7 +30,6 @@ def first_title_from_content(content_text):
         anchor = slugify(title, allow_unicode=True)
 
     return title, anchor
-
 
 def _parent_ordinal_sort(pair):
     node = pair[0]
@@ -91,6 +91,12 @@ def get_course_instance_tasks(instance, deadline_before=None):
 
 
 def regenerate_nearest_cache(content):
+    """
+    Executes a cache regen for content. As caching is done by actual page, this means either
+    regenerating cache of the content itself if it is a top-level page, or its embed parent if
+    it's an embedded page.
+    """
+
     for cg in cm.ContentGraph.objects.filter(content=content, revision=None):
         content.regenerate_cache(cg.instance, active_only=True)
     else:
@@ -250,8 +256,10 @@ def course_tree(tree, node, user, instance_obj, enrolled=False, staff=False):
         if not (enrolled or staff):
             return
 
-    embedded_links = cm.EmbeddedLink.objects.filter(parent=node.content.id, instance=instance_obj)
-    embedded_count = len(embedded_links)
+    embedded_links = (
+        cm.EmbeddedLink.objects.filter(parent=node.content.id, instance=instance_obj)
+    )
+    embedded_count = embedded_links.count()
     page_count = node.content.count_pages(instance_obj)
 
     correct_embedded = 0
@@ -299,7 +307,6 @@ def course_tree(tree, node, user, instance_obj, enrolled=False, staff=False):
         if exemption:
             deadline = exemption.new_deadline
 
-
     list_item = {
         "node_id": node.id,
         "content": node.content,
@@ -333,20 +340,4 @@ def course_tree(tree, node, user, instance_obj, enrolled=False, staff=False):
             course_tree(tree, child, user, instance_obj, enrolled, staff)
         tree.append({"content": mark_safe("<")})
 
-
-def get_deadline_urgency(deadline):
-    if deadline is not None:
-        now = datetime.datetime.now()
-        if deadline < now:
-            return "past"
-
-        diff = deadline - now
-        if diff.days <= 1:
-            return "urgent"
-
-        if diff.days <= 7:
-            return "near"
-
-        return "normal"
-    return ""
 

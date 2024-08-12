@@ -48,7 +48,12 @@ class RoutineExerciseAdmin(CourseContentAdmin, TranslationAdmin, VersionAdmin):
     content_type = "ROUTINE_EXERCISE"
     form = ContentForm
     fieldsets = [
-        ("Page information", {"fields": ["name", "slug", "content", "tags"]}),
+        (
+            "Page information",
+            {
+                "fields": ["name", "origin", "slug", "content", "question", "tags"],
+            },
+        ),
         (
             "Exercise miscellaneous",
             {"fields": ["default_points", "evaluation_group"], "classes": ["wide"]},

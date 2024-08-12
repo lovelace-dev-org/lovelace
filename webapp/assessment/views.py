@@ -52,7 +52,7 @@ def view_assessment_sheet(request, course, instance, content):
 
 @ensure_staff
 def manage_assessment(request, course, instance, content):
-    course_sheets = AssessmentSheet.objects.filter(course=course)
+    course_sheets = AssessmentSheet.objects.filter(origin=course)
     sheet_link = AssessmentToExerciseLink.objects.filter(
         exercise=content,
         instance=instance,
@@ -65,7 +65,7 @@ def manage_assessment(request, course, instance, content):
 
         if form.cleaned_data["copy"]:
             source_sheet = AssessmentSheet.objects.get(id=form.cleaned_data["sheet"])
-            new_sheet = AssessmentSheet(course=course)
+            new_sheet = AssessmentSheet(origin=course)
             for lang_code, __ in settings.LANGUAGES:
                 field = "title_" + lang_code
                 setattr(new_sheet, field, form.cleaned_data[field])
@@ -77,7 +77,7 @@ def manage_assessment(request, course, instance, content):
             sheet = AssessmentSheet.objects.get(id=form.cleaned_data["sheet"])
         except AssessmentSheet.DoesNotExist:
             with reversion.create_revision():
-                sheet = AssessmentSheet(course=course)
+                sheet = AssessmentSheet(origin=course)
                 for lang_code, __ in settings.LANGUAGES:
                     field = "title_" + lang_code
                     setattr(sheet, field, form.cleaned_data[field])

@@ -5,12 +5,14 @@ from django.db import models, transaction
 from django import forms
 from django.forms import Textarea, ModelForm
 from django.utils import translation
+from django.utils.text import slugify
 from reversion.models import Version
 from modeltranslation.translator import translator
 import courses.models as cm
 from courses.widgets import ContentPreviewWidget, AdminFileWidget
 from utils.access import determine_access, determine_media_access
 from utils.archive import find_latest_version
+from utils.data import serialize_single_python, export_json
 
 
 # TODO: There's a loophole where staff members of any course A can gain access
@@ -135,6 +137,7 @@ class CourseContentAdmin(admin.ModelAdmin):
                 self.current.regenerate_cache(instance)
             for parent in parents:
                 parent.regenerate_cache(instance)
+            instance.clear_content_tree_cache()
 
     def _find_contexts(self, obj):
         """
@@ -217,10 +220,6 @@ class CourseMediaAdmin(admin.ModelAdmin):
         return False
 
 
-class DefaultFirstTranslationForm(ModelForm):
-    pass
-
-
 def clone_instance_files(instance):
     """
     Creates cloned links to all instance files in a course instance.
@@ -239,13 +238,17 @@ def clone_terms(instance):
     Creates cloned links to all terms in a course instance.
     """
 
-    terms = cm.Term.objects.filter(course=instance.course)
+    terms = cm.Term.objects.filter(origin=instance.course)
     for term in terms:
         link = cm.TermToInstanceLink(revision=None, term=term, instance=instance)
         link.save()
 
 
 def clone_grades(old_instance, new_instance):
+    """
+    Clones grade thresholds when creating a new course instance by cloning.
+    """
+
     grades = cm.GradeThreshold.objects.filter(instance=old_instance)
     for grade in grades:
         grade.pk = None
@@ -278,6 +281,12 @@ def clone_content_graphs(old_instance, new_instance):
 
 
 def freeze_context_link(link_object, revisioned_attr, freeze_to=None):
+    """
+    Utility function to freeze a context link (e.g. ContentGraph) by setting its revision
+    attribute to either the latest revision, or the revision specified by the freeze_to
+    parameter.
+    """
+
     if getattr(link_object, "evergreen", False):
         return
 
@@ -300,6 +309,8 @@ def add_translated_charfields(
     and other languages as secondary that are always optional. The primary can
     be set to optional for fields that are optional. Labels need to be given
     separately for the default field, and for alternative fields.
+
+    Deprecated, use TranslationStaffForm instead.
     """
 
     languages = sorted(
@@ -316,8 +327,6 @@ def add_translated_charfields(
             form.fields[field_name + "_" + lang_code] = forms.CharField(
                 label=alternative_label.format(lang=lang_code), required=False
             )
-
-
 
 
 # NOTE: not used currently because it introduced new problems
@@ -342,6 +351,17 @@ def save_translated_field(model_instance, field_name, value):
 
 
 class TranslationStaffForm(ModelForm):
+    """
+    Utility form parent class that makes it easier to work with translated fields. If using
+    modeltranslation's own traslation form, it will always save to the active language which can
+    lead to all sorts of havoc. This form class instead displays the value in every language for
+    a translated field so that they can be edited similarly to the admin interface. It also labels
+    the default language clearly, and makes it mandatory if the field itself is mandatory.
+
+    Always use this class as a form class' parent if it is intended to be able to edit values in all
+    languages.
+    """
+
     def get_initial_for_field(self, field, field_name):
         if self._instance:
             if field_name in self._translated_field_names:
@@ -405,3 +425,62 @@ class TranslationStaffForm(ModelForm):
                 self.fields.pop(field_name)
 
 
+class ExportImportMixin:
+
+    def natural_key(self):
+        """
+        Gets the 'natural key' for a model instance. This must be a combination of field
+        values that can uniquely identify the model instance and cannot include its database ID.
+
+        Use of natural key must always be paired with the use of a manager that has a get_by_natural
+        method.
+        """
+
+        raise NotImplementedError
+
+    def export(self, instance, export_target):
+        """
+        Exports this model instance into a zip file as a json document. Note that this base method
+        does not need the instance parameter for anything, but potential overrides might need it.
+
+        :param CourseInstance instance: the course instance being exported
+        :param ZipFile export_target: the zip file (or compatible object) export is written to
+        """
+
+        document = serialize_single_python(self)
+        name = "_".join(self.natural_key())
+        export_json(document, name, export_target)
+
+
+def get_prefixed_slug(model_instance, origin, source_field, translated=True):
+    """
+    Creates a prefixed slug for the given model instance. This utility function keeps identifiers
+    unique within courses, freeing commonly used names for pages etc. to be used in multiple
+    courses. Tries to avoid prefixing an already prefixed slug.
+
+    :param Model model_instance: the model instance to attach the slug for
+    :param Course origin: the course the model instance originally belongs to
+    :param source_field: name of the field from which slug should be generated from
+    :param translated: whether the field is managed by modeltranslation or not (default True)
+
+    :return: the prefixed slug as a string
+    """
+
+    default_lang = settings.MODELTRANSLATION_DEFAULT_LANGUAGE
+    if origin is None:
+        prefix = settings.ORPHAN_PREFIX
+    else:
+        prefix = origin.prefix
+
+    if translated:
+        main_slug = slugify(
+            getattr(model_instance, f"{source_field}_{default_lang}"),
+            allow_unicode=True
+        )
+    else:
+        main_slug = slugify(getattr(model_instance, f"{source_field}"), allow_unicode=True)
+
+    # don't double the prefix if it's already used in the source field (legacy naming habit)
+    main_slug = main_slug.removeprefix(f"{prefix}-")
+
+    return f"{prefix}-{main_slug}"

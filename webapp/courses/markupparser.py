@@ -253,6 +253,7 @@ class MarkupParser:
                     yield (block_type, block_content, line_idx, line_count)
             except MarkupError as e:
                 yield ("error", e.html(), line_idx, 1)
+                line_count = 1
 
             line_idx += line_count
 
@@ -265,6 +266,15 @@ class MarkupParser:
         if line_idx == 0:
             yield ("empty", "", 0, 0)
 
+    def parse_to_string(self, text, request=None, context=None, embedded_pages=None, editable=False):
+        parsed_string = ""
+        for block in self.parse(text, request, context, embedded_pages, editable):
+            if isinstance(block[1], str):
+                parsed_string += block[1]
+            else:
+                raise ValueError("Embedded content is not allowed when parsing to string")
+
+        return parsed_string
 
     def tag(self, text, replace_in, replaces, tag):
         if not self._ready:
@@ -423,10 +433,10 @@ class CalendarMarkup(Markup):
 
     @classmethod
     def block(cls, block, settings, state):
-        if cm.Calendar.objects.filter(name=settings["calendar_name"]).exists():
-            yield ("calendar", {"calendar": settings["calendar_name"]})
-        else:
-            yield f"<div>Calendar {settings['calendar_name']} not found.</div>"
+        if not cm.Calendar.objects.filter(name=settings["calendar_name"]).exists():
+            new_calendar = cm.Calendar(name=settings["calendar_name"])
+            new_calendar.save()
+        yield ("calendar", {"calendar": settings["calendar_name"]})
 
     @classmethod
     def settings(cls, matchobj, state):
@@ -914,7 +924,6 @@ class EmbeddedScriptMarkup(Markup):
 
     @classmethod
     def markup_from_dict(cls, form_data):
-        print(form_data)
         markup = f"<!script={form_data['script_slug']}"
         markup += f"|width={form_data['script_width']}"
         markup += f"|height={form_data['script_height']}"

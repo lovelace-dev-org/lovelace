@@ -2,6 +2,7 @@ from functools import wraps
 
 
 from django.db.models import Q
+from django.conf import settings
 from django.http import HttpResponseForbidden
 from django.utils.translation import gettext as _
 from reversion.models import Version
@@ -202,3 +203,4 @@ def ensure_responsible_or_supervisor(function):
         return HttpResponseForbidden(_("This view is limited to group supervisor"))
 
     return wrap
+

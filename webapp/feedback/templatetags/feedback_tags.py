@@ -28,8 +28,6 @@ def feedback_thumb(question, user, content, instance):
     else:
         user_answer = None
 
-    print(instance.slug)
-
     return {
         "question": question,
         "user_answer": user_answer,

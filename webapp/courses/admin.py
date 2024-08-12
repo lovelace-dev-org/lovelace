@@ -23,8 +23,6 @@ from courses.models import (
     CalendarDate,
     CheckboxExercise,
     CheckboxExerciseAnswer,
-    CodeInputExerciseAnswer,
-    CodeReplaceExerciseAnswer,
     ContentGraph,
     ContentPage,
     Course,
@@ -85,8 +83,6 @@ reversion.register(
     ContentPage,
     follow=[
         "checkboxexerciseanswer_set",
-        "codeinputexerciseanswer_set",
-        "codereplaceexerciseanswer_set",
         "fileexercisetest_set",
         "fileexercisetestincludefile_set",
         "hint_set",
@@ -116,8 +112,6 @@ reversion.register(IncludeFileSettings)
 reversion.register(CourseMedia)
 reversion.register(TermTab)
 reversion.register(TermLink)
-reversion.register(CodeInputExerciseAnswer)
-reversion.register(CodeReplaceExerciseAnswer)
 reversion.register(RepeatedTemplateExerciseTemplate)
 reversion.register(RepeatedTemplateExerciseBackendFile)
 reversion.register(RepeatedTemplateExerciseBackendCommand)
@@ -184,7 +178,7 @@ class MultipleChoiceExerciseAdmin(CourseContentAdmin, TranslationAdmin, VersionA
         (
             "Page information",
             {
-                "fields": ["name", "slug", "content", "question", "tags"],
+                "fields": ["name", "origin", "slug", "content", "question", "tags"],
             },
         ),
         (
@@ -229,7 +223,9 @@ class CheckboxExerciseAdmin(CourseContentAdmin, TranslationAdmin, VersionAdmin):
     fieldsets = [
         (
             "Page information",
-            {"fields": ["name", "slug", "content", "question", "tags"]},
+            {
+                "fields": ["name", "origin", "slug", "content", "question", "tags"],
+            },
         ),
         (
             "Exercise miscellaneous",
@@ -261,6 +257,7 @@ class TextfieldExerciseAnswerInline(TranslationStackedInline):
     model = TextfieldExerciseAnswer
     extra = 1
     form = TextfieldAnswerForm
+    fields = ["correct", "regexp", "answer", "hint", "comment"]
 
 
 class TextfieldExerciseAdmin(CourseContentAdmin, TranslationAdmin, VersionAdmin):
@@ -272,7 +269,9 @@ class TextfieldExerciseAdmin(CourseContentAdmin, TranslationAdmin, VersionAdmin)
     fieldsets = [
         (
             "Page information",
-            {"fields": ["name", "slug", "content", "question", "tags"]},
+            {
+                "fields": ["name", "origin", "slug", "content", "question", "tags"],
+            },
         ),
         (
             "Exercise miscellaneous",
@@ -291,36 +290,6 @@ class TextfieldExerciseAdmin(CourseContentAdmin, TranslationAdmin, VersionAdmin)
         ("Feedback settings", {"fields": ["feedback_questions"]}),
     ]
     inlines = [TextfieldExerciseAnswerInline, HintInline]
-    search_fields = ("name",)
-    readonly_fields = ("slug",)
-    list_display = (
-        "name",
-        "slug",
-    )
-    list_per_page = 500
-    save_on_top = True
-
-
-class CodeReplaceExerciseAnswerInline(admin.StackedInline):
-    model = CodeReplaceExerciseAnswer
-    extra = 1
-
-
-class CodeReplaceExerciseAdmin(CourseContentAdmin, TranslationAdmin, VersionAdmin):
-    content_type = "CODE_REPLACE_EXERCISE"
-
-    fieldsets = [
-        (
-            "Page information",
-            {"fields": ["name", "slug", "content", "question", "tags"]},
-        ),
-        (
-            "Exercise miscellaneous",
-            {"fields": ["default_points", "evaluation_group"], "classes": ["wide"]},
-        ),
-        ("Feedback settings", {"fields": ["feedback_questions"]}),
-    ]
-    inlines = [CodeReplaceExerciseAnswerInline, HintInline]
     search_fields = ("name",)
     readonly_fields = ("slug",)
     list_display = (
@@ -408,7 +377,7 @@ class LectureAdmin(CourseContentAdmin, TranslationAdmin, VersionAdmin):
     content_type = "LECTURE"
     form = ContentForm
     fieldsets = [
-        ("Page information", {"fields": ["name", "content"]}),
+        ("Page information", {"fields": ["name", "content", "origin"]}),
         ("Feedback", {"fields": ["feedback_questions"]}),
     ]
 
@@ -471,12 +440,14 @@ class CalendarAdmin(admin.ModelAdmin):
 
 class FileAdmin(CourseMediaAdmin, TranslationAdmin, VersionAdmin):
     search_fields = ("name",)
+    readonly_fields = ("slug",)
     form = FileEditForm
     formfield_overrides = {models.FileField: {"widget": AdminFileWidget}}
 
 
 class ImageAdmin(CourseMediaAdmin, TranslationAdmin, VersionAdmin):
     search_fields = ("name",)
+    readonly_fields = ("slug",)
     list_display = (
         "name",
         "description",
@@ -486,6 +457,7 @@ class ImageAdmin(CourseMediaAdmin, TranslationAdmin, VersionAdmin):
 
 class VideoLinkAdmin(CourseMediaAdmin, TranslationAdmin, VersionAdmin):
     search_fields = ("name",)
+    readonly_fields = ("slug",)
     list_display = (
         "name",
         "description",
@@ -512,9 +484,10 @@ class TermAdmin(TranslationAdmin, VersionAdmin):
     search_fields = ("name",)
     list_display = (
         "name",
-        "course",
+        "origin",
     )
-    list_filter = ("course",)
+    readonly_fields = ("slug",)
+    list_filter = ("origin",)
     list_per_page = 500
     ordering = ("name",)
 
@@ -533,7 +506,7 @@ class TermAdmin(TranslationAdmin, VersionAdmin):
         )
 
         return qs.filter(
-            Q(id__in=list(edited)) | Q(course__staff_group__user=request.user)
+            Q(id__in=list(edited)) | Q(origin__staff_group__user=request.user)
         ).distinct()
 
     def has_change_permission(self, request, obj=None):
@@ -543,7 +516,7 @@ class TermAdmin(TranslationAdmin, VersionAdmin):
             if obj:
                 return (
                     Version.objects.get_for_object(obj).filter(revision__user=request.user).exists()
-                    or request.user in obj.course.staff_group.user_set.get_queryset()
+                    or request.user in obj.origin.staff_group.user_set.get_queryset()
                 )
             return True
         return False
@@ -555,7 +528,7 @@ class TermAdmin(TranslationAdmin, VersionAdmin):
             if obj:
                 return (
                     Version.objects.get_for_object(obj).filter(revision__user=request.user).exists()
-                    or request.user in obj.course.staff_group.user_set.get_queryset()
+                    or request.user in obj.origin.staff_group.user_set.get_queryset()
                 )
             return True
         return False
@@ -563,7 +536,7 @@ class TermAdmin(TranslationAdmin, VersionAdmin):
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)
         lang_list = django.conf.settings.LANGUAGES
-        for instance in CourseInstance.objects.filter(course=obj.course, frozen=False):
+        for instance in CourseInstance.objects.filter(course=obj.origin, frozen=False):
             instance_slug = instance.slug
             for lang, __ in lang_list:
                 cache.set(
@@ -664,6 +637,7 @@ class CourseAdmin(TranslationAdmin, VersionAdmin):
                 "fields": [
                     "name",
                     "slug",
+                    "prefix",
                 ]
             },
         ),
@@ -867,7 +841,7 @@ class CourseInstanceAdmin(TranslationAdmin, VersionAdmin):
                 )
                 link.save()
 
-            terms = Term.objects.filter(course=obj.course)
+            terms = Term.objects.filter(origin=obj.course)
             for term in terms:
                 link = TermToInstanceLink(revision=None, term=term, instance=obj)
                 link.save()

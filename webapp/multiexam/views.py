@@ -25,10 +25,15 @@ from multiexam.models import MultipleQuestionExamAttempt, UserMultipleQuestionEx
 from multiexam.forms import ExamAttemptForm, ExamAttemptDeleteForm, ExamAttemptSettingsForm
 from multiexam.utils import generate_attempt_questions, process_questions
 
-# Create your views here.
-
 @ensure_enrolled_or_staff
 def get_exam_attempt(request, course, instance, content):
+    """
+    Gets an attempt for an exam. Tries to find an open attempt, and gives an error if one is not
+    found. In case multiple attempts are open for some eason, picks the first one. Also checks if
+    the user already has existing answers for the attempt, and loads the latest answer if at least
+    one exists.
+    """
+
     now = datetime.datetime.now()
     open_attempts = MultipleQuestionExamAttempt.objects.filter(
         Q(user=None) | Q(user=request.user),
@@ -71,6 +76,10 @@ def get_exam_attempt(request, course, instance, content):
 
 @ensure_responsible
 def manage_attempts(request, course, instance, content):
+    """
+    Management view for exam attempts.
+    """
+
     attempts = MultipleQuestionExamAttempt.objects.filter(
         exam=content,
         instance=instance,
@@ -90,6 +99,11 @@ def manage_attempts(request, course, instance, content):
 
 @ensure_responsible
 def open_new_attempt(request, course, instance, content):
+    """
+    View for opening a new attempt. Depending on the HTTP method used either displays the form,
+    or saves a filled form. Generation of questions for the attempt is also done at this point.
+    """
+
     if request.method == "POST":
         form = ExamAttemptForm(
             request.POST,
@@ -131,6 +145,10 @@ def open_new_attempt(request, course, instance, content):
 
 @ensure_responsible
 def preview_attempt(request, course, instance, attempt):
+    """
+    View for getting a preview for an exam attempt.
+    """
+
     script = attempt.load_exam_script()
     process_questions(request, script, {})
     c = {
@@ -145,6 +163,10 @@ def preview_attempt(request, course, instance, attempt):
 
 @ensure_responsible
 def attempt_settings(request, course, instance, attempt):
+    """
+    A view for changing attempt settings.
+    """
+
     if request.method == "POST":
         form = ExamAttemptSettingsForm(request.POST, instance=attempt)
         if not form.is_valid():
@@ -170,6 +192,10 @@ def attempt_settings(request, course, instance, attempt):
 
 @ensure_responsible
 def delete_attempt(request, course, instance, attempt):
+    """
+    View for deleting an attempt.
+    """
+
     def success(form):
         attempt.delete()
 

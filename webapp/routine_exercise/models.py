@@ -1,3 +1,4 @@
+from django.core import serializers
 from django.db import models
 from django.db.models import Q, JSONField
 from django.template import loader
@@ -6,7 +7,9 @@ from django.utils.text import slugify
 
 from courses.models import ContentPage, CourseInstance, User
 
+from utils.data import export_json, export_files, serialize_many_python, serialize_single_python
 from utils.files import get_testfile_path, upload_storage
+from utils.management import ExportImportMixin
 
 
 class RoutineExercise(ContentPage):
@@ -104,8 +107,28 @@ class RoutineExercise(ContentPage):
     def save_evaluation(self, user, evaluation, answer_object):
         pass
 
+    def export(self, instance, export_target):
+        super(ContentPage, self).export(instance, export_target)
+        export_json(
+            serialize_single_python(self.routineexercisebackendcommand),
+            f"{self.slug}_command",
+            export_target,
+        )
+        export_json(
+            serialize_many_python(self.routineexercisetemplate_set.get_queryset()),
+            f"{self.slug}_templates",
+            export_target,
+        )
+        for backend in RoutineExerciseBackendFile.objects.filter(exercise=self):
+            backend.export(instance, export_target)
 
-class RoutineExerciseBackendFile(models.Model):
+
+class RoutineBackendManager(models.Manager):
+
+    def get_by_natural_key(self, exercise_slug, filename):
+        return self.get(exercise__slug=exercise_slug, filename=filename)
+
+class RoutineExerciseBackendFile(models.Model, ExportImportMixin):
     class Meta:
         verbose_name = "routine exercise backend file"
         verbose_name_plural = "routine exercise backend files"
@@ -114,13 +137,40 @@ class RoutineExerciseBackendFile(models.Model):
     filename = models.CharField(max_length=255, blank=True)
     fileinfo = models.FileField(max_length=255, upload_to=get_testfile_path, storage=upload_storage)
 
+    def natural_key(self):
+        return (self.exercise.slug, self.filename)
+
+    def export(self, instance, export_target):
+        super().export(instance, export_target)
+        export_files(self, export_target, "backend")
+
+class RoutineCommandManager(models.Manager):
+
+    def get_by_natural_key(self, exercise_slug):
+        return self.get(exercise__slug=exercise_slug)
+
 
 class RoutineExerciseBackendCommand(models.Model):
     class Meta:
         verbose_name = "routine exercise backend command"
 
+    objects = RoutineCommandManager()
+
     exercise = models.OneToOneField(RoutineExercise, on_delete=models.CASCADE)
     command = models.TextField()
+
+    def natural_key(self):
+        return [self.exercise.slug]
+
+
+class RoutineTemplateManager(models.Manager):
+
+    def get_by_natural_key(self, exercise_slug, variant, question_class):
+        return self.get(
+            exercise__slug=exercise_slug,
+            variant=variant,
+            question_class=question_class
+        )
 
 
 class RoutineExerciseTemplate(models.Model):
@@ -131,6 +181,19 @@ class RoutineExerciseTemplate(models.Model):
     exercise = models.ForeignKey(RoutineExercise, on_delete=models.CASCADE)
     content = models.TextField()
     question_class = models.PositiveIntegerField()
+    variant = models.PositiveIntegerField()
+
+    def save(self, *args, **kwargs):
+        if self.variant is None:
+            previous = RoutineExerciseTemplate.objects.filter(
+                exercise=self.exercise,
+                question_class=self.question_class
+            ).order_by("-variant").first()
+            if previous and previous.variant is not None:
+                self.variant = previous.variant + 1
+            else:
+                self.variant = 0
+        super().save(*args, **kwargs)
 
 
 class RoutineExerciseQuestion(models.Model):
@@ -164,3 +227,19 @@ class RoutineExerciseProgress(models.Model):
     progress = models.CharField(max_length=255)
     points = models.DecimalField(default=0, max_digits=5, decimal_places=2)
     max_points = models.PositiveIntegerField(default=1)
+
+
+ContentPage.register_content_type(
+    "ROUTINE_EXERCISE", RoutineExercise, RoutineExerciseAnswer
+)
+
+def export_models(instance, export_target):
+    pass
+
+def get_import_list():
+    return [
+        RoutineExercise,
+        RoutineExerciseBackendCommand,
+        RoutineExerciseBackendFile,
+        RoutineExerciseTemplate
+    ]

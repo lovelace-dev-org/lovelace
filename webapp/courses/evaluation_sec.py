@@ -6,9 +6,11 @@ and limiting the OS resources available to the processes to provide a reasonably
 safe environment to run unsafe code in.
 """
 
+import logging
 import os
 import pwd
 import resource
+import subprocess
 
 from django.conf import settings
 
@@ -17,6 +19,7 @@ _NUMBER_OF_FILES = 100
 _FILE_SIZE = 4 * (1024**2)  # 4 MiB
 _CPU_TIME = 20
 
+logger = logging.getLogger(__name__)
 
 def get_uid_gid(username):
     pwrec = pwd.getpwnam(username)
@@ -82,12 +85,17 @@ def drop_privileges():
         os.setresgid(student_gid, student_gid, student_gid)
         os.setresuid(student_uid, student_uid, student_uid)
     except OSError:
-        print(
+        logger.error(
             "Unable to drop privileges to "
             "GID: (r:{s_gid}, e:{s_gid}, s:{s_gid}), "
             "UID: (r:{s_uid}, e:{s_uid}, s:{s_uid})".format(s_gid=student_gid, s_uid=student_uid)
         )
-
+    else:
+        logger.debug(
+            "Dropped privileges to "
+            "GID: (r:{s_gid}, e:{s_gid}, s:{s_gid}), "
+            "UID: (r:{s_uid}, e:{s_uid}, s:{s_uid})".format(s_gid=student_gid, s_uid=student_uid)
+        )
 
 def limit_resources(
     concurrent_processes=_CONCURRENT_PROCESSES,
@@ -125,6 +133,27 @@ def limit_resources(
     # Prevent arbitrary use of computing power by limiting the amount of CPU time
     # in seconds
     resource.setrlimit(resource.RLIMIT_CPU, (cpu_time, cpu_time))
+
+
+def chmod_child_files(test_dir):
+    """
+    Makes sure everything created during the checking can be removed by the parent process
+    when it's cleaning up the temporary directory. Achieved by running chmod as the child.
+    """
+
+    proc = subprocess.run(
+        ("chmod", "-R", "a+rw", "."),
+        bufsize=-1,
+        executable=None,
+        timeout=5,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        preexec_fn=default_demote_process,  # Demote before fork
+        start_new_session=True,
+        close_fds=True,  # Don't inherit fds
+        shell=False,  # Don't run in shell
+        cwd=test_dir,
+    )
 
 
 def secure_kill(pid):

@@ -5,12 +5,15 @@ import itertools
 import operator
 import re
 import os
+import uuid
+from collections import defaultdict
 from fnmatch import fnmatch
 from html import escape
 
 from django.conf import settings
+from django.core import serializers
 from django.core.files.base import ContentFile
-from django.db import models
+from django.db import models, transaction
 from django.db.models import Q, Max, JSONField
 from django.contrib.auth.models import User, Group
 from django.db.models.signals import post_save
@@ -18,17 +21,23 @@ from django.urls import reverse
 from django.core.cache import cache
 from django.template import loader
 from django.utils import translation
-from django.utils.translation import gettext as _
+from django.utils.safestring import mark_safe
+from django.utils.translation import gettext_lazy as _
 from django.utils.text import slugify
 from django.contrib.postgres.fields import ArrayField
 import django.conf
 
+from model_utils.managers import InheritanceManager
 from reversion.models import Version
 
 import pygments
 import magic
 
 import feedback.models
+from lovelace import plugins as lovelace_plugins
+from utils.data import (
+    export_json, export_files, serialize_single_python, serialize_many_python
+)
 from utils.files import (
     get_answerfile_path,
     get_file_upload_path,
@@ -38,7 +47,11 @@ from utils.files import (
     upload_storage,
 )
 from utils.archive import get_archived_field, get_single_archived
-from utils.management import freeze_context_link
+from utils.management import (
+    ExportImportMixin,
+    freeze_context_link,
+    get_prefixed_slug,
+)
 
 
 class RollbackRevert(Exception):
@@ -69,7 +82,7 @@ class UserProfile(models.Model):
     # http://stackoverflow.com/questions/44109/extending-the-user-model-with-custom-fields-in-django
     user = models.OneToOneField(User, on_delete=models.CASCADE)
 
-    student_id = models.IntegerField(verbose_name="Student number", blank=True, null=True)
+    student_id = models.CharField(max_length=36, verbose_name="Student ID", blank=True, null=True)
     study_program = models.CharField(
         verbose_name="Study program", max_length=80, blank=True, null=True
     )
@@ -177,11 +190,18 @@ class DeadlineExemption(models.Model):
 # |
 # V
 
+class SlugManager(models.Manager):
+
+    def get_by_natural_key(self, slug):
+        return self.get(slug=slug)
+
 
 class Course(models.Model):
     """
     Describes the metadata for a course.
     """
+
+    objects = SlugManager()
 
     name = models.CharField(max_length=255)  # Translate
     code = models.CharField(
@@ -213,7 +233,11 @@ class Course(models.Model):
         verbose_name="Staff only course",
         help_text="Staff only courses will not be shown on the front page unless the user is staff",
     )
+    prefix = models.CharField(max_length=4, unique=True)
     # TODO: Create an instance automatically, if none exists
+
+    def natural_key(self):
+        return [self.slug]
 
     def get_url_name(self):
         """Creates a URL and HTML5 ID field friendly version of the name."""
@@ -232,6 +256,7 @@ class Course(models.Model):
 
     def __str__(self):
         return self.name
+
 
 
 class CourseEnrollment(models.Model):
@@ -279,9 +304,13 @@ class CourseInstance(models.Model):
     dates of the course.
     """
 
+    objects = SlugManager()
+
     name = models.CharField(max_length=255, unique=True)  # Translate
     email = models.EmailField(blank=True)  # Translate
-    slug = models.SlugField(max_length=255, allow_unicode=True, blank=False)
+    slug = models.SlugField(
+        max_length=255, db_index=True, unique=True, blank=False, allow_unicode=True
+    )
     course = models.ForeignKey("Course", on_delete=models.CASCADE)
 
     start_date = models.DateTimeField(
@@ -313,6 +342,9 @@ class CourseInstance(models.Model):
     )
     max_group_size = models.PositiveSmallIntegerField(null=True, blank=True)
 
+    def natural_key(self):
+        return [self.slug]
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._was_frozen = self.frozen
@@ -326,8 +358,7 @@ class CourseInstance(models.Model):
 
     def get_url_name(self):
         """Creates a URL and HTML5 ID field friendly version of the name."""
-        default_lang = django.conf.settings.LANGUAGE_CODE
-        return slugify(getattr(self, f"name_{default_lang}"), allow_unicode=True)
+        return get_prefixed_slug(self, self.course, "name")
 
     def user_enroll_status(self, user):
         if not user.is_active:
@@ -346,6 +377,111 @@ class CourseInstance(models.Model):
             for instance in CourseInstance.objects.filter(course=self.course).exclude(pk=self.pk):
                 instance.primary = False
                 instance.save()
+
+
+    def get_content_tree(self, lang_code=None, staff=False):
+        current_lang = translation.get_language()
+        if lang_code is not None:
+            translation.activate(lang_code)
+        else:
+            lang_code = current_lang
+
+        cache_key = f"{self.slug}_tree_{lang_code}"
+        if staff:
+            cache_key += "_staff"
+
+        cached_tree = cache.get(cache_key)
+        if cached_tree:
+            return cached_tree
+
+        if staff:
+            nodes = ContentGraph.objects.filter(instance=self, ordinal_number__gt=0)
+        else:
+            nodes = ContentGraph.objects.filter(instance=self, ordinal_number__gt=0, visible=True)
+
+        nodes = nodes.select_related("parentnode", "content").defer("content__content")
+        embed_links = (
+            EmbeddedLink.objects.filter(instance=self)
+            .select_related("embedded_page")
+            .defer("embedded_page__content")
+        )
+        embeds_by_parent = defaultdict(dict)
+        for link in embed_links:
+            task_group = link.embedded_page.evaluation_group
+            try:
+                embeds_by_parent[link.parent_id][task_group].append(
+                    (link.embedded_page_id, link.embedded_page.default_points)
+                )
+            except KeyError:
+                embeds_by_parent[link.parent_id][task_group] = [
+                    (link.embedded_page_id, link.embedded_page.default_points)
+                ]
+
+        nodes = list(nodes.order_by("parentnode"))
+        ordered = []
+        for node in nodes:
+            ordinals = [node.ordinal_number]
+            parent_node = node.parentnode
+            while parent_node is not None:
+                ordinals.insert(0, parent_node.ordinal_number)
+                parent_node = parent_node.parentnode
+
+            ordered.append((ordinals, node))
+
+        ordered.sort()
+        tree = []
+        level = 0
+        for ordinals, node in ordered:
+            if len(ordinals) > level:
+                tree.append({"content": mark_safe(">")})
+                level += 1
+            elif len(ordinals) < level:
+                tree.append({"content": mark_safe("<")})
+                level -= 1
+
+            page_count = node.content.count_pages(self)
+            embeds = embeds_by_parent[node.content_id]
+            embedded_count = max(len(embeds) - 1, 0) + len(embeds.get("", []))
+            page_score = (
+                sum(task[1] for task in embeds.get("", []))
+                + sum(embeds[tag][0][1] for tag in embeds if tag)
+            )
+
+            tree.append({
+                "node_id": node.id,
+                "content": node.content.name,
+                "url": reverse("courses:content", kwargs={
+                    "course": self.course,
+                    "instance": self,
+                    "content": node.content
+                }),
+                "visible": node.visible,
+                "require_enroll": node.require_enroll,
+                "page_count": page_count,
+                "deadline": node.deadline,
+                "embedded_count": embedded_count,
+                "page_score": page_score,
+                "embeds": embeds,
+                "weight": node.score_weight,
+            })
+        while level > 0:
+            tree.append({"content": mark_safe("<")})
+            level -= 1
+
+        cache.set(cache_key, tree, timeout=None)
+
+        if lang_code is not None:
+            translation.activate(current_lang)
+
+        return tree
+
+    def clear_content_tree_cache(self, regen_frozen=False):
+        if self.frozen and not regen_frozen:
+            return
+
+        for lang_code, _ in settings.LANGUAGES:
+            cache.delete(f"{self.slug}_tree_{lang_code}")
+            cache.delete(f"{self.slug}_tree_{lang_code}_staff")
 
     def freeze(self, freeze_to=None):
         """
@@ -399,6 +535,52 @@ class CourseInstance(models.Model):
         self.frontpage = frontpage
         self.frozen = True
 
+    def export(self, export_target):
+        document = serialize_single_python(self)
+        export_json(document, self.slug, export_target)
+        export_json(
+            serialize_single_python(self.course),
+            self.course.slug,
+            export_target
+        )
+
+        for cg in ContentGraph.objects.filter(instance=self):
+            cg.export(export_target)
+
+        for term_link in TermToInstanceLink.objects.filter(instance=self):
+            term_link.term.export(self, export_target)
+            term_link.export(self, export_target)
+
+        for ifile_link in InstanceIncludeFileToInstanceLink.objects.filter(instance=self):
+            ifile_link.export(self, export_target)
+            ifile_link.include_file.export(self, export_target)
+
+        embeds = (
+            EmbeddedLink.objects.filter(instance=self)
+            .order_by("embedded_page__id")
+        )
+        media = (
+            CourseMediaLink.objects.filter(instance=self)
+            .order_by("media__id")
+        )
+        for embed_link in embeds:
+            embed_link.export(self, export_target)
+        for embed_link in embeds.distinct("embedded_page__id"):
+            embed_link.embedded_page.export(embed_link.embedded_page, self, export_target)
+        for media_link in media:
+            media_link.export(self, export_target)
+        for media_link in media.distinct("media__id"):
+            media_link.media.export(self, export_target)
+            CourseMedia.objects.get_subclass(id=media_link.media.id).export(self, export_target)
+
+        for module in lovelace_plugins["export"]:
+            module.models.export_models(self, export_target)
+
+
+
+    def finalize_import(self, document, pk_map):
+        pass
+
     def __str__(self):
         return self.name
 
@@ -421,6 +603,12 @@ class GradeThreshold(models.Model):
     )
 
 
+class ContextLinkManager(models.Manager):
+
+    def get_by_natural_key(self, instance_slug, content_slug):
+        return self.get(instance__slug=instance_slug, content__slug=content_slug)
+
+
 class ContentGraph(models.Model):
     """A node in the course tree/graph. Links content into a course."""
 
@@ -428,6 +616,8 @@ class ContentGraph(models.Model):
         unique_together = ("content", "instance")
         verbose_name = "content to course link"
         verbose_name_plural = "content to course links"
+
+    objects = ContextLinkManager()
 
     parentnode = models.ForeignKey("self", null=True, blank=True, on_delete=models.SET_NULL)
     content = models.ForeignKey("ContentPage", null=True, blank=True, on_delete=models.RESTRICT)
@@ -479,6 +669,9 @@ class ContentGraph(models.Model):
     )
     evergreen = models.BooleanField(verbose_name="This content should not be frozen", default=False)
 
+    def natural_key(self):
+        return (self.instance.slug, self.content.slug)
+
     def get_revision_str(self):
         if self.revision is None:
             return "newest"
@@ -504,6 +697,18 @@ class ContentGraph(models.Model):
     def freeze(self, freeze_to=None):
         freeze_context_link(self, "content", freeze_to)
 
+    def export(self, export_target):
+        document = serialize_single_python(self)
+        export_json(
+            document,
+            "_".join(self.natural_key()),
+            export_target
+        )
+        self.content.export(self.content, self.instance, export_target)
+
+    def set_instance(self, instance):
+        self.instance = instance
+
     def __str__(self):
         return f"No. {self.ordinal_number} – {self.content.slug} ({self.get_revision_str()})"
 
@@ -515,27 +720,53 @@ class ContentGraph(models.Model):
 # |
 # V
 
+class MediaManager(InheritanceManager):
 
-class CourseMedia(models.Model):
+    def get_by_natural_key(self, slug):
+        return self.get(slug=slug)
+
+
+class CourseMedia(models.Model, ExportImportMixin):
     """
     Top level model for embedded media.
     """
 
+    objects = MediaManager()
+
     name = models.CharField(
-        verbose_name="Unique name identifier", max_length=200, unique=True
+        verbose_name="Unique name identifier", max_length=200
+    )
+    origin = models.ForeignKey("Course", null=True, on_delete=models.SET_NULL)
+    slug = models.SlugField(
+        max_length=255, db_index=True, unique=True, blank=False, allow_unicode=True
     )
 
+    def natural_key(self):
+        return (self.slug, )
+
     def save(self, *args, **kwargs):
+        self.slug = get_prefixed_slug(self, self.origin, "name", translated=False)
         super().save(*args, **kwargs)
         for link in self.coursemedialink_set.get_queryset():
             if not link.instance.frozen:
                 link.parent.regenerate_cache(link.instance)
 
 
-class CourseMediaLink(models.Model):
+class MediaLinkManager(models.Manager):
+
+    def get_by_natural_key(self, parent_slug, media_slug, instance_slug):
+        return self.get(
+            parent__slug=parent_slug, media__slug=media_slug, instance__slug=instance_slug
+        )
+
+
+
+class CourseMediaLink(models.Model, ExportImportMixin):
     """
     Context model for embedded media.
     """
+
+    objects = MediaLinkManager()
 
     media = models.ForeignKey(CourseMedia, on_delete=models.RESTRICT)
     parent = models.ForeignKey("ContentPage", on_delete=models.CASCADE, null=True)
@@ -546,11 +777,17 @@ class CourseMediaLink(models.Model):
         verbose_name="Revision to display", blank=True, null=True
     )
 
+    def natural_key(self):
+        return [self.parent.slug, self.media.slug, self.instance.slug]
+
     class Meta:
         unique_together = ("instance", "media", "parent")
 
     def freeze(self, freeze_to=None):
         freeze_context_link(self, "media", freeze_to)
+
+    def set_instance(self):
+        self.instance = instance
 
 
 class File(CourseMedia):
@@ -566,6 +803,10 @@ class File(CourseMedia):
 
     def __str__(self):
         return self.name
+
+    def export(self, instance, export_target):
+        super().export(instance, export_target)
+        export_files(self, export_target, "media", translate=True)
 
 
 class Image(CourseMedia):
@@ -588,6 +829,9 @@ class Image(CourseMedia):
             data[f"fileinfo_{lang_code}"] = str(getattr(self, f"fileinfo_{lang_code}", ""))
         return data
 
+    def export(self, instance, export_target):
+        super().export(instance, export_target)
+        export_files(self, export_target, "media", translate=True)
 
 
 class VideoLink(CourseMedia):
@@ -609,7 +853,18 @@ class VideoLink(CourseMedia):
 # V
 
 
-class TermToInstanceLink(models.Model):
+class TermLinkManager(models.Manager):
+
+    def get_by_natural_key(self, term_slug, instance_slug):
+        return self.get(term__slug=term_slug, instance__slug=instance_slug)
+
+
+class TermToInstanceLink(models.Model, ExportImportMixin):
+    class Meta:
+        unique_together = ("instance", "term")
+
+    objects = TermLinkManager()
+
     term = models.ForeignKey("Term", on_delete=models.RESTRICT)
     instance = models.ForeignKey(
         CourseInstance, verbose_name="Course instance", on_delete=models.CASCADE
@@ -618,44 +873,97 @@ class TermToInstanceLink(models.Model):
         verbose_name="Revision to display", blank=True, null=True
     )
 
-    class Meta:
-        unique_together = ("instance", "term")
+    def natural_key(self):
+        return self.term.natural_key() + self.instance.natural_key()
 
     def freeze(self, freeze_to=None):
         freeze_context_link(self, "term", freeze_to)
 
+    def set_instance(self, instance):
+        self.instance = instance
 
-class Term(models.Model):
-    course = models.ForeignKey(Course, verbose_name="Course", null=True, on_delete=models.SET_NULL)
+
+class Term(models.Model, ExportImportMixin):
+    class Meta:
+        unique_together = (
+            "origin",
+            "name",
+        )
+
+    objects = SlugManager()
+
     name = models.CharField(verbose_name="Term", max_length=200)  # Translate
+    origin = models.ForeignKey(Course, verbose_name="Course", null=True, on_delete=models.SET_NULL)
+    slug = models.SlugField(
+        max_length=255, db_index=True, unique=True, blank=False, allow_unicode=True
+    )
     description = models.TextField()  # Translate
 
     tags = models.ManyToManyField("TermTag", blank=True)
+
+    def natural_key(self):
+        return [self.slug]
 
     def __str__(self):
         return self.name
 
     def save(self, *args, **kwargs):
+        self.slug = get_prefixed_slug(self, self.origin, "name")
         super().save(*args, **kwargs)
-        for instance in CourseInstance.objects.filter(course=self.course, frozen=False):
+        for instance in CourseInstance.objects.filter(course=self.origin, frozen=False):
             if not TermToInstanceLink.objects.filter(instance=instance, term=self):
                 link = TermToInstanceLink(instance=instance, revision=None, term=self)
                 link.save()
 
-    class Meta:
-        unique_together = (
-            "course",
-            "name",
+    def export(self, instance, export_target):
+        super().export(instance, export_target)
+        export_json(
+            serialize_many_python(self.termalias_set.get_queryset()),
+            f"{self.name}_aliases",
+            export_target,
         )
+        export_json(
+            serialize_many_python(self.tags.get_queryset()),
+            f"{self.name}_tags",
+            export_target,
+        )
+        export_json(
+            serialize_many_python(self.termtab_set.get_queryset()),
+            f"{self.name}_tabs",
+            export_target,
+        )
+        export_json(
+            serialize_many_python(self.termlink_set.get_queryset()),
+            f"{self.name}_links",
+            export_target,
+        )
+
+    def set_instance(self, instance):
+        self.origin = instance.course
 
 
 class TermAlias(models.Model):
-    term = models.ForeignKey(Term, null=False, on_delete=models.CASCADE)
+    term = models.ForeignKey(Term, null=True, on_delete=models.CASCADE)
     name = models.CharField(verbose_name="Term", max_length=200)  # Translate
+
+    def natural_key(self):
+        return self.term.natural_key() + [self.name]
+
+
+class TermTagManager(models.Manager):
+
+    def get_by_natural_key(self, export_id):
+        return self.get(export_id=export_id)
 
 
 class TermTag(models.Model):
+    objects = TermTagManager()
+
     name = models.CharField(verbose_name="Term", max_length=200)  # Translate
+    export_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+
+    def natural_key(self):
+        return [self.export_id]
 
     def __str__(self):
         return self.name
@@ -666,6 +974,9 @@ class TermTab(models.Model):
     title = models.CharField(verbose_name="Title of this tab", max_length=100)  # Translate
     description = models.TextField()  # Translate
 
+    def natural_key(self):
+        return self.term.natural_key() + [self.title]
+
     def __str__(self):
         return self.title
 
@@ -674,6 +985,10 @@ class TermLink(models.Model):
     term = models.ForeignKey(Term, on_delete=models.CASCADE)
     url = models.CharField(verbose_name="URL", max_length=300)  # Translate
     link_text = models.CharField(verbose_name="Link text", max_length=80)  # Translate
+
+    def natural_key(self):
+        return self.term.natural_key() + [self.url]
+
 
 
 # ^
@@ -684,8 +999,10 @@ class TermLink(models.Model):
 # V
 
 
-class Calendar(models.Model):
+class Calendar(models.Model, ExportImportMixin):
     """A multi purpose calendar for course events markups, time reservations etc."""
+
+    objects = SlugManager()
 
     name = models.CharField(
         verbose_name="Name for reference in content", max_length=200, unique=True
@@ -694,6 +1011,16 @@ class Calendar(models.Model):
     related_content = models.ForeignKey(
         "ContentPage", on_delete=models.SET_NULL, null=True, blank=True
     )
+    origin = models.ForeignKey(Course, verbose_name="Course", null=True, on_delete=models.SET_NULL)
+    slug = models.SlugField(max_length=255, allow_unicode=True, blank=False)
+
+    def natural_key(self):
+        return [self.name]
+
+    def save(self, *args, **kwargs):
+        self.slug = get_prefixed_slug(self, self.origin, "name", translated=False)
+        super().save(*args, **kwargs)
+
 
     def __str__(self):
         return self.name
@@ -735,8 +1062,19 @@ class CalendarReservation(models.Model):
 # |
 # V
 
+class EmbeddedLinkManager(models.Manager):
 
-class EmbeddedLink(models.Model):
+    def get_by_natural_key(self, instance_slug, parent_slug, content_slug):
+        return self.get(
+            instance__slug=instance_slug,
+            parent__slug=parent_slug,
+            embedded_page__slug=content_slug,
+        )
+
+
+class EmbeddedLink(models.Model, ExportImportMixin):
+    objects = EmbeddedLinkManager()
+
     parent = models.ForeignKey("ContentPage", related_name="emb_parent", on_delete=models.CASCADE)
     embedded_page = models.ForeignKey(
         "ContentPage", related_name="emb_embedded", on_delete=models.RESTRICT
@@ -748,37 +1086,71 @@ class EmbeddedLink(models.Model):
     class Meta:
         ordering = ["ordinal_number"]
 
+    def natural_key(self):
+        return (self.instance.slug, self.parent.slug, self.embedded_page.slug)
+
     def freeze(self, freeze_to=None):
         freeze_context_link(self, "embedded_page", freeze_to)
 
+    def set_instance(self, instance):
+        self.instance = instance
 
-class ContentPage(models.Model):
+
+class ContentPage(models.Model, ExportImportMixin):
     """
-    A single content containing page of a course.
-    The used content pages (Lecture and Exercise) and their
-    child classes all inherit from this class.
+    This class determines the base for all content in Lovelace. All pages that can be displayed
+    as course content or embedded into other pages must be created as proxy models of this class.
+
+    This class handles base behavior for all pages, consisting of
+    - rendering markup
+    - caching rendered markup
+    - doing replace operations on markup
+    - saving and handling evaluations
+    - managing embedded links in the markup
+
+    Content types must be registered after definition using the register_content_type class method.
+    This class contains black sorcery that delegates certain method calls to child classes based
+    on the content type attribute. See __getattribute__ for details.
     """
 
     class Meta:
         ordering = ("name",)
+        unique_together = ("name", "origin")
 
+    objects = SlugManager()
+
+    # This will ideally be deprecated and replaced by a list generated dynamically from
+    # registered content types.
     CONTENT_TYPE_CHOICES = (
         ("LECTURE", "Lecture"),
         ("TEXTFIELD_EXERCISE", "Textfield exercise"),
         ("MULTIPLE_CHOICE_EXERCISE", "Multiple choice exercise"),
         ("CHECKBOX_EXERCISE", "Checkbox exercise"),
         ("FILE_UPLOAD_EXERCISE", "File upload exercise"),
-#        ("CODE_INPUT_EXERCISE", "Code input exercise"),
-#        ("CODE_REPLACE_EXERCISE", "Code replace exercise"),
         ("REPEATED_TEMPLATE_EXERCISE", "Repeated template exercise"),
         ("ROUTINE_EXERCISE", "Routine exercise"),
         ("MULTIPLE_QUESTION_EXAM", "Multiple question exam"),
     )
+
+    # Dynamically registered content types go here.
+    content_type_models = {}
+
+    # Template to use for rendering this content type, all content type models must set their own.
     template = "courses/blank.html"
+
+    # Template for answers page for tasks of this type, override if the default is not suitable.
     answers_template = "courses/user-exercise-answers.html"
+
+    # Classes to include for the answers table. Override if needed.
     answer_table_classes ="fixed alternate-green answers-table"
 
+
+    # Model fields that are shared by all content types.
+    # v
     name = models.CharField(max_length=255, help_text="The full name of this page")  # Translate
+    origin = models.ForeignKey(
+        Course, verbose_name="Origin course", null=True, on_delete=models.SET_NULL
+    )
     slug = models.SlugField(
         max_length=255, db_index=True, unique=True, blank=False, allow_unicode=True
     )
@@ -810,7 +1182,6 @@ class ContentPage(models.Model):
     )
     feedback_questions = models.ManyToManyField(feedback.models.ContentFeedbackQuestion, blank=True)
 
-    # Exercise fields
     question = models.TextField(blank=True, default="")  # Translate
     manually_evaluated = models.BooleanField(
         verbose_name="This exercise is evaluated by hand", default=False
@@ -827,6 +1198,22 @@ class ContentPage(models.Model):
     ask_collaborators = models.BooleanField(
         verbose_name="Ask the student to list collaborators", default=False
     )
+    # ^
+
+    @classmethod
+    def register_content_type(cls, constant_name, type_class, answer_class=None):
+        if not issubclass(type_class, cls):
+            raise TypeError(
+                _("Class {type_class} is not a subclass of {cls}").format(
+                    type_class=type_class,
+                    cls=cls
+                )
+            )
+
+        cls.content_type_models[constant_name] = type_class
+
+    def natural_key(self):
+        return (self.slug, )
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -837,6 +1224,16 @@ class ContentPage(models.Model):
         super().save(*args, **kwargs)
 
     def replace_lines(self, line_idx, new_lines, delete_count=1):
+        """
+        Replaces one or more lines in the page's markup, in the content field of the currently
+        active language. If currently active language is empty, changes the default language
+        content field instead.
+
+        Always use this method to edit markup when creating content editing tools. The calling
+        end is expected to know how many lines are being replaced. This information is available
+        as the content data's block size value.
+        """
+
         lang = translation.get_language()
         if not getattr(self, f"content_{lang}"):
             field = f"content_{settings.MODELTRANSLATION_DEFAULT_LANGUAGE}"
@@ -854,9 +1251,15 @@ class ContentPage(models.Model):
     def rendered_markup(self, request=None, context=None, revision=None, lang_code=None, page=None):
         """
         Uses the included MarkupParser library to render the page content into
-        HTML. If a rendered version already exists in the cache, use that
-        instead.
+        a data format that can be used by templates and safely cached. If a rendered version
+        already exists in the cache, use that instead. If page breaks are used, creates both
+        paginated and full versions of the content, but only returns the requested markup (either
+        1 page or full content).
+
+        This version of rendering is only used for top-level pages.
         """
+
+        # This import needs to be here until circular import issues are fully sorted out.
         from courses import markupparser
 
         parser = markupparser.MarkupParser()
@@ -893,21 +1296,6 @@ class ContentPage(models.Model):
                 else:
                     blocks.append(chunk)
 
-                #if isinstance(chunk, str):
-                    #segment += chunk
-                #if isinstance(chunk, markupparser.PageBreak):
-                    #blocks.append(("plain", segment))
-                    #segment = ""
-                    #pages.append(blocks)
-                    #blocks = []
-                #else:
-                    #blocks.append(("plain", segment))
-                    #blocks.append(chunk)
-                    #segment = ""
-
-            #if segment:
-                #blocks.append(("plain", segment))
-
             pages.append(blocks)
 
             if len(pages) > 1:
@@ -929,12 +1317,21 @@ class ContentPage(models.Model):
                 return pages[page - 1]
             return full
 
-        #for render in cached_content:
-            #print(render)
-
         return cached_content
 
     def _get_rendered_content(self, context):
+        """
+        This method renders markup for embedded pages. It is called from within the markup parser
+        when it encounters an embedded page. Child models are expected to have a public version of
+        this method get_rendered_content, and it is expected to call this method first, then
+        provide its additions to the rendered markup as needed.
+
+        See routine exercise or multiexam content types for examples of tasks that have their
+        own includes to the rendered content. As extra content is not editable, it should always
+        be a content block that has the 'extra' type, line index of -1, and line count of 0.
+        e.g. ["extra", "rendered content string", -1, 0]
+        """
+
         from courses import markupparser
 
         embedded_content = []
@@ -950,17 +1347,36 @@ class ContentPage(models.Model):
         return embedded_content
 
     def _get_question(self, context):
+        """
+        This method is for rendering the questions box of a task. Similarly to _get_rendered_content
+        it is called from within the markup parser as it encounters embedded pages. Also similarly,
+        child models are expected to have the public version of this method that calls this method,
+        and then makes its own additions to the question box as needed.
+        """
+
         from courses import blockparser
 
         question = blockparser.parseblock(escape(self.question, quote=False), context)
         return question
 
     def count_pages(self, instance):
+        """
+        Counts the number of pages the content has been paginated to. Uses cache keys to avoid
+        needing to read the content for page breaks.
+        """
+
         lang_code = translation.get_language()
         content_key = f"{self.slug}_contents_{instance.slug}_{lang_code}"
         keys = cache.keys(content_key + "*")
+
+        # Return -1 because the full page is cached separately.
         return len(keys) - 1
 
+    # NOTE: This method was separated from the normal parsing of markup for legacy reasons
+    #       Because the this only needs to be done when the content has changed whereas
+    #       before caching, the content rendering was done much more frequently.
+    #       Presently only manual cache regen renders the content without a need to run this
+    #       process, so there is sufficient basis for combining this into the rendering process.
     def update_embedded_links(self, instance, revision=None):
         """
         Uses LinkMarkupParser to discover all embedded page links
@@ -1040,6 +1456,11 @@ class ContentPage(models.Model):
                 link_obj.embedded_page.update_embedded_links(instance)
 
     def regenerate_cache(self, instance, active_only=False):
+        """
+        Forcibly regenerates content page's cache for the given course instance. If active_only
+        is set to true, the process will be skipped if the page is archived.
+        """
+
         context = {"instance": instance, "course": instance.course, "content_page": self}
         try:
             revision = ContentGraph.objects.get(content=self, instance=instance).revision
@@ -1072,77 +1493,40 @@ class ContentPage(models.Model):
         return dashed_type
 
     def get_admin_change_url(self):
+        """
+        Forms change URL to modify this content from the management panel. Because
+        app name is part of the URL, this method needs to be overridden in all child
+        models that are defined in separate apps.
+        """
+
         adminized_type = self.content_type.replace("_", "").lower()
         return reverse(f"admin:courses_{adminized_type}_change", args=(self.id,))
 
     def get_staff_extra(self, context):
+        """
+        Overriding this method allows content types to include additional staff tools in the
+        left hand context menu. This method needs to return a list with (link text, link url)
+        tuples as its values.
+        """
+
         return []
 
     def get_url_name(self):
-        default_lang = django.conf.settings.LANGUAGE_CODE
-        return slugify(getattr(self, f"name_{default_lang}"), allow_unicode=True)
-
-    def get_type_object(self):
-        # this seems to lose the revision info?
-        from routine_exercise.models import RoutineExercise
-        from multiexam.models import MultipleQuestionExam
-
-        type_models = {
-            "LECTURE": Lecture,
-            "TEXTFIELD_EXERCISE": TextfieldExercise,
-            "MULTIPLE_CHOICE_EXERCISE": MultipleChoiceExercise,
-            "CHECKBOX_EXERCISE": CheckboxExercise,
-            "FILE_UPLOAD_EXERCISE": FileUploadExercise,
-            "CODE_INPUT_EXERCISE": CodeInputExercise,
-            "CODE_REPLACE_EXERCISE": CodeReplaceExercise,
-            "REPEATED_TEMPLATE_EXERCISE": RepeatedTemplateExercise,
-            "ROUTINE_EXERCISE": RoutineExercise,
-            "MULTIPLE_QUESTION_EXAM": MultipleQuestionExam,
-        }
-        return type_models[self.content_type].objects.get(id=self.id)
-
-    def get_type_model(self):
-        from routine_exercise.models import RoutineExercise
-        from multiexam.models import MultipleQuestionExam
-
-        type_models = {
-            "LECTURE": Lecture,
-            "TEXTFIELD_EXERCISE": TextfieldExercise,
-            "MULTIPLE_CHOICE_EXERCISE": MultipleChoiceExercise,
-            "CHECKBOX_EXERCISE": CheckboxExercise,
-            "FILE_UPLOAD_EXERCISE": FileUploadExercise,
-            "CODE_INPUT_EXERCISE": CodeInputExercise,
-            "CODE_REPLACE_EXERCISE": CodeReplaceExercise,
-            "REPEATED_TEMPLATE_EXERCISE": RepeatedTemplateExercise,
-            "ROUTINE_EXERCISE": RoutineExercise,
-            "MULTIPLE_QUESTION_EXAM": MultipleQuestionExam,
-        }
-        return type_models[self.content_type]
-
-    def get_answer_model(self):
-        from routine_exercise.models import RoutineExerciseAnswer
-        from multiexam.models import UserMultipleQuestionExamAnswer
-
-        answer_models = {
-            "LECTURE": None,
-            "TEXTFIELD_EXERCISE": UserTextfieldExerciseAnswer,
-            "MULTIPLE_CHOICE_EXERCISE": UserMultipleChoiceExerciseAnswer,
-            "CHECKBOX_EXERCISE": UserCheckboxExerciseAnswer,
-            "FILE_UPLOAD_EXERCISE": UserFileUploadExerciseAnswer,
-            "CODE_INPUT_EXERCISE": None,
-            "CODE_REPLACE_EXERCISE": UserCodeReplaceExerciseAnswer,
-            "REPEATED_TEMPLATE_EXERCISE": UserRepeatedTemplateExerciseAnswer,
-            "ROUTINE_EXERCISE": RoutineExerciseAnswer,
-            "MULTIPLE_QUESTION_EXAM": UserMultipleQuestionExamAnswer,
-        }
-        return answer_models[self.content_type]
+        return get_prefixed_slug(self, self.origin, "name")
 
     def is_answerable(self):
         return self.content_type != "LECTURE"
 
     def save_evaluation(self, user, evaluation, answer_object):
         """
-        Evaluation dictionary:
+        Saves evaluation. This method has been designed in a way that it is generally compatible
+        with all task types as it simply saves an evaluation that has been generated by the task
+        itself.
+
+        This method also takes care of updating completion, and updating the evaluation for
+        group members when applicable, and making a copy of the answer for each of them.
+
+        Evaluation dictionary and its default values are defined as follows:
         - *evaluation: bool
         - points: float (0)
         - max: float (exercise.default_points)
@@ -1151,6 +1535,7 @@ class ContentPage(models.Model):
         - test_results: string ("")
         - feedback: string ("")
         """
+
         from utils.exercise import update_completion
         from utils.users import get_group_members
 
@@ -1191,6 +1576,13 @@ class ContentPage(models.Model):
         return evaluation_object
 
     def update_evaluation(self, user, evaluation, answer_object, complete=True, overwrite=False):
+        """
+        Updates an existing evaluation based on a new evaluation dictionary. See save_evaluation.
+        This is used by tasks that use manual assesssment, or delayed evaluation.
+        As default behavior completion is only updated if the new evaluation is better than the
+        existing one. This can be overridden by settings overwrite to True.
+        """
+
         from utils.exercise import update_completion
         from utils.users import get_group_members
 
@@ -1215,6 +1607,11 @@ class ContentPage(models.Model):
                     )
 
     def get_user_evaluation(self, user, instance, check_group=True):
+        """
+        Gets a user's evaluation for this content. In the present day it only serves as a proxy to
+        get the completion state.
+        """
+
         try:
             completion = UserTaskCompletion.objects.get(user=user, instance=instance, exercise=self)
             return completion.state, completion.points
@@ -1222,6 +1619,12 @@ class ContentPage(models.Model):
             return "unanswered", 0
 
     def re_evaluate(self, user, instance):
+        """
+        Re-evaluates a task by picking the user's best result, and updating completion based on it.
+        This method is primarily used when transfering records between instances that have different
+        scoring rules.
+        """
+
         from utils.exercise import update_completion
 
         best_answer = (
@@ -1240,8 +1643,62 @@ class ContentPage(models.Model):
         }
         update_completion(self, instance, user, evaluation, best_answer.answer_date)
 
+
+    # Abstract methods that proxy model classes need to implement.
+    # v
+
     def get_user_answers(self, user, instance, ignore_drafts=True):
+        """
+        Method that all task content types need to implement. Should return a queryset.
+        """
         raise NotImplementedError("base type has no method 'get_user_answers'")
+
+
+    def get_choices(self, revision=None):
+        """
+        Method that all task content types need to implement. Should return an iterable, or
+        None if not applicable to the task type. The name says 'choices' for legacy reasons but it
+        also includes things like textfield task answers.
+        """
+        raise NotImplementedError("base type has no method 'get_choices'")
+
+    def save_answer(self, user, ip, answer, files, instance, revision):
+        """
+        Method that all task content types need to implement if they use the standard check_answer
+        view for processing answers (generally recommended unless behavior needs to be entirely
+        different, e.g. routine exercise). The saved answer should be a child model of UserAnswer.
+
+        :param User user: instance of User
+        :param str ip: IP address the answer was sent from (saved to the answer model instance)
+        :param querydict answer: has the contents of the answer form as a Django querydict
+        :param dict files: a dictionary-like object that contains UploadedFile instances
+        :param CourseInstance instance: context where the answer was given
+        :param int revision: revision the answer was submitted for
+
+        :return: the created answer object (instance of UserAnswer child class)
+        """
+        raise NotImplementedError("base type has no method 'save_answer'")
+
+    def check_answer(self, user, ip, answer, files, answer_object, revision):
+        """
+        A follow-up method for save_answer, similarly mandatory if using standard views. This
+        function checks the answer and return an evaluation dictionary that should conform to the
+        format shown in save_evaluation docstring. When using standard views it should not save
+        the evaluation.
+
+        :param User user: instance of User
+        :param str ip: IP address the answer was sent from (saved to the answer model instance)
+        :param querydict answer: has the contents of the answer form as a Django querydict
+        :param dict files: a dictionary-like object that contains UploadedFile instances
+        :param UserAnswer answer_object: saved instance of UserAnswer child class
+        :param int revision: revision the answer was submitted for
+
+        :return: evaluation as dictionary
+        """
+        raise NotImplementedError("base type has no method 'save_answer'")
+
+    # ^
+
 
     def get_feedback_questions(self):
         return [q.get_type_object() for q in self.feedback_questions.all()]
@@ -1249,9 +1706,70 @@ class ContentPage(models.Model):
     def __str__(self):
         return self.name
 
+    # Everything past here is part of the machinations that allow content to be referenced
+    # as a common type and handled as if they were the same, and also have their own behaviors
+    # at the same time. This whole mechanism needs to be revised but proxy models aren't making
+    # it easy.
+    # v
+
+    def get_type_object(self):
+        # this seems to lose the revision info?
+        from routine_exercise.models import RoutineExercise
+        from multiexam.models import MultipleQuestionExam
+
+        type_models = {
+            "LECTURE": Lecture,
+            "TEXTFIELD_EXERCISE": TextfieldExercise,
+            "MULTIPLE_CHOICE_EXERCISE": MultipleChoiceExercise,
+            "CHECKBOX_EXERCISE": CheckboxExercise,
+            "FILE_UPLOAD_EXERCISE": FileUploadExercise,
+            "REPEATED_TEMPLATE_EXERCISE": RepeatedTemplateExercise,
+            "ROUTINE_EXERCISE": RoutineExercise,
+            "MULTIPLE_QUESTION_EXAM": MultipleQuestionExam,
+        }
+
+        return type_models[self.content_type].objects.get(id=self.id)
+
+    def get_type_model(self):
+        from routine_exercise.models import RoutineExercise
+        from multiexam.models import MultipleQuestionExam
+
+        type_models = {
+            "LECTURE": Lecture,
+            "TEXTFIELD_EXERCISE": TextfieldExercise,
+            "MULTIPLE_CHOICE_EXERCISE": MultipleChoiceExercise,
+            "CHECKBOX_EXERCISE": CheckboxExercise,
+            "FILE_UPLOAD_EXERCISE": FileUploadExercise,
+            "REPEATED_TEMPLATE_EXERCISE": RepeatedTemplateExercise,
+            "ROUTINE_EXERCISE": RoutineExercise,
+            "MULTIPLE_QUESTION_EXAM": MultipleQuestionExam,
+        }
+        return type_models[self.content_type]
+
+    def get_answer_model(self):
+        from routine_exercise.models import RoutineExerciseAnswer
+        from multiexam.models import UserMultipleQuestionExamAnswer
+
+        answer_models = {
+            "LECTURE": None,
+            "TEXTFIELD_EXERCISE": UserTextfieldExerciseAnswer,
+            "MULTIPLE_CHOICE_EXERCISE": UserMultipleChoiceExerciseAnswer,
+            "CHECKBOX_EXERCISE": UserCheckboxExerciseAnswer,
+            "FILE_UPLOAD_EXERCISE": UserFileUploadExerciseAnswer,
+            "REPEATED_TEMPLATE_EXERCISE": UserRepeatedTemplateExerciseAnswer,
+            "ROUTINE_EXERCISE": RoutineExerciseAnswer,
+            "MULTIPLE_QUESTION_EXAM": UserMultipleQuestionExamAnswer,
+        }
+        return answer_models[self.content_type]
+
     # HACK: Experimental way of implementing a better get_type_object
-    # TODO: get rid of this
     def __getattribute__(self, name):
+        """
+        Defines when attribute access needs to be delegated to a child model. Note that
+        this results in methods being returned as functions, so they must be called with the
+        model instance as the first argument.
+        """
+
         normal = [
             "get_choices",
             "get_rendered_content",
@@ -1263,6 +1781,7 @@ class ContentPage(models.Model):
             "template",
             "answers_template",
             "answer_table_classes",
+            "export",
         ]
 
         if name in normal:
@@ -1276,6 +1795,7 @@ class ContentPage(models.Model):
             return super().__getattribute__(name)
         return type_attr
 
+    # ^
 
 # ^
 # |
@@ -1412,6 +1932,14 @@ class MultipleChoiceExercise(ContentPage):
             )
         return answers
 
+    def export(self, instance, export_target):
+        super(ContentPage, self).export(instance, export_target)
+        export_json(
+            serialize_many_python(self.get_choices(self)),
+            f"{self.slug}_choices",
+            export_target,
+        )
+
 
 # @reversion.register(follow=["checkboxexerciseanswer_set"])
 class CheckboxExercise(ContentPage):
@@ -1511,6 +2039,14 @@ class CheckboxExercise(ContentPage):
                 exercise=self, instance=instance, user=user
             )
         return answers
+
+    def export(self, instance, export_target):
+        super(ContentPage, self).export(instance, export_target)
+        export_json(
+            serialize_many_python(self.get_choices(self)),
+            f"{self.slug}_choices",
+            export_target,
+        )
 
 
 class TextfieldExercise(ContentPage):
@@ -1641,6 +2177,14 @@ class TextfieldExercise(ContentPage):
             )
         return answers
 
+    def export(self, instance, export_target):
+        super(ContentPage, self).export(instance, export_target)
+        export_json(
+            serialize_many_python(self.get_choices(self)),
+            f"{self.slug}_choices",
+            export_target,
+        )
+
 
 class FileUploadExercise(ContentPage):
     class Meta:
@@ -1767,90 +2311,19 @@ class FileUploadExercise(ContentPage):
             )
         return answers
 
-
-# Placeholder for a textfield exercise variant where the answer is run as code in the backend
-class CodeInputExercise(ContentPage):
-    class Meta:
-        verbose_name = "code input exercise"
-        proxy = True
-
-    template = "courses/code-input-exercise.html"
-
-    def save(self, *args, **kwargs):
-        if not self.slug:
-            self.slug = self.get_url_name()
-        else:
-            self.slug = slugify(self.slug, allow_unicode=True)
-
-        self.content_type = "CODE_INPUT_EXERCISE"
-        super().save(*args, **kwargs)
-
-    def get_user_answers(self, user, instance, ignore_drafts=True):
-        return UserAnswer.objects.none()
-
-    def save_answer(self, user, ip, answer, files, instance, revision):
-        pass
-
-    def check_answer(self, user, ip, answer, files, answer_object, revision):
-        return {}
-
-
-# Placeholder for a textfield exercise variant where the student is allowed to modify part of
-# a given code while the rest is kept fixed.
-class CodeReplaceExercise(ContentPage):
-    class Meta:
-        verbose_name = "code replace exercise"
-        proxy = True
-
-    template = "courses/code-replace-exercise.html"
-
-    def save(self, *args, **kwargs):
-        if not self.slug:
-            self.slug = self.get_url_name()
-        else:
-            self.slug = slugify(self.slug, allow_unicode=True)
-
-        self.content_type = "CODE_REPLACE_EXERCISE"
-        super().save(*args, **kwargs)
-        parents = ContentPage.objects.filter(embedded_pages=self).distinct()
-        for instance in CourseInstance.objects.filter(
-            Q(contentgraph__content=self) | Q(contentgraph__content__embedded_pages=self),
-            frozen=False,
-        ).distinct():
-            self.update_embedded_links(instance)
-            for parent in parents:
-                parent.regenerate_cache(instance)
-
-    def get_choices(self, revision=None):
-        choices = (
-            CodeReplaceExerciseAnswer.objects.filter(exercise=self)
-            .values_list("replace_file", "replace_line", "id")
-            .order_by("replace_file", "replace_line")
+    def export(self, instance, export_target):
+        super(ContentPage, self).export(instance, export_target)
+        export_json(
+            serialize_single_python(self.fileexercisesettings),
+            f"{self.slug}_settings",
+            export_target,
         )
-        choices = itertools.groupby(choices, operator.itemgetter(0))
-        # Django templates don't like groupby, so evaluate iterators:
-        return [(a, list(b)) for a, b in choices]
-
-    def get_rendered_content(self, context):
-        return ContentPage._get_rendered_content(self, context)
-
-    def get_question(self, context):
-        return ContentPage._get_question(self, context)
-
-    def save_answer(self, user, ip, answer, files, instance, revision):
-        pass
-
-    def check_answer(self, user, ip, answer, files, answer_object, revision):
-        return {}
-
-    def get_user_answers(self, user, instance, ignore_drafts=True):
-        if instance is None:
-            answers = UserCodeReplaceExerciseAnswer.objects.filter(exercise=self, user=user)
-        else:
-            answers = UserCodeReplaceExerciseAnswer.objects.filter(
-                exercise=self, instance=instance, user=user
-            )
-        return answers
+        for testfile in self.fileexercisetestincludefile_set.get_queryset():
+            testfile.export(instance, export_target)
+        for test in self.fileexercisetest_set.get_queryset():
+            test.export(instance, export_target)
+        for ifile_link in self.instanceincludefiletoexerciselink_set.get_queryset():
+            ifile_link.export(instance, export_target)
 
 
 # Legacy task type only kept for compatibility, use routine exercise instead
@@ -1996,7 +2469,7 @@ class RepeatedTemplateExercise(ContentPage):
                 match, m = validate(answer.answer, given_answer)
             except re.error as e:
                 if user.is_staff:
-                    errors.append(f"Contact staff, regexp error '{e}' from regexp: {answer.answer}")
+                    errors.append(f"Regexp error '{e}' from regexp: {answer.answer}")
                 else:
                     errors.append(f"Contact staff! Regexp error '{e}' in exercise '{self.name}'.")
                 correct = False
@@ -2112,6 +2585,13 @@ def default_fue_timeout():
     return datetime.timedelta(seconds=5)
 
 
+
+class ExerciseOneToOneManager(models.Manager):
+
+    def get_by_natural_key(self, exercise_slug):
+        return self.get(exercise__slug=exercise_slug)
+
+
 class FileExerciseSettings(models.Model):
     """
     A separate extra settings model for file upload exercises. Introduced to prevent
@@ -2123,13 +2603,15 @@ class FileExerciseSettings(models.Model):
         ("TEXT", "From textbox"),
     )
 
+    objects = ExerciseOneToOneManager()
+
     exercise = models.OneToOneField(
         FileUploadExercise,
         verbose_name="for file exercise",
         db_index=True,
         on_delete=models.CASCADE,
     )
-    allowed_filenames = ArrayField(  # File upload exercise specific
+    allowed_filenames = ArrayField(
         base_field=models.CharField(max_length=32, blank=True), default=list, blank=True
     )
     max_file_count = models.PositiveIntegerField(
@@ -2154,8 +2636,21 @@ class FileExerciseSettings(models.Model):
         )
     )
 
+    def natural_key(self):
+        return (self.exercise.slug, )
 
-class FileExerciseTest(models.Model):
+
+class FileExerciseTestManager(models.Manager):
+
+    def get_by_natural_key(self, exercise_slug, name):
+        return self.get(exercise__slug=exercise_slug, name=name)
+
+class FileExerciseTest(models.Model, ExportImportMixin):
+    class Meta:
+        verbose_name = "file exercise test"
+
+    objects = FileExerciseTestManager()
+
     exercise = models.ForeignKey(
         FileUploadExercise,
         verbose_name="for file exercise",
@@ -2172,20 +2667,36 @@ class FileExerciseTest(models.Model):
         "InstanceIncludeFile", verbose_name="instance files required by this test", blank=True
     )
 
+    def natural_key(self):
+        return (self.exercise.slug, self.name)
+
     def __str__(self):
         return self.name
 
-    class Meta:
-        verbose_name = "file exercise test"
+    def export(self, instance, export_target):
+        super().export(instance, export_target)
+        for stage in self.fileexerciseteststage_set.get_queryset():
+            stage.export(instance, export_target)
 
 
-class FileExerciseTestStage(models.Model):
+class FileExerciseTestStageManager(models.Manager):
+
+    def get_by_natural_key(self, exercise_slug, test_name, ordinal):
+        return self.get(
+            test__exercise__slug=exercise_slug,
+            test__name=test_name,
+            ordinal_number=ordinal
+        )
+
+class FileExerciseTestStage(models.Model, ExportImportMixin):
     """A stage – a named sequence of commands to run in a file exercise test."""
 
     class Meta:
         # Deferred constraints: https://code.djangoproject.com/ticket/20581
         unique_together = ("test", "ordinal_number")
         ordering = ["ordinal_number"]
+
+    objects = FileExerciseTestStageManager()
 
     test = models.ForeignKey(FileExerciseTest, on_delete=models.CASCADE)
     depends_on = models.ForeignKey(
@@ -2194,11 +2705,31 @@ class FileExerciseTestStage(models.Model):
     name = models.CharField(max_length=64, default="stage")  # Translate
     ordinal_number = models.PositiveSmallIntegerField()
 
+    def natural_key(self):
+        return (self.test.exercise.slug, self.test.name, str(self.ordinal_number))
+
     def __str__(self):
         return f"{self.test.name}: {self.ordinal_number:02} - {self.name}"
 
+    def export(self, instance, export_target):
+        super().export(instance, export_target)
+        for command in self.fileexercisetestcommand_set.get_queryset():
+            command.export(instance, export_target)
 
-class FileExerciseTestCommand(models.Model):
+
+class FileExerciseTestCommandManager(models.Manager):
+
+    def get_by_natural_key(self, exercise_slug, test_name, stage_ordinal, ordinal):
+        return self.get(
+            stage__test__exercise__slug=exercise_slug,
+            stage__test__name=test_name,
+            stage__ordinal_number=stage_ordinal,
+            ordinal_number=ordinal
+        )
+
+
+
+class FileExerciseTestCommand(models.Model, ExportImportMixin):
     """A command that shall be executed on the test machine."""
 
     class Meta:
@@ -2213,6 +2744,8 @@ class FileExerciseTestCommand(models.Model):
         ("SIGINT", "Interrupt signal (same as Ctrl-C)"),
         ("SIGTERM", "Terminate signal"),
     )
+
+    objects = FileExerciseTestCommandManager()
 
     stage = models.ForeignKey(FileExerciseTestStage, on_delete=models.CASCADE)
     command_line = models.CharField(max_length=255)  # Translate
@@ -2256,8 +2789,29 @@ class FileExerciseTestCommand(models.Model):
     return_value = models.IntegerField(verbose_name="Expected return value", blank=True, null=True)
     ordinal_number = models.PositiveSmallIntegerField()  # TODO: Enforce min=1
 
+    def natural_key(self):
+        return list(self.stage.natural_key()) + [str(self.ordinal_number)]
+
     def __str__(self):
         return f"{self.ordinal_number:02}: {self.command_line}"
+
+    def export(self, instance, export_target):
+        super().export(instance, export_target)
+        name = "_".join(self.natural_key())
+        export_json(
+            serialize_many_python(
+                FileExerciseTestExpectedOutput.objects.filter(command=self, output_type="STDOUT")
+            ),
+            f"{name}_exp_stdout",
+            export_target,
+        )
+        export_json(
+            serialize_many_python(
+                FileExerciseTestExpectedOutput.objects.filter(command=self, output_type="STDERR")
+            ),
+            f"{name}_exp_stderr",
+            export_target,
+        )
 
 
 class FileExerciseTestExpectedOutput(models.Model):
@@ -2304,28 +2858,66 @@ class FileExerciseTestExpectedStderr(FileExerciseTestExpectedOutput):
 # V
 
 
-class InstanceIncludeFileToExerciseLink(models.Model):
+class InstanceFileExerciseLinkManager(models.Manager):
+
+    def get_by_natural_key(self, exercise_slug, file_slug):
+        return self.get(exercise__slug=exercise_slug, include_file__slug=file_slug)
+
+class InstanceIncludeFileToExerciseLink(models.Model, ExportImportMixin):
     """
     Context model for shared course files for file exercises.
     """
+
+    objects = InstanceFileExerciseLinkManager()
 
     include_file = models.ForeignKey("InstanceIncludeFile", on_delete=models.CASCADE)
     exercise = models.ForeignKey("ContentPage", on_delete=models.CASCADE)
 
     # The settings are determined per exercise basis
-    file_settings = models.OneToOneField("IncludeFileSettings", on_delete=models.CASCADE)
+    file_settings = models.ForeignKey("IncludeFileSettings", on_delete=models.CASCADE)
+
+    def natural_key(self):
+        return (self.exercise.slug, self.include_file.slug)
+
+    def export(self, instance, export_target):
+        document = serialize_single_python(self)
+        name = "_".join(self.natural_key()) + "_link"
+        export_json(document, name, export_target)
+        export_json(
+            serialize_single_python(self.file_settings),
+            f"{name}_settings",
+            export_target,
+        )
 
 
-class InstanceIncludeFileToInstanceLink(models.Model):
+class InstanceFileLinkManager(models.Manager):
+
+    def get_by_natural_key(self, instance_slug, file_name):
+        return self.get(instance__slug=instance_slug, include_file__default_name=file_name)
+
+
+class InstanceIncludeFileToInstanceLink(models.Model, ExportImportMixin):
     class Meta:
         unique_together = ("instance", "include_file")
+
+    objects = InstanceFileLinkManager()
 
     revision = models.PositiveIntegerField(blank=True, null=True)
     instance = models.ForeignKey("CourseInstance", on_delete=models.CASCADE)
     include_file = models.ForeignKey("InstanceIncludeFile", on_delete=models.CASCADE)
 
+    def natural_key(self):
+        return [self.instance.slug, self.include_file.default_name]
+
     def freeze(self, freeze_to=None):
         freeze_context_link(self, "include_file", freeze_to)
+
+    def set_instance(self, instance):
+        self.instance = instance
+
+
+
+
 
 
 class InstanceIncludeFile(models.Model):
@@ -2333,6 +2925,8 @@ class InstanceIncludeFile(models.Model):
     A file that's linked to a course and can be included in any exercise
     that needs it. (File upload, code input, code replace, ...)
     """
+
+    objects = SlugManager()
 
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     exercises = models.ManyToManyField(
@@ -2342,15 +2936,22 @@ class InstanceIncludeFile(models.Model):
         through_fields=("include_file", "exercise"),
     )
     default_name = models.CharField(verbose_name="Default name", max_length=255)  # Translate
+    slug = models.SlugField(
+        max_length=255, db_index=True, unique=True, blank=False, allow_unicode=True
+    )
     description = models.TextField(blank=True, null=True)  # Translate
     fileinfo = models.FileField(
         max_length=255, upload_to=get_instancefile_path, storage=upload_storage
     )  # Translate
 
+    def natural_key(self):
+        return [self.slug]
+
     def save(self, *args, **kwargs):
         new = False
         if self.pk is None:
             new = True
+        self.slug = get_prefixed_slug(self, self.course, "default_name")
         super().save(*args, **kwargs)
         if new:
             self.create_instance_links()
@@ -2369,6 +2970,11 @@ class InstanceIncludeFile(models.Model):
             )
             link.save()
 
+    def export(self, instance, export_target):
+        document = serialize_single_python(self)
+        name = self.slug
+        export_json(document, name, export_target)
+        export_files(self, export_target, "backend", translate=True)
 
 # ^
 # |
@@ -2377,6 +2983,11 @@ class InstanceIncludeFile(models.Model):
 # |
 # V
 
+
+class IncludeFileManager(models.Manager):
+
+    def get_by_natural_key(self, export_id):
+        return self.get(export_id=export_id)
 
 class FileExerciseTestIncludeFile(models.Model):
     """
@@ -2388,13 +2999,19 @@ class FileExerciseTestIncludeFile(models.Model):
     class Meta:
         verbose_name = "included file"
 
+    objects = IncludeFileManager()
     exercise = models.ForeignKey(FileUploadExercise, on_delete=models.CASCADE)
-    file_settings = models.OneToOneField("IncludeFileSettings", on_delete=models.CASCADE)
+    export_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    file_settings = models.ForeignKey("IncludeFileSettings", on_delete=models.CASCADE)
     default_name = models.CharField(verbose_name="Default name", max_length=255)  # Translate
     description = models.TextField(blank=True, null=True)  # Translate
     fileinfo = models.FileField(
         max_length=255, upload_to=get_testfile_path, storage=upload_storage
     )  # Translate
+
+
+    def natural_key(self):
+        return [self.export_id]
 
     def __str__(self):
         return f"{self.file_settings.purpose} - {self.default_name}"
@@ -2407,6 +3024,32 @@ class FileExerciseTestIncludeFile(models.Model):
         with open(self.fileinfo.path, "rb") as f:
             file_contents = f.read()
         return file_contents
+
+    def export(self, instance, export_target):
+        document = serialize_single_python(self)
+        name = f"{self.default_name}_{self.export_id}"
+        export_json(
+            document,
+            name,
+            export_target,
+        )
+        export_json(
+            serialize_single_python(self.file_settings),
+            f"{name}_settings",
+            export_target,
+        )
+        export_files(self, export_target, "backend", translate=True)
+
+
+
+# Export ID needed to be added for this to be importable with
+# natural keys
+class FileSettingsManager(models.Manager):
+
+    def get_by_natural_key(self, export_id):
+        return self.get(
+            export_id=export_id
+        )
 
 
 class IncludeFileSettings(models.Model):
@@ -2428,8 +3071,12 @@ class IncludeFileSettings(models.Model):
             ),
         ),
     )
+
+    objects = FileSettingsManager()
+
     # Default order: reference, inputgen, wrapper, test
     name = models.CharField(verbose_name="File name during test", max_length=255)  # Translate
+    export_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     purpose = models.CharField(
         verbose_name="Used as", max_length=10, default="REFERENCE", choices=FILE_PURPOSE_CHOICES
     )
@@ -2446,19 +3093,30 @@ class IncludeFileSettings(models.Model):
         choices=FILE_OWNERSHIP_CHOICES,
     )
     chmod_settings = models.CharField(
-        verbose_name="File access mode", max_length=10, default="rw-rw-rw-"
+        verbose_name="File access mode", max_length=10, default="rw-rw-r--"
     )
+
+    def natural_key(self):
+        return [self.export_id]
 
 
 # ^
 # |
-# INSTANCE FILES
+# EXERCISE FILES
 # ANSWER MODELS
 # |
 # V
 
 
+class AnswerModelManager(models.Manager):
+
+    def get_by_natural_key(self, exercise_slug, ordinal):
+        return self.get(exercise__slug=exercise_slug, ordinal=ordinal)
+
+
 class TextfieldExerciseAnswer(models.Model):
+    objects = AnswerModelManager()
+
     exercise = models.ForeignKey(TextfieldExercise, on_delete=models.CASCADE)
     correct = models.BooleanField(default=False)
     regexp = models.BooleanField(default=True)
@@ -2467,21 +3125,35 @@ class TextfieldExerciseAnswer(models.Model):
     comment = models.TextField(
         verbose_name="Extra comment given upon entering a matching answer", blank=True
     )  # Translate
+    ordinal = models.PositiveIntegerField()
 
     def __str__(self):
         if len(self.answer) > 76:
             return self.answer[0:76] + " ..."
         return self.answer
 
+    def natural_key(self):
+        return [self.exercise.slug, self.ordinal]
+
     def save(self, *args, **kwargs):
         self.answer = self.answer.replace("\r", "")
+        if self.ordinal is None:
+            previous = TextfieldExerciseAnswer.objects.filter(
+                exercise=self.exercise,
+            ).order_by("-ordinal").first()
+            if previous and previous.ordinal is not None:
+                self.ordinal = previous.ordinal + 1
+            else:
+                self.ordinal = 1
         super().save(*args, **kwargs)
 
 
 class MultipleChoiceExerciseAnswer(models.Model):
+    objects = AnswerModelManager()
+
     exercise = models.ForeignKey(MultipleChoiceExercise, null=True, on_delete=models.SET_NULL)
     correct = models.BooleanField(default=False)
-    ordinal = models.PositiveIntegerField(null=True)
+    ordinal = models.PositiveIntegerField()
     answer = models.TextField()  # Translate
     hint = models.TextField(blank=True)  # Translate
     comment = models.TextField(
@@ -2490,12 +3162,17 @@ class MultipleChoiceExerciseAnswer(models.Model):
 
     def __str__(self):
         return self.answer
+
+    def natural_key(self):
+        return [self.exercise.slug, self.ordinal]
 
 
 class CheckboxExerciseAnswer(models.Model):
+    objects = AnswerModelManager()
+
     exercise = models.ForeignKey(CheckboxExercise, null=True, on_delete=models.SET_NULL)
     correct = models.BooleanField(default=False)
-    ordinal = models.PositiveIntegerField(null=True)
+    ordinal = models.PositiveIntegerField()
     answer = models.TextField()  # Translate
     hint = models.TextField(blank=True)  # Translate
     comment = models.TextField(
@@ -2505,19 +3182,8 @@ class CheckboxExerciseAnswer(models.Model):
     def __str__(self):
         return self.answer
 
-
-class CodeInputExerciseAnswer(models.Model):
-    exercise = models.ForeignKey(CodeInputExercise, on_delete=models.CASCADE)
-    answer = models.TextField()  # Translate
-
-
-class CodeReplaceExerciseAnswer(models.Model):
-    exercise = models.ForeignKey(CodeReplaceExercise, on_delete=models.CASCADE)
-    answer = models.TextField()  # Translate
-    # replace_file = models.ForeignKey()
-    replace_file = models.TextField()  # DEBUG
-    replace_line = models.PositiveIntegerField()
-
+    def natural_key(self):
+        return [self.exercise.slug, self.ordinal]
 
 # ^
 # |
@@ -2694,6 +3360,7 @@ class UserAnswer(models.Model):
     checked = models.BooleanField(verbose_name="This answer has been checked", default=False)
     draft = models.BooleanField(verbose_name="This answer is a draft", default=False)
 
+    # NOTE: This should be obsolete and replaced by content page's get_user_answers
     @staticmethod
     def get_task_answers(task, instance=None, user=None, revision=None):
         if task.content_type == "CHECKBOX_EXERCISE":
@@ -2721,6 +3388,13 @@ class UserAnswer(models.Model):
         return answers.order_by("answer_date")
 
     def get_html_repr(self, context):
+        """
+        A method that needs to be implemented by child classes to display answers in various
+        answer tables (e.g. user answers and answer summary). Returns an HTML string. Receives
+        the rendering context that is used for rendering the template itself. Refer to the
+        embed_frame tag documentation in course_tags for more details about this context.
+        """
+
         return ""
 
 
@@ -2917,19 +3591,6 @@ class UserCheckboxExerciseAnswer(UserAnswer):
 
 
 
-class CodeReplaceExerciseReplacement(models.Model):
-    answer = models.ForeignKey("UserCodeReplaceExerciseAnswer", on_delete=models.CASCADE)
-    target = models.ForeignKey(CodeReplaceExerciseAnswer, null=True, on_delete=models.SET_NULL)
-    replacement = models.TextField()
-
-
-class UserCodeReplaceExerciseAnswer(UserAnswer):
-    exercise = models.ForeignKey(CodeReplaceExercise, null=True, on_delete=models.SET_NULL)
-    given_answer = models.TextField()
-
-    def __str__(self):
-        return self.given_answer
-
 
 class UserTaskCompletion(models.Model):
     class Meta:
@@ -2956,3 +3617,53 @@ class InvalidExerciseAnswerException(Exception):
     """
     This exception is cast when an exercise answer cannot be processed.
     """
+
+
+ContentPage.register_content_type("LECTURE", Lecture)
+ContentPage.register_content_type(
+    "MULTIPLE_CHOICE_EXERCISE", MultipleChoiceExercise, UserMultipleChoiceExerciseAnswer
+)
+ContentPage.register_content_type(
+    "CHECKBOX_EXERCISE", CheckboxExercise, UserCheckboxExerciseAnswer
+)
+ContentPage.register_content_type(
+    "TEXTFIELD_EXERCISE", TextfieldExercise, UserTextfieldExerciseAnswer
+)
+ContentPage.register_content_type(
+    "FILE_UPLOAD_EXERCISE", FileUploadExercise, UserFileUploadExerciseAnswer
+)
+
+def get_import_list():
+    return [
+        Course,
+        CourseInstance,
+        Term,
+        TermAlias,
+        TermLink,
+        TermTab,
+        TermTag,
+        CourseMedia,
+        File,
+        Image,
+        VideoLink,
+        InstanceIncludeFile,
+        ContentPage,
+        CheckboxExerciseAnswer,
+        MultipleChoiceExerciseAnswer,
+        TextfieldExerciseAnswer,
+        FileExerciseSettings,
+        IncludeFileSettings,
+        FileExerciseTestIncludeFile,
+        FileExerciseTest,
+        FileExerciseTestStage,
+        FileExerciseTestCommand,
+        FileExerciseTestExpectedOutput,
+        ContentGraph,
+        EmbeddedLink,
+        CourseMediaLink,
+        InstanceIncludeFileToInstanceLink,
+        InstanceIncludeFileToExerciseLink,
+        TermToInstanceLink,
+    ]
+
+

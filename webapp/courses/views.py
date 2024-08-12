@@ -3,6 +3,7 @@ Django views for rendering the course contents and checking exercises.
 """
 import datetime
 import json
+import logging
 import os
 from html import escape
 from collections import namedtuple
@@ -39,6 +40,7 @@ from courses.models import (
     CourseInstance,
     CourseMediaLink,
     ContentGraph,
+    DeadlineExemption,
     EmbeddedLink,
     File,
     FileExerciseTestIncludeFile,
@@ -49,7 +51,6 @@ from courses.models import (
     RepeatedTemplateExerciseSession,
     RepeatedTemplateExerciseSessionInstance,
     UserCheckboxExerciseAnswer,
-    UserCodeReplaceExerciseAnswer,
     UserFileUploadExerciseAnswer,
     UserMultipleChoiceExerciseAnswer,
     UserRepeatedTemplateExerciseAnswer,
@@ -83,6 +84,8 @@ JSON_CORRECT = 1
 JSON_INFO = 2
 JSON_ERROR = 3
 JSON_DEBUG = 4
+
+logger = logging.getLogger(__name__)
 
 # PAGE VIEWS
 # |
@@ -136,28 +139,38 @@ def course(request, course, instance):
     context["instance"] = instance
 
     if is_course_staff(request.user, instance):
-        contents = ContentGraph.objects.filter(
-            instance=instance, ordinal_number__gt=0, parentnode=None
-        ).order_by("ordinal_number")
+        content_qs = ContentGraph.objects.filter(
+            instance=instance, ordinal_number__gt=0
+        )
         context["course_staff"] = True
     else:
-        contents = ContentGraph.objects.filter(
-            instance=instance, ordinal_number__gt=0, visible=True, parentnode=None
-        ).order_by("ordinal_number")
+        content_qs = ContentGraph.objects.filter(
+            instance=instance, ordinal_number__gt=0, visible=True
+        )
         context["course_staff"] = False
 
     enroll_state = instance.user_enroll_status(request.user)
     enrolled = enroll_state in ["ACCEPTED", "COMPLETED"]
     context["enroll_state"] = enroll_state
 
-    if len(contents) > 0:
-        tree = []
-        tree.append({"content": mark_safe(">")})
-        for content_ in contents:
-            course_tree(tree, content_, request.user, instance, enrolled, context["course_staff"])
-        tree.append({"content": mark_safe("<")})
-        context["content_tree"] = tree
+    context["content_tree"] = instance.get_content_tree(staff=context["course_staff"])
+    if request.user.is_authenticated:
+        user_results = dict(
+            (entry["exercise_id"], entry) for entry in
+            UserTaskCompletion.objects.filter(user=request.user, instance=instance).values()
+        )
+        exemptions = dict(
+            (entry["contentgraph_id"], entry["new_deadline"]) for entry in
+            DeadlineExemption.objects.filter(user=request.user).values()
+        )
+    else:
+        user_results = {}
+        exemptions = {}
 
+
+    context["student_results"] = user_results
+    context["exemptions"] = exemptions
+    context["time_now"] = datetime.datetime.now()
     t = loader.get_template("courses/course.html")
     return HttpResponse(t.render(context, request))
 
@@ -357,7 +370,7 @@ def check_answer(request, course, instance, content, revision):
         return HttpResponseNotAllowed(["POST"])
 
     user = request.user
-    ip = request.META.get("REMOTE_ADDR")
+    ip = request.META.get("HTTP_X_REAL_IP") or request.META.get("REMOTE_ADDR")
     answer = request.POST
     files = request.FILES
 
@@ -608,8 +621,6 @@ def check_progress(request, course, instance, content, revision, task_id):
 def file_exercise_evaluation(request, course, instance, content, revision, task_id, task=None):
     if task is None:
         task = celery_app.AsyncResult(task_id)
-    evaluation_id = task.get()
-    task.forget()
     if revision != "head":
         content = get_single_archived(content, revision)
     answers = content.get_user_answers(content, request.user, instance)
@@ -617,10 +628,8 @@ def file_exercise_evaluation(request, course, instance, content, revision, task_
     evaluated_answer = answers.get(task_id=task_id)
     answer_count_str = get_answer_count_meta(answer_count)
 
-    r = redis.StrictRedis(**settings.REDIS_RESULT_CONFIG)
-    evaluation_json = r.get(task_id).decode("utf-8")
-    evaluation_tree = json.loads(evaluation_json)
-    r.delete(task_id)
+    evaluation_tree = task.info["data"]
+    evaluation_json = json.dumps(evaluation_tree)
     task.forget()
     evaluation_obj = content.save_evaluation(
         request.user,

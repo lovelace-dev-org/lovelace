@@ -3,6 +3,7 @@ webapp/bin/
 webapp/db.sqlite3
 webapp/lib/
 webapp/pyvenv.cfg
+<<<<<<< HEAD
 **/migrations/**
 webapp/lovelace/settings/dev.py
 webapp/lovelace/settings/unittest.py
@@ -16,3 +17,6 @@ webapp/package*.json
 .pylintrc
 node_modules
 django.mo
+.env
+.pg_service.conf
+.lovelace_pgpass

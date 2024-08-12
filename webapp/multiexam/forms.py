@@ -23,7 +23,7 @@ class ExamAttemptForm(forms.ModelForm):
         available_questions = kwargs.pop("available_questions")
         super().__init__(*args, **kwargs)
         self.fields["question_count"] = forms.IntegerField(
-            min_value = 1,
+            min_value=1,
             max_value=available_questions,
             label=_("Number of questions (max: {n})").format(n=available_questions),
         )
@@ -67,8 +67,7 @@ class QuestionPoolForm(forms.ModelForm):
 
     def _validate_yaml(self, memoryfile):
         """
-        Validates a regular expression by trying to compile it. Skipped for
-        non-regexp answers.
+        Validates that the yaml file is valid i.e. does not contain syntax errors
         """
 
         try:

@@ -1,12 +1,12 @@
 import base64
 import json
+import logging
 from django.template import loader
 from django.urls import reverse
 from courses import markupparser
 from utils.archive import get_single_archived, get_archived_instances
 from utils.files import get_file_contents_b64
 import courses.models as cm
-
 
 INCORRECT = 0
 CORRECT = 1
@@ -18,6 +18,7 @@ LINT_R = 11  # 11
 LINT_W = 12  # 12
 LINT_E = 13  # 13
 
+logger = logging.getLogger(__name__)
 
 # NOTE: the amount of reverts caused by this is disgusting.
 def file_upload_payload(exercise, student_files, instance, revision=None):
@@ -128,9 +129,7 @@ def file_upload_payload(exercise, student_files, instance, revision=None):
                 "chmod": if_link.file_settings.chmod_settings,
             }
 
-    # import json
-    # print(json.dumps(payload, indent=4))
-
+    logger.debug(json.dumps(payload, indent=4))
     return payload
 
 

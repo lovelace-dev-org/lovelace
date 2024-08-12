@@ -2,6 +2,7 @@ from django.utils.text import slugify
 from django.db import models
 from django.contrib.auth.models import User
 import django.conf
+from utils.management import ExportImportMixin, get_prefixed_slug
 
 # from courses.models import ContentPage # prevent circular import
 
@@ -15,22 +16,36 @@ QUESTION_TYPE_CHOICES = (
 )
 
 
-class ContentFeedbackQuestion(models.Model):
+class FeedbackManager(models.Manager):
+
+    def get_by_natural_key(self, slug):
+        return self.get(slug=slug)
+
+
+class ContentFeedbackQuestion(models.Model, ExportImportMixin):
     """A feedback that can be linked to any content."""
+
+    class Meta:
+        ordering = ["question_type"]
+
+    objects = FeedbackManager()
 
     question = models.CharField(verbose_name="Question", max_length=100)
     question_type = models.CharField(
         max_length=28, default="TEXTFIELD_FEEDBACK", choices=QUESTION_TYPE_CHOICES
     )
+    origin = models.ForeignKey("courses.Course", null=True, on_delete=models.SET_NULL)
     slug = models.SlugField(max_length=255, db_index=True, unique=True, allow_unicode=True)
+
+    def natural_key(self):
+        return [self.slug]
 
     def __str__(self):
         return self.question
 
     def get_url_name(self):
         """Creates a URL and HTML5 ID field friendly version of the name."""
-        default_lang = django.conf.settings.LANGUAGE_CODE
-        return slugify(getattr(self, f"question_{default_lang}"), allow_unicode=True)
+        return get_prefixed_slug(self, self.origin, "question")
 
     def get_type_object(self):
         """
@@ -105,8 +120,6 @@ class ContentFeedbackQuestion(models.Model):
             >= 1
         )
 
-    class Meta:
-        ordering = ["question_type"]
 
 
 class TextfieldFeedbackQuestion(ContentFeedbackQuestion):
@@ -173,6 +186,10 @@ class ThumbFeedbackQuestion(ContentFeedbackQuestion):
 
 
 class StarFeedbackQuestion(ContentFeedbackQuestion):
+    class Meta:
+        verbose_name = "content star feedback question"
+        proxy = True
+
     def save(self, *args, **kwargs):
         self.slug = self.get_url_name()
         self.question_type = "STAR_FEEDBACK"
@@ -197,12 +214,14 @@ class StarFeedbackQuestion(ContentFeedbackQuestion):
         answer_object.save()
         return answer_object
 
+
+class MultipleChoiceFeedbackQuestion(ContentFeedbackQuestion):
+
     class Meta:
-        verbose_name = "content star feedback question"
+        verbose_name = "content multiple choice feedback question"
         proxy = True
 
 
-class MultipleChoiceFeedbackQuestion(ContentFeedbackQuestion):
     def save(self, *args, **kwargs):
         self.slug = self.get_url_name()
         self.question_type = "MULTIPLE_CHOICE_FEEDBACK"
@@ -229,14 +248,21 @@ class MultipleChoiceFeedbackQuestion(ContentFeedbackQuestion):
         choices = MultipleChoiceFeedbackAnswer.objects.filter(question=self.id).order_by("id")
         return choices
 
-    class Meta:
-        verbose_name = "content multiple choice feedback question"
-        proxy = True
+    def export(self, instance, export_target):
+        super(ContentFeedbackQuestion, self).export(instance, export_target)
+        export_json(
+            serialize_many_python(self.get_choices()),
+            f"{self.slug}_choices",
+            export_target,
+        )
 
 
 class MultipleChoiceFeedbackAnswer(models.Model):
     question = models.ForeignKey(MultipleChoiceFeedbackQuestion, on_delete=models.CASCADE)
     answer = models.TextField(blank=False)
+
+    def natural_key(self):
+        return [self.question.slug, self.answer]
 
     def __str__(self):
         return self.answer
@@ -299,3 +325,13 @@ class DatabaseBackendException(Exception):
     """
     This exception is cast when the database backend does not support the attempted operation.
     """
+
+def export_models(instance, export_target):
+    for question in ContentFeedbackQuestion.objects.all():
+        question.export(instance, export_target)
+
+def get_import_list():
+    return [
+        ContentFeedbackQuestion,
+        MultipleChoiceFeedbackAnswer
+    ]

@@ -11,10 +11,10 @@ from django.http import (
 )
 from django.template import loader
 from django.utils.text import slugify
-from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy as _
 from modeltranslation.forms import TranslationModelForm
 from utils.formatters import display_name
-from utils.management import add_translated_charfields, TranslationStaffForm
+from utils.management import add_translated_charfields, TranslationStaffForm, get_prefixed_slug
 from courses import blockparser
 from courses import markupparser
 import courses.models as cm
@@ -115,11 +115,13 @@ class ContentForm(forms.ModelForm):
                 self.add_error("content_" + lang_code, e)
 
         default_lang = django.conf.settings.LANGUAGE_CODE
-        from courses.models import ContentPage
 
-        slug = slugify(cleaned_data[f"name_{default_lang}"], allow_unicode=True)
         if self._instance is None:
-            if ContentPage.objects.filter(slug=slug).exists():
+            origin = cleaned_data["origin"]
+            base_slug = slugify(cleaned_data[f"name_{default_lang}"])
+            base_slug = base_slug.removeprefix(f"{origin.prefix}-")
+            slug = f"{origin.prefix}-{base_slug}"
+            if cm.ContentPage.objects.filter(slug=slug).exists():
                 self.add_error(f"name_{default_lang}", _("Name causes slug conflict"))
 
     def __init__(self, *args, **kwargs):
@@ -214,6 +216,24 @@ class InstanceCloneForm(forms.ModelForm):
             _("Instance default name ({lang})"),
             _("Alternative name ({lang})"),
         )
+
+
+class InstanceExportForm(forms.Form):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["export"] = forms.BooleanField(
+            label=_("Confirm export"),
+            required=True
+        )
+
+
+class InstanceImportForm(forms.Form):
+
+    import_file = forms.FileField(
+        label=_("Upload exported zip file"),
+        required=True
+    )
 
 
 InstanceGradingForm = forms.inlineformset_factory(
@@ -514,10 +534,20 @@ class CacheRegenForm(forms.Form):
 
 
 class ConfirmDeleteForm(forms.Form):
-
     delete = forms.BooleanField(required=True, label=_("Confirm deletion"))
 
+
 def process_delete_confirm_form(request, success_callback, extra_context={}):
+    """
+    Convenience function for displaying and processing a ConfirmDeleteForm. Can be used to reduce
+    boilerplate in delete views. The calling end simply needs to define a success callback that
+    carries out the deletion once the user has confirmed the operation.
+
+    :param Request request: request object
+    :param function success_callback: function that takes a form object as its argument
+    :param dict extra_context: extra context data to be added to the form template's rendering
+    """
+
     if request.method == "POST":
         form = ConfirmDeleteForm(request.POST)
         if not form.is_valid():

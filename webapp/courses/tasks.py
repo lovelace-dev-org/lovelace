@@ -6,6 +6,7 @@ from __future__ import absolute_import
 
 import base64
 import json
+import logging
 import os
 import random
 import resource
@@ -39,6 +40,7 @@ JSON_INFO = 2
 JSON_ERROR = 3
 JSON_DEBUG = 4
 
+logger = logging.getLogger(__name__)
 
 @worker_process_init.connect
 def demote_server(**kwargs):
@@ -50,8 +52,9 @@ def demote_server(**kwargs):
 
     server_uid, server_gid = sec.get_uid_gid(django_settings.WORKER_USERNAME)
     student_uid, student_gid = sec.get_uid_gid(django_settings.RESTRICTED_USERNAME)
-    os.setresgid(server_gid, student_gid, student_gid)
-    os.setresuid(server_uid, student_uid, student_uid)
+    os.setresgid(server_gid, server_gid, student_gid)
+    os.setresuid(server_uid, server_uid, student_uid)
+    logger.debug(f"Worker demoted to: {os.getuid()}")
 
 
 @shared_task(name="add")
@@ -65,6 +68,7 @@ def add(a, b):
 
 @shared_task(name="courses.run-fileexercise-tests", bind=True)
 def run_tests(self, payload):
+    logger.debug(f"Starting task as: {os.getuid()}")
     self.update_state(state="PROGRESS", meta={"current": 4, "total": 10})
 
     tests = payload["tests"]
@@ -91,8 +95,13 @@ def run_tests(self, payload):
 
     # Save the rendered results into Redis
     task_id = self.request.id
-    r = redis.StrictRedis(**django_settings.REDIS_RESULT_CONFIG)
-    r.set(task_id, json.dumps(evaluation), ex=django_settings.REDIS_RESULT_EXPIRE)
+    # r = redis.StrictRedis(**django_settings.REDIS_RESULT_CONFIG)
+    # r.set(task_id, json.dumps(evaluation), ex=django_settings.REDIS_RESULT_EXPIRE)
+    return {
+        "task": "check",
+        "status": "success",
+        "data": evaluation
+    }
 
 
 def generate_results(results):
@@ -309,22 +318,17 @@ def run_test(self, test, resources, student=False):
 
     temp_dir_prefix = os.path.join("/", "tmp")
 
-    server_uid, server_gid = sec.get_uid_gid(django_settings.WORKER_USERNAME)
-    student_uid, student_gid = sec.get_uid_gid(django_settings.RESTRICTED_USERNAME)
-    uid = {"OWNED": student_uid, "NOT_OWNED": server_uid}
-    gid = {"OWNED": student_gid, "NOT_OWNED": server_gid}
-
     test_results = {test["test_id"]: {"fail": True, "name": test["name"], "stages": {}}}
     with tempfile.TemporaryDirectory(dir=temp_dir_prefix) as test_dir:
+        os.chmod(test_dir, 0o777)
         # Write the files under test
         # Do this first to prevent overwriting of included/instance files
         for name, contents in files_to_check.items():
             fpath = os.path.join(test_dir, name)
             with open(fpath, "wb") as fd:
                 fd.write(base64.b64decode(contents))
-            print(f"Wrote file under test {fpath}")
-            os.chmod(fpath, 0o660)
-            os.chown(fpath, student_uid, student_gid)
+            logger.info(f"Wrote file under test {fpath}")
+            os.chmod(fpath, 0o664)
 
         # Write the exercise files required by this test
         for f_handle in required_files:
@@ -335,7 +339,7 @@ def run_test(self, test, resources, student=False):
             fpath = os.path.join(test_dir, f_resource["name"])
             with open(fpath, "wb") as fd:
                 fd.write(base64.b64decode(f_resource["content"]))
-            print(f"Wrote required exercise file {fpath} from {f_handle}")
+            logger.info(f"Wrote required exercise file {fpath} from {f_handle}")
             os.chmod(fpath, chmod_parse(f_resource["chmod"]))
 
         all_json = True
@@ -361,6 +365,9 @@ def run_test(self, test, resources, student=False):
 
         else:
             test_results[test["test_id"]]["fail"] = False
+
+        # Run chmod on all files owned by the child process so that they can be cleaned up
+        sec.chmod_child_files(test_dir)
 
     return test_results, all_json
 
@@ -479,7 +486,7 @@ def run_command(command, stdin, stdout, stderr, test_dir, files_to_check):
         "json_output": command["json_output"],
         "command_line": shell_like_cmd,
     }
-    print(f"Running: {shell_like_cmd}")
+    logger.info(f"Running: {shell_like_cmd}")
 
     demote_process = sec.default_demote_process
 
@@ -555,8 +562,8 @@ def run_command(command, stdin, stdout, stderr, test_dir, files_to_check):
         }
     )
 
-    print("\n".join(l.decode("utf-8") for l in stdout.readlines()))
-    print("\n".join(l.decode("utf-8") for l in stderr.readlines()))
+    logger.info("\n".join(l.decode("utf-8") for l in stdout.readlines()))
+    logger.info("\n".join(l.decode("utf-8") for l in stderr.readlines()))
 
     return proc_results
 
@@ -591,7 +598,7 @@ def precache_repeated_template_sessions(self):
                 exercise=exercise, user=None, language_code=lang_code
             )
             generate_count = ENSURE_COUNT - sessions.count()
-            print(
+            logger.info(
                 f"Exercise {exercise.name} with language {lang_code} missing "
                 f"{generate_count} pre-generated sessions!"
             )
@@ -656,7 +663,7 @@ def generate_repeated_template_session(
             "LC_CTYPE": "en_US.UTF-8",
         }
 
-        print("Running: {}".format(" ".join(shlex.quote(arg) for arg in args)))
+        logger.info("Running: {}".format(" ".join(shlex.quote(arg) for arg in args)))
         # TODO: Security aspects
         proc = subprocess.Popen(
             args=args,
@@ -685,8 +692,8 @@ def generate_repeated_template_session(
         stdout.close()
         stderr.close()
 
-        print("output", output)
-        print("errors", errors)
+        logger.info("output", output)
+        logger.info("errors", errors)
 
     try:
         output_json = json.loads(output)
@@ -789,6 +796,6 @@ def get_celery_worker_status():
         if len(e.args) > 0 and errorcode.get(e.args[0]) == "ECONNREFUSED":
             msg += " Check that the RabbitMQ server is running."
         d = {ERROR_KEY: msg}
-    except ImportError as e:
-        d = {ERROR_KEY: str(e)}
+    except Exception as e:
+        d = {ERROR_KEY: "Uknown error: " + str(e)}
     return d
