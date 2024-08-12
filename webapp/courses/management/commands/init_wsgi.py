@@ -5,7 +5,13 @@ from django.core.management.base import BaseCommand
 template = \
 """
 import dotenv
+import os
+import sys
 from django.core.wsgi import get_wsgi_application
+mask = 0o77
+if os.stat("{env_path}").st_mode & mask:
+    sys.exit("Insecure .env permissions, refusing to start")
+
 dotenv.load_dotenv("{env_path}")
 application = get_wsgi_application()
 """
