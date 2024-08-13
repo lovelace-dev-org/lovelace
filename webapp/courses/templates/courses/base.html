@@ -160,6 +160,11 @@
                   </a>
                 </div>
                 <div class="user-tools">
+                  <a href="{% url 'teacher_tools:search_records' course instance %}">
+                    {% trans 'Search records' %}
+                  </a>
+                </div>
+                <div class="user-tools">
                   <a href="{% url 'teacher_tools:reminders' course instance %}">
                     {% trans 'Reminders' %}
                   </a>

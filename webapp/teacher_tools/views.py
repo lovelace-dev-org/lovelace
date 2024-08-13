@@ -7,6 +7,7 @@ import zipfile
 from django.conf import settings
 from django.core.cache import cache
 from django.db import transaction, IntegrityError
+from django.db.models import Q
 from django.http import (
     HttpResponse,
     HttpResponseForbidden,
@@ -56,6 +57,7 @@ from teacher_tools.forms import (
     ReminderForm,
     BatchGradingForm,
     TransferRecordsForm,
+    RecordSearchForm,
 )
 
 
@@ -420,6 +422,48 @@ def course_completion(request, course, instance):
 
     t = loader.get_template("teacher_tools/course_completion.html")
     c = {"course": course, "instance": instance, "users": users, "course_staff": True}
+    return HttpResponse(t.render(c, request))
+
+
+@ensure_responsible
+def search_records(request, course, instance):
+    if request.method == "POST":
+        form = RecordSearchForm(request.POST)
+        if form.is_valid():
+            results = []
+            query = Q()
+            if form.cleaned_data.get("username"):
+                query |= Q(username=form.cleaned_data.get("username"))
+            if form.cleaned_data.get("student_id"):
+                query |= Q(userprofile__student_id=form.cleaned_data.get("username"))
+            if form.cleaned_data.get("last_name"):
+                query |= Q(last_name=form.cleaned_data.get("last_name"))
+            if form.cleaned_data.get("first_name"):
+                query |= Q(last_name=form.cleaned_data.get("first_name"))
+            if form.cleaned_data.get("email"):
+                query |= Q(email=form.cleaned_data.get("email"))
+            for user in User.objects.filter(query):
+                enrollments = CourseEnrollment.objects.filter(student=user, instance__course=course)
+                for enrollment in enrollments:
+                    if UserTaskCompletion.objects.filter(
+                        user=user, instance=enrollment.instance
+                    ).exists():
+                        results.append((user, {
+                            "instance": enrollment.instance,
+                            "enrollment_state": enrollment.enrollment_state,
+                        }))
+    else:
+        form = RecordSearchForm()
+        results = []
+
+    t = loader.get_template("teacher_tools/search-records.html")
+    c = {
+        "course": course,
+        "instance": instance,
+        "form": form,
+        "course_staff": True,
+        "results": results,
+    }
     return HttpResponse(t.render(c, request))
 
 
