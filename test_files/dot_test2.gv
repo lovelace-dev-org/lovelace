@@ -1,9 +1,0 @@
-digraph test2 {
-    node [href="/blah/lesson1.html"]
-    
-    root -> "Lecture 1"
-    root -> "Check your knowledge 1"
-    root -> "Programming exercise 1"
-
-
-}
