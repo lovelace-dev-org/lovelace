@@ -176,7 +176,20 @@ class InstanceSettingsForm(TranslationStaffForm):
             "license_url",
         ]
 
+    def clean(self):
+        cleaned_data = super().clean()
+        default_lang = django.conf.settings.LANGUAGE_CODE
+        if self._instance:
+            course = self._instance.course
+            base_slug = slugify(cleaned_data[f"name_{default_lang}"])
+            base_slug = base_slug.removeprefix(f"{course.prefix}-")
+            slug = f"{course.prefix}-{base_slug}"
+            if cm.CourseInstance.objects.filter(slug=slug).exists():
+                self.add_error(f"name_{default_lang}", _("Name causes slug conflict"))
+
+
     def __init__(self, *args, **kwargs):
+        self._instance = kwargs.get("instance")
         available_content = kwargs.pop("available_content")
         super().__init__(*args, **kwargs)
 
@@ -206,7 +219,19 @@ class InstanceCloneForm(forms.ModelForm):
         model = cm.CourseInstance
         fields = ["start_date", "end_date"]
 
+    def clean(self):
+        cleaned_data = super().clean()
+        default_lang = django.conf.settings.LANGUAGE_CODE
+        if self._instance:
+            course = self._instance.course
+            base_slug = slugify(cleaned_data[f"name_{default_lang}"])
+            base_slug = base_slug.removeprefix(f"{course.prefix}-")
+            slug = f"{course.prefix}-{base_slug}"
+            if cm.CourseInstance.objects.filter(slug=slug).exists():
+                self.add_error(f"name_{default_lang}", _("Name causes slug conflict"))
+
     def __init__(self, *args, **kwargs):
+        self._instance = kwargs.get("instance")
         super().__init__(*args, **kwargs)
 
         # These strings will be formatted later

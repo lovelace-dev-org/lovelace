@@ -1,0 +1,13 @@
+{% extends 'courses/base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block page-title %}{% trans 'About' %}{% endblock %}
+
+{% block breadcrumb-links %}
+  <li><a href="{% url 'courses:index' %}">{% trans 'Courses' %}</a></li>
+{% endblock %}
+
+{% block page-content %}
+{{ error_msg }}
+{% endblock %}

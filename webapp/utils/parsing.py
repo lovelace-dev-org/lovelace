@@ -1,7 +1,9 @@
 from django.urls import reverse
 from django.utils.text import slugify
 import courses.models as cm
+import logging
 
+logger = logging.getLogger(__name__)
 
 class BrokenLinkWarning(Exception):
     pass
@@ -45,7 +47,8 @@ def parse_link_url(address, context=None):
                 try:
                     content = cm.ContentPage.objects.get(slug=slugified)
                 except cm.ContentPage.DoesNotExist as e:
-                    raise BrokenLinkWarning from e
+                    logger.warning(f"Found broken link reference: {slugified}")
+                    raise BrokenLinkWarning(slugified) from e
                 else:
                     if context.get("course"):
                         final_address = reverse(

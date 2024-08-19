@@ -112,7 +112,12 @@ def instance_settings(request, course, instance):
         ContentGraph.objects.filter(content=frontpage, ordinal_number__gt=0).delete()
         instance.frontpage = frontpage
         instance.save()
-        return JsonResponse({"status": "ok"})
+        return JsonResponse({
+            "status": "ok",
+            "redirect": reverse(
+                "courses:course", kwargs={"course": course, "instance": instance}
+            )
+        })
 
     form = InstanceSettingsForm(
         instance=instance,

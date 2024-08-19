@@ -21,6 +21,7 @@ from django.db import transaction
 from django.template import loader, engines
 from django.conf import settings
 from django.core.files.base import File
+from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils import translation
 from django.utils.text import slugify
@@ -124,7 +125,17 @@ def about(request):
 
 @cookie_law
 def course_instances(request, course):
-    return HttpResponse("here be instances for this course")
+    try:
+        primary = CourseInstance.objects.get(course=course, primary=True)
+    except CourseInstance.DoesNotExist:
+        t = loader.get_template("courses/error-page.html")
+        c = {"error_msg": _("This course does not have a primary instance.")}
+        return HttpResponse(t.render(c, request))
+
+    return redirect(reverse("courses:course", kwargs={
+        "course": course,
+        "instance": primary,
+    }))
 
 
 @cookie_law

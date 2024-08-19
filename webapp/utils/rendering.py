@@ -6,7 +6,7 @@ from reversion.models import Version
 from courses import markupparser
 import courses.models as cm
 from utils.archive import get_single_archived
-from utils.parsing import parse_link_url
+from utils.parsing import parse_link_url, BrokenLinkWarning
 
 
 def render_content(content, request=None, context=None, revision=None, lang_code=None, page=None):
@@ -119,8 +119,12 @@ def render_terms(request, instance, context):
 
             final_links = []
             for link in term.termlink_set.all():
-                final_address, __ = parse_link_url(link.url, context)
-                final_links.append({"url": final_address, "text": link.link_text})
+                try:
+                    final_address, __ = parse_link_url(link.url, context)
+                except BrokenLinkWarning:
+                    final_links.append({"url": "", "text": "-- WARNING: BROKEN LINK --"})
+                else:
+                    final_links.append({"url": final_address, "text": link.link_text})
 
             term_div_data.append(
                 {
