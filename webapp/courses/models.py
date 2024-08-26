@@ -306,7 +306,7 @@ class CourseInstance(models.Model):
 
     objects = SlugManager()
 
-    name = models.CharField(max_length=255, unique=True)  # Translate
+    name = models.CharField(max_length=255)  # Translate
     email = models.EmailField(blank=True)  # Translate
     slug = models.SlugField(
         max_length=255, db_index=True, unique=True, blank=False, allow_unicode=True

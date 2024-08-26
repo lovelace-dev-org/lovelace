@@ -73,16 +73,19 @@ def manage_assessment(request, course, instance, content):
                 new_sheet.save()
                 copy_sheet(source_sheet, new_sheet)
                 reversion.set_user(request.user)
-        try:
-            sheet = AssessmentSheet.objects.get(id=form.cleaned_data["sheet"])
-        except AssessmentSheet.DoesNotExist:
-            with reversion.create_revision():
-                sheet = AssessmentSheet(origin=course)
-                for lang_code, __ in settings.LANGUAGES:
-                    field = "title_" + lang_code
-                    setattr(sheet, field, form.cleaned_data[field])
-                sheet.save()
-                reversion.set_user(request.user)
+            sheet = new_sheet
+        else:
+            try:
+                sheet = AssessmentSheet.objects.get(id=form.cleaned_data["sheet"])
+            except AssessmentSheet.DoesNotExist:
+                with reversion.create_revision():
+                    sheet = AssessmentSheet(origin=course)
+                    for lang_code, __ in settings.LANGUAGES:
+                        field = "title_" + lang_code
+                        setattr(sheet, field, form.cleaned_data[field])
+                    sheet.save()
+                    reversion.set_user(request.user)
+
         if not sheet_link:
             sheet_link = AssessmentToExerciseLink(
                 exercise=content, instance=instance, sheet=sheet, revision=None

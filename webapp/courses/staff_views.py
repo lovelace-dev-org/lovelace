@@ -613,14 +613,6 @@ def move_content_node(request, course, instance, target_id, placement):
 
     return JsonResponse({"status": "ok"})
 
-# ^
-# |
-# INSTANCE MANAGEMENT VIEWS
-# CONTENT EDIT VIEWS
-# |
-# v
-
-
 
 # ^
 # |

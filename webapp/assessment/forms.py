@@ -16,6 +16,10 @@ class AddAssessmentForm(forms.Form):
             raise ValidationError(
                 _(f"Either title in default language, or existing sheet must be filled")
             )
+        if cleaned_data["copy"] and not default_title:
+            raise ValidationError(
+                _(f"When making a copy, title is mandatory")
+            )
 
     def __init__(self, *args, **kwargs):
         course_sheets = kwargs.pop("course_sheets")
