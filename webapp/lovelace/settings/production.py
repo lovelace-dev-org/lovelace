@@ -7,7 +7,7 @@ DEBUG = False
 
 LOGGING = {
     "version": 1,
-    "disable_existing_loggers": False,
+    "disable_existing_loggers": True,
     "formatters": {
         "standard": {
             "format": "[{levelname}] lovelace {name}: {message}",
