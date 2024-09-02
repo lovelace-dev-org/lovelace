@@ -9,6 +9,9 @@ import os
 import sys
 from django.core.wsgi import get_wsgi_application
 mask = 0o77
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "lovelace.settings.production")
+
 if os.stat("{env_path}").st_mode & mask:
     sys.exit("Insecure .env permissions, refusing to start")
 
@@ -27,6 +30,7 @@ class Command(BaseCommand):
         )
         parser.add_argument(
             "--env_path",
+            required=True,
             help="Path to the .env file to use for settings",
         )
         parser.add_argument(
