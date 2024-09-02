@@ -117,8 +117,14 @@ class ContentForm(forms.ModelForm):
         default_lang = django.conf.settings.LANGUAGE_CODE
 
         if self._instance is None:
-            origin = cleaned_data["origin"]
-            base_slug = slugify(cleaned_data[f"name_{default_lang}"])
+            try:
+                origin = cleaned_data["origin"]
+            except KeyError:
+                return
+            try:
+                base_slug = slugify(cleaned_data[f"name_{default_lang}"])
+            except KeyError:
+                return
             base_slug = base_slug.removeprefix(f"{origin.prefix}-")
             slug = f"{origin.prefix}-{base_slug}"
             if cm.ContentPage.objects.filter(slug=slug).exists():

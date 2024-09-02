@@ -29,7 +29,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 DEBUG = False # Use True when viewing through web browser
 
 # Change to your hostname for production or network development installations
-ALLOWED_HOSTS = [os.environ["LOVELACE_HOSTNAME"], os.environ["LOVELACE_HOSTADDR"]]
+ALLOWED_HOSTS = os.environ["LOVELACE_HOSTNAME"].split(":") + [os.environ["LOVELACE_HOSTADDR"]]
 
 # Applications
 # If you want to use debug toolbar, copy this to your development settings file

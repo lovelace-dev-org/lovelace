@@ -2,7 +2,7 @@ import os
 import sys
 from lovelace.settings.factory import *
 
-ALLOWED_HOSTS = [os.environ["LOVELACE_HOSTNAME"]]
+ALLOWED_HOSTS = os.environ["LOVELACE_HOSTNAME"].split(":")
 DEBUG = False
 
 LOGGING = {
