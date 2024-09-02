@@ -1,4 +1,8 @@
+from dotenv import load_dotenv
 import os
+
+load_dotenv(os.getenv("DOTENV_PATH"))
+
 from lovelace.settings.factory import *
 
 DEBUG = True
