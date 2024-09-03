@@ -7,7 +7,7 @@ DEBUG = False
 
 LOGGING = {
     "version": 1,
-    "disable_existing_loggers": True,
+    "disable_existing_loggers": False,
     "formatters": {
         "standard": {
             "format": "[{levelname}] lovelace {name}: {message}",
@@ -33,14 +33,15 @@ LOGGING = {
             "stream": "ext://sys.stderr",
             "level": "WARNING",
         },
-        "mail_admins": {
-            "level": "ERROR",
-            "class": "django.utils.log.AdminEmailHandler",
-        }
+        # Commented out since existing loggers already do this
+        #"mail_admins": {
+        #    "level": "ERROR",
+        #    "class": "django.utils.log.AdminEmailHandler",
+        #}
     },
     "loggers": {
         "": {
-            "handlers": ["stdout", "stderr", "mail_admins"],
+            "handlers": ["stdout", "stderr"],
             "level": os.getenv("DJANGO_LOG_LEVEL", "INFO"),
         },
     }
