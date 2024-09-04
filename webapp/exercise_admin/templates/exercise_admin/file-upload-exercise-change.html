@@ -124,7 +124,7 @@
     <label for="exercise-answer_mode">Answer mode: </label>
     <select id="exercise-answer_mode" name="exercise_answer_mode">
       {% for value, label in answer_mode_choices %}
-        {% if value == exercise.answer_mode %}
+        {% if value == exercise.fileexercisesettings.answer_mode %}
           <option value="{{ value }}" selected="selected">{{ label }}</option>
         {% else %}
           <option value="{{ value }}">{{ label }}</option>
