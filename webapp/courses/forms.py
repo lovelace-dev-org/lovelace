@@ -190,7 +190,7 @@ class InstanceSettingsForm(TranslationStaffForm):
             base_slug = slugify(cleaned_data[f"name_{default_lang}"])
             base_slug = base_slug.removeprefix(f"{course.prefix}-")
             slug = f"{course.prefix}-{base_slug}"
-            if cm.CourseInstance.objects.filter(slug=slug).exists():
+            if cm.CourseInstance.objects.filter(slug=slug).exclude(id=self._instance.id).exists():
                 self.add_error(f"name_{default_lang}", _("Name causes slug conflict"))
 
 

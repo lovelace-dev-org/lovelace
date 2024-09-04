@@ -15,16 +15,3 @@ if os.getenv("DEBUG_TOOLBAR"):
         INTERNAL_IPS.extend(extras.split(","))
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": True,
-    "handlers": {
-        "console": {
-            "class": "logging.StreamHandler",
-        },
-    },
-    "root": {
-        "handlers": ["console"],
-        "level": "DEBUG",
-    },
-}
