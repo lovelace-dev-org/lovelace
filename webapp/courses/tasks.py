@@ -536,8 +536,6 @@ def run_command(command, stdin, stdout, stderr, test_dir, files_to_check):
         proc_runtime = time.time() - start_time
         proc_retval = None
         proc_timedout = True
-        proc.terminate()  # Try terminating the process nicely
-        time.sleep(0.5)  # Grace period to allow the process to terminate
         if proc.poll() is None:
             sec.secure_kill(proc.pid)
             proc_killed = True

@@ -42,6 +42,7 @@ def _run_command(args, test_dir):
             stdout=stdout,
             stderr=stderr,
             preexec_fn=demote_process,
+            start_new_session=True,
             close_fds=True,
             shell=False,
             cwd=test_dir,
@@ -73,8 +74,10 @@ def _run_command(args, test_dir):
         proc_runtime = time.time() - start_time
         proc_retval = None
         proc_timedout = True
-        proc.terminate()  # Try terminating the process nicely
-        time.sleep(0.5)  # Grace period to allow the process to terminate
+        if proc.poll() is None:
+            sec.secure_kill(proc.pid)
+            proc_killed = True
+
 
     end_rusage = resource.getrusage(resource.RUSAGE_CHILDREN)
     ru_utime = end_rusage.ru_utime - start_rusage.ru_utime

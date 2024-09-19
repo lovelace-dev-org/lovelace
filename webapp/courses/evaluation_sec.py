@@ -10,6 +10,7 @@ import logging
 import os
 import pwd
 import resource
+import signal
 import subprocess
 
 from django.conf import settings
@@ -172,10 +173,22 @@ def secure_kill(pid):
 
     Neither SIGKILL nor SIGSTOP can be captured or blocked by any process.
 
-    NOTE: Requires the issuing process to match its real or effective UID with
-          the real or saved UID of the receiving process.[1]
-
     [1] https://linux.die.net/man/3/kill
     """
-    os.system(f"pkill --signal SIGSTOP -s {pid}")
-    os.system(f"pkill --signal SIGKILL -s {pid}")
+    commands = [
+        ("pkill", "--signal", "SIGSTOP", "-s", str(pid)),
+        ("pkill", "--signal", "SIGKILL", "-s", str(pid)),
+    ]
+    for command in commands:
+        proc = subprocess.run(
+            command,
+            bufsize=-1,
+            executable=None,
+            timeout=5,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            preexec_fn=default_demote_process,  # Demote before fork
+            start_new_session=True,
+            close_fds=True,  # Don't inherit fds
+            shell=False,  # Don't run in shell
+        )
