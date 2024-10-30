@@ -193,6 +193,7 @@ def clone_instance(request, course, instance):
         clone_terms(new_instance)
         clone_faq_links(new_instance)
         clone_assessment_links(old_instance, new_instance)
+        old_instance.clear_content_tree_cache(regen_frozen=True)
         new_url = reverse("courses:course", kwargs={"course": course, "instance": new_instance})
         return JsonResponse({"status": "ok"})
 
@@ -419,7 +420,11 @@ def create_content_node(request, course, instance):
     available_content = content_access.defer("content").all()
 
     if request.method == "POST":
-        form = NewContentNodeForm(request.POST, available_content=available_content)
+        form = NewContentNodeForm(
+            request.POST,
+            available_content=available_content,
+            course_instance=instance
+        )
         if not form.is_valid():
             errors = form.errors.as_json()
             return JsonResponse({"errors": errors}, status=400)
@@ -484,7 +489,7 @@ def create_content_node(request, course, instance):
         instance.clear_content_tree_cache()
         return JsonResponse({"status": "ok"}, status=201)
 
-    form = NewContentNodeForm(available_content=available_content)
+    form = NewContentNodeForm(available_content=available_content, course_instance=instance)
     t = loader.get_template("courses/base-edit-form.html")
     c = {
         "form_object": form,
@@ -586,6 +591,7 @@ def move_content_node(request, course, instance, target_id, placement):
         active_node.parentnode = target_node
         active_node.ordinal_number = target_node.ordinal_number + 1
         active_node.save()
+        instance.clear_content_tree_cache()
         return JsonResponse({"status": "ok"})
 
     if placement == "after":

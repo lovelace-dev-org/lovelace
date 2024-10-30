@@ -375,8 +375,12 @@ class CourseInstance(models.Model):
 
         if not self._was_primary and self.primary:
             for instance in CourseInstance.objects.filter(course=self.course).exclude(pk=self.pk):
+                was_primary = instance.primary
                 instance.primary = False
                 instance.save()
+                if was_primary:
+                    instance.clear_content_tree_cache(regen_frozen=True)
+            self.clear_content_tree_cache(regen_frozen=True)
 
 
     def get_content_tree(self, lang_code=None, staff=False):
@@ -432,12 +436,13 @@ class CourseInstance(models.Model):
         tree = []
         level = 0
         for ordinals, node in ordered:
-            if len(ordinals) > level:
-                tree.append({"content": mark_safe(">")})
-                level += 1
-            elif len(ordinals) < level:
-                tree.append({"content": mark_safe("<")})
-                level -= 1
+            while len(ordinals) != level:
+                if len(ordinals) > level:
+                    tree.append({"content": mark_safe(">")})
+                    level += 1
+                elif len(ordinals) < level:
+                    tree.append({"content": mark_safe("<")})
+                    level -= 1
 
             page_count = node.content.count_pages(self)
             embeds = embeds_by_parent[node.content_id]

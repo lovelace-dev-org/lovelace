@@ -192,7 +192,8 @@ class InstanceSettingsForm(TranslationStaffForm):
             slug = f"{course.prefix}-{base_slug}"
             if cm.CourseInstance.objects.filter(slug=slug).exclude(id=self._instance.id).exists():
                 self.add_error(f"name_{default_lang}", _("Name causes slug conflict"))
-
+                return
+        return cleaned_data
 
     def __init__(self, *args, **kwargs):
         self._instance = kwargs.get("instance")
@@ -235,6 +236,8 @@ class InstanceCloneForm(forms.ModelForm):
             slug = f"{course.prefix}-{base_slug}"
             if cm.CourseInstance.objects.filter(slug=slug).exists():
                 self.add_error(f"name_{default_lang}", _("Name causes slug conflict"))
+                return
+        return cleaned_data
 
     def __init__(self, *args, **kwargs):
         self._instance = kwargs.get("instance")
@@ -300,7 +303,7 @@ class ContextNodeForm(forms.ModelForm):
                 self.add_error("late_rule", _("Does not result in a number when evaluated"))
                 return
             elif dummy_result > 1:
-                self.add_error("late_rule", _("The formula resulst must be between 0 and 1"))
+                self.add_error("late_rule", _("The formula results must be between 0 and 1"))
                 return
         return rule
 
@@ -331,7 +334,27 @@ class NewContentNodeForm(ContextNodeForm):
             "evergreen",
         ]
 
+    def clean(self):
+        cleaned_data = super().clean()
+        course = self._course_instance.course
+        print(cleaned_data)
+        if cleaned_data.get("content", "0") == "0":
+            new_name = cleaned_data.get("new_page_name")
+            if not new_name:
+                self.add_error("new_page_name", _("Cannot be empty when creating new page"))
+                return
+
+            base_slug = slugify(new_name)
+            base_slug = base_slug.removeprefix(f"{course.prefix}-")
+            slug = f"{course.prefix}-{base_slug}"
+            if cm.ContentPage.objects.filter(slug=slug).exists():
+                self.add_error("new_page_name", _("Name causes slug conflict"))
+                return
+
+        return cleaned_data
+
     def __init__(self, *args, **kwargs):
+        self._course_instance = kwargs.pop("course_instance")
         super().__init__(*args, **kwargs)
         self.fields["make_child"] = forms.BooleanField(
             label=_("Make this node a child of the selected node"), required=False
