@@ -244,6 +244,17 @@ def routine_progress(request, course, instance, content, task_id):
         data = {"errors": _("Operation failed. Course staff has been notified.")}
         return JsonResponse(data)
 
+    if info.get("status") == "timeout":
+        data = {
+            "errors": _(
+                "Operation timed out. "
+                "Check that your code doesn't have input prompts unless requested "
+                "and doesn't cause infinite loops."
+            )
+        }
+        return JsonResponse(data)
+
+
     if info["task"] == "generate":
         if info["data"].get("over", False):
             return JsonResponse({"error": _("No more questions available.")})

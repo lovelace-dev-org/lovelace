@@ -1,5 +1,7 @@
 import datetime
+import os
 
+from django.conf import settings
 from django.db.models import Q
 from django.http import (
     HttpResponse,
@@ -20,8 +22,14 @@ from courses.models import User
 from utils.access import ensure_enrolled_or_staff, determine_access, ensure_staff, ensure_responsible
 from utils.archive import find_latest_version
 from utils.content import get_embedded_parent
+from utils.files import generate_download_response, get_file_contents_b64
 
-from multiexam.models import MultipleQuestionExamAttempt, UserMultipleQuestionExamAnswer
+from multiexam.models import (
+    ExamQuestionPool,
+    MultipleQuestionExam,
+    MultipleQuestionExamAttempt,
+    UserMultipleQuestionExamAnswer
+)
 from multiexam.forms import ExamAttemptForm, ExamAttemptDeleteForm, ExamAttemptSettingsForm
 from multiexam.utils import generate_attempt_questions, process_questions
 
@@ -208,13 +216,38 @@ def delete_attempt(request, course, instance, attempt):
     }
     return process_delete_confirm_form(request, success, extra)
 
+def download_question_pool(request, exercise_id, field_name, filename):
+    try:
+        exercise_object = MultipleQuestionExam.objects.get(id=exercise_id)
+    except MultipleQuestionExam.DoesNotExist as e:
+        return HttpResponseNotFound(_("This exercise does't exist"))
 
+    if not determine_access(request.user, exercise_object):
+        return HttpResponseForbidden(
+            _(
+                "Only course main responsible teachers are allowed "
+                "to download files through this interface."
+            )
+        )
 
+    fileobjects = ExamQuestionPool.objects.filter(exercise=exercise_object)
+    try:
+        for fileobject in fileobjects:
+            if filename == os.path.basename(getattr(fileobject, field_name).name):
+                fs_path = os.path.join(
+                    settings.PRIVATE_STORAGE_FS_PATH, getattr(fileobject, field_name).name
+                )
+                break
 
+            # Archived file was requested
+            version = find_version_with_filename(fileobject, field_name, filename)
+            if version:
+                filename = version.field_dict[field_name].name
+                fs_path = os.path.join(settings.PRIVATE_STORAGE_FS_PATH, filename)
+                break
+        else:
+            return HttpResponseNotFound(_("Requested file does not exist."))
+    except AttributeError as e:
+        return HttpResponseNotFound(_("Requested file does not exist."))
 
-
-
-
-
-
-
+    return generate_download_response(fs_path)

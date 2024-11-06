@@ -973,7 +973,8 @@ function update_inc_file_popup_on_def_name_change (default_name_input, file_id, 
 }
 
 function update_inc_file_popup_on_file_change (file_input, file_id, default_lang) {
-    const filename = file_input.val()
+    const fileparts = file_input.val().split("\\")
+    const filename = fileparts[fileparts.length - 1]
     const lang_code = file_input.attr("data-language-code")
 
     const default_name_input = $("#included-file-default-name-" + file_id + "-" + lang_code)

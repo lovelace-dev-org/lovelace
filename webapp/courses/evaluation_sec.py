@@ -180,15 +180,19 @@ def secure_kill(pid):
         ("pkill", "--signal", "SIGKILL", "-s", str(pid)),
     ]
     for command in commands:
-        proc = subprocess.run(
-            command,
-            bufsize=-1,
-            executable=None,
-            timeout=5,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            preexec_fn=default_demote_process,  # Demote before fork
-            start_new_session=True,
-            close_fds=True,  # Don't inherit fds
-            shell=False,  # Don't run in shell
-        )
+        try:
+            proc = subprocess.run(
+                command,
+                bufsize=-1,
+                executable=None,
+                timeout=5,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                preexec_fn=default_demote_process,  # Demote before fork
+                start_new_session=True,
+                close_fds=True,  # Don't inherit fds
+                shell=False,  # Don't run in shell
+            )
+        except subprocess.TimeoutExpired:
+            command_str = " ".join(command)
+            logger.error(f"Command '{command_str}' timed out")

@@ -133,7 +133,7 @@
            title="{% trans 'View assessment' %}">
         </a>              
       {% endif %}
-      {% if answer.evaluation.test_results %}
+      {% if exercise.answers_show_log and answer.evaluation.test_results %}
         <a class="button-style log-button"
            href="{% url 'courses:get_file_exercise_evaluation' student course instance exercise answer %}"
            onclick="show_results(event, this, 'results-{{ answer.id }}');"

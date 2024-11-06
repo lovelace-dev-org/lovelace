@@ -55,7 +55,7 @@ class FileEditForm(forms.ModelForm):
         return default_value
 
 
-class RepeatedTemplateExerciseBackendForm(forms.ModelForm):
+class ExerciseBackendForm(forms.ModelForm):
     def get_initial_for_field(self, field, field_name):
         default_value = super().get_initial_for_field(field, field_name)
         if isinstance(field, fields.FileField) and default_value:

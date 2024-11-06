@@ -195,13 +195,18 @@ def check_answer(self, payload):
 
         sec.chmod_child_files(test_dir)
 
-    if proc_results.get("fail") or proc_results.get("killed") or proc_results.get("timedout"):
+    if proc_results.get("timedout"):
+        return {
+            "task": "check",
+            "status": "timeout",
+            "error": proc_results["error"],
+        }
+    if proc_results.get("fail") or proc_results.get("killed"):
         return {
             "task": "check",
             "status": "fail",
             "error": proc_results["error"],
         }
-
     return {
         "task": "check",
         "status": "success",

@@ -1,17 +1,18 @@
 from django.contrib import admin
+from django.db import models
 
 from reversion import revisions as reversion
 from reversion.admin import VersionAdmin
 
 from modeltranslation.admin import TranslationAdmin, TranslationStackedInline
 from utils.management import CourseContentAdmin
-from courses.forms import ContentForm
+from courses.forms import ContentForm, ExerciseBackendForm
 from multiexam.forms import QuestionPoolForm
 from multiexam.models import (
     MultipleQuestionExam,
     ExamQuestionPool,
 )
-
+from multiexam.widgets import AdminMultiexamFileWidget
 # Register your models here.
 
 reversion.register(MultipleQuestionExam)
@@ -22,6 +23,8 @@ class QuestionPoolInline(TranslationStackedInline):
     model = ExamQuestionPool
     form = QuestionPoolForm
 
+    form = ExerciseBackendForm
+    formfield_overrides = {models.FileField: {"widget": AdminMultiexamFileWidget}}
 
 
 class MultiExamAdmin(CourseContentAdmin, TranslationAdmin, VersionAdmin):

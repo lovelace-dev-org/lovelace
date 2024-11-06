@@ -17,7 +17,7 @@ app = Celery("lovelace")
 app.config_from_object("django.conf:settings", namespace="CELERY")
 
 # load task modules from all registered Django app configs.
-app.autodiscover_tasks(packages=["courses", "teacher_tools", "stats"])
+app.autodiscover_tasks(packages=["courses", "routine_exercise", "teacher_tools", "stats"])
 # setting CELERY_ROUTES in settings seems to do nothing, but this works
 app.conf.update(task_routes=settings.CELERY_ROUTES)
 

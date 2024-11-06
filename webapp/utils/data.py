@@ -13,6 +13,7 @@ from django.conf import settings
 from django.core import serializers
 from django.utils.translation import gettext as _
 from modeltranslation.translator import translator, NotRegistered
+from reversion import revisions as reversion
 from lovelace import plugins as lovelace_plugins
 import courses.models as cm
 
@@ -155,18 +156,20 @@ def import_from_zip(import_source, user, responsible, staff_group, target_instan
                 logger.error(f"Serialized data contains pk, importing aborted.")
                 raise ValueError("Imported data is not allowed to define pk")
 
-        for obj in deserialize_python(source_doc):
-            if not import_allowed(obj, user, target_instance):
-                errors.append(_("Import of {obj_str} failed - no overwrite permission").format(
-                    obj_str=str(obj.object)
-                ))
-                continue
+        with reversion.create_revision():
+            for obj in deserialize_python(source_doc):
+                if not import_allowed(obj, user, target_instance):
+                    errors.append(_("Import of {obj_str} failed - no overwrite permission").format(
+                        obj_str=str(obj.object)
+                    ))
+                    continue
 
-            fix_default_lang_fields(obj.object)
-            obj.save()
-            imported.append(obj.object)
-            if obj.deferred_fields is not None:
-                deferred.append(obj)
+                fix_default_lang_fields(obj.object)
+                obj.save()
+                imported.append(obj.object)
+                if obj.deferred_fields is not None:
+                    deferred.append(obj)
+            reversion.set_comment("imported by system")
 
         return imported
 

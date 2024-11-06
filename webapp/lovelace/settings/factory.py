@@ -15,9 +15,6 @@ https://docs.djangoproject.com/en/dev/ref/settings/
 import json
 import os
 from kombu import Exchange, Queue
-from dotenv import load_dotenv, find_dotenv
-
-load_dotenv(find_dotenv())
 
 # To prevent accidents, unit tests will not run unless started with a settings
 # file where this flag is set to True.

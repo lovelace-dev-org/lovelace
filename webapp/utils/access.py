@@ -30,13 +30,13 @@ def determine_access(user, content, responsible_only=False):
         if Version.objects.get_for_object(content).filter(revision__user=user).exists():
             return True
 
-        if responsible_only:
-            if cm.Course.objects.filter(
-                Q(courseinstance__contentgraph__content=content)
-                | Q(courseinstance__contentgraph__content__embedded_pages=content)
-            ).filter(main_responsible=user):
-                return True
-        else:
+        if cm.Course.objects.filter(
+            Q(courseinstance__contentgraph__content=content)
+            | Q(courseinstance__contentgraph__content__embedded_pages=content)
+        ).filter(main_responsible=user):
+            return True
+
+        if not responsible_only:
             if cm.Course.objects.filter(
                 Q(courseinstance__contentgraph__content=content)
                 | Q(courseinstance__contentgraph__content__embedded_pages=content)

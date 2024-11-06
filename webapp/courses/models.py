@@ -1145,6 +1145,7 @@ class ContentPage(models.Model, ExportImportMixin):
 
     # Template for answers page for tasks of this type, override if the default is not suitable.
     answers_template = "courses/user-exercise-answers.html"
+    answers_show_log = False
 
     # Classes to include for the answers table. Override if needed.
     answer_table_classes ="fixed alternate-green answers-table"
@@ -1598,6 +1599,8 @@ class ContentPage(models.Model, ExportImportMixin):
         answer_object.evaluation.feedback = evaluation.get("feedback", "")
         answer_object.evaluation.evaluator = evaluation.get("evaluator", None)
         answer_object.evaluation.test_results = evaluation.get("test_results", "")
+        answer_object.evaluation.suspect = evaluation.get("suspect", False)
+        answer_object.evaluation.comment = evaluation.get("comment", "")
         answer_object.evaluation.save()
         if complete:
             update_completion(
@@ -2197,6 +2200,7 @@ class FileUploadExercise(ContentPage):
         proxy = True
 
     template = "courses/file-upload-exercise.html"
+    answers_show_log = True
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -3313,6 +3317,7 @@ class Evaluation(models.Model):
     """Evaluation of a student's answer to an exercise."""
 
     correct = models.BooleanField(default=False)
+    suspect = models.BooleanField(default=False)
     points = models.DecimalField(default=0, max_digits=5, decimal_places=2)
 
     # max_points is separate from the task's default_points to allow
@@ -3336,6 +3341,9 @@ class Evaluation(models.Model):
     test_results = models.TextField(
         verbose_name="Test results in JSON", blank=True
     )  # TODO: JSONField
+    comment = models.TextField(
+        verbose_name="Comment about the evaluation for course staff only", blank=True
+    )
 
 
 class UserAnswer(models.Model):

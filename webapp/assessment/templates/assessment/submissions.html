@@ -101,6 +101,33 @@
             {% endfor %}
         </tbody>
     </table>
+
+    <h2>
+      {% trans 'Submissions Marked as Suspect' %}
+    </h2>
+
+    <table class="submissions-table full-width">
+        <thead>
+            <tr>
+                <th>{% trans 'Group' %}</th>
+                <th>{% trans 'Student(s)' %}</th>
+                <th>{% trans 'Answer Link' %}</th>
+                <th>{% trans 'Assessment Link' %}</th>
+                <th>{% trans 'Points' %}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for entry in suspect %}
+                <tr>
+                    <td>{{ entry.group }}</td>
+                    <td class="preserve-white">{{ entry.students }}</td>
+                    <td><a href="{{ entry.answers_url }}">{% trans 'view answers' %}</a></td>
+                    <td><a href="{{ entry.assessment_url }}">{% trans 'view assessment' %}</a></td>
+                    <td>{{ entry.total_points }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 {% endblock %}
 
 

@@ -45,6 +45,7 @@ def get_missing_and_points(results):
     missing = 0
     points = 0
     points_available = 0
+    tasks = 0
     groups_counted = []
     group_scores = {}
     for result in results:
@@ -53,20 +54,23 @@ def get_missing_and_points(results):
             if evalgroup not in groups_counted:
                 points_available += result["eo"].default_points
                 groups_counted.append(evalgroup)
+                tasks += 1
                 if not result["correct"]:
                     missing += 1
             group_scores[evalgroup] = max(result["points"], group_scores.get(evalgroup, 0))
         else:
             points_available += result["eo"].default_points
+            tasks += 1
             if result["correct"]:
                 points += result["points"]
             else:
                 missing += 1
 
+
     for group in groups_counted:
         points += group_scores[group]
 
-    return missing, points, points_available
+    return tasks, missing, points, points_available
 
 
 def compile_student_results(user, instance, tasks_by_page, summary=False):
@@ -83,7 +87,7 @@ def compile_student_results(user, instance, tasks_by_page, summary=False):
     for context, task_links in tasks_by_page:
         page = context.content
         page_stats = check_user_completion(user, task_links, instance, completion_qs)
-        missing, page_points, page_points_available = get_missing_and_points(page_stats)
+        tasks, missing, page_points, page_points_available = get_missing_and_points(page_stats)
         if context.scoring_group:
             grouped_page_scores[context.scoring_group] = max(
                 grouped_page_scores.get(context.scoring_group, 0),
@@ -102,8 +106,8 @@ def compile_student_results(user, instance, tasks_by_page, summary=False):
             total_missing += missing
         page_results = {
             "page": page.name,
-            "done_count": len(task_links) - missing,
-            "task_count": len(task_links),
+            "done_count": tasks - missing,
+            "task_count": tasks,
             "points": page_points,
             "points_available": page_points_available,
             "score": page_points * context.score_weight,

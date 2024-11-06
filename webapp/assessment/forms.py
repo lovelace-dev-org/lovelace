@@ -128,6 +128,13 @@ class AssessmentForm(forms.Form):
         self.fields["complete"] = forms.BooleanField(
             label=_("This assessment is complete"), required=False
         )
+        self.fields["suspect"] = forms.BooleanField(
+            label=_("Mark the assessed submit as suspect"), required=False
+        )
+        self.fields["comment"] = forms.CharField(
+            label=_("Add comment for other evaluators"),
+            widget=forms.TextInput(attrs={"class": "comment-input"}), required=False
+        )
 
 
 class AssessmentBulletForm(TranslationStaffForm):

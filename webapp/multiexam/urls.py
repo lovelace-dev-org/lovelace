@@ -42,4 +42,12 @@ urlpatterns = [
         views.delete_attempt,
         name="delete_attempt",
     ),
+
+    # other
+
+    path(
+        "file-download/multiexam/<int:exercise_id>/<str:field_name>/<str:filename>/",
+        views.download_question_pool,
+        name="download_question_pool",
+    )
 ]

@@ -97,6 +97,19 @@
         <div class="input-label-container">
             {{ form.complete.label_tag }} {{ form.complete }}
         </div>
+        <div class="staff-panel">
+          <div class="interactive" onclick="expand_next_div(this);">
+            {% trans 'Notes for evaluators' %}
+          </div>
+          <div class="collapsed">
+            <div class="input-label-container">
+                {{ form.suspect.label_tag }} {{ form.suspect }}
+            </div>
+            <div class="input-label-container">
+                {{ form.comment.label_tag }} {{ form.comment }}
+            </div>
+          </div>
+        </div>
         <input type="submit" name="submit" value="{% trans 'Save' %}"></input>
     </form>
     

@@ -70,6 +70,10 @@ class CourseContentAdmin(admin.ModelAdmin):
             | Q(
                 emb_embedded__parent__contentgraph__instance__course__staff_group__user=request.user
             )
+            | Q(contentgraph__instance__course__main_responsible=request.user)
+            | Q(
+                emb_embedded__parent__contentgraph__instance__course__main_responsible=request.user
+            )
         ).distinct()
 
         return qs

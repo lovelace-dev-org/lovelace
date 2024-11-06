@@ -324,6 +324,7 @@ def view_submissions(request, course, instance, content):
     )
     assessed = []
     unassessed = []
+    suspect = []
     skip = []
     for completion in all_records:
         try:
@@ -372,7 +373,10 @@ def view_submissions(request, course, instance, content):
                 unassessed.append(entry)
             else:
                 entry["total_points"] = evaluated_answer.evaluation.points
-                assessed.append(entry)
+                if evaluated_answer.evaluation.suspect:
+                    suspect.append(entry)
+                else:
+                    assessed.append(entry)
         else:
             unassessed.append(entry)
 
@@ -390,6 +394,7 @@ def view_submissions(request, course, instance, content):
         "single_linked": single_linked,
         "assessed": assessed,
         "unassessed": unassessed,
+        "suspect": suspect,
     }
     return HttpResponse(t.render(c, request))
 
@@ -419,6 +424,8 @@ def submission_assessment(request, course, instance, exercise, user):
                 "points": assessment["total_score"],
                 "max": sheet_link.calculate_max_score(),
                 "feedback": json.dumps(assessment),
+                "suspect": form.cleaned_data.get("suspect", False),
+                "comment": form.cleaned_data.get("comment", ""),
             },
             answer_object,
             complete=form.cleaned_data.get("complete", False),
@@ -434,9 +441,13 @@ def submission_assessment(request, course, instance, exercise, user):
             .latest("answer_date")
         )
         assessment = json.loads(evaluated_answer.evaluation.feedback)
+        suspect = evaluated_answer.evaluation.suspect
+        comment = evaluated_answer.evaluation.comment
     except (UserAnswer.DoesNotExist, json.JSONDecodeError):
         evaluated_answer = None
         assessment = {}
+        suspect = False
+        comment = ""
 
     max_score = 0
     section_scores = {}
@@ -449,7 +460,14 @@ def submission_assessment(request, course, instance, exercise, user):
 
     parent, single_linked = get_embedded_parent(exercise, instance)
 
-    form = AssessmentForm(by_section=by_section, assessment=assessment)
+    form = AssessmentForm(
+        by_section=by_section,
+        assessment=assessment,
+        initial={
+            "suspect": suspect,
+            "comment": comment,
+        }
+    )
     c = {
         "course": course,
         "instance": instance,

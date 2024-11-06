@@ -335,6 +335,8 @@ def update_completion(exercise, instance, user, evaluation, answer_date, overwri
         others = cm.ContentPage.objects.filter(evaluation_group=eval_group).exclude(id=exercise.id)
         for task in others:
             link = cm.EmbeddedLink.objects.filter(instance=instance, embedded_page=task).first()
+            if link is None:
+                continue
             if get_single_archived(task, link.revision).evaluation_group != eval_group:
                 continue
             try:

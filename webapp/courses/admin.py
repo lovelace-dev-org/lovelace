@@ -64,7 +64,7 @@ from courses.models import (
 )
 from courses.forms import (
     FileEditForm,
-    RepeatedTemplateExerciseBackendForm,
+    ExerciseBackendForm,
     ContentForm,
     TextfieldAnswerForm,
     InstanceForm,
@@ -308,7 +308,7 @@ class RepeatedTemplateExerciseTemplateInline(TranslationStackedInline):
 class RepeatedTemplateExerciseBackendFileInline(admin.StackedInline):
     model = RepeatedTemplateExerciseBackendFile
     extra = 1
-    form = RepeatedTemplateExerciseBackendForm
+    form = ExerciseBackendForm
     formfield_overrides = {models.FileField: {"widget": AdminTemplateBackendFileWidget}}
 
 
