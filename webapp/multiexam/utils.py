@@ -41,7 +41,7 @@ def generate_attempt_questions(exam, instance, total_questions, user=None):
         pool = yaml.safe_load(f)
 
     selected = {}
-    categories = random.sample(pool.keys(), total_questions)
+    categories = random.sample(list(pool.keys()), total_questions)
     if user is None:
         used_questions = get_used_questions(exam, instance, user)
     else:
