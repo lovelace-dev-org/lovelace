@@ -126,12 +126,14 @@
          rel="noopener noreferrer" 
          href="mailto:{{ instance_email }}?subject={{ instance_name|urlencode }}%20-%20{{ exercise_title|urlencode }}{% autoescape off %}&body={% endautoescape %}{{ answers_url|urlencode }}%23{{ answer.id }}"
          title="{% trans 'Send course staff a question about this answer' %}"></a>
-      {% if completion.state == "correct" or completion.state == "incorrect" and answer.evaluation.feedback %}
-        <a class="button-style report-button"
-           href="{% url 'assessment:view_assessment' student course instance exercise answer %}"
-           onclick="show_results(event, this, 'assessment-{{ answer.id }}');"
-           title="{% trans 'View assessment' %}">
-        </a>              
+      {% if answer.evaluation.feedback %}
+        {% if completion.state == "correct" or completion.state == "incorrect" %}
+          <a class="button-style report-button"
+             href="{% url 'assessment:view_assessment' student course instance exercise answer %}"
+             onclick="show_results(event, this, 'assessment-{{ answer.id }}');"
+             title="{% trans 'View assessment' %}">
+          </a>
+        {% endif %}
       {% endif %}
       {% if exercise.answers_show_log and answer.evaluation.test_results %}
         <a class="button-style log-button"

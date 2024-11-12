@@ -1789,6 +1789,7 @@ class ContentPage(models.Model, ExportImportMixin):
             "template",
             "answers_template",
             "answer_table_classes",
+            "answers_show_log",
             "export",
         ]
 
