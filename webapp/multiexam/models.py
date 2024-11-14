@@ -226,10 +226,16 @@ class ExamQuestionPool(models.Model):
         Gets the question count of the exam for displaying it on a page.
         """
 
-        with self.fileinfo.open() as f:
-            n = len(yaml.safe_load(f).keys())
-        return n
+        return len(self.load_contents().keys())
 
+    def load_contents(self):
+        """
+        Load the contents of the question pool file.
+        """
+
+        with self.fileinfo.open() as f:
+            pool = yaml.safe_load(f)
+        return pool
 
 class MultipleQuestionExamAttempt(models.Model):
     """

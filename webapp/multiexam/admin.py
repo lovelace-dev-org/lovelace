@@ -23,7 +23,6 @@ class QuestionPoolInline(TranslationStackedInline):
     model = ExamQuestionPool
     form = QuestionPoolForm
 
-    form = ExerciseBackendForm
     formfield_overrides = {models.FileField: {"widget": AdminMultiexamFileWidget}}
 
 
