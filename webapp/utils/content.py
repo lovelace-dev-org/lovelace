@@ -3,16 +3,18 @@ import re
 from collections import defaultdict
 from functools import wraps
 import django.conf
+from django.contrib import messages
 from django.http import HttpResponseNotFound
 from django.template import engines, loader
 from django.utils.safestring import mark_safe
 from django.utils.text import slugify
+from django.utils import translation
 from reversion.models import Version, Revision
 from courses import markupparser
 import courses.models as cm
 from utils.access import is_course_staff
 from utils.exercise import best_result
-
+from utils.notify import get_notifications
 
 def first_title_from_content(content_text):
     """
@@ -228,10 +230,20 @@ def system_messages(view_func):
         else:
             request.session["cookies_accepted"] = False
 
+        last_seen = request.COOKIES.get("notifications_seen")
+        msg_count = 0
+        for message in get_notifications("system", last_seen, translation.get_language()):
+            messages.add_message(request, messages.INFO, message)
+            msg_count += 1
 
-
-
-        return view_func(request, *args, **kwargs)
+        response = view_func(request, *args, **kwargs)
+        if msg_count:
+            response.set_cookie(
+                "notifications_seen",
+                datetime.datetime.now().isoformat(),
+                samesite="Strict"
+            )
+        return response
 
     return func_wrapper
 

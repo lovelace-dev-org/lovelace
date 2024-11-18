@@ -1,4 +1,7 @@
+import datetime
+import uuid
 from django.conf import settings
+from django.core.cache import caches
 from django.core.mail import get_connection, EmailMessage, send_mass_mail
 from django.utils import translation
 from utils.formatters import display_name
@@ -112,3 +115,29 @@ def send_bcc_email(instance, recipients, sender, title, body):
         connection=connection,
     )
     mail.send()
+
+def create_notifications(content_dict, expiry, instance="system"):
+    cache = caches["notify"]
+    now = datetime.datetime.now()
+    to_expiry = (expiry - now).total_seconds()
+    timestamp = now.isoformat()
+    for lang_code, _ in settings.LANGUAGES:
+        if f"content_{lang_code}" in content_dict:
+            key = f"{instance}_{timestamp}_{lang_code}"
+            cache.set(key, content_dict[f"content_{lang_code}"], to_expiry)
+
+def get_notifications(instance, last_seen, lang):
+    messages = []
+    cache = caches["notify"]
+    prefix = settings.CACHES["notify"]["KEY_PREFIX"]
+    keys = cache.keys(
+        f"{instance}*"
+    )
+    keys.sort()
+    for key in keys:
+        _, timestamp, lang_code = key.split("_")
+        if not last_seen or timestamp > last_seen:
+            if key.endswith(lang):
+                messages.append(cache.get(key))
+
+    return messages

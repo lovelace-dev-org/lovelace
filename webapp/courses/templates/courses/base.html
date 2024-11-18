@@ -132,6 +132,11 @@
                     <a href="{% url 'admin:index' %}">{% trans 'Management panel' %}</a>
                 </div>
               {% endif %}
+              {% if user.is_superuser %}
+                <div class="user-tools">
+                    <a href="{% url 'courses:system_messages' %}">{% trans 'System messages' %}</a>
+                </div>
+              {% endif %}
               {% if course_staff and course and instance %}
                 <div class="user-tools">
                   <a href="{% url 'teacher_tools:manage_enrollments' course instance %}">
