@@ -19,6 +19,8 @@ _CONCURRENT_PROCESSES = 40
 _NUMBER_OF_FILES = 100
 _FILE_SIZE = 4 * (1024**2)  # 4 MiB
 _CPU_TIME = 20
+_MEMORY_SIZE = 100 * (1024 ** 2) # 100 MiB
+
 
 logger = logging.getLogger(__name__)
 
@@ -103,6 +105,7 @@ def limit_resources(
     number_of_files=_NUMBER_OF_FILES,
     file_size=_FILE_SIZE,
     cpu_time=_CPU_TIME,
+    memory=_MEMORY_SIZE,
 ):
     """
     Use resource.setrlimit to define soft and hard limits for different
@@ -134,6 +137,9 @@ def limit_resources(
     # Prevent arbitrary use of computing power by limiting the amount of CPU time
     # in seconds
     resource.setrlimit(resource.RLIMIT_CPU, (cpu_time, cpu_time))
+
+    # Prevent filling up memory by limiting heap size
+    resource.setrlimit(resource.RLIMIT_DATA, (memory, memory))
 
 
 def chmod_child_files(test_dir):
