@@ -310,6 +310,22 @@
         </div>
       {% endblock %}
 
+      {% block flash-messages %}
+        {% if messages %}
+          <div class="message-box interactive" onclick="close_self(this)">
+            <div class="message-container">
+              <div class="message-box-header">
+                {% trans 'Messages' %}
+                <span class="popup-button">x</a>
+              </div>
+              {% for message in messages %}
+                <div>{{ message }}</div>
+              {% endfor %}
+            </div>
+          </div>
+        {% endif %}
+      {% endblock %}
+
       <section class="content">
         {% block revision-info %}
         {% endblock %}

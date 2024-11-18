@@ -1,0 +1,18 @@
+{% extends 'courses/base.html' %}
+
+{% load i18n %}
+{% load static %}
+{% load course_tags %}
+
+{% block breadcrumb-links %}
+  <li><a href="{% url 'courses:index' %}">{% trans 'Courses' %}</a></li>
+  <div class="separator">»</div>
+  <li>{% trans 'System Messages' %}</li>
+{% endblock %}
+
+{% block page-content %}
+  <div>
+    {{ form|safe }}
+  </div>
+{% endblock %}
+

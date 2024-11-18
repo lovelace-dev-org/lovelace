@@ -2,7 +2,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.urls import path
 
-from . import views, staff_views, user_views, calendar_views, message_views
+from . import views, staff_views, user_views, calendar_views, message_views, admin_views
 
 app_name = "courses"
 
@@ -212,6 +212,14 @@ urlpatterns = [
         message_views.load_message,
         name="load_message",
     ),
+
+    # Admin URLs
+    path(
+        "system/messages/",
+        admin_views.manage_system_messages,
+        name="system_messages",
+    ),
+
     # Help pages
     path(
         "help/",

@@ -212,11 +212,10 @@ def get_embedded_media_image(name, instance, parent):
     return image_object
 
 
-def cookie_law(view_func):
+def system_messages(view_func):
     """
-    To comply with the European Union cookie law, display a warning about the
-    site using cookies. When the user accepts cookies, set a session variable to
-    disable the message.
+    Retrieves messages that should be shown to the user. This includes the cookie
+    law notifcation.
     """
 
     @wraps(view_func)
@@ -228,6 +227,10 @@ def cookie_law(view_func):
             pass
         else:
             request.session["cookies_accepted"] = False
+
+
+
+
         return view_func(request, *args, **kwargs)
 
     return func_wrapper

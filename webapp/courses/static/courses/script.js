@@ -339,6 +339,10 @@ function toggle_inactive_instances (caller) {
     $(caller).nextAll("div").first().find("div.inactive").toggleClass("collapsed")
 }
 
+function close_self (caller) {
+    $(caller).remove()
+}
+
 function expand_next_div (caller) {
     $(caller).nextAll("div").first().toggleClass("collapsed")
 }
