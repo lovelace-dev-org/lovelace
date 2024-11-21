@@ -116,20 +116,23 @@ def send_bcc_email(instance, recipients, sender, title, body):
     )
     mail.send()
 
-def create_notifications(content_dict, expiry, instance="system"):
+def create_notifications(content_dict, expiry, instance="system", timestamp=None):
     cache = caches["notify"]
     now = datetime.datetime.now()
     to_expiry = (expiry - now).total_seconds()
-    timestamp = now.isoformat()
+    if timestamp is None:
+        timestamp = now.isoformat()
     for lang_code, _ in settings.LANGUAGES:
-        if f"content_{lang_code}" in content_dict:
-            key = f"{instance}_{timestamp}_{lang_code}"
-            cache.set(key, content_dict[f"content_{lang_code}"], to_expiry)
+        key = f"{instance}_{timestamp}_{lang_code}"
+        if content := content_dict.get(f"content_{lang_code}", ""):
+            cache.set(key, content, to_expiry)
+        else:
+            cache.set(key, content_dict[f"content_{settings.LANGUAGE_CODE}"], to_expiry)
 
-def get_notifications(instance, last_seen, lang):
+
+def get_notifications(instance, last_seen, lang, return_keys=False):
     messages = []
     cache = caches["notify"]
-    prefix = settings.CACHES["notify"]["KEY_PREFIX"]
     keys = cache.keys(
         f"{instance}*"
     )
@@ -140,4 +143,10 @@ def get_notifications(instance, last_seen, lang):
             if key.endswith(lang):
                 messages.append(cache.get(key))
 
+    if return_keys:
+        return zip(keys, messages)
     return messages
+
+def delete_notification(instance, timestamp):
+    cache = caches["notify"]
+    cache.delete_pattern(f"{instance}_{timestamp}*")

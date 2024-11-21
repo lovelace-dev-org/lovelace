@@ -642,3 +642,18 @@ class SystemMessageForm(forms.Form):
         )
 
 
+class CourseMessageForm(TranslationStaffForm):
+
+    class Meta:
+        model = cm.CourseMessage
+        fields = ["title", "content"]
+
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["expires"] = forms.DateTimeField(
+            label=_("Notification expires"),
+            required=True,
+            input_formats=["%Y-%m-%dT%H:%M"],
+            widget=forms.widgets.DateTimeInput(attrs={"type": "datetime-local"}),
+        )

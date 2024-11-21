@@ -43,6 +43,10 @@ except ImportError:
     LOGOUT_REDIRECT_URL = ""
 
 
+# LOGIN
+# |
+# v
+
 @system_messages
 def login(request):
     # template based on allauth login page
@@ -76,6 +80,13 @@ def logout(request):
     else:
         c = {"logout_url": reverse("account_logout")}
     return HttpResponse(t.render(c, request))
+
+# ^
+# |
+# LOGIN
+# PROFILE
+# |
+# v
 
 
 def user_profile_save(request):
@@ -154,6 +165,12 @@ def user(request, user):
     }
     return HttpResponse(t.render(c, request))
 
+# ^
+# |
+# PROFILE
+# GROUP
+# |
+# v
 
 @ensure_enrolled_or_staff
 def group_info(request, course, instance):
@@ -290,3 +307,10 @@ def cancel_invitation(request, course, instance, group, invite):
 
     invite.delete()
     return redirect(reverse("courses:group_info", kwargs={"course": course, "instance": instance}))
+
+# ^
+# |
+# GROUP
+
+
+

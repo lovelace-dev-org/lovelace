@@ -110,93 +110,113 @@
                     {% endfilter %}
                   </span>
               </div>
-              </div><div class="side-by-side-top">
-                <div class="vertical-separator"></div>
-              </div><div class="side-by-side-top">
-                <img src="{% static 'courses/arrow-down.png' %}"
-                     onclick="$('#user-menu').toggle();"
-                     id="user-menu-arrow">
-                <div id="user-menu"><div>
-              <div class="user-settings">
-                <a href="/profile/">{% trans 'Settings' %}</a>
               </div>
-              {% if course and instance and instance.max_group_size %}
-                  <div class="user-settings">
-                    <a href="{% url 'courses:group_info' course instance %}">
-                        {% trans 'Group info' %}
+              <div class="side-by-side-top">
+                <div class="vertical-separator"></div>
+              </div>
+              <div class="side-by-side-top">
+                <div class="user-menu-arrow"
+                     onclick="$('#user-menu').toggle()"
+                     id="user-menu-arrow">
+                  {% if user.userprofile.unread_messages %}
+                    <span class="attention-icon right-float">
+                      {{ user.userprofile.unread_messages }}
+                    </span>
+                  {% endif %}
+                </div>
+                <div id="user-menu"><div>
+                <div class="user-settings">
+                  <a href="/profile/">{% trans 'Settings' %}</a>
+                </div>
+                <div class="user-settings">
+                  <a href="/messages/">{% trans 'Messages' %}</a>
+                  {% if user.userprofile.unread_messages %}
+                    <span class="attention-icon">
+                      {{ user.userprofile.unread_messages }}
+                    </span>
+                  {% endif %}
+                </div>
+                {% if course and instance and instance.max_group_size %}
+                    <div class="user-settings">
+                      <a href="{% url 'courses:group_info' course instance %}">
+                          {% trans 'Group info' %}
+                      </a>
+                    </div>
+                {% endif %}
+                {% if user.is_staff %}
+                  <div class="user-tools">
+                      <a href="{% url 'admin:index' %}">{% trans 'Management panel' %}</a>
+                  </div>
+                {% endif %}
+                {% if user.is_superuser %}
+                  <div class="user-tools">
+                      <a href="{% url 'courses:system_messages' %}">{% trans 'System messages' %}</a>
+                  </div>
+                {% endif %}
+                {% if course_staff and course and instance %}
+                  <div class="user-tools">
+                    <a href="{% url 'teacher_tools:manage_enrollments' course instance %}">
+                      {% trans 'Manage enrollments' %}
                     </a>
                   </div>
-              {% endif %}
-              {% if user.is_staff %}
-                <div class="user-tools">
-                    <a href="{% url 'admin:index' %}">{% trans 'Management panel' %}</a>
-                </div>
-              {% endif %}
-              {% if user.is_superuser %}
-                <div class="user-tools">
-                    <a href="{% url 'courses:system_messages' %}">{% trans 'System messages' %}</a>
-                </div>
-              {% endif %}
-              {% if course_staff and course and instance %}
-                <div class="user-tools">
-                  <a href="{% url 'teacher_tools:manage_enrollments' course instance %}">
-                    {% trans 'Manage enrollments' %}
-                  </a>
-                </div>        
-                {% if instance.max_group_size %}
-                    <div class="user-tools">
-                      <a href="{% url 'courses:group_management' course instance %}">
-                        {% trans 'Manage groups' %}
+                  {% if instance.max_group_size %}
+                      <div class="user-tools">
+                        <a href="{% url 'courses:group_management' course instance %}">
+                          {% trans 'Manage groups' %}
+                        </a>
+                      </div>
+                  {% endif %}
+                  <div class="user-tools">
+                      <a href="{% url 'courses:course_messages' course instance %}">
+                        {% trans 'Course messages' %}
                       </a>
-                    </div>    
+                  </div>
+                  <div class="user-tools">
+                    <a id="{{ content.slug }}-email-panel-link"
+                      class="email-panel-link"
+                      href="{% url 'courses:mass_email' course instance %}"
+                      title="{% trans 'Open the mass email panel' %}"
+                      onclick="show_panel(event, this, 'email-panel', 'message-panel');"
+                      data-querystring="">{% trans 'Mass email' %}
+                    </a>
+                  </div>
+                  <div class="user-tools">
+                    <a href="{% url 'teacher_tools:completion' course instance %}">
+                      {% trans 'Course completion' %}
+                    </a>
+                  </div>
+                  <div class="user-tools">
+                    <a href="{% url 'teacher_tools:reminders' course instance %}">
+                      {% trans 'Reminders' %}
+                    </a>
+                  </div>
+                  <div class="user-tools">
+                    <a href="{% url 'teacher_tools:exemptions' course instance %}">
+                      {% trans 'Deadline Exemptions' %}
+                    </a>
+                  </div>
+                  <div class="user-tools">
+                    <a href="{% url 'stats:instance_console' course instance %}">
+                      {% trans 'Statistics' %}
+                    </a>
+                  </div>
                 {% endif %}
-                <div class="user-tools">
-                  <a id="{{ content.slug }}-email-panel-link"
-                     class="email-panel-link"
-                     href="{% url 'courses:mass_email' course instance %}"
-                     title="{% trans 'Open the mass email panel' %}"
-                     onclick="show_panel(event, this, 'email-panel', 'message-panel');"
-                     data-querystring="">{% trans 'Mass email' %}
-                  </a>
+                <div class="user-logout">
+                  <a href="/logout">{% trans 'Log out' %}</a>
+                </div></div></div>
                 </div>
-                <div class="user-tools">
-                  <a href="{% url 'teacher_tools:completion' course instance %}">
-                    {% trans 'Course completion' %}
-                  </a>
-                </div>
-                <div class="user-tools">
-                  <a href="{% url 'teacher_tools:reminders' course instance %}">
-                    {% trans 'Reminders' %}
-                  </a>
-                </div>
-                <div class="user-tools">
-                  <a href="{% url 'teacher_tools:exemptions' course instance %}">
-                    {% trans 'Deadline Exemptions' %}
-                  </a>
-                </div>
-                <div class="user-tools">
-                  <a href="{% url 'stats:instance_console' course instance %}">
-                    {% trans 'Statistics' %}
-                  </a>
-                </div>
+              {% else %}
+                <a href="/login">
+                  <div class="user-action">
+                    {% trans 'Log in' %}
+                  </div>
+                </a><a href="/accounts/signup">
+                  <div class="user-action">
+                    {% trans 'Sign up' %}
+                  </div>
+                </a>
               {% endif %}
-              <div class="user-logout">
-                <a href="/logout">{% trans 'Log out' %}</a>
-              </div></div></div>
-              </div>
-            {% else %}
-              <a href="/login">
-                <div class="user-action">
-                  {% trans 'Log in' %}
-                </div>
-              </a><a href="/accounts/signup">
-                <div class="user-action">
-                  {% trans 'Sign up' %}
-                </div>
-              </a>
-            {% endif %}
-            
-          </div>{% comment %}login box{% endcomment %}
+            </div>{% comment %}login box{% endcomment %}
         </div>
       </header>
       

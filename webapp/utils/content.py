@@ -236,6 +236,13 @@ def system_messages(view_func):
             messages.add_message(request, messages.INFO, message)
             msg_count += 1
 
+        if "instance" in kwargs:
+            for message in get_notifications(
+                kwargs["instance"].slug, last_seen, translation.get_language()
+            ):
+                messages.add_message(request, messages.INFO, message)
+                msg_count += 1
+
         response = view_func(request, *args, **kwargs)
         if msg_count:
             response.set_cookie(

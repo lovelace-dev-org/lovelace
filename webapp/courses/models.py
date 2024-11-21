@@ -89,6 +89,9 @@ class UserProfile(models.Model):
     enrollment_year = models.PositiveSmallIntegerField(
         verbose_name="Year of enrollment", blank=True, null=True
     )
+    unread_messages = models.PositiveSmallIntegerField(
+        verbose_name="Unread message count", default=0,
+    )
 
     def __str__(self):
         return f"{self.user}'s profile"
@@ -296,6 +299,14 @@ class CourseEnrollment(models.Model):
         if exclude_current:
             enrollments = enrollments.exclude(instance=instance)
         return [e.instance for e in enrollments]
+
+    @staticmethod
+    def get_user_enrollments(user):
+        enrollments = CourseEnrollment.objects.filter(
+            student=user,
+            enrollment_state="ACCEPTED"
+        )
+        return enrollments
 
 
 class CourseInstance(models.Model):
@@ -606,6 +617,20 @@ class GradeThreshold(models.Model):
     grade = models.CharField(
         max_length=4,
     )
+
+
+class CourseMessage(models.Model):
+    instance = models.ForeignKey(
+        "CourseInstance", null=False, blank=False, on_delete=models.CASCADE
+    )
+    title = models.CharField(
+        verbose_name="Message title",
+        max_length=64,
+    )
+    content = models.TextField(
+        verbose_name="Message content",
+    )
+    created = models.DateTimeField(auto_now_add=True)
 
 
 class ContextLinkManager(models.Manager):

@@ -11,21 +11,29 @@
 {% block breadcrumb-links %}
   <li><a href="{% url 'courses:index' %}">{% trans 'Courses' %}</a></li>
   <div class="separator">»</div>
-  <li>{% trans 'System Messages' %}</li>
+  <li>
+    <a href="{% url 'courses:course' course instance %}">
+      {{ course.name }}&nbsp;/&nbsp;{{ instance.name }}
+    </a>
+  </li>
+  <div class="separator">»</div>
+  <li>{% trans 'Course Messages' %}</li>
 {% endblock %}
 
 {% block page-content %}
-  {% for key, msg in system_messages %}
-    <div class="item-header" onclick="expand_next_div(this)">
-      <span>{{ msg }}</span>
+  {% for msg in course_msgs %}
+    <div class="item-header interactive" onclick="expand_next_div(this)">
+      <span>{{ msg.title }}</span>
       <button type="button"
               class="staff-base-button right-float delete-button"
               onclick="messaging.remove_message(event, this)"
-              data-url="{% url 'courses:remove_system_message' key %}"
+              data-url="{% url 'courses:remove_course_message' course instance msg.id %}"
               data-csrf="{{ csrf_token }}">X
       </button>
     </div>
-    <div></div>
+    <div class="item-container collapsed">
+      {{ msg.content }}
+    </div>
   {% endfor %}
 
   <div>

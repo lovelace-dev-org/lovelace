@@ -142,7 +142,7 @@ def course_instances(request, course):
 def course(request, course, instance):
     frontpage = instance.frontpage
     if frontpage:
-        context = content(request, course, instance, frontpage, frontpage=True)
+        context = _page_context(request, course, instance, frontpage)
     else:
         context = {}
 
@@ -185,9 +185,7 @@ def course(request, course, instance):
     t = loader.get_template("courses/course.html")
     return HttpResponse(t.render(context, request))
 
-
-@system_messages
-def content(request, course, instance, content, pagenum=None, **kwargs):
+def _page_context(request, course, instance, content, pagenum=None):
     content_graph = None
     revision = None
     try:
@@ -305,9 +303,12 @@ def content(request, course, instance, content, pagenum=None, **kwargs):
             "content": content,
         }),
     }
-    if "frontpage" in kwargs:
-        return c
+    return c
 
+
+@system_messages
+def content(request, course, instance, content, pagenum=None):
+    c = _page_context(request, course, instance, content, pagenum=None)
     t = loader.get_template("courses/contentpage.html")
     return HttpResponse(t.render(c, request))
 

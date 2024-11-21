@@ -2032,3 +2032,30 @@ div.message-container {
     z-index: 101;
 }
 
+div.item-header {
+    background: #caeaca;
+    border: 1px solid #d0d0d0;
+    border-radius: 2px;
+}
+
+div.item-header > span {
+    margin-left: 5px;
+}
+
+div.item-container {
+    margin-left: 10px;
+}
+
+div.user-menu-arrow {
+    background: no-repeat url("/static/courses/arrow-down.png") center/40px;
+    width: 40px;
+    height: 40px;
+}
+
+span.attention-icon {
+    border-radius: 2px;
+    background: #f93c3c;
+    min-width: 15px;
+    text-align: center;
+    display: inline-block;
+}

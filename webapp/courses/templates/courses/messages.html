@@ -1,0 +1,39 @@
+{% extends 'courses/base.html' %}
+
+{% load i18n %}
+{% load static %}
+{% load course_tags %}
+
+{% block extra-static %}
+  <script src="{% static 'courses/messaging.js' %}"></script>
+{% endblock %}
+
+{% block breadcrumb-links %}
+  <li><a href="{% url 'courses:index' %}">{% trans 'Courses' %}</a></li>
+  <div class="separator">»</div>
+  <li>{% trans 'Messages' %}</li>
+{% endblock %}
+
+{% block page-content %}
+  {% if system_messages %}
+    <h1>{% trans 'System Messages' %}</h1>
+    {% for msg in system_messages %}
+      <div class="item-header">
+        <span>{{ msg }}</span>
+      </div>
+    {% endfor %}
+  {% endif %}
+  {% for inst_name, message_list in by_instance.items %}
+    <h1>{{ inst_name }}</h1>
+    {% for msg in message_list %}
+      <div class="item-header interactive" onclick="expand_next_div(this)">
+        <span>{{ msg.created|date:"Y-m-d, H:i" }} - {{ msg.title }}</span>
+      </div>
+      <div class="item-container collapsed">
+        {{ msg.content }}
+      </div>
+    {% endfor %}
+  {% endfor %}
+
+{% endblock %}
+

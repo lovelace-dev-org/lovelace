@@ -85,6 +85,7 @@ urlpatterns = [
         name="show_answer_file",
     ),
     path("user/<user:user>/", user_views.user),
+    path("messages/", message_views.view_messages, name="view_messages"),
     path("profile/", user_views.user_profile),
     path("profile/save/", user_views.user_profile_save),
     # For calendar POST requests
@@ -213,12 +214,29 @@ urlpatterns = [
         name="load_message",
     ),
 
+    path(
+        "staff/<course:course>/<instance:instance>/manage_messages/",
+        message_views.course_messages,
+        name="course_messages",
+    ),
+    path(
+        "staff/<course:course>/<instance:instance>/remove_message/<int:msgid>/",
+        message_views.remove_course_message,
+        name="remove_course_message",
+    ),
+
     # Admin URLs
     path(
         "system/messages/",
         admin_views.manage_system_messages,
         name="system_messages",
     ),
+    path(
+        "system/messages/remove/<str:msg_key>/",
+        admin_views.remove_system_message,
+        name="remove_system_message",
+    ),
+
 
     # Help pages
     path(
