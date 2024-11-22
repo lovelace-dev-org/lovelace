@@ -2059,3 +2059,13 @@ span.attention-icon {
     text-align: center;
     display: inline-block;
 }
+
+div.user-menu-separator {
+    padding: 4px 2px 4px 2px;
+    height: 1px;
+    position: relative;
+}
+
+div.user-menu-separator hr {
+    color: #cacaca;
+}

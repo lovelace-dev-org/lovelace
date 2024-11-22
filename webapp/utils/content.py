@@ -236,12 +236,16 @@ def system_messages(view_func):
             messages.add_message(request, messages.INFO, message)
             msg_count += 1
 
-        if "instance" in kwargs:
-            for message in get_notifications(
-                kwargs["instance"].slug, last_seen, translation.get_language()
-            ):
-                messages.add_message(request, messages.INFO, message)
-                msg_count += 1
+        # The following lines will show notification popups for
+        # course messages, currently not in use but left here in
+        # case it ends up back on the menu
+
+        #if "instance" in kwargs:
+            #for message in get_notifications(
+                #kwargs["instance"].slug, last_seen, translation.get_language()
+            #):
+                #messages.add_message(request, messages.INFO, message)
+                #msg_count += 1
 
         response = view_func(request, *args, **kwargs)
         if msg_count:

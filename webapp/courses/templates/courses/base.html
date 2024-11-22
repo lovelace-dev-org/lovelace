@@ -144,6 +144,7 @@
                     </div>
                 {% endif %}
                 {% if user.is_staff %}
+                  <div class="user-menu-separator"><hr /></div>
                   <div class="user-tools">
                       <a href="{% url 'admin:index' %}">{% trans 'Management panel' %}</a>
                   </div>
@@ -154,6 +155,7 @@
                   </div>
                 {% endif %}
                 {% if course_staff and course and instance %}
+                  <div class="user-menu-separator"><hr /></div>
                   <div class="user-tools">
                     <a href="{% url 'teacher_tools:manage_enrollments' course instance %}">
                       {% trans 'Manage enrollments' %}
@@ -185,19 +187,21 @@
                       {% trans 'Course completion' %}
                     </a>
                   </div>
+                  <!--
                   <div class="user-tools">
                     <a href="{% url 'teacher_tools:reminders' course instance %}">
                       {% trans 'Reminders' %}
                     </a>
                   </div>
                   <div class="user-tools">
-                    <a href="{% url 'teacher_tools:exemptions' course instance %}">
-                      {% trans 'Deadline Exemptions' %}
-                    </a>
-                  </div>
-                  <div class="user-tools">
                     <a href="{% url 'stats:instance_console' course instance %}">
                       {% trans 'Statistics' %}
+                    </a>
+                  </div>
+                  -->
+                  <div class="user-tools">
+                    <a href="{% url 'teacher_tools:exemptions' course instance %}">
+                      {% trans 'Deadline Exemptions' %}
                     </a>
                   </div>
                 {% endif %}

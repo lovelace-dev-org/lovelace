@@ -23,8 +23,8 @@
       </div>
     {% endfor %}
   {% endif %}
-  {% for inst_name, message_list in by_instance.items %}
-    <h1>{{ inst_name }}</h1>
+  {% for instance, message_list in by_instance.items %}
+    <h2><a href="{% url 'courses:course' instance.course instance %}">{{ instance.name }}</a></h2>
     {% for msg in message_list %}
       <div class="item-header interactive" onclick="expand_next_div(this)">
         <span>{{ msg.created|date:"Y-m-d, H:i" }} - {{ msg.title }}</span>

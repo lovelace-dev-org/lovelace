@@ -200,13 +200,13 @@ def remove_course_message(request, course, instance, msgid):
 
 
 def view_messages(request):
-    by_instance = defaultdict(list)
+    by_instance = []
     for enrollment in CourseEnrollment.get_user_enrollments(request.user):
         instance_messages = (
             CourseMessage.objects.filter(instance=enrollment.instance)
             .order_by("-created")
         )
-        by_instance[enrollment.instance.name].extend(instance_messages)
+        by_instance.append((enrollment.instance, instance_messages))
 
     system_messages = get_notifications(
         "system",
