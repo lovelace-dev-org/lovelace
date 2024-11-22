@@ -3,16 +3,18 @@ import re
 from collections import defaultdict
 from functools import wraps
 import django.conf
+from django.contrib import messages
 from django.http import HttpResponseNotFound
 from django.template import engines, loader
 from django.utils.safestring import mark_safe
 from django.utils.text import slugify
+from django.utils import translation
 from reversion.models import Version, Revision
 from courses import markupparser
 import courses.models as cm
 from utils.access import is_course_staff
 from utils.exercise import best_result
-
+from utils.notify import get_notifications
 
 def first_title_from_content(content_text):
     """
@@ -212,11 +214,10 @@ def get_embedded_media_image(name, instance, parent):
     return image_object
 
 
-def cookie_law(view_func):
+def system_messages(view_func):
     """
-    To comply with the European Union cookie law, display a warning about the
-    site using cookies. When the user accepts cookies, set a session variable to
-    disable the message.
+    Retrieves messages that should be shown to the user. This includes the cookie
+    law notifcation.
     """
 
     @wraps(view_func)
@@ -228,7 +229,32 @@ def cookie_law(view_func):
             pass
         else:
             request.session["cookies_accepted"] = False
-        return view_func(request, *args, **kwargs)
+
+        last_seen = request.COOKIES.get("notifications_seen")
+        msg_count = 0
+        for message in get_notifications("system", last_seen, translation.get_language()):
+            messages.add_message(request, messages.INFO, message)
+            msg_count += 1
+
+        # The following lines will show notification popups for
+        # course messages, currently not in use but left here in
+        # case it ends up back on the menu
+
+        #if "instance" in kwargs:
+            #for message in get_notifications(
+                #kwargs["instance"].slug, last_seen, translation.get_language()
+            #):
+                #messages.add_message(request, messages.INFO, message)
+                #msg_count += 1
+
+        response = view_func(request, *args, **kwargs)
+        if msg_count:
+            response.set_cookie(
+                "notifications_seen",
+                datetime.datetime.now().isoformat(),
+                samesite="Strict"
+            )
+        return response
 
     return func_wrapper
 

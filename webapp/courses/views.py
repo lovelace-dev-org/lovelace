@@ -69,7 +69,7 @@ from utils.access import (
 from utils.archive import find_version_with_filename, get_single_archived
 from utils.content import (
     check_exercise_accessible,
-    cookie_law,
+    system_messages,
     course_tree,
     first_title_from_content,
     get_answer_count_meta,
@@ -93,7 +93,7 @@ logger = logging.getLogger(__name__)
 # v
 
 
-@cookie_law
+@system_messages
 def index(request):
     course_list = Course.objects.order_by("name").all()
 
@@ -103,7 +103,7 @@ def index(request):
     }
     return HttpResponse(t.render(c, request))
 
-@cookie_law
+@system_messages
 def about(request):
     local_about = About.objects.first()
     parser = markupparser.MarkupParser()
@@ -123,7 +123,7 @@ def about(request):
 
 
 
-@cookie_law
+@system_messages
 def course_instances(request, course):
     try:
         primary = CourseInstance.objects.get(course=course, primary=True)
@@ -138,11 +138,11 @@ def course_instances(request, course):
     }))
 
 
-@cookie_law
+@system_messages
 def course(request, course, instance):
     frontpage = instance.frontpage
     if frontpage:
-        context = content(request, course, instance, frontpage, frontpage=True)
+        context = _page_context(request, course, instance, frontpage)
     else:
         context = {}
 
@@ -185,9 +185,7 @@ def course(request, course, instance):
     t = loader.get_template("courses/course.html")
     return HttpResponse(t.render(context, request))
 
-
-@cookie_law
-def content(request, course, instance, content, pagenum=None, **kwargs):
+def _page_context(request, course, instance, content, pagenum=None):
     content_graph = None
     revision = None
     try:
@@ -305,9 +303,12 @@ def content(request, course, instance, content, pagenum=None, **kwargs):
             "content": content,
         }),
     }
-    if "frontpage" in kwargs:
-        return c
+    return c
 
+
+@system_messages
+def content(request, course, instance, content, pagenum=None):
+    c = _page_context(request, course, instance, content, pagenum=None)
     t = loader.get_template("courses/contentpage.html")
     return HttpResponse(t.render(c, request))
 

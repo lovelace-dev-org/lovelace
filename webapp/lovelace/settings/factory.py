@@ -362,7 +362,16 @@ CACHES = {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
             "CONNECTION_POOL_KWARGS": _CACHE_CONNECTION_POOL_KWARGS,
         }
-    }
+    },
+    "notify": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": os.environ["LOVELACE_REDIS_CACHE"],
+        "KEY_PREFIX": "lovelace_notify",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "CONNECTION_POOL_KWARGS": _CACHE_CONNECTION_POOL_KWARGS,
+        },
+    },
 }
 
 # Stats generation is a time-consuming task. This configuration key allows you

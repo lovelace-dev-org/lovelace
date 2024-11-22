@@ -624,3 +624,36 @@ def process_delete_confirm_form(request, success_callback, extra_context={}):
     return HttpResponse(form_t.render(form_c, request))
 
 
+class SystemMessageForm(forms.Form):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        add_translated_charfields(
+            self, "content",
+            _("Message content ({lang} - default)"),
+            _("Message content ({lang})"),
+            require_default=True
+        )
+        self.fields["expires"] = forms.DateTimeField(
+            label=_("Time this message expires"),
+            required=True,
+            input_formats=["%Y-%m-%dT%H:%M"],
+            widget=forms.widgets.DateTimeInput(attrs={"type": "datetime-local"}),
+        )
+
+
+class CourseMessageForm(TranslationStaffForm):
+
+    class Meta:
+        model = cm.CourseMessage
+        fields = ["title", "content"]
+
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["expires"] = forms.DateTimeField(
+            label=_("Notification expires"),
+            required=True,
+            input_formats=["%Y-%m-%dT%H:%M"],
+            widget=forms.widgets.DateTimeInput(attrs={"type": "datetime-local"}),
+        )

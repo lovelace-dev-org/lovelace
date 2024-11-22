@@ -9,6 +9,7 @@ from courses.models import (
     Course,
     CourseInstance,
     CourseMedia,
+    CourseMessage,
     File,
     FileExerciseSettings,
     FileExerciseTestCommand,
@@ -68,6 +69,11 @@ class CourseTranslationOptions(TranslationOptions):
 @register(CourseInstance)
 class CourseInstanceTranslationOptions(TranslationOptions):
     fields = ("name", "email", "notes", "welcome_message")
+
+
+@register(CourseMessage)
+class CourseMessageTranslationOptions(TranslationOptions):
+    fields = ("title", "content")
 
 
 ## Page content objects

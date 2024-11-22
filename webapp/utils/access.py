@@ -109,6 +109,21 @@ def is_course_staff(user, instance, responsible_only=False):
 # v
 
 
+def ensure_admin(function):
+    """
+    Decorator for limiting access to a function to admin users only. Returns
+    HttpResponseForbidden instead of calling the wrapped function if the user
+    is not ad admin.
+    """
+
+    @wraps(function)
+    def wrap(request, *args, **kwargs):
+        if request.user.is_superuser:
+            return function(request, *args, **kwargs)
+        return HttpResponseForbidden(_("This view is limited to admins."))
+
+    return wrap
+
 def ensure_staff(function):
     """
     Decorator for limiting access to a function to course staff only. Returns

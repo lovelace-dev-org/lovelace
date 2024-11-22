@@ -1,17 +1,32 @@
+from collections import defaultdict
+import datetime
+from django.conf import settings
 from django.http import (
     HttpResponse,
     JsonResponse,
     HttpResponseForbidden,
+    HttpResponseNotFound,
 )
 from django.template import loader
 from django.urls import reverse
 from django.utils.translation import gettext as _
-from courses.models import SavedMessage
-from courses.forms import MessageForm
-from utils.access import ensure_staff, ensure_responsible
+from django.utils import translation
+from courses.models import SavedMessage, CourseMessage, CourseEnrollment
+from courses.forms import MessageForm, CourseMessageForm
+from utils.access import ensure_staff, ensure_responsible, ensure_enrolled_or_staff
 from utils.formatters import display_name
-from utils.notify import send_email, send_bcc_email
+from utils.notify import (
+    send_email,
+    send_bcc_email,
+    create_notifications,
+    delete_notification,
+    get_notifications,
+)
 
+
+# Email Messages
+# |
+# v
 
 def process_message_form(request, course, instance, recipients, form_label="", use_bcc=False):
     saved_msgs = SavedMessage.objects.filter(course=course)
@@ -103,3 +118,113 @@ def load_message(request, course, instance, msgid):
         message = SavedMessage()
 
     return JsonResponse(message.serialize_translated())
+
+# ^
+# |
+# Email Messages
+# Lovelace Messages
+# |
+# v
+
+@ensure_responsible
+def course_messages(request, course, instance):
+    if request.method == "POST":
+        form = CourseMessageForm(request.POST)
+
+        if not form.is_valid():
+            errors = form.errors_as_json()
+        else:
+            message = form.save(commit=False)
+            message.instance = instance
+            message.save()
+
+            session_lang = translation.get_language()
+            notifications = {}
+            for lang, __ in settings.LANGUAGES:
+                if getattr(message, f"title_{lang}"):
+                    translation.activate(lang)
+                    notifications[f"content_{lang}"] = _("New message in {course}: {title}").format(
+                        course=course.name,
+                        title=message.title,
+                    )
+            translation.activate(session_lang)
+
+            create_notifications(
+                notifications,
+                form.cleaned_data["expires"],
+                instance=instance.slug,
+                timestamp=message.created.isoformat(),
+            )
+
+            users = (
+                instance.enrolled_users.get_queryset()
+                .filter(courseenrollment__enrollment_state="ACCEPTED")
+            )
+
+            for user in users:
+                user.userprofile.unread_messages += 1
+                user.userprofile.save()
+
+    else:
+        form = CourseMessageForm()
+
+    form_t = loader.get_template("courses/base-edit-form.html")
+    form_c = {
+        "form_object": form,
+        "submit_url": request.path,
+        "html_id": "system-message-form",
+    }
+
+    messages = CourseMessage.objects.filter(instance=instance)
+
+    t = loader.get_template("courses/course-messages.html")
+    c = {
+        "form": form_t.render(form_c, request),
+        "course": course,
+        "instance": instance,
+        "course_msgs": messages,
+    }
+
+    return HttpResponse(t.render(c, request))
+
+@ensure_responsible
+def remove_course_message(request, course, instance, msgid):
+    try:
+        message = CourseMessage.objects.get(id=msgid)
+    except CourseMessage.DoesNotExist:
+        return HttpResponseNotFound
+
+    delete_notification(instance, message.created.isoformat())
+    message.delete()
+    return JsonResponse({"status": "ok"})
+
+
+def view_messages(request):
+    by_instance = []
+    for enrollment in CourseEnrollment.get_user_enrollments(request.user):
+        instance_messages = (
+            CourseMessage.objects.filter(instance=enrollment.instance)
+            .order_by("-created")
+        )
+        by_instance.append((enrollment.instance, instance_messages))
+
+    system_messages = get_notifications(
+        "system",
+        datetime.datetime.fromtimestamp(0).isoformat(),
+        translation.get_language(),
+    )
+
+    request.user.userprofile.unread_messages = 0
+    request.user.userprofile.save()
+
+    t = loader.get_template("courses/messages.html")
+    c = {
+        "by_instance": dict(by_instance),
+        "system_messages": system_messages,
+    }
+    return HttpResponse(t.render(c, request))
+
+
+
+
+

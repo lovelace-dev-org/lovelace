@@ -1,4 +1,7 @@
+import datetime
+import uuid
 from django.conf import settings
+from django.core.cache import caches
 from django.core.mail import get_connection, EmailMessage, send_mass_mail
 from django.utils import translation
 from utils.formatters import display_name
@@ -112,3 +115,38 @@ def send_bcc_email(instance, recipients, sender, title, body):
         connection=connection,
     )
     mail.send()
+
+def create_notifications(content_dict, expiry, instance="system", timestamp=None):
+    cache = caches["notify"]
+    now = datetime.datetime.now()
+    to_expiry = (expiry - now).total_seconds()
+    if timestamp is None:
+        timestamp = now.isoformat()
+    for lang_code, _ in settings.LANGUAGES:
+        key = f"{instance}_{timestamp}_{lang_code}"
+        if content := content_dict.get(f"content_{lang_code}", ""):
+            cache.set(key, content, to_expiry)
+        else:
+            cache.set(key, content_dict[f"content_{settings.LANGUAGE_CODE}"], to_expiry)
+
+
+def get_notifications(instance, last_seen, lang, return_keys=False):
+    messages = []
+    cache = caches["notify"]
+    keys = cache.keys(
+        f"{instance}*"
+    )
+    keys.sort()
+    for key in keys:
+        _, timestamp, lang_code = key.split("_")
+        if not last_seen or timestamp > last_seen:
+            if key.endswith(lang):
+                messages.append(cache.get(key))
+
+    if return_keys:
+        return zip(keys, messages)
+    return messages
+
+def delete_notification(instance, timestamp):
+    cache = caches["notify"]
+    cache.delete_pattern(f"{instance}_{timestamp}*")
