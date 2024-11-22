@@ -161,6 +161,11 @@
                       {% trans 'Manage enrollments' %}
                     </a>
                   </div>
+                  <div class="user-tools">
+                    <a href="{% url 'teacher_tools:search_records' course instance %}">
+                      {% trans 'Search records' %}
+                    </a>
+                  </div>
                   {% if instance.max_group_size %}
                       <div class="user-tools">
                         <a href="{% url 'courses:group_management' course instance %}">

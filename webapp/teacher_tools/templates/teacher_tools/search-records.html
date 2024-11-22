@@ -1,0 +1,93 @@
+{% extends 'courses/base.html' %}
+{% load static %}
+{% load i18n %}
+{% load course_tags %}
+
+{% block page-title %}{% blocktrans with course=course.name %}
+  Find student records from all instances of {{ course }}
+{% endblocktrans %}{% endblock %}
+
+{% block extra-static %}
+  <link rel="stylesheet" href="{% static 'teacher_tools/style.css' %}">
+{% endblock %}
+
+{% block breadcrumb-links %}
+  <li><a href="{% url 'courses:index' %}">{% trans 'Courses' %}</a></li>
+  <div class="separator">»</div>
+  <li>{% trans 'Find Records' %}</li>
+{% endblock %}
+
+{% block page-content %}
+
+  <h1>
+    {% blocktrans with course=course.name %}
+      Search Student Records for {{ course }}
+    {% endblocktrans %}
+  </h1>
+
+  <div class="paragraph">
+    {% trans "This utility can be used to find which instance contains a student's completion records" %}
+  </div>
+
+  <form id="search-form"
+    class="teacher-form"
+    method="POST"
+    enctype="multipart/form-data"
+    action="{% url 'teacher:search_records' course instance %}">
+
+    {% csrf_token %}
+
+    {% for field in form %}
+
+      <div class="input-label-container">
+        {{ field.errors }}
+        {{ field.label_tag }} {{ field }}
+      </div>
+
+    {% endfor %}
+
+    <input id="search-submit" type="submit" name="submit" value="{% trans 'Search' %}"></input>
+
+  </form>
+
+  {% if results %}
+  <table class="fixed alternate-green">
+    <colgroup>
+      <col class="name">
+      <col class="username">
+      <col class="instance">
+      <col class="enrollment-state">
+      <col class="actions-cell">
+    </colgroup>
+    <caption>
+      {% trans 'Found Records' %}
+    </caption>
+    <thead>
+      <tr>
+        <th>{% trans 'Name' %}</th>
+        <th>{% trans 'Username' %}</th>
+        <th>{% trans 'Instance' %}</th>
+        <th>{% trans 'Status' %}</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for user, result in results %}
+        <tr>
+          <td>{{ user|full_name }}</td>
+          <td>{{ user.username }}</td>
+          <td>{{ result.instance.name }}</td>
+          <td>{{ result.enrollment_state }}</td>
+          <td>
+            <a class="button-style inspect-button"
+              href="{% url 'teacher_tools:student_completion' course result.instance user %}"
+              title="{% trans 'View student completion' %}">
+            </a>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+{% endblock %}

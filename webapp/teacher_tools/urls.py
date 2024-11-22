@@ -6,6 +6,11 @@ app_name = "teacher_tools"
 
 urlpatterns = [
     path(
+        "<course:course>/<instance:instance>/search_records/",
+        views.search_records,
+        name="search_records",
+    ),
+    path(
         "<course:course>/<instance:instance>/<content:content>/download_answers/",
         views.download_answers,
         name="download_answers",

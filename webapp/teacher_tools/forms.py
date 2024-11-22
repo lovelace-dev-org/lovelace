@@ -1,5 +1,5 @@
 from django import forms
-from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy as _
 import courses.models as cm
 from teacher_tools.models import MossSettings, ReminderTemplate
 
@@ -127,6 +127,14 @@ class DeadlineExemptionForm(forms.ModelForm):
         self.fields["user"].queryset = students
 
 
+
+class RecordSearchForm(forms.Form):
+
+    username = forms.CharField(label=_("Username"), required=False)
+    student_id = forms.CharField(label=_("Student ID"), required=False)
+    last_name = forms.CharField(label=_("Last name"), required=False)
+    first_name = forms.CharField(label=_("First name"), required=False)
+    email = forms.CharField(label=_("Email"), required=False)
 
 
 
