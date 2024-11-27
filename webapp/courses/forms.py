@@ -390,6 +390,36 @@ class IndexEntryForm(TranslationModelForm):
         pass
 
 
+class UserProfileForm(forms.ModelForm):
+
+    class Meta:
+        model = cm.UserProfile
+        fields = ["student_id", "data_policy", "dyslexic_fonts"]
+
+    def clean_data_policy(self):
+        data_policy = self.cleaned_data.get("data_policy")
+        if data_policy == "UNSELECTED":
+            self.add_error("data_policy", _("An option must be selected"))
+        return data_policy
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["student_id"].required = True
+
+
+class UserForm(forms.ModelForm):
+
+    class Meta:
+        model = cm.User
+        fields = ["first_name", "last_name", "email"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["first_name"].required = True
+        self.fields["last_name"].required = True
+        self.fields["email"].required = True
+
+
 class GroupForm(forms.ModelForm):
     class Meta:
         model = cm.StudentGroup
@@ -651,9 +681,10 @@ class CourseMessageForm(TranslationStaffForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["expires"] = forms.DateTimeField(
-            label=_("Notification expires"),
-            required=True,
-            input_formats=["%Y-%m-%dT%H:%M"],
-            widget=forms.widgets.DateTimeInput(attrs={"type": "datetime-local"}),
-        )
+        # Currently disabled as notifications for course messages are not used
+        #self.fields["expires"] = forms.DateTimeField(
+            #label=_("Notification expires"),
+            #required=True,
+            #input_formats=["%Y-%m-%dT%H:%M"],
+            #widget=forms.widgets.DateTimeInput(attrs={"type": "datetime-local"}),
+        #)

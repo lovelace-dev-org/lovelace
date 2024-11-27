@@ -138,23 +138,23 @@ def course_messages(request, course, instance):
             message.instance = instance
             message.save()
 
-            session_lang = translation.get_language()
-            notifications = {}
-            for lang, __ in settings.LANGUAGES:
-                if getattr(message, f"title_{lang}"):
-                    translation.activate(lang)
-                    notifications[f"content_{lang}"] = _("New message in {course}: {title}").format(
-                        course=course.name,
-                        title=message.title,
-                    )
-            translation.activate(session_lang)
+            #session_lang = translation.get_language()
+            #notifications = {}
+            #for lang, __ in settings.LANGUAGES:
+                #if getattr(message, f"title_{lang}"):
+                    #translation.activate(lang)
+                    #notifications[f"content_{lang}"] = _("New message in {course}: {title}").format(
+                        #course=course.name,
+                        #title=message.title,
+                    #)
+            #translation.activate(session_lang)
 
-            create_notifications(
-                notifications,
-                form.cleaned_data["expires"],
-                instance=instance.slug,
-                timestamp=message.created.isoformat(),
-            )
+            #create_notifications(
+                #notifications,
+                #form.cleaned_data["expires"],
+                #instance=instance.slug,
+                #timestamp=message.created.isoformat(),
+            #)
 
             users = (
                 instance.enrolled_users.get_queryset()
@@ -175,7 +175,7 @@ def course_messages(request, course, instance):
         "html_id": "system-message-form",
     }
 
-    messages = CourseMessage.objects.filter(instance=instance)
+    messages = CourseMessage.objects.filter(instance=instance).order_by("-created")
 
     t = loader.get_template("courses/course-messages.html")
     c = {
@@ -194,7 +194,7 @@ def remove_course_message(request, course, instance, msgid):
     except CourseMessage.DoesNotExist:
         return HttpResponseNotFound
 
-    delete_notification(instance, message.created.isoformat())
+    # delete_notification(instance, message.created.isoformat())
     message.delete()
     return JsonResponse({"status": "ok"})
 

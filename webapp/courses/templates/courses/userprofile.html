@@ -1,65 +1,125 @@
-<!DOCTYPE html>
-<html>
-<head>
-<title>User profile for {{ username }}</title>
-<style type="text/css">
-form {
-    width: 500px;
-}
-div > label {
-    display: inline-block;
-    clear: both;
-    width: 140px;
-}
-div > input {
-    clear: both;
-    width: 260px;
-}
+{% extends 'courses/base.html' %}
 
-</style>
-</head>
-<body>
-<form action="/profile/save/" method="post">
-  {% csrf_token %}
-  <fieldset>
-    <legend>Basic information</legend>
-    <div>
-      <label for="username">Username</label>
-      <input type="text" name="username" id="username" value="{{ username }}" readonly="readonly" />
+{% load i18n %}
+{% load static %}
+{% load course_tags %}
+{% load form_tags %}
+
+{% block breadcrumb-links %}
+  <li><a href="{% url 'courses:index' %}">{% trans 'Courses' %}</a></li>
+  <div class="separator">»</div>
+  <li>{% trans 'User Profile' %}</li>
+{% endblock %}
+
+{% block page-content %}
+  <h1>{% trans 'User Profile and Settings' %}</h1>
+
+  <div class="form-disclaimer">
+    {% blocktrans %}
+      Please fill any missing profile information. Only accounts with a completed profile
+      can enroll to courses.
+    {% endblocktrans %}
+  </div>
+
+  <form id="user-profile-form"
+        method="POST"
+        enctype="multipart/form-data"
+        action="{{ submit_url }}">
+
+        <div class="form-disclaimer"></div>
+
+        {% csrf_token %}
+
+        {% for field in user_form.hidden_fields %}
+            {{ field }}
+        {% endfor %}
+
+        {% for field in profile_form.hidden_fields %}
+            {{ field }}
+        {% endfor %}
+
+        <table class="edit-form-table">
+          <tbody>
+            {% for field in user_form.visible_fields %}
+              <tr class="edit-form-error-tr">
+                <td colspan="2">{{ field.errors.as_text }}</td>
+              </tr>
+              <tr>
+                <td>
+                    {% if field.field.required %}
+                        <b>{{ field.label_tag }}</b>
+                    {% else %}
+                        {{ field.label_tag }}
+                    {% endif %}
+                </td>
+                <td>{{ field|tabindex_attr }}</td>
+              </tr>
+            {% endfor %}
+            {% for field in profile_form.visible_fields %}
+              <tr class="edit-form-error-tr">
+                <td colspan="2">{{ field.errors.as_text }}</td>
+              </tr>
+              <tr>
+                <td>
+                    {% if field.field.required %}
+                        <b>{{ field.label_tag }}</b>
+                    {% else %}
+                        {{ field.label_tag }}
+                    {% endif %}
+                </td>
+                <td>{{ field|tabindex_attr }}</td>
+              </tr>
+            {% endfor %}
+          <tbody>
+        </table>
+
+        <input type="submit" name="submit" value="{% trans 'Save' %}"></input>
+
+  </form>
+
+  <h2>{% trans 'Data Retention Setting' %}</h2>
+  <div class="form-disclaimer">
+    <div class="paragraph">
+      {% blocktrans %}
+        Data retention setting determines how long Lovelace will keep your data. You have three options.
+        "Your data" in this context refers to your submitted answers, including any attached files,
+        and all evaluation reports linked to them. It also includes your completion statistics. Data is
+        cleaned up periodically.
+      {% endblocktrans %}
     </div>
-    <div>
-      <label for="first_name">First name</label>
-      <input type="text" name="first_name" id="first_name" value="{{ first_name }}" />
-    </div>
-    <div>
-      <label for="last_name">Last name</label>
-      <input type="text" name="last_name" id="last_name" value="{{ last_name }}" />
-    </div>
-    <div>
-      <label for="email">E-mail</label>
-      <input type="email" name="email" id="email" value="{{ email }}" readonly="readonly" />
-    </div>
-  </fieldset>
-  <fieldset>
-    <legend>Identification</legend>
-    <div>
-      <label for="student_id">Student ID</label>
-      <input type="number"
-             name="student_id"
-             id="student_id"
-             value="{{ student_id }}"
-             placeholder="Your student ID number" />
-    </div>
-    <div>
-      <label for="study_program">Study program</label>
-      <input type="text"
-             name="study_program"
-             id="study_program"
-             value="{{ study_program }}"
-             placeholder="What field do you study" />
-    </div>
-  </fieldset>
-  <input type="submit" value="Save changes"/>
-</form>
-</body>
-</html>
+    <ol>
+      <li>{% trans 'Institution policy - anonymized' %}
+        <ul><li>
+          {% blocktrans %}
+            Your data will be kept for {{ data_retention_period }} months after a course has ended,
+            as dictated by the learning institutions's policy. After this period your data will be
+            anonymized, and become unaccessible. Statistics from anonymous data can be used by
+            teachers to improve learning materials. Anonymous data cannot be connected back to
+            your account.
+          {% endblocktrans %}
+        </li></ul>
+      </li>
+      <li>{% trans 'Institution policy - deleted' %}
+        <ul><li>
+          {% blocktrans %}
+            Your data will be kept for {{ data_retention_period }} months after a course has ended,
+            as dictated by the learning institutions's policy. After this period your data will be
+            deleted completely.
+          {% endblocktrans %}
+        </li></ul>
+      </li>
+      <li>
+        {% trans 'Retain indefinitely' %}
+        <ul><li>
+          {% blocktrans %}
+            Your data will be retained indefinitely and you can access it as long as you have
+            access to your user account. You can change this policy to one of the other two
+            at any time. If {{ data_retention_period }} months have passed since the course(s)
+            ended, the change will take effect the next time data is cleaned up.
+          {% endblocktrans %}
+        </li></ul>
+      </li>
+  </div>
+
+{% endblock %}
+

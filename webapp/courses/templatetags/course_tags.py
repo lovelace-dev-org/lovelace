@@ -1,8 +1,10 @@
 import time
 from datetime import datetime
 from django.urls import reverse
+from django.utils.html import mark_safe
 from django import template
 from courses.models import Calendar, StudentGroup
+from courses import markupparser
 from utils.base import get_deadline_urgency
 from utils.formatters import display_name
 
@@ -18,6 +20,16 @@ def full_name(user):
 def enrolled(user, instance):
     return instance.user_enroll_status(user)
 
+@register.simple_tag
+def render_markup(content, instance):
+    context = {
+        "course": instance.course,
+        "instance": instance,
+    }
+    parser = markupparser.MarkupParser()
+    return mark_safe("".join(
+        block[1] for block in parser.parse(content, context=context)
+    ))
 
 # {% content_meta %}
 @register.inclusion_tag("courses/content-meta.html", takes_context=True)

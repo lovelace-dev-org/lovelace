@@ -888,6 +888,16 @@ def enroll(request, course, instance):
     if not request.user.is_authenticated:
         return HttpResponseForbidden(_("Only logged in users can enroll to courses."))
 
+    if request.user.userprofile.completed:
+        response = JsonResponse({
+            "message": _(
+                "Your profile is not completed. "
+                "Please fill in missing information in order to be eligible to enroll."
+            )
+        })
+        response.set_cookie("profile_incomplete", "1", samesite="Strict")
+        return response
+
     status = instance.user_enroll_status(request.user)
 
     if status not in [None, "WITHDRAWN"]:

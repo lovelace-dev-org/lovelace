@@ -2069,3 +2069,7 @@ div.user-menu-separator {
 div.user-menu-separator hr {
     color: #cacaca;
 }
+
+tr.edit-form-error-tr {
+    color: #a33;
+}

@@ -77,6 +77,13 @@ class About(models.Model):
 class UserProfile(models.Model):
     """User profile, which extends the Django's User model."""
 
+    DATA_POLICY_CHOICES = (
+        ("UNSELECTED", _("Not selected")),
+        ("ANONYMIZE", _("Institution policy (anonymize)")),
+        ("DELETE", _("Institution policy (delete)")),
+        ("RETAIN", _("Retain my data")),
+    )
+
     # For more information, see:
     # https://docs.djangoproject.com/en/dev/topics/auth/#storing-additional-information-about-users
     # http://stackoverflow.com/questions/44109/extending-the-user-model-with-custom-fields-in-django
@@ -92,6 +99,18 @@ class UserProfile(models.Model):
     unread_messages = models.PositiveSmallIntegerField(
         verbose_name="Unread message count", default=0,
     )
+    data_policy = models.CharField(
+        max_length=10,
+        verbose_name=_("Data retention preference"),
+        choices = DATA_POLICY_CHOICES,
+        default="UNSELECTED",
+    )
+    completed = models.BooleanField(default=False)
+
+    dyslexic_fonts = models.BooleanField(
+        verbose_name=_("Use dyslexic fonts (OpenDyslexic)."),
+        default=False,
+    )
 
     def __str__(self):
         return f"{self.user}'s profile"
@@ -104,7 +123,21 @@ class UserProfile(models.Model):
             self.id = existing.id
         except UserProfile.DoesNotExist:
             pass
-        models.Model.save(self, *args, **kwargs)
+        if not self.completed:
+            completed = True
+            for field in ["first_name", "last_name", "email"]:
+                if not getattr(self.user, field, ""):
+                    completed = False
+
+            if not self.student_id:
+                completed = False
+
+            if self.data_policy == "UNSELECTED":
+                completed = False
+
+            self.completed = completed
+
+        super().save(*args, **kwargs)
 
 
 def create_user_profile(sender, instance, created, **kwargs):

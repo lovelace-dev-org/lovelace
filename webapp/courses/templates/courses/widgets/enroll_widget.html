@@ -68,6 +68,10 @@
         <div class="paragraph">{% trans 'Enrollments to this course are accepted automatically' %}</div>
         {% endif %}
 
+        <div class="paragraph">
+          {% trans 'Please note that your user profile must be completed before enrolling to courses' %}
+        </div>
+
         <input type="hidden" class="instance-hint" name="instance-slug" value="{{ instance.slug }}">
         <input type="submit" name="submit" value="{% trans 'Send application' %}"></input>
     </form>

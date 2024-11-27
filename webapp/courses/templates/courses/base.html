@@ -19,6 +19,9 @@
     <link rel="stylesheet" href="{% static 'courses/terms.css' %}">
     <link rel="stylesheet" href="{% static 'faq/faq.css' %}">
     <link rel="stylesheet" href="{% static 'assessment/assessment.css' %}">
+    {% if user.userprofile.dyslexic_fonts %}
+      <link rel="stylesheet" href="{% static 'courses/dyslexic.css' %}">
+    {% endif %}
 
     <script src="{% static 'courses/katex.min.js' %}"></script>
     <script src="{% static 'courses/jquery-3.6.4.min.js' %}"></script>
@@ -118,7 +121,9 @@
                 <div class="user-menu-arrow"
                      onclick="$('#user-menu').toggle()"
                      id="user-menu-arrow">
-                  {% if user.userprofile.unread_messages %}
+                  {% if not user.userprofile.completed %}
+                    <span class="attention-icon right-float">!</span>
+                  {% elif user.userprofile.unread_messages %}
                     <span class="attention-icon right-float">
                       {{ user.userprofile.unread_messages }}
                     </span>
@@ -126,7 +131,10 @@
                 </div>
                 <div id="user-menu"><div>
                 <div class="user-settings">
-                  <a href="/profile/">{% trans 'Settings' %}</a>
+                  <a href="/profile/">{% trans 'Profile and Settings' %}</a>
+                  {% if not user.userprofile.completed %}
+                    <span class="attention-icon">!</span>
+                  {% endif %}
                 </div>
                 <div class="user-settings">
                   <a href="/messages/">{% trans 'Messages' %}</a>

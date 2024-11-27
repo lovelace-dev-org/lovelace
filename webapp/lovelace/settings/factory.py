@@ -142,6 +142,8 @@ TEMPLATES = (
     },
 )
 
+DATA_RETENTION_PERIOD = os.getenv("LOVELACE_DATA_RETENTION", 12)
+
 UNEDITABLE_MARKUPS = ["empty", "cleanup", "error", "embedded", "calendar"]
 ORPHAN_PREFIX = "null"
 

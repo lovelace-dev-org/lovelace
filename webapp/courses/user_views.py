@@ -26,7 +26,7 @@ from courses.models import (
     UserRepeatedTemplateExerciseAnswer,
     UserTextfieldExerciseAnswer,
 )
-from courses.forms import GroupConfigForm, GroupInviteForm
+from courses.forms import GroupConfigForm, GroupInviteForm, UserForm, UserProfileForm
 from courses.views import system_messages
 from utils.access import (
     ensure_enrolled_or_staff,
@@ -89,33 +89,6 @@ def logout(request):
 # v
 
 
-def user_profile_save(request):
-    """
-    Save the submitted form.
-    """
-    if not request.user.is_authenticated:
-        return HttpResponseNotFound()
-    if not request.method == "POST":
-        return HttpResponseNotFound()
-    form = request.POST
-    if not set(["first_name", "last_name", "student_id", "study_program"]).issubset(form.keys()):
-        return HttpResponseNotFound()
-
-    profile = UserProfile.objects.get(user=request.user)
-
-    request.user.first_name = form["first_name"][:30]
-    request.user.last_name = form["last_name"][:30]
-    try:
-        profile.student_id = int(form["student_id"])
-    except ValueError:
-        return HttpResponseNotFound()
-    profile.study_program = form["study_program"][:80]
-
-    profile.save()
-    request.user.save()
-    return HttpResponseRedirect("/")
-
-
 def user_profile(request):
     """
     Allow the user to change information in their profile.
@@ -123,18 +96,26 @@ def user_profile(request):
     if not request.user.is_authenticated:
         return HttpResponseNotFound()
 
-    profile = UserProfile.objects.get(user=request.user)
+    if request.method == "POST":
+        user_form = UserForm(request.POST, instance=request.user)
+        profile_form = UserProfileForm(request.POST, instance=request.user.userprofile)
+        if user_form.is_valid() and profile_form.is_valid():
+            user = user_form.save()
+            profile = profile_form.save()
+    else:
+        user_form = UserForm(instance=request.user)
+        profile_form = UserProfileForm(instance=request.user.userprofile)
 
     t = loader.get_template("courses/userprofile.html")
     c = {
-        "username": request.user.username,
-        "first_name": request.user.first_name,
-        "last_name": request.user.last_name,
-        "email": request.user.email,
-        "student_id": profile.student_id,
-        "study_program": profile.study_program,
+        "user_form": user_form,
+        "profile_form": profile_form,
+        "user": request.user,
+        "submit_url": request.path,
+        "data_retention_period": settings.DATA_RETENTION_PERIOD,
     }
-    return HttpResponse(t.render(c, request))
+    response = HttpResponse(t.render(c, request))
+    return response
 
 
 def user(request, user):

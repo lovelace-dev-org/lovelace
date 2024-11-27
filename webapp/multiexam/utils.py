@@ -174,8 +174,6 @@ def validate_exam(exam):
         valid(bool): True if the exam data is valid according to the schema, False otherwise.
         errors(dict): A dictionary of validation errors if the exam data is invalid, empty otherwise.
     """
-    print("Validating")
-
     # Initialize the validator
     v = ExamValidator(exam_schema)
 
@@ -205,7 +203,6 @@ def compare_exams (exams_per_lang, primary_lang):
     If any of these checks fail, the function returns False and a list of error messages describing the differences.
     """
     errors = []
-    print("Comparing")
 
     # Check that the two exams have the same question types
     primary_exam = exams_per_lang.pop(primary_lang)
@@ -261,6 +258,16 @@ def compare_exams (exams_per_lang, primary_lang):
                     continue
 
     return not errors, errors
+
+def render_error(error, error_str=""):
+    for msg in error:
+        if isinstance(msg, str):
+            error_str += f"{msg}\n"
+            return error_str
+
+        for section, section_errors in msg.items():
+            error_str += f"{section} -> "
+            return render_error(section_errors, error_str)
 
 
 

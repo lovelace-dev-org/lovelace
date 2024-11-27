@@ -123,18 +123,26 @@ def open_new_attempt(request, course, instance, content):
             return JsonResponse({"errors": errors}, status=400)
 
         if form.cleaned_data.get("user_id", None):
-            user = User.objects.get(id=form.cleaned_data["user_id"])
+            users = [User.objects.get(id=form.cleaned_data["user_id"])]
         else:
-            user = None
+            if form.cleaned_data.get("individual_exams"):
+                users = (
+                    instance.enrolled_users.get_queryset()
+                    .filter(courseenrollment__enrollment_state="ACCEPTED")
+                )
+            else:
+                users = [None]
         attempt = form.save(commit=False)
         attempt.instance = instance
         attempt.exam = content
-        attempt.questions = generate_attempt_questions(
-            content, instance, form.cleaned_data["question_count"], user
-        )
         attempt.revision = find_latest_version(content).revision_id
-        attempt.user = user
-        attempt.save()
+        for user in users:
+            attempt.pk = None
+            attempt.questions = generate_attempt_questions(
+                content, instance, form.cleaned_data["question_count"], user
+            )
+            attempt.user = user
+            attempt.save()
         return JsonResponse({"status": "ok"})
 
     form = ExamAttemptForm(

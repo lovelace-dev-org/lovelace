@@ -101,6 +101,7 @@ def is_course_staff(user, instance, responsible_only=False):
     return False
 
 
+
 # ^
 # |
 # UTILITY FUNCTIONS

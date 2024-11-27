@@ -87,7 +87,6 @@ urlpatterns = [
     path("user/<user:user>/", user_views.user),
     path("messages/", message_views.view_messages, name="view_messages"),
     path("profile/", user_views.user_profile),
-    path("profile/save/", user_views.user_profile_save),
     # For calendar POST requests
     path(
         "calendar/<calendar:calendar>/<event:event>/",

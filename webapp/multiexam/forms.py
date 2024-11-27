@@ -6,7 +6,7 @@ from django.forms import fields
 from django.utils.translation import gettext as _
 from courses.forms import ExerciseBackendForm
 from multiexam.models import MultipleQuestionExamAttempt, ExamQuestionPool
-from multiexam.utils import validate_exam, compare_exams
+from multiexam.utils import validate_exam, compare_exams, render_error
 from utils.formatters import display_name
 from utils.management import add_translated_charfields, TranslationStaffForm
 
@@ -36,6 +36,10 @@ class ExamAttemptForm(forms.ModelForm):
                 [(None, _(" -- GENERAL EXAM --"))]
                 + [(student.id, display_name(student)) for student in students]
             )
+        )
+        self.fields["individual_exams"] = forms.BooleanField(
+            required=False,
+            label=_("Create invidivual exams for everyone"),
         )
 
 
@@ -70,7 +74,7 @@ class QuestionPoolForm(ExerciseBackendForm):
     def clean(self):
         cleaned_data = super().clean()
         content_per_lang = {}
-        for lang_code, _ in settings.LANGUAGES:
+        for lang_code, __ in settings.LANGUAGES:
             memoryfile = cleaned_data.get(f"fileinfo_{lang_code}")
             try:
                 if memoryfile:
@@ -98,8 +102,11 @@ class QuestionPoolForm(ExerciseBackendForm):
 
             valid, errors = validate_exam(content)
             if not valid:
-                for error in errors:
-                    self.add_error(f"fileinfo_{lang_code}", error)
+                for __, error in errors.items():
+                    self.add_error(
+                        f"fileinfo_{lang_code}",
+                        render_error(error)
+                    )
                 return
 
         if len(content_per_lang.keys()) > 1:

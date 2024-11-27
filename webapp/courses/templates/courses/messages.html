@@ -30,7 +30,7 @@
         <span>{{ msg.created|date:"Y-m-d, H:i" }} - {{ msg.title }}</span>
       </div>
       <div class="item-container collapsed">
-        {{ msg.content }}
+        {% render_markup msg.content instance %}
       </div>
     {% endfor %}
   {% endfor %}
