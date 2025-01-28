@@ -102,8 +102,14 @@ class UserProfile(models.Model):
     data_policy = models.CharField(
         max_length=10,
         verbose_name=_("Data retention preference"),
-        choices = DATA_POLICY_CHOICES,
+        choices=DATA_POLICY_CHOICES,
         default="UNSELECTED",
+    )
+    language_preference = models.CharField(
+        verbose_name=_("Communication language"),
+        choices=settings.LANGUAGES,
+        null=True,
+        default=None,
     )
     completed = models.BooleanField(default=False)
 

@@ -394,7 +394,7 @@ class UserProfileForm(forms.ModelForm):
 
     class Meta:
         model = cm.UserProfile
-        fields = ["student_id", "data_policy", "dyslexic_fonts"]
+        fields = ["student_id", "data_policy", "language_preference", "dyslexic_fonts"]
 
     def clean_data_policy(self):
         data_policy = self.cleaned_data.get("data_policy")
