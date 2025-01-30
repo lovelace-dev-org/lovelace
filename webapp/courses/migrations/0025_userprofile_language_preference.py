@@ -13,6 +13,7 @@ class Migration(migrations.Migration):
             model_name="userprofile",
             name="language_preference",
             field=models.CharField(
+                max_length=24,
                 choices=[("en", "English"), ("fi", "suomi")],
                 default=None,
                 null=True,

@@ -106,6 +106,7 @@ class UserProfile(models.Model):
         default="UNSELECTED",
     )
     language_preference = models.CharField(
+        max_length=24,
         verbose_name=_("Communication language"),
         choices=settings.LANGUAGES,
         null=True,
