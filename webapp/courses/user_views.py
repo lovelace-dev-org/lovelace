@@ -10,7 +10,7 @@ from django.template import loader
 from django.conf import settings
 from django.urls import reverse
 from django.utils.translation import gettext as _
-from django.contrib import auth
+from django.contrib import auth, messages
 from django.shortcuts import redirect
 from django.db.utils import IntegrityError
 
@@ -102,6 +102,7 @@ def user_profile(request):
         if user_form.is_valid() and profile_form.is_valid():
             user = user_form.save()
             profile = profile_form.save()
+            messages.add_message(request, messages.INFO, _("Profile saved."))
     else:
         user_form = UserForm(instance=request.user)
         profile_form = UserProfileForm(instance=request.user.userprofile)
