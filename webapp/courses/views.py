@@ -309,6 +309,8 @@ def _page_context(request, course, instance, content, pagenum=None):
 @system_messages
 def content(request, course, instance, content, pagenum=None):
     c = _page_context(request, course, instance, content, pagenum=None)
+    if not isinstance(c, dict):
+        return c
     t = loader.get_template("courses/contentpage.html")
     return HttpResponse(t.render(c, request))
 
