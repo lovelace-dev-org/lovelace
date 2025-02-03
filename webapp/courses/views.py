@@ -890,7 +890,7 @@ def enroll(request, course, instance):
     if not request.user.is_authenticated:
         return HttpResponseForbidden(_("Only logged in users can enroll to courses."))
 
-    if request.user.userprofile.completed:
+    if not request.user.userprofile.completed:
         response = JsonResponse({
             "message": _(
                 "Your profile is not completed. "
