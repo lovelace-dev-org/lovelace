@@ -15,12 +15,6 @@ import subprocess
 
 from django.conf import settings
 
-_CONCURRENT_PROCESSES = 40
-_NUMBER_OF_FILES = 100
-_FILE_SIZE = 4 * (1024**2)  # 4 MiB
-_CPU_TIME = 20
-_MEMORY_SIZE = 100 * (1024 ** 2) # 100 MiB
-
 
 logger = logging.getLogger(__name__)
 
@@ -32,10 +26,10 @@ def get_uid_gid(username):
 
 
 def get_demote_process_fun(
-    concurrent_processes=_CONCURRENT_PROCESSES,
-    number_of_files=_NUMBER_OF_FILES,
-    file_size=_FILE_SIZE,
-    cpu_time=_CPU_TIME,
+    concurrent_processes=settings.WORKER_CONCURRENCY,
+    number_of_files=settings.WORKER_NO_FILES,
+    file_size=settings.WORKER_FILE_SIZE,
+    cpu_time=settings.WORKER_CPU_TIME,
 ):
     """
     Creates and returns a function that demotes the process based on given
@@ -101,11 +95,11 @@ def drop_privileges():
         )
 
 def limit_resources(
-    concurrent_processes=_CONCURRENT_PROCESSES,
-    number_of_files=_NUMBER_OF_FILES,
-    file_size=_FILE_SIZE,
-    cpu_time=_CPU_TIME,
-    memory=_MEMORY_SIZE,
+    concurrent_processes=settings.WORKER_CONCURRENCY,
+    number_of_files=settings.WORKER_NO_FILES,
+    file_size=settings.WORKER_FILE_SIZE,
+    cpu_time=settings.WORKER_CPU_TIME,
+    memory=settings.WORKER_MEMORY,
 ):
     """
     Use resource.setrlimit to define soft and hard limits for different
