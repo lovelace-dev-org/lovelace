@@ -1596,8 +1596,29 @@ section.content {
         div.calendar {
             width: 50%;
         }
-        div.calendar fieldset {
+        div.calendar-date-container {
+            margin-top: 10px;
+            background: #e7e7e7;
+            border-radius: 8px;
             padding: 4px;
+        }
+        div.calendar-disclaimer {
+            border: 2px solid #f66;
+            background: #fe9;
+            color: #922;
+            padding: 4px;
+        }
+
+        div.calendar-date-heading {
+            font-weight: bold;
+            background: linear-gradient(to bottom, #9c9, #8b8);
+            border-radius: 4px;
+            padding-left: 4px;
+        }
+
+        div.calendar fieldset {
+            padding: 8px;
+            border: 0px;
         }
         div.calendar legend {
             font-size: 1.0rem;

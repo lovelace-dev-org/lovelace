@@ -1078,6 +1078,12 @@ class Calendar(models.Model, ExportImportMixin):
         verbose_name="Name for reference in content", max_length=200, unique=True
     )
     allow_multiple = models.BooleanField(verbose_name="Allow multiple reservation", default=False)
+    lock_period = models.PositiveIntegerField(
+        verbose_name=_("Reservation lock time (hours)"),
+        null=True,
+        blank=True,
+    )
+    lock_cancel = models.BooleanField(verbose_name=_("Lock canceling as well"), default=False)
     related_content = models.ForeignKey(
         "ContentPage", on_delete=models.SET_NULL, null=True, blank=True
     )
@@ -1108,6 +1114,10 @@ class CalendarDate(models.Model):
     end_time = models.DateTimeField(verbose_name="Ends at")
     reservable_slots = models.IntegerField(verbose_name="Amount of reservable slots")
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.locked = False
+
     def __str__(self):
         return self.event_name
 
@@ -1116,6 +1126,12 @@ class CalendarDate(models.Model):
 
     def duration(self):
         return self.end_time - self.start_time
+
+    def is_locked(self):
+        if self.calendar.lock_period is not None:
+            now = datetime.datetime.now()
+            if now + datetime.timedelta(hours=self.calendar.lock_period) > self.start_time:
+                self.locked = True
 
 
 class CalendarReservation(models.Model):
@@ -3744,5 +3760,3 @@ def get_import_list():
         InstanceIncludeFileToExerciseLink,
         TermToInstanceLink,
     ]
-
-

@@ -1,3 +1,4 @@
+import datetime
 from django.conf import settings
 from django.db import transaction
 from django.http import (
@@ -86,7 +87,9 @@ def calendar_config(request, course, instance, calendar):
     available_content = content_access.defer("content").all()
 
     if request.method == "POST":
-        form = CalendarConfigForm(request.POST, available_content=available_content)
+        form = CalendarConfigForm(
+            request.POST, available_content=available_content, instance=calendar
+        )
         if not form.is_valid():
             errors = form.errors.as_json()
             return JsonResponse({"errors": errors}, status=400)
@@ -95,8 +98,8 @@ def calendar_config(request, course, instance, calendar):
             content = ContentPage.objects.get(id=form.cleaned_data["related_content"])
         except ContentPage.DoesNotExist:
             content = None
+        calendar = form.save(commit=False)
         calendar.related_content = content
-        calendar.allow_multiple = form.cleaned_data["allow_multiple"]
         calendar.save()
         return JsonResponse({"status": "ok"})
 
@@ -131,19 +134,21 @@ def message_reservers(request, course, instance, calendar):
         use_bcc=True,
     )
 
-
 def calendar_reservation(request, calendar, event):
     if not request.user.is_authenticated:
         return HttpResponseNotFound()
     if not request.method == "POST":
         return HttpResponseNotFound()
     form = request.POST
+    locked = event.is_locked()
 
     with transaction.atomic():
         reservations = CalendarReservation.objects.filter(calendar_date=event)
         reserved_slots = reservations.count()
         total_slots = event.reservable_slots
         if "reserve" in form.keys() and int(form["reserve"]) == 1:
+            if event.locked:
+                return JsonResponse({"msg": _("Reservation for this event is locked")}, status=400)
             if reserved_slots >= total_slots:
                 return JsonResponse({"msg": _("This event is already full.")}, status=400)
             user_reservations = reservations.filter(user=request.user)
@@ -159,10 +164,13 @@ def calendar_reservation(request, calendar, event):
                     "msg": _("Slot reserved!"),
                     "slots": f"{reserved_slots + 1} / {total_slots}",
                     "full": reserved_slots + 1 >= total_slots,
+                    "locked": event.locked,
                     "can_reserve": calendar.allow_multiple,
                 }
             )
         if "reserve" in form.keys() and int(form["reserve"]) == 0:
+            if event.locked and calendar.lock_cancel:
+                return JsonResponse({"msg": _("Canceling this reservation is locked")}, status=400)
             user_reservations = CalendarReservation.objects.filter(
                 calendar_date=event, user=request.user
             )
@@ -173,6 +181,7 @@ def calendar_reservation(request, calendar, event):
                         "msg": _("Reservation cancelled."),
                         "slots": f"{reserved_slots - 1} / {total_slots}",
                         "full": reserved_slots - 1 >= total_slots,
+                        "locked": event.locked,
                         "can_reserve": True,
                     }
                 )
@@ -181,6 +190,7 @@ def calendar_reservation(request, calendar, event):
                     "msg": _("Reservation already cancelled."),
                     "slots": f"{reserved_slots} / {total_slots}",
                     "full": reserved_slots >= total_slots,
+                    "locked": event.locked,
                     "can_reserve": True,
                 }
             )

@@ -1,3 +1,4 @@
+import itertools
 import time
 from datetime import datetime
 from django.urls import reverse
@@ -148,66 +149,73 @@ def calendar(context, calendar_data):
         .first()
     )
 
-    cal_dates = calendar.calendardate_set.get_queryset().order_by("start_time")
-    calendar_reservations = []
+    events = calendar.calendardate_set.get_queryset().order_by("start_time")
+    calendar_reservations = {}
 
     user = context["user"]
     user_has_slot = False
     reserved_event_ids = []
 
-    for cal_date in cal_dates:
-        date_reservations = []
-        for reservation in cal_date.calendarreservation_set.get_queryset():
-            entry = {}
-            if context.get("course_staff"):
-                entry["reserver"] = display_name(reservation.user)
-                try:
-                    group = StudentGroup.objects.get(
-                        members=reservation.user, instance=context["instance"]
-                    )
-                except StudentGroup.DoesNotExist:
-                    entry["group"] = "-"
-                else:
-                    memberlist = []
-                    for member in group.members.get_queryset().exclude(id=reservation.user.id):
-                        memberlist.append(display_name(member))
-                    entry["group"] = f"({group.name})\n"
-                    entry["group"] += "\n".join(memberlist)
+    def get_event_date(event):
+        return event.start_time.date()
 
-                if calendar.related_content:
-                    entry["answers_url"] = reverse(
-                        "courses:show_answers",
+    for event_date, cal_dates in itertools.groupby(events, get_event_date):
+        calendar_reservations[event_date] = []
+        for cal_date in cal_dates:
+            cal_date.is_locked()
+            date_reservations = []
+            for reservation in cal_date.calendarreservation_set.get_queryset():
+                entry = {}
+                if context.get("course_staff"):
+                    entry["reserver"] = display_name(reservation.user)
+                    try:
+                        group = StudentGroup.objects.get(
+                            members=reservation.user, instance=context["instance"]
+                        )
+                    except StudentGroup.DoesNotExist:
+                        entry["group"] = "-"
+                    else:
+                        memberlist = []
+                        for member in group.members.get_queryset().exclude(id=reservation.user.id):
+                            memberlist.append(display_name(member))
+                        entry["group"] = f"({group.name})\n"
+                        entry["group"] += "\n".join(memberlist)
+
+                    if calendar.related_content:
+                        entry["answers_url"] = reverse(
+                            "courses:show_answers",
+                            kwargs={
+                                "user": reservation.user,
+                                "course": context["course"],
+                                "instance": context["instance"],
+                                "exercise": calendar.related_content,
+                            },
+                        )
+                    else:
+                        entry["answers_url"] = reverse(
+                            "teacher:student_completion",
+                            kwargs={
+                                "user": reservation.user,
+                                "course": context["course"],
+                                "instance": context["instance"],
+                            },
+                        )
+                    entry["message_url"] = reverse(
+                        "courses:send_message",
                         kwargs={
                             "user": reservation.user,
                             "course": context["course"],
                             "instance": context["instance"],
-                            "exercise": calendar.related_content,
                         },
                     )
-                else:
-                    entry["answers_url"] = reverse(
-                        "teacher:student_completion",
-                        kwargs={
-                            "user": reservation.user,
-                            "course": context["course"],
-                            "instance": context["instance"],
-                        },
-                    )
-                entry["message_url"] = reverse(
-                    "courses:send_message",
-                    kwargs={
-                        "user": reservation.user,
-                        "course": context["course"],
-                        "instance": context["instance"],
-                    },
-                )
 
-            date_reservations.append(entry)
-            if reservation.user == user:
-                user_has_slot = True
-                reserved_event_ids.append(cal_date.id)
+                date_reservations.append(entry)
+                if reservation.user == user:
+                    user_has_slot = True
+                    reserved_event_ids.append(cal_date.id)
 
-        calendar_reservations.append((cal_date, date_reservations))
+            calendar_reservations[event_date].append((cal_date, date_reservations))
+
 
     can_reserve = True
     if user_has_slot and not calendar.allow_multiple:

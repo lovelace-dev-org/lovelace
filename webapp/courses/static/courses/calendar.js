@@ -65,7 +65,7 @@ const cal = {
         const reservation_field = form.children("input[name=\"reserve\"]")
         const submit_button = $(elem)
         const reservation_result = $(elem).parent().siblings(".reservation-result")
-        const calendar = form.parent()
+        const calendar = form.parent().parent()
 
         if (reservation_field.val() === "1") {
             reservation_result.html("Reservation sent, awaiting for confirmation.")
@@ -82,8 +82,9 @@ const cal = {
             success: function (data, text_status, jqxhr_obj) {
                 reservation_result.html(data.msg)
                 reservation_result.removeClass("collapsed")
-                calendar.children("form").each(function () {
-                    if (data.can_reserve) {
+                calendar.children("div").children("form").each(function () {
+                    const locked = $(this).find("div.datetime").hasClass("event-full")
+                    if (data.can_reserve && !locked) {
                         $(this).find("input[type='submit']").attr("disabled", false)
                     } else {
                         $(this).find("input[type='submit']").attr("disabled", true)
@@ -93,19 +94,19 @@ const cal = {
                 slot_span.html(data.slots)
                 if (reservation_field.val() === "1") {
                     submit_button.val(submit_button.attr("data-cancel-text"))
+                    submit_button.attr("disabled", false)
                     reservation_field.val("0")
-                    if (data.full) {
+                    if (data.full || data.locked) {
                         form.find("div.datetime").addClass("event-full")
                     }
                 } else {
                     submit_button.val(submit_button.attr("data-reserve-text"))
                     reservation_field.val("1")
-                    if (!data.full) {
+                    if (!data.full && !data.locked) {
                         form.find("div.datetime").removeClass("event-full")
+                        submit_button.attr("disabled", false)
                     }
                 }
-
-                submit_button.attr("disabled", false)
             },
             error: function (xhr, status, type) {
                 reservation_result.html(JSON.parse(xhr.responseTextt).msg)
