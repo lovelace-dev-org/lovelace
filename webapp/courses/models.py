@@ -2300,15 +2300,6 @@ class FileUploadExercise(ContentPage):
             extra_settings = FileExerciseSettings(exercise=self)
             extra_settings.save()
 
-        parents = ContentPage.objects.filter(embedded_pages=self).distinct()
-        for instance in CourseInstance.objects.filter(
-            Q(contentgraph__content=self) | Q(contentgraph__content__embedded_pages=self),
-            frozen=False,
-        ).distinct():
-            self.update_embedded_links(instance)
-            for parent in parents:
-                parent.regenerate_cache(instance)
-
     def save_answer(self, user, ip, answer, files, instance, revision):
         answer_object = UserFileUploadExerciseAnswer(
             exercise_id=self.id,

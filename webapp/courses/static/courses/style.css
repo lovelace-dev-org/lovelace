@@ -1958,6 +1958,10 @@ span.confirm-tag {
     visibility: hidden;
 }
 
+span.light-text {
+    color: #b7b7b7;
+}
+
 .tag--is-visible {
     visibility: visible;
 }

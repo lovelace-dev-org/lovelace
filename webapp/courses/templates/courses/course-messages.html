@@ -23,7 +23,7 @@
 {% block page-content %}
   {% for msg in course_msgs %}
     <div class="item-header interactive" onclick="expand_next_div(this)">
-      <span>{{ msg.title }}</span>
+      <span>{{ msg.title }}</span> <span class="light-text">({{ msg.created }})</span>
       <button type="button"
               class="staff-base-button right-float delete-button"
               onclick="messaging.remove_message(event, this)"

@@ -48,6 +48,7 @@ from feedback.models import (
     MultipleChoiceFeedbackAnswer,
 )
 from utils.access import determine_access
+from utils.content import regenerate_nearest_cache
 from utils.files import generate_download_response
 
 # Forms
@@ -379,6 +380,8 @@ def save_file_upload_exercise(
     for command_id, command_obj in edited_commands.items():
         command_obj.ordinal_number -= command_count + 1
         command_obj.save()
+
+    regenerate_nearest_cache(exercise)
 
     return {
         "hints": convert_new_objects_to_json(edited_hints),
