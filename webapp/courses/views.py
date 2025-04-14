@@ -7,6 +7,7 @@ import logging
 import os
 from html import escape
 from collections import namedtuple
+from operator import attrgetter
 
 import redis
 from django.http import (
@@ -95,8 +96,13 @@ logger = logging.getLogger(__name__)
 
 @system_messages
 def index(request):
-    course_list = Course.objects.order_by("name").all()
+    # This cannot be ordered on DB level because of translations
+    course_list = list(Course.objects.all())
 
+    def name_key(course):
+        return course.name.lower()
+
+    course_list.sort(key=name_key)
     t = loader.get_template("courses/index.html")
     c = {
         "course_list": course_list,

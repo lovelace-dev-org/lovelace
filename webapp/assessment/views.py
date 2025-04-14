@@ -475,7 +475,7 @@ def submission_assessment(request, course, instance, exercise, user):
         "exercise": exercise,
         "parent": parent,
         "single_linked": single_linked,
-        "user": user,
+        "student": user,
         "sheet": sheet,
         "bullets_by_section": by_section,
         "assessment": assessment,

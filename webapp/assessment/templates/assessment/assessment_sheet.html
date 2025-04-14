@@ -21,8 +21,8 @@
   <div class="separator">»</div>
   <li><a href="{% url 'assessment:view_submissions' course instance exercise %}">{% trans 'Submissions' %}</a></li>
   <div class="separator">»</div>
-  <li><a href="{% url 'assessment:submission_assessment' course instance exercise user %}">
-    {% blocktrans with username=user.username exercise_name=exercise.name %}
+  <li><a href="{% url 'assessment:submission_assessment' course instance exercise student %}">
+    {% blocktrans with username=student.username exercise_name=exercise.name %}
         {{ username }}’s assessment for {{ exercise_name }}
     {% endblocktrans %}
   </a></li>
@@ -31,15 +31,15 @@
 
 {% block page-content %}
     <h1>
-        {% blocktrans with title=sheet.title username=user.username exercise_name=exercise.name %}
-            {{ title }} of {{ username }}'s answer to {{ exercise_name }} 
+        {% blocktrans with title=sheet.title username=student.username exercise_name=exercise.name %}
+            {{ title }} of {{ username }}'s answer to {{ exercise_name }}
         {% endblocktrans %}
     </h1>
 
     <form class="assessment-form"
           method="POST"
           enctype="multipart/form-data"
-          action="{% url 'assessment:submission_assessment' course instance exercise user %}">
+          action="{% url 'assessment:submission_assessment' course instance exercise student %}">
           
         {% csrf_token %}
     

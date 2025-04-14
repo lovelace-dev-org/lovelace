@@ -83,8 +83,8 @@ def faq(context):
 @register.filter
 def answer_date(t):
     if t.date() == datetime.now().date():
-        return f"{t:%H:%M:%S}"
-    return f"{t:%Y-%m-%d}"
+        return mark_safe(f'<span>{t:%H:%M:%S}</span>')
+    return mark_safe(f'<span title="{t:%H:%M:%S}">{t:%Y-%m-%d}</span>')
 
 
 # {% event_duration %}
