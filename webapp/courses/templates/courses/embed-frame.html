@@ -162,7 +162,7 @@
     {% else %}
       {% if course_staff and revision is None and block_type != "cleanup" %}
         <span>
-          {% if block_type not in uneditable_markups %}
+          {% if block_type in editable_markups %}
             <a class="staff-only collapsed"
               href="{{ meta.edit_content_url }}"
               onclick="editing.show_widget_panel(event, this)"

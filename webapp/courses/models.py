@@ -33,6 +33,8 @@ from reversion.models import Version
 import pygments
 import magic
 
+from courses import blockparser
+from courses import markupparser
 import feedback.models
 from lovelace import plugins as lovelace_plugins
 from utils.data import (
@@ -1347,7 +1349,7 @@ class ContentPage(models.Model, ExportImportMixin):
         """
 
         # This import needs to be here until circular import issues are fully sorted out.
-        from courses import markupparser
+        # from courses import markupparser
 
         parser = markupparser.MarkupParser()
 
@@ -1377,7 +1379,7 @@ class ContentPage(models.Model, ExportImportMixin):
             segment = ""
             pages = []
             for chunk in markup_gen:
-                if isinstance(chunk, markupparser.PageBreak):
+                if chunk[0] == "pagebreak":
                     pages.append(blocks)
                     blocks = []
                 else:
@@ -1419,8 +1421,6 @@ class ContentPage(models.Model, ExportImportMixin):
         e.g. ["extra", "rendered content string", -1, 0]
         """
 
-        from courses import markupparser
-
         embedded_content = []
         parser = markupparser.MarkupParser()
         markup_gen = parser.parse(self.content, context=context)
@@ -1440,8 +1440,6 @@ class ContentPage(models.Model, ExportImportMixin):
         child models are expected to have the public version of this method that calls this method,
         and then makes its own additions to the question box as needed.
         """
-
-        from courses import blockparser
 
         question = blockparser.parseblock(escape(self.question, quote=False), context)
         return question
@@ -1470,8 +1468,6 @@ class ContentPage(models.Model, ExportImportMixin):
         within the page content and creates EmbeddedLink and CourseMediaLink
         objects based on links found in the markup.
         """
-        from courses import markupparser
-
         page_links = set()
         media_links = set()
 

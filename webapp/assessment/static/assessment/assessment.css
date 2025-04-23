@@ -103,6 +103,10 @@ table.assessment-side-table th:nth-child(3) {
     width: 12%;
 }
 
+table.assessment-side-table .center-align {
+    text-align: center;
+}
+
 
 
 form.assessment-form table.assessment-table tbody tr:last-child,

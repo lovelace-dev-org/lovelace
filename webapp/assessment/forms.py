@@ -3,8 +3,12 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.forms import fields
 from django.utils.translation import gettext as _
+import courses.models as cm
+from courses import markupparser
+from courses.edit_forms import LineEditMixin, EmbeddedObjectIncludeForm
 from assessment.models import AssessmentBullet, AssessmentSection
-from utils.management import add_translated_charfields, TranslationStaffForm
+from assessment.markup import AssessmentMarkup
+from utils.management import add_translated_charfields, TranslationStaffForm, CourseContentAdmin
 
 
 class AddAssessmentForm(forms.Form):
@@ -141,3 +145,23 @@ class AssessmentBulletForm(TranslationStaffForm):
     class Meta:
         model = AssessmentBullet
         fields = ["title", "tooltip", "point_value"]
+
+
+class AssessmentIncludeForm(LineEditMixin, EmbeddedObjectIncludeForm):
+
+    _name = "assessment"
+
+    class Meta:
+        ref_field = "exercise_slug"
+        markup = AssessmentMarkup
+
+    def get_choices(self):
+        return sorted(((page.slug, page.name)
+            for page in CourseContentAdmin.content_access_list(
+                self._context["request"], cm.ContentPage
+            ) if page.manually_evaluated
+        ))
+
+
+def register_edit_forms():
+    markupparser.MarkupParser.register_form("assessment", "include", AssessmentIncludeForm)

@@ -13,10 +13,11 @@ from django.template import loader
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from modeltranslation.forms import TranslationModelForm
-from utils.formatters import display_name
-from utils.management import add_translated_charfields, TranslationStaffForm, get_prefixed_slug
+
 from courses import blockparser
 from courses import markupparser
+from utils.formatters import display_name
+from utils.management import add_translated_charfields, TranslationStaffForm, get_prefixed_slug
 import courses.models as cm
 
 
@@ -94,7 +95,7 @@ class ContentForm(forms.ModelForm):
                 missing_media.append(link)
                 messages.append(f"Media matching {link} does not exist")
 
-        term_re = blockparser.tags["term"].re
+        term_re = blockparser.BlockParser.tags["term"].regexp
 
         term_links = {match.group("term_name") for match in term_re.finditer(value)}
 

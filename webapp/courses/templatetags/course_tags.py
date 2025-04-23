@@ -126,7 +126,7 @@ def embed_frame(context, content_data):
         "evaluation": evaluation,
         "score": quotient * content_data["max_points"],
         "max_points": content_data["max_points"],
-        "uneditable_markups": context["uneditable_markups"],
+        "editable_markups": context["editable_markups"],
     }
 
 @register.inclusion_tag("courses/embed_staff_extra.html", takes_context=True)

@@ -32,8 +32,8 @@ from django.utils.translation import gettext as _
 from reversion.models import Version
 
 from lovelace.celery import app as celery_app
-import courses.tasks as rpc_tasks
 from courses import markupparser
+import courses.tasks as rpc_tasks
 from courses import blockparser
 from courses.models import (
     About,
@@ -290,7 +290,7 @@ def _page_context(request, course, instance, content, pagenum=None):
         "revision": revision,
         "enrolled": enrolled,
         "course_staff": course_staff,
-        "uneditable_markups": settings.UNEDITABLE_MARKUPS,
+        "editable_markups": markupparser.MarkupParser.editable_markups(),
         "edit_content_url": reverse("courses:content_edit_form", kwargs={
             "course": course,
             "instance": instance,

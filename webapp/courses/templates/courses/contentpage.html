@@ -63,7 +63,7 @@
   {% for block_type, block_data, line_idx, line_count in content_blocks %}
     {% if course_staff and revision is None and block_type != "cleanup" %}
       <span>
-        {% if block_type not in uneditable_markups %}
+        {% if block_type in editable_markups %}
           <a class="staff-only collapsed"
             href="{{ edit_content_url }}"
             onclick="editing.show_widget_panel(event, this)"
@@ -84,7 +84,7 @@
     {% endif %}
     {% if block_type == "calendar" %}
       {% calendar block_data %}
-    {% elif block_type == "embedded" %}
+    {% elif block_type == "embedded_page" %}
       {% embed_frame block_data %}
     {% else %}
       {{ block_data|safe }}

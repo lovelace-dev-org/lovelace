@@ -5,6 +5,7 @@ from django.http import HttpResponseNotFound
 from django.template import loader
 from django.utils import translation
 from django.utils.translation import gettext as _
+
 from courses import markupparser
 from faq.models import FaqQuestion, FaqToInstanceLink
 from faq.forms import FaqQuestionForm, FaqLinkForm

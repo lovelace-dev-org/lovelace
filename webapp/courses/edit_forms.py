@@ -23,10 +23,16 @@ from utils.management import (
 from courses import blockparser
 from courses import markupparser
 import courses.models as cm
+import courses.markup
+
+class UnsupportedOperation(Exception):
+
+    def __init__(self, action):
+        self.action = action
 
 
 def parse_line(line, markup_cls, context):
-    pat = re.compile(markup_cls.regexp)
+    pat = markup_cls.regexp or re.compile(r"")
     match_obj = pat.match(line)
     return match_obj.groupdict(default="")
 
@@ -35,9 +41,12 @@ def get_form(block_type, position, context, action, form_post=None, form_files=N
     if action == "delete":
         form_class = LineDeleteForm
     elif action == "include":
-        form_class = markupparser.MarkupParser.include_forms[block_type]
+        form_class = markupparser.MarkupParser.include_forms.get(block_type, None)
     else:
-        form_class = markupparser.MarkupParser.edit_forms[block_type]
+        form_class = markupparser.MarkupParser.edit_forms.get(block_type, None)
+
+    if form_class is None:
+        raise UnsupportedOperation(action)
 
     lines = context["content"].content.splitlines()
     revision=find_latest_version(context["content"]).revision_id
@@ -270,7 +279,7 @@ class MarkupEditForm(forms.Form):
 class CodeEditForm(LineEditMixin, MarkupEditForm):
 
     _name = "code"
-    _markup = markupparser.CodeMarkup
+    _markup = courses.markup.CodeMarkup
     highlight = forms.CharField(required=False)
 
     def __init__(self, *args, **kwargs):
@@ -286,7 +295,7 @@ class CodeEditForm(LineEditMixin, MarkupEditForm):
 class HeadingEditForm(LineEditMixin, MarkupEditForm):
 
     _name = "heading"
-    _markup = markupparser.HeadingMarkup
+    _markup = courses.markup.HeadingMarkup
     level = forms.IntegerField(required=True)
 
     def get_initial_for_field(self, field, field_name):
@@ -311,7 +320,7 @@ class HeadingEditForm(LineEditMixin, MarkupEditForm):
 class ListEditForm(LineEditMixin, MarkupEditForm):
 
     _name = "list"
-    _markup = markupparser.ListMarkup
+    _markup = courses.markup.ListMarkup
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -326,7 +335,7 @@ class ListEditForm(LineEditMixin, MarkupEditForm):
 class ParagraphEditForm(LineEditMixin, MarkupEditForm):
 
     _name = "paragraph"
-    _markup = markupparser.ParagraphMarkup
+    _markup = courses.markup.ParagraphMarkup
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -341,7 +350,7 @@ class ParagraphEditForm(LineEditMixin, MarkupEditForm):
 class SeparatorEditForm(LineEditMixin, MarkupEditForm):
 
     _name = "separator"
-    _markup = markupparser.SeparatorMarkup
+    _markup = courses.markup.SeparatorMarkup
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -350,7 +359,7 @@ class SeparatorEditForm(LineEditMixin, MarkupEditForm):
 class SvgEditForm(LineEditMixin, MarkupEditForm):
 
     _name = "svg"
-    _markup = markupparser.SvgMarkup
+    _markup = courses.markup.SvgMarkup
     svg_width = forms.IntegerField(required=True)
     svg_height = forms.IntegerField(required=True)
 
@@ -367,7 +376,7 @@ class SvgEditForm(LineEditMixin, MarkupEditForm):
 class TableEditForm(LineEditMixin, MarkupEditForm):
 
     _name = "table"
-    _markup = markupparser.TableMarkup
+    _markup = courses.markup.TableMarkup
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -382,7 +391,7 @@ class TableEditForm(LineEditMixin, MarkupEditForm):
 class TeXEditForm(LineEditMixin, MarkupEditForm):
 
     _name = "tex"
-    _markup = markupparser.TeXMarkup
+    _markup = courses.markup.TeXMarkup
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -488,14 +497,14 @@ class ScriptFileInline(TranslationStaffForm):
 class ScriptEditForm(LineEditMixin, EmbeddedObjectEditForm):
 
     _name = "script"
-    _markup = markupparser.EmbeddedScriptMarkup
+    _markup = courses.markup.EmbeddedScriptMarkup
     has_inline = True
 
     class Meta:
         model = cm.File
         fields = ["fileinfo"]
         ref_field = "script_slug"
-        markup = markupparser.EmbeddedScriptMarkup
+        markup = courses.markup.EmbeddedScriptMarkup
 
     def get_initial_for_field(self, field, field_name):
         try:
@@ -626,7 +635,7 @@ class ImageEditForm(LineEditMixin, EmbeddedObjectEditForm):
         model = cm.Image
         fields = ["description", "fileinfo"]
         ref_field = "image_name"
-        markup = markupparser.ImageMarkup
+        markup = courses.markup.ImageMarkup
 
     alt_text = forms.CharField(required=False)
     caption_text = forms.CharField(required=False)
@@ -639,7 +648,7 @@ class ImageIncludeForm(LineEditMixin, EmbeddedObjectIncludeForm):
 
     class Meta:
         ref_field = "image_name"
-        markup = markupparser.ImageMarkup
+        markup = courses.markup.ImageMarkup
 
     def get_choices(self):
         return sorted(((image.name, image.name)
@@ -657,7 +666,7 @@ class FileEditForm(LineEditMixin, EmbeddedObjectEditForm):
         model = cm.File
         fields = ["typeinfo", "fileinfo", "download_as"]
         ref_field = "file_slug"
-        markup = markupparser.EmbeddedFileMarkup
+        markup = courses.markup.EmbeddedFileMarkup
 
 
     def __init__(self, *args, **kwargs):
@@ -671,7 +680,7 @@ class FileIncludeForm(LineEditMixin, EmbeddedObjectIncludeForm):
 
     class Meta:
         ref_field = "file_slug"
-        markup = markupparser.EmbeddedFileMarkup
+        markup = courses.markup.EmbeddedFileMarkup
 
     def get_choices(self):
         return sorted(((f.name, f.name)
@@ -689,7 +698,7 @@ class VideoEditForm(LineEditMixin, EmbeddedObjectEditForm):
         model = cm.VideoLink
         fields = ["description", "link"]
         ref_field = "video_slug"
-        markup = markupparser.EmbeddedVideoMarkup
+        markup = courses.markup.EmbeddedVideoMarkup
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -703,7 +712,7 @@ class VideoIncludeForm(LineEditMixin, EmbeddedObjectIncludeForm):
 
     class Meta:
         ref_field = "video_slug"
-        markup = markupparser.EmbeddedVideoMarkup
+        markup = courses.markup.EmbeddedVideoMarkup
 
     def get_choices(self):
         return sorted(((video.name, video.name)
@@ -720,7 +729,7 @@ class TaskCreateForm(LineEditMixin, TranslationStaffForm):
     class Meta:
         model = cm.ContentPage
         fields = ["name"]
-        markup = markupparser.EmbeddedPageMarkup
+        markup = courses.markup.EmbeddedPageMarkup
 
     def save(self, commit=True):
         instance = super().save(commit=False)
@@ -754,7 +763,7 @@ class TaskIncludeForm(LineEditMixin, EmbeddedObjectIncludeForm):
 
     class Meta:
         ref_field = "page_slug"
-        markup = markupparser.EmbeddedPageMarkup
+        markup = courses.markup.EmbeddedPageMarkup
 
     def get_choices(self):
         return sorted(((page.slug, page.name)
@@ -771,7 +780,7 @@ class CalendarCreateForm(LineEditMixin, forms.ModelForm):
     class Meta:
         model = cm.Calendar
         fields = ["name", "allow_multiple"]
-        markup = markupparser.CalendarMarkup
+        markup = courses.markup.CalendarMarkup
 
     def save(self, commit=True):
         instance = super().save(commit=False)
@@ -791,6 +800,19 @@ class CalendarCreateForm(LineEditMixin, forms.ModelForm):
 
 
 class BlockTypeSelectForm(forms.Form):
+
+    def clean(self):
+        cleaned_data = super().clean()
+        action = cleaned_data["mode"]
+        block_type = cleaned_data["block_type"]
+        if action == "create" and block_type not in markupparser.MarkupParser.edit_forms:
+            self.add_error(
+                "block_type", _("Selected block type only supports include.")
+            )
+        elif action == "include" and block_type not in markupparser.MarkupParser.include_forms:
+            self.add_error(
+                "block_type", _("Selected block type only supports create.")
+            )
 
     def __init__(self, *args, **kwargs):
         line_idx = kwargs.pop("line_idx", 0)
@@ -865,27 +887,22 @@ class TermifyForm(forms.Form):
 
 
 
-
-markupparser.MarkupParser.register_form("calendar", "edit", CalendarCreateForm)
-markupparser.MarkupParser.register_form("code", "edit", CodeEditForm)
-markupparser.MarkupParser.register_form("embedded_page", "edit", TaskCreateForm)
-markupparser.MarkupParser.register_form("embedded_page", "include", TaskIncludeForm)
-markupparser.MarkupParser.register_form("file", "edit", FileEditForm)
-markupparser.MarkupParser.register_form("file", "include", FileIncludeForm)
-markupparser.MarkupParser.register_form("heading", "edit", HeadingEditForm)
-markupparser.MarkupParser.register_form("image", "edit", ImageEditForm)
-markupparser.MarkupParser.register_form("image", "include", ImageIncludeForm)
-markupparser.MarkupParser.register_form("list", "edit", ListEditForm)
-markupparser.MarkupParser.register_form("paragraph", "edit", ParagraphEditForm)
-markupparser.MarkupParser.register_form("separator", "edit", SeparatorEditForm)
-markupparser.MarkupParser.register_form("script", "edit", ScriptEditForm)
-markupparser.MarkupParser.register_form("svg", "edit", SvgEditForm)
-markupparser.MarkupParser.register_form("table", "edit", TableEditForm)
-markupparser.MarkupParser.register_form("tex", "edit", TeXEditForm)
-markupparser.MarkupParser.register_form("video", "edit", VideoEditForm)
-markupparser.MarkupParser.register_form("video", "include", VideoIncludeForm)
-
-
-
-
-
+def register_edit_forms():
+    markupparser.MarkupParser.register_form("calendar", "edit", CalendarCreateForm)
+    markupparser.MarkupParser.register_form("code", "edit", CodeEditForm)
+    markupparser.MarkupParser.register_form("embedded_page", "edit", TaskCreateForm)
+    markupparser.MarkupParser.register_form("embedded_page", "include", TaskIncludeForm)
+    markupparser.MarkupParser.register_form("file", "edit", FileEditForm)
+    markupparser.MarkupParser.register_form("file", "include", FileIncludeForm)
+    markupparser.MarkupParser.register_form("heading", "edit", HeadingEditForm)
+    markupparser.MarkupParser.register_form("image", "edit", ImageEditForm)
+    markupparser.MarkupParser.register_form("image", "include", ImageIncludeForm)
+    markupparser.MarkupParser.register_form("list", "edit", ListEditForm)
+    markupparser.MarkupParser.register_form("paragraph", "edit", ParagraphEditForm)
+    markupparser.MarkupParser.register_form("separator", "edit", SeparatorEditForm)
+    markupparser.MarkupParser.register_form("script", "edit", ScriptEditForm)
+    markupparser.MarkupParser.register_form("svg", "edit", SvgEditForm)
+    markupparser.MarkupParser.register_form("table", "edit", TableEditForm)
+    markupparser.MarkupParser.register_form("tex", "edit", TeXEditForm)
+    markupparser.MarkupParser.register_form("video", "edit", VideoEditForm)
+    markupparser.MarkupParser.register_form("video", "include", VideoIncludeForm)

@@ -1,6 +1,6 @@
 from django import template
 
-import courses.markupparser as markupparser
+from courses import markupparser
 
 register = template.Library()
 

@@ -53,6 +53,7 @@ from courses.edit_forms import (
     place_into_content,
     BlockTypeSelectForm,
     TermifyForm,
+    UnsupportedOperation,
 )
 from utils.access import (
     determine_media_access,
@@ -707,7 +708,7 @@ def edit_form(request, course, instance, content, action):
         "line_count": int(request.GET.get("size")),
         "placement": request.GET.get("placement", "replace")
     }
-    form =get_form(
+    form = get_form(
         block_type, position, context, action
     )
     form_t = loader.get_template("courses/base-edit-form.html")
