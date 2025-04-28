@@ -2679,6 +2679,7 @@ class FileExerciseSettings(models.Model):
     ANSWER_MODE_CHOICES = (
         ("FILE", "Upload as file"),
         ("TEXT", "From textbox"),
+        ("ACE", "From Ace editor"),
     )
 
     objects = ExerciseOneToOneManager()
@@ -2716,6 +2717,12 @@ class FileExerciseSettings(models.Model):
 
     def natural_key(self):
         return (self.exercise.slug, )
+
+    def answer_language(self):
+        try:
+            return pygments.lexers.guess_lexer_for_filename(self.answer_filename, "").name.lower()
+        except pygments.util.ClassNotFound:
+            return "plain_text"
 
 
 class FileExerciseTestManager(models.Manager):
