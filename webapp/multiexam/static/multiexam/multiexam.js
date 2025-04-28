@@ -70,23 +70,45 @@ const exam = {
                     errorbox.css("display", "block")
                     errorbox.html(data.error)
                 }
-                const form_fields = $(data.rendered_form)
-                const form = button.parent().parent().find(".question > form")
-                const form_submit = button.parent().parent().find(
-                    ".question > form > input[type='submit']"
-                )
-                form_submit.before(form_fields)
-                form.submit(exam.submit_exam)
-                form.dirty({preventLeaving: true})
-                form.keypress(function(event) {
-                    if (event.which == '13') {
-                        event.preventDefault()
-                    }
-                })
-                button.prop("disabled", true)
-                exam.set_scroll_targets()
+                else if (data.rendered_form) {
+                    exam.render_exam(button, data)
+                    button.prop("disabled", true)
+                }
+                else {
+                    button.after(data)
+                    button.prop("disabled", true)
+                }
             },
         })
+    },
+
+    submit_key: function (event) {
+        event.preventDefault()
+        const form = $(this)
+
+        process_success = function (data) {
+            exam.render_exam (form, data)
+            form.remove()
+        }
+
+        submit_ajax_form(form, process_success)
+    },
+
+    render_exam: function (caller, data) {
+        const form_fields = $(data.rendered_form)
+        const form = caller.parent().parent().find(".question > form")
+        const form_submit = caller.parent().parent().find(
+            ".question > form > input[type='submit']"
+        )
+        form_submit.before(form_fields)
+        form.submit(exam.submit_exam)
+        form.dirty({preventLeaving: true})
+        form.keypress(function(event) {
+            if (event.which == '13') {
+                event.preventDefault()
+            }
+        })
+        exam.set_scroll_targets()
     },
 
     preview_attempt: function (event, caller) {

@@ -115,6 +115,12 @@
         onclick="formtools.fetch_form(event, this);"
         data-url="{% url 'multiexam:open_attempt' course instance content %}">+
     </button>
+    <button type="button"
+        class="staff-base-button refresh-button"
+        title="{% trans 'Mass refresh exam attempts' %}"
+        onclick="formtools.fetch_form(event, this);"
+        data-url="{% url 'multiexam:refresh_attempts' course instance content %}">
+    </button>
 
     <div class="attempt-preview popup"></div>
 

@@ -41,6 +41,11 @@ class ExamAttemptForm(forms.ModelForm):
             required=False,
             label=_("Create invidivual exams for everyone"),
         )
+        self.fields["key"] = forms.CharField(
+            widget=forms.PasswordInput,
+            label=_("Exam attempt key"),
+            required=False,
+        )
 
 
 class ExamAttemptDeleteForm(forms.Form):
@@ -67,6 +72,43 @@ class ExamAttemptSettingsForm(forms.ModelForm):
             required=False,
             label=_("Refresh exam to latest version")
         )
+
+
+class ExamAttemptRefreshForm(forms.Form):
+
+    start = forms.DateTimeField(
+        label=_("Refresh attempts from"),
+        required=True,
+        input_formats=["%Y-%m-%dT%H:%M"],
+        widget=forms.widgets.DateTimeInput(attrs={"type": "datetime-local"}),
+    )
+    end = forms.DateTimeField(
+        label=_("Refresh attempts until"),
+        required=False,
+        input_formats=["%Y-%m-%dT%H:%M"],
+        widget=forms.widgets.DateTimeInput(attrs={"type": "datetime-local"}),
+    )
+
+
+
+
+class ExamAttemptKeyForm(forms.Form):
+
+    exam_key = forms.CharField(
+        widget=forms.PasswordInput,
+        label=_("Exam attempt key"),
+        required=True,
+    )
+
+    def clean_exam_key(self):
+        key = self.cleaned_data["exam_key"]
+        if not self._attempt.check_key(key):
+            raise ValidationError(_("Invalid key"))
+
+    def __init__(self, *args, **kwargs):
+        self._attempt = kwargs.pop("attempt")
+        super().__init__(*args, **kwargs)
+
 
 
 class QuestionPoolForm(ExerciseBackendForm):
@@ -112,7 +154,7 @@ class QuestionPoolForm(ExerciseBackendForm):
         if len(content_per_lang.keys()) > 1:
             valid, errors = compare_exams(
                 content_per_lang,
-                primary_lang=settings.MODELTRANSLATION_DEFAULT_LANGUAGE
+                primary_key=settings.MODELTRANSLATION_DEFAULT_LANGUAGE
             )
             if not valid:
                 for lang_code, msg in errors:

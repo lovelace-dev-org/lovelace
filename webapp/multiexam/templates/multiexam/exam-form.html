@@ -62,7 +62,7 @@
                   {% else %}
                     disabled="true"
                   {% endif %}>
-            <label for="exam-{{ handle}}-{{ key }}">{{ label }}</label>
+            <label for="exam-{{ handle}}-{{ key }}">{{ label|safe }}</label>
           </div>
         {% endfor %}
         <input type="hidden" name="{{ handle }}-certainty" value="{{ question.answer.1 }}">

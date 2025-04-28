@@ -24,6 +24,11 @@ urlpatterns = [
         views.open_new_attempt,
         name="open_attempt",
     ),
+    path(
+        "<course:course>/<instance:instance>/<content:content>/refresh/",
+        views.refresh_attempts,
+        name="refresh_attempts",
+    ),
 
     # attempt management
 

@@ -8,7 +8,9 @@ from django.template import loader
 from django.urls import reverse
 from django.utils.text import slugify
 from django.utils.translation import gettext as _
+from django.contrib.auth.hashers import make_password, check_password
 
+hashed_pwd = make_password("plain_text")
 from courses.models import (
     ContentPage, CourseInstance, Evaluation, User, UserAnswer,
     InvalidExerciseAnswerException
@@ -237,6 +239,7 @@ class ExamQuestionPool(models.Model):
             pool = yaml.safe_load(f)
         return pool
 
+
 class MultipleQuestionExamAttempt(models.Model):
     """
     One attempt of a multiexam. Indicates a period of time when the exam can be answered, and
@@ -255,6 +258,7 @@ class MultipleQuestionExamAttempt(models.Model):
     open_to = models.DateTimeField(
         verbose_name="Answerable until",
     )
+    key = models.CharField(max_length=128, null=True)
 
     def load_exam_script(self, exclude_correct=True):
         """
@@ -303,7 +307,14 @@ class MultipleQuestionExamAttempt(models.Model):
         """
         return self.questions.keys()
 
+    def set_key(self, key):
+        if key:
+            self.key = make_password(key)
+        else:
+            self.key = None
 
+    def check_key(self, given_key):
+        return check_password(given_key, self.key)
 
 
 class UserMultipleQuestionExamAnswer(UserAnswer):

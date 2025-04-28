@@ -20,10 +20,10 @@ class AssessmentMarkup(markupparser.Markup):
     @classmethod
     def block(cls, block, settings, state):
         instance = state["context"].get("instance")
-        sheet_link = AssessmentToExerciseLink.objects.get(
+        sheet_link = AssessmentToExerciseLink.objects.filter(
             exercise__slug=settings["exercise_slug"],
             instance=instance
-        )
+        ).first()
         if sheet_link:
             sheet, by_section = get_sectioned_sheet(sheet_link)
         else:

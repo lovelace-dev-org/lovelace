@@ -30,7 +30,13 @@ from multiexam.models import (
     MultipleQuestionExamAttempt,
     UserMultipleQuestionExamAnswer
 )
-from multiexam.forms import ExamAttemptForm, ExamAttemptDeleteForm, ExamAttemptSettingsForm
+from multiexam.forms import (
+    ExamAttemptForm,
+    ExamAttemptDeleteForm,
+    ExamAttemptSettingsForm,
+    ExamAttemptRefreshForm,
+    ExamAttemptKeyForm
+)
 from multiexam.utils import generate_attempt_questions, process_questions
 
 @ensure_enrolled_or_staff
@@ -56,6 +62,25 @@ def get_exam_attempt(request, course, instance, content):
         })
 
     attempt = open_attempts.first()
+    if attempt.key:
+        if request.method == "POST":
+            form = ExamAttemptKeyForm(request.POST, attempt=attempt)
+            if not form.is_valid():
+                errors = form.errors.as_json()
+                return JsonResponse({"errors": errors}, status=400)
+        else:
+            form = ExamAttemptKeyForm(attempt=attempt)
+            form_t = loader.get_template("courses/base-edit-form.html")
+            form_c = {
+                "form_object": form,
+                "submit_url": request.path,
+                "html_id": f"attempt-key-form",
+                "html_class": "exam-key-form",
+                "submit_override": "exam.submit_key",
+                "submit_label": _("Send"),
+            }
+            return HttpResponse(form_t.render(form_c, request))
+
     script = attempt.load_exam_script()
 
     answer = UserMultipleQuestionExamAnswer.objects.filter(
@@ -119,7 +144,7 @@ def open_new_attempt(request, course, instance, content):
             available_questions=content.examquestionpool.question_count()
         )
         if not form.is_valid():
-            errors = form.errors_as_json()
+            errors = form.errors.as_json()
             return JsonResponse({"errors": errors}, status=400)
 
         if form.cleaned_data.get("user_id", None):
@@ -136,6 +161,7 @@ def open_new_attempt(request, course, instance, content):
         attempt.instance = instance
         attempt.exam = content
         attempt.revision = find_latest_version(content).revision_id
+        attempt.set_key(form.cleaned_data["key"])
         for user in users:
             attempt.pk = None
             attempt.questions = generate_attempt_questions(
@@ -186,7 +212,7 @@ def attempt_settings(request, course, instance, attempt):
     if request.method == "POST":
         form = ExamAttemptSettingsForm(request.POST, instance=attempt)
         if not form.is_valid():
-            errors = form.errors_as_json()
+            errors = form.errors.as_json()
             return JsonResponse({"errors": errors}, status=400)
 
         attempt = form.save(commit=False)
@@ -223,6 +249,39 @@ def delete_attempt(request, course, instance, attempt):
         ),
     }
     return process_delete_confirm_form(request, success, extra)
+
+@ensure_responsible
+def refresh_attempts(request, course, instance, content):
+
+    if request.method == "POST":
+        form = ExamAttemptRefreshForm(request.POST)
+        if not form.is_valid():
+            errors = form.errors.as_json()
+            return JsonResponse({"errors": errors}, status=400)
+
+        attempts = MultipleQuestionExamAttempt.objects.filter(
+            exam=content,
+            instance=instance,
+            open_from__gt=form.cleaned_data["start"]
+        )
+        if end := form.cleaned_data.get("end"):
+            attempts = attempts.filter(open_to__lt=end)
+
+        updated = attempts.update(revision=find_latest_version(attempt.exam).revision_id)
+        return JsonResponse({
+            "status": "ok",
+            "status_string": _("Refreshed {count} attempts").format(count=updated),
+        })
+
+    form = ExamAttemptRefreshForm()
+    form_t = loader.get_template("courses/base-edit-form.html")
+    form_c = {
+        "form_object": form,
+        "submit_url": request.path,
+        "html_id": f"refresh-attempts-form",
+        "html_class": "exam-management-form",
+    }
+    return HttpResponse(form_t.render(form_c, request))
 
 def download_question_pool(request, exercise_id, field_name, filename):
     try:

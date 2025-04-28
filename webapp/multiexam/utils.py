@@ -2,7 +2,7 @@ from collections import defaultdict
 import random
 import yaml
 from cerberus import Validator
-from courses import markupparser
+from courses import markupparser, blockparser
 from multiexam.models import MultipleQuestionExamAttempt
 
 exam_schema = {
@@ -119,6 +119,9 @@ def process_questions(request, exam_script, answers):
                 question["question"], request, None
             )
         ).strip()
+        for key, option_text in question["options"].items():
+            question["options"][key] = blockparser.parseblock(option_text)
+
         if answers.get(handle):
             question["answer"] = answers[handle]
             state = (
@@ -185,12 +188,12 @@ def validate_exam(exam):
         return False, v.errors
     return True, []
 
-def compare_exams (exams_per_lang, primary_lang):
+def compare_exams (exams_by_key, primary_key):
     """
     Compare exam models in different languages to the primary one
     Args:
-        exams_per_lang (dict): Dictionary of exam question pools, keys are languages
-        primary_lang (str): Indicator of which one is considered primary
+        exams_by_key (dict): Dictionary of exam question pools, keys are languages
+        primary_key (str): Indicator of which one is considered primary
     Returns tuple (valid,errors):
             valid(bool) The boolean is True if the exams are considered equivalent, False otherwise.
             errors(list) The list contains error messages describing the differences between the exams.
@@ -205,10 +208,10 @@ def compare_exams (exams_per_lang, primary_lang):
     errors = []
 
     # Check that the two exams have the same question types
-    primary_exam = exams_per_lang.pop(primary_lang)
+    primary_exam = exams_by_key.pop(primary_key)
     primary_categories = set(primary_exam)
 
-    for lang_code, exam in exams_per_lang.items():
+    for lang_code, exam in exams_by_key.items():
         categories = set(exam)
         if categories != primary_categories:
             extra = categories - primary_categories
@@ -224,7 +227,7 @@ def compare_exams (exams_per_lang, primary_lang):
 
         primary_alts = primary_exam[category]["alternatives"]
 
-        for lang_code, exam in exams_per_lang.items():
+        for lang_code, exam in exams_by_key.items():
             if len(primary_exam[category]) != len(exam[category]):
                 errors.append((
                     lang_code,

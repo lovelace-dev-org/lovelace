@@ -360,7 +360,8 @@ function submit_ajax_form (form, success_extra_cb) {
         contentType: false,
         dataType: "json",
         success: function (data, status, jqxhr) {
-            const okspan = $("<span class='ajax-form-success'>OK</span>")
+            const msg = data.status_string ? data.status_string : "OK"
+            const okspan = $("<span class='ajax-form-success'>" + msg + "</span>")
             form.find("input[type='submit']").after(okspan)
             setTimeout(function () {
                 okspan.remove()
