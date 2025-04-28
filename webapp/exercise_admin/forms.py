@@ -5,6 +5,8 @@ from django import forms
 
 import feedback.models
 import courses.models as cm
+from courses import blockparser
+from courses import markupparser
 
 from .utils import get_default_lang, get_lang_list
 
@@ -485,10 +487,6 @@ class CreateFileUploadExerciseForm(forms.Form):
         validation error.
         """
 
-        from courses import blockparser
-        from courses import markupparser
-        from courses.models import ContentPage, CourseMedia, Term
-
         missing_pages = []
         missing_media = []
         missing_terms = []
@@ -497,21 +495,20 @@ class CreateFileUploadExerciseForm(forms.Form):
         parser = markupparser.LinkParser()
         page_links, media_links = parser.parse(value)
         for link in page_links:
-            if not ContentPage.objects.filter(slug=link):
+            if not cm.ContentPage.objects.filter(slug=link):
                 missing_pages.append(link)
                 messages.append(f"Content matching {link} does not exist")
 
         for link in media_links:
-            if not CourseMedia.objects.filter(name=link):
+            if not cm.CourseMedia.objects.filter(name=link):
                 missing_media.append(link)
                 messages.append(f"Media matching {link} does not exist")
 
-        term_re = blockparser.tags["term"].re
-
+        term_re = blockparser.BlockParser.tags["term"].regexp
         term_links = {match.group("term_name") for match in term_re.finditer(value)}
 
         for link in term_links:
-            if not Term.objects.filter(**{"name_" + lang: link}):
+            if not cm.Term.objects.filter(**{"name_" + lang: link}):
                 missing_terms.append(link)
                 messages.append(f"Term matching {link} does not exist")
 
