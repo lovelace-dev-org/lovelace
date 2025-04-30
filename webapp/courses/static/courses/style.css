@@ -1217,7 +1217,7 @@ section.content {
             }
 
             textarea.generic-textfield,
-            section.content div.question form textarea {
+            section.content div.question form > textarea {
                 width: 100%;
                 border: 2px solid #ddd;
                 padding: 2px;

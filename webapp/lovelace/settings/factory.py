@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'multiexam',
     'reversion',
     'teacher_tools',
+    'ace',
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

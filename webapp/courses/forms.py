@@ -16,6 +16,7 @@ from modeltranslation.forms import TranslationModelForm
 
 from courses import blockparser
 from courses import markupparser
+from courses.widgets import AnswerWidgetRegistry
 from utils.formatters import display_name
 from utils.management import add_translated_charfields, TranslationStaffForm, get_prefixed_slug
 import courses.models as cm
@@ -134,6 +135,17 @@ class ContentForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         self._instance = kwargs.get("instance")
         super().__init__(*args, **kwargs)
+        if "answer_widget" in self.fields:
+            self.fields["answer_widget"] = forms.ChoiceField(
+                widget = forms.Select(),
+                choices = (
+                    [(None, _("--USE-DEFAULT--"))] +
+                    [(widget, widget) for widget in AnswerWidgetRegistry.list_widgets()]
+                ),
+                required=False
+            )
+
+
 
 
 class TextfieldAnswerForm(forms.ModelForm):
@@ -689,3 +701,12 @@ class CourseMessageForm(TranslationStaffForm):
             #input_formats=["%Y-%m-%dT%H:%M"],
             #widget=forms.widgets.DateTimeInput(attrs={"type": "datetime-local"}),
         #)
+
+
+class TextfieldWidgetConfigurationForm(forms.ModelForm):
+
+    class Meta:
+        model = cm.TextfieldWidgetSettings
+        fields = ["rows"]
+
+

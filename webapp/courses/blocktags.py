@@ -42,13 +42,16 @@ class PreTag(Tag):
         hilite = hilite.strip("#! ")
 
         parsed_string = self.htmlbegin({"class": "highlight " + hilite})
-        try:
-            lexer = get_lexer_by_name(hilite)
-        except pygments.util.ClassNotFound as e:
-            parsed_string += f"no such highlighter: {hilite}; "
-            parsed_string += code_string
+        if hilite:
+            try:
+                lexer = get_lexer_by_name(hilite)
+            except pygments.util.ClassNotFound as e:
+                parsed_string += f"no such highlighter: {hilite}; "
+                parsed_string += code_string
+            else:
+                parsed_string += highlight(code_string, lexer, HtmlFormatter(nowrap=True)).rstrip("\n")
         else:
-            parsed_string += highlight(code_string, lexer, HtmlFormatter(nowrap=True)).rstrip("\n")
+            parsed_string += code_string
 
         parsed_string += self.htmlend()
         return parsed_string

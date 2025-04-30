@@ -1,0 +1,28 @@
+{% load i18n %}
+{% load static %}
+
+<style type="text/css">
+  .ace-editor {
+      width: 100%;
+      min-height: 300px;
+      border: 2px solid #ddd;
+      padding: 2px;
+      resize: vertical;
+  }
+</style>
+
+<div id="{{ content.slug }}-ace-editor"
+     class="ace-editor"
+     style="min-height: {{ ace_container_height }}px;">
+</div>
+<script src="{% static 'ace/ace/ace.js' %}"></script>
+<script src="{% static 'ace/acewidget.js' %}"></script>
+<script>
+  var editor = ace.edit("{{ content.slug }}-ace-editor", {{ ace_extra|safe }})
+  editor.setOption("fontSize", {{ ace_font_size }})
+  editor.session.setMode("ace/mode/{{ ace_mode }}")
+
+  var form = $(document.currentScript).closest("form")
+  form.attr("data-extra-callback", "acewidget.read_editor_value('{{ content.slug }}-ace-editor')")
+  form.attr("data-extra-key", "answer")
+</script>

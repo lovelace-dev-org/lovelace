@@ -17,15 +17,26 @@ const editing = {
     get_form_url: function (event) {
         event.preventDefault()
         event.stopPropagation()
-        const form = $(this)
+        const caller = $(this)
 
         $(".edit-form-widget").remove()
 
         process_success = function (data) {
-            editing.fetch_edit_form(data.form_url, form)
+            editing.fetch_edit_form(data.form_url, caller)
         }
 
-        submit_ajax_form(form, process_success)
+        submit_ajax_form(caller, process_success)
+    },
+
+    get_form: function (event, caller) {
+        event.preventDefault()
+        event.stopPropagation()
+        const source = $(caller)
+        const url = source.attr("data-url")
+
+        $(".edit-form-widget").remove()
+
+        editing.fetch_edit_form(url, source)
     },
 
     fetch_edit_form: function (address, caller) {
@@ -44,6 +55,7 @@ const editing = {
         const form = $(this)
 
         process_success = function (data) {
+            console.log(location)
             if (data.redirect) {
                 location.replace(data.redirect)
             } else {

@@ -55,6 +55,7 @@ from courses.edit_forms import (
     TermifyForm,
     UnsupportedOperation,
 )
+from courses.widgets import AnswerWidgetRegistry
 from utils.access import (
     determine_media_access,
     ensure_responsible_or_supervisor,
@@ -653,6 +654,7 @@ def regen_page_cache(request, course, instance, content):
     form_t = loader.get_template("courses/base-edit-form.html")
     form_c = {
         "form_object": form,
+        "html_id": f"{content.slug}-cache-regen-form",
         "submit_url": request.path,
         "html_class": "side-panel-form",
         "disclaimer": _("Regenerate cache for {content}").format(content=content.name),
@@ -778,6 +780,41 @@ def add_form(request, course, instance, content):
 # ^
 # |
 # PAGE CONTENT MANAGEMENT VIEWS
+# CONTENT CONFIGURATION VIEWS
+# |
+# v
+
+@ensure_staff
+def configure_answer_widget(request, course, instance, content):
+    widget = content.get_answer_widget(instance)
+    form_cls = widget.get_configuration_form()
+    if form_cls is None:
+        return HttpResponse(_("This answer widget cannot be configured"))
+
+    if request.method == "POST":
+        form = form_cls(request.POST, instance=widget.get_settings())
+        if not form.is_valid():
+            errors = form.errors.as_json()
+            return JsonResponse({"errors": errors}, status=400)
+
+        form.save()
+        regenerate_nearest_cache(content)
+        return JsonResponse({"status": "ok"})
+
+    form = form_cls(instance=widget.get_settings())
+    form_t = loader.get_template("courses/base-edit-form.html")
+    form_c = {
+        "html_id": f"{content.slug}-widget-config-form",
+        "form_object": form,
+        "submit_url": request.path,
+        "html_class": "edit-form-widget",
+        "submit_override": "editing.submit_form"
+    }
+    return HttpResponse(form_t.render(form_c, request))
+
+# ^
+# |
+# CONTENT CONFIGURATION VIEWS
 # GROUP MANAGEMENT VIEWS
 # |
 # v

@@ -181,6 +181,11 @@ urlpatterns = [
         name="content_add_form",
     ),
     path(
+        "staff/<course:course>/<instance:instance>/<content:content>/widget_settings/",
+        staff_views.configure_answer_widget,
+        name="widget_settings",
+    ),
+    path(
         "staff/<course:course>/<instance:instance>/regen_cache/",
         staff_views.regen_instance_cache,
         name="regen_instance_cache",

@@ -13,8 +13,9 @@ from utils.management import ExportImportMixin
 
 
 class RoutineExercise(ContentPage):
-    template = "routine_exercise/routine-exercise.html"
+    form_template = "routine_exercise/routine-exercise.html"
     answers_template = "routine_exercise/user-answers.html"
+    default_answer_widget = "routine"
     answer_table_classes = "fixed"
 
     class Meta:
@@ -49,6 +50,9 @@ class RoutineExercise(ContentPage):
 
     def get_choices(self, revision=None):
         return
+
+    def get_answer_widget(self):
+        return ContentPage._get_answer_widget(self)
 
     def get_admin_change_url(self):
         adminized_type = self.content_type.replace("_", "").lower()

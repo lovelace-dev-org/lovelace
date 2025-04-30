@@ -35,6 +35,7 @@ import magic
 
 from courses import blockparser
 from courses import markupparser
+from courses import widgets
 import feedback.models
 from lovelace import plugins as lovelace_plugins
 from utils.data import (
@@ -1142,10 +1143,18 @@ class CalendarReservation(models.Model):
     calendar_date = models.ForeignKey(CalendarDate, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
 
-
 # ^
 # |
 # CALENDAR
+# ANSWER WIDGETS
+# |
+# V
+
+
+
+# ^
+# |
+# ANSWER WIDGETS
 # CONTENT BASE
 # |
 # V
@@ -1224,10 +1233,11 @@ class ContentPage(models.Model, ExportImportMixin):
     content_type_models = {}
 
     # Template to use for rendering this content type, all content type models must set their own.
-    template = "courses/blank.html"
+    form_template = "courses/blank.html"
+    default_answer_widget = "blank"
 
     # Template for answers page for tasks of this type, override if the default is not suitable.
-    answers_template = "courses/user-exercise-answers.html"
+    answers_form_template = "courses/user-exercise-answers.html"
     answers_show_log = False
 
     # Classes to include for the answers table. Override if needed.
@@ -1272,6 +1282,7 @@ class ContentPage(models.Model, ExportImportMixin):
     feedback_questions = models.ManyToManyField(feedback.models.ContentFeedbackQuestion, blank=True)
 
     question = models.TextField(blank=True, default="")  # Translate
+    answer_widget = models.CharField(max_length=32, blank=True, null=True)
     manually_evaluated = models.BooleanField(
         verbose_name="This exercise is evaluated by hand", default=False
     )
@@ -1443,6 +1454,15 @@ class ContentPage(models.Model, ExportImportMixin):
 
         question = blockparser.parseblock(escape(self.question, quote=False), context)
         return question
+
+    def get_answer_widget(self, instance):
+        if not self.answer_widget:
+            handle = self.default_answer_widget
+        else:
+            handle = self.answer_widget
+
+        widget = widgets.AnswerWidgetRegistry.get_widget(handle, instance, self)
+        return widget
 
     def count_pages(self, instance):
         """
@@ -1728,7 +1748,6 @@ class ContentPage(models.Model, ExportImportMixin):
         }
         update_completion(self, instance, user, evaluation, best_answer.answer_date)
 
-
     # Abstract methods that proxy model classes need to implement.
     # v
 
@@ -1780,7 +1799,7 @@ class ContentPage(models.Model, ExportImportMixin):
 
         :return: evaluation as dictionary
         """
-        raise NotImplementedError("base type has no method 'save_answer'")
+        raise NotImplementedError("base type has no method 'check_answer'")
 
     # ^
 
@@ -1863,7 +1882,8 @@ class ContentPage(models.Model, ExportImportMixin):
             "check_answer",
             "get_user_answers",
             "get_staff_extra",
-            "template",
+            "form_template",
+            "default_answer_widget",
             "answers_template",
             "answer_table_classes",
             "answers_show_log",
@@ -1898,7 +1918,8 @@ class Lecture(ContentPage):
         verbose_name = "lecture page"
         proxy = True
 
-    template = "courses/lecture.html"
+    form_template = "courses/lecture.html"
+    default_answer_widget = "blank"
 
     def get_choices(self, revision=None):
         pass
@@ -1924,13 +1945,17 @@ class Lecture(ContentPage):
     def get_user_answers(self, user, instance, ignore_drafts=True):
         raise NotImplementedError
 
+    def get_answer_widget(self):
+        raise NotImplementedError
+
 
 class MultipleChoiceExercise(ContentPage):
     class Meta:
         verbose_name = "multiple choice exercise"
         proxy = True
 
-    template = "courses/multiple-choice-exercise.html"
+    form_template = "courses/multiple-choice-exercise.html"
+    default_answer_widget = "radio"
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -1954,6 +1979,9 @@ class MultipleChoiceExercise(ContentPage):
 
     def get_question(self, context):
         return ContentPage._get_question(self, context)
+
+    def get_answer_widget(self):
+        return ContentPage._get_answer_widget(self)
 
     def save_answer(self, user, ip, answer, files, instance, revision):
         keys = list(answer.keys())
@@ -2033,7 +2061,8 @@ class CheckboxExercise(ContentPage):
         verbose_name = "checkbox exercise"
         proxy = True
 
-    template = "courses/checkbox-exercise.html"
+    form_template = "courses/checkbox-exercise.html"
+    default_answer_widget = "checkbox"
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -2057,6 +2086,9 @@ class CheckboxExercise(ContentPage):
 
     def get_question(self, context):
         return ContentPage._get_question(self, context)
+
+    def get_answer_widget(self):
+        return ContentPage._get_answer_widget(self)
 
     def save_answer(self, user, ip, answer, files, instance, revision):
         chosen_answer_ids = [int(i) for i, _ in answer.items() if i.isdigit()]
@@ -2140,7 +2172,8 @@ class TextfieldExercise(ContentPage):
         verbose_name = "text field exercise"
         proxy = True
 
-    template = "courses/textfield-exercise.html"
+    form_template = "courses/textfield-exercise.html"
+    default_answer_widget = "textfield"
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -2163,6 +2196,9 @@ class TextfieldExercise(ContentPage):
 
     def get_question(self, context):
         return ContentPage._get_question(self, context)
+
+    def get_answer_widget(self):
+        return ContentPage._get_answer_widget(self)
 
     def save_answer(self, user, ip, answer, files, instance, revision):
         if "answer" in answer.keys():
@@ -2277,7 +2313,8 @@ class FileUploadExercise(ContentPage):
         verbose_name = "file upload exercise"
         proxy = True
 
-    template = "courses/file-upload-exercise.html"
+    form_template = "courses/file-upload-exercise.html"
+    default_answer_widget = "file"
     answers_show_log = True
 
     def save(self, *args, **kwargs):
@@ -2326,7 +2363,7 @@ class FileUploadExercise(ContentPage):
                     answer=answer_object, fileinfo=uploaded_file
                 )
                 return_file.save()
-        elif self.fileexercisesettings.answer_mode == "TEXT":
+        elif self.fileexercisesettings.answer_mode != "FILE":
             if not self.fileexercisesettings.answer_filename:
                 raise InvalidExerciseAnswerException(
                     _("Task improperly configured, notify staff!")
@@ -2353,6 +2390,9 @@ class FileUploadExercise(ContentPage):
 
     def get_question(self, context):
         return ContentPage._get_question(self, context)
+
+    def get_answer_widget(self):
+        return ContentPage._get_answer_widget(self)
 
     def get_admin_change_url(self):
         return reverse("exercise_admin:file_upload_change", args=(self.id,))
@@ -2410,7 +2450,7 @@ class RepeatedTemplateExercise(ContentPage):
         verbose_name = "repeated template exercise"
         proxy = True
 
-    template = "courses/repeated-template-exercise.html"
+    form_template = "courses/repeated-template-exercise.html"
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -2679,7 +2719,6 @@ class FileExerciseSettings(models.Model):
     ANSWER_MODE_CHOICES = (
         ("FILE", "Upload as file"),
         ("TEXT", "From textbox"),
-        ("ACE", "From Ace editor"),
     )
 
     objects = ExerciseOneToOneManager()
@@ -2933,6 +2972,30 @@ class FileExerciseTestExpectedStderr(FileExerciseTestExpectedOutput):
     def save(self, *args, **kwargs):
         self.output_type = "STDERR"
         super().save(*args, **kwargs)
+
+
+class WidgetSettingsManager(models.Manager):
+
+    def get_by_natural_key(self, instance_slug, content_slug):
+        if content_slug:
+            return self.get(instance__slug=instance_slug, content__slug=content_slug)
+        else:
+            return self.get(instance__slug=instance_slug)
+
+
+class TextfieldWidgetSettings(models.Model, ExportImportMixin):
+
+    content = models.ForeignKey(ContentPage, on_delete=models.CASCADE, null=True)
+    instance = models.ForeignKey(CourseInstance, on_delete=models.CASCADE)
+    rows = models.PositiveSmallIntegerField(default=3)
+
+    objects = WidgetSettingsManager()
+
+    def natural_key(self):
+        if self.content:
+            return (self.instance.natural_key(), self.content.natural_key())
+        else:
+            return (self.instance.natural_key(), "")
 
 
 # ^
@@ -3740,6 +3803,7 @@ def get_import_list():
         CheckboxExerciseAnswer,
         MultipleChoiceExerciseAnswer,
         TextfieldExerciseAnswer,
+        TextfieldWidgetSettings,
         FileExerciseSettings,
         IncludeFileSettings,
         FileExerciseTestIncludeFile,

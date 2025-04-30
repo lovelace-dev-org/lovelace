@@ -54,7 +54,8 @@ class MultipleQuestionExam(ContentPage):
     compatible with the rest of the main code.
     """
 
-    template = "multiexam/multiple-question-exam.html"
+    form_template = "multiexam/multiple-question-exam.html"
+    default_answer_widget = "multiexam"
 
     class Meta:
         verbose_name = "multiple question exam"
@@ -85,6 +86,9 @@ class MultipleQuestionExam(ContentPage):
         """
 
         return ContentPage._get_question(self, context)
+
+    def get_answer_widget(self):
+        return ContentPage._get_answer_widget(self)
 
     def get_admin_change_url(self):
         """

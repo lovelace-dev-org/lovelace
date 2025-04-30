@@ -24,10 +24,9 @@
                 rows="10"></textarea>
     {% elif content.fileexercisesettings.answer_mode == "ACE" %}
       <div id="{{ content.slug }}-ace-editor" class="ace-editor"></div>
-      <script src="/ace/ace.js" type="text/javascript" charset="utf-8"></script>
       <script>
-        const editor = ace.edit("{{ content.slug }}-ace-editor")
-        editor.session.setMode("ace/mode/{{ content.fileexercisesettings.answer_language }}")
+        const editor = ace.edit("{{ content.slug }}-ace-editor", {fontSize: 16});
+        editor.session.setMode("ace/mode/{{ content.fileexercisesettings.answer_language }}");
       </script>
     {% endif %}
   </div>

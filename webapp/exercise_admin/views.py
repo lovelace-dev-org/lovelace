@@ -39,6 +39,7 @@ from courses.models import (
     InstanceIncludeFile,
     InstanceIncludeFileToExerciseLink,
 )
+from courses.widgets import AnswerWidgetRegistry
 from feedback.models import (
     ContentFeedbackQuestion,
     TextfieldFeedbackQuestion,
@@ -109,6 +110,7 @@ def save_file_upload_exercise(
     e_allowed_filenames = form_data["exercise_allowed_filenames"]
     e_max_file_count = form_data["exercise_max_file_count"]
     e_answer_mode = form_data["exercise_answer_mode"]
+    e_answer_widget = form_data["exercise_answer_widget"]
 
     lang_list = get_lang_list()
     for lang_code, _ in lang_list:
@@ -133,6 +135,7 @@ def save_file_upload_exercise(
     exercise.save()
     # save() first so that m2m can be used (when adding a new exercise)
     exercise.feedback_questions.set(e_feedback_questions)
+    exercise.answer_widget = e_answer_widget
     exercise.save()
 
     extra_settings = exercise.fileexercisesettings
@@ -594,6 +597,10 @@ def file_upload_exercise(request, exercise_id=None, action=None):
     c = {
         "add_or_edit": add_or_edit,
         "answer_mode_choices": FileExerciseSettings.ANSWER_MODE_CHOICES,
+        "answer_widget_choices": (
+            [(None, _("--USE-DEFAULT--"))] +
+            [(widget, widget) for widget in AnswerWidgetRegistry.list_widgets()]
+        ),
         "exercise": exercise,
         "hints": hints,
         "instances": instances,
