@@ -48,6 +48,16 @@ def querydict_to_answer(attempt, querydict, include_certainty=False):
 
     return answer_record
 
+def load_pool_file(basefile):
+    if cached_pool := cache.get(basefile):
+        pool = cached_pool
+    else:
+        with basefile.open() as f:
+            pool = yaml.safe_load(f)
+        cache.set(basefile, pool, timeout=5)
+
+    return pool
+
 
 class MultipleQuestionExam(ContentPage):
     """
@@ -274,12 +284,7 @@ class MultipleQuestionExamAttempt(models.Model):
         else:
             basefile = self.exam.examquestionpool.fileinfo
 
-        if cached_pool := cache.get(basefile):
-            pool = cached_pool
-        else:
-            with basefile.open() as f:
-                pool = yaml.safe_load(f)
-            cache.set(basefile, pool, timeout=5)
+        pool = load_pool_file(basefile)
 
         script = []
         for handle, alt_idx in self.questions.items():
