@@ -20,7 +20,7 @@ from courses.models import User
 
 
 from utils.access import ensure_enrolled_or_staff, determine_access, ensure_staff, ensure_responsible
-from utils.archive import find_latest_version
+from utils.archive import find_latest_version, find_version_with_filename
 from utils.content import get_embedded_parent
 from utils.files import generate_download_response, get_file_contents_b64
 

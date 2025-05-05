@@ -217,9 +217,9 @@ def compare_exams (exams_by_key, primary_key):
             extra = categories - primary_categories
             missing = primary_categories - categories
             if extra:
-                errors.append(lang_code, f"Extra keys: {extra}")
+                errors.append((lang_code, f"Extra keys: {extra}"))
             if missing:
-                errors.append(lang_code, f"Missing keys: {missing}")
+                errors.append((lang_code, f"Missing keys: {missing}"))
             return False, errors
 
 
