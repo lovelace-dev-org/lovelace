@@ -1024,7 +1024,7 @@ section.content {
     }
 
         section.content div.paragraph > code, section.content td > code,
-        section.content div.question > code,
+        section.content div.question code,
         section.content li > code, section.content form > code,
         section.content mark > code {
             font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
@@ -1035,6 +1035,12 @@ section.content {
             border-radius: 3px;
             box-shadow: inset 0 0 5px #cacaca;
             white-space: nowrap;
+        }
+
+        section.content div.question pre code {
+            white-space: pre;
+            border: none;
+            box-shadow: none;
         }
 
         section.content * a {
