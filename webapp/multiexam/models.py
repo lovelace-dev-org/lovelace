@@ -2,6 +2,7 @@ import datetime
 import json
 import yaml
 from django.core import serializers
+from django.core.cache import cache
 from django.db import models
 from django.db.models import Q, JSONField
 from django.template import loader
@@ -264,7 +265,7 @@ class MultipleQuestionExamAttempt(models.Model):
         """
         Loads the exam script of this attempt. This opens the exam question file, and forms the
         exam script based on questions that have been selected for the attempt. When getting
-        the script for rendering on the frontend, exclude_correct must always be False, otherwise
+        the script for rendering on the frontend, exclude_correct must always be True, otherwise
         correct answers could be accessed via javascript console.
         """
 
@@ -273,8 +274,12 @@ class MultipleQuestionExamAttempt(models.Model):
         else:
             basefile = self.exam.examquestionpool.fileinfo
 
-        with basefile.open() as f:
-            pool = yaml.safe_load(f)
+        if cached_pool := cache.get(basefile):
+            pool = cached_pool
+        else:
+            with basefile.open() as f:
+                pool = yaml.safe_load(f)
+            cache.set(basefile, pool, timeout=5)
 
         script = []
         for handle, alt_idx in self.questions.items():
@@ -327,19 +332,30 @@ class UserMultipleQuestionExamAnswer(UserAnswer):
     answers = models.JSONField()
 
     def get_html_repr(self, context):
-        script = self.attempt.load_exam_script()
-        evaluation = json.loads(self.evaluation.test_results or "{}")
-        summary = {}
-        for handle, question in script:
-            chosen = []
-            for choice in self.answers.get(handle, ("", ""))[0]:
-                chosen.append(question["options"][choice])
-            summary[handle] = (question["summary"], chosen, evaluation.get(handle, False))
+        try:
+            script = self.attempt.load_exam_script()
+        except Exception as e:
+            c = {
+                "answer_summary": [(
+                    _("Unableto show: Answer data is incompatible with exam."),
+                    [],
+                    False
+                )],
+                "evaluated": False,
+            }
+        else:
+            evaluation = json.loads(self.evaluation.test_results or "{}")
+            summary = {}
+            for handle, question in script:
+                chosen = []
+                for choice in self.answers.get(handle, ("", ""))[0]:
+                    chosen.append(question["options"][choice])
+                summary[handle] = (question["summary"], chosen, evaluation.get(handle, False))
+            c = {
+                "answer_summary": summary.values(),
+                "evaluated": bool(evaluation),
+            }
         t = loader.get_template("multiexam/answered-exam.html")
-        c = {
-            "answer_summary": summary.values(),
-            "evaluated": bool(evaluation),
-        }
         return t.render(c)
 
 
