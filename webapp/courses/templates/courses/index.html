@@ -1,7 +1,11 @@
 {% extends 'courses/base.html' %}
-{% load staticfiles %}
+{% load static %}
 {% load i18n %}
 {% load course_tags %}
+
+{% block extra-static %}
+  <link rel="stylesheet" href="{% static 'courses/index.css' %}">
+{% endblock %}
 
 {% block page-title %}{% trans 'Available courses' %}{% endblock %}
 
@@ -14,94 +18,68 @@
 {% block page-content %}
 {% if course_list %}
   <h1>{% trans 'Available courses' %}</h1>
-  <ul>
+  <ul class="index-list">
     {% for course in course_list %}
-      <li>
-        <div>
-          <div>
-            {#<a href="{% url 'courses:course_instances' course %}">#}{{ course.name }}{#</a>#}
-            {% if course.code %}– {{ course.code }}{% endif %}
-            {% if course.credits %}/ {{ course.credits }} {% trans 'credits' %}{% endif %}
-          </div>
-          {% if course.description %}<div>{{ course.description }}</div>{% endif %}
-          <div>
-            <ul>
+      {% if request.user.is_staff or not course.staff_course %}
+        <li class="index-bullet">
+          <div class="index-container">
+            <div class="index-course-header" onclick="toggle_inactive_instances(this);">
+              <span class="index-course-name">{{ course.name }}</span>
+              {% if course.code %}
+                <span class="index-course-extra">– {{ course.code }}</span>
+              {% endif %}
+              {% if course.credits %}
+                <span class="index-course-extra">/ {{ course.credits }}</span> {% trans 'credits' %}
+              {% endif %}
+            </div>
+            <div class="index-course-wrapper">
               {% for instance in course.get_instances %}
-                {% if instance.visible or request.user.is_staff %}
-                  <li>
-                    <div>
-                      <a href="{% url 'courses:course' course instance %}">{{ instance.name }}</a>
-                    </div>
-                    {% with request.user|enrolled:instance as enroll_status %}
-                      <div>
-                        {% if enroll_status == None %}
-                          {% if request.user.is_authenticated %}                        
-                            <span class="instance-userinfo">{% trans 'You are not enrolled.' %}</span>
-                            <p><button id="{{ instance.slug }}-enroll-button" onclick="show_popup(event, '{{ instance.slug }}-enrollment-application-popup')">{% trans 'Enroll' %}</button></p>
-                          {% else %}
-                            <span class="instance-userinfo">{% trans 'Log in to enable enrolling.' %}</span>
-                          {% endif %}
-                        {% else %}
-                          <span class="instance-userinfo">
-                            {% if enroll_status == "ACCEPTED" %}
-                              {% trans 'You have enrolled' %}
-                            {% elif enroll_status == "DENIED" %}
-                              {% trans 'Your application was not accepted' %}
-                            {% elif enroll_status == "EXPELLED" %}
-                              {% trans 'You have been removed from this course instance' %}
-                            {% elif enroll_status == "WAITING" %}
-                              {% trans 'Your enrollment is waiting confirmation' %}
-                            {% elif enroll_status == "WITHDRAWN" %}
-                              {% trans 'You have withdrawn your enrollment' %}
-                            {% endif %}
-                          </span> 
-                            {% if enroll_status == "ACCEPTED" or enroll_status == "WAITING" %}
-                              <form id="{{ instance.slug }}-withdraw-form" class="withdraw-form" method="POST" enctype="multipart/form-data" action="{% url 'courses:withdraw' course instance %}">
-                                {% csrf_token %}
-                                <input type="hidden" class="instance-hint" name="instance-slug" value="{{ instance.slug }}">
-                                <input type="submit" name="submit" value="{% trans 'Withdraw' %}"></input>
-                              </form>
-                            {% elif enroll_status == "WITHDRAWN" %}
-                              <p><button id="{{ instance.slug }}-enroll-button" onclick="show_popup(event, '{{ instance.slug }}-enrollment-application-popup')">{% trans 'Re-Enroll' %}</button></p>
-                            {% endif %}
+                {% with request.user|enrolled:instance as enroll_status %}
+                  {% if instance.is_active or enroll_status == "ACCEPTED" or request.user.is_staff %}
+                    <div class="
+                        index-course-instance
+                        {% if not instance.is_active and enroll_status != 'ACCEPTED' %}
+                          inactive collapsed
                         {% endif %}
+                        ">
+                      <a href="{% url 'courses:course' course instance %}">{{ instance.name }}</a>
+                      <div>
+                        {% for tag in instance.split_notes %}
+                          <span class="index-instance-tag">{{ tag }}</span>
+                        {% endfor %}
                       </div>
-                      {% if enroll_status == None or enroll_status == "WITHDRAWN" %}
-                        <div class="popup" id="{{ instance.slug }}-enrollment-application-popup">
-                          <div>
-                            <h2>{% trans 'Enroll to' %} {{ instance.name }}</h2>
-                            <form id="{{ instance.slug }}-enroll-form" class="enroll-form" method="POST" enctype="multipart/form-data" action="{% url 'courses:enroll' course instance %}">
-                              {% csrf_token %}
-                          
-                              {% if instance.manual_accept %}
-                                <div class="paragraph">{% trans 'Enrollments to this course must be accepted by the teacher' %}</div>
-                                <div class="paragraph">{% trans 'You can attach a note to your enrollment application by typing below' %}</div>                        
-                                <textarea name="application-note" class="generic-textfield" placeholder="{% trans 'Type your application here' %}" rows="3"></textarea>
-                              {% else %}
-                                <div class="paragraph">{% trans 'Enrollments to this course are accepted automatically' %}</div>
-                              {% endif %}
-                          
-                              <input type="hidden" class="instance-hint" name="instance-slug" value="{{ instance.slug }}">
-                              <input type="submit" name="submit" value="{% trans 'Send application' %}"></input>
-                            </form>
-                            <div class="enroll-status-msg" id="{{ instance.slug }}-enroll-status-msg"></div>
-                          </div>                      
-                        </div>  
-                      {% endif %}
-                    {% endwith %}
-                    {% comment %}
-                    <div>
-                      <span class="instance-userinfo">Your progress: </span>
-                      <progress max="5" value="3" title="3/5 completed"></progress>
+                      {% enroll_widget course instance enroll_status %}
                     </div>
-                    {% endcomment %}
-                  </li>
-                {% endif %}
+                  {% endif %}
+                {% endwith %}
               {% endfor %}
-            </ul>
-          </div>
-        </div>
-      </li>
+            </div>
+
+            {% comment %}
+            <div>
+              <ul>
+                {% for instance in course.get_instances %}
+                  {% with request.user|enrolled:instance as enroll_status %}
+                  {% if instance.is_active or enroll_status == "ACCEPTED" or request.user.is_staff %}
+                    <li {% if not instance.is_active%} class="inactive collapsed" {% endif %}>
+                      <div>
+                        <a href="{% url 'courses:course' course instance %}">{{ instance.name }}</a>
+                      </div>
+                      {% enroll_widget course instance enroll_status %}
+
+                      <div>
+                        <span class="instance-userinfo">Your progress: </span>
+                        <progress max="5" value="3" title="3/5 completed"></progress>
+                      </div>
+                    </li>
+                  {% endif %}
+                  {% endwith %}
+                {% endfor %}
+              </ul>
+            </div>
+          {% endcomment %}
+        </li>
+      {% endif %}
     {% endfor %}
   </ul>
 {% else %}

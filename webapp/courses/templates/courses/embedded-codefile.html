@@ -1,9 +1,15 @@
 <div class="embedded-code">
   <header class="embedded-code-header">
     {{ name }}
-    <a href="{% url 'courses:download_embedded_file' course instance file %}" class="file-url" dowload></a>
+    <a
+      {% if instance %}
+        href="{% url 'courses:download_embedded_file' instance.course instance file %}"
+      {% endif %}
+      class="file-url" dowload
+    ></a>
   </header>
   {% if show_content %}
-    <pre><code class="highlight">{{ contents }}</code></pre>
+    <pre><code class="highlight">{% for line in content_lines %}<span class="line" style="width: 100%;">{{ line|safe }}</span>
+{% endfor %}</code></pre>
   {% endif %}
 </div>

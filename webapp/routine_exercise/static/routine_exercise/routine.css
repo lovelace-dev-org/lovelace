@@ -1,0 +1,10 @@
+td.routine-meta {
+    "background": #daeeda
+}
+
+td.routine-answer {
+    font-family: "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
+    background: #e2e2e2;
+    font-size: 1.2rem;    
+}
+

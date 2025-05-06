@@ -1,0 +1,133 @@
+{% extends 'courses/base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block page-title %}{% blocktrans with exercise=exercise.name %}
+  Submissions for {{ exercise }}
+{% endblocktrans %}{% endblock %}
+
+{% block extra-static %}
+  <script src="{% static 'assessment/assessment.js' %}"></script>
+{% endblock %}
+
+{% block breadcrumb-links %}
+    <li>
+        <a href="{% url 'courses:index' %}">{% trans 'Courses' %}</a>
+    </li>
+    <div class="separator">»</div>
+    <li>
+        <a href="{% url 'courses:course' course instance %}">
+            {{ course.name }}&nbsp;/&nbsp;{{ instance.name }}
+        </a>
+    </li>
+    {% if single_linked %}
+        <div class="separator">»</div>
+        <li>
+            <a href="{% url 'courses:content' course instance parent %}">{{ parent.name }}</a>
+        </li>
+        <div class="separator">»</div>
+        <li>
+            <a href="{% url 'courses:content' course instance parent %}#{{ anchor }}">{{ exercise_title }}</a>
+        </li>
+    {% else %}
+        <div class="separator">»</div>
+        <li>{{ exercise.name }}</li>
+    {% endif %}
+    <div class="separator">»</div>
+    <li>
+        <a href="{% url 'assessment:view_submissions' course instance exercise %}">
+            {% trans 'Submissions' %}
+        </a>
+    </li>
+{% endblock %}
+
+{% block page-content %}
+    <h1>
+        {% blocktrans with exercise=exercise.name %}
+            Submissions for {{ exercise }}
+        {% endblocktrans %}  
+    </h1>
+    
+    <h2>
+        {% trans 'Unassessed Submissions' %}
+    </h2>
+    
+    <table class="submissions-table full-width">
+        <thead>
+            <tr>
+                <th>{% trans 'Group' %}</th>
+                <th>{% trans 'Student(s)' %}</th>
+                <th>{% trans 'Answer Link' %}</th>
+                <th>{% trans 'Assessment Link' %}</th>
+                <th>{% trans 'Points' %}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for entry in unassessed %}
+                <tr>
+                    <td>{{ entry.group }}</td>
+                    <td class="preserve-white">{{ entry.students }}</td>
+                    <td><a href="{{ entry.answers_url }}">{% trans 'view answers' %}</a></td>
+                    <td><a href="{{ entry.assessment_url }}">{% trans 'assess' %}</a></td>
+                    <td>-</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <h2>
+        {% trans 'Assessed Submissions' %}
+    </h2>
+    
+    <table class="submissions-table full-width">
+        <thead>
+            <tr>
+                <th>{% trans 'Group' %}</th>
+                <th>{% trans 'Student(s)' %}</th>
+                <th>{% trans 'Answer Link' %}</th>
+                <th>{% trans 'Assessment Link' %}</th>
+                <th>{% trans 'Points' %}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for entry in assessed %}
+                <tr>
+                    <td>{{ entry.group }}</td>
+                    <td class="preserve-white">{{ entry.students }}</td>
+                    <td><a href="{{ entry.answers_url }}">{% trans 'view answers' %}</a></td>
+                    <td><a href="{{ entry.assessment_url }}">{% trans 'view assessment' %}</a></td>
+                    <td>{{ entry.total_points }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h2>
+      {% trans 'Submissions Marked as Suspect' %}
+    </h2>
+
+    <table class="submissions-table full-width">
+        <thead>
+            <tr>
+                <th>{% trans 'Group' %}</th>
+                <th>{% trans 'Student(s)' %}</th>
+                <th>{% trans 'Answer Link' %}</th>
+                <th>{% trans 'Assessment Link' %}</th>
+                <th>{% trans 'Points' %}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for entry in suspect %}
+                <tr>
+                    <td>{{ entry.group }}</td>
+                    <td class="preserve-white">{{ entry.students }}</td>
+                    <td><a href="{{ entry.answers_url }}">{% trans 'view answers' %}</a></td>
+                    <td><a href="{{ entry.assessment_url }}">{% trans 'view assessment' %}</a></td>
+                    <td>{{ entry.total_points }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}
+
+

@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="UTF-8">
-    {% load staticfiles %}
+    {% load static %}
     {% load i18n %}
     {% load exercise_admin_extras %}
     {% get_current_language as CURRENT_LANGUAGE %}
@@ -18,7 +18,7 @@
     <link rel="stylesheet" href="{% static 'courses/latofonts.css' %}">
     <link rel="stylesheet" href="{% static 'exercise_admin/exercise-admin.css' %}">
 
-    <script src="{% static 'courses/jquery-3.3.1.min.js' %}"></script>
+    <script src="{% static 'courses/jquery-3.6.4.min.js' %}"></script>
     <script src="{% static 'courses/jquery-ui.min.js' %}"></script>
     <script src="{% static 'courses/jquery.slimscroll.min.js' %}"></script>
     <script src="{% static 'exercise_admin/exercise-admin.js' %}"></script>
@@ -150,7 +150,12 @@
                 <textarea id="exercise-page-content-{{ language_choice }}" name="exercise_content_{{ language_choice }}"
                           cols="101" rows="8" onInput="exercise_page_content_changed(event, '{{ language_choice }}');"
                           class="exercise-content-input">{% get_translated_field exercise "content" language_choice %}</textarea>
-              </div>
+                
+                </div>
+                <button type="button" class="add-item"
+                    onclick="show_preview(this, '{{ language_choice }}');"
+                    data-url="{% url 'courses:content_preview' language_choice %}"
+                >{% trans 'Preview' %}</button>
             </div>
           {% endfor %}
 
@@ -176,13 +181,13 @@
           </div>
 
           <div class="form-cb-row">
-            <input type="checkbox" id="manually_evaluated" name="exercise_manually_evaluated" {% if exercise.manually_evaluated %}checked{% endif %}>
-            <label for="manually_evaluated">This exercise is evaluated by hand</label>
+            <input type="checkbox" id="group_submission" name="exercise_group_submission" {% if exercise.group_submission %}checked{% endif %}>
+            <label for="group_submission">Allow group submissions</label>
           </div>
 
           <div class="form-cb-row">
-            <input type="checkbox" id="ask_collaborators" name="exercise_ask_collaborators" {% if exercise.ask_collaborators %}checked{% endif %}>
-            <label for="ask_collaborators">Ask the answerer to list collaborators</label>
+            <input type="checkbox" id="manually_evaluated" name="exercise_manually_evaluated" {% if exercise.manually_evaluated %}checked{% endif %}>
+            <label for="manually_evaluated">This exercise is evaluated by hand</label>
           </div>
 
           {% block exercise-type-extra %}
@@ -330,6 +335,11 @@
         {% endfor %}
       </select>
     </div>
+    
+    <div id="preview-popup" class="popup">
+        <div class="content-preview" id="{{ widget.name }}-preview"></div>
+    </div>
+    
   </body>
 </html>
     

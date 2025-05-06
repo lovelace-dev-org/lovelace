@@ -1,0 +1,38 @@
+{% extends 'courses/base.html' %}
+{% load static %}
+{% load i18n %}
+{% load course_tags %}
+
+{% block page-title %}{% blocktrans with instance=instance.name %}
+  {{ instance }} reminders
+{% endblocktrans %}{% endblock %}
+
+{% block extra-static %}
+  <script src="{% static 'teacher_tools/reminders.js' %}"></script>
+{% endblock %}
+
+{% block breadcrumb-links %}
+  <li><a href="{% url 'courses:index' %}">{% trans 'Courses' %}</a></li>
+  <div class="separator">»</div>
+  <li>
+    <a href="{% url 'courses:course' course instance %}">
+      {{ course.name }}&nbsp;/&nbsp;{{ instance.name }}
+    </a>
+  </li>
+{% endblock %}
+
+{% block page-content %}
+
+  <h1>
+    {% blocktrans with instance=instance.name %}
+      Send mass email to {{ instance }} students
+    {% endblocktrans %}
+  </h1>
+
+  <div class="paragraph">
+    {% trans 'This utility can be used to send mass email to all students' %}
+  </div>
+
+  {{ panel|safe}}
+
+{% endblock %}

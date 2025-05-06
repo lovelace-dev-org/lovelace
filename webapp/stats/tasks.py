@@ -1,25 +1,23 @@
 # Celery tasks
 from __future__ import absolute_import
 
+import logging
+
 import datetime
 import json
-import redis
 import statistics
 
 from celery import shared_task
-from django.conf import settings
 from django.core.cache import cache
 
 from courses.models import ContentGraph, CourseInstance, UserAnswer
-from .models import *
-
 from utils.content import get_course_instance_tasks
+from .models import StudentTaskStats, TaskSummary
 
-from time import sleep
+logger = logging.getLogger(__name__)
 
 @shared_task(name="stats.generate-instance-user-stats")
 def generate_instance_user_stats(instance_slug):
-
     instance = CourseInstance.objects.get(slug=instance_slug)
 
     StudentTaskStats.objects.filter(instance=instance).delete()
@@ -28,14 +26,16 @@ def generate_instance_user_stats(instance_slug):
     students = instance.enrolled_users.get_queryset()
 
     for user in students:
-        print("Processing user", user.username)
+        logger.debug("Processing user", user.username)
         for page, task_links in task_pages:
-            print("Processing page", page.name)
-            deadline = ContentGraph.objects.filter(courseinstance=instance, content=page).first().deadline
+            logger("Processing page", page.name)
+            deadline = (
+                ContentGraph.objects.filter(courseinstance=instance, content=page).first().deadline
+            )
 
             for link in task_links:
                 task = link.embedded_page.get_type_object()
-                print("Processing task", task.name)
+                logger.debug("Processing task", task.name)
                 answers = UserAnswer.get_task_answers(task, user=user, instance=instance)
                 total = answers.count()
 
@@ -54,8 +54,12 @@ def generate_instance_user_stats(instance_slug):
                     stats.correct_answers = 0
 
                 if stats.correct_answers > 0:
-                    stats.first_correct = answers.filter(evaluation__correct=True).first().answer_date
-                    stats.tries_until_correct = answers.filter(answer_date__lte=stats.first_correct).count()
+                    stats.first_correct = (
+                        answers.filter(evaluation__correct=True).first().answer_date
+                    )
+                    stats.tries_until_correct = answers.filter(
+                        answer_date__lte=stats.first_correct
+                    ).count()
                 else:
                     stats.tries_until_correct = total
 
@@ -70,25 +74,23 @@ def generate_instance_user_stats(instance_slug):
 
     return datetime.datetime.now().strftime("%Y-%-m-%d %H:%M:%S")
 
+
 @shared_task(name="stats.generate-instance-tasks-summary")
 def generate_instance_tasks_summary(instance_slug):
-    
     instance = CourseInstance.objects.get(slug=instance_slug)
-    
+
     task_pages = get_course_instance_tasks(instance)
-    
+
     TaskSummary.objects.filter(instance=instance).delete()
-    
-    for page, task_links in task_pages:
+
+    for __, task_links in task_pages:
         for link in task_links:
             task = link.embedded_page.get_type_object()
-            records = StudentTaskStats.objects.filter(instance=instance, task=task).exclude(total_answers=0)
-
-            stats = TaskSummary(
-                instance=instance,
-                task=task,
-                total_users=records.count()
+            records = StudentTaskStats.objects.filter(instance=instance, task=task).exclude(
+                total_answers=0
             )
+
+            stats = TaskSummary(instance=instance, task=task, total_users=records.count())
 
             total_answers = 0
             correct_by = 0
@@ -119,23 +121,23 @@ def generate_instance_tasks_summary(instance_slug):
             if tries_len > 0:
                 stats.tries_avg = statistics.mean(try_counts)
                 stats.tries_median = statistics.median(try_counts)
-                
+
                 if tries_len > 3:
                     stats.tries_25p = try_counts[int(round(tries_len * 0.25))]
                     stats.tries_75p = try_counts[int(round(tries_len * 0.75))]
                 else:
                     stats.tries_25p = try_counts[0]
                     stats.tries_75p = try_counts[-1]
-            
+
             time_count = len(times)
             if time_count > 0:
                 stats.time_avg = sum(times, datetime.timedelta(0)) / len(times)
-            
+
                 if time_count % 2 == 1:
                     stats.time_median = times[time_count // 2]
                 else:
                     stats.time_median = (times[time_count // 2 - 1] + times[time_count // 2]) / 2
-                    
+
                 if time_count > 3:
                     stats.time_25p = times[int(round(time_count * 0.25))]
                     stats.time_75p = times[int(round(time_count * 0.75))]
@@ -144,19 +146,13 @@ def generate_instance_tasks_summary(instance_slug):
                     stats.time_75p = times[-1]
 
             stats.save()
-            
+
     return datetime.datetime.now().strftime("%Y-%-m-%d %H:%M:%S")
+
 
 @shared_task(name="stats.finalize-instance-stats", bind=True)
 def finalize_instance_stats(self, timestamp, instance_slug):
-    
-    cache.set("{}_stat_meta".format(instance_slug), json.dumps({"task_id": self.request.id, "completed": timestamp}))
-    
-    
-            
-            
-    
-    
-    
-    
-
+    cache.set(
+        f"{instance_slug}_stat_meta",
+        json.dumps({"task_id": self.request.id, "completed": timestamp}),
+    )

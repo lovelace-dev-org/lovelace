@@ -1,39 +1,20 @@
-INSTALLING
-==========
+ABOUT
+=====
 
-Review the INSTALL document.
-
-
-UPGRADING
-=========
-
-Review the UPGRADE document.
+Lovelace is a learning environment created at the University of Oulu for programming and associated sciences. It was created to answer the need for programming education that scales up to large number of students with limited teaching resources. Its primary purpose is to offer tools for creating meaningful exercises that are automatically evaluated by the system. Embedding these exercises into material pages is the main mode of delivery for Lovelace courses as it creates an uninterrupted flow where students can get a confirmation of learning the previous topics before moving on to next ones.
 
 
-TROUBLESHOOTING
-===============
+INSTALLATION
+============
 
-If the file uploads stop working for file names that have non-ASCII characters
-in them and Django returns a UnicodeEncodeError response tracing back to
-os.stat, you should check that your Apache configuration has UTF-8 as the file
-system encoding.
+The primary way of installing and upgrading Lovelace is to use the Ansible scripts maintained at
+the [Lovelace Ansible repository][lovelace-ansible]. These scripts cover needs from development
+installation to local testing to production installation across multiple servers. These scripts have
+been written and tested for Ubuntu, and may need modification for other systems.
 
-Refer to the following address for more information:
-https://docs.djangoproject.com/en/1.8/howto/deployment/wsgi/modwsgi/#if-you-get-a-unicodeencodeerror
+[lovelace-ansible]: https://github.com/lovelace-dev-org/lovelace-ansible
 
-How to fix
-----------
 
-On RHEL based distributions, edit
-    /etc/sysconfig/httpd
-and on Debian based distributions, edit
-    /etc/apache2/envvars
+USAGE
+=====
 
-Add the following lines to the file you edited:
-export LANG='en_US.UTF-8'
-export LC_ALL='en_US.UTF-8'
-
-and restart Apache – possibly by issuing one of the following commands:
-sudo /etc/init.d/httpd restart
-sudo apachectl restart
-sudo service apache2 restart

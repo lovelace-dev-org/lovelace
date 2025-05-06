@@ -1,20 +1,33 @@
+
 {% extends 'courses/base.html' %}
-{% load staticfiles %}
+{% load static %}
 {% load i18n %}
+{% load course_tags %}
+
+{% block extra-static %}
+    <link rel="stylesheet" href="{% static 'courses/toc.css' %}"></script>
+    <script src="{% static 'courses/toc.js' %}"></script>
+{% endblock %}
 
 {% block page-title %}{{ course.name }}{% endblock %}
 
 {% block breadcrumb-links %}
   <li><a href="{% url 'courses:index' %}">{% trans 'Courses' %}</a></li>
   <div class="separator">»</div>
-  <li><a href="{% url 'courses:course' course instance %}">{{ instance.get_identifying_str }}</a></li>
+  <li>
+    <a href="{% url 'courses:course' course instance %}">
+      {{ instance.get_identifying_str }}
+    </a>
+  </li>
 {% endblock %}
 
 {% block toc %}{% endblock %}
 
 {% block course-completion-link %}
   {% if not sandboxed %}
-    <a href="{% url 'teacher_tools:completion' course instance %}">{% trans 'Course completion' %}</a>
+    <a href="{% url 'teacher_tools:completion' course instance %}">
+      {% trans 'Course completion' %}
+    </a>
   {% endif %}
 {% endblock %}
 
@@ -23,46 +36,234 @@
 {% endblock %}
 
 {% block course-enrollments-link %}
-  <a href="{% url 'teacher:manage_enrollments' course instance %}">{% trans 'Manage enrollments' %}</a>
+  <a href="{% url 'teacher:manage_enrollments' course instance %}">
+    {% trans 'Manage enrollments' %}
+  </a>
 {% endblock %}
 
 {% block page-content %}
-<h1 class="content-heading">{{ course.name }}<span id="{{ course.slug }}" class="anchor-offset"></span><a href="#{{ course.slug }}" class="permalink" title="Permalink to {{ course.name }}">&para;</a></h1>
+<h1 class="content-heading">
+  {{ course.name }}
+  <span id="{{ course.slug }}" class="anchor-offset"></span>
+  <a href="#{{ course.slug }}" class="permalink" title="Permalink to {{ course.name }}">&para;</a>
+</h1>
 
-{% if content_tree %}
+<div class="sub-header-container">
+  {% enroll_widget course instance enroll_state %}
+</div>
+
+{% if course_staff %}
+  <div class="staff-panel staff-only collapsed">
+    <div>
+        <button type="button"
+                class="staff-base-button settings-button"
+                title="{% trans 'Course instance settings' %}"
+                onclick="toc.fetch_form(event, this);"
+                data-url="{% url 'courses:instance_settings' course instance %}">
+        </button>
+        <button type="button"
+                class="staff-base-button freeze-button"
+                title="{% trans 'Freeze this course instance' %}"
+                onclick="toc.fetch_form(event, this);"
+                data-url="{% url 'courses:freeze_instance' course instance %}">
+        </button>
+        <button type="button"
+                class="staff-base-button copy-button"
+                title="{% trans 'Make a clone of this course instance' %}"
+                onclick="toc.fetch_form(event, this);"
+                data-url="{% url 'courses:clone_instance' course instance %}">
+        </button>
+        <button type="button"
+                class="staff-base-button grades-button"
+                title="{% trans 'Edit course grading for this instance' %}"
+                onclick="toc.fetch_form(event, this);"
+                data-url="{% url 'courses:edit_grading' course instance %}">
+        </button>
+        <button type="button"
+                class="staff-base-button refresh-button"
+                title="{% trans 'Regenerate cache for this instance' %}"
+                onclick="toc.fetch_form(event, this);"
+                data-url="{% url 'courses:regen_instance_cache' course instance %}">
+        </button>
+        <button type="button"
+                class="staff-base-button termify-button"
+                title="{% trans 'Termify words in this instance' %}"
+                onclick="toc.fetch_form(event, this);"
+                data-url="{% url 'courses:termify' course instance %}">
+        </button>
+        <button type="button"
+                class="staff-base-button export-button"
+                title="{% trans 'Export this instance' %}"
+                onclick="toc.fetch_form(event, this);"
+                data-url="{% url 'courses:export' course instance %}">
+        </button>
+        <button type="button"
+                class="staff-base-button import-button"
+                title="{% trans 'Import into this instance' %}"
+                onclick="toc.fetch_form(event, this);"
+                data-url="{% url 'courses:import' course instance %}">
+        </button>
+    </div>
+  </div>
+{% endif %}
+
+
   <div class="course-contents">
-    <h2 class="content-heading">{% trans 'Course Contents' %}<span id="course-contents" class="anchor-offset"></span><a href="#course-contents" class="permalink" title="Permalink to Course Contents">&para;</a></h2>
-    {% for list_direction, result, correct_emb, emb_count, visible in content_tree %}
-      {% if list_direction == '>' %}
+    <h2 class="content-heading">
+      {% trans 'Course Contents' %}
+      <span id="course-contents" class="anchor-offset"></span>
+      <a href="#course-contents" class="permalink" title="Permalink to Course Contents">&para;</a>
+    </h2>
+    
+    {% if course_staff %}
+    <div class="toc-staff-top-row staff-only collapsed">
+        <div>
+            <button type="button"
+                class="staff-base-button add-button"
+                title="{% trans 'Add a new content at the beginning' %}"
+                onclick="toc.fetch_form(event, this, 0);"
+                data-url="{% url 'courses:create_content_node' course instance %}"
+                data-node-id="0">+
+            </button>
+        </div>
+    </div>
+    {% endif %}
+    
+    {% for item in content_tree %}
+      {% if item.content == '>' %}
         <ul>
-      {% elif list_direction == '<' %}
+      {% elif item.content == '<' %}
         </ul>
       {% else %}
-        <li{% if visible == False %} class="admin-visible-content"{% endif %}>
-          <a href="{% url 'courses:content' course instance list_direction %}">{{ list_direction.name }}</a>
-          {% if result and emb_count == 0 %}
-            {% if result == 'unanswered' %}
-              <img class="course-contents-result" src="{% static 'courses/unanswered-16.png' %}" alt="{% trans 'Unanswered' %}">
-            {% elif result == 'correct' %}
-              <img class="course-contents-result" src="{% static 'courses/correct-16.png' %}" alt="{% trans 'Correctly answered' %}">
-            {% elif result == 'incorrect' %}
-              <img class="course-contents-result" src="{% static 'courses/incorrect-16.png' %}" alt="{% trans 'Incorrectly answered' %}">
-            {% endif %}
+        <li class="
+          {% if item.visible == False %}admin-visible-content{% endif %}
+          {% if course_staff and item.require_enroll %}enroll-locked-content{% endif %}
+        ">
+          <a href="{{ item.url }}">
+            {{ item.content }}
+          </a>
+          {% comment %}
+          {% if item.page_count > 0 %}
+            <img class="course-pagination-icon"
+                 src="{% static 'courses/pagination.png' %}"
+                 alt="{% trans 'View as paginated' %}">
           {% endif %}
-          {% if emb_count > 0 %}
-            <progress class="course-contents-progress" value="{{ correct_emb }}" max="{{ emb_count }}"
-                      title="{% trans 'Completed' %} {{ correct_emb }} / {{ emb_count }}">
+          {% endcomment %}
+          
+          {% if course_staff %}
+
+            <img class="toc-drag-target drop-before collapsed" 
+                 id="drop-before-{{ item.node_id }}"
+                 src="{% static 'courses/drop_before.png' %}"
+                 ondragover="toc.over_drag_target(event);"
+                 ondrop="toc.drop_to_target(event, {{ item.node_id }});"
+                 ondragleave="toc.leave_drag_target(event);"
+                 data-url="{% url 'courses:move_content_node' course instance item.node_id 'before' %}"
+                 data-csrf="{{ csrf_token }}">
+
+            <img class="toc-drag-target drop-as-child collapsed" 
+                 id="drop-inside-{{ item.node_id }}"
+                 src="{% static 'courses/drop_as_child.png' %}"
+                 ondragover="toc.over_drag_target(event);"
+                 ondrop="toc.drop_to_target(event, {{ item.node_id }});"
+                 ondragleave="toc.leave_drag_target(event);"
+                 data-url="{% url 'courses:move_content_node' course instance item.node_id 'child' %}"
+                 data-csrf="{{ csrf_token }}">
+          
+            <img class="toc-drag-target drop-after collapsed" 
+                 id="drop-after-{{ item.node_id }}"
+                 src="{% static 'courses/drop_after.png' %}"
+                 ondragover="toc.over_drag_target(event);"
+                 ondrop="toc.drop_to_target(event, {{ item.node_id }});"
+                 ondragleave="toc.leave_drag_target(event);"
+                 data-url="{% url 'courses:move_content_node' course instance item.node_id 'after' %}"
+                 data-csrf="{{ csrf_token }}">
+            
+            <button type="button"
+                    class="staff-base-button toc-button add-button staff-only collapsed"
+                    title="{% trans 'Add a new content node after or inside this node' %}"
+                    onclick="toc.fetch_form(event, this);"
+                    data-url="{% url 'courses:create_content_node' course instance %}"
+                    data-node-id="{{ item.node_id }}">+
+            </button>
+            <button type="button"
+                    class="staff-base-button toc-button unlink-button staff-only collapsed"
+                    title="{% trans 'Remove this node from the course instance' %}"
+                    onclick="toc.remove_node(event, this, {{ item.node_id }});"
+                    data-url="{% url 'courses:remove_content_node' course instance item.node_id %}"
+                    data-csrf="{{ csrf_token }}">
+            </button>
+            <button type="button"
+                    class="staff-base-button toc-button settings-button staff-only collapsed"
+                    title="{% trans 'Edit node settings' %}"
+                    onclick="toc.fetch_form(event, this);"
+                    data-url="{% url 'courses:node_settings' course instance item.node_id %}"
+                    data-node-id="{{ item.node_id }}">
+            </button>
+            <button type="button"
+                    class="staff-base-button toc-button move-button staff-only collapsed"
+                    title="{% trans 'Move node by dragging this button' %}"
+                    draggable="true"
+                    ondragstart="toc.start_drag(event, {{ item.node_id }});"
+                    ondragend="toc.end_drag(event);"
+                    data-csrf="{{ csrf_token }}">&nbsp;&nbsp;&nbsp;&nbsp;
+            </button>
+            
+            {% if item.embedded_count > 0 %}
+              {% progress_widget item %}
+            {% endif %}
+
+          {% else %}
+            {% if item.embedded_count > 0 %}
+              {% progress_widget item %}
+            {% endif %}
           {% endif %}
         </li>
       {% endif %}
     {% endfor %}
   </div>
-{% endif %}
 
 {% if rendered_content %}
-  {{ rendered_content|safe }}
   {% if content.is_answerable %}
     {% include "courses/task.html" %}
+  {% elif not content.is_answerable %}
+    {% for block_type, block_data, line_idx, line_count in content_blocks %}
+      {% if block_type == "calendar" %}
+        {% calendar block_data %}
+      {% elif block_type == "embedded" %}
+        {% embed_frame block_data %}
+      {% else %}
+          {% if course_staff and revision is None %}
+            <span>
+              {% if block_type not in uneditable_markups %}
+                <a class="staff-only collapsed"
+                  href="{{ edit_content_url }}"
+                  onclick="editing.show_widget_panel(event, this)"
+                  data-querystring="line={{ line_idx }}&block={{ block_type }}&size={{ line_count }}"
+                  data-csrf="{{ csrf_token }}"><img src="{% static 'courses/edit.png' %}"></a>
+              {% endif %}
+              <a class="staff-only collapsed"
+                href="{{ delete_content_url }}"
+                onclick="editing.show_widget_panel(event, this)"
+                data-querystring="line={{ line_idx }}&block={{ block_type }}&size={{ line_count }}"
+                data-csrf="{{ csrf_token }}"><img src="{% static 'courses/delete-16.png' %}"></a>
+              <a class="staff-only collapsed"
+                href="{{ add_content_url }}"
+                onclick="editing.show_widget_panel(event, this)"
+                data-querystring="line={{ line_idx }}&size={{ line_count }}"
+                data-csrf="{{ csrf_token }}"><img src="{% static 'courses/expand-16.png' %}"></a>
+            </span>
+          {% endif %}
+        {{ block_data|safe }}
+      {% endif %}
+    {% endfor %}
+
+    {% block feedback %}
+      {% feedbacks %}
+    {% endblock %}
+
   {% endif %}
+
 {% endif %}
 {% endblock %}
+

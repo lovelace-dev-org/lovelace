@@ -1,6 +1,9 @@
 {% load i18n %}
 {% load course_tags %}
 
+{% block extra-static %}
+{% endblock %}
+
 {% if user.is_active %}
   {% content_meta %}
 {% endif %}
@@ -11,7 +14,9 @@
 
 {% if emb_content %}
   {% if revision and revision > 0 and user.is_superuser %}
-    <div class="revision-info-embedded">This is an old revision № {{ revision }} of this embedded page!</div>
+    <div class="revision-info-embedded">
+      This is an old revision № {{ revision }} of this embedded page!
+    </div>
   {% endif %}
   <div>{{ emb_content|safe }}</div>
 {% endif %}
@@ -25,12 +30,15 @@
     <div class="hints-list"></div>
   </div>
   
-  <form id="{{ content_slug }}-form" class="exercise-form" method="POST" enctype="multipart/form-data"
-        {% if revision and not sandboxed%}action="{% url 'courses:check' course instance content revision %}"
-        {% comment %}
-            {% elif sandboxed %}action="{% url 'courses:check_sandboxed' content.slug %}"
-        {% endcomment %}
-        {% else %}action="{% url 'courses:check' course instance content "head" %}"{% endif %}>
+  <form id="{{ content_slug }}-form"
+        class="exercise-form"
+        method="POST"
+        enctype="multipart/form-data"
+        {% if revision and not sandboxed%}
+          action="{% url 'courses:check' course instance content revision %}"
+        {% else %}
+          action="{% url 'courses:check' course instance content "head" %}"
+        {% endif %}>
     
     {% csrf_token %}
     {% if question %}{{ question|safe }}{% endif %}
@@ -47,15 +55,21 @@
     {% if not user.is_authenticated %}
       <div class="auth-warning">{% trans "Warning: You have not logged in. You cannot answer." %}</div>
     {% elif not enrolled and not course_staff %}
-      <div class="auth-warning">{% trans "Warning: You have not enrolled to this course instance. You cannot answer." %}</div>
+      <div class="auth-warning">
+        {% trans "Warning: You have not enrolled to this course instance. You cannot answer." %}
+      </div>
     {% endif %}
     
     {% if evaluation == "unanswered" %}
       <div class="answered-status"></div>
     {% elif evaluation == "incorrect" %}
-      <div class="answered-status"><span class="incorrect">{% trans "You have previously answered this task incorrectly." %}</span></div>
+      <div class="answered-status">
+        <span class="incorrect">{% trans "You have previously answered this task incorrectly." %}</span>
+      </div>
     {% elif evaluation == "correct" %}
-      <div class="answered-status"><span class="correct">{% trans "You have already answered this task correctly." %}</span></div>
+      <div class="answered-status">
+        <span class="correct">{% trans "You have already answered this task correctly." %}</span>
+      </div>
     {% endif %}
 
     {% block exercise-form-extra %}

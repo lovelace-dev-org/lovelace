@@ -476,6 +476,7 @@ input#save-exercise {
     text-decoration: none;
     text-transform: uppercase;
     border: 2px solid #ccc;
+    cursor: pointer;
 }
 
 button.add-item, input[type=submit].add-item {

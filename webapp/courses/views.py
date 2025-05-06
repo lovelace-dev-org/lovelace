@@ -3,60 +3,83 @@ Django views for rendering the course contents and checking exercises.
 """
 import datetime
 import json
-from cgi import escape
+import logging
+import os
+from html import escape
 from collections import namedtuple
+from operator import attrgetter
 
 import redis
-
-import magic
-
-from django.http import HttpResponse, JsonResponse, HttpResponseRedirect,\
-    HttpResponseNotFound, HttpResponseForbidden, HttpResponseNotAllowed,\
-    HttpResponseServerError, HttpResponseBadRequest
+from django.http import (
+    HttpResponse,
+    JsonResponse,
+    HttpResponseNotFound,
+    HttpResponseForbidden,
+    HttpResponseNotAllowed,
+    HttpResponseBadRequest,
+)
 from django.db import transaction
-from django.db.models import Q
-from django.template import Template, loader, engines
+from django.template import loader, engines
 from django.conf import settings
-from django.core.cache import cache
 from django.core.files.base import File
+from django.shortcuts import redirect
 from django.urls import reverse
-from django.utils import timezone, translation
+from django.utils import translation
 from django.utils.text import slugify
 from django.utils.safestring import mark_safe
-from django.utils.translation import ugettext as _
-from django.contrib import messages
+from django.utils.translation import gettext as _
 
-from reversion import revisions as reversion
 from reversion.models import Version
 
 from lovelace.celery import app as celery_app
+from courses import markupparser
 import courses.tasks as rpc_tasks
-from courses.tasks import get_celery_worker_status
-
-from courses.models import *
-from courses.forms import *
-from feedback.models import *
-
-from allauth.account.forms import LoginForm
-
-import courses.markupparser as markupparser
-import courses.blockparser as blockparser
-import django.conf
-from django.contrib import auth
-from django.shortcuts import redirect
-
-from utils.access import is_course_staff, determine_media_access, ensure_enrolled_or_staff, ensure_owner_or_staff
-from utils.content import first_title_from_content
+from courses import blockparser
+from courses.models import (
+    About,
+    Course,
+    CourseEnrollment,
+    CourseInstance,
+    CourseMediaLink,
+    ContentGraph,
+    DeadlineExemption,
+    EmbeddedLink,
+    File,
+    FileExerciseTestIncludeFile,
+    FileUploadExerciseReturnFile,
+    InvalidExerciseAnswerException,
+    RepeatedTemplateExercise,
+    RepeatedTemplateExerciseBackendFile,
+    RepeatedTemplateExerciseSession,
+    RepeatedTemplateExerciseSessionInstance,
+    UserCheckboxExerciseAnswer,
+    UserFileUploadExerciseAnswer,
+    UserMultipleChoiceExerciseAnswer,
+    UserRepeatedTemplateExerciseAnswer,
+    UserTaskCompletion,
+    UserTextfieldExerciseAnswer,
+)
+import faq.utils as faq_utils
+from utils.access import (
+    is_course_staff,
+    determine_media_access,
+    ensure_enrolled_or_staff,
+    ensure_owner_or_staff,
+    determine_access,
+)
+from utils.archive import find_version_with_filename, get_single_archived
+from utils.content import (
+    check_exercise_accessible,
+    system_messages,
+    course_tree,
+    first_title_from_content,
+    get_answer_count_meta,
+    get_embedded_parent,
+)
+from utils.exercise import compile_evaluation_data
 from utils.files import generate_download_response
-
-try:
-    from shibboleth.app_settings import LOGOUT_URL, LOGOUT_REDIRECT_URL, LOGOUT_SESSION_KEY
-except:
-    # shibboleth not installed 
-    # these are not needed
-    LOGOUT_URL = ""
-    LOGOUT_REDIRECT_URL = ""
-    LOGOUT_SESSION_KEY = ""
+from utils.notify import send_error_report, send_welcome_email
+from utils.rendering import render_terms
 
 JSON_INCORRECT = 0
 JSON_CORRECT = 1
@@ -64,99 +87,68 @@ JSON_INFO = 2
 JSON_ERROR = 3
 JSON_DEBUG = 4
 
+logger = logging.getLogger(__name__)
 
-def cookie_law(view_func):
-    """
-    To comply with the European Union cookie law, display a warning about the
-    site using cookies. When the user accepts cookies, set a session variable to
-    disable the message.
-    """
-    def func_wrapper(request, *args, **kwargs):
-        if "cookies_accepted" in request.COOKIES:
-            if request.COOKIES["cookies_accepted"] == "1":
-                request.session["cookies_accepted"] = True
-        if request.session.get("cookies_accepted"):
-            pass
-        else:
-            request.session["cookies_accepted"] = False
-        return view_func(request, *args, **kwargs)
-    return func_wrapper
+# PAGE VIEWS
+# |
+# v
 
-@cookie_law
-def login(request):
-    # template based on allauth login page
-    t = loader.get_template("courses/login.html")
-    c = {
-        'login_form': LoginForm(),
-        'signup_url': reverse("account_signup")
-    }
 
-    if 'shibboleth' in django.conf.settings.INSTALLED_APPS:
-        c['shibboleth_login'] = reverse("shibboleth:login")
-    else:
-        c['shibboleth_login'] = False
-
-    return HttpResponse(t.render(c, request))
-
-@cookie_law    
-def logout(request):
-    # template based on allauth logout page
-    t = loader.get_template("courses/logout.html")   
-    
-    if request.method == "POST":
-        # handle shibboleth logout
-        # from shibboleth login view
-        
-        auth.logout(request)
-        request.session[LOGOUT_SESSION_KEY] = True
-        target = LOGOUT_REDIRECT_URL
-        logout = LOGOUT_URL % target
-        return redirect(logout)        
-    
-    if request.session.get("shib", None):
-        c = {
-            "logout_url": reverse("courses:logout") 
-        }
-    else:
-        c = {
-            "logout_url": reverse("account_logout")
-        }
-    return HttpResponse(t.render(c, request))
-
-@cookie_law
+@system_messages
 def index(request):
-    course_list = Course.objects.all()
-    
+    # This cannot be ordered on DB level because of translations
+    course_list = list(Course.objects.all())
+
+    def name_key(course):
+        return course.name.lower()
+
+    course_list.sort(key=name_key)
     t = loader.get_template("courses/index.html")
     c = {
-        'course_list': course_list,
+        "course_list": course_list,
     }
     return HttpResponse(t.render(c, request))
 
-@cookie_law
-def course_instances(request, course):
-    return HttpResponse("here be instances for this course")
+@system_messages
+def about(request):
+    local_about = About.objects.first()
+    parser = markupparser.MarkupParser()
+    markup_gen = parser.parse(local_about.content)
+    local_about_body = ""
+    for chunk in markup_gen:
+        if isinstance(chunk[1], str):
+            local_about_body += chunk[1]
+        else:
+            raise ValueError("Embedded content is not allowed about page content")
 
-def check_exercise_accessible(request, course, instance, content):
-
-    embedded_links = EmbeddedLink.objects.filter(embedded_page_id=content.id, instance=instance)
-    content_graph_links = ContentGraph.objects.filter(instance=instance, content=content)
-    
-    if content_graph_links.first() is None and embedded_links.first() is None:
-        return {'error': HttpResponseNotFound("Content {} is not linked to course {}!".format(content.slug, course.slug))}
-
-    return {
-        'embedded_links': embedded_links,
-        'content_graph_links': content_graph_links,
-        'error': None,
+    t = loader.get_template("courses/about.html")
+    c = {
+        "about_instance": local_about_body,
     }
+    return HttpResponse(t.render(c, request))
 
-@cookie_law
+
+
+@system_messages
+def course_instances(request, course):
+    try:
+        primary = CourseInstance.objects.get(course=course, primary=True)
+    except CourseInstance.DoesNotExist:
+        t = loader.get_template("courses/error-page.html")
+        c = {"error_msg": _("This course does not have a primary instance.")}
+        return HttpResponse(t.render(c, request))
+
+    return redirect(reverse("courses:course", kwargs={
+        "course": course,
+        "instance": primary,
+    }))
+
+
+@system_messages
 def course(request, course, instance):
-
     frontpage = instance.frontpage
     if frontpage:
-        context = content(request, course, instance, frontpage, frontpage=True)
+        context = _page_context(request, course, instance, frontpage)
     else:
         context = {}
 
@@ -164,488 +156,77 @@ def course(request, course, instance):
     context["instance"] = instance
 
     if is_course_staff(request.user, instance):
-        contents = ContentGraph.objects.filter(instance=instance, ordinal_number__gt=0).order_by('ordinal_number')
+        content_qs = ContentGraph.objects.filter(
+            instance=instance, ordinal_number__gt=0
+        )
+        context["course_staff"] = True
     else:
-        contents = ContentGraph.objects.filter(instance=instance, ordinal_number__gt=0, visible=True).order_by('ordinal_number')
-    
-    if len(contents) > 0:
-        tree = []
-        tree.append((mark_safe('>'), None, None, None, None))
-        for content_ in contents:
-            course_tree(tree, content_, request.user, instance)
-        tree.append((mark_safe('<'), None, None, None, None))
-        context["content_tree"] = tree
+        content_qs = ContentGraph.objects.filter(
+            instance=instance, ordinal_number__gt=0, visible=True
+        )
+        context["course_staff"] = False
 
+    enroll_state = instance.user_enroll_status(request.user)
+    enrolled = enroll_state in ["ACCEPTED", "COMPLETED"]
+    context["enroll_state"] = enroll_state
+
+    context["content_tree"] = instance.get_content_tree(staff=context["course_staff"])
+    if request.user.is_authenticated:
+        user_results = dict(
+            (entry["exercise_id"], entry) for entry in
+            UserTaskCompletion.objects.filter(user=request.user, instance=instance).values()
+        )
+        exemptions = dict(
+            (entry["contentgraph_id"], entry["new_deadline"]) for entry in
+            DeadlineExemption.objects.filter(user=request.user).values()
+        )
+    else:
+        user_results = {}
+        exemptions = {}
+
+
+    context["student_results"] = user_results
+    context["exemptions"] = exemptions
+    context["time_now"] = datetime.datetime.now()
     t = loader.get_template("courses/course.html")
     return HttpResponse(t.render(context, request))
 
-def course_tree(tree, node, user, instance_obj):
-    embedded_links = EmbeddedLink.objects.filter(parent=node.content.id, instance=instance_obj)
-    embedded_count = len(embedded_links)
-    
-    correct_embedded = 0
-    
-    evaluation = ""
-    if user.is_authenticated:
-        exercise = node.content
-        evaluation = exercise.get_user_evaluation(exercise, user, instance_obj)
-
-        if embedded_count > 0:
-            
-            grouped = embedded_links.exclude(embedded_page__evaluation_group="")
-            group_repr = grouped.order_by("embedded_page__evaluation_group")\
-                .distinct("embedded_page__evaluation_group")
-            
-            embedded_count -= (grouped.count() - group_repr.count())
-            
-            for link in group_repr:
-                if link.embedded_page.get_user_evaluation(
-                    link.embedded_page, user, instance_obj
-                    ) in ("correct", "credited"):
-                    
-                    correct_embedded += 1
-            
-            for emb_exercise in embedded_links.filter(embedded_page__evaluation_group="").values_list('embedded_page', flat=True):
-                emb_exercise = ContentPage.objects.get(id=emb_exercise)
-                #print(emb_exercise.name)
-                correct_embedded += 1 if emb_exercise.get_user_evaluation(emb_exercise, user, instance_obj) == "correct" else 0
-    
-    list_item = (node.content, evaluation, correct_embedded, embedded_count, node.visible)
-    
-    if list_item not in tree:
-        tree.append(list_item)
-
-    if is_course_staff(user, instance_obj):
-        children = ContentGraph.objects.filter(parentnode=node, instance=instance_obj).order_by('ordinal_number')
-    else:
-        children = ContentGraph.objects.filter(parentnode=node, instance=instance_obj, visible=True).order_by('ordinal_number')
-    
-    if len(children) > 0:
-        tree.append((mark_safe('>'), None, None, None, None))
-        for child in children:
-            course_tree(tree, child, user, instance_obj)
-        tree.append((mark_safe('<'), None, None, None, None))
-
-def check_answer_sandboxed(request, content_slug):
-    """
-    Saves and evaluates a user's answer to an exercise and sends the results
-    back to the user in sanboxed mode.
-    """
-
-    course_slug = "sandbox"
-    
-    if request.method != "POST":
-        return HttpResponseNotAllowed(['POST'])
-
-    user = request.user
-    if not user.is_authenticated or not user.is_active or not user.is_staff:
-        return JsonResponse({
-            'result': 'Only logged in admins can send their answers for evaluation!'
-        })
-
-    content = ContentPage.objects.get(slug=content_slug)
-    
-    user = request.user
-    ip = request.META.get('REMOTE_ADDR')
-    answer = request.POST
-    files = request.FILES
-
-    exercise = content.get_type_object()
-    
-    try:
-        answer_object = exercise.save_answer(user, ip, answer, files)
-    except InvalidExerciseAnswerException as e:
-        return JsonResponse({
-            'result': str(e)
-        })
-    evaluation = exercise.check_answer(user, ip, answer, files, answer_object)
-    if not exercise.manually_evaluated:
-        if exercise.content_type == "FILE_UPLOAD_EXERCISE":
-            task_id = evaluation["task_id"]
-            return check_progress(request, None, content_slug, task_id)
-        exercise.save_evaluation(user, evaluation, answer_object)
-        evaluation["manual"] = False
-    else:
-        evaluation["manual"] = True
-
-    # TODO: Errors, hints, comments in JSON
-    t = loader.get_template("courses/exercise-evaluation.html")
-    return JsonResponse({
-        'result': t.render(evaluation),
-        'evaluation': evaluation.get("evaluation"),
-    })
-
-@ensure_enrolled_or_staff
-def check_answer(request, course, instance, content, revision):
-    """
-    Saves and evaluates a user's answer to an exercise and sends the results
-    back to the user.
-    """
-    if request.method != "POST":
-        return HttpResponseNotAllowed(['POST'])
-
-    # TODO: Ensure that the content revision really belongs to the course instance
-
-    if revision == "head":
-        latest = Version.objects.get_for_object(content).latest("revision__date_created")
-        revision = latest.revision_id
-
-    # Check if a deadline exists and if it has already passed
-    try:
-        content_graph = ContentGraph.objects.get(instance=instance, content=content)
-    except ContentGraph.DoesNotExist as e:
-        pass
-    else:
-        if content_graph is not None:
-            if not content_graph.deadline or datetime.datetime.now() < content_graph.deadline:
-                pass
-            else:
-                # TODO: Use a template!
-                return JsonResponse({
-                    'result': _('The deadline for this exercise (%s) has passed. Your answer will not be evaluated!') % (content_graph.deadline)
-                })
-
-    user = request.user
-    ip = request.META.get('REMOTE_ADDR')
-    answer = request.POST
-    files = request.FILES
-
-    exercise = content
-    
-    try:
-        answer_object = exercise.save_answer(content, user, ip, answer, files, instance, revision)
-    except InvalidExerciseAnswerException as e:
-        return JsonResponse({
-            'result': str(e)
-        })
-    evaluation = exercise.check_answer(content, user, ip, answer, files, answer_object, revision)
-    if not exercise.manually_evaluated:
-        if exercise.content_type == "FILE_UPLOAD_EXERCISE":
-            task_id = evaluation["task_id"]
-            return check_progress(request, course, instance, content, revision, task_id)
-        exercise.save_evaluation(content, user, evaluation, answer_object)
-        evaluation["manual"] = False
-    else:
-        evaluation["manual"] = True
-
-    msg_context = {
-        'course_slug': course.slug,
-        'instance_slug': instance.slug,
-        'instance': instance,
-        'content_page': content
-    }
-    hints = ["".join(markupparser.MarkupParser.parse(msg, request, msg_context)).strip()
-             for msg in evaluation.get('hints', [])]
-
-    answer_count = exercise.get_user_answers(exercise, user, instance).count()
-    answer_count_str = get_answer_count_meta(answer_count)
-
-    # TODO: Errors, hints, comments in JSON
-    t = loader.get_template("courses/exercise-evaluation.html")
-    total_evaluation = exercise.get_user_evaluation(content, user, instance)
-    #print(evaluation)
-    
-    data = {
-        'result': t.render(evaluation),
-        'hints': hints,
-        'evaluation': evaluation.get("evaluation"),
-        'answer_count_str': answer_count_str,
-        'next_instance': evaluation.get('next_instance', None),
-        'total_instances': evaluation.get('total_instances', None),
-        'total_evaluation': total_evaluation,
-    }
-    return JsonResponse(data)
-
-
-@ensure_enrolled_or_staff
-def get_repeated_template_session(request, course, instance, content, revision):
-    check_results = check_exercise_accessible(request, course, instance, content)
-    check_error = check_results.get('error')
-    if check_error is not None:
-        return check_error
-
-    content = content.get_type_object()
-    
-    lang_code = translation.get_language()
-
-    # If a user has an unfinished session, pick that one
-    open_sessions = RepeatedTemplateExerciseSession.objects.filter(
-        exercise=content, user=request.user, language_code=lang_code,
-        repeatedtemplateexercisesessioninstance__userrepeatedtemplateinstanceanswer__isnull=True
-    )
-    
-    session = open_sessions.exclude(repeatedtemplateexercisesessioninstance__userrepeatedtemplateinstanceanswer__correct=False).distinct().first()
-
-    #print(session)
-    if session is None:
-        with transaction.atomic():
-            session = RepeatedTemplateExerciseSession.objects.filter(exercise=content, user__isnull=True, language_code=lang_code).first()
-            if session is not None:
-                session.user = request.user
-                session.save()
-            else:
-                # create a new one, no need for atomic anymore
-                if revision == "head": revision = None
-                # TODO: DO NOTHING AND FORGET THE TASK IF CELERY IS NOT WORKING!
-                # TODO: Add an expire date
-                celery_status = rpc_tasks.get_celery_worker_status()
-                if 'errors' in celery_status.keys():
-                    data = {
-                        'ready': True,
-                        'rendered_template': _("Error, exercise backend unavailable."),
-                    }
-                else:
-                    result = rpc_tasks.generate_repeated_template_session.delay(
-                        user_id=request.user.id,
-                        instance_id=instance.id,
-                        exercise_id=content.id,
-                        lang_code=lang_code,
-                        revision=revision
-                    )
-                    # TODO: Check that the task was successfully launched
-                    rerequest_url = reverse('courses:get_repeated_template_session',
-                                            kwargs={'course': course,
-                                                    'instance': instance,
-                                                    'content': content,
-                                                    'revision': "head" if revision is None else revision,
-                                            })
-                    data = {
-                        'ready': False,
-                        'redirect': rerequest_url,
-                    }
-                return JsonResponse(data)
-
-    # Pick the first unfinished instance
-    session_instance = RepeatedTemplateExerciseSessionInstance.objects.filter(session=session, userrepeatedtemplateinstanceanswer__isnull=True).order_by('ordinal_number').first()
-    #usession_instance)
-
-    session_template = session_instance.template
-    variables = session_instance.variables
-    values = session_instance.values
-    
-    total_instances = session.total_instances()
-    next_instance = session_instance.ordinal_number + 2 if session_instance.ordinal_number + 1 < total_instances else None
-    
-    #print(session_instance.ordinal_number + 1, " / ", total_instances)
-    
-    rendered_template = session_instance.template.content_string.format(**dict(zip(variables, values)))
-    
-    #print(session_instance.repeatedtemplateexercisesessioninstanceanswer_set.first().answer)
-    
-    template_context = {
-        'course_slug': course.slug,
-        'instance_slug': instance.slug,
-    }
-    template_parsed = "".join(markupparser.MarkupParser.parse(rendered_template, request, template_context)).strip()
-
-    data = {
-        'ready': True,
-        'title': session_template.title,
-        'rendered_template': template_parsed,
-        'redirect': None,
-        'next_instance': next_instance,
-        'total_instances': total_instances,
-        'progress': "{} / {}".format(session_instance.ordinal_number + 1, total_instances)
-    }
-    
-    return JsonResponse(data)
-
-@ensure_enrolled_or_staff
-def check_progress(request, course, instance, content, revision, task_id):
-    # Based on https://djangosnippets.org/snippets/2898/
-    # TODO: Check permissions
-    task = celery_app.AsyncResult(id=task_id)
-    info = task.info
-    if task.ready():
-        return file_exercise_evaluation(request, course, instance, content, revision, task_id, task)
-    else:
-        celery_status = get_celery_worker_status()
-        if "errors" in celery_status:
-            data = celery_status
-        else:
-            progress_url = reverse('courses:check_progress',
-                                   kwargs={'course': course,
-                                           'instance': instance,
-                                           'content': content,
-                                           'revision': revision,
-                                           'task_id': task_id,})
-            if not info: info = task.info # Try again in case the first time was too early
-            data = {"state": task.state, "metadata": info, "redirect": progress_url}
-        return JsonResponse(data)
-
-def get_answer_count_meta(answer_count):
-    # TODO: Maybe refactor
-    t = engines['django'].from_string("""{% load i18n %}{% blocktrans count counter=answer_count %}<span class="answer-count">{{ counter }}</span> answer{% plural %}<span class="answer-count">{{ counter }}</span> answers{% endblocktrans %}""")
-    return t.render({'answer_count': answer_count})
-    
-    
-def file_exercise_evaluation(request, course, instance, content, revision, task_id, task=None):
-    if task is None:
-        task = AsyncResult(task_id)
-    evaluation_id = task.get()
-    task.forget() # TODO: IMPORTANT! Also forget all the subtask results somehow? in tasks.py?
-    evaluation_obj = Evaluation.objects.get(id=evaluation_id)
-    answer_count = content.get_user_answers(content, request.user, instance).count()
-    answer_count_str = get_answer_count_meta(answer_count)
-
-    r = redis.StrictRedis(**settings.REDIS_RESULT_CONFIG)
-    evaluation_json = r.get(task_id).decode("utf-8")
-    evaluation_tree = json.loads(evaluation_json)
-    r.delete(task_id)
-    task.forget()
-
-    msg_context = {
-        'course_slug': course.slug,
-        'instance_slug': instance.slug,
-        'instance': instance,
-        'content_page': content
-    }
-
-    data = compile_evaluation_data(request, evaluation_tree, evaluation_obj, msg_context)
-    
-    if evaluation_tree['test_tree'].get('errors', []):
-        if evaluation_tree['timedout']:
-            data['errors'] = _("The program took too long to execute and was terminated. Check your code for too slow solutions.")
-        else:
-            #print(evaluation_tree['test_tree']['errors'])        
-            data['errors'] = _("Checking program was unable to finish due to an error. Contact course staff.")
-            #print(data)
-        
-    data["answer_count_str"] = answer_count_str
-    
-    return JsonResponse(data)
-
-def compile_evaluation_data(request, evaluation_tree, evaluation_obj, context=None):
-    log = evaluation_tree["test_tree"].get("log", [])
-
-    messages = [
-        (msg['title'], [
-            "".join(markupparser.MarkupParser.parse(msg_msg, request, context)).strip()
-            for msg_msg in msg['msgs']
-        ])
-        for msg in evaluation_tree['test_tree'].get('messages', [])
-    ]
-
-    # render all individual messages in the log tree
-    for test in log:
-        test["title"] = "".join(markupparser.MarkupParser.parse(test["title"], request, context)).strip()
-        test["runs"].sort(key=lambda run: run["correct"])
-        for run in test["runs"]:
-            for output in run["output"]:
-                output["msg"] = "".join(markupparser.MarkupParser.parse(output["msg"], request, context)).strip()
-    
-    debug_json = json.dumps(evaluation_tree, indent=4)
-
-    hints = ["".join(markupparser.MarkupParser.parse(msg, request, context)).strip()
-             for msg in evaluation_tree['test_tree'].get('hints', [])]
-    triggers = evaluation_tree['test_tree'].get('triggers', [])
-
-    t_file = loader.get_template("courses/file-exercise-evaluation.html")
-    c_file = {
-        'debug_json': debug_json,
-        'evaluation_tree': evaluation_tree["test_tree"],
-    }
-    t_exercise = loader.get_template("courses/exercise-evaluation.html")
-    c_exercise = {
-        'evaluation': evaluation_obj.correct,
-    }
-    t_messages = loader.get_template('courses/exercise-evaluation-messages.html')
-    data = {
-        'file_tabs': t_file.render(c_file, request),
-        'result': t_exercise.render(c_exercise),
-        'evaluation': evaluation_obj.correct,
-        'points': evaluation_obj.points,
-        'messages': t_messages.render({'log': log}),
-        'hints': hints,
-        'triggers': triggers,
-    }
-    
-    return data
-    
-@ensure_owner_or_staff
-def get_file_exercise_evaluation(request, user, course, instance, exercise, answer):
-    from .tasks import generate_results
-
-    results_json = answer.evaluation.test_results
-    results_dict = json.loads(results_json)
-
-    evaluation_tree = generate_results(results_dict, 0)
-    evaluation_obj = answer.evaluation
-
-    msg_context = {
-        'course_slug': course.slug,
-        'instance_slug': instance.slug,
-        'instance': instance,
-        'content_page': exercise
-    }
-
-    data = compile_evaluation_data(request, evaluation_tree, evaluation_obj, msg_context)
-
-    if not request.user.is_staff:
-        data["triggers"] = []
-
-    t_view = loader.get_template("courses/view-answer-results.html")
-
-    return HttpResponse(t_view.render(data, request))
-
-
-@cookie_law
-def sandboxed_content(request, content_slug, **kwargs):
-    try:
-        content = ContentPage.objects.get(slug=content_slug)
-    except ContentPage.DoesNotExist:
-        return HttpResponseNotFound("Content {} does not exist!".format(content_slug))
-
-    user = request.user
-    if not user.is_authenticated or not user.is_active or not user.is_staff:
-        return HttpResponseForbidden("Only logged in admins can view pages in sandbox!")
-
-    content_type = content.content_type
-    question = blockparser.parseblock(escape(content.question))
-    choices = answers = content.get_choices(content)
-
-    rendered_content = content.rendered_markup(request)
-
-    c = {
-        'content': content,
-        'content_name': content.name,
-        'content_type': content_type,
-        'rendered_content': rendered_content,
-        'embedded': False,
-        'question': question,
-        'choices': choices,
-        'user': user,
-        'sandboxed': True,
-    }
-    if "frontpage" in kwargs:
-        return c
-    else:
-        t = loader.get_template("courses/contentpage.html")
-        return HttpResponse(t.render(c, request))
-
-@cookie_law
-def content(request, course, instance, content, **kwargs):
+def _page_context(request, course, instance, content, pagenum=None):
     content_graph = None
     revision = None
-    #if "frontpage" not in kwargs:
     try:
-        content_graph = ContentGraph.objects.get(instance=instance, content=content)
+        content_graph = ContentGraph.objects.filter(instance=instance, content=content).first()
     except ContentGraph.DoesNotExist:
-        return HttpResponseNotFound("Content {} is not linked to course {}!".format(content.slug, course.slug))
+        return HttpResponseNotFound(
+            _("Content {content} is not linked to course {course}!").format(
+                content=content.slug, course=course.slug
+            )
+        )
     else:
         if content_graph is None:
-            return HttpResponseNotFound("Content {} is not linked to course {}!".format(content.slug, course.slug))
-        
+            return HttpResponseNotFound(
+                _("Content {content} is not linked to course {course}!").format(
+                    content=content.slug, course=course.slug
+                )
+            )
+
     evaluation = None
     answer_count = None
     enrolled = False
     course_staff = False
     if request.user.is_authenticated:
-        if request.user.is_active and content.is_answerable() and content.get_user_answers(content, request.user, instance):
+        if (
+            request.user.is_active
+            and content.is_answerable()
+            and content.get_user_answers(content, request.user, instance)
+        ):
             answer_count = content.get_user_answers(content, request.user, instance).count()
-        if content_graph and (content_graph.publish_date is None or content_graph.publish_date < datetime.datetime.now()):
+        if content_graph and (
+            content_graph.publish_date is None
+            or content_graph.publish_date < datetime.datetime.now()
+        ):
             try:
-                evaluation = content.get_user_evaluation(content, request.user, instance)
+                evaluation = content.get_user_evaluation(request.user, instance)
             except NotImplementedError:
                 evaluation = None
         try:
@@ -655,307 +236,90 @@ def content(request, course, instance, content, **kwargs):
             pass
         if is_course_staff(request.user, instance):
             course_staff = True
-            
+
+    if not content_graph.visible and not course_staff:
+        return HttpResponseNotFound(_("This content is (currently) only available to course staff"))
+
+    if content_graph.require_enroll:
+        if not (enrolled or course_staff):
+            return HttpResponseNotFound(_("This content is only available to enrolled users"))
+
     revision = content_graph.revision
-    
     content_type = content.content_type
-
     context = {
-        'course': course,
-        'course_slug': course.slug,
-        'instance': instance,
-        'instance_slug': instance.slug,
-        'content_page': content,
-        'enrolled': enrolled,
-        'course_staff': course_staff
-    }
-
-    termbank_contents = cache.get('termbank_contents_{instance}_{lang}'.format(instance=context['instance_slug'], lang=translation.get_language()))
-    term_div_data = cache.get('term_div_data_{instance}_{lang}'.format(instance=context['instance_slug'], lang=translation.get_language()))
-    if termbank_contents is None or term_div_data is None:
-        term_context = context.copy()
-        term_context['tooltip'] = True
-        term_links = TermToInstanceLink.objects.filter(instance__slug=context["instance_slug"])
-        term_div_data = []
-        termbank_contents = {}
-        #terms = Term.objects.filter(course=course).exclude(Q(description__isnull=True) | Q(description__exact='')).order_by('name')
-        terms = []
-        for link in term_links:
-            if link.revision is None:
-                term = link.term
-            else:
-                term = Version.objects.get_for_object(link.term).get(revision=link.revision)._object_version.object
-                
-            if term.description:
-                terms.append(term)
-        
-        def sort_by_name(item):
-            return item.name
-            
-        terms.sort(key=sort_by_name)
-        
-        for term in terms:
-            slug = slugify(term.name, allow_unicode=True)
-            description = "".join(markupparser.MarkupParser.parse(term.description, request, term_context)).strip()
-            tabs = [(tab.title, "".join(markupparser.MarkupParser.parse(tab.description, request, term_context)).strip())
-                    for tab in term.termtab_set.all().order_by('id')]
-            tags = term.tags
-            
-            final_links = []
-            for link in term.termlink_set.all():
-                try:
-                    server_side, client_side = link.url.split('#', 1)
-                except ValueError:
-                    server_side = link.url
-                    client_side = None
-                
-                try:
-                    target_content = ContentPage.objects.get(slug=server_side)
-                except ContentPage.DoesNotExist:
-                    final_address = link.url
-                else:
-                    final_address = reverse('courses:content', args=[context['course'], context['instance'], target_content])
-                    if client_side is not None:
-                        final_address = final_address.rstrip('/') + '#' + client_side
-                    
-                final_links.append({"url": final_address, "text": link.link_text})
-                
-            term_div_data.append({
-                'slug' : slug,
-                'description' : description,
-                'tabs' : tabs,
-                'links' : final_links,
-            })
-
-            term_data = {
-                'slug' : slug,
-                'name' : term.name,
-                'tags' : tags,
-                'alias' : False,
-            }
-
-            def get_term_initial(term):
-                try:
-                    first_char = term.upper()[0]
-                except IndexError:
-                    first_char = "#"
-                else:
-                    if not first_char.isalpha():
-                        first_char = "#"
-                return first_char
-
-            first_char = get_term_initial(term.name)
-            
-            if first_char in termbank_contents:
-                termbank_contents[first_char].append(term_data)
-            else:
-                termbank_contents[first_char] = [term_data]
-
-            for alias in term.aliases:
-                alias_data = {
-                    'slug' : slug,
-                    'name' : term.name,
-                    'alias' : alias,
-                }
-
-                first_char = get_term_initial(alias)
-
-                if first_char in termbank_contents:
-                    termbank_contents[first_char].append(alias_data)
-                else:
-                    termbank_contents[first_char] = [alias_data]
-                    
-        cache.set(
-            'termbank_contents_{instance}_{lang}'.format(
-                instance=context['instance_slug'],
-                lang=translation.get_language()
-            ),
-            termbank_contents,
-            timeout=None
-        )
-        
-        cache.set(
-            'term_div_data_{instance}_{lang}'.format(
-                instance=context['instance_slug'],                                                           lang=translation.get_language()),
-            term_div_data,
-            timeout=None
-        )
-            
-    rendered_content = ""
-
-    # TODO: Admin link should point to the correct version!
-
-    # TODO: Warn admins if the displayed version is not the current version!
-
-    # Get the other things based on the rev. if set
-    if revision is not None:
-        # This seems unoptimal. Maybe create a patch to django-reversions?
-        # reversion.get_revision_for_object or sth. would be nice...
-        #version_list = reversion.get_for_object(content).order_by('revision_id')
-        # TODO: New form? Version.objects.get_for_object(term)[0].revision.
-        version = Version.objects.get_for_object(content).get(revision_id=revision).field_dict
-        old_content = version["content"]
-        question = version["question"]
-        
-        # Render the old version of the page
-        markup_gen = markupparser.MarkupParser.parse(old_content, request, context)
-        for chunk in markup_gen:
-            rendered_content += chunk
-    else:
-        question = blockparser.parseblock(escape(content.question), {"course": course})
-
-    choices = answers = content.get_choices(content, revision=revision)
-
-    if not rendered_content:
-        rendered_content = content.rendered_markup(request, context)
-
-    c = {
-        'course': course,
-        'course_slug': course.slug,
-        'course_name': course.name,
+        "course": course,
+        "course_slug": course.slug,
         "instance": instance,
-        'instance_name': instance.name,
-        'instance_slug': instance.slug,
-        'content': content,
-        'rendered_content': rendered_content,
-        'embedded': False,
-        'content_name': content.name,
-        'content_type': content_type,
-        'question': question,
-        'choices': choices,
-        'evaluation': evaluation,
-        'answer_count': answer_count,
-        'sandboxed': False,
-        'termbank_contents': sorted(list(termbank_contents.items())),
-        'term_div_data': term_div_data,
-        'revision': revision,
-        'enrolled': enrolled,
-        'course_staff': course_staff
+        "instance_slug": instance.slug,
+        "content_page": content,
+        "enrolled": enrolled,
+        "course_staff": course_staff,
     }
-    if "frontpage" in kwargs:
+    question = blockparser.parseblock(escape(content.question, quote=False), {"course": course})
+    choices = content.get_choices(content, revision=revision)
+    rendered_content = content.rendered_markup(request, context, revision, page=pagenum)
+    termbank_contents, term_div_data = render_terms(request, instance, context)
+    embedded_links = EmbeddedLink.objects.filter(parent=content, instance=instance).select_related(
+        "embedded_page"
+    )
+    embed_dict = {}
+    for link in embedded_links:
+        embed_dict[link.embedded_page.slug] = link.embedded_page
+
+    c = {
+        "course": course,
+        "course_slug": course.slug,
+        "course_name": course.name,
+        "instance": instance,
+        "instance_name": instance.name,
+        "instance_slug": instance.slug,
+        "content": content,
+        "content_blocks": rendered_content,
+        "embedded_pages": embed_dict,
+        "rendered_content": rendered_content,
+        "embedded": False,
+        "content_name": content.name,
+        "content_type": content_type,
+        "question": question,
+        "choices": choices,
+        "evaluation": evaluation,
+        "answer_count": answer_count,
+        "sandboxed": False,
+        "termbank_contents": sorted(list(termbank_contents.items())),
+        "term_div_data": term_div_data,
+        "revision": revision,
+        "enrolled": enrolled,
+        "course_staff": course_staff,
+        "editable_markups": markupparser.MarkupParser.editable_markups(),
+        "edit_content_url": reverse("courses:content_edit_form", kwargs={
+            "course": course,
+            "instance": instance,
+            "content": content,
+            "action": "edit",
+        }),
+        "delete_content_url": reverse("courses:content_edit_form", kwargs={
+            "course": course,
+            "instance": instance,
+            "content": content,
+            "action": "delete",
+        }),
+        "add_content_url": reverse("courses:content_add_form", kwargs={
+            "course": course,
+            "instance": instance,
+            "content": content,
+        }),
+    }
+    return c
+
+
+@system_messages
+def content(request, course, instance, content, pagenum=None):
+    c = _page_context(request, course, instance, content, pagenum=None)
+    if not isinstance(c, dict):
         return c
-    else:
-        t = loader.get_template("courses/contentpage.html")
-        return HttpResponse(t.render(c, request))
-
-def user_profile_save(request):
-    """
-    Save the submitted form.
-    """
-    if not request.user.is_authenticated:
-        return HttpResponseNotFound()
-    if not request.method == "POST":
-        return HttpResponseNotFound()
-    form = request.POST
-    if not set(["first_name", "last_name", "student_id", "study_program"]).issubset(form.keys()):
-        return HttpResponseNotFound()
-
-    profile = UserProfile.objects.get(user=request.user)
-
-    request.user.first_name = form["first_name"][:30]
-    request.user.last_name = form["last_name"][:30]
-    try:
-        profile.student_id = int(form["student_id"])
-    except ValueError:
-        return HttpResponseNotFound()
-    profile.study_program = form["study_program"][:80]
-
-    profile.save()
-    request.user.save()
-    return HttpResponseRedirect('/')
-
-def user_profile(request):
-    """
-    Allow the user to change information in their profile.
-    """
-    if not request.user.is_authenticated:
-        return HttpResponseNotFound()
-
-    profile = UserProfile.objects.get(user=request.user)
-
-    t = loader.get_template("courses/userprofile.html")
-    c = {
-        'username': request.user.username,
-        'first_name': request.user.first_name,
-        'last_name': request.user.last_name,
-        'email': request.user.email,
-        'student_id': profile.student_id,
-        'study_program': profile.study_program,
-    }
+    t = loader.get_template("courses/contentpage.html")
     return HttpResponse(t.render(c, request))
 
-def user(request, user_name):
-    """
-    Shows user information to the requesting user. The amount of information
-    depends on who the requesting user is.
-    """
-    user = request.user
-
-    if not (user.is_authenticated and user.is_active): # Don't allow anons to view anything
-        return HttpResponseForbidden(_("Please log in to view your information."))
-    elif user.is_staff: # Allow admins to view useful information regarding the user they've requested
-        pass
-    elif user.username != user_name: # Allow the user to view their own info
-        return HttpResponseForbidden(_("You are only allowed to view your own information."))
-
-    try:
-        target_user = User.objects.get(username=user_name)
-    except User.DoesNotExist as e:
-        return HttpReponseNotFound("No such user {}".format(user_name))
-    
-    checkboxexercise_answers = UserCheckboxExerciseAnswer.objects.filter(user=target_user)
-    multiplechoiceexercise_answers = UserMultipleChoiceExerciseAnswer.objects.filter(user=target_user)
-    textfieldexercise_answers = UserTextfieldExerciseAnswer.objects.filter(user=target_user)
-    fileexercise_answers = UserFileUploadExerciseAnswer.objects.filter(user=target_user)
-    repeatedtemplateexercise_answers = UserRepeatedTemplateExerciseAnswer.objects.filter(user=target_user)
-
-    t = loader.get_template("courses/userinfo.html")
-    c = {
-        'checkboxexercise_answers': checkboxexercise_answers,
-        'multiplechoiceexercise_answers': multiplechoiceexercise_answers,
-        'textfieldexercise_answers': textfieldexercise_answers,
-        'fileexercise_answers': fileexercise_answers,
-        'repeatedtemplateexercise_answers': repeatedtemplateexercise_answers,
-    }
-    return HttpResponse(t.render(c, request))
-
-# TODO: calendars should be tied to instances
-def calendar_post(request, calendar_id, event_id):
-    if not request.user.is_authenticated:
-        return HttpResponseNotFound()
-    if not request.method == "POST":
-        return HttpResponseNotFound()
-    form = request.POST
-
-    event_id = int(event_id)
-
-    try:
-        calendar_date = CalendarDate.objects.get(id=event_id)
-    except CalendarDate.DoesNotExist:
-        return HttpResponseNotFound("Error: the selected calendar does not exist.")
-
-    if "reserve" in form.keys() and int(form["reserve"]) == 1:
-        # TODO: How to make this atomic? Use with transaction.atomic
-        reservations = CalendarReservation.objects.filter(calendar_date_id=event_id)
-        if reservations.count() >= calendar_date.reservable_slots:
-            return HttpResponse(_("This event is already full."))
-        user_reservations = reservations.filter(user=request.user)
-        if user_reservations.count() >= 1:
-            return HttpResponse(_("You have already reserved a slot in this event."))
-
-        new_reservation = CalendarReservation(calendar_date_id=event_id, user=request.user)
-        new_reservation.save()
-        # TODO: Check that we didn't overfill the event
-        return HttpResponse(_("Slot reserved!"))
-    elif "reserve" in form.keys() and int(form["reserve"]) == 0:
-        user_reservations = CalendarReservation.objects.filter(calendar_date_id=event_id, user=request.user)
-        if user_reservations.count() >= 1:
-            user_reservations.delete()
-            return HttpResponse(_("Reservation cancelled."))
-        else:
-            return HttpResponse(_("Reservation already cancelled."))
-    else:
-        return HttpResponseForbidden()
 
 @ensure_owner_or_staff
 def show_answers(request, user, course, instance, exercise):
@@ -963,66 +327,25 @@ def show_answers(request, user, course, instance, exercise):
     Show the user's answers for a specific exercise on a specific course.
     """
 
+    try:
+        parent, single_linked = get_embedded_parent(exercise, instance)
+    except EmbeddedLink.DoesNotExist:
+        return HttpResponseNotFound(_("The task was not linked on the requested course instance"))
+
+    completion = UserTaskCompletion.objects.filter(
+        user=user, instance=instance, exercise=exercise
+    ).first()
     content_type = exercise.content_type
     question = exercise.question
     choices = exercise.get_choices(exercise)
-    
-    # TODO: Error checking for exercises that don't belong to this course
-    
-    answers = []
-    
-    if content_type == "MULTIPLE_CHOICE_EXERCISE":
-        answers = UserMultipleChoiceExerciseAnswer.objects.filter(
-            user=user,
-            exercise=exercise,
-            instance=instance
-        )
-    elif content_type == "CHECKBOX_EXERCISE":
-        answers = UserCheckboxExerciseAnswer.objects.filter(
-            user=user,
-            exercise=exercise,
-            instance=instance
-        )
-    elif content_type == "TEXTFIELD_EXERCISE":
-        answers = UserTextfieldExerciseAnswer.objects.filter(
-            user=user,
-            exercise=exercise,
-            instance=instance
-        )
-    elif content_type == "FILE_UPLOAD_EXERCISE":
-        answers = UserFileUploadExerciseAnswer.objects.filter(
-            user=user,
-            exercise=exercise,
-            instance=instance
-        )
-    elif content_type == "CODE_REPLACE_EXERCISE":
-        answers = UserCodeReplaceExerciseAnswer.objects.filter(
-            user=user,
-            exercise=exercise,
-            instance=instance
-        )
-    elif content_type == "REPEATED_TEMPLATE_EXERCISE":
-        answers = UserRepeatedTemplateExerciseAnswer.objects.filter(
-            user=user,
-            exercise=exercise,
-            instance=instance
-        )
-        
-    answers = answers.order_by('-answer_date')
-    
-    try:
-        link = EmbeddedLink.objects.get(embedded_page=exercise, instance=instance)
-    except EmbeddedLink.MultipleObjectsReturned:
-        parent = None
-        single_linked = False
-    else:
-        parent = link.parent
-        single_linked = True
-      
+    template = exercise.answers_template
+
+    answers = exercise.get_user_answers(exercise, user, instance)
+    answers = answers.order_by("-answer_date")
+
     title, anchor = first_title_from_content(exercise.content)
-    
-    # TODO: Own subtemplates for each of the exercise types.
-    t = loader.get_template("courses/user-exercise-answers.html")
+
+    t = loader.get_template(template)
     c = {
         "exercise": exercise,
         "exercise_title": title,
@@ -1038,11 +361,389 @@ def show_answers(request, user, course, instance, exercise):
         "anchor": anchor,
         "answers_url": request.build_absolute_uri(),
         "answers": answers,
+        "completion": completion,
         "student": user,
         "username": user.username,
-        "course_staff": user.is_staff
+        "course_staff": is_course_staff(request.user, instance),
+        "enrolled_instances": CourseEnrollment.get_enrolled_instances(
+            instance, user, exclude_current=True
+        ),
     }
     return HttpResponse(t.render(c, request))
+
+
+# ^
+# |
+# PAGE VIEWS
+# CHECKING RELATED
+# |
+# v
+
+
+@ensure_enrolled_or_staff
+def check_answer(request, course, instance, content, revision):
+    """
+    Saves and evaluates a user's answer to an exercise and sends the results
+    back to the user.
+    """
+    if request.method != "POST":
+        return HttpResponseNotAllowed(["POST"])
+
+    user = request.user
+    ip = request.META.get("HTTP_X_REAL_IP") or request.META.get("REMOTE_ADDR")
+    answer = request.POST
+    files = request.FILES
+
+    if revision == "head":
+        latest = Version.objects.get_for_object(content).latest("revision__date_created")
+        answered_revision = latest.revision_id
+        revision = None
+        exercise = content
+    else:
+        answered_revision = revision
+        exercise = get_single_archived(content, revision)
+
+    answer_count = exercise.get_user_answers(exercise, user, instance).count()
+    if exercise.answer_limit is not None and answer_count >= exercise.answer_limit:
+        return JsonResponse({"result": _("You don't have any more attempts left for this task.")})
+
+    try:
+        answer_object = exercise.save_answer(
+            content, user, ip, answer, files, instance, answered_revision
+        )
+    except InvalidExerciseAnswerException as e:
+        return JsonResponse({"result": str(e)})
+
+    answer_count += 1
+
+    if exercise.delayed_evaluation:
+        evaluation = {"evaluation": False, "manual": True}
+    else:
+        evaluation = exercise.check_answer(
+            content, user, ip, answer, files, answer_object, revision
+        )
+        if exercise.manually_evaluated:
+            evaluation["manual"] = True
+            evaluation["evaluation"] = False
+            if exercise.content_type == "FILE_UPLOAD_EXERCISE":
+                task_id = evaluation.get("task_id")
+                if task_id is not None:
+                    return check_progress(request, course, instance, content, revision, task_id)
+        else:
+            evaluation["manual"] = False
+            if exercise.content_type == "FILE_UPLOAD_EXERCISE":
+                task_id = evaluation.get("task_id")
+                if task_id is not None:
+                    return check_progress(request, course, instance, content, revision, task_id)
+
+    exercise.save_evaluation(user, evaluation, answer_object)
+
+    msg_context = {
+        "course_slug": course.slug,
+        "instance_slug": instance.slug,
+        "instance": instance,
+        "content_page": content,
+    }
+    answer_count = exercise.get_user_answers(exercise, user, instance).count()
+    answer_count_str = get_answer_count_meta(answer_count)
+    answer_url = (
+        reverse(
+            "courses:show_answers",
+            kwargs={
+                "user": request.user,
+                "course": course,
+                "instance": instance,
+                "exercise": content,
+            },
+        )
+        + "#"
+        + str(answer_object.id)
+    )
+    evaluation["answer_url"] = request.build_absolute_uri(answer_url)
+    evaluation["max"] = evaluation.get("max") or exercise.default_points
+
+    t = loader.get_template("courses/exercise-evaluation.html")
+    total_evaluation, quotient = exercise.get_user_evaluation(user, instance)
+    score = quotient * exercise.default_points
+
+    if not evaluation["evaluation"] or score < exercise.default_points:
+        parser = markupparser.MarkupParser()
+        hints = [
+            "".join(
+                block[1] for block in parser.parse(msg, request, msg_context)
+            ).strip()
+            for msg in evaluation.get("hints", [])
+        ]
+    else:
+        hints = []
+
+    data = {
+        "result": t.render(evaluation),
+        "hints": hints,
+        "evaluation": evaluation.get("evaluation"),
+        "answer_count_str": answer_count_str,
+        "attempts_left": exercise.answer_limit and exercise.answer_limit - answer_count,
+        "total_evaluation": total_evaluation,
+        "manual": exercise.manually_evaluated or exercise.delayed_evaluation,
+        "score": f"{score:.2f}",
+    }
+    if "next_instance" in evaluation:
+        data["next_instance"] = evaluation["next_instance"]
+    if "total_instances" in evaluation:
+        data["total_instances"] = evaluation["next_instance"]
+
+    return JsonResponse(data)
+
+
+# Legacy task type intended to be entirely phased out and replaced by routine exercise
+@ensure_enrolled_or_staff
+def get_repeated_template_session(request, course, instance, content, revision):
+    check_results = check_exercise_accessible(request, course, instance, content)
+    check_error = check_results.get("error")
+    if check_error is not None:
+        return check_error
+
+    content = content.get_type_object()
+
+    lang_code = translation.get_language()
+
+    # If a user has an unfinished session, pick that one
+    open_sessions = RepeatedTemplateExerciseSession.objects.filter(
+        exercise=content,
+        user=request.user,
+        language_code=lang_code,
+        repeatedtemplateexercisesessioninstance__userrepeatedtemplateinstanceanswer__isnull=True,
+    )
+
+    session = (
+        open_sessions.exclude(
+            repeatedtemplateexercisesessioninstance__userrepeatedtemplateinstanceanswer__correct=False
+        )
+        .distinct()
+        .first()
+    )
+
+    if session is None:
+        with transaction.atomic():
+            session = RepeatedTemplateExerciseSession.objects.filter(
+                exercise=content, user__isnull=True, language_code=lang_code
+            ).first()
+            if session is not None:
+                session.user = request.user
+                session.save()
+            else:
+                # create a new one, no need for atomic anymore
+                if revision == "head":
+                    revision = None
+                celery_status = rpc_tasks.get_celery_worker_status()
+                if "errors" in celery_status.keys():
+                    data = {
+                        "ready": True,
+                        "rendered_template": _("Error, exercise backend unavailable."),
+                    }
+                else:
+                    result = rpc_tasks.generate_repeated_template_session.delay(
+                        user_id=request.user.id,
+                        instance_id=instance.id,
+                        exercise_id=content.id,
+                        lang_code=lang_code,
+                        revision=revision,
+                    )
+                    rerequest_url = reverse(
+                        "courses:get_repeated_template_session",
+                        kwargs={
+                            "course": course,
+                            "instance": instance,
+                            "content": content,
+                            "revision": "head" if revision is None else revision,
+                        },
+                    )
+                    data = {
+                        "ready": False,
+                        "redirect": rerequest_url,
+                    }
+                return JsonResponse(data)
+
+    # Pick the first unfinished instance
+    session_instance = (
+        RepeatedTemplateExerciseSessionInstance.objects.filter(
+            session=session, userrepeatedtemplateinstanceanswer__isnull=True
+        )
+        .order_by("ordinal_number")
+        .first()
+    )
+
+    session_template = session_instance.template
+    variables = session_instance.variables
+    values = session_instance.values
+
+    total_instances = session.total_instances()
+    next_instance = (
+        session_instance.ordinal_number + 2
+        if session_instance.ordinal_number + 1 < total_instances
+        else None
+    )
+
+    rendered_template = session_instance.template.content_string.format(
+        **dict(zip(variables, values))
+    )
+
+    template_context = {
+        "course_slug": course.slug,
+        "instance_slug": instance.slug,
+    }
+    parser = markupparser.MarkupParser()
+    template_parsed = "".join(
+        block[1] for block in parser.parse(rendered_template, request, template_context)
+    ).strip()
+
+    data = {
+        "ready": True,
+        "title": session_template.title,
+        "rendered_template": template_parsed,
+        "redirect": None,
+        "next_instance": next_instance,
+        "total_instances": total_instances,
+        "progress": f"{session_instance.ordinal_number + 1} / {total_instances}",
+    }
+
+    return JsonResponse(data)
+
+
+@ensure_enrolled_or_staff
+def check_progress(request, course, instance, content, revision, task_id):
+    # Based on https://djangosnippets.org/snippets/2898/
+    task = celery_app.AsyncResult(id=task_id)
+    info = task.info
+    if task.ready():
+        return file_exercise_evaluation(request, course, instance, content, revision, task_id, task)
+
+    celery_status = rpc_tasks.get_celery_worker_status()
+    if "errors" in celery_status:
+        data = celery_status
+    else:
+        progress_url = reverse(
+            "courses:check_progress",
+            kwargs={
+                "course": course,
+                "instance": instance,
+                "content": content,
+                "revision": "head" if revision is None else revision,
+                "task_id": task_id,
+            },
+        )
+        if not info:
+            info = task.info  # Try again in case the first time was too early
+        data = {"state": task.state, "metadata": info, "redirect": progress_url}
+    return JsonResponse(data)
+
+
+def file_exercise_evaluation(request, course, instance, content, revision, task_id, task=None):
+    if task is None:
+        task = celery_app.AsyncResult(task_id)
+    if revision != "head":
+        content = get_single_archived(content, revision)
+    answers = content.get_user_answers(content, request.user, instance)
+    answer_count = answers.count()
+    evaluated_answer = answers.get(task_id=task_id)
+    answer_count_str = get_answer_count_meta(answer_count)
+
+    evaluation_tree = task.info["data"]
+    evaluation_json = json.dumps(evaluation_tree)
+    task.forget()
+    evaluation_obj = content.save_evaluation(
+        request.user,
+        {
+            "evaluation": evaluation_tree["correct"],
+            "test_results": evaluation_json,
+            "manual": content.manually_evaluated,
+            "points": evaluation_tree["points"],
+            "max": evaluation_tree["max"],
+        },
+        evaluated_answer,
+    )
+
+    answer_url = (
+        reverse(
+            "courses:show_answers",
+            kwargs={
+                "user": request.user,
+                "course": course,
+                "instance": instance,
+                "exercise": content,
+            },
+        )
+        + "#"
+        + str(evaluated_answer.id)
+    )
+    answer_url = request.build_absolute_uri(answer_url)
+
+    msg_context = {
+        "course_slug": course.slug,
+        "instance_slug": instance.slug,
+        "instance": instance,
+        "content_page": content,
+        "answer_url": answer_url,
+    }
+
+    data = compile_evaluation_data(request, evaluation_tree, evaluation_obj, msg_context)
+
+    errors = evaluation_tree["test_tree"].get("errors", [])
+    if errors:
+        if evaluation_tree["timedout"]:
+            data["errors"] = _(
+                "The program took too long to execute and was terminated. "
+                "Check your code for too slow solutions."
+            )
+        else:
+            data["errors"] = _(
+                "Checking program was unable to finish due to an error. Contact course staff."
+            )
+            send_error_report(instance, content, revision, errors, answer_url)
+
+    total_evaluation, quotient = content.get_user_evaluation(request.user, instance)
+    score = quotient * content.default_points
+
+    data["answer_count_str"] = answer_count_str
+    data["attempts_left"] = (content.answer_limit and content.answer_limit - answer_count,)
+    data["manual"] = content.manually_evaluated
+    data["total_evaluation"] = (total_evaluation,)
+    data["score"] = f"{score:.2f}"
+    data["has_faq"] = faq_utils.has_faq(instance, content, data["triggers"])
+
+    return JsonResponse(data)
+
+
+# ^
+# |
+# CHECKING RELATED
+# ANSWERS AJAX
+# |
+# v
+
+
+@ensure_owner_or_staff
+def get_file_exercise_evaluation(request, user, course, instance, exercise, answer):
+    results_json = answer.evaluation.test_results
+    evaluation_tree = json.loads(results_json)
+    evaluation_obj = answer.evaluation
+
+    msg_context = {
+        "course_slug": course.slug,
+        "instance_slug": instance.slug,
+        "instance": instance,
+        "content_page": exercise,
+    }
+
+    data = compile_evaluation_data(request, evaluation_tree, evaluation_obj, msg_context)
+
+    if not request.user.is_staff:
+        data["triggers"] = []
+
+    t_view = loader.get_template("courses/view-answer-results.html")
+
+    return HttpResponse(t_view.render(data, request))
+
 
 @ensure_owner_or_staff
 def show_answer_file_content(request, user, course, instance, answer, filename):
@@ -1050,7 +751,7 @@ def show_answer_file_content(request, user, course, instance, answer, filename):
         files = FileUploadExerciseReturnFile.objects.filter(answer=answer, answer__user=user)
     except FileUploadExerciseReturnFile.DoesNotExist as e:
         return HttpResponseForbidden(_("You cannot access this answer."))
-    
+
     for f in files:
         if f.filename() == filename:
             content = f.get_content()
@@ -1059,99 +760,124 @@ def show_answer_file_content(request, user, course, instance, answer, filename):
         return HttpResponseForbidden(_("You cannot access this answer."))
 
     return HttpResponse(content)
-    
 
+
+# ^
+# |
+# ANSWERS AJAX
 # DOWNLOAD VIEWS
 # |
 # v
 
+
 @ensure_owner_or_staff
 def download_answer_file(request, user, course, instance, answer, filename):
-    
     try:
         files = FileUploadExerciseReturnFile.objects.filter(answer=answer, answer__user=user)
     except FileUploadExerciseReturnFile.DoesNotExist as e:
         return HttpResponseForbidden(_("You cannot access this answer."))
-    
+
     for f in files:
         if f.filename() == filename:
-            fs_path = os.path.join(getattr(settings, "PRIVATE_STORAGE_FS_PATH", settings.MEDIA_ROOT), f.fileinfo.name)
+            fs_path = os.path.join(
+                getattr(settings, "PRIVATE_STORAGE_FS_PATH", settings.MEDIA_ROOT), f.fileinfo.name
+            )
             break
     else:
         return HttpResponseForbidden(_("You cannot access this answer."))
-    
+
     return generate_download_response(fs_path)
+
 
 def download_embedded_file(request, course, instance, mediafile):
     """
     This view function is for downloading media files via the actual site.
     """
-    
-    #NOTE: hotfix for multiple copies of medialinks
-    try:
-        file_link = CourseMediaLink.objects.filter(media=mediafile, instance=instance).first()
-    except CourseMediaLink.DoesNotExist as e:
-        return HttpResponseNotFound("No such file {}".format(mediafile.name))
-    
+
+    file_link = CourseMediaLink.objects.filter(media=mediafile, instance=instance).first()
+    if file_link is None:
+        return HttpResponseNotFound(_("No such file {mediafile}").format(mediafile=mediafile.name))
+
     if file_link.revision is None:
         file_object = file_link.media.file
     else:
-        file_object = Version.objects.get_for_object(file_link.media.file).get(revision=file_link.revision)._object_version.object
-    
+        file_object = get_single_archived(file_link.media.file, file_link.revision)
     fs_path = os.path.join(settings.MEDIA_ROOT, file_object.fileinfo.name)
-
     return generate_download_response(fs_path, file_object.download_as)
 
-    
-def download_media_file(request, file_slug, field_name):
+
+def download_media_file(request, file_slug, field_name, filename):
     """
     This view function is for downloading media files via the file admin interface.
     """
-    
-    # Try to find the file 
+
+    # Try to find the file
     try:
         fileobject = File.objects.get(name=file_slug)
     except FileExerciseTestIncludeFile.DoesNotExist as e:
         return HttpResponseNotFound(_("Requested file does not exist."))
-    
+
     if not determine_media_access(request.user, fileobject):
-        return HttpResponseForbidden(_("Only course main responsible teachers are allowed to download media files through this interface."))
-                        
+        return HttpResponseForbidden(
+            _(
+                "Only course main responsible teachers are allowed to "
+                "download media files through this interface."
+            )
+        )
+
     try:
-        fs_path = os.path.join(settings.MEDIA_ROOT, getattr(fileobject, field_name).name)
+        if filename == os.path.basename(getattr(fileobject, field_name).name):
+            fs_path = os.path.join(settings.MEDIA_ROOT, getattr(fileobject, field_name).name)
+        else:
+            # Archived file was requested
+            version = find_version_with_filename(fileobject, field_name, filename)
+            if version:
+                filename = version.field_dict[field_name].name
+                fs_path = os.path.join(settings.MEDIA_ROOT, filename)
+            else:
+                return HttpResponseNotFound(_("Requested file does not exist."))
     except AttributeError as e:
         return HttpResponseNotFound(_("Requested file does not exist."))
 
     return generate_download_response(fs_path)
 
 
-# TODO: limit to owner and course staff
-def download_template_exercise_backend(request, exercise_id, filename):
-    
-    if not request.user.is_authenticated:
-        return HttpResponseForbidden(_("Only course staff members are allowed to download repeated template exercise backends."))
-    elif (not request.user.is_staff) and (not request.user.is_superuser):
-        return HttpResponseForbidden(_("Only course staff members are allowed to download repeated template exercise backends."))
-    
+def download_template_exercise_backend(request, exercise_id, field_name, filename):
     try:
         exercise_object = RepeatedTemplateExercise.objects.get(id=exercise_id)
     except CourseInstance.DoesNotExist as e:
         return HttpResponseNotFound(_("This exercise does't exist"))
-            
-    #if not is_course_staff(request.user, exercise_object.instance.slug):
-    #    return HttpResponseForbidden(_("Only course staff members are allowed to download repeated template exercise backends."))
-    
+
+    if not determine_access(request.user, exercise_object):
+        return HttpResponseForbidden(
+            _(
+                "Only course main responsible teachers are "
+                "allowed to download files through this interface."
+            )
+        )
+
+    fileobjects = RepeatedTemplateExerciseBackendFile.objects.filter(exercise=exercise_object)
     try:
-        fileobject = RepeatedTemplateExerciseBackendFile.objects.get(filename=filename, exercise=exercise_object)
-    except FileExerciseTestIncludeFile.DoesNotExist as e:
-        return HttpResponseNotFound(_("Requested file does not exist."))
-    
-    try:
-        fs_path = os.path.join(getattr(settings, "PRIVATE_STORAGE_FS_PATH", settings.MEDIA_ROOT), fileobject.fileinfo.name)
+        for fileobject in fileobjects:
+            if filename == os.path.basename(getattr(fileobject, field_name).name):
+                fs_path = os.path.join(
+                    settings.PRIVATE_STORAGE_FS_PATH, getattr(fileobject, field_name).name
+                )
+                break
+
+            # Archived file was requested
+            version = find_version_with_filename(fileobject, field_name, filename)
+            if version:
+                filename = version.field_dict[field_name].name
+                fs_path = os.path.join(settings.PRIVATE_STORAGE_FS_PATH, filename)
+                break
+        else:
+            return HttpResponseNotFound(_("Requested file does not exist."))
     except AttributeError as e:
         return HttpResponseNotFound(_("Requested file does not exist."))
 
     return generate_download_response(fs_path)
+
 
 # ^
 # |
@@ -1160,77 +886,104 @@ def download_template_exercise_backend(request, exercise_id, filename):
 # |
 # v
 
-def enroll(request, course, instance):
 
+def enroll(request, course, instance):
     if not request.method == "POST":
-        return HttpResponseNotAllowed(["POST"])        
+        return HttpResponseNotAllowed(["POST"])
 
     form = request.POST
-    
+
     if not request.user.is_authenticated:
         return HttpResponseForbidden(_("Only logged in users can enroll to courses."))
-    
+
+    if not request.user.userprofile.completed:
+        response = JsonResponse({
+            "message": _(
+                "Your profile is not completed. "
+                "Please fill in missing information in order to be eligible to enroll."
+            )
+        })
+        response.set_cookie("profile_incomplete", "1", samesite="Strict")
+        return response
+
     status = instance.user_enroll_status(request.user)
-    
+
     if status not in [None, "WITHDRAWN"]:
         return HttpResponseBadRequest(_("You have already enrolled to this course."))
-    
+
     with transaction.atomic():
         CourseEnrollment.objects.filter(instance=instance, student=request.user).delete()
         enrollment = CourseEnrollment(instance=instance, student=request.user)
-    
+
         if not instance.manual_accept:
             enrollment.enrollment_state = "ACCEPTED"
             response_text = _("Your enrollment has been automatically accepted.")
+            send_welcome_email(instance, user=request.user)
         else:
             enrollment.application_note = form.get("application-note")
             response_text = _("Your enrollment application has been registered for approval.")
-            
+
         enrollment.save()
-    
+
     return JsonResponse({"message": response_text})
-        
+
+
 def withdraw(request, course, instance):
-    
     if not request.method == "POST":
         return HttpResponseNotAllowed(["POST"])
-    
+
     if not request.user.is_authenticated:
         return HttpResponseForbidden(_("Only logged in users can manage their enrollments."))
-    
+
     status = instance.user_enroll_status(request.user)
-    
+
     if status is None:
         return HttpResponseBadRequest(_("You have not enrolled to this course."))
-    
+
     with transaction.atomic():
         enrollment = CourseEnrollment.objects.get(instance=instance, student=request.user)
         enrollment.enrollment_state = "WITHDRAWN"
         enrollment.save()
-        
+
     return JsonResponse({"message": _("Your enrollment has been withdrawn")})
-        
+
+
+# ^
+# |
+# ENROLLMENT VIEWS
+# MISC VIEWS
+# |
+# v
+
+
 def help_list(request):
     return HttpResponse()
 
+
 def markup_help(request):
     markups = markupparser.MarkupParser.get_markups()
-    Markup = namedtuple(
-        'Markup',
-        ['name', 'description', 'example', 'result', 'slug']
-    )
+    Markup = namedtuple("Markup", ["name", "description", "example", "result", "slug"])
 
+    parser = markupparser.MarkupParser()
     markup_list = (
-        Markup(m.name, m.description, m.example, mark_safe("".join(markupparser.MarkupParser.parse(m.example))),
-               slugify(m.name, allow_unicode=True))
+        Markup(
+            m.name,
+            m.description,
+            m.example,
+            mark_safe(
+                "".join(block[1] for block in parser.parse(m.example))
+            ),
+            slugify(m.name, allow_unicode=True),
+        )
         for _, m in markups.items()
     )
-    
+
     t = loader.get_template("courses/markup-help.html")
     c = {
-        'markups': list(sorted(markup_list)),
+        "markups": list(sorted(markup_list)),
     }
     return HttpResponse(t.render(c, request))
+
 
 def terms(request):
     t = loader.get_template("courses/terms.html")

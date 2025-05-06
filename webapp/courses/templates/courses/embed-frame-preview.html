@@ -1,0 +1,17 @@
+{% load i18n %}
+{% load course_tags %}
+
+<div class="embedded-page">
+    <div>
+      {% for block_type, block_data, line_idx, line_count in emb.content %}
+        {{ block_data|preview_escape|safe }}
+      {% endfor %}
+    </div>
+    <div class="question">
+        <div class="exercise-form">
+            {% if emb.question %}{{ emb.question|preview_escape|safe }}{% endif %}
+            {{ emb.form|preview_escape|safe }}
+            <input type="submit" name="submit" value="{% trans 'Send answer' %}" disabled>
+        </div>
+    </div>
+</div>

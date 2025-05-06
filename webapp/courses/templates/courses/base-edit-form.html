@@ -1,0 +1,108 @@
+{% load i18n %}
+{% load form_tags %}
+
+<form id="{{ html_id }}"
+    class="{{ html_class }}"
+    method="POST"
+    enctype="multipart/form-data"
+    action="{{ submit_url }}">
+    
+        <div class="form-disclaimer">{{ disclaimer }}</div>
+
+        {% csrf_token %}
+    
+        {% for field in form_object.hidden_fields %}
+            {{ field }}
+        {% endfor %}
+        
+        
+        <table class="edit-form-table">
+          <tbody>
+            {% for field in form_object.visible_fields %}
+              <tr>
+                <td colspan="2">{{ field.errors }}</td>
+              </tr>
+              <tr>
+                <td>
+                    {% if field.field.required %}
+                        <b>{{ field.label_tag }}</b>
+                    {% else %}
+                        {{ field.label_tag }}
+                    {% endif %}
+                </td>
+                <td>{{ field|tabindex_attr }}</td>
+              </tr>
+            {% endfor %}
+          <tbody>
+        </table>
+
+        {% if form_object.has_inline %}
+          <div class="form-inline-header">{{ form_object.inline_header }}</div>
+          {% for form in form_object.get_inline_formset %}
+            <table class="edit-form-inline sub-rectangle">
+              <tbody>
+                {% for field in form.visible_fields %}
+                  <tr>
+                    <td colspan="2">{{ field.errors }}</td>
+                  </tr>
+                  <tr>
+                    <td>
+                        {% if field.field.required %}
+                            <b>{{ field.label_tag }}</b>
+                        {% else %}
+                            {{ field.label_tag }}
+                        {% endif %}
+                    </td>
+                    <td>{{ field|tabindex_attr }}</td>
+                  </tr>
+                {% endfor %}
+                {% for field in form.hidden_fields %}
+                  <tr>
+                    <td colspan="2">{{ field }}</td>
+                  </tr>
+                {% endfor %}
+              <tbody>
+            </table>
+          {% endfor %}
+          <table id="empty_form" style="display:none">
+            <tbody>
+              {% for field in form_object.empty_form.visible_fields %}
+                <tr>
+                  <td>
+                      {% if field.field.required %}
+                          <b>{{ field.label_tag }}</b>
+                      {% else %}
+                          {{ field.label_tag }}
+                      {% endif %}
+                  </td>
+                  <td>{{ field }}</td>
+                </tr>
+              {% endfor %}
+              {% for field in form.hidden_fields %}
+                <tr>
+                  <td colspan="2">{{ field }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          <div>
+            <button type="button"
+                    class="staff-base-button add-button"
+                    title="{% trans 'Add new' %}"
+                    onclick="duplicate_subform_table(event, this);">+
+            </button>
+          </div>
+        {% endif %}
+
+        {% if submit_label %}
+          <input type="submit" name="submit" value="{{ submit_label }}"></input>
+        {% else %}
+          <input type="submit" name="submit" value="{% trans 'Save' %}"></input>
+        {% endif %}
+</form>
+
+{% if submit_override %}
+  <script>
+      $("#{{ html_id }}").submit({{ submit_override }})
+  </script>
+{% endif %}

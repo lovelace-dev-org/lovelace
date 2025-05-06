@@ -1,0 +1,49 @@
+div.index-container {
+    background: #caeaca;
+    border: solid 2px #cacaca;
+    border-radius: 4px;
+}
+
+div.index-course-header {
+    background: linear-gradient(to bottom, #9c9, #8b8);
+    font-size: 1.2em;
+    padding-left: 5px;
+}
+
+div.index-course-wrapper {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+}
+
+div.index-course-instance {
+    background: #daeeda;
+    padding: 5px;
+    border-color: #cacaca;
+    border-width: 1px;
+    border-style: solid;
+    border-radius: 4px;
+    margin: 5px;
+}
+
+section.content li.index-bullet {
+    list-style: none;
+    margin-left: 0;
+}
+
+section.content ul.index-list {
+    margin-left: 0;
+}
+
+span.index-instance-tag {
+    background: #d4d4d4;
+    font-size: 0.8rem;
+    color: #444;
+    padding: 1px 2px;
+    border: 1px inset rgba(224, 224, 224, 0.60);
+    border-radius: 6px;
+    margin-top: 0px;
+}
+
+span.index-course-extra {
+    font-size: 0.8em;
+}

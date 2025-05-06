@@ -1,5 +1,5 @@
 {% extends 'exercise_admin/base.html' %}
-{% load staticfiles %}
+{% load static %}
 {% load i18n %}
 {% load exercise_admin_extras %}
 
@@ -107,9 +107,46 @@
 {% block exercise-type-extra %}
   <div class="form-row">
     <label for="exercise-allowed_filenames">Accepted file names: </label>
-    <input type="text" id="exercise-allowed_filenames" name="exercise_allowed_filenames" class="general-text-input"
-           value="{{ exercise.allowed_filenames|join:"," }}">
+    <input type="text"
+           class="general-text-input"
+           id="exercise-allowed_filenames"
+           name="exercise_allowed_filenames"
+           value="{{ exercise.fileexercisesettings.allowed_filenames|join:"," }}">
   </div>
+  <div class="form-row">
+    <label for="exercise-max_file_count">Maximum number of files allowed: </label>
+    <input type="number"
+           id="exercise-max_file_count"
+           name="exercise_max_file_count"
+           value="{{ exercise.fileexercisesettings.max_file_count }}">
+  </div>
+  <div class="form-row">
+    <label for="exercise-answer_mode">Answer mode: </label>
+    <select id="exercise-answer_mode" name="exercise_answer_mode">
+      {% for value, label in answer_mode_choices %}
+        {% if value == exercise.fileexercisesettings.answer_mode %}
+          <option value="{{ value }}" selected="selected">{{ label }}</option>
+        {% else %}
+          <option value="{{ value }}">{{ label }}</option>
+        {% endif %}
+      {% endfor %}
+    </select>
+  </div>
+  {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
+    <div class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}"
+         data-language-code="{{ language_choice }}">
+      <div class="form-row">
+        <label for="exercise-answer_filename-{{ language_choice }}">
+          Save answer as {% lang_reminder language_choice %}:
+        </label>
+        <input type="text"
+               id="exercise-answer_filename-{{ language_choice }}"
+               name="exercise_answer_filename_{{ language_choice }}"
+               value="{% get_translated_field exercise.fileexercisesettings "answer_filename" language_choice %}" class="general-text-input">
+      </div>
+    </div>
+  {% endfor %}
+
 {% endblock %}
 
 {% block exercise-type-specific %}

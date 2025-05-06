@@ -1,0 +1,61 @@
+{% extends 'courses/base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block page-title %}{% trans 'About' %}{% endblock %}
+
+{% block breadcrumb-links %}
+  <li><a href="{% url 'courses:index' %}">{% trans 'Courses' %}</a></li>
+  <div class="separator">»</div>
+  <li><a href="{% url 'courses:about' %}">{% trans 'About' %}</a></li>
+{% endblock %}
+
+{% block page-content %}
+<h1 class="content-heading">
+  {% trans 'About Lovelace' %}
+  <span id="about-lovelace" class="anchor-offset"></span>
+  <a href="#about-lovelace" class="permalink" title="Permalink to About Lovelace">
+    &para;
+  </a>
+</h1>
+
+{% blocktrans %}
+<div class="paragraph">Lovelace is a learning environment created at the University of Oulu for programming and associated sciences. It was created to answer the need for programming education that scales up to large number of students with limited teaching resources. Its primary purpose is to offer tools for creating meaningful exercises that are automatically evaluated by the system. Embedding these exercises into material pages is the main mode of delivery for Lovelace courses as it creates an uninterrupted flow where students can get a confirmation of learning the previous topics before moving on to next ones.</div>
+
+<div class="paragraph">The most important task type in Lovelace is the automatically evaluated programming exercise. These tasks are checked in backend servers, and can be almost anything that runs on Linux command line and is able to output a checking report in the JSON format that Lovelace understands. This report is then rendered into rich feedback with the option to also trigger different hint mechanisms like highlighting parts of the assignment text or pulling up an FAQ answer that is relevant.</div>
+
+<div class="paragraph">Backends are also used for routine exercises that are template-based question generators, generally used for tasks that build programming routine by asking narrow questions. This mechanism also lends itself to phased exercises where the student answers a series of questions that build on each other.</div>
+
+<div class="paragraph">Other tasks types have a supporting role in programming courses. These include basic task types like multiple choice and regular expression based text input tasks. Lovelace also has its own exam task type that allows generating exams from a pool of questions for the entire class or for individual students. All task types have different evaluation options from immediate automatic evaluation to elaborate manual evaluation using built-in evaluation form tools.</div>
+
+<div class="paragraph">Lovelace is developed by and in collaboration with the teachers who use it. All the additions and improvements made to the system are always targeted for real use cases and support teachers in their work both for creating more meaningful learning materials, and for managing students. We have a commitment to free and open education. Courses in Lovelace are viewable by anyone without creating an account by default. Content is also easily shareable between Lovelace installations with the export-import feature.</div>
+
+<div class="paragraph">In the spirit of openness, Lovelace is built using open source technologies. The main server backend is created with <a href="https://www.python.org/" target="_blank">Python 3</a> and <a href="https://www.djangoproject.com/" target="_blank">Django</a>. Communication with the backends is handled by <a href="https://docs.celeryq.dev/en/stable/" target="_blank">Celery</a> using <a href="https://www.rabbitmq.com/" target="_blank">RabbitMQ</a> as the default message broker and <a href="https://redis.io/" target="_blank">Redis</a> for storing results. Lovelace installations can be managed with <a href="https://www.ansible.com/" target="_blank">Ansible</a> scripts.</div>
+
+<table>
+  <tr>
+    <td>Original Developer:</td>
+    <td>Miikka Salminen</td>
+  </tr>
+  <tr>
+    <td>Current Developer(s):</td>
+    <td>Mika Oja</td>
+  </tr>
+  <tr>
+    <td>License:</td>
+    <td>UIUC</td>
+  </tr>
+</table>
+{% endblocktrans %}
+
+<h1 class="content-heading">
+  {% trans 'About This Lovelace Instance' %}
+  <span id="about-lovelace-instance" class="anchor-offset"></span>
+  <a href="#about-lovelace-instance" class="permalink" title="Permalink to About Lovelace Instance">
+    &para;
+  </a>
+</h1>
+
+{{ about_instance|safe }}
+
+{% endblock %}

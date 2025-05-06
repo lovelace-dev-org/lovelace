@@ -6,40 +6,55 @@ and limiting the OS resources available to the processes to provide a reasonably
 safe environment to run unsafe code in.
 """
 
+import logging
 import os
-import signal
+import pwd
 import resource
+import signal
+import subprocess
 
-from signal import SIGKILL, SIGSTOP
+from django.conf import settings
 
-_CONCURRENT_PROCESSES = 40
-_NUMBER_OF_FILES = 100
-_FILE_SIZE = 4 * (1024 ** 2)  # 4 MiB
-_CPU_TIME = 20
 
-def get_demote_process_fun(concurrent_processes=_CONCURRENT_PROCESSES,
-                           number_of_files=_NUMBER_OF_FILES,
-                           file_size=_FILE_SIZE,
-                           cpu_time=_CPU_TIME):
+logger = logging.getLogger(__name__)
+
+def get_uid_gid(username):
+    pwrec = pwd.getpwnam(username)
+    uid = pwrec.pw_uid
+    gid = pwrec.pw_gid
+    return uid, gid
+
+
+def get_demote_process_fun(
+    concurrent_processes=settings.WORKER_CONCURRENCY,
+    number_of_files=settings.WORKER_NO_FILES,
+    file_size=settings.WORKER_FILE_SIZE,
+    cpu_time=settings.WORKER_CPU_TIME,
+):
     """
     Creates and returns a function that demotes the process based on given
-    arguments. Allows setting of custom limits based on, e.g., database values. 
+    arguments. Allows setting of custom limits based on, e.g., database values.
     """
+
     def demote_process():
         """
         Execute a number of security measures to limit the possible scope of harm
         available for the spawned processes to exploit.
         """
-        #close_fds()
-        #drop_privileges()
-        limit_resources(concurrent_processes=concurrent_processes,
-                        number_of_files=number_of_files,
-                        file_size=file_size,
-                        cpu_time=cpu_time)
+        # close_fds()
+        drop_privileges()
+        limit_resources(
+            concurrent_processes=concurrent_processes,
+            number_of_files=number_of_files,
+            file_size=file_size,
+            cpu_time=cpu_time,
+        )
 
     return demote_process
 
+
 default_demote_process = get_demote_process_fun()
+
 
 def close_fds():
     """
@@ -47,6 +62,7 @@ def close_fds():
     input, output and error streams to ensure that the forked process doesn't
     have access to data it shouldn't have.
     """
+
 
 def drop_privileges():
     """
@@ -59,19 +75,32 @@ def drop_privileges():
     - https://docs.python.org/3/library/os.html#os.setresuid
     """
 
+    student_uid, student_gid = get_uid_gid(settings.RESTRICTED_USERNAME)
+
     # Drop the real, effective and saved group and user ids
     try:
         os.setresgid(student_gid, student_gid, student_gid)
         os.setresuid(student_uid, student_uid, student_uid)
     except OSError:
-        print("Unable to drop privileges to GID: (r:{s_gid}, e:{s_gid}, s:{s_gid}), UID: (r:{s_uid}, e:{s_uid}, s:{s_uid})".
-              format(s_gid=student_gid, s_uid=student_uid))
+        logger.error(
+            "Unable to drop privileges to "
+            "GID: (r:{s_gid}, e:{s_gid}, s:{s_gid}), "
+            "UID: (r:{s_uid}, e:{s_uid}, s:{s_uid})".format(s_gid=student_gid, s_uid=student_uid)
+        )
+    else:
+        logger.debug(
+            "Dropped privileges to "
+            "GID: (r:{s_gid}, e:{s_gid}, s:{s_gid}), "
+            "UID: (r:{s_uid}, e:{s_uid}, s:{s_uid})".format(s_gid=student_gid, s_uid=student_uid)
+        )
 
-
-def limit_resources(concurrent_processes=_CONCURRENT_PROCESSES,
-                    number_of_files=_NUMBER_OF_FILES,
-                    file_size=_FILE_SIZE,
-                    cpu_time=_CPU_TIME):
+def limit_resources(
+    concurrent_processes=settings.WORKER_CONCURRENCY,
+    number_of_files=settings.WORKER_NO_FILES,
+    file_size=settings.WORKER_FILE_SIZE,
+    cpu_time=settings.WORKER_CPU_TIME,
+    memory=settings.WORKER_MEMORY,
+):
     """
     Use resource.setrlimit to define soft and hard limits for different
     resources available to the forked process.
@@ -103,6 +132,31 @@ def limit_resources(concurrent_processes=_CONCURRENT_PROCESSES,
     # in seconds
     resource.setrlimit(resource.RLIMIT_CPU, (cpu_time, cpu_time))
 
+    # Prevent filling up memory by limiting heap size
+    resource.setrlimit(resource.RLIMIT_DATA, (memory, memory))
+
+
+def chmod_child_files(test_dir):
+    """
+    Makes sure everything created during the checking can be removed by the parent process
+    when it's cleaning up the temporary directory. Achieved by running chmod as the child.
+    """
+
+    proc = subprocess.run(
+        ("chmod", "-R", "a+rw", "."),
+        bufsize=-1,
+        executable=None,
+        timeout=5,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        preexec_fn=default_demote_process,  # Demote before fork
+        start_new_session=True,
+        close_fds=True,  # Don't inherit fds
+        shell=False,  # Don't run in shell
+        cwd=test_dir,
+    )
+
+
 def secure_kill(pid):
     """
     Use SIGSTOP and SIGKILL signals to clean up any remaining processes. In
@@ -119,20 +173,26 @@ def secure_kill(pid):
 
     Neither SIGKILL nor SIGSTOP can be captured or blocked by any process.
 
-    NOTE: Requires the issuing process to match its real or effective UID with
-          the real or saved UID of the receiving process.[1]
-
     [1] https://linux.die.net/man/3/kill
     """
-    # DEBUG
-    user = "student"
-    timeout = 5
-
-    kill_age = timeout + 5
-
-    # Iterate through the processes and issue SIGSTOP
-    os.system("killall -STOP --verbose --user {user} --younger-than {kill_age}s".format(user=user, kill_age=kill_age))
-
-    # Iterate through the processes again and issue SIGKILL
-    os.system("killall -KILL --verbose --user {user} --younger-than {kill_age}s".format(user=user, kill_age=kill_age))
-    
+    commands = [
+        ("pkill", "--signal", "SIGSTOP", "-s", str(pid)),
+        ("pkill", "--signal", "SIGKILL", "-s", str(pid)),
+    ]
+    for command in commands:
+        try:
+            proc = subprocess.run(
+                command,
+                bufsize=-1,
+                executable=None,
+                timeout=5,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                preexec_fn=default_demote_process,  # Demote before fork
+                start_new_session=True,
+                close_fds=True,  # Don't inherit fds
+                shell=False,  # Don't run in shell
+            )
+        except subprocess.TimeoutExpired:
+            command_str = " ".join(command)
+            logger.error(f"Command '{command_str}' timed out")

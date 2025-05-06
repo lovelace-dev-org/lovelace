@@ -1,3 +1,63 @@
+.div.large-table-container {
+    max-height: 100%;
+    overflow: auto;
+}
+
+table.completion-table {
+    display: block;
+    overflow-x: auto;
+    height: 90vh;
+}
+
+section.content table.completion-table td {
+    text-align: center;
+}
+
+section.content table.completion-table td:first-child {
+    text-align: left;
+}
+
+section.content table.completion-table td:last-child {
+    text-align: left;
+}
+
+table.completion-table colgroup {
+}
+
+table.completion-table tbody, table.completion-table thead {
+}
+
+table.completion-table th {
+    position: sticky;
+    background: #eee;
+    top: 0px;
+    z-index: 1;
+    cursor: pointer;
+}
+
+table.completion-table th:first-child {
+    z-index: 2;
+}
+
+table.enrollments-table th {
+    cursor: pointer;
+}
+
+.sticky-left {
+    position: sticky;
+    left: 0px;
+    z-index: 1;
+    background: inherit;
+}
+
+.sticky-right {
+    position: sticky;
+    right: 0px;
+    z-index: 1;
+    background: inherit;
+}
+
+
 li.task-bullet-correct {
     list-style-image: url("/static/courses/correct-16.png");
 }
@@ -14,14 +74,56 @@ li.task-bullet-credited {
     list-style-image: url("/static/courses/credited-16.png");
 }
 
+li.task-bullet-submitted {
+    list-style-image: url("/static/courses/submitted-16.png");
+}
+
 li.tasks-expanded {
+    cursor: pointer;
     list-style-image: url("/static/courses/collapse-16.png");
 }
 
 li.tasks-collapsed {
+    cursor: pointer;
     list-style-image: url("/static/courses/expand-16.png");
 }
 
 ul.student-task-list {
     display: none;
 }
+
+col.selector {
+    width: 20px;
+}
+
+col.name {
+    width: 250px;
+}
+
+col.username {
+    width: 250px;
+}
+
+col.page-results {
+    width: 470px;
+}
+
+col.course-results {
+    width: 60px;
+}
+
+col.actions-cell {
+    width: 100px;
+}
+
+th.vertical-th {
+    writing-mode: vertical-rl;
+    text-orientation: sideways;
+    vertical-align: top;
+    transform: rotate(180deg);
+}
+
+th.horizontal-th {
+    vertical-align: bottom;
+}
+

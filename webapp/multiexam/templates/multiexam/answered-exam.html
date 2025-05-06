@@ -1,0 +1,22 @@
+{% load i18n %}
+
+<div class="multiexam-exam-answers">
+  {% for question, chosen_answers, correct in answer_summary %}
+    <div class="multiexam-answer-heading">
+      {% trans 'Question' %} {{ forloop.counter }}: {{ question }}
+    <div>
+    <ul class="multiexam-answer-choices">
+      {% for answer_text in chosen_answers %}
+        {% if not evaluated %}
+          <li class="evaluation-msg-unknown">{{ answer_text }}</li>
+        {% elif correct %}
+          <li class="evaluation-msg-correct">{{ answer_text }}</li>
+        {% else %}
+          <li class="evaluation-msg-incorrect">{{ answer_text }}</li>
+        {% endif %}
+      {% endfor %}
+    </ul>
+  {% endfor %}
+</div>
+
+

@@ -21,6 +21,7 @@ from courses.models import FileUploadExerciseReturnFile
 
 import courses.tasks as rpc_tasks
 
+
 def check_file_answer(exercise, files={}, answer=None):
     test_object = compose_test_object(exercise)
     result = rpc_tasks.run_tests.delay(test_object, 2, 3, 4)
@@ -28,6 +29,7 @@ def check_file_answer(exercise, files={}, answer=None):
     print(result.task_id)
 
     return result.task_id
+
 
 def compose_test_object(exercise):
     """
@@ -43,8 +45,9 @@ def compose_test_object(exercise):
             db_cmds = FileExerciseTestCommand.objects.filter(stage=db_stage)
             for db_cmd in db_cmds:
                 db_outputs = FileExerciseTestExpectedOutput.objects.filter(command=db_cmd)
-    
+
     return test_object
+
 
 def file_exercise_check(content, user, files_data, post_data):
     # NOTE: Deprecated code moved from views.py to here temporarily.
@@ -52,31 +55,46 @@ def file_exercise_check(content, user, files_data, post_data):
     correct = True
     hints = []
     comments = []
-    
+
     # TODO: Create a model manager that fetches all relevant information
     #       for the file exercise in question.
     # TODO: Fetch all the relevant information using the above manager.
     # TODO: Cache it to save many complicated db queries and filesystem reads.
 
-    if user.is_authenticated() and points==666.6:
+    if user.is_authenticated() and points == 666.6:
         # TODO: Fix the information that will be saved
-        f_returnable = FileTaskReturnable(run_time=datetime.time(0,0,1,500), output="filler-output-filler", errors="filler-errors-filler", retval=0)
+        f_returnable = FileTaskReturnable(
+            run_time=datetime.time(0, 0, 1, 500),
+            output="filler-output-filler",
+            errors="filler-errors-filler",
+            retval=0,
+        )
         f_returnable.save()
-        f_evaluation = Evaluation(points=points,feedback="",correct=False)
+        f_evaluation = Evaluation(points=points, feedback="", correct=False)
         f_evaluation.save()
         if "collaborators" in post_data.keys():
             collaborators = post_data["collaborators"]
         else:
             collaborators = None
-        f_answer = UserFileTaskAnswer(exercise=content.exercisepage.filetask, returnable=f_returnable, evaluation=f_evaluation,
-                                      user=user, answer_date=timezone.now(), collaborators=collaborators)
+        f_answer = UserFileTaskAnswer(
+            exercise=content.exercisepage.filetask,
+            returnable=f_returnable,
+            evaluation=f_evaluation,
+            user=user,
+            answer_date=timezone.now(),
+            collaborators=collaborators,
+        )
         f_answer.save()
 
         for entry_name, uploaded_file in files_data.items():
-            f_filetaskreturnfile = FileTaskReturnFile(fileinfo=uploaded_file, returnable=f_returnable)
+            f_filetaskreturnfile = FileTaskReturnFile(
+                fileinfo=uploaded_file, returnable=f_returnable
+            )
             f_filetaskreturnfile.save()
-        
-        results = filecheck_client.check_file_answer(exercise=content.exercisepage.filetask, files={}, answer=f_answer)
+
+        results = filecheck_client.check_file_answer(
+            exercise=content.exercisepage.filetask, files={}, answer=f_answer
+        )
 
         # Quickly determine, whether the answer was correct
         results_zipped = []
@@ -90,8 +108,12 @@ def file_exercise_check(content, user, files_data, post_data):
 
         for test in results["student"].keys():
             # TODO: Do the output and stderr comparison here instead of below
-            results_zipped.append(zip(results["student"][test]["outputs"], results[ref][test]["outputs"]))
-            results_zipped.append(zip(results["student"][test]["errors"], results[ref][test]["errors"]))
+            results_zipped.append(
+                zip(results["student"][test]["outputs"], results[ref][test]["outputs"])
+            )
+            results_zipped.append(
+                zip(results["student"][test]["errors"], results[ref][test]["errors"])
+            )
 
             for name, content in results[ref][test]["outputfiles"].items():
                 if name not in results["student"][test]["outputfiles"].keys():
@@ -102,7 +124,7 @@ def file_exercise_check(content, user, files_data, post_data):
 
         for test in results_zipped:
             for resultpair in test:
-                if resultpair[0].replace('\r\n', '\n') != resultpair[1].replace('\r\n', '\n'):
+                if resultpair[0].replace("\r\n", "\n") != resultpair[1].replace("\r\n", "\n"):
                     correct = False
 
         if correct:
@@ -110,14 +132,16 @@ def file_exercise_check(content, user, files_data, post_data):
             f_evaluation.correct = correct
             f_evaluation.save()
             f_answer.save()
-    elif points==555.5:
+    elif points == 555.5:
         files = {}
         for rf in files_data.values():
             f = bytes()
             for chunk in rf.chunks():
                 f += chunk
             files[rf.name] = f
-        results = filecheck_client.check_file_answer(exercise=content.exercisepage.filetask, files=files)
+        results = filecheck_client.check_file_answer(
+            exercise=content.exercisepage.filetask, files=files
+        )
 
         # Quickly determine, whether the answer was correct
         results_zipped = []
@@ -131,8 +155,12 @@ def file_exercise_check(content, user, files_data, post_data):
 
         for test in results["student"].keys():
             # TODO: Do the output and stderr comparison here instead of below
-            results_zipped.append(zip(results["student"][test]["outputs"], results[ref][test]["outputs"]))
-            results_zipped.append(zip(results["student"][test]["errors"], results[ref][test]["errors"]))
+            results_zipped.append(
+                zip(results["student"][test]["outputs"], results[ref][test]["outputs"])
+            )
+            results_zipped.append(
+                zip(results["student"][test]["errors"], results[ref][test]["errors"])
+            )
 
             for name, content in results[ref][test]["outputfiles"].items():
                 if name not in results["student"][test]["outputfiles"].keys():
@@ -143,27 +171,28 @@ def file_exercise_check(content, user, files_data, post_data):
 
         for test in results_zipped:
             for resultpair in test:
-                if resultpair[0].replace('\r\n', '\n') != resultpair[1].replace('\r\n', '\n'):
+                if resultpair[0].replace("\r\n", "\n") != resultpair[1].replace("\r\n", "\n"):
                     correct = False
 
     # Get a nice HTML table for the diffs
-    #diff_table = filecheck_client.html(results)
+    # diff_table = filecheck_client.html(results)
     results = filecheck_client.check_file_answer(1, 2, 3)
     diff_table = results
 
     return correct, hints, comments, diff_table
 
+
 def ex_check_file_answer(task, files={}, answer=None):
     """Iterates through all the tests for a returnable package of user content."""
     print("Checking a file")
-    _secs = lambda dt: dt.hour*3600+dt.minute*60+dt.second
+    _secs = lambda dt: dt.hour * 3600 + dt.minute * 60 + dt.second
 
     # Read the returned files from database objects
     if answer:
         ft_returned_files = FileTaskReturnFile.objects.filter(returnable=answer.returnable)
         codefiles = {}
         for ft_returned_file in ft_returned_files:
-            with open(ft_returned_file.fileinfo.path, 'rb') as f:
+            with open(ft_returned_file.fileinfo.path, "rb") as f:
                 codefiles[ft_returned_file.filename()] = f.read()
     else:
         codefiles = files
@@ -183,13 +212,13 @@ def ex_check_file_answer(task, files={}, answer=None):
         ft_test_input = ft_test.inputs
 
         ft_test_commands = FileTaskTestCommand.objects.filter(test=ft_test)
-        commands = [(tc.command_line, tc.main_command) for tc in ft_test_commands] or ['']
+        commands = [(tc.command_line, tc.main_command) for tc in ft_test_commands] or [""]
 
         ft_test_expected_outputs = FileTaskTestExpectedOutput.objects.filter(test=ft_test)
-        outputs = [eo.expected_answer for eo in ft_test_expected_outputs] or ['']
+        outputs = [eo.expected_answer for eo in ft_test_expected_outputs] or [""]
 
         ft_test_expected_errors = FileTaskTestExpectedError.objects.filter(test=ft_test)
-        errors = [ee.expected_answer for ee in ft_test_expected_errors] or ['']
+        errors = [ee.expected_answer for ee in ft_test_expected_errors] or [""]
 
         ft_test_include_files = FileTaskTestIncludeFile.objects.filter(test=ft_test)
         include_files = {}
@@ -199,7 +228,7 @@ def ex_check_file_answer(task, files={}, answer=None):
         output_files = {}
         for ft_test_include_file in ft_test_include_files:
             filename = ft_test_include_file.name
-            with open(ft_test_include_file.fileinfo.path, 'rb') as f:
+            with open(ft_test_include_file.fileinfo.path, "rb") as f:
                 include_files[filename] = base64.b64encode(f.read())
             if ft_test_include_file.purpose == "REFERENCE":
                 references[filename] = include_files[filename]
@@ -212,20 +241,25 @@ def ex_check_file_answer(task, files={}, answer=None):
             elif ft_test_include_file.purpose == "OUTPUT":
                 output_files[filename] = include_files[filename]
 
-        test = {"name": ft_test_name,
-                "timeout": _secs(ft_test_timeout),
-                "signal": ft_test_signal,
-                "args": commands,
-                "unittests": unittests,
-                "inputgens": inputgens,
-                "input": ft_test_input,
-                "inputfiles": input_files,
-                "output": outputs,
-                "outputfiles": output_files,
-                "errors": errors,
-               }
+        test = {
+            "name": ft_test_name,
+            "timeout": _secs(ft_test_timeout),
+            "signal": ft_test_signal,
+            "args": commands,
+            "unittests": unittests,
+            "inputgens": inputgens,
+            "input": ft_test_input,
+            "inputfiles": input_files,
+            "output": outputs,
+            "outputfiles": output_files,
+            "errors": errors,
+        }
         tests.append(test)
-        expected[ft_test_name] = {"outputs":outputs, "outputfiles":output_files, "errors":errors}
+        expected[ft_test_name] = {
+            "outputs": outputs,
+            "outputfiles": output_files,
+            "errors": errors,
+        }
 
     results = None
 
@@ -234,8 +268,8 @@ def ex_check_file_answer(task, files={}, answer=None):
         codefiles[name] = base64.b64encode(contents)
 
     # Send the tests and files to the checking server and receive the results
-    bjsonrpc_client = bjsonrpc.connect(host='10.10.110.66', port=10123)
-        
+    bjsonrpc_client = bjsonrpc.connect(host="10.10.110.66", port=10123)
+
     if references:
         results = bjsonrpc_client.call.checkWithReference(codefiles, references, tests)
         bjsonrpc_client.close()
@@ -244,7 +278,9 @@ def ex_check_file_answer(task, files={}, answer=None):
             test_result["outputs"] = [base64.b64decode(output) for output in test_result["outputs"]]
             test_result["errors"] = [base64.b64decode(error) for error in test_result["errors"]]
             for output_file_name, output_file_contents in test_result["outputfiles"].items():
-                test_result["outputfiles"][output_file_name] = base64.b64decode(output_file_contents)
+                test_result["outputfiles"][output_file_name] = base64.b64decode(
+                    output_file_contents
+                )
             for input_file_name, input_file_contents in test_result["inputfiles"].items():
                 test_result["inputfiles"][input_file_name] = base64.b64decode(input_file_contents)
     else:
@@ -260,15 +296,15 @@ def ex_check_file_answer(task, files={}, answer=None):
         for input_file_name, input_file_contents in test_result["inputfiles"].items():
             test_result["inputfiles"][input_file_name] = base64.b64decode(input_file_contents)
 
-    
     print("File checked")
 
     return results
 
+
 def html(results):
     colgroup_old = "<colgroup></colgroup> <colgroup></colgroup> <colgroup></colgroup>\n        <colgroup></colgroup> <colgroup></colgroup> <colgroup></colgroup>"
-    colgroup_new = '''<colgroup class="student"><col class="lnum" span="2" /><col class="content" />
-</colgroup><colgroup class="expected"><col class="lnum" span="2"><col class="content" /></colgroup>'''
+    colgroup_new = """<colgroup class="student"><col class="lnum" span="2" /><col class="content" />
+</colgroup><colgroup class="expected"><col class="lnum" span="2"><col class="content" /></colgroup>"""
     diff_tables = "<h1>Test results</h1>\n"
     expected = None
     reference = None
@@ -281,13 +317,20 @@ def html(results):
             expected = results["expected"][test_name]
 
         if test_result["input"]:
-            diff_tables += "<h3>Input:</h3>\n<pre class=\"normal\">%s</pre>\n" % (escape(str(test_result["input"].decode("utf-8"))))
+            diff_tables += '<h3>Input:</h3>\n<pre class="normal">%s</pre>\n' % (
+                escape(str(test_result["input"].decode("utf-8")))
+            )
         if test_result["inputfiles"]:
             for inputfile, contents in test_result["inputfiles"].items():
-                diff_tables += "<h3>Input file: %s</h3>\n<pre class=\"normal\">%s</pre>\n" % (escape(str(inputfile.decode("utf-8"))), escape(contents))
+                diff_tables += '<h3>Input file: %s</h3>\n<pre class="normal">%s</pre>\n' % (
+                    escape(str(inputfile.decode("utf-8"))),
+                    escape(contents),
+                )
 
         for i, cmd in enumerate(test_result["cmds"]):
-            diff_tables += "<h3>Command: <span class=\"command\">%s</span></h3>\n" % (str(" ".join(pipes.quote(s) for s in cmd[0]).decode("utf-8")))    #(cmd[0])
+            diff_tables += '<h3>Command: <span class="command">%s</span></h3>\n' % (
+                str(" ".join(pipes.quote(s) for s in cmd[0]).decode("utf-8"))
+            )  # (cmd[0])
 
             rcv_retval = test_result["returnvalues"][i]
             rcv_output = test_result["outputs"][i].split("\n")
@@ -307,8 +350,26 @@ def html(results):
                     exp_output = [str()]
                     exp_error = [str()]
 
-            out_diff = difflib.HtmlDiff().make_table(fromlines=rcv_output,tolines=exp_output,fromdesc="Your program's output",todesc="Expected output").replace(colgroup_old, colgroup_new)
-            err_diff = difflib.HtmlDiff().make_table(fromlines=rcv_error,tolines=exp_error,fromdesc="Your program's errors",todesc="Expected errors").replace(colgroup_old, colgroup_new)
+            out_diff = (
+                difflib.HtmlDiff()
+                .make_table(
+                    fromlines=rcv_output,
+                    tolines=exp_output,
+                    fromdesc="Your program's output",
+                    todesc="Expected output",
+                )
+                .replace(colgroup_old, colgroup_new)
+            )
+            err_diff = (
+                difflib.HtmlDiff()
+                .make_table(
+                    fromlines=rcv_error,
+                    tolines=exp_error,
+                    fromdesc="Your program's errors",
+                    todesc="Expected errors",
+                )
+                .replace(colgroup_old, colgroup_new)
+            )
 
             diff_tables += out_diff
             diff_tables += err_diff
@@ -327,7 +388,16 @@ def html(results):
             else:
                 rcv_content = [str()]
 
-            file_diff = difflib.HtmlDiff().make_table(fromlines=rcv_content,tolines=exp_content,fromdesc="Your program's output",todesc="Expected output").replace(colgroup_old, colgroup_new)
+            file_diff = (
+                difflib.HtmlDiff()
+                .make_table(
+                    fromlines=rcv_content,
+                    tolines=exp_content,
+                    fromdesc="Your program's output",
+                    todesc="Expected output",
+                )
+                .replace(colgroup_old, colgroup_new)
+            )
             diff_tables += file_diff
 
     return diff_tables

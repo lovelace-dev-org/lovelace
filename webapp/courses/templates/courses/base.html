@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8">
 
-    {% load staticfiles %}
+    {% load static %}
     {% load i18n %}
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:400,400italic,700,700italic%26subset=latin,latin-ext">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inconsolata">
@@ -17,20 +17,29 @@
     <link rel="stylesheet" href="{% static 'courses/latofonts.css' %}">
     <link rel="stylesheet" href="{% static 'feedback/style.css' %}">
     <link rel="stylesheet" href="{% static 'courses/terms.css' %}">
+    <link rel="stylesheet" href="{% static 'faq/faq.css' %}">
+    <link rel="stylesheet" href="{% static 'assessment/assessment.css' %}">
+    {% if user.userprofile.dyslexic_fonts %}
+      <link rel="stylesheet" href="{% static 'courses/dyslexic.css' %}">
+    {% endif %}
 
     <script src="{% static 'courses/katex.min.js' %}"></script>
-    <script src="{% static 'courses/jquery-3.3.1.min.js' %}"></script>
+    <script src="{% static 'courses/jquery-3.6.4.min.js' %}"></script>
     <script src="{% static 'courses/jquery.slimscroll.min.js' %}"></script>
+    <script src="{% static 'courses/jquery.dirty.js' %}"></script>
     <script src="{% static 'courses/script.js' %}"></script>
     <script src="{% static 'courses/embedded-file.js' %}"></script>
     <script src="{% static 'courses/exercise.js' %}"></script>
+    <script src="{% static 'courses/editing.js' %}"></script>
     <script src="{% static 'courses/calendar.js' %}"></script>
     <script src="{% static 'feedback/script.js' %}"></script>
+    <script src="{% static 'faq/faq.js' %}"></script>
+    <script src="{% static 'assessment/assessment.js' %}"></script>
     <script>
       $(document).ready(function() {
         // TODO: Store data in a js object
-        add_line_numbers();
-        set_line_widths();
+        // add_line_numbers();
+        // set_line_widths();
 
         add_exercise_form_callbacks();
         add_feedback_form_callbacks();
@@ -76,7 +85,13 @@
       <div id="cookie-law-message">
         <div class="cookie-law-container">
           <p>{% url 'courses:terms' as terms_url %}
-            {% blocktrans %}This site uses cookies. Learn more about our <a href="{{ terms_url }}">terms and conditions</a>.{% endblocktrans %}</p>
+            {% blocktrans %}
+              This site uses cookies. Only cookies that are necessary for the site to
+              work or to remember your settings (like language) are used. This site does
+              not use any tracking cookies.
+              Learn more about our <a href="{{ terms_url }}">terms and conditions</a>.
+            {% endblocktrans %}
+          </p>
           <button onclick="accept_cookies();">{% trans 'Accept' %}</button>
         </div>
       </div>
@@ -98,60 +113,127 @@
                     {% endfilter %}
                   </span>
               </div>
-              </div><div class="side-by-side-top">
+              </div>
+              <div class="side-by-side-top">
                 <div class="vertical-separator"></div>
-              </div><div class="side-by-side-top">
-                <img src="{% static 'courses/arrow-down.png' %}"
-                     onclick="$('#user-menu').toggle();"
+              </div>
+              <div class="side-by-side-top">
+                <div class="user-menu-arrow"
+                     onclick="$('#user-menu').toggle()"
                      id="user-menu-arrow">
+                  {% if not user.userprofile.completed %}
+                    <span class="attention-icon right-float">!</span>
+                  {% elif user.userprofile.unread_messages %}
+                    <span class="attention-icon right-float">
+                      {{ user.userprofile.unread_messages }}
+                    </span>
+                  {% endif %}
+                </div>
                 <div id="user-menu"><div>
-              <div class="user-settings">
-                <a href="/profile/">{% trans 'Settings' %}</a>
-              </div>
-              {% if user.is_staff %}
-                <div class="user-tools">
-                    <a href="{% url 'admin:index' %}">{% trans 'Teacher’s tools' %}</a>
+                <div class="user-settings">
+                  <a href="/profile/">{% trans 'Profile and Settings' %}</a>
+                  {% if not user.userprofile.completed %}
+                    <span class="attention-icon">!</span>
+                  {% endif %}
                 </div>
+                <div class="user-settings">
+                  <a href="/messages/">{% trans 'Messages' %}</a>
+                  {% if user.userprofile.unread_messages %}
+                    <span class="attention-icon">
+                      {{ user.userprofile.unread_messages }}
+                    </span>
+                  {% endif %}
+                </div>
+                {% if course and instance and instance.max_group_size %}
+                    <div class="user-settings">
+                      <a href="{% url 'courses:group_info' course instance %}">
+                          {% trans 'Group info' %}
+                      </a>
+                    </div>
+                {% endif %}
+                {% if user.is_staff %}
+                  <div class="user-menu-separator"><hr /></div>
+                  <div class="user-tools">
+                      <a href="{% url 'admin:index' %}">{% trans 'Management panel' %}</a>
+                  </div>
+                {% endif %}
+                {% if user.is_superuser %}
+                  <div class="user-tools">
+                      <a href="{% url 'courses:system_messages' %}">{% trans 'System messages' %}</a>
+                  </div>
+                {% endif %}
+                {% if course_staff and course and instance %}
+                  <div class="user-menu-separator"><hr /></div>
+                  <div class="user-tools">
+                    <a href="{% url 'teacher_tools:manage_enrollments' course instance %}">
+                      {% trans 'Manage enrollments' %}
+                    </a>
+                  </div>
+                  <div class="user-tools">
+                    <a href="{% url 'teacher_tools:search_records' course instance %}">
+                      {% trans 'Search records' %}
+                    </a>
+                  </div>
+                  {% if instance.max_group_size %}
+                      <div class="user-tools">
+                        <a href="{% url 'courses:group_management' course instance %}">
+                          {% trans 'Manage groups' %}
+                        </a>
+                      </div>
+                  {% endif %}
+                  <div class="user-tools">
+                      <a href="{% url 'courses:course_messages' course instance %}">
+                        {% trans 'Course messages' %}
+                      </a>
+                  </div>
+                  <div class="user-tools">
+                    <a id="{{ content.slug }}-email-panel-link"
+                      class="email-panel-link"
+                      href="{% url 'courses:mass_email' course instance %}"
+                      title="{% trans 'Open the mass email panel' %}"
+                      onclick="show_panel(event, this, 'email-panel', 'message-panel');"
+                      data-querystring="">{% trans 'Mass email' %}
+                    </a>
+                  </div>
+                  <div class="user-tools">
+                    <a href="{% url 'teacher_tools:completion' course instance %}">
+                      {% trans 'Course completion' %}
+                    </a>
+                  </div>
+                  <!--
+                  <div class="user-tools">
+                    <a href="{% url 'teacher_tools:reminders' course instance %}">
+                      {% trans 'Reminders' %}
+                    </a>
+                  </div>
+                  <div class="user-tools">
+                    <a href="{% url 'stats:instance_console' course instance %}">
+                      {% trans 'Statistics' %}
+                    </a>
+                  </div>
+                  -->
+                  <div class="user-tools">
+                    <a href="{% url 'teacher_tools:exemptions' course instance %}">
+                      {% trans 'Deadline Exemptions' %}
+                    </a>
+                  </div>
+                {% endif %}
+                <div class="user-logout">
+                  <a href="/logout">{% trans 'Log out' %}</a>
+                </div></div></div>
+                </div>
+              {% else %}
+                <a href="/login">
+                  <div class="user-action">
+                    {% trans 'Log in' %}
+                  </div>
+                </a><a href="/accounts/signup">
+                  <div class="user-action">
+                    {% trans 'Sign up' %}
+                  </div>
+                </a>
               {% endif %}
-              {% if course_staff and course and instance %}
-                <div class="user-tools">
-                  <a href="{% url 'teacher_tools:manage_enrollments' course instance %}">
-                    {% trans 'Manage enrollments' %}
-                  </a>
-                </div>                
-                <div class="user-tools">
-                  <a href="{% url 'teacher_tools:completion' course instance %}">
-                    {% trans 'Course completion' %}
-                  </a>
-                </div>
-                <div class="user-tools">
-                  <a href="{% url 'teacher_tools:reminders' course instance %}">
-                    {% trans 'Reminders' %}
-                  </a>
-                </div>
-                <div class="user-tools">
-                  <a href="{% url 'stats:instance_console' course instance %}">
-                    {% trans 'Statistics' %}
-                  </a>
-                </div>
-              {% endif %}
-              <div class="user-logout">
-                <a href="/logout">{% trans 'Log out' %}</a>
-              </div></div></div>
-              </div>
-            {% else %}
-              <a href="/login">
-                <div class="user-action">
-                  {% trans 'Log in' %}
-                </div>
-              </a><a href="/accounts/signup">
-                <div class="user-action">
-                  {% trans 'Sign up' %}
-                </div>
-              </a>
-            {% endif %}
-            
-          </div>{% comment %}login box{% endcomment %}
+            </div>{% comment %}login box{% endcomment %}
         </div>
       </header>
       
@@ -164,21 +246,36 @@
           {% endblock %}
         </ul>
         <div class="right-side">
+          <div class="vertical-separator"></div>
+          <a onclick="$('div.toc-box').toggle();" style="cursor:pointer;">
+            <img src="{% static 'courses/toc.png' %}" title="{% trans 'Table of Contents' %}">
+          </a>
+          <div class="vertical-separator"></div>
           {# https://docs.djangoproject.com/en/1.9/topics/i18n/translation/#set-language-redirect-view #}
           <form action="{% url 'set_language' %}" method="post" class="language-picker">
-            {% csrf_token %}
+            {% csrf_token %}            
             <input name="next" type="hidden" value="{{ redirect_to }}">
             <select name="language" onchange="this.form.submit();">
               {% get_current_language as LANGUAGE_CODE %}
               {% get_available_languages as LANGUAGES %}
               {% get_language_info_list for LANGUAGES as languages %}
               {% for language in languages %}
-                <option value="{{ language.code }}"{% if language.code == LANGUAGE_CODE %} selected="selected"{% endif %}>
+                <option value="{{ language.code }}"{% if language.code == LANGUAGE_CODE %}
+                        selected="selected"{% endif %}>
                   {{ language.name_local }} ({{ language.code }})
                 </option>
               {% endfor %}
             </select>
-          </form><div class="vertical-separator"></div><a onclick="$('div.toc-box').toggle();" style="cursor:pointer;"><img src="{% static 'courses/toc.png' %}" title="{% trans 'Table of Contents' %}"></a><div class="vertical-separator"></div>
+          </form>
+          {% if course_staff %}
+            <div class="vertical-separator"></div>
+            <button type="button"
+                    id="staff-view-toggle"
+                    class="nav-bar-button"
+                    title="{% trans 'Toggle between student and staff view' %}"
+                    onclick="toggle_staff_widgets(event, this);">{% trans 'staff view' %}
+            </button>
+          {% endif %}          
         </div>
         </div>
       </nav>
@@ -187,11 +284,16 @@
       {% block termbank %}
         {% if termbank_contents %}
           <div class="termbank" id="termbank">
-            <button class="expand-box" onclick="expand_box(this);" title="{% trans 'Hide/Show the termbank' %}">◀</button>
+            <button class="expand-box"
+                    onclick="expand_box(this);"
+                    title="{% trans 'Hide/Show the termbank' %}"
+            >◀</button>
             <div class="termbank-contents" id="termbank-contents">
               <div class="termbank-heading" id="termbank-heading">{% trans "Termbank" %}</div>
               <div class="termbank-search-div">
-                <input id="termbank-search" type="search" oninput="filter_termbank_contents($(this).val());"
+                <input id="termbank-search"
+                       type="search"
+                       oninput="filter_termbank_contents($(this).val());"
                        placeholder="{% trans 'Search for a term…' %}">
               </div>
               <div id="termbank-list-div" class="list-div">
@@ -204,7 +306,10 @@
                           <li class="term-list-item">
                             {% if term.alias %}<span class="term-alias">{{ term.alias }}</span> → {% endif %}
                             <div class="term-container"
-                                 onmouseenter="show_term_description_during_hover(this, event, '#{{ term.slug }}-term-div');"
+                                 onmouseenter="
+                                   show_term_description_during_hover
+                                   (this, event, '#{{ term.slug }}-term-div');
+                                 "
                                  onmouseleave="hide_tooltip('#{{ term.slug }}-term-div');">
                               <span class="term">{{ term.name }}</span>
                             </div>
@@ -224,7 +329,10 @@
 
       {% block toc %}
         <div class="toc-box">
-          <button class="expand-box" onclick="expand_box(this);" title="{% trans 'Hide/Show the table of contents' %}">◀</button>
+          <button class="expand-box"
+                  onclick="expand_box(this);"
+                  title="{% trans 'Hide/Show the table of contents' %}"
+          >◀</button>
           <nav class="toc" id="toc">
             <div class="toc-box-heading">{% trans "Table of Contents" %}</div>
             <div class="list-div">
@@ -234,11 +342,30 @@
           </nav>
           {% block progress %}
             <div class="progress-container">
-              <div class="toc-box-progress-info">{% trans "Completed:" %} <span id="completed-exercises"></span>/<span id="total-exercises"></span> {% trans "exercises" %}</div>
+              <div class="toc-box-progress-info">
+                {% trans "Completed:" %} <span id="completed-exercises"></span>/
+                <span id="total-exercises"></span> {% trans "exercises" %}
+              </div>
               <progress id="exercises-progress" value="0" max="0"></progress>
             </div>
           {% endblock %}
         </div>
+      {% endblock %}
+
+      {% block flash-messages %}
+        {% if messages %}
+          <div class="message-box interactive" onclick="close_self(this)">
+            <div class="message-container">
+              <div class="message-box-header">
+                {% trans 'Messages' %}
+                <span class="popup-button">x</a>
+              </div>
+              {% for message in messages %}
+                <div>{{ message }}</div>
+              {% endfor %}
+            </div>
+          </div>
+        {% endif %}
       {% endblock %}
 
       <section class="content">
@@ -247,6 +374,30 @@
         {% block page-content %}
         {% endblock %}
       </section>
+      
+      {% block floating-elements %}
+        <div class="arrow-container">
+        </div>
+      {% endblock %}
+
+      {% block side-panels %}
+        <div class="side-panel" id="message-panel">
+            <button type="button"
+                    class="side-panel-closer"
+                    title="{% trans 'Close the panel' %}"
+                    onclick="hide_panel(event, 'message-panel');">&lt;&lt;
+            </button>
+            <div class="panel-container"></div>
+        </div>
+        <div class="side-panel" id="edit-panel">
+            <button type="button"
+                    class="side-panel-closer"
+                    title="{% trans 'Close the panel' %}"
+                    onclick="editing.hide_widget_panel(event);">&lt;&lt;
+            </button>
+            <div class="panel-container"></div>
+        </div>
+      {% endblock %}
 
       {% block term-descriptions %}
         <div class="term-descriptions" id="term-descriptions">
@@ -255,11 +406,17 @@
           </div>
           {% if term_div_data %}
             {% for term in term_div_data %}
-              <div class="term-description" id="{{ term.slug }}-term-div">
+               <div class="term-description" id="{{ term.slug }}-term-div">
                 <div class="term-grace-area"></div>
+                {% if course_staff %}
+                  <a class="staff-only collapsed"
+                     href="{{ term.edit_url }}"><img src="{% static 'courses/edit.png' %}"></a>
+                {% endif %}
                 {% if term.tabs %}
                   <ol class="term-tab-titles">
-                    <li onclick="show_term_tab(this);" class="term-tab-active">{% trans 'Description' %}</li>
+                    <li onclick="show_term_tab(this);" class="term-tab-active">
+                      {% trans 'Description' %}
+                    </li>
                     {% for tab_title, _ in term.tabs %}
                       <li onclick="show_term_tab(this);">{{ tab_title }}</li>
                     {% endfor %}
@@ -292,13 +449,17 @@
 
       <footer>
         <div class="column0">
-          <p>Content license for this course: <a href="{{ instance.license_url }}">{{ instance.content_license }}</a></p>
-          <p>Site design &amp; backend by Miikka Salminen</p>
-        </div>
-        <div class="column1">
-          <p>Powered by Python, Django and jQuery.</p>
+          <p><a href="{% url 'courses:about' %}">{% trans 'About Lovelace' %}</a></p>
           <p><a href="{% url 'courses:terms' %}">{% trans 'Terms and Conditions' %}</a></p>
         </div>
+        {% if instance %}
+          <div class="column1">
+            <p>
+              <p>Content license for this course:</p>
+              <p><a href="{{ instance.license_url }}">{{ instance.content_license }}</a></p>
+            </p>
+          </div>
+        {% endif %}
       </footer>
     </div>{# end container #}
   </body>

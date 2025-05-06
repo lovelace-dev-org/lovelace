@@ -1,0 +1,82 @@
+button.faq-button {
+    
+    float: right;
+    width: 25px;
+    height: 25px;
+    outline: 0;
+    vertical-align: middle;
+    overflow: hidden;
+    color: #4CAF50;
+    background-color: #fff;
+    text-align: center;
+    cursor: pointer;
+    border: 0px solid #42860e;
+    border-radius: 8px;
+    box-shadow: 1px 1px 2px #285c00;
+    margin: 0px 5px 0px 5px;
+}
+
+button.faq-button.add-button {
+    color: #05cf02;
+    float: none;
+    font-size: 1.25em;
+    font-weight: bold;
+    margin-left: 0px;
+    margin-top: 5px;
+}
+
+button.faq-button.edit-button {
+    background: no-repeat url("/static/courses/edit_icon_pencil.svg") center/18px,
+                #fff;
+}
+
+button.faq-button.link-button {
+    background: no-repeat url("/static/courses/link.png") center/18px,
+                #fff;
+    float: none;
+    margin-left: 0px;
+}
+
+button.faq-button.unlink-button {
+    background: no-repeat url("/static/courses/unlink.png") center/18px,
+                #fff;
+    color: #ff0000;
+    box-shadow: 1px 1px 2px #ff2000;
+}
+
+div.faq-heading {
+    background: #caeaca;
+    background: linear-gradient(to bottom, #caeaca, #daeeda);
+    border: 1px solid #aba;
+    border-radius: 2px;
+    margin: 2px 0px 2px 0px;
+    cursor: pointer;
+}
+
+div.faq-heading.highlight {
+    color: #ff0000;
+}
+
+div.faq-panel {
+    font-size: 18px;
+}
+
+div.faq-answer { 
+}
+
+div.faq-form-opener {
+    height: 25px;
+}
+
+div.faq-form-opener > span {
+    cursor: pointer;
+    vertical-align: middle;
+}
+
+div.faq-form-container {
+}
+
+span.faq-question {
+    font-weight: bold;
+}
+    

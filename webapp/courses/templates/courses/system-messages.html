@@ -1,0 +1,35 @@
+{% extends 'courses/base.html' %}
+
+{% load i18n %}
+{% load static %}
+{% load course_tags %}
+
+{% block extra-static %}
+  <script src="{% static 'courses/messaging.js' %}"></script>
+{% endblock %}
+
+{% block breadcrumb-links %}
+  <li><a href="{% url 'courses:index' %}">{% trans 'Courses' %}</a></li>
+  <div class="separator">»</div>
+  <li>{% trans 'System Messages' %}</li>
+{% endblock %}
+
+{% block page-content %}
+  {% for key, msg in system_messages %}
+    <div class="item-header" onclick="expand_next_div(this)">
+      <span>{{ msg }}</span>
+      <button type="button"
+              class="staff-base-button right-float delete-button"
+              onclick="messaging.remove_message(event, this)"
+              data-url="{% url 'courses:remove_system_message' key %}"
+              data-csrf="{{ csrf_token }}">X
+      </button>
+    </div>
+    <div></div>
+  {% endfor %}
+
+  <div>
+    {{ form|safe }}
+  </div>
+{% endblock %}
+

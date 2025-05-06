@@ -1,0 +1,13 @@
+{% load static %}
+{% load i18n %}
+
+<div class="messaging-panel"
+     data-source-url="">
+     
+    {{ form|safe }}
+</div>
+
+<script>
+    $("div.messaging-panel form").submit(submit_message);
+    $("div.messaging-panel form select").change(load_saved_fields);
+</script>

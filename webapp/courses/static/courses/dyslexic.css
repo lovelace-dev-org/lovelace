@@ -1,0 +1,136 @@
+@font-face {
+    font-family: "Dyslexic";
+    src:
+        local(OpenDyslexic),
+        local(OpenDyslexic-Regular),
+        url("/static/courses/fonts/OpenDyslexic-Regular.woff2") format("woff2"),
+        url("/static/courses/fonts/OpenDyslexic-Regular.woff") format("woff"),
+        url("/static/courses/fonts/OpenDyslexic-Regular.otf") format("opentype");
+}
+
+@font-face {
+    font-family: "Dyslexic";
+    src:
+        local(OpenDyslexic Bold),
+        local(OpenDyslexic-Bold),
+        url("/static/courses/fonts/OpenDyslexic-Bold.otf") format("opentype"),
+        url("/static/courses/fonts/OpenDyslexic-Bold.woff") format("woff");
+    font-weight: bold;
+}
+
+@font-face {
+    font-family: "Dyslexic";
+    src:
+        local(OpenDyslexic Italic),
+        local(OpenDyslexic-Italic),
+        url("/static/courses/fonts/OpenDyslexic-Italic.otf") format("opentype"),
+        url("/static/courses/fonts/OpenDyslexic-Italic.woff") format("woff");
+    font-style: italic;
+}
+
+@font-face {
+    font-family: "DyslexicMono";
+    src:
+        local(OpenDyslexicMono),
+        local(OpenDyslexicMono-Regular),
+        url("/static/courses/fonts/OpenDyslexicMono-Regular.otf") format("opentype");
+}
+
+section.content {
+    font-family: "Dyslexic", "LatoWeb", "DejaVu Sans", "Verdana", "Ubuntu", "Arial", sans-serif;
+}
+
+section.content h1, section.content h2, section.content h3, section.content h4, section.content h5, section.content h6 {
+    font-family: "Dyslexic", "LatoWebSemibold", "Trebuchet MS", "Helvetica", sans-serif;
+}
+
+section.content div.paragraph > code, section.content td > code,
+section.content li > code, section.content form > code,
+section.content mark > code {
+    font-family: "DyslexicMono", "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
+}
+
+section.content pre.normal {
+    font-family: "DyslexicMono", "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
+}
+
+section.content div.question form input[type=file], section.content div.question form input[type=submit] {
+    font-family: "Dyslexic";
+}
+
+section.content div.question form div.code-replace-filename {
+    font-family: "DyslexicMono", "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
+}
+
+section.content div.question form label.code-replace-label {
+    font-family: "DyslexicMono", "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
+}
+
+section.content div.question form input.code-replace-input {
+    font-family: "DyslexicMono", "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
+}
+
+section.content div.question form textarea {
+    font-family: "DyslexicMono", "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
+}
+
+section.content button.rt-interaction {
+    font-family: "Dyslexic", "LatoWeb";
+}
+
+section.content div#result h3 span.command {
+    font-family: "DyslexicMono", "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
+}
+
+pre.test-evaluation-cmdline {
+    font-family: "DyslexicMono", "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
+}
+
+div.test-evaluation-msg-attention:after {
+    font-family: "DyslexicMono", "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
+}
+
+span.retval {
+    font-family: "DyslexicMono", "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
+}
+
+pre.test-evaluation-inputs {
+    font-family: "DyslexicMono", "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
+}
+
+section.content table.diff td {
+    font-family: "DyslexicMono", "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
+}
+
+div.calendar input[type=submit] {
+    font-family: "Dyslexic", "LatoWeb";
+}
+
+div#cookie-law-message > div > p {
+    font-family: "Dyslexic", "LatoWeb", "DejaVu Sans", "Verdana", "Ubuntu", "Arial", sans-serif;
+}
+
+div#cookie-law-message > div > button {
+    font-family: "Dyslexic", "LatoWeb", "DejaVu Sans", "Verdana", "Ubuntu", "Arial", sans-serif;
+}
+
+div.termbank {
+    font-family: "Dyslexic", "LatoWeb", "DejaVu Sans", "Verdana", "Ubuntu", "Arial", sans-serif;
+}
+
+div.toc-box {
+    font-family: "Dyslexic", "LatoWeb", "DejaVu Sans", "Verdana", "Ubuntu", "Arial", sans-serif;
+}
+
+div.term-descriptions {
+    font-family: "Dyslexic", "LatoWeb", "DejaVu Sans", "Verdana", "Ubuntu", "Arial", sans-serif;
+}
+
+div.embedded-code > pre {
+    font-family: "DyslexicMono", "Inconsolata", "Lucida Console", "DejaVu Sans Mono", monospace;
+}
+
+
+
+
+
