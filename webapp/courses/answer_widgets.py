@@ -27,8 +27,8 @@ class TextfieldAnswerWidget(AnswerWidget):
         context["widget_rows"] = settings.rows
         return t.render(context)
 
-    def get_configuration_form(self):
-        return courses.forms.TextfieldWidgetConfigurationForm
+    def get_configuration_form(self, data=None):
+        return courses.forms.TextfieldWidgetConfigurationForm(data, instance=self.get_settings())
 
     def get_settings(self):
         settings, created = cm.TextfieldWidgetSettings.objects.get_or_create(

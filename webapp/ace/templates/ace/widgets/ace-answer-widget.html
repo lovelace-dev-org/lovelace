@@ -1,20 +1,28 @@
 {% load i18n %}
 {% load static %}
 
-<style type="text/css">
-  .ace-editor {
-      width: 100%;
-      min-height: 300px;
-      border: 2px solid #ddd;
-      padding: 2px;
-      resize: vertical;
-  }
-</style>
 
-<div id="{{ content.slug }}-ace-editor"
-     class="ace-editor"
-     style="min-height: {{ ace_container_height }}px;">
+<link type="text/css" rel="stylesheet" href="{% static 'ace/acewidget.css' %}">
+
+<div class="ace-container ace-layout-{{ ace_layout }}">
+  <div id="{{ content.slug }}-ace-editor"
+       class="ace-editor"
+       style="min-height: {{ ace_container_height }}px;"></div>
+  {% if ace_preview_widget %}
+    <button type="button"
+            id="{{ content.slug }}-ace-run-button">
+      {% if ace_layout == "horizontal" %}
+        ⇉
+      {% else %}
+        ⇊
+      {% endif %}
+    </button>
+    <div class="preview-container">
+      {{ ace_preview_widget|safe }}
+    </div>
+  {% endif %}
 </div>
+
 <script src="{% static 'ace/ace/ace.js' %}"></script>
 <script src="{% static 'ace/acewidget.js' %}"></script>
 <script>
@@ -25,4 +33,14 @@
   var form = $(document.currentScript).closest("form")
   form.attr("data-extra-callback", "acewidget.read_editor_value('{{ content.slug }}-ace-editor')")
   form.attr("data-extra-key", "answer")
+
+  {% if ace_preview_widget %}
+    var ace_controller = new AceWidget(
+      "{{ ace_preview_ws }}",
+      editor,
+      preview_widget,
+      "{{ content.slug }}-ace-run-button"
+    )
+  {% endif %}
+
 </script>

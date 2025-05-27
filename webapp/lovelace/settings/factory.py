@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     'reversion',
     'teacher_tools',
     'ace',
+    'task_ws',
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -99,6 +100,7 @@ if os.getenv("LOVELACE_USE_SHIBBOLETH"):
     MIDDLEWARE.append("courses.middleware.ShibbolethExceptionReporter")
     AUTHENTICATION_BACKENDS.append("shibboleth.backends.ShibbolethRemoteUserBackend")
 
+ENABLE_CELERY = True
 
 if os.getenv("ENABLE_MANAGEMENT_API"):
     ENABLE_MANAGEMENT_API = True

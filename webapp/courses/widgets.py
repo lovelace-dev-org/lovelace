@@ -22,7 +22,7 @@ class ContentPreviewWidget(forms.Textarea):
         return self._render(self.template_name, context, renderer)
 
 
-class AnswerWidgetRegistry:
+class WidgetRegistry:
 
     widgets = {}
 
@@ -38,7 +38,18 @@ class AnswerWidgetRegistry:
     def list_widgets(cls):
         return sorted(cls.widgets.keys())
 
-class AnswerWidget:
+
+class AnswerWidgetRegistry(WidgetRegistry):
+
+    widgets = {}
+
+
+class PreviewWidgetRegistry(WidgetRegistry):
+
+    widgets = {}
+
+
+class Widget:
 
     template = "courses/blank.html"
     handle = "blank"
@@ -54,3 +65,14 @@ class AnswerWidget:
 
     def get_configuration_form(self):
         return None
+
+
+class AnswerWidget(Widget):
+
+    pass
+
+
+class PreviewWidget(Widget):
+
+    pass
+

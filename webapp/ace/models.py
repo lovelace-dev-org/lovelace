@@ -26,3 +26,33 @@ class AceWidgetSettings(models.Model):
     )
 
 
+class AcePlusWidgetSettings(models.Model):
+
+    objects = cm.WidgetSettingsManager()
+
+    content = models.ForeignKey(cm.ContentPage, on_delete=models.CASCADE, null=True)
+    instance = models.ForeignKey(cm.CourseInstance, on_delete=models.CASCADE)
+
+    ace_settings = models.OneToOneField(
+        AceWidgetSettings,
+        on_delete=models.SET_NULL,
+        null=True
+    )
+    preview_widget = models.CharField(
+        verbose_name="Interactive preview widget.",
+        max_length=32,
+    )
+    ws_address = models.CharField(
+        verbose_name="Preview backend websocket address.",
+        max_length=256
+    )
+    layout = models.CharField(
+        verbose_name="Layout style",
+        max_length=16,
+        choices=(
+            ("horizontal", "Horizontal"),
+            ("vertical", "Vertical")
+        ),
+        default="horizontal"
+    )
+

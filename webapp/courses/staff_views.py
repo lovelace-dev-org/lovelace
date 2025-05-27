@@ -787,12 +787,9 @@ def add_form(request, course, instance, content):
 @ensure_staff
 def configure_answer_widget(request, course, instance, content):
     widget = content.get_answer_widget(instance)
-    form_cls = widget.get_configuration_form()
-    if form_cls is None:
-        return HttpResponse(_("This answer widget cannot be configured"))
 
     if request.method == "POST":
-        form = form_cls(request.POST, instance=widget.get_settings())
+        form = widget.get_configuration_form(data=request.POST)
         if not form.is_valid():
             errors = form.errors.as_json()
             return JsonResponse({"errors": errors}, status=400)
@@ -801,7 +798,7 @@ def configure_answer_widget(request, course, instance, content):
         regenerate_nearest_cache(content)
         return JsonResponse({"status": "ok"})
 
-    form = form_cls(instance=widget.get_settings())
+    form = widget.get_configuration_form()
     form_t = loader.get_template("courses/base-edit-form.html")
     form_c = {
         "html_id": f"{content.slug}-widget-config-form",
