@@ -20,11 +20,12 @@ from courses.models import User
 
 
 from utils.access import ensure_enrolled_or_staff, determine_access, ensure_staff, ensure_responsible
-from utils.archive import find_latest_version
+from utils.archive import get_single_archived, find_latest_version, find_version_with_filename
 from utils.content import get_embedded_parent
 from utils.files import generate_download_response, get_file_contents_b64
 
 from multiexam.models import (
+    load_pool_file,
     ExamQuestionPool,
     MultipleQuestionExam,
     MultipleQuestionExamAttempt,
@@ -37,7 +38,7 @@ from multiexam.forms import (
     ExamAttemptRefreshForm,
     ExamAttemptKeyForm
 )
-from multiexam.utils import generate_attempt_questions, process_questions
+from multiexam.utils import compare_exams, generate_attempt_questions, process_questions
 
 @ensure_enrolled_or_staff
 def get_exam_attempt(request, course, instance, content):
@@ -217,6 +218,16 @@ def attempt_settings(request, course, instance, attempt):
 
         attempt = form.save(commit=False)
         if form.cleaned_data["refresh"]:
+            pools = {
+                "None": load_pool_file(attempt.exam.examquestionpool.fileinfo),
+                "Attempt": load_pool_file(
+                    get_single_archived(attempt.exam.examquestionpool, attempt.revision).fileinfo
+                )
+            }
+            if not compare_exams(pools, primary_key="None")[0]:
+                form.add_error("refresh", _("Cannot update, the exam files are incompatible"))
+                return JsonResponse({"errors": form.errors.as_json()}, status=400)
+
             attempt.revision = find_latest_version(attempt.exam).revision_id
         attempt.save()
 
@@ -259,6 +270,7 @@ def refresh_attempts(request, course, instance, content):
             errors = form.errors.as_json()
             return JsonResponse({"errors": errors}, status=400)
 
+        pools = {"None": load_pool_file(content.examquestionpool.fileinfo)}
         attempts = MultipleQuestionExamAttempt.objects.filter(
             exam=content,
             instance=instance,
@@ -266,6 +278,16 @@ def refresh_attempts(request, course, instance, content):
         )
         if end := form.cleaned_data.get("end"):
             attempts = attempts.filter(open_to__lt=end)
+
+        for attempt in attempts:
+            if attempt.revision not in pools:
+                pools[attempt.revision] = load_pool_file(
+                    get_single_archived(attempt.exam.examquestionpool, attempt.revision).fileinfo
+                )
+
+        if not compare_exams(pools, primary_key="None")[0]:
+            form.add_error(None, _("Cannot update, some exam files are incompatible"))
+            return JsonResponse({"errors": form.errors.as_json()}, status=400)
 
         updated = attempts.update(revision=find_latest_version(attempt.exam).revision_id)
         return JsonResponse({

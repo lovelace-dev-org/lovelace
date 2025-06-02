@@ -1037,6 +1037,12 @@ section.content {
             white-space: nowrap;
         }
 
+        section.content div.question pre code {
+            white-space: pre;
+            border: none;
+            box-shadow: none;
+        }
+
         section.content * a {
             padding: 0 1px;
             margin-left: -1px;

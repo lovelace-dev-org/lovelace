@@ -6,8 +6,8 @@ from django.urls.converters import StringConverter
 
 from django.urls import path, register_converter
 
-from model_path_converter import register_model_converter
 from lovelace import plugins as lovelace_plugins
+
 from courses.models import (
     Course,
     ContentPage,
@@ -20,7 +20,11 @@ from courses.models import (
     CalendarDate,
 )
 from feedback.models import ContentFeedbackQuestion
-from utils.converters import Utf8SlugConverter, RevisionConverter, InstanceConverter
+from utils.converters import (
+    Utf8SlugConverter, RevisionConverter, InstanceConverter,
+    register_model_converter
+)
+
 
 register_model_converter(Course, field="slug", base=Utf8SlugConverter)
 register_model_converter(ContentPage, name="content", field="slug", base=Utf8SlugConverter)

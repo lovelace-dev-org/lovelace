@@ -1,6 +1,7 @@
 from collections import defaultdict
 import random
 import yaml
+from django.core.cache import cache
 from cerberus import Validator
 from courses import markupparser, blockparser
 from multiexam.models import MultipleQuestionExamAttempt
@@ -188,7 +189,7 @@ def validate_exam(exam):
         return False, v.errors
     return True, []
 
-def compare_exams (exams_by_key, primary_key):
+def compare_exams(exams_by_key, primary_key):
     """
     Compare exam models in different languages to the primary one
     Args:
@@ -211,15 +212,15 @@ def compare_exams (exams_by_key, primary_key):
     primary_exam = exams_by_key.pop(primary_key)
     primary_categories = set(primary_exam)
 
-    for lang_code, exam in exams_by_key.items():
+    for key, exam in exams_by_key.items():
         categories = set(exam)
         if categories != primary_categories:
             extra = categories - primary_categories
             missing = primary_categories - categories
             if extra:
-                errors.append(lang_code, f"Extra keys: {extra}")
+                errors.append((key, f"Extra keys: {extra}"))
             if missing:
-                errors.append(lang_code, f"Missing keys: {missing}")
+                errors.append((key, f"Missing keys: {missing}"))
             return False, errors
 
 
@@ -227,10 +228,10 @@ def compare_exams (exams_by_key, primary_key):
 
         primary_alts = primary_exam[category]["alternatives"]
 
-        for lang_code, exam in exams_by_key.items():
+        for key, exam in exams_by_key.items():
             if len(primary_exam[category]) != len(exam[category]):
                 errors.append((
-                    lang_code,
+                    key,
                     f"Different number of alternatives for question type '{question_type}'."
                 ))
                 continue
@@ -238,7 +239,7 @@ def compare_exams (exams_by_key, primary_key):
             for primary_alt, alt in zip(primary_alts, exam[category]["alternatives"]):
                 if primary_alt["type"] != alt["type"]:
                     errors.append((
-                        lang_code,
+                        key,
                         f"Alternative <{alt['summary']}> of <{category}> "
                         "has different question type from primary"
                     ))
@@ -246,7 +247,7 @@ def compare_exams (exams_by_key, primary_key):
 
                 if set(primary_alt["options"]) != set(alt["options"]):
                     errors.append((
-                        lang_code,
+                        key,
                         f"Alternative <{alt['summary']}> of <{category}> "
                         "has different options from primary"
                     ))
@@ -254,7 +255,7 @@ def compare_exams (exams_by_key, primary_key):
 
                 if primary_alt["correct"] != alt["correct"]:
                     errors.append((
-                        lang_code,
+                        key,
                         f"Alternative <{alt['summary']}> of <{category}> "
                         "has different correct answer from primary"
                     ))

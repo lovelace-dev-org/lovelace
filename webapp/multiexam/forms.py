@@ -125,7 +125,7 @@ class QuestionPoolForm(ExerciseBackendForm):
                 else:
                     try:
                         existing = ExamQuestionPool.objects.get(id=cleaned_data["id"].id)
-                    except ExamQuestionPool.DoesNotExist:
+                    except (AttributeError, ExamQuestionPool.DoesNotExist):
                         continue
                     else:
                         existing_file = getattr(existing, f"fileinfo_{lang_code}")

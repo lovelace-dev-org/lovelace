@@ -1,5 +1,5 @@
 from django.urls import path
-from model_path_converter import register_model_converter
+from utils.converters import register_model_converter
 
 from . import views, models
 
