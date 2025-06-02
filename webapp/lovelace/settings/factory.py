@@ -64,6 +64,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "allauth.account.middleware.AccountMiddleware"
 ]
 
 AUTHENTICATION_BACKENDS = [
@@ -203,7 +204,7 @@ DEFAULT_FROM_EMAIL = os.getenv("LOVELACE_EMAIL_FROM", "lovelace-notify")
 # For production, password min length of 32 or more recommended
 ACCOUNT_EMAIL_SUBJECT_PREFIX = "[Lovelace] "
 ACCOUNT_PASSWORD_MIN_LENGTH = 8
-ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']
 ACCOUNT_SESSION_REMEMBER = True
 ADMINS = [
     entry.rsplit(" ", 1) for entry in os.getenv("LOVELACE_ADMINS", "").split(":")

@@ -3,7 +3,10 @@ webapp/bin/
 webapp/db.sqlite3
 webapp/lib/
 webapp/pyvenv.cfg
-upload
+static/
+upload/
+gateway/
+lovelace.egg-info/
 *kate-swp
 .env
 .pg_service.conf
