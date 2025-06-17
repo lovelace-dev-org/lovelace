@@ -3,14 +3,15 @@
 
 <link type="text/css" rel="stylesheet" href="{% static 'task_ws/xterm/css/xterm.css' %}">
 
-<div id="{{ content.slug }}-xterm-window"
+<div id="{{ widget_slug }}-xterm-window"
      class="xterm-window"></div>
 
 <script src="{% static 'task_ws/xterm/lib/xterm.js' %}"></script>
+<script src="{% static 'task_ws/addon-fit/lib/addon-fit.js' %}"></script>
 <script src="{% static 'task_ws/xtermwidget.js' %}"></script>
 <script>
     var preview_widget = new XTermWidget(
-      "{{ content.slug }}-xterm-window",
+      "{{ widget_slug }}-xterm-window",
       {{ xterm_rows }}
     )
 </script>

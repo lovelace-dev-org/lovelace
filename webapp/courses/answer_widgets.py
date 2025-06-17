@@ -25,16 +25,23 @@ class TextfieldAnswerWidget(AnswerWidget):
         t = loader.get_template(self.template)
         settings = self.get_settings()
         context["widget_rows"] = settings.rows
+        context["widget_slug"] = settings.key_slug
         return t.render(context)
 
     def get_configuration_form(self, data=None):
         return courses.forms.TextfieldWidgetConfigurationForm(data, instance=self.get_settings())
 
     def get_settings(self):
-        settings, created = cm.TextfieldWidgetSettings.objects.get_or_create(
-            instance=self.instance,
-            content=self.content
-        )
+        try:
+            settings = cm.TextfieldWidgetSettings.objects.get(
+                instance=self.instance,
+                key_slug=self.key
+            )
+        except cm.TextfieldWidgetSettings.DoesNotExist:
+            settings = cm.TextfieldWidgetSettings(
+                instance=self.instance,
+                key_slug=self.key
+            )
         return settings
 
 

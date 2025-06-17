@@ -1461,7 +1461,7 @@ class ContentPage(models.Model, ExportImportMixin):
         else:
             handle = self.answer_widget
 
-        widget = widgets.AnswerWidgetRegistry.get_widget(handle, instance, self)
+        widget = widgets.AnswerWidgetRegistry.get_widget(handle, instance, self.slug)
         return widget
 
     def count_pages(self, instance):
@@ -2976,26 +2976,23 @@ class FileExerciseTestExpectedStderr(FileExerciseTestExpectedOutput):
 
 class WidgetSettingsManager(models.Manager):
 
-    def get_by_natural_key(self, instance_slug, content_slug):
-        if content_slug:
-            return self.get(instance__slug=instance_slug, content__slug=content_slug)
-        else:
-            return self.get(instance__slug=instance_slug)
+    def get_by_natural_key(self, instance_slug, key_slug):
+        return self.get(instance__slug=instance_slug, key_slug=key_slug)
 
 
 class TextfieldWidgetSettings(models.Model, ExportImportMixin):
 
-    content = models.ForeignKey(ContentPage, on_delete=models.CASCADE, null=True)
+    class Meta:
+        unique_together = ("key_slug", "instance")
+
+    key_slug = models.SlugField(max_length=255, blank=True)
     instance = models.ForeignKey(CourseInstance, on_delete=models.CASCADE)
     rows = models.PositiveSmallIntegerField(default=3)
 
     objects = WidgetSettingsManager()
 
     def natural_key(self):
-        if self.content:
-            return (self.instance.natural_key(), self.content.natural_key())
-        else:
-            return (self.instance.natural_key(), "")
+        return (self.instance.natural_key(), self.key_slug)
 
 
 # ^

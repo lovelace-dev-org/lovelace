@@ -6,8 +6,9 @@ class AceConfig(AppConfig):
     name = "ace"
 
     def ready(self):
-        from ace import answer_widgets
+        from ace import markup, forms, answer_widgets
         answer_widgets.register_answer_widgets()
         register_plugin(self.module, ["urls"])
-
+        markup.register_markups()
+        forms.register_edit_forms()
 

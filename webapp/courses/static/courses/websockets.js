@@ -21,10 +21,15 @@ const WSWrapper = class {
                         break;
                     case "read":
                         controller.receive(data["output"])
-                        if (data["exitcode"] != null) {
+                        if (data["state"] == "done" || data["exitcode"] !== null ) {
                             controller.end(data["exitcode"])
                             socket.close()
                             console.log("all done")
+                        }
+                        else if (data["state"] == "waiting") {
+                            socket.send(JSON.stringify({
+                                "operation": "read"
+                            }))
                         }
                         break;
                     default:

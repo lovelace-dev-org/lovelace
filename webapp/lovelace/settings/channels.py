@@ -5,7 +5,7 @@ load_dotenv(os.getenv("DOTENV_PATH"))
 
 ALLOWED_HOSTS = os.environ["LOVELACE_HOSTNAME"].split(":") + [os.environ["LOVELACE_HOSTADDR"]]
 
-SECRET_KEY="secret-channels-key"
+SECRET_KEY = os.environ["LOVELACE_SECRET_KEY"]
 INSTALLED_APPS = [
     "daphne",
     "modeltranslation",

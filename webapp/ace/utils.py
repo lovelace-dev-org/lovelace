@@ -10,5 +10,3 @@ def get_available_modes():
         for name in glob.glob("mode-*.js", root_dir=ace_static_path)
     ]
 
-
-

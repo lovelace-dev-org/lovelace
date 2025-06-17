@@ -789,16 +789,17 @@ def configure_answer_widget(request, course, instance, content):
     widget = content.get_answer_widget(instance)
 
     if request.method == "POST":
-        form = widget.get_configuration_form(data=request.POST)
+        form = widget.get_configuration_form(request, data=request.POST)
         if not form.is_valid():
             errors = form.errors.as_json()
+            print(errors)
             return JsonResponse({"errors": errors}, status=400)
 
         form.save()
         regenerate_nearest_cache(content)
         return JsonResponse({"status": "ok"})
 
-    form = widget.get_configuration_form()
+    form = widget.get_configuration_form(request)
     form_t = loader.get_template("courses/base-edit-form.html")
     form_c = {
         "html_id": f"{content.slug}-widget-config-form",

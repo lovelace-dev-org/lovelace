@@ -5,41 +5,52 @@
 <link type="text/css" rel="stylesheet" href="{% static 'ace/acewidget.css' %}">
 
 <div class="ace-container ace-layout-{{ ace_layout }}">
-  <div id="{{ content.slug }}-ace-editor"
+  <div id="{{ widget_slug }}-ace-editor"
        class="ace-editor"
        style="min-height: {{ ace_container_height }}px;"></div>
   {% if ace_preview_widget %}
     <button type="button"
-            id="{{ content.slug }}-ace-run-button">
+            id="{{ widget_slug }}-ace-run-button">
       {% if ace_layout == "horizontal" %}
         ⇉
       {% else %}
         ⇊
       {% endif %}
     </button>
-    <div class="preview-container">
+    <div class="preview-container"
+         style="min-height: {{ ace_container_height }}px;">
       {{ ace_preview_widget|safe }}
     </div>
   {% endif %}
+  <textarea id="{{ widget_slug }}-ace-initial" style="display: none">{{ ace_initial_content|safe }}</textarea>
 </div>
 
 <script src="{% static 'ace/ace/ace.js' %}"></script>
 <script src="{% static 'ace/acewidget.js' %}"></script>
 <script>
-  var editor = ace.edit("{{ content.slug }}-ace-editor", {{ ace_extra|safe }})
+  var editor = ace.edit("{{ widget_slug }}-ace-editor", {{ ace_extra|safe }})
   editor.setOption("fontSize", {{ ace_font_size }})
   editor.session.setMode("ace/mode/{{ ace_mode }}")
+  var content = localStorage.getItem("{{ widget_slug }}-ace-editor-contents")
+  if (content) {
+    editor.setValue(content)
+  } else {
+    editor.setValue($("textarea#{{ widget_slug }}-ace-initial").val())
+  }
+  editor.clearSelection()
 
-  var form = $(document.currentScript).closest("form")
-  form.attr("data-extra-callback", "acewidget.read_editor_value('{{ content.slug }}-ace-editor')")
-  form.attr("data-extra-key", "answer")
+  {% if not ace_standalone %}
+    var form = $(document.currentScript).closest("form")
+    form.attr("data-extra-callback", "acewidget.read_editor_value('{{ widget_slug }}-ace-editor')")
+    form.attr("data-extra-key", "answer")
+  {% endif %}
 
   {% if ace_preview_widget %}
     var ace_controller = new AceWidget(
       "{{ ace_preview_ws }}",
       editor,
       preview_widget,
-      "{{ content.slug }}-ace-run-button"
+      "{{ widget_slug }}-ace-run-button"
     )
   {% endif %}
 

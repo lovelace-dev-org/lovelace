@@ -2,8 +2,13 @@ var XTermWidget = class {
 
     constructor(widget_id, rows) {
         this.xterm = new Terminal({rows: rows})
+        const fitAddon = new FitAddon.FitAddon()
+        this.xterm.loadAddon(fitAddon)
         this.xterm.open(document.getElementById(widget_id))
+        fitAddon.fit()
         this.xterm.onKey((event) => this.read_key(event))
+        document.querySelector('.xterm-width-cache-measure-container').style.fontVariantLigatures='none';
+        document.querySelector('.xterm-rows').style.fontVariantLigatures='none';
         this.input_string = ""
         this.interactive = false
         this.controller = null
@@ -35,7 +40,7 @@ var XTermWidget = class {
     }
 
     receive(data) {
-        this.xterm.write(data.replace("\n", "\n\r"))
+        this.xterm.write(data.replaceAll("\n", "\n\r"))
     }
 
     end() {

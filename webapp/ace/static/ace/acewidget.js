@@ -2,7 +2,9 @@
 var acewidget = {
 
     read_editor_value: function (editor_id) {
-        return ace.edit(editor_id).getValue()
+        const content = ace.edit(editor_id).getValue()
+        localStorage.setItem(editor_id + "-contents", content)
+        return content
     },
 }
 
@@ -28,9 +30,11 @@ var AceWidget = class {
         this.button.addClass("ace-button-running")
         this.button.prop("disabled", true)
         this.running = true
+        const content = this.editor.getValue()
+        localStorage.setItem(this.editor.container.id + "-contents", content)
         this.ws.send({
             "operation": "run",
-            "content": this.editor.getValue(),
+            "content": content,
         })
     }
 

@@ -5,9 +5,12 @@ from ace.utils import get_available_modes
 
 class AceWidgetSettings(models.Model):
 
+    class Meta:
+        unique_together = ("key_slug", "instance")
+
     objects = cm.WidgetSettingsManager()
 
-    content = models.ForeignKey(cm.ContentPage, on_delete=models.CASCADE, null=True)
+    key_slug = models.SlugField(max_length=255, blank=True)
     instance = models.ForeignKey(cm.CourseInstance, on_delete=models.CASCADE)
     font_size = models.PositiveSmallIntegerField(default=16)
     editor_height = models.PositiveSmallIntegerField(
@@ -24,13 +27,17 @@ class AceWidgetSettings(models.Model):
         blank=True,
         help_text="Define any other Ace settings as JSON"
     )
+    base_file = models.ForeignKey(cm.File, on_delete=models.SET_NULL, null=True)
 
 
 class AcePlusWidgetSettings(models.Model):
 
+    class Meta:
+        unique_together = ("key_slug", "instance")
+
     objects = cm.WidgetSettingsManager()
 
-    content = models.ForeignKey(cm.ContentPage, on_delete=models.CASCADE, null=True)
+    key_slug = models.SlugField(max_length=255, blank=True)
     instance = models.ForeignKey(cm.CourseInstance, on_delete=models.CASCADE)
 
     ace_settings = models.OneToOneField(

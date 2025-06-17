@@ -1,8 +1,19 @@
+import io
 import os
 import subprocess
 import sys
 import tempfile
 import time
+import psutil
+
+class RunState:
+
+    NOT_STARTED = "unknown"
+    INPUT = "input"
+    DONE = "done"
+    TERMINATED = "terminated"
+    WAITING = "waiting"
+
 
 async def setup_env(data):
     folder = tempfile.TemporaryDirectory()
@@ -10,7 +21,7 @@ async def setup_env(data):
     with open(file_path, "w") as codefile:
         codefile.write(data["content"])
 
-    input_r, input_w = os.pipe()
+    input_r, input_w = os.pipe2(os.O_NONBLOCK)
     out_f = tempfile.NamedTemporaryFile(dir=folder.name)
     return {
         "folder": folder,
@@ -37,21 +48,55 @@ async def start_process(run_env):
     )
     return run_env
 
+async def start_docker(run_env, container):
+    run_env["process"] = subprocess.Popen(
+        (
+            "docker", "run",
+            "--rm",
+            "-v", f"{run_env["file_path"]}:/script/code.py:ro",
+            "-i",
+            container,
+        ),
+        bufsize=0,
+        stdin=run_env["input_r"],
+        stdout=run_env["output"],
+        stderr=run_env["output"],
+        encoding="utf-8",
+        start_new_session=True,
+        cwd=run_env["folder"].name,
+        close_fds=True,
+        text=True,
+    )
+    return run_env
+
 async def read_output(run_env, pos):
     output = ""
     attempts = 0
     with open(run_env["output"].name) as out:
         out.seek(pos)
+        output = out.read()
         while not output and attempts * 0.1 < run_env["read_timeout"]:
-            output = out.read()
             time.sleep(0.1)
             attempts += 1
+            if await process_status(run_env) is not None:
+                state = RunState.TERMINATED
+                return "", pos, state
+            output = out.read()
 
         new_pos = out.tell()
-    return output, new_pos
+
+    if output.endswith("\x03"):
+        state = RunState.INPUT
+    elif output.endswith("\x04"):
+        state = RunState.DONE
+    else:
+        state = RunState.WAITING
+
+    return output.rstrip("\x03\x04"), new_pos, state
 
 async def process_status(run_env):
-    return run_env["process"].poll()
+    exitcode = run_env["process"].poll()
+    return exitcode
 
 async def write_input(run_env, data):
     os.write(run_env["input_w"], data["input"].encode("utf-8") + b"\n")

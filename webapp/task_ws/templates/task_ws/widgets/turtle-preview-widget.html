@@ -1,0 +1,17 @@
+{% load i18n %}
+{% load static %}
+
+<link type="text/css" rel="stylesheet" href="{% static 'task_ws/turtle.css' %}">
+
+<div class="turtle-container">
+  <pre id="{{ widget_slug }}-turtle-stdout" class="turtle-stdout"></pre>
+  <canvas id="{{ widget_slug }}-turtle-window" class="turtle-window"></canvas>
+</div>
+
+<script src="{% static 'task_ws/turtlewidget.js' %}"></script>
+<script>
+    var preview_widget = new TurtleWidget(
+      "{{ widget_slug }}-turtle-window",
+      "{{ widget_slug }}-turtle-stdout",
+    )
+</script>

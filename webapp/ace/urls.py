@@ -5,7 +5,7 @@ app_name = "ace"
 
 urlpatterns = [
     path(
-        "<instance:instance>/<content:content>/preview_settings/",
+        "<instance:instance>/<str:key>/preview_settings/",
         views.get_widget_subform,
         name="preview_subform",
     ),

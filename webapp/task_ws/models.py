@@ -6,8 +6,11 @@ import courses.models as cm
 
 class XtermWidgetSettings(models.Model):
 
+    class Meta:
+        unique_together = ("key_slug", "instance")
+
     objects = cm.WidgetSettingsManager()
-    content = models.ForeignKey(cm.ContentPage, on_delete=models.CASCADE, null=True)
+    key_slug = models.SlugField(max_length=255, blank=True)
     instance = models.ForeignKey(cm.CourseInstance, on_delete=models.CASCADE)
 
     rows = models.PositiveSmallIntegerField(
@@ -16,7 +19,11 @@ class XtermWidgetSettings(models.Model):
     )
 
 
+class TurtleWidgetSettings(models.Model):
 
+    class Meta:
+        unique_together = ("key_slug", "instance")
 
-
-
+    objects = cm.WidgetSettingsManager()
+    key_slug = models.SlugField(max_length=255, blank=True)
+    instance = models.ForeignKey(cm.CourseInstance, on_delete=models.CASCADE)

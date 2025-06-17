@@ -1,12 +1,16 @@
 import json
+from channels.auth import get_user
 from channels.generic.websocket import AsyncWebsocketConsumer
 from . import run_utils
 
-class InteractivePythonConsumer(AsyncWebsocketConsumer):
+class WSBaseConsumer(AsyncWebsocketConsumer):
 
     async def connect(self):
+        print("Connection cookies:", self.scope["cookies"])
+        print("User:", self.scope["user"])
         await self.accept()
         self.run_env = None
+        self.state = run_utils.RunState.NOT_STARTED
         self.position = 0
 
     async def disconnect(self, close_code):
@@ -18,9 +22,25 @@ class InteractivePythonConsumer(AsyncWebsocketConsumer):
     async def receive(self, text_data):
         data = json.loads(text_data)
         print("Received:", data)
+        msg = await self.parse_request(data)
+        if self.run_env is not None:
+            exitcode = await run_utils.process_status(self.run_env)
+            msg["exitcode"] = exitcode
+        print("Responding:", msg)
+        await self.send(text_data=json.dumps(msg))
+
+        if exitcode is not None:
+            await run_utils.close_env(self.run_env)
+            return
+
+        if self.state == run_utils.RunState.DONE:
+            await run_utils.kill_process(self.run_env)
+            await run_utils.close_env(self.run_env)
+
+    async def parse_request(self, data):
         if data["operation"] == "run":
             self.run_env = await run_utils.setup_env(data)
-            self.run_env = await run_utils.start_process(self.run_env)
+            self.run_env = await run_utils.start_docker(self.run_env, self.container)
             msg = {
                 "operation": "run",
                 "status": "ok",
@@ -32,22 +52,26 @@ class InteractivePythonConsumer(AsyncWebsocketConsumer):
                 "status": "ok",
             }
         elif data["operation"] == "read":
-            output, self.position = await run_utils.read_output(self.run_env, self.position)
+            output, self.position, self.state = await run_utils.read_output(self.run_env, self.position)
             msg = {
                 "operation": "read",
                 "status": "ok",
                 "output": output,
+                "state": self.state,
             }
         else:
             msg = {
                 "operation": "unknown",
                 "status": "failed"
             }
-        if self.run_env is not None:
-            exitcode = await run_utils.process_status(self.run_env)
-            msg["exitcode"] = exitcode
-        print("Responding:", msg)
-        await self.send(text_data=json.dumps(msg))
+        return msg
 
-        if exitcode is not None:
-            await run_utils.close_env(self.run_env)
+
+class InteractivePythonConsumer(WSBaseConsumer):
+
+    container = "python-runner"
+
+
+class TurtleConsumer(WSBaseConsumer):
+
+    container = "turtle-runner"
