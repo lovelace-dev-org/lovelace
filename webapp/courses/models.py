@@ -2992,7 +2992,7 @@ class TextfieldWidgetSettings(models.Model, ExportImportMixin):
     objects = WidgetSettingsManager()
 
     def natural_key(self):
-        return (self.instance.natural_key(), self.key_slug)
+        return self.instance.natural_key() + [self.key_slug]
 
 
 # ^
