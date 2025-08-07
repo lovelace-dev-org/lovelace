@@ -187,6 +187,9 @@ class RoutineExerciseTemplate(models.Model):
     question_class = models.PositiveIntegerField()
     variant = models.PositiveIntegerField()
 
+    def natural_key(self):
+        return [self.exercise.slug, self.variant, self.question_class]
+
     def save(self, *args, **kwargs):
         if self.variant is None:
             previous = RoutineExerciseTemplate.objects.filter(
