@@ -6,14 +6,16 @@ from channels.routing import ProtocolTypeRouter, URLRouter
 from channels.security.websocket import OriginValidator
 from django.core.asgi import get_asgi_application
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "lovelace.channels")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "lovelace.settings.channels")
+
+asgi_app = get_asgi_application()
 
 from lovelace.routing import websocket_urlpatterns
 from django.conf import settings
 
 application = ProtocolTypeRouter(
     {
-        "http": get_asgi_application(),
+        "http": asgi_app,
         "websocket": OriginValidator(
             AuthMiddlewareStack(URLRouter(websocket_urlpatterns)),
             settings.ALLOWED_WS_ORIGINS,
