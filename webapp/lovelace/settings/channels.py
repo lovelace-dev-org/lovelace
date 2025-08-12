@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 load_dotenv(os.getenv("DOTENV_PATH"))
 
 ALLOWED_HOSTS = os.environ["LOVELACE_HOSTNAME"].split(":") + [os.environ["LOVELACE_HOSTADDR"]]
+ALLOWED_WS_ORIGINS = os.environ["LOVELACE_WS_ORIGINS"].split(",")
 
 SECRET_KEY = os.environ["LOVELACE_SECRET_KEY"]
 INSTALLED_APPS = [
@@ -46,3 +47,4 @@ DATABASES = {
         "OPTIONS": _DB_OPTIONS,
     }
 }
+
