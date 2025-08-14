@@ -1,3 +1,4 @@
+import secrets
 from django.http import (
     HttpResponse,
     JsonResponse,
@@ -8,6 +9,7 @@ from django.http import (
 )
 from django.template import loader
 from django.conf import settings
+from django.core.cache import caches
 from django.urls import reverse
 from django.utils.translation import gettext as _
 from django.contrib import auth, messages
@@ -293,6 +295,26 @@ def cancel_invitation(request, course, instance, group, invite):
 # ^
 # |
 # GROUP
+# WS
+# |
+# v
+
+@ensure_enrolled_or_staff
+def get_ws_ticket(request, course, instance, widget_id):
+    ticket_key = secrets.token_urlsafe(64)
+    ticket = {
+        "user_id": request.user.id,
+        "instance": instance.slug,
+        "widget": widget_id,
+    }
+    cache = caches["ws_tickets"]
+    cache.set(ticket_key, ticket, settings.WS_TICKET_EXPIRY)
+    return JsonResponse({"ticket": ticket_key})
+
+
+
+
+
 
 
 

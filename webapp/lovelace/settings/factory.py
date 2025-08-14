@@ -359,6 +359,8 @@ if os.getenv("LOVELACE_CACHE_USE_SSL"):
 else:
     _CACHE_CONNECTION_POOL_KWARGS = {}
 
+def plain_key(key, key_prefix, version):
+    return key
 
 CACHES = {
     "default": {
@@ -378,7 +380,19 @@ CACHES = {
             "CONNECTION_POOL_KWARGS": _CACHE_CONNECTION_POOL_KWARGS,
         },
     },
+    "ws_tickets": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": os.environ["LOVELACE_WS_CACHE"],
+        "KEY_FUNCTION": plain_key,
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "CONNECTION_POOL_KWARGS": _CACHE_CONNECTION_POOL_KWARGS,
+            "SERIALIZER": "django_redis.serializers.json.JSONSerializer",
+        },
+    }
 }
+
+WS_TICKET_EXPIRY = 10
 
 # Stats generation is a time-consuming task. This configuration key allows you
 # to determine what hour of the day stats runs start

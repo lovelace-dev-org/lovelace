@@ -50,7 +50,8 @@
       "{{ ace_preview_ws }}",
       editor,
       preview_widget,
-      "{{ widget_slug }}-ace-run-button"
+      "{{ widget_slug }}-ace-run-button",
+      "{% url 'courses:get_ws_ticket' course instance widget_slug %}",
     )
   {% endif %}
 

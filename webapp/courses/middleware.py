@@ -1,8 +1,11 @@
-from django.http import HttpResponseBadRequest
+import json
+import urllib
+from django.http import HttpResponseBadRequest, HttpResponseForbidden
 from django.utils.translation import gettext as _
-import django.conf
+from django.conf import settings
+import redis.asyncio as redis
 
-if "shibboleth" in django.conf.settings.INSTALLED_APPS:
+if "shibboleth" in settings.INSTALLED_APPS:
     from shibboleth.middleware import (
         ShibbolethRemoteUserMiddleware,
         ShibbolethValidationError,
@@ -40,3 +43,27 @@ if "shibboleth" in django.conf.settings.INSTALLED_APPS:
                     )
                 )
             return None
+
+
+class WSTicketAuthMiddleware:
+
+    def __init__(self, app):
+        self.app = app
+        self.pool = redis.ConnectionPool.from_url(settings.TICKET_CACHE_URL)
+        self.client = redis.Redis(connection_pool=self.pool)
+
+    async def __call__(self, scope, receive, send):
+        query = urllib.parse.parse_qs(scope["query_string"].decode("utf-8"))
+        try:
+            ticket = query["ticket"][0]
+        except KeyError:
+            scope["user"] = None
+        else:
+            ticket_data = await self.client.get(ticket)
+            if not ticket_data:
+                scope["user"] = None
+            else:
+                ticket_data = json.loads(ticket_data)
+                scope["user"] = ticket_data["user_id"]
+
+        return await self.app(scope, receive, send)

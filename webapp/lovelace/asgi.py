@@ -10,6 +10,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "lovelace.settings.channels")
 
 asgi_app = get_asgi_application()
 
+from courses.middleware import WSTicketAuthMiddleware
 from lovelace.routing import websocket_urlpatterns
 from django.conf import settings
 
@@ -17,7 +18,7 @@ application = ProtocolTypeRouter(
     {
         "http": asgi_app,
         "websocket": OriginValidator(
-            AuthMiddlewareStack(URLRouter(websocket_urlpatterns)),
+            WSTicketAuthMiddleware(URLRouter(websocket_urlpatterns)),
             settings.ALLOWED_WS_ORIGINS,
         ),
     }

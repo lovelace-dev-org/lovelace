@@ -48,3 +48,14 @@ DATABASES = {
     }
 }
 
+TICKET_CACHE_URL = os.environ["LOVELACE_WS_CACHE"]
+if os.getenv("LOVELACE_CACHE_USE_SSL"):
+    TICKET_CACHE_URL += (
+        "?ssl_cert_reqs=required"
+        f"&ssl_ca_certs={os.environ['LOVELACE_CLIENT_CA']}"
+        f"&ssl_certfile={os.environ['LOVELACE_CLIENT_CERT']}"
+        f"&ssl_keyfile={os.environ['LOVELACE_CLIENT_KEY']}"
+    )
+
+WS_TIMEOUT = int(os.getenv("LOVELACE_WS_TIMEOUT", 30))
+

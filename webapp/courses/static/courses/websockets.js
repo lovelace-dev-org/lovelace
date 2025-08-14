@@ -1,11 +1,27 @@
 const WSWrapper = class {
-    constructor(addr) {
+    constructor(addr, ticket_url) {
         this.addr = addr
         this.socket = null
+        this.ticket_url = ticket_url
     }
 
     connect(controller) {
-        this.socket = new WebSocket(this.addr)
+        $.ajax({
+            type: "GET",
+            url: this.ticket_url,
+            success: (data, status, jqxhr) => {
+                console.log(data)
+                const ticket = data["ticket"]
+                this.open_ws(controller, ticket)
+            },
+            error: function(xhr, status, type) {
+                controller.error("Unauthorized")
+            }
+        })
+    }
+
+    open_ws(controller, ticket) {
+        this.socket = new WebSocket(this.addr + "?ticket=" + ticket)
         this.socket.onopen = () => controller.begin()
         const socket = this.socket
 

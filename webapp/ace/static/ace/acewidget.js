@@ -12,8 +12,8 @@ var acewidget = {
 // This class is used when running with websockets
 var AceWidget = class {
 
-    constructor(addr, editor, preview, button_id) {
-        this.ws = new WSWrapper(addr)
+    constructor(addr, editor, preview, button_id, ticket_url) {
+        this.ws = new WSWrapper(addr, ticket_url)
         this.editor = editor
         this.preview = preview
         this.button = $("button#" + button_id)
