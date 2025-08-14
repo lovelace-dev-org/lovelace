@@ -53,7 +53,7 @@ class WSBaseConsumer(AsyncWebsocketConsumer):
             await self.close(code=1000)
             return
 
-        self.task = asyncio.get_event_loop().create_task(self.timeout_connection)
+        self.task = asyncio.get_event_loop().create_task(self.timeout_connection())
 
     async def parse_request(self, data):
         if data["operation"] == "run":
