@@ -1,0 +1,22 @@
+div.turtle-container {
+    position: relative;
+    height: 100%;
+    min-height: inherit;
+    width: 100%;
+}
+
+canvas.turtle-window {
+    background: white;
+    border: 1px solid;
+    height: 100%;
+    width: 100%;
+    position: absolute;
+}
+
+pre.turtle-stdout {
+    height: 100%;
+    width: 100% !important;
+    position: absolute;
+    z-index: 100;
+    overflow: auto;
+}

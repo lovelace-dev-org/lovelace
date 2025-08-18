@@ -1,0 +1,22 @@
+{% load form_tags %}
+
+{% for field in form.visible_fields %}
+    <tr>
+    <td colspan="2">{{ field.errors }}</td>
+    </tr>
+    <tr>
+    <td>
+        {% if field.field.required %}
+            <b>{{ field.label_tag }}</b>
+        {% else %}
+            {{ field.label_tag }}
+        {% endif %}
+    </td>
+    <td>{{ field|tabindex_attr }}</td>
+    </tr>
+{% endfor %}
+{% for field in form.hidden_fields %}
+    <tr>
+    <td colspan="2">{{ field }}</td>
+    </tr>
+{% endfor %}

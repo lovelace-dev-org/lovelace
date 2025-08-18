@@ -1,0 +1,5 @@
+{% for choice in choices %}
+  <div class="input-label-container">
+    <input type="checkbox" name="{{ choice.id }}" id="cb-{{ choice.id }}" value="{{ choice.id }}" class="task_check"><label for="cb-{{ choice.id }}">{{ choice.answer }}</label>
+  </div>
+{% endfor %}

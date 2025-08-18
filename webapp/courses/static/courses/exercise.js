@@ -247,13 +247,22 @@ function add_exercise_form_callbacks () {
             const submit_element = form_parent.find(":submit")
             submit_element.prop("disabled", true)
 
+            const data = new FormData(form[0])
+            const extra_key = form.attr("data-extra-key")
+            if (extra_key) {
+                const extra_cb = form.attr("data-extra-callback")
+                data.append(extra_key, eval(extra_cb))
+            }
+
+            console.log(data)
+
             // TODO: Use xhr and progressevent to measure upload progress
 
             $.ajax({
                 type: form.attr("method"),
                 url: form.attr("action"),
                 // data: form.serialize(), // This doesn't work for files with jQuery
-                data: new FormData(form[0]), // Use this instead
+                data: data, // Use this instead
                 processData: false, // And this
                 contentType: false, // And this
                 dataType: "json",

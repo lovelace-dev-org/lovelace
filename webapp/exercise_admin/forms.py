@@ -7,6 +7,7 @@ import feedback.models
 import courses.models as cm
 from courses import blockparser
 from courses import markupparser
+from courses.widgets import AnswerWidgetRegistry
 
 from .utils import get_default_lang, get_lang_list
 
@@ -301,6 +302,15 @@ class CreateFileUploadExerciseForm(forms.Form):
             self.fields[f"exercise_content_{lang_code}"] = forms.CharField(required=False)
             self.fields[f"exercise_question_{lang_code}"] = forms.CharField(required=False)
             self.fields[f"exercise_answer_filename_{lang_code}"] = forms.CharField(required=False)
+
+        self.fields["exercise_answer_widget"] = forms.ChoiceField(
+            widget = forms.Select(),
+            choices = (
+                [(None, "--USE-DEFAULT--")] +
+                [(widget, widget) for widget in AnswerWidgetRegistry.list_widgets()]
+            ),
+            required=False
+        )
 
         # Other dynamic fields
 

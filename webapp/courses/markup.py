@@ -336,14 +336,15 @@ class EmbeddedPageMarkup(Markup):
             }
             embedded_content = page.get_rendered_content(page, c)
             question = page.get_question(page, c)
-            t = loader.get_template(page.template)
-            rendered_form = t.render(c)
+            answer_widget = page.get_answer_widget(instance)
+            rendered_form = answer_widget.render(c)
 
             settings["content"] = embedded_content
             settings["question"] = question
             settings["form"] = rendered_form
             settings["revision"] = revision
             settings["max_points"] = page.default_points
+            settings["widget_configurable"] = answer_widget.configurable
             if instance is not None:
                 settings["urls"] = {
                     "stats_url": reverse("stats:single_exercise", kwargs={"exercise": page}),

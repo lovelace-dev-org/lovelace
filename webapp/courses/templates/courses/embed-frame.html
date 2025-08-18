@@ -202,7 +202,15 @@
         <div class="panel-container"></div>
     </div>
   {% endblock %}
-  
+
+  {% if course_staff and emb.widget_configurable %}
+    <button type="button"
+            class="staff-only collapsed staff-base-button settings-button"
+            title="{% trans 'Answer widget settings' %}"
+            onclick="editing.get_form(event, this)"
+            data-url="{% url 'courses:widget_settings' course instance content %}">
+    </button>
+  {% endif %}
   <form id="{{ content.slug }}-form"
         class="exercise-form"
         method="POST"

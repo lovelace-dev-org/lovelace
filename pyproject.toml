@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = []
+
+
+[project]
+name = "lovelace"
+version = "2.0.0"
+authors = [
+    {name = "Miikka Salminen"},
+    {name = "Mika Oja", email = "mika.oja@oulu.fi"}
+]
+readme = "README.md"
+requires-python = ">3.10"
+dependencies = [
+    "celery[redis]",
+    "cerberus",
+    "channels[daphne]",
+    "Django",
+    "django-allauth",
+    "django-model-utils<5.0.0",
+    "django-modeltranslation",
+    "django-redis",
+    "django-reversion",
+    "Pillow",
+    "psycopg2-binary",
+    "Pygments",
+    "python-dotenv",
+    "python-magic",
+    "PyYAML",
+    "redis",
+]
+
+[project.optional-dependencies]
+monitoring = [
+    "django-prometheus",
+]
+shibboleth = [
+    "django-shibboleth-remoteuser",
+]
+
+

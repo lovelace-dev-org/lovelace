@@ -54,6 +54,8 @@ INSTALLED_APPS = [
     'multiexam',
     'reversion',
     'teacher_tools',
+    'ace',
+    'task_ws',
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -64,6 +66,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "allauth.account.middleware.AccountMiddleware"
 ]
 
 AUTHENTICATION_BACKENDS = [
@@ -98,6 +101,7 @@ if os.getenv("LOVELACE_USE_SHIBBOLETH"):
     MIDDLEWARE.append("courses.middleware.ShibbolethExceptionReporter")
     AUTHENTICATION_BACKENDS.append("shibboleth.backends.ShibbolethRemoteUserBackend")
 
+ENABLE_CELERY = True
 
 if os.getenv("ENABLE_MANAGEMENT_API"):
     ENABLE_MANAGEMENT_API = True
@@ -203,7 +207,7 @@ DEFAULT_FROM_EMAIL = os.getenv("LOVELACE_EMAIL_FROM", "lovelace-notify")
 # For production, password min length of 32 or more recommended
 ACCOUNT_EMAIL_SUBJECT_PREFIX = "[Lovelace] "
 ACCOUNT_PASSWORD_MIN_LENGTH = 8
-ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']
 ACCOUNT_SESSION_REMEMBER = True
 ADMINS = [
     entry.rsplit(" ", 1) for entry in os.getenv("LOVELACE_ADMINS", "").split(":")
@@ -355,6 +359,8 @@ if os.getenv("LOVELACE_CACHE_USE_SSL"):
 else:
     _CACHE_CONNECTION_POOL_KWARGS = {}
 
+def plain_key(key, key_prefix, version):
+    return key
 
 CACHES = {
     "default": {
@@ -374,7 +380,19 @@ CACHES = {
             "CONNECTION_POOL_KWARGS": _CACHE_CONNECTION_POOL_KWARGS,
         },
     },
+    "ws_tickets": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": os.environ["LOVELACE_WS_CACHE"],
+        "KEY_FUNCTION": plain_key,
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "CONNECTION_POOL_KWARGS": _CACHE_CONNECTION_POOL_KWARGS,
+            "SERIALIZER": "django_redis.serializers.json.JSONSerializer",
+        },
+    }
 }
+
+WS_TICKET_EXPIRY = 10
 
 # Stats generation is a time-consuming task. This configuration key allows you
 # to determine what hour of the day stats runs start

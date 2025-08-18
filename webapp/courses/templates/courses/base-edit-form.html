@@ -64,34 +64,36 @@
               <tbody>
             </table>
           {% endfor %}
-          <table id="empty_form" style="display:none">
-            <tbody>
-              {% for field in form_object.empty_form.visible_fields %}
-                <tr>
-                  <td>
-                      {% if field.field.required %}
-                          <b>{{ field.label_tag }}</b>
-                      {% else %}
-                          {{ field.label_tag }}
-                      {% endif %}
-                  </td>
-                  <td>{{ field }}</td>
-                </tr>
-              {% endfor %}
-              {% for field in form.hidden_fields %}
-                <tr>
-                  <td colspan="2">{{ field }}</td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-          <div>
-            <button type="button"
-                    class="staff-base-button add-button"
-                    title="{% trans 'Add new' %}"
-                    onclick="duplicate_subform_table(event, this);">+
-            </button>
-          </div>
+          {% if form_object.empty_form %}
+            <table id="empty_form" style="display:none">
+              <tbody>
+                {% for field in form_object.empty_form.visible_fields %}
+                  <tr>
+                    <td>
+                        {% if field.field.required %}
+                            <b>{{ field.label_tag }}</b>
+                        {% else %}
+                            {{ field.label_tag }}
+                        {% endif %}
+                    </td>
+                    <td>{{ field }}</td>
+                  </tr>
+                {% endfor %}
+                {% for field in form.hidden_fields %}
+                  <tr>
+                    <td colspan="2">{{ field }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            <div>
+              <button type="button"
+                      class="staff-base-button add-button"
+                      title="{% trans 'Add new' %}"
+                      onclick="duplicate_subform_table(event, this);">+
+              </button>
+            </div>
+          {% endif %}
         {% endif %}
 
         {% if submit_label %}

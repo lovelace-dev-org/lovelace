@@ -43,11 +43,12 @@ class MultiExamAdmin(CourseContentAdmin, TranslationAdmin, VersionAdmin):
             {
                 "fields": [
                     "default_points",
-                    "answer_limit",
                     "manually_evaluated",
+                    "evaluation_group",
                     "delayed_evaluation",
                     "group_submission",
-                    "evaluation_group",
+                    "answer_limit",
+                    "answer_widget",
                 ],
                 "classes": ["wide"],
             },

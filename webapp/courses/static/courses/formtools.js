@@ -56,4 +56,25 @@ const formtools = {
         }
         submit_ajax_form(form, process_success)
     },
+
+    fetch_rows: function (event, caller) {
+
+        event.stopPropagation()
+        const widget = $(caller)
+        const url = widget.attr("data-change-url")
+        const form = widget.closest("form")
+
+        $.ajax({
+            type: "GET",
+            url,
+            data: {
+                value: widget.val()
+            },
+            success: function (data, status, jqxhr) {
+                form.find("input[name^='extra-']").closest("table").remove()
+                const rows = $(data)
+                widget.closest("table").after(rows)
+            },
+        })
+    }
 }

@@ -181,6 +181,11 @@ urlpatterns = [
         name="content_add_form",
     ),
     path(
+        "staff/<course:course>/<instance:instance>/<content:content>/widget_settings/",
+        staff_views.configure_answer_widget,
+        name="widget_settings",
+    ),
+    path(
         "staff/<course:course>/<instance:instance>/regen_cache/",
         staff_views.regen_instance_cache,
         name="regen_instance_cache",
@@ -291,6 +296,15 @@ urlpatterns = [
         views.download_template_exercise_backend,
         name="download_template_exercise_backend",
     ),
+
+
+    # WS related
+    path(
+        "ws/<course:course>/<instance:instance>/<str:widget_id>/ticket/",
+        user_views.get_ws_ticket,
+        name="get_ws_ticket",
+    ),
+
     # Exercise sending for checking, progress and evaluation views
     path(
         "<course:course>/<instance:instance>/<content:content>/<revision:revision>/check/",
