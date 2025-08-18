@@ -10,7 +10,6 @@ const WSWrapper = class {
             type: "GET",
             url: this.ticket_url,
             success: (data, status, jqxhr) => {
-                console.log(data)
                 const ticket = data["ticket"]
                 this.open_ws(controller, ticket)
             },
@@ -40,7 +39,6 @@ const WSWrapper = class {
                         if (data["state"] == "done" || data["exitcode"] !== null ) {
                             controller.end(data["exitcode"])
                             socket.close()
-                            console.log("all done")
                         }
                         else if (data["state"] == "waiting") {
                             socket.send(JSON.stringify({
