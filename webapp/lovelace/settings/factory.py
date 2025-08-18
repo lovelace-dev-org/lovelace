@@ -359,6 +359,18 @@ if os.getenv("LOVELACE_CACHE_USE_SSL"):
 else:
     _CACHE_CONNECTION_POOL_KWARGS = {}
 
+
+if os.getenv("LOVELACE_WS_CACHE_USE_SSL"):
+    _WS_CACHE_CONNECTION_POOL_KWARGS = {
+        "ssl_cert_reqs": "required",
+        "ssl_ca_certs": os.environ["LOVELACE_WS_CLIENT_CA"],
+        "ssl_certfile": os.environ["LOVELACE_WS_CLIENT_CERT"],
+        "ssl_keyfile": os.environ["LOVELACE_WS_CLIENT_KEY"],
+    }
+else:
+    _CACHE_CONNECTION_POOL_KWARGS = {}
+
+
 def plain_key(key, key_prefix, version):
     return key
 
