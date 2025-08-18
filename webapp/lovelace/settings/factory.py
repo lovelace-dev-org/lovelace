@@ -398,7 +398,7 @@ CACHES = {
         "KEY_FUNCTION": plain_key,
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
-            "CONNECTION_POOL_KWARGS": _CACHE_CONNECTION_POOL_KWARGS,
+            "CONNECTION_POOL_KWARGS": _WS_CACHE_CONNECTION_POOL_KWARGS,
             "SERIALIZER": "django_redis.serializers.json.JSONSerializer",
         },
     }
