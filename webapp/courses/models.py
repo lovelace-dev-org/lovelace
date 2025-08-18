@@ -1238,6 +1238,7 @@ class ContentPage(models.Model, ExportImportMixin):
 
     # Template for answers page for tasks of this type, override if the default is not suitable.
     answers_form_template = "courses/user-exercise-answers.html"
+    answers_template = "courses/user-exercise-answers.html"
     answers_show_log = False
 
     # Classes to include for the answers table. Override if needed.
