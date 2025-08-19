@@ -1946,9 +1946,6 @@ class Lecture(ContentPage):
     def get_user_answers(self, user, instance, ignore_drafts=True):
         raise NotImplementedError
 
-    def get_answer_widget(self):
-        raise NotImplementedError
-
 
 class MultipleChoiceExercise(ContentPage):
     class Meta:
@@ -1980,9 +1977,6 @@ class MultipleChoiceExercise(ContentPage):
 
     def get_question(self, context):
         return ContentPage._get_question(self, context)
-
-    def get_answer_widget(self):
-        return ContentPage._get_answer_widget(self)
 
     def save_answer(self, user, ip, answer, files, instance, revision):
         keys = list(answer.keys())
@@ -2087,9 +2081,6 @@ class CheckboxExercise(ContentPage):
 
     def get_question(self, context):
         return ContentPage._get_question(self, context)
-
-    def get_answer_widget(self):
-        return ContentPage._get_answer_widget(self)
 
     def save_answer(self, user, ip, answer, files, instance, revision):
         chosen_answer_ids = [int(i) for i, _ in answer.items() if i.isdigit()]
@@ -2197,9 +2188,6 @@ class TextfieldExercise(ContentPage):
 
     def get_question(self, context):
         return ContentPage._get_question(self, context)
-
-    def get_answer_widget(self):
-        return ContentPage._get_answer_widget(self)
 
     def save_answer(self, user, ip, answer, files, instance, revision):
         if "answer" in answer.keys():
@@ -2391,9 +2379,6 @@ class FileUploadExercise(ContentPage):
 
     def get_question(self, context):
         return ContentPage._get_question(self, context)
-
-    def get_answer_widget(self):
-        return ContentPage._get_answer_widget(self)
 
     def get_admin_change_url(self):
         return reverse("exercise_admin:file_upload_change", args=(self.id,))

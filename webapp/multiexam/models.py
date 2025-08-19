@@ -98,9 +98,6 @@ class MultipleQuestionExam(ContentPage):
 
         return ContentPage._get_question(self, context)
 
-    def get_answer_widget(self):
-        return ContentPage._get_answer_widget(self)
-
     def get_admin_change_url(self):
         """
         Returns admin change url for the model instance.

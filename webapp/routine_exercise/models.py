@@ -51,9 +51,6 @@ class RoutineExercise(ContentPage):
     def get_choices(self, revision=None):
         return
 
-    def get_answer_widget(self):
-        return ContentPage._get_answer_widget(self)
-
     def get_admin_change_url(self):
         adminized_type = self.content_type.replace("_", "").lower()
         return reverse(f"admin:routine_exercise_{adminized_type}_change", args=(self.id,))
