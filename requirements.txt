@@ -79,5 +79,5 @@ traitlets==5.3.0
 urllib3==1.26.11
 vine==5.0.0
 wcwidth==0.2.5
-Werkzeug==2.2.2
+Werkzeug==3.0.6
 wrapt==1.14.1
