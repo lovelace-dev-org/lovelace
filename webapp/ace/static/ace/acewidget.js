@@ -6,6 +6,14 @@ var acewidget = {
         localStorage.setItem(editor_id + "-contents", content)
         return content
     },
+
+    reset_editor: function (widget_slug) {
+        console.log(widget_slug)
+        const editor = ace.edit(widget_slug + "-ace-editor")
+        localStorage.removeItem(widget_slug + "-ace-editor-contents")
+        editor.setValue($("textarea#" + widget_slug + "-ace-initial").val())
+    }
+
 }
 
 

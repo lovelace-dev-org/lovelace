@@ -222,9 +222,10 @@ class EmbeddedObjectEditForm(TranslationStaffForm):
             )
         else:
             self.fields[self.Meta.ref_field] = forms.CharField(
-                disabled=True,
                 initial=self._settings[self.Meta.ref_field],
+                widget=forms.TextInput(attrs={"readonly": "readonly"})
             )
+
 
 
 class EmbeddedObjectIncludeForm(forms.Form):

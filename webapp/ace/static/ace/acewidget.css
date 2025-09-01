@@ -1,3 +1,8 @@
+section > div.ace-container,
+div > div.ace-container {
+    margin-bottom: 1em;
+}
+
 div.ace-editor {
     border: 2px solid #ddd;
     padding: 2px;

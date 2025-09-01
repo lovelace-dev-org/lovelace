@@ -4,6 +4,13 @@
 
 <link type="text/css" rel="stylesheet" href="{% static 'ace/acewidget.css' %}">
 
+<div class="ace-control-bar">
+  <button type="button"
+          id="{{ widget_slug }}-ace-restore-button"
+          onclick="acewidget.reset_editor('{{ widget_slug }}')">
+    {% trans 'Reset' %}
+  </button>
+</div>
 <div class="ace-container ace-layout-{{ ace_layout }}">
   <div id="{{ widget_slug }}-ace-editor"
        class="ace-editor"

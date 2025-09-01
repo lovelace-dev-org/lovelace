@@ -14,7 +14,7 @@ from django.conf import settings
 from django.core import serializers
 from django.core.files.base import ContentFile
 from django.db import models, transaction
-from django.db.models import Q, Max, JSONField
+from django.db.models import F, Q, Max, JSONField
 from django.contrib.auth.models import User, Group
 from django.db.models.signals import post_save
 from django.urls import reverse
@@ -2961,6 +2961,9 @@ class FileExerciseTestExpectedStderr(FileExerciseTestExpectedOutput):
 
 
 class WidgetSettingsManager(models.Manager):
+
+    def get_queryset(self):
+        return super().get_queryset().alias(name=F("key_slug"))
 
     def get_by_natural_key(self, instance_slug, key_slug):
         return self.get(instance__slug=instance_slug, key_slug=key_slug)

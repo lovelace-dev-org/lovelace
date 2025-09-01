@@ -301,6 +301,7 @@ class TextfieldExerciseAdmin(CourseContentAdmin, TranslationAdmin, VersionAdmin)
     )
     list_per_page = 500
     save_on_top = True
+    save_as = True
 
 
 class RepeatedTemplateExerciseTemplateInline(TranslationStackedInline):
