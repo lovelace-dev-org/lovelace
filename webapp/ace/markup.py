@@ -19,9 +19,9 @@ class AcePlusMarkup(markupparser.Markup):
 
     @classmethod
     def block(cls, block, settings, state):
-        instance = state["context"].get("instance")
+        course = state["context"]["course"]
         key_slug = settings["key_slug"]
-        widget = AnswerWidgetRegistry.get_widget("ace-plus", instance, key_slug)
+        widget = AnswerWidgetRegistry.get_widget("ace-plus", course, key_slug)
         yield widget.render(state["context"])
 
     @classmethod

@@ -34,13 +34,11 @@ class TextfieldAnswerWidget(AnswerWidget):
     def get_settings(self):
         try:
             settings = cm.TextfieldWidgetSettings.objects.get(
-                instance=self.instance,
-                key_slug=self.key
+                key_slug=self.slug
             )
         except cm.TextfieldWidgetSettings.DoesNotExist:
             settings = cm.TextfieldWidgetSettings(
-                instance=self.instance,
-                key_slug=self.key
+                slug=self.slug
             )
         return settings
 

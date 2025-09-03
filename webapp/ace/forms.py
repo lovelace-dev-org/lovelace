@@ -11,7 +11,7 @@ class AceWidgetConfigurationForm(forms.ModelForm):
 
     class Meta:
         model = ace.models.AceWidgetSettings
-        exclude = ["instance", "key_slug"]
+        exclude = ["course", "slug"]
 
     def __init__(self, *args, **kwargs):
         self._accessible_files_qs = CourseMediaAdmin.media_access_list(kwargs.pop("request"), cm.File)
@@ -45,9 +45,10 @@ class AcePlusWidgetConfigurationForm(forms.ModelForm):
         model_inst = super().save(commit=False)
         preview_settings = self._preview_subform.save(commit=False)
         ace_settings = self._ace_subform.save(commit=False)
-        ace_settings.instance = model_inst.instance
-        ace_settings.key_slug = model_inst.key_slug
-        preview_settings.key_slug = model_inst.key_slug
+        ace_settings.course = model_inst.course
+        ace_settings.name = model_inst.name
+        preview_settings.name = model_inst.name
+        preview_settings.course = model_inst.course
         model_inst.ace_settings = ace_settings
         if commit:
             ace_settings.save()
@@ -88,8 +89,8 @@ class AcePlusEditForm(LineEditMixin, EmbeddedObjectEditForm):
 
     class Meta:
         model = ace.models.AcePlusWidgetSettings
-        fields = ["key_slug", "layout", "preview_widget", "ws_address"]
-        ref_field = "key_slug"
+        fields = ["name", "layout", "preview_widget", "ws_address"]
+        ref_field = "slug"
         markup = ace.markup.AcePlusMarkup
 
     def get_inline_formset(self):
