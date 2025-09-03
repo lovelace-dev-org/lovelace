@@ -45,6 +45,10 @@ const WSWrapper = class {
                                 "operation": "read"
                             }))
                         }
+                        else if (data["state"] == "timeout") {
+                            controller.end("Timeout")
+                            socket.close()
+                        }
                         break;
                     default:
                         controller.error("Websocket returned unknown operation")

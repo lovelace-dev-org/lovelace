@@ -82,6 +82,10 @@ class WSBaseConsumer(AsyncWebsocketConsumer):
                 "operation": "unknown",
                 "status": "failed"
             }
+        if self.state == run_utils.RunState.TIMEOUT:
+            await run_utils.kill_process(self.run_env)
+            await run_utils.close_env(self.run_env)
+
         return msg
 
 

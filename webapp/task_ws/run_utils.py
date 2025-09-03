@@ -5,6 +5,8 @@ import sys
 import tempfile
 import time
 
+from django.conf import settings
+
 class RunState:
 
     NOT_STARTED = "unknown"
@@ -12,6 +14,7 @@ class RunState:
     DONE = "done"
     TERMINATED = "terminated"
     WAITING = "waiting"
+    TIMEOUT = "timeout"
 
 
 async def setup_env(data):
@@ -30,6 +33,7 @@ async def setup_env(data):
         "input_w": input_w,
         "process": None,
         "read_timeout": 5,
+        "total_readtime": 0,
     }
 
 async def start_process(run_env):
@@ -55,6 +59,9 @@ async def start_docker(run_env, container):
             "-v", f"{run_env["file_path"]}:/script/code.py:ro",
             "-i",
             container,
+            "--memory", settings.WS_CHILD_MEMORY_LIMIT_HARD,
+            "--memory-reservation", settings.WS_CHILD_MEMORY_LIMIT_SOFT,
+            "--cpus", settings.WS_CHILD_CPU_LIMIT,
         ),
         bufsize=0,
         stdin=run_env["input_r"],
@@ -79,17 +86,22 @@ async def read_output(run_env, pos):
             attempts += 1
             if await process_status(run_env) is not None:
                 state = RunState.TERMINATED
+                print(out.read())
                 return "", pos, state
             output = out.read()
 
         new_pos = out.tell()
+        run_env["total_readtime"] += attempts * 0.1
 
     if output.endswith("\x03"):
         state = RunState.INPUT
     elif output.endswith("\x04"):
         state = RunState.DONE
     else:
-        state = RunState.WAITING
+        if run_env["total_readtime"] >= settings.WS_TIMEOUT:
+            state = RunState.TIMEOUT
+        else:
+            state = RunState.WAITING
 
     return output.rstrip("\x03\x04"), new_pos, state
 
