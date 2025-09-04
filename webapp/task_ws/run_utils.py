@@ -121,6 +121,8 @@ async def kill_process(run_env):
 
 async def close_env(run_env):
     run_env["output"].close()
+    os.close(run_env["input_w"])
+    os.close(run_env["input_r"])
     run_env["folder"].cleanup()
 
 def secure_kill(pid):
