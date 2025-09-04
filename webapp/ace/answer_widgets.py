@@ -41,7 +41,8 @@ class AceAnswerWidget(AnswerWidget):
             )
         except ace.models.AceWidgetSettings.DoesNotExist:
             settings = ace.models.AceWidgetSettings(
-                course=self.course
+                name=self.slug.removeprefix(self.course.prefix + "-"),
+                course=self.course,
             )
         return settings
 
@@ -105,7 +106,8 @@ class AcePlusAnswerWidget(AnswerWidget):
             )
         except ace.models.AcePlusWidgetSettings.DoesNotExist:
             settings = ace.models.AcePlusWidgetSettings(
-                course=self.course
+                name=self.slug.removeprefix(self.course.prefix + "-"),
+                course=self.course,
             )
         return settings
 

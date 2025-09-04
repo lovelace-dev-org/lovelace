@@ -134,7 +134,7 @@ class AcePlusEditForm(LineEditMixin, EmbeddedObjectEditForm):
             initial=instance and instance.preview_widget,
         )
         self._ace_subform = AnswerWidgetRegistry.get_widget(
-            "ace", course_inst, ""
+            "ace", course_inst.course, ""
         ).get_configuration_form(
             request,
             data=request.POST if self.is_bound else None,
@@ -142,11 +142,11 @@ class AcePlusEditForm(LineEditMixin, EmbeddedObjectEditForm):
         )
         if instance and instance.preview_widget:
             preview_widget = PreviewWidgetRegistry.get_widget(
-                instance.preview_widget, course_inst, instance.key_slug
+                instance.preview_widget, course_inst.course, instance.slug
             )
         elif request.POST:
             preview_widget = PreviewWidgetRegistry.get_widget(
-                request.POST["preview_widget"], course_inst, request.POST["key_slug"]
+                request.POST["preview_widget"], course_inst.course, request.POST["slug"]
             )
         else:
             preview_widget = None

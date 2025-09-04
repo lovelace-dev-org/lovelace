@@ -20,18 +20,18 @@ class AcePlusMarkup(markupparser.Markup):
     @classmethod
     def block(cls, block, settings, state):
         course = state["context"]["course"]
-        key_slug = settings["key_slug"]
-        widget = AnswerWidgetRegistry.get_widget("ace-plus", course, key_slug)
+        slug = settings["slug"]
+        widget = AnswerWidgetRegistry.get_widget("ace-plus", course, slug)
         yield widget.render(state["context"])
 
     @classmethod
     def settings(cls, matchobj, state):
-        settings = {"key_slug": matchobj.group("key_slug")}
+        settings = {"slug": matchobj.group("key_slug")}
         return settings
 
     @classmethod
     def markup_from_dict(cls, form_data):
-        return f"<!aceplus={form_data['key_slug']}>"
+        return f"<!aceplus={form_data['slug']}>"
 
 
 def register_markups():

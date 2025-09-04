@@ -32,7 +32,8 @@ class XtermPreviewWidget(PreviewWidget):
             )
         except task_ws.models.XtermWidgetSettings.DoesNotExist:
             settings = task_ws.models.XtermWidgetSettings(
-                slug=self.slug
+                name=self.slug.removeprefix(self.course.prefix + "-"),
+                course=self.course,
             )
         return settings
 
@@ -64,7 +65,8 @@ class TurtlePreviewWidget(PreviewWidget):
             )
         except task_ws.models.TurtleWidgetSettings.DoesNotExist:
             settings = task_ws.models.TurtleWidgetSettings(
-                slug=self.slug
+                name=self.slug.removeprefix(self.course.prefix + "-"),
+                course=self.course,
             )
         return settings
 

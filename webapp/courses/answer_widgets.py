@@ -25,7 +25,7 @@ class TextfieldAnswerWidget(AnswerWidget):
         t = loader.get_template(self.template)
         settings = self.get_settings()
         context["widget_rows"] = settings.rows
-        context["widget_slug"] = settings.key_slug
+        context["widget_slug"] = settings.slug
         return t.render(context)
 
     def get_configuration_form(self, data=None):
@@ -38,7 +38,8 @@ class TextfieldAnswerWidget(AnswerWidget):
             )
         except cm.TextfieldWidgetSettings.DoesNotExist:
             settings = cm.TextfieldWidgetSettings(
-                slug=self.slug
+                name=self.slug.removeprefix(self.course.prefix + "-"),
+                course=self.course,
             )
         return settings
 
