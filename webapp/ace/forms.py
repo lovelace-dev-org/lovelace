@@ -11,7 +11,7 @@ class AceWidgetConfigurationForm(forms.ModelForm):
 
     class Meta:
         model = ace.models.AceWidgetSettings
-        exclude = ["course", "slug"]
+        exclude = ["name", "course", "slug"]
 
     def __init__(self, *args, **kwargs):
         self._accessible_files_qs = CourseMediaAdmin.media_access_list(kwargs.pop("request"), cm.File)
@@ -89,8 +89,8 @@ class AcePlusEditForm(LineEditMixin, EmbeddedObjectEditForm):
 
     class Meta:
         model = ace.models.AcePlusWidgetSettings
-        fields = ["name", "layout", "preview_widget", "ws_address"]
-        ref_field = "slug"
+        fields = ["layout", "preview_widget", "ws_address"]
+        ref_field = "name"
         markup = ace.markup.AcePlusMarkup
 
     def get_inline_formset(self):
@@ -99,19 +99,26 @@ class AcePlusEditForm(LineEditMixin, EmbeddedObjectEditForm):
         return [self._ace_subform]
 
     def save(self, commit=True):
+        print(self.cleaned_data)
         model_inst = super().save(commit=False)
-        model_inst.instance = self._context["instance"]
+        model_inst.course = self._context["instance"].course
         preview_settings = self._preview_subform.save(commit=False)
         ace_settings = self._ace_subform.save(commit=False)
-        ace_settings.instance = model_inst.instance
-        ace_settings.key_slug = model_inst.key_slug
-        preview_settings.key_slug = model_inst.key_slug
+        ace_settings.course = model_inst.course
+        ace_settings.name = model_inst.name
+        preview_settings.course = model_inst.course
+        preview_settings.name = model_inst.name
         model_inst.ace_settings = ace_settings
         if commit:
             ace_settings.save()
             model_inst.save()
             preview_settings.save()
+        self._saved_inst = model_inst
         return model_inst
+
+    def generate_new_markup(self):
+        self.cleaned_data["slug"] = self._saved_inst.slug
+        return self._markup.markup_from_dict(self.cleaned_data).split("\n")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, requires=False, **kwargs)
@@ -122,8 +129,8 @@ class AcePlusEditForm(LineEditMixin, EmbeddedObjectEditForm):
             widget = forms.Select(attrs={
                 "onchange": "formtools.fetch_rows(event, this)",
                 "data-change-url": reverse("ace:preview_subform", kwargs={
-                    "instance": course_inst,
-                    "key": "-default-",
+                    "course": course_inst.course,
+                    "slug": "-default-",
                 }),
             }),
             choices = (
@@ -146,7 +153,8 @@ class AcePlusEditForm(LineEditMixin, EmbeddedObjectEditForm):
             )
         elif request.POST:
             preview_widget = PreviewWidgetRegistry.get_widget(
-                request.POST["preview_widget"], course_inst.course, request.POST["slug"]
+                request.POST["preview_widget"], course_inst.course,
+                f"{course_inst.course.prefix}-{request.POST["name"]}"
             )
         else:
             preview_widget = None
