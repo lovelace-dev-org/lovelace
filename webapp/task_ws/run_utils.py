@@ -5,6 +5,8 @@ import sys
 import tempfile
 import time
 
+from django.conf import settings
+
 class RunState:
 
     NOT_STARTED = "unknown"
@@ -54,6 +56,9 @@ async def start_docker(run_env, container):
             "--rm",
             "-v", f"{run_env["file_path"]}:/script/code.py:ro",
             "-i",
+            "--memory", settings.WS_CHILD_MEMORY_LIMIT_HARD,
+            "--memory-reservation", settings.WS_CHILD_MEMORY_LIMIT_SOFT,
+            "--cpus", settings.WS_CHILD_CPU_LIMIT,
             container,
         ),
         bufsize=0,
