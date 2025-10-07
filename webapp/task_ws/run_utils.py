@@ -58,6 +58,7 @@ async def start_docker(run_env, container):
             "--rm",
             "-v", f"{run_env["file_path"]}:/script/code.py:ro",
             "-i",
+            "-e", f"TZ={settings.TIME_ZONE}",
             "--memory", settings.WS_CHILD_MEMORY_LIMIT_HARD,
             "--memory-reservation", settings.WS_CHILD_MEMORY_LIMIT_SOFT,
             "--cpus", settings.WS_CHILD_CPU_LIMIT,
