@@ -20,6 +20,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
 ]
+TIME_ZONE = "Europe/Helsinki"
 
 ASGI_APPLICATION = "lovelace.asgi.application"
 ROOT_URLCONF = "lovelace.channel_urls"
