@@ -1462,7 +1462,10 @@ class ContentPage(models.Model, ExportImportMixin):
         else:
             handle = self.answer_widget
 
-        widget = widgets.AnswerWidgetRegistry.get_widget(handle, course, self.slug)
+        widget_slug = f"{course.prefix}-{self.slug.removeprefix(course.prefix)}"
+        widget = widgets.AnswerWidgetRegistry.get_widget(
+            handle, course, widget_slug
+        )
         return widget
 
     def count_pages(self, instance):

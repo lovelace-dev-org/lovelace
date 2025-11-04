@@ -83,6 +83,8 @@ class AcePlusWidgetConfigurationForm(forms.ModelForm):
 
 class AcePlusEditForm(LineEditMixin, EmbeddedObjectEditForm):
 
+    model_key_field = "slug"
+
     _name = "ace-plus"
     _markup = ace.markup.AcePlusMarkup
     has_inline = True
@@ -90,7 +92,7 @@ class AcePlusEditForm(LineEditMixin, EmbeddedObjectEditForm):
     class Meta:
         model = ace.models.AcePlusWidgetSettings
         fields = ["layout", "preview_widget", "ws_address"]
-        ref_field = "name"
+        ref_field = "key_slug"
         markup = ace.markup.AcePlusMarkup
 
     def get_inline_formset(self):
@@ -122,7 +124,7 @@ class AcePlusEditForm(LineEditMixin, EmbeddedObjectEditForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, requires=False, **kwargs)
-        instance = kwargs.get("instance")
+        instance = self._instance
         request = self._context["request"]
         course_inst = self._context["instance"]
         self.fields["preview_widget"] = forms.ChoiceField(
@@ -141,20 +143,24 @@ class AcePlusEditForm(LineEditMixin, EmbeddedObjectEditForm):
             initial=instance and instance.preview_widget,
         )
         self._ace_subform = AnswerWidgetRegistry.get_widget(
-            "ace", course_inst.course, ""
+            "ace", course_inst.course, instance.slug if instance else ""
         ).get_configuration_form(
             request,
             data=request.POST if self.is_bound else None,
             prefix="ace"
         )
-        if instance and instance.preview_widget:
-            preview_widget = PreviewWidgetRegistry.get_widget(
-                instance.preview_widget, course_inst.course, instance.slug
-            )
-        elif request.POST:
+        if request.POST:
+            if "key_slug" in request.POST:
+                slug = request.POST["key_slug"]
+            else:
+                slug = f"{course_inst.course.prefix}-{request.POST["name"]}"
             preview_widget = PreviewWidgetRegistry.get_widget(
                 request.POST["preview_widget"], course_inst.course,
-                f"{course_inst.course.prefix}-{request.POST["name"]}"
+                slug
+            )
+        elif instance and instance.preview_widget:
+            preview_widget = PreviewWidgetRegistry.get_widget(
+                instance.preview_widget, course_inst.course, instance.slug
             )
         else:
             preview_widget = None

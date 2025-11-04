@@ -74,7 +74,9 @@ class AcePlusAnswerWidget(AnswerWidget):
             context["ace_preview_cb"] = self.preview_widget.receive_callback
             context["ace_preview_ws"] = self.settings.ws_address
         context["ace_layout"] = self.settings.layout
+        context["widget_slug"] = self.slug
         t = loader.get_template(self.template)
+
         return t.render(context)
 
     def get_configuration_form(self, request, data=None, prefix=None):

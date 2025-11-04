@@ -28,13 +28,13 @@ class TextfieldAnswerWidget(AnswerWidget):
         context["widget_slug"] = settings.slug
         return t.render(context)
 
-    def get_configuration_form(self, data=None):
+    def get_configuration_form(self, request, data=None):
         return courses.forms.TextfieldWidgetConfigurationForm(data, instance=self.get_settings())
 
     def get_settings(self):
         try:
             settings = cm.TextfieldWidgetSettings.objects.get(
-                key_slug=self.slug
+                slug=self.slug
             )
         except cm.TextfieldWidgetSettings.DoesNotExist:
             settings = cm.TextfieldWidgetSettings(
