@@ -177,6 +177,11 @@ class LineDeleteForm(LineEditMixin, forms.Form):
 
 class EmbeddedObjectEditForm(TranslationStaffForm):
 
+    # Workaround hack because we still haven't updated
+    # markup references to be slugs, overriding this
+    # allows new features to already use slug.
+    model_key_field = "name"
+
     class Meta:
         model = None
         fields = []
@@ -191,11 +196,14 @@ class EmbeddedObjectEditForm(TranslationStaffForm):
 
     def save(self, commit=True):
         instance = super().save(commit=False)
-        instance.name = self.cleaned_data[self.Meta.ref_field]
+        if name := self.cleaned_data.get("name"):
+            instance.name = name
+            self.cleaned_data[self.Meta.ref_field] = name
         if commit:
             instance = super().save(commit=False)
             instance.origin = self._context["course"]
             instance.save()
+            # self.cleaned_data[self.Meta.ref_field] = instance.slug
             return self.save_m2m()
         return instance
 
@@ -212,11 +220,13 @@ class EmbeddedObjectEditForm(TranslationStaffForm):
         if not new:
             line = lines[0]
             self._settings.update(parse_line(line, self._markup, self._context))
-            instance = self.Meta.model.objects.get(name=self._settings[self.Meta.ref_field])
+            instance = self.Meta.model.objects.get(
+                **{self.model_key_field: self._settings[self.Meta.ref_field]}
+            )
             kwargs["instance"] = instance
         super().__init__(*args, **kwargs)
         if new:
-            self.fields[self.Meta.ref_field] = forms.CharField(
+            self.fields["name"] = forms.CharField(
                 label=_("Name for new object"),
                 required=True
             )

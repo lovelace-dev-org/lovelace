@@ -439,7 +439,7 @@ def search_records(request, course, instance):
             if form.cleaned_data.get("last_name"):
                 query |= Q(last_name=form.cleaned_data.get("last_name"))
             if form.cleaned_data.get("first_name"):
-                query |= Q(last_name=form.cleaned_data.get("first_name"))
+                query |= Q(first_name=form.cleaned_data.get("first_name"))
             if form.cleaned_data.get("email"):
                 query |= Q(email=form.cleaned_data.get("email"))
             for user in User.objects.filter(query):

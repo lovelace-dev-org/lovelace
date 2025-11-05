@@ -15,7 +15,7 @@ class XtermPreviewWidget(PreviewWidget):
         t = loader.get_template(self.template)
         settings = self.get_settings()
         context["xterm_rows"] = settings.rows
-        context["widget_slug"] = settings.key_slug
+        context["widget_slug"] = settings.slug
         return t.render(context)
 
     def get_configuration_form(self, request, data=None, prefix=None):
@@ -28,13 +28,12 @@ class XtermPreviewWidget(PreviewWidget):
     def get_settings(self):
         try:
             settings = task_ws.models.XtermWidgetSettings.objects.get(
-                instance=self.instance,
-                key_slug=self.key
+                slug=self.slug
             )
         except task_ws.models.XtermWidgetSettings.DoesNotExist:
             settings = task_ws.models.XtermWidgetSettings(
-                instance=self.instance,
-                key_slug=self.key
+                name=self.slug.removeprefix(self.course.prefix + "-"),
+                course=self.course,
             )
         return settings
 
@@ -49,7 +48,7 @@ class TurtlePreviewWidget(PreviewWidget):
     def render(self, context):
         t = loader.get_template(self.template)
         settings = self.get_settings()
-        context["widget_slug"] = settings.key_slug
+        context["widget_slug"] = settings.slug
         return t.render(context)
 
     def get_configuration_form(self, request, data=None, prefix=None):
@@ -62,13 +61,12 @@ class TurtlePreviewWidget(PreviewWidget):
     def get_settings(self):
         try:
             settings = task_ws.models.TurtleWidgetSettings.objects.get(
-                instance=self.instance,
-                key_slug=self.key
+                slug=self.slug
             )
         except task_ws.models.TurtleWidgetSettings.DoesNotExist:
             settings = task_ws.models.TurtleWidgetSettings(
-                instance=self.instance,
-                key_slug=self.key
+                name=self.slug.removeprefix(self.course.prefix + "-"),
+                course=self.course,
             )
         return settings
 

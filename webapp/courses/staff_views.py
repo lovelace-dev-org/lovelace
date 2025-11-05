@@ -786,7 +786,7 @@ def add_form(request, course, instance, content):
 
 @ensure_staff
 def configure_answer_widget(request, course, instance, content):
-    widget = content.get_answer_widget(instance)
+    widget = content.get_answer_widget(course)
 
     if request.method == "POST":
         form = widget.get_configuration_form(request, data=request.POST)

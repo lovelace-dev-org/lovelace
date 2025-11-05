@@ -336,7 +336,7 @@ class EmbeddedPageMarkup(Markup):
             }
             embedded_content = page.get_rendered_content(page, c)
             question = page.get_question(page, c)
-            answer_widget = page.get_answer_widget(instance)
+            answer_widget = page.get_answer_widget(instance.course)
             rendered_form = answer_widget.render(c)
 
             settings["content"] = embedded_content

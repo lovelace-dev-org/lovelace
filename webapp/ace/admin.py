@@ -15,14 +15,14 @@ class AceWidgetAdmin(VersionAdmin):
 
     content_type = "ACE"
     save_on_top = True
-    list_display = ["key_slug", "instance"]
+    list_display = ["slug", "course"]
 
 
 class AcePlusWidgetAdmin(VersionAdmin):
 
     content_type = "ACE_PLUS"
     save_on_top = True
-    list_display = ["key_slug", "instance"]
+    list_display = ["slug", "course"]
 
 
 admin.site.register(AceWidgetSettings, AceWidgetAdmin)

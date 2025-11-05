@@ -1456,13 +1456,16 @@ class ContentPage(models.Model, ExportImportMixin):
         question = blockparser.parseblock(escape(self.question, quote=False), context)
         return question
 
-    def get_answer_widget(self, instance):
+    def get_answer_widget(self, course):
         if not self.answer_widget:
             handle = self.default_answer_widget
         else:
             handle = self.answer_widget
 
-        widget = widgets.AnswerWidgetRegistry.get_widget(handle, instance, self.slug)
+        widget_slug = f"{course.prefix}-{self.slug.removeprefix(course.prefix)}"
+        widget = widgets.AnswerWidgetRegistry.get_widget(
+            handle, course, widget_slug
+        )
         return widget
 
     def count_pages(self, instance):
@@ -2971,17 +2974,19 @@ class WidgetSettingsManager(models.Manager):
 
 class TextfieldWidgetSettings(models.Model, ExportImportMixin):
 
-    class Meta:
-        unique_together = ("key_slug", "instance")
-
-    key_slug = models.SlugField(max_length=255, blank=True)
-    instance = models.ForeignKey(CourseInstance, on_delete=models.CASCADE)
+    name = models.CharField(max_length=255)
+    slug = models.SlugField(max_length=255, unique=True)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
     rows = models.PositiveSmallIntegerField(default=3)
 
-    objects = WidgetSettingsManager()
+    objects = SlugManager()
+
+    def save(self, *args, **kwargs):
+        self.slug = get_prefixed_slug(self, self.course, "name", translated=False)
+        super().save(*args, **kwargs)
 
     def natural_key(self):
-        return self.instance.natural_key() + [self.key_slug]
+        return [self.slug]
 
 
 # ^

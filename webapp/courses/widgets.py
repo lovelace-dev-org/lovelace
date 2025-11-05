@@ -31,8 +31,8 @@ class WidgetRegistry:
         cls.widgets[widget_cls.handle] = widget_cls
 
     @classmethod
-    def get_widget(cls, handle, instance, key_slug):
-        return cls.widgets[handle](instance, key_slug)
+    def get_widget(cls, handle, course, slug):
+        return cls.widgets[handle](course, slug)
 
     @classmethod
     def list_widgets(cls):
@@ -55,9 +55,9 @@ class Widget:
     handle = "blank"
     configurable = False
 
-    def __init__(self, instance, key):
-        self.instance = instance
-        self.key = key
+    def __init__(self, course, slug):
+        self.slug = slug
+        self.course = course
 
     def render(self, context):
         t = loader.get_template(self.template)

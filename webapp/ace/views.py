@@ -7,13 +7,13 @@ from courses.widgets import PreviewWidgetRegistry
 
 # Create your views here.
 
-def get_widget_subform(request, instance, key):
-    if key == "-default-":
-        key = ""
+def get_widget_subform(request, course, slug):
+    if slug == "-default-":
+        slug = ""
     widget = request.GET.get("value")
     try:
         preview_widget = PreviewWidgetRegistry.get_widget(
-            widget, instance, key
+            widget, course, slug
         )
     except KeyError:
         return HttpResponse("")
