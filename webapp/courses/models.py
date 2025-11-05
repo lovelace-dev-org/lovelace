@@ -851,7 +851,7 @@ class CourseMediaLink(models.Model, ExportImportMixin):
     )
 
     def natural_key(self):
-        return [self.parent.slug, self.media.slug, self.instance.slug]
+        return [self.parent and self.parent.slug, self.media.slug, self.instance.slug]
 
     class Meta:
         unique_together = ("instance", "media", "parent")

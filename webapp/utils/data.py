@@ -156,6 +156,13 @@ def import_from_zip(import_source, user, responsible, staff_group, target_instan
                 logger.error(f"Serialized data contains pk, importing aborted.")
                 raise ValueError("Imported data is not allowed to define pk")
 
+            # Change origin to the current course
+            # when importing objects that had different origins
+            if origin := serialized_dict["fields"].get("origin"):
+                if origin != target_course.natural_key():
+                    print("Setting origin to:", target_course.natural_key())
+                    serialized_dict["fields"]["origin"] = target_course.natural_key()
+
         with reversion.create_revision():
             for obj in deserialize_python(source_doc):
                 if not import_allowed(obj, user, target_instance):
@@ -165,6 +172,7 @@ def import_from_zip(import_source, user, responsible, staff_group, target_instan
                     continue
 
                 fix_default_lang_fields(obj.object)
+
                 obj.save()
                 imported.append(obj.object)
                 if obj.deferred_fields is not None:
@@ -182,7 +190,9 @@ def import_from_zip(import_source, user, responsible, staff_group, target_instan
     if target_instance is None:
         imported_course_doc[0]["fields"]["staff_group"] = staff_group.natural_key()
         imported_course_doc[0]["fields"]["main_responsible"] = responsible.natural_key()
+        print(f"Importing course")
         course = import_model(imported_course_doc)[0]
+        print(f"Importing course instance")
         instance = import_model(imported_instance_doc, course)[0]
     else:
         if target_instance.slug != imported_instance_doc[0]["fields"]["slug"]:
@@ -216,6 +226,7 @@ def import_from_zip(import_source, user, responsible, staff_group, target_instan
                     target.write(import_source.read(name))
         else:
             for name in group:
+                print(f"Importing {block_type} {name}")
                 try:
                     import_model(json.loads(import_source.read(name)), course, instance)
                 except Exception as e:
@@ -223,6 +234,12 @@ def import_from_zip(import_source, user, responsible, staff_group, target_instan
                     raise e
 
     for obj in deferred:
-        obj.save_deferred_fields()
+        try:
+            obj.save_deferred_fields()
+        except serializers.base.DeserializationError:
+            logger.warning(f"Cannot save deferred fields for {obj}")
+            errors.append(_("Import of deferred fields failed for {obj_str}").format(
+                obj_str=str(obj.object)
+            ))
 
     return instance, errors
