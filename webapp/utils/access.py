@@ -101,6 +101,19 @@ def is_course_staff(user, instance, responsible_only=False):
     return False
 
 
+def accessible_courses(user):
+    courses = cm.Course.objects.all()
+    if user.is_superuser:
+        return courses
+
+    if user.is_staff:
+        return courses.filter(
+            Q(main_responsible=user)
+            | Q(staff_group__user=user)
+        )
+
+    return cm.Course.objects.none()
+
 
 # ^
 # |

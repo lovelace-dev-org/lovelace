@@ -795,8 +795,9 @@ class CalendarCreateForm(LineEditMixin, forms.ModelForm):
 
     def save(self, commit=True):
         instance = super().save(commit=False)
+        instance.origin = self._context["course"]
         instance.save()
-        self.cleaned_data["calendar_name"] = instance.name
+        self.cleaned_data["calendar_slug"] = instance.slug
 
     @property
     def reference_changed(self):

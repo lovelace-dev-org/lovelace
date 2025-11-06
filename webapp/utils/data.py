@@ -173,7 +173,14 @@ def import_from_zip(import_source, user, responsible, staff_group, target_instan
 
                 fix_default_lang_fields(obj.object)
 
-                obj.save()
+                try:
+                    obj.save()
+                except Exception as e:
+                    errors.append(_("Import of {obj_str} failed - missing dependencies").format(
+                        obj_str=str(obj.object)
+                    ))
+                    continue
+
                 imported.append(obj.object)
                 if obj.deferred_fields is not None:
                     deferred.append(obj)

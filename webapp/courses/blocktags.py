@@ -154,12 +154,12 @@ class HintTag(Tag):
 class TermTag(Tag):
 
     name = "div"
-    begin = "[!term=term_name!]"
+    begin = "[!term=term_slug!]"
     end = "[!term!]"
-    regexp = re.compile(r"\[\!term\=(?P<term_name>[^!]+)\!\](?P<term_text>.+?)\[\!term\!\]")
+    regexp = re.compile(r"\[\!term\=(?P<term_slug>[^!]+)\!\](?P<term_text>.+?)\[\!term\!\]")
 
     def render_tag(self, match, context):
-        term_name = match.group("term_name")
+        term_slug = match.group("term_slug")
         term_text = match.group("term_text")
         if context is not None and "tooltip" in context and context["tooltip"]:
             parsed_string = term_text
@@ -169,7 +169,7 @@ class TermTag(Tag):
             parsed_string = f'<span class="term">{term_text}</span>'
             return parsed_string
 
-        div_id = f"#{slugify(term_name, allow_unicode=True)}-term-div"
+        div_id = f"#{slugify(term_slug, allow_unicode=True)}-term-div"
         on_mouse_enter = f"show_term_description_during_hover(this, event, '{div_id}');"
         on_mouse_leave = f"hide_tooltip('{div_id}');"
 

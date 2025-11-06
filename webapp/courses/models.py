@@ -13,6 +13,7 @@ from html import escape
 from django.conf import settings
 from django.core import serializers
 from django.core.files.base import ContentFile
+from django.core.validators import URLValidator
 from django.db import models, transaction
 from django.db.models import F, Q, Max, JSONField
 from django.contrib.auth.models import User, Group
@@ -395,6 +396,12 @@ class CourseInstance(models.Model):
         verbose_name="Automatic welcome message for accepted enrollments", blank=True
     )
     max_group_size = models.PositiveSmallIntegerField(null=True, blank=True)
+    ws_server = models.CharField(
+        verbose_name="WebSocket server address.",
+        max_length=255,
+        blank=True, null=True,
+        validators=[URLValidator(schemes=["ws", "wss", "http", "https"])]
+    )
 
     def natural_key(self):
         return [self.slug]
@@ -1016,6 +1023,12 @@ class Term(models.Model, ExportImportMixin):
 
 
 class TermAlias(models.Model):
+    class Meta:
+        unique_together = (
+            "term",
+            "name"
+        )
+
     term = models.ForeignKey(Term, null=True, on_delete=models.CASCADE)
     name = models.CharField(verbose_name="Term", max_length=200)  # Translate
 
@@ -1043,6 +1056,12 @@ class TermTag(models.Model):
 
 
 class TermTab(models.Model):
+    class Meta:
+        unique_together = (
+            "term",
+            "title"
+        )
+
     term = models.ForeignKey(Term, on_delete=models.CASCADE)
     title = models.CharField(verbose_name="Title of this tab", max_length=100)  # Translate
     description = models.TextField()  # Translate
@@ -1055,6 +1074,12 @@ class TermTab(models.Model):
 
 
 class TermLink(models.Model):
+    class Meta:
+        unique_together = (
+            "term",
+            "url"
+        )
+
     term = models.ForeignKey(Term, on_delete=models.CASCADE)
     url = models.CharField(verbose_name="URL", max_length=300)  # Translate
     link_text = models.CharField(verbose_name="Link text", max_length=80)  # Translate
@@ -1462,7 +1487,7 @@ class ContentPage(models.Model, ExportImportMixin):
         else:
             handle = self.answer_widget
 
-        widget_slug = f"{course.prefix}-{self.slug.removeprefix(course.prefix)}"
+        widget_slug = f"{course.prefix}-{self.slug.removeprefix(course.prefix + "-")}"
         widget = widgets.AnswerWidgetRegistry.get_widget(
             handle, course, widget_slug
         )

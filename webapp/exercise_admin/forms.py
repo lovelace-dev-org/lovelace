@@ -311,6 +311,12 @@ class CreateFileUploadExerciseForm(forms.Form):
             ),
             required=False
         )
+        self.fields["exercise_origin"] = forms.ChoiceField(
+            widget = forms.Select(),
+            choices = (
+                [(course.slug, course.name) for course in cm.Course.objects.all()]
+            )
+        )
 
         # Other dynamic fields
 

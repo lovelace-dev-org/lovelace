@@ -2,6 +2,7 @@ import os.path
 import re
 import django.conf
 from django.core.exceptions import ValidationError
+from django.core.validators import URLValidator
 from django.db.models import Count
 from django import forms
 from django.forms import fields
@@ -193,6 +194,7 @@ class InstanceSettingsForm(TranslationStaffForm):
             "welcome_message",
             "content_license",
             "license_url",
+            "ws_server"
         ]
 
     def clean(self):
@@ -212,6 +214,9 @@ class InstanceSettingsForm(TranslationStaffForm):
         self._instance = kwargs.get("instance")
         available_content = kwargs.pop("available_content")
         super().__init__(*args, **kwargs)
+        print(self.fields["ws_server"].validators)
+        self.fields["ws_server"].validators = [URLValidator(schemes=["ws", "wss", "http", "https"])]
+        print(self.fields["ws_server"].validators)
 
         self.fields["frontpage"] = forms.ChoiceField(
             widget=forms.Select,

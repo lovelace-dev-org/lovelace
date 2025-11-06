@@ -48,7 +48,7 @@ from feedback.models import (
     MultipleChoiceFeedbackQuestion,
     MultipleChoiceFeedbackAnswer,
 )
-from utils.access import determine_access
+from utils.access import determine_access, accessible_courses
 from utils.content import regenerate_nearest_cache
 from utils.files import generate_download_response
 
@@ -111,6 +111,7 @@ def save_file_upload_exercise(
     e_max_file_count = form_data["exercise_max_file_count"]
     e_answer_mode = form_data["exercise_answer_mode"]
     e_answer_widget = form_data["exercise_answer_widget"]
+    e_origin = form_data["exercise_origin"]
 
     lang_list = get_lang_list()
     for lang_code, _ in lang_list:
@@ -132,6 +133,7 @@ def save_file_upload_exercise(
     exercise.group_submission = e_group_submission
     exercise.manually_evaluated = e_manually_evaluated
     exercise.ask_collaborators = e_ask_collaborators
+    exercise.origin = e_origin
     exercise.save()
     # save() first so that m2m can be used (when adding a new exercise)
     exercise.feedback_questions.set(e_feedback_questions)
@@ -481,7 +483,7 @@ def file_upload_exercise(request, exercise_id=None, action=None):
     instance_files = InstanceIncludeFile.objects.all()
     instance_files_linked = [link.include_file for link in instance_file_links]
     instance_files_not_linked = [f for f in instance_files if f not in instance_files_linked]
-    instances = Course.objects.all().order_by("name")
+    courses = Course.objects.all().order_by("name")
 
     if request.method == "POST":
         form_contents = request.POST
@@ -603,7 +605,11 @@ def file_upload_exercise(request, exercise_id=None, action=None):
         ),
         "exercise": exercise,
         "hints": hints,
-        "instances": instances,
+        "instances": courses,
+        "origin_choices": (
+            [(course.slug, course.name)
+             for course in accessible_courses(request.user).order_by("name")]
+        ),
         "include_files": include_files,
         "instance_files": instance_files,
         "instance_files_not_linked": instance_files_not_linked,

@@ -89,7 +89,7 @@ class CalendarMarkup(Markup):
     name = "Calendar"
     shortname = "calendar"
     description = "A calendar for time reservations."
-    regexp = re.compile(r"^\<\!calendar\=(?P<calendar_name>[^\s>]+)\>\s*$")
+    regexp = re.compile(r"^\<\!calendar\=(?P<calendar_slug>[^\s>]+)\>\s*$")
     markup_class = "embedded item"
     example = "<!calendar=course-project-demo-calendar>"
     inline = False
@@ -99,19 +99,19 @@ class CalendarMarkup(Markup):
 
     @classmethod
     def block(cls, block, settings, state):
-        if not cm.Calendar.objects.filter(name=settings["calendar_name"]).exists():
-            new_calendar = cm.Calendar(name=settings["calendar_name"])
-            new_calendar.save()
-        yield ("calendar", {"calendar": settings["calendar_name"]})
+        if not cm.Calendar.objects.filter(slug=settings["calendar_slug"]).exists():
+            yield ("calendar", {"calendar": None})
+        else:
+            yield ("calendar", {"calendar": settings["calendar_slug"]})
 
     @classmethod
     def settings(cls, matchobj, state):
-        settings = {"calendar_name": matchobj.group("calendar_name")}
+        settings = {"calendar_slug": matchobj.group("calendar_slug")}
         return settings
 
     @classmethod
     def markup_from_dict(cls, form_data):
-        return f"<!calendar={form_data['calendar_name']}>"
+        return f"<!calendar={form_data['calendar_slug']}>"
 
 
 class CodeMarkup(Markup):
