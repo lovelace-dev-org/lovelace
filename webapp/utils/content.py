@@ -160,7 +160,7 @@ def get_parent_context(exercise, instance):
     )
 
 
-def get_embedded_media_file(name, instance, parent):
+def get_embedded_media_file(slug, instance, parent):
     """
     Gets an embedded media file within a given instance context. Will return
     either the current version, or the revision specified in the media link.
@@ -169,9 +169,9 @@ def get_embedded_media_file(name, instance, parent):
     """
 
     try:
-        link = cm.CourseMediaLink.objects.get(media__name=name, instance=instance, parent=parent)
+        link = cm.CourseMediaLink.objects.get(media__slug=slug, instance=instance, parent=parent)
     except (KeyError, cm.CourseMediaLink.DoesNotExist) as e:
-        file_object = cm.File.objects.get(name=name)
+        file_object = cm.File.objects.get(slug=slug)
     else:
         if link.revision is None:
             file_object = link.media.file
@@ -183,11 +183,11 @@ def get_embedded_media_file(name, instance, parent):
 
             # is there a better way to get parent attributes
             # from the version object?
-            file_object.name = revision_object.field_dict["name"]
+            file_object.slug = revision_object.field_dict["slug"]
     return file_object
 
 
-def get_embedded_media_image(name, instance, parent):
+def get_embedded_media_image(slug, instance, parent):
     """
     Gets an embedded media image within a given instance context. Will return
     either the current version, or the revision specified in the media link.
@@ -196,13 +196,14 @@ def get_embedded_media_image(name, instance, parent):
     """
 
     try:
-        link = cm.CourseMediaLink.objects.get(media__name=name, instance=instance, parent=parent)
+        link = cm.CourseMediaLink.objects.get(media__slug=slug, instance=instance, parent=parent)
     except (KeyError, cm.CourseMediaLink.DoesNotExist) as e:
-        image_object = cm.Image.objects.get(name=name)
+        image_object = cm.Image.objects.get(slug=slug)
     else:
         if link.revision is None:
             image_object = link.media.image
         else:
+            print(link.media.image)
             revision_object = Version.objects.get_for_object(link.media.image).get(
                 revision=link.revision
             )
@@ -210,7 +211,7 @@ def get_embedded_media_image(name, instance, parent):
 
             # is there a better way to get parent attributes
             # from the version object?
-            image_object.name = revision_object.field_dict["name"]
+            image_object.slug = revision_object.field_dict["slug"]
     return image_object
 
 

@@ -824,12 +824,13 @@ class CourseMedia(models.Model, ExportImportMixin):
     def natural_key(self):
         return (self.slug, )
 
-    def save(self, *args, **kwargs):
+    def save(self, *args, regen_cache=True, **kwargs):
         self.slug = get_prefixed_slug(self, self.origin, "name", translated=False)
         super().save(*args, **kwargs)
-        for link in self.coursemedialink_set.get_queryset():
-            if not link.instance.frozen:
-                link.parent.regenerate_cache(link.instance)
+        if regen_cache:
+            for link in self.coursemedialink_set.get_queryset():
+                if not link.instance.frozen:
+                    link.parent.regenerate_cache(link.instance)
 
 
 class MediaLinkManager(models.Manager):
@@ -1482,9 +1483,12 @@ class ContentPage(models.Model, ExportImportMixin):
         return question
 
     def get_answer_widget(self, course):
+        print(self.__class__)
         if not self.answer_widget:
+            print("Default:", self.default_answer_widget)
             handle = self.default_answer_widget
         else:
+            print("Custom:", self.answer_widget)
             handle = self.answer_widget
 
         widget_slug = f"{course.prefix}-{self.slug.removeprefix(course.prefix + "-")}"
@@ -1542,7 +1546,7 @@ class ContentPage(models.Model, ExportImportMixin):
         )
         old_media_links = list(
             CourseMediaLink.objects.filter(instance=instance, parent=self).values_list(
-                "media__name", flat=True
+                "media__slug", flat=True
             )
         )
 
@@ -1555,7 +1559,7 @@ class ContentPage(models.Model, ExportImportMixin):
             embedded_page__slug__in=removed_page_links, instance=instance, parent=self
         ).delete()
         CourseMediaLink.objects.filter(
-            media__name__in=removed_media_links, instance=instance, parent=self
+            media__slug__in=removed_media_links, instance=instance, parent=self
         ).delete()
 
         # set ordinal to zero at first, updated per language later
@@ -1572,7 +1576,7 @@ class ContentPage(models.Model, ExportImportMixin):
         for link_slug in added_media_links:
             link_obj = CourseMediaLink(
                 parent=self,
-                media=CourseMedia.objects.get(name=link_slug),
+                media=CourseMedia.objects.get(slug=link_slug),
                 instance=instance,
                 revision=None,
             )

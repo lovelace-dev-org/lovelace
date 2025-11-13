@@ -306,7 +306,7 @@ class CreateFileUploadExerciseForm(forms.Form):
         self.fields["exercise_answer_widget"] = forms.ChoiceField(
             widget = forms.Select(),
             choices = (
-                [(None, "--USE-DEFAULT--")] +
+                [("", "--USE-DEFAULT--")] +
                 [(widget, widget) for widget in AnswerWidgetRegistry.list_widgets()]
             ),
             required=False

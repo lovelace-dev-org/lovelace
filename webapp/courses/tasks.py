@@ -537,6 +537,7 @@ def run_command(command, stdin, stdout, stderr, test_dir, files_to_check):
         proc_retval = None
         proc_timedout = True
         if proc.poll() is None:
+            sec.chmod_child_files(test_dir)
             sec.secure_kill(proc.pid)
             proc_killed = True
 

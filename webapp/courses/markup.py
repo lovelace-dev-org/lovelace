@@ -13,7 +13,13 @@ from pygments.formatters import HtmlFormatter
 
 from reversion.models import Version
 
-from courses.markupparser import MarkupParser, LinkParser, Markup
+from courses.markupparser import (
+    MarkupParser,
+    LinkParser,
+    Markup,
+    EmbeddedObjectNotAllowedError,
+    EmbeddedObjectNotFoundError,
+)
 from courses import blockparser
 import courses.models as cm
 from utils.archive import get_single_archived

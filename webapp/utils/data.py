@@ -163,7 +163,7 @@ def import_from_zip(import_source, user, responsible, staff_group, target_instan
                     print("Setting origin to:", target_course.natural_key())
                     serialized_dict["fields"]["origin"] = target_course.natural_key()
 
-        with reversion.create_revision():
+
             for obj in deserialize_python(source_doc):
                 if not import_allowed(obj, user, target_instance):
                     errors.append(_("Import of {obj_str} failed - no overwrite permission").format(
@@ -184,7 +184,6 @@ def import_from_zip(import_source, user, responsible, staff_group, target_instan
                 imported.append(obj.object)
                 if obj.deferred_fields is not None:
                     deferred.append(obj)
-            reversion.set_comment("imported by system")
 
         return imported
 
@@ -219,34 +218,37 @@ def import_from_zip(import_source, user, responsible, staff_group, target_instan
 
     imported_course_name = instance.course.name
 
-    for block_type, group in itertools.groupby(names, _grouper):
-        if block_type == "datafiles":
-            for name in group:
-                storage = name.split("/")[1]
-                if storage == "media":
-                    root = settings.MEDIA_ROOT
-                else:
-                    root = settings.PRIVATE_STORAGE_FS_PATH
-                path = os.path.join(root, *name.split("/")[2:])
-                os.makedirs(os.path.dirname(path), exist_ok=True)
-                with open(path, "wb") as target:
-                    target.write(import_source.read(name))
-        else:
-            for name in group:
-                print(f"Importing {block_type} {name}")
-                try:
-                    import_model(json.loads(import_source.read(name)), course, instance)
-                except Exception as e:
-                    logger.warning(f"Error while handling file {name} under model {block_type}")
-                    raise e
+    with reversion.create_revision():
 
-    for obj in deferred:
-        try:
-            obj.save_deferred_fields()
-        except serializers.base.DeserializationError:
-            logger.warning(f"Cannot save deferred fields for {obj}")
-            errors.append(_("Import of deferred fields failed for {obj_str}").format(
-                obj_str=str(obj.object)
-            ))
+        for block_type, group in itertools.groupby(names, _grouper):
+            if block_type == "datafiles":
+                for name in group:
+                    storage = name.split("/")[1]
+                    if storage == "media":
+                        root = settings.MEDIA_ROOT
+                    else:
+                        root = settings.PRIVATE_STORAGE_FS_PATH
+                    path = os.path.join(root, *name.split("/")[2:])
+                    os.makedirs(os.path.dirname(path), exist_ok=True)
+                    with open(path, "wb") as target:
+                        target.write(import_source.read(name))
+            else:
+                for name in group:
+                    print(f"Importing {block_type} {name}")
+                    try:
+                        import_model(json.loads(import_source.read(name)), course, instance)
+                    except Exception as e:
+                        logger.warning(f"Error while handling file {name} under model {block_type}")
+                        raise e
+
+        for obj in deferred:
+            try:
+                obj.save_deferred_fields()
+            except serializers.base.DeserializationError:
+                logger.warning(f"Cannot save deferred fields for {obj}")
+                errors.append(_("Import of deferred fields failed for {obj_str}").format(
+                    obj_str=str(obj.object)
+                ))
+        reversion.set_comment("imported by system")
 
     return instance, errors

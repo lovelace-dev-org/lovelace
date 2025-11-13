@@ -180,7 +180,7 @@ class EmbeddedObjectEditForm(TranslationStaffForm):
     # Workaround hack because we still haven't updated
     # markup references to be slugs, overriding this
     # allows new features to already use slug.
-    model_key_field = "name"
+    model_key_field = "slug"
 
     class Meta:
         model = None
@@ -198,12 +198,12 @@ class EmbeddedObjectEditForm(TranslationStaffForm):
         instance = super().save(commit=False)
         if name := self.cleaned_data.get("name"):
             instance.name = name
-            self.cleaned_data[self.Meta.ref_field] = name
+            # self.cleaned_data[self.Meta.ref_field] = name
         if commit:
             instance = super().save(commit=False)
             instance.origin = self._context["course"]
             instance.save()
-            # self.cleaned_data[self.Meta.ref_field] = instance.slug
+            self.cleaned_data[self.Meta.ref_field] = instance.slug
             return self.save_m2m()
         return instance
 
@@ -662,7 +662,7 @@ class ImageIncludeForm(LineEditMixin, EmbeddedObjectIncludeForm):
         markup = courses.markup.ImageMarkup
 
     def get_choices(self):
-        return sorted(((image.name, image.name)
+        return sorted(((image.slug, image.name)
             for image in CourseMediaAdmin.media_access_list(
                 self._context["request"], cm.Image
             )
@@ -694,7 +694,7 @@ class FileIncludeForm(LineEditMixin, EmbeddedObjectIncludeForm):
         markup = courses.markup.EmbeddedFileMarkup
 
     def get_choices(self):
-        return sorted(((f.name, f.name)
+        return sorted(((f.slug, f.name)
             for f in CourseMediaAdmin.media_access_list(
                 self._context["request"], cm.File
             )
@@ -726,7 +726,7 @@ class VideoIncludeForm(LineEditMixin, EmbeddedObjectIncludeForm):
         markup = courses.markup.EmbeddedVideoMarkup
 
     def get_choices(self):
-        return sorted(((video.name, video.name)
+        return sorted(((video.slug, video.name)
             for video in CourseMediaAdmin.media_access_list(
                 self._context["request"], cm.VideoLink
             )

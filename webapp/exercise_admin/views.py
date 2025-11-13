@@ -133,7 +133,7 @@ def save_file_upload_exercise(
     exercise.group_submission = e_group_submission
     exercise.manually_evaluated = e_manually_evaluated
     exercise.ask_collaborators = e_ask_collaborators
-    exercise.origin = e_origin
+    exercise.origin = Course.objects.get(slug=e_origin)
     exercise.save()
     # save() first so that m2m can be used (when adding a new exercise)
     exercise.feedback_questions.set(e_feedback_questions)
@@ -600,7 +600,7 @@ def file_upload_exercise(request, exercise_id=None, action=None):
         "add_or_edit": add_or_edit,
         "answer_mode_choices": FileExerciseSettings.ANSWER_MODE_CHOICES,
         "answer_widget_choices": (
-            [(None, _("--USE-DEFAULT--"))] +
+            [("", _("--USE-DEFAULT--"))] +
             [(widget, widget) for widget in AnswerWidgetRegistry.list_widgets()]
         ),
         "exercise": exercise,

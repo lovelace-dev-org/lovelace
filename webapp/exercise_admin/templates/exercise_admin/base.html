@@ -139,8 +139,8 @@
           {% endfor %}
 
           <div class="form-row">
-            <label for="origin">Origin: </label>
-            <select id="origin" name="origin">
+            <label for="exercise-origin">Origin: </label>
+            <select id="exercise-origin" name="exercise_origin">
               {% for value, label in origin_choices %}
                 {% if value == exercise.origin %}
                   <option value="{{ value }}" selected="selected">{{ label }}</option>

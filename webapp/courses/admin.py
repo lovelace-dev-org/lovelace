@@ -109,7 +109,10 @@ reversion.register(InstanceIncludeFileToExerciseLink)
 reversion.register(InstanceIncludeFile)
 reversion.register(FileExerciseTestIncludeFile)
 reversion.register(IncludeFileSettings)
-reversion.register(CourseMedia)
+reversion.register(
+    CourseMedia,
+    follow=["file", "image", "videolink"]
+)
 reversion.register(TermTab)
 reversion.register(TermLink)
 reversion.register(RepeatedTemplateExerciseTemplate)
