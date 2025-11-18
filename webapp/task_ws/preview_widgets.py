@@ -37,6 +37,11 @@ class XtermPreviewWidget(PreviewWidget):
             )
         return settings
 
+    def export(self, instance, export_target):
+        settings = self.get_settings()
+        if settings.pk is not None:
+            settings.export(instance, export_target)
+
 
 class TurtlePreviewWidget(PreviewWidget):
 
@@ -69,6 +74,11 @@ class TurtlePreviewWidget(PreviewWidget):
                 course=self.course,
             )
         return settings
+
+    def export(self, instance, export_target):
+        settings = self.get_settings()
+        if settings.pk is not None:
+            settings.export(instance, export_target)
 
 
 def register_preview_widgets():

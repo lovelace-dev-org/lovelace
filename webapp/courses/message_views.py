@@ -13,7 +13,12 @@ from django.utils.translation import gettext as _
 from django.utils import translation
 from courses.models import SavedMessage, CourseMessage, CourseEnrollment
 from courses.forms import MessageForm, CourseMessageForm
-from utils.access import ensure_staff, ensure_responsible, ensure_enrolled_or_staff
+from utils.access import (
+    ensure_enrolled_or_staff,
+    ensure_logged_in,
+    ensure_responsible,
+    ensure_staff,
+)
 from utils.formatters import display_name
 from utils.notify import (
     send_email,
@@ -199,6 +204,7 @@ def remove_course_message(request, course, instance, msgid):
     return JsonResponse({"status": "ok"})
 
 
+@ensure_logged_in
 def view_messages(request):
     by_instance = []
     for enrollment in CourseEnrollment.get_user_enrollments(request.user):

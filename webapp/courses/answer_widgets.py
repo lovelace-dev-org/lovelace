@@ -43,6 +43,11 @@ class TextfieldAnswerWidget(AnswerWidget):
             )
         return settings
 
+    def export(self, instance, export_target):
+        settings = self.get_settings()
+        if settings.pk is not None:
+            settings.export(instance, export_target)
+
 
 class FileAnswerWidget(AnswerWidget):
 

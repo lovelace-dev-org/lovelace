@@ -33,6 +33,12 @@ class AcePlusMarkup(markupparser.Markup):
     def markup_from_dict(cls, form_data):
         return f"<!aceplus={form_data['slug']}>"
 
+    @classmethod
+    def build_links(cls, block, matchobj, instance, links):
+        slug = matchobj.group("key_slug")
+        links["aceplus"].append(slug)
+
 
 def register_markups():
     markupparser.MarkupParser.register_markup(AcePlusMarkup)
+    markupparser.LinkParser.register_markup(AcePlusMarkup)

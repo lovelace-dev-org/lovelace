@@ -81,7 +81,7 @@ def place_into_content(content, form):
         content.replace_lines(
             form.cleaned_data["line_idx"],
             "",
-            delete_count=form.cleaned_data["line_count"]
+            delete_count=form.cleaned_data["line_count"] + 1
         )
     else:
         placement = form.cleaned_data["placement"]

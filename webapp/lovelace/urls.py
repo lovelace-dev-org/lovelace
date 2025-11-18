@@ -38,6 +38,7 @@ register_model_converter(File, name="file", field="name", base=Utf8SlugConverter
 register_model_converter(UserAnswer, name="answer")
 register_converter(RevisionConverter, "revision")
 register_converter(InstanceConverter, "instance")
+register_converter(Utf8SlugConverter, "utf8slug")
 register_model_converter(Calendar, name="calendar")
 register_model_converter(CalendarDate, name="event")
 

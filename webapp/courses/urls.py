@@ -287,7 +287,7 @@ urlpatterns = [
         name="download_embedded_file",
     ),
     path(
-        "file-download/media/<slug:file_slug>/<str:field_name>/<str:filename>/",
+        "file-download/media/<utf8slug:file_slug>/<str:field_name>/<str:filename>/",
         views.download_media_file,
         name="download_media_file",
     ),

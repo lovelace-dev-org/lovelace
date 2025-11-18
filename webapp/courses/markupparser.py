@@ -1,3 +1,4 @@
+from collections import defaultdict
 import copy
 from html import escape
 import itertools
@@ -276,8 +277,7 @@ class LinkParser(MarkupParser):
     _inline_markups = []
 
     def parse(self, text, instance=None):
-        page_links = []
-        media_links = []
+        links = defaultdict(list)
 
         lines = iter(text.splitlines())
 
@@ -293,9 +293,9 @@ class LinkParser(MarkupParser):
                 pass
             else:
                 link_func = block_markup.build_links
-                link_func(group, self._current_matchobj, instance, page_links, media_links)
+                link_func(group, self._current_matchobj, instance, links)
 
-        return page_links, media_links
+        return links
 
 
 # inline = this markup is inline

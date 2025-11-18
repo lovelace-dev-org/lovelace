@@ -47,6 +47,11 @@ class AceAnswerWidget(AnswerWidget):
             )
         return settings
 
+    def export(self, instance, export_target):
+        settings = self.get_settings()
+        if settings.pk is not None:
+            settings.export(instance, export_target)
+
 
 class AcePlusAnswerWidget(AnswerWidget):
 
@@ -116,6 +121,14 @@ class AcePlusAnswerWidget(AnswerWidget):
                 course=self.course,
             )
         return settings
+
+    def export(self, instance, export_target):
+        settings = self.get_settings()
+        if settings.pk is not None:
+            settings.export(instance, export_target)
+        self.ace_widget.export(instance, export_target)
+        if self.preview_widget:
+            self.preview_widget.export(instance, export_target)
 
 
 def register_answer_widgets():

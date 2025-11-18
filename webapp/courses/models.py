@@ -639,7 +639,7 @@ class CourseInstance(models.Model):
             media_link.media.export(self, export_target)
             CourseMedia.objects.get_subclass(id=media_link.media.id).export(self, export_target)
 
-        for module in lovelace_plugins["export"]:
+        for module in lovelace_plugins.get("export", []):
             module.models.export_models(self, export_target)
 
 
@@ -751,6 +751,10 @@ class ContentGraph(models.Model):
 
     def natural_key(self):
         return (self.instance.slug, self.content.slug)
+
+    def delete(self, *args, **kwargs):
+        EmbeddedLink.objects.filter(parent=self.content, instance=self.instance).delete()
+        super().delete(*args, **kwargs)
 
     def get_revision_str(self):
         if self.revision is None:
@@ -1185,7 +1189,42 @@ class CalendarReservation(models.Model):
 # |
 # V
 
+class EmbeddedLinkQueryset(models.query.QuerySet):
+    """
+    Queryset with an overridden delete.
+    """
+
+    def delete(self):
+        """
+        When embedded pages are being unlinked from a course, there's a need to check
+        if that was the last reference to the page in that course instance. In case it was,
+        all things that are referencing the task itself become orphans and need to be cleaned up.
+
+        This delete method will delete all orphaned media links, as well as any other links
+        that have been registered as task references.
+        """
+
+        for model_inst in self:
+            peers = EmbeddedLink.objects.filter(
+                embedded_page=model_inst.embedded_page, instance=model_inst.instance
+            ).exclude(id=model_inst.id)
+            if not peers:
+                CourseMediaLink.objects.filter(
+                    parent=model_inst.embedded_page, instance=model_inst.instance
+                ).delete()
+                for module in lovelace_plugins.get("task_reference"):
+                    module.models.delete_orphan_references(
+                        model_inst.embedded_page,
+                        model_inst.instance
+                    )
+
+        super().delete()
+
+
 class EmbeddedLinkManager(models.Manager):
+
+    def get_queryset(self):
+        return EmbeddedLinkQueryset(self.model, using=self._db)
 
     def get_by_natural_key(self, instance_slug, parent_slug, content_slug):
         return self.get(
@@ -1208,6 +1247,9 @@ class EmbeddedLink(models.Model, ExportImportMixin):
 
     class Meta:
         ordering = ["ordinal_number"]
+
+    def delete(self, *args, **kwargs):
+        super().delete(*args, **kwargs)
 
     def natural_key(self):
         return (self.instance.slug, self.parent.slug, self.embedded_page.slug)
@@ -1483,12 +1525,9 @@ class ContentPage(models.Model, ExportImportMixin):
         return question
 
     def get_answer_widget(self, course):
-        print(self.__class__)
         if not self.answer_widget:
-            print("Default:", self.default_answer_widget)
             handle = self.default_answer_widget
         else:
-            print("Custom:", self.answer_widget)
             handle = self.answer_widget
 
         widget_slug = f"{course.prefix}-{self.slug.removeprefix(course.prefix + "-")}"
@@ -1496,6 +1535,10 @@ class ContentPage(models.Model, ExportImportMixin):
             handle, course, widget_slug
         )
         return widget
+
+    def export_answer_widget(self, instance, export_target):
+        answer_widget = self.get_answer_widget(instance.course)
+        answer_widget.export(instance, export_target)
 
     def count_pages(self, instance):
         """
@@ -1525,6 +1568,7 @@ class ContentPage(models.Model, ExportImportMixin):
         media_links = set()
 
         page_links_per_lang = {}
+        all_links = defaultdict(set)
 
         parser = markupparser.LinkParser()
         for lang_code, _ in settings.LANGUAGES:
@@ -1534,10 +1578,14 @@ class ContentPage(models.Model, ExportImportMixin):
                 version = Version.objects.get_for_object(self).get(revision_id=revision).field_dict
                 content = version[f"content_{lang_code}"]
 
-            lang_page_links, lang_media_links = parser.parse(content, instance)
-            page_links = page_links.union(lang_page_links)
-            media_links = media_links.union(lang_media_links)
+            links = parser.parse(content, instance)
+            print(links)
+            for category, link_list in links.items():
+                all_links[category].update(link_list)
+
+            lang_page_links = links["page"]
             page_links_per_lang[lang_code] = lang_page_links
+
 
         old_page_links = list(
             EmbeddedLink.objects.filter(instance=instance, parent=self).values_list(
@@ -1550,10 +1598,10 @@ class ContentPage(models.Model, ExportImportMixin):
             )
         )
 
-        removed_page_links = set(old_page_links).difference(page_links)
-        removed_media_links = set(old_media_links).difference(media_links)
-        added_page_links = set(page_links).difference(old_page_links)
-        added_media_links = set(media_links).difference(old_media_links)
+        removed_page_links = set(old_page_links).difference(all_links["page"])
+        removed_media_links = set(old_media_links).difference(all_links["media"])
+        added_page_links = all_links["page"].difference(old_page_links)
+        added_media_links = all_links["media"].difference(old_media_links)
 
         EmbeddedLink.objects.filter(
             embedded_page__slug__in=removed_page_links, instance=instance, parent=self
@@ -1581,6 +1629,9 @@ class ContentPage(models.Model, ExportImportMixin):
                 revision=None,
             )
             link_obj.save()
+
+        for module in lovelace_plugins.get("context_links", []):
+            module.models.update_context_links(self, instance, all_links, revision)
 
         for lang_code, _ in settings.LANGUAGES:
             for i, link_slug in enumerate(page_links_per_lang[lang_code]):
@@ -2075,6 +2126,7 @@ class MultipleChoiceExercise(ContentPage):
 
     def export(self, instance, export_target):
         super(ContentPage, self).export(instance, export_target)
+        self.export_answer_widget(instance, export_target)
         export_json(
             serialize_many_python(self.get_choices(self)),
             f"{self.slug}_choices",
@@ -2184,6 +2236,7 @@ class CheckboxExercise(ContentPage):
 
     def export(self, instance, export_target):
         super(ContentPage, self).export(instance, export_target)
+        self.export_answer_widget(instance, export_target)
         export_json(
             serialize_many_python(self.get_choices(self)),
             f"{self.slug}_choices",
@@ -2322,6 +2375,7 @@ class TextfieldExercise(ContentPage):
 
     def export(self, instance, export_target):
         super(ContentPage, self).export(instance, export_target)
+        self.export_answer_widget(instance, export_target)
         export_json(
             serialize_many_python(self.get_choices(self)),
             f"{self.slug}_choices",
@@ -2449,6 +2503,7 @@ class FileUploadExercise(ContentPage):
 
     def export(self, instance, export_target):
         super(ContentPage, self).export(instance, export_target)
+        self.export_answer_widget(instance, export_target)
         export_json(
             serialize_single_python(self.fileexercisesettings),
             f"{self.slug}_settings",

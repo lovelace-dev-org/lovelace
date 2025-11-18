@@ -81,3 +81,6 @@ def get_import_list():
         FaqQuestion,
         FaqToInstanceLink,
     ]
+
+def delete_orphan_references(task, instance):
+    FaqToInstanceLink.objects.filter(exercise=task, instance=instance).delete()

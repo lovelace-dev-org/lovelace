@@ -66,6 +66,9 @@ class Widget:
     def get_configuration_form(self, request, data=None, prefix=None):
         return None
 
+    def export(self, instance, export_target):
+        pass
+
 
 class AnswerWidget(Widget):
 

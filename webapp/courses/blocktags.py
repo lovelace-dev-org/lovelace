@@ -115,7 +115,10 @@ class KeyboardTag(Tag):
             "{shift}": "⇧ Shift",
             "{win}": "⊞ Win",
         }
-        return key_mini_lang.get(symbol, symbol)
+        parsed_string = self.htmlbegin()
+        parsed_string += key_mini_lang.get(symbol, symbol)
+        parsed_string += self.htmlend()
+        return parsed_string
 
 
 class ColorTag(Tag):

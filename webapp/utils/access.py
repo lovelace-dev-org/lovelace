@@ -122,6 +122,19 @@ def accessible_courses(user):
 # |
 # v
 
+def ensure_logged_in(function):
+    """
+    Decorator to limit a view to logged in users. Returns HttpResponseForbidden
+    if the user has not been authenticated.
+    """
+
+    @wraps(function)
+    def wrap(request, *args, **kwargs):
+        if request.user.is_authenticated:
+            return function(request, *args, **kwargs)
+        return HttpResponseForbidden(_("This view is limited to logged in users."))
+
+    return wrap
 
 def ensure_admin(function):
     """

@@ -142,7 +142,7 @@
             <label for="exercise-origin">Origin: </label>
             <select id="exercise-origin" name="exercise_origin">
               {% for value, label in origin_choices %}
-                {% if value == exercise.origin %}
+                {% if value == exercise.origin.slug %}
                   <option value="{{ value }}" selected="selected">{{ label }}</option>
                 {% else %}
                   <option value="{{ value }}">{{ label }}</option>

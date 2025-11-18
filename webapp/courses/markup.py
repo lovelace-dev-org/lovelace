@@ -55,7 +55,7 @@ class ParagraphMarkup(Markup):
         pass
 
     @classmethod
-    def build_links(cls, block, matchobj, instance, page_links, media_links):
+    def build_links(cls, block, matchobj, instance, links):
         """
         Finds inline links to media files. Necessary to ensure that all linked
         files are provided with a context link.
@@ -64,7 +64,7 @@ class ParagraphMarkup(Markup):
         for line in block:
             for tag in blockparser.BlockParser.tags["anchor"].regexp.findall(line):
                 if tag[0].startswith("file:"):
-                    media_links.append(tag[0].split("file:")[1])
+                    links["media"].append(tag[0].split("file:")[1])
 
     @classmethod
     def markup_from_dict(cls, form_data):
@@ -264,9 +264,9 @@ class EmbeddedFileMarkup(Markup):
         return settings
 
     @classmethod
-    def build_links(cls, block, matchobj, instance, page_links, media_links):
+    def build_links(cls, block, matchobj, instance, links):
         slug = matchobj.group("file_slug")
-        media_links.append(slug)
+        links["media"].append(slug)
 
 
     @classmethod
@@ -422,9 +422,9 @@ class EmbeddedPageMarkup(Markup):
         return settings
 
     @classmethod
-    def build_links(cls, block, matchobj, instance, page_links, media_links):
+    def build_links(cls, block, matchobj, instance, links):
         slug = matchobj.group("page_slug")
-        page_links.append(slug)
+        links["page"].append(slug)
 
     @classmethod
     def markup_from_dict(cls, form_data):
@@ -576,12 +576,12 @@ class EmbeddedScriptMarkup(Markup):
         return settings
 
     @classmethod
-    def build_links(cls, block, matchobj, instance, page_links, media_links):
+    def build_links(cls, block, matchobj, instance, links):
         slugs = [matchobj.group("script_slug")] + [
             m.split("=")[1] for m in matchobj.group("include").split(",")
         ]
         for slug in slugs:
-            media_links.append(slug)
+            links["media"].append(slug)
 
     @classmethod
     def markup_from_dict(cls, form_data):
@@ -659,9 +659,9 @@ class EmbeddedVideoMarkup(Markup):
         return settings
 
     @classmethod
-    def build_links(cls, block, matchobj, instance, page_links, media_links):
+    def build_links(cls, block, matchobj, instance, links):
         slug = matchobj.group("video_slug")
-        media_links.append(slug)
+        links["media"].append(slug)
 
     @classmethod
     def markup_from_dict(cls, form_data):
@@ -823,9 +823,9 @@ class ImageMarkup(Markup):
         return settings
 
     @classmethod
-    def build_links(cls, block, matchobj, instance, page_links, media_links):
+    def build_links(cls, block, matchobj, instance, links):
         slug = matchobj.group("image_name")
-        media_links.append(slug)
+        links["media"].append(slug)
 
     @classmethod
     def markup_from_dict(cls, form_data):

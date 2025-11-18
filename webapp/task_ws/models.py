@@ -44,10 +44,7 @@ class TurtleWidgetSettings(models.Model, ExportImportMixin):
 
 
 def export_models(instance, export_target):
-    for model_inst in XtermWidgetSettings.objects.filter(instance=instance):
-        model_inst.export(instance, export_target)
-    for model_inst in TurtleWidgetSettings.objects.filter(instance=instance):
-        model_inst.export(instance, export_target)
+    pass
 
 def get_import_list():
     return [
