@@ -251,6 +251,7 @@ def transfer_records(request, course, instance, user):
         new_enrollment.save()
 
         if form.cleaned_data["recalculate"]:
+            UserTaskCompletion.objects.filter(user=user, instance=target_instance).update(points=0)
             for __, task_links in get_course_instance_tasks(target_instance):
                 for task_link in task_links:
                     content = task_link.embedded_page.get_type_object()

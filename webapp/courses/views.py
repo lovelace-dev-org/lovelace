@@ -429,12 +429,17 @@ def check_answer(request, course, instance, content, revision):
                 task_id = evaluation.get("task_id")
                 if task_id is not None:
                     return check_progress(request, course, instance, content, revision, task_id)
+                elif errors := evaluation.get("errors"):
+                    return JsonResponse({"result": errors})
         else:
             evaluation["manual"] = False
             if exercise.content_type == "FILE_UPLOAD_EXERCISE":
                 task_id = evaluation.get("task_id")
                 if task_id is not None:
                     return check_progress(request, course, instance, content, revision, task_id)
+                elif errors := evaluation.get("errors"):
+                    print(errors)
+                    return JsonResponse({"result": errors})
 
     exercise.save_evaluation(user, evaluation, answer_object)
 

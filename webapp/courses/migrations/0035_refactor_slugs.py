@@ -108,7 +108,11 @@ def refactor_slugs(apps, schema_editor):
     # Term slug replacements
     for term in Term.objects.all():
         for lang_code, _ in settings.LANGUAGES:
-            old_tag = f"[!term={term.name}!]"
+            lang_name = getattr(term, f"name_{lang_code}", "")
+            if not lang_name:
+                continue
+
+            old_tag = f"[!term={lang_name}!]"
             new_tag = f"[!term={term.slug}!]"
             term_replaces[term.origin.prefix][old_tag] = new_tag
             term_keys.append(re.escape(old_tag))
@@ -149,8 +153,8 @@ def refactor_slugs(apps, schema_editor):
         all_replaces.update(tags)
 
     for image in Image.objects.all():
-        old_ref = mediafile.name
-        new_ref = mediafile.slug
+        old_ref = image.name
+        new_ref = image.slug
 
         old_emb_tag = f"<!image={old_ref}"
         new_emb_tag = f"<!image={new_ref}"

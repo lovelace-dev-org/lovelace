@@ -509,13 +509,13 @@ class CreateFileUploadExerciseForm(forms.Form):
         messages = []
 
         parser = markupparser.LinkParser()
-        page_links, media_links = parser.parse(value)
-        for link in page_links:
+        links = parser.parse(value)
+        for link in links["page"]:
             if not cm.ContentPage.objects.filter(slug=link):
                 missing_pages.append(link)
                 messages.append(f"Content matching {link} does not exist")
 
-        for link in media_links:
+        for link in links["media"]:
             if not cm.CourseMedia.objects.filter(name=link):
                 missing_media.append(link)
                 messages.append(f"Media matching {link} does not exist")

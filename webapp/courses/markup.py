@@ -228,11 +228,14 @@ class EmbeddedFileMarkup(Markup):
                 yield f"<div>Unable to decode file {settings['file_slug']} with utf-8.</div>"
                 return
 
-            try:
-                lexer = guess_lexer_for_filename(file_path, file_contents)
-            except pygments.util.ClassNotFound:
-                yield f"<div>Unable to find lexer for file {settings['file_slug']}.</div>"
-                return
+            if not file_object.lexer:
+                try:
+                    lexer = guess_lexer_for_filename(file_path, file_contents)
+                except pygments.util.ClassNotFound:
+                    yield f"<div>Unable to find lexer for file {settings['file_slug']}.</div>"
+                    return
+            else:
+                lexer = get_lexer_by_name(file_object.lexer)
 
             highlighted = pygments.highlight(file_contents, lexer, HtmlFormatter(nowrap=True))
 
@@ -598,7 +601,7 @@ class EmbeddedScriptMarkup(Markup):
                     where=form_data[f"include_files-{i}-where"],
                     itype=form_data[f"include_files-{i}-type"],
                     slug=(
-                        form_data[f"include_files-{i}-name"]
+                        form_data[f"include_files-{i}-slug"]
                         or form_data[f"include_files-{i}-existing"]
                     ),
                 )

@@ -122,7 +122,6 @@ def get_import_list():
     ]
 
 def update_context_links(page, instance, parsed_links, revision=None):
-    print(parsed_links)
     new_links = parsed_links["aceplus"]
     old_links = list(
         AcePlusLink.objects.filter(parent=page, instance=instance).values_list(
@@ -136,7 +135,7 @@ def update_context_links(page, instance, parsed_links, revision=None):
         widget_slug__in=removed_links, instance=instance, parent=page
     ).delete()
 
-    for link_slug in new_links:
+    for link_slug in added_links:
         link_obj = AcePlusLink(
             widget_slug=link_slug,
             instance=instance,

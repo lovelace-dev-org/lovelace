@@ -22,6 +22,7 @@ from django.utils.translation import gettext as _
 from django.conf import settings as django_settings
 from django.contrib.auth.models import User
 
+import kombu
 import redis
 
 from celery import shared_task, group
@@ -795,6 +796,9 @@ def get_celery_worker_status():
         if len(e.args) > 0 and errorcode.get(e.args[0]) == "ECONNREFUSED":
             msg += " Check that the RabbitMQ server is running."
         d = {ERROR_KEY: msg}
+    except kombu.exceptions.OperationalError:
+        d = {ERROR_KEY: _("No Celery connection")}
+
     except Exception as e:
         d = {ERROR_KEY: "Uknown error: " + str(e)}
     return d

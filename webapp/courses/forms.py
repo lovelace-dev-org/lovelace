@@ -99,10 +99,10 @@ class ContentForm(forms.ModelForm):
 
         term_re = blockparser.BlockParser.tags["term"].regexp
 
-        term_links = {match.group("term_name") for match in term_re.finditer(value)}
+        term_links = {match.group("term_slug") for match in term_re.finditer(value)}
 
         for link in term_links:
-            if not cm.Term.objects.filter(**{"name_" + lang: link}):
+            if not cm.Term.objects.filter(slug=link):
                 missing_terms.append(link)
                 messages.append(f"Term matching {link} does not exist")
 

@@ -18,6 +18,7 @@ from django.utils.translation import gettext as _
 from lovelace.celery import app as celery_app
 
 from courses import markupparser
+import courses.tasks as rpc_tasks
 
 from routine_exercise.models import (
     RoutineExercise,
@@ -182,6 +183,16 @@ def get_routine_question(request, course, instance, content, revision):
     ).first()
 
     if question is None:
+        celery_status = rpc_tasks.get_celery_worker_status()
+        if "errors" in celery_status:
+            return JsonResponse(
+                {
+                    "error": _(
+                        "Question retrieval failed. Contact teaching staff (reason: {e})"
+                    ).format(e=celery_status["errors"])
+                }
+            )
+
         payload = _routine_payload(request.user, instance, content, revision, progress)
         task = routine_tasks.generate_question.delay(payload)
         progress_url = reverse(
@@ -343,6 +354,12 @@ def check_routine_question(request, course, instance, content, revision):
         exercise=content,
     )
     payload = _routine_payload(request.user, instance, content, revision, progress, answer)
+
+    celery_status = rpc_tasks.get_celery_worker_status()
+    if "errors" in celery_status:
+        return HttpResponse(
+            _("Cannot connect to backend."), status=400
+        )
 
     task = routine_tasks.check_answer.delay(payload)
 

@@ -57,7 +57,6 @@ from utils.management import (
     get_prefixed_slug,
 )
 
-
 class RollbackRevert(Exception):
     pass
 
@@ -441,6 +440,9 @@ class CourseInstance(models.Model):
                 instance.save()
                 if was_primary:
                     instance.clear_content_tree_cache(regen_frozen=True)
+                    nodes = ContentGraph.objects.filter(instance=instance)
+                    for node in nodes:
+                        node.content.regenerate_cache(instance)
             self.clear_content_tree_cache(regen_frozen=True)
 
 
@@ -884,6 +886,9 @@ class File(CourseMedia):
     fileinfo = models.FileField(max_length=255, upload_to=get_file_upload_path)  # Translate
     download_as = models.CharField(
         verbose_name="Default name for the download dialog", max_length=200, null=True, blank=True
+    )
+    lexer = models.CharField(
+        verbose_name="Set lexer manually to", max_length=64, null=True, blank=True
     )
 
     def __str__(self):
@@ -1431,6 +1436,7 @@ class ContentPage(models.Model, ExportImportMixin):
         # This import needs to be here until circular import issues are fully sorted out.
         # from courses import markupparser
 
+        print(f"Rendering {self.slug}")
         parser = markupparser.MarkupParser()
 
         blocks = []
@@ -1579,7 +1585,6 @@ class ContentPage(models.Model, ExportImportMixin):
                 content = version[f"content_{lang_code}"]
 
             links = parser.parse(content, instance)
-            print(links)
             for category, link_list in links.items():
                 all_links[category].update(link_list)
 
@@ -1621,6 +1626,7 @@ class ContentPage(models.Model, ExportImportMixin):
             )
             link_obj.save()
 
+        print(added_media_links)
         for link_slug in added_media_links:
             link_obj = CourseMediaLink(
                 parent=self,
@@ -1819,7 +1825,7 @@ class ContentPage(models.Model, ExportImportMixin):
         best_answer = (
             self.get_user_answers(self, user, instance)
             .filter(evaluation__correct=True)
-            .order_by("-evaluation__points")
+            .order_by("-evaluation__points", "answer_date")
             .first()
         )
         if not best_answer:
@@ -1828,7 +1834,7 @@ class ContentPage(models.Model, ExportImportMixin):
         evaluation = {
             "evaluation": True,
             "points": best_answer.evaluation.points,
-            "max": self.default_points,
+            "max": best_answer.evaluation.max_points,
         }
         update_completion(self, instance, user, evaluation, best_answer.answer_date)
 
@@ -2477,6 +2483,10 @@ class FileUploadExercise(ContentPage):
             revision = None
 
         if self.fileexercisetest_set.get_queryset():
+            celery_status = rpc_tasks.get_celery_worker_status()
+            if "errors" in celery_status:
+                return {"task_id": None, "errors": celery_status["errors"]}
+
             filelist = files.getlist("file")
             if not filelist and self.fileexercisesettings.answer_filename:
                 filelist.append(ContentFile(
@@ -2816,7 +2826,6 @@ class FileExerciseSettings(models.Model):
     )
     answer_filename = models.CharField(
         max_length=32,
-        null=True,
         blank=True,
         verbose_name=_("Filename to use for the answer"),
         help_text=_(
