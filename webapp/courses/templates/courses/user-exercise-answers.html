@@ -145,7 +145,7 @@
       {% endif %}
       {% if course_staff and exercise.manually_evaluated %}
         <a class="button-style inspect-button" 
-           href="{% url 'assessment:submission_assessment' course instance exercise student %}"
+           href="{% url 'assessment:submission_assessment' course instance exercise student answer %}"
            title="{% trans 'Assess submission' %}">
         </a>
       {% endif %}
