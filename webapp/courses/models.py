@@ -1127,6 +1127,9 @@ class Calendar(models.Model, ExportImportMixin):
     )
     origin = models.ForeignKey(Course, verbose_name="Course", null=True, on_delete=models.SET_NULL)
     slug = models.SlugField(max_length=255, allow_unicode=True, blank=False)
+    heading_level = models.PositiveSmallIntegerField(
+        verbose_name=_("Date heading level"),
+    )
 
     def natural_key(self):
         return [self.name]

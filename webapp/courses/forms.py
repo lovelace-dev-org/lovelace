@@ -534,7 +534,7 @@ class GroupMemberForm(forms.Form):
 class CalendarConfigForm(forms.ModelForm):
     class Meta:
         model = cm.Calendar
-        fields = ["allow_multiple", "lock_period", "lock_cancel"]
+        fields = ["heading_level", "allow_multiple", "lock_period", "lock_cancel"]
 
     def __init__(self, *args, **kwargs):
         available_content = kwargs.pop("available_content")

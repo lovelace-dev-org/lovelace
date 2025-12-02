@@ -146,7 +146,7 @@ class CodeMarkup(Markup):
     @classmethod
     def block(cls, block, settings, state):
         highlight = settings["highlight"]
-        yield "<div><pre class='normal'>"
+        yield "<div><pre class='block-code normal'>"
         text = ""
         if highlight:
             try:

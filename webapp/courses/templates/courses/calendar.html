@@ -41,7 +41,11 @@
 
     {% for date, events in cal_reservations.items %}
       <div class="calendar-date-container">
-        <div class="calendar-date-heading">{{ date|date:"Y-m-d l" }}</div>
+        <div class="calendar-date-heading"
+             data-heading-level="{{ calendar.heading_level }}">
+          {{ date|date:"Y-m-d l" }}
+          <span class="anchor-offset" id='{{ calendar.slug }}-{{ date|date:"Y-m-d" }}'>
+        </div>
         {% for event, reservations in events %}
           <form method="POST" action="{% url 'courses:calendar_reservation' calendar event %}">
             {% csrf_token %}

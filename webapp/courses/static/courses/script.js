@@ -89,10 +89,13 @@ function build_toc (static_root_url) {
     // var topmost_ol = null;
     const headings = $.map([1, 2, 3, 4, 5, 6], function (i) {
         return "section.content h" + i + ".content-heading"
-    }).join(", ")
+    }).join(", ") + ", .calendar-date-heading"
     $(headings).each(function (index) {
         // TODO: http://stackoverflow.com/questions/123999/how-to-tell-if-a-dom-element-is-visible-in-the-current-viewport
-        const new_toc_level = parseInt(this.tagName[1])
+        let new_toc_level = parseInt(this.tagName[1])
+        if (isNaN(new_toc_level)) {
+            new_toc_level = $(this).attr("data-heading-level")
+        }
 
         if ($(this).closest("div.term-description").length > 0) {
             return

@@ -41,7 +41,7 @@ class PreTag(Tag):
             code_string = code_string.replace(escaped, unescaped)
         hilite = hilite.strip("#! ")
 
-        parsed_string = self.htmlbegin({"class": "highlight " + hilite})
+        parsed_string = self.htmlbegin({"class": "inline-code highlight " + hilite})
         if hilite:
             try:
                 lexer = get_lexer_by_name(hilite)

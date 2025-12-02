@@ -1,6 +1,7 @@
 import datetime
 from assessment.models import AssessmentToExerciseLink
 from utils.archive import get_archived_instances
+from utils.translation import user_language
 
 
 def clone_assessment_links(old_instance, new_instance):
@@ -68,27 +69,29 @@ def serializable_assessment(user, sheet, bullets_by_section, cleaned_data):
         "complete": cleaned_data["complete"],
     }
 
-    for name, section in bullets_by_section.items():
-        section_doc = {
-            "name": name.title,
-            "section_points": 0,
-            "max_points": section["total_points"],
-            "bullets": [],
-        }
-        for bullet in section["bullets"]:
-            score = cleaned_data[f"bullet-{bullet.id}-points"] or 0
-            section_doc["bullets"].append(str(bullet.id))
-            section_doc["section_points"] += score
-            document["bullet_index"][str(bullet.id)] = {
-                "title": bullet.title,
-                "tooltip": bullet.tooltip,
-                "max_points": bullet.point_value,
-                "scored_points": score,
-                "comment": cleaned_data[f"bullet-{bullet.id}-comment"],
-            }
 
-        document["total_score"] += section_doc["section_points"]
-        document["sections"].append(section_doc)
-        document["max_total"] += section["total_points"]
+    with user_language(user):
+        for name, section in bullets_by_section.items():
+            section_doc = {
+                "name": name.title,
+                "section_points": 0,
+                "max_points": section["total_points"],
+                "bullets": [],
+            }
+            for bullet in section["bullets"]:
+                score = cleaned_data[f"bullet-{bullet.id}-points"] or 0
+                section_doc["bullets"].append(str(bullet.id))
+                section_doc["section_points"] += score
+                document["bullet_index"][str(bullet.id)] = {
+                    "title": bullet.title,
+                    "tooltip": bullet.tooltip,
+                    "max_points": bullet.point_value,
+                    "scored_points": score,
+                    "comment": cleaned_data[f"bullet-{bullet.id}-comment"],
+                }
+
+            document["total_score"] += section_doc["section_points"]
+            document["sections"].append(section_doc)
+            document["max_total"] += section["total_points"]
 
     return document
