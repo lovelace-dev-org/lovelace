@@ -361,18 +361,22 @@ def view_submissions(request, course, instance, content):
             "exercise": content,
         }
         entry["answers_url"] = reverse("courses:show_answers", kwargs=href_args)
-        entry["assessment_url"] = reverse("assessment:submission_assessment", kwargs=href_args)
         if completion.state in ["correct", "incorrect"]:
             try:
                 evaluated_answer = (
                     UserAnswer.get_task_answers(content, instance, completion.user)
                     .exclude(evaluation=None)
                     .exclude(evaluation__feedback="")
-                    .latest("answer_date")
+                    .latest("evaluation__evaluation_date")
                 )
             except UserAnswer.DoesNotExist:
+                href_args["answer"] = (
+                    UserAnswer.get_task_answers(content, instance, completion.user)
+                    .latest("answer_date")
+                )
                 unassessed.append(entry)
             else:
+                href_args["answer"] = evaluated_answer
                 entry["total_points"] = evaluated_answer.evaluation.points
                 if evaluated_answer.evaluation.suspect:
                     suspect.append(entry)
@@ -380,6 +384,13 @@ def view_submissions(request, course, instance, content):
                     assessed.append(entry)
         else:
             unassessed.append(entry)
+            href_args["answer"] = (
+                UserAnswer.get_task_answers(content, instance, completion.user)
+                .latest("answer_date")
+            )
+
+        entry["assessment_url"] = reverse("assessment:submission_assessment", kwargs=href_args)
+
 
     assessed.sort(key=itemgetter("group"))
     unassessed.sort(key=itemgetter("group"))
@@ -401,7 +412,7 @@ def view_submissions(request, course, instance, content):
 
 
 @ensure_staff
-def submission_assessment(request, course, instance, exercise, user):
+def submission_assessment(request, course, instance, exercise, user, answer):
     try:
         sheet_link = AssessmentToExerciseLink.objects.get(instance=instance, exercise=exercise)
     except AssessmentToExerciseLink.DoesNotExist:
@@ -416,7 +427,6 @@ def submission_assessment(request, course, instance, exercise, user):
             return JsonResponse({"errors": errors}, status=400)
 
         assessment = serializable_assessment(request.user, sheet, by_section, form.cleaned_data)
-        answer_object = UserAnswer.get_task_answers(exercise, instance, user).latest("answer_date")
         exercise.update_evaluation(
             user,
             {
@@ -428,24 +438,17 @@ def submission_assessment(request, course, instance, exercise, user):
                 "suspect": form.cleaned_data.get("suspect", False),
                 "comment": form.cleaned_data.get("comment", ""),
             },
-            answer_object,
+            answer,
             complete=form.cleaned_data.get("complete", False),
             overwrite=True
         )
         return JsonResponse({"status": "ok"})
 
     try:
-        evaluated_answer = (
-            UserAnswer.get_task_answers(exercise, instance, user)
-            .exclude(evaluation=None)
-            .exclude(evaluation__feedback="")
-            .latest("answer_date")
-        )
-        assessment = json.loads(evaluated_answer.evaluation.feedback)
-        suspect = evaluated_answer.evaluation.suspect
-        comment = evaluated_answer.evaluation.comment
+        assessment = json.loads(answer.evaluation.feedback)
+        suspect = answer.evaluation.suspect
+        comment = answer.evaluation.comment
     except (UserAnswer.DoesNotExist, json.JSONDecodeError):
-        evaluated_answer = None
         assessment = {}
         suspect = False
         comment = ""
@@ -472,6 +475,7 @@ def submission_assessment(request, course, instance, exercise, user):
     c = {
         "course": course,
         "instance": instance,
+        "answer": answer,
         "course_staff": True,
         "exercise": exercise,
         "parent": parent,
