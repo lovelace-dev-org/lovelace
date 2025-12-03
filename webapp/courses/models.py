@@ -1439,7 +1439,6 @@ class ContentPage(models.Model, ExportImportMixin):
         # This import needs to be here until circular import issues are fully sorted out.
         # from courses import markupparser
 
-        print(f"Rendering {self.slug}")
         parser = markupparser.MarkupParser()
 
         blocks = []
@@ -1629,7 +1628,6 @@ class ContentPage(models.Model, ExportImportMixin):
             )
             link_obj.save()
 
-        print(added_media_links)
         for link_slug in added_media_links:
             link_obj = CourseMediaLink(
                 parent=self,
@@ -1748,6 +1746,7 @@ class ContentPage(models.Model, ExportImportMixin):
 
         evaluation_object = Evaluation(
             correct=correct,
+            completed=not evaluation.get("manual", False),
             points=points,
             max_points=evaluation.get("max", self.default_points),
             evaluator=evaluation.get("evaluator"),
@@ -1762,11 +1761,9 @@ class ContentPage(models.Model, ExportImportMixin):
 
         update_completion(self, instance, user, evaluation, answer_object.answer_date)
         if self.group_submission:
+            type_object = self.get_type_object()
             for member in get_group_members(user, instance):
-                answer_object.pk = None
-                answer_object.useranswer_ptr = None
-                answer_object.user = member
-                answer_object.save()
+                type_object.copy_answer(answer_object, member)
                 update_completion(self, instance, member, evaluation, answer_object.answer_date)
 
         return evaluation_object
@@ -1784,6 +1781,7 @@ class ContentPage(models.Model, ExportImportMixin):
 
         instance = answer_object.instance
         answer_object.evaluation.correct = evaluation["evaluation"]
+        answer_object.evaluation.completed = complete
         answer_object.evaluation.points = evaluation["points"]
         answer_object.evaluation.max_points = evaluation.get("max", self.default_points)
         answer_object.evaluation.feedback = evaluation.get("feedback", "")
@@ -1840,6 +1838,12 @@ class ContentPage(models.Model, ExportImportMixin):
             "max": best_answer.evaluation.max_points,
         }
         update_completion(self, instance, user, evaluation, best_answer.answer_date)
+
+    def copy_answer(self, answer_object, copy_owner):
+        answer_object.pk = None
+        answer_object.useranswer_ptr = None
+        answer_object.user = copy_owner
+        answer_object.save()
 
     # Abstract methods that proxy model classes need to implement.
     # v
@@ -2413,7 +2417,6 @@ class FileUploadExercise(ContentPage):
         super().save(*args, **kwargs)
         # create the extra settings model instance if one doesn't exist yet
         if not hasattr(self, "fileexercisesettings"):
-            print("Creating settings")
             extra_settings = FileExerciseSettings(exercise=self)
             extra_settings.save()
 
@@ -2465,6 +2468,15 @@ class FileUploadExercise(ContentPage):
         else:
             raise InvalidExerciseAnswerException("No file was sent!")
         return answer_object
+
+    def copy_answer(self, answer_object, copy_owner):
+        attached_files = list(FileUploadExerciseReturnFile.objects.filter(answer=answer_object))
+        super().copy_answer(answer_object, copy_owner)
+        answer_object.refresh_from_db()
+        for file_ref in attached_files:
+            file_ref.pk = None
+            file_ref.answer = answer_object
+            file_ref.save()
 
     def get_choices(self, revision=None):
         return
@@ -3543,6 +3555,9 @@ class Evaluation(models.Model):
     """Evaluation of a student's answer to an exercise."""
 
     correct = models.BooleanField(default=False)
+
+    # Default to True because manual/delayed evaluation is the exception
+    completed = models.BooleanField(default=True)
     suspect = models.BooleanField(default=False)
     points = models.DecimalField(default=0, max_digits=5, decimal_places=2)
 
@@ -3847,6 +3862,7 @@ class UserTaskCompletion(models.Model):
             ("incorrect", "The task has not been answered correctly"),
             ("credited", "The task has been credited by completing another task"),
             ("submitted", "An answer has been submitted, awaiting assessment"),
+            ("rebsubmitted", "A new answer answer has been submitted"),
             ("ongoing", "The task has been started"),
         ),
     )

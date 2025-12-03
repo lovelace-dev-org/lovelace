@@ -12,8 +12,10 @@ from django.utils import translation
 from reversion.models import Version, Revision
 from courses import markupparser
 import courses.models as cm
-from utils.access import is_course_staff
+from utils.access import is_course_staff, determine_access
+from utils.archive import find_version_with_filename
 from utils.exercise import best_result
+from utils.files import find_fs_path, generate_download_response
 from utils.notify import get_notifications
 
 def first_title_from_content(content_text):
@@ -367,4 +369,31 @@ def course_tree(tree, node, user, instance_obj, enrolled=False, staff=False):
             course_tree(tree, child, user, instance_obj, enrolled, staff)
         tree.append({"content": mark_safe("<")})
 
+
+def download_exercise_backend(request, exercise_id, field_name, filename, backend_model):
+    try:
+        exercise_object = cm.ContentPage.objects.get(id=exercise_id)
+    except cm.ContentPage.DoesNotExist as e:
+        return HttpResponseNotFound(_("This exercise does't exist"))
+
+    if not determine_access(request.user, exercise_object):
+        return HttpResponseForbidden(
+            _(
+                "Only course main responsible teachers are allowed "
+                "to download files through this interface."
+            )
+        )
+
+    fileobjects = backend_model.objects.filter(exercise=exercise_object)
+    for fileobject in fileobjects:
+        try:
+            fs_path = find_fs_path(filename, fileobject, field_name)
+        except FileNotFoundError as e:
+            pass
+        else:
+            break
+    else:
+        return HttpResponseNotFound(_("Requested file does not exist."))
+
+    return generate_download_response(fs_path)
 

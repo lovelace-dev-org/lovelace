@@ -28,6 +28,10 @@
           <img src="{% static 'courses/submitted-96.png' %}" width="96" height="96" alt="->"
              title="{% trans 'Your submitted answer is waiting for staff assessment' %}"
              class="submitted">
+        {% elif evaluation == "resubmitted" %}
+          <img src="{% static 'courses/resubmitted-96.png' %}" width="96" height="96" alt="->"
+             title="{% trans 'You have submitted a new answer for evaluation' %}"
+             class="resubmitted">
         {% endif %}
 
         <div class="task-meta-score">

@@ -140,6 +140,8 @@ function build_toc (static_root_url) {
                 icon = static_root_url + "credited-16.png"
             } else if (status === "submitted") {
                 icon = static_root_url + "submitted-16.png"
+            } else if (status === "resubmitted") {
+                icon = static_root_url + "resubmitted-16.png"
             }
             icon_img = $(document.createElement("img"))
             icon_img.attr("src", icon)

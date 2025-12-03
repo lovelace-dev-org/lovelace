@@ -330,6 +330,10 @@ def update_completion(exercise, instance, user, evaluation, answer_date, overwri
         if correct:
             if quotient > completion.points or overwrite:
                 completion.points = quotient
+
+        if evaluation.get("manual", False):
+            completion.state = "resubmitted"
+
         completion.save()
 
     eval_group = get_single_archived(exercise, link.revision).evaluation_group

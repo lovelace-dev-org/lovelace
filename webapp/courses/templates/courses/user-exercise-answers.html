@@ -97,7 +97,7 @@
     {% else %}{# No answers, e.g. files, were sent #}
       <td class="answer {{ answer.html_extra_class }}">{% rendered_answer answer %}</td>
     {% endif %}
-    {% if completion.state == "correct" or completion.state == "incorrect" %}
+    {% if answer.evaluation.completed %}
       <td class="
             evaluation
             {% if answer.evaluation.correct == True %}correct
@@ -128,7 +128,7 @@
          href="mailto:{{ instance_email }}?subject={{ instance_name|urlencode }}%20-%20{{ exercise_title|urlencode }}{% autoescape off %}&body={% endautoescape %}{{ answers_url|urlencode }}%23{{ answer.id }}"
          title="{% trans 'Send course staff a question about this answer' %}"></a>
       {% if answer.evaluation.feedback %}
-        {% if completion.state == "correct" or completion.state == "incorrect" %}
+        {% if answer.evaluation.completed %}
           <a class="button-style report-button"
              href="{% url 'assessment:view_assessment' student course instance exercise answer %}"
              onclick="show_results(event, this, 'assessment-{{ answer.id }}');"

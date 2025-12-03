@@ -306,37 +306,6 @@ def refresh_attempts(request, course, instance, content):
     return HttpResponse(form_t.render(form_c, request))
 
 def download_question_pool(request, exercise_id, field_name, filename):
-    try:
-        exercise_object = MultipleQuestionExam.objects.get(id=exercise_id)
-    except MultipleQuestionExam.DoesNotExist as e:
-        return HttpResponseNotFound(_("This exercise does't exist"))
-
-    if not determine_access(request.user, exercise_object):
-        return HttpResponseForbidden(
-            _(
-                "Only course main responsible teachers are allowed "
-                "to download files through this interface."
-            )
-        )
-
-    fileobjects = ExamQuestionPool.objects.filter(exercise=exercise_object)
-    try:
-        for fileobject in fileobjects:
-            if filename == os.path.basename(getattr(fileobject, field_name).name):
-                fs_path = os.path.join(
-                    settings.PRIVATE_STORAGE_FS_PATH, getattr(fileobject, field_name).name
-                )
-                break
-
-            # Archived file was requested
-            version = find_version_with_filename(fileobject, field_name, filename)
-            if version:
-                filename = version.field_dict[field_name].name
-                fs_path = os.path.join(settings.PRIVATE_STORAGE_FS_PATH, filename)
-                break
-        else:
-            return HttpResponseNotFound(_("Requested file does not exist."))
-    except AttributeError as e:
-        return HttpResponseNotFound(_("Requested file does not exist."))
-
-    return generate_download_response(fs_path)
+    return download_exercise_backend(
+        request, exercise_id, field_name, filename, ExamQuestionPool
+    )

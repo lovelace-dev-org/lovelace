@@ -308,7 +308,10 @@ class CodeEditForm(LineEditMixin, MarkupEditForm):
             label=_("Code highlight"),
             choices=(
                 [("", _("----NO--HIGHLIGHT----"))] +
-                [(name, name) for name, __, __, __ in pygments.lexers.get_all_lexers()]
+                [
+                    (aliases[0], name) if aliases else (name, name)
+                    for name, aliases, __, __ in pygments.lexers.get_all_lexers()
+                ]
             ),
             required=False,
         )
@@ -721,7 +724,10 @@ class FileEditForm(LineEditMixin, EmbeddedObjectEditForm):
             label=_("Code highlight"),
             choices=(
                 [("", _("----NO--HIGHLIGHT----"))] +
-                [(name, name) for name, __, __, __ in pygments.lexers.get_all_lexers()]
+                [
+                    (aliases[0], name) if aliases else (name, name)
+                    for name, aliases, __, __ in pygments.lexers.get_all_lexers()
+                ]
             ),
             required=False,
         )
