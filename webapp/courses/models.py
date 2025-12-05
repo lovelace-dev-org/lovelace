@@ -1707,6 +1707,19 @@ class ContentPage(models.Model, ExportImportMixin):
             )
             if self.group_submission:
                 for member in get_group_members(user, instance):
+                    if not UserAnswer.objects.filter(
+                        user=member, evaluation=answer_object.evaluation
+                    ):
+                        task_answer = self.get_user_answers(self, user, instance).get(
+                            evaluation=answer_object.evaluation
+                        )
+                        print("Answer missing, copying")
+                        task_answer.pk = None
+                        task_answer.useranswer_ptr = None
+                        task_answer.user = member
+                        task_answer.save()
+                    else:
+                        print("Answer exists")
                     update_completion(
                         self, instance, member, evaluation, answer_object.answer_date,
                         overwrite=overwrite
