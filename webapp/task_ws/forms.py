@@ -5,11 +5,11 @@ class XtermWidgetConfigurationForm(forms.ModelForm):
 
     class Meta:
         model = task_ws.models.XtermWidgetSettings
-        exclude = ["key_slug", "instance"]
+        exclude = ["name", "slug", "course"]
 
 
 class TurtleWidgetConfigurationForm(forms.ModelForm):
 
     class Meta:
         model = task_ws.models.TurtleWidgetSettings
-        exclude = ["key_slug", "instance"]
+        exclude = ["name", "slug", "course"]

@@ -156,7 +156,14 @@ def import_from_zip(import_source, user, responsible, staff_group, target_instan
                 logger.error(f"Serialized data contains pk, importing aborted.")
                 raise ValueError("Imported data is not allowed to define pk")
 
-        with reversion.create_revision():
+            # Change origin to the current course
+            # when importing objects that had different origins
+            if origin := serialized_dict["fields"].get("origin"):
+                if origin != target_course.natural_key():
+                    print("Setting origin to:", target_course.natural_key())
+                    serialized_dict["fields"]["origin"] = target_course.natural_key()
+
+
             for obj in deserialize_python(source_doc):
                 if not import_allowed(obj, user, target_instance):
                     errors.append(_("Import of {obj_str} failed - no overwrite permission").format(
@@ -165,11 +172,18 @@ def import_from_zip(import_source, user, responsible, staff_group, target_instan
                     continue
 
                 fix_default_lang_fields(obj.object)
-                obj.save()
+
+                try:
+                    obj.save()
+                except Exception as e:
+                    errors.append(_("Import of {obj_str} failed - missing dependencies").format(
+                        obj_str=str(obj.object)
+                    ))
+                    continue
+
                 imported.append(obj.object)
                 if obj.deferred_fields is not None:
                     deferred.append(obj)
-            reversion.set_comment("imported by system")
 
         return imported
 
@@ -182,7 +196,9 @@ def import_from_zip(import_source, user, responsible, staff_group, target_instan
     if target_instance is None:
         imported_course_doc[0]["fields"]["staff_group"] = staff_group.natural_key()
         imported_course_doc[0]["fields"]["main_responsible"] = responsible.natural_key()
+        print(f"Importing course")
         course = import_model(imported_course_doc)[0]
+        print(f"Importing course instance")
         instance = import_model(imported_instance_doc, course)[0]
     else:
         if target_instance.slug != imported_instance_doc[0]["fields"]["slug"]:
@@ -202,27 +218,37 @@ def import_from_zip(import_source, user, responsible, staff_group, target_instan
 
     imported_course_name = instance.course.name
 
-    for block_type, group in itertools.groupby(names, _grouper):
-        if block_type == "datafiles":
-            for name in group:
-                storage = name.split("/")[1]
-                if storage == "media":
-                    root = settings.MEDIA_ROOT
-                else:
-                    root = settings.PRIVATE_STORAGE_FS_PATH
-                path = os.path.join(root, *name.split("/")[2:])
-                os.makedirs(os.path.dirname(path), exist_ok=True)
-                with open(path, "wb") as target:
-                    target.write(import_source.read(name))
-        else:
-            for name in group:
-                try:
-                    import_model(json.loads(import_source.read(name)), course, instance)
-                except Exception as e:
-                    logger.warning(f"Error while handling file {name} under model {block_type}")
-                    raise e
+    with reversion.create_revision():
 
-    for obj in deferred:
-        obj.save_deferred_fields()
+        for block_type, group in itertools.groupby(names, _grouper):
+            if block_type == "datafiles":
+                for name in group:
+                    storage = name.split("/")[1]
+                    if storage == "media":
+                        root = settings.MEDIA_ROOT
+                    else:
+                        root = settings.PRIVATE_STORAGE_FS_PATH
+                    path = os.path.join(root, *name.split("/")[2:])
+                    os.makedirs(os.path.dirname(path), exist_ok=True)
+                    with open(path, "wb") as target:
+                        target.write(import_source.read(name))
+            else:
+                for name in group:
+                    print(f"Importing {block_type} {name}")
+                    try:
+                        import_model(json.loads(import_source.read(name)), course, instance)
+                    except Exception as e:
+                        logger.warning(f"Error while handling file {name} under model {block_type}")
+                        raise e
+
+        for obj in deferred:
+            try:
+                obj.save_deferred_fields()
+            except serializers.base.DeserializationError:
+                logger.warning(f"Cannot save deferred fields for {obj}")
+                errors.append(_("Import of deferred fields failed for {obj_str}").format(
+                    obj_str=str(obj.object)
+                ))
+        reversion.set_comment("imported by system")
 
     return instance, errors

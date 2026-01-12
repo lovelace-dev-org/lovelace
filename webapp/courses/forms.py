@@ -2,6 +2,7 @@ import os.path
 import re
 import django.conf
 from django.core.exceptions import ValidationError
+from django.core.validators import URLValidator
 from django.db.models import Count
 from django import forms
 from django.forms import fields
@@ -85,23 +86,23 @@ class ContentForm(forms.ModelForm):
 
         parser = markupparser.LinkParser()
 
-        page_links, media_links = parser.parse(value)
-        for link in page_links:
+        links = parser.parse(value)
+        for link in links["page"]:
             if not cm.ContentPage.objects.filter(slug=link):
                 missing_pages.append(link)
                 messages.append(f"Content matching {link} does not exist")
 
-        for link in media_links:
-            if not cm.CourseMedia.objects.filter(name=link):
+        for link in links["media"]:
+            if not cm.CourseMedia.objects.filter(slug=link):
                 missing_media.append(link)
                 messages.append(f"Media matching {link} does not exist")
 
         term_re = blockparser.BlockParser.tags["term"].regexp
 
-        term_links = {match.group("term_name") for match in term_re.finditer(value)}
+        term_links = {match.group("term_slug") for match in term_re.finditer(value)}
 
         for link in term_links:
-            if not cm.Term.objects.filter(**{"name_" + lang: link}):
+            if not cm.Term.objects.filter(slug=link):
                 missing_terms.append(link)
                 messages.append(f"Term matching {link} does not exist")
 
@@ -193,6 +194,7 @@ class InstanceSettingsForm(TranslationStaffForm):
             "welcome_message",
             "content_license",
             "license_url",
+            "ws_server"
         ]
 
     def clean(self):
@@ -212,6 +214,9 @@ class InstanceSettingsForm(TranslationStaffForm):
         self._instance = kwargs.get("instance")
         available_content = kwargs.pop("available_content")
         super().__init__(*args, **kwargs)
+        print(self.fields["ws_server"].validators)
+        self.fields["ws_server"].validators = [URLValidator(schemes=["ws", "wss", "http", "https"])]
+        print(self.fields["ws_server"].validators)
 
         self.fields["frontpage"] = forms.ChoiceField(
             widget=forms.Select,
@@ -529,7 +534,7 @@ class GroupMemberForm(forms.Form):
 class CalendarConfigForm(forms.ModelForm):
     class Meta:
         model = cm.Calendar
-        fields = ["allow_multiple", "lock_period", "lock_cancel"]
+        fields = ["heading_level", "allow_multiple", "lock_period", "lock_cancel"]
 
     def __init__(self, *args, **kwargs):
         available_content = kwargs.pop("available_content")

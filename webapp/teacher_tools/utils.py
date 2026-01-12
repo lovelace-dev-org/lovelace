@@ -17,7 +17,7 @@ def check_user_completion(user, tasks, instance, completion_qs, include_links=Tr
             result = "unanswered"
 
         points = 0
-        if result == "correct":
+        if result in ["correct", "resubmitted"]:
             correct = True
             points = completion.points * exercise_obj.default_points
         elif result == "credited":

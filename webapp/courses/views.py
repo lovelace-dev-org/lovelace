@@ -77,7 +77,7 @@ from utils.content import (
     get_embedded_parent,
 )
 from utils.exercise import compile_evaluation_data
-from utils.files import generate_download_response
+from utils.files import find_fs_path, generate_download_response
 from utils.notify import send_error_report, send_welcome_email
 from utils.rendering import render_terms
 
@@ -429,12 +429,17 @@ def check_answer(request, course, instance, content, revision):
                 task_id = evaluation.get("task_id")
                 if task_id is not None:
                     return check_progress(request, course, instance, content, revision, task_id)
+                elif errors := evaluation.get("errors"):
+                    return JsonResponse({"result": errors})
         else:
             evaluation["manual"] = False
             if exercise.content_type == "FILE_UPLOAD_EXERCISE":
                 task_id = evaluation.get("task_id")
                 if task_id is not None:
                     return check_progress(request, course, instance, content, revision, task_id)
+                elif errors := evaluation.get("errors"):
+                    print(errors)
+                    return JsonResponse({"result": errors})
 
     exercise.save_evaluation(user, evaluation, answer_object)
 
@@ -826,58 +831,17 @@ def download_media_file(request, file_slug, field_name, filename):
         )
 
     try:
-        if filename == os.path.basename(getattr(fileobject, field_name).name):
-            fs_path = os.path.join(settings.MEDIA_ROOT, getattr(fileobject, field_name).name)
-        else:
-            # Archived file was requested
-            version = find_version_with_filename(fileobject, field_name, filename)
-            if version:
-                filename = version.field_dict[field_name].name
-                fs_path = os.path.join(settings.MEDIA_ROOT, filename)
-            else:
-                return HttpResponseNotFound(_("Requested file does not exist."))
-    except AttributeError as e:
-        return HttpResponseNotFound(_("Requested file does not exist."))
+        fs_path = find_fs_path(filename, fileobject, field_name)
+    except FileNotFoundError as e:
+        return HttpResponseNotFound(e)
 
     return generate_download_response(fs_path)
 
 
 def download_template_exercise_backend(request, exercise_id, field_name, filename):
-    try:
-        exercise_object = RepeatedTemplateExercise.objects.get(id=exercise_id)
-    except CourseInstance.DoesNotExist as e:
-        return HttpResponseNotFound(_("This exercise does't exist"))
-
-    if not determine_access(request.user, exercise_object):
-        return HttpResponseForbidden(
-            _(
-                "Only course main responsible teachers are "
-                "allowed to download files through this interface."
-            )
-        )
-
-    fileobjects = RepeatedTemplateExerciseBackendFile.objects.filter(exercise=exercise_object)
-    try:
-        for fileobject in fileobjects:
-            if filename == os.path.basename(getattr(fileobject, field_name).name):
-                fs_path = os.path.join(
-                    settings.PRIVATE_STORAGE_FS_PATH, getattr(fileobject, field_name).name
-                )
-                break
-
-            # Archived file was requested
-            version = find_version_with_filename(fileobject, field_name, filename)
-            if version:
-                filename = version.field_dict[field_name].name
-                fs_path = os.path.join(settings.PRIVATE_STORAGE_FS_PATH, filename)
-                break
-        else:
-            return HttpResponseNotFound(_("Requested file does not exist."))
-    except AttributeError as e:
-        return HttpResponseNotFound(_("Requested file does not exist."))
-
-    return generate_download_response(fs_path)
-
+    return download_exercise_backend(
+        request, exercise_id, field_name, filename, RepeatedTemplateExerciseBackendFile
+    )
 
 # ^
 # |

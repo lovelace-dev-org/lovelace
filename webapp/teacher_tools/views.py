@@ -251,6 +251,7 @@ def transfer_records(request, course, instance, user):
         new_enrollment.save()
 
         if form.cleaned_data["recalculate"]:
+            UserTaskCompletion.objects.filter(user=user, instance=target_instance).update(points=0)
             for __, task_links in get_course_instance_tasks(target_instance):
                 for task_link in task_links:
                     content = task_link.embedded_page.get_type_object()
@@ -439,7 +440,7 @@ def search_records(request, course, instance):
             if form.cleaned_data.get("last_name"):
                 query |= Q(last_name=form.cleaned_data.get("last_name"))
             if form.cleaned_data.get("first_name"):
-                query |= Q(last_name=form.cleaned_data.get("first_name"))
+                query |= Q(first_name=form.cleaned_data.get("first_name"))
             if form.cleaned_data.get("email"):
                 query |= Q(email=form.cleaned_data.get("email"))
             for user in User.objects.filter(query):

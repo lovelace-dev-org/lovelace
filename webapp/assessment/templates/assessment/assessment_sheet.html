@@ -36,6 +36,12 @@
         {% endblocktrans %}
     </h1>
 
+    <div class="paragraph">
+        {% blocktrans with lang_pref=student.userprofile.language_preference %}
+            Student's preferred communication language: {{ lang_pref }}
+        {% endblocktrans %}
+    </div>
+
     <form class="assessment-form"
           method="POST"
           enctype="multipart/form-data"

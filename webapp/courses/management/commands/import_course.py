@@ -31,6 +31,11 @@ class Command(BaseCommand):
         group, created = Group.objects.get_or_create(name=options["group"])
 
         with ZipFile(options["zipfile"]) as zf:
-            import_from_zip(zf, superuser, responsible, group)
+            _, errors = import_from_zip(zf, superuser, responsible, group)
+
+        if errors:
+            print("The following errors where encountered:")
+            for error in errors:
+                print(error)
 
 

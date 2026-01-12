@@ -11,7 +11,7 @@ class AceWidgetConfigurationForm(forms.ModelForm):
 
     class Meta:
         model = ace.models.AceWidgetSettings
-        exclude = ["instance", "key_slug"]
+        exclude = ["name", "course", "slug"]
 
     def __init__(self, *args, **kwargs):
         self._accessible_files_qs = CourseMediaAdmin.media_access_list(kwargs.pop("request"), cm.File)
@@ -45,9 +45,10 @@ class AcePlusWidgetConfigurationForm(forms.ModelForm):
         model_inst = super().save(commit=False)
         preview_settings = self._preview_subform.save(commit=False)
         ace_settings = self._ace_subform.save(commit=False)
-        ace_settings.instance = model_inst.instance
-        ace_settings.key_slug = model_inst.key_slug
-        preview_settings.key_slug = model_inst.key_slug
+        ace_settings.course = model_inst.course
+        ace_settings.name = model_inst.name
+        preview_settings.name = model_inst.name
+        preview_settings.course = model_inst.course
         model_inst.ace_settings = ace_settings
         if commit:
             ace_settings.save()
@@ -82,13 +83,15 @@ class AcePlusWidgetConfigurationForm(forms.ModelForm):
 
 class AcePlusEditForm(LineEditMixin, EmbeddedObjectEditForm):
 
+    model_key_field = "slug"
+
     _name = "ace-plus"
     _markup = ace.markup.AcePlusMarkup
     has_inline = True
 
     class Meta:
         model = ace.models.AcePlusWidgetSettings
-        fields = ["key_slug", "layout", "preview_widget", "ws_address"]
+        fields = ["layout", "preview_widget", "ws_address"]
         ref_field = "key_slug"
         markup = ace.markup.AcePlusMarkup
 
@@ -98,31 +101,38 @@ class AcePlusEditForm(LineEditMixin, EmbeddedObjectEditForm):
         return [self._ace_subform]
 
     def save(self, commit=True):
+        print(self.cleaned_data)
         model_inst = super().save(commit=False)
-        model_inst.instance = self._context["instance"]
+        model_inst.course = self._context["instance"].course
         preview_settings = self._preview_subform.save(commit=False)
         ace_settings = self._ace_subform.save(commit=False)
-        ace_settings.instance = model_inst.instance
-        ace_settings.key_slug = model_inst.key_slug
-        preview_settings.key_slug = model_inst.key_slug
+        ace_settings.course = model_inst.course
+        ace_settings.name = model_inst.name
+        preview_settings.course = model_inst.course
+        preview_settings.name = model_inst.name
         model_inst.ace_settings = ace_settings
         if commit:
             ace_settings.save()
             model_inst.save()
             preview_settings.save()
+        self._saved_inst = model_inst
         return model_inst
+
+    def generate_new_markup(self):
+        self.cleaned_data["slug"] = self._saved_inst.slug
+        return self._markup.markup_from_dict(self.cleaned_data).split("\n")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, requires=False, **kwargs)
-        instance = kwargs.get("instance")
+        instance = self._instance
         request = self._context["request"]
         course_inst = self._context["instance"]
         self.fields["preview_widget"] = forms.ChoiceField(
             widget = forms.Select(attrs={
                 "onchange": "formtools.fetch_rows(event, this)",
                 "data-change-url": reverse("ace:preview_subform", kwargs={
-                    "instance": course_inst,
-                    "key": "-default-",
+                    "course": course_inst.course,
+                    "slug": "-default-",
                 }),
             }),
             choices = (
@@ -133,19 +143,24 @@ class AcePlusEditForm(LineEditMixin, EmbeddedObjectEditForm):
             initial=instance and instance.preview_widget,
         )
         self._ace_subform = AnswerWidgetRegistry.get_widget(
-            "ace", course_inst, ""
+            "ace", course_inst.course, instance.slug if instance else ""
         ).get_configuration_form(
             request,
             data=request.POST if self.is_bound else None,
             prefix="ace"
         )
-        if instance and instance.preview_widget:
+        if request.POST:
+            if "key_slug" in request.POST:
+                slug = request.POST["key_slug"]
+            else:
+                slug = f"{course_inst.course.prefix}-{request.POST["name"]}"
             preview_widget = PreviewWidgetRegistry.get_widget(
-                instance.preview_widget, course_inst, instance.key_slug
+                request.POST["preview_widget"], course_inst.course,
+                slug
             )
-        elif request.POST:
+        elif instance and instance.preview_widget:
             preview_widget = PreviewWidgetRegistry.get_widget(
-                request.POST["preview_widget"], course_inst, request.POST["key_slug"]
+                instance.preview_widget, course_inst.course, instance.slug
             )
         else:
             preview_widget = None

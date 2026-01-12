@@ -13,6 +13,7 @@ from html import escape
 from django.conf import settings
 from django.core import serializers
 from django.core.files.base import ContentFile
+from django.core.validators import URLValidator
 from django.db import models, transaction
 from django.db.models import F, Q, Max, JSONField
 from django.contrib.auth.models import User, Group
@@ -55,7 +56,6 @@ from utils.management import (
     freeze_context_link,
     get_prefixed_slug,
 )
-
 
 class RollbackRevert(Exception):
     pass
@@ -395,6 +395,12 @@ class CourseInstance(models.Model):
         verbose_name="Automatic welcome message for accepted enrollments", blank=True
     )
     max_group_size = models.PositiveSmallIntegerField(null=True, blank=True)
+    ws_server = models.CharField(
+        verbose_name="WebSocket server address.",
+        max_length=255,
+        blank=True, null=True,
+        validators=[URLValidator(schemes=["ws", "wss", "http", "https"])]
+    )
 
     def natural_key(self):
         return [self.slug]
@@ -434,6 +440,9 @@ class CourseInstance(models.Model):
                 instance.save()
                 if was_primary:
                     instance.clear_content_tree_cache(regen_frozen=True)
+                    nodes = ContentGraph.objects.filter(instance=instance)
+                    for node in nodes:
+                        node.content.regenerate_cache(instance)
             self.clear_content_tree_cache(regen_frozen=True)
 
 
@@ -632,7 +641,7 @@ class CourseInstance(models.Model):
             media_link.media.export(self, export_target)
             CourseMedia.objects.get_subclass(id=media_link.media.id).export(self, export_target)
 
-        for module in lovelace_plugins["export"]:
+        for module in lovelace_plugins.get("export", []):
             module.models.export_models(self, export_target)
 
 
@@ -745,6 +754,10 @@ class ContentGraph(models.Model):
     def natural_key(self):
         return (self.instance.slug, self.content.slug)
 
+    def delete(self, *args, **kwargs):
+        EmbeddedLink.objects.filter(parent=self.content, instance=self.instance).delete()
+        super().delete(*args, **kwargs)
+
     def get_revision_str(self):
         if self.revision is None:
             return "newest"
@@ -817,12 +830,13 @@ class CourseMedia(models.Model, ExportImportMixin):
     def natural_key(self):
         return (self.slug, )
 
-    def save(self, *args, **kwargs):
+    def save(self, *args, regen_cache=True, **kwargs):
         self.slug = get_prefixed_slug(self, self.origin, "name", translated=False)
         super().save(*args, **kwargs)
-        for link in self.coursemedialink_set.get_queryset():
-            if not link.instance.frozen:
-                link.parent.regenerate_cache(link.instance)
+        if regen_cache:
+            for link in self.coursemedialink_set.get_queryset():
+                if not link.instance.frozen:
+                    link.parent.regenerate_cache(link.instance)
 
 
 class MediaLinkManager(models.Manager):
@@ -851,7 +865,7 @@ class CourseMediaLink(models.Model, ExportImportMixin):
     )
 
     def natural_key(self):
-        return [self.parent.slug, self.media.slug, self.instance.slug]
+        return [self.parent and self.parent.slug, self.media.slug, self.instance.slug]
 
     class Meta:
         unique_together = ("instance", "media", "parent")
@@ -872,6 +886,9 @@ class File(CourseMedia):
     fileinfo = models.FileField(max_length=255, upload_to=get_file_upload_path)  # Translate
     download_as = models.CharField(
         verbose_name="Default name for the download dialog", max_length=200, null=True, blank=True
+    )
+    lexer = models.CharField(
+        verbose_name="Set lexer manually to", max_length=64, null=True, blank=True
     )
 
     def __str__(self):
@@ -1016,6 +1033,12 @@ class Term(models.Model, ExportImportMixin):
 
 
 class TermAlias(models.Model):
+    class Meta:
+        unique_together = (
+            "term",
+            "name"
+        )
+
     term = models.ForeignKey(Term, null=True, on_delete=models.CASCADE)
     name = models.CharField(verbose_name="Term", max_length=200)  # Translate
 
@@ -1043,6 +1066,12 @@ class TermTag(models.Model):
 
 
 class TermTab(models.Model):
+    class Meta:
+        unique_together = (
+            "term",
+            "title"
+        )
+
     term = models.ForeignKey(Term, on_delete=models.CASCADE)
     title = models.CharField(verbose_name="Title of this tab", max_length=100)  # Translate
     description = models.TextField()  # Translate
@@ -1055,6 +1084,12 @@ class TermTab(models.Model):
 
 
 class TermLink(models.Model):
+    class Meta:
+        unique_together = (
+            "term",
+            "url"
+        )
+
     term = models.ForeignKey(Term, on_delete=models.CASCADE)
     url = models.CharField(verbose_name="URL", max_length=300)  # Translate
     link_text = models.CharField(verbose_name="Link text", max_length=80)  # Translate
@@ -1092,6 +1127,9 @@ class Calendar(models.Model, ExportImportMixin):
     )
     origin = models.ForeignKey(Course, verbose_name="Course", null=True, on_delete=models.SET_NULL)
     slug = models.SlugField(max_length=255, allow_unicode=True, blank=False)
+    heading_level = models.PositiveSmallIntegerField(
+        verbose_name=_("Date heading level"),
+    )
 
     def natural_key(self):
         return [self.name]
@@ -1159,7 +1197,42 @@ class CalendarReservation(models.Model):
 # |
 # V
 
+class EmbeddedLinkQueryset(models.query.QuerySet):
+    """
+    Queryset with an overridden delete.
+    """
+
+    def delete(self):
+        """
+        When embedded pages are being unlinked from a course, there's a need to check
+        if that was the last reference to the page in that course instance. In case it was,
+        all things that are referencing the task itself become orphans and need to be cleaned up.
+
+        This delete method will delete all orphaned media links, as well as any other links
+        that have been registered as task references.
+        """
+
+        for model_inst in self:
+            peers = EmbeddedLink.objects.filter(
+                embedded_page=model_inst.embedded_page, instance=model_inst.instance
+            ).exclude(id=model_inst.id)
+            if not peers:
+                CourseMediaLink.objects.filter(
+                    parent=model_inst.embedded_page, instance=model_inst.instance
+                ).delete()
+                for module in lovelace_plugins.get("task_reference"):
+                    module.models.delete_orphan_references(
+                        model_inst.embedded_page,
+                        model_inst.instance
+                    )
+
+        super().delete()
+
+
 class EmbeddedLinkManager(models.Manager):
+
+    def get_queryset(self):
+        return EmbeddedLinkQueryset(self.model, using=self._db)
 
     def get_by_natural_key(self, instance_slug, parent_slug, content_slug):
         return self.get(
@@ -1182,6 +1255,9 @@ class EmbeddedLink(models.Model, ExportImportMixin):
 
     class Meta:
         ordering = ["ordinal_number"]
+
+    def delete(self, *args, **kwargs):
+        super().delete(*args, **kwargs)
 
     def natural_key(self):
         return (self.instance.slug, self.parent.slug, self.embedded_page.slug)
@@ -1456,14 +1532,21 @@ class ContentPage(models.Model, ExportImportMixin):
         question = blockparser.parseblock(escape(self.question, quote=False), context)
         return question
 
-    def get_answer_widget(self, instance):
+    def get_answer_widget(self, course):
         if not self.answer_widget:
             handle = self.default_answer_widget
         else:
             handle = self.answer_widget
 
-        widget = widgets.AnswerWidgetRegistry.get_widget(handle, instance, self.slug)
+        widget_slug = f"{course.prefix}-{self.slug.removeprefix(course.prefix + "-")}"
+        widget = widgets.AnswerWidgetRegistry.get_widget(
+            handle, course, widget_slug
+        )
         return widget
+
+    def export_answer_widget(self, instance, export_target):
+        answer_widget = self.get_answer_widget(instance.course)
+        answer_widget.export(instance, export_target)
 
     def count_pages(self, instance):
         """
@@ -1493,6 +1576,7 @@ class ContentPage(models.Model, ExportImportMixin):
         media_links = set()
 
         page_links_per_lang = {}
+        all_links = defaultdict(set)
 
         parser = markupparser.LinkParser()
         for lang_code, _ in settings.LANGUAGES:
@@ -1502,10 +1586,13 @@ class ContentPage(models.Model, ExportImportMixin):
                 version = Version.objects.get_for_object(self).get(revision_id=revision).field_dict
                 content = version[f"content_{lang_code}"]
 
-            lang_page_links, lang_media_links = parser.parse(content, instance)
-            page_links = page_links.union(lang_page_links)
-            media_links = media_links.union(lang_media_links)
+            links = parser.parse(content, instance)
+            for category, link_list in links.items():
+                all_links[category].update(link_list)
+
+            lang_page_links = links["page"]
             page_links_per_lang[lang_code] = lang_page_links
+
 
         old_page_links = list(
             EmbeddedLink.objects.filter(instance=instance, parent=self).values_list(
@@ -1514,20 +1601,20 @@ class ContentPage(models.Model, ExportImportMixin):
         )
         old_media_links = list(
             CourseMediaLink.objects.filter(instance=instance, parent=self).values_list(
-                "media__name", flat=True
+                "media__slug", flat=True
             )
         )
 
-        removed_page_links = set(old_page_links).difference(page_links)
-        removed_media_links = set(old_media_links).difference(media_links)
-        added_page_links = set(page_links).difference(old_page_links)
-        added_media_links = set(media_links).difference(old_media_links)
+        removed_page_links = set(old_page_links).difference(all_links["page"])
+        removed_media_links = set(old_media_links).difference(all_links["media"])
+        added_page_links = all_links["page"].difference(old_page_links)
+        added_media_links = all_links["media"].difference(old_media_links)
 
         EmbeddedLink.objects.filter(
             embedded_page__slug__in=removed_page_links, instance=instance, parent=self
         ).delete()
         CourseMediaLink.objects.filter(
-            media__name__in=removed_media_links, instance=instance, parent=self
+            media__slug__in=removed_media_links, instance=instance, parent=self
         ).delete()
 
         # set ordinal to zero at first, updated per language later
@@ -1544,11 +1631,14 @@ class ContentPage(models.Model, ExportImportMixin):
         for link_slug in added_media_links:
             link_obj = CourseMediaLink(
                 parent=self,
-                media=CourseMedia.objects.get(name=link_slug),
+                media=CourseMedia.objects.get(slug=link_slug),
                 instance=instance,
                 revision=None,
             )
             link_obj.save()
+
+        for module in lovelace_plugins.get("context_links", []):
+            module.models.update_context_links(self, instance, all_links, revision)
 
         for lang_code, _ in settings.LANGUAGES:
             for i, link_slug in enumerate(page_links_per_lang[lang_code]):
@@ -1656,6 +1746,7 @@ class ContentPage(models.Model, ExportImportMixin):
 
         evaluation_object = Evaluation(
             correct=correct,
+            completed=not evaluation.get("manual", False),
             points=points,
             max_points=evaluation.get("max", self.default_points),
             evaluator=evaluation.get("evaluator"),
@@ -1670,11 +1761,9 @@ class ContentPage(models.Model, ExportImportMixin):
 
         update_completion(self, instance, user, evaluation, answer_object.answer_date)
         if self.group_submission:
+            type_object = self.get_type_object()
             for member in get_group_members(user, instance):
-                answer_object.pk = None
-                answer_object.useranswer_ptr = None
-                answer_object.user = member
-                answer_object.save()
+                type_object.copy_answer(answer_object, member)
                 update_completion(self, instance, member, evaluation, answer_object.answer_date)
 
         return evaluation_object
@@ -1692,6 +1781,7 @@ class ContentPage(models.Model, ExportImportMixin):
 
         instance = answer_object.instance
         answer_object.evaluation.correct = evaluation["evaluation"]
+        answer_object.evaluation.completed = complete
         answer_object.evaluation.points = evaluation["points"]
         answer_object.evaluation.max_points = evaluation.get("max", self.default_points)
         answer_object.evaluation.feedback = evaluation.get("feedback", "")
@@ -1746,7 +1836,7 @@ class ContentPage(models.Model, ExportImportMixin):
         best_answer = (
             self.get_user_answers(self, user, instance)
             .filter(evaluation__correct=True)
-            .order_by("-evaluation__points")
+            .order_by("-evaluation__points", "answer_date")
             .first()
         )
         if not best_answer:
@@ -1755,9 +1845,15 @@ class ContentPage(models.Model, ExportImportMixin):
         evaluation = {
             "evaluation": True,
             "points": best_answer.evaluation.points,
-            "max": self.default_points,
+            "max": best_answer.evaluation.max_points,
         }
         update_completion(self, instance, user, evaluation, best_answer.answer_date)
+
+    def copy_answer(self, answer_object, copy_owner):
+        answer_object.pk = None
+        answer_object.useranswer_ptr = None
+        answer_object.user = copy_owner
+        answer_object.save()
 
     # Abstract methods that proxy model classes need to implement.
     # v
@@ -2053,6 +2149,7 @@ class MultipleChoiceExercise(ContentPage):
 
     def export(self, instance, export_target):
         super(ContentPage, self).export(instance, export_target)
+        self.export_answer_widget(instance, export_target)
         export_json(
             serialize_many_python(self.get_choices(self)),
             f"{self.slug}_choices",
@@ -2162,6 +2259,7 @@ class CheckboxExercise(ContentPage):
 
     def export(self, instance, export_target):
         super(ContentPage, self).export(instance, export_target)
+        self.export_answer_widget(instance, export_target)
         export_json(
             serialize_many_python(self.get_choices(self)),
             f"{self.slug}_choices",
@@ -2300,6 +2398,7 @@ class TextfieldExercise(ContentPage):
 
     def export(self, instance, export_target):
         super(ContentPage, self).export(instance, export_target)
+        self.export_answer_widget(instance, export_target)
         export_json(
             serialize_many_python(self.get_choices(self)),
             f"{self.slug}_choices",
@@ -2328,7 +2427,6 @@ class FileUploadExercise(ContentPage):
         super().save(*args, **kwargs)
         # create the extra settings model instance if one doesn't exist yet
         if not hasattr(self, "fileexercisesettings"):
-            print("Creating settings")
             extra_settings = FileExerciseSettings(exercise=self)
             extra_settings.save()
 
@@ -2381,6 +2479,15 @@ class FileUploadExercise(ContentPage):
             raise InvalidExerciseAnswerException("No file was sent!")
         return answer_object
 
+    def copy_answer(self, answer_object, copy_owner):
+        attached_files = list(FileUploadExerciseReturnFile.objects.filter(answer=answer_object))
+        super().copy_answer(answer_object, copy_owner)
+        answer_object.refresh_from_db()
+        for file_ref in attached_files:
+            file_ref.pk = None
+            file_ref.answer = answer_object
+            file_ref.save()
+
     def get_choices(self, revision=None):
         return
 
@@ -2401,6 +2508,10 @@ class FileUploadExercise(ContentPage):
             revision = None
 
         if self.fileexercisetest_set.get_queryset():
+            celery_status = rpc_tasks.get_celery_worker_status()
+            if "errors" in celery_status:
+                return {"task_id": None, "errors": celery_status["errors"]}
+
             filelist = files.getlist("file")
             if not filelist and self.fileexercisesettings.answer_filename:
                 filelist.append(ContentFile(
@@ -2427,6 +2538,7 @@ class FileUploadExercise(ContentPage):
 
     def export(self, instance, export_target):
         super(ContentPage, self).export(instance, export_target)
+        self.export_answer_widget(instance, export_target)
         export_json(
             serialize_single_python(self.fileexercisesettings),
             f"{self.slug}_settings",
@@ -2739,7 +2851,6 @@ class FileExerciseSettings(models.Model):
     )
     answer_filename = models.CharField(
         max_length=32,
-        null=True,
         blank=True,
         verbose_name=_("Filename to use for the answer"),
         help_text=_(
@@ -2981,17 +3092,19 @@ class WidgetSettingsManager(models.Manager):
 
 class TextfieldWidgetSettings(models.Model, ExportImportMixin):
 
-    class Meta:
-        unique_together = ("key_slug", "instance")
-
-    key_slug = models.SlugField(max_length=255, blank=True)
-    instance = models.ForeignKey(CourseInstance, on_delete=models.CASCADE)
+    name = models.CharField(max_length=255)
+    slug = models.SlugField(max_length=255, unique=True)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
     rows = models.PositiveSmallIntegerField(default=3)
 
-    objects = WidgetSettingsManager()
+    objects = SlugManager()
+
+    def save(self, *args, **kwargs):
+        self.slug = get_prefixed_slug(self, self.course, "name", translated=False)
+        super().save(*args, **kwargs)
 
     def natural_key(self):
-        return self.instance.natural_key() + [self.key_slug]
+        return [self.slug]
 
 
 # ^
@@ -3452,6 +3565,9 @@ class Evaluation(models.Model):
     """Evaluation of a student's answer to an exercise."""
 
     correct = models.BooleanField(default=False)
+
+    # Default to True because manual/delayed evaluation is the exception
+    completed = models.BooleanField(default=True)
     suspect = models.BooleanField(default=False)
     points = models.DecimalField(default=0, max_digits=5, decimal_places=2)
 
@@ -3756,6 +3872,7 @@ class UserTaskCompletion(models.Model):
             ("incorrect", "The task has not been answered correctly"),
             ("credited", "The task has been credited by completing another task"),
             ("submitted", "An answer has been submitted, awaiting assessment"),
+            ("rebsubmitted", "A new answer answer has been submitted"),
             ("ongoing", "The task has been started"),
         ),
     )

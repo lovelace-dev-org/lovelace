@@ -1,7 +1,7 @@
 from collections import defaultdict
 import os.path
-import re
 import pygments
+import re
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
@@ -81,7 +81,7 @@ def place_into_content(content, form):
         content.replace_lines(
             form.cleaned_data["line_idx"],
             "",
-            delete_count=form.cleaned_data["line_count"]
+            delete_count=form.cleaned_data["line_count"] + 1
         )
     else:
         placement = form.cleaned_data["placement"]
@@ -177,6 +177,11 @@ class LineDeleteForm(LineEditMixin, forms.Form):
 
 class EmbeddedObjectEditForm(TranslationStaffForm):
 
+    # Workaround hack because we still haven't updated
+    # markup references to be slugs, overriding this
+    # allows new features to already use slug.
+    model_key_field = "slug"
+
     class Meta:
         model = None
         fields = []
@@ -191,11 +196,13 @@ class EmbeddedObjectEditForm(TranslationStaffForm):
 
     def save(self, commit=True):
         instance = super().save(commit=False)
-        instance.name = self.cleaned_data[self.Meta.ref_field]
+        if name := self.cleaned_data.get("name"):
+            instance.name = name
+            # self.cleaned_data[self.Meta.ref_field] = name
         if commit:
-            instance = super().save(commit=False)
-            instance.origin = self._context["course"]
+            instance.origin = instance.origin or self._context["course"]
             instance.save()
+            self.cleaned_data[self.Meta.ref_field] = instance.slug
             return self.save_m2m()
         return instance
 
@@ -212,18 +219,21 @@ class EmbeddedObjectEditForm(TranslationStaffForm):
         if not new:
             line = lines[0]
             self._settings.update(parse_line(line, self._markup, self._context))
-            instance = self.Meta.model.objects.get(name=self._settings[self.Meta.ref_field])
+            instance = self.Meta.model.objects.get(
+                **{self.model_key_field: self._settings[self.Meta.ref_field]}
+            )
             kwargs["instance"] = instance
         super().__init__(*args, **kwargs)
         if new:
-            self.fields[self.Meta.ref_field] = forms.CharField(
+            self.fields["name"] = forms.CharField(
                 label=_("Name for new object"),
                 required=True
             )
         else:
             self.fields[self.Meta.ref_field] = forms.CharField(
                 initial=self._settings[self.Meta.ref_field],
-                widget=forms.TextInput(attrs={"readonly": "readonly"})
+                required=False,
+                widget=forms.TextInput(attrs={"disabled": "disabled"})
             )
 
 
@@ -281,10 +291,31 @@ class CodeEditForm(LineEditMixin, MarkupEditForm):
 
     _name = "code"
     _markup = courses.markup.CodeMarkup
-    highlight = forms.CharField(required=False)
+
+    def get_initial_for_field(self, field, field_name):
+        if field_name == "highlight":
+            highlight = self._settings.get("highlight")
+            if highlight:
+                highlight = pygments.lexers.get_lexer_by_name(highlight).name
+            return highlight
+        else:
+            return super().get_initial_for_field(field, field_name)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["highlight"] = forms.ChoiceField(
+            widget=forms.Select,
+            label=_("Code highlight"),
+            choices=(
+                [("", _("----NO--HIGHLIGHT----"))] +
+                [
+                    (aliases[0], name) if aliases else (name, name)
+                    for name, aliases, __, __ in pygments.lexers.get_all_lexers()
+                ]
+            ),
+            required=False,
+        )
+
         self.fields["content"] = forms.CharField(
             widget=forms.Textarea(attrs={"class": "generic-textfield", "rows": 5}),
             label=_("Code block content"),
@@ -409,7 +440,7 @@ class ScriptFileInline(TranslationStaffForm):
     class Meta:
         model = cm.File
         fields = ["fileinfo", "name"]
-        ref_field = "name"
+        ref_field = "slug"
 
     name = forms.CharField(
         required=False,
@@ -440,10 +471,12 @@ class ScriptFileInline(TranslationStaffForm):
 
     def save(self, commit=True):
         if self._save_ok:
-            if not self.cleaned_data["existing"]:
+            if not self.cleaned_data["existing"] or not self._new:
+                fileinfo_changed = self.field_changed("fileinfo")
                 instance = super().save(commit=False)
-                instance.origin = self._context["course"]
-                instance.save()
+                instance.origin = instance.origin or self._context["course"]
+                instance.save(regen_cache=fileinfo_changed)
+                self.cleaned_data[self.Meta.ref_field] = instance.slug
 
         return None
 
@@ -460,7 +493,8 @@ class ScriptFileInline(TranslationStaffForm):
         self.prefix = kwargs["prefix"]
         accessible_files = kwargs.pop("accessible_files")
         slug, itype, where = self._parse_include(kwargs.pop("include", ""))
-        instance = cm.File.objects.filter(name=slug).first()
+        instance = cm.File.objects.filter(slug=slug).first()
+        self._instance = instance
         kwargs["instance"] = instance
         super().__init__(*args, requires=False, **kwargs)
         self.fields["existing"] = forms.ChoiceField(
@@ -468,7 +502,7 @@ class ScriptFileInline(TranslationStaffForm):
             label=_("Choose existing include"),
             choices=[("", _("----NOT--SELECTED----"))] + accessible_files,
             required=False,
-            initial=instance and instance.name,
+            initial=instance and instance.slug,
         )
         self.fields["type"] = forms.ChoiceField(
             widget=forms.Select,
@@ -493,6 +527,9 @@ class ScriptFileInline(TranslationStaffForm):
             self.fields["existing"].disabled = True
             self.fields["type"].disabled = True
             self.fields["where"].disabled = True
+            self._new = False
+        else:
+            self._new = True
 
 
 class ScriptEditForm(LineEditMixin, EmbeddedObjectEditForm):
@@ -530,7 +567,7 @@ class ScriptEditForm(LineEditMixin, EmbeddedObjectEditForm):
         default_lang = settings.MODELTRANSLATION_DEFAULT_LANGUAGE
         cleaned_data = super().clean()
         if not cleaned_data["existing"]:
-            if not cleaned_data[f"fileinfo_{default_lang}"] or not cleaned_data[self.Meta.ref_field]:
+            if not cleaned_data[f"fileinfo_{default_lang}"] or not cleaned_data["name"]:
                 raise ValidationError(_(
                     "Existing file must be chosen, or both fileinfo and "
                     "name must be filled to create a new file"
@@ -541,13 +578,20 @@ class ScriptEditForm(LineEditMixin, EmbeddedObjectEditForm):
             self.cleaned_data["script_slug"] = self.cleaned_data["existing"]
         else:
             instance = super().save(commit=False)
-            instance.origin = self._context["course"]
+            instance.origin = instance.origin or self._context["course"]
             instance.save()
         for inline in self._include_formset:
             inline.save(commit)
+            self.cleaned_data[inline.prefix + "-" + inline.Meta.ref_field] = (
+                inline.cleaned_data.get(inline.Meta.ref_field)
+            )
 
     @property
     def reference_changed(self):
+        # This is technically lazy and causes unnecessary cache regens.
+        # However script editing occurs rarely enough that it's not worth
+        # making better atm.
+
         return True
 
     def get_inline_formset(self):
@@ -564,20 +608,22 @@ class ScriptEditForm(LineEditMixin, EmbeddedObjectEditForm):
         )
 
     def get_choices(self):
-        return  [(f.name, f.name)
+        return  [(f.slug, f.name)
             for f in CourseMediaAdmin.media_access_list(
                 self._context["request"], cm.File
             )
         ]
 
     def __init__(self, *args, **kwargs):
+        new = kwargs["new"]
         super().__init__(*args, requires=False, **kwargs)
         self.fields["script_width"] = forms.IntegerField(label=_("iframe width"), required=True)
         self.fields["script_height"] = forms.IntegerField(label=_("iframe height"), required=True)
         self.fields["border"] = forms.CharField(label=_("Border CSS"), required=False)
+        if new:
+            self.fields["name"].required = False
         included_files_str = self._settings.get("include", "")
         included_files = included_files_str.split(",") if included_files_str else []
-        self.fields[self.Meta.ref_field].required = False
         self.fields["include_files-TOTAL_FORMS"] = forms.IntegerField(
             widget=forms.HiddenInput,
             initial=len(included_files)
@@ -599,6 +645,7 @@ class ScriptEditForm(LineEditMixin, EmbeddedObjectEditForm):
             widget=forms.Select,
             label=_("Choose existing script"),
             choices=[("", _("----NOT--SELECTED----"))] + self._accessible_files,
+            initial=self._settings.get("script_slug", ""),
             required=False,
         )
         self._include_formset = [
@@ -652,7 +699,7 @@ class ImageIncludeForm(LineEditMixin, EmbeddedObjectIncludeForm):
         markup = courses.markup.ImageMarkup
 
     def get_choices(self):
-        return sorted(((image.name, image.name)
+        return sorted(((image.slug, image.name)
             for image in CourseMediaAdmin.media_access_list(
                 self._context["request"], cm.Image
             )
@@ -665,13 +712,25 @@ class FileEditForm(LineEditMixin, EmbeddedObjectEditForm):
 
     class Meta:
         model = cm.File
-        fields = ["typeinfo", "fileinfo", "download_as"]
+        fields = ["typeinfo", "fileinfo", "download_as", "lexer"]
         ref_field = "file_slug"
         markup = courses.markup.EmbeddedFileMarkup
 
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["lexer"] = forms.ChoiceField(
+            widget=forms.Select,
+            label=_("Code highlight"),
+            choices=(
+                [("", _("----NO--HIGHLIGHT----"))] +
+                [
+                    (aliases[0], name) if aliases else (name, name)
+                    for name, aliases, __, __ in pygments.lexers.get_all_lexers()
+                ]
+            ),
+            required=False,
+        )
         self.fields["link_only"] = forms.BooleanField(label=_("No content preview"), required=False)
 
 
@@ -684,7 +743,7 @@ class FileIncludeForm(LineEditMixin, EmbeddedObjectIncludeForm):
         markup = courses.markup.EmbeddedFileMarkup
 
     def get_choices(self):
-        return sorted(((f.name, f.name)
+        return sorted(((f.slug, f.name)
             for f in CourseMediaAdmin.media_access_list(
                 self._context["request"], cm.File
             )
@@ -716,7 +775,7 @@ class VideoIncludeForm(LineEditMixin, EmbeddedObjectIncludeForm):
         markup = courses.markup.EmbeddedVideoMarkup
 
     def get_choices(self):
-        return sorted(((video.name, video.name)
+        return sorted(((video.slug, video.name)
             for video in CourseMediaAdmin.media_access_list(
                 self._context["request"], cm.VideoLink
             )
@@ -785,8 +844,9 @@ class CalendarCreateForm(LineEditMixin, forms.ModelForm):
 
     def save(self, commit=True):
         instance = super().save(commit=False)
+        instance.origin = self._context["course"]
         instance.save()
-        self.cleaned_data["calendar_name"] = instance.name
+        self.cleaned_data["calendar_slug"] = instance.slug
 
     @property
     def reference_changed(self):

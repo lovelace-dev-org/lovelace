@@ -3,7 +3,9 @@ import json
 import logging
 from django.template import loader
 from django.urls import reverse
+
 from courses import markupparser
+import courses.tasks as rpc_tasks
 from utils.archive import get_single_archived, get_archived_instances
 from utils.files import get_file_contents_b64
 import courses.models as cm
@@ -19,6 +21,7 @@ LINT_W = 12  # 12
 LINT_E = 13  # 13
 
 logger = logging.getLogger(__name__)
+
 
 # NOTE: the amount of reverts caused by this is disgusting.
 def file_upload_payload(exercise, student_files, instance, revision=None):
@@ -327,6 +330,10 @@ def update_completion(exercise, instance, user, evaluation, answer_date, overwri
         if correct:
             if quotient > completion.points or overwrite:
                 completion.points = quotient
+
+        if evaluation.get("manual", False):
+            completion.state = "resubmitted"
+
         completion.save()
 
     eval_group = get_single_archived(exercise, link.revision).evaluation_group

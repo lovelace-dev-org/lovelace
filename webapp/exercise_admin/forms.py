@@ -306,10 +306,16 @@ class CreateFileUploadExerciseForm(forms.Form):
         self.fields["exercise_answer_widget"] = forms.ChoiceField(
             widget = forms.Select(),
             choices = (
-                [(None, "--USE-DEFAULT--")] +
+                [("", "--USE-DEFAULT--")] +
                 [(widget, widget) for widget in AnswerWidgetRegistry.list_widgets()]
             ),
             required=False
+        )
+        self.fields["exercise_origin"] = forms.ChoiceField(
+            widget = forms.Select(),
+            choices = (
+                [(course.slug, course.name) for course in cm.Course.objects.all()]
+            )
         )
 
         # Other dynamic fields
@@ -503,22 +509,22 @@ class CreateFileUploadExerciseForm(forms.Form):
         messages = []
 
         parser = markupparser.LinkParser()
-        page_links, media_links = parser.parse(value)
-        for link in page_links:
+        links = parser.parse(value)
+        for link in links["page"]:
             if not cm.ContentPage.objects.filter(slug=link):
                 missing_pages.append(link)
                 messages.append(f"Content matching {link} does not exist")
 
-        for link in media_links:
+        for link in links["media"]:
             if not cm.CourseMedia.objects.filter(name=link):
                 missing_media.append(link)
                 messages.append(f"Media matching {link} does not exist")
 
         term_re = blockparser.BlockParser.tags["term"].regexp
-        term_links = {match.group("term_name") for match in term_re.finditer(value)}
+        term_links = {match.group("term_slug") for match in term_re.finditer(value)}
 
         for link in term_links:
-            if not cm.Term.objects.filter(**{"name_" + lang: link}):
+            if not cm.Term.objects.filter(slug=link):
                 missing_terms.append(link)
                 messages.append(f"Term matching {link} does not exist")
 

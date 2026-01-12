@@ -18,6 +18,8 @@ from django.utils.translation import gettext as _
 from lovelace.celery import app as celery_app
 
 from courses import markupparser
+import courses.models as cm
+import courses.tasks as rpc_tasks
 
 from routine_exercise.models import (
     RoutineExercise,
@@ -31,6 +33,7 @@ import routine_exercise.tasks as routine_tasks
 
 from utils.access import ensure_enrolled_or_staff, determine_access
 from utils.archive import find_version_with_filename, get_archived_instances, get_single_archived
+from utils.content import download_exercise_backend
 from utils.exercise import render_json_feedback, update_completion
 from utils.files import generate_download_response, get_file_contents_b64
 from utils.notify import send_error_report
@@ -182,6 +185,16 @@ def get_routine_question(request, course, instance, content, revision):
     ).first()
 
     if question is None:
+        celery_status = rpc_tasks.get_celery_worker_status()
+        if "errors" in celery_status:
+            return JsonResponse(
+                {
+                    "error": _(
+                        "Question retrieval failed. Contact teaching staff (reason: {e})"
+                    ).format(e=celery_status["errors"])
+                }
+            )
+
         payload = _routine_payload(request.user, instance, content, revision, progress)
         task = routine_tasks.generate_question.delay(payload)
         progress_url = reverse(
@@ -344,6 +357,12 @@ def check_routine_question(request, course, instance, content, revision):
     )
     payload = _routine_payload(request.user, instance, content, revision, progress, answer)
 
+    celery_status = rpc_tasks.get_celery_worker_status()
+    if "errors" in celery_status:
+        return HttpResponse(
+            _("Cannot connect to backend."), status=400
+        )
+
     task = routine_tasks.check_answer.delay(payload)
 
     answer.task_id = task.task_id
@@ -358,37 +377,6 @@ def check_routine_question(request, course, instance, content, revision):
 
 
 def download_routine_exercise_backend(request, exercise_id, field_name, filename):
-    try:
-        exercise_object = RoutineExercise.objects.get(id=exercise_id)
-    except CourseInstance.DoesNotExist as e:
-        return HttpResponseNotFound(_("This exercise does't exist"))
-
-    if not determine_access(request.user, exercise_object):
-        return HttpResponseForbidden(
-            _(
-                "Only course main responsible teachers are allowed "
-                "to download files through this interface."
-            )
-        )
-
-    fileobjects = RoutineExerciseBackendFile.objects.filter(exercise=exercise_object)
-    try:
-        for fileobject in fileobjects:
-            if filename == os.path.basename(getattr(fileobject, field_name).name):
-                fs_path = os.path.join(
-                    settings.PRIVATE_STORAGE_FS_PATH, getattr(fileobject, field_name).name
-                )
-                break
-
-            # Archived file was requested
-            version = find_version_with_filename(fileobject, field_name, filename)
-            if version:
-                filename = version.field_dict[field_name].name
-                fs_path = os.path.join(settings.PRIVATE_STORAGE_FS_PATH, filename)
-                break
-        else:
-            return HttpResponseNotFound(_("Requested file does not exist."))
-    except AttributeError as e:
-        return HttpResponseNotFound(_("Requested file does not exist."))
-
-    return generate_download_response(fs_path)
+    return download_exercise_backend(
+        request, exercise_id, field_name, filename, RoutineExerciseBackendFile
+    )

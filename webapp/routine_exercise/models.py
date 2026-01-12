@@ -110,6 +110,7 @@ class RoutineExercise(ContentPage):
 
     def export(self, instance, export_target):
         super(ContentPage, self).export(instance, export_target)
+        self.export_answer_widget(instance, export_target)
         export_json(
             serialize_single_python(self.routineexercisebackendcommand),
             f"{self.slug}_command",
@@ -131,6 +132,7 @@ class RoutineBackendManager(models.Manager):
 
 class RoutineExerciseBackendFile(models.Model, ExportImportMixin):
     class Meta:
+        unique_together = ("exercise", "filename")
         verbose_name = "routine exercise backend file"
         verbose_name_plural = "routine exercise backend files"
 
@@ -176,6 +178,7 @@ class RoutineTemplateManager(models.Manager):
 
 class RoutineExerciseTemplate(models.Model):
     class Meta:
+        unique_together = ("exercise", "variant", "question_class")
         verbose_name = "routine exercise template"
         verbose_name_plural = "routine exercise templates"
 

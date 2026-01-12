@@ -20,6 +20,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
 ]
+TIME_ZONE = "Europe/Helsinki"
 
 ASGI_APPLICATION = "lovelace.asgi.application"
 ROOT_URLCONF = "lovelace.channel_urls"
@@ -58,4 +59,6 @@ if os.getenv("LOVELACE_CACHE_USE_SSL"):
     )
 
 WS_TIMEOUT = int(os.getenv("LOVELACE_WS_TIMEOUT", 30))
-
+WS_CHILD_MEMORY_LIMIT_HARD = os.getenv("LOVELACE_WS_MEMORY_LIMIT_HARD", "100m")
+WS_CHILD_MEMORY_LIMIT_SOFT = os.getenv("LOVELACE_WS_MEMORY_LIMIT_SOFT", "50m")
+WS_CHILD_CPU_LIMIT = os.getenv("LOVELACE_WS_CPU_LIMIT", "0.5")

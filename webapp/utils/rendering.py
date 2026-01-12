@@ -98,7 +98,7 @@ def render_terms(request, instance, context):
         terms.sort(key=sort_by_name)
         parser = markupparser.MarkupParser()
         for term in terms:
-            slug = slugify(term.name, allow_unicode=True)
+            slug = slugify(term.slug, allow_unicode=True)
             description = "".join(
                 block[1] for block in parser.parse(
                     term.description, request, term_context

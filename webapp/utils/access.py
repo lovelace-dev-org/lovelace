@@ -101,6 +101,19 @@ def is_course_staff(user, instance, responsible_only=False):
     return False
 
 
+def accessible_courses(user):
+    courses = cm.Course.objects.all()
+    if user.is_superuser:
+        return courses
+
+    if user.is_staff:
+        return courses.filter(
+            Q(main_responsible=user)
+            | Q(staff_group__user=user)
+        )
+
+    return cm.Course.objects.none()
+
 
 # ^
 # |
@@ -109,6 +122,19 @@ def is_course_staff(user, instance, responsible_only=False):
 # |
 # v
 
+def ensure_logged_in(function):
+    """
+    Decorator to limit a view to logged in users. Returns HttpResponseForbidden
+    if the user has not been authenticated.
+    """
+
+    @wraps(function)
+    def wrap(request, *args, **kwargs):
+        if request.user.is_authenticated:
+            return function(request, *args, **kwargs)
+        return HttpResponseForbidden(_("This view is limited to logged in users."))
+
+    return wrap
 
 def ensure_admin(function):
     """

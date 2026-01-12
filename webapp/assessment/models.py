@@ -9,14 +9,28 @@ from utils.data import (
 from utils.management import get_prefixed_slug
 
 
+class AssessmentToExerciseLinkManager(models.Manager):
+
+    def get_by_natural_key(self, exercise_slug, instance_slug):
+        return self.get(
+            exercise__slug=exercise_slug,
+            instance__slug=instance_slug,
+        )
+
+
 class AssessmentToExerciseLink(models.Model):
+    class Meta:
+        unique_together = ("instance", "exercise")
+
+    objects = AssessmentToExerciseLinkManager()
+
     instance = models.ForeignKey("courses.CourseInstance", on_delete=models.CASCADE)
     exercise = models.ForeignKey("courses.ContentPage", on_delete=models.CASCADE)
     sheet = models.ForeignKey("AssessmentSheet", on_delete=models.CASCADE)
     revision = models.PositiveIntegerField(blank=True, null=True)
 
     def natural_key(self):
-        return self.sheet.natural_key() + [self.exercise.slug]
+        return [self.exercise.slug,  self.instance.slug]
 
     def freeze(self, freeze_to):
         try:
@@ -89,6 +103,9 @@ class AssessmentSectionManager(models.Manager):
 
 
 class AssessmentSection(models.Model):
+    class Meta:
+        unique_together = ("sheet", "ordinal_number")
+
     objects = AssessmentSectionManager()
 
     sheet = models.ForeignKey("AssessmentSheet", on_delete=models.CASCADE)
@@ -123,6 +140,9 @@ class AssessmentBulletManager(models.Manager):
 
 
 class AssessmentBullet(models.Model):
+    class Meta:
+        unique_together = ("sheet", "section", "ordinal_number")
+
     sheet = models.ForeignKey("AssessmentSheet", on_delete=models.CASCADE)
     point_value = models.FloatField(blank=False, null=False)
     ordinal_number = models.PositiveSmallIntegerField()
@@ -152,3 +172,8 @@ def get_import_list():
         AssessmentBullet,
         AssessmentToExerciseLink,
     ]
+
+def delete_orphan_references(task, instance):
+    AssessmentToExerciseLink.objects.filter(
+        exercise=task, instance=instance
+    ).delete()

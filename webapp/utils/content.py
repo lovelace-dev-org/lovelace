@@ -12,8 +12,10 @@ from django.utils import translation
 from reversion.models import Version, Revision
 from courses import markupparser
 import courses.models as cm
-from utils.access import is_course_staff
+from utils.access import is_course_staff, determine_access
+from utils.archive import find_version_with_filename
 from utils.exercise import best_result
+from utils.files import find_fs_path, generate_download_response
 from utils.notify import get_notifications
 
 def first_title_from_content(content_text):
@@ -160,7 +162,7 @@ def get_parent_context(exercise, instance):
     )
 
 
-def get_embedded_media_file(name, instance, parent):
+def get_embedded_media_file(slug, instance, parent):
     """
     Gets an embedded media file within a given instance context. Will return
     either the current version, or the revision specified in the media link.
@@ -169,9 +171,9 @@ def get_embedded_media_file(name, instance, parent):
     """
 
     try:
-        link = cm.CourseMediaLink.objects.get(media__name=name, instance=instance, parent=parent)
+        link = cm.CourseMediaLink.objects.get(media__slug=slug, instance=instance, parent=parent)
     except (KeyError, cm.CourseMediaLink.DoesNotExist) as e:
-        file_object = cm.File.objects.get(name=name)
+        file_object = cm.File.objects.get(slug=slug)
     else:
         if link.revision is None:
             file_object = link.media.file
@@ -183,11 +185,11 @@ def get_embedded_media_file(name, instance, parent):
 
             # is there a better way to get parent attributes
             # from the version object?
-            file_object.name = revision_object.field_dict["name"]
+            file_object.slug = revision_object.field_dict["slug"]
     return file_object
 
 
-def get_embedded_media_image(name, instance, parent):
+def get_embedded_media_image(slug, instance, parent):
     """
     Gets an embedded media image within a given instance context. Will return
     either the current version, or the revision specified in the media link.
@@ -196,13 +198,14 @@ def get_embedded_media_image(name, instance, parent):
     """
 
     try:
-        link = cm.CourseMediaLink.objects.get(media__name=name, instance=instance, parent=parent)
+        link = cm.CourseMediaLink.objects.get(media__slug=slug, instance=instance, parent=parent)
     except (KeyError, cm.CourseMediaLink.DoesNotExist) as e:
-        image_object = cm.Image.objects.get(name=name)
+        image_object = cm.Image.objects.get(slug=slug)
     else:
         if link.revision is None:
             image_object = link.media.image
         else:
+            print(link.media.image)
             revision_object = Version.objects.get_for_object(link.media.image).get(
                 revision=link.revision
             )
@@ -210,7 +213,7 @@ def get_embedded_media_image(name, instance, parent):
 
             # is there a better way to get parent attributes
             # from the version object?
-            image_object.name = revision_object.field_dict["name"]
+            image_object.slug = revision_object.field_dict["slug"]
     return image_object
 
 
@@ -366,4 +369,31 @@ def course_tree(tree, node, user, instance_obj, enrolled=False, staff=False):
             course_tree(tree, child, user, instance_obj, enrolled, staff)
         tree.append({"content": mark_safe("<")})
 
+
+def download_exercise_backend(request, exercise_id, field_name, filename, backend_model):
+    try:
+        exercise_object = cm.ContentPage.objects.get(id=exercise_id)
+    except cm.ContentPage.DoesNotExist as e:
+        return HttpResponseNotFound(_("This exercise does't exist"))
+
+    if not determine_access(request.user, exercise_object):
+        return HttpResponseForbidden(
+            _(
+                "Only course main responsible teachers are allowed "
+                "to download files through this interface."
+            )
+        )
+
+    fileobjects = backend_model.objects.filter(exercise=exercise_object)
+    for fileobject in fileobjects:
+        try:
+            fs_path = find_fs_path(filename, fileobject, field_name)
+        except FileNotFoundError as e:
+            pass
+        else:
+            break
+    else:
+        return HttpResponseNotFound(_("Requested file does not exist."))
+
+    return generate_download_response(fs_path)
 

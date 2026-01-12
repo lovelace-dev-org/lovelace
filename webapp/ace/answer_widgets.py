@@ -1,3 +1,4 @@
+import urllib
 from django.template import loader
 from django.urls import reverse
 from courses.widgets import AnswerWidget, AnswerWidgetRegistry, PreviewWidgetRegistry
@@ -17,9 +18,11 @@ class AceAnswerWidget(AnswerWidget):
         context["ace_mode"] = settings.language_mode
         context["ace_extra"] = settings.extra_settings or {}
         context["ace_layout"] = "vertical"
-        context["widget_slug"] = settings.key_slug
+        context["widget_slug"] = settings.slug
         if settings.base_file:
             context["ace_initial_content"] = get_file_contents(settings.base_file).decode("utf-8")
+        else:
+            context["ace_initial_content"] = ""
 
     def render(self, context):
         t = loader.get_template(self.template)
@@ -35,15 +38,19 @@ class AceAnswerWidget(AnswerWidget):
     def get_settings(self):
         try:
             settings = ace.models.AceWidgetSettings.objects.get(
-                instance=self.instance,
-                key_slug=self.key
+                slug=self.slug
             )
         except ace.models.AceWidgetSettings.DoesNotExist:
             settings = ace.models.AceWidgetSettings(
-                instance=self.instance,
-                key_slug=self.key
+                name=self.slug.removeprefix(self.course.prefix + "-"),
+                course=self.course,
             )
         return settings
+
+    def export(self, instance, export_target):
+        settings = self.get_settings()
+        if settings.pk is not None:
+            settings.export(instance, export_target)
 
 
 class AcePlusAnswerWidget(AnswerWidget):
@@ -52,15 +59,15 @@ class AcePlusAnswerWidget(AnswerWidget):
     template = "ace/widgets/ace-answer-widget.html"
     configurable = True
 
-    def __init__(self, instance, content):
-        super().__init__(instance, content)
+    def __init__(self, course, key):
+        super().__init__(course, key)
         self.settings = self.get_settings()
         self.ace_widget = AnswerWidgetRegistry.get_widget(
-            "ace", self.instance, self.key
+            "ace", self.course, self.slug
         )
         if self.settings.preview_widget:
             self.preview_widget = PreviewWidgetRegistry.get_widget(
-                self.settings.preview_widget, self.instance, self.key
+                self.settings.preview_widget, self.course, self.slug
             )
         else:
             self.preview_widget = None
@@ -71,9 +78,14 @@ class AcePlusAnswerWidget(AnswerWidget):
         if self.preview_widget:
             context["ace_preview_widget"] = self.preview_widget.render(context)
             context["ace_preview_cb"] = self.preview_widget.receive_callback
-            context["ace_preview_ws"] = self.settings.ws_address
+            context["ace_preview_ws"] = urllib.parse.urljoin(
+                context["instance"].ws_server,
+                urllib.parse.urlsplit(self.settings.ws_address).path
+            )
         context["ace_layout"] = self.settings.layout
+        context["widget_slug"] = self.slug
         t = loader.get_template(self.template)
+
         return t.render(context)
 
     def get_configuration_form(self, request, data=None, prefix=None):
@@ -82,7 +94,7 @@ class AcePlusAnswerWidget(AnswerWidget):
             preview_form = self.preview_widget.get_configuration_form(request, data, prefix="extra")
         elif data:
             preview_widget = PreviewWidgetRegistry.get_widget(
-                data["preview_widget"], self.instance, self.key
+                data["preview_widget"], self.course, self.slug
             )
             preview_form = preview_widget.get_configuration_form(request, data, prefix="extra")
         else:
@@ -91,8 +103,7 @@ class AcePlusAnswerWidget(AnswerWidget):
         return ace.forms.AcePlusWidgetConfigurationForm(
             data, instance=self.settings,
             widget_change_url=reverse("ace:preview_subform", kwargs={
-                "instance": self.instance,
-                "key": self.key,
+                "slug": self.slug, "course": self.course
             }),
             prefix=prefix,
             ace_form=ace_form,
@@ -102,15 +113,22 @@ class AcePlusAnswerWidget(AnswerWidget):
     def get_settings(self):
         try:
             settings = ace.models.AcePlusWidgetSettings.objects.get(
-                instance=self.instance,
-                key_slug=self.key
+                slug=self.slug
             )
         except ace.models.AcePlusWidgetSettings.DoesNotExist:
             settings = ace.models.AcePlusWidgetSettings(
-                instance=self.instance,
-                key_slug=self.key
+                name=self.slug.removeprefix(self.course.prefix + "-"),
+                course=self.course,
             )
         return settings
+
+    def export(self, instance, export_target):
+        settings = self.get_settings()
+        if settings.pk is not None:
+            settings.export(instance, export_target)
+        self.ace_widget.export(instance, export_target)
+        if self.preview_widget:
+            self.preview_widget.export(instance, export_target)
 
 
 def register_answer_widgets():

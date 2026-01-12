@@ -9,14 +9,14 @@ class XtermWidgetAdmin(VersionAdmin):
 
     content_type = "XTERM"
     save_on_top = True
-    list_display = ["key_slug", "instance"]
+    list_display = ["slug", "course"]
 
 
 class TurtleWidgetAdmin(VersionAdmin):
 
     content_type = "TURTLE"
     save_on_top = True
-    list_display = ["key_slug", "instance"]
+    list_display = ["slug", "course"]
 
 admin.site.register(XtermWidgetSettings, XtermWidgetAdmin)
 admin.site.register(TurtleWidgetSettings, TurtleWidgetAdmin)

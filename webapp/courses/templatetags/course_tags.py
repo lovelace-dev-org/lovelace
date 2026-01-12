@@ -143,8 +143,13 @@ def embed_frame_preview(content_data):
 
 @register.inclusion_tag("courses/calendar.html", takes_context=True)
 def calendar(context, calendar_data):
+    if calendar_data["calendar"] is None:
+        return {
+            "calendar": None
+        }
+
     calendar = (
-        Calendar.objects.filter(name=calendar_data["calendar"])
+        Calendar.objects.filter(slug=calendar_data["calendar"])
         .prefetch_related("calendardate_set", "calendardate_set__calendarreservation_set")
         .first()
     )

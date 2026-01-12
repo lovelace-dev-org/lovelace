@@ -13,7 +13,13 @@ from pygments.formatters import HtmlFormatter
 
 from reversion.models import Version
 
-from courses.markupparser import MarkupParser, LinkParser, Markup
+from courses.markupparser import (
+    MarkupParser,
+    LinkParser,
+    Markup,
+    EmbeddedObjectNotAllowedError,
+    EmbeddedObjectNotFoundError,
+)
 from courses import blockparser
 import courses.models as cm
 from utils.archive import get_single_archived
@@ -49,7 +55,7 @@ class ParagraphMarkup(Markup):
         pass
 
     @classmethod
-    def build_links(cls, block, matchobj, instance, page_links, media_links):
+    def build_links(cls, block, matchobj, instance, links):
         """
         Finds inline links to media files. Necessary to ensure that all linked
         files are provided with a context link.
@@ -58,7 +64,7 @@ class ParagraphMarkup(Markup):
         for line in block:
             for tag in blockparser.BlockParser.tags["anchor"].regexp.findall(line):
                 if tag[0].startswith("file:"):
-                    media_links.append(tag[0].split("file:")[1])
+                    links["media"].append(tag[0].split("file:")[1])
 
     @classmethod
     def markup_from_dict(cls, form_data):
@@ -89,7 +95,7 @@ class CalendarMarkup(Markup):
     name = "Calendar"
     shortname = "calendar"
     description = "A calendar for time reservations."
-    regexp = re.compile(r"^\<\!calendar\=(?P<calendar_name>[^\s>]+)\>\s*$")
+    regexp = re.compile(r"^\<\!calendar\=(?P<calendar_slug>[^\s>]+)\>\s*$")
     markup_class = "embedded item"
     example = "<!calendar=course-project-demo-calendar>"
     inline = False
@@ -99,19 +105,19 @@ class CalendarMarkup(Markup):
 
     @classmethod
     def block(cls, block, settings, state):
-        if not cm.Calendar.objects.filter(name=settings["calendar_name"]).exists():
-            new_calendar = cm.Calendar(name=settings["calendar_name"])
-            new_calendar.save()
-        yield ("calendar", {"calendar": settings["calendar_name"]})
+        if not cm.Calendar.objects.filter(slug=settings["calendar_slug"]).exists():
+            yield ("calendar", {"calendar": None})
+        else:
+            yield ("calendar", {"calendar": settings["calendar_slug"]})
 
     @classmethod
     def settings(cls, matchobj, state):
-        settings = {"calendar_name": matchobj.group("calendar_name")}
+        settings = {"calendar_slug": matchobj.group("calendar_slug")}
         return settings
 
     @classmethod
     def markup_from_dict(cls, form_data):
-        return f"<!calendar={form_data['calendar_name']}>"
+        return f"<!calendar={form_data['calendar_slug']}>"
 
 
 class CodeMarkup(Markup):
@@ -140,7 +146,7 @@ class CodeMarkup(Markup):
     @classmethod
     def block(cls, block, settings, state):
         highlight = settings["highlight"]
-        yield "<div><pre class='normal'>"
+        yield "<div><pre class='block-code normal'>"
         text = ""
         if highlight:
             try:
@@ -222,11 +228,14 @@ class EmbeddedFileMarkup(Markup):
                 yield f"<div>Unable to decode file {settings['file_slug']} with utf-8.</div>"
                 return
 
-            try:
-                lexer = guess_lexer_for_filename(file_path, file_contents)
-            except pygments.util.ClassNotFound:
-                yield f"<div>Unable to find lexer for file {settings['file_slug']}.</div>"
-                return
+            if not file_object.lexer:
+                try:
+                    lexer = guess_lexer_for_filename(file_path, file_contents)
+                except pygments.util.ClassNotFound:
+                    yield f"<div>Unable to find lexer for file {settings['file_slug']}.</div>"
+                    return
+            else:
+                lexer = get_lexer_by_name(file_object.lexer)
 
             highlighted = pygments.highlight(file_contents, lexer, HtmlFormatter(nowrap=True))
 
@@ -258,9 +267,9 @@ class EmbeddedFileMarkup(Markup):
         return settings
 
     @classmethod
-    def build_links(cls, block, matchobj, instance, page_links, media_links):
+    def build_links(cls, block, matchobj, instance, links):
         slug = matchobj.group("file_slug")
-        media_links.append(slug)
+        links["media"].append(slug)
 
 
     @classmethod
@@ -336,7 +345,7 @@ class EmbeddedPageMarkup(Markup):
             }
             embedded_content = page.get_rendered_content(page, c)
             question = page.get_question(page, c)
-            answer_widget = page.get_answer_widget(instance)
+            answer_widget = page.get_answer_widget(instance.course)
             rendered_form = answer_widget.render(c)
 
             settings["content"] = embedded_content
@@ -416,9 +425,9 @@ class EmbeddedPageMarkup(Markup):
         return settings
 
     @classmethod
-    def build_links(cls, block, matchobj, instance, page_links, media_links):
+    def build_links(cls, block, matchobj, instance, links):
         slug = matchobj.group("page_slug")
-        page_links.append(slug)
+        links["page"].append(slug)
 
     @classmethod
     def markup_from_dict(cls, form_data):
@@ -570,12 +579,12 @@ class EmbeddedScriptMarkup(Markup):
         return settings
 
     @classmethod
-    def build_links(cls, block, matchobj, instance, page_links, media_links):
+    def build_links(cls, block, matchobj, instance, links):
         slugs = [matchobj.group("script_slug")] + [
             m.split("=")[1] for m in matchobj.group("include").split(",")
         ]
         for slug in slugs:
-            media_links.append(slug)
+            links["media"].append(slug)
 
     @classmethod
     def markup_from_dict(cls, form_data):
@@ -592,7 +601,7 @@ class EmbeddedScriptMarkup(Markup):
                     where=form_data[f"include_files-{i}-where"],
                     itype=form_data[f"include_files-{i}-type"],
                     slug=(
-                        form_data[f"include_files-{i}-name"]
+                        form_data[f"include_files-{i}-slug"]
                         or form_data[f"include_files-{i}-existing"]
                     ),
                 )
@@ -653,9 +662,9 @@ class EmbeddedVideoMarkup(Markup):
         return settings
 
     @classmethod
-    def build_links(cls, block, matchobj, instance, page_links, media_links):
+    def build_links(cls, block, matchobj, instance, links):
         slug = matchobj.group("video_slug")
-        media_links.append(slug)
+        links["media"].append(slug)
 
     @classmethod
     def markup_from_dict(cls, form_data):
@@ -817,9 +826,9 @@ class ImageMarkup(Markup):
         return settings
 
     @classmethod
-    def build_links(cls, block, matchobj, instance, page_links, media_links):
+    def build_links(cls, block, matchobj, instance, links):
         slug = matchobj.group("image_name")
-        media_links.append(slug)
+        links["media"].append(slug)
 
     @classmethod
     def markup_from_dict(cls, form_data):

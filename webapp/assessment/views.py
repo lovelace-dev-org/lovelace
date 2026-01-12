@@ -30,6 +30,7 @@ from assessment.utils import get_sectioned_sheet, serializable_assessment, copy_
 from utils.access import (
     ensure_owner_or_staff,
     ensure_staff,
+    is_course_staff,
 )
 from utils.content import get_embedded_parent
 from utils.formatters import display_name
@@ -324,6 +325,7 @@ def view_submissions(request, course, instance, content):
     )
     assessed = []
     unassessed = []
+    resubmitted = []
     suspect = []
     skip = []
     for completion in all_records:
@@ -360,7 +362,7 @@ def view_submissions(request, course, instance, content):
             "exercise": content,
         }
         entry["answers_url"] = reverse("courses:show_answers", kwargs=href_args)
-        if completion.state in ["correct", "incorrect"]:
+        if completion.state in ["correct", "incorrect", "resubmitted"]:
             try:
                 evaluated_answer = (
                     UserAnswer.get_task_answers(content, instance, completion.user)
@@ -379,6 +381,8 @@ def view_submissions(request, course, instance, content):
                 entry["total_points"] = evaluated_answer.evaluation.points
                 if evaluated_answer.evaluation.suspect:
                     suspect.append(entry)
+                elif completion.state == "resubmitted":
+                    resubmitted.append(entry)
                 else:
                     assessed.append(entry)
         else:
@@ -393,6 +397,7 @@ def view_submissions(request, course, instance, content):
 
     assessed.sort(key=itemgetter("group"))
     unassessed.sort(key=itemgetter("group"))
+    resubmitted.sort(key=itemgetter("group"))
     parent, single_linked = get_embedded_parent(content, instance)
 
     t = loader.get_template("assessment/submissions.html")
@@ -405,6 +410,7 @@ def view_submissions(request, course, instance, content):
         "single_linked": single_linked,
         "assessed": assessed,
         "unassessed": unassessed,
+        "resubmitted": resubmitted,
         "suspect": suspect,
     }
     return HttpResponse(t.render(c, request))
@@ -503,6 +509,9 @@ def view_assessment(request, user, course, instance, exercise, answer):
         return HttpResponseNotFound(_("This answer has not been evaluated"))
     except json.JSONDecodeError:
         return HttpResponseNotFound(_("Assessment not found"))
+
+    if not assessment.get("completed") and not is_course_staff(request.user, instance):
+        return HttpResponseNotFound(_("Assessment is not completed"))
 
     t = loader.get_template("assessment/assessment_view.html")
     c = {"document": assessment}

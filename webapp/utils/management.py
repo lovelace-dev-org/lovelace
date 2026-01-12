@@ -393,6 +393,14 @@ class TranslationStaffForm(ModelForm):
         fields.sort(key=meta_listing_index)
         return fields
 
+    def field_changed(self, field):
+        for lang_code, __ in settings.LANGUAGES:
+            # Unset fileinfo is empty string in the model
+            current = getattr(self._instance, f"{field}_{lang_code}") or None
+            if current != self.cleaned_data[f"{field}_{lang_code}"]:
+                return True
+        return False
+
     def __init__(self, *args, requires=True, **kwargs):
         super().__init__(*args, **kwargs)
         self._instance = kwargs.get("instance")

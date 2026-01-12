@@ -7,10 +7,30 @@ from django.core.files.storage import FileSystemStorage
 from django.conf import settings
 from django.http import HttpResponse
 
+from utils.archive import find_version_with_filename
+
 mod_pat = re.compile("[wrx]")
 
 PRIVATE_UPLOAD = getattr(settings, "PRIVATE_STORAGE_FS_PATH", settings.MEDIA_ROOT)
 upload_storage = FileSystemStorage(location=PRIVATE_UPLOAD)
+
+
+def find_fs_path(filename, fileobject, field_name):
+    try:
+        if filename == os.path.basename(getattr(fileobject, field_name).name):
+            fs_path = os.path.join(settings.MEDIA_ROOT, getattr(fileobject, field_name).name)
+        else:
+            # Archived file was requested
+            version = find_version_with_filename(fileobject, field_name, filename)
+            if version:
+                filename = version.field_dict[field_name].name
+                fs_path = os.path.join(settings.MEDIA_ROOT, filename)
+            else:
+                raise FileNotFoundError(_("Requested file does not exist."))
+    except AttributeError as e:
+        raise FileNotFoundError(_("Requested file does not exist.")) from e
+
+    return fs_path
 
 
 def generate_download_response(fs_path, dl_name=None):

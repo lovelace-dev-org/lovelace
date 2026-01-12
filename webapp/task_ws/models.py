@@ -1,6 +1,6 @@
 from django.db import models
 import courses.models as cm
-from utils.management import ExportImportMixin
+from utils.management import ExportImportMixin, get_prefixed_slug
 
 
 # Create your models here.
@@ -8,39 +8,43 @@ from utils.management import ExportImportMixin
 
 class XtermWidgetSettings(models.Model, ExportImportMixin):
 
-    class Meta:
-        unique_together = ("key_slug", "instance")
+    objects = cm.SlugManager()
 
-    objects = cm.WidgetSettingsManager()
-    key_slug = models.SlugField(max_length=255, blank=True)
-    instance = models.ForeignKey(cm.CourseInstance, on_delete=models.CASCADE)
+    name = models.CharField(max_length=255)
+    slug = models.SlugField(max_length=255, unique=True)
+    course = models.ForeignKey(cm.Course, on_delete=models.CASCADE)
 
     rows = models.PositiveSmallIntegerField(
         default=20,
         help_text="Number of rows in the terminal view (determines widget height)"
     )
 
+    def save(self, *args, **kwargs):
+        self.slug = get_prefixed_slug(self, self.course, "name", translated=False)
+        super().save(*args, **kwargs)
+
     def natural_key(self):
-        return self.instance.natural_key() + [self.key_slug]
+        return [self.slug]
 
 
 class TurtleWidgetSettings(models.Model, ExportImportMixin):
 
-    class Meta:
-        unique_together = ("key_slug", "instance")
+    objects = cm.SlugManager()
 
-    objects = cm.WidgetSettingsManager()
-    key_slug = models.SlugField(max_length=255, blank=True)
-    instance = models.ForeignKey(cm.CourseInstance, on_delete=models.CASCADE)
+    name = models.CharField(max_length=255)
+    slug = models.SlugField(max_length=255, unique=True)
+    course = models.ForeignKey(cm.Course, on_delete=models.CASCADE)
+
+    def save(self, *args, **kwargs):
+        self.slug = get_prefixed_slug(self, self.course, "name", translated=False)
+        super().save(*args, **kwargs)
 
     def natural_key(self):
-        return self.instance.natural_key() + [self.key_slug]
+        return [self.slug]
+
 
 def export_models(instance, export_target):
-    for model_inst in XtermWidgetSettings.objects.filter(instance=instance):
-        model_inst.export(instance, export_target)
-    for model_inst in TurtleWidgetSettings.objects.filter(instance=instance):
-        model_inst.export(instance, export_target)
+    pass
 
 def get_import_list():
     return [

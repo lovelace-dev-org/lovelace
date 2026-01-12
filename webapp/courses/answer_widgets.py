@@ -25,24 +25,28 @@ class TextfieldAnswerWidget(AnswerWidget):
         t = loader.get_template(self.template)
         settings = self.get_settings()
         context["widget_rows"] = settings.rows
-        context["widget_slug"] = settings.key_slug
+        context["widget_slug"] = settings.slug
         return t.render(context)
 
-    def get_configuration_form(self, data=None):
+    def get_configuration_form(self, request, data=None):
         return courses.forms.TextfieldWidgetConfigurationForm(data, instance=self.get_settings())
 
     def get_settings(self):
         try:
             settings = cm.TextfieldWidgetSettings.objects.get(
-                instance=self.instance,
-                key_slug=self.key
+                slug=self.slug
             )
         except cm.TextfieldWidgetSettings.DoesNotExist:
             settings = cm.TextfieldWidgetSettings(
-                instance=self.instance,
-                key_slug=self.key
+                name=self.slug.removeprefix(self.course.prefix + "-"),
+                course=self.course,
             )
         return settings
+
+    def export(self, instance, export_target):
+        settings = self.get_settings()
+        if settings.pk is not None:
+            settings.export(instance, export_target)
 
 
 class FileAnswerWidget(AnswerWidget):

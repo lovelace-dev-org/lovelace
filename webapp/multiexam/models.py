@@ -209,6 +209,7 @@ class MultipleQuestionExam(ContentPage):
         """
 
         super(ContentPage, self).export(instance, export_target)
+        self.export_answer_widget(instance, export_target)
         export_json(
             serialize_single_python(self.examquestionpool),
             f"{self.slug}_question_pool",

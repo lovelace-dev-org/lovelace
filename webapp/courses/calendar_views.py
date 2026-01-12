@@ -67,11 +67,12 @@ def adjust_slots(request, course, instance, event, action):
     if event.reservable_slots <= 0:
         event.delete()
         deleted = True
+        reservations = 0
     else:
         event.save()
         deleted = False
+        reservations = CalendarReservation.objects.filter(calendar_date=event).count()
 
-    reservations = CalendarReservation.objects.filter(calendar_date=event).count()
     return JsonResponse(
         {
             "status": "ok",
