@@ -17,4 +17,19 @@ class Migration(migrations.Migration):
                 blank=True, null=True, max_length=255, verbose_name='WebSocket server address.'
             ),
         ),
+        migrations.AlterField(
+            model_name='termlink',
+            name='url',
+            field=models.CharField(max_length=350, verbose_name='URL'),
+        ),
+        migrations.AlterField(
+            model_name='termlink',
+            name='url_en',
+            field=models.CharField(max_length=350, null=True, verbose_name='URL'),
+        ),
+        migrations.AlterField(
+            model_name='termlink',
+            name='url_fi',
+            field=models.CharField(max_length=350, null=True, verbose_name='URL'),
+        ),
     ]

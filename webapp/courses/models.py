@@ -1091,7 +1091,7 @@ class TermLink(models.Model):
         )
 
     term = models.ForeignKey(Term, on_delete=models.CASCADE)
-    url = models.CharField(verbose_name="URL", max_length=300)  # Translate
+    url = models.CharField(verbose_name="URL", max_length=350)  # Translate
     link_text = models.CharField(verbose_name="Link text", max_length=80)  # Translate
 
     def natural_key(self):

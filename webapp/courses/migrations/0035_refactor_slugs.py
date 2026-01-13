@@ -5,9 +5,10 @@ import re
 from django.conf import settings
 from django.core.paginator import Paginator
 from django.db import migrations
+from reversion.models import Version
 from utils.management import get_prefixed_slug
 
-def guess_origins(page):
+def guess_origins(apps, schema_editor):
     ContentGraph = apps.get_model("courses", "contentgraph")
     ContentPage = apps.get_model("courses", "contentpage")
     CourseMedia = apps.get_model("courses", "coursemedia")
@@ -15,6 +16,10 @@ def guess_origins(page):
     EmbeddedLink = apps.get_model("courses", "embeddedlink")
 
     for page in ContentPage.objects.all():
+        if not page.slug:
+            page.delete()
+            continue
+
         if page.origin:
             continue
 
@@ -30,9 +35,10 @@ def guess_origins(page):
     for media in CourseMedia.objects.all():
         if not media.origin:
             if links := CourseMediaLink.objects.filter(media=media).order_by("id"):
-                page.origin = links.first().instance.course
+                media.origin = links.first().instance.course
 
-        media.save(regen_cache=False)
+        media.slug = get_prefixed_slug(media, media.origin, "name", translated=False)
+        media.save()
 
 
 def refactor_slugs(apps, schema_editor):
@@ -40,7 +46,7 @@ def refactor_slugs(apps, schema_editor):
     ContentPage = apps.get_model("courses", "contentpage")
     Term = apps.get_model("courses", "term")
     TermLink = apps.get_model("courses", "termlink")
-    Version = apps.get_model("reversion", "version")
+    # Version = apps.get_model("reversion", "version")
 
     all_replaces = {}
     updated_slugs = []
@@ -52,6 +58,14 @@ def refactor_slugs(apps, schema_editor):
         new_ref = get_prefixed_slug(page, page.origin, "name")
         if old_ref == new_ref:
             continue
+
+        if ContentPage.objects.exclude(id=page.id).filter(slug=new_ref).count():
+            setattr(
+                page,
+                f"name_{settings.MODELTRANSLATION_DEFAULT_LANGUAGE}",
+                f"{page.name}-{str(page.id)}"
+            )
+            new_ref = get_prefixed_slug(page, page.origin, "name")
 
         page.slug = new_ref
         page.save()
@@ -68,7 +82,11 @@ def refactor_slugs(apps, schema_editor):
                 link = getattr(termlink, f"url_{lang_code}", "")
                 if link:
                     setattr(termlink, f"url_{lang_code}", link.replace(old_ref, new_ref))
-            termlink.save()
+            try:
+                termlink.save()
+            except Exception as e:
+                print(termlink.url_fi)
+                raise e
 
             for version in Version.objects.get_for_object(termlink):
                 data = json.loads(version.serialized_data)
