@@ -2,6 +2,7 @@
 import re
 
 from django.conf import settings
+from django.core.paginator import Paginator
 from django.db import migrations
 
 def refactor_ace(apps, schema_editor):
