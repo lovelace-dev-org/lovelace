@@ -236,6 +236,7 @@ class CheckboxExerciseAdmin(CourseContentAdmin, TranslationAdmin, VersionAdmin):
             {
                 "fields": [
                     "default_points",
+                    "correct_threshold",
                     "evaluation_group",
                     "delayed_evaluation",
                     "answer_limit",

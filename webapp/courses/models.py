@@ -2220,33 +2220,38 @@ class CheckboxExercise(ContentPage):
         answered = {choice.id: False for choice in choices}
         answered.update({int(i): True for i, _ in answer.items() if i.isdigit()})
 
-        correct = True
+        chosen_weight_sum = 0
+        total_weight_sum = 0
         hints = []
         comments = []
         chosen = []
         for choice in choices:
-            if answered[choice.id] and choice.correct and correct:
-                correct = True
-                chosen.append(choice)
-                if choice.comment:
-                    comments.append(choice.comment)
-            elif not answered[choice.id] and choice.correct:
-                correct = False
-                if choice.hint:
+            if choice.correct:
+                total_weight_sum += choice.weight
+                if answered[choice.id]:
+                    chosen_weight_sum += choice.weight
+                    chosen.append(choice)
+                    if choice.comment:
+                        comments.append(choice.comment)
+                elif choice.hint:
                     hints.append(choice.hint)
-            elif answered[choice.id] and not choice.correct:
-                correct = False
-                if choice.hint:
-                    hints.append(choice.hint)
-                if choice.comment:
-                    comments.append(choice.comment)
-                chosen.append(choice)
+            else:
+                if answered[choice.id]:
+                    chosen_weight_sum -= choice.weight
+                    if choice.hint:
+                        hints.append(choice.hint)
+                    if choice.comment:
+                        comments.append(choice.comment)
+                    chosen.append(choice)
+
+        quotient = max(chosen_weight_sum / total_weight_sum, 0)
+        correct = quotient >= self.correct_threshold
 
         return {
             "evaluation": correct,
             "hints": hints,
             "comments": comments,
-            "points": correct * self.default_points,
+            "points": quotient * self.default_points,
         }
 
     def get_user_answers(self, user, instance, ignore_drafts=True):
@@ -3431,6 +3436,7 @@ class CheckboxExerciseAnswer(models.Model):
     exercise = models.ForeignKey(CheckboxExercise, null=True, on_delete=models.SET_NULL)
     correct = models.BooleanField(default=False)
     ordinal = models.PositiveIntegerField()
+    weight = models.PositiveSmallIntegerField(default=1)
     answer = models.TextField()  # Translate
     hint = models.TextField(blank=True)  # Translate
     comment = models.TextField(
