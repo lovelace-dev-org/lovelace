@@ -1337,6 +1337,7 @@ class ContentPage(models.Model, ExportImportMixin):
         default=1,
         help_text="The default points a user can gain by finishing this exercise correctly",
     )
+    correct_threshold = models.DecimalField(default=1, max_digits=8, decimal_places=5)
     access_count = models.PositiveIntegerField(editable=False, default=0)
     tags = ArrayField(
         base_field=models.CharField(max_length=32, blank=True),
