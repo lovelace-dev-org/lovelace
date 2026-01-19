@@ -214,6 +214,31 @@ def refactor_slugs(apps, schema_editor):
                 version.save()
 
 
+def patch_media(queryset):
+    for media_obj in queryset:
+        for ver in Version.objects.get_for_object(media_obj):
+            if not ver.field_dict.get("slug"):
+                media_ver = (
+                    ver.revision.version_set.get_queryset().get(content_type__model="coursemedia")
+                )
+                data = json.loads(media_ver.serialized_data)
+                data[0]["fields"]["origin"] = media_obj.origin_id
+                data[0]["fields"]["slug"] = media_obj.slug
+                media_ver.serialized_data = json.dumps(data)
+                media_ver.save()
+
+
+def patch_archived_slugs(apps, schema_editor):
+    File = apps.get_model("courses", "file")
+    Image = apps.get_model("courses", "image")
+    VideoLink = apps.get_model("courses", "videolink")
+
+    patch_media(File.objects.all())
+    patch_media(Image.objects.all())
+    patch_media(VideoLink.objects.all())
+
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -223,4 +248,5 @@ class Migration(migrations.Migration):
     operations = [
         migrations.RunPython(guess_origins),
         migrations.RunPython(refactor_slugs),
+        migrations.RunPython(patch_archived_slugs),
     ]

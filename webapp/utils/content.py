@@ -181,11 +181,7 @@ def get_embedded_media_file(slug, instance, parent):
             revision_object = Version.objects.get_for_object(link.media.file).get(
                 revision=link.revision
             )
-            file_object = revision_object._object_version.object
-
-            # is there a better way to get parent attributes
-            # from the version object?
-            file_object.slug = revision_object.field_dict["slug"]
+            file_object = cm.File(**revision_object.field_dict)
     return file_object
 
 
@@ -209,11 +205,7 @@ def get_embedded_media_image(slug, instance, parent):
             revision_object = Version.objects.get_for_object(link.media.image).get(
                 revision=link.revision
             )
-            image_object = revision_object._object_version.object
-
-            # is there a better way to get parent attributes
-            # from the version object?
-            image_object.slug = revision_object.field_dict["slug"]
+            image_object = cm.Image(**revision_object.field_dict)
     return image_object
 
 

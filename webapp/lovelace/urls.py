@@ -34,7 +34,7 @@ register_model_converter(GroupInvitation, "invite")
 register_model_converter(
     ContentFeedbackQuestion, name="feedback", field="slug", base=Utf8SlugConverter
 )
-register_model_converter(File, name="file", field="name", base=Utf8SlugConverter)
+register_model_converter(File, name="file", field="slug", base=Utf8SlugConverter)
 register_model_converter(UserAnswer, name="answer")
 register_converter(RevisionConverter, "revision")
 register_converter(InstanceConverter, "instance")
