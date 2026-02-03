@@ -375,7 +375,7 @@ if os.getenv("LOVELACE_WS_CACHE_USE_SSL"):
         "ssl_keyfile": os.environ["LOVELACE_WS_CLIENT_KEY"],
     }
 else:
-    _CACHE_CONNECTION_POOL_KWARGS = {}
+    _WS_CACHE_CONNECTION_POOL_KWARGS = {}
 
 
 def plain_key(key, key_prefix, version):
