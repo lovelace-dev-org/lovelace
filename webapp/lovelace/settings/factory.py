@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.sites', # Required by allauth
     'django.contrib.messages',
+#    'django.contrib.postgres',
     'django.contrib.staticfiles',
     'allauth',
     'allauth.account',
