@@ -5,7 +5,6 @@ from django.template import loader
 from django.urls import reverse
 
 from courses import markupparser
-import courses.tasks as rpc_tasks
 from utils.archive import get_single_archived, get_archived_instances
 from utils.files import get_file_contents_b64
 import courses.models as cm
