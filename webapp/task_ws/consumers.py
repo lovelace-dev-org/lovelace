@@ -18,9 +18,9 @@ class WSBaseConsumer(AsyncWebsocketConsumer):
                 "operation": "unknown",
                 "status": "unauthorized"
             }
+            self.timeout_task = None
             await self.send(text_data=json.dumps(msg))
             await self.close(code=3000)
-            self.timeout_task = None
         else:
             self.timeout_task = asyncio.get_event_loop().create_task(self.timeout_connection())
 
@@ -40,6 +40,9 @@ class WSBaseConsumer(AsyncWebsocketConsumer):
             await run_utils.close_env(self.run_env)
 
     async def receive(self, text_data):
+        if self.timeout_task is None:
+            return
+
         self.timeout_task.cancel()
         data = json.loads(text_data)
         print("Received:", data)
