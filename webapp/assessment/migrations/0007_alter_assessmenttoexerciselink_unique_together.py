@@ -15,4 +15,12 @@ class Migration(migrations.Migration):
             name='assessmenttoexerciselink',
             unique_together={('instance', 'exercise')},
         ),
+        migrations.AlterUniqueTogether(
+            name='assessmentbullet',
+            unique_together={('sheet', 'section', 'ordinal_number')},
+        ),
+        migrations.AlterUniqueTogether(
+            name='assessmentsection',
+            unique_together={('sheet', 'ordinal_number')},
+        ),
     ]

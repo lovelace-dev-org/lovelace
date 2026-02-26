@@ -101,7 +101,6 @@ class AcePlusEditForm(LineEditMixin, EmbeddedObjectEditForm):
         return [self._ace_subform]
 
     def save(self, commit=True):
-        print(self.cleaned_data)
         model_inst = super().save(commit=False)
         model_inst.course = self._context["instance"].course
         preview_settings = self._preview_subform.save(commit=False)
@@ -149,7 +148,11 @@ class AcePlusEditForm(LineEditMixin, EmbeddedObjectEditForm):
             data=request.POST if self.is_bound else None,
             prefix="ace"
         )
-        if request.POST:
+        if instance and instance.preview_widget:
+            preview_widget = PreviewWidgetRegistry.get_widget(
+                instance.preview_widget, course_inst.course, instance.slug
+            )
+        elif request.POST:
             if "key_slug" in request.POST:
                 slug = request.POST["key_slug"]
             else:
@@ -157,10 +160,6 @@ class AcePlusEditForm(LineEditMixin, EmbeddedObjectEditForm):
             preview_widget = PreviewWidgetRegistry.get_widget(
                 request.POST["preview_widget"], course_inst.course,
                 slug
-            )
-        elif instance and instance.preview_widget:
-            preview_widget = PreviewWidgetRegistry.get_widget(
-                instance.preview_widget, course_inst.course, instance.slug
             )
         else:
             preview_widget = None

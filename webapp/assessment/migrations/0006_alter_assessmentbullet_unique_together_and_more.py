@@ -2,6 +2,20 @@
 
 from django.db import migrations
 
+def renumerate_sections(apps, schema_editor):
+    AssessmentSheet = apps.get_model("assessment", "assessmentsheet")
+    for sheet in AssessmentSheet.objects.all():
+        sections = sheet.assessmentsection_set.get_queryset()
+        needfix = False
+        for section in sections:
+            if sections.exclude(id=section.id).filter(ordinal_number=section.ordinal_number).exists():
+                needfix = True
+                break
+        if needfix:
+            for i, section in enumerate(sections.order_by("ordinal_number"), 1):
+                section.ordinal_number = i
+                section.save()
+
 
 class Migration(migrations.Migration):
 
@@ -10,12 +24,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AlterUniqueTogether(
-            name='assessmentbullet',
-            unique_together={('sheet', 'section', 'ordinal_number')},
-        ),
-        migrations.AlterUniqueTogether(
-            name='assessmentsection',
-            unique_together={('sheet', 'ordinal_number')},
-        ),
+        migrations.RunPython(renumerate_sections)
     ]

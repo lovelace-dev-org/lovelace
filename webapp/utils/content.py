@@ -201,7 +201,6 @@ def get_embedded_media_image(slug, instance, parent):
         if link.revision is None:
             image_object = link.media.image
         else:
-            print(link.media.image)
             revision_object = Version.objects.get_for_object(link.media.image).get(
                 revision=link.revision
             )
