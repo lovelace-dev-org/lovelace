@@ -2225,12 +2225,14 @@ class CheckboxExercise(ContentPage):
         hints = []
         comments = []
         chosen = []
+        correct_items = 0
         for choice in choices:
             if choice.correct:
                 total_weight_sum += choice.weight
                 if answered[choice.id]:
                     chosen_weight_sum += choice.weight
                     chosen.append(choice)
+                    correct_items += 1
                     if choice.comment:
                         comments.append(choice.comment)
                 elif choice.hint:
@@ -2243,6 +2245,8 @@ class CheckboxExercise(ContentPage):
                     if choice.comment:
                         comments.append(choice.comment)
                     chosen.append(choice)
+                else:
+                    correct_items += 1
 
         quotient = max(chosen_weight_sum / total_weight_sum, 0)
         correct = quotient >= self.correct_threshold
@@ -2252,6 +2256,8 @@ class CheckboxExercise(ContentPage):
             "hints": hints,
             "comments": comments,
             "points": quotient * self.default_points,
+            "correct_items": correct_items,
+            "total_items": len(choices)
         }
 
     def get_user_answers(self, user, instance, ignore_drafts=True):
