@@ -91,6 +91,8 @@ class ContentForm(forms.ModelForm):
             if not cm.ContentPage.objects.filter(slug=link):
                 missing_pages.append(link)
                 messages.append(f"Content matching {link} does not exist")
+            if cm.ContentPage.objects.get(slug=link).content_type == "LECTURE":
+                messages.append(f"Unable to embed {link} because it's a lecture")
 
         for link in links["media"]:
             if not cm.CourseMedia.objects.filter(slug=link):

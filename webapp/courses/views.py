@@ -156,22 +156,20 @@ def course(request, course, instance):
     context["instance"] = instance
 
     if is_course_staff(request.user, instance):
-        content_qs = ContentGraph.objects.filter(
-            instance=instance, ordinal_number__gt=0
-        )
         context["course_staff"] = True
     else:
-        content_qs = ContentGraph.objects.filter(
-            instance=instance, ordinal_number__gt=0, visible=True
-        )
         context["course_staff"] = False
 
     enroll_state = instance.user_enroll_status(request.user)
     enrolled = enroll_state in ["ACCEPTED", "COMPLETED"]
     context["enroll_state"] = enroll_state
 
-    context["content_tree"] = instance.get_content_tree(staff=context["course_staff"])
-    if request.user.is_authenticated:
+    context["content_tree"] = instance.get_content_tree(
+        staff=context["course_staff"],
+        guest=not enrolled
+    )
+
+    if enrolled:
         user_results = dict(
             (entry["exercise_id"], entry) for entry in
             UserTaskCompletion.objects.filter(user=request.user, instance=instance).values()
@@ -183,7 +181,6 @@ def course(request, course, instance):
     else:
         user_results = {}
         exemptions = {}
-
 
     context["student_results"] = user_results
     context["exemptions"] = exemptions

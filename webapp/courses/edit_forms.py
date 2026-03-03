@@ -716,6 +716,8 @@ class FileEditForm(LineEditMixin, EmbeddedObjectEditForm):
         ref_field = "file_slug"
         markup = courses.markup.EmbeddedFileMarkup
 
+    def save(self, commit=True):
+        return super().save(commit)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -839,7 +841,10 @@ class CalendarCreateForm(LineEditMixin, forms.ModelForm):
 
     class Meta:
         model = cm.Calendar
-        fields = ["name", "allow_multiple"]
+        fields = [
+            "name", "allow_multiple", "lock_period",
+            "lock_cancel", "heading_level"
+        ]
         markup = courses.markup.CalendarMarkup
 
     def save(self, commit=True):
@@ -852,12 +857,24 @@ class CalendarCreateForm(LineEditMixin, forms.ModelForm):
     def reference_changed(self):
         return True
 
+    def _get_content_choices(self):
+        return sorted(((page.slug, page.name)
+            for page in CourseContentAdmin.content_access_list(
+                self._context["request"], cm.ContentPage
+            ) if page.content_type != "LECTURE"
+        ))
+
     def __init__(self, *args, **kwargs):
         self._context = kwargs.pop("context")
         self._markup = self.Meta.markup
         kwargs.pop("lines")
         kwargs.pop("new")
         super().__init__(*args, **kwargs)
+        self.fields["related_content"] = forms.ChoiceField(
+            widget=forms.Select,
+            label=_("Related content"),
+            choices=[(None, _(" -- NO CONTENT -- "))] + self._get_content_choices()
+        )
 
 
 class BlockTypeSelectForm(forms.Form):
@@ -910,10 +927,10 @@ class BlockTypeSelectForm(forms.Form):
         self.fields["block_type"] = forms.ChoiceField(
             widget=forms.Select,
             label=_("Block type to add"),
-            choices=[
+            choices=sorted([
                 (markup, markup.replace("_", " ").capitalize())
                 for markup in markupparser.MarkupParser.editable_markups()
-            ],
+            ]),
             required=True
         )
 

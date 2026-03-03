@@ -446,7 +446,7 @@ class CourseInstance(models.Model):
             self.clear_content_tree_cache(regen_frozen=True)
 
 
-    def get_content_tree(self, lang_code=None, staff=False):
+    def get_content_tree(self, lang_code=None, staff=False, guest=False):
         current_lang = translation.get_language()
         if lang_code is not None:
             translation.activate(lang_code)
@@ -456,6 +456,8 @@ class CourseInstance(models.Model):
         cache_key = f"{self.slug}_tree_{lang_code}"
         if staff:
             cache_key += "_staff"
+        elif guest:
+            cache_key += "_guest"
 
         cached_tree = cache.get(cache_key)
         if cached_tree:
@@ -463,6 +465,10 @@ class CourseInstance(models.Model):
 
         if staff:
             nodes = ContentGraph.objects.filter(instance=self, ordinal_number__gt=0)
+        elif guest:
+            nodes = ContentGraph.objects.filter(
+                instance=self, ordinal_number__gt=0, visible=True, require_enroll=False
+            )
         else:
             nodes = ContentGraph.objects.filter(instance=self, ordinal_number__gt=0, visible=True)
 

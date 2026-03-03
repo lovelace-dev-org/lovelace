@@ -374,6 +374,13 @@ class TranslationStaffForm(ModelForm):
         return super().get_initial_for_field(field, field_name)
 
     def save(self, commit=True):
+        # TODO: After updating Django check if this still needed
+        #       seems like an unnecessary hack?
+        for field_name, field in self.fields.items():
+            if isinstance(field, forms.FileField):
+                if self.cleaned_data[field_name] is False:
+                    self.cleaned_data[field_name] = None
+
         instance = super().save(commit=False)
         for lang_field_name in self._translated_field_names:
             setattr(instance, lang_field_name, self.cleaned_data.get(lang_field_name, ""))
