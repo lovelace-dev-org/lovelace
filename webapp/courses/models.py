@@ -37,7 +37,7 @@ import magic
 from courses import blockparser
 from courses import markupparser
 from courses import widgets
-import feedback.models
+#import feedback.models
 from lovelace import plugins as lovelace_plugins
 from utils.data import (
     export_json, export_files, serialize_single_python, serialize_many_python
@@ -80,6 +80,8 @@ class About(models.Model):
 class UserProfile(models.Model):
     """User profile, which extends the Django's User model."""
 
+    user_data_models = []
+
     DATA_POLICY_CHOICES = (
         ("UNSELECTED", _("Not selected")),
         ("ANONYMIZE", _("Institution policy (anonymize)")),
@@ -121,6 +123,10 @@ class UserProfile(models.Model):
         verbose_name=_("Use dyslexic fonts (OpenDyslexic)."),
         default=False,
     )
+
+    @classmethod
+    def register_user_data_model(cls, model, fields):
+        cls.user_data_models.append((model, fields))
 
     def __str__(self):
         return f"{self.user}'s profile"
@@ -167,13 +173,31 @@ class StudentGroup(models.Model):
     members = models.ManyToManyField(User)
 
 
+
+
+class GroupInvitationManager(models.Manager):
+    """
+    Custom manager that allows querying for all invitations that belong to a course
+    instance.
+    """
+
+    def filter(self, *args, **kwargs):
+        if "instance" in kwargs:
+            kwargs["group__instance"] = kwargs["instance"]
+            kwargs.pop("instance")
+        return super().filter(*args, **kwargs)
+
+
 class GroupInvitation(models.Model):
     class Meta:
         unique_together = ("group", "user")
 
+    objects = GroupInvitationManager()
+
     group = models.ForeignKey("StudentGroup", on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sent_invitation")
+
 
 
 class SavedMessage(models.Model):
@@ -219,14 +243,36 @@ class SavedMessage(models.Model):
         return getattr(self, f"title_{lang_code}", "")
 
 
+
+class DeadlineExemptionManager(models.Manager):
+
+    """
+    Custom manager that allows querying for all exemptions that belong to a course
+    instance.
+    """
+
+    def filter(self, *args, **kwargs):
+        if "instance" in kwargs:
+            kwargs["contentgraph__instance"] = kwargs["instance"]
+            kwargs.pop("instance")
+        return super().filter(*args, **kwargs)
+
+
+
 class DeadlineExemption(models.Model):
 
     class Meta:
         unique_together = ("user", "contentgraph")
 
+    objects = DeadlineExemptionManager()
+
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     contentgraph = models.ForeignKey("ContentGraph", on_delete=models.CASCADE)
     new_deadline = models.DateTimeField(null=True)
+
+
+UserProfile.register_user_data_model(GroupInvitation, ["user", "sender"])
+UserProfile.register_user_data_model(DeadlineExemption, ["user"])
 
 
 # ^
@@ -351,6 +397,8 @@ class CourseEnrollment(models.Model):
         )
         return enrollments
 
+
+UserProfile.register_user_data_model(CourseEnrollment, ["student"])
 
 class CourseInstance(models.Model):
     """
@@ -1187,6 +1235,7 @@ class CalendarReservation(models.Model):
     calendar_date = models.ForeignKey(CalendarDate, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
 
+
 # ^
 # |
 # CALENDAR
@@ -1362,7 +1411,8 @@ class ContentPage(models.Model, ExportImportMixin):
         symmetrical=False,
         through_fields=("parent", "embedded_page", "instance"),
     )
-    feedback_questions = models.ManyToManyField(feedback.models.ContentFeedbackQuestion, blank=True)
+
+    feedback_questions = models.ManyToManyField("feedback.ContentFeedbackQuestion", blank=True)
 
     question = models.TextField(blank=True, default="")  # Translate
     answer_widget = models.CharField(max_length=32, blank=True, null=True)
@@ -3888,6 +3938,9 @@ class InvalidExerciseAnswerException(Exception):
     """
     This exception is cast when an exercise answer cannot be processed.
     """
+
+UserProfile.register_user_data_model(UserAnswer, ["user"])
+UserProfile.register_user_data_model(UserTaskCompletion, ["user"])
 
 
 ContentPage.register_content_type("LECTURE", Lecture)

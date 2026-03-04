@@ -2,6 +2,7 @@ from django.utils.text import slugify
 from django.db import models
 from django.contrib.auth.models import User
 import django.conf
+import courses.models as cm
 from utils.management import ExportImportMixin, get_prefixed_slug
 
 # from courses.models import ContentPage # prevent circular import
@@ -325,6 +326,9 @@ class DatabaseBackendException(Exception):
     """
     This exception is cast when the database backend does not support the attempted operation.
     """
+
+
+cm.UserProfile.register_user_data_model(ContentFeedbackUserAnswer, ["user"])
 
 def export_models(instance, export_target):
     for question in ContentFeedbackQuestion.objects.all():
