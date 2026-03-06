@@ -1702,6 +1702,15 @@ class ContentPage(models.Model, ExportImportMixin):
         adminized_type = self.content_type.replace("_", "").lower()
         return reverse(f"admin:courses_{adminized_type}_change", args=(self.id,))
 
+    def get_student_extra(self, context):
+        """
+        Overriding this method allows content types to include additional student tools in the
+        left hand context menu. This method needs to return a list with (link text, link url)
+        tuples as its values.
+        """
+
+        return []
+
     def get_staff_extra(self, context):
         """
         Overriding this method allows content types to include additional staff tools in the

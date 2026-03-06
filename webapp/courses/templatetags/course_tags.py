@@ -113,6 +113,7 @@ def embed_frame(context, content_data):
     return {
         "emb": content_data,
         "embedded": True,
+        "staff_menu": content_data["staff_menu"],
         "meta": content_data["urls"],
         "revision": content_data["revision"],
         "user": context["user"],
@@ -129,7 +130,14 @@ def embed_frame(context, content_data):
         "editable_markups": context["editable_markups"],
     }
 
-@register.inclusion_tag("courses/embed_staff_extra.html", takes_context=True)
+
+@register.inclusion_tag("courses/embed_menu_options.html", takes_context=True)
+def embed_student_extra(context, content_data):
+    return {
+        "extra_options": content_data.get_student_extra(content_data, context)
+    }
+
+@register.inclusion_tag("courses/embed_menu_options.html", takes_context=True)
 def embed_staff_extra(context, content_data):
     return {
         "extra_options": content_data.get_staff_extra(content_data, context)
