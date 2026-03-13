@@ -7,5 +7,5 @@ class TeacherToolsConfig(AppConfig):
     verbose_name = "Lovelace teacher's tools"
 
     def ready(self):
-        from teacher_tools import menu
+        from teacher_tools import includes
         register_plugin(self.module, ["user-menu", "embed-menu"])

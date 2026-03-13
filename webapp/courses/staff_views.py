@@ -72,9 +72,6 @@ from utils.management import (
     clone_content_graphs,
     clone_grades,
 )
-from faq.utils import clone_faq_links
-from assessment.utils import clone_assessment_links
-
 from lovelace import plugins as lovelace_plugins
 
 # INSTANCE MANAGEMENT VIEWS
@@ -193,8 +190,9 @@ def clone_instance(request, course, instance):
         clone_grades(old_instance, new_instance)
         clone_instance_files(new_instance)
         clone_terms(new_instance)
-        clone_faq_links(new_instance)
-        clone_assessment_links(old_instance, new_instance)
+        for module in lovelace_plugins["clone"]:
+            module.models.clone_models(old_instance, new_instance)
+
         old_instance.clear_content_tree_cache(regen_frozen=True)
         new_url = reverse("courses:course", kwargs={"course": course, "instance": new_instance})
         return JsonResponse({"status": "ok"})

@@ -58,26 +58,6 @@
             </a>
           </div>
           {% embed_student_extra content %}
-          <div>
-            <a id="{{ content.slug }}-faq-panel-link"
-               class="faq-panel-link"
-               href="{% url 'faq:faq_panel' course instance content %}"
-               title="{% trans 'Open the FAQ panel' %}"
-               onclick="show_panel(event, this, 'faq', '{{ content.slug }}-panel');"
-               data-querystring="">{% trans 'Frequently Asked Questions' %}
-            </a>
-          </div>
-          {% if content.manually_evaluated %}
-              <div>
-                <a id="{{ content.slug }}-faq-panel-link"
-                   class="assessment-panel-link"
-                   href="{% url 'assessment:view_assessment_sheet' course instance content %}"
-                   title="{% trans 'View assessment sheet' %}"
-                   onclick="show_panel(event, this, 'assessment-view', '{{ content.slug }}-panel');"
-                   data-querystring="">{% trans 'Assessment Criteria' %}
-                </a>
-              </div>
-          {% endif %}          
         {% endif %}
       {% endif %}
 
@@ -235,8 +215,8 @@
   <div class="results-box comments" style="display: none"></div>
 </div>
 
-{% block feedback %}
-  {% feedbacks %}
+{% block addons %}
+  {% content_page_addons content 'embed' %}
 {% endblock %}
 </div>
     

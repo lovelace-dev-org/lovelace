@@ -140,11 +140,10 @@ function exercise_success (data, result_div, error_div, form_parent) {
             const hint_text = $("section.content").find("#hint-id-" + hint_id)
             hint_text.attr({ class: "hint-active" })
         }
-        const panel = form_parent.children(".side-panel")
-        const handle = form_parent.parent().find("a.faq-panel-link")
-        if (data.has_faq) {
-            faq.handle_triggers(panel, handle, data.triggers)
-        }
+        data.extra_callbacks.forEach(function (obj_name) {
+            eval(obj_name).handle_triggers(form_parent, data.triggers)
+        })
+
     }
     if (data.messages) {
         msgs_div.find("div.msgs-list").html(data.messages)

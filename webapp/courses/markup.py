@@ -361,7 +361,7 @@ class EmbeddedPageMarkup(Markup):
                     (_("Edit this exercise"), "self", page.get_admin_change_url()),
                 ]
                 for module in lovelace_plugins.get("embed-menu"):
-                    menu_options.extend(module.menu.get_embed_frame_options(
+                    menu_options.extend(module.includes.get_embed_frame_options(
                         state["context"],
                         page,
                         revision,
@@ -371,8 +371,9 @@ class EmbeddedPageMarkup(Markup):
                 menu_context = {
                     "menu_options": menu_options,
                     "content": page,
+                    "in_list": True
                 }
-                menu_template = loader.get_template("courses/embed_menu_options.html")
+                menu_template = loader.get_template("courses/embed-menu-options.html")
                 settings["staff_menu"] = menu_template.render(menu_context)
 
 

@@ -7,5 +7,5 @@ class FeedbackConfig(AppConfig):
     verbose_name = "Lovelace feedback"
 
     def ready(self):
-        from feedback import menu
-        register_plugin(self.module, ["embed-menu"])
+        from feedback import includes
+        register_plugin(self.module, ["base-static", "content-addon", "content-menu", "embed-menu"])

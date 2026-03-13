@@ -111,14 +111,18 @@ class MultipleQuestionExam(ContentPage):
         Adds a link to attempt management page to the task's staff tools.
         """
 
-        return [(
+        options = ContentPage.get_staff_extra(self, context)
+        options.append((
             _("Manage attempts"),
+            "multiexam-attempts",
+            "self",
             reverse("multiexam:manage_attempts", kwargs={
                 "course": context["course"],
                 "instance": context["instance"],
                 "content": self,
             })
-        )]
+        ))
+        return options
 
     def get_choices(self, revision=None):
         """

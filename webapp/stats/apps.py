@@ -7,5 +7,5 @@ class StatsConfig(AppConfig):
     verbose_name = "Lovelace stats"
 
     def ready(self):
-        from stats import menu
-        register_plugin(self.module, ["embed-menu"])
+        from stats import includes
+        register_plugin(self.module, ["content-menu", "embed-menu"])

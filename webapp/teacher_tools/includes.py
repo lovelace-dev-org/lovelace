@@ -2,6 +2,44 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 
+def get_user_menu_options(context):
+    options = []
+    instance = context.get("instance")
+    if not instance:
+        return []
+    if not context.get("course_staff"):
+        return []
+
+
+    kwargs = {
+        "course": instance.course,
+        "instance": instance,
+    }
+
+    options.append((
+        _("Manage enrollments"),
+        "self",
+        reverse("teacher_tools:manage_enrollments", kwargs=kwargs)
+    ))
+    options.append((
+        _("Course completion"),
+        "self",
+        reverse("teacher_tools:completion", kwargs=kwargs)
+    ))
+    options.append((
+        _("Search records"),
+        "self",
+        reverse("teacher_tools:search_records", kwargs=kwargs)
+    ))
+    options.append((
+        _("Deadline exemptions"),
+        "self",
+        reverse("teacher_tools:exemptions", kwargs=kwargs)
+    ))
+
+    return options
+
+
 def get_embed_frame_options(context, content, revision, category):
     options = []
     instance = context["instance"]
@@ -15,6 +53,7 @@ def get_embed_frame_options(context, content, revision, category):
         if content.content_type == "FILE_UPLOAD_EXERCISE":
             options.append((
                 _("Download answers"),
+                "download-answers",
                 "self",
                 reverse(
                     "teacher_tools:download_answers",
@@ -24,6 +63,7 @@ def get_embed_frame_options(context, content, revision, category):
 
         options.append((
             _("Answer summary"),
+            "answer-summary",
             "self",
             reverse(
                 "teacher_tools:answer_summary",
@@ -39,6 +79,7 @@ def get_embed_frame_options(context, content, revision, category):
         ]:
             options.append((
                 _("Batch grading"),
+                "batch-grading",
                 "side-panel",
                 reverse(
                     "teacher_tools:batch_grade",
@@ -50,6 +91,7 @@ def get_embed_frame_options(context, content, revision, category):
         if False:
             options.append((
                 _("Reset completion"),
+                "reset",
                 "side-panel",
                 reverse(
                     "teacher_tools:reset_completion",
