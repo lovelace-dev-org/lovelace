@@ -358,7 +358,7 @@ class EmbeddedPageMarkup(Markup):
             settings["widget_configurable"] = answer_widget.configurable
             if instance is not None:
                 menu_options = [
-                    (_("Edit this exercise"), "self", page.get_admin_change_url()),
+                    (_("Edit this exercise"), "admin", "self", page.get_admin_change_url()),
                 ]
                 for module in lovelace_plugins.get("embed-menu"):
                     menu_options.extend(module.includes.get_embed_frame_options(

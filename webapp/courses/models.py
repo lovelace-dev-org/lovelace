@@ -1306,7 +1306,6 @@ class ContentPage(models.Model, ExportImportMixin):
     content_type_models = {}
 
     # Template to use for rendering this content type, all content type models must set their own.
-    form_template = "courses/blank.html"
     default_answer_widget = "blank"
 
     # Template for answers page for tasks of this type, override if the default is not suitable.
@@ -2030,7 +2029,6 @@ class ContentPage(models.Model, ExportImportMixin):
             "get_student_extra",
             "get_staff_extra",
             "get_answer_actions_extra",
-            "form_template",
             "default_answer_widget",
             "answers_template",
             "answer_table_classes",
@@ -2066,7 +2064,6 @@ class Lecture(ContentPage):
         verbose_name = "lecture page"
         proxy = True
 
-    form_template = "courses/lecture.html"
     default_answer_widget = "blank"
 
     def get_choices(self, revision=None):
@@ -2099,7 +2096,6 @@ class MultipleChoiceExercise(ContentPage):
         verbose_name = "multiple choice exercise"
         proxy = True
 
-    form_template = "courses/multiple-choice-exercise.html"
     default_answer_widget = "radio"
 
     def save(self, *args, **kwargs):
@@ -2204,7 +2200,6 @@ class CheckboxExercise(ContentPage):
         verbose_name = "checkbox exercise"
         proxy = True
 
-    form_template = "courses/checkbox-exercise.html"
     default_answer_widget = "checkbox"
 
     def save(self, *args, **kwargs):
@@ -2313,7 +2308,6 @@ class TextfieldExercise(ContentPage):
         verbose_name = "text field exercise"
         proxy = True
 
-    form_template = "courses/textfield-exercise.html"
     default_answer_widget = "textfield"
 
     def save(self, *args, **kwargs):
@@ -2452,7 +2446,6 @@ class FileUploadExercise(ContentPage):
         verbose_name = "file upload exercise"
         proxy = True
 
-    form_template = "courses/file-upload-exercise.html"
     default_answer_widget = "file"
     answers_show_log = True
 
@@ -2598,8 +2591,6 @@ class RepeatedTemplateExercise(ContentPage):
     class Meta:
         verbose_name = "repeated template exercise"
         proxy = True
-
-    form_template = "courses/repeated-template-exercise.html"
 
     def save(self, *args, **kwargs):
         if not self.slug:

@@ -65,7 +65,6 @@ class MultipleQuestionExam(ContentPage):
     compatible with the rest of the main code.
     """
 
-    form_template = "multiexam/multiple-question-exam.html"
     default_answer_widget = "multiexam"
 
     class Meta:

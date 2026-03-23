@@ -25,6 +25,7 @@ from courses import blockparser
 from courses import markupparser
 import courses.models as cm
 from courses.models import (
+    Course,
     CourseInstance,
     ContentGraph,
     ContentPage,
@@ -969,21 +970,6 @@ def content_preview(request, field_name):
         for chunk in markup_gen:
             blocks.append(chunk)
 
-            #if isinstance(chunk, str):
-                #segment += chunk
-            #elif isinstance(chunk, markupparser.PageBreak):
-                #blocks.append(("plain", segment))
-                #segment = ""
-                #pages.append(blocks)
-                #blocks = []
-            #else:
-                #blocks.append(("plain", segment))
-                #blocks.append(chunk)
-                #segment = ""
-
-        #if segment:
-            #blocks.append(("plain", segment))
-
         pages.append(blocks)
         full = [block for page in pages for block in page]
 
@@ -997,17 +983,25 @@ def content_preview(request, field_name):
             "content_blocks": full,
         }
         if embedded_preview:
-            template = request.POST["form_template"]
-            form = loader.get_template(template)
+            preview_course = Course(prefix="prev")
+            answer_widget = AnswerWidgetRegistry.get_widget(
+                request.POST.get("answer_widget"),
+                preview_course, "preview"
+            )
+
             choices = []
             for i, choice in enumerate(request.POST.getlist("choices[]")):
                 if choice:
                     choices.append({"id": i, "answer": choice})
+            c["choices"] = choices
+
+            rendered_form = answer_widget.render(c)
+
             c["embedded_preview"] = True
             c["embed_data"] = {
                 "content": full,
                 "question": rendered_question,
-                "form": form.render({"choices": choices}, request),
+                "form": rendered_form,
             }
 
         rendered = t.render(c, request)

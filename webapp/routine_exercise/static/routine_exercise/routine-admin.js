@@ -8,6 +8,7 @@ function show_preview (event, a) {
     const url = caller.attr("href")
     const popup = $("div.popup")
     const csrf = $("form").find("input[name*='csrfmiddlewaretoken']").attr("value")
+    let answerWidget = $("select[name='answer_widget']").val();
 
     $.ajax({
         type: "POST",
@@ -17,7 +18,7 @@ function show_preview (event, a) {
             content: textArea.val(),
             question: questionArea.val(),
             embedded: true,
-            form_template: "routine_exercise/routine-exercise.html"
+            answer_widget: answerWidget ? answerWidget : "textfield"
         },
         dataType: "json",
         success: function (data, text_status, jqxhr_obj) {
