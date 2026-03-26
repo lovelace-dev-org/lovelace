@@ -812,8 +812,9 @@ class TaskCreateForm(LineEditMixin, TranslationStaffForm):
         super().__init__(*args, **kwargs)
         self.fields["content_type"] = forms.ChoiceField(
             widget=forms.Select,
-            choices=(
-                choice for choice in cm.ContentPage.CONTENT_TYPE_CHOICES if choice[0] != "LECTURE"
+            choices=sorted(
+                (handle, cls._meta.verbose_name.title())
+                for handle, cls in cm.ContentPage.content_type_models.items() if handle != "LECTURE"
             )
         )
 

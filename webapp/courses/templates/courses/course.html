@@ -240,8 +240,8 @@
       {% endif %}
     {% endfor %}
 
-    {% block feedback %}
-      {% feedbacks %}
+    {% block addons %}
+      {% content_page_addons content 'toplevel' %}
     {% endblock %}
 
   {% endif %}

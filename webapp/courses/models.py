@@ -1289,21 +1289,9 @@ class ContentPage(models.Model, ExportImportMixin):
 
     objects = SlugManager()
 
-    # This will ideally be deprecated and replaced by a list generated dynamically from
-    # registered content types.
-    CONTENT_TYPE_CHOICES = (
-        ("LECTURE", "Lecture"),
-        ("TEXTFIELD_EXERCISE", "Textfield exercise"),
-        ("MULTIPLE_CHOICE_EXERCISE", "Multiple choice exercise"),
-        ("CHECKBOX_EXERCISE", "Checkbox exercise"),
-        ("FILE_UPLOAD_EXERCISE", "File upload exercise"),
-        ("REPEATED_TEMPLATE_EXERCISE", "Repeated template exercise"),
-        ("ROUTINE_EXERCISE", "Routine exercise"),
-        ("MULTIPLE_QUESTION_EXAM", "Multiple question exam"),
-    )
-
     # Dynamically registered content types go here.
     content_type_models = {}
+    answer_models = {}
 
     # Template to use for rendering this content type, all content type models must set their own.
     default_answer_widget = "blank"
@@ -1344,7 +1332,7 @@ class ContentPage(models.Model, ExportImportMixin):
         help_text="Evaluation group identifier for binding together mutually exclusive tasks.",
         blank=True,
     )
-    content_type = models.CharField(max_length=28, default="LECTURE", choices=CONTENT_TYPE_CHOICES)
+    content_type = models.CharField(max_length=28, default="LECTURE")
     embedded_pages = models.ManyToManyField(
         "self",
         blank=True,
@@ -1384,6 +1372,7 @@ class ContentPage(models.Model, ExportImportMixin):
             )
 
         cls.content_type_models[constant_name] = type_class
+        cls.answer_models[constant_name] = answer_class
 
     def natural_key(self):
         return (self.slug, )
@@ -1962,53 +1951,13 @@ class ContentPage(models.Model, ExportImportMixin):
 
     def get_type_object(self):
         # this seems to lose the revision info?
-        from routine_exercise.models import RoutineExercise
-        from multiexam.models import MultipleQuestionExam
-
-        type_models = {
-            "LECTURE": Lecture,
-            "TEXTFIELD_EXERCISE": TextfieldExercise,
-            "MULTIPLE_CHOICE_EXERCISE": MultipleChoiceExercise,
-            "CHECKBOX_EXERCISE": CheckboxExercise,
-            "FILE_UPLOAD_EXERCISE": FileUploadExercise,
-            "REPEATED_TEMPLATE_EXERCISE": RepeatedTemplateExercise,
-            "ROUTINE_EXERCISE": RoutineExercise,
-            "MULTIPLE_QUESTION_EXAM": MultipleQuestionExam,
-        }
-
-        return type_models[self.content_type].objects.get(id=self.id)
+        return self.content_type_models[self.content_type].objects.get(id=self.id)
 
     def get_type_model(self):
-        from routine_exercise.models import RoutineExercise
-        from multiexam.models import MultipleQuestionExam
-
-        type_models = {
-            "LECTURE": Lecture,
-            "TEXTFIELD_EXERCISE": TextfieldExercise,
-            "MULTIPLE_CHOICE_EXERCISE": MultipleChoiceExercise,
-            "CHECKBOX_EXERCISE": CheckboxExercise,
-            "FILE_UPLOAD_EXERCISE": FileUploadExercise,
-            "REPEATED_TEMPLATE_EXERCISE": RepeatedTemplateExercise,
-            "ROUTINE_EXERCISE": RoutineExercise,
-            "MULTIPLE_QUESTION_EXAM": MultipleQuestionExam,
-        }
-        return type_models[self.content_type]
+        return self.content_type_models[self.content_type]
 
     def get_answer_model(self):
-        from routine_exercise.models import RoutineExerciseAnswer
-        from multiexam.models import UserMultipleQuestionExamAnswer
-
-        answer_models = {
-            "LECTURE": None,
-            "TEXTFIELD_EXERCISE": UserTextfieldExerciseAnswer,
-            "MULTIPLE_CHOICE_EXERCISE": UserMultipleChoiceExerciseAnswer,
-            "CHECKBOX_EXERCISE": UserCheckboxExerciseAnswer,
-            "FILE_UPLOAD_EXERCISE": UserFileUploadExerciseAnswer,
-            "REPEATED_TEMPLATE_EXERCISE": UserRepeatedTemplateExerciseAnswer,
-            "ROUTINE_EXERCISE": RoutineExerciseAnswer,
-            "MULTIPLE_QUESTION_EXAM": UserMultipleQuestionExamAnswer,
-        }
-        return answer_models[self.content_type]
+        return self.answer_models[self.content_type]
 
     # HACK: Experimental way of implementing a better get_type_object
     def __getattribute__(self, name):
@@ -2532,6 +2481,8 @@ class FileUploadExercise(ContentPage):
         return ContentPage._get_question(self, context)
 
     def get_admin_change_url(self):
+        # NOTE: Leaving this as is even though it references another app.
+        #       Eventually these links will be replaced by widgets
         return reverse("exercise_admin:file_upload_change", args=(self.id,))
 
     def check_answer(self, user, ip, answer, files, answer_object, revision):
@@ -3788,7 +3739,7 @@ class UserFileUploadExerciseAnswer(UserAnswer):
         repr_str = ""
         for fname, (type_info, contents) in returned_files.items():
             link_kw = {
-                "user": context["student"],
+                "user": self.user,
                 "course": context["course"],
                 "instance": context["instance"],
                 "answer": self,

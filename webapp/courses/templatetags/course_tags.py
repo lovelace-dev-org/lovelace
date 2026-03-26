@@ -56,11 +56,6 @@ def base_static_extra(context):
 def content_meta(context):
     return context
 
-# {% feedbacks %}
-@register.inclusion_tag("feedback/feedbacks.html", takes_context=True)
-def feedbacks(context):
-    return context
-
 # {% answer_date %}
 @register.filter
 def answer_date(t):

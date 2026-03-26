@@ -181,7 +181,7 @@ def get_import_list():
         AssessmentToExerciseLink,
     ]
 
-def delete_orphan_references(task, instance):
+def delete_orphan_references(content, instance):
     AssessmentToExerciseLink.objects.filter(
-        exercise=task, instance=instance
+        exercise=content, instance=instance
     ).delete()

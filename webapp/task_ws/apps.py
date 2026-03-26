@@ -7,5 +7,5 @@ class TaskWsConfig(AppConfig):
 
     def ready(self):
         from . import routing, preview_widgets
-        register_plugin(self.module, ["routing"])
+        register_plugin(self.module, ["export", "import", "routing"])
         preview_widgets.register_preview_widgets()

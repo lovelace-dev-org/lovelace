@@ -121,10 +121,10 @@ def get_import_list():
         AcePlusLink,
     ]
 
-def update_context_links(page, instance, parsed_links, revision=None):
+def update_context_links(content, instance, parsed_links, revision=None):
     new_links = parsed_links["aceplus"]
     old_links = list(
-        AcePlusLink.objects.filter(parent=page, instance=instance).values_list(
+        AcePlusLink.objects.filter(parent=content, instance=instance).values_list(
             "widget_slug", flat=True
         )
     )
@@ -132,14 +132,14 @@ def update_context_links(page, instance, parsed_links, revision=None):
     added_links = set(new_links).difference(old_links)
 
     AcePlusLink.objects.filter(
-        widget_slug__in=removed_links, instance=instance, parent=page
+        widget_slug__in=removed_links, instance=instance, parent=content
     ).delete()
 
     for link_slug in added_links:
         link_obj = AcePlusLink(
             widget_slug=link_slug,
             instance=instance,
-            parent=page
+            parent=content
         )
         link_obj.save()
 

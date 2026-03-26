@@ -8,4 +8,7 @@ class FeedbackConfig(AppConfig):
 
     def ready(self):
         from feedback import includes
-        register_plugin(self.module, ["base-static", "content-addon", "content-menu", "embed-menu"])
+        register_plugin(
+            self.module,
+            ["export", "import", "base-static", "content-addon", "content-menu", "embed-menu"]
+        )

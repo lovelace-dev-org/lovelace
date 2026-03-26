@@ -13,6 +13,7 @@ from utils.management import ExportImportMixin
 
 
 class RoutineExercise(ContentPage):
+
     answers_template = "routine_exercise/user-answers.html"
     default_answer_widget = "routine"
     answer_table_classes = "fixed"
