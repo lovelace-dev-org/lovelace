@@ -14,8 +14,11 @@ def guess_origins(apps, schema_editor):
     CourseMedia = apps.get_model("courses", "coursemedia")
     CourseMediaLink = apps.get_model("courses", "coursemedialink")
     EmbeddedLink = apps.get_model("courses", "embeddedlink")
+    Calendar = apps.get_model("courses", "calendar")
+    Course = apps.get_model("courses", "course")
 
-    for page in ContentPage.objects.all():
+    pages = list(ContentPage.objects.all())
+    for page in pages:
         if not page.slug:
             page.delete()
             continue
@@ -39,6 +42,21 @@ def guess_origins(apps, schema_editor):
 
         media.slug = get_prefixed_slug(media, media.origin, "name", translated=False)
         media.save()
+
+    prefix_map = {}
+    for course in Course.objects.all():
+        prefix_map[course.prefix] = course
+
+    for calendar in Calendar.objects.all():
+        calendar_prefix = calendar.name.split("-", 1)[0]
+        if matching_course := prefix_map.get(calendar_prefix):
+            calendar.origin = matching_course
+        else:
+            for page in pages:
+                for lang_code, _ in settings.LANGUAGES:
+                    if calendar.name in getattr(page, f"content_{lang_code}"):
+                        calendar.origin = page.origin
+        calendar.save()
 
 
 def refactor_slugs(apps, schema_editor):
