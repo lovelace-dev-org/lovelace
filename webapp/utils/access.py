@@ -182,6 +182,26 @@ def ensure_responsible(function):
 
     return wrap
 
+def ensure_enrolled(function):
+    """
+    Decorator for limiting access to a function to enrolled users only.
+    """
+
+    @wraps(function)
+    def wrap(request, course, instance, *args, **kwargs):
+        try:
+            if cm.CourseEnrollment.objects.get(
+                instance=instance, student=request.user
+            ).is_enrolled():
+                return function(request, course, instance, *args, **kwargs)
+        except cm.CourseEnrollment.DoesNotExist:
+            return HttpResponseForbidden(_("You must be enrolled to perform this action."))
+        except TypeError:
+            return HttpResponseForbidden(_("You must be enrolled to perform this action."))
+
+    return wrap
+
+
 
 def ensure_enrolled_or_staff(function):
     """

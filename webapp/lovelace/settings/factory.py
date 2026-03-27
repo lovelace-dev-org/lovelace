@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     'teacher_tools',
     'ace',
     'task_ws',
+    'ticketing',
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

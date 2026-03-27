@@ -161,7 +161,10 @@ def course(request, course, instance):
 
     enroll_state = instance.user_enroll_status(request.user)
     enrolled = enroll_state in ["ACCEPTED", "COMPLETED"]
+
+    # TODO: find out if enroll_state is actually used
     context["enroll_state"] = enroll_state
+    context["enrolled"] = enrolled
 
     context["content_tree"] = instance.get_content_tree(
         staff=context["course_staff"],
