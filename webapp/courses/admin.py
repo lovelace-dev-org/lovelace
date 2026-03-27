@@ -72,8 +72,6 @@ from courses.forms import (
 from courses.widgets import AdminFileWidget, AdminTemplateBackendFileWidget
 from utils.management import CourseContentAdmin, CourseMediaAdmin
 
-from faq.utils import clone_faq_links
-
 # Moved these here from models.py so that all registering happens
 # in this file (as VersionAdmin autoregisters the associated model)
 # This makes modeltranslation work with reversion, probably due
@@ -852,8 +850,6 @@ class CourseInstanceAdmin(TranslationAdmin, VersionAdmin):
             for term in terms:
                 link = TermToInstanceLink(revision=None, term=term, instance=obj)
                 link.save()
-
-            clone_faq_links(obj)
 
         self.current = obj
         transaction.on_commit(self.finish_cg)

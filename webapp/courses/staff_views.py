@@ -25,6 +25,7 @@ from courses import blockparser
 from courses import markupparser
 import courses.models as cm
 from courses.models import (
+    Course,
     CourseInstance,
     ContentGraph,
     ContentPage,
@@ -72,9 +73,6 @@ from utils.management import (
     clone_content_graphs,
     clone_grades,
 )
-from faq.utils import clone_faq_links
-from assessment.utils import clone_assessment_links
-
 from lovelace import plugins as lovelace_plugins
 
 # INSTANCE MANAGEMENT VIEWS
@@ -193,8 +191,9 @@ def clone_instance(request, course, instance):
         clone_grades(old_instance, new_instance)
         clone_instance_files(new_instance)
         clone_terms(new_instance)
-        clone_faq_links(new_instance)
-        clone_assessment_links(old_instance, new_instance)
+        for module in lovelace_plugins["clone"]:
+            module.models.clone_models(old_instance, new_instance)
+
         old_instance.clear_content_tree_cache(regen_frozen=True)
         new_url = reverse("courses:course", kwargs={"course": course, "instance": new_instance})
         return JsonResponse({"status": "ok"})
@@ -971,21 +970,6 @@ def content_preview(request, field_name):
         for chunk in markup_gen:
             blocks.append(chunk)
 
-            #if isinstance(chunk, str):
-                #segment += chunk
-            #elif isinstance(chunk, markupparser.PageBreak):
-                #blocks.append(("plain", segment))
-                #segment = ""
-                #pages.append(blocks)
-                #blocks = []
-            #else:
-                #blocks.append(("plain", segment))
-                #blocks.append(chunk)
-                #segment = ""
-
-        #if segment:
-            #blocks.append(("plain", segment))
-
         pages.append(blocks)
         full = [block for page in pages for block in page]
 
@@ -999,17 +983,25 @@ def content_preview(request, field_name):
             "content_blocks": full,
         }
         if embedded_preview:
-            template = request.POST["form_template"]
-            form = loader.get_template(template)
+            preview_course = Course(prefix="prev")
+            answer_widget = AnswerWidgetRegistry.get_widget(
+                request.POST.get("answer_widget"),
+                preview_course, "preview"
+            )
+
             choices = []
             for i, choice in enumerate(request.POST.getlist("choices[]")):
                 if choice:
                     choices.append({"id": i, "answer": choice})
+            c["choices"] = choices
+
+            rendered_form = answer_widget.render(c)
+
             c["embedded_preview"] = True
             c["embed_data"] = {
                 "content": full,
                 "question": rendered_question,
-                "form": form.render({"choices": choices}, request),
+                "form": rendered_form,
             }
 
         rendered = t.render(c, request)

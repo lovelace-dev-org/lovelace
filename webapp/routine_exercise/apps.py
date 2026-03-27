@@ -1,4 +1,5 @@
 from django.apps import AppConfig
+from lovelace import register_plugin
 
 class RoutineExerciseConfig(AppConfig):
 
@@ -7,5 +8,6 @@ class RoutineExerciseConfig(AppConfig):
     def ready(self):
         from routine_exercise import answer_widgets
         answer_widgets.register_answer_widgets()
+        register_plugin(self.module, ["export", "import"])
 
 

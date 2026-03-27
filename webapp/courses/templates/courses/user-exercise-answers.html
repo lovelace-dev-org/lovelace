@@ -84,7 +84,6 @@
     <td class="answer-date">
        {{ answer.answer_date|answer_date }}
        <div class="popup"><div class="results-view" id="results-{{ answer.id }}"></div></div>
-       <div class="popup"><div class="results-view" id="assessment-{{ answer.id }}"></div></div>
     </td>
     {% if exercise.content_type == "REPEATED_TEMPLATE_EXERCISE" %}
       <td class="answer">
@@ -127,15 +126,6 @@
          rel="noopener noreferrer" 
          href="mailto:{{ instance_email }}?subject={{ instance_name|urlencode }}%20-%20{{ exercise_title|urlencode }}{% autoescape off %}&body={% endautoescape %}{{ answers_url|urlencode }}%23{{ answer.id }}"
          title="{% trans 'Send course staff a question about this answer' %}"></a>
-      {% if answer.evaluation.feedback %}
-        {% if answer.evaluation.completed %}
-          <a class="button-style report-button"
-             href="{% url 'assessment:view_assessment' student course instance exercise answer %}"
-             onclick="show_results(event, this, 'assessment-{{ answer.id }}');"
-             title="{% trans 'View assessment' %}">
-          </a>
-        {% endif %}
-      {% endif %}
       {% if exercise.answers_show_log and answer.evaluation.test_results %}
         <a class="button-style log-button"
            href="{% url 'courses:get_file_exercise_evaluation' student course instance exercise answer %}"
@@ -143,13 +133,8 @@
            title="{% trans 'View checker log' %}">
         </a>
       {% endif %}
-      {% if course_staff and exercise.manually_evaluated %}
-        <a class="button-style inspect-button" 
-           href="{% url 'assessment:submission_assessment' course instance exercise student answer %}"
-           title="{% trans 'Assess submission' %}">
-        </a>
-      {% endif %}
-    </td>    
+      {% answer_actions_extra exercise answer %}
+    </td>
   </tr>
   {% endfor %}
 </tbody>

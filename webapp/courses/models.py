@@ -587,17 +587,8 @@ class CourseInstance(models.Model):
         for link in term_links:
             link.freeze(freeze_to)
 
-        from faq.models import FaqToInstanceLink
-
-        faq_links = FaqToInstanceLink.objects.filter(instance=self)
-        for link in faq_links:
-            link.freeze(freeze_to)
-
-        from assessment.models import AssessmentToExerciseLink
-
-        assessment_links = AssessmentToExerciseLink.objects.filter(instance=self)
-        for link in assessment_links:
-            link.freeze(freeze_to)
+        for module in lovelace_plugins["freeze"]:
+            module.models.freeze_context_links(self, freeze_to)
 
         contents = ContentGraph.objects.filter(instance=self)
         frontpage = None
@@ -647,7 +638,7 @@ class CourseInstance(models.Model):
             media_link.media.export(self, export_target)
             CourseMedia.objects.get_subclass(id=media_link.media.id).export(self, export_target)
 
-        for module in lovelace_plugins.get("export", []):
+        for module in lovelace_plugins["export"]:
             module.models.export_models(self, export_target)
 
 
@@ -1298,24 +1289,11 @@ class ContentPage(models.Model, ExportImportMixin):
 
     objects = SlugManager()
 
-    # This will ideally be deprecated and replaced by a list generated dynamically from
-    # registered content types.
-    CONTENT_TYPE_CHOICES = (
-        ("LECTURE", "Lecture"),
-        ("TEXTFIELD_EXERCISE", "Textfield exercise"),
-        ("MULTIPLE_CHOICE_EXERCISE", "Multiple choice exercise"),
-        ("CHECKBOX_EXERCISE", "Checkbox exercise"),
-        ("FILE_UPLOAD_EXERCISE", "File upload exercise"),
-        ("REPEATED_TEMPLATE_EXERCISE", "Repeated template exercise"),
-        ("ROUTINE_EXERCISE", "Routine exercise"),
-        ("MULTIPLE_QUESTION_EXAM", "Multiple question exam"),
-    )
-
     # Dynamically registered content types go here.
     content_type_models = {}
+    answer_models = {}
 
     # Template to use for rendering this content type, all content type models must set their own.
-    form_template = "courses/blank.html"
     default_answer_widget = "blank"
 
     # Template for answers page for tasks of this type, override if the default is not suitable.
@@ -1354,7 +1332,7 @@ class ContentPage(models.Model, ExportImportMixin):
         help_text="Evaluation group identifier for binding together mutually exclusive tasks.",
         blank=True,
     )
-    content_type = models.CharField(max_length=28, default="LECTURE", choices=CONTENT_TYPE_CHOICES)
+    content_type = models.CharField(max_length=28, default="LECTURE")
     embedded_pages = models.ManyToManyField(
         "self",
         blank=True,
@@ -1394,6 +1372,7 @@ class ContentPage(models.Model, ExportImportMixin):
             )
 
         cls.content_type_models[constant_name] = type_class
+        cls.answer_models[constant_name] = answer_class
 
     def natural_key(self):
         return (self.slug, )
@@ -1681,8 +1660,9 @@ class ContentPage(models.Model, ExportImportMixin):
             self.rendered_markup(instance, context, lang_code=lang_code, revision=revision)
         translation.activate(current_lang)
 
-        from faq.utils import regenerate_cache
-        regenerate_cache(instance, self)
+        for module in lovelace_plugins["content-cache"]:
+            module.utils.regenerate_content_cache(instance, self)
+
 
     def get_human_readable_type(self):
         humanized_type = self.content_type.replace("_", " ").lower()
@@ -1702,14 +1682,54 @@ class ContentPage(models.Model, ExportImportMixin):
         adminized_type = self.content_type.replace("_", "").lower()
         return reverse(f"admin:courses_{adminized_type}_change", args=(self.id,))
 
+    def get_content_additions(self, context, content_level):
+        """
+        Returns content additions that plugins can provide. Content types can also override this
+        method to include their own dynamic content additions (= content additions that cannot be
+        cached - cacheable additions should be done elsewhere). The additions will be displayed
+        at the bottom of a content page whether it is used as a main page or embedded.
+        """
+
+        additions = []
+        for module in lovelace_plugins["content-addon"]:
+            additions.append(module.includes.get_content_page_additions(
+                context, self, content_level
+            ))
+
+        return additions
+
+    def get_student_extra(self, context):
+        """
+        Overriding this method allows content types to include additional student tools in the
+        left hand context menu. This method needs to return a list with
+        (link text, link target, link url)
+        tuples as its values. By default it includes all
+        """
+
+        options = []
+        for module in lovelace_plugins["embed-extra"]:
+            options.extend(module.includes.get_embed_frame_extra(
+                context, self, "student"
+            ))
+
+        return options
+
     def get_staff_extra(self, context):
         """
         Overriding this method allows content types to include additional staff tools in the
-        left hand context menu. This method needs to return a list with (link text, link url)
+        left hand context menu. This method needs to return a list with
+        (link text, link target, link url)
         tuples as its values.
         """
 
         return []
+
+    def get_answer_actions_extra(self, context, answer):
+        options = []
+        for module in lovelace_plugins["answer-actions"]:
+            options.extend(module.includes.get_answer_actions(context, self, answer))
+
+        return options
 
     def get_url_name(self):
         return get_prefixed_slug(self, self.origin, "name")
@@ -1931,53 +1951,13 @@ class ContentPage(models.Model, ExportImportMixin):
 
     def get_type_object(self):
         # this seems to lose the revision info?
-        from routine_exercise.models import RoutineExercise
-        from multiexam.models import MultipleQuestionExam
-
-        type_models = {
-            "LECTURE": Lecture,
-            "TEXTFIELD_EXERCISE": TextfieldExercise,
-            "MULTIPLE_CHOICE_EXERCISE": MultipleChoiceExercise,
-            "CHECKBOX_EXERCISE": CheckboxExercise,
-            "FILE_UPLOAD_EXERCISE": FileUploadExercise,
-            "REPEATED_TEMPLATE_EXERCISE": RepeatedTemplateExercise,
-            "ROUTINE_EXERCISE": RoutineExercise,
-            "MULTIPLE_QUESTION_EXAM": MultipleQuestionExam,
-        }
-
-        return type_models[self.content_type].objects.get(id=self.id)
+        return self.content_type_models[self.content_type].objects.get(id=self.id)
 
     def get_type_model(self):
-        from routine_exercise.models import RoutineExercise
-        from multiexam.models import MultipleQuestionExam
-
-        type_models = {
-            "LECTURE": Lecture,
-            "TEXTFIELD_EXERCISE": TextfieldExercise,
-            "MULTIPLE_CHOICE_EXERCISE": MultipleChoiceExercise,
-            "CHECKBOX_EXERCISE": CheckboxExercise,
-            "FILE_UPLOAD_EXERCISE": FileUploadExercise,
-            "REPEATED_TEMPLATE_EXERCISE": RepeatedTemplateExercise,
-            "ROUTINE_EXERCISE": RoutineExercise,
-            "MULTIPLE_QUESTION_EXAM": MultipleQuestionExam,
-        }
-        return type_models[self.content_type]
+        return self.content_type_models[self.content_type]
 
     def get_answer_model(self):
-        from routine_exercise.models import RoutineExerciseAnswer
-        from multiexam.models import UserMultipleQuestionExamAnswer
-
-        answer_models = {
-            "LECTURE": None,
-            "TEXTFIELD_EXERCISE": UserTextfieldExerciseAnswer,
-            "MULTIPLE_CHOICE_EXERCISE": UserMultipleChoiceExerciseAnswer,
-            "CHECKBOX_EXERCISE": UserCheckboxExerciseAnswer,
-            "FILE_UPLOAD_EXERCISE": UserFileUploadExerciseAnswer,
-            "REPEATED_TEMPLATE_EXERCISE": UserRepeatedTemplateExerciseAnswer,
-            "ROUTINE_EXERCISE": RoutineExerciseAnswer,
-            "MULTIPLE_QUESTION_EXAM": UserMultipleQuestionExamAnswer,
-        }
-        return answer_models[self.content_type]
+        return self.answer_models[self.content_type]
 
     # HACK: Experimental way of implementing a better get_type_object
     def __getattribute__(self, name):
@@ -1994,8 +1974,10 @@ class ContentPage(models.Model, ExportImportMixin):
             "save_answer",
             "check_answer",
             "get_user_answers",
+            "get_content_additions",
+            "get_student_extra",
             "get_staff_extra",
-            "form_template",
+            "get_answer_actions_extra",
             "default_answer_widget",
             "answers_template",
             "answer_table_classes",
@@ -2031,7 +2013,6 @@ class Lecture(ContentPage):
         verbose_name = "lecture page"
         proxy = True
 
-    form_template = "courses/lecture.html"
     default_answer_widget = "blank"
 
     def get_choices(self, revision=None):
@@ -2064,7 +2045,6 @@ class MultipleChoiceExercise(ContentPage):
         verbose_name = "multiple choice exercise"
         proxy = True
 
-    form_template = "courses/multiple-choice-exercise.html"
     default_answer_widget = "radio"
 
     def save(self, *args, **kwargs):
@@ -2169,7 +2149,6 @@ class CheckboxExercise(ContentPage):
         verbose_name = "checkbox exercise"
         proxy = True
 
-    form_template = "courses/checkbox-exercise.html"
     default_answer_widget = "checkbox"
 
     def save(self, *args, **kwargs):
@@ -2278,7 +2257,6 @@ class TextfieldExercise(ContentPage):
         verbose_name = "text field exercise"
         proxy = True
 
-    form_template = "courses/textfield-exercise.html"
     default_answer_widget = "textfield"
 
     def save(self, *args, **kwargs):
@@ -2417,7 +2395,6 @@ class FileUploadExercise(ContentPage):
         verbose_name = "file upload exercise"
         proxy = True
 
-    form_template = "courses/file-upload-exercise.html"
     default_answer_widget = "file"
     answers_show_log = True
 
@@ -2504,6 +2481,8 @@ class FileUploadExercise(ContentPage):
         return ContentPage._get_question(self, context)
 
     def get_admin_change_url(self):
+        # NOTE: Leaving this as is even though it references another app.
+        #       Eventually these links will be replaced by widgets
         return reverse("exercise_admin:file_upload_change", args=(self.id,))
 
     def check_answer(self, user, ip, answer, files, answer_object, revision):
@@ -2563,8 +2542,6 @@ class RepeatedTemplateExercise(ContentPage):
     class Meta:
         verbose_name = "repeated template exercise"
         proxy = True
-
-    form_template = "courses/repeated-template-exercise.html"
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -3762,7 +3739,7 @@ class UserFileUploadExerciseAnswer(UserAnswer):
         repr_str = ""
         for fname, (type_info, contents) in returned_files.items():
             link_kw = {
-                "user": context["student"],
+                "user": self.user,
                 "course": context["course"],
                 "instance": context["instance"],
                 "answer": self,

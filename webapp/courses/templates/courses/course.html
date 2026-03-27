@@ -23,24 +23,6 @@
 
 {% block toc %}{% endblock %}
 
-{% block course-completion-link %}
-  {% if not sandboxed %}
-    <a href="{% url 'teacher_tools:completion' course instance %}">
-      {% trans 'Course completion' %}
-    </a>
-  {% endif %}
-{% endblock %}
-
-{% block course-stats-link %}
-  <a href="{% url 'stats:users_course' course instance %}">{% trans 'Course statistics' %}</a>
-{% endblock %}
-
-{% block course-enrollments-link %}
-  <a href="{% url 'teacher:manage_enrollments' course instance %}">
-    {% trans 'Manage enrollments' %}
-  </a>
-{% endblock %}
-
 {% block page-content %}
 <h1 class="content-heading">
   {{ course.name }}
@@ -258,8 +240,8 @@
       {% endif %}
     {% endfor %}
 
-    {% block feedback %}
-      {% feedbacks %}
+    {% block addons %}
+      {% content_page_addons content 'toplevel' %}
     {% endblock %}
 
   {% endif %}

@@ -59,7 +59,6 @@ from courses.models import (
     UserTaskCompletion,
     UserTextfieldExerciseAnswer,
 )
-import faq.utils as faq_utils
 from utils.access import (
     is_course_staff,
     determine_media_access,
@@ -711,7 +710,13 @@ def file_exercise_evaluation(request, course, instance, content, revision, task_
     data["manual"] = content.manually_evaluated
     data["total_evaluation"] = (total_evaluation,)
     data["score"] = f"{score:.2f}"
-    data["has_faq"] = faq_utils.has_faq(instance, content, data["triggers"])
+    # data["has_faq"] = faq_utils.has_faq(instance, content, data["triggers"])
+    data["extra_callbacks"] = []
+
+    for module in lovelace_plugins["exercise-triggers"]:
+        data["extra_callbacks"].append(module.includes.get_exercise_trigger_callbacks(
+            instance, content, data
+        ))
 
     return JsonResponse(data)
 

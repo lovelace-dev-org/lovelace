@@ -4,13 +4,6 @@ from utils.archive import get_archived_instances
 from utils.translation import user_language
 
 
-def clone_assessment_links(old_instance, new_instance):
-    links = AssessmentToExerciseLink.objects.filter(instance=old_instance)
-    for link in links:
-        link.id = None
-        link.instance = new_instance
-        link.save()
-
 def copy_sheet(source_sheet, new_sheet):
     bullets = source_sheet.assessmentbullet_set.get_queryset().all()
     sections = list(source_sheet.assessmentsection_set.get_queryset().all())
