@@ -10,7 +10,7 @@ def get_user_menu_options(context):
     if context.get("enrolled"):
         options.append((
             _("Request Credits"),
-            "self",
+            "side-panel",
             reverse("ticketing:request_credits", kwargs=kwargs)
         ))
 
