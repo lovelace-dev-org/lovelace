@@ -1249,6 +1249,10 @@ class EmbeddedLinkManager(models.Manager):
 
 
 class EmbeddedLink(models.Model, ExportImportMixin):
+
+    class Meta:
+        ordering = ["ordinal_number"]
+
     objects = EmbeddedLinkManager()
 
     parent = models.ForeignKey("ContentPage", related_name="emb_parent", on_delete=models.CASCADE)
@@ -1259,8 +1263,31 @@ class EmbeddedLink(models.Model, ExportImportMixin):
     ordinal_number = models.PositiveSmallIntegerField()
     instance = models.ForeignKey("CourseInstance", on_delete=models.CASCADE)
 
-    class Meta:
-        ordering = ["ordinal_number"]
+    mandatory = models.BooleanField(
+        verbose_name=_("Required to complete course"),
+        default=False
+    )
+
+    # Fields moved from ContentPage
+    correct_threshold = models.DecimalField(default=1, max_digits=8, decimal_places=5)
+    manually_evaluated = models.BooleanField(
+        verbose_name="This exercise is evaluated by hand", default=False
+    )
+    delayed_evaluation = models.BooleanField(
+        verbose_name="This exercise is not immediately evaluated", default=False
+    )
+    answer_limit = models.PositiveSmallIntegerField(
+        verbose_name="Limit number of allowed attempts to", blank=True, null=True
+    )
+    group_submission = models.BooleanField(
+        verbose_name="Answers can be submitted as a group", default=False
+    )
+    default_points = models.DecimalField(
+        default=1, max_digits=8, decimal_places=5,
+        help_text="The default points a user can gain by finishing this exercise correctly",
+    )
+
+
 
     def delete(self, *args, **kwargs):
         super().delete(*args, **kwargs)
@@ -1339,23 +1366,9 @@ class ContentPage(models.Model, ExportImportMixin):
     content = models.TextField(
         verbose_name="Page content body", blank=True, default=""
     )  # Translate
-    default_points = models.IntegerField(
-        default=1,
-        help_text="The default points a user can gain by finishing this exercise correctly",
-    )
-    correct_threshold = models.DecimalField(default=1, max_digits=8, decimal_places=5)
-    access_count = models.PositiveIntegerField(editable=False, default=0)
-    tags = ArrayField(
-        base_field=models.CharField(max_length=32, blank=True),
-        default=list,
-        blank=True,
-    )
-    evaluation_group = models.CharField(
-        max_length=32,
-        help_text="Evaluation group identifier for binding together mutually exclusive tasks.",
-        blank=True,
-    )
     content_type = models.CharField(max_length=28, default="LECTURE", choices=CONTENT_TYPE_CHOICES)
+    question = models.TextField(blank=True, default="")  # Translate
+    answer_widget = models.CharField(max_length=32, blank=True, null=True)
     embedded_pages = models.ManyToManyField(
         "self",
         blank=True,
@@ -1365,24 +1378,6 @@ class ContentPage(models.Model, ExportImportMixin):
     )
     feedback_questions = models.ManyToManyField(feedback.models.ContentFeedbackQuestion, blank=True)
 
-    question = models.TextField(blank=True, default="")  # Translate
-    answer_widget = models.CharField(max_length=32, blank=True, null=True)
-    manually_evaluated = models.BooleanField(
-        verbose_name="This exercise is evaluated by hand", default=False
-    )
-    delayed_evaluation = models.BooleanField(
-        verbose_name="This exercise is not immediately evaluated", default=False
-    )
-    answer_limit = models.PositiveSmallIntegerField(
-        verbose_name="Limit number of allowed attempts to", blank=True, null=True
-    )
-    group_submission = models.BooleanField(
-        verbose_name="Answers can be submitted as a group", default=False
-    )
-    ask_collaborators = models.BooleanField(
-        verbose_name="Ask the student to list collaborators", default=False
-    )
-    # ^
 
     @classmethod
     def register_content_type(cls, constant_name, type_class, answer_class=None):
