@@ -16,17 +16,17 @@ urlpatterns = [
         name="download_answers",
     ),
     path(
-        "<course:course>/<instance:instance>/<content:content>/answer_summary/",
+        "<course:course>/<instance:instance>/<content:parent>/<content:content>/answer_summary/",
         views.answer_summary,
         name="answer_summary",
     ),
     path(
-        "<course:course>/<instance:instance>/<content:content>/batch_grade/",
+        "<course:course>/<instance:instance>/<content:parent>/<content:content>/batch_grade/",
         views.batch_grade_task,
         name="batch_grade",
     ),
     path(
-        "<course:course>/<instance:instance>/<content:content>/reset_completion/",
+        "<course:course>/<instance:instance>/<content:parent>/<content:content>/reset_completion/",
         views.reset_completion,
         name="reset_completion",
     ),

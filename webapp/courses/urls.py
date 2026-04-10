@@ -307,7 +307,7 @@ urlpatterns = [
 
     # Exercise sending for checking, progress and evaluation views
     path(
-        "<course:course>/<instance:instance>/<content:content>/<revision:revision>/check/",
+        "<course:course>/<instance:instance>/<content:parent>/<content:content>/check/",
         views.check_answer,
         name="check",
     ),
@@ -318,14 +318,14 @@ urlpatterns = [
         name="get_repeated_template_session",
     ),
     path(
-        "<course:course>/<instance:instance>/<content:content>/"
-        "<revision:revision>/progress/<slug:task_id>/",
+        "<course:course>/<instance:instance>/<content:parent>/<content:content>/"
+        "progress/<slug:task_id>/",
         views.check_progress,
         name="check_progress",
     ),
     path(
-        "<course:course>/<instance:instance>/<content:content>/"
-        "<revision:revision>/evaluation/<slug:task_id>/",
+        "<course:course>/<instance:instance>/<content:parent>/<content:content>/"
+        "evaluation/<slug:task_id>/",
         views.file_exercise_evaluation,
         name="file_exercise_evaluation",
     ),

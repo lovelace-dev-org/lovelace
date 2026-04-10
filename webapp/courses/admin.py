@@ -188,10 +188,6 @@ class MultipleChoiceExerciseAdmin(CourseContentAdmin, TranslationAdmin, VersionA
             "Exercise miscellaneous",
             {
                 "fields": [
-                    "default_points",
-                    "evaluation_group",
-                    "delayed_evaluation",
-                    "answer_limit",
                     "answer_widget",
                 ],
                 "classes": ["wide"],
@@ -235,11 +231,6 @@ class CheckboxExerciseAdmin(CourseContentAdmin, TranslationAdmin, VersionAdmin):
             "Exercise miscellaneous",
             {
                 "fields": [
-                    "default_points",
-                    "correct_threshold",
-                    "evaluation_group",
-                    "delayed_evaluation",
-                    "answer_limit",
                     "answer_widget",
                 ],
                 "classes": ["wide"],
@@ -283,12 +274,6 @@ class TextfieldExerciseAdmin(CourseContentAdmin, TranslationAdmin, VersionAdmin)
             "Exercise miscellaneous",
             {
                 "fields": [
-                    "default_points",
-                    "manually_evaluated",
-                    "evaluation_group",
-                    "delayed_evaluation",
-                    "group_submission",
-                    "answer_limit",
                     "answer_widget",
                 ],
                 "classes": ["wide"],
@@ -332,10 +317,6 @@ class RepeatedTemplateExerciseAdmin(CourseContentAdmin, TranslationAdmin, Versio
         (
             "Page information",
             {"fields": ["name", "slug", "content", "question", "tags"]},
-        ),
-        (
-            "Exercise miscellaneous",
-            {"fields": ["default_points", "evaluation_group"], "classes": ["wide"]},
         ),
         ("Feedback settings", {"fields": ["feedback_questions"]}),
     ]

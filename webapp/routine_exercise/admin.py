@@ -56,7 +56,7 @@ class RoutineExerciseAdmin(CourseContentAdmin, TranslationAdmin, VersionAdmin):
         ),
         (
             "Exercise miscellaneous",
-            {"fields": ["default_points", "evaluation_group", "answer_widget"], "classes": ["wide"]},
+            {"fields": ["answer_widget"], "classes": ["wide"]},
         ),
         ("Feedback settings", {"fields": ["feedback_questions"]}),
     ]

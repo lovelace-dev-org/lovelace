@@ -260,12 +260,12 @@ def render_json_feedback(log, request, course, instance, content, answer_id=None
     return feedback
 
 
-def apply_late_rule(exercise, evaluation, rule, days_late):
-    quotient = evaluation.get("points", 0) / evaluation.get("max", exercise.default_points)
+def apply_late_rule(exercise, link, evaluation, rule, days_late):
+    quotient = evaluation.get("points", 0) / evaluation.get("max", link.default_points)
     return eval(
         rule.format(
             p=evaluation.get("points", 0),
-            m=evaluation.get("max", exercise.default_points),
+            m=evaluation.get("max", link.default_points),
             q=quotient,
             d=days_late,
         )
@@ -281,8 +281,7 @@ def is_late(graph, user, answer_date):
     return deadline and (answer_date > deadline)
 
 
-def update_completion(exercise, instance, user, evaluation, answer_date, overwrite=False):
-    link = cm.EmbeddedLink.objects.filter(instance=instance, embedded_page=exercise).first()
+def update_completion(exercise, link, instance, user, evaluation, answer_date, overwrite=False):
     parent_graph = link.parent.contentgraph_set.get_queryset().get(instance=instance)
     late = is_late(parent_graph, user, answer_date)
 
@@ -291,11 +290,11 @@ def update_completion(exercise, instance, user, evaluation, answer_date, overwri
     if correct:
         if late and parent_graph.late_rule:
             days_late = (answer_date - parent_graph.deadline).days + 1
-            quotient = apply_late_rule(exercise, evaluation, parent_graph.late_rule, days_late)
+            quotient = apply_late_rule(exercise, link, evaluation, parent_graph.late_rule, days_late)
         else:
             try:
                 quotient = evaluation.get("points", 0) / evaluation.get(
-                    "max", exercise.default_points
+                    "max", link.default_points
                 )
             except ZeroDivisionError:
                 quotient = 0
@@ -340,10 +339,12 @@ def update_completion(exercise, instance, user, evaluation, answer_date, overwri
     if changed and correct and eval_group:
         others = cm.ContentPage.objects.filter(evaluation_group=eval_group).exclude(id=exercise.id)
         for task in others:
-            link = cm.EmbeddedLink.objects.filter(instance=instance, embedded_page=task).first()
-            if link is None:
+            group_link = cm.EmbeddedLink.objects.filter(
+                instance=instance, embedded_page=task, parent=link.parent
+            ).first()
+            if group_link is None:
                 continue
-            if get_single_archived(task, link.revision).evaluation_group != eval_group:
+            if get_single_archived(task, group_link.revision).evaluation_group != eval_group:
                 continue
             try:
                 completion = cm.UserTaskCompletion.objects.get(
@@ -361,14 +362,16 @@ def update_completion(exercise, instance, user, evaluation, answer_date, overwri
     return completion.state
 
 
-def best_result(user, instance, group_tag):
-    grouped_tasks = cm.ContentPage.objects.filter(evaluation_group=group_tag)
+def best_result(user, instance, parent, group_tag):
+    grouped_links = cm.EmbeddedLink.objects.filter(
+        evaluation_group=group_tag, parent=parent
+    ).prefetch_related("embedded_page")
     best_score = -1
-    best_task = grouped_tasks[0]
-    for task in grouped_tasks:
-        correct, score = task.get_user_evaluation(user, instance)
+    best_link = grouped_links[0].embedded_page
+    for link in grouped_links:
+        correct, score = task.embedded_page.get_user_evaluation(user, instance)
         if correct == "correct":
             if score > best_score:
                 best_score = score
-                best_task = task
-    return best_score, best_task
+                best_link = link
+    return best_score, best_link

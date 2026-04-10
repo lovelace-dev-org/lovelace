@@ -7,11 +7,10 @@
     <script>
     (function() {
       $(document.currentScript).parent().parent().find("form :input").prop("disabled", "true");
-      {% if revision %}
-        $(document.currentScript).parent().parent().find("form").prop("action", "{% url 'routine_exercise:check_routine_question' course instance content revision %}");
-      {% elif instance %}
-        $(document.currentScript).parent().parent().find("form").prop("action", "{% url 'routine_exercise:check_routine_question' course instance content 'head' %}");
-      {% endif %}
+      $(document.currentScript).parent().parent().find("form").prop(
+        "action",
+        "{% url 'routine_exercise:check_routine_question' course instance parent content %}"
+      );
     })();
    </script>
 

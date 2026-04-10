@@ -42,12 +42,6 @@ class MultiExamAdmin(CourseContentAdmin, TranslationAdmin, VersionAdmin):
             "Exercise miscellaneous",
             {
                 "fields": [
-                    "default_points",
-                    "manually_evaluated",
-                    "evaluation_group",
-                    "delayed_evaluation",
-                    "group_submission",
-                    "answer_limit",
                     "answer_widget",
                 ],
                 "classes": ["wide"],

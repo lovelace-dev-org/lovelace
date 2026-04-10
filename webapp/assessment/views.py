@@ -292,7 +292,7 @@ def delete_bullet(request, course, instance, sheet, bullet):
 
 
 @ensure_staff
-def update_exercise_points(request, course, instance, content, sheet):
+def update_exercise_points(request, course, instance, parent, content, sheet):
     sheet_link = AssessmentToExerciseLink.objects.filter(
         exercise=content,
         instance=instance,
@@ -311,7 +311,7 @@ def update_exercise_points(request, course, instance, content, sheet):
 
 
 @ensure_staff
-def view_submissions(request, course, instance, content):
+def view_submissions(request, course, instance, parent, content):
     users = (
         instance.enrolled_users.get_queryset().order_by("last_name", "first_name", "username").all()
     )
@@ -417,7 +417,7 @@ def view_submissions(request, course, instance, content):
 
 
 @ensure_staff
-def submission_assessment(request, course, instance, exercise, user, answer):
+def submission_assessment(request, course, instance, parent, exercise, user, answer):
     try:
         sheet_link = AssessmentToExerciseLink.objects.get(instance=instance, exercise=exercise)
     except AssessmentToExerciseLink.DoesNotExist:
@@ -499,7 +499,7 @@ def submission_assessment(request, course, instance, exercise, user, answer):
 
 
 @ensure_owner_or_staff
-def view_assessment(request, user, course, instance, exercise, answer):
+def view_assessment(request, user, course, instance, parent, exercise, answer):
     if not exercise.manually_evaluated:
         return HttpResponseNotFound(_("This exercise does not have manual assessment."))
 

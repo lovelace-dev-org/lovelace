@@ -57,22 +57,24 @@ urlpatterns = [
         name="view_assessment_sheet",
     ),
     path(
-        "<course:course>/<instance:instance>/<content:content>/submissions/",
+        "<course:course>/<instance:instance>/<content:parent>/<content:content>/submissions/",
         views.view_submissions,
         name="view_submissions",
     ),
     path(
-        "<course:course>/<instance:instance>/<content:exercise>/<user:user>/<answer:answer>/",
+        "<course:course>/<instance:instance>/<content:parent>/<content:exercise>/"
+        "<user:user>/<answer:answer>/",
         views.submission_assessment,
         name="submission_assessment",
     ),
     path(
-        "<user:user>/<course:course>/<instance:instance>/<content:exercise>/<answer:answer>/",
+        "<user:user>/<course:course>/<instance:instance>/<content:parent>/"
+        "<content:exercise>/<answer:answer>/",
         views.view_assessment,
         name="view_assessment",
     ),
     path(
-        "<course:course>/<instance:instance>/<content:content>/<sheet:sheet>/",
+        "<course:course>/<instance:instance>/<content:parent>/<content:content>/<sheet:sheet>/",
         views.update_exercise_points,
         name="update_exercise_points",
     ),

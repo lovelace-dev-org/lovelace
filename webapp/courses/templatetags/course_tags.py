@@ -120,6 +120,7 @@ def embed_frame(context, content_data):
         "course_staff": context["course_staff"],
         "course": context["course"],
         "instance": context["instance"],
+        "parent": context["content"],
         "content": page,
         "answer_count": answer_count,
         "attempts_left": page.answer_limit and page.answer_limit - answer_count,

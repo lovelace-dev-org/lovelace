@@ -219,7 +219,7 @@ def get_routine_question(request, course, instance, content, revision):
 
 
 @ensure_enrolled_or_staff
-def routine_progress(request, course, instance, content, task_id):
+def routine_progress(request, course, instance, parent, content, task_id):
     task = celery_app.AsyncResult(id=task_id)
     if not task.ready():
         progress_url = reverse(
@@ -305,10 +305,13 @@ def routine_progress(request, course, instance, content, task_id):
         data["max"] = info["data"]["max"]
 
         if progress.completed:
+            embed_link = instance.embeddedlink_set.get_queryset().get(
+                embedded_page=content, parent=parent
+            )
             data["evaluation"] = True
             update_completion(content, instance, request.user, data, answer.answer_date)
             total_evaluation, quotient = content.get_user_evaluation(request.user, instance)
-            data["score"] = f"{quotient * content.default_points:.2f}"
+            data["score"] = f"{quotient * embed_link.default_points:.2f}"
             data["total_evaluation"] = total_evaluation
         else:
             data["score"] = f"{0:.2f}"
@@ -325,13 +328,15 @@ def routine_progress(request, course, instance, content, task_id):
 
 
 @ensure_enrolled_or_staff
-def check_routine_question(request, course, instance, content, revision):
+def check_routine_question(request, course, instance, parent, content):
     if request.method != "POST":
         return HttpResponseNotAllowed(["POST"])
 
+    embed_link = cm.EmbeddedLink.objects.get(
+        embedded_page=content, instance=instance, parent=parent
+    )
     content = content.get_type_object()
-    if revision == "head":
-        revision = None
+    revision = embed_link.revision
 
     try:
         question = RoutineExerciseQuestion.objects.get(
@@ -370,7 +375,13 @@ def check_routine_question(request, course, instance, content, revision):
 
     progress_url = reverse(
         "routine_exercise:task_progress",
-        kwargs={"course": course, "instance": instance, "content": content, "task_id": task.id},
+        kwargs={
+            "course": course,
+            "instance": instance,
+            "parent": parent,
+            "content": content,
+            "task_id": task.id,
+        },
     )
     data = {"task": "check", "ready": False, "redirect": progress_url}
     return JsonResponse(data)

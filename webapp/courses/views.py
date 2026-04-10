@@ -378,7 +378,7 @@ def show_answers(request, user, course, instance, exercise):
 
 
 @ensure_enrolled_or_staff
-def check_answer(request, course, instance, content, revision):
+def check_answer(request, course, instance, parent, content):
     """
     Saves and evaluates a user's answer to an exercise and sends the results
     back to the user.
@@ -391,7 +391,9 @@ def check_answer(request, course, instance, content, revision):
     answer = request.POST
     files = request.FILES
 
-    if revision == "head":
+    embed_link = EmbeddedLink.objects.get(embedded_page=content, instance=instance, parent=parent)
+
+    if embed_link.revision is None:
         latest = Version.objects.get_for_object(content).latest("revision__date_created")
         answered_revision = latest.revision_id
         revision = None
@@ -401,7 +403,7 @@ def check_answer(request, course, instance, content, revision):
         exercise = get_single_archived(content, revision)
 
     answer_count = exercise.get_user_answers(exercise, user, instance).count()
-    if exercise.answer_limit is not None and answer_count >= exercise.answer_limit:
+    if embed_link.answer_limit is not None and answer_count >= embed_link.answer_limit:
         return JsonResponse({"result": _("You don't have any more attempts left for this task.")})
 
     try:
@@ -413,19 +415,20 @@ def check_answer(request, course, instance, content, revision):
 
     answer_count += 1
 
-    if exercise.delayed_evaluation:
+    if embed_link.delayed_evaluation:
         evaluation = {"evaluation": False, "manual": True}
     else:
         evaluation = exercise.check_answer(
-            content, user, ip, answer, files, answer_object, revision
+            content, embed_link, user, answer, files, answer_object
         )
-        if exercise.manually_evaluated:
+        evaluation["points"] = evaluation["quotient"] * embed_link.default_points
+        if embed_link.manually_evaluated:
             evaluation["manual"] = True
             evaluation["evaluation"] = False
             if exercise.content_type == "FILE_UPLOAD_EXERCISE":
                 task_id = evaluation.get("task_id")
                 if task_id is not None:
-                    return check_progress(request, course, instance, content, revision, task_id)
+                    return check_progress(request, course, instance, parent, content, task_id)
                 elif errors := evaluation.get("errors"):
                     return JsonResponse({"result": errors})
         else:
@@ -433,12 +436,12 @@ def check_answer(request, course, instance, content, revision):
             if exercise.content_type == "FILE_UPLOAD_EXERCISE":
                 task_id = evaluation.get("task_id")
                 if task_id is not None:
-                    return check_progress(request, course, instance, content, revision, task_id)
+                    return check_progress(request, course, instance, parent, content, task_id)
                 elif errors := evaluation.get("errors"):
                     print(errors)
                     return JsonResponse({"result": errors})
 
-    exercise.save_evaluation(user, evaluation, answer_object)
+    exercise.save_evaluation(embed_link, user, evaluation, answer_object)
 
     msg_context = {
         "course_slug": course.slug,
@@ -462,13 +465,13 @@ def check_answer(request, course, instance, content, revision):
         + str(answer_object.id)
     )
     evaluation["answer_url"] = request.build_absolute_uri(answer_url)
-    evaluation["max"] = evaluation.get("max") or exercise.default_points
+    evaluation["max"] = evaluation.get("max") or embed_link.default_points
 
     t = loader.get_template("courses/exercise-evaluation.html")
     total_evaluation, quotient = exercise.get_user_evaluation(user, instance)
-    score = quotient * exercise.default_points
+    score = quotient * embed_link.default_points
 
-    if not evaluation["evaluation"] or score < exercise.default_points:
+    if not evaluation["evaluation"] or score < embed_link.default_points:
         parser = markupparser.MarkupParser()
         hints = [
             "".join(
@@ -484,9 +487,9 @@ def check_answer(request, course, instance, content, revision):
         "hints": hints,
         "evaluation": evaluation.get("evaluation"),
         "answer_count_str": answer_count_str,
-        "attempts_left": exercise.answer_limit and exercise.answer_limit - answer_count,
+        "attempts_left": embed_link.answer_limit and embed_link.answer_limit - answer_count,
         "total_evaluation": total_evaluation,
-        "manual": exercise.manually_evaluated or exercise.delayed_evaluation,
+        "manual": embed_link.manually_evaluated or embed_link.delayed_evaluation,
         "score": f"{score:.2f}",
     }
     if "next_instance" in evaluation:
@@ -613,12 +616,12 @@ def get_repeated_template_session(request, course, instance, content, revision):
 
 
 @ensure_enrolled_or_staff
-def check_progress(request, course, instance, content, revision, task_id):
+def check_progress(request, course, instance, parent, content, task_id):
     # Based on https://djangosnippets.org/snippets/2898/
     task = celery_app.AsyncResult(id=task_id)
     info = task.info
     if task.ready():
-        return file_exercise_evaluation(request, course, instance, content, revision, task_id, task)
+        return file_exercise_evaluation(request, course, instance, parent, content, task_id, task)
 
     celery_status = rpc_tasks.get_celery_worker_status()
     if "errors" in celery_status:
@@ -640,10 +643,13 @@ def check_progress(request, course, instance, content, revision, task_id):
     return JsonResponse(data)
 
 
-def file_exercise_evaluation(request, course, instance, content, revision, task_id, task=None):
+def file_exercise_evaluation(request, course, instance, parent, content, task_id, task=None):
     if task is None:
         task = celery_app.AsyncResult(task_id)
-    if revision != "head":
+
+    embed_link = EmbeddedLink.objects.get(embedded_page=content, instance=instance, parent=parent)
+
+    if embed_link.revision is not None:
         content = get_single_archived(content, revision)
     answers = content.get_user_answers(content, request.user, instance)
     answer_count = answers.count()

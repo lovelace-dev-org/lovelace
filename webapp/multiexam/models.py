@@ -159,7 +159,7 @@ class MultipleQuestionExam(ContentPage):
         answer_object.save()
         return answer_object
 
-    def check_answer(self, user, ip, answer, files, answer_object, revision):
+    def check_answer(self, link, user, answer, files, answer_object):
         """
         Checks a student's answer against the exam attempt's script.
         """

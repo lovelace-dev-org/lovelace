@@ -352,7 +352,7 @@ class EmbeddedPageMarkup(Markup):
             settings["question"] = question
             settings["form"] = rendered_form
             settings["revision"] = revision
-            settings["max_points"] = page.default_points
+            settings["max_points"] = link.default_points
             settings["widget_configurable"] = answer_widget.configurable
             if instance is not None:
                 settings["urls"] = {
@@ -399,8 +399,8 @@ class EmbeddedPageMarkup(Markup):
                         kwargs={
                             "course": instance.course,
                             "instance": instance,
+                            "parent": state["context"]["content"],
                             "content": page,
-                            "revision": revision or "head",
                         },
                     ),
                     "edit_content_url": reverse("courses:content_edit_form", kwargs={

@@ -102,7 +102,7 @@ class RoutineExercise(ContentPage):
     def save_answer(self, user, ip, answer, files, instance, revision):
         pass
 
-    def check_answer(self, user, ip, answer, files, answer_object, revision):
+    def check_answer(self, link, user, answer, files, answer_object):
         pass
 
     def save_evaluation(self, user, evaluation, answer_object):
