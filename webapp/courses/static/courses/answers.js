@@ -20,14 +20,14 @@ function show_results (e, elem, results_div) {
     const r_div = $("#" + results_div)
     const popup = r_div.parent()
 
-    if (!r_div.html()) {
-        $.get(url, function (data, textStatus, jqXHR) {
-            r_div.html(data)
-            popup.css({ opacity: "1", "pointer-events": "auto", overflow: "scroll" })
-        })
-    } else {
+    // if (!r_div.html()) {
+    $.get(url, function (data, textStatus, jqXHR) {
+        r_div.html(data)
         popup.css({ opacity: "1", "pointer-events": "auto", overflow: "scroll" })
-    }
+    })
+    // } else {
+    //     popup.css({ opacity: "1", "pointer-events": "auto", overflow: "scroll" })
+    // }
 }
 
 $(document).ready(function () {

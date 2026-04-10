@@ -1,4 +1,5 @@
 from django.apps import AppConfig
+from lovelace import register_plugin
 
 
 class MultiExamConfig(AppConfig):
@@ -8,5 +9,4 @@ class MultiExamConfig(AppConfig):
     def ready(self):
         from multiexam import answer_widgets
         answer_widgets.register_answer_widgets()
-
-
+        register_plugin(self.module, ["export", "import"])

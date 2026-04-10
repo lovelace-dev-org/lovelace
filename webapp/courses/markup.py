@@ -6,6 +6,7 @@ from django.urls import reverse
 from django.utils.safestring import mark_safe
 
 from django.utils.text import slugify
+from django.utils.translation import gettext_lazy as _
 
 import pygments
 from pygments.lexers import get_lexer_by_name, guess_lexer_for_filename
@@ -22,6 +23,7 @@ from courses.markupparser import (
 )
 from courses import blockparser
 import courses.models as cm
+from lovelace import plugins as lovelace_plugins
 from utils.archive import get_single_archived
 from utils.content import get_embedded_media_file, get_embedded_media_image
 from utils import snippets
@@ -355,44 +357,27 @@ class EmbeddedPageMarkup(Markup):
             settings["max_points"] = link.default_points
             settings["widget_configurable"] = answer_widget.configurable
             if instance is not None:
+                menu_options = [
+                    (_("Edit this exercise"), "admin", "self", page.get_admin_change_url()),
+                ]
+                for module in lovelace_plugins.get("embed-menu"):
+                    menu_options.extend(module.includes.get_embed_frame_options(
+                        state["context"],
+                        page,
+                        revision,
+                        "staff",
+                    ))
+
+                menu_context = {
+                    "menu_options": menu_options,
+                    "content": page,
+                    "in_list": True
+                }
+                menu_template = loader.get_template("courses/embed-menu-options.html")
+                settings["staff_menu"] = menu_template.render(menu_context)
+
+
                 settings["urls"] = {
-                    "stats_url": reverse("stats:single_exercise", kwargs={"exercise": page}),
-                    "feedback_url": reverse(
-                        "feedback:statistics",
-                        kwargs={"instance": instance, "content": page},
-                    ),
-                    "download_url": reverse(
-                        "teacher_tools:download_answers",
-                        kwargs={
-                            "course": instance.course,
-                            "instance": instance,
-                            "content": page,
-                        },
-                    ),
-                    "summary_url": reverse(
-                        "teacher_tools:answer_summary",
-                        kwargs={
-                            "course": instance.course,
-                            "instance": instance,
-                            "content": page,
-                        },
-                    ),
-                    "batch_url": reverse(
-                        "teacher_tools:batch_grade",
-                        kwargs={
-                            "course": instance.course,
-                            "instance": instance,
-                            "content": page,
-                        },
-                    ),
-                    "reset_url": reverse(
-                        "teacher_tools:reset_completion",
-                        kwargs={
-                            "course": instance.course,
-                            "instance": instance,
-                            "content": page,
-                        },
-                    ),
                     "edit_url": page.get_admin_change_url(),
                     "submit_url": reverse(
                         "courses:check",

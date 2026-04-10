@@ -1,0 +1,13 @@
+{% for label, target, url in menu_options %}
+    <div class="user-tools">
+        {% if target == "side-panel" %}
+            <a class="tool-panel-link"
+               href="{{ url }}"
+               onclick="show_panel(event, this, 'user-tool-panel', '{{ content.slug }}-panel');"
+               data-querystring="">{{ label }}
+            </a>
+        {% else %}
+            <a href="{{ url }}">{{ label }}</a>
+        {% endif %}
+    </div>
+{% endfor %}

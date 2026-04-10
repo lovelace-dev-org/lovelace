@@ -74,7 +74,8 @@ urlpatterns = [
         name="get_file_exercise_evaluation",
     ),
     path(
-        "answers/<user:user>/<course:course>/<instance:instance>/<content:exercise>/",
+        "answers/<user:user>/<course:course>/<instance:instance>/<content:parent>/"
+        "<content:exercise>/",
         views.show_answers,
         name="show_answers",
     ),

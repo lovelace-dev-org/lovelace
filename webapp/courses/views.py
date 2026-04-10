@@ -59,7 +59,6 @@ from courses.models import (
     UserTaskCompletion,
     UserTextfieldExerciseAnswer,
 )
-import faq.utils as faq_utils
 from utils.access import (
     is_course_staff,
     determine_media_access,
@@ -319,15 +318,10 @@ def content(request, course, instance, content, pagenum=None):
 
 
 @ensure_owner_or_staff
-def show_answers(request, user, course, instance, exercise):
+def show_answers(request, user, course, instance, parent, exercise):
     """
     Show the user's answers for a specific exercise on a specific course.
     """
-
-    try:
-        parent, single_linked = get_embedded_parent(exercise, instance)
-    except EmbeddedLink.DoesNotExist:
-        return HttpResponseNotFound(_("The task was not linked on the requested course instance"))
 
     completion = UserTaskCompletion.objects.filter(
         user=user, instance=instance, exercise=exercise
@@ -717,7 +711,13 @@ def file_exercise_evaluation(request, course, instance, parent, content, task_id
     data["manual"] = content.manually_evaluated
     data["total_evaluation"] = (total_evaluation,)
     data["score"] = f"{score:.2f}"
-    data["has_faq"] = faq_utils.has_faq(instance, content, data["triggers"])
+    # data["has_faq"] = faq_utils.has_faq(instance, content, data["triggers"])
+    data["extra_callbacks"] = []
+
+    for module in lovelace_plugins["exercise-triggers"]:
+        data["extra_callbacks"].append(module.includes.get_exercise_trigger_callbacks(
+            instance, content, data
+        ))
 
     return JsonResponse(data)
 

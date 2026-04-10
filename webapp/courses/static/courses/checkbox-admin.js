@@ -21,7 +21,7 @@ function show_preview (event, a) {
             question: questionArea.val(),
             choices,
             embedded: true,
-            form_template: "courses/checkbox-exercise.html"
+            answer_widget: "checkbox"
         },
         dataType: "json",
         success: function (data, text_status, jqxhr_obj) {
