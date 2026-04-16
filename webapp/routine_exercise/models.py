@@ -5,7 +5,7 @@ from django.template import loader
 from django.urls import reverse
 from django.utils.text import slugify
 
-from courses.models import ContentPage, CourseInstance, User
+import courses.models as cm
 
 from utils.data import export_json, export_files, serialize_many_python, serialize_single_python
 from utils.files import get_testfile_path, upload_storage
@@ -13,7 +13,6 @@ from utils.management import ExportImportMixin
 
 
 class RoutineExercise(ContentPage):
-
     answers_template = "routine_exercise/user-answers.html"
     default_answer_widget = "routine"
     answer_table_classes = "fixed"
@@ -31,8 +30,8 @@ class RoutineExercise(ContentPage):
         self.content_type = "ROUTINE_EXERCISE"
         super().save(*args, **kwargs)
         RoutineExerciseQuestion.objects.filter(exercise=self, routineexerciseanswer=None).delete()
-        parents = ContentPage.objects.filter(embedded_pages=self).distinct()
-        for instance in CourseInstance.objects.filter(
+        parents = cm.ContentPage.objects.filter(embedded_pages=self).distinct()
+        for instance in cm.CourseInstance.objects.filter(
             Q(contentgraph__content=self) | Q(contentgraph__content__embedded_pages=self),
             frozen=False,
         ).distinct():
@@ -41,12 +40,12 @@ class RoutineExercise(ContentPage):
                 parent.regenerate_cache(instance)
 
     def get_rendered_content(self, context):
-        content = ContentPage._get_rendered_content(self, context)
+        content = cm.ContentPage._get_rendered_content(self, context)
         t = loader.get_template("routine_exercise/routine-exercise-content-extra.html")
         return content + [("extra", t.render(context), -1, 0)]
 
     def get_question(self, context):
-        return ContentPage._get_question(self, context)
+        return cm.ContentPage._get_question(self, context)
 
     def get_choices(self, revision=None):
         return
@@ -109,7 +108,7 @@ class RoutineExercise(ContentPage):
         pass
 
     def export(self, instance, export_target):
-        super(ContentPage, self).export(instance, export_target)
+        super(cm.ContentPage, self).export(instance, export_target)
         self.export_answer_widget(instance, export_target)
         export_json(
             serialize_single_python(self.routineexercisebackendcommand),
@@ -205,8 +204,8 @@ class RoutineExerciseTemplate(models.Model):
 
 class RoutineExerciseQuestion(models.Model):
     exercise = models.ForeignKey(RoutineExercise, on_delete=models.CASCADE)
-    instance = models.ForeignKey(CourseInstance, null=True, on_delete=models.SET_NULL)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    instance = models.ForeignKey(cm.CourseInstance, null=True, on_delete=models.SET_NULL)
+    user = models.ForeignKey(cm.User, on_delete=models.CASCADE)
     revision = models.PositiveIntegerField(null=True)
     language_code = models.CharField(max_length=7)
     question_class = models.PositiveIntegerField()
@@ -228,17 +227,20 @@ class RoutineExerciseProgress(models.Model):
         unique_together = ("exercise", "instance", "user")
 
     exercise = models.ForeignKey(RoutineExercise, on_delete=models.CASCADE)
-    instance = models.ForeignKey(CourseInstance, null=True, on_delete=models.SET_NULL)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    instance = models.ForeignKey(cm.CourseInstance, null=True, on_delete=models.SET_NULL)
+    user = models.ForeignKey(cm.User, on_delete=models.CASCADE)
     completed = models.BooleanField(default=False)
     progress = models.CharField(max_length=255)
     points = models.DecimalField(default=0, max_digits=5, decimal_places=2)
     max_points = models.PositiveIntegerField(default=1)
 
 
-ContentPage.register_content_type(
+cm.ContentPage.register_content_type(
     "ROUTINE_EXERCISE", RoutineExercise, RoutineExerciseAnswer
 )
+
+cm.UserProfile.register_user_data_model(RoutineExerciseProgress, ["user"])
+cm.UserProfile.register_user_data_model(RoutineExerciseQuestion, ["user"])
 
 def export_models(instance, export_target):
     pass

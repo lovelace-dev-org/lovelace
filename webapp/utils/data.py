@@ -7,10 +7,12 @@ import shutil
 import uuid
 from collections import defaultdict
 from decimal import Decimal
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from django.apps import apps
 from django.conf import settings
+from django.contrib.admin.utils import NestedObjects
 from django.core import serializers
+from django.db import router
 from django.utils.translation import gettext as _
 from modeltranslation.translator import translator, NotRegistered
 from reversion import revisions as reversion
@@ -252,3 +254,117 @@ def import_from_zip(import_source, user, responsible, staff_group, target_instan
         reversion.set_comment("imported by system")
 
     return instance, errors
+
+def apply_data_retention(preview=True):
+    """
+    Function for applying data retention policy settings. Checks through all course instances where
+    the end date is older than the server's data retention time setting. User data retention policy
+    affects data handling as follows:
+    1) Retain policy
+        - Only calendar reservations are deleted, everything else is kept as is.
+    2) Delete policy
+        - A generated "deleted-user" replaces the user to maintain a record that a user who was
+          enrolled has been deleted.
+        - All data the user has in the course instance is deleted.
+    3) Anonymize policy
+        - A generated "generated-user" takes ownership of all the user's data in the course instance
+        - Calendar reservations are deleted
+
+    All models that have been registered to courses.models.UserProfile as containing user data are
+    affected.
+
+    This function returns a dictionary that shows number of changes made or changes that will
+    be made if run in preview mode.
+    """
+
+    retention_threshold = (
+        datetime.now() - timedelta(weeks=settings.DATA_RETENTION_PERIOD * 4)
+    )
+
+    # Delete or anonymize answer and completion related data based on user's chosen data policy
+    ended_course_instances = cm.CourseInstance.objects.filter(end_date__lt=retention_threshold)
+    affected = defaultdict(dict)
+
+    for instance in ended_course_instances:
+        enrolled_users = instance.enrolled_users.get_queryset()
+        delete_setting = list(enrolled_users.filter(userprofile__data_policy="DELETE"))
+        anonymize_setting = list(enrolled_users.filter(userprofile__data_policy="ANONYMIZE"))
+
+        # Move enrollments of deleted users to "deleted user" dummies to retain participation numbers
+        if not preview:
+            for user in delete_setting:
+                deleted_anon = cm.User(
+                    username=f"deleted-user-{str(uuid.uuid1())}"
+                )
+                deleted_anon.save()
+                count = cm.CourseEnrollment.objects.filter(
+                    student=user, instance=instance
+                ).update(student=deleted_anon)
+                try:
+                    affected[cm.CourseEnrollment._meta.label]["deleted"] += count
+                except KeyError:
+                    affected[cm.CourseEnrollment._meta.label]["deleted"] = count
+
+        # Delete everything else that belongs to users with a delete policy
+        for model_cls, fields in cm.UserProfile.user_data_models:
+            for field in fields:
+                queryset = model_cls.objects.filter(
+                    **{f"{field}__in": delete_setting, "instance": instance}
+                )
+                if preview:
+                    try:
+                        affected[model_cls._meta.label]["deleted"] += list(queryset)
+                    except KeyError:
+                        affected[model_cls._meta.label]["deleted"] = list(queryset)
+                else:
+                    count = queryset.delete()
+                    try:
+                        affected[model_cls._meta.label]["deleted"] += count
+                    except KeyError:
+                        affected[model_cls._meta.label]["deleted"] = count
+
+        # Create an anonymous clone for each user with anonymize policy and transfer everything
+        # to it
+        for user in anonymize_setting:
+
+            if not preview:
+                new_anon = cm.User(
+                    username=f"generated-user-{str(uuid.uuid1())}"
+                )
+                new_anon.save()
+
+            for model_cls, fields in cm.UserProfile.user_data_models:
+                for field in fields:
+                    queryset = model_cls.objects.filter(**{field: user, "instance": instance})
+                    if preview:
+                        try:
+                            affected[model_cls._meta.label]["anonymized"] += list(queryset)
+                        except KeyError:
+                            affected[model_cls._meta.label]["anonymized"] = list(queryset)
+                    else:
+                        count = queryset.update(**{field: new_anon})
+                        try:
+                            affected[model_cls._meta.label]["anonymized"] += count
+                        except KeyError:
+                            affected[model_cls._meta.label]["anonymized"] = count
+
+
+    # Delete all old calendar reservations regardless of user data policy
+    queryset = cm.CalendarReservation.objects.filter(calendar_date__end_time__lt=retention_threshold)
+    if preview:
+        affected[cm.CalendarReservation._meta.label]["deleted"] = list(queryset)
+    else:
+        queryset.delete()
+
+    # Delete all users whose policy is delete or anonymize if their last login is older than
+    # data retention period
+    non_retain_setting = cm.User.objects.filter(
+        userprofile__data_policy__in=["DELETE", "ANONYMIZE"],
+        last_login__lt=retention_threshold
+    )
+    if preview:
+        affected[cm.User._meta.label]["deleted"] = list(non_retain_setting)
+    else:
+        affected[cm.User._meta.label]["deleted"] = non_retain_setting.delete()
+
+    return affected
