@@ -13,11 +13,11 @@ class WSBaseConsumer(AsyncWebsocketConsumer):
         self.state = run_utils.RunState.NOT_STARTED
         self.position = 0
         if self.scope["user"] is None:
-            self.timeout_task = None
             msg = {
                 "operation": "unknown",
                 "status": "unauthorized"
             }
+            self.timeout_task = None
             await self.send(text_data=json.dumps(msg))
             await self.close(code=3000)
         else:
