@@ -2,6 +2,7 @@
 Django views for rendering the course contents and checking exercises.
 """
 import datetime
+from decimal import Decimal
 import json
 import logging
 import os
@@ -31,6 +32,7 @@ from django.utils.translation import gettext as _
 
 from reversion.models import Version
 
+from lovelace import plugins as lovelace_plugins
 from lovelace.celery import app as celery_app
 from courses import markupparser
 import courses.tasks as rpc_tasks
@@ -260,7 +262,7 @@ def _page_context(request, course, instance, content, pagenum=None):
     )
     embed_dict = {}
     for link in embedded_links:
-        embed_dict[link.embedded_page.slug] = link.embedded_page
+        embed_dict[link.embedded_page.slug] = link
 
     c = {
         "course": course,
@@ -323,6 +325,7 @@ def show_answers(request, user, course, instance, parent, exercise):
     Show the user's answers for a specific exercise on a specific course.
     """
 
+    embed_link = EmbeddedLink.objects.get(embedded_page=exercise, instance=instance, parent=parent)
     completion = UserTaskCompletion.objects.filter(
         user=user, instance=instance, exercise=exercise
     ).first()
@@ -348,7 +351,7 @@ def show_answers(request, user, course, instance, parent, exercise):
         "instance_name": instance.name,
         "instance_email": instance.email,
         "parent": parent,
-        "single_linked": single_linked,
+        "embed_link": embed_link,
         "anchor": anchor,
         "answers_url": request.build_absolute_uri(),
         "answers": answers,
@@ -415,7 +418,7 @@ def check_answer(request, course, instance, parent, content):
         evaluation = exercise.check_answer(
             content, embed_link, user, answer, files, answer_object
         )
-        evaluation["points"] = evaluation["quotient"] * embed_link.default_points
+        evaluation["points"] = Decimal(evaluation.get("quotient", 0)) * embed_link.default_points
         if embed_link.manually_evaluated:
             evaluation["manual"] = True
             evaluation["evaluation"] = False
@@ -452,6 +455,7 @@ def check_answer(request, course, instance, parent, content):
                 "user": request.user,
                 "course": course,
                 "instance": instance,
+                "parent": parent,
                 "exercise": content,
             },
         )
@@ -627,7 +631,7 @@ def check_progress(request, course, instance, parent, content, task_id):
                 "course": course,
                 "instance": instance,
                 "content": content,
-                "revision": "head" if revision is None else revision,
+                "parent": parent,
                 "task_id": task_id,
             },
         )
@@ -653,12 +657,14 @@ def file_exercise_evaluation(request, course, instance, parent, content, task_id
     evaluation_tree = task.info["data"]
     evaluation_json = json.dumps(evaluation_tree)
     task.forget()
+
     evaluation_obj = content.save_evaluation(
+        embed_link,
         request.user,
         {
             "evaluation": evaluation_tree["correct"],
             "test_results": evaluation_json,
-            "manual": content.manually_evaluated,
+            "manual": embed_link.manually_evaluated,
             "points": evaluation_tree["points"],
             "max": evaluation_tree["max"],
         },
@@ -672,6 +678,7 @@ def file_exercise_evaluation(request, course, instance, parent, content, task_id
                 "user": request.user,
                 "course": course,
                 "instance": instance,
+                "parent": parent,
                 "exercise": content,
             },
         )
@@ -679,13 +686,13 @@ def file_exercise_evaluation(request, course, instance, parent, content, task_id
         + str(evaluated_answer.id)
     )
     answer_url = request.build_absolute_uri(answer_url)
-
     msg_context = {
         "course_slug": course.slug,
         "instance_slug": instance.slug,
         "instance": instance,
         "content_page": content,
         "answer_url": answer_url,
+        "embed_link": embed_link,
     }
 
     data = compile_evaluation_data(request, evaluation_tree, evaluation_obj, msg_context)
@@ -703,19 +710,20 @@ def file_exercise_evaluation(request, course, instance, parent, content, task_id
             )
             send_error_report(instance, content, revision, errors, answer_url)
 
+
     total_evaluation, quotient = content.get_user_evaluation(request.user, instance)
-    score = quotient * content.default_points
+    score = quotient * embed_link.default_points
 
     data["answer_count_str"] = answer_count_str
-    data["attempts_left"] = (content.answer_limit and content.answer_limit - answer_count,)
-    data["manual"] = content.manually_evaluated
+    data["attempts_left"] = (embed_link.answer_limit and embed_link.answer_limit - answer_count,)
+    data["manual"] = embed_link.manually_evaluated
     data["total_evaluation"] = (total_evaluation,)
     data["score"] = f"{score:.2f}"
     # data["has_faq"] = faq_utils.has_faq(instance, content, data["triggers"])
     data["extra_callbacks"] = []
 
     for module in lovelace_plugins["exercise-triggers"]:
-        data["extra_callbacks"].append(module.includes.get_exercise_trigger_callbacks(
+        data["extra_callbacks"].extend(module.includes.get_exercise_trigger_callbacks(
             instance, content, data
         ))
 
@@ -731,7 +739,9 @@ def file_exercise_evaluation(request, course, instance, parent, content, task_id
 
 
 @ensure_owner_or_staff
-def get_file_exercise_evaluation(request, user, course, instance, exercise, answer):
+def get_file_exercise_evaluation(request, user, course, instance, parent, exercise, answer):
+    embed_link = EmbeddedLink.objects.get(embedded_page=exercise, instance=instance, parent=parent)
+
     results_json = answer.evaluation.test_results
     evaluation_tree = json.loads(results_json)
     evaluation_obj = answer.evaluation
@@ -741,6 +751,7 @@ def get_file_exercise_evaluation(request, user, course, instance, exercise, answ
         "instance_slug": instance.slug,
         "instance": instance,
         "content_page": exercise,
+        "embed_link": embed_link,
     }
 
     data = compile_evaluation_data(request, evaluation_tree, evaluation_obj, msg_context)

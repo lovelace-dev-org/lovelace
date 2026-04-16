@@ -203,6 +203,11 @@ class MarkupParser:
             except MarkupError as e:
                 yield ("error", e.html(), line_idx, 1)
                 line_count = 1
+            except Exception as e:
+                error = MarkupError(str(e))
+                print(f"Error in {block_markup.__name__} markup: {e}")
+                print(f"On line: {line_idx}")
+                yield ("error", error.html(), line_idx, 1)
 
             line_idx += line_count
 

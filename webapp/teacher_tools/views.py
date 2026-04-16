@@ -614,7 +614,12 @@ def batch_grade_task(request, course, instance, parent, content):
     ]:
         return HttpResponseForbidden(_("Batch grading is not supported for this task type"))
 
-    if content.manually_evaluated:
+    try:
+        link = EmbeddedLink.objects.get(instance=instance, embedded_page=content, parent=parent)
+    except EmbeddedLink.DoesNotExist:
+        return HttpResponseNotFound(_("Task is not linked to this course"))
+
+    if link.manually_evaluated:
         return HttpResponseForbidden(
             _("Batch grading is not possible for manually evaluated tasks")
         )
@@ -624,18 +629,6 @@ def batch_grade_task(request, course, instance, parent, content):
         if not form.is_valid():
             errors = form.errors.as_json()
             return JsonResponse({"errors": errors}, status=400)
-
-        try:
-            parent, single_linked = get_embedded_parent(content, instance)
-        except EmbeddedLink.DoesNotExist:
-            return HttpResponseNotFound(
-                _("The task was not linked on the requested course instance")
-            )
-
-        try:
-            link = EmbeddedLink.objects.get(instance=instance, embedded_page=content, parent=parent)
-        except EmbeddedLink.DoesNotExist:
-            return HttpResponseNotFound(_("Task is not linked to this course"))
 
         if link.revision is None:
             exercise = content
@@ -691,7 +684,6 @@ def batch_grade_task(request, course, instance, parent, content):
             "instance": instance,
             "content": content,
             "parent": parent,
-            "single_linked": single_linked,
             "answers": log,
             "course_staff": True,
         }

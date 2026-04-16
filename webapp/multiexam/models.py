@@ -187,9 +187,10 @@ class MultipleQuestionExam(ContentPage):
 
         return {
             "evaluation": True,
-            "points": total_score,
-            "max": max_score,
+            "quotient": total_score / max_score,
             "test_results": json.dumps(results),
+            "correct_items": total_score,
+            "total_items": max_score,
         }
 
     def get_user_answers(self, user, instance, ignore_drafts=True):

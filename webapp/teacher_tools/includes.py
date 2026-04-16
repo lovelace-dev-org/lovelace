@@ -40,7 +40,7 @@ def get_user_menu_options(context):
     return options
 
 
-def get_embed_frame_options(context, content, revision, category):
+def get_embed_frame_options(context, content, link, category):
     options = []
     instance = context["instance"]
     parent = context["content"]

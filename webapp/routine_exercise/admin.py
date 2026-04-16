@@ -51,7 +51,7 @@ class RoutineExerciseAdmin(CourseContentAdmin, TranslationAdmin, VersionAdmin):
         (
             "Page information",
             {
-                "fields": ["name", "origin", "slug", "content", "question", "tags"],
+                "fields": ["name", "origin", "slug", "content", "question"],
             },
         ),
         (

@@ -2,11 +2,7 @@
 
   <button id="rt-{{ content.id }}" onclick="get_routine_question(event);" class="rt-interaction"
             data-url="
-            {% if revision %}
-              {% url 'routine_exercise:get_routine_question' course instance content revision %}
-            {% elif instance %}
-              {% url 'routine_exercise:get_routine_question' course instance content "head" %}
-            {% endif %}
+              {% url 'routine_exercise:get_routine_question' course instance parent content %}
             "
             data-start-text="{% trans 'Start exercise session' %}"
             data-next-text="{% trans 'Next' %}">

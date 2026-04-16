@@ -157,10 +157,11 @@ def _routine_payload(user, instance, content, revision, progress, answer=None):
 
 
 @ensure_enrolled_or_staff
-def get_routine_question(request, course, instance, content, revision):
+def get_routine_question(request, course, instance, parent, content):
     content = content.get_type_object()
-    if revision == "head":
-        revision = None
+    embed_link = cm.EmbeddedLink.objects.get(
+        embedded_page=content, instance=instance, parent=parent
+    )
 
     try:
         progress = RoutineExerciseProgress.objects.get(
@@ -180,7 +181,7 @@ def get_routine_question(request, course, instance, content, revision):
         user=request.user,
         instance=instance,
         exercise=content,
-        revision=revision,
+        revision=embed_link.revision,
         routineexerciseanswer=None,
     ).first()
 
@@ -195,11 +196,17 @@ def get_routine_question(request, course, instance, content, revision):
                 }
             )
 
-        payload = _routine_payload(request.user, instance, content, revision, progress)
+        payload = _routine_payload(request.user, instance, content, embed_link.revision, progress)
         task = routine_tasks.generate_question.delay(payload)
         progress_url = reverse(
             "routine_exercise:task_progress",
-            kwargs={"course": course, "instance": instance, "content": content, "task_id": task.id},
+            kwargs={
+                "course": course,
+                "instance": instance,
+                "content": content,
+                "parent": parent,
+                "task_id": task.id
+            },
         )
         data = {"task": "generate", "ready": False, "redirect": progress_url}
         return JsonResponse(data)
@@ -297,17 +304,18 @@ def routine_progress(request, course, instance, parent, content, task_id):
         except RoutineExercise.DoesNotExist:
             return JsonResponse({"error": _("Unable to find matching answer.")})
 
+        embed_link = instance.embeddedlink_set.get_queryset().get(
+            embedded_page=content, parent=parent
+        )
+
         progress = _save_evaluation(request.user, instance, content, task_id, info)
         data = render_json_feedback(
-            info["data"]["log"], request, course, instance, content, answer.id
+            info["data"]["log"], request, course, instance, embed_link, content, answer.id
         )
         data["points"] = info["data"]["score"]
         data["max"] = info["data"]["max"]
 
         if progress.completed:
-            embed_link = instance.embeddedlink_set.get_queryset().get(
-                embedded_page=content, parent=parent
-            )
             data["evaluation"] = True
             update_completion(content, instance, request.user, data, answer.answer_date)
             total_evaluation, quotient = content.get_user_evaluation(request.user, instance)

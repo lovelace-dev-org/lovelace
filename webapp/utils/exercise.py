@@ -169,7 +169,7 @@ def compile_evaluation_data(request, evaluation_tree, evaluation_obj, context=No
     t_exercise = loader.get_template("courses/exercise-evaluation.html")
     c_exercise = {
         "evaluation": evaluation_obj.correct,
-        "manual": context["content_page"].manually_evaluated,
+        "manual": context["embed_link"].manually_evaluated,
         "answer_url": context.get("answer_url", ""),
         "points": evaluation_tree["points"],
         "max": evaluation_tree["max"],
@@ -189,7 +189,7 @@ def compile_evaluation_data(request, evaluation_tree, evaluation_obj, context=No
     return data
 
 
-def render_json_feedback(log, request, course, instance, content, answer_id=None):
+def render_json_feedback(log, request, course, instance, link, content, answer_id=None):
     """
     Renders exercise feedback from the exercise log JSON format. Parses
     messages, hints, triggers, and the final result from the log and returns
@@ -235,6 +235,7 @@ def render_json_feedback(log, request, course, instance, content, answer_id=None
                 "user": request.user,
                 "course": course,
                 "instance": instance,
+                "parent": link.parent,
                 "exercise": content,
             },
         )
@@ -246,7 +247,7 @@ def render_json_feedback(log, request, course, instance, content, answer_id=None
     t_exercise = loader.get_template("courses/exercise-evaluation.html")
     c_exercise = {
         "evaluation": log["result"]["correct"],
-        "manual": content.manually_evaluated,
+        "manual": link.manually_evaluated,
         "answer_url": request.build_absolute_uri(answer_url),
         "points": log["result"]["score"],
         "max": log["result"]["max"],
@@ -334,24 +335,24 @@ def update_completion(exercise, link, instance, user, evaluation, answer_date, o
 
         completion.save()
 
-    eval_group = get_single_archived(exercise, link.revision).evaluation_group
+    eval_group = link.evaluation_group
 
     if changed and correct and eval_group:
-        others = cm.ContentPage.objects.filter(evaluation_group=eval_group).exclude(id=exercise.id)
-        for task in others:
-            group_link = cm.EmbeddedLink.objects.filter(
-                instance=instance, embedded_page=task, parent=link.parent
-            ).first()
-            if group_link is None:
-                continue
-            if get_single_archived(task, group_link.revision).evaluation_group != eval_group:
-                continue
+        others = cm.EmbeddedLink.objects.filter(
+            evaluation_group=eval_group,
+            instance=instance,
+            parent=link.parent
+        ).exclude(id=link.id)
+
+        for group_link in others:
             try:
                 completion = cm.UserTaskCompletion.objects.get(
-                    exercise=task, instance=instance, user=user
+                    exercise=group_link.embedded_page, instance=instance, user=user
                 )
             except cm.UserTaskCompletion.DoesNotExist:
-                completion = cm.UserTaskCompletion(exercise=task, instance=instance, user=user)
+                completion = cm.UserTaskCompletion(
+                    exercise=group_link.embedded_page, instance=instance, user=user
+                )
                 completion.state = "credited"
                 completion.save()
             else:

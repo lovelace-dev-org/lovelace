@@ -23,7 +23,9 @@
     <div class="exercise-score">{% trans 'You got:' %} {{ correct_items }} / {{ total_items }}</div>
   {% endif %}
   {% if evaluation == True %}
-    <div class="exercise-score">{% trans 'Score:' %} {{ points }} / {{ max }}</div>
+    <div class="exercise-score">
+      {% trans 'Score:' %} {{ points|floatformat:"2" }} / {{ max|floatformat:"2" }}
+    </div>
   {% endif %}
 
 

@@ -11,7 +11,7 @@ register_model_converter(AssessmentSection, name="section")
 
 urlpatterns = [
     path(
-        "<course:course>/<instance:instance>/<content:content>/manage/",
+        "<course:course>/<instance:instance>/<content:parent>/<content:content>/manage/",
         views.manage_assessment,
         name="manage_assessment",
     ),
@@ -52,7 +52,7 @@ urlpatterns = [
         name="delete_bullet",
     ),
     path(
-        "<course:course>/<instance:instance>/<content:content>/view/",
+        "<course:course>/<instance:instance>/<content:parent>/<content:content>/view/",
         views.view_assessment_sheet,
         name="view_assessment_sheet",
     ),

@@ -6,7 +6,7 @@
 <div class="embedded-page">
 {% if user.is_active %}
   <div class="task-meta-container">
-    <div class="task-meta" data-eval-group="{{ content.evaluation_group }}">
+    <div class="task-meta" data-eval-group="{{ embed_link.evaluation_group }}">
       {% if not sandboxed %}
         {% if evaluation == "unanswered" %}
           <img src="{% static 'courses/unanswered-96.png' %}" width="96" height="96" alt="?"
@@ -35,7 +35,7 @@
         {% endif %}
 
         <div class="task-meta-score">
-          <span>{{ score|floatformat:"2" }}</span> <span> / {{ max_points }}</span>
+          <span>{{ score|floatformat:"2" }}</span> <span> / {{ max_points|floatformat:"2" }}</span>
         </div>
 
         {% comment %}
@@ -91,6 +91,15 @@
 {% endif %}
 
 <div>
+  {% if course_staff %}
+    <div><button type="button"
+            class="staff-only collapsed staff-base-button settings-button"
+            title="{% trans 'Embed link settings' %}"
+            onclick="editing.get_form(event, this)"
+            data-url="{% url 'courses:embed_settings' course instance parent content %}">
+    </button></div>
+  {% endif %}
+
   {% for block_type, block_data, line_idx, line_count in emb.content %}
     {% if block_type == "extra" %}
       {{ block_data|safe }}

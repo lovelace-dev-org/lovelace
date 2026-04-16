@@ -320,6 +320,7 @@ function start_repeated_template_session (e) {
 }
 
 function credit_eval_group (eval_group) {
+    console.log(eval_group)
     $("div.task-meta[data-eval-group='" + eval_group + "'] img").each(function () {
         if (!$(this).hasClass("correct")) {
             $(this).attr({

@@ -68,7 +68,7 @@ def get_course_instance_tasks(instance, deadline_before=None):
 
     all_embedded_links = (
         cm.EmbeddedLink.objects.filter(instance=instance)
-        .order_by("embedded_page__name")
+        .order_by("ordinal_number")
         .select_related("embedded_page")
         .defer("embedded_page__content")
     )

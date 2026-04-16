@@ -1140,11 +1140,7 @@ section.content {
             min-height: 300px;
         }
 
-        section.content div.question {
-            /*margin-bottom: 2em;*/
-        }
-
-        section.content div.question form {
+        section.content div.embedded-page form {
             position: relative;
             margin-top: 5px;
             padding: 9px;

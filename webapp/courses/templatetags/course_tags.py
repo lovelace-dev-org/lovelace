@@ -78,7 +78,9 @@ def preview_escape(block):
 
 @register.inclusion_tag("courses/embed-frame.html", takes_context=True)
 def embed_frame(context, content_data):
-    page = context["embedded_pages"][content_data["slug"]]
+    link = context["embedded_pages"][content_data["slug"]]
+    page = link.embedded_page
+
     if context["user"].is_active:
         answer_count = page.get_user_answers(page, context["user"], context["instance"]).count()
         evaluation, quotient = page.get_user_evaluation(context["user"], context["instance"])
@@ -99,9 +101,10 @@ def embed_frame(context, content_data):
         "course": context["course"],
         "instance": context["instance"],
         "parent": context["content"],
+        "embed_link": link,
         "content": page,
         "answer_count": answer_count,
-        "attempts_left": page.answer_limit and page.answer_limit - answer_count,
+        "attempts_left": link.answer_limit and link.answer_limit - answer_count,
         "evaluation": evaluation,
         "score": quotient * content_data["max_points"],
         "max_points": content_data["max_points"],

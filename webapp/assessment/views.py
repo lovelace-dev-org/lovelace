@@ -36,7 +36,7 @@ from utils.content import get_embedded_parent
 from utils.formatters import display_name
 
 
-def view_assessment_sheet(request, course, instance, content):
+def view_assessment_sheet(request, course, instance, parent, content):
     sheet_link = AssessmentToExerciseLink.objects.filter(
         exercise=content,
         instance=instance,
@@ -52,7 +52,7 @@ def view_assessment_sheet(request, course, instance, content):
 
 
 @ensure_staff
-def manage_assessment(request, course, instance, content):
+def manage_assessment(request, course, instance, parent, content):
     course_sheets = AssessmentSheet.objects.filter(origin=course)
     sheet_link = AssessmentToExerciseLink.objects.filter(
         exercise=content,
@@ -102,7 +102,7 @@ def manage_assessment(request, course, instance, content):
         "form_object": form,
         "submit_url": reverse(
             "assessment:manage_assessment",
-            kwargs={"course": course, "instance": instance, "content": content},
+            kwargs={"course": course, "instance": instance, "parent": parent, "content": content},
         ),
         "html_id": content.slug + "-assessment-select",
         "html_class": "assessment-staff-form staff-only",
@@ -119,6 +119,7 @@ def manage_assessment(request, course, instance, content):
         "course": course,
         "instance": instance,
         "exercise": content,
+        "parent": parent,
         "top_form": form_html,
         "sheet": sheet,
         "bullets_by_section": by_section,
@@ -298,13 +299,12 @@ def update_exercise_points(request, course, instance, parent, content, sheet):
         instance=instance,
     ).first()
 
-    with reversion.create_revision():
-        content.default_points = sheet_link.calculate_max_score()
-        content.save()
-        reversion.set_user(request.user)
+    points = sheet_link.calculate_max_score()
 
     embed_links = EmbeddedLink.objects.filter(embedded_page=content, instance=instance)
     for link in embed_links:
+        link.default_points = points
+        link.save()
         link.parent.regenerate_cache(instance)
 
     return JsonResponse({"status": "ok"})

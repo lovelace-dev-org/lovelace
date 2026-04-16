@@ -17,7 +17,7 @@ from modeltranslation.forms import TranslationModelForm
 
 from courses import blockparser
 from courses import markupparser
-from courses.widgets import AnswerWidgetRegistry
+from courses.widgets import AnswerWidgetRegistry, NoTrailingZerosInput
 from utils.formatters import display_name
 from utils.management import add_translated_charfields, TranslationStaffForm, get_prefixed_slug
 import courses.models as cm
@@ -403,6 +403,39 @@ class NodeSettingsForm(ContextNodeForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+
+
+class EmbedConfigForm(forms.ModelForm):
+
+    class Meta:
+        model = cm.EmbeddedLink
+        fields = [
+            "mandatory",
+            "correct_threshold",
+            "default_points",
+            "answer_limit",
+            "manually_evaluated",
+            "delayed_evaluation",
+            "evaluation_group",
+            "group_submission",
+        ]
+        widgets = {
+            "correct_threshold": NoTrailingZerosInput,
+            "default_points": NoTrailingZerosInput,
+        }
+
+    propagate = forms.ChoiceField(
+        widget=forms.Select,
+        label=_("Propagate changes to"),
+        choices=[
+            ("none", _("Don't propagate")),
+            ("instance", _("This task in this instance")),
+            ("live", _("This task in all live instances")),
+            ("all", _("This task in ALL instances")),
+        ]
+    )
+
 
 
 class IndexEntryForm(TranslationModelForm):

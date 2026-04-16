@@ -1,6 +1,7 @@
 """Django database models for courses."""
 
 import datetime
+from decimal import Decimal
 import itertools
 import operator
 import re
@@ -13,7 +14,7 @@ from html import escape
 from django.conf import settings
 from django.core import serializers
 from django.core.files.base import ContentFile
-from django.core.validators import URLValidator
+from django.core.validators import MaxValueValidator, URLValidator
 from django.db import models, transaction
 from django.db.models import F, Q, Max, JSONField
 from django.contrib.auth.models import User, Group
@@ -1260,12 +1261,22 @@ class EmbeddedLink(models.Model, ExportImportMixin):
     )
 
     # Fields moved from ContentPage
-    correct_threshold = models.DecimalField(default=1, max_digits=8, decimal_places=5)
+    correct_threshold = models.DecimalField(
+        default=1, max_digits=8, decimal_places=5,
+        verbose_name="Amount of completion required to mark this task correct",
+        help_text="Marked as a quotient, defaults to 1 indicating fully completed",
+        validators=[MaxValueValidator(Decimal("1"))]
+    )
     manually_evaluated = models.BooleanField(
         verbose_name="This exercise is evaluated by hand", default=False
     )
     delayed_evaluation = models.BooleanField(
         verbose_name="This exercise is not immediately evaluated", default=False
+    )
+    evaluation_group = models.CharField(
+        max_length=32,
+        help_text="Evaluation group identifier for binding together mutually exclusive tasks.",
+        blank=True,
     )
     answer_limit = models.PositiveSmallIntegerField(
         verbose_name="Limit number of allowed attempts to", blank=True, null=True
@@ -1275,7 +1286,8 @@ class EmbeddedLink(models.Model, ExportImportMixin):
     )
     default_points = models.DecimalField(
         default=1, max_digits=8, decimal_places=5,
-        help_text="The default points a user can gain by finishing this exercise correctly",
+        verbose_name="Point value",
+        help_text="Amount of points a user can gain by finishing this exercise correctly in this course instance",
     )
 
 
@@ -1291,6 +1303,7 @@ class EmbeddedLink(models.Model, ExportImportMixin):
 
     def set_instance(self, instance):
         self.instance = instance
+
 
 
 class ContentPage(models.Model, ExportImportMixin):
@@ -2090,7 +2103,7 @@ class MultipleChoiceExercise(ContentPage):
         return answer_object
 
     def check_answer(self, link, user, answer, files, answer_object):
-        choices = self.get_choices(self, revision)
+        choices = self.get_choices(self, link.revision)
 
         # quick hax:
         answered = int([v for k, v in answer.items() if k.endswith("-radio")][0])
@@ -2229,7 +2242,7 @@ class CheckboxExercise(ContentPage):
                     correct_items += 1
 
         quotient = max(chosen_weight_sum / total_weight_sum, 0)
-        correct = quotient >= self.correct_threshold
+        correct = quotient >= link.correct_threshold
 
         return {
             "evaluation": correct,
@@ -2305,8 +2318,8 @@ class TextfieldExercise(ContentPage):
         answer_object.save()
         return answer_object
 
-    def check_answer(self, user, ip, user_answer, files, answer_object, revision):
-        answers = self.get_choices(self, revision)
+    def check_answer(self, link, user, answer, files, answer_object):
+        answers = self.get_choices(self, link.revision)
 
         # Determine, if the given answer was correct and which hints/comments to show
         correct = False
@@ -2314,8 +2327,8 @@ class TextfieldExercise(ContentPage):
         comments = []
         errors = []
 
-        if "answer" in user_answer.keys():
-            given_answer = user_answer["answer"].replace("\r", "")
+        if "answer" in answer.keys():
+            given_answer = answer["answer"].replace("\r", "")
         else:
             return {"evaluation": False}
 
@@ -2496,9 +2509,6 @@ class FileUploadExercise(ContentPage):
         import courses.tasks as rpc_tasks
         from utils.exercise import file_upload_payload
 
-        if revision == "head":
-            revision = None
-
         if self.fileexercisetest_set.get_queryset():
             celery_status = rpc_tasks.get_celery_worker_status()
             if "errors" in celery_status:
@@ -2511,13 +2521,13 @@ class FileUploadExercise(ContentPage):
                     name=self.fileexercisesettings.answer_filename
                 ))
 
-            payload = file_upload_payload(self, filelist, answer_object.instance, revision)
+            payload = file_upload_payload(self, filelist, answer_object.instance, link.revision)
 
             result = rpc_tasks.run_tests.delay(payload=payload)
             answer_object.task_id = result.task_id
             answer_object.save()
             return {"task_id": result.task_id}
-        return {"evaluation": True, "manual": self.manually_evaluated}
+        return {"evaluation": True, "manual": link.manually_evaluated}
 
     def get_user_answers(self, user, instance, ignore_drafts=True):
         if instance is None:

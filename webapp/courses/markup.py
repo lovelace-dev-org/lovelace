@@ -229,6 +229,9 @@ class EmbeddedFileMarkup(Markup):
             except ValueError as e:
                 yield f"<div>Unable to decode file {settings['file_slug']} with utf-8.</div>"
                 return
+            except FileNotFoundError:
+                yield f"<div>File {settings['file_slug']} does not exist on disk.</div>"
+                return
 
             if not file_object.lexer:
                 try:
@@ -344,6 +347,7 @@ class EmbeddedPageMarkup(Markup):
                 "instance": state["context"].get("instance"),
                 "choices": choices,
                 "revision": revision,
+                "parent": state["context"]["content"],
             }
             embedded_content = page.get_rendered_content(page, c)
             question = page.get_question(page, c)
@@ -364,7 +368,7 @@ class EmbeddedPageMarkup(Markup):
                     menu_options.extend(module.includes.get_embed_frame_options(
                         state["context"],
                         page,
-                        revision,
+                        link,
                         "staff",
                     ))
 
@@ -381,6 +385,15 @@ class EmbeddedPageMarkup(Markup):
                     "edit_url": page.get_admin_change_url(),
                     "submit_url": reverse(
                         "courses:check",
+                        kwargs={
+                            "course": instance.course,
+                            "instance": instance,
+                            "parent": state["context"]["content"],
+                            "content": page,
+                        },
+                    ),
+                    "config_url": reverse(
+                        "courses:embed_settings",
                         kwargs={
                             "course": instance.course,
                             "instance": instance,
@@ -749,13 +762,16 @@ class ImageMarkup(Markup):
             image_object = get_embedded_media_image(
                 settings["image_name"], instance, state["context"].get("content")
             )
+            w = image_object.fileinfo.width
+            h = image_object.fileinfo.height
         except cm.Image.DoesNotExist as e:
             yield f"<div>File {settings['image_name']} not found.</div>"
             return
+        except FileNotFoundError:
+            yield f"<div>File {settings['image_name']} not found on disk.</div>"
+            return
 
         image_url = image_object.fileinfo.url
-        w = image_object.fileinfo.width
-        h = image_object.fileinfo.height
 
         MAX_IMG_WIDTH = 1000
 

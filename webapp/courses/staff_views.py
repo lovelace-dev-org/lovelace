@@ -37,6 +37,7 @@ from courses.models import (
 )
 from courses.forms import (
     CacheRegenForm,
+    EmbedConfigForm,
     GroupForm,
     GroupMemberForm,
     InstanceCloneForm,
@@ -784,6 +785,50 @@ def add_form(request, course, instance, content):
 # v
 
 @ensure_staff
+def configure_embed_link(request, course, instance, parent, content):
+    embed_link = EmbeddedLink.objects.get(embedded_page=content, instance=instance, parent=parent)
+
+    if request.method == "POST":
+        propagate = request.POST.get("propagate")
+        if propagate == "instance":
+            affected = EmbeddedLink.objects.filter(
+                embedded_page=content, instance=instance
+            )
+        elif propagate == "live":
+            affected = EmbeddedLink.objects.filter(
+                embedded_page=content, revision=None
+            )
+        elif propagate == "all":
+            affected = EmbeddedLink.objects.filter(
+                embedded_page=content
+            )
+        else:
+            affected = [embed_link]
+
+        for link in affected:
+            form = EmbedConfigForm(request.POST, instance=link)
+            if not form.is_valid():
+                errors = form.errors.as_json()
+                return JsonResponse({"errors": errors}, status=400)
+
+            form.save()
+            link.parent.regenerate_cache(link.instance)
+
+            return JsonResponse({"status": "ok"})
+
+    form = EmbedConfigForm(instance=embed_link)
+    form_t = loader.get_template("courses/base-edit-form.html")
+    form_c = {
+        "html_id": f"{content.slug}-embed-config-form",
+        "form_object": form,
+        "submit_url": request.path,
+        "html_class": "edit-form-widget",
+        "submit_override": "editing.submit_form"
+    }
+    return HttpResponse(form_t.render(form_c, request))
+
+
+@ensure_staff
 def configure_answer_widget(request, course, instance, content):
     widget = content.get_answer_widget(course)
 
@@ -791,7 +836,6 @@ def configure_answer_widget(request, course, instance, content):
         form = widget.get_configuration_form(request, data=request.POST)
         if not form.is_valid():
             errors = form.errors.as_json()
-            print(errors)
             return JsonResponse({"errors": errors}, status=400)
 
         form.save()

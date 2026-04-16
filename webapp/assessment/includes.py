@@ -9,13 +9,13 @@ def get_base_static_includes(context):
     ]
 
 
-def get_embed_frame_options(context, content, revision, category):
+def get_embed_frame_options(context, content, link, category):
     options = []
-    if not content.manually_evaluated:
-        return options
-
     instance = context["instance"]
     parent = context["content"]
+    if not link.manually_evaluated:
+        return options
+
     content_kwargs = {
         "course": instance.course,
         "instance": instance,
@@ -32,7 +32,7 @@ def get_embed_frame_options(context, content, revision, category):
                 "assessment:view_submissions", kwargs=content_kwargs
             )
         ))
-        if revision is None:
+        if link.revision is None:
             options.append((
                 _("Edit Assessment"),
                 "edit-assessment",
@@ -46,11 +46,13 @@ def get_embed_frame_options(context, content, revision, category):
 
 def get_embed_frame_extra(context, content, category):
     options = []
-    if not content.manually_evaluated:
-        return options
-
     instance = context["instance"]
     parent = context["content"]
+    link = context["embed_link"]
+
+    if not link.manually_evaluated:
+        return options
+
     content_kwargs = {
         "course": instance.course,
         "instance": instance,
@@ -70,10 +72,13 @@ def get_embed_frame_extra(context, content, category):
     return options
 
 def get_answer_actions(context, content, answer):
-    if not content.manually_evaluated:
+    instance = context["instance"]
+    parent = context["exercise"]
+    link = context["embed_link"]
+
+    if not link.manually_evaluated:
         return []
 
-    instance = context["instance"]
     buttons = []
     answer_kwargs = {
         "course": instance.course,

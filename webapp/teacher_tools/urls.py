@@ -11,7 +11,7 @@ urlpatterns = [
         name="search_records",
     ),
     path(
-        "<course:course>/<instance:instance>/<content:content>/download_answers/",
+        "<course:course>/<instance:instance>/<content:parent>/<content:content>/download_answers/",
         views.download_answers,
         name="download_answers",
     ),

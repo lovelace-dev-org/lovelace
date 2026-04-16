@@ -68,7 +68,7 @@ urlpatterns = [
     ),
     # For viewing and changing user information
     path(
-        "answers/<user:user>/<course:course>/<instance:instance>/"
+        "answers/<user:user>/<course:course>/<instance:instance>/<content:parent>/"
         "<content:exercise>/<answer:answer>/",
         views.get_file_exercise_evaluation,
         name="get_file_exercise_evaluation",
@@ -180,6 +180,12 @@ urlpatterns = [
         "staff/<course:course>/<instance:instance>/<content:content>/add/",
         staff_views.add_form,
         name="content_add_form",
+    ),
+    path(
+        "staff/<course:course>/<instance:instance>/<content:parent>/<content:content>/"
+        "embed_settings/",
+        staff_views.configure_embed_link,
+        name="embed_settings",
     ),
     path(
         "staff/<course:course>/<instance:instance>/<content:content>/widget_settings/",

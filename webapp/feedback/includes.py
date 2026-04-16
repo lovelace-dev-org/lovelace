@@ -16,6 +16,7 @@ def get_content_page_additions(context, content, content_level):
         "content": content,
         "instance": context["instance"],
         "embedded": content_level == "embed",
+        "csrf_token": context["csrf_token"],
     }
     return template.render(c)
 
@@ -35,7 +36,7 @@ def get_content_menu_options(context, content, category):
         ))
     return options
 
-def get_embed_frame_options(context, content, revision, category):
+def get_embed_frame_options(context, content, link, category):
     options = []
     instance = context["instance"]
     if category == "staff":

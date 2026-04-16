@@ -32,6 +32,15 @@ class Migration(migrations.Migration):
         ),
         migrations.AddField(
             model_name='embeddedlink',
+            name='evaluation_group',
+            field=models.CharField(
+                max_length=32,
+                help_text="Evaluation group identifier for binding together mutually exclusive tasks.",
+                blank=True,
+            ),
+        ),
+        migrations.AddField(
+            model_name='embeddedlink',
             name='group_submission',
             field=models.BooleanField(default=False, verbose_name='Answers can be submitted as a group'),
         ),

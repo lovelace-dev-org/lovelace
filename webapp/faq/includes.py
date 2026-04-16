@@ -33,4 +33,5 @@ def get_embed_frame_extra(context, content, category):
 
 def get_exercise_trigger_callbacks(instance, content, data):
     if has_faq(instance, content, data["triggers"]):
-        return "faq"
+        return ["faq"]
+    return []

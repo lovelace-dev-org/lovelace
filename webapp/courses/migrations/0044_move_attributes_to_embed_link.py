@@ -11,6 +11,7 @@ def move_attributes(apps, schema_editor):
         "correct_threshold",
         "default_points",
         "delayed_evaluation",
+        "evaluation_group",
         "group_submission",
         "manually_evaluated",
     ]

@@ -14,6 +14,7 @@ plugins = {                         # Overrideable methods + Required functions
     "base-static": set(),           # includes.get_basic_static_includes
     "clone": set(),                 # models.clone_models
     "content-addon": set(),         # get_content_additions, includes.get_content_page_additions
+    "content-cache": set(),         # utils.regenerate_content_cache
     "content-menu": set(),          # includes.get_content_menu_options
     "context_links": set(),         # models.update_context_links
     "embed-extra": set(),           # get_student_extra, get_staff_extra,

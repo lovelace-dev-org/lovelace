@@ -179,7 +179,7 @@ class MultipleChoiceExerciseAdmin(CourseContentAdmin, TranslationAdmin, VersionA
         (
             "Page information",
             {
-                "fields": ["name", "origin", "slug", "content", "question", "tags"],
+                "fields": ["name", "origin", "slug", "content", "question"],
             },
         ),
         (
@@ -222,7 +222,7 @@ class CheckboxExerciseAdmin(CourseContentAdmin, TranslationAdmin, VersionAdmin):
         (
             "Page information",
             {
-                "fields": ["name", "origin", "slug", "content", "question", "tags"],
+                "fields": ["name", "origin", "slug", "content", "question"],
             },
         ),
         (
@@ -265,7 +265,7 @@ class TextfieldExerciseAdmin(CourseContentAdmin, TranslationAdmin, VersionAdmin)
         (
             "Page information",
             {
-                "fields": ["name", "origin", "slug", "content", "question", "tags"],
+                "fields": ["name", "origin", "slug", "content", "question"],
             },
         ),
         (
@@ -314,7 +314,7 @@ class RepeatedTemplateExerciseAdmin(CourseContentAdmin, TranslationAdmin, Versio
     fieldsets = [
         (
             "Page information",
-            {"fields": ["name", "slug", "content", "question", "tags"]},
+            {"fields": ["name", "slug", "content", "question"]},
         ),
         ("Feedback settings", {"fields": ["feedback_questions"]}),
     ]

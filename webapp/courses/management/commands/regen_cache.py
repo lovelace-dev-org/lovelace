@@ -37,8 +37,11 @@ class Command(BaseCommand):
                 )
 
         print("Regenerating content caches")
-        for cg in ContentGraph.objects.all():
-            if not options["frozen"] and cg.instance.frozen:
-                print(f"Skipping for frozen instance {cg.instance}")
-                continue
+        if not options["frozen"]:
+            cgs = ContentGraph.objects.exclude(instance__frozen=True)
+        else:
+            cgs = ContentGraph.objects.all()
+
+        for cg in cgs:
+            print(f"Regenerating {cg.content.slug} ({cg.instance.slug})")
             cg.content.regenerate_cache(cg.instance)
