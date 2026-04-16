@@ -12,7 +12,7 @@ from utils.files import get_testfile_path, upload_storage
 from utils.management import ExportImportMixin
 
 
-class RoutineExercise(ContentPage):
+class RoutineExercise(cm.ContentPage):
     answers_template = "routine_exercise/user-answers.html"
     default_answer_widget = "routine"
     answer_table_classes = "fixed"
