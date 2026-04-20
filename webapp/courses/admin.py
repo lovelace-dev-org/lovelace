@@ -17,6 +17,8 @@ from reversion.admin import VersionAdmin
 from reversion.models import Version
 from reversion import revisions as reversion
 
+from lovelace import plugins as lovelace_plugins
+
 from courses.models import (
     About,
     Calendar,
@@ -78,6 +80,10 @@ from utils.management import CourseContentAdmin, CourseMediaAdmin
 # to translated fields being added between loading models.py and
 # this module.
 
+content_follow_extra = []
+for module in lovelace_plugins["content-follow"]:
+    content_follow_extra.extend(module.get_content_follows())
+
 reversion.register(
     ContentPage,
     follow=[
@@ -90,10 +96,7 @@ reversion.register(
         "repeatedtemplateexercisebackendfile_set",
         "repeatedtemplateexercisetemplate_set",
         "textfieldexerciseanswer_set",
-        "routineexercisetemplate_set",
-        "routineexercisebackendfile_set",
-        "routineexercisebackendcommand",
-    ],
+    ] + content_follow_extra,
 )
 reversion.register(
     FileExerciseTest,

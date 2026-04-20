@@ -252,3 +252,10 @@ def get_import_list():
         RoutineExerciseBackendFile,
         RoutineExerciseTemplate
     ]
+
+def get_content_follows():
+    return [
+        "routineexercisetemplate_set",
+        "routineexercisebackendfile_set",
+        "routineexercisebackendcommand",
+    ]

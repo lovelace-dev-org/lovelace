@@ -390,3 +390,8 @@ def get_import_list():
         MultipleQuestionExam,
         ExamQuestionPool,
     ]
+
+def get_content_follows():
+    return [
+        "examquestionpool"
+    ]
