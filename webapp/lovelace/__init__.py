@@ -16,6 +16,7 @@ plugins = {                         # Overrideable methods + Required functions
     "content-addon": set(),         # get_content_additions, includes.get_content_page_additions
     "content-cache": set(),         # utils.regenerate_content_cache
     "content-menu": set(),          # includes.get_content_menu_options
+    "content-follow": set(),        # models.get_content_follows
     "context_links": set(),         # models.update_context_links
     "embed-extra": set(),           # get_student_extra, get_staff_extra,
                                     # includes.get_embed_frame_extra
