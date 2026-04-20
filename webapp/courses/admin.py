@@ -77,6 +77,7 @@ from utils.management import CourseContentAdmin, CourseMediaAdmin
 # This makes modeltranslation work with reversion, probably due
 # to translated fields being added between loading models.py and
 # this module.
+
 reversion.register(
     ContentPage,
     follow=[

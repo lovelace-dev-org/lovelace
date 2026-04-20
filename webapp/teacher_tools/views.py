@@ -288,7 +288,7 @@ def transfer_records(request, course, instance, user):
 
 @ensure_staff
 def answer_summary(request, course, instance, parent, content):
-    answer_model = content.get_answer_model()
+    answer_model = content.get_user_answer_model()
     answers = (
         answer_model.objects.filter(
             exercise=content,
@@ -635,7 +635,7 @@ def batch_grade_task(request, course, instance, parent, content):
         else:
             exercise = get_single_archived(content, link.revision)
 
-        answer_model = content.get_answer_model()
+        answer_model = content.get_user_answer_model()
         answers = (
             answer_model.objects.filter(
                 exercise=content,

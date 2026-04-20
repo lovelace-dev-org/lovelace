@@ -4,6 +4,7 @@ import os
 import tempfile
 import zipfile
 
+from django.db import transaction
 from django.conf import settings
 from django.http import (
     HttpResponse,
@@ -49,6 +50,7 @@ from courses.forms import (
     NewContentNodeForm,
     NodeSettingsForm,
 )
+import courses.config_forms
 from courses.edit_forms import (
     get_form,
     save_form,
@@ -852,6 +854,96 @@ def configure_answer_widget(request, course, instance, content):
         "submit_override": "editing.submit_form"
     }
     return HttpResponse(form_t.render(form_c, request))
+
+
+@ensure_staff
+def add_exercise_choice(request, course, instance, content, after):
+    choice_cls = content.get_answer_model()
+    if choice_model is None:
+        return JsonResponse(
+            {"errors": _("No choice class associated with this content type")},
+            status=400
+        )
+
+
+
+def _get_choice(content, choice_id):
+    choice_cls = content.get_answer_model()
+    if choice_cls is None:
+        raise ValueError(_("No choice class associated with this content type"))
+
+    try:
+        return choice_cls.objects.get(id=choice_id)
+    except choice_cls.DoesNotExist:
+        raise ValueError(_("No choice found with the given ID"))
+
+@ensure_staff
+def delete_exercise_choice(request, course, instance, content, choice_id):
+    try:
+        choice = _get_choice(content, choice_id)
+    except ValueError as e:
+        return JsonResponse({"errors": str(e)}, status=400)
+
+    with reversion.create_revision():
+        choice.delete()
+
+        # Save the content to include it in the revision
+        content.save()
+        reversion.set_user(request.user)
+        reversion.set_comment(
+            f"Delete exercise {content.slug} choice {choice.answer} ({choice_id})"
+        )
+
+    regenerate_nearest_cache(content)
+    return JsonResponse({"status": "ok"})
+
+@ensure_staff
+def move_exercise_choice(request, course, instance, content, choice_id, direction):
+    try:
+        choice = _get_choice(content, choice_id)
+    except ValueError as e:
+        return JsonResponse({"errors": str(e)}, status=400)
+
+    if direction == "up":
+        peer = choice.__class__.objects.filter(
+            ordinal__lt=choice.ordinal, exercise=content
+        ).order_by("-ordinal").first()
+    else:
+        peer = choice.__class__.objects.filter(
+            ordinal__gt=choice.ordinal, exercise=content
+        ).order_by("ordinal").first()
+
+    if peer is None:
+        return JsonResponse({"errors": _("Already first")}, status=400)
+
+    pos = choice.ordinal
+    choice.ordinal = peer.ordinal
+    peer.ordinal = pos
+
+    with reversion.create_revision():
+        choice.save()
+        peer.save()
+
+        # Save the content to include it in the revision
+        content.save()
+        reversion.set_user(request.user)
+        reversion.set_comment(
+            f"Move exercise {content.slug} choice {choice.answer} ({choice_id}) {direction}"
+        )
+
+    regenerate_nearest_cache(content)
+    squash_revisions(content, 1)
+    return JsonResponse({"status": "ok"})
+
+@ensure_staff
+def edit_exercise_choice(request, course, instance, content, choice_id):
+    choice_cls = content.get_answer_model()
+    if choice_model is None:
+        return JsonResponse(
+            {"errors": _("No choice class associated with this content type")},
+            status=400
+        )
+
 
 # ^
 # |

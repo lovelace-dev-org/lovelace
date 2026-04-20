@@ -367,7 +367,7 @@ class UserMultipleQuestionExamAnswer(cm.UserAnswer):
 
 
 cm.ContentPage.register_content_type(
-    "MULTIPLE_QUESTION_EXAM", MultipleQuestionExam, UserMultipleQuestionExamAnswer
+    "MULTIPLE_QUESTION_EXAM", MultipleQuestionExam, None, UserMultipleQuestionExamAnswer
 )
 
 cm.UserProfile.register_user_data_model(MultipleQuestionExamAttempt, ["user"])

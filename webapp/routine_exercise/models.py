@@ -236,7 +236,7 @@ class RoutineExerciseProgress(models.Model):
 
 
 cm.ContentPage.register_content_type(
-    "ROUTINE_EXERCISE", RoutineExercise, RoutineExerciseAnswer
+    "ROUTINE_EXERCISE", RoutineExercise, None, RoutineExerciseAnswer
 )
 
 cm.UserProfile.register_user_data_model(RoutineExerciseProgress, ["user"])

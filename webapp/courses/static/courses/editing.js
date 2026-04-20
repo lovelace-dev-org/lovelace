@@ -66,6 +66,42 @@ const editing = {
         submit_ajax_form(form, process_success)
     },
 
+    move_item: function (event, caller, direction) {
+        event.preventDefault()
+        const button = $(caller)
+        button.attr(
+            "data-csrf",
+            button.closest("form").children("input[name='csrfmiddlewaretoken']").val()
+        )
+        const item_div = button.closest("div")
+
+        process_success = function (data) {
+            if (direction == "up") {
+                const prev_div = item_div.prev("div")
+                item_div.insertBefore(prev_div)
+            }
+            else {
+                const next_div = item_div.next("div")
+                item_div.insertAfter(next_div)
+            }
+        }
+        submit_ajax_action(button, process_success)
+    },
+
+    delete_item: function (event, caller) {
+        event.preventDefault()
+        const button = $(caller)
+        button.attr(
+            "data-csrf",
+            button.closest("form").children("input[name='csrfmiddlewaretoken']").val()
+        )
+        const item_div = button.closest("div")
+
+        process_success = function (data) {
+            item_div.remove()
+        }
+        submit_ajax_action(button, process_success)
+    },
 
     hide_widget_panel: function (event) {
         event.preventDefault()

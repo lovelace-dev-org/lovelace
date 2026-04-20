@@ -392,7 +392,7 @@ class EmbeddedPageMarkup(Markup):
                             "content": page,
                         },
                     ),
-                    "config_url": reverse(
+                    "embed_config_url": reverse(
                         "courses:embed_settings",
                         kwargs={
                             "course": instance.course,

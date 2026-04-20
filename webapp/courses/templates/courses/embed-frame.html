@@ -92,12 +92,14 @@
 
 <div>
   {% if course_staff %}
-    <div><button type="button"
-            class="staff-only collapsed staff-base-button settings-button"
+    <div>
+      <button type="button"
+            class="staff-only collapsed staff-base-button link-button"
             title="{% trans 'Embed link settings' %}"
             onclick="editing.get_form(event, this)"
-            data-url="{% url 'courses:embed_settings' course instance parent content %}">
-    </button></div>
+            data-url="{{ meta.embed_config_url }}">
+      </button>
+    </div>
   {% endif %}
 
   {% for block_type, block_data, line_idx, line_count in emb.content %}

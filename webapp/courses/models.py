@@ -1231,15 +1231,6 @@ class CalendarReservation(models.Model):
 # ^
 # |
 # CALENDAR
-# ANSWER WIDGETS
-# |
-# V
-
-
-
-# ^
-# |
-# ANSWER WIDGETS
 # CONTENT BASE
 # |
 # V
@@ -1381,6 +1372,8 @@ class ContentPage(models.Model, ExportImportMixin):
     # Dynamically registered content types go here.
     content_type_models = {}
     answer_models = {}
+    user_answer_models = {}
+    config_forms = {}
 
     # Template to use for rendering this content type, all content type models must set their own.
     default_answer_widget = "blank"
@@ -1421,7 +1414,8 @@ class ContentPage(models.Model, ExportImportMixin):
 
 
     @classmethod
-    def register_content_type(cls, constant_name, type_class, answer_class=None):
+    def register_content_type(cls, constant_name, type_class,
+                              answer_class=None, user_answer_class=None):
         if not issubclass(type_class, cls):
             raise TypeError(
                 _("Class {type_class} is not a subclass of {cls}").format(
@@ -1432,6 +1426,11 @@ class ContentPage(models.Model, ExportImportMixin):
 
         cls.content_type_models[constant_name] = type_class
         cls.answer_models[constant_name] = answer_class
+        cls.user_answer_models[constant_name] = user_answer_class
+
+    @classmethod
+    def register_config_form(cls, constant_name, form_class):
+        cls.config_forms[constant_name] = form_class
 
     def natural_key(self):
         return (self.slug, )
@@ -1575,6 +1574,9 @@ class ContentPage(models.Model, ExportImportMixin):
 
         question = blockparser.parseblock(escape(self.question, quote=False), context)
         return question
+
+    def get_config_form(self):
+        return self.config_forms[self.content_type]
 
     def get_answer_widget(self, course):
         if not self.answer_widget:
@@ -2017,6 +2019,9 @@ class ContentPage(models.Model, ExportImportMixin):
 
     def get_answer_model(self):
         return self.answer_models[self.content_type]
+
+    def get_user_answer_model(self):
+        return self.user_answer_models[self.content_type]
 
     # HACK: Experimental way of implementing a better get_type_object
     def __getattribute__(self, name):
@@ -3920,16 +3925,20 @@ UserProfile.register_user_data_model(UserTaskCompletion, ["user"])
 
 ContentPage.register_content_type("LECTURE", Lecture)
 ContentPage.register_content_type(
-    "MULTIPLE_CHOICE_EXERCISE", MultipleChoiceExercise, UserMultipleChoiceExerciseAnswer
+    "MULTIPLE_CHOICE_EXERCISE",
+    MultipleChoiceExercise, MultipleChoiceExerciseAnswer, UserMultipleChoiceExerciseAnswer,
 )
 ContentPage.register_content_type(
-    "CHECKBOX_EXERCISE", CheckboxExercise, UserCheckboxExerciseAnswer
+    "CHECKBOX_EXERCISE",
+    CheckboxExercise, CheckboxExerciseAnswer, UserCheckboxExerciseAnswer
 )
 ContentPage.register_content_type(
-    "TEXTFIELD_EXERCISE", TextfieldExercise, UserTextfieldExerciseAnswer
+    "TEXTFIELD_EXERCISE",
+    TextfieldExercise, TextfieldExerciseAnswer, UserTextfieldExerciseAnswer
 )
 ContentPage.register_content_type(
-    "FILE_UPLOAD_EXERCISE", FileUploadExercise, UserFileUploadExerciseAnswer
+    "FILE_UPLOAD_EXERCISE",
+    FileUploadExercise, None, UserFileUploadExerciseAnswer
 )
 
 def get_import_list():
