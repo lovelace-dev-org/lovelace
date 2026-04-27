@@ -6,11 +6,16 @@ from utils.management import TranslationStaffForm
 
 import courses.models as cm
 
-MultipleChoiceConfigForm = forms.inlineformset_factory(
-    cm.ContentPage,
-    cm.MultipleChoiceExerciseAnswer,
-    fields=["correct", "answer", "hint", "comment"],
-    extra=1,
-)
+class MultipleChoiceExerciseChoiceForm(TranslationStaffForm):
 
-cm.ContentPage.register_config_form("MULTIPLE_CHOICE_EXERCISE", MultipleChoiceConfigForm)
+    class Meta:
+        model = cm.MultipleChoiceExerciseAnswer
+        fields = ["correct", "answer", "hint", "comment"]
+
+
+class CheckboxExerciseChoiceForm(TranslationStaffForm):
+
+    class Meta:
+        model = cm.CheckboxExerciseAnswer
+        fields = ["correct", "weight", "answer", "hint", "comment"]
+

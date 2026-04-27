@@ -5,6 +5,17 @@ from decimal import Decimal
 from django.db import migrations, models
 
 
+
+def standardize_choice_ordinals(apps, schema_editor):
+    MultipleChoiceExerciseAnswer = apps.get_model("courses", "multiplechoiceexerciseanswer")
+    CheckboxExerciseAnswer = apps.get_model("courses", "checkboxexerciseanswer")
+    ContentPage = apps.get_model("courses", "contentpage")
+
+
+
+
+
+
 class Migration(migrations.Migration):
 
     dependencies = [

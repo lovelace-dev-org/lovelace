@@ -859,13 +859,50 @@ def configure_answer_widget(request, course, instance, content):
 @ensure_staff
 def add_exercise_choice(request, course, instance, content, after):
     choice_cls = content.get_answer_model()
-    if choice_model is None:
+    if choice_cls is None:
         return JsonResponse(
             {"errors": _("No choice class associated with this content type")},
             status=400
         )
 
+    form_cls = choice_cls.get_edit_form()
 
+    if request.method == "POST":
+        form = form_cls(request.POST)
+        if not form.is_valid():
+            errors = form.errors.as_json()
+            return JsonResponse({"errors": errors}, status=400)
+
+        with reversion.create_revision():
+            for choice_after in choice_cls.objects.filter(exercise=content, ordinal__gt=after):
+                choice_after.ordinal += 1
+                choice_after.save()
+
+            # Save the content to include it in the revision
+            choice = form.save(commit=False)
+            choice.exercise = content
+            choice.ordinal = after + 1
+            choice.save()
+            content.save()
+            reversion.set_user(request.user)
+            reversion.set_comment(
+                f"Add {content.slug} choice {choice.answer}"
+            )
+
+        regenerate_nearest_cache(content)
+        squash_revisions(content, 1)
+        return JsonResponse({"status": "ok"})
+
+    form = form_cls()
+    form_t = loader.get_template("courses/base-edit-form.html")
+    form_c = {
+        "html_id": f"{content.slug}-add-choice-form",
+        "form_object": form,
+        "submit_url": request.path,
+        "html_class": "edit-form-widget",
+        "submit_override": "editing.submit_form"
+    }
+    return HttpResponse(form_t.render(form_c, request))
 
 def _get_choice(content, choice_id):
     choice_cls = content.get_answer_model()
@@ -895,6 +932,7 @@ def delete_exercise_choice(request, course, instance, content, choice_id):
         )
 
     regenerate_nearest_cache(content)
+    squash_revisions(content, 1)
     return JsonResponse({"status": "ok"})
 
 @ensure_staff
@@ -937,12 +975,41 @@ def move_exercise_choice(request, course, instance, content, choice_id, directio
 
 @ensure_staff
 def edit_exercise_choice(request, course, instance, content, choice_id):
-    choice_cls = content.get_answer_model()
-    if choice_model is None:
-        return JsonResponse(
-            {"errors": _("No choice class associated with this content type")},
-            status=400
-        )
+    try:
+        choice = _get_choice(content, choice_id)
+    except ValueError as e:
+        return JsonResponse({"errors": str(e)}, status=400)
+
+    form_cls = choice.get_edit_form()
+
+    if request.method == "POST":
+        form = form_cls(request.POST, instance=choice)
+        if not form.is_valid():
+            errors = form.errors.as_json()
+            return JsonResponse({"errors": errors}, status=400)
+
+        with reversion.create_revision():
+            form.save()
+            content.save()
+            reversion.set_user(request.user)
+            reversion.set_comment(
+                f"Add {content.slug} choice {choice.answer}"
+            )
+
+        regenerate_nearest_cache(content)
+        squash_revisions(content, 1)
+        return JsonResponse({"status": "ok"})
+
+    form = form_cls(instance=choice)
+    form_t = loader.get_template("courses/base-edit-form.html")
+    form_c = {
+        "html_id": f"{content.slug}-add-choice-form",
+        "form_object": form,
+        "submit_url": request.path,
+        "html_class": "edit-form-widget",
+        "submit_override": "editing.submit_form"
+    }
+    return HttpResponse(form_t.render(form_c, request))
 
 
 # ^

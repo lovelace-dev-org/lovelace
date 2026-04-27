@@ -1,5 +1,29 @@
+{% load static %}
+
 {% for choice in choices %}
   <div class="input-label-container">
     <input type="checkbox" name="{{ choice.id }}" id="cb-{{ choice.id }}" value="{{ choice.id }}" class="task_check"><label for="cb-{{ choice.id }}">{{ choice.answer }}</label>
+    <span class="multichoice-config-actions">
+      <a class="staff-only collapsed right-float"
+        onclick="editing.get_form(event, this)"
+        data-url="{% url 'courses:add_exercise_choice' course instance content choice.ordinal %}"
+        ><img src="{% static 'courses/expand-16.png' %}"></a>
+      <a class="staff-only collapsed right-float"
+        onclick="editing.delete_item(event, this)"
+        data-url="{% url 'courses:delete_exercise_choice' course instance content choice.id %}"
+        ><img src="{% static 'courses/delete-16.png' %}"></a>
+      <a class="staff-only collapsed right-float"
+        onclick="editing.move_item(event, this, 'down')"
+        data-url="{% url 'courses:move_exercise_choice' course instance content choice.id 'down' %}"
+        ><img src="{% static 'courses/move-dn.png' %}"></a>
+      <a class="staff-only collapsed right-float"
+        onclick="editing.move_item(event, this, 'up')"
+        data-url="{% url 'courses:move_exercise_choice' course instance content choice.id 'up' %}"
+        ><img src="{% static 'courses/move-up.png' %}"></a>
+      <a class="staff-only collapsed right-float"
+        onclick="editing.get_form(event, this)"
+        data-url="{% url 'courses:edit_exercise_choice' course instance content choice.id %}"
+        ><img src="{% static 'courses/edit.png' %}"></a>
+    </span>
   </div>
 {% endfor %}

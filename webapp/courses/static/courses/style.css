@@ -22,8 +22,8 @@ body {
 }
 
 .collapsed {
-    visibility: hidden;
-    display: none;
+    visibility: hidden !important;
+    display: none !important;
 }
 
 div#container {

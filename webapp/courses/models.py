@@ -3452,6 +3452,13 @@ class MultipleChoiceExerciseAnswer(models.Model):
         verbose_name="Extra comment given upon selection of this answer", blank=True
     )  # Translate
 
+    @classmethod
+    def get_edit_form(self):
+        # NOTE: Just import from here now to avoid cyclic imports
+
+        from courses.config_forms import MultipleChoiceExerciseChoiceForm
+        return MultipleChoiceExerciseChoiceForm
+
     def __str__(self):
         return self.answer
 
@@ -3471,6 +3478,11 @@ class CheckboxExerciseAnswer(models.Model):
     comment = models.TextField(
         verbose_name="Extra comment given upon selection of this answer", blank=True
     )  # Translate
+
+    @classmethod
+    def get_edit_form(self):
+        from courses.config_forms import CheckboxExerciseChoiceForm
+        return CheckboxExerciseChoiceForm
 
     def __str__(self):
         return self.answer
