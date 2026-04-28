@@ -210,6 +210,7 @@ DEFAULT_FROM_EMAIL = os.getenv(
 
 # Allauth settings
 # For production, password min length of 32 or more recommended
+ALLAUTH_TRUSTED_PROXY_COUNT=int(os.getenv("LOVELACE_TRUSTED_PROXIES", 1))
 ACCOUNT_EMAIL_SUBJECT_PREFIX = "[Lovelace] "
 ACCOUNT_PASSWORD_MIN_LENGTH = 8
 ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']

@@ -106,7 +106,7 @@ class MultipleQuestionExam(cm.ContentPage):
         Adds a link to attempt management page to the task's staff tools.
         """
 
-        options = ContentPage.get_staff_extra(self, context)
+        options = cm.ContentPage.get_staff_extra(self, context)
         options.append((
             _("Manage attempts"),
             "multiexam-attempts",
