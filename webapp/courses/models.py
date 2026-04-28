@@ -495,7 +495,7 @@ class CourseInstance(models.Model):
             self.clear_content_tree_cache(regen_frozen=True)
 
 
-    def get_content_tree(self, lang_code=None, staff=False, guest=False):
+    def get_content_tree(self, lang_code=None, mode=None):
         current_lang = translation.get_language()
         if lang_code is not None:
             translation.activate(lang_code)
@@ -503,10 +503,11 @@ class CourseInstance(models.Model):
             lang_code = current_lang
 
         cache_key = f"{self.slug}_tree_{lang_code}"
-        if staff:
-            cache_key += "_staff"
-        elif guest:
-            cache_key += "_guest"
+        if mode:
+            cache_key += f"_{mode}"
+
+        staff = mode == "staff"
+        guest = mode == "guest"
 
         cached_tree = cache.get(cache_key)
         if cached_tree:
@@ -514,12 +515,18 @@ class CourseInstance(models.Model):
 
         if staff:
             nodes = ContentGraph.objects.filter(instance=self, ordinal_number__gt=0)
-        elif guest:
-            nodes = ContentGraph.objects.filter(
-                instance=self, ordinal_number__gt=0, visible=True, require_enroll=False
-            )
         else:
-            nodes = ContentGraph.objects.filter(instance=self, ordinal_number__gt=0, visible=True)
+            if guest:
+                nodes = ContentGraph.objects.filter(
+                    instance=self, ordinal_number__gt=0, visible=True, require_enroll=False
+                )
+            else:
+                nodes = ContentGraph.objects.filter(instance=self, ordinal_number__gt=0, visible=True)
+
+            if settings.EXAM_MODE:
+                nodes = nodes.exclude(visibility="no-exam")
+            else:
+                nodes = nodes.exclude(visibility="exam-only")
 
         nodes = nodes.select_related("parentnode", "content").defer("content__content")
         embed_links = (
@@ -578,7 +585,7 @@ class CourseInstance(models.Model):
                     "instance": self,
                     "content": node.content
                 }),
-                "visible": node.visible,
+                "visible": node.is_visible(),
                 "require_enroll": node.require_enroll,
                 "page_count": page_count,
                 "deadline": node.deadline,
@@ -605,6 +612,8 @@ class CourseInstance(models.Model):
         for lang_code, _ in settings.LANGUAGES:
             cache.delete(f"{self.slug}_tree_{lang_code}")
             cache.delete(f"{self.slug}_tree_{lang_code}_staff")
+            cache.delete(f"{self.slug}_tree_{lang_code}_guest")
+            cache.delete(f"{self.slug}_tree_{lang_code}_exam")
 
     def freeze(self, freeze_to=None):
         """
@@ -792,6 +801,15 @@ class ContentGraph(models.Model):
     scored = models.BooleanField(verbose_name="Does this exercise affect scoring", default=True)
     ordinal_number = models.PositiveSmallIntegerField()
     visible = models.BooleanField(verbose_name="Is this content visible to students", default=True)
+    visibility = models.CharField(
+        max_length=16,
+        choices=(
+            ("both", "Always visible"),
+            ("exam-only", "Only visible in Exam Mode"),
+            ("no-exam", "Not visible in Exam Mode"),
+        ),
+        default="both",
+    )
     revision = models.PositiveIntegerField(
         verbose_name="The specific revision of the content", blank=True, null=True  # null = current
     )
@@ -840,6 +858,16 @@ class ContentGraph(models.Model):
 
     def set_instance(self, instance):
         self.instance = instance
+
+    def is_visible(self):
+        if not self.visible:
+            return False
+        else:
+            if self.visibility == "exam-only" and not settings.EXAM_MODE:
+                return False
+            elif self.visibility == "no-exam" and settings.EXAM_MODE:
+                return False
+        return True
 
     def __str__(self):
         return f"No. {self.ordinal_number} – {self.content.slug} ({self.get_revision_str()})"

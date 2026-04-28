@@ -31,6 +31,7 @@ from courses.models import (
 from courses.forms import GroupConfigForm, GroupInviteForm, UserForm, UserProfileForm
 from courses.views import system_messages
 from utils.access import (
+    block_in_exam_mode,
     ensure_enrolled_or_staff,
     is_course_staff,
 )
@@ -91,6 +92,7 @@ def logout(request):
 # v
 
 
+@block_in_exam_mode
 def user_profile(request):
     """
     Allow the user to change information in their profile.
@@ -120,7 +122,7 @@ def user_profile(request):
     response = HttpResponse(t.render(c, request))
     return response
 
-
+@block_in_exam_mode
 def user(request, user):
     """
     Shows user information to the requesting user. The amount of information
@@ -157,6 +159,7 @@ def user(request, user):
 # v
 
 @ensure_enrolled_or_staff
+@block_in_exam_mode
 def group_info(request, course, instance):
     if instance.max_group_size is None:
         return HttpResponseNotAllowed(_("This course instance doesn't allow groups"))

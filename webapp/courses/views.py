@@ -62,6 +62,7 @@ from courses.models import (
     UserTextfieldExerciseAnswer,
 )
 from utils.access import (
+    block_in_exam_mode,
     is_course_staff,
     determine_media_access,
     ensure_enrolled_or_staff,
@@ -147,6 +148,15 @@ def course_instances(request, course):
 
 @system_messages
 def course(request, course, instance):
+    enroll_state = instance.user_enroll_status(request.user)
+    enrolled = enroll_state in ["ACCEPTED", "COMPLETED"]
+    staff = is_course_staff(request.user, instance)
+
+    if settings.EXAM_MODE and not enrolled and not staff:
+        return HttpResponseForbidden(
+            _("Only enrolled users can view this content in exam mode")
+        )
+
     frontpage = instance.frontpage
     if frontpage:
         context = _page_context(request, course, instance, frontpage)
@@ -155,19 +165,20 @@ def course(request, course, instance):
 
     context["course"] = course
     context["instance"] = instance
-
-    if is_course_staff(request.user, instance):
-        context["course_staff"] = True
-    else:
-        context["course_staff"] = False
-
-    enroll_state = instance.user_enroll_status(request.user)
-    enrolled = enroll_state in ["ACCEPTED", "COMPLETED"]
     context["enroll_state"] = enroll_state
+    context["course_staff"] = staff
+
+    if staff:
+        view_mode = "staff"
+    elif not enrolled:
+        view_mode = "guest"
+    elif settings.EXAM_MODE:
+        view_mode = "exam"
+    else:
+        view_mode = None
 
     context["content_tree"] = instance.get_content_tree(
-        staff=context["course_staff"],
-        guest=not enrolled
+        mode=view_mode
     )
 
     if enrolled:
@@ -238,9 +249,12 @@ def _page_context(request, course, instance, content, pagenum=None):
     if not content_graph.visible and not course_staff:
         return HttpResponseNotFound(_("This content is (currently) only available to course staff"))
 
-    if content_graph.require_enroll:
+    if content_graph.require_enroll or content_graph.visibility == "exam-only":
         if not (enrolled or course_staff):
             return HttpResponseNotFound(_("This content is only available to enrolled users"))
+
+    if settings.EXAM_MODE and content_graph.visibility == "no-exam":
+        return HttpResponseNotFound(_("This content is not accessible in exam mode"))
 
     revision = content_graph.revision
     content_type = content.content_type
@@ -320,6 +334,7 @@ def content(request, course, instance, content, pagenum=None):
 
 
 @ensure_owner_or_staff
+@block_in_exam_mode
 def show_answers(request, user, course, instance, parent, exercise):
     """
     Show the user's answers for a specific exercise on a specific course.

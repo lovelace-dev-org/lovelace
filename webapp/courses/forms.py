@@ -345,6 +345,7 @@ class NewContentNodeForm(ContextNodeForm):
         model = cm.ContentGraph
         fields = [
             "visible",
+            "visibility",
             "require_enroll",
             "scored",
             "score_weight",
@@ -392,6 +393,7 @@ class NodeSettingsForm(ContextNodeForm):
         model = cm.ContentGraph
         fields = [
             "visible",
+            "visibility",
             "require_enroll",
             "scored",
             "score_weight",
