@@ -122,6 +122,19 @@ def accessible_courses(user):
 # |
 # v
 
+def block_in_exam_mode(function):
+    """
+    Decorator to prevent access to this view when the platform is in exam mode.
+    """
+
+    @wraps(function)
+    def wrap(*args, **kwargs):
+        if settings.EXAM_MODE:
+            return HttpResponseForbidden(_("This view is not accessible in exam mode"))
+        return function(*args, **kwargs)
+
+    return wrap
+
 def ensure_logged_in(function):
     """
     Decorator to limit a view to logged in users. Returns HttpResponseForbidden
