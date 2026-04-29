@@ -142,6 +142,8 @@ class AssessmentBullet(models.Model):
     class Meta:
         unique_together = ("sheet", "section", "ordinal_number")
 
+    objects = AssessmentBulletManager()
+
     sheet = models.ForeignKey("AssessmentSheet", on_delete=models.CASCADE)
     point_value = models.FloatField(blank=False, null=False)
     ordinal_number = models.PositiveSmallIntegerField()

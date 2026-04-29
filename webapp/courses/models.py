@@ -3931,6 +3931,10 @@ ContentPage.register_content_type(
 ContentPage.register_content_type(
     "FILE_UPLOAD_EXERCISE", FileUploadExercise, UserFileUploadExerciseAnswer
 )
+ContentPage.register_content_type(
+    "REPEATED_TEMPLATE_EXERCISE", RepeatedTemplateExercise, UserRepeatedTemplateExerciseAnswer
+)
+
 
 def get_import_list():
     return [
