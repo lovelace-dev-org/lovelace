@@ -631,7 +631,7 @@ class EmbeddedVideoMarkup(Markup):
             raise EmbeddedObjectNotAllowedError("embedded videos are not allowed in tooltips")
 
         try:
-            videolink = cm.VideoLink.objects.get(name=settings["video_slug"])
+            videolink = cm.VideoLink.objects.get(slug=settings["video_slug"])
         except cm.VideoLink.DoesNotExist as e:
             yield f"<div>Video link {settings['video_slug']} not found.</div>"
             return

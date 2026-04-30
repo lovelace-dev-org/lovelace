@@ -658,6 +658,9 @@ class CourseInstance(models.Model):
             export_target
         )
 
+        for grade in GradeThreshold.objects.filter(instance=self):
+            grade.export(self, export_target)
+
         for cg in ContentGraph.objects.filter(instance=self):
             cg.export(export_target)
 
@@ -707,7 +710,20 @@ class CourseInstance(models.Model):
         return []
 
 
-class GradeThreshold(models.Model):
+class GradeThresholdManager(models.Manager):
+
+    def get_by_natural_key(self, instance_slug, grade):
+        return self.get(instance__slug=instance_slug, grade=grade)
+
+
+class GradeThreshold(models.Model, ExportImportMixin):
+
+    class Meta:
+        unique_together = ("instance", "grade")
+
+
+    objects = GradeThresholdManager()
+
     instance = models.ForeignKey(
         "CourseInstance", null=False, blank=False, on_delete=models.CASCADE
     )
@@ -715,6 +731,9 @@ class GradeThreshold(models.Model):
     grade = models.CharField(
         max_length=4,
     )
+
+    def natural_key(self):
+        return [self.instance.slug, self.grade]
 
 
 class CourseMessage(models.Model):
@@ -3940,6 +3959,7 @@ def get_import_list():
     return [
         Course,
         CourseInstance,
+        GradeThreshold,
         Term,
         TermAlias,
         TermLink,

@@ -511,7 +511,7 @@ class CreateFileUploadExerciseForm(forms.Form):
                 messages.append(f"Content matching {link} does not exist")
 
         for link in links["media"]:
-            if not cm.CourseMedia.objects.filter(name=link):
+            if not cm.CourseMedia.objects.filter(slug=link):
                 missing_media.append(link)
                 messages.append(f"Media matching {link} does not exist")
 
