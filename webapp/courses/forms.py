@@ -447,7 +447,9 @@ class UserProfileForm(forms.ModelForm):
 
     class Meta:
         model = cm.UserProfile
-        fields = ["student_id", "data_policy", "language_preference", "dyslexic_fonts"]
+        fields = [
+            "student_id", "data_policy", "language_preference", "dyslexic_fonts"
+        ]
 
     def clean_data_policy(self):
         data_policy = self.cleaned_data.get("data_policy")
@@ -464,13 +466,14 @@ class UserForm(forms.ModelForm):
 
     class Meta:
         model = cm.User
-        fields = ["first_name", "last_name", "email"]
+        fields = ["username", "first_name", "last_name", "email"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["first_name"].required = True
         self.fields["last_name"].required = True
         self.fields["email"].required = True
+        self.fields["username"].disabled = True
 
 
 class GroupForm(forms.ModelForm):
