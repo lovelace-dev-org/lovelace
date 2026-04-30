@@ -364,6 +364,11 @@ class EmbeddedPageMarkup(Markup):
                 menu_options = [
                     (_("Edit this exercise"), "admin", "self", page.get_admin_change_url()),
                 ]
+                if checking_setup_url := page.get_checking_settings_url(page, c):
+                    menu_options.append(
+                        (_("Checking settings"), "admin", "side-panel", checking_setup_url)
+                    )
+
                 for module in lovelace_plugins.get("embed-menu"):
                     menu_options.extend(module.includes.get_embed_frame_options(
                         state["context"],

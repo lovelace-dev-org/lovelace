@@ -1743,6 +1743,9 @@ class ContentPage(models.Model, ExportImportMixin):
         adminized_type = self.content_type.replace("_", "").lower()
         return reverse(f"admin:courses_{adminized_type}_change", args=(self.id,))
 
+    def get_checking_settings_url(self, context):
+        return None
+
     def get_content_additions(self, context, content_level):
         """
         Returns content additions that plugins can provide. Content types can also override this
@@ -2032,6 +2035,7 @@ class ContentPage(models.Model, ExportImportMixin):
         """
 
         normal = [
+            "get_checking_settings_url",
             "get_choices",
             "get_rendered_content",
             "get_question",
@@ -2355,6 +2359,15 @@ class TextfieldExercise(ContentPage):
 
     def get_question(self, context):
         return ContentPage._get_question(self, context)
+
+    def get_checking_settings_url(self, context):
+        return reverse(
+            "courses:answer_settings_panel", kwargs={
+                "course": context["course"],
+                "instance": context["instance"],
+                "content": self,
+            }
+        )
 
     def save_answer(self, user, ip, answer, files, instance, revision):
         if "answer" in answer.keys():
@@ -3415,9 +3428,16 @@ class TextfieldExerciseAnswer(models.Model):
     answer = models.TextField()  # Translate
     hint = models.TextField(blank=True)  # Translate
     comment = models.TextField(
-        verbose_name="Extra comment given upon entering a matching answer", blank=True
+        blank=True
     )  # Translate
     ordinal = models.PositiveIntegerField()
+
+    @classmethod
+    def get_edit_form(self):
+        # NOTE: Just import from here now to avoid cyclic imports
+
+        from courses.config_forms import TextfieldExerciseAnswerForm
+        return TextfieldExerciseAnswerForm
 
     def __str__(self):
         if len(self.answer) > 76:

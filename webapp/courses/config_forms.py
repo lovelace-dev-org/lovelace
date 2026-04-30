@@ -19,3 +19,9 @@ class CheckboxExerciseChoiceForm(TranslationStaffForm):
         model = cm.CheckboxExerciseAnswer
         fields = ["correct", "weight", "answer", "hint", "comment"]
 
+
+class TextfieldExerciseAnswerForm(TranslationStaffForm):
+
+    class Meta:
+        model = cm.TextfieldExerciseAnswer
+        fields = ["correct", "regexp", "answer", "hint", "comment"]

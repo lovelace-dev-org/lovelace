@@ -216,6 +216,12 @@ urlpatterns = [
     # Staff URLs for exercise configuration
 
     path(
+        "staff/<course:course>/<instance:instance>/<content:content>/checking/",
+        staff_views.answer_settings_panel,
+        name="answer_settings_panel",
+    ),
+
+    path(
         "staff/<course:course>/<instance:instance>/<content:content>/choices/"
         "add/<int:after>/",
         staff_views.add_exercise_choice,

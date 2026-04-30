@@ -49,6 +49,7 @@ from courses.forms import (
     InstanceSettingsForm,
     NewContentNodeForm,
     NodeSettingsForm,
+    process_delete_confirm_form,
 )
 import courses.config_forms
 from courses.edit_forms import (
@@ -921,19 +922,26 @@ def delete_exercise_choice(request, course, instance, content, choice_id):
     except ValueError as e:
         return JsonResponse({"errors": str(e)}, status=400)
 
-    with reversion.create_revision():
-        choice.delete()
+    def delete_success(form):
+        with reversion.create_revision():
+            choice.delete()
 
-        # Save the content to include it in the revision
-        content.save()
-        reversion.set_user(request.user)
-        reversion.set_comment(
-            f"Delete exercise {content.slug} choice {choice.answer} ({choice_id})"
-        )
+            # Save the content to include it in the revision
+            content.save()
+            reversion.set_user(request.user)
+            reversion.set_comment(
+                f"Delete exercise {content.slug} choice {choice.answer} ({choice_id})"
+            )
 
-    regenerate_nearest_cache(content)
-    squash_revisions(content, 1)
-    return JsonResponse({"status": "ok"})
+        regenerate_nearest_cache(content)
+        squash_revisions(content, 1)
+
+    return process_delete_confirm_form(
+        request, delete_success,
+        extra_context={
+            "submit_override": "editing.submit_form",
+        }
+    )
 
 @ensure_staff
 def move_exercise_choice(request, course, instance, content, choice_id, direction):
@@ -996,6 +1004,8 @@ def edit_exercise_choice(request, course, instance, content, choice_id):
                 f"Add {content.slug} choice {choice.answer}"
             )
 
+        # TODO: make this conditional so that this function can also support
+        #       editing answers that do not have a visible component
         regenerate_nearest_cache(content)
         squash_revisions(content, 1)
         return JsonResponse({"status": "ok"})
@@ -1010,6 +1020,25 @@ def edit_exercise_choice(request, course, instance, content, choice_id):
         "submit_override": "editing.submit_form"
     }
     return HttpResponse(form_t.render(form_c, request))
+
+@ensure_staff
+def answer_settings_panel(request, course, instance, content):
+    choice_cls = content.get_answer_model()
+    if choice_cls is None:
+        return JsonResponse(
+            {"errors": _("No choice class associated with this content type")},
+            status=400
+        )
+
+    answers = choice_cls.objects.filter(exercise=content).order_by("-correct")
+    c = {
+        "answers": list(answers),
+        "course": course,
+        "instance": instance,
+        "content": content,
+    }
+    t = loader.get_template("courses/answer-settings-panel.html")
+    return HttpResponse(t.render(c, request))
 
 
 # ^
