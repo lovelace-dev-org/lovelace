@@ -1,7 +1,7 @@
 {% load i18n %}
 {% load static %}
 
-<div>
+<div class="panel-content" data-refresh-url="{{ panel_refresh_url }}">
   {% for answer in answers %}
     <div class="item-header">
       {% if answer.correct %}
@@ -9,7 +9,7 @@
       {% else %}
         <img src="{% static 'courses/incorrect-16.png' %}">
       {% endif %}
-      {{ answer.answer|truncatechars:80}}
+      {{ answer.answer|truncatechars:80 }}
       <span class="answer-config-actions">
         <a class="right-float interactive"
             onclick="editing.get_form(event, this)"
@@ -27,7 +27,7 @@
       <button type="button"
               class="staff-base-button add-button"
               onclick="editing.get_form(event, this)"
-              data-url="{% url 'courses:add_exercise_choice' course instance content last.ordinal %}">+
+              data-url="{% url 'courses:add_exercise_choice' course instance content last.ordinal %}?aasi=hemuli">+
       </button>
     {% endwith %}
   </div>

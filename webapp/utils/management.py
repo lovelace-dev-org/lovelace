@@ -3,15 +3,26 @@ from django.contrib import admin
 from django.db.models import Q
 from django.db import models, transaction
 from django import forms
+from django.http import (
+    HttpResponse,
+    JsonResponse,
+)
 from django.forms import Textarea, ModelForm
+from django.template import loader
+from django.utils.translation import gettext_lazy as _
+
 from django.utils import translation
 from django.utils.text import slugify
+
+from reversion import revisions as reversion
 from reversion.models import Version
+
 from modeltranslation.translator import translator
 import courses.models as cm
 from courses.widgets import ContentPreviewWidget, AdminFileWidget
 from utils.access import determine_access, determine_media_access
-from utils.archive import find_latest_version
+from utils.archive import find_latest_version, squash_revisions
+from utils.content import regenerate_nearest_cache
 from utils.data import serialize_single_python, export_json
 
 
@@ -503,3 +514,94 @@ def get_prefixed_slug(model_instance, origin, source_field, translated=True):
     main_slug = main_slug.removeprefix(f"{prefix}-")
 
     return f"{prefix}-{main_slug}"
+
+
+def process_modelform(request, form_cls, model_instance, form_id, comment,
+                      parent=None,
+                      post_save_cb=None,
+                      extra_context=None,
+                      extra_response=None):
+
+    if request.method == "POST":
+        form = form_cls(request.POST, request.FILES, instance=model_instance)
+        if not form.is_valid():
+            errors = form.errors.as_json()
+            return JsonResponse({"errors": errors}, status=400)
+
+        with reversion.create_revision():
+            if post_save_cb:
+                saved_instance = form.save(commit=False)
+                post_save_cb(saved_instance, form)
+                saved_instance.save()
+            else:
+                form.save()
+            if parent:
+                parent.save()
+            reversion.set_user(request.user)
+            reversion.set_comment(comment)
+
+        if parent:
+            squash_revisions(parent, 1)
+        else:
+            squash_revisions(model_instance, 1)
+
+        if getattr(form.Meta, "trigger_cache", False):
+            regenerate_nearest_cache(parent or model_instance)
+
+        response = {"status": "ok"}
+        extra_response and response.update(extra_response)
+        return JsonResponse(response)
+
+    form = form_cls(instance=model_instance)
+    form_t = loader.get_template("courses/base-edit-form.html")
+    form_c = {
+        "html_id": form_id,
+        "form_object": form,
+        "submit_url": request.path,
+        "html_class": "edit-form-widget",
+        "submit_override": "editing.submit_form"
+    }
+    extra_context and form_c.update(extra_context)
+    return HttpResponse(form_t.render(form_c, request))
+
+
+class ConfirmDeleteForm(forms.Form):
+    delete = forms.BooleanField(required=True, label=_("Confirm deletion"))
+
+
+
+def process_delete_confirm_form(request, success_callback, extra_context=None, extra_response=None):
+    """
+    Convenience function for displaying and processing a ConfirmDeleteForm. Can be used to reduce
+    boilerplate in delete views. The calling end simply needs to define a success callback that
+    carries out the deletion once the user has confirmed the operation.
+
+    :param Request request: request object
+    :param function success_callback: function that takes a form object as its argument
+    :param dict extra_context: extra context data to be added to the form template's rendering
+    """
+
+    if request.method == "POST":
+        form = ConfirmDeleteForm(request.POST)
+        if not form.is_valid():
+            errors = form.errors_as_json()
+            return JsonResponse({"errors": errors}, status=400)
+
+        success_callback(form)
+        response = {"status": "ok"}
+        extra_response and response.update(extra_response)
+        return JsonResponse(response)
+
+    form = ConfirmDeleteForm()
+    form_t = loader.get_template("courses/base-edit-form.html")
+    form_c = {
+        "form_object": form,
+        "submit_url": request.path,
+        "html_id": f"delete-confirm-form",
+        "html_class": "management-form",
+        "submit_label": _("Execute"),
+    }
+    extra_context and form_c.update(extra_context)
+    return HttpResponse(form_t.render(form_c, request))
+
+

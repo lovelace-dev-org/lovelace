@@ -55,9 +55,16 @@ const editing = {
         const form = $(this)
 
         process_success = function (data) {
-            console.log(location)
             if (data.redirect) {
                 location.replace(data.redirect)
+            } else if (data.refresh) {
+                const container = form.closest(".panel-container")
+                const content = container.children("div.panel-content")
+                if (content) {
+                    refresh_panel(container, content.attr("data-refresh-url"))
+                } else {
+                    location.reload()
+                }
             } else {
                 location.reload()
             }

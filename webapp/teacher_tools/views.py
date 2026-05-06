@@ -25,9 +25,9 @@ from lovelace.celery import app as celery_app
 from utils.access import determine_access, is_course_staff, ensure_responsible, ensure_staff
 from utils.archive import get_single_archived
 from utils.content import get_course_instance_tasks, get_embedded_parent
+from utils.management import process_delete_confirm_form
 from utils.notify import send_welcome_email
 
-from courses.forms import process_delete_confirm_form
 from courses.models import (
     ContentGraph,
     CourseEnrollment,

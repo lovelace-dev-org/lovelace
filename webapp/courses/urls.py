@@ -222,6 +222,12 @@ urlpatterns = [
     ),
 
     path(
+        "staff/<course:course>/<instance:instance>/<content:content>/change_widget/",
+        staff_views.change_answer_widget,
+        name="change_answer_widget",
+    ),
+
+    path(
         "staff/<course:course>/<instance:instance>/<content:content>/choices/"
         "add/<int:after>/",
         staff_views.add_exercise_choice,

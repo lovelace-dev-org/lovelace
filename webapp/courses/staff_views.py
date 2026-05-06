@@ -49,9 +49,8 @@ from courses.forms import (
     InstanceSettingsForm,
     NewContentNodeForm,
     NodeSettingsForm,
-    process_delete_confirm_form,
 )
-import courses.config_forms
+import courses.config_forms as config_forms
 from courses.edit_forms import (
     get_form,
     save_form,
@@ -76,6 +75,8 @@ from utils.management import (
     clone_terms,
     clone_content_graphs,
     clone_grades,
+    process_delete_confirm_form,
+    process_modelform,
 )
 from lovelace import plugins as lovelace_plugins
 
@@ -830,6 +831,35 @@ def configure_embed_link(request, course, instance, parent, content):
     }
     return HttpResponse(form_t.render(form_c, request))
 
+@ensure_staff
+def change_answer_widget(request, course, instance, content):
+    if request.method == "POST":
+        form = config_forms.AnswerWidgetChangeForm(request.POST, instance=content)
+        if not form.is_valid():
+            errors = form.errors.as_json()
+            return JsonResponse({"errors": errors}, status=400)
+
+        with reversion.create_revision():
+            form.save()
+            reversion.set_user(request.user)
+            reversion.set_comment(
+                f"Change answer widget of {content.slug}"
+            )
+
+        regenerate_nearest_cache(content)
+        squash_revisions(content, 1)
+        return JsonResponse({"status": "ok"})
+
+    form = config_forms.AnswerWidgetChangeForm(instance=content)
+    form_t = loader.get_template("courses/base-edit-form.html")
+    form_c = {
+        "html_id": f"{content.slug}-widget-config-form",
+        "form_object": form,
+        "submit_url": request.path,
+        "html_class": "edit-form-widget",
+        "submit_override": "editing.submit_form"
+    }
+    return HttpResponse(form_t.render(form_c, request))
 
 @ensure_staff
 def configure_answer_widget(request, course, instance, content):
@@ -867,43 +897,28 @@ def add_exercise_choice(request, course, instance, content, after):
         )
 
     form_cls = choice_cls.get_edit_form()
+    extra = {}
+    if getattr(form_cls.Meta, "refresh_mode", None) == "refresh":
+        extra["refresh"] = True
 
-    if request.method == "POST":
-        form = form_cls(request.POST)
-        if not form.is_valid():
-            errors = form.errors.as_json()
-            return JsonResponse({"errors": errors}, status=400)
+    def post_save(choice, form):
+        choice.exercise = content
+        for choice_after in choice_cls.objects.filter(exercise=content, ordinal__gt=after):
+            choice_after.ordinal += 1
+            choice_after.save()
 
-        with reversion.create_revision():
-            for choice_after in choice_cls.objects.filter(exercise=content, ordinal__gt=after):
-                choice_after.ordinal += 1
-                choice_after.save()
+        choice.ordinal = after + 1
 
-            # Save the content to include it in the revision
-            choice = form.save(commit=False)
-            choice.exercise = content
-            choice.ordinal = after + 1
-            choice.save()
-            content.save()
-            reversion.set_user(request.user)
-            reversion.set_comment(
-                f"Add {content.slug} choice {choice.answer}"
-            )
-
-        regenerate_nearest_cache(content)
-        squash_revisions(content, 1)
-        return JsonResponse({"status": "ok"})
-
-    form = form_cls()
-    form_t = loader.get_template("courses/base-edit-form.html")
-    form_c = {
-        "html_id": f"{content.slug}-add-choice-form",
-        "form_object": form,
-        "submit_url": request.path,
-        "html_class": "edit-form-widget",
-        "submit_override": "editing.submit_form"
-    }
-    return HttpResponse(form_t.render(form_c, request))
+    return process_modelform(
+        request,
+        form_cls,
+        None,
+        form_id=f"{content.slug}-add-choice-form",
+        comment=f"Add {content.slug} choice",
+        parent=content,
+        post_save_cb=post_save,
+        extra_response=extra,
+    )
 
 def _get_choice(content, choice_id):
     choice_cls = content.get_answer_model()
@@ -989,37 +1004,19 @@ def edit_exercise_choice(request, course, instance, content, choice_id):
         return JsonResponse({"errors": str(e)}, status=400)
 
     form_cls = choice.get_edit_form()
+    extra = {}
+    if getattr(form_cls.Meta, "refresh_mode", None) == "refresh":
+        extra["refresh"] = True
 
-    if request.method == "POST":
-        form = form_cls(request.POST, instance=choice)
-        if not form.is_valid():
-            errors = form.errors.as_json()
-            return JsonResponse({"errors": errors}, status=400)
-
-        with reversion.create_revision():
-            form.save()
-            content.save()
-            reversion.set_user(request.user)
-            reversion.set_comment(
-                f"Add {content.slug} choice {choice.answer}"
-            )
-
-        # TODO: make this conditional so that this function can also support
-        #       editing answers that do not have a visible component
-        regenerate_nearest_cache(content)
-        squash_revisions(content, 1)
-        return JsonResponse({"status": "ok"})
-
-    form = form_cls(instance=choice)
-    form_t = loader.get_template("courses/base-edit-form.html")
-    form_c = {
-        "html_id": f"{content.slug}-add-choice-form",
-        "form_object": form,
-        "submit_url": request.path,
-        "html_class": "edit-form-widget",
-        "submit_override": "editing.submit_form"
-    }
-    return HttpResponse(form_t.render(form_c, request))
+    return process_modelform(
+        request,
+        form_cls,
+        choice,
+        form_id=f"{content.slug}-edit-choice-form",
+        comment=f"Edit {content.slug} choice {choice.answer}",
+        parent=content,
+        extra_response=extra,
+    )
 
 @ensure_staff
 def answer_settings_panel(request, course, instance, content):
@@ -1036,6 +1033,7 @@ def answer_settings_panel(request, course, instance, content):
         "course": course,
         "instance": instance,
         "content": content,
+        "panel_refresh_url": request.path
     }
     t = loader.get_template("courses/answer-settings-panel.html")
     return HttpResponse(t.render(c, request))

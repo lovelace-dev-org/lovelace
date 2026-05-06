@@ -1950,6 +1950,16 @@ div.expand-handle {
                 #fff;
 }
 
+.widget-change-button {
+    background: no-repeat url("/static/courses/change-widget.png") center/18px,
+                #fff;
+}
+
+.widget-settings-button {
+    background: no-repeat url("/static/courses/widget-settings.png") center/18px,
+                #fff;
+}
+
 
 div.task-meta-score {
     display: block;

@@ -520,6 +520,21 @@ function show_panel (event, caller, panel_type, panel_id, refresh) {
     }
 }
 
+function refresh_panel(container, url) {
+    console.log(url)
+    $.ajax({
+        type: "GET",
+        url,
+        success: function (data, status, jqxhr) {
+            container.html(data)
+            container.find("form :input[type!=hidden]").first().focus()
+        },
+        error: function (jqxhr, status, type) {
+            container.html(jqxhr.responseText)
+        }
+    })
+}
+
 function hide_panel (event, panel_id) {
     event.preventDefault()
     event.stopPropagation()

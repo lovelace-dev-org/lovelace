@@ -26,4 +26,65 @@ urlpatterns = [
         views.download_routine_exercise_backend,
         name="download_routine_exercise_backend",
     ),
+
+    # MANAGEMENT
+
+
+    path(
+        "staff/<course:course>/<instance:instance>/<content:content>/"
+        "backend/",
+        views.routine_backend_panel,
+        name="routine_backend_panel",
+    ),
+    path(
+        "staff/<course:course>/<instance:instance>/<content:content>/"
+        "backend/<str:filename>/edit/",
+        views.edit_backend,
+        name="edit_backend",
+    ),
+    path(
+        "staff/<course:course>/<instance:instance>/<content:content>/"
+        "backend/<str:filename>/delete/",
+        views.delete_backend,
+        name="delete_backend",
+    ),
+    path(
+        "staff/<course:course>/<instance:instance>/<content:content>/"
+        "backend/add/",
+        views.add_backend,
+        name="add_backend",
+    ),
+    path(
+        "staff/<course:course>/<instance:instance>/<content:content>/"
+        "command/edit",
+        views.edit_command,
+        name="edit_command",
+    ),
+    path(
+        "staff/<course:course>/<instance:instance>/<content:content>/"
+        "template/",
+        views.routine_template_panel,
+        name="routine_template_panel",
+    ),
+    path(
+        "staff/<course:course>/<instance:instance>/<content:content>/"
+        "template/<int:qc>/<int:variant>/edit/",
+        views.edit_template,
+        name="edit_template",
+    ),
+    path(
+        "staff/<course:course>/<instance:instance>/<content:content>/"
+        "template/<int:qc>/<int:variant>/delete/",
+        views.delete_template,
+        name="delete_template",
+    ),
+    path(
+        "staff/<course:course>/<instance:instance>/<content:content>/"
+        "template/<int:qc>/add/",
+        views.add_template,
+        name="add_template",
+    ),
+
+
+
 ]

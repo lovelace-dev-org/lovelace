@@ -4,6 +4,7 @@ from django.db.models import Q, JSONField
 from django.template import loader
 from django.urls import reverse
 from django.utils.text import slugify
+from django.utils.translation import gettext_lazy as _
 
 import courses.models as cm
 
@@ -53,6 +54,34 @@ class RoutineExercise(cm.ContentPage):
     def get_admin_change_url(self):
         adminized_type = self.content_type.replace("_", "").lower()
         return reverse(f"admin:routine_exercise_{adminized_type}_change", args=(self.id,))
+
+    def get_staff_extra(self, context):
+        """
+        Adds a link to attempt management page to the task's staff tools.
+        """
+
+        options = cm.ContentPage.get_staff_extra(self, context)
+        options.append((
+            _("Manage backends"),
+            "routine-backends",
+            "side-panel",
+            reverse("routine_exercise:routine_backend_panel", kwargs={
+                "course": context["course"],
+                "instance": context["instance"],
+                "content": self,
+            })
+        ))
+        options.append((
+            _("Manage templates"),
+            "routine-templates",
+            "side-panel",
+            reverse("routine_exercise:routine_template_panel", kwargs={
+                "course": context["course"],
+                "instance": context["instance"],
+                "content": self,
+            })
+        ))
+        return options
 
     def get_user_answers(self, user, instance, ignore_drafts=True):
         if instance is None:

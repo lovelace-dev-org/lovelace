@@ -1,0 +1,38 @@
+{% load i18n %}
+{% load static %}
+
+
+<div class="panel-content" data-refresh-url="{{ panel_refresh_url }}">
+  <div class="expand-handle"
+      onclick="editing.get_form(event, this)"
+      data-url="{% url 'routine_exercise:edit_command' course instance content %}">
+        {% trans 'Edit backend command' %}
+  </div>
+
+  <div>Backend Files</div>
+
+  <div>
+    {% for backend in backends %}
+      <div class="item-header">
+        {{ backend.filename }}
+        <span class="answer-config-actions">
+          <a class="right-float interactive"
+              onclick="editing.get_form(event, this)"
+              data-url="{% url 'routine_exercise:delete_backend' course instance content backend.filename %}"
+              ><img src="{% static 'courses/delete-16.png' %}"></a>
+          <a class="right-float interactive"
+              onclick="editing.get_form(event, this)"
+              data-url="{% url 'routine_exercise:edit_backend' course instance content backend.filename %}"
+              ><img src="{% static 'courses/edit.png' %}"></a>
+        </span>
+      </div>
+    {% endfor %}
+    <div>
+      <button type="button"
+              class="staff-base-button add-button"
+              onclick="editing.get_form(event, this)"
+              data-url="{% url 'routine_exercise:add_backend' course instance content %}">+
+      </button>
+    </div>
+  </div>
+</div>
