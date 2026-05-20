@@ -61,7 +61,7 @@ def manage_assessment(request, course, instance, parent, content):
     if request.method == "POST":
         form = AddAssessmentForm(request.POST, course_sheets=course_sheets)
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         if form.cleaned_data["copy"]:
@@ -132,7 +132,7 @@ def create_bullet(request, course, instance, sheet):
     if request.method == "POST":
         form = NewBulletForm(request.POST)
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         new_bullet = form.save(commit=False)
@@ -177,7 +177,7 @@ def edit_section(request, course, instance, sheet, section=None):
     if request.method == "POST":
         form = SectionForm(request.POST, instance=section)
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         with reversion.create_revision():
@@ -258,7 +258,7 @@ def edit_bullet(request, course, instance, sheet, bullet):
     if request.method == "POST":
         form = AssessmentBulletForm(request.POST, instance=bullet)
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         with reversion.create_revision():
@@ -428,7 +428,7 @@ def submission_assessment(request, course, instance, parent, exercise, user, ans
     if request.method == "POST":
         form = AssessmentForm(request.POST, by_section=by_section)
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         assessment = serializable_assessment(request.user, sheet, by_section, form.cleaned_data)

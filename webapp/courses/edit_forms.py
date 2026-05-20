@@ -435,6 +435,8 @@ class TeXEditForm(LineEditMixin, MarkupEditForm):
         )
 
 
+# TODO: The solution used for MultipleChoiceFeedback in feedback/forms.py
+#       is much better than whatever this is. See if it can be applied here
 class ScriptFileInline(TranslationStaffForm):
 
     class Meta:

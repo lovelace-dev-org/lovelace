@@ -2,6 +2,19 @@
 
 from django.db import migrations
 
+def standardize_variants(apps, schema_editor):
+    ContentPage = apps.get_model("courses", "contentpage")
+    RoutineExerciseTemplate = apps.get_model("routine_exercise", "routineexercisetemplate")
+
+    for page in ContentPage.objects.all():
+        if page.content_type == "ROUTINE_EXERCISE":
+            templates = RoutineExerciseTemplate.objects.filter(exercise=page)
+            for qc in templates.distinct("question_class").values_list("question_class", flat=True):
+                variants = templates.filter(question_class=qc).order_by("variant")
+                for i, template in enumerate(variants, start=1):
+                    template.variant = i
+                    template.save()
+
 
 class Migration(migrations.Migration):
 
@@ -10,4 +23,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        migrations.RunPython(standardize_variants)
     ]

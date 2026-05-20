@@ -6,6 +6,7 @@ from django.utils.translation import gettext_lazy as _
 from utils.management import TranslationStaffForm
 
 import courses.models as cm
+from courses.forms import TextfieldAnswerForm
 from courses.widgets import AnswerWidgetRegistry
 
 class MultipleChoiceExerciseChoiceForm(TranslationStaffForm):
@@ -25,7 +26,7 @@ class CheckboxExerciseChoiceForm(TranslationStaffForm):
         trigger_cache = True
 
 
-class TextfieldExerciseAnswerForm(TranslationStaffForm):
+class TextfieldExerciseAnswerForm(TranslationStaffForm, TextfieldAnswerForm):
 
     class Meta:
         model = cm.TextfieldExerciseAnswer

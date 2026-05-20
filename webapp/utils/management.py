@@ -436,11 +436,13 @@ class TranslationStaffForm(ModelForm):
                 for lang_code, __ in languages:
                     lang_field_name = f"{field_name}_{lang_code}"
                     if lang_code == settings.MODELTRANSLATION_DEFAULT_LANGUAGE:
+                        required = requires and not field.blank
                         self.fields[lang_field_name] = field.formfield(
                             label=f"{field.verbose_name} (default)".capitalize(),
-                            required=requires and not field.blank,
+                            required=required,
                         )
                     else:
+                        required = False
                         self.fields[lang_field_name] = field.formfield(
                             label=f"{field.verbose_name} ({lang_code})".capitalize(),
                             required=False
@@ -450,7 +452,13 @@ class TranslationStaffForm(ModelForm):
                             attrs={"class": "generic-textfield", "rows": 5}
                         )
                     elif isinstance(field, models.FileField):
-                        self.fields[lang_field_name].widget = forms.ClearableFileInput()
+                        try:
+                            widget = self.Meta.widgets[field_name]()
+                        except (AttributeError, KeyError):
+                            widget = forms.ClearableFileInput()
+                        widget.is_required = required
+                        self.fields[lang_field_name].widget = widget
+
                     self._translated_field_names.append(lang_field_name)
                 self.fields.pop(field_name)
 
@@ -490,8 +498,8 @@ def get_prefixed_slug(model_instance, origin, source_field, translated=True):
 
     :param Model model_instance: the model instance to attach the slug for
     :param Course origin: the course the model instance originally belongs to
-    :param source_field: name of the field from which slug should be generated from
-    :param translated: whether the field is managed by modeltranslation or not (default True)
+    :param str source_field: name of the field from which slug should be generated from
+    :param bool translated: whether the field is managed by modeltranslation or not (default True)
 
     :return: the prefixed slug as a string
     """
@@ -521,11 +529,31 @@ def process_modelform(request, form_cls, model_instance, form_id, comment,
                       post_save_cb=None,
                       extra_context=None,
                       extra_response=None):
+    """
+    A general utility function for displaying and processing most instances of ModelForms.
+    Should be used for most views that are used for displaying and saving a form. Handles
+    creating revisions and refreshing cache. Other things can also be controlled with the optional
+    parameters.
+
+    :param Request request: request object
+    :param ModelForm form_cls: form class, must inherit ModelForm
+    :param Model model_instance: model instance being edited, can be None when creating new instance
+    :param str form_id: form's HTML id
+    :param str comment: comment for the automatically created revision
+    :param Model parent: the object's parent when relevant, used in revisioning and cache refresh
+    :param function post_save_cb: callback function for additional actions needed when saving the
+                                  form, will be given the model instance and the form
+    :param dict extra_context: extra/override context that will be updated into the form's rendering
+                               context
+    :param dict extra_response: extra data that will be updated into the JSON response when
+                                saving is successful
+
+    """
 
     if request.method == "POST":
         form = form_cls(request.POST, request.FILES, instance=model_instance)
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         with reversion.create_revision():
@@ -542,7 +570,7 @@ def process_modelform(request, form_cls, model_instance, form_id, comment,
 
         if parent:
             squash_revisions(parent, 1)
-        else:
+        elif model_instance:
             squash_revisions(model_instance, 1)
 
         if getattr(form.Meta, "trigger_cache", False):
@@ -584,7 +612,7 @@ def process_delete_confirm_form(request, success_callback, extra_context=None, e
     if request.method == "POST":
         form = ConfirmDeleteForm(request.POST)
         if not form.is_valid():
-            errors = form.errors_as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         success_callback(form)
@@ -598,7 +626,7 @@ def process_delete_confirm_form(request, success_callback, extra_context=None, e
         "form_object": form,
         "submit_url": request.path,
         "html_id": f"delete-confirm-form",
-        "html_class": "management-form",
+        "html_class": "edit-form-widget",
         "submit_label": _("Execute"),
     }
     extra_context and form_c.update(extra_context)

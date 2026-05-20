@@ -94,7 +94,7 @@ def instance_settings(request, course, instance):
             request.POST, instance=instance, available_content=available_content
         )
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         instance = form.save(commit=False)
@@ -149,7 +149,7 @@ def freeze_instance(request, course, instance):
             request.POST,
         )
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         instance.freeze(freeze_to=form.cleaned_data["freeze_to"])
@@ -180,7 +180,7 @@ def clone_instance(request, course, instance):
         old_pk = instance.id
         form = InstanceCloneForm(request.POST, instance=instance)
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         new_instance = form.save(commit=False)
@@ -230,7 +230,7 @@ def edit_grading(request, course, instance):
             instance=instance,
         )
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         form.save()
@@ -257,7 +257,7 @@ def regen_instance_cache(request, course, instance):
     if request.method == "POST":
         form = CacheRegenForm(request.POST)
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         nodes = ContentGraph.objects.filter(instance=instance)
@@ -288,7 +288,7 @@ def termify(request, course, instance):
     if request.method == "POST":
         form = TermifyForm(request.POST, course_terms=terms)
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         words_to_replace = [form.cleaned_data["baseword"]]
@@ -353,7 +353,7 @@ def export_instance(request, course, instance):
     if request.method == "POST":
         form = InstanceExportForm(request.POST)
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         data = []
@@ -384,7 +384,7 @@ def import_instance(request, course, instance):
     if request.method == "POST":
         form = InstanceImportForm(request.POST, request.FILES)
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         source = form.cleaned_data["import_file"]
@@ -432,7 +432,7 @@ def create_content_node(request, course, instance):
             course_instance=instance
         )
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         try:
@@ -535,7 +535,7 @@ def node_settings(request, course, instance, node_id):
     if request.method == "POST":
         form = NodeSettingsForm(request.POST, available_content=available_content, instance=node)
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         node = form.save(commit=False)
@@ -641,7 +641,7 @@ def regen_page_cache(request, course, instance, content):
     if request.method == "POST":
         form = CacheRegenForm(request.POST)
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         node = ContentGraph.objects.get(instance=instance, content=content)
@@ -696,7 +696,7 @@ def edit_form(request, course, instance, content, action):
             block_type, position, context, action, request.POST, request.FILES,
         )
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         with reversion.create_revision():
@@ -737,7 +737,7 @@ def add_form(request, course, instance, content):
         line_count = int(request.POST.get("line_count"))
         form = BlockTypeSelectForm(request.POST, line_idx=line_idx)
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         query = (
@@ -812,7 +812,7 @@ def configure_embed_link(request, course, instance, parent, content):
         for link in affected:
             form = EmbedConfigForm(request.POST, instance=link)
             if not form.is_valid():
-                errors = form.errors.as_json()
+                errors = form.errors.get_json_data()
                 return JsonResponse({"errors": errors}, status=400)
 
             form.save()
@@ -836,7 +836,7 @@ def change_answer_widget(request, course, instance, content):
     if request.method == "POST":
         form = config_forms.AnswerWidgetChangeForm(request.POST, instance=content)
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         with reversion.create_revision():
@@ -868,7 +868,7 @@ def configure_answer_widget(request, course, instance, content):
     if request.method == "POST":
         form = widget.get_configuration_form(request, data=request.POST)
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         form.save()
@@ -1078,7 +1078,7 @@ def create_group(request, course, instance):
     if request.method == "POST":
         form = GroupForm(request.POST, staff=staff_members)
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         group = form.save(commit=False)
@@ -1112,7 +1112,7 @@ def add_member(request, course, instance, group):
     if request.method == "POST":
         form = GroupMemberForm(request.POST, students=enrolled_students)
         if not form.is_valid(instance):
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         user = enrolled_students.get(id=form.cleaned_data["student"])

@@ -374,7 +374,7 @@ function submit_ajax_form (form, success_extra_cb) {
             success_extra_cb(data)
         },
         error: function (jqxhr, status, type) {
-            const errors = JSON.parse(JSON.parse(jqxhr.responseText).errors)
+            const errors = JSON.parse(jqxhr.responseText).errors
             for (const [field, content] of Object.entries(errors)) {
                 console.log(field, content)
                 content.forEach(function (entry) {

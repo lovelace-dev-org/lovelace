@@ -106,7 +106,17 @@ class MultipleQuestionExam(cm.ContentPage):
         Adds a link to attempt management page to the task's staff tools.
         """
 
-        options = ContentPage.get_staff_extra(self, context)
+        options = cm.ContentPage.get_staff_extra(self, context)
+        options.append((
+            _("Edit question pool"),
+            "multiexam-question-pool",
+            "side-panel",
+            reverse("multiexam:edit_question_pool", kwargs={
+                "course": context["course"],
+                "instance": context["instance"],
+                "content": self,
+            })
+        ))
         options.append((
             _("Manage attempts"),
             "multiexam-attempts",

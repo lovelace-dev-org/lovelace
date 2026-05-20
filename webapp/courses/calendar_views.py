@@ -26,7 +26,7 @@ def calendar_scheduling(request, course, instance, calendar):
     if request.method == "POST":
         form = CalendarSchedulingForm(request.POST)
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         start = form.cleaned_data["start"]
@@ -92,7 +92,7 @@ def calendar_config(request, course, instance, calendar):
             request.POST, available_content=available_content, instance=calendar
         )
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         try:

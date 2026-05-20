@@ -38,6 +38,11 @@ class ContentFeedbackQuestion(models.Model, ExportImportMixin):
     origin = models.ForeignKey("courses.Course", null=True, on_delete=models.SET_NULL)
     slug = models.SlugField(max_length=255, db_index=True, unique=True, allow_unicode=True)
 
+    @classmethod
+    def get_edit_form(cls):
+        from .forms import FeedbackQuestionEditForm
+        return FeedbackQuestionEditForm
+
     def natural_key(self):
         return [self.slug]
 
@@ -47,6 +52,15 @@ class ContentFeedbackQuestion(models.Model, ExportImportMixin):
     def get_url_name(self):
         """Creates a URL and HTML5 ID field friendly version of the name."""
         return get_prefixed_slug(self, self.origin, "question")
+
+    def get_type_model(self):
+        type_models = {
+            "THUMB_FEEDBACK": ThumbFeedbackQuestion,
+            "STAR_FEEDBACK": StarFeedbackQuestion,
+            "MULTIPLE_CHOICE_FEEDBACK": MultipleChoiceFeedbackQuestion,
+            "TEXTFIELD_FEEDBACK": TextfieldFeedbackQuestion,
+        }
+        return type_models[self.question_type]
 
     def get_type_object(self):
         """
@@ -222,6 +236,10 @@ class MultipleChoiceFeedbackQuestion(ContentFeedbackQuestion):
         verbose_name = "content multiple choice feedback question"
         proxy = True
 
+    @classmethod
+    def get_edit_form(cls):
+        from .forms import MultipleChoiceFeedbackEditForm
+        return MultipleChoiceFeedbackEditForm
 
     def save(self, *args, **kwargs):
         self.slug = self.get_url_name()

@@ -3433,7 +3433,7 @@ class TextfieldExerciseAnswer(models.Model):
     ordinal = models.PositiveIntegerField()
 
     @classmethod
-    def get_edit_form(self):
+    def get_edit_form(cls):
         # NOTE: Just import from here now to avoid cyclic imports
 
         from courses.config_forms import TextfieldExerciseAnswerForm
@@ -3448,7 +3448,14 @@ class TextfieldExerciseAnswer(models.Model):
         return [self.exercise.slug, self.ordinal]
 
     def save(self, *args, **kwargs):
-        self.answer = self.answer.replace("\r", "")
+        # TODO: why was this needed? If not needed, remove the fixed version below
+        # self.answer = self.answer.replace("\r", "")
+        for lang_code, __ in settings.LANGUAGES:
+            lang_field = f"answer_{lang_code}"
+            lang_answer = getattr(self, lang_field)
+            lang_answer = lang_answer.replace("\r", "")
+            setattr(self, lang_field, lang_answer)
+
         if self.ordinal is None:
             previous = TextfieldExerciseAnswer.objects.filter(
                 exercise=self.exercise,
@@ -3473,7 +3480,7 @@ class MultipleChoiceExerciseAnswer(models.Model):
     )  # Translate
 
     @classmethod
-    def get_edit_form(self):
+    def get_edit_form(cls):
         # NOTE: Just import from here now to avoid cyclic imports
 
         from courses.config_forms import MultipleChoiceExerciseChoiceForm
@@ -3500,7 +3507,7 @@ class CheckboxExerciseAnswer(models.Model):
     )  # Translate
 
     @classmethod
-    def get_edit_form(self):
+    def get_edit_form(cls):
         from courses.config_forms import CheckboxExerciseChoiceForm
         return CheckboxExerciseChoiceForm
 

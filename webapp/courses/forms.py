@@ -48,6 +48,7 @@ class CodeReplaceExerciseForm(forms.Form):
 
 
 class FileEditForm(forms.ModelForm):
+
     def get_initial_for_field(self, field, field_name):
         default_value = super().get_initial_for_field(field, field_name)
         if isinstance(field, fields.FileField) and default_value:
@@ -59,6 +60,7 @@ class FileEditForm(forms.ModelForm):
 
 
 class ExerciseBackendForm(forms.ModelForm):
+
     def get_initial_for_field(self, field, field_name):
         default_value = super().get_initial_for_field(field, field_name)
         if isinstance(field, fields.FileField) and default_value:

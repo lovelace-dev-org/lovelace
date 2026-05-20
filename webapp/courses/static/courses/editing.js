@@ -45,7 +45,7 @@ const editing = {
             url: address,
             success: function (data, status, jqxhr) {
                 const form = $(data)
-                caller.after(form)
+                caller.closest("div").after(form)
             }
         })
     },

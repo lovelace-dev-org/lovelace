@@ -4,6 +4,7 @@ import os
 import random
 
 from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from django.http import (
     HttpResponse,
@@ -403,6 +404,14 @@ def check_routine_question(request, course, instance, parent, content):
     data = {"task": "check", "ready": False, "redirect": progress_url}
     return JsonResponse(data)
 
+# ^
+# |
+# CHECKING VIEWS
+# CONFIGURATION VIEWS
+# |
+# v
+
+
 @ensure_staff
 def routine_backend_panel(request, course, instance, content):
     backends = content.routineexercisebackendfile_set.get_queryset()
@@ -487,13 +496,18 @@ def add_backend(request, course, instance, content):
 @ensure_staff
 def edit_command(request, course, instance, content):
 
+    try:
+        command = content.routineexercisebackendcommand
+    except ObjectDoesNotExist:
+        command = None
+
     def post_save(command, form):
         command.exercise = content
 
     return process_modelform(
         request,
         CommandForm,
-        content.routineexercisebackendcommand,
+        command,
         form_id=f"{content.slug}-routine-command-form",
         comment=f"Change {content.slug} backend command",
         parent=content,

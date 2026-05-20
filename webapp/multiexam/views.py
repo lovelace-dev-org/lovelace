@@ -2,6 +2,7 @@ import datetime
 import os
 
 from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 from django.http import (
     HttpResponse,
@@ -19,9 +20,9 @@ from courses.models import User
 
 from utils.access import ensure_enrolled_or_staff, determine_access, ensure_staff, ensure_responsible
 from utils.archive import get_single_archived, find_latest_version, find_version_with_filename
-from utils.content import get_embedded_parent
+from utils.content import get_embedded_parent, download_exercise_backend
 from utils.files import generate_download_response, get_file_contents_b64
-from utils.management import process_delete_confirm_form
+from utils.management import process_delete_confirm_form, process_modelform
 
 from multiexam.models import (
     load_pool_file,
@@ -35,7 +36,8 @@ from multiexam.forms import (
     ExamAttemptDeleteForm,
     ExamAttemptSettingsForm,
     ExamAttemptRefreshForm,
-    ExamAttemptKeyForm
+    ExamAttemptKeyForm,
+    QuestionPoolForm,
 )
 from multiexam.utils import compare_exams, generate_attempt_questions, process_questions
 
@@ -66,7 +68,7 @@ def get_exam_attempt(request, course, instance, content):
         if request.method == "POST":
             form = ExamAttemptKeyForm(request.POST, attempt=attempt)
             if not form.is_valid():
-                errors = form.errors.as_json()
+                errors = form.errors.get_json_data()
                 return JsonResponse({"errors": errors}, status=400)
         else:
             form = ExamAttemptKeyForm(attempt=attempt)
@@ -107,6 +109,13 @@ def get_exam_attempt(request, course, instance, content):
         "rendered_form": t.render(c, request),
     })
 
+# ^
+# |
+# STUDENT VIEWS
+# ATTEMPT MANAGEMENT
+# |
+# v
+
 @ensure_responsible
 def manage_attempts(request, course, instance, content):
     """
@@ -144,7 +153,7 @@ def open_new_attempt(request, course, instance, content):
             available_questions=content.examquestionpool.question_count()
         )
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         if form.cleaned_data.get("user_id", None):
@@ -212,7 +221,7 @@ def attempt_settings(request, course, instance, attempt):
     if request.method == "POST":
         form = ExamAttemptSettingsForm(request.POST, instance=attempt)
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         attempt = form.save(commit=False)
@@ -225,7 +234,7 @@ def attempt_settings(request, course, instance, attempt):
             }
             if not compare_exams(pools, primary_key="None")[0]:
                 form.add_error("refresh", _("Cannot update, the exam files are incompatible"))
-                return JsonResponse({"errors": form.errors.as_json()}, status=400)
+                return JsonResponse({"errors": form.errors.get_json_data()}, status=400)
 
             attempt.revision = find_latest_version(attempt.exam).revision_id
         attempt.save()
@@ -266,7 +275,7 @@ def refresh_attempts(request, course, instance, content):
     if request.method == "POST":
         form = ExamAttemptRefreshForm(request.POST)
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         pools = {"None": load_pool_file(content.examquestionpool.fileinfo)}
@@ -286,7 +295,7 @@ def refresh_attempts(request, course, instance, content):
 
         if not compare_exams(pools, primary_key="None")[0]:
             form.add_error(None, _("Cannot update, some exam files are incompatible"))
-            return JsonResponse({"errors": form.errors.as_json()}, status=400)
+            return JsonResponse({"errors": form.errors.get_json_data()}, status=400)
 
         updated = attempts.update(revision=find_latest_version(attempt.exam).revision_id)
         return JsonResponse({
@@ -303,6 +312,33 @@ def refresh_attempts(request, course, instance, content):
         "html_class": "exam-management-form",
     }
     return HttpResponse(form_t.render(form_c, request))
+
+# ^
+# |
+# ATTEMPT MANAGEMENT
+# CONFIGURATION VIEWS
+# |
+# v
+
+@ensure_staff
+def edit_question_pool(request, course, instance, content):
+    try:
+        question_pool = content.examquestionpool
+    except ObjectDoesNotExist:
+        question_pool = None
+
+    def post_save(pool, form):
+        pool.exercise = content
+
+    return process_modelform(
+        request,
+        QuestionPoolForm,
+        question_pool,
+        form_id=f"{content.slug}-question-pool-form",
+        comment=f"Change {content.slug} question pool",
+        parent=content,
+        post_save_cb=post_save,
+    )
 
 def download_question_pool(request, exercise_id, field_name, filename):
     return download_exercise_backend(
