@@ -225,8 +225,12 @@ def system_messages(view_func):
             request.session["cookies_accepted"] = False
 
         last_seen = request.COOKIES.get("notifications_seen")
+        msg_lang = translation.get_language()
         msg_count = 0
-        for message in get_notifications("system", last_seen, translation.get_language()):
+        notifications = get_notifications("system", last_seen, msg_lang)
+        notifications.extend(get_notifications(request.user.username, last_seen, msg_lang))
+
+        for message in notifications:
             messages.add_message(request, messages.INFO, message)
             msg_count += 1
 

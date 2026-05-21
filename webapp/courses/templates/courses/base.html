@@ -143,6 +143,9 @@
                     </span>
                   {% endif %}
                 </div>
+                <div class="user-settings">
+                  <a href="/calendar/my-calendar/">{% trans 'My Calendar' %}</a>
+                </div>
                 {% if course and instance and instance.max_group_size %}
                     <div class="user-settings">
                       <a href="{% url 'courses:group_info' course instance %}">

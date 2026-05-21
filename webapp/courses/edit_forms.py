@@ -844,7 +844,7 @@ class CalendarCreateForm(LineEditMixin, forms.ModelForm):
         model = cm.Calendar
         fields = [
             "name", "allow_multiple", "lock_period",
-            "lock_cancel", "heading_level"
+            "lock_cancel", "meeting_calendar", "heading_level"
         ]
         markup = courses.markup.CalendarMarkup
 
@@ -874,7 +874,8 @@ class CalendarCreateForm(LineEditMixin, forms.ModelForm):
         self.fields["related_content"] = forms.ChoiceField(
             widget=forms.Select,
             label=_("Related content"),
-            choices=[(None, _(" -- NO CONTENT -- "))] + self._get_content_choices()
+            choices=[(None, _(" -- NO CONTENT -- "))] + self._get_content_choices(),
+            required=False,
         )
 
 

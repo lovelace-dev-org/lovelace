@@ -1,4 +1,5 @@
 import datetime
+import itertools
 from django.conf import settings
 from django.db import transaction
 from django.http import (
@@ -15,11 +16,67 @@ from courses.models import (
     CalendarDate,
     CalendarReservation,
     ContentPage,
+    StudentGroup,
 )
 import courses.message_views as messaging
 from utils.access import ensure_staff
+from utils.formatters import display_name
 from utils.management import CourseContentAdmin
 
+
+def user_calendar(request):
+    all_events = []
+    now = datetime.datetime.now()
+    reserved_events = CalendarDate.objects.filter(
+        created_by=request.user,
+        start_time__gt=now,
+        calendarreservation__isnull=False,
+    )
+    reservations = CalendarReservation.objects.filter(
+        user=request.user,
+        calendar_date__start_time__gt=now,
+    )
+    group_reservations = []
+    for group in StudentGroup.objects.filter(members=request.user):
+        for member in group.members.get_queryset().exclude(id=request.user.id):
+            group_reservations.extend(
+                list(CalendarReservation.objects.filter(
+                    user=member,
+                    calendar_date__start_time__gt=now
+                ))
+            )
+
+    for event in reserved_events:
+        entry = {"role": "host", "event": event}
+        reservations = list(event.calendarreservation_set.get_queryset())
+        if len(reservations) == 1:
+            entry["reserver"] = display_name(reservations[0].user)
+        else:
+            entry["reserver"] = _("multiple")
+        all_events.append(entry)
+
+    for reservation in reservations:
+        all_events.append({"role": "reserver", "event": reservation.calendar_date})
+
+    for reservation in group_reservations:
+        all_events.append({"role": "member", "event": reservation.calendar_date})
+
+    def start_time_key(entry):
+        return entry["event"].start_time
+
+    def date_key(entry):
+        return entry["event"].start_time.date()
+
+    all_events.sort(key=start_time_key)
+    grouped_events = itertools.groupby(all_events, date_key)
+    grouped_events = [(key, list(group)) for key, group in grouped_events]
+
+    t = loader.get_template("courses/user-calendar.html")
+    c = {
+        "user": request.user,
+        "grouped_events": grouped_events
+    }
+    return HttpResponse(t.render(c, request))
 
 @ensure_staff
 def calendar_scheduling(request, course, instance, calendar):
@@ -35,6 +92,7 @@ def calendar_scheduling(request, course, instance, calendar):
         for i in range(form.cleaned_data["event_count"]):
             event_start = start + increment * i
             event = CalendarDate(
+                created_by=request.user,
                 calendar=calendar,
                 start_time=event_start,
                 end_time=event_start + increment,

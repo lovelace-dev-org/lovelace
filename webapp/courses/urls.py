@@ -88,7 +88,14 @@ urlpatterns = [
     path("user/<user:user>/", user_views.user),
     path("messages/", message_views.view_messages, name="view_messages"),
     path("profile/", user_views.user_profile),
-    # For calendar POST requests
+
+
+    # For calendar
+    path(
+        "calendar/my-calendar/",
+        calendar_views.user_calendar,
+        name="user_calendar",
+    ),
     path(
         "calendar/<calendar:calendar>/<event:event>/",
         calendar_views.calendar_reservation,
