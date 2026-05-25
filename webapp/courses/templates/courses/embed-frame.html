@@ -6,7 +6,7 @@
 <div class="embedded-page">
 {% if user.is_active %}
   <div class="task-meta-container">
-    <div class="task-meta" data-eval-group="{{ content.evaluation_group }}">
+    <div class="task-meta" data-eval-group="{{ embed_link.evaluation_group }}">
       {% if not sandboxed %}
         {% if evaluation == "unanswered" %}
           <img src="{% static 'courses/unanswered-96.png' %}" width="96" height="96" alt="?"
@@ -35,7 +35,7 @@
         {% endif %}
 
         <div class="task-meta-score">
-          <span>{{ score|floatformat:"2" }}</span> <span> / {{ max_points }}</span>
+          <span>{{ score|floatformat:"2" }}</span> <span> / {{ max_points|floatformat:"2" }}</span>
         </div>
 
         {% comment %}
@@ -47,7 +47,7 @@
         {% if not sandboxed %}
           <hr>
           <div>
-            <a href="{% url 'courses:show_answers' user course instance content %}"
+            <a href="{% url 'courses:show_answers' user course instance parent content %}"
                class="user-answers-link"
                title="{% trans 'View your previous answers' %}">
               {% blocktrans count counter=answer_count %}
@@ -57,26 +57,7 @@
                 answers{% endblocktrans %}
             </a>
           </div>
-          <div>
-            <a id="{{ content.slug }}-faq-panel-link"
-               class="faq-panel-link"
-               href="{% url 'faq:faq_panel' course instance content %}"
-               title="{% trans 'Open the FAQ panel' %}"
-               onclick="show_panel(event, this, 'faq', '{{ content.slug }}-panel');"
-               data-querystring="">{% trans 'Frequently Asked Questions' %}
-            </a>
-          </div>
-          {% if content.manually_evaluated %}
-              <div>
-                <a id="{{ content.slug }}-faq-panel-link"
-                   class="assessment-panel-link"
-                   href="{% url 'assessment:view_assessment_sheet' course instance content %}"
-                   title="{% trans 'View assessment sheet' %}"
-                   onclick="show_panel(event, this, 'assessment-view', '{{ content.slug }}-panel');"
-                   data-querystring="">{% trans 'Assessment Criteria' %}
-                </a>
-              </div>
-          {% endif %}          
+          {% embed_student_extra content %}
         {% endif %}
       {% endif %}
 
@@ -86,57 +67,7 @@
         <div class="admin-tools">
           <div><b>{% trans "Teacher’s tools" %}</b></div>
           <ul>
-            <li><div><a href="{{ meta.stats_url }}">{% trans 'Statistics' %}</a></div></li>
-            <li><div><a href="{{ meta.feedback_url }}">{% trans 'Feedback' %}</a></div></li>
-              {% if content.content_type == "FILE_UPLOAD_EXERCISE" %}
-                <li><div>
-                  <a href="{{ meta.download_url }}">
-                    {% trans 'Download answers' %}
-                  </a>
-                </div></li>
-                <li><div>
-                  <a href="{{ meta.plagiarism_url }}">
-                    {% trans 'Check plagiarism' %}
-                  </a>
-                </div></li>
-              {% else %}
-                <li><div>
-                  <a href="{{ meta.summary_url }}">
-                    {% trans 'Answer summary' %}
-                  </a>
-                </div></li>
-                <li><div>
-                  <a id="{{ content.slug }}-batch-panel-link"
-                     class="batch-panel-link"
-                     href="{{ meta.batch_url }}"
-                     title="{% trans 'Open the batch grading panel' %}"
-                     onclick="show_panel(event, this, 'batch-panel', '{{ content.slug }}-panel');"
-                     data-querystring="">{% trans 'Batch grading' %}
-                  </a>
-                </div></li>
-              {% endif %}
-
-            <li><div><a href="{{ meta.edit_url }}">
-                {% trans 'Edit this exercise' %}
-            </a></div></li>
-            {% if content.manually_evaluated %}
-                <li><div>
-                    <a href="{% url 'assessment:view_submissions' course instance content %}">
-                        {% trans 'View Submissions' %}
-                    </a>
-                </div></li>
-                {% if revision is None %}
-                    <li><div>
-                        <a id="{{ content.slug }}-assessment-panel-link"
-                           class="assessment-panel-link"
-                           href="{% url 'assessment:manage_assessment' course instance content %}"
-                           title="{% trans 'Open the assessment edit panel' %}"
-                           onclick="show_panel(event, this, 'assessment-manage', '{{ content.slug }}-panel');"
-                           data-querystring="">{% trans 'Edit Assessment' %}
-                        </a>
-                    </div></li>
-                {% endif %}
-            {% endif %}
+            {{ staff_menu|safe }}
             {% embed_staff_extra content %}
             {% comment %}
               <li><div><a href="TODO">{% trans 'View reference answer' %}</a></div></li>
@@ -160,6 +91,17 @@
 {% endif %}
 
 <div>
+  {% if course_staff %}
+    <div>
+      <button type="button"
+            class="staff-only collapsed staff-base-button link-button"
+            title="{% trans 'Embed link settings' %}"
+            onclick="editing.get_form(event, this)"
+            data-url="{{ meta.embed_config_url }}">
+      </button>
+    </div>
+  {% endif %}
+
   {% for block_type, block_data, line_idx, line_count in emb.content %}
     {% if block_type == "extra" %}
       {{ block_data|safe }}
@@ -207,13 +149,23 @@
     </div>
   {% endblock %}
 
-  {% if course_staff and emb.widget_configurable %}
+
+
+  {% if course_staff %}
     <button type="button"
-            class="staff-only collapsed staff-base-button settings-button"
-            title="{% trans 'Answer widget settings' %}"
+            class="staff-only collapsed staff-base-button widget-change-button"
+            title="{% trans 'Change answer widget' %}"
             onclick="editing.get_form(event, this)"
-            data-url="{% url 'courses:widget_settings' course instance content %}">
+            data-url="{% url 'courses:change_answer_widget' course instance content %}">
     </button>
+    {% if emb.widget_configurable %}
+      <button type="button"
+              class="staff-only collapsed staff-base-button widget-settings-button"
+              title="{% trans 'Answer widget settings' %}"
+              onclick="editing.get_form(event, this)"
+              data-url="{% url 'courses:widget_settings' course instance content %}">
+      </button>
+    {% endif %}
   {% endif %}
   <form id="{{ content.slug }}-form"
         class="exercise-form"
@@ -284,8 +236,8 @@
   <div class="results-box comments" style="display: none"></div>
 </div>
 
-{% block feedback %}
-  {% feedbacks %}
+{% block addons %}
+  {% content_page_addons content 'embed' %}
 {% endblock %}
 </div>
     

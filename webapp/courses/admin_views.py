@@ -16,7 +16,7 @@ def manage_system_messages(request):
         form = SystemMessageForm(request.POST)
 
         if not form.is_valid():
-            errors = form.errors_as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         create_notifications(

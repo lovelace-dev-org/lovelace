@@ -68,7 +68,7 @@ def get_course_instance_tasks(instance, deadline_before=None):
 
     all_embedded_links = (
         cm.EmbeddedLink.objects.filter(instance=instance)
-        .order_by("embedded_page__name")
+        .order_by("ordinal_number")
         .select_related("embedded_page")
         .defer("embedded_page__content")
     )
@@ -90,7 +90,7 @@ def get_course_instance_tasks(instance, deadline_before=None):
         if page_task_links:
             task_pages.append((content_link, page_task_links))
 
-    task_pages.sort(key=_parent_ordinal_sort)
+    task_pages.sort(key=parent_ordinal_sort)
     return task_pages
 
 
@@ -225,8 +225,12 @@ def system_messages(view_func):
             request.session["cookies_accepted"] = False
 
         last_seen = request.COOKIES.get("notifications_seen")
+        msg_lang = translation.get_language()
         msg_count = 0
-        for message in get_notifications("system", last_seen, translation.get_language()):
+        notifications = get_notifications("system", last_seen, msg_lang)
+        notifications.extend(get_notifications(request.user.username, last_seen, msg_lang))
+
+        for message in notifications:
             messages.add_message(request, messages.INFO, message)
             msg_count += 1
 
@@ -292,17 +296,17 @@ def course_tree(tree, node, user, instance_obj, enrolled=False, staff=False):
         evaluation = exercise.get_user_evaluation(user, instance_obj)
 
         if embedded_count > 0:
-            grouped = embedded_links.exclude(embedded_page__evaluation_group="")
+            grouped = embedded_links.exclude(evaluation_group="")
             group_tags = (
-                grouped.order_by("embedded_page__evaluation_group")
-                .distinct("embedded_page__evaluation_group")
-                .values_list("embedded_page__evaluation_group", flat=True)
+                grouped.order_by("evaluation_group")
+                .distinct("evaluation_group")
+                .values_list("evaluation_group", flat=True)
             )
 
             embedded_count -= grouped.count() - len(group_tags)
 
             for tag in group_tags:
-                group_score, representative = best_result(user, instance_obj, tag)
+                group_score, representative = best_result(user, instance_obj, node.content, tag)
                 if group_score > -1:
                     correct_embedded += 1
                     if not grouped.filter(embedded_page=representative).exists():
@@ -310,13 +314,13 @@ def course_tree(tree, node, user, instance_obj, enrolled=False, staff=False):
                     page_score += group_score * representative.default_points * node.score_weight
                 page_max += representative.default_points * node.score_weight
 
-            for emb_link in embedded_links.filter(embedded_page__evaluation_group=""):
+            for emb_link in embedded_links.filter(evaluation_group=""):
                 emb_exercise = emb_link.embedded_page
                 correct, score = emb_exercise.get_user_evaluation(user, instance_obj)
-                page_max += emb_exercise.default_points * node.score_weight
+                page_max += emb_link.default_points * node.score_weight
                 if correct == "correct":
                     correct_embedded += 1
-                    page_score += score * emb_exercise.default_points * node.score_weight
+                    page_score += score * emb_link.default_points * node.score_weight
 
     deadline = node.deadline
     if user.is_authenticated:

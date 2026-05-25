@@ -14,8 +14,14 @@ def guess_origins(apps, schema_editor):
     CourseMedia = apps.get_model("courses", "coursemedia")
     CourseMediaLink = apps.get_model("courses", "coursemedialink")
     EmbeddedLink = apps.get_model("courses", "embeddedlink")
+    Calendar = apps.get_model("courses", "calendar")
+    Course = apps.get_model("courses", "course")
 
-    for page in ContentPage.objects.all():
+    print()
+
+    print("    Guessing page origins")
+    pages = list(ContentPage.objects.all())
+    for page in pages:
         if not page.slug:
             page.delete()
             continue
@@ -32,6 +38,7 @@ def guess_origins(apps, schema_editor):
 
         page.save()
 
+    print("    Guessing media origins")
     for media in CourseMedia.objects.all():
         if not media.origin:
             if links := CourseMediaLink.objects.filter(media=media).order_by("id"):
@@ -39,6 +46,22 @@ def guess_origins(apps, schema_editor):
 
         media.slug = get_prefixed_slug(media, media.origin, "name", translated=False)
         media.save()
+
+    prefix_map = {}
+    for course in Course.objects.all():
+        prefix_map[course.prefix] = course
+
+    print("    Guessing calendar origins")
+    for calendar in Calendar.objects.all():
+        calendar_prefix = calendar.name.split("-", 1)[0]
+        if matching_course := prefix_map.get(calendar_prefix):
+            calendar.origin = matching_course
+        else:
+            for page in pages:
+                for lang_code, _ in settings.LANGUAGES:
+                    if calendar.name in getattr(page, f"content_{lang_code}"):
+                        calendar.origin = page.origin
+        calendar.save()
 
 
 def refactor_slugs(apps, schema_editor):
@@ -52,6 +75,7 @@ def refactor_slugs(apps, schema_editor):
     updated_slugs = []
 
     # Page slug replacements
+    print("    Preparing prefixed page slugs")
     for page in ContentPage.objects.all().order_by("-name"):
 
         old_ref = page.slug
@@ -124,6 +148,7 @@ def refactor_slugs(apps, schema_editor):
     term_keys = []
 
     # Term slug replacements
+    print("    Preparing prefixed term slugs")
     for term in Term.objects.all():
         for lang_code, _ in settings.LANGUAGES:
             lang_name = getattr(term, f"name_{lang_code}", "")
@@ -137,6 +162,7 @@ def refactor_slugs(apps, schema_editor):
 
 
     # Calendar slug replacements
+    print("    Preparing prefixed calendar slugs")
     for calendar in Calendar.objects.all():
         old_tag = f"<!calendar={calendar.name}>"
         new_tag = f"<!calendar={calendar.slug}>"
@@ -146,6 +172,7 @@ def refactor_slugs(apps, schema_editor):
     Image = apps.get_model("courses", "Image")
     VideoLink = apps.get_model("courses", "VideoLink")
 
+    print("    Preparing prefixed file slugs")
     for mediafile in File.objects.all():
         old_ref = mediafile.name
         new_ref = mediafile.slug
@@ -170,6 +197,7 @@ def refactor_slugs(apps, schema_editor):
         ]
         all_replaces.update(tags)
 
+    print("    Preparing prefixed image slugs")
     for image in Image.objects.all():
         old_ref = image.name
         new_ref = image.slug
@@ -184,8 +212,9 @@ def refactor_slugs(apps, schema_editor):
 
     paginator = Paginator(ContentPage.objects.all(), 10)
 
+    print("    Replacing slugs in content")
     for page in paginator.page_range:
-        print(f"Processing page {page} / {paginator.num_pages}")
+        print(f"    Processing page {page} / {paginator.num_pages}")
 
         for container in paginator.page(page).object_list.iterator():
 

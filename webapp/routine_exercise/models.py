@@ -4,6 +4,7 @@ from django.db.models import Q, JSONField
 from django.template import loader
 from django.urls import reverse
 from django.utils.text import slugify
+from django.utils.translation import gettext_lazy as _
 
 import courses.models as cm
 
@@ -13,7 +14,6 @@ from utils.management import ExportImportMixin
 
 
 class RoutineExercise(cm.ContentPage):
-    form_template = "routine_exercise/routine-exercise.html"
     answers_template = "routine_exercise/user-answers.html"
     default_answer_widget = "routine"
     answer_table_classes = "fixed"
@@ -54,6 +54,34 @@ class RoutineExercise(cm.ContentPage):
     def get_admin_change_url(self):
         adminized_type = self.content_type.replace("_", "").lower()
         return reverse(f"admin:routine_exercise_{adminized_type}_change", args=(self.id,))
+
+    def get_staff_extra(self, context):
+        """
+        Adds a link to attempt management page to the task's staff tools.
+        """
+
+        options = cm.ContentPage.get_staff_extra(self, context)
+        options.append((
+            _("Manage backends"),
+            "routine-backends",
+            "side-panel",
+            reverse("routine_exercise:routine_backend_panel", kwargs={
+                "course": context["course"],
+                "instance": context["instance"],
+                "content": self,
+            })
+        ))
+        options.append((
+            _("Manage templates"),
+            "routine-templates",
+            "side-panel",
+            reverse("routine_exercise:routine_template_panel", kwargs={
+                "course": context["course"],
+                "instance": context["instance"],
+                "content": self,
+            })
+        ))
+        return options
 
     def get_user_answers(self, user, instance, ignore_drafts=True):
         if instance is None:
@@ -102,7 +130,7 @@ class RoutineExercise(cm.ContentPage):
     def save_answer(self, user, ip, answer, files, instance, revision):
         pass
 
-    def check_answer(self, user, ip, answer, files, answer_object, revision):
+    def check_answer(self, link, user, answer, files, answer_object):
         pass
 
     def save_evaluation(self, user, evaluation, answer_object):
@@ -237,7 +265,7 @@ class RoutineExerciseProgress(models.Model):
 
 
 cm.ContentPage.register_content_type(
-    "ROUTINE_EXERCISE", RoutineExercise, RoutineExerciseAnswer
+    "ROUTINE_EXERCISE", RoutineExercise, None, RoutineExerciseAnswer
 )
 
 cm.UserProfile.register_user_data_model(RoutineExerciseProgress, ["user"])
@@ -252,4 +280,11 @@ def get_import_list():
         RoutineExerciseBackendCommand,
         RoutineExerciseBackendFile,
         RoutineExerciseTemplate
+    ]
+
+def get_content_follows():
+    return [
+        "routineexercisetemplate_set",
+        "routineexercisebackendfile_set",
+        "routineexercisebackendcommand",
     ]

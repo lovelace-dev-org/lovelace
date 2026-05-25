@@ -1,3 +1,4 @@
+from decimal import Decimal
 from django import forms
 from django.template import loader
 
@@ -21,6 +22,16 @@ class ContentPreviewWidget(forms.Textarea):
         context = self.get_context(name, value, attrs)
         return self._render(self.template_name, context, renderer)
 
+
+class NoTrailingZerosInput(forms.NumberInput):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def format_value(self, value):
+        if value is not None and isinstance(value, Decimal):
+            while (abs(value.as_tuple().exponent) > 1 and value.as_tuple().digits[-1] == 0):
+                value = Decimal(str(value)[:-1])
+            return value
 
 class WidgetRegistry:
 
@@ -78,4 +89,5 @@ class AnswerWidget(Widget):
 class PreviewWidget(Widget):
 
     pass
+
 

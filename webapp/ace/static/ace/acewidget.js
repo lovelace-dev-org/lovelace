@@ -60,14 +60,15 @@ var AceWidget = class {
     }
 
     error(msg) {
-        this.running = false
-        this.preview.receive(msg + "\n")
+        if (this.running) {
+            this.running = false
+            this.preview.receive(msg + "\n")
+        }
     }
 
     end(status) {
         this.button.removeClass("ace-button-running")
         this.button.prop("disabled", false)
-        this.preview.receive(status + "\n")
         this.preview.end()
         this.running = false
     }

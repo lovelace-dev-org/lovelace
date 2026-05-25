@@ -61,7 +61,6 @@ class MultipleQuestionExam(cm.ContentPage):
     compatible with the rest of the main code.
     """
 
-    form_template = "multiexam/multiple-question-exam.html"
     default_answer_widget = "multiexam"
 
     class Meta:
@@ -107,14 +106,28 @@ class MultipleQuestionExam(cm.ContentPage):
         Adds a link to attempt management page to the task's staff tools.
         """
 
-        return [(
+        options = cm.ContentPage.get_staff_extra(self, context)
+        options.append((
+            _("Edit question pool"),
+            "multiexam-question-pool",
+            "side-panel",
+            reverse("multiexam:edit_question_pool", kwargs={
+                "course": context["course"],
+                "instance": context["instance"],
+                "content": self,
+            })
+        ))
+        options.append((
             _("Manage attempts"),
+            "multiexam-attempts",
+            "self",
             reverse("multiexam:manage_attempts", kwargs={
                 "course": context["course"],
                 "instance": context["instance"],
                 "content": self,
             })
-        )]
+        ))
+        return options
 
     def get_choices(self, revision=None):
         """
@@ -155,7 +168,7 @@ class MultipleQuestionExam(cm.ContentPage):
         answer_object.save()
         return answer_object
 
-    def check_answer(self, user, ip, answer, files, answer_object, revision):
+    def check_answer(self, link, user, answer, files, answer_object):
         """
         Checks a student's answer against the exam attempt's script.
         """
@@ -180,9 +193,10 @@ class MultipleQuestionExam(cm.ContentPage):
 
         return {
             "evaluation": True,
-            "points": total_score,
-            "max": max_score,
+            "quotient": total_score / max_score,
             "test_results": json.dumps(results),
+            "correct_items": total_score,
+            "total_items": max_score,
         }
 
     def get_user_answers(self, user, instance, ignore_drafts=True):
@@ -363,7 +377,7 @@ class UserMultipleQuestionExamAnswer(cm.UserAnswer):
 
 
 cm.ContentPage.register_content_type(
-    "MULTIPLE_QUESTION_EXAM", MultipleQuestionExam, UserMultipleQuestionExamAnswer
+    "MULTIPLE_QUESTION_EXAM", MultipleQuestionExam, None, UserMultipleQuestionExamAnswer
 )
 
 cm.UserProfile.register_user_data_model(MultipleQuestionExamAttempt, ["user"])
@@ -385,4 +399,9 @@ def get_import_list():
     return [
         MultipleQuestionExam,
         ExamQuestionPool,
+    ]
+
+def get_content_follows():
+    return [
+        "examquestionpool"
     ]

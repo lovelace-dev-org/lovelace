@@ -6,6 +6,7 @@ from django.urls import reverse
 from django.utils.safestring import mark_safe
 
 from django.utils.text import slugify
+from django.utils.translation import gettext_lazy as _
 
 import pygments
 from pygments.lexers import get_lexer_by_name, guess_lexer_for_filename
@@ -22,6 +23,7 @@ from courses.markupparser import (
 )
 from courses import blockparser
 import courses.models as cm
+from lovelace import plugins as lovelace_plugins
 from utils.archive import get_single_archived
 from utils.content import get_embedded_media_file, get_embedded_media_image
 from utils import snippets
@@ -227,6 +229,9 @@ class EmbeddedFileMarkup(Markup):
             except ValueError as e:
                 yield f"<div>Unable to decode file {settings['file_slug']} with utf-8.</div>"
                 return
+            except FileNotFoundError:
+                yield f"<div>File {settings['file_slug']} does not exist on disk.</div>"
+                return
 
             if not file_object.lexer:
                 try:
@@ -342,6 +347,7 @@ class EmbeddedPageMarkup(Markup):
                 "instance": state["context"].get("instance"),
                 "choices": choices,
                 "revision": revision,
+                "parent": state["context"]["content"],
             }
             embedded_content = page.get_rendered_content(page, c)
             question = page.get_question(page, c)
@@ -352,55 +358,52 @@ class EmbeddedPageMarkup(Markup):
             settings["question"] = question
             settings["form"] = rendered_form
             settings["revision"] = revision
-            settings["max_points"] = page.default_points
+            settings["max_points"] = link.default_points
             settings["widget_configurable"] = answer_widget.configurable
             if instance is not None:
+                menu_options = [
+                    (_("Edit this exercise"), "admin", "self", page.get_admin_change_url()),
+                ]
+                if checking_setup_url := page.get_checking_settings_url(page, c):
+                    menu_options.append(
+                        (_("Checking settings"), "admin", "side-panel", checking_setup_url)
+                    )
+
+                for module in lovelace_plugins.get("embed-menu"):
+                    menu_options.extend(module.includes.get_embed_frame_options(
+                        state["context"],
+                        page,
+                        link,
+                        "staff",
+                    ))
+
+                menu_context = {
+                    "menu_options": menu_options,
+                    "content": page,
+                    "in_list": True
+                }
+                menu_template = loader.get_template("courses/embed-menu-options.html")
+                settings["staff_menu"] = menu_template.render(menu_context)
+
+
                 settings["urls"] = {
-                    "stats_url": reverse("stats:single_exercise", kwargs={"exercise": page}),
-                    "feedback_url": reverse(
-                        "feedback:statistics",
-                        kwargs={"instance": instance, "content": page},
-                    ),
-                    "download_url": reverse(
-                        "teacher_tools:download_answers",
-                        kwargs={
-                            "course": instance.course,
-                            "instance": instance,
-                            "content": page,
-                        },
-                    ),
-                    "summary_url": reverse(
-                        "teacher_tools:answer_summary",
-                        kwargs={
-                            "course": instance.course,
-                            "instance": instance,
-                            "content": page,
-                        },
-                    ),
-                    "batch_url": reverse(
-                        "teacher_tools:batch_grade",
-                        kwargs={
-                            "course": instance.course,
-                            "instance": instance,
-                            "content": page,
-                        },
-                    ),
-                    "reset_url": reverse(
-                        "teacher_tools:reset_completion",
-                        kwargs={
-                            "course": instance.course,
-                            "instance": instance,
-                            "content": page,
-                        },
-                    ),
                     "edit_url": page.get_admin_change_url(),
                     "submit_url": reverse(
                         "courses:check",
                         kwargs={
                             "course": instance.course,
                             "instance": instance,
+                            "parent": state["context"]["content"],
                             "content": page,
-                            "revision": revision or "head",
+                        },
+                    ),
+                    "embed_config_url": reverse(
+                        "courses:embed_settings",
+                        kwargs={
+                            "course": instance.course,
+                            "instance": instance,
+                            "parent": state["context"]["content"],
+                            "content": page,
                         },
                     ),
                     "edit_content_url": reverse("courses:content_edit_form", kwargs={
@@ -633,7 +636,7 @@ class EmbeddedVideoMarkup(Markup):
             raise EmbeddedObjectNotAllowedError("embedded videos are not allowed in tooltips")
 
         try:
-            videolink = cm.VideoLink.objects.get(name=settings["video_slug"])
+            videolink = cm.VideoLink.objects.get(slug=settings["video_slug"])
         except cm.VideoLink.DoesNotExist as e:
             yield f"<div>Video link {settings['video_slug']} not found.</div>"
             return
@@ -764,13 +767,16 @@ class ImageMarkup(Markup):
             image_object = get_embedded_media_image(
                 settings["image_name"], instance, state["context"].get("content")
             )
+            w = image_object.fileinfo.width
+            h = image_object.fileinfo.height
         except cm.Image.DoesNotExist as e:
             yield f"<div>File {settings['image_name']} not found.</div>"
             return
+        except FileNotFoundError:
+            yield f"<div>File {settings['image_name']} not found on disk.</div>"
+            return
 
         image_url = image_object.fileinfo.url
-        w = image_object.fileinfo.width
-        h = image_object.fileinfo.height
 
         MAX_IMG_WIDTH = 1000
 

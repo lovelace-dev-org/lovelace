@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.sites', # Required by allauth
     'django.contrib.messages',
+    'django.contrib.postgres',
     'django.contrib.staticfiles',
     'allauth',
     'allauth.account',
@@ -201,10 +202,14 @@ EMAIL_HOST_PASSWORD = os.getenv("LOVELACE_EMAIL_PWD", "")
 
 # E-mail settings
 EMAIL_SUBJECT_PREFIX = "[Lovelace] "
-DEFAULT_FROM_EMAIL = os.getenv("LOVELACE_EMAIL_FROM", "lovelace-notify")
+DEFAULT_FROM_EMAIL = os.getenv(
+    "LOVELACE_EMAIL_FROM",
+    f"lovelace-notify@{os.environ['LOVELACE_HOSTNAME']}"
+)
 
 # Allauth settings
 # For production, password min length of 32 or more recommended
+ALLAUTH_TRUSTED_PROXY_COUNT=int(os.getenv("LOVELACE_TRUSTED_PROXIES", 1))
 ACCOUNT_EMAIL_SUBJECT_PREFIX = "[Lovelace] "
 ACCOUNT_PASSWORD_MIN_LENGTH = 8
 ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']
@@ -375,7 +380,7 @@ if os.getenv("LOVELACE_WS_CACHE_USE_SSL"):
         "ssl_keyfile": os.environ["LOVELACE_WS_CLIENT_KEY"],
     }
 else:
-    _CACHE_CONNECTION_POOL_KWARGS = {}
+    _WS_CACHE_CONNECTION_POOL_KWARGS = {}
 
 
 def plain_key(key, key_prefix, version):

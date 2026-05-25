@@ -22,8 +22,8 @@ body {
 }
 
 .collapsed {
-    visibility: hidden;
-    display: none;
+    visibility: hidden !important;
+    display: none !important;
 }
 
 div#container {
@@ -1140,11 +1140,7 @@ section.content {
             min-height: 300px;
         }
 
-        section.content div.question {
-            /*margin-bottom: 2em;*/
-        }
-
-        section.content div.question form {
+        section.content div.embedded-page form {
             position: relative;
             margin-top: 5px;
             padding: 9px;
@@ -1951,6 +1947,16 @@ div.expand-handle {
 
 .import-button {
     background: no-repeat url("/static/courses/import-16.png") center/16px,
+                #fff;
+}
+
+.widget-change-button {
+    background: no-repeat url("/static/courses/change-widget.png") center/18px,
+                #fff;
+}
+
+.widget-settings-button {
+    background: no-repeat url("/static/courses/widget-settings.png") center/18px,
                 #fff;
 }
 

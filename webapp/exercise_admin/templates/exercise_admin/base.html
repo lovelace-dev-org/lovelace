@@ -181,28 +181,6 @@
             </div>
           {% endfor %}
 
-          <div class="form-row">
-            <label for="exercise-points">Default points:</label>
-            <input type="number" step="1" id="exercise-points" name="exercise_default_points"
-                   value="{{ exercise.default_points }}">
-          </div>
-
-          <div class="form-row">
-            <label for="evaluation-group">Evaluation group:</label>
-            <input type="text" id="evaluation-group" name="exercise_evaluation_group"
-                   value="{{ exercise.evaluation_group }}">
-          </div>
-
-          <div class="form-cb-row">
-            <input type="checkbox" id="group_submission" name="exercise_group_submission" {% if exercise.group_submission %}checked{% endif %}>
-            <label for="group_submission">Allow group submissions</label>
-          </div>
-
-          <div class="form-cb-row">
-            <input type="checkbox" id="manually_evaluated" name="exercise_manually_evaluated" {% if exercise.manually_evaluated %}checked{% endif %}>
-            <label for="manually_evaluated">This exercise is evaluated by hand</label>
-          </div>
-
           {% block exercise-type-extra %}
           {% endblock %}
         </div>

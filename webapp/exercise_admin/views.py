@@ -97,16 +97,7 @@ def save_file_upload_exercise(
 ):
     deletions = []
     # Collect the content page data
-    # e_name = form_data['exercise_name']
-    # e_content = form_data['exercise_content']
-    e_default_points = form_data["exercise_default_points"]
-    e_evaluation_group = form_data["exercise_evaluation_group"]
-    e_tags = [tag for key, tag in sorted(form_data.items()) if key.startswith("exercise_tag")]
     e_feedback_questions = form_data.get("exercise_feedback_questions") or []
-    # e_question = form_data['exercise_question']
-    e_group_submission = form_data["exercise_group_submission"]
-    e_manually_evaluated = form_data["exercise_manually_evaluated"]
-    e_ask_collaborators = form_data["exercise_ask_collaborators"]
     e_allowed_filenames = form_data["exercise_allowed_filenames"]
     e_max_file_count = form_data["exercise_max_file_count"]
     e_answer_mode = form_data["exercise_answer_mode"]
@@ -124,15 +115,6 @@ def save_file_upload_exercise(
         e_question = form_data[f"exercise_question_{lang_code}"]
         setattr(exercise, f"question_{lang_code}", e_question)
 
-    # exercise.name = e_name
-    # exercise.content = e_content
-    exercise.default_points = e_default_points
-    exercise.evaluation_group = e_evaluation_group
-    exercise.tags = e_tags
-    # exercise.question = e_question
-    exercise.group_submission = e_group_submission
-    exercise.manually_evaluated = e_manually_evaluated
-    exercise.ask_collaborators = e_ask_collaborators
     exercise.origin = Course.objects.get(slug=e_origin)
     exercise.save()
     # save() first so that m2m can be used (when adding a new exercise)

@@ -1,3 +1,14 @@
+{% load static %}
+
+<div class="input-label-container staff-only collapsed">
+  <label></label>
+  <span class="multichoice-config-actions">
+    <a class="staff-only collapsed right-float"
+      onclick="editing.get_form(event, this)"
+      data-url="{% url 'courses:add_exercise_choice' course instance content 0 %}"
+      ><img src="{% static 'courses/expand-16.png' %}"></a>
+  </span>
+</div>
 {% for choice in choices %}
   <div class="input-label-container">
     <input type="radio"
@@ -6,5 +17,27 @@
            value="{{ choice.id }}"
            class="task_radio">
     <label for="mce-{{ choice.id }}">{{ choice.answer }}</label>
+    <span class="multichoice-config-actions">
+      <a class="staff-only collapsed right-float interactive"
+        onclick="editing.get_form(event, this)"
+        data-url="{% url 'courses:add_exercise_choice' course instance content choice.ordinal %}"
+        ><img src="{% static 'courses/expand-16.png' %}"></a>
+      <a class="staff-only collapsed right-float interactive"
+        onclick="editing.get_form(event, this)"
+        data-url="{% url 'courses:delete_exercise_choice' course instance content choice.id %}"
+        ><img src="{% static 'courses/delete-16.png' %}"></a>
+      <a class="staff-only collapsed right-float interactive"
+        onclick="editing.move_item(event, this, 'down')"
+        data-url="{% url 'courses:move_exercise_choice' course instance content choice.id 'down' %}"
+        ><img src="{% static 'courses/move-dn.png' %}"></a>
+      <a class="staff-only collapsed right-float interactive"
+        onclick="editing.move_item(event, this, 'up')"
+        data-url="{% url 'courses:move_exercise_choice' course instance content choice.id 'up' %}"
+        ><img src="{% static 'courses/move-up.png' %}"></a>
+      <a class="staff-only collapsed right-float interactive"
+        onclick="editing.get_form(event, this)"
+        data-url="{% url 'courses:edit_exercise_choice' course instance content choice.id %}"
+        ><img src="{% static 'courses/edit.png' %}"></a>
+    </span>
   </div>
 {% endfor %}

@@ -8,7 +8,6 @@ from utils.data import (
 )
 from utils.management import get_prefixed_slug
 
-
 class AssessmentToExerciseLinkManager(models.Manager):
 
     def get_by_natural_key(self, exercise_slug, instance_slug):
@@ -143,6 +142,8 @@ class AssessmentBullet(models.Model):
     class Meta:
         unique_together = ("sheet", "section", "ordinal_number")
 
+    objects = AssessmentBulletManager()
+
     sheet = models.ForeignKey("AssessmentSheet", on_delete=models.CASCADE)
     point_value = models.FloatField(blank=False, null=False)
     ordinal_number = models.PositiveSmallIntegerField()
@@ -155,6 +156,11 @@ class AssessmentBullet(models.Model):
     def natural_key(self):
         return list(self.section.natural_key()) + [str(self.ordinal_number)]
 
+def clone_models(old_instance, new_instance):
+    for link in AssessmentToExerciseLink.objects.filter(instance=old_instance):
+        link.id = None
+        link.instance = new_instance
+        link.save()
 
 def export_models(instance, export_target):
     links = (
@@ -165,6 +171,10 @@ def export_models(instance, export_target):
     for link in links:
         link.sheet.export(instance, export_target)
 
+def freeze_context_links(instance, freeze_to):
+    for link in AssessmentToExerciseLink.objects.filter(instance=instance):
+        link.freeze(freeze_to)
+
 def get_import_list():
     return [
         AssessmentSheet,
@@ -173,7 +183,7 @@ def get_import_list():
         AssessmentToExerciseLink,
     ]
 
-def delete_orphan_references(task, instance):
+def delete_orphan_references(content, instance):
     AssessmentToExerciseLink.objects.filter(
-        exercise=task, instance=instance
+        exercise=content, instance=instance
     ).delete()

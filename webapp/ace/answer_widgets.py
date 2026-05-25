@@ -20,7 +20,10 @@ class AceAnswerWidget(AnswerWidget):
         context["ace_layout"] = "vertical"
         context["widget_slug"] = settings.slug
         if settings.base_file:
-            context["ace_initial_content"] = get_file_contents(settings.base_file).decode("utf-8")
+            try:
+                context["ace_initial_content"] = get_file_contents(settings.base_file).decode("utf-8")
+            except FileNotFoundError:
+                context["ace_initial_content"] = "FILE NOT FOUND"
         else:
             context["ace_initial_content"] = ""
 
