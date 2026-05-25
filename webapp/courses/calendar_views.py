@@ -1,5 +1,6 @@
 import datetime
 import itertools
+import operator
 from django.conf import settings
 from django.db import transaction
 from django.http import (
@@ -17,6 +18,7 @@ from courses.models import (
     CalendarDate,
     CalendarReservation,
     ContentPage,
+    CourseEnrollment,
     StudentGroup,
 )
 import courses.message_views as messaging
@@ -93,10 +95,26 @@ def user_calendar(request):
     grouped_events = itertools.groupby(all_events, date_key)
     grouped_events = [(key, list(group)) for key, group in grouped_events]
 
+    enrollments = CourseEnrollment.objects.filter(
+        student=request.user,
+        enrollment_state="ACCEPTED"
+    )
+    all_deadlines = []
+    for enrollment in enrollments:
+        all_deadlines.extend(enrollment.instance.get_deadlines(request.user))
+
+    def deadline_key(entry):
+        return (entry["deadline"], entry["course"].name, entry["ordinal"])
+
+    all_deadlines.sort(key=deadline_key)
+
     t = loader.get_template("courses/user-calendar.html")
     c = {
         "user": request.user,
-        "grouped_events": grouped_events
+        "grouped_events": grouped_events,
+        "deadlines": [
+            entry for entry in all_deadlines if entry["deadline"].date() >= datetime.date.today()
+        ]
     }
     return HttpResponse(t.render(c, request))
 

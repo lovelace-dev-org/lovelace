@@ -90,7 +90,7 @@ def get_course_instance_tasks(instance, deadline_before=None):
         if page_task_links:
             task_pages.append((content_link, page_task_links))
 
-    task_pages.sort(key=_parent_ordinal_sort)
+    task_pages.sort(key=parent_ordinal_sort)
     return task_pages
 
 

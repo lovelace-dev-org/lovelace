@@ -40,6 +40,7 @@ from courses import markupparser
 from courses import widgets
 #import feedback.models
 from lovelace import plugins as lovelace_plugins
+from utils.base import parent_ordinal_sort
 from utils.data import (
     export_json, export_files, serialize_single_python, serialize_many_python
 )
@@ -606,6 +607,8 @@ class CourseInstance(models.Model):
             cache.delete(f"{self.slug}_tree_{lang_code}")
             cache.delete(f"{self.slug}_tree_{lang_code}_staff")
 
+        cache.delete(f"{self.slug}_deadlines")
+
     def freeze(self, freeze_to=None):
         """
         Freezes the course instance by creating copies of content graph links
@@ -693,7 +696,49 @@ class CourseInstance(models.Model):
         for module in lovelace_plugins["export"]:
             module.models.export_models(self, export_target)
 
+    def get_deadlines(self, user):
+        entries = []
+        exempt = []
 
+        cached = cache.get(f"{self.slug}_deadlines")
+
+        if not cached:
+            cgs = list(self.contentgraph_set.get_queryset().filter(deadline__isnull=False))
+            cgs.sort(key=parent_ordinal_sort)
+            for i, cg in enumerate(cgs):
+                instance_url = reverse("courses:course", kwargs={
+                    "course": self.course,
+                    "instance": self,
+                })
+                entries.append({
+                    "cg_id": cg.id,
+                    "deadline": cg.deadline,
+                    "course": self.course,
+                    "content": cg.content,
+                    "ordinal": i,
+                    "instance_url": instance_url,
+                    "content_url": reverse("courses:content", kwargs={
+                        "course": self.course,
+                        "instance": self,
+                        "content": cg.content,
+                    })
+                })
+        else:
+            entries = cached
+
+        exemptions = dict(
+            (e.contentgraph.id, e.new_deadline)
+            for e in DeadlineExemption.objects.filter(user=user, contentgraph__instance=self)
+        )
+        if not exemptions:
+            return entries
+
+        for entry in entries:
+            if new_dl := exemptions.get(entry["cg_id"]):
+                entry["deadline"] = new_dl
+
+        entries.sort(key=operator.itemgetter("deadline"))
+        return entries
 
     def finalize_import(self, document, pk_map):
         pass

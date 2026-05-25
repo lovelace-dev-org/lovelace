@@ -50,6 +50,27 @@
       </tbody>
     </table>
   {% endfor %}
+
+  <h1>{% trans 'Upcoming Deadlines' %}</h1>
+
+  <table class="fixed alternate-green">
+    <thead>
+      <tr>
+        <th>{% trans 'Deadline' %}</th>
+        <th>{% trans 'Course' %}</th>
+        <th>{% trans 'Content' %}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for entry in deadlines %}
+        <tr>
+          <td>{{ entry.deadline|date:"Y-m-d H:i" }}</td>
+          <td><a href="{{ entry.instance_url }}">{{ entry.course.name }}</a></td>
+          <td><a href="{{ entry.content_url }}">{{ entry.content.name }}</a></td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 {% endblock %}
 
 
