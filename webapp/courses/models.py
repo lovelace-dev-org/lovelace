@@ -40,6 +40,7 @@ from courses import markupparser
 from courses import widgets
 #import feedback.models
 from lovelace import plugins as lovelace_plugins
+from utils.base import parent_ordinal_sort
 from utils.data import (
     export_json, export_files, serialize_single_python, serialize_many_python
 )
@@ -606,6 +607,8 @@ class CourseInstance(models.Model):
             cache.delete(f"{self.slug}_tree_{lang_code}")
             cache.delete(f"{self.slug}_tree_{lang_code}_staff")
 
+        cache.delete(f"{self.slug}_deadlines")
+
     def freeze(self, freeze_to=None):
         """
         Freezes the course instance by creating copies of content graph links
@@ -693,7 +696,49 @@ class CourseInstance(models.Model):
         for module in lovelace_plugins["export"]:
             module.models.export_models(self, export_target)
 
+    def get_deadlines(self, user):
+        entries = []
+        exempt = []
 
+        cached = cache.get(f"{self.slug}_deadlines")
+
+        if not cached:
+            cgs = list(self.contentgraph_set.get_queryset().filter(deadline__isnull=False))
+            cgs.sort(key=parent_ordinal_sort)
+            for i, cg in enumerate(cgs):
+                instance_url = reverse("courses:course", kwargs={
+                    "course": self.course,
+                    "instance": self,
+                })
+                entries.append({
+                    "cg_id": cg.id,
+                    "deadline": cg.deadline,
+                    "course": self.course,
+                    "content": cg.content,
+                    "ordinal": i,
+                    "instance_url": instance_url,
+                    "content_url": reverse("courses:content", kwargs={
+                        "course": self.course,
+                        "instance": self,
+                        "content": cg.content,
+                    })
+                })
+        else:
+            entries = cached
+
+        exemptions = dict(
+            (e.contentgraph.id, e.new_deadline)
+            for e in DeadlineExemption.objects.filter(user=user, contentgraph__instance=self)
+        )
+        if not exemptions:
+            return entries
+
+        for entry in entries:
+            if new_dl := exemptions.get(entry["cg_id"]):
+                entry["deadline"] = new_dl
+
+        entries.sort(key=operator.itemgetter("deadline"))
+        return entries
 
     def finalize_import(self, document, pk_map):
         pass
@@ -1190,6 +1235,10 @@ class Calendar(models.Model, ExportImportMixin):
     related_content = models.ForeignKey(
         "ContentPage", on_delete=models.SET_NULL, null=True, blank=True
     )
+    meeting_calendar = models.BooleanField(
+        verbose_name=_("Is a meeting calendar"),
+        default=True,
+        help_text=_("Meeting calendar reservations will show up in the host's personal calendar."),    )
     origin = models.ForeignKey(Course, verbose_name="Course", null=True, on_delete=models.SET_NULL)
     slug = models.SlugField(max_length=255, allow_unicode=True, blank=False)
     heading_level = models.PositiveSmallIntegerField(
@@ -1212,6 +1261,7 @@ class CalendarDate(models.Model):
     """A single date on a calendar."""
 
     calendar = models.ForeignKey(Calendar, on_delete=models.CASCADE)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     event_name = models.CharField(verbose_name="Name of the event", max_length=200)  # Translate
     event_description = models.CharField(
         verbose_name="Description", max_length=200, blank=True, null=True
@@ -1245,6 +1295,7 @@ class CalendarReservation(models.Model):
 
     calendar_date = models.ForeignKey(CalendarDate, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    instance = models.ForeignKey(CourseInstance, on_delete=models.SET_NULL, null=True)
 
 
 # ^
