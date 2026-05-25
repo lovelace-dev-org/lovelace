@@ -36,8 +36,12 @@
             <td>{{ entry.event.calendar.origin.name}}</td>
             <td>
               {% if entry.role == "host" %}
-                {{ entry.reserver }}
-              {% else %}
+                {% if entry.answers_url %}
+                  <a href="{{ entry.answers_url }}">{{ entry.reserver }}</a>
+                {% else %}
+                  {{ entry.reserver }}
+                {% endif %}
+              {% elif entry.event.calendar.meeting_calendar %}
                 {{ entry.event.created_by|full_name }}
               {% endif %}
             </td>

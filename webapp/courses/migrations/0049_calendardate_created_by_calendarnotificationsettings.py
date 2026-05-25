@@ -23,4 +23,9 @@ class Migration(migrations.Migration):
             name='meeting_calendar',
             field=models.BooleanField(default=True, help_text="Meeting calendar reservations will show up in the host's personal calendar.", verbose_name='Is a meeting calendar'),
         ),
+        migrations.AddField(
+            model_name='calendarreservation',
+            name='instance',
+            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='courses.courseinstance'),
+        ),
     ]

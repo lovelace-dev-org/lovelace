@@ -97,7 +97,7 @@ urlpatterns = [
         name="user_calendar",
     ),
     path(
-        "calendar/<calendar:calendar>/<event:event>/",
+        "calendar/<instance:instance>/<calendar:calendar>/<event:event>/",
         calendar_views.calendar_reservation,
         name="calendar_reservation",
     ),

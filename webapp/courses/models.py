@@ -1250,6 +1250,7 @@ class CalendarReservation(models.Model):
 
     calendar_date = models.ForeignKey(CalendarDate, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    instance = models.ForeignKey(CourseInstance, on_delete=models.SET_NULL, null=True)
 
 
 # ^
