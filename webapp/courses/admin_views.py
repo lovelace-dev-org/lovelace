@@ -6,7 +6,7 @@ from django.http import (
 )
 from django.template import loader
 from django.utils import translation
-from courses.forms import SystemMessageForm
+from courses.admin_forms import DataRetentionForm, SystemMessageForm
 from utils.access import ensure_admin
 from utils.notify import create_notifications, get_notifications, delete_notification
 
