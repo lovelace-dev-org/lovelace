@@ -374,7 +374,7 @@ function submit_ajax_form (form, success_extra_cb) {
             success_extra_cb(data)
         },
         error: function (jqxhr, status, type) {
-            const errors = JSON.parse(JSON.parse(jqxhr.responseText).errors)
+            const errors = JSON.parse(jqxhr.responseText).errors
             for (const [field, content] of Object.entries(errors)) {
                 console.log(field, content)
                 content.forEach(function (entry) {
@@ -518,6 +518,21 @@ function show_panel (event, caller, panel_type, panel_id, refresh) {
     } else {
         panel.addClass("panel--is-visible")
     }
+}
+
+function refresh_panel(container, url) {
+    console.log(url)
+    $.ajax({
+        type: "GET",
+        url,
+        success: function (data, status, jqxhr) {
+            container.html(data)
+            container.find("form :input[type!=hidden]").first().focus()
+        },
+        error: function (jqxhr, status, type) {
+            container.html(jqxhr.responseText)
+        }
+    })
 }
 
 function hide_panel (event, panel_id) {

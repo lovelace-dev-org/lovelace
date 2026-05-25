@@ -1,0 +1,36 @@
+{% load i18n %}
+{% load static %}
+
+<div class="panel-content" data-refresh-url="{{ panel_refresh_url }}">
+  {% for answer in answers %}
+    <div class="item-header">
+      {% if answer.correct %}
+        <img src="{% static 'courses/correct-16.png' %}">
+      {% else %}
+        <img src="{% static 'courses/incorrect-16.png' %}">
+      {% endif %}
+      {{ answer.answer|truncatechars:80 }}
+      <span class="answer-config-actions">
+        <a class="right-float interactive"
+            onclick="editing.get_form(event, this)"
+            data-url="{% url 'courses:delete_exercise_choice' course instance content answer.id %}"
+            ><img src="{% static 'courses/delete-16.png' %}"></a>
+        <a class="right-float interactive"
+            onclick="editing.get_form(event, this)"
+            data-url="{% url 'courses:edit_exercise_choice' course instance content answer.id %}"
+            ><img src="{% static 'courses/edit.png' %}"></a>
+      </span>
+    </div>
+  {% endfor %}
+  <div>
+    {% with answers|last as last %}
+      <button type="button"
+              class="staff-base-button add-button"
+              onclick="editing.get_form(event, this)"
+              data-url="{% url 'courses:add_exercise_choice' course instance content last.ordinal %}?aasi=hemuli">+
+      </button>
+    {% endwith %}
+  </div>
+</div>
+
+

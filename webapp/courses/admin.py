@@ -84,7 +84,6 @@ content_follow_extra = []
 for module in lovelace_plugins["content-follow"]:
     content_follow_extra.extend(module.get_content_follows())
 
-
 reversion.register(
     ContentPage,
     follow=[

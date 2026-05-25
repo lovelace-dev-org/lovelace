@@ -108,6 +108,16 @@ class MultipleQuestionExam(cm.ContentPage):
 
         options = cm.ContentPage.get_staff_extra(self, context)
         options.append((
+            _("Edit question pool"),
+            "multiexam-question-pool",
+            "side-panel",
+            reverse("multiexam:edit_question_pool", kwargs={
+                "course": context["course"],
+                "instance": context["instance"],
+                "content": self,
+            })
+        ))
+        options.append((
             _("Manage attempts"),
             "multiexam-attempts",
             "self",
@@ -367,7 +377,7 @@ class UserMultipleQuestionExamAnswer(cm.UserAnswer):
 
 
 cm.ContentPage.register_content_type(
-    "MULTIPLE_QUESTION_EXAM", MultipleQuestionExam, UserMultipleQuestionExamAnswer
+    "MULTIPLE_QUESTION_EXAM", MultipleQuestionExam, None, UserMultipleQuestionExamAnswer
 )
 
 cm.UserProfile.register_user_data_model(MultipleQuestionExamAttempt, ["user"])

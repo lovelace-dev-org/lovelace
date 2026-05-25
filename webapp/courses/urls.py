@@ -213,6 +213,45 @@ urlpatterns = [
         name="import",
     ),
 
+    # Staff URLs for exercise configuration
+
+    path(
+        "staff/<course:course>/<instance:instance>/<content:content>/checking/",
+        staff_views.answer_settings_panel,
+        name="answer_settings_panel",
+    ),
+
+    path(
+        "staff/<course:course>/<instance:instance>/<content:content>/change_widget/",
+        staff_views.change_answer_widget,
+        name="change_answer_widget",
+    ),
+
+    path(
+        "staff/<course:course>/<instance:instance>/<content:content>/choices/"
+        "add/<int:after>/",
+        staff_views.add_exercise_choice,
+        name="add_exercise_choice",
+    ),
+    path(
+        "staff/<course:course>/<instance:instance>/<content:content>/choices/"
+        "edit/<int:choice_id>/",
+        staff_views.edit_exercise_choice,
+        name="edit_exercise_choice",
+    ),
+    path(
+        "staff/<course:course>/<instance:instance>/<content:content>/choices/"
+        "delete/<int:choice_id>/",
+        staff_views.delete_exercise_choice,
+        name="delete_exercise_choice",
+    ),
+    path(
+        "staff/<course:course>/<instance:instance>/<content:content>/choices/"
+        "move/<int:choice_id>/<str:direction>/",
+        staff_views.move_exercise_choice,
+        name="move_exercise_choice",
+    ),
+
     # Staff URLs for messages
     path(
         "staff/<course:course>/<instance:instance>/mass_email/",

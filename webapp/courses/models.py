@@ -1250,15 +1250,6 @@ class CalendarReservation(models.Model):
 # ^
 # |
 # CALENDAR
-# ANSWER WIDGETS
-# |
-# V
-
-
-
-# ^
-# |
-# ANSWER WIDGETS
 # CONTENT BASE
 # |
 # V
@@ -1400,6 +1391,8 @@ class ContentPage(models.Model, ExportImportMixin):
     # Dynamically registered content types go here.
     content_type_models = {}
     answer_models = {}
+    user_answer_models = {}
+    config_forms = {}
 
     # Template to use for rendering this content type, all content type models must set their own.
     default_answer_widget = "blank"
@@ -1440,7 +1433,8 @@ class ContentPage(models.Model, ExportImportMixin):
 
 
     @classmethod
-    def register_content_type(cls, constant_name, type_class, answer_class=None):
+    def register_content_type(cls, constant_name, type_class,
+                              answer_class=None, user_answer_class=None):
         if not issubclass(type_class, cls):
             raise TypeError(
                 _("Class {type_class} is not a subclass of {cls}").format(
@@ -1451,6 +1445,11 @@ class ContentPage(models.Model, ExportImportMixin):
 
         cls.content_type_models[constant_name] = type_class
         cls.answer_models[constant_name] = answer_class
+        cls.user_answer_models[constant_name] = user_answer_class
+
+    @classmethod
+    def register_config_form(cls, constant_name, form_class):
+        cls.config_forms[constant_name] = form_class
 
     def natural_key(self):
         return (self.slug, )
@@ -1594,6 +1593,9 @@ class ContentPage(models.Model, ExportImportMixin):
 
         question = blockparser.parseblock(escape(self.question, quote=False), context)
         return question
+
+    def get_config_form(self):
+        return self.config_forms[self.content_type]
 
     def get_answer_widget(self, course):
         if not self.answer_widget:
@@ -1759,6 +1761,9 @@ class ContentPage(models.Model, ExportImportMixin):
 
         adminized_type = self.content_type.replace("_", "").lower()
         return reverse(f"admin:courses_{adminized_type}_change", args=(self.id,))
+
+    def get_checking_settings_url(self, context):
+        return None
 
     def get_content_additions(self, context, content_level):
         """
@@ -2037,6 +2042,9 @@ class ContentPage(models.Model, ExportImportMixin):
     def get_answer_model(self):
         return self.answer_models[self.content_type]
 
+    def get_user_answer_model(self):
+        return self.user_answer_models[self.content_type]
+
     # HACK: Experimental way of implementing a better get_type_object
     def __getattribute__(self, name):
         """
@@ -2046,6 +2054,7 @@ class ContentPage(models.Model, ExportImportMixin):
         """
 
         normal = [
+            "get_checking_settings_url",
             "get_choices",
             "get_rendered_content",
             "get_question",
@@ -2369,6 +2378,15 @@ class TextfieldExercise(ContentPage):
 
     def get_question(self, context):
         return ContentPage._get_question(self, context)
+
+    def get_checking_settings_url(self, context):
+        return reverse(
+            "courses:answer_settings_panel", kwargs={
+                "course": context["course"],
+                "instance": context["instance"],
+                "content": self,
+            }
+        )
 
     def save_answer(self, user, ip, answer, files, instance, revision):
         if "answer" in answer.keys():
@@ -3429,9 +3447,16 @@ class TextfieldExerciseAnswer(models.Model):
     answer = models.TextField()  # Translate
     hint = models.TextField(blank=True)  # Translate
     comment = models.TextField(
-        verbose_name="Extra comment given upon entering a matching answer", blank=True
+        blank=True
     )  # Translate
     ordinal = models.PositiveIntegerField()
+
+    @classmethod
+    def get_edit_form(cls):
+        # NOTE: Just import from here now to avoid cyclic imports
+
+        from courses.config_forms import TextfieldExerciseAnswerForm
+        return TextfieldExerciseAnswerForm
 
     def __str__(self):
         if len(self.answer) > 76:
@@ -3442,7 +3467,14 @@ class TextfieldExerciseAnswer(models.Model):
         return [self.exercise.slug, self.ordinal]
 
     def save(self, *args, **kwargs):
-        self.answer = self.answer.replace("\r", "")
+        # TODO: why was this needed? If not needed, remove the fixed version below
+        # self.answer = self.answer.replace("\r", "")
+        for lang_code, __ in settings.LANGUAGES:
+            lang_field = f"answer_{lang_code}"
+            lang_answer = getattr(self, lang_field)
+            lang_answer = lang_answer.replace("\r", "")
+            setattr(self, lang_field, lang_answer)
+
         if self.ordinal is None:
             previous = TextfieldExerciseAnswer.objects.filter(
                 exercise=self.exercise,
@@ -3466,6 +3498,13 @@ class MultipleChoiceExerciseAnswer(models.Model):
         verbose_name="Extra comment given upon selection of this answer", blank=True
     )  # Translate
 
+    @classmethod
+    def get_edit_form(cls):
+        # NOTE: Just import from here now to avoid cyclic imports
+
+        from courses.config_forms import MultipleChoiceExerciseChoiceForm
+        return MultipleChoiceExerciseChoiceForm
+
     def __str__(self):
         return self.answer
 
@@ -3485,6 +3524,11 @@ class CheckboxExerciseAnswer(models.Model):
     comment = models.TextField(
         verbose_name="Extra comment given upon selection of this answer", blank=True
     )  # Translate
+
+    @classmethod
+    def get_edit_form(cls):
+        from courses.config_forms import CheckboxExerciseChoiceForm
+        return CheckboxExerciseChoiceForm
 
     def __str__(self):
         return self.answer
@@ -3939,16 +3983,20 @@ UserProfile.register_user_data_model(UserTaskCompletion, ["user"])
 
 ContentPage.register_content_type("LECTURE", Lecture)
 ContentPage.register_content_type(
-    "MULTIPLE_CHOICE_EXERCISE", MultipleChoiceExercise, UserMultipleChoiceExerciseAnswer
+    "MULTIPLE_CHOICE_EXERCISE",
+    MultipleChoiceExercise, MultipleChoiceExerciseAnswer, UserMultipleChoiceExerciseAnswer,
 )
 ContentPage.register_content_type(
-    "CHECKBOX_EXERCISE", CheckboxExercise, UserCheckboxExerciseAnswer
+    "CHECKBOX_EXERCISE",
+    CheckboxExercise, CheckboxExerciseAnswer, UserCheckboxExerciseAnswer
 )
 ContentPage.register_content_type(
-    "TEXTFIELD_EXERCISE", TextfieldExercise, UserTextfieldExerciseAnswer
+    "TEXTFIELD_EXERCISE",
+    TextfieldExercise, TextfieldExerciseAnswer, UserTextfieldExerciseAnswer
 )
 ContentPage.register_content_type(
-    "FILE_UPLOAD_EXERCISE", FileUploadExercise, UserFileUploadExerciseAnswer
+    "FILE_UPLOAD_EXERCISE",
+    FileUploadExercise, None, UserFileUploadExerciseAnswer
 )
 ContentPage.register_content_type(
     "REPEATED_TEMPLATE_EXERCISE", RepeatedTemplateExercise, UserRepeatedTemplateExerciseAnswer
