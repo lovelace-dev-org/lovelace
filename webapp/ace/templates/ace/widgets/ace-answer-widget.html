@@ -2,8 +2,6 @@
 {% load static %}
 
 
-<link type="text/css" rel="stylesheet" href="{% static 'ace/acewidget.css' %}">
-
 <div class="ace-control-bar">
   <button type="button"
           id="{{ widget_slug }}-ace-restore-button"
@@ -32,8 +30,6 @@
   <textarea id="{{ widget_slug }}-ace-initial" style="display: none">{{ ace_initial_content|safe }}</textarea>
 </div>
 
-<script src="{% static 'ace/ace/ace.js' %}"></script>
-<script src="{% static 'ace/acewidget.js' %}"></script>
 <script>
   var editor = ace.edit("{{ widget_slug }}-ace-editor", {{ ace_extra|safe }})
   editor.setOption("fontSize", {{ ace_font_size }})

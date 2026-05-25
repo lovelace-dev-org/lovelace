@@ -6,8 +6,8 @@ class RoutineExerciseConfig(AppConfig):
     name = "routine_exercise"
 
     def ready(self):
-        from routine_exercise import answer_widgets
+        from routine_exercise import answer_widgets, includes
         answer_widgets.register_answer_widgets()
-        register_plugin(self.module, ["export", "import", "content-follow"])
+        register_plugin(self.module, ["base-static", "export", "import", "content-follow"])
 
 
