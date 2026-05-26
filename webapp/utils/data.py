@@ -352,7 +352,7 @@ def apply_data_retention(preview=True, show_progress=False):
                         affected[model_cls._meta.label]["deleted"] = deleted_objects
                     count = len(deleted_objects)
                 else:
-                    count = queryset.delete()
+                    count = queryset.delete()[0]
                     try:
                         affected[model_cls._meta.label]["deleted"] += count
                     except KeyError:
@@ -365,12 +365,12 @@ def apply_data_retention(preview=True, show_progress=False):
         # Create an anonymous clone for each user with anonymize policy and transfer everything
         # to it
         total = len(anonymize_setting)
-        for user in anonymize_setting:
-            if show_progress:
-                print("Anonymizing users.")
+        if show_progress:
+            print("Anonymizing users.")
 
+        for i, user in enumerate(anonymize_setting, start=1):
             if show_progress:
-                print(f"{i} / {total}\r", end="", flush=True)
+                print(f"\r{i} / {total}", end="", flush=True)
 
             if not preview:
                 new_anon = cm.User(
@@ -393,8 +393,8 @@ def apply_data_retention(preview=True, show_progress=False):
                         except KeyError:
                             affected[model_cls._meta.label]["anonymized"] = count
 
-            if show_progress:
-                print()
+        if show_progress:
+            print()
 
 
     # Delete all old calendar reservations regardless of user data policy
@@ -407,7 +407,7 @@ def apply_data_retention(preview=True, show_progress=False):
         affected[cm.CalendarReservation._meta.label]["deleted"] = deleted_objects
         count = len(deleted_objects)
     else:
-        count = queryset.delete()
+        count = queryset.delete()[0]
 
     if show_progress:
         print(f"Deleted {count} calendar reservations")
@@ -431,7 +431,7 @@ def apply_data_retention(preview=True, show_progress=False):
         affected[cm.User._meta.label]["deleted"] = deleted_objects
         count = len(deleted_objects)
     else:
-        count = non_retain_setting.delete()
+        count = non_retain_setting.delete()[0]
         affected[cm.User._meta.label]["deleted"] = count
 
     if show_progress:
