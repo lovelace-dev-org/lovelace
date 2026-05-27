@@ -140,7 +140,7 @@
     <ul>
         {% for o_instance in enrolled_instances %}
           <li>
-            <a href="{% url 'courses:show_answers' student course o_instance exercise %}">
+            <a href="{% url 'courses:show_answers' student course o_instance parent exercise %}">
                 {{ o_instance.name }}
             </a>
           </li>
