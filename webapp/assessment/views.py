@@ -323,6 +323,11 @@ def view_submissions(request, course, instance, parent, content):
         .exclude(state="credited")
         .prefetch_related(Prefetch("user", queryset=users))
     )
+    embed_link = EmbeddedLink.objects.get(
+        embedded_page=content,
+        instance=instance,
+        parent=parent,
+    )
     assessed = []
     unassessed = []
     resubmitted = []
@@ -338,7 +343,7 @@ def view_submissions(request, course, instance, parent, content):
             continue
 
         entry = {}
-        if content.group_submission:
+        if embed_link.group_submission:
             try:
                 group = StudentGroup.objects.get(members=completion.user, instance=instance)
             except StudentGroup.DoesNotExist:
@@ -360,6 +365,7 @@ def view_submissions(request, course, instance, parent, content):
             "course": course,
             "instance": instance,
             "exercise": content,
+            "parent": parent,
         }
         entry["answers_url"] = reverse("courses:show_answers", kwargs=href_args)
         if completion.state in ["correct", "incorrect", "resubmitted"]:
@@ -394,11 +400,9 @@ def view_submissions(request, course, instance, parent, content):
 
         entry["assessment_url"] = reverse("assessment:submission_assessment", kwargs=href_args)
 
-
     assessed.sort(key=itemgetter("group"))
     unassessed.sort(key=itemgetter("group"))
     resubmitted.sort(key=itemgetter("group"))
-    parent, single_linked = get_embedded_parent(content, instance)
 
     t = loader.get_template("assessment/submissions.html")
     c = {
@@ -407,7 +411,6 @@ def view_submissions(request, course, instance, parent, content):
         "course_staff": True,
         "exercise": content,
         "parent": parent,
-        "single_linked": single_linked,
         "assessed": assessed,
         "unassessed": unassessed,
         "resubmitted": resubmitted,
@@ -424,6 +427,11 @@ def submission_assessment(request, course, instance, parent, exercise, user, ans
         return HttpResponseNotFound(_("Assessment sheet for this exercise doesn't exist"))
 
     sheet, by_section = get_sectioned_sheet(sheet_link)
+    embed_link = EmbeddedLink.objects.get(
+        embedded_page=exercise,
+        instance=instance,
+        parent=parent,
+    )
 
     if request.method == "POST":
         form = AssessmentForm(request.POST, by_section=by_section)
@@ -433,6 +441,7 @@ def submission_assessment(request, course, instance, parent, exercise, user, ans
 
         assessment = serializable_assessment(request.user, sheet, by_section, form.cleaned_data)
         exercise.update_evaluation(
+            embed_link,
             user,
             {
                 "evaluation": form.cleaned_data.get("correct", False),
@@ -467,8 +476,6 @@ def submission_assessment(request, course, instance, parent, exercise, user, ans
         section["section_points"] = section_scores.get(name.title, 0)
         max_score += section["total_points"]
 
-    parent, single_linked = get_embedded_parent(exercise, instance)
-
     form = AssessmentForm(
         by_section=by_section,
         assessment=assessment,
@@ -484,7 +491,6 @@ def submission_assessment(request, course, instance, parent, exercise, user, ans
         "course_staff": True,
         "exercise": exercise,
         "parent": parent,
-        "single_linked": single_linked,
         "student": user,
         "sheet": sheet,
         "bullets_by_section": by_section,
@@ -500,9 +506,6 @@ def submission_assessment(request, course, instance, parent, exercise, user, ans
 
 @ensure_owner_or_staff
 def view_assessment(request, user, course, instance, parent, exercise, answer):
-    if not exercise.manually_evaluated:
-        return HttpResponseNotFound(_("This exercise does not have manual assessment."))
-
     try:
         assessment = json.loads(answer.evaluation.feedback)
     except AttributeError:

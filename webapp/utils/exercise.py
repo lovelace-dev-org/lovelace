@@ -344,6 +344,8 @@ def update_completion(exercise, link, instance, user, evaluation, answer_date, o
             parent=link.parent
         ).exclude(id=link.id)
 
+        print(others)
+
         for group_link in others:
             try:
                 completion = cm.UserTaskCompletion.objects.get(

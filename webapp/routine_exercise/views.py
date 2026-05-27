@@ -20,6 +20,7 @@ from django.utils.translation import gettext as _
 
 from reversion import revisions as reversion
 
+from lovelace import plugins as lovelace_plugins
 from lovelace.celery import app as celery_app
 
 from courses import markupparser
@@ -327,7 +328,7 @@ def routine_progress(request, course, instance, parent, content, task_id):
 
         if progress.completed:
             data["evaluation"] = True
-            update_completion(content, instance, request.user, data, answer.answer_date)
+            update_completion(content, embed_link, instance, request.user, data, answer.answer_date)
             total_evaluation, quotient = content.get_user_evaluation(request.user, instance)
             data["score"] = f"{quotient * embed_link.default_points:.2f}"
             data["total_evaluation"] = total_evaluation
@@ -336,6 +337,14 @@ def routine_progress(request, course, instance, parent, content, task_id):
             data["total_evaluation"] = "ongoing"
         data["next_instance"] = True
         data["progress"] = progress.progress
+
+        data["extra_callbacks"] = []
+
+        for module in lovelace_plugins["exercise-triggers"]:
+            data["extra_callbacks"].extend(module.includes.get_exercise_trigger_callbacks(
+                instance, content, data
+            ))
+
         next_question = info["data"].get("next")
         if next_question:
             _save_question(request.user, instance, content, info, info["data"]["next"])

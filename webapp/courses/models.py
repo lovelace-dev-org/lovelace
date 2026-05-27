@@ -2336,7 +2336,7 @@ class CheckboxExercise(ContentPage):
     def check_answer(self, link, user, answer, files, answer_object):
         # Determine, if the given answer was correct and which hints to show
 
-        choices = self.get_choices(self, revision)
+        choices = self.get_choices(self, link.revision)
 
         # quick hax:
         answered = {choice.id: False for choice in choices}

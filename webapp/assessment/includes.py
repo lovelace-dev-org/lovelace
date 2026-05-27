@@ -83,6 +83,7 @@ def get_answer_actions(context, content, answer):
     answer_kwargs = {
         "course": instance.course,
         "instance": instance,
+        "parent": parent,
         "exercise": content,
         "user": context["student"],
         "answer": answer,
