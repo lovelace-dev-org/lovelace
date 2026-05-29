@@ -28,6 +28,7 @@ import courses.models as cm
 from courses.models import (
     Course,
     CourseInstance,
+    CourseInstanceExamWindow,
     ContentGraph,
     ContentPage,
     EmbeddedLink,
@@ -39,6 +40,7 @@ from courses.models import (
 from courses.forms import (
     CacheRegenForm,
     EmbedConfigForm,
+    ExamWindowForm,
     GroupForm,
     GroupMemberForm,
     InstanceCloneForm,
@@ -251,6 +253,26 @@ def edit_grading(request, course, instance):
     }
     return HttpResponse(t.render(c, request))
 
+
+@ensure_responsible
+def edit_exam_window(request, course, instance):
+
+    try:
+        window = instance.courseinstanceexamwindow
+    except CourseInstanceExamWindow.DoesNotExist:
+        window = None
+
+    def post_save(window, form):
+        window.instance = instance
+
+    return process_modelform(
+        request,
+        ExamWindowForm,
+        window,
+        f"{instance.slug}-exam-window-form",
+        "",
+        post_save_cb=post_save,
+    )
 
 @ensure_responsible
 def regen_instance_cache(request, course, instance):

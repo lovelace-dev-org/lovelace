@@ -763,6 +763,23 @@ class CourseInstance(models.Model):
             return self.notes.split(",")
         return []
 
+    def exam_active(self, user):
+        try:
+            window = self.courseinstanceexamwindow
+        except CourseInstanceExamWindow.DoesNotExist:
+            return False
+        else:
+            if window.start_time <= datetime.datetime.now() <= window.end_time:
+                return True
+        return False
+
+
+class CourseInstanceExamWindow(models.Model):
+
+    start_time = models.DateTimeField(verbose_name=_("Exam window start time"))
+    end_time = models.DateTimeField(verbose_name=_("Exam window end time"))
+    instance = models.OneToOneField("CourseInstance", on_delete=models.CASCADE)
+
 
 class GradeThresholdManager(models.Manager):
 

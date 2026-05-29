@@ -299,6 +299,15 @@ InstanceGradingForm = forms.inlineformset_factory(
     extra=1,
 )
 
+class ExamWindowForm(forms.ModelForm):
+
+    class Meta:
+        model = cm.CourseInstanceExamWindow
+        fields = ["start_time", "end_time"]
+
+
+
+
 
 class ContextNodeForm(forms.ModelForm):
 

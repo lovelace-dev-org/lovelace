@@ -62,6 +62,12 @@
                 data-url="{% url 'courses:edit_grading' course instance %}">
         </button>
         <button type="button"
+                class="staff-base-button exam-button"
+                title="{% trans 'Edit exam window for this instance' %}"
+                onclick="toc.fetch_form(event, this);"
+                data-url="{% url 'courses:edit_exam_window' course instance %}">
+        </button>
+        <button type="button"
                 class="staff-base-button refresh-button"
                 title="{% trans 'Regenerate cache for this instance' %}"
                 onclick="toc.fetch_form(event, this);"

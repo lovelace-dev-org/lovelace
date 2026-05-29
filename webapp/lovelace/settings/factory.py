@@ -77,6 +77,8 @@ AUTHENTICATION_BACKENDS = [
 
 SITE_ID = int(os.getenv("LOVELACE_SITE_ID", 1))
 EXAM_MODE = bool(os.getenv("LOVELACE_EXAM_MODE", False))
+if EXAM_MODE:
+    MIDDLEWARE.append("courses.middleware.ExamModeMiddleware")
 
 # Shibboleth related options
 if os.getenv("LOVELACE_USE_SHIBBOLETH"):
