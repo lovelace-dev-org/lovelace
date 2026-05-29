@@ -88,9 +88,16 @@ urlpatterns = [
     path("user/<user:user>/", user_views.user),
     path("messages/", message_views.view_messages, name="view_messages"),
     path("profile/", user_views.user_profile),
-    # For calendar POST requests
+
+
+    # For calendar
     path(
-        "calendar/<calendar:calendar>/<event:event>/",
+        "calendar/my-calendar/",
+        calendar_views.user_calendar,
+        name="user_calendar",
+    ),
+    path(
+        "calendar/<instance:instance>/<calendar:calendar>/<event:event>/",
         calendar_views.calendar_reservation,
         name="calendar_reservation",
     ),
@@ -211,6 +218,45 @@ urlpatterns = [
         "staff/<course:course>/<instance:instance>/import/",
         staff_views.import_instance,
         name="import",
+    ),
+
+    # Staff URLs for exercise configuration
+
+    path(
+        "staff/<course:course>/<instance:instance>/<content:content>/checking/",
+        staff_views.answer_settings_panel,
+        name="answer_settings_panel",
+    ),
+
+    path(
+        "staff/<course:course>/<instance:instance>/<content:content>/change_widget/",
+        staff_views.change_answer_widget,
+        name="change_answer_widget",
+    ),
+
+    path(
+        "staff/<course:course>/<instance:instance>/<content:content>/choices/"
+        "add/<int:after>/",
+        staff_views.add_exercise_choice,
+        name="add_exercise_choice",
+    ),
+    path(
+        "staff/<course:course>/<instance:instance>/<content:content>/choices/"
+        "edit/<int:choice_id>/",
+        staff_views.edit_exercise_choice,
+        name="edit_exercise_choice",
+    ),
+    path(
+        "staff/<course:course>/<instance:instance>/<content:content>/choices/"
+        "delete/<int:choice_id>/",
+        staff_views.delete_exercise_choice,
+        name="delete_exercise_choice",
+    ),
+    path(
+        "staff/<course:course>/<instance:instance>/<content:content>/choices/"
+        "move/<int:choice_id>/<str:direction>/",
+        staff_views.move_exercise_choice,
+        name="move_exercise_choice",
     ),
 
     # Staff URLs for messages

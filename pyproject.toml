@@ -5,10 +5,9 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools]
 packages = []
 
-
 [project]
 name = "lovelace"
-version = "2.0.0"
+version = "2.1.0"
 authors = [
     {name = "Miikka Salminen"},
     {name = "Mika Oja", email = "mika.oja@oulu.fi"}

@@ -38,6 +38,9 @@
 
         {% if form_object.has_inline %}
           <div class="form-inline-header">{{ form_object.inline_header }}</div>
+
+          {{ form_object.management_form }}
+
           {% for form in form_object.get_inline_formset %}
             <table class="edit-form-inline sub-rectangle">
               <tbody>

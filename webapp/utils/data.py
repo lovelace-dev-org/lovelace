@@ -4,6 +4,7 @@ import logging
 import math
 import os
 import shutil
+import time
 import uuid
 from collections import defaultdict
 from decimal import Decimal
@@ -255,7 +256,7 @@ def import_from_zip(import_source, user, responsible, staff_group, target_instan
 
     return instance, errors
 
-def apply_data_retention(preview=True):
+def apply_data_retention(preview=True, show_progress=False):
     """
     Function for applying data retention policy settings. Checks through all course instances where
     the end date is older than the server's data retention time setting. User data retention policy
@@ -283,16 +284,39 @@ def apply_data_retention(preview=True):
 
     # Delete or anonymize answer and completion related data based on user's chosen data policy
     ended_course_instances = cm.CourseInstance.objects.filter(end_date__lt=retention_threshold)
+
     affected = defaultdict(dict)
 
+    if show_progress:
+        print("Starting delete / anonymize process")
+        if preview:
+            print("in PREVIEW mode")
+        else:
+            print("in EXECUTION mode")
+            time.sleep(2)
+
     for instance in ended_course_instances:
+        if show_progress:
+            print(
+                f"Processing course instance: {instance.course.name} - {instance.name}"
+                f" (ended {instance.end_date.isoformat()}"
+            )
+
+        # Users without profile (i.e. generated users) will not be included in these filters
         enrolled_users = instance.enrolled_users.get_queryset()
         delete_setting = list(enrolled_users.filter(userprofile__data_policy="DELETE"))
         anonymize_setting = list(enrolled_users.filter(userprofile__data_policy="ANONYMIZE"))
 
         # Move enrollments of deleted users to "deleted user" dummies to retain participation numbers
         if not preview:
-            for user in delete_setting:
+            if show_progress:
+                print("Creating deleted-user accounts.")
+
+            total = len(delete_setting)
+            for i, user in enumerate(delete_setting, start=1):
+                if show_progress:
+                    print(f"{i} / {total}\r", end="", flush=True)
+
                 deleted_anon = cm.User(
                     username=f"deleted-user-{str(uuid.uuid1())}"
                 )
@@ -305,27 +329,48 @@ def apply_data_retention(preview=True):
                 except KeyError:
                     affected[cm.CourseEnrollment._meta.label]["deleted"] = count
 
+            if show_progress:
+                print()
+
         # Delete everything else that belongs to users with a delete policy
         for model_cls, fields in cm.UserProfile.user_data_models:
+            if show_progress:
+                print(f"Deleting {model_cls._meta.label} instances")
+
             for field in fields:
+                if show_progress:
+                    print(f"Deleting via field: {field}")
+
                 queryset = model_cls.objects.filter(
                     **{f"{field}__in": delete_setting, "instance": instance}
                 )
                 if preview:
+                    deleted_objects = list(queryset)
                     try:
-                        affected[model_cls._meta.label]["deleted"] += list(queryset)
+                        affected[model_cls._meta.label]["deleted"] += deleted_objects
                     except KeyError:
-                        affected[model_cls._meta.label]["deleted"] = list(queryset)
+                        affected[model_cls._meta.label]["deleted"] = deleted_objects
+                    count = len(deleted_objects)
                 else:
-                    count = queryset.delete()
+                    count = queryset.delete()[0]
                     try:
                         affected[model_cls._meta.label]["deleted"] += count
                     except KeyError:
                         affected[model_cls._meta.label]["deleted"] = count
 
+                if show_progress:
+                    print(f"Objects deleted: {count}")
+                    print()
+
         # Create an anonymous clone for each user with anonymize policy and transfer everything
         # to it
-        for user in anonymize_setting:
+        total = len(anonymize_setting)
+        if show_progress:
+            print("Anonymizing users.")
+
+        for i, user in enumerate(anonymize_setting, start=1):
+            if show_progress:
+                print(f"\r{i} / {total}", end="", flush=True)
 
             if not preview:
                 new_anon = cm.User(
@@ -348,23 +393,48 @@ def apply_data_retention(preview=True):
                         except KeyError:
                             affected[model_cls._meta.label]["anonymized"] = count
 
+        if show_progress:
+            print()
+
 
     # Delete all old calendar reservations regardless of user data policy
+    if show_progress:
+        print("Deleting calendar reservations")
+
     queryset = cm.CalendarReservation.objects.filter(calendar_date__end_time__lt=retention_threshold)
     if preview:
-        affected[cm.CalendarReservation._meta.label]["deleted"] = list(queryset)
+        deleted_objects = list(queryset)
+        affected[cm.CalendarReservation._meta.label]["deleted"] = deleted_objects
+        count = len(deleted_objects)
     else:
-        queryset.delete()
+        count = queryset.delete()[0]
+
+    if show_progress:
+        print(f"Deleted {count} calendar reservations")
+        print()
 
     # Delete all users whose policy is delete or anonymize if their last login is older than
     # data retention period
+    if show_progress:
+        print("Deleting users")
+
+    # Account for session age
+    login_threshold = (
+        retention_threshold - timedelta(seconds=settings.ACCOUNT_SESSION_COOKIE_AGE)
+    )
     non_retain_setting = cm.User.objects.filter(
         userprofile__data_policy__in=["DELETE", "ANONYMIZE"],
-        last_login__lt=retention_threshold
+        last_login__lt=login_threshold
     )
     if preview:
-        affected[cm.User._meta.label]["deleted"] = list(non_retain_setting)
+        deleted_objects = list(non_retain_setting)
+        affected[cm.User._meta.label]["deleted"] = deleted_objects
+        count = len(deleted_objects)
     else:
-        affected[cm.User._meta.label]["deleted"] = non_retain_setting.delete()
+        count = non_retain_setting.delete()[0]
+        affected[cm.User._meta.label]["deleted"] = count
+
+    if show_progress:
+        print(f"Deleted {count} users")
 
     return affected

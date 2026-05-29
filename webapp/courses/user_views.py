@@ -247,7 +247,7 @@ def invite_members(request, course, instance, group):
     slots = instance.max_group_size - members - invites.count()
     form = GroupInviteForm(request.POST, slots=slots)
     if not form.is_valid(for_instance=instance):
-        errors = form.errors.as_json()
+        errors = form.errors.get_json_data()
         return JsonResponse({"errors": errors}, status=400)
 
     for user in form.invited_users:

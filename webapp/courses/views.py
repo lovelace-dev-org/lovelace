@@ -484,7 +484,7 @@ def check_answer(request, course, instance, parent, content):
     total_evaluation, quotient = exercise.get_user_evaluation(user, instance)
     score = quotient * embed_link.default_points
 
-    if not evaluation["evaluation"] or score < embed_link.default_points:
+    if not evaluation["evaluation"] or evaluation["quotient"] < 1:
         parser = markupparser.MarkupParser()
         hints = [
             "".join(
@@ -624,6 +624,13 @@ def get_repeated_template_session(request, course, instance, content, revision):
         "total_instances": total_instances,
         "progress": f"{session_instance.ordinal_number + 1} / {total_instances}",
     }
+
+    data["extra_callbacks"] = []
+
+    for module in lovelace_plugins["exercise-triggers"]:
+        data["extra_callbacks"].extend(module.includes.get_exercise_trigger_callbacks(
+            instance, content, data
+        ))
 
     return JsonResponse(data)
 

@@ -22,8 +22,8 @@ body {
 }
 
 .collapsed {
-    visibility: hidden;
-    display: none;
+    visibility: hidden !important;
+    display: none !important;
 }
 
 div#container {
@@ -1947,6 +1947,16 @@ div.expand-handle {
 
 .import-button {
     background: no-repeat url("/static/courses/import-16.png") center/16px,
+                #fff;
+}
+
+.widget-change-button {
+    background: no-repeat url("/static/courses/change-widget.png") center/18px,
+                #fff;
+}
+
+.widget-settings-button {
+    background: no-repeat url("/static/courses/widget-settings.png") center/18px,
                 #fff;
 }
 

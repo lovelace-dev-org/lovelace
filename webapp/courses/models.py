@@ -40,6 +40,7 @@ from courses import markupparser
 from courses import widgets
 #import feedback.models
 from lovelace import plugins as lovelace_plugins
+from utils.base import parent_ordinal_sort
 from utils.data import (
     export_json, export_files, serialize_single_python, serialize_many_python
 )
@@ -615,6 +616,8 @@ class CourseInstance(models.Model):
             cache.delete(f"{self.slug}_tree_{lang_code}_guest")
             cache.delete(f"{self.slug}_tree_{lang_code}_exam")
 
+        cache.delete(f"{self.slug}_deadlines")
+
     def freeze(self, freeze_to=None):
         """
         Freezes the course instance by creating copies of content graph links
@@ -667,6 +670,9 @@ class CourseInstance(models.Model):
             export_target
         )
 
+        for grade in GradeThreshold.objects.filter(instance=self):
+            grade.export(self, export_target)
+
         for cg in ContentGraph.objects.filter(instance=self):
             cg.export(export_target)
 
@@ -699,7 +705,49 @@ class CourseInstance(models.Model):
         for module in lovelace_plugins["export"]:
             module.models.export_models(self, export_target)
 
+    def get_deadlines(self, user):
+        entries = []
+        exempt = []
 
+        cached = cache.get(f"{self.slug}_deadlines")
+
+        if not cached:
+            cgs = list(self.contentgraph_set.get_queryset().filter(deadline__isnull=False))
+            cgs.sort(key=parent_ordinal_sort)
+            for i, cg in enumerate(cgs):
+                instance_url = reverse("courses:course", kwargs={
+                    "course": self.course,
+                    "instance": self,
+                })
+                entries.append({
+                    "cg_id": cg.id,
+                    "deadline": cg.deadline,
+                    "course": self.course,
+                    "content": cg.content,
+                    "ordinal": i,
+                    "instance_url": instance_url,
+                    "content_url": reverse("courses:content", kwargs={
+                        "course": self.course,
+                        "instance": self,
+                        "content": cg.content,
+                    })
+                })
+        else:
+            entries = cached
+
+        exemptions = dict(
+            (e.contentgraph.id, e.new_deadline)
+            for e in DeadlineExemption.objects.filter(user=user, contentgraph__instance=self)
+        )
+        if not exemptions:
+            return entries
+
+        for entry in entries:
+            if new_dl := exemptions.get(entry["cg_id"]):
+                entry["deadline"] = new_dl
+
+        entries.sort(key=operator.itemgetter("deadline"))
+        return entries
 
     def finalize_import(self, document, pk_map):
         pass
@@ -716,7 +764,20 @@ class CourseInstance(models.Model):
         return []
 
 
-class GradeThreshold(models.Model):
+class GradeThresholdManager(models.Manager):
+
+    def get_by_natural_key(self, instance_slug, grade):
+        return self.get(instance__slug=instance_slug, grade=grade)
+
+
+class GradeThreshold(models.Model, ExportImportMixin):
+
+    class Meta:
+        unique_together = ("instance", "grade")
+
+
+    objects = GradeThresholdManager()
+
     instance = models.ForeignKey(
         "CourseInstance", null=False, blank=False, on_delete=models.CASCADE
     )
@@ -724,6 +785,9 @@ class GradeThreshold(models.Model):
     grade = models.CharField(
         max_length=4,
     )
+
+    def natural_key(self):
+        return [self.instance.slug, self.grade]
 
 
 class CourseMessage(models.Model):
@@ -1199,6 +1263,10 @@ class Calendar(models.Model, ExportImportMixin):
     related_content = models.ForeignKey(
         "ContentPage", on_delete=models.SET_NULL, null=True, blank=True
     )
+    meeting_calendar = models.BooleanField(
+        verbose_name=_("Is a meeting calendar"),
+        default=True,
+        help_text=_("Meeting calendar reservations will show up in the host's personal calendar."),    )
     origin = models.ForeignKey(Course, verbose_name="Course", null=True, on_delete=models.SET_NULL)
     slug = models.SlugField(max_length=255, allow_unicode=True, blank=False)
     heading_level = models.PositiveSmallIntegerField(
@@ -1221,6 +1289,7 @@ class CalendarDate(models.Model):
     """A single date on a calendar."""
 
     calendar = models.ForeignKey(Calendar, on_delete=models.CASCADE)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     event_name = models.CharField(verbose_name="Name of the event", max_length=200)  # Translate
     event_description = models.CharField(
         verbose_name="Description", max_length=200, blank=True, null=True
@@ -1254,20 +1323,12 @@ class CalendarReservation(models.Model):
 
     calendar_date = models.ForeignKey(CalendarDate, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    instance = models.ForeignKey(CourseInstance, on_delete=models.SET_NULL, null=True)
 
 
 # ^
 # |
 # CALENDAR
-# ANSWER WIDGETS
-# |
-# V
-
-
-
-# ^
-# |
-# ANSWER WIDGETS
 # CONTENT BASE
 # |
 # V
@@ -1409,6 +1470,8 @@ class ContentPage(models.Model, ExportImportMixin):
     # Dynamically registered content types go here.
     content_type_models = {}
     answer_models = {}
+    user_answer_models = {}
+    config_forms = {}
 
     # Template to use for rendering this content type, all content type models must set their own.
     default_answer_widget = "blank"
@@ -1449,7 +1512,8 @@ class ContentPage(models.Model, ExportImportMixin):
 
 
     @classmethod
-    def register_content_type(cls, constant_name, type_class, answer_class=None):
+    def register_content_type(cls, constant_name, type_class,
+                              answer_class=None, user_answer_class=None):
         if not issubclass(type_class, cls):
             raise TypeError(
                 _("Class {type_class} is not a subclass of {cls}").format(
@@ -1460,6 +1524,11 @@ class ContentPage(models.Model, ExportImportMixin):
 
         cls.content_type_models[constant_name] = type_class
         cls.answer_models[constant_name] = answer_class
+        cls.user_answer_models[constant_name] = user_answer_class
+
+    @classmethod
+    def register_config_form(cls, constant_name, form_class):
+        cls.config_forms[constant_name] = form_class
 
     def natural_key(self):
         return (self.slug, )
@@ -1603,6 +1672,9 @@ class ContentPage(models.Model, ExportImportMixin):
 
         question = blockparser.parseblock(escape(self.question, quote=False), context)
         return question
+
+    def get_config_form(self):
+        return self.config_forms[self.content_type]
 
     def get_answer_widget(self, course):
         if not self.answer_widget:
@@ -1768,6 +1840,9 @@ class ContentPage(models.Model, ExportImportMixin):
 
         adminized_type = self.content_type.replace("_", "").lower()
         return reverse(f"admin:courses_{adminized_type}_change", args=(self.id,))
+
+    def get_checking_settings_url(self, context):
+        return None
 
     def get_content_additions(self, context, content_level):
         """
@@ -2046,6 +2121,9 @@ class ContentPage(models.Model, ExportImportMixin):
     def get_answer_model(self):
         return self.answer_models[self.content_type]
 
+    def get_user_answer_model(self):
+        return self.user_answer_models[self.content_type]
+
     # HACK: Experimental way of implementing a better get_type_object
     def __getattribute__(self, name):
         """
@@ -2055,6 +2133,7 @@ class ContentPage(models.Model, ExportImportMixin):
         """
 
         normal = [
+            "get_checking_settings_url",
             "get_choices",
             "get_rendered_content",
             "get_question",
@@ -2285,7 +2364,7 @@ class CheckboxExercise(ContentPage):
     def check_answer(self, link, user, answer, files, answer_object):
         # Determine, if the given answer was correct and which hints to show
 
-        choices = self.get_choices(self, revision)
+        choices = self.get_choices(self, link.revision)
 
         # quick hax:
         answered = {choice.id: False for choice in choices}
@@ -2378,6 +2457,15 @@ class TextfieldExercise(ContentPage):
 
     def get_question(self, context):
         return ContentPage._get_question(self, context)
+
+    def get_checking_settings_url(self, context):
+        return reverse(
+            "courses:answer_settings_panel", kwargs={
+                "course": context["course"],
+                "instance": context["instance"],
+                "content": self,
+            }
+        )
 
     def save_answer(self, user, ip, answer, files, instance, revision):
         if "answer" in answer.keys():
@@ -3438,9 +3526,16 @@ class TextfieldExerciseAnswer(models.Model):
     answer = models.TextField()  # Translate
     hint = models.TextField(blank=True)  # Translate
     comment = models.TextField(
-        verbose_name="Extra comment given upon entering a matching answer", blank=True
+        blank=True
     )  # Translate
     ordinal = models.PositiveIntegerField()
+
+    @classmethod
+    def get_edit_form(cls):
+        # NOTE: Just import from here now to avoid cyclic imports
+
+        from courses.config_forms import TextfieldExerciseAnswerForm
+        return TextfieldExerciseAnswerForm
 
     def __str__(self):
         if len(self.answer) > 76:
@@ -3451,7 +3546,14 @@ class TextfieldExerciseAnswer(models.Model):
         return [self.exercise.slug, self.ordinal]
 
     def save(self, *args, **kwargs):
-        self.answer = self.answer.replace("\r", "")
+        # TODO: why was this needed? If not needed, remove the fixed version below
+        # self.answer = self.answer.replace("\r", "")
+        for lang_code, __ in settings.LANGUAGES:
+            lang_field = f"answer_{lang_code}"
+            lang_answer = getattr(self, lang_field)
+            lang_answer = lang_answer.replace("\r", "")
+            setattr(self, lang_field, lang_answer)
+
         if self.ordinal is None:
             previous = TextfieldExerciseAnswer.objects.filter(
                 exercise=self.exercise,
@@ -3475,6 +3577,13 @@ class MultipleChoiceExerciseAnswer(models.Model):
         verbose_name="Extra comment given upon selection of this answer", blank=True
     )  # Translate
 
+    @classmethod
+    def get_edit_form(cls):
+        # NOTE: Just import from here now to avoid cyclic imports
+
+        from courses.config_forms import MultipleChoiceExerciseChoiceForm
+        return MultipleChoiceExerciseChoiceForm
+
     def __str__(self):
         return self.answer
 
@@ -3494,6 +3603,11 @@ class CheckboxExerciseAnswer(models.Model):
     comment = models.TextField(
         verbose_name="Extra comment given upon selection of this answer", blank=True
     )  # Translate
+
+    @classmethod
+    def get_edit_form(cls):
+        from courses.config_forms import CheckboxExerciseChoiceForm
+        return CheckboxExerciseChoiceForm
 
     def __str__(self):
         return self.answer
@@ -3948,22 +4062,31 @@ UserProfile.register_user_data_model(UserTaskCompletion, ["user"])
 
 ContentPage.register_content_type("LECTURE", Lecture)
 ContentPage.register_content_type(
-    "MULTIPLE_CHOICE_EXERCISE", MultipleChoiceExercise, UserMultipleChoiceExerciseAnswer
+    "MULTIPLE_CHOICE_EXERCISE",
+    MultipleChoiceExercise, MultipleChoiceExerciseAnswer, UserMultipleChoiceExerciseAnswer,
 )
 ContentPage.register_content_type(
-    "CHECKBOX_EXERCISE", CheckboxExercise, UserCheckboxExerciseAnswer
+    "CHECKBOX_EXERCISE",
+    CheckboxExercise, CheckboxExerciseAnswer, UserCheckboxExerciseAnswer
 )
 ContentPage.register_content_type(
-    "TEXTFIELD_EXERCISE", TextfieldExercise, UserTextfieldExerciseAnswer
+    "TEXTFIELD_EXERCISE",
+    TextfieldExercise, TextfieldExerciseAnswer, UserTextfieldExerciseAnswer
 )
 ContentPage.register_content_type(
-    "FILE_UPLOAD_EXERCISE", FileUploadExercise, UserFileUploadExerciseAnswer
+    "FILE_UPLOAD_EXERCISE",
+    FileUploadExercise, None, UserFileUploadExerciseAnswer
 )
+ContentPage.register_content_type(
+    "REPEATED_TEMPLATE_EXERCISE", RepeatedTemplateExercise, UserRepeatedTemplateExerciseAnswer
+)
+
 
 def get_import_list():
     return [
         Course,
         CourseInstance,
+        GradeThreshold,
         Term,
         TermAlias,
         TermLink,

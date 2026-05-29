@@ -92,12 +92,14 @@
 
 <div>
   {% if course_staff %}
-    <div><button type="button"
-            class="staff-only collapsed staff-base-button settings-button"
+    <div>
+      <button type="button"
+            class="staff-only collapsed staff-base-button link-button"
             title="{% trans 'Embed link settings' %}"
             onclick="editing.get_form(event, this)"
-            data-url="{% url 'courses:embed_settings' course instance parent content %}">
-    </button></div>
+            data-url="{{ meta.embed_config_url }}">
+      </button>
+    </div>
   {% endif %}
 
   {% for block_type, block_data, line_idx, line_count in emb.content %}
@@ -147,13 +149,23 @@
     </div>
   {% endblock %}
 
-  {% if course_staff and emb.widget_configurable %}
+
+
+  {% if course_staff %}
     <button type="button"
-            class="staff-only collapsed staff-base-button settings-button"
-            title="{% trans 'Answer widget settings' %}"
+            class="staff-only collapsed staff-base-button widget-change-button"
+            title="{% trans 'Change answer widget' %}"
             onclick="editing.get_form(event, this)"
-            data-url="{% url 'courses:widget_settings' course instance content %}">
+            data-url="{% url 'courses:change_answer_widget' course instance content %}">
     </button>
+    {% if emb.widget_configurable %}
+      <button type="button"
+              class="staff-only collapsed staff-base-button widget-settings-button"
+              title="{% trans 'Answer widget settings' %}"
+              onclick="editing.get_form(event, this)"
+              data-url="{% url 'courses:widget_settings' course instance content %}">
+      </button>
+    {% endif %}
   {% endif %}
   <form id="{{ content.slug }}-form"
         class="exercise-form"

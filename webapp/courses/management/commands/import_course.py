@@ -37,5 +37,3 @@ class Command(BaseCommand):
             print("The following errors where encountered:")
             for error in errors:
                 print(error)
-
-

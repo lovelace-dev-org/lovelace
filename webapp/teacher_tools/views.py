@@ -25,9 +25,9 @@ from lovelace.celery import app as celery_app
 from utils.access import determine_access, is_course_staff, ensure_responsible, ensure_staff
 from utils.archive import get_single_archived
 from utils.content import get_course_instance_tasks, get_embedded_parent
+from utils.management import process_delete_confirm_form
 from utils.notify import send_welcome_email
 
-from courses.forms import process_delete_confirm_form
 from courses.models import (
     ContentGraph,
     CourseEnrollment,
@@ -213,7 +213,7 @@ def transfer_records(request, course, instance, user):
     if request.method == "POST":
         form = TransferRecordsForm(request.POST, instances=other_instances)
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         target_instance = CourseInstance.objects.get(id=form.cleaned_data["target_instance"])
@@ -288,7 +288,7 @@ def transfer_records(request, course, instance, user):
 
 @ensure_staff
 def answer_summary(request, course, instance, parent, content):
-    answer_model = content.get_answer_model()
+    answer_model = content.get_user_answer_model()
     answers = (
         answer_model.objects.filter(
             exercise=content,
@@ -476,7 +476,7 @@ def manage_reminders(request, course, instance):
     if request.method != "POST":
         form = ReminderForm(request.POST, instance=saved_template)
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         if form.cleaned_data["reminder_action"] == "generate":
@@ -627,7 +627,7 @@ def batch_grade_task(request, course, instance, parent, content):
     if request.method == "POST":
         form = BatchGradingForm(request.POST)
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         if link.revision is None:
@@ -635,7 +635,7 @@ def batch_grade_task(request, course, instance, parent, content):
         else:
             exercise = get_single_archived(content, link.revision)
 
-        answer_model = content.get_answer_model()
+        answer_model = content.get_user_answer_model()
         answers = (
             answer_model.objects.filter(
                 exercise=content,
@@ -743,7 +743,7 @@ def exercise_plagiarism(request, course, instance, content):
     if request.method == "POST":
         form = MossnetForm(request.POST, other_instances=other_instances, instance=saved_settings)
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         if form.cleaned_data["save_settings"]:
@@ -829,7 +829,7 @@ def create_exemption(request, course, instance):
             graphs=graphs,
         )
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         form.save(commit=True)

@@ -38,7 +38,7 @@ def save_question(request, course, instance, exercise):
         form = FaqQuestionForm(request.POST, instance=question)
 
     if not form.is_valid():
-        errors = form.errors.as_json()
+        errors = form.errors.get_json_data()
         return JsonResponse({"errors": errors}, status=400)
 
     with reversion.create_revision():

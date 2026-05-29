@@ -48,6 +48,7 @@ class CodeReplaceExerciseForm(forms.Form):
 
 
 class FileEditForm(forms.ModelForm):
+
     def get_initial_for_field(self, field, field_name):
         default_value = super().get_initial_for_field(field, field_name)
         if isinstance(field, fields.FileField) and default_value:
@@ -59,6 +60,7 @@ class FileEditForm(forms.ModelForm):
 
 
 class ExerciseBackendForm(forms.ModelForm):
+
     def get_initial_for_field(self, field, field_name):
         default_value = super().get_initial_for_field(field, field_name)
         if isinstance(field, fields.FileField) and default_value:
@@ -449,7 +451,9 @@ class UserProfileForm(forms.ModelForm):
 
     class Meta:
         model = cm.UserProfile
-        fields = ["student_id", "data_policy", "language_preference", "dyslexic_fonts"]
+        fields = [
+            "student_id", "data_policy", "language_preference", "dyslexic_fonts"
+        ]
 
     def clean_data_policy(self):
         data_policy = self.cleaned_data.get("data_policy")
@@ -466,13 +470,14 @@ class UserForm(forms.ModelForm):
 
     class Meta:
         model = cm.User
-        fields = ["first_name", "last_name", "email"]
+        fields = ["username", "first_name", "last_name", "email"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["first_name"].required = True
         self.fields["last_name"].required = True
         self.fields["email"].required = True
+        self.fields["username"].disabled = True
 
 
 class GroupForm(forms.ModelForm):
@@ -571,7 +576,9 @@ class GroupMemberForm(forms.Form):
 class CalendarConfigForm(forms.ModelForm):
     class Meta:
         model = cm.Calendar
-        fields = ["heading_level", "allow_multiple", "lock_period", "lock_cancel"]
+        fields = [
+            "heading_level", "allow_multiple", "lock_period", "lock_cancel", "meeting_calendar"
+        ]
 
     def __init__(self, *args, **kwargs):
         available_content = kwargs.pop("available_content")
@@ -707,24 +714,6 @@ def process_delete_confirm_form(request, success_callback, extra_context={}):
     }
     form_c.update(extra_context)
     return HttpResponse(form_t.render(form_c, request))
-
-
-class SystemMessageForm(forms.Form):
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        add_translated_charfields(
-            self, "content",
-            _("Message content ({lang} - default)"),
-            _("Message content ({lang})"),
-            require_default=True
-        )
-        self.fields["expires"] = forms.DateTimeField(
-            label=_("Time this message expires"),
-            required=True,
-            input_formats=["%Y-%m-%dT%H:%M"],
-            widget=forms.widgets.DateTimeInput(attrs={"type": "datetime-local"}),
-        )
 
 
 class CourseMessageForm(TranslationStaffForm):
