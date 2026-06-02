@@ -24,12 +24,23 @@ class ContentPreviewWidget(forms.Textarea):
 
 
 class OriginFilterSelect(forms.Select):
+    """
+    A widget class that adds an additional select with which the user
+    can fetch options from different origins. Instances of this widget
+    always need three mandatory attributes to be passed to them.
+
+    * options_url: the URL to use in Ajax calls to update the displayed options
+    * origins: list of available origins (Course)
+    * initial_origin: the initial value for the origin selector
+    """
+
     template_name = "courses/widgets/origin-filter-select.html"
 
     def get_context(self, name, value, attrs):
         context = super().get_context(name, value, attrs)
         context["widget"]["options_url"] = self.attrs["options_url"]
         context["widget"]["origins"] = self.attrs["origin_options"]
+        context["widget"]["initial_origin"] = self.attrs["initial_origin"]
         return context
 
 

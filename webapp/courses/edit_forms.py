@@ -25,6 +25,7 @@ from courses import blockparser
 from courses import markupparser
 import courses.models as cm
 import courses.markup
+from courses.fields import OriginFilterField
 from courses.widgets import OriginFilterSelect
 
 class UnsupportedOperation(Exception):
@@ -259,14 +260,16 @@ class EmbeddedObjectIncludeForm(forms.Form):
         lines = kwargs.pop("lines")
         new = kwargs.pop("new")
         super().__init__(*args, **kwargs)
-        self.fields[self.Meta.ref_field] = forms.ChoiceField(
+        self.fields[self.Meta.ref_field] = OriginFilterField(
             widget=OriginFilterSelect(attrs={
                 "options_url": self._options_url,
-                "origin_options": accessible_courses(self._context["request"].user)
+                "origin_options": accessible_courses(self._context["request"].user).order_by("name"),
+                "initial_origin": self._context["course"],
             }),
             label=_("Choose existing object"),
             choices=self.get_choices(),
             required=True,
+            origin_validator=self._origin_validator,
         )
 
     def get_choices(self):
@@ -705,10 +708,20 @@ class ImageIncludeForm(LineEditMixin, EmbeddedObjectIncludeForm):
         ref_field = "image_name"
         markup = courses.markup.ImageMarkup
 
+    @property
+    def _options_url(self):
+        return reverse("courses:get_accessible_media", kwargs={
+            "media_type": "image"
+        })
+
+    def _origin_validator(self, value):
+        media_origin = cm.CourseMedia.objects.get(slug=value).origin
+        return media_origin in accessible_courses(self._context["request"].user)
+
     def get_choices(self):
         return sorted(((image.slug, image.name)
             for image in CourseMediaAdmin.media_access_list(
-                self._context["request"], cm.Image, origin=self._context["origin"]
+                self._context["request"], cm.Image, origin=self._context["course"]
             )
         ))
 
@@ -751,10 +764,20 @@ class FileIncludeForm(LineEditMixin, EmbeddedObjectIncludeForm):
         ref_field = "file_slug"
         markup = courses.markup.EmbeddedFileMarkup
 
+    @property
+    def _options_url(self):
+        return reverse("courses:get_accessible_media", kwargs={
+            "media_type": "file"
+        })
+
+    def _origin_validator(self, value):
+        media_origin = cm.CourseMedia.objects.get(slug=value).origin
+        return media_origin in accessible_courses(self._context["request"].user)
+
     def get_choices(self):
         return sorted(((f.slug, f.name)
             for f in CourseMediaAdmin.media_access_list(
-                self._context["request"], cm.File, origin=self._context["origin"]
+                self._context["request"], cm.File, origin=self._context["course"]
             )
         ))
 
@@ -783,10 +806,20 @@ class VideoIncludeForm(LineEditMixin, EmbeddedObjectIncludeForm):
         ref_field = "video_slug"
         markup = courses.markup.EmbeddedVideoMarkup
 
+    @property
+    def _options_url(self):
+        return reverse("courses:get_accessible_media", kwargs={
+            "media_type": "videolink"
+        })
+
+    def _origin_validator(self, value):
+        media_origin = cm.CourseMedia.objects.get(slug=value).origin
+        return media_origin in accessible_courses(self._context["request"].user)
+
     def get_choices(self):
         return sorted(((video.slug, video.name)
             for video in CourseMediaAdmin.media_access_list(
-                self._context["request"], cm.VideoLink, origin=self._context["origin"]
+                self._context["request"], cm.VideoLink, origin=self._context["course"]
             )
         ))
 
@@ -830,16 +863,23 @@ class TaskCreateForm(LineEditMixin, TranslationStaffForm):
 class TaskIncludeForm(LineEditMixin, EmbeddedObjectIncludeForm):
 
     _name = "embedded_page"
-    _options_url = reverse("courses:get_accessible_pages")
 
     class Meta:
         ref_field = "page_slug"
         markup = courses.markup.EmbeddedPageMarkup
 
+    @property
+    def _options_url(self):
+        return reverse("courses:get_accessible_pages")
+
+    def _origin_validator(self, value):
+        page_origin = cm.ContentPage.objects.get(slug=value).origin
+        return page_origin in accessible_courses(self._context["request"].user)
+
     def get_choices(self):
         return sorted(((page.slug, page.name)
             for page in CourseContentAdmin.content_access_list(
-                self._context["request"], cm.ContentPage, origin=self._context["origin"]
+                self._context["request"], cm.ContentPage, origin=self._context["course"]
             ) if page.content_type != "LECTURE"
         ))
 
@@ -943,14 +983,6 @@ class BlockTypeSelectForm(forms.Form):
                 for markup in markupparser.MarkupParser.editable_markups()
             ]),
             required=True
-        )
-        self.fields["origin"] = forms.ChoiceField(
-            widget=forms.Select,
-            label=_("Show objects from"),
-            choices=sorted([
-                    (course.slug, course.name)
-                    for course in accessible_courses
-            ]),
         )
 
 

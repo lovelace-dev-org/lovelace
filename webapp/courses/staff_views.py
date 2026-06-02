@@ -72,6 +72,7 @@ from utils.content import regenerate_nearest_cache
 from utils.data import field_serializer, import_from_zip
 from utils.management import (
     CourseContentAdmin,
+    CourseMediaAdmin,
     clone_instance_files,
     clone_terms,
     clone_content_graphs,
@@ -670,13 +671,12 @@ def regen_page_cache(request, course, instance, content):
 
 
 @ensure_staff
-def edit_form(request, course, instance, content, action, origin=None):
+def edit_form(request, course, instance, content, action):
     context = {
         "course": course,
         "instance": instance,
         "content": content,
         "request": request,
-        "origin": origin,
     }
 
     try:
@@ -765,7 +765,6 @@ def add_form(request, course, instance, content):
                 "instance": instance,
                 "content": content,
                 "action": action,
-                "origin": course_access.filter(slug=form.cleaned_data["origin"]).first(),
             },
         )
         return JsonResponse({"status": "ok", "form_url": form_url + query})
@@ -774,9 +773,6 @@ def add_form(request, course, instance, content):
     line_count = int(request.GET.get("size"))
     form = BlockTypeSelectForm(
         line_idx=line_idx, line_count=line_count, course_access=course_access,
-        initial={
-            "origin": course.slug,
-        }
     )
     form_t = loader.get_template("courses/base-edit-form.html")
     form_id = f"line-add-form"
@@ -795,7 +791,31 @@ def get_accessible_pages(request):
     origin = Course.objects.get(slug=request.GET.get("origin"))
     content_access = CourseContentAdmin.content_access_list(request, ContentPage, origin=origin)
     data = {
-        "options": [{"value": page.slug, "text": page.name} for page in content_access]
+        "options": [
+            {"value": page.slug, "text": page.name}
+            for page in content_access if page.content_type != "LECTURE"
+        ]
+    }
+    return JsonResponse(data)
+
+
+def get_accessible_media(request, media_type):
+    origin = Course.objects.get(slug=request.GET.get("origin"))
+    if media_type == "file":
+        model = cm.File
+    elif media_type == "image":
+        model = cm.Image
+    elif media_type == "videolink":
+        model = cm.VideoLink
+    else:
+        return HttpResponseNotFound(_("Media type doesn't exist"))
+
+    media_access = CourseMediaAdmin.media_access_list(request, model, origin=origin)
+    data = {
+        "options": [
+            {"value": media.slug, "text": media.name}
+            for media in media_access
+        ]
     }
     return JsonResponse(data)
 

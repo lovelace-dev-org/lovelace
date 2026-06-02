@@ -3,9 +3,14 @@
           onchange="editing.get_select_options(event, this)"
           data-url="{{ widget.options_url }}">
     {% for origin in widget.origins %}
-      <option value="{{ origin.slug }}">{{ origin.name }}</option>
+      {% if origin == widget.initial_origin %}
+        <option value="{{ origin.slug }}" selected="selected">{{ origin.name }}</option>
+      {% else %}
+        <option value="{{ origin.slug }}">{{ origin.name }}</option>
+      {% endif %}
     {% endfor %}
   </select>
+  <br />
   <select name="{{ widget.name }}"{% include "django/forms/widgets/attrs.html" %}>
     {% for group_name, group_choices, group_index in widget.optgroups %}
       {% if group_name %}

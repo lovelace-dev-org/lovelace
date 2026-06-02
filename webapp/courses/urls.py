@@ -180,12 +180,6 @@ urlpatterns = [
     ),
     path(
         "staff/<course:course>/<instance:instance>/<content:content>/"
-        "editform/<str:action>/<course:origin>/",
-        staff_views.edit_form,
-        name="content_edit_form",
-    ),
-    path(
-        "staff/<course:course>/<instance:instance>/<content:content>/"
         "editform/<str:action>/",
         staff_views.edit_form,
         name="content_edit_form",
@@ -233,6 +227,11 @@ urlpatterns = [
         "staff/pages/",
         staff_views.get_accessible_pages,
         name="get_accessible_pages",
+    ),
+    path(
+        "staff/media/<str:media_type>/",
+        staff_views.get_accessible_media,
+        name="get_accessible_media",
     ),
 
 

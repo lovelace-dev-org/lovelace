@@ -52,7 +52,7 @@ const editing = {
             url: address,
             dataType: "json",
             success: function (data) {
-                const target = source.next("select")
+                const target = source.nextAll("select")
                 console.log(target)
                 target.empty()
                 data.options.forEach(function (option) {
