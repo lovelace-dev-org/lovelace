@@ -23,6 +23,16 @@ class ContentPreviewWidget(forms.Textarea):
         return self._render(self.template_name, context, renderer)
 
 
+class OriginFilterSelect(forms.Select):
+    template_name = "courses/widgets/origin-filter-select.html"
+
+    def get_context(self, name, value, attrs):
+        context = super().get_context(name, value, attrs)
+        context["widget"]["options_url"] = self.attrs["options_url"]
+        context["widget"]["origins"] = self.attrs["origin_options"]
+        return context
+
+
 class NoTrailingZerosInput(forms.NumberInput):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

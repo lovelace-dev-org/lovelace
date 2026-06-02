@@ -179,7 +179,14 @@ urlpatterns = [
         name="regen_page_cache",
     ),
     path(
-        "staff/<course:course>/<instance:instance>/<content:content>/editform/<str:action>/",
+        "staff/<course:course>/<instance:instance>/<content:content>/"
+        "editform/<str:action>/<course:origin>/",
+        staff_views.edit_form,
+        name="content_edit_form",
+    ),
+    path(
+        "staff/<course:course>/<instance:instance>/<content:content>/"
+        "editform/<str:action>/",
         staff_views.edit_form,
         name="content_edit_form",
     ),
@@ -219,6 +226,15 @@ urlpatterns = [
         staff_views.import_instance,
         name="import",
     ),
+
+    # Staff URLs for fetching lists of things
+
+    path(
+        "staff/pages/",
+        staff_views.get_accessible_pages,
+        name="get_accessible_pages",
+    ),
+
 
     # Staff URLs for exercise configuration
 

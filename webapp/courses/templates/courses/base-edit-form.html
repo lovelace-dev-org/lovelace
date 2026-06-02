@@ -1,6 +1,7 @@
 {% load i18n %}
 {% load form_tags %}
 
+<div>
 <form id="{{ html_id }}"
     class="{{ html_class }}"
     method="POST"
@@ -105,6 +106,7 @@
           <input type="submit" name="submit" value="{% trans 'Save' %}"></input>
         {% endif %}
 </form>
+</div>
 
 {% if submit_override %}
   <script>

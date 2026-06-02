@@ -49,7 +49,7 @@ class CourseContentAdmin(admin.ModelAdmin):
     content_type = ""
 
     @staticmethod
-    def content_access_list(request, model, content_type=None):
+    def content_access_list(request, model, content_type=None, origin=None):
         """
         Gets a queryset of content where the requesting user either:
         1) has edited the page previously
@@ -61,10 +61,16 @@ class CourseContentAdmin(admin.ModelAdmin):
         content is shown.
         """
 
-        if content_type:
-            qs = model.objects.filter(content_type=content_type)
+        if origin is None:
+            if content_type:
+                qs = model.objects.filter(content_type=content_type)
+            else:
+                qs = model.objects.all()
         else:
-            qs = model.objects.all()
+            if content_type:
+                qs = model.objects.filter(content_type=content_type, origin=origin)
+            else:
+                qs = model.objects.filter(origin=origin)
 
         if request.user.is_superuser:
             return qs
@@ -191,8 +197,11 @@ class CourseContentAdmin(admin.ModelAdmin):
 
 class CourseMediaAdmin(admin.ModelAdmin):
     @staticmethod
-    def media_access_list(request, model):
-        qs = model.objects.all()
+    def media_access_list(request, model, origin=None):
+        if origin is None:
+            qs = model.objects.all()
+        else:
+            qs = model.objects.filter(origin=origin)
 
         if request.user.is_superuser:
             return qs

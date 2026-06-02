@@ -61,6 +61,7 @@ from courses.edit_forms import (
 )
 from courses.widgets import AnswerWidgetRegistry
 from utils.access import (
+    accessible_courses,
     determine_media_access,
     ensure_responsible_or_supervisor,
     ensure_responsible,
@@ -669,12 +670,13 @@ def regen_page_cache(request, course, instance, content):
 
 
 @ensure_staff
-def edit_form(request, course, instance, content, action):
+def edit_form(request, course, instance, content, action, origin=None):
     context = {
         "course": course,
         "instance": instance,
         "content": content,
         "request": request,
+        "origin": origin,
     }
 
     try:
@@ -732,10 +734,12 @@ def edit_form(request, course, instance, content, action):
 
 @ensure_staff
 def add_form(request, course, instance, content):
+    course_access = accessible_courses(request.user)
+
     if request.method == "POST":
         line_idx = int(request.POST.get("line_idx"))
         line_count = int(request.POST.get("line_count"))
-        form = BlockTypeSelectForm(request.POST, line_idx=line_idx)
+        form = BlockTypeSelectForm(request.POST, line_idx=line_idx, course_access=course_access)
         if not form.is_valid():
             errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
@@ -761,13 +765,19 @@ def add_form(request, course, instance, content):
                 "instance": instance,
                 "content": content,
                 "action": action,
+                "origin": course_access.filter(slug=form.cleaned_data["origin"]).first(),
             },
         )
         return JsonResponse({"status": "ok", "form_url": form_url + query})
 
     line_idx = int(request.GET.get("line"))
     line_count = int(request.GET.get("size"))
-    form = BlockTypeSelectForm(line_idx=line_idx, line_count=line_count)
+    form = BlockTypeSelectForm(
+        line_idx=line_idx, line_count=line_count, course_access=course_access,
+        initial={
+            "origin": course.slug,
+        }
+    )
     form_t = loader.get_template("courses/base-edit-form.html")
     form_id = f"line-add-form"
     form_c = {
@@ -779,6 +789,16 @@ def add_form(request, course, instance, content):
         "submit_override": "editing.get_form_url"
     }
     return HttpResponse(form_t.render(form_c, request))
+
+
+def get_accessible_pages(request):
+    origin = Course.objects.get(slug=request.GET.get("origin"))
+    content_access = CourseContentAdmin.content_access_list(request, ContentPage, origin=origin)
+    data = {
+        "options": [{"value": page.slug, "text": page.name} for page in content_access]
+    }
+    return JsonResponse(data)
+
 
 
 # ^

@@ -12,6 +12,7 @@ from django.urls import reverse
 from django.utils.text import slugify
 from django.utils.translation import gettext as _
 from modeltranslation.forms import TranslationModelForm
+from utils.access import accessible_courses
 from utils.archive import find_latest_version
 from utils.formatters import display_name
 from utils.management import (
@@ -24,6 +25,7 @@ from courses import blockparser
 from courses import markupparser
 import courses.models as cm
 import courses.markup
+from courses.widgets import OriginFilterSelect
 
 class UnsupportedOperation(Exception):
 
@@ -258,7 +260,10 @@ class EmbeddedObjectIncludeForm(forms.Form):
         new = kwargs.pop("new")
         super().__init__(*args, **kwargs)
         self.fields[self.Meta.ref_field] = forms.ChoiceField(
-            widget=forms.Select,
+            widget=OriginFilterSelect(attrs={
+                "options_url": reverse("courses:get_accessible_pages"),
+                "origin_options": accessible_courses(self._context["request"].user)
+            }),
             label=_("Choose existing object"),
             choices=self.get_choices(),
             required=True,
@@ -612,7 +617,7 @@ class ScriptEditForm(LineEditMixin, EmbeddedObjectEditForm):
     def get_choices(self):
         return  [(f.slug, f.name)
             for f in CourseMediaAdmin.media_access_list(
-                self._context["request"], cm.File
+                self._context["request"], cm.File, origin=self._context["origin"],
             )
         ]
 
@@ -703,7 +708,7 @@ class ImageIncludeForm(LineEditMixin, EmbeddedObjectIncludeForm):
     def get_choices(self):
         return sorted(((image.slug, image.name)
             for image in CourseMediaAdmin.media_access_list(
-                self._context["request"], cm.Image
+                self._context["request"], cm.Image, origin=self._context["origin"]
             )
         ))
 
@@ -749,7 +754,7 @@ class FileIncludeForm(LineEditMixin, EmbeddedObjectIncludeForm):
     def get_choices(self):
         return sorted(((f.slug, f.name)
             for f in CourseMediaAdmin.media_access_list(
-                self._context["request"], cm.File
+                self._context["request"], cm.File, origin=self._context["origin"]
             )
         ))
 
@@ -781,7 +786,7 @@ class VideoIncludeForm(LineEditMixin, EmbeddedObjectIncludeForm):
     def get_choices(self):
         return sorted(((video.slug, video.name)
             for video in CourseMediaAdmin.media_access_list(
-                self._context["request"], cm.VideoLink
+                self._context["request"], cm.VideoLink, origin=self._context["origin"]
             )
         ))
 
@@ -833,7 +838,7 @@ class TaskIncludeForm(LineEditMixin, EmbeddedObjectIncludeForm):
     def get_choices(self):
         return sorted(((page.slug, page.name)
             for page in CourseContentAdmin.content_access_list(
-                self._context["request"], cm.ContentPage
+                self._context["request"], cm.ContentPage, origin=self._context["origin"]
             ) if page.content_type != "LECTURE"
         ))
 
@@ -899,6 +904,7 @@ class BlockTypeSelectForm(forms.Form):
     def __init__(self, *args, **kwargs):
         line_idx = kwargs.pop("line_idx", 0)
         line_count = kwargs.pop("line_count", 0)
+        accessible_courses = kwargs.pop("course_access")
         super().__init__(*args, **kwargs)
         self.fields["placement"] = forms.ChoiceField(
             widget=forms.RadioSelect,
@@ -936,6 +942,14 @@ class BlockTypeSelectForm(forms.Form):
                 for markup in markupparser.MarkupParser.editable_markups()
             ]),
             required=True
+        )
+        self.fields["origin"] = forms.ChoiceField(
+            widget=forms.Select,
+            label=_("Show objects from"),
+            choices=sorted([
+                    (course.slug, course.name)
+                    for course in accessible_courses
+            ]),
         )
 
 

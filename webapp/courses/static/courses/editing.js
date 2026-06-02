@@ -39,6 +39,31 @@ const editing = {
         editing.fetch_edit_form(url, source)
     },
 
+    get_select_options: function (event, caller) {
+        event.preventDefault()
+        event.stopPropagation()
+
+        const source = $(caller)
+        const address = source.attr("data-url") + "?origin=" + source.val()
+
+
+        $.ajax({
+            type: "GET",
+            url: address,
+            dataType: "json",
+            success: function (data) {
+                const target = source.next("select")
+                console.log(target)
+                target.empty()
+                data.options.forEach(function (option) {
+                    target.append($("<option></option>").attr({
+                        "value": option.value,
+                    }).text(option.text))
+                })
+            }
+        })
+    },
+
     fetch_edit_form: function (address, caller) {
         $.ajax({
             type: "GET",

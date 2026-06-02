@@ -14,7 +14,9 @@ class AceWidgetConfigurationForm(forms.ModelForm):
         exclude = ["name", "course", "slug"]
 
     def __init__(self, *args, **kwargs):
-        self._accessible_files_qs = CourseMediaAdmin.media_access_list(kwargs.pop("request"), cm.File)
+        self._accessible_files_qs = CourseMediaAdmin.media_access_list(
+            kwargs.pop("request"), cm.File, origin=kwargs.pop("origin")
+        )
         super().__init__(*args, **kwargs)
         self.fields["base_file"].queryset = self._accessible_files_qs
         self.fields["base_file"].required = False
@@ -146,7 +148,8 @@ class AcePlusEditForm(LineEditMixin, EmbeddedObjectEditForm):
         ).get_configuration_form(
             request,
             data=request.POST if self.is_bound else None,
-            prefix="ace"
+            prefix="ace",
+            origin=self._context["origin"],
         )
         if instance and instance.preview_widget:
             preview_widget = PreviewWidgetRegistry.get_widget(

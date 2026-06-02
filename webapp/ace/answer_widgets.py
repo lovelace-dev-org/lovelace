@@ -33,9 +33,9 @@ class AceAnswerWidget(AnswerWidget):
         self._add_context(settings, context)
         return t.render(context)
 
-    def get_configuration_form(self, request, data=None, prefix=None):
+    def get_configuration_form(self, request, data=None, prefix=None, origin=None):
         return ace.forms.AceWidgetConfigurationForm(
-            data, instance=self.get_settings(), prefix=prefix, request=request
+            data, instance=self.get_settings(), prefix=prefix, request=request, origin=origin,
         )
 
     def get_settings(self):
