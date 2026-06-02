@@ -261,7 +261,7 @@ class EmbeddedObjectIncludeForm(forms.Form):
         super().__init__(*args, **kwargs)
         self.fields[self.Meta.ref_field] = forms.ChoiceField(
             widget=OriginFilterSelect(attrs={
-                "options_url": reverse("courses:get_accessible_pages"),
+                "options_url": self._options_url,
                 "origin_options": accessible_courses(self._context["request"].user)
             }),
             label=_("Choose existing object"),
@@ -830,6 +830,7 @@ class TaskCreateForm(LineEditMixin, TranslationStaffForm):
 class TaskIncludeForm(LineEditMixin, EmbeddedObjectIncludeForm):
 
     _name = "embedded_page"
+    _options_url = reverse("courses:get_accessible_pages")
 
     class Meta:
         ref_field = "page_slug"
