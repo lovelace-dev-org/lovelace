@@ -31,6 +31,7 @@ dependencies = [
     "python-magic",
     "PyYAML",
     "redis",
+    "unidecode",
 ]
 
 [project.optional-dependencies]
