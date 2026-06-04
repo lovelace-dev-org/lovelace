@@ -393,11 +393,10 @@ def check_answer(request, course, instance, parent, content):
     if embed_link.revision is None:
         latest = Version.objects.get_for_object(content).latest("revision__date_created")
         answered_revision = latest.revision_id
-        revision = None
         exercise = content
     else:
-        answered_revision = revision
-        exercise = get_single_archived(content, revision)
+        answered_revision = embed_link.revision
+        exercise = get_single_archived(content, answered_revision)
 
     answer_count = exercise.get_user_answers(exercise, user, instance).count()
     if embed_link.answer_limit is not None and answer_count >= embed_link.answer_limit:
