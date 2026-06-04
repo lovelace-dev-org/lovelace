@@ -456,6 +456,16 @@ class ScriptFileInline(TranslationStaffForm):
         required=False,
     )
 
+    @property
+    def _options_url(self):
+        return reverse("courses:get_accessible_media", kwargs={
+            "media_type": "file"
+        })
+
+    def _origin_validator(self, value):
+        media_origin = cm.CourseMedia.objects.get(slug=value).origin
+        return media_origin in accessible_courses(self._context["request"].user)
+
     def clean(self):
         default_lang = settings.MODELTRANSLATION_DEFAULT_LANGUAGE
         self._save_ok = False
@@ -507,13 +517,27 @@ class ScriptFileInline(TranslationStaffForm):
         self._instance = instance
         kwargs["instance"] = instance
         super().__init__(*args, requires=False, **kwargs)
-        self.fields["existing"] = forms.ChoiceField(
-            widget=forms.Select,
-            label=_("Choose existing include"),
+
+        self.fields["existing"] = OriginFilterField(
+            widget=OriginFilterSelect(attrs={
+                "options_url": self._options_url,
+                "origin_options": accessible_courses(self._context["request"].user).order_by("name"),
+                "initial_origin": self._context["course"],
+            }),
+            label=_("Choose existing object"),
             choices=[("", _("----NOT--SELECTED----"))] + accessible_files,
             required=False,
+            origin_validator=self._origin_validator,
             initial=instance and instance.slug,
         )
+
+        # self.fields["existing"] = forms.ChoiceField(
+        #     widget=forms.Select,
+        #     label=_("Choose existing include"),
+        #     choices=[("", _("----NOT--SELECTED----"))] + accessible_files,
+        #     required=False,
+        #     initial=instance and instance.slug,
+        # )
         self.fields["type"] = forms.ChoiceField(
             widget=forms.Select,
             label=_("Include type"),
@@ -553,6 +577,16 @@ class ScriptEditForm(LineEditMixin, EmbeddedObjectEditForm):
         fields = ["fileinfo"]
         ref_field = "script_slug"
         markup = courses.markup.EmbeddedScriptMarkup
+
+    @property
+    def _options_url(self):
+        return reverse("courses:get_accessible_media", kwargs={
+            "media_type": "file"
+        })
+
+    def _origin_validator(self, value):
+        media_origin = cm.CourseMedia.objects.get(slug=value).origin
+        return media_origin in accessible_courses(self._context["request"].user)
 
     def get_initial_for_field(self, field, field_name):
         try:
@@ -620,12 +654,15 @@ class ScriptEditForm(LineEditMixin, EmbeddedObjectEditForm):
     def get_choices(self):
         return  [(f.slug, f.name)
             for f in CourseMediaAdmin.media_access_list(
-                self._context["request"], cm.File, origin=self._context["origin"],
+                self._context["request"], cm.File, origin=(
+                    (self._instance and self._instance.origin) or self._context["course"]
+                )
             )
         ]
 
     def __init__(self, *args, **kwargs):
         new = kwargs["new"]
+        self._instance = kwargs.get("instance")
         super().__init__(*args, requires=False, **kwargs)
         self.fields["script_width"] = forms.IntegerField(label=_("iframe width"), required=True)
         self.fields["script_height"] = forms.IntegerField(label=_("iframe height"), required=True)
@@ -651,13 +688,29 @@ class ScriptEditForm(LineEditMixin, EmbeddedObjectEditForm):
             initial=1000
         )
         self._accessible_files = self.get_choices()
-        self.fields["existing"] = forms.ChoiceField(
-            widget=forms.Select,
-            label=_("Choose existing script"),
-            choices=[("", _("----NOT--SELECTED----"))] + self._accessible_files,
+
+        self.fields["existing"] = OriginFilterField(
+            widget=OriginFilterSelect(attrs={
+                "options_url": self._options_url,
+                "origin_options": accessible_courses(self._context["request"].user).order_by("name"),
+                "initial_origin": (
+                    (self._instance and self._instance.origin) or self._context["course"]
+                ),
+            }),
+            label=_("Choose existing object"),
+            choices=[("", _("----NOT--SELECTED----"))] + self.get_choices(),
             initial=self._settings.get("script_slug", ""),
             required=False,
+            origin_validator=self._origin_validator,
         )
+
+        # self.fields["existing"] = forms.ChoiceField(
+        #     widget=forms.Select,
+        #     label=_("Choose existing script"),
+        #     choices=[("", _("----NOT--SELECTED----"))] + self._accessible_files,
+        #     initial=self._settings.get("script_slug", ""),
+        #     required=False,
+        # )
         self._include_formset = [
             ScriptFileInline(
                 getattr(self._context["request"], "POST", None) if self.is_bound else None,

@@ -791,7 +791,7 @@ def get_accessible_pages(request):
     origin = Course.objects.get(slug=request.GET.get("origin"))
     content_access = CourseContentAdmin.content_access_list(request, ContentPage, origin=origin)
     data = {
-        "options": [
+        "options": [{"value": "", "text": _("----NOT--SELECTED----")}] + [
             {"value": page.slug, "text": page.name}
             for page in content_access if page.content_type != "LECTURE"
         ]
@@ -812,7 +812,7 @@ def get_accessible_media(request, media_type):
 
     media_access = CourseMediaAdmin.media_access_list(request, model, origin=origin)
     data = {
-        "options": [
+        "options": [{"value": "", "text": _("----NOT--SELECTED----")}] + [
             {"value": media.slug, "text": media.name}
             for media in media_access
         ]
