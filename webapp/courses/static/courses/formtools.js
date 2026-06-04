@@ -14,7 +14,7 @@ const formtools = {
             type: "GET",
             url,
             success: function (data, status, jqxhr) {
-                const form = $(data)
+                const form = $(data).find("form")
                 form.submit(formtools.submit_form)
                 if (button.attr("data-in-table")) {
                     const colspan = button.attr("data-colspan")
