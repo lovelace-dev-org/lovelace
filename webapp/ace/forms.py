@@ -1,9 +1,13 @@
 from django import forms
 from django.urls import reverse
+from django.utils.translation import gettext as _
 from courses import markupparser
 from courses.widgets import AnswerWidgetRegistry, PreviewWidgetRegistry
 import courses.models as cm
+from courses.fields import OriginFilterField
+from courses.widgets import OriginFilterSelect
 from courses.edit_forms import LineEditMixin, EmbeddedObjectEditForm
+from utils.access import accessible_courses
 from utils.management import CourseMediaAdmin
 import ace.models
 
@@ -13,13 +17,36 @@ class AceWidgetConfigurationForm(forms.ModelForm):
         model = ace.models.AceWidgetSettings
         exclude = ["name", "course", "slug"]
 
+    @property
+    def _options_url(self):
+        return reverse("courses:get_accessible_media", kwargs={
+            "media_type": "file"
+        })
+
+    def _origin_validator(self, value):
+        media_origin = cm.CourseMedia.objects.get(slug=value).origin
+        return media_origin in accessible_courses(self._request.user)
+
     def __init__(self, *args, **kwargs):
-        self._accessible_files_qs = CourseMediaAdmin.media_access_list(
-            kwargs.pop("request"), cm.File, origin=kwargs.pop("origin")
-        )
+        self._request = kwargs.pop("request")
+        origin = kwargs.pop("origin")
         super().__init__(*args, **kwargs)
-        self.fields["base_file"].queryset = self._accessible_files_qs
-        self.fields["base_file"].required = False
+        choices = sorted(((f.slug, f.name)
+            for f in CourseMediaAdmin.media_access_list(
+                self._request, cm.File, origin=origin
+            )
+        ))
+        self.fields["base_file"] = OriginFilterField(
+            widget=OriginFilterSelect(attrs={
+                "options_url": self._options_url,
+                "origin_options": accessible_courses(self._request.user).order_by("name"),
+                "initial_origin": origin,
+            }),
+            required=False,
+            origin_validator=self._origin_validator,
+            choices=[("", _("----NOT--SELECTED----"))] + choices
+        )
+
 
 
 class AcePlusWidgetConfigurationForm(forms.ModelForm):
@@ -149,7 +176,7 @@ class AcePlusEditForm(LineEditMixin, EmbeddedObjectEditForm):
             request,
             data=request.POST if self.is_bound else None,
             prefix="ace",
-            origin=self._context["origin"],
+            origin=self._context["course"],
         )
         if instance and instance.preview_widget:
             preview_widget = PreviewWidgetRegistry.get_widget(
