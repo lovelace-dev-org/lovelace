@@ -714,7 +714,7 @@ def file_exercise_evaluation(request, course, instance, parent, content, task_id
             data["errors"] = _(
                 "Checking program was unable to finish due to an error. Contact course staff."
             )
-            send_error_report(instance, content, revision, errors, answer_url)
+            send_error_report(instance, content, embed_link.revision, errors, answer_url)
 
 
     total_evaluation, quotient = content.get_user_evaluation(request.user, instance)
