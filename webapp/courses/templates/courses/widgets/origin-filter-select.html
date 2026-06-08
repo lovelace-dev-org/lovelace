@@ -1,7 +1,8 @@
 <div>
   <select name="{{ widget.name }}-origin-filter"
           onchange="editing.get_select_options(event, this)"
-          data-url="{{ widget.options_url }}">
+          data-url="{{ widget.options_url }}"
+          {% if widget.attrs.disabled %}disabled{% endif %}>
     {% for origin in widget.origins %}
       {% if origin == widget.initial_origin %}
         <option value="{{ origin.slug }}" selected="selected">{{ origin.name }}</option>

@@ -522,7 +522,7 @@ class ScriptFileInline(TranslationStaffForm):
             widget=OriginFilterSelect(attrs={
                 "options_url": self._options_url,
                 "origin_options": accessible_courses(self._context["request"].user).order_by("name"),
-                "initial_origin": self._context["course"],
+                "initial_origin": (instance and instance.origin) or self._context["course"],
             }),
             label=_("Choose existing object"),
             choices=[("", _("----NOT--SELECTED----"))] + accessible_files,
@@ -657,7 +657,7 @@ class ScriptEditForm(LineEditMixin, EmbeddedObjectEditForm):
                 self._context["request"], cm.File, origin=(
                     (self._instance and self._instance.origin) or self._context["course"]
                 )
-            )
+            ).order_by("name")
         ]
 
     def __init__(self, *args, **kwargs):

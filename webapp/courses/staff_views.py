@@ -789,7 +789,9 @@ def add_form(request, course, instance, content):
 
 def get_accessible_pages(request):
     origin = Course.objects.get(slug=request.GET.get("origin"))
-    content_access = CourseContentAdmin.content_access_list(request, ContentPage, origin=origin)
+    content_access = CourseContentAdmin.content_access_list(
+        request, ContentPage, origin=origin
+    ).order_by("name")
     data = {
         "options": [{"value": "", "text": _("----NOT--SELECTED----")}] + [
             {"value": page.slug, "text": page.name}
@@ -810,7 +812,9 @@ def get_accessible_media(request, media_type):
     else:
         return HttpResponseNotFound(_("Media type doesn't exist"))
 
-    media_access = CourseMediaAdmin.media_access_list(request, model, origin=origin)
+    media_access = CourseMediaAdmin.media_access_list(
+        request, model, origin=origin
+    ).order_by("name")
     data = {
         "options": [{"value": "", "text": _("----NOT--SELECTED----")}] + [
             {"value": media.slug, "text": media.name}
