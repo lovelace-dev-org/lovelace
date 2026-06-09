@@ -73,7 +73,7 @@ def get_embed_frame_extra(context, content, category):
 
 def get_answer_actions(context, content, answer):
     instance = context["instance"]
-    parent = context["exercise"]
+    parent = context["parent"]
     link = context["embed_link"]
 
     if not link.manually_evaluated:

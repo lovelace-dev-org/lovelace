@@ -2,11 +2,11 @@
 {% load form_tags %}
 
 <div>
-<form id="{{ html_id }}"
-    class="{{ html_class }}"
-    method="POST"
-    enctype="multipart/form-data"
-    action="{{ submit_url }}">
+  <form id="{{ html_id }}"
+        class="{{ html_class }}"
+        method="POST"
+        enctype="multipart/form-data"
+        action="{{ submit_url }}">
     
         <div class="form-disclaimer">{{ disclaimer }}</div>
 
@@ -105,7 +105,7 @@
         {% else %}
           <input type="submit" name="submit" value="{% trans 'Save' %}"></input>
         {% endif %}
-</form>
+  </form>
 </div>
 
 {% if submit_override %}
