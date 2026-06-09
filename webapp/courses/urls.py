@@ -233,6 +233,12 @@ urlpatterns = [
         staff_views.get_accessible_media,
         name="get_accessible_media",
     ),
+    path(
+        "staff/calendars/",
+        staff_views.get_accessible_calendars,
+        name="get_accessible_calendars",
+    ),
+
 
 
     # Staff URLs for exercise configuration

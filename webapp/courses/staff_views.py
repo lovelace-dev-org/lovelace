@@ -794,7 +794,7 @@ def get_accessible_pages(request):
     ).order_by("name")
     data = {
         "options": [{"value": "", "text": _("----NOT--SELECTED----")}] + [
-            {"value": page.slug, "text": page.name}
+            {"value": page.id, "text": page.name}
             for page in content_access if page.content_type != "LECTURE"
         ]
     }
@@ -817,8 +817,19 @@ def get_accessible_media(request, media_type):
     ).order_by("name")
     data = {
         "options": [{"value": "", "text": _("----NOT--SELECTED----")}] + [
-            {"value": media.slug, "text": media.name}
+            {"value": media.id, "text": media.name}
             for media in media_access
+        ]
+    }
+    return JsonResponse(data)
+
+def get_accessible_calendars(request):
+    origin = Course.objects.get(slug=request.GET.get("origin"))
+    calendars = cm.Calendar.objects.filter(origin=origin).order_by("name")
+    data = {
+        "options": [{"value": "", "text": _("----NOT--SELECTED----")}] + [
+            {"value": calendar.id, "text": calendar.name}
+            for calendar in calendars
         ]
     }
     return JsonResponse(data)

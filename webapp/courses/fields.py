@@ -1,21 +1,26 @@
 from django.forms.fields import ChoiceField
 from courses.widgets import OriginFilterSelect
+from utils.access import accessible_courses
 
 class OriginFilterField(ChoiceField):
     """
     Field class for choosing content filtered by origin. This field validates
-    its selected value by using an origin validator which needs to be provided by
-    the form since this field class does not know the model class it's validating origin
-    for nor does it know the user it's validating access for.
+    its selected value by checking the selected model instance's origin against
+    the provided list of courses.
     """
+
 
     widget = OriginFilterSelect
 
+    def to_python(self, value):
+        inst = self._model.objects.get(id=value)
+        return inst
+
     def valid_value(self, value):
-        return self._origin_validator(value)
+        return value.origin in self._access_list
 
     def __init__(self, *, choices=(), **kwargs):
-        self._origin_validator = kwargs.pop("origin_validator")
+        self._model = kwargs.pop("model")
+        self._access_list = kwargs.pop("access_list")
         super().__init__(choices=choices, **kwargs)
-
 

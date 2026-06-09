@@ -1,3 +1,4 @@
+import operator
 from django import forms
 from django.urls import reverse
 from django.utils.translation import gettext as _
@@ -23,28 +24,29 @@ class AceWidgetConfigurationForm(forms.ModelForm):
             "media_type": "file"
         })
 
-    def _origin_validator(self, value):
-        media_origin = cm.CourseMedia.objects.get(slug=value).origin
-        return media_origin in accessible_courses(self._request.user)
-
     def __init__(self, *args, **kwargs):
         self._request = kwargs.pop("request")
+        instance = kwargs["instance"]
         origin = kwargs.pop("origin")
         super().__init__(*args, **kwargs)
-        choices = sorted(((f.slug, f.name)
+        origin = (instance.base_file and instance.base_file.origin) or origin
+        choices = sorted(((f.id, f.name)
             for f in CourseMediaAdmin.media_access_list(
                 self._request, cm.File, origin=origin
             )
-        ))
+        ), key=operator.itemgetter(1))
+        access_list = accessible_courses(self._request.user).order_by("name")
         self.fields["base_file"] = OriginFilterField(
             widget=OriginFilterSelect(attrs={
                 "options_url": self._options_url,
-                "origin_options": accessible_courses(self._request.user).order_by("name"),
+                "origin_options": access_list,
                 "initial_origin": origin,
             }),
             required=False,
-            origin_validator=self._origin_validator,
-            choices=[("", _("----NOT--SELECTED----"))] + choices
+            model=cm.File,
+            access_list=access_list,
+            choices=[("", _("----NOT--SELECTED----"))] + choices,
+            initial=instance.base_file.id,
         )
 
 
@@ -145,6 +147,14 @@ class AcePlusEditForm(LineEditMixin, EmbeddedObjectEditForm):
             preview_settings.save()
         self._saved_inst = model_inst
         return model_inst
+
+    def is_valid(self):
+        ace_valid = self._ace_subform.is_valid()
+        preview_valid = self._preview_subform.is_valid()
+        main_valid = super().is_valid()
+        if ace_valid and preview_valid and main_valid:
+            return True
+        return False
 
     def generate_new_markup(self):
         self.cleaned_data["slug"] = self._saved_inst.slug
