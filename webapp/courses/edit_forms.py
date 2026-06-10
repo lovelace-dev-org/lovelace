@@ -623,7 +623,7 @@ class ScriptEditForm(LineEditMixin, EmbeddedObjectEditForm):
                 ))
 
     def save(self, commit=True):
-        if self.cleaned_data["existing"]:
+        if self.cleaned_data["existing"] and self._new:
             self.cleaned_data["script_slug"] = self.cleaned_data["existing"].slug
         else:
             instance = super().save(commit=False)
@@ -667,13 +667,13 @@ class ScriptEditForm(LineEditMixin, EmbeddedObjectEditForm):
         ]
 
     def __init__(self, *args, **kwargs):
-        new = kwargs["new"]
+        self._new = kwargs["new"]
         self._instance = kwargs.get("instance")
         super().__init__(*args, requires=False, **kwargs)
         self.fields["script_width"] = forms.IntegerField(label=_("iframe width"), required=True)
         self.fields["script_height"] = forms.IntegerField(label=_("iframe height"), required=True)
         self.fields["border"] = forms.CharField(label=_("Border CSS"), required=False)
-        if new:
+        if self._new:
             self.fields["name"].required = False
         included_files_str = self._settings.get("include", "")
         included_files = included_files_str.split(",") if included_files_str else []
