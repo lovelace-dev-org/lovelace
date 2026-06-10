@@ -518,13 +518,20 @@ class ScriptFileInline(TranslationStaffForm):
     def __init__(self, *args, **kwargs):
         self._context = kwargs.pop("context", None)
         self.prefix = kwargs["prefix"]
-        accessible_files = kwargs.pop("accessible_files")
         access_list = kwargs.pop("access_list")
         slug, itype, where = self._parse_include(kwargs.pop("include", ""))
         instance = cm.File.objects.filter(slug=slug).first()
         self._instance = instance
         kwargs["instance"] = instance
         super().__init__(*args, requires=False, **kwargs)
+
+        accessible_files = [(f.id, f.name)
+            for f in CourseMediaAdmin.media_access_list(
+                self._context["request"], cm.File, origin=(
+                    (instance and instance.origin) or self._context["course"]
+                )
+            ).order_by("name")
+        ]
 
         self.fields["existing"] = OriginFilterField(
             widget=OriginFilterSelect(attrs={
@@ -622,6 +629,7 @@ class ScriptEditForm(LineEditMixin, EmbeddedObjectEditForm):
             instance = super().save(commit=False)
             instance.origin = instance.origin or self._context["course"]
             instance.save()
+            self.cleaned_data["script_slug"] = instance.slug
         for inline in self._include_formset:
             inline.save(commit)
             self.cleaned_data[inline.prefix + "-" + inline.Meta.ref_field] = (
@@ -646,7 +654,6 @@ class ScriptEditForm(LineEditMixin, EmbeddedObjectEditForm):
         return ScriptFileInline(
             prefix=f"include_files-__prefix__",
             access_list=self._access_list,
-            accessible_files=self._accessible_files,
             context=self._context
         )
 
@@ -712,7 +719,6 @@ class ScriptEditForm(LineEditMixin, EmbeddedObjectEditForm):
                 include=include,
                 context=self._context,
                 access_list=self._access_list,
-                accessible_files=self._accessible_files,
                 prefix=f"include_files-{i}",
             ) for i, include in enumerate(included_files)
         ]
@@ -729,7 +735,6 @@ class ScriptEditForm(LineEditMixin, EmbeddedObjectEditForm):
                 getattr(self._context["request"], "FILES", None) if self.is_bound else None,
                 context=self._context,
                 access_list=self._access_list,
-                accessible_files=self._accessible_files,
                 prefix=f"include_files-{i}",)
             )
 

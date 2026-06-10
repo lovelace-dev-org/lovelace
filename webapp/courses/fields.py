@@ -13,11 +13,16 @@ class OriginFilterField(ChoiceField):
     widget = OriginFilterSelect
 
     def to_python(self, value):
-        inst = self._model.objects.get(id=value)
+        if value:
+            inst = self._model.objects.get(id=value)
+        else:
+            return None
         return inst
 
     def valid_value(self, value):
-        return value.origin in self._access_list
+        if value:
+            return value.origin in self._access_list
+        return value is None
 
     def __init__(self, *, choices=(), **kwargs):
         self._model = kwargs.pop("model")

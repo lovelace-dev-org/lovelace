@@ -423,7 +423,7 @@ class TranslationStaffForm(ModelForm):
     def field_changed(self, field):
         for lang_code, __ in settings.LANGUAGES:
             # Unset fileinfo is empty string in the model
-            current = getattr(self._instance, f"{field}_{lang_code}") or None
+            current = getattr(self._instance, f"{field}_{lang_code}", "") or None
             if current != self.cleaned_data[f"{field}_{lang_code}"]:
                 return True
         return False

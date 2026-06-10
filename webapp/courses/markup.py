@@ -586,6 +586,7 @@ class EmbeddedScriptMarkup(Markup):
         slugs = [matchobj.group("script_slug")] + [
             m.split("=")[1] for m in matchobj.group("include").split(",")
         ]
+        print(slugs)
         for slug in slugs:
             links["media"].append(slug)
 
@@ -605,7 +606,7 @@ class EmbeddedScriptMarkup(Markup):
                     itype=form_data[f"include_files-{i}-type"],
                     slug=(
                         form_data[f"include_files-{i}-slug"]
-                        or form_data[f"include_files-{i}-existing"]
+                        or form_data[f"include_files-{i}-existing"].slug
                     ),
                 )
                 for i in range(total_forms) if not form_data[f"include_files-{i}-delete"]

@@ -944,7 +944,7 @@ class CourseMedia(models.Model, ExportImportMixin):
         self.slug = get_prefixed_slug(self, self.origin, "name", translated=False)
         super().save(*args, **kwargs)
         if regen_cache:
-            for link in self.coursemedialink_set.get_queryset():
+            for link in self.coursemedialink_set.get_queryset().distinct("instance", "parent"):
                 if not link.instance.frozen:
                     link.parent.regenerate_cache(link.instance)
 
