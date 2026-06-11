@@ -1,4 +1,5 @@
 import datetime
+from decimal import Decimal
 import os.path
 import tempfile
 import zipfile
@@ -667,6 +668,7 @@ def batch_grade_task(request, course, instance, parent, content):
                 evaluation = exercise.check_answer(
                     content, link, user, answer_form, [], answer
                 )
+                evaluation["points"] = Decimal(evaluation.get("quotient", 0)) * link.default_points
                 if evaluation["evaluation"]:
                     exercise.update_evaluation(link, user, evaluation, answer)
                     log.append(answer)
