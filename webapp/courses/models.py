@@ -1654,9 +1654,9 @@ class ContentPage(models.Model, ExportImportMixin):
         else:
             handle = self.answer_widget
 
-        widget_slug = f"{course.prefix}-{self.slug.removeprefix(course.prefix + "-")}"
+        # widget_slug = f"{course.prefix}-{self.slug.removeprefix(course.prefix + "-")}"
         widget = widgets.AnswerWidgetRegistry.get_widget(
-            handle, course, widget_slug
+            handle, course, self.slug
         )
         return widget
 

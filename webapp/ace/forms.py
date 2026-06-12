@@ -1,6 +1,10 @@
 import operator
+import uuid
 from django import forms
+from django.conf import settings
+from django.core.files.base import ContentFile
 from django.urls import reverse
+from django.utils import translation
 from django.utils.translation import gettext as _
 from courses import markupparser
 from courses.widgets import AnswerWidgetRegistry, PreviewWidgetRegistry
@@ -24,12 +28,30 @@ class AceWidgetConfigurationForm(forms.ModelForm):
             "media_type": "file"
         })
 
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        if self.cleaned_data["new_base_file"]:
+            file_obj = ContentFile(b"")
+            postfix = uuid.uuid1()
+            default_fileinfo_field = f"fileinfo_{settings.MODELTRANSLATION_DEFAULT_LANGUAGE}"
+            new_file = cm.File(
+                name=f"{instance.name}-base-file-{postfix}",
+                typeinfo="Ace base file",
+                origin=self._origin,
+            )
+            getattr(new_file, default_fileinfo_field).save(f"base-file-{postfix}", file_obj)
+            instance.base_file = new_file
+            new_file.save()
+
+        instance.save()
+        return instance
+
     def __init__(self, *args, **kwargs):
         self._request = kwargs.pop("request")
         instance = kwargs["instance"]
-        origin = kwargs.pop("origin")
+        self._origin = kwargs.pop("origin")
         super().__init__(*args, **kwargs)
-        origin = (instance.base_file and instance.base_file.origin) or origin
+        origin = (instance.base_file and instance.base_file.origin) or self._origin
         choices = sorted(((f.id, f.name)
             for f in CourseMediaAdmin.media_access_list(
                 self._request, cm.File, origin=origin
@@ -46,7 +68,11 @@ class AceWidgetConfigurationForm(forms.ModelForm):
             model=cm.File,
             access_list=access_list,
             choices=[("", _("----NOT--SELECTED----"))] + choices,
-            initial=instance.base_file.id,
+            initial=instance.base_file and instance.base_file.id,
+        )
+        self.fields["new_base_file"] = forms.BooleanField(
+            label=_("Create a blank base file"),
+            required=False,
         )
 
 
@@ -209,6 +235,41 @@ class AcePlusEditForm(LineEditMixin, EmbeddedObjectEditForm):
             data=request.POST if self.is_bound else None,
             prefix="extra"
         )
+
+class BaseFileSaveConfirmForm(forms.Form):
+
+
+    editor_content = forms.CharField(widget=forms.HiddenInput, required=False)
+
+    def __init__(self, *args, **kwargs):
+        widget_slug = kwargs.pop("widget_slug")
+        lang_file_exists = kwargs.pop("lang_file_exists")
+        super().__init__(*args, **kwargs)
+        self.fields["widget_slug"] = forms.CharField(
+            widget=forms.HiddenInput,
+            initial=widget_slug,
+        )
+        self.fields["filename"] = forms.CharField(
+            label=_("Save as"),
+            required=False,
+        )
+        if not lang_file_exists:
+            self.fields["write_to"] = forms.ChoiceField(
+                widget=forms.Select,
+                choices=[
+                    ("default", _("Update default language file")),
+                    ("new", _("Create file for current language"))
+                ],
+                initial="default",
+            )
+        self.fields["confirm_save"] = forms.BooleanField(
+            required=True,
+            label=_("Confirm save")
+        )
+
+
+
+
 
 def register_edit_forms():
     markupparser.MarkupParser.register_form("ace-plus", "edit", AcePlusEditForm)
