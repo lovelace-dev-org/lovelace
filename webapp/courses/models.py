@@ -1084,11 +1084,6 @@ class TermToInstanceLink(models.Model, ExportImportMixin):
 
 
 class Term(models.Model, ExportImportMixin):
-    class Meta:
-        unique_together = (
-            "origin",
-            "name",
-        )
 
     objects = SlugManager()
 
@@ -1146,14 +1141,16 @@ class TermAlias(models.Model):
     class Meta:
         unique_together = (
             "term",
-            "name"
+            f"name_{settings.MODELTRANSLATION_DEFAULT_LANGUAGE}"
         )
 
     term = models.ForeignKey(Term, null=True, on_delete=models.CASCADE)
     name = models.CharField(verbose_name="Term", max_length=200)  # Translate
 
     def natural_key(self):
-        return self.term.natural_key() + [self.name]
+        return self.term.natural_key() + [getattr(
+            self, f"name_{settings.MODELTRANSLATION_DEFAULT_LANGUAGE}"
+        )]
 
 
 class TermTagManager(models.Manager):
@@ -1179,7 +1176,7 @@ class TermTab(models.Model):
     class Meta:
         unique_together = (
             "term",
-            "title"
+            f"title_{settings.MODELTRANSLATION_DEFAULT_LANGUAGE}"
         )
 
     term = models.ForeignKey(Term, on_delete=models.CASCADE)
@@ -1187,7 +1184,9 @@ class TermTab(models.Model):
     description = models.TextField()  # Translate
 
     def natural_key(self):
-        return self.term.natural_key() + [self.title]
+        return self.term.natural_key() + [getattr(
+            self, f"title_{settings.MODELTRANSLATION_DEFAULT_LANGUAGE}"
+        )]
 
     def __str__(self):
         return self.title
@@ -1197,7 +1196,7 @@ class TermLink(models.Model):
     class Meta:
         unique_together = (
             "term",
-            "url"
+            f"url_{settings.MODELTRANSLATION_DEFAULT_LANGUAGE}"
         )
 
     term = models.ForeignKey(Term, on_delete=models.CASCADE)
@@ -1205,7 +1204,10 @@ class TermLink(models.Model):
     link_text = models.CharField(verbose_name="Link text", max_length=80)  # Translate
 
     def natural_key(self):
-        return self.term.natural_key() + [self.url]
+        return self.term.natural_key() + [getattr(
+            self, f"url_{settings.MODELTRANSLATION_DEFAULT_LANGUAGE}"
+        )]
+
 
 
 
@@ -1435,7 +1437,6 @@ class ContentPage(models.Model, ExportImportMixin):
 
     class Meta:
         ordering = ("name",)
-        unique_together = ("name", "origin")
 
     objects = SlugManager()
 
