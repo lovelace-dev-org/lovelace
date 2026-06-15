@@ -4,9 +4,15 @@
   <label></label>
   <span class="multichoice-config-actions">
     <a class="staff-only collapsed right-float"
-      onclick="editing.get_form(event, this)"
-      data-url="{% url 'courses:add_exercise_choice' course instance content 0 %}"
-      ><img src="{% static 'courses/expand-16.png' %}"></a>
+       onclick="editing.get_form(event, this)"
+       data-url="{% url 'courses:add_exercise_choice' course instance content 0 %}"
+    ><img src="{% static 'courses/expand-16.png' %}"></a>
+    {% if not choices %}
+      <a class="staff-only collapsed right-float"
+         onclick="editing.get_form(event, this)"
+         data-url="{% url 'courses:generate_exercise_choices' course instance content %}"
+      ><img src="{% static 'courses/autochoices.png' %}"></a>
+    {% endif %}
   </span>
 </div>
 {% for choice in choices %}

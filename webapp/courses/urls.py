@@ -279,6 +279,13 @@ urlpatterns = [
         staff_views.move_exercise_choice,
         name="move_exercise_choice",
     ),
+    path(
+        "staff/<course:course>/<instance:instance>/<content:content>/choices/"
+        "generate/",
+        staff_views.generate_exercise_choices,
+        name="generate_exercise_choices",
+    ),
+
 
     # Staff URLs for messages
     path(

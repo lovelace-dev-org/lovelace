@@ -1,6 +1,7 @@
 from html import escape
 import json
 import os
+import string
 import tempfile
 import zipfile
 
@@ -1072,6 +1073,47 @@ def edit_exercise_choice(request, course, instance, content, choice_id):
         parent=content,
         extra_response=extra,
     )
+
+@ensure_staff
+def generate_exercise_choices(request, course, instance, content):
+    if content.get_choices(content):
+        return JsonResponse({
+            "errors": _("Autogenerate is only supported if there are no existing choices")
+        }, status=400)
+
+    if request.method == "POST":
+        form = config_forms.GenerateChoicesForm(request.POST)
+        if not form.is_valid():
+            errors = form.errors.get_json_data()
+            return JsonResponse({"errors": errors}, status=400)
+
+        choice_cls = content.get_answer_model()
+        pattern = string.ascii_uppercase[:form.cleaned_data["amount"]]
+        with reversion.create_revision():
+            for i, char in enumerate(pattern, start=1):
+                choice = choice_cls(
+                    exercise=content,
+                    ordinal=i,
+                )
+                setattr(choice, f"answer_{settings.MODELTRANSLATION_DEFAULT_LANGUAGE}", char)
+                choice.save()
+            content.save()
+            reversion.set_user(request.user)
+            reversion.set_comment(f"Autogenerate choices for {content.slug}")
+
+        regenerate_nearest_cache(content)
+        return JsonResponse({"status": "ok"})
+
+    form = config_forms.GenerateChoicesForm()
+    form_t = loader.get_template("courses/base-edit-form.html")
+    form_c = {
+        "html_id": f"{content.slug}-generate-choices-form",
+        "form_object": form,
+        "submit_url": request.path,
+        "html_class": "edit-form-widget",
+        "submit_override": "editing.submit_form"
+    }
+    return HttpResponse(form_t.render(form_c, request))
 
 @ensure_staff
 def answer_settings_panel(request, course, instance, content):
