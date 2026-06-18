@@ -95,7 +95,7 @@ class RoutineExercise(cm.ContentPage):
 
         return answers
 
-    def re_evaluate(self, user, instance):
+    def re_evaluate(self, link, user, instance):
         from utils.exercise import update_completion
 
         progress = RoutineExerciseProgress.objects.filter(
@@ -125,7 +125,7 @@ class RoutineExercise(cm.ContentPage):
         except AttributeError:
             return
 
-        update_completion(self, instance, user, evaluation, answer_date)
+        update_completion(self, link, instance, user, evaluation, answer_date)
 
     def save_answer(self, user, ip, answer, files, instance, revision):
         pass

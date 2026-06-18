@@ -256,7 +256,7 @@ def transfer_records(request, course, instance, user):
             for __, task_links in get_course_instance_tasks(target_instance):
                 for task_link in task_links:
                     content = task_link.embedded_page.get_type_object()
-                    content.re_evaluate(user, target_instance)
+                    content.re_evaluate(task_link, user, target_instance)
 
         return redirect(
             reverse(

@@ -1985,7 +1985,7 @@ class ContentPage(models.Model, ExportImportMixin):
         except UserTaskCompletion.DoesNotExist:
             return "unanswered", 0
 
-    def re_evaluate(self, user, instance):
+    def re_evaluate(self, link, user, instance):
         """
         Re-evaluates a task by picking the user's best result, and updating completion based on it.
         This method is primarily used when transfering records between instances that have different
@@ -2008,7 +2008,7 @@ class ContentPage(models.Model, ExportImportMixin):
             "points": best_answer.evaluation.points,
             "max": best_answer.evaluation.max_points,
         }
-        update_completion(self, instance, user, evaluation, best_answer.answer_date)
+        update_completion(self, link, instance, user, evaluation, best_answer.answer_date)
 
     def copy_answer(self, answer_object, copy_owner):
         answer_object.pk = None

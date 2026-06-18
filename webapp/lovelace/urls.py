@@ -88,7 +88,7 @@ finally:
         path("", include("courses.urls", namespace="courses")),
     )
 
-if settings.DEBUG:
+if settings.DEBUG_TOOLBAR:
     try:
         import debug_toolbar
     except ModuleNotFoundError:
