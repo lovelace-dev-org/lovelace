@@ -298,7 +298,7 @@ def update_completion(exercise, link, instance, user, evaluation, answer_date, o
                 quotient = evaluation.get("points", 0) / evaluation.get(
                     "max", link.default_points
                 )
-            except decimal.InvalidOperation:
+            except (ZeroDivisionError, decimal.InvalidOperation):
                 quotient = 0
     else:
         quotient = 0
