@@ -654,7 +654,7 @@ def file_exercise_evaluation(request, course, instance, parent, content, task_id
     embed_link = EmbeddedLink.objects.get(embedded_page=content, instance=instance, parent=parent)
 
     if embed_link.revision is not None:
-        content = get_single_archived(content, revision)
+        content = get_single_archived(content, embed_link.revision)
     answers = content.get_user_answers(content, request.user, instance)
     answer_count = answers.count()
     evaluated_answer = answers.get(task_id=task_id)

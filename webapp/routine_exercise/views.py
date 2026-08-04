@@ -266,6 +266,7 @@ def routine_progress(request, course, instance, parent, content, task_id):
                     "user": request.user,
                     "course": course,
                     "instance": instance,
+                    "parent": parent,
                     "exercise": content,
                 },
             )
