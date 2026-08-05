@@ -586,7 +586,6 @@ class EmbeddedScriptMarkup(Markup):
         slugs = [matchobj.group("script_slug")] + [
             m.split("=")[1] for m in matchobj.group("include").split(",")
         ]
-        print(slugs)
         for slug in slugs:
             links["media"].append(slug)
 

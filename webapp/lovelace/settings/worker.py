@@ -22,6 +22,8 @@ INSTALLED_APPS = [
     'teacher_tools',
 ]
 
+MODELTRANSLATION_DEFAULT_LANGUAGE = os.environ["LOVELACE_DEFAULT_LANG"]
+
 TIME_ZONE = "Europe/Helsinki"
 REDIS_RESULT_EXPIRE = 60
 

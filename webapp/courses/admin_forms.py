@@ -1,4 +1,7 @@
 from django import forms
+from django.utils.translation import gettext_lazy as _
+from utils.management import add_translated_charfields
+
 
 class SystemMessageForm(forms.Form):
 
