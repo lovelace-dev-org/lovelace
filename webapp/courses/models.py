@@ -1736,23 +1736,29 @@ class ContentPage(models.Model, ExportImportMixin):
 
         # set ordinal to zero at first, updated per language later
         for link_slug in added_page_links:
-            link_obj = EmbeddedLink(
-                parent=self,
-                embedded_page=ContentPage.objects.get(slug=link_slug),
-                revision=None,
-                ordinal_number=0,
-                instance=instance,
-            )
-            link_obj.save()
+            try:
+                link_obj = EmbeddedLink(
+                    parent=self,
+                    embedded_page=ContentPage.objects.get(slug=link_slug),
+                    revision=None,
+                    ordinal_number=0,
+                    instance=instance,
+                )
+                link_obj.save()
+            except ContentPage.DoesNotExist:
+                print("Broken reference:", link_slug)
 
         for link_slug in added_media_links:
-            link_obj = CourseMediaLink(
-                parent=self,
-                media=CourseMedia.objects.get(slug=link_slug),
-                instance=instance,
-                revision=None,
-            )
-            link_obj.save()
+            try:
+                link_obj = CourseMediaLink(
+                    parent=self,
+                    media=CourseMedia.objects.get(slug=link_slug),
+                    instance=instance,
+                    revision=None,
+                )
+                link_obj.save()
+            except CourseMedia.DoesNotExist:
+                print("Broken reference:", link_slug)
 
         for module in lovelace_plugins.get("context_links", []):
             module.models.update_context_links(self, instance, all_links, revision)

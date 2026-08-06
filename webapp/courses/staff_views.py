@@ -77,6 +77,7 @@ from utils.management import (
     clone_instance_files,
     clone_terms,
     clone_content_graphs,
+    clone_embed_links,
     clone_grades,
     process_delete_confirm_form,
     process_modelform,
@@ -195,6 +196,7 @@ def clone_instance(request, course, instance):
         new_instance.save()
         new_instance.refresh_from_db()
         old_instance = CourseInstance.objects.get(id=old_pk)
+        clone_embed_links(old_instance, new_instance)
         clone_content_graphs(old_instance, new_instance)
         clone_grades(old_instance, new_instance)
         clone_instance_files(new_instance)
