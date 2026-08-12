@@ -169,65 +169,67 @@
       {% endif %}
     </div>
   {% endif %}
-  <form id="{{ content.slug }}-form"
-        class="exercise-form"
-        method="POST"
-        enctype="multipart/form-data"
-        action="{{ meta.submit_url }}">
-    
-    {% csrf_token %}
-    {% if emb.question %}{{ emb.question|safe }}{% endif %}
-    
-    {{ emb.form|safe }}
-    
-    {% if content.answer_limit %}
-    {% endif %}
+  {% if emb.question is not None %}
+    <form id="{{ content.slug }}-form"
+          class="exercise-form"
+          method="POST"
+          enctype="multipart/form-data"
+          action="{{ meta.submit_url }}">
 
-    {% if course_staff or enrolled %}
+      {% csrf_token %}
+      {% if emb.question %}{{ emb.question|safe }}{% endif %}
+
+      {{ emb.form|safe }}
+
       {% if content.answer_limit %}
-        {% if answer_count >= content.answer_limit %}
-          <input type="submit" name="submit" value="{% trans 'Send answer' %}" disabled>
+      {% endif %}
+
+      {% if course_staff or enrolled %}
+        {% if content.answer_limit %}
+          {% if answer_count >= content.answer_limit %}
+            <input type="submit" name="submit" value="{% trans 'Send answer' %}" disabled>
+          {% else %}
+            <input type="submit" name="submit" value="{% trans 'Send answer' %}">
+          {% endif %}
+          <div class="answer-limit">
+            {% trans "Attempts:" %}
+            <span>{{ answer_count }}</span>
+            <span> / {{ content.answer_limit }}</span>
+          </div>
         {% else %}
           <input type="submit" name="submit" value="{% trans 'Send answer' %}">
         {% endif %}
-        <div class="answer-limit">
-          {% trans "Attempts:" %}
-          <span>{{ answer_count }}</span>
-          <span> / {{ content.answer_limit }}</span>
-        </div>
       {% else %}
-        <input type="submit" name="submit" value="{% trans 'Send answer' %}">
+        {% if not user.is_authenticated %}
+          <div class="auth-warning">
+            {% trans "Warning: You have not logged in. You cannot answer." %}
+          </div>
+        {% else %}
+          <div class="auth-warning">
+            {% trans "Warning: You have not enrolled to this course instance. You cannot answer." %}
+          </div>
+          <input type="submit" name="submit" value="{% trans 'Send answer' %}" disabled>
+        {% endif %}
       {% endif %}
-    {% else %}
-      {% if not user.is_authenticated %}
-        <div class="auth-warning">
-          {% trans "Warning: You have not logged in. You cannot answer." %}
+
+      {% if evaluation == "unanswered" %}
+        <div class="answered-status"></div>
+      {% elif evaluation == "incorrect" %}
+        <div class="answered-status">
+          <span class="incorrect">
+            {% trans "You have previously answered this task incorrectly." %}
+          </span>
         </div>
-      {% else %}
-        <div class="auth-warning">
-          {% trans "Warning: You have not enrolled to this course instance. You cannot answer." %}
+      {% elif evaluation == "correct" %}
+        <div class="answered-status">
+          <span class="correct">
+            {% trans "You have already answered this task correctly." %}
+          </span>
         </div>
-        <input type="submit" name="submit" value="{% trans 'Send answer' %}" disabled>
       {% endif %}
-    {% endif %}
 
-    {% if evaluation == "unanswered" %}
-      <div class="answered-status"></div>
-    {% elif evaluation == "incorrect" %}
-      <div class="answered-status">
-        <span class="incorrect">
-          {% trans "You have previously answered this task incorrectly." %}
-        </span>
-      </div>
-    {% elif evaluation == "correct" %}
-      <div class="answered-status">
-        <span class="correct">
-          {% trans "You have already answered this task correctly." %}
-        </span>
-      </div>
-    {% endif %}
-
-  </form>
+    </form>
+  {% endif %}
   <div class="results-box error" style="display: none"></div>
   <div class="results-box result" style="display: none"></div>
   <div class="results-box file-result" style="display: none"></div>
