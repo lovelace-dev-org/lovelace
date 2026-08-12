@@ -164,6 +164,8 @@ class RoutineExerciseBackendFile(models.Model, ExportImportMixin):
         verbose_name = "routine exercise backend file"
         verbose_name_plural = "routine exercise backend files"
 
+    objects = RoutineBackendManager()
+
     exercise = models.ForeignKey(RoutineExercise, on_delete=models.CASCADE)
     filename = models.CharField(max_length=255, blank=True)
     fileinfo = models.FileField(max_length=255, upload_to=get_testfile_path, storage=upload_storage)
@@ -209,6 +211,8 @@ class RoutineExerciseTemplate(models.Model):
         unique_together = ("exercise", "variant", "question_class")
         verbose_name = "routine exercise template"
         verbose_name_plural = "routine exercise templates"
+
+    objects = RoutineTemplateManager()
 
     exercise = models.ForeignKey(RoutineExercise, on_delete=models.CASCADE)
     content = models.TextField()
