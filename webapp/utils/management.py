@@ -544,6 +544,7 @@ def get_prefixed_slug(model_instance, origin, source_field, translated=True):
 
 def process_modelform(request, form_cls, model_instance, form_id, comment,
                       parent=None,
+                      form_extra=None,
                       post_save_cb=None,
                       extra_context=None,
                       extra_response=None):
@@ -567,9 +568,10 @@ def process_modelform(request, form_cls, model_instance, form_id, comment,
                                 saving is successful
 
     """
+    form_extra = form_extra or {}
 
     if request.method == "POST":
-        form = form_cls(request.POST, request.FILES, instance=model_instance)
+        form = form_cls(request.POST, request.FILES, instance=model_instance, **form_extra)
         if not form.is_valid():
             errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
@@ -598,7 +600,7 @@ def process_modelform(request, form_cls, model_instance, form_id, comment,
         extra_response and response.update(extra_response)
         return JsonResponse(response)
 
-    form = form_cls(instance=model_instance)
+    form = form_cls(instance=model_instance, **form_extra)
     form_t = loader.get_template("courses/base-edit-form.html")
     form_c = {
         "html_id": form_id,
