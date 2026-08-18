@@ -234,6 +234,11 @@ urlpatterns = [
         name="get_accessible_media",
     ),
     path(
+        "staff/terms/",
+        staff_views.get_accessible_terms,
+        name="get_accessible_terms",
+    ),
+    path(
         "staff/calendars/",
         staff_views.get_accessible_calendars,
         name="get_accessible_calendars",

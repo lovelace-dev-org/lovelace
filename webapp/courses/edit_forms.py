@@ -1054,8 +1054,9 @@ class BlockTypeSelectForm(forms.Form):
 
 class TermifyForm(forms.Form):
 
-
     def __init__(self, *args, **kwargs):
+        access_list = kwargs.pop("accessible_courses")
+        course = kwargs.pop("course")
         terms = kwargs.pop("course_terms")
         super().__init__(*args, **kwargs)
         self.fields["baseword"] = forms.CharField(label=_("Base word"), required=True)
@@ -1073,10 +1074,17 @@ class TermifyForm(forms.Form):
             ],
             required=False
         )
-        self.fields["term"] = forms.ChoiceField(
-            widget=forms.Select,
+        self.fields["term"] = OriginFilterField(
+            widget=OriginFilterSelect(attrs={
+                "options_url": reverse("courses:get_accessible_terms"),
+                "origin_options": access_list,
+                "initial_origin": course,
+            }),
             label=_("Term"),
-            choices=[(term.name, term.name) for term in terms]
+            choices=[(term.id, term.name) for term in terms],
+            model=cm.Term,
+            access_list=access_list,
+            initial=None,
         )
 
 

@@ -199,8 +199,8 @@ def clone_instance(request, course, instance):
         clone_embed_links(old_instance, new_instance)
         clone_content_graphs(old_instance, new_instance)
         clone_grades(old_instance, new_instance)
-        clone_instance_files(new_instance)
-        clone_terms(new_instance)
+        clone_instance_files(old_instance, new_instance)
+        clone_terms(old_instance, new_instance)
         for module in lovelace_plugins["clone"]:
             module.models.clone_models(old_instance, new_instance)
 
@@ -289,9 +289,13 @@ def regen_instance_cache(request, course, instance):
 
 @ensure_staff
 def termify(request, course, instance):
-    terms = Term.objects.filter(course=course)
+    form_kwargs = {
+        "accessible_courses": accessible_courses(request.user).order_by("name"),
+        "course": course,
+        "course_terms": Term.objects.filter(origin=course).order_by("name")
+    }
     if request.method == "POST":
-        form = TermifyForm(request.POST, course_terms=terms)
+        form = TermifyForm(request.POST, **form_kwargs)
         if not form.is_valid():
             errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
@@ -326,7 +330,7 @@ def termify(request, course, instance):
                     getattr(page, field),
                     form.cleaned_data["replace_in"],
                     replaces,
-                    (f"[!term={form.cleaned_data['term']}!]", "[!term!]")
+                    (f"[!term={form.cleaned_data['term'].slug}!]", "[!term!]")
                 )
                 if n:
                     setattr(page, field, "\n".join(termified_lines))
@@ -341,7 +345,7 @@ def termify(request, course, instance):
             squash_revisions(page, 1)
         return JsonResponse({"status": "ok"})
 
-    form = TermifyForm(course_terms=terms)
+    form = TermifyForm(**form_kwargs)
     form_t = loader.get_template("courses/base-edit-form.html")
     form_c = {
         "form_object": form,
@@ -822,6 +826,17 @@ def get_accessible_media(request, media_type):
         "options": [{"value": "", "text": _("----NOT--SELECTED----")}] + [
             {"value": media.id, "text": media.name}
             for media in media_access
+        ]
+    }
+    return JsonResponse(data)
+
+def get_accessible_terms(request):
+    origin = Course.objects.get(slug=request.GET.get("origin"))
+    terms = cm.Term.objects.filter(origin=origin).order_by("name")
+    data = {
+        "options": [{"value": "", "text": _("----NOT--SELECTED----")}] + [
+            {"value": term.id, "text": term.name}
+            for term in terms
         ]
     }
     return JsonResponse(data)

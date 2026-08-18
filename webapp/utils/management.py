@@ -244,27 +244,27 @@ class CourseMediaAdmin(admin.ModelAdmin):
         return False
 
 
-def clone_instance_files(instance):
+def clone_instance_files(old_instance, new_instance):
     """
     Creates cloned links to all instance files in a course instance.
     """
 
-    instance_files = cm.InstanceIncludeFile.objects.filter(course=instance.course)
-    for ifile in instance_files:
-        link = cm.InstanceIncludeFileToInstanceLink(
-            revision=None, include_file=ifile, instance=instance
-        )
+    if_links = cm.InstanceIncludeFileToInstanceLink.objects.filter(instance=old_instance)
+    for link in if_links:
+        link.pk = None
+        link.instance = new_instance
         link.save()
 
 
-def clone_terms(instance):
+def clone_terms(old_instance, new_instance):
     """
     Creates cloned links to all terms in a course instance.
     """
 
-    terms = cm.Term.objects.filter(origin=instance.course)
-    for term in terms:
-        link = cm.TermToInstanceLink(revision=None, term=term, instance=instance)
+    term_links = cm.TermToInstanceLink.objects.filter(instance=old_instance)
+    for link in term_links:
+        link.pk = None
+        link.instance = new_instance
         link.save()
 
 
