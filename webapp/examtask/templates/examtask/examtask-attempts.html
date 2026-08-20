@@ -1,18 +1,23 @@
 {% load i18n %}
 {% load static %}
 
-<div class="examtask-attempts-panel">
+<div class="panel-content" data-refresh-url="{{ panel_refresh_url }}">
   {% for attempt in attempts %}
     <div class="item-header">
       {{ attempt.title|truncatechars:80 }}
+      ({{ attempt.start|date:"Y-m-d H:i"}} - {{ attempt.end|date:"Y-m-d H:i"}})
       <span class="item-config-actions">
         <a class="right-float interactive"
             onclick="editing.get_form(event, this)"
-            data-url="{% url 'examtask:delete_task_attempt' course instance content attempt.id %}"
+            data-url="{% url 'examtask:delete_task_attempt' course instance parent content attempt %}"
             ><img src="{% static 'courses/delete-16.png' %}"></a>
         <a class="right-float interactive"
             onclick="editing.get_form(event, this)"
-            data-url="{% url 'examtask:edit_task_attempt' course instance content attempt.id %}"
+            data-url="{% url 'examtask:edit_task_attempt' course instance parent content attempt %}"
+            ><img src="{% static 'courses/edit.png' %}"></a>
+        <a class="right-float interactive"
+            onclick="editing.get_form(event, this)"
+            data-url="{% url 'examtask:rerandomize_tasks' course instance parent content attempt %}"
             ><img src="{% static 'courses/edit.png' %}"></a>
       </span>
     </div>
@@ -20,6 +25,6 @@
   <button type="button"
           class="staff-base-button add-button"
           onclick="editing.get_form(event, this)"
-          data-url="{% url 'examtask:add_task_attempt' course instance content %}">+
+          data-url="{% url 'examtask:add_task_attempt' course instance parent content %}">+
   </button>
 </div>

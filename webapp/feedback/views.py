@@ -17,7 +17,7 @@ from feedback.forms import ContentFeedbackConfigForm, FeedbackQuestionEditForm
 import courses.models
 from utils.access import ensure_staff
 from utils.content import first_title_from_content
-from utils.management import process_modelform, process_delete_confirm_form
+from utils.management import process_modelform, process_confirm_form
 
 
 def textfield_feedback_stats(question, instance, content):
@@ -263,7 +263,7 @@ def delete_feedback_question(request, course, instance, question):
     def delete_success(form):
         question.delete()
 
-    return process_delete_confirm_form(
+    return process_confirm_form(
         request,
         delete_success,
         extra_context={

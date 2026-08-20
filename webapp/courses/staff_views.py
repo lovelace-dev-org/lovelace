@@ -79,7 +79,7 @@ from utils.management import (
     clone_content_graphs,
     clone_embed_links,
     clone_grades,
-    process_delete_confirm_form,
+    process_confirm_form,
     process_modelform,
 )
 from lovelace import plugins as lovelace_plugins
@@ -1009,7 +1009,7 @@ def delete_exercise_choice(request, course, instance, content, choice_id):
         regenerate_nearest_cache(content)
         squash_revisions(content, 1)
 
-    return process_delete_confirm_form(
+    return process_confirm_form(
         request, delete_success,
         extra_context={
             "submit_override": "editing.submit_form",

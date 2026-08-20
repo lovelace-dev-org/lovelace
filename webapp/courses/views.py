@@ -421,23 +421,18 @@ def check_answer(request, course, instance, parent, content):
         if embed_link.manually_evaluated:
             evaluation["manual"] = True
             evaluation["evaluation"] = False
-            if exercise.content_type == "FILE_UPLOAD_EXERCISE":
-                task_id = evaluation.get("task_id")
-                if task_id is not None:
-                    return check_progress(request, course, instance, parent, content, task_id)
-                elif errors := evaluation.get("errors"):
-                    return JsonResponse({"result": errors})
+            if task_id := evaluation.get("task_id"):
+                return check_progress(request, course, instance, parent, content, task_id)
+            if errors := evaluation.get("errors"):
+                return JsonResponse({"result": errors})
         else:
             evaluation["manual"] = False
-            if exercise.content_type == "FILE_UPLOAD_EXERCISE":
-                task_id = evaluation.get("task_id")
-                if task_id is not None:
-                    return check_progress(request, course, instance, parent, content, task_id)
-                elif errors := evaluation.get("errors"):
-                    print(errors)
-                    return JsonResponse({"result": errors})
+            if task_id := evaluation.get("task_id"):
+                return check_progress(request, course, instance, parent, content, task_id)
+            if errors := evaluation.get("errors"):
+                return JsonResponse({"result": errors})
 
-    exercise.save_evaluation(embed_link, user, evaluation, answer_object)
+    exercise.save_evaluation(exercise, embed_link, user, evaluation, answer_object)
 
     msg_context = {
         "course_slug": course.slug,
@@ -665,6 +660,7 @@ def file_exercise_evaluation(request, course, instance, parent, content, task_id
     task.forget()
 
     evaluation_obj = content.save_evaluation(
+        content,
         embed_link,
         request.user,
         {

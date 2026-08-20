@@ -614,11 +614,11 @@ def process_modelform(request, form_cls, model_instance, form_id, comment,
 
 
 class ConfirmDeleteForm(forms.Form):
-    delete = forms.BooleanField(required=True, label=_("Confirm deletion"))
+    delete = forms.BooleanField(required=True, label=_("Confirm"))
 
 
 
-def process_delete_confirm_form(request, success_callback, extra_context=None, extra_response=None):
+def process_confirm_form(request, success_callback, extra_context=None, extra_response=None):
     """
     Convenience function for displaying and processing a ConfirmDeleteForm. Can be used to reduce
     boilerplate in delete views. The calling end simply needs to define a success callback that
@@ -645,7 +645,7 @@ def process_delete_confirm_form(request, success_callback, extra_context=None, e
     form_c = {
         "form_object": form,
         "submit_url": request.path,
-        "html_id": f"delete-confirm-form",
+        "html_id": f"confirm-form",
         "html_class": "edit-form-widget",
         "submit_label": _("Execute"),
     }

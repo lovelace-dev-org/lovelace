@@ -123,6 +123,13 @@ def get_embedded_parent(content, instance):
         return link.parent, True
 
 
+def get_siblings(content, parent, instance):
+    return cm.ContentPage.objects.filter(
+        content_type=content.content_type,
+        embedlink__parent=parent,
+        embedlink__instance=instance,
+    ).exclude(id=content.id)
+
 # Modified from reversion.models.Revision.revert
 # NOTE: Outdated, functions in utils.archive should be used.
 def get_archived_instances(main_obj, revision_id):

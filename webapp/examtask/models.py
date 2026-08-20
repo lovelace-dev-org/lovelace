@@ -1,3 +1,4 @@
+import random
 from django.db import models
 from django.template import loader
 from django.urls import reverse
@@ -8,9 +9,25 @@ import courses.models as cm
 
 from utils.management import ExportImportMixin
 
+class NoAttemptException(Exception):
+    pass
+
 # CONTENT MODELS
 # |
 # v
+
+def get_attempt(task, instance, user):
+    all_attempts = ExamTaskAttempt.objects.filter(task=task, instance=instance)
+    if not all_attempts:
+        raise NoAttemptException
+
+    if personal_attempt := all_attempts.filter(user=user).first():
+        return personal_attempt
+    elif generic_attempt := all_attempts.filter(user=None).first():
+        return generic_attempt
+
+    raise NoAttemptException
+
 
 class ExamTask(cm.ContentPage):
 
@@ -45,6 +62,23 @@ class ExamTask(cm.ContentPage):
         """
 
         return cm.ContentPage._get_question(self, context)
+
+    def dynamic_content(self, context, cached_content):
+        try:
+            attempt = get_attempt(self, context["instance"], context["user"])
+        except NoAttemptException:
+            return cached_content
+
+        # make a copy of context
+        context = context.flatten()
+
+        if exercise := attempt.get_user_task(context["user"]):
+            cached_content["content"] = exercise.get_rendered_content(exercise, context)
+            answer_widget = exercise.get_answer_widget(context["instance"].course)
+            context["choices"] = exercise.get_choices(exercise, revision=context["revision"])
+            cached_content["form"] = answer_widget.render(context)
+
+        return cached_content
 
     def get_admin_change_url(self):
         """
@@ -95,16 +129,52 @@ class ExamTask(cm.ContentPage):
     def save_answer(self, user, ip, answer, files, instance, revision):
         # proxy the answer to the randomized task
 
-        pass
+        try:
+            attempt = get_attempt(self, instance, user)
+        except NoAttemptException:
+            raise cm.InvalidExerciseAnswerException("No open attempt")
+
+        if exercise := attempt.get_user_task(user):
+            task_answer = exercise.save_answer(exercise, user, ip, answer, files, instance, revision)
+        else:
+            raise cm.InvalidExerciseAnswerException("No assigned task")
+
+        answer_object = UserExamTaskAnswer(
+            user=user,
+            exercise=self,
+            instance=instance,
+            revision=revision,
+            answerer_ip=ip,
+            task_answer=task_answer
+        )
+        answer_object.save()
+        return answer_object
 
     def check_answer(self, link, user, answer, files, answer_object):
         # proxy checking to the randomized task
 
-        pass
+        exercise = answer_object.task_answer.exercise
+        exercise_evaluation = exercise.check_answer(
+            exercise, link, user, answer, files, answer_object.task_answer
+        )
+        if task_id := exercise_evaluation.get("task_id"):
+            answer_object.task_id = task_id
+            answer_object.save()
+
+        return exercise_evaluation
+
+    def save_evaluation(self, link, user, evaluation, answer_object):
+        attempt = get_attempt(self, answer_object.instance, user)
+        exercise = attempt.get_user_task(user)
+        exercise.save_evaluation(exercise, link, user, evaluation, answer_object.task_answer)
+        return cm.ContentPage.save_evaluation(self, link, user, evaluation, answer_object)
 
     def get_user_answers(self, user, instance, ignore_drafts=True):
-        # proxy to randomized task
-        return cm.UserAnswer.objects.none()
+        return UserExamTaskAnswer.objects.filter(
+            exercise=self,
+            instance=instance,
+            user=user,
+        )
 
     def export(self, instance, export_target):
         super(cm.ContentPage, self).export(instance, export_target)
@@ -129,7 +199,7 @@ class ExamTaskSettings(models.Model, ExportImportMixin):
         unique_together = ("instance", "task")
 
     instance = models.ForeignKey(cm.CourseInstance, on_delete=models.CASCADE)
-    task = models.ForeignKey(ExamTask, on_delete=models.RESTRICT, related_name="task")
+    task = models.ForeignKey(ExamTask, on_delete=models.RESTRICT)
     task_pool = models.ManyToManyField(
         cm.ContentPage,
         through="ExamTaskToExerciseLink",
@@ -171,6 +241,16 @@ class ExamTaskToExerciseLink(models.Model, ExportImportMixin):
         return [settings.exam.slug, settings.instance.slug, exercise.slug]
 
 
+class UserExamTaskAnswer(cm.UserAnswer):
+
+    exercise = models.ForeignKey(
+        ExamTask, blank=True, null=True, on_delete=models.SET_NULL
+    )
+    task_answer = models.OneToOneField(
+        cm.UserAnswer, on_delete=models.CASCADE, related_name="exam_proxy_answer"
+    )
+
+
 
 # ^
 # |
@@ -185,15 +265,58 @@ class ExamTaskAttempt(models.Model):
     instance = models.ForeignKey(cm.CourseInstance, on_delete=models.CASCADE)
     title = models.CharField(max_length=256, blank=True)
     task = models.ForeignKey(ExamTask, on_delete=models.RESTRICT)
+    parent = models.ForeignKey(
+        cm.ContentPage, null=True, on_delete=models.SET_NULL,
+        related_name="child_examtask_attempt_set"
+    )
     start = models.DateTimeField()
     end = models.DateTimeField()
-    user = models.ForeignKey(cm.User, null=True, on_delete=models.CASCADE)
+    user = models.ForeignKey(cm.User, null=True, blank=True, on_delete=models.CASCADE)
+
+    def assign_tasks(self):
+        try:
+            task_pool = list(ExamTaskSettings.objects.get(
+                instance=self.instance,
+                task=self.task,
+            ).task_pool.get_queryset())
+        except ExamTaskSettings.DoesNotExist:
+            return
+
+        if self.user is not None:
+            users = [self.user]
+        else:
+            users = self.instance.enrolled_users.get_queryset()
+
+        for user in users:
+            exercise = random.choice(task_pool)
+            choice, _ = ExamTaskChoice.objects.get_or_create(
+                attempt=self,
+                user=user,
+                exercise=exercise,
+            )
+            choice.save()
+
+    def get_user_task(self, user):
+        try:
+            choice = ExamTaskChoice.objects.get(user=user, attempt=self)
+        except ExamTaskChoice.DoesNotExist:
+            return None
+
+        return choice.exercise
+
+    def reset_tasks(self):
+        ExamTaskChoice.objects.filter(
+            attempt=self
+        ).delete()
 
 
 
 class ExamTaskChoice(models.Model):
 
-    task = models.ForeignKey(ExamTaskToExerciseLink, on_delete=models.CASCADE)
+    class Meta:
+        unique_together = ("user", "attempt")
+
+    exercise = models.ForeignKey(cm.ContentPage, on_delete=models.CASCADE)
     user = models.ForeignKey(cm.User, on_delete=models.CASCADE)
     attempt = models.ForeignKey(ExamTaskAttempt, on_delete=models.CASCADE)
 

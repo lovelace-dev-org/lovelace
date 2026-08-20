@@ -33,6 +33,7 @@ class ExamTaskSettingsForm(forms.ModelForm):
                 "options_url": self._options_url,
                 "origin_options": accessible_courses,
                 "initial_origin": course,
+                "size": 10,
             }),
             label=_("Select tasks"),
             queryset=accessible_pages,
@@ -41,8 +42,35 @@ class ExamTaskSettingsForm(forms.ModelForm):
             access_list=accessible_courses,
         )
 
+
 class ExamTaskAttemptForm(forms.ModelForm):
 
     class Meta:
         model = ExamTaskAttempt
         fields = ["title", "start", "end", "user"]
+
+    def __init__(self, *args, **kwargs):
+        enrolled_students = kwargs.pop("enrolled_students")
+        super().__init__(*args, **kwargs)
+        if not kwargs.get("instance"):
+            self.fields["start"] = forms.DateTimeField(
+                label=_("Starting date and time"),
+                required=True,
+                input_formats=["%Y-%m-%dT%H:%M"],
+                widget=forms.widgets.DateTimeInput(attrs={"type": "datetime-local"}),
+            )
+            self.fields["end"] = forms.DateTimeField(
+                label=_("Ending date and time"),
+                required=True,
+                input_formats=["%Y-%m-%dT%H:%M"],
+                widget=forms.widgets.DateTimeInput(attrs={"type": "datetime-local"}),
+            )
+        self.fields["user"] = forms.ModelChoiceField(
+            queryset=enrolled_students,
+            required=False,
+        )
+
+        self.fields["propagate"] = forms.BooleanField(
+            label=_("Apply to all exam tasks on this page"),
+            required=False
+        )

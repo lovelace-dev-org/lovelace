@@ -1359,9 +1359,9 @@ class EmbeddedLink(models.Model, ExportImportMixin):
 
     objects = EmbeddedLinkManager()
 
-    parent = models.ForeignKey("ContentPage", related_name="emb_parent", on_delete=models.CASCADE)
+    parent = models.ForeignKey("ContentPage", related_name="parentlink", on_delete=models.CASCADE)
     embedded_page = models.ForeignKey(
-        "ContentPage", related_name="emb_embedded", on_delete=models.RESTRICT
+        "ContentPage", related_name="embedlink", on_delete=models.RESTRICT
     )
     revision = models.PositiveIntegerField(blank=True, null=True)
     ordinal_number = models.PositiveSmallIntegerField()
@@ -1823,6 +1823,9 @@ class ContentPage(models.Model, ExportImportMixin):
     def get_checking_settings_url(self, context):
         return None
 
+    def dynamic_content(self, context, cached_content):
+        return cached_content
+
     def get_content_additions(self, context, content_level):
         """
         Returns content additions that plugins can provide. Content types can also override this
@@ -2112,12 +2115,14 @@ class ContentPage(models.Model, ExportImportMixin):
         """
 
         normal = [
+            "dynamic_content",
             "get_checking_settings_url",
             "get_choices",
             "get_rendered_content",
             "get_question",
             "save_answer",
             "check_answer",
+            "save_evaluation",
             "get_user_answers",
             "get_content_additions",
             "get_student_extra",
