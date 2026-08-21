@@ -116,6 +116,17 @@ class ExamTask(cm.ContentPage):
                 "content": self,
             })
         ))
+        options.append((
+            _("Update evaluations"),
+            "examtask-update-evaluations",
+            "side-panel",
+            reverse("examtask:update_evaluations", kwargs={
+                "course": context["course"],
+                "instance": context["instance"],
+                "parent": context["parent"],
+                "content": self,
+            })
+        ))
         return options
 
     def get_choices(self, revision=None):
@@ -154,6 +165,16 @@ class ExamTask(cm.ContentPage):
         # proxy checking to the randomized task
 
         exercise = answer_object.task_answer.exercise
+
+        # TODO: What to do with tasks that have more than one link?
+        exercise_link = cm.EmbeddedLink.objects.filter(
+            embedded_page=exercise,
+            instance=link.instance,
+        ).first()
+        if exercise_link:
+            link.manually_evaluated = exercise_link.manually_evaluated
+            link.correct_threshold = exercise_link.correct_threshold
+
         exercise_evaluation = exercise.check_answer(
             exercise, link, user, answer, files, answer_object.task_answer
         )
@@ -211,10 +232,6 @@ class ExamTaskSettings(models.Model, ExportImportMixin):
         super().export(instance, export_target)
         for link in self.task_pool:
             link.export(instance, export_target)
-
-
-
-
 
 
 class ExamTaskToExerciseManager(models.Manager):

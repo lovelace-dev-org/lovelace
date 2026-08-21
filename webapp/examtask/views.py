@@ -18,7 +18,7 @@ from utils.management import (
     process_confirm_form,
     process_modelform,
 )
-from .models import ExamTaskSettings, ExamTaskAttempt
+from .models import ExamTaskSettings, ExamTaskAttempt, UserExamTaskAnswer, get_attempt
 from .forms import ExamTaskSettingsForm, ExamTaskAttemptForm
 from .utils import propagate_attempt
 
@@ -139,4 +139,50 @@ def rerandomize_tasks(request, course, instance, parent, content, attempt):
             "disclaimer": _("Rerandomize")
         },
         extra_response={"refresh": True},
+    )
+
+@ensure_staff
+def update_evaluations(request, course, instance, parent, content):
+
+    def confirmed(form):
+        link = cm.EmbeddedLink.objects.get(
+            instance=instance,
+            parent=parent,
+            embedded_page=content
+        )
+        for user in instance.enrolled_users.get_queryset():
+            attempt = get_attempt(content, instance, user)
+            exercise = attempt.get_user_task(user)
+            best_answer = (
+                exercise.get_user_answers(exercise, user, instance)
+                .order_by("-evaluation__points", "answer_date")
+                .first()
+            )
+            exam_answer = UserExamTaskAnswer.objects.get(task_answer=best_answer)
+            evaluation = best_answer.evaluation
+            quotient = evaluation.points / evaluation.max_points
+            content.update_evaluation(
+                link,
+                user,
+                {
+                    "evaluation": evaluation.correct,
+                    "points": quotient * link.default_points,
+                    "max": link.default_points,
+                    "feedback": evaluation.feedback,
+                    "evaluator": evaluation.evaluator,
+                    "test_results": evaluation.test_results,
+                    "suspect": evaluation.suspect,
+                    "comment": evaluation.comment,
+                },
+                exam_answer,
+                complete=evaluation.completed,
+                overwrite=True,
+            )
+
+    return process_confirm_form(
+        request, confirmed,
+        extra_context={
+            "submit_override": "editing.submit_form",
+            "disclaimer": _("Update evaluations from assigned tasks")
+        },
     )

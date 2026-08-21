@@ -41,4 +41,9 @@ urlpatterns = [
         views.delete_task_attempt,
         name="delete_task_attempt",
     ),
+    path(
+        "<course:course>/<instance:instance>/<content:parent>/<content:content>/update_evaluations/",
+        views.update_evaluations,
+        name="update_evaluations",
+    ),
 ]
