@@ -71,7 +71,7 @@ def clone_models(old_instance, new_instance):
     )
     for link in active_links:
         link.pk = None
-        link.instance = instance
+        link.instance = new_instance
         try:
             link.save()
         except IntegrityError:

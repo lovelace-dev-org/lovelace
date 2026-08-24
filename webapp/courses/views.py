@@ -408,11 +408,10 @@ def check_answer(request, course, instance, parent, content):
     if embed_link.revision is None:
         latest = Version.objects.get_for_object(content).latest("revision__date_created")
         answered_revision = latest.revision_id
-        revision = None
         exercise = content
     else:
-        answered_revision = revision
-        exercise = get_single_archived(content, revision)
+        answered_revision = embed_link.revision
+        exercise = get_single_archived(content, answered_revision)
 
     answer_count = exercise.get_user_answers(exercise, user, instance).count()
     if embed_link.answer_limit is not None and answer_count >= embed_link.answer_limit:
@@ -670,7 +669,7 @@ def file_exercise_evaluation(request, course, instance, parent, content, task_id
     embed_link = EmbeddedLink.objects.get(embedded_page=content, instance=instance, parent=parent)
 
     if embed_link.revision is not None:
-        content = get_single_archived(content, revision)
+        content = get_single_archived(content, embed_link.revision)
     answers = content.get_user_answers(content, request.user, instance)
     answer_count = answers.count()
     evaluated_answer = answers.get(task_id=task_id)
@@ -730,7 +729,7 @@ def file_exercise_evaluation(request, course, instance, parent, content, task_id
             data["errors"] = _(
                 "Checking program was unable to finish due to an error. Contact course staff."
             )
-            send_error_report(instance, content, revision, errors, answer_url)
+            send_error_report(instance, content, embed_link.revision, errors, answer_url)
 
 
     total_evaluation, quotient = content.get_user_evaluation(request.user, instance)

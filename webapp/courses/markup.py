@@ -605,7 +605,7 @@ class EmbeddedScriptMarkup(Markup):
                     itype=form_data[f"include_files-{i}-type"],
                     slug=(
                         form_data[f"include_files-{i}-slug"]
-                        or form_data[f"include_files-{i}-existing"]
+                        or form_data[f"include_files-{i}-existing"].slug
                     ),
                 )
                 for i in range(total_forms) if not form_data[f"include_files-{i}-delete"]
@@ -748,7 +748,7 @@ class ImageMarkup(Markup):
     shortname = "image"
     description = "An image, img tag in HTML."
     regexp = re.compile(
-        r"^\<\!image\=(?P<image_name>[^>|]+)"
+        r"^\<\!image\=(?P<image_slug>[^>|]+)"
         r"(\|alt\=(?P<alt_text>[^|]+))?"
         r"(\|caption\=(?P<caption_text>(([\[]{2}[^|]+(\|.+)?[\]]{2})|([^|]))+))?"
         r"(\|align\=(?P<align>[^|]+))?\>\s*$"
@@ -765,15 +765,15 @@ class ImageMarkup(Markup):
         instance = state["context"].get("instance")
         try:
             image_object = get_embedded_media_image(
-                settings["image_name"], instance, state["context"].get("content")
+                settings["image_slug"], instance, state["context"].get("content")
             )
             w = image_object.fileinfo.width
             h = image_object.fileinfo.height
         except cm.Image.DoesNotExist as e:
-            yield f"<div>File {settings['image_name']} not found.</div>"
+            yield f"<div>File {settings['image_slug']} not found.</div>"
             return
         except FileNotFoundError:
-            yield f"<div>File {settings['image_name']} not found on disk.</div>"
+            yield f"<div>File {settings['image_slug']} not found on disk.</div>"
             return
 
         image_url = image_object.fileinfo.url
@@ -814,7 +814,7 @@ class ImageMarkup(Markup):
 
     @classmethod
     def settings(cls, matchobj, state):
-        settings = {"image_name": escape(matchobj.group("image_name"))}
+        settings = {"image_slug": escape(matchobj.group("image_slug"))}
         try:
             settings["alt_text"] = escape(matchobj.group("alt_text"), quote=False)
         except AttributeError:
@@ -833,12 +833,12 @@ class ImageMarkup(Markup):
 
     @classmethod
     def build_links(cls, block, matchobj, instance, links):
-        slug = matchobj.group("image_name")
+        slug = matchobj.group("image_slug")
         links["media"].append(slug)
 
     @classmethod
     def markup_from_dict(cls, form_data):
-        markup = f"<!image={form_data['image_name']}"
+        markup = f"<!image={form_data['image_slug']}"
         if form_data.get("alt_text"):
             markup += f"|alt={form_data['alt_text']}"
         if form_data.get("caption_text"):

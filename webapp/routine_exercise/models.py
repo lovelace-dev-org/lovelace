@@ -95,7 +95,7 @@ class RoutineExercise(cm.ContentPage):
 
         return answers
 
-    def re_evaluate(self, user, instance):
+    def re_evaluate(self, link, user, instance):
         from utils.exercise import update_completion
 
         progress = RoutineExerciseProgress.objects.filter(
@@ -125,7 +125,7 @@ class RoutineExercise(cm.ContentPage):
         except AttributeError:
             return
 
-        update_completion(self, instance, user, evaluation, answer_date)
+        update_completion(self, link, instance, user, evaluation, answer_date)
 
     def save_answer(self, user, ip, answer, files, instance, revision):
         pass
@@ -163,6 +163,8 @@ class RoutineExerciseBackendFile(models.Model, ExportImportMixin):
         unique_together = ("exercise", "filename")
         verbose_name = "routine exercise backend file"
         verbose_name_plural = "routine exercise backend files"
+
+    objects = RoutineBackendManager()
 
     exercise = models.ForeignKey(RoutineExercise, on_delete=models.CASCADE)
     filename = models.CharField(max_length=255, blank=True)
@@ -209,6 +211,8 @@ class RoutineExerciseTemplate(models.Model):
         unique_together = ("exercise", "variant", "question_class")
         verbose_name = "routine exercise template"
         verbose_name_plural = "routine exercise templates"
+
+    objects = RoutineTemplateManager()
 
     exercise = models.ForeignKey(RoutineExercise, on_delete=models.CASCADE)
     content = models.TextField()

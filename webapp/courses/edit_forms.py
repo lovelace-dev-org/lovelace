@@ -12,6 +12,7 @@ from django.urls import reverse
 from django.utils.text import slugify
 from django.utils.translation import gettext as _
 from modeltranslation.forms import TranslationModelForm
+from utils.access import accessible_courses
 from utils.archive import find_latest_version
 from utils.formatters import display_name
 from utils.management import (
@@ -24,6 +25,8 @@ from courses import blockparser
 from courses import markupparser
 import courses.models as cm
 import courses.markup
+from courses.fields import OriginFilterField
+from courses.widgets import OriginFilterSelect
 
 class UnsupportedOperation(Exception):
 
@@ -248,6 +251,11 @@ class EmbeddedObjectIncludeForm(forms.Form):
     def reference_changed(self):
         return True
 
+    def clean_include(self):
+        value = self.cleaned_data["include"]
+        self.cleaned_data[self.Meta.ref_field] = value.slug
+        return value
+
     def _get_instance(self):
         raise NotImplementedError
 
@@ -257,11 +265,18 @@ class EmbeddedObjectIncludeForm(forms.Form):
         lines = kwargs.pop("lines")
         new = kwargs.pop("new")
         super().__init__(*args, **kwargs)
-        self.fields[self.Meta.ref_field] = forms.ChoiceField(
-            widget=forms.Select,
+        access_list = accessible_courses(self._context["request"].user).order_by("name")
+        self.fields["include"] = OriginFilterField(
+            widget=OriginFilterSelect(attrs={
+                "options_url": self._options_url,
+                "origin_options": access_list,
+                "initial_origin": self._context["course"],
+            }),
             label=_("Choose existing object"),
             choices=self.get_choices(),
             required=True,
+            model=self.Meta.model,
+            access_list=access_list,
         )
 
     def get_choices(self):
@@ -448,6 +463,16 @@ class ScriptFileInline(TranslationStaffForm):
         required=False,
     )
 
+    @property
+    def _options_url(self):
+        return reverse("courses:get_accessible_media", kwargs={
+            "media_type": "file"
+        })
+
+    def _origin_validator(self, value):
+        media_origin = cm.CourseMedia.objects.get(slug=value).origin
+        return media_origin in accessible_courses(self._context["request"].user)
+
     def clean(self):
         default_lang = settings.MODELTRANSLATION_DEFAULT_LANGUAGE
         self._save_ok = False
@@ -493,19 +518,35 @@ class ScriptFileInline(TranslationStaffForm):
     def __init__(self, *args, **kwargs):
         self._context = kwargs.pop("context", None)
         self.prefix = kwargs["prefix"]
-        accessible_files = kwargs.pop("accessible_files")
+        access_list = kwargs.pop("access_list")
         slug, itype, where = self._parse_include(kwargs.pop("include", ""))
         instance = cm.File.objects.filter(slug=slug).first()
         self._instance = instance
         kwargs["instance"] = instance
         super().__init__(*args, requires=False, **kwargs)
-        self.fields["existing"] = forms.ChoiceField(
-            widget=forms.Select,
-            label=_("Choose existing include"),
+
+        accessible_files = [(f.id, f.name)
+            for f in CourseMediaAdmin.media_access_list(
+                self._context["request"], cm.File, origin=(
+                    (instance and instance.origin) or self._context["course"]
+                )
+            ).order_by("name")
+        ]
+
+        self.fields["existing"] = OriginFilterField(
+            widget=OriginFilterSelect(attrs={
+                "options_url": self._options_url,
+                "origin_options": access_list,
+                "initial_origin": (instance and instance.origin) or self._context["course"],
+            }),
+            label=_("Choose existing object"),
             choices=[("", _("----NOT--SELECTED----"))] + accessible_files,
             required=False,
-            initial=instance and instance.slug,
+            model=cm.File,
+            access_list=access_list,
+            initial=instance and instance.id,
         )
+
         self.fields["type"] = forms.ChoiceField(
             widget=forms.Select,
             label=_("Include type"),
@@ -546,6 +587,12 @@ class ScriptEditForm(LineEditMixin, EmbeddedObjectEditForm):
         ref_field = "script_slug"
         markup = courses.markup.EmbeddedScriptMarkup
 
+    @property
+    def _options_url(self):
+        return reverse("courses:get_accessible_media", kwargs={
+            "media_type": "file"
+        })
+
     def get_initial_for_field(self, field, field_name):
         try:
             return self._settings[field_name]
@@ -576,12 +623,13 @@ class ScriptEditForm(LineEditMixin, EmbeddedObjectEditForm):
                 ))
 
     def save(self, commit=True):
-        if self.cleaned_data["existing"]:
-            self.cleaned_data["script_slug"] = self.cleaned_data["existing"]
+        if self.cleaned_data["existing"] and self._new:
+            self.cleaned_data["script_slug"] = self.cleaned_data["existing"].slug
         else:
             instance = super().save(commit=False)
             instance.origin = instance.origin or self._context["course"]
             instance.save()
+            self.cleaned_data["script_slug"] = instance.slug
         for inline in self._include_formset:
             inline.save(commit)
             self.cleaned_data[inline.prefix + "-" + inline.Meta.ref_field] = (
@@ -605,24 +653,27 @@ class ScriptEditForm(LineEditMixin, EmbeddedObjectEditForm):
     def empty_form(self):
         return ScriptFileInline(
             prefix=f"include_files-__prefix__",
-            accessible_files=self._accessible_files,
+            access_list=self._access_list,
             context=self._context
         )
 
     def get_choices(self):
-        return  [(f.slug, f.name)
+        return  [(f.id, f.name)
             for f in CourseMediaAdmin.media_access_list(
-                self._context["request"], cm.File
-            )
+                self._context["request"], cm.File, origin=(
+                    (self._instance and self._instance.origin) or self._context["course"]
+                )
+            ).order_by("name")
         ]
 
     def __init__(self, *args, **kwargs):
-        new = kwargs["new"]
+        self._new = kwargs["new"]
+        self._instance = kwargs.get("instance")
         super().__init__(*args, requires=False, **kwargs)
         self.fields["script_width"] = forms.IntegerField(label=_("iframe width"), required=True)
         self.fields["script_height"] = forms.IntegerField(label=_("iframe height"), required=True)
         self.fields["border"] = forms.CharField(label=_("Border CSS"), required=False)
-        if new:
+        if self._new:
             self.fields["name"].required = False
         included_files_str = self._settings.get("include", "")
         included_files = included_files_str.split(",") if included_files_str else []
@@ -643,20 +694,31 @@ class ScriptEditForm(LineEditMixin, EmbeddedObjectEditForm):
             initial=1000
         )
         self._accessible_files = self.get_choices()
-        self.fields["existing"] = forms.ChoiceField(
-            widget=forms.Select,
-            label=_("Choose existing script"),
-            choices=[("", _("----NOT--SELECTED----"))] + self._accessible_files,
-            initial=self._settings.get("script_slug", ""),
+        self._access_list = accessible_courses(self._context["request"].user).order_by("name")
+
+        self.fields["existing"] = OriginFilterField(
+            widget=OriginFilterSelect(attrs={
+                "options_url": self._options_url,
+                "origin_options": self._access_list,
+                "initial_origin": (
+                    (self._instance and self._instance.origin) or self._context["course"]
+                ),
+            }),
+            label=_("Choose existing object"),
+            choices=[("", _("----NOT--SELECTED----"))] + self.get_choices(),
+            initial=self._instance and self._instance.id,
             required=False,
+            model=cm.File,
+            access_list=self._access_list,
         )
+
         self._include_formset = [
             ScriptFileInline(
                 getattr(self._context["request"], "POST", None) if self.is_bound else None,
                 getattr(self._context["request"], "FILES", None) if self.is_bound else None,
                 include=include,
                 context=self._context,
-                accessible_files=self._accessible_files,
+                access_list=self._access_list,
                 prefix=f"include_files-{i}",
             ) for i, include in enumerate(included_files)
         ]
@@ -672,7 +734,7 @@ class ScriptEditForm(LineEditMixin, EmbeddedObjectEditForm):
                 getattr(self._context["request"], "POST", None) if self.is_bound else None,
                 getattr(self._context["request"], "FILES", None) if self.is_bound else None,
                 context=self._context,
-                accessible_files=self._accessible_files,
+                access_list=self._access_list,
                 prefix=f"include_files-{i}",)
             )
 
@@ -684,7 +746,7 @@ class ImageEditForm(LineEditMixin, EmbeddedObjectEditForm):
     class Meta:
         model = cm.Image
         fields = ["description", "fileinfo"]
-        ref_field = "image_name"
+        ref_field = "image_slug"
         markup = courses.markup.ImageMarkup
 
     alt_text = forms.CharField(required=False)
@@ -697,13 +759,20 @@ class ImageIncludeForm(LineEditMixin, EmbeddedObjectIncludeForm):
     _name = "image"
 
     class Meta:
-        ref_field = "image_name"
+        model = cm.Image
+        ref_field = "image_slug"
         markup = courses.markup.ImageMarkup
 
+    @property
+    def _options_url(self):
+        return reverse("courses:get_accessible_media", kwargs={
+            "media_type": "image"
+        })
+
     def get_choices(self):
-        return sorted(((image.slug, image.name)
+        return sorted(((image.id, image.name)
             for image in CourseMediaAdmin.media_access_list(
-                self._context["request"], cm.Image
+                self._context["request"], cm.Image, origin=self._context["course"]
             )
         ))
 
@@ -717,11 +786,15 @@ class FileEditForm(LineEditMixin, EmbeddedObjectEditForm):
         fields = ["typeinfo", "fileinfo", "download_as", "lexer"]
         ref_field = "file_slug"
         markup = courses.markup.EmbeddedFileMarkup
+        widgets = {
+            "lexer": forms.Select
+        }
 
     def save(self, commit=True):
         return super().save(commit)
 
     def __init__(self, *args, **kwargs):
+        instance = kwargs.get("instance")
         super().__init__(*args, **kwargs)
         self.fields["lexer"] = forms.ChoiceField(
             widget=forms.Select,
@@ -734,6 +807,7 @@ class FileEditForm(LineEditMixin, EmbeddedObjectEditForm):
                 ]
             ),
             required=False,
+            initial=instance and instance.lexer,
         )
         self.fields["link_only"] = forms.BooleanField(label=_("No content preview"), required=False)
 
@@ -743,13 +817,20 @@ class FileIncludeForm(LineEditMixin, EmbeddedObjectIncludeForm):
     _name = "file"
 
     class Meta:
+        model = cm.File
         ref_field = "file_slug"
         markup = courses.markup.EmbeddedFileMarkup
 
+    @property
+    def _options_url(self):
+        return reverse("courses:get_accessible_media", kwargs={
+            "media_type": "file"
+        })
+
     def get_choices(self):
-        return sorted(((f.slug, f.name)
+        return sorted(((f.id, f.name)
             for f in CourseMediaAdmin.media_access_list(
-                self._context["request"], cm.File
+                self._context["request"], cm.File, origin=self._context["course"]
             )
         ))
 
@@ -775,13 +856,20 @@ class VideoIncludeForm(LineEditMixin, EmbeddedObjectIncludeForm):
     _name = "video"
 
     class Meta:
+        model = cm.VideoLink
         ref_field = "video_slug"
         markup = courses.markup.EmbeddedVideoMarkup
 
+    @property
+    def _options_url(self):
+        return reverse("courses:get_accessible_media", kwargs={
+            "media_type": "videolink"
+        })
+
     def get_choices(self):
-        return sorted(((video.slug, video.name)
+        return sorted(((video.id, video.name)
             for video in CourseMediaAdmin.media_access_list(
-                self._context["request"], cm.VideoLink
+                self._context["request"], cm.VideoLink, origin=self._context["course"]
             )
         ))
 
@@ -828,12 +916,17 @@ class TaskIncludeForm(LineEditMixin, EmbeddedObjectIncludeForm):
 
     class Meta:
         ref_field = "page_slug"
+        model = cm.ContentPage
         markup = courses.markup.EmbeddedPageMarkup
 
+    @property
+    def _options_url(self):
+        return reverse("courses:get_accessible_pages")
+
     def get_choices(self):
-        return sorted(((page.slug, page.name)
+        return sorted(((page.id, page.name)
             for page in CourseContentAdmin.content_access_list(
-                self._context["request"], cm.ContentPage
+                self._context["request"], cm.ContentPage, origin=self._context["course"]
             ) if page.content_type != "LECTURE"
         ))
 
@@ -881,6 +974,25 @@ class CalendarCreateForm(LineEditMixin, forms.ModelForm):
         )
 
 
+class CalendarIncludeForm(LineEditMixin, EmbeddedObjectIncludeForm):
+
+    _name = "calendar"
+
+    class Meta:
+        ref_field = "calendar_slug"
+        model = cm.Calendar
+        markup = courses.markup.CalendarMarkup
+
+    @property
+    def _options_url(self):
+        return reverse("courses:get_accessible_calendars")
+
+    def get_choices(self):
+        return sorted(((calendar.id, calendar.name)
+            for calendar in cm.Calendar.objects.filter(origin=self._context["course"])
+        ))
+
+
 class BlockTypeSelectForm(forms.Form):
 
     def clean(self):
@@ -899,6 +1011,7 @@ class BlockTypeSelectForm(forms.Form):
     def __init__(self, *args, **kwargs):
         line_idx = kwargs.pop("line_idx", 0)
         line_count = kwargs.pop("line_count", 0)
+        accessible_courses = kwargs.pop("course_access")
         super().__init__(*args, **kwargs)
         self.fields["placement"] = forms.ChoiceField(
             widget=forms.RadioSelect,
@@ -941,8 +1054,9 @@ class BlockTypeSelectForm(forms.Form):
 
 class TermifyForm(forms.Form):
 
-
     def __init__(self, *args, **kwargs):
+        access_list = kwargs.pop("accessible_courses")
+        course = kwargs.pop("course")
         terms = kwargs.pop("course_terms")
         super().__init__(*args, **kwargs)
         self.fields["baseword"] = forms.CharField(label=_("Base word"), required=True)
@@ -960,10 +1074,17 @@ class TermifyForm(forms.Form):
             ],
             required=False
         )
-        self.fields["term"] = forms.ChoiceField(
-            widget=forms.Select,
+        self.fields["term"] = OriginFilterField(
+            widget=OriginFilterSelect(attrs={
+                "options_url": reverse("courses:get_accessible_terms"),
+                "origin_options": access_list,
+                "initial_origin": course,
+            }),
             label=_("Term"),
-            choices=[(term.name, term.name) for term in terms]
+            choices=[(term.id, term.name) for term in terms],
+            model=cm.Term,
+            access_list=access_list,
+            initial=None,
         )
 
 
@@ -971,6 +1092,7 @@ class TermifyForm(forms.Form):
 
 def register_edit_forms():
     markupparser.MarkupParser.register_form("calendar", "edit", CalendarCreateForm)
+    markupparser.MarkupParser.register_form("calendar", "include", CalendarIncludeForm)
     markupparser.MarkupParser.register_form("code", "edit", CodeEditForm)
     markupparser.MarkupParser.register_form("embedded_page", "edit", TaskCreateForm)
     markupparser.MarkupParser.register_form("embedded_page", "include", TaskIncludeForm)

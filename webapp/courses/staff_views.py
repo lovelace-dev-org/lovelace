@@ -1,6 +1,7 @@
 from html import escape
 import json
 import os
+import string
 import tempfile
 import zipfile
 
@@ -63,6 +64,7 @@ from courses.edit_forms import (
 )
 from courses.widgets import AnswerWidgetRegistry
 from utils.access import (
+    accessible_courses,
     determine_media_access,
     ensure_responsible_or_supervisor,
     ensure_responsible,
@@ -73,9 +75,11 @@ from utils.content import regenerate_nearest_cache
 from utils.data import field_serializer, import_from_zip
 from utils.management import (
     CourseContentAdmin,
+    CourseMediaAdmin,
     clone_instance_files,
     clone_terms,
     clone_content_graphs,
+    clone_embed_links,
     clone_grades,
     process_delete_confirm_form,
     process_modelform,
@@ -194,10 +198,11 @@ def clone_instance(request, course, instance):
         new_instance.save()
         new_instance.refresh_from_db()
         old_instance = CourseInstance.objects.get(id=old_pk)
+        clone_embed_links(old_instance, new_instance)
         clone_content_graphs(old_instance, new_instance)
         clone_grades(old_instance, new_instance)
-        clone_instance_files(new_instance)
-        clone_terms(new_instance)
+        clone_instance_files(old_instance, new_instance)
+        clone_terms(old_instance, new_instance)
         for module in lovelace_plugins["clone"]:
             module.models.clone_models(old_instance, new_instance)
 
@@ -306,9 +311,13 @@ def regen_instance_cache(request, course, instance):
 
 @ensure_staff
 def termify(request, course, instance):
-    terms = Term.objects.filter(course=course)
+    form_kwargs = {
+        "accessible_courses": accessible_courses(request.user).order_by("name"),
+        "course": course,
+        "course_terms": Term.objects.filter(origin=course).order_by("name")
+    }
     if request.method == "POST":
-        form = TermifyForm(request.POST, course_terms=terms)
+        form = TermifyForm(request.POST, **form_kwargs)
         if not form.is_valid():
             errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
@@ -343,7 +352,7 @@ def termify(request, course, instance):
                     getattr(page, field),
                     form.cleaned_data["replace_in"],
                     replaces,
-                    (f"[!term={form.cleaned_data['term']}!]", "[!term!]")
+                    (f"[!term={form.cleaned_data['term'].slug}!]", "[!term!]")
                 )
                 if n:
                     setattr(page, field, "\n".join(termified_lines))
@@ -358,7 +367,7 @@ def termify(request, course, instance):
             squash_revisions(page, 1)
         return JsonResponse({"status": "ok"})
 
-    form = TermifyForm(course_terms=terms)
+    form = TermifyForm(**form_kwargs)
     form_t = loader.get_template("courses/base-edit-form.html")
     form_c = {
         "form_object": form,
@@ -754,10 +763,12 @@ def edit_form(request, course, instance, content, action):
 
 @ensure_staff
 def add_form(request, course, instance, content):
+    course_access = accessible_courses(request.user)
+
     if request.method == "POST":
         line_idx = int(request.POST.get("line_idx"))
         line_count = int(request.POST.get("line_count"))
-        form = BlockTypeSelectForm(request.POST, line_idx=line_idx)
+        form = BlockTypeSelectForm(request.POST, line_idx=line_idx, course_access=course_access)
         if not form.is_valid():
             errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
@@ -789,7 +800,9 @@ def add_form(request, course, instance, content):
 
     line_idx = int(request.GET.get("line"))
     line_count = int(request.GET.get("size"))
-    form = BlockTypeSelectForm(line_idx=line_idx, line_count=line_count)
+    form = BlockTypeSelectForm(
+        line_idx=line_idx, line_count=line_count, course_access=course_access,
+    )
     form_t = loader.get_template("courses/base-edit-form.html")
     form_id = f"line-add-form"
     form_c = {
@@ -801,6 +814,66 @@ def add_form(request, course, instance, content):
         "submit_override": "editing.get_form_url"
     }
     return HttpResponse(form_t.render(form_c, request))
+
+
+def get_accessible_pages(request):
+    origin = Course.objects.get(slug=request.GET.get("origin"))
+    content_access = CourseContentAdmin.content_access_list(
+        request, ContentPage, origin=origin
+    ).order_by("name")
+    data = {
+        "options": [{"value": "", "text": _("----NOT--SELECTED----")}] + [
+            {"value": page.id, "text": page.name}
+            for page in content_access if page.content_type != "LECTURE"
+        ]
+    }
+    return JsonResponse(data)
+
+
+def get_accessible_media(request, media_type):
+    origin = Course.objects.get(slug=request.GET.get("origin"))
+    if media_type == "file":
+        model = cm.File
+    elif media_type == "image":
+        model = cm.Image
+    elif media_type == "videolink":
+        model = cm.VideoLink
+    else:
+        return HttpResponseNotFound(_("Media type doesn't exist"))
+
+    media_access = CourseMediaAdmin.media_access_list(
+        request, model, origin=origin
+    ).order_by("name")
+    data = {
+        "options": [{"value": "", "text": _("----NOT--SELECTED----")}] + [
+            {"value": media.id, "text": media.name}
+            for media in media_access
+        ]
+    }
+    return JsonResponse(data)
+
+def get_accessible_terms(request):
+    origin = Course.objects.get(slug=request.GET.get("origin"))
+    terms = cm.Term.objects.filter(origin=origin).order_by("name")
+    data = {
+        "options": [{"value": "", "text": _("----NOT--SELECTED----")}] + [
+            {"value": term.id, "text": term.name}
+            for term in terms
+        ]
+    }
+    return JsonResponse(data)
+
+def get_accessible_calendars(request):
+    origin = Course.objects.get(slug=request.GET.get("origin"))
+    calendars = cm.Calendar.objects.filter(origin=origin).order_by("name")
+    data = {
+        "options": [{"value": "", "text": _("----NOT--SELECTED----")}] + [
+            {"value": calendar.id, "text": calendar.name}
+            for calendar in calendars
+        ]
+    }
+    return JsonResponse(data)
+
 
 
 # ^
@@ -1039,6 +1112,47 @@ def edit_exercise_choice(request, course, instance, content, choice_id):
         parent=content,
         extra_response=extra,
     )
+
+@ensure_staff
+def generate_exercise_choices(request, course, instance, content):
+    if content.get_choices(content):
+        return JsonResponse({
+            "errors": _("Autogenerate is only supported if there are no existing choices")
+        }, status=400)
+
+    if request.method == "POST":
+        form = config_forms.GenerateChoicesForm(request.POST)
+        if not form.is_valid():
+            errors = form.errors.get_json_data()
+            return JsonResponse({"errors": errors}, status=400)
+
+        choice_cls = content.get_answer_model()
+        pattern = string.ascii_uppercase[:form.cleaned_data["amount"]]
+        with reversion.create_revision():
+            for i, char in enumerate(pattern, start=1):
+                choice = choice_cls(
+                    exercise=content,
+                    ordinal=i,
+                )
+                setattr(choice, f"answer_{settings.MODELTRANSLATION_DEFAULT_LANGUAGE}", char)
+                choice.save()
+            content.save()
+            reversion.set_user(request.user)
+            reversion.set_comment(f"Autogenerate choices for {content.slug}")
+
+        regenerate_nearest_cache(content)
+        return JsonResponse({"status": "ok"})
+
+    form = config_forms.GenerateChoicesForm()
+    form_t = loader.get_template("courses/base-edit-form.html")
+    form_c = {
+        "html_id": f"{content.slug}-generate-choices-form",
+        "form_object": form,
+        "submit_url": request.path,
+        "html_class": "edit-form-widget",
+        "submit_override": "editing.submit_form"
+    }
+    return HttpResponse(form_t.render(form_c, request))
 
 @ensure_staff
 def answer_settings_panel(request, course, instance, content):

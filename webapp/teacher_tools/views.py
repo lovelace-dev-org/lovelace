@@ -1,4 +1,5 @@
 import datetime
+from decimal import Decimal
 import os.path
 import tempfile
 import zipfile
@@ -255,7 +256,7 @@ def transfer_records(request, course, instance, user):
             for __, task_links in get_course_instance_tasks(target_instance):
                 for task_link in task_links:
                     content = task_link.embedded_page.get_type_object()
-                    content.re_evaluate(user, target_instance)
+                    content.re_evaluate(task_link, user, target_instance)
 
         return redirect(
             reverse(
@@ -667,6 +668,7 @@ def batch_grade_task(request, course, instance, parent, content):
                 evaluation = exercise.check_answer(
                     content, link, user, answer_form, [], answer
                 )
+                evaluation["points"] = Decimal(evaluation.get("quotient", 0)) * link.default_points
                 if evaluation["evaluation"]:
                     exercise.update_evaluation(link, user, evaluation, answer)
                     log.append(answer)

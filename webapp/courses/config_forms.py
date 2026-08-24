@@ -51,4 +51,11 @@ class AnswerWidgetChangeForm(forms.ModelForm):
             required=False
         )
 
+class GenerateChoicesForm(forms.Form):
+
+    amount = forms.IntegerField(
+        label=_("Number to generate"),
+        required=True
+    )
+
 

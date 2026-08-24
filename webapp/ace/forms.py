@@ -1,9 +1,18 @@
+import operator
+import uuid
 from django import forms
+from django.conf import settings
+from django.core.files.base import ContentFile
 from django.urls import reverse
+from django.utils import translation
+from django.utils.translation import gettext as _
 from courses import markupparser
 from courses.widgets import AnswerWidgetRegistry, PreviewWidgetRegistry
 import courses.models as cm
+from courses.fields import OriginFilterField
+from courses.widgets import OriginFilterSelect
 from courses.edit_forms import LineEditMixin, EmbeddedObjectEditForm
+from utils.access import accessible_courses
 from utils.management import CourseMediaAdmin
 import ace.models
 
@@ -13,11 +22,59 @@ class AceWidgetConfigurationForm(forms.ModelForm):
         model = ace.models.AceWidgetSettings
         exclude = ["name", "course", "slug"]
 
+    @property
+    def _options_url(self):
+        return reverse("courses:get_accessible_media", kwargs={
+            "media_type": "file"
+        })
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        if self.cleaned_data["new_base_file"]:
+            file_obj = ContentFile(b"")
+            postfix = uuid.uuid1()
+            default_fileinfo_field = f"fileinfo_{settings.MODELTRANSLATION_DEFAULT_LANGUAGE}"
+            new_file = cm.File(
+                name=f"{instance.name}-base-file-{postfix}",
+                typeinfo="Ace base file",
+                origin=self._origin,
+            )
+            getattr(new_file, default_fileinfo_field).save(f"base-file-{postfix}", file_obj)
+            instance.base_file = new_file
+            new_file.save()
+
+        instance.save()
+        return instance
+
     def __init__(self, *args, **kwargs):
-        self._accessible_files_qs = CourseMediaAdmin.media_access_list(kwargs.pop("request"), cm.File)
+        self._request = kwargs.pop("request")
+        instance = kwargs["instance"]
+        self._origin = kwargs.pop("origin")
         super().__init__(*args, **kwargs)
-        self.fields["base_file"].queryset = self._accessible_files_qs
-        self.fields["base_file"].required = False
+        origin = (instance.base_file and instance.base_file.origin) or self._origin
+        choices = sorted(((f.id, f.name)
+            for f in CourseMediaAdmin.media_access_list(
+                self._request, cm.File, origin=origin
+            )
+        ), key=operator.itemgetter(1))
+        access_list = accessible_courses(self._request.user).order_by("name")
+        self.fields["base_file"] = OriginFilterField(
+            widget=OriginFilterSelect(attrs={
+                "options_url": self._options_url,
+                "origin_options": access_list,
+                "initial_origin": origin,
+            }),
+            required=False,
+            model=cm.File,
+            access_list=access_list,
+            choices=[("", _("----NOT--SELECTED----"))] + choices,
+            initial=instance.base_file and instance.base_file.id,
+        )
+        self.fields["new_base_file"] = forms.BooleanField(
+            label=_("Create a blank base file"),
+            required=False,
+        )
+
 
 
 class AcePlusWidgetConfigurationForm(forms.ModelForm):
@@ -117,6 +174,14 @@ class AcePlusEditForm(LineEditMixin, EmbeddedObjectEditForm):
         self._saved_inst = model_inst
         return model_inst
 
+    def is_valid(self):
+        ace_valid = self._ace_subform.is_valid()
+        preview_valid = self._preview_subform.is_valid()
+        main_valid = super().is_valid()
+        if ace_valid and preview_valid and main_valid:
+            return True
+        return False
+
     def generate_new_markup(self):
         self.cleaned_data["slug"] = self._saved_inst.slug
         return self._markup.markup_from_dict(self.cleaned_data).split("\n")
@@ -146,7 +211,8 @@ class AcePlusEditForm(LineEditMixin, EmbeddedObjectEditForm):
         ).get_configuration_form(
             request,
             data=request.POST if self.is_bound else None,
-            prefix="ace"
+            prefix="ace",
+            origin=self._context["course"],
         )
         if instance and instance.preview_widget:
             preview_widget = PreviewWidgetRegistry.get_widget(
@@ -169,6 +235,41 @@ class AcePlusEditForm(LineEditMixin, EmbeddedObjectEditForm):
             data=request.POST if self.is_bound else None,
             prefix="extra"
         )
+
+class BaseFileSaveConfirmForm(forms.Form):
+
+
+    editor_content = forms.CharField(widget=forms.HiddenInput, required=False)
+
+    def __init__(self, *args, **kwargs):
+        widget_slug = kwargs.pop("widget_slug")
+        lang_file_exists = kwargs.pop("lang_file_exists")
+        super().__init__(*args, **kwargs)
+        self.fields["widget_slug"] = forms.CharField(
+            widget=forms.HiddenInput,
+            initial=widget_slug,
+        )
+        self.fields["filename"] = forms.CharField(
+            label=_("Save as"),
+            required=False,
+        )
+        if not lang_file_exists:
+            self.fields["write_to"] = forms.ChoiceField(
+                widget=forms.Select,
+                choices=[
+                    ("default", _("Update default language file")),
+                    ("new", _("Create file for current language"))
+                ],
+                initial="default",
+            )
+        self.fields["confirm_save"] = forms.BooleanField(
+            required=True,
+            label=_("Confirm save")
+        )
+
+
+
+
 
 def register_edit_forms():
     markupparser.MarkupParser.register_form("ace-plus", "edit", AcePlusEditForm)

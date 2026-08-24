@@ -989,7 +989,7 @@ class CourseMedia(models.Model, ExportImportMixin):
         self.slug = get_prefixed_slug(self, self.origin, "name", translated=False)
         super().save(*args, **kwargs)
         if regen_cache:
-            for link in self.coursemedialink_set.get_queryset():
+            for link in self.coursemedialink_set.get_queryset().distinct("instance", "parent"):
                 if not link.instance.frozen:
                     link.parent.regenerate_cache(link.instance)
 
@@ -1129,11 +1129,6 @@ class TermToInstanceLink(models.Model, ExportImportMixin):
 
 
 class Term(models.Model, ExportImportMixin):
-    class Meta:
-        unique_together = (
-            "origin",
-            "name",
-        )
 
     objects = SlugManager()
 
@@ -1191,14 +1186,16 @@ class TermAlias(models.Model):
     class Meta:
         unique_together = (
             "term",
-            "name"
+            f"name_{settings.MODELTRANSLATION_DEFAULT_LANGUAGE}"
         )
 
     term = models.ForeignKey(Term, null=True, on_delete=models.CASCADE)
     name = models.CharField(verbose_name="Term", max_length=200)  # Translate
 
     def natural_key(self):
-        return self.term.natural_key() + [self.name]
+        return self.term.natural_key() + [getattr(
+            self, f"name_{settings.MODELTRANSLATION_DEFAULT_LANGUAGE}"
+        )]
 
 
 class TermTagManager(models.Manager):
@@ -1224,7 +1221,7 @@ class TermTab(models.Model):
     class Meta:
         unique_together = (
             "term",
-            "title"
+            f"title_{settings.MODELTRANSLATION_DEFAULT_LANGUAGE}"
         )
 
     term = models.ForeignKey(Term, on_delete=models.CASCADE)
@@ -1232,7 +1229,9 @@ class TermTab(models.Model):
     description = models.TextField()  # Translate
 
     def natural_key(self):
-        return self.term.natural_key() + [self.title]
+        return self.term.natural_key() + [getattr(
+            self, f"title_{settings.MODELTRANSLATION_DEFAULT_LANGUAGE}"
+        )]
 
     def __str__(self):
         return self.title
@@ -1242,7 +1241,7 @@ class TermLink(models.Model):
     class Meta:
         unique_together = (
             "term",
-            "url"
+            f"url_{settings.MODELTRANSLATION_DEFAULT_LANGUAGE}"
         )
 
     term = models.ForeignKey(Term, on_delete=models.CASCADE)
@@ -1250,7 +1249,10 @@ class TermLink(models.Model):
     link_text = models.CharField(verbose_name="Link text", max_length=80)  # Translate
 
     def natural_key(self):
-        return self.term.natural_key() + [self.url]
+        return self.term.natural_key() + [getattr(
+            self, f"url_{settings.MODELTRANSLATION_DEFAULT_LANGUAGE}"
+        )]
+
 
 
 
@@ -1480,7 +1482,6 @@ class ContentPage(models.Model, ExportImportMixin):
 
     class Meta:
         ordering = ("name",)
-        unique_together = ("name", "origin")
 
     objects = SlugManager()
 
@@ -1699,9 +1700,9 @@ class ContentPage(models.Model, ExportImportMixin):
         else:
             handle = self.answer_widget
 
-        widget_slug = f"{course.prefix}-{self.slug.removeprefix(course.prefix + "-")}"
+        # widget_slug = f"{course.prefix}-{self.slug.removeprefix(course.prefix + "-")}"
         widget = widgets.AnswerWidgetRegistry.get_widget(
-            handle, course, widget_slug
+            handle, course, self.slug
         )
         return widget
 
@@ -1780,23 +1781,29 @@ class ContentPage(models.Model, ExportImportMixin):
 
         # set ordinal to zero at first, updated per language later
         for link_slug in added_page_links:
-            link_obj = EmbeddedLink(
-                parent=self,
-                embedded_page=ContentPage.objects.get(slug=link_slug),
-                revision=None,
-                ordinal_number=0,
-                instance=instance,
-            )
-            link_obj.save()
+            try:
+                link_obj = EmbeddedLink(
+                    parent=self,
+                    embedded_page=ContentPage.objects.get(slug=link_slug),
+                    revision=None,
+                    ordinal_number=0,
+                    instance=instance,
+                )
+                link_obj.save()
+            except ContentPage.DoesNotExist:
+                print("Broken reference:", link_slug)
 
         for link_slug in added_media_links:
-            link_obj = CourseMediaLink(
-                parent=self,
-                media=CourseMedia.objects.get(slug=link_slug),
-                instance=instance,
-                revision=None,
-            )
-            link_obj.save()
+            try:
+                link_obj = CourseMediaLink(
+                    parent=self,
+                    media=CourseMedia.objects.get(slug=link_slug),
+                    instance=instance,
+                    revision=None,
+                )
+                link_obj.save()
+            except CourseMedia.DoesNotExist:
+                print("Broken reference:", link_slug)
 
         for module in lovelace_plugins.get("context_links", []):
             module.models.update_context_links(self, instance, all_links, revision)
@@ -2029,7 +2036,7 @@ class ContentPage(models.Model, ExportImportMixin):
         except UserTaskCompletion.DoesNotExist:
             return "unanswered", 0
 
-    def re_evaluate(self, user, instance):
+    def re_evaluate(self, link, user, instance):
         """
         Re-evaluates a task by picking the user's best result, and updating completion based on it.
         This method is primarily used when transfering records between instances that have different
@@ -2052,7 +2059,7 @@ class ContentPage(models.Model, ExportImportMixin):
             "points": best_answer.evaluation.points,
             "max": best_answer.evaluation.max_points,
         }
-        update_completion(self, instance, user, evaluation, best_answer.answer_date)
+        update_completion(self, link, instance, user, evaluation, best_answer.answer_date)
 
     def copy_answer(self, answer_object, copy_owner):
         answer_object.pk = None

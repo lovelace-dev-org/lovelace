@@ -242,7 +242,12 @@ def routine_progress(request, course, instance, parent, content, task_id):
     if not task.ready():
         progress_url = reverse(
             "routine_exercise:task_progress",
-            kwargs={"course": course, "instance": instance, "content": content, "task_id": task.id},
+            kwargs={
+                "course": course,
+                "instance": instance,
+                "content": content,
+                "parent": parent,
+                "task_id": task.id},
         )
         data = {"state": task.state, "metadata": task.info, "redirect": progress_url}
         return JsonResponse(data)
@@ -261,6 +266,7 @@ def routine_progress(request, course, instance, parent, content, task_id):
                     "user": request.user,
                     "course": course,
                     "instance": instance,
+                    "parent": parent,
                     "exercise": content,
                 },
             )

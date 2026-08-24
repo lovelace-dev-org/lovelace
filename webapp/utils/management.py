@@ -49,7 +49,7 @@ class CourseContentAdmin(admin.ModelAdmin):
     content_type = ""
 
     @staticmethod
-    def content_access_list(request, model, content_type=None):
+    def content_access_list(request, model, content_type=None, origin=None):
         """
         Gets a queryset of content where the requesting user either:
         1) has edited the page previously
@@ -61,10 +61,16 @@ class CourseContentAdmin(admin.ModelAdmin):
         content is shown.
         """
 
-        if content_type:
-            qs = model.objects.filter(content_type=content_type)
+        if origin is None:
+            if content_type:
+                qs = model.objects.filter(content_type=content_type)
+            else:
+                qs = model.objects.all()
         else:
-            qs = model.objects.all()
+            if content_type:
+                qs = model.objects.filter(content_type=content_type, origin=origin)
+            else:
+                qs = model.objects.filter(origin=origin)
 
         if request.user.is_superuser:
             return qs
@@ -191,8 +197,11 @@ class CourseContentAdmin(admin.ModelAdmin):
 
 class CourseMediaAdmin(admin.ModelAdmin):
     @staticmethod
-    def media_access_list(request, model):
-        qs = model.objects.all()
+    def media_access_list(request, model, origin=None):
+        if origin is None:
+            qs = model.objects.all()
+        else:
+            qs = model.objects.filter(origin=origin)
 
         if request.user.is_superuser:
             return qs
@@ -235,27 +244,27 @@ class CourseMediaAdmin(admin.ModelAdmin):
         return False
 
 
-def clone_instance_files(instance):
+def clone_instance_files(old_instance, new_instance):
     """
     Creates cloned links to all instance files in a course instance.
     """
 
-    instance_files = cm.InstanceIncludeFile.objects.filter(course=instance.course)
-    for ifile in instance_files:
-        link = cm.InstanceIncludeFileToInstanceLink(
-            revision=None, include_file=ifile, instance=instance
-        )
+    if_links = cm.InstanceIncludeFileToInstanceLink.objects.filter(instance=old_instance)
+    for link in if_links:
+        link.pk = None
+        link.instance = new_instance
         link.save()
 
 
-def clone_terms(instance):
+def clone_terms(old_instance, new_instance):
     """
     Creates cloned links to all terms in a course instance.
     """
 
-    terms = cm.Term.objects.filter(origin=instance.course)
-    for term in terms:
-        link = cm.TermToInstanceLink(revision=None, term=term, instance=instance)
+    term_links = cm.TermToInstanceLink.objects.filter(instance=old_instance)
+    for link in term_links:
+        link.pk = None
+        link.instance = new_instance
         link.save()
 
 
@@ -293,6 +302,15 @@ def clone_content_graphs(old_instance, new_instance):
         )
         child_node.parentnode = new_parent
         child_node.save()
+
+
+def clone_embed_links(old_instance, new_instance):
+
+    embed_links = cm.EmbeddedLink.objects.filter(instance=old_instance)
+    for link in embed_links:
+        link.pk = None
+        link.instance = new_instance
+        link.save()
 
 
 def freeze_context_link(link_object, revisioned_attr, freeze_to=None):
@@ -414,7 +432,7 @@ class TranslationStaffForm(ModelForm):
     def field_changed(self, field):
         for lang_code, __ in settings.LANGUAGES:
             # Unset fileinfo is empty string in the model
-            current = getattr(self._instance, f"{field}_{lang_code}") or None
+            current = getattr(self._instance, f"{field}_{lang_code}", "") or None
             if current != self.cleaned_data[f"{field}_{lang_code}"]:
                 return True
         return False
