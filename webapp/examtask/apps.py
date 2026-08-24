@@ -7,4 +7,4 @@ class ExamtaskConfig(AppConfig):
     name = 'examtask'
 
     def ready(self):
-        register_plugin(self.module, ["content-follow", "export", "import", "urls"])
+        register_plugin(self.module, ["clone", "content-follow", "export", "import", "urls"])

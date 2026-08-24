@@ -1416,6 +1416,8 @@ class EmbeddedLink(models.Model, ExportImportMixin):
     def set_instance(self, instance):
         self.instance = instance
 
+    def __str__(self):
+        return f"{self.parent.name} > {self.embedded_page.name}"
 
 
 class ContentPage(models.Model, ExportImportMixin):

@@ -1,5 +1,6 @@
 from django import forms
 from django.forms import fields
+from django.forms.models import ModelMultipleChoiceField
 from django.urls import reverse
 from django.utils.translation import gettext as _
 
@@ -16,31 +17,41 @@ class ExamTaskSettingsForm(forms.ModelForm):
 
     class Meta:
         model = ExamTaskSettings
-        fields = ["task_pool"]
+        fields = ["task_pool", "avoid_same"]
 
     @property
     def _options_url(self):
         return reverse("courses:get_accessible_pages")
 
     def __init__(self, *args, **kwargs):
-        accessible_courses = kwargs.pop("accessible_courses")
-        accessible_pages = kwargs.pop("accessible_pages")
-        course = kwargs.pop("course")
+        course_inst = kwargs.pop("course_inst")
         super().__init__(*args, **kwargs)
 
-        self.fields["task_pool"] = ModelOriginFilterMultiField(
-            widget=OriginFilterMultiSelect(attrs={
-                "options_url": self._options_url,
-                "origin_options": accessible_courses,
-                "initial_origin": course,
+        self.fields["task_pool"] = ModelMultipleChoiceField(
+            widget=forms.SelectMultiple(attrs={
                 "size": 10,
             }),
-            label=_("Select tasks"),
-            queryset=accessible_pages,
-            required=True,
-            model=cm.ContentPage,
-            access_list=accessible_courses,
+            queryset=(
+                cm.EmbeddedLink.objects.filter(instance=course_inst)
+                .select_related("parent", "embedded_page")
+                .defer("parent__content", "embedded_page__content")
+                .order_by("parent__name", "embedded_page__name")
+            )
         )
+
+        # self.fields["task_pool"] = ModelOriginFilterMultiField(
+        #     widget=OriginFilterMultiSelect(attrs={
+        #         "options_url": self._options_url,
+        #         "origin_options": accessible_courses,
+        #         "initial_origin": course,
+        #         "size": 10,
+        #     }),
+        #     label=_("Select tasks"),
+        #     queryset=accessible_pages,
+        #     required=True,
+        #     model=cm.ContentPage,
+        #     access_list=accessible_courses,
+        # )
 
 
 class ExamTaskAttemptForm(forms.ModelForm):

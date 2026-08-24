@@ -36,9 +36,7 @@ def exam_task_settings(request, course, instance, parent, content):
     ).exclude(content_type__in=["LECTURE", "EXAM_TASK"]).order_by("name")
 
     form_extra = {
-        "accessible_courses": courses,
-        "accessible_pages": pages,
-        "course": course,
+        "course_inst": instance,
     }
 
     return process_modelform(
@@ -136,7 +134,7 @@ def rerandomize_tasks(request, course, instance, parent, content, attempt):
         request, confirmed,
         extra_context={
             "submit_override": "editing.submit_form",
-            "disclaimer": _("Rerandomize")
+            "disclaimer": _("Rerandomize unopened tasks")
         },
         extra_response={"refresh": True},
     )

@@ -1,3 +1,4 @@
+import datetime
 import random
 from django.db import models
 from django.template import loader
@@ -53,8 +54,7 @@ class ExamTask(cm.ContentPage):
         """
 
         content = cm.ContentPage._get_rendered_content(self, context)
-        #t = loader.get_template("examtask/exam-content-extra.html")
-        return content #+ [("extra", t.render(context), -1, 0)]
+        return content
 
     def get_question(self, context):
         """
@@ -72,11 +72,15 @@ class ExamTask(cm.ContentPage):
         # make a copy of context
         context = context.flatten()
 
-        if exercise := attempt.get_user_task(context["user"]):
+        if choice := attempt.get_user_task(context["user"]):
+            exercise = choice.embedlink.embedded_page
             cached_content["content"] = exercise.get_rendered_content(exercise, context)
             answer_widget = exercise.get_answer_widget(context["instance"].course)
             context["choices"] = exercise.get_choices(exercise, revision=context["revision"])
             cached_content["form"] = answer_widget.render(context)
+            if not choice.opened:
+                choice.opened = datetime.datetime.now()
+                choice.save()
 
         return cached_content
 
@@ -145,8 +149,11 @@ class ExamTask(cm.ContentPage):
         except NoAttemptException:
             raise cm.InvalidExerciseAnswerException("No open attempt")
 
-        if exercise := attempt.get_user_task(user):
-            task_answer = exercise.save_answer(exercise, user, ip, answer, files, instance, revision)
+        if choice := attempt.get_user_task(user):
+            exercise = choice.embedlink.embedded_page
+            task_answer = exercise.save_answer(
+                exercise, user, ip, answer, files, instance, revision
+            )
         else:
             raise cm.InvalidExerciseAnswerException("No assigned task")
 
@@ -164,16 +171,12 @@ class ExamTask(cm.ContentPage):
     def check_answer(self, link, user, answer, files, answer_object):
         # proxy checking to the randomized task
 
+        attempt = get_attempt(self, answer_object.instance, user)
         exercise = answer_object.task_answer.exercise
+        exercise_link = attempt.get_user_task(user).embedlink
 
-        # TODO: What to do with tasks that have more than one link?
-        exercise_link = cm.EmbeddedLink.objects.filter(
-            embedded_page=exercise,
-            instance=link.instance,
-        ).first()
-        if exercise_link:
-            link.manually_evaluated = exercise_link.manually_evaluated
-            link.correct_threshold = exercise_link.correct_threshold
+        link.manually_evaluated = exercise_link.manually_evaluated
+        link.correct_threshold = exercise_link.correct_threshold
 
         exercise_evaluation = exercise.check_answer(
             exercise, link, user, answer, files, answer_object.task_answer
@@ -186,7 +189,7 @@ class ExamTask(cm.ContentPage):
 
     def save_evaluation(self, link, user, evaluation, answer_object):
         attempt = get_attempt(self, answer_object.instance, user)
-        exercise = attempt.get_user_task(user)
+        exercise = attempt.get_user_task(user).embedlink.embedded_page
         exercise.save_evaluation(exercise, link, user, evaluation, answer_object.task_answer)
         return cm.ContentPage.save_evaluation(self, link, user, evaluation, answer_object)
 
@@ -222,11 +225,12 @@ class ExamTaskSettings(models.Model, ExportImportMixin):
     instance = models.ForeignKey(cm.CourseInstance, on_delete=models.CASCADE)
     task = models.ForeignKey(ExamTask, on_delete=models.RESTRICT)
     task_pool = models.ManyToManyField(
-        cm.ContentPage,
+        cm.EmbeddedLink,
         through="ExamTaskToExerciseLink",
-        through_fields=("settings", "exercise"),
+        through_fields=("settings", "embedlink"),
         related_name="task_pool"
     )
+    avoid_same = models.BooleanField(verbose_name=_("Avoid assigning same task"), default=False)
 
     def export(self, instance, export_target):
         super().export(instance, export_target)
@@ -240,22 +244,22 @@ class ExamTaskToExerciseManager(models.Manager):
         return self.get(
             settings__instance__slug=instance_slug,
             settings__exam__slug=exam_slug,
-            exercise__slug=exercise_slug,
+            embedlink__embedded_page__slug=exercise_slug,
         )
 
 
 class ExamTaskToExerciseLink(models.Model, ExportImportMixin):
 
     class Meta:
-        unique_together = ("settings", "exercise")
+        unique_together = ("settings", "embedlink")
 
     objects = ExamTaskToExerciseManager()
 
-    settings = models.ForeignKey(ExamTaskSettings, on_delete=models.RESTRICT)
-    exercise = models.ForeignKey(cm.ContentPage, on_delete=models.RESTRICT)
+    settings = models.ForeignKey(ExamTaskSettings, on_delete=models.CASCADE)
+    embedlink = models.ForeignKey(cm.EmbeddedLink, on_delete=models.CASCADE, null=True)
 
     def natural_key(self):
-        return [settings.exam.slug, settings.instance.slug, exercise.slug]
+        return [settings.exam.slug, settings.instance.slug, embedlink.embedded_page.slug]
 
 
 class UserExamTaskAnswer(cm.UserAnswer):
@@ -292,12 +296,15 @@ class ExamTaskAttempt(models.Model):
 
     def assign_tasks(self):
         try:
-            task_pool = list(ExamTaskSettings.objects.get(
+            settings = ExamTaskSettings.objects.get(
                 instance=self.instance,
                 task=self.task,
-            ).task_pool.get_queryset())
+            )
         except ExamTaskSettings.DoesNotExist:
             return
+
+        task_qs = settings.task_pool.get_queryset()
+        task_pool = list(task_qs)
 
         if self.user is not None:
             users = [self.user]
@@ -305,12 +312,26 @@ class ExamTaskAttempt(models.Model):
             users = self.instance.enrolled_users.get_queryset()
 
         for user in users:
-            exercise = random.choice(task_pool)
-            choice, _ = ExamTaskChoice.objects.get_or_create(
-                attempt=self,
-                user=user,
-                exercise=exercise,
-            )
+            try:
+                choice = ExamTaskChoice.objects.get(attempt=self, user=user)
+            except ExamTaskChoice.DoesNotExist:
+                choice = ExamTaskChoice(attempt=self, user=user)
+
+            # Don't reassign new task if student has already opened the exam task
+            if choice.opened:
+                continue
+
+            personal_pool = task_pool
+            if settings.avoid_same:
+                past_choices = ExamTaskChoice.objects.filter(
+                    attempt__task=self.task,
+                    user=user
+                )
+                if remaining := task_qs.exclude(exercise__in=past_choices):
+                    personal_pool = list(remaining)
+
+            embedlink = random.choice(personal_pool)
+            choice.embedlink=embedlink
             choice.save()
 
     def get_user_task(self, user):
@@ -319,11 +340,12 @@ class ExamTaskAttempt(models.Model):
         except ExamTaskChoice.DoesNotExist:
             return None
 
-        return choice.exercise
+        return choice
 
     def reset_tasks(self):
         ExamTaskChoice.objects.filter(
-            attempt=self
+            attempt=self,
+            opened=None,
         ).delete()
 
 
@@ -333,11 +355,29 @@ class ExamTaskChoice(models.Model):
     class Meta:
         unique_together = ("user", "attempt")
 
-    exercise = models.ForeignKey(cm.ContentPage, on_delete=models.CASCADE)
+    embedlink = models.ForeignKey(cm.EmbeddedLink, on_delete=models.CASCADE)
     user = models.ForeignKey(cm.User, on_delete=models.CASCADE)
     attempt = models.ForeignKey(ExamTaskAttempt, on_delete=models.CASCADE)
+    opened = models.DateTimeField(null=True)
 
 
 cm.ContentPage.register_content_type(
     "EXAM_TASK", ExamTask, None, None
 )
+
+def clone_models(old_instance, new_instance):
+    for settings in ExamTaskSettings.objects.filter(instance=old_instance):
+        tasklinks = list(ExamTaskToExerciseLink.objects.filter(settings=settings))
+        settings.pk = None
+        settings.instance = new_instance
+        settings.save()
+
+        for link in tasklinks:
+            link.pk = None
+            link.embedlink = cm.EmbeddedLink.objects.get(
+                instance=new_instance,
+                parent=link.embedlink.parent,
+                embedded_page=link.embedlink.embedded_page
+            )
+            link.settings = settings
+            link.save()
