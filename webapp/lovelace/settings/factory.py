@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     'assessment',
     'exercise_admin',
     'multiexam',
+    'answerless',
     'reversion',
     'teacher_tools',
     'ace',
