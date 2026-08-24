@@ -46,7 +46,7 @@ from utils.archive import (
 from utils.content import download_exercise_backend
 from utils.exercise import render_json_feedback, update_completion
 from utils.files import generate_download_response, get_file_contents_b64
-from utils.management import process_modelform, process_delete_confirm_form
+from utils.management import process_modelform, process_confirm_form
 from utils.notify import send_error_report
 
 
@@ -478,7 +478,7 @@ def delete_backend(request, course, instance, content, filename):
             )
         squash_revisions(content, 1)
 
-    return process_delete_confirm_form(
+    return process_confirm_form(
         request,
         delete_success,
         extra_context={
@@ -591,7 +591,7 @@ def delete_template(request, course, instance, content, qc, variant):
             )
         squash_revisions(content, 1)
 
-    return process_delete_confirm_form(
+    return process_confirm_form(
         request,
         delete_success,
         extra_context={

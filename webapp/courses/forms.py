@@ -696,39 +696,6 @@ class ConfirmDeleteForm(forms.Form):
     delete = forms.BooleanField(required=True, label=_("Confirm deletion"))
 
 
-def process_delete_confirm_form(request, success_callback, extra_context={}):
-    """
-    Convenience function for displaying and processing a ConfirmDeleteForm. Can be used to reduce
-    boilerplate in delete views. The calling end simply needs to define a success callback that
-    carries out the deletion once the user has confirmed the operation.
-
-    :param Request request: request object
-    :param function success_callback: function that takes a form object as its argument
-    :param dict extra_context: extra context data to be added to the form template's rendering
-    """
-
-    if request.method == "POST":
-        form = ConfirmDeleteForm(request.POST)
-        if not form.is_valid():
-            errors = form.errors_as_json()
-            return JsonResponse({"errors": errors}, status=400)
-
-        success_callback(form)
-        return JsonResponse({"status": "ok"})
-
-    form = ConfirmDeleteForm()
-    form_t = loader.get_template("courses/base-edit-form.html")
-    form_c = {
-        "form_object": form,
-        "submit_url": request.path,
-        "html_id": f"delete-confirm-form",
-        "html_class": "management-form",
-        "submit_label": _("Execute"),
-    }
-    form_c.update(extra_context)
-    return HttpResponse(form_t.render(form_c, request))
-
-
 class CourseMessageForm(TranslationStaffForm):
 
     class Meta:

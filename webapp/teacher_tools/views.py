@@ -26,7 +26,7 @@ from lovelace.celery import app as celery_app
 from utils.access import determine_access, is_course_staff, ensure_responsible, ensure_staff
 from utils.archive import get_single_archived
 from utils.content import get_course_instance_tasks, get_embedded_parent
-from utils.management import process_delete_confirm_form
+from utils.management import process_confirm_form
 from utils.notify import send_welcome_email
 
 from courses.models import (
@@ -857,7 +857,7 @@ def delete_exemption(request, course, instance, user, graph_id):
             user=user,
             contentgraph__id=graph_id,
         ).delete()
-    return process_delete_confirm_form(request, success)
+    return process_confirm_form(request, success)
 
 
 

@@ -544,6 +544,7 @@ def get_prefixed_slug(model_instance, origin, source_field, translated=True):
 
 def process_modelform(request, form_cls, model_instance, form_id, comment,
                       parent=None,
+                      form_extra=None,
                       post_save_cb=None,
                       extra_context=None,
                       extra_response=None):
@@ -567,9 +568,10 @@ def process_modelform(request, form_cls, model_instance, form_id, comment,
                                 saving is successful
 
     """
+    form_extra = form_extra or {}
 
     if request.method == "POST":
-        form = form_cls(request.POST, request.FILES, instance=model_instance)
+        form = form_cls(request.POST, request.FILES, instance=model_instance, **form_extra)
         if not form.is_valid():
             errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
@@ -598,7 +600,7 @@ def process_modelform(request, form_cls, model_instance, form_id, comment,
         extra_response and response.update(extra_response)
         return JsonResponse(response)
 
-    form = form_cls(instance=model_instance)
+    form = form_cls(instance=model_instance, **form_extra)
     form_t = loader.get_template("courses/base-edit-form.html")
     form_c = {
         "html_id": form_id,
@@ -612,11 +614,11 @@ def process_modelform(request, form_cls, model_instance, form_id, comment,
 
 
 class ConfirmDeleteForm(forms.Form):
-    delete = forms.BooleanField(required=True, label=_("Confirm deletion"))
+    delete = forms.BooleanField(required=True, label=_("Confirm"))
 
 
 
-def process_delete_confirm_form(request, success_callback, extra_context=None, extra_response=None):
+def process_confirm_form(request, success_callback, extra_context=None, extra_response=None):
     """
     Convenience function for displaying and processing a ConfirmDeleteForm. Can be used to reduce
     boilerplate in delete views. The calling end simply needs to define a success callback that
@@ -643,7 +645,7 @@ def process_delete_confirm_form(request, success_callback, extra_context=None, e
     form_c = {
         "form_object": form,
         "submit_url": request.path,
-        "html_id": f"delete-confirm-form",
+        "html_id": f"confirm-form",
         "html_class": "edit-form-widget",
         "submit_label": _("Execute"),
     }

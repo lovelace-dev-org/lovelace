@@ -22,7 +22,7 @@ from utils.access import ensure_enrolled_or_staff, determine_access, ensure_staf
 from utils.archive import get_single_archived, find_latest_version, find_version_with_filename
 from utils.content import get_embedded_parent, download_exercise_backend
 from utils.files import generate_download_response, get_file_contents_b64
-from utils.management import process_delete_confirm_form, process_modelform
+from utils.management import process_confirm_form, process_modelform
 
 from multiexam.models import (
     load_pool_file,
@@ -267,7 +267,7 @@ def delete_attempt(request, course, instance, attempt):
             "retain existing answers while making the exam attempt unavailable."
         ),
     }
-    return process_delete_confirm_form(request, success, extra)
+    return process_confirm_form(request, success, extra)
 
 @ensure_responsible
 def refresh_attempts(request, course, instance, content):
