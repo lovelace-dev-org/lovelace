@@ -48,6 +48,7 @@ class AceAnswerWidget(AnswerWidget):
                 name=self.slug.removeprefix(self.course.prefix + "-"),
                 course=self.course,
             )
+            settings.save()
         return settings
 
     def export(self, instance, export_target):
@@ -123,6 +124,7 @@ class AcePlusAnswerWidget(AnswerWidget):
                 name=self.slug.removeprefix(self.course.prefix + "-"),
                 course=self.course,
             )
+            settings.save()
         return settings
 
     def export(self, instance, export_target):
