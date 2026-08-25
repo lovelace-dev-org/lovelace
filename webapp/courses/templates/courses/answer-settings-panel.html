@@ -23,13 +23,22 @@
     </div>
   {% endfor %}
   <div>
-    {% with answers|last as last %}
+    {% if answers %}
+      {% with answers|last as last %}
+        <button type="button"
+                class="staff-base-button add-button"
+                onclick="editing.get_form(event, this)"
+                data-url="{% url 'courses:add_exercise_choice' course instance content last.ordinal %}?aasi=hemuli">+
+        </button>
+      {% endwith %}
+    {% else %}
       <button type="button"
               class="staff-base-button add-button"
               onclick="editing.get_form(event, this)"
-              data-url="{% url 'courses:add_exercise_choice' course instance content last.ordinal %}?aasi=hemuli">+
+              data-url="{% url 'courses:add_exercise_choice' course instance content 0 %}?aasi=hemuli">+
       </button>
-    {% endwith %}
+    {% endif %}
+
   </div>
 </div>
 
