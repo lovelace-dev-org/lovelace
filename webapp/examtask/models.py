@@ -381,3 +381,10 @@ def clone_models(old_instance, new_instance):
             )
             link.settings = settings
             link.save()
+
+def get_import_list():
+    return [
+        ExamTask,
+        ExamTaskSettings,
+        ExamTaskToExerciseLink
+    ]

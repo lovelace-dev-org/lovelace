@@ -45,4 +45,9 @@ class Migration(migrations.Migration):
             name='termtab',
             unique_together={('term', 'title_fi')},
         ),
+        migrations.AddField(
+            model_name='contentgraph',
+            name='visibility',
+            field=models.CharField(choices=[('both', 'Always visible'), ('exam-only', 'Only visible in Exam Mode'), ('no-exam', 'Not visible in Exam Mode')], default='both', max_length=16),
+        ),
     ]

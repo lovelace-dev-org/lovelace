@@ -124,5 +124,5 @@ def export_models(instance, export_target):
 
 def get_import_list():
     return [
-        "AnswerlessTask"
+        AnswerlessTask
     ]
