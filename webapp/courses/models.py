@@ -526,8 +526,8 @@ class CourseInstance(models.Model):
 
             if settings.EXAM_MODE:
                 nodes = nodes.exclude(visibility="no-exam")
-            else:
-                nodes = nodes.exclude(visibility="exam-only")
+            # else:
+            #     nodes = nodes.exclude(visibility="exam-only")
 
         nodes = nodes.select_related("parentnode", "content").defer("content__content")
         embed_links = (
@@ -586,7 +586,8 @@ class CourseInstance(models.Model):
                     "instance": self,
                     "content": node.content
                 }),
-                "visible": node.is_visible(),
+                "visible": node.visible,
+                "accessible": node.is_accessible(),
                 "require_enroll": node.require_enroll,
                 "page_count": page_count,
                 "deadline": node.deadline,
@@ -940,14 +941,11 @@ class ContentGraph(models.Model):
     def set_instance(self, instance):
         self.instance = instance
 
-    def is_visible(self):
-        if not self.visible:
+    def is_accessible(self):
+        if self.visibility == "exam-only" and not settings.EXAM_MODE:
             return False
-        else:
-            if self.visibility == "exam-only" and not settings.EXAM_MODE:
-                return False
-            elif self.visibility == "no-exam" and settings.EXAM_MODE:
-                return False
+        elif self.visibility == "no-exam" and settings.EXAM_MODE:
+            return False
         return True
 
     def __str__(self):
