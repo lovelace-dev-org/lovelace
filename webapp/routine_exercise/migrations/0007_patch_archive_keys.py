@@ -9,6 +9,10 @@ from django.contrib.contenttypes.models import ContentType
 def sync_unique_keys(apps, schema_editor):
     ContentPage = apps.get_model("courses", "contentpage")
     RoutineExerciseTemplate = apps.get_model("routine_exercise", "routineexercisetemplate")
+    # Get out early if none exist, as the line after will not work during initial migration
+    if not RoutineExerciseTemplate.objects.exists():
+        return
+
     template_type_id = ContentType.objects.get(model=RoutineExerciseTemplate._meta.model_name).id
 
     for page in ContentPage.objects.all():
