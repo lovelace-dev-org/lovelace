@@ -326,8 +326,8 @@ class ExamTaskAttempt(models.Model):
                 past_choices = ExamTaskChoice.objects.filter(
                     attempt__task=self.task,
                     user=user
-                )
-                if remaining := task_qs.exclude(exercise__in=past_choices):
+                ).values_list("embedlink__id")
+                if remaining := task_qs.exclude(id__in=past_choices):
                     personal_pool = list(remaining)
 
             embedlink = random.choice(personal_pool)
