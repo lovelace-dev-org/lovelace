@@ -30,12 +30,13 @@ from assessment.utils import get_sectioned_sheet, serializable_assessment, copy_
 from utils.access import (
     ensure_owner_or_staff,
     ensure_staff,
+    is_course_staff,
 )
 from utils.content import get_embedded_parent
 from utils.formatters import display_name
 
 
-def view_assessment_sheet(request, course, instance, content):
+def view_assessment_sheet(request, course, instance, parent, content):
     sheet_link = AssessmentToExerciseLink.objects.filter(
         exercise=content,
         instance=instance,
@@ -51,7 +52,7 @@ def view_assessment_sheet(request, course, instance, content):
 
 
 @ensure_staff
-def manage_assessment(request, course, instance, content):
+def manage_assessment(request, course, instance, parent, content):
     course_sheets = AssessmentSheet.objects.filter(origin=course)
     sheet_link = AssessmentToExerciseLink.objects.filter(
         exercise=content,
@@ -60,7 +61,7 @@ def manage_assessment(request, course, instance, content):
     if request.method == "POST":
         form = AddAssessmentForm(request.POST, course_sheets=course_sheets)
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         if form.cleaned_data["copy"]:
@@ -101,7 +102,7 @@ def manage_assessment(request, course, instance, content):
         "form_object": form,
         "submit_url": reverse(
             "assessment:manage_assessment",
-            kwargs={"course": course, "instance": instance, "content": content},
+            kwargs={"course": course, "instance": instance, "parent": parent, "content": content},
         ),
         "html_id": content.slug + "-assessment-select",
         "html_class": "assessment-staff-form staff-only",
@@ -118,6 +119,7 @@ def manage_assessment(request, course, instance, content):
         "course": course,
         "instance": instance,
         "exercise": content,
+        "parent": parent,
         "top_form": form_html,
         "sheet": sheet,
         "bullets_by_section": by_section,
@@ -130,7 +132,7 @@ def create_bullet(request, course, instance, sheet):
     if request.method == "POST":
         form = NewBulletForm(request.POST)
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         new_bullet = form.save(commit=False)
@@ -175,7 +177,7 @@ def edit_section(request, course, instance, sheet, section=None):
     if request.method == "POST":
         form = SectionForm(request.POST, instance=section)
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         with reversion.create_revision():
@@ -256,7 +258,7 @@ def edit_bullet(request, course, instance, sheet, bullet):
     if request.method == "POST":
         form = AssessmentBulletForm(request.POST, instance=bullet)
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         with reversion.create_revision():
@@ -291,26 +293,25 @@ def delete_bullet(request, course, instance, sheet, bullet):
 
 
 @ensure_staff
-def update_exercise_points(request, course, instance, content, sheet):
+def update_exercise_points(request, course, instance, parent, content, sheet):
     sheet_link = AssessmentToExerciseLink.objects.filter(
         exercise=content,
         instance=instance,
     ).first()
 
-    with reversion.create_revision():
-        content.default_points = sheet_link.calculate_max_score()
-        content.save()
-        reversion.set_user(request.user)
+    points = sheet_link.calculate_max_score()
 
     embed_links = EmbeddedLink.objects.filter(embedded_page=content, instance=instance)
     for link in embed_links:
+        link.default_points = points
+        link.save()
         link.parent.regenerate_cache(instance)
 
     return JsonResponse({"status": "ok"})
 
 
 @ensure_staff
-def view_submissions(request, course, instance, content):
+def view_submissions(request, course, instance, parent, content):
     users = (
         instance.enrolled_users.get_queryset().order_by("last_name", "first_name", "username").all()
     )
@@ -322,8 +323,14 @@ def view_submissions(request, course, instance, content):
         .exclude(state="credited")
         .prefetch_related(Prefetch("user", queryset=users))
     )
+    embed_link = EmbeddedLink.objects.get(
+        embedded_page=content,
+        instance=instance,
+        parent=parent,
+    )
     assessed = []
     unassessed = []
+    resubmitted = []
     suspect = []
     skip = []
     for completion in all_records:
@@ -336,7 +343,7 @@ def view_submissions(request, course, instance, content):
             continue
 
         entry = {}
-        if content.group_submission:
+        if embed_link.group_submission:
             try:
                 group = StudentGroup.objects.get(members=completion.user, instance=instance)
             except StudentGroup.DoesNotExist:
@@ -358,31 +365,44 @@ def view_submissions(request, course, instance, content):
             "course": course,
             "instance": instance,
             "exercise": content,
+            "parent": parent,
         }
         entry["answers_url"] = reverse("courses:show_answers", kwargs=href_args)
-        entry["assessment_url"] = reverse("assessment:submission_assessment", kwargs=href_args)
-        if completion.state in ["correct", "incorrect"]:
+        if completion.state in ["correct", "incorrect", "resubmitted"]:
             try:
                 evaluated_answer = (
                     UserAnswer.get_task_answers(content, instance, completion.user)
                     .exclude(evaluation=None)
                     .exclude(evaluation__feedback="")
-                    .latest("answer_date")
+                    .latest("evaluation__evaluation_date")
                 )
             except UserAnswer.DoesNotExist:
+                href_args["answer"] = (
+                    UserAnswer.get_task_answers(content, instance, completion.user)
+                    .latest("answer_date")
+                )
                 unassessed.append(entry)
             else:
+                href_args["answer"] = evaluated_answer
                 entry["total_points"] = evaluated_answer.evaluation.points
                 if evaluated_answer.evaluation.suspect:
                     suspect.append(entry)
+                elif completion.state == "resubmitted":
+                    resubmitted.append(entry)
                 else:
                     assessed.append(entry)
         else:
             unassessed.append(entry)
+            href_args["answer"] = (
+                UserAnswer.get_task_answers(content, instance, completion.user)
+                .latest("answer_date")
+            )
+
+        entry["assessment_url"] = reverse("assessment:submission_assessment", kwargs=href_args)
 
     assessed.sort(key=itemgetter("group"))
     unassessed.sort(key=itemgetter("group"))
-    parent, single_linked = get_embedded_parent(content, instance)
+    resubmitted.sort(key=itemgetter("group"))
 
     t = loader.get_template("assessment/submissions.html")
     c = {
@@ -391,32 +411,37 @@ def view_submissions(request, course, instance, content):
         "course_staff": True,
         "exercise": content,
         "parent": parent,
-        "single_linked": single_linked,
         "assessed": assessed,
         "unassessed": unassessed,
+        "resubmitted": resubmitted,
         "suspect": suspect,
     }
     return HttpResponse(t.render(c, request))
 
 
 @ensure_staff
-def submission_assessment(request, course, instance, exercise, user):
+def submission_assessment(request, course, instance, parent, exercise, user, answer):
     try:
         sheet_link = AssessmentToExerciseLink.objects.get(instance=instance, exercise=exercise)
     except AssessmentToExerciseLink.DoesNotExist:
         return HttpResponseNotFound(_("Assessment sheet for this exercise doesn't exist"))
 
     sheet, by_section = get_sectioned_sheet(sheet_link)
+    embed_link = EmbeddedLink.objects.get(
+        embedded_page=exercise,
+        instance=instance,
+        parent=parent,
+    )
 
     if request.method == "POST":
         form = AssessmentForm(request.POST, by_section=by_section)
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         assessment = serializable_assessment(request.user, sheet, by_section, form.cleaned_data)
-        answer_object = UserAnswer.get_task_answers(exercise, instance, user).latest("answer_date")
         exercise.update_evaluation(
+            embed_link,
             user,
             {
                 "evaluation": form.cleaned_data.get("correct", False),
@@ -427,24 +452,17 @@ def submission_assessment(request, course, instance, exercise, user):
                 "suspect": form.cleaned_data.get("suspect", False),
                 "comment": form.cleaned_data.get("comment", ""),
             },
-            answer_object,
+            answer,
             complete=form.cleaned_data.get("complete", False),
             overwrite=True
         )
         return JsonResponse({"status": "ok"})
 
     try:
-        evaluated_answer = (
-            UserAnswer.get_task_answers(exercise, instance, user)
-            .exclude(evaluation=None)
-            .exclude(evaluation__feedback="")
-            .latest("answer_date")
-        )
-        assessment = json.loads(evaluated_answer.evaluation.feedback)
-        suspect = evaluated_answer.evaluation.suspect
-        comment = evaluated_answer.evaluation.comment
+        assessment = json.loads(answer.evaluation.feedback)
+        suspect = answer.evaluation.suspect
+        comment = answer.evaluation.comment
     except (UserAnswer.DoesNotExist, json.JSONDecodeError):
-        evaluated_answer = None
         assessment = {}
         suspect = False
         comment = ""
@@ -458,8 +476,6 @@ def submission_assessment(request, course, instance, exercise, user):
         section["section_points"] = section_scores.get(name.title, 0)
         max_score += section["total_points"]
 
-    parent, single_linked = get_embedded_parent(exercise, instance)
-
     form = AssessmentForm(
         by_section=by_section,
         assessment=assessment,
@@ -471,10 +487,10 @@ def submission_assessment(request, course, instance, exercise, user):
     c = {
         "course": course,
         "instance": instance,
+        "answer": answer,
         "course_staff": True,
         "exercise": exercise,
         "parent": parent,
-        "single_linked": single_linked,
         "student": user,
         "sheet": sheet,
         "bullets_by_section": by_section,
@@ -489,16 +505,16 @@ def submission_assessment(request, course, instance, exercise, user):
 
 
 @ensure_owner_or_staff
-def view_assessment(request, user, course, instance, exercise, answer):
-    if not exercise.manually_evaluated:
-        return HttpResponseNotFound(_("This exercise does not have manual assessment."))
-
+def view_assessment(request, user, course, instance, parent, exercise, answer):
     try:
         assessment = json.loads(answer.evaluation.feedback)
     except AttributeError:
         return HttpResponseNotFound(_("This answer has not been evaluated"))
     except json.JSONDecodeError:
         return HttpResponseNotFound(_("Assessment not found"))
+
+    if not assessment.get("completed") and not is_course_staff(request.user, instance):
+        return HttpResponseNotFound(_("Assessment is not completed"))
 
     t = loader.get_template("assessment/assessment_view.html")
     c = {"document": assessment}

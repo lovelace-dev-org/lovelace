@@ -1,3 +1,4 @@
+from collections import defaultdict
 import copy
 from html import escape
 import itertools
@@ -202,6 +203,11 @@ class MarkupParser:
             except MarkupError as e:
                 yield ("error", e.html(), line_idx, 1)
                 line_count = 1
+            except Exception as e:
+                error = MarkupError(str(e))
+                print(f"Error in {block_markup.__name__} markup: {e}")
+                print(f"On line: {line_idx}")
+                yield ("error", error.html(), line_idx, 1)
 
             line_idx += line_count
 
@@ -233,9 +239,6 @@ class MarkupParser:
         return parsed_string
 
     def tag(self, text, replace_in, replaces, tag):
-        if not self._ready:
-            raise ParserUninitializedError("compile() not called")
-
         self._state = {
             "open_block": "paragraph",
             "open": False
@@ -245,7 +248,7 @@ class MarkupParser:
 
         replaces = [
             re.compile(
-                f"(?<!{tag[0]})(?P<word>[{old[0].upper()}{old[0]}]{old[1:]})(?P<punct>[- ,.?!;:])"
+                f"(?<!{re.escape(tag[0])})(?P<word>[{old[0].upper()}{old[0]}]{old[1:]})(?P<punct>[- ,.?!;:])"
             ) for old in replaces
         ]
 
@@ -276,8 +279,7 @@ class LinkParser(MarkupParser):
     _inline_markups = []
 
     def parse(self, text, instance=None):
-        page_links = []
-        media_links = []
+        links = defaultdict(list)
 
         lines = iter(text.splitlines())
 
@@ -293,9 +295,9 @@ class LinkParser(MarkupParser):
                 pass
             else:
                 link_func = block_markup.build_links
-                link_func(group, self._current_matchobj, instance, page_links, media_links)
+                link_func(group, self._current_matchobj, instance, links)
 
-        return page_links, media_links
+        return links
 
 
 # inline = this markup is inline

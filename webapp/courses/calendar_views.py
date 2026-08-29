@@ -1,4 +1,6 @@
 import datetime
+import itertools
+import operator
 from django.conf import settings
 from django.db import transaction
 from django.http import (
@@ -9,24 +11,119 @@ from django.http import (
     HttpResponseNotAllowed,
 )
 from django.template import loader
+from django.urls import reverse
 from django.utils.translation import gettext as _
 from courses.forms import CalendarConfigForm, CalendarSchedulingForm
 from courses.models import (
     CalendarDate,
     CalendarReservation,
     ContentPage,
+    CourseEnrollment,
+    StudentGroup,
 )
 import courses.message_views as messaging
 from utils.access import ensure_staff
+from utils.formatters import display_name
 from utils.management import CourseContentAdmin
 
+
+def user_calendar(request):
+    all_events = []
+    now = datetime.datetime.now()
+    reserved_events = CalendarDate.objects.filter(
+        calendar__meeting_calendar=True,
+        created_by=request.user,
+        start_time__gt=now,
+        calendarreservation__isnull=False,
+    )
+    reservations = CalendarReservation.objects.filter(
+        user=request.user,
+        calendar_date__start_time__gt=now,
+    )
+    group_reservations = []
+    for group in StudentGroup.objects.filter(members=request.user):
+        for member in group.members.get_queryset().exclude(id=request.user.id):
+            group_reservations.extend(
+                list(CalendarReservation.objects.filter(
+                    user=member,
+                    calendar_date__start_time__gt=now
+                ))
+            )
+
+    for event in reserved_events:
+        entry = {"role": "host", "event": event}
+        event_reservations = list(event.calendarreservation_set.get_queryset())
+        if len(event_reservations) == 1:
+            entry["reserver"] = display_name(event_reservations[0].user)
+            if instance := event_reservations[0].instance:
+                if event.calendar.related_content:
+                    entry["answers_url"] = reverse(
+                        "courses:show_answers",
+                        kwargs={
+                            "user": event_reservations[0].user,
+                            "course": instance.course,
+                            "instance": instance,
+                            "exercise": event.calendar.related_content,
+                        },
+                    )
+                else:
+                    entry["answers_url"] = reverse(
+                        "teacher:student_completion",
+                        kwargs={
+                            "user": event_reservations[0].user,
+                            "course": instance.course,
+                            "instance": instance,
+                        },
+                    )
+        else:
+            entry["reserver"] = _("multiple")
+        all_events.append(entry)
+
+    for reservation in reservations:
+        all_events.append({"role": "reserver", "event": reservation.calendar_date})
+
+    for reservation in group_reservations:
+        all_events.append({"role": "member", "event": reservation.calendar_date})
+
+    def start_time_key(entry):
+        return entry["event"].start_time
+
+    def date_key(entry):
+        return entry["event"].start_time.date()
+
+    all_events.sort(key=start_time_key)
+    grouped_events = itertools.groupby(all_events, date_key)
+    grouped_events = [(key, list(group)) for key, group in grouped_events]
+
+    enrollments = CourseEnrollment.objects.filter(
+        student=request.user,
+        enrollment_state="ACCEPTED"
+    )
+    all_deadlines = []
+    for enrollment in enrollments:
+        all_deadlines.extend(enrollment.instance.get_deadlines(request.user))
+
+    def deadline_key(entry):
+        return (entry["deadline"], entry["course"].name, entry["ordinal"])
+
+    all_deadlines.sort(key=deadline_key)
+
+    t = loader.get_template("courses/user-calendar.html")
+    c = {
+        "user": request.user,
+        "grouped_events": grouped_events,
+        "deadlines": [
+            entry for entry in all_deadlines if entry["deadline"].date() >= datetime.date.today()
+        ]
+    }
+    return HttpResponse(t.render(c, request))
 
 @ensure_staff
 def calendar_scheduling(request, course, instance, calendar):
     if request.method == "POST":
         form = CalendarSchedulingForm(request.POST)
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         start = form.cleaned_data["start"]
@@ -35,6 +132,7 @@ def calendar_scheduling(request, course, instance, calendar):
         for i in range(form.cleaned_data["event_count"]):
             event_start = start + increment * i
             event = CalendarDate(
+                created_by=request.user,
                 calendar=calendar,
                 start_time=event_start,
                 end_time=event_start + increment,
@@ -67,11 +165,12 @@ def adjust_slots(request, course, instance, event, action):
     if event.reservable_slots <= 0:
         event.delete()
         deleted = True
+        reservations = 0
     else:
         event.save()
         deleted = False
+        reservations = CalendarReservation.objects.filter(calendar_date=event).count()
 
-    reservations = CalendarReservation.objects.filter(calendar_date=event).count()
     return JsonResponse(
         {
             "status": "ok",
@@ -91,7 +190,7 @@ def calendar_config(request, course, instance, calendar):
             request.POST, available_content=available_content, instance=calendar
         )
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         try:
@@ -134,7 +233,7 @@ def message_reservers(request, course, instance, calendar):
         use_bcc=True,
     )
 
-def calendar_reservation(request, calendar, event):
+def calendar_reservation(request, instance, calendar, event):
     if not request.user.is_authenticated:
         return HttpResponseNotFound()
     if not request.method == "POST":
@@ -157,7 +256,11 @@ def calendar_reservation(request, calendar, event):
                     {"msg": _("You have already reserved a slot in this event.")},
                     status=400,
                 )
-            new_reservation = CalendarReservation(calendar_date=event, user=request.user)
+            new_reservation = CalendarReservation(
+                calendar_date=event,
+                user=request.user,
+                instance=instance,
+            )
             new_reservation.save()
             return JsonResponse(
                 {

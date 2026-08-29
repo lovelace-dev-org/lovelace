@@ -1,5 +1,5 @@
 from django.urls import path
-from model_path_converter import register_model_converter
+from utils.converters import register_model_converter
 from . import views
 from .models import AssessmentBullet, AssessmentSection, AssessmentSheet
 
@@ -11,7 +11,7 @@ register_model_converter(AssessmentSection, name="section")
 
 urlpatterns = [
     path(
-        "<course:course>/<instance:instance>/<content:content>/manage/",
+        "<course:course>/<instance:instance>/<content:parent>/<content:content>/manage/",
         views.manage_assessment,
         name="manage_assessment",
     ),
@@ -52,27 +52,29 @@ urlpatterns = [
         name="delete_bullet",
     ),
     path(
-        "<course:course>/<instance:instance>/<content:content>/view/",
+        "<course:course>/<instance:instance>/<content:parent>/<content:content>/view/",
         views.view_assessment_sheet,
         name="view_assessment_sheet",
     ),
     path(
-        "<course:course>/<instance:instance>/<content:content>/submissions/",
+        "<course:course>/<instance:instance>/<content:parent>/<content:content>/submissions/",
         views.view_submissions,
         name="view_submissions",
     ),
     path(
-        "<course:course>/<instance:instance>/<content:exercise>/<user:user>/",
+        "<course:course>/<instance:instance>/<content:parent>/<content:exercise>/"
+        "<user:user>/<answer:answer>/",
         views.submission_assessment,
         name="submission_assessment",
     ),
     path(
-        "<user:user>/<course:course>/<instance:instance>/<content:exercise>/<answer:answer>/",
+        "<user:user>/<course:course>/<instance:instance>/<content:parent>/"
+        "<content:exercise>/<answer:answer>/",
         views.view_assessment,
         name="view_assessment",
     ),
     path(
-        "<course:course>/<instance:instance>/<content:content>/<sheet:sheet>/",
+        "<course:course>/<instance:instance>/<content:parent>/<content:content>/<sheet:sheet>/",
         views.update_exercise_points,
         name="update_exercise_points",
     ),

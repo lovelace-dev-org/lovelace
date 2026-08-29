@@ -17,6 +17,8 @@ from reversion.admin import VersionAdmin
 from reversion.models import Version
 from reversion import revisions as reversion
 
+from lovelace import plugins as lovelace_plugins
+
 from courses.models import (
     About,
     Calendar,
@@ -72,13 +74,16 @@ from courses.forms import (
 from courses.widgets import AdminFileWidget, AdminTemplateBackendFileWidget
 from utils.management import CourseContentAdmin, CourseMediaAdmin
 
-from faq.utils import clone_faq_links
-
 # Moved these here from models.py so that all registering happens
 # in this file (as VersionAdmin autoregisters the associated model)
 # This makes modeltranslation work with reversion, probably due
 # to translated fields being added between loading models.py and
 # this module.
+
+content_follow_extra = []
+for module in lovelace_plugins["content-follow"]:
+    content_follow_extra.extend(module.get_content_follows())
+
 reversion.register(
     ContentPage,
     follow=[
@@ -91,10 +96,7 @@ reversion.register(
         "repeatedtemplateexercisebackendfile_set",
         "repeatedtemplateexercisetemplate_set",
         "textfieldexerciseanswer_set",
-        "routineexercisetemplate_set",
-        "routineexercisebackendfile_set",
-        "routineexercisebackendcommand",
-    ],
+    ] + content_follow_extra,
 )
 reversion.register(
     FileExerciseTest,
@@ -109,7 +111,10 @@ reversion.register(InstanceIncludeFileToExerciseLink)
 reversion.register(InstanceIncludeFile)
 reversion.register(FileExerciseTestIncludeFile)
 reversion.register(IncludeFileSettings)
-reversion.register(CourseMedia)
+reversion.register(
+    CourseMedia,
+    follow=["file", "image", "videolink"]
+)
 reversion.register(TermTab)
 reversion.register(TermLink)
 reversion.register(RepeatedTemplateExerciseTemplate)
@@ -178,17 +183,14 @@ class MultipleChoiceExerciseAdmin(CourseContentAdmin, TranslationAdmin, VersionA
         (
             "Page information",
             {
-                "fields": ["name", "origin", "slug", "content", "question", "tags"],
+                "fields": ["name", "origin", "slug", "content", "question"],
             },
         ),
         (
             "Exercise miscellaneous",
             {
                 "fields": [
-                    "default_points",
-                    "evaluation_group",
-                    "delayed_evaluation",
-                    "answer_limit",
+                    "answer_widget",
                 ],
                 "classes": ["wide"],
             },
@@ -224,17 +226,14 @@ class CheckboxExerciseAdmin(CourseContentAdmin, TranslationAdmin, VersionAdmin):
         (
             "Page information",
             {
-                "fields": ["name", "origin", "slug", "content", "question", "tags"],
+                "fields": ["name", "origin", "slug", "content", "question"],
             },
         ),
         (
             "Exercise miscellaneous",
             {
                 "fields": [
-                    "default_points",
-                    "evaluation_group",
-                    "delayed_evaluation",
-                    "answer_limit",
+                    "answer_widget",
                 ],
                 "classes": ["wide"],
             },
@@ -270,19 +269,14 @@ class TextfieldExerciseAdmin(CourseContentAdmin, TranslationAdmin, VersionAdmin)
         (
             "Page information",
             {
-                "fields": ["name", "origin", "slug", "content", "question", "tags"],
+                "fields": ["name", "origin", "slug", "content", "question"],
             },
         ),
         (
             "Exercise miscellaneous",
             {
                 "fields": [
-                    "default_points",
-                    "answer_limit",
-                    "manually_evaluated",
-                    "delayed_evaluation",
-                    "group_submission",
-                    "evaluation_group",
+                    "answer_widget",
                 ],
                 "classes": ["wide"],
             },
@@ -298,6 +292,7 @@ class TextfieldExerciseAdmin(CourseContentAdmin, TranslationAdmin, VersionAdmin)
     )
     list_per_page = 500
     save_on_top = True
+    save_as = True
 
 
 class RepeatedTemplateExerciseTemplateInline(TranslationStackedInline):
@@ -323,11 +318,7 @@ class RepeatedTemplateExerciseAdmin(CourseContentAdmin, TranslationAdmin, Versio
     fieldsets = [
         (
             "Page information",
-            {"fields": ["name", "slug", "content", "question", "tags"]},
-        ),
-        (
-            "Exercise miscellaneous",
-            {"fields": ["default_points", "evaluation_group"], "classes": ["wide"]},
+            {"fields": ["name", "slug", "content", "question"]},
         ),
         ("Feedback settings", {"fields": ["feedback_questions"]}),
     ]
@@ -845,8 +836,6 @@ class CourseInstanceAdmin(TranslationAdmin, VersionAdmin):
             for term in terms:
                 link = TermToInstanceLink(revision=None, term=term, instance=obj)
                 link.save()
-
-            clone_faq_links(obj)
 
         self.current = obj
         transaction.on_commit(self.finish_cg)

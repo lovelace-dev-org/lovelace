@@ -8,7 +8,9 @@ import json
 import os
 import ssl
 from kombu import Exchange, Queue
+from dotenv import load_dotenv
 
+load_dotenv(os.getenv("DOTENV_PATH"))
 
 INSTALLED_APPS = [
     'django.contrib.auth',
@@ -20,9 +22,12 @@ INSTALLED_APPS = [
     'teacher_tools',
 ]
 
+MODELTRANSLATION_DEFAULT_LANGUAGE = os.environ["LOVELACE_DEFAULT_LANG"]
+
 TIME_ZONE = "Europe/Helsinki"
 REDIS_RESULT_EXPIRE = 60
 
+ENABLE_CELERY = True
 CELERY_BROKER_URL = os.environ["LOVELACE_CELERY_BROKER"]
 CELERY_RESULT_BACKEND = os.environ["LOVELACE_CELERY_RESULT"]
 if os.getenv("LOVELACE_CELERY_USE_SSL"):
@@ -63,5 +68,11 @@ CHECKING_ENV = json.loads(os.environ["LOVELACE_CHECKER_ENV"])
 WORKER_USERNAME = os.getenv("LOVELACE_WORKER_USER", "nobody")
 RESTRICTED_USERNAME = os.getenv("LOVELACE_RESTRICTED_USER", "nobody")
 
-MOSSNET_LANGUAGES = []
+WORKER_CONCURRENCY = os.getenv("LOVELACE_WORKER_CONCURRENCY", 40)
+WORKER_NO_FILES = os.getenv("LOVELACE_WORKER_NO_FILES", 100)
+WORKER_FILE_SIZE = os.getenv("LOVELACE_WORKER_FILE_SIZE", 4 * (1024 ** 2))
+WORKER_CPU_TIME = os.getenv("LOVELACE_WORKER_CPU_TIME", 20)
+WORKER_MEMORY = int(os.getenv("LOVELACE_WORKER_MEMORY", 100 * (1024 ** 2)))
 
+
+MOSSNET_LANGUAGES = []

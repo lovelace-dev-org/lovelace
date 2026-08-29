@@ -17,15 +17,15 @@ def check_user_completion(user, tasks, instance, completion_qs, include_links=Tr
             result = "unanswered"
 
         points = 0
-        if result == "correct":
+        if result in ["correct", "resubmitted"]:
             correct = True
-            points = completion.points * exercise_obj.default_points
+            points = completion.points * link.default_points
         elif result == "credited":
             correct = True
         else:
             correct = False
 
-        result_dict = {"eo": exercise_obj, "correct": correct, "points": points, "result": result}
+        result_dict = {"eo": exercise_obj, "correct": correct, "points": points, "result": result, "link": link}
         if include_links:
             result_dict["answers_link"] = reverse(
                 "courses:show_answers",
@@ -33,6 +33,7 @@ def check_user_completion(user, tasks, instance, completion_qs, include_links=Tr
                     "user": user,
                     "course": course,
                     "instance": instance,
+                    "parent": link.parent,
                     "exercise": exercise_obj,
                 },
             )
@@ -49,17 +50,17 @@ def get_missing_and_points(results):
     groups_counted = []
     group_scores = {}
     for result in results:
-        if result["eo"].evaluation_group:
-            evalgroup = result["eo"].evaluation_group
+        if result["link"].evaluation_group:
+            evalgroup = result["link"].evaluation_group
             if evalgroup not in groups_counted:
-                points_available += result["eo"].default_points
+                points_available += result["link"].default_points
                 groups_counted.append(evalgroup)
                 tasks += 1
                 if not result["correct"]:
                     missing += 1
             group_scores[evalgroup] = max(result["points"], group_scores.get(evalgroup, 0))
         else:
-            points_available += result["eo"].default_points
+            points_available += result["link"].default_points
             tasks += 1
             if result["correct"]:
                 points += result["points"]

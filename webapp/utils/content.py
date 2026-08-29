@@ -12,8 +12,10 @@ from django.utils import translation
 from reversion.models import Version, Revision
 from courses import markupparser
 import courses.models as cm
-from utils.access import is_course_staff
+from utils.access import is_course_staff, determine_access
+from utils.archive import find_version_with_filename
 from utils.exercise import best_result
+from utils.files import find_fs_path, generate_download_response
 from utils.notify import get_notifications
 
 def first_title_from_content(content_text):
@@ -66,7 +68,7 @@ def get_course_instance_tasks(instance, deadline_before=None):
 
     all_embedded_links = (
         cm.EmbeddedLink.objects.filter(instance=instance)
-        .order_by("embedded_page__name")
+        .order_by("ordinal_number")
         .select_related("embedded_page")
         .defer("embedded_page__content")
     )
@@ -160,7 +162,7 @@ def get_parent_context(exercise, instance):
     )
 
 
-def get_embedded_media_file(name, instance, parent):
+def get_embedded_media_file(slug, instance, parent):
     """
     Gets an embedded media file within a given instance context. Will return
     either the current version, or the revision specified in the media link.
@@ -169,9 +171,9 @@ def get_embedded_media_file(name, instance, parent):
     """
 
     try:
-        link = cm.CourseMediaLink.objects.get(media__name=name, instance=instance, parent=parent)
+        link = cm.CourseMediaLink.objects.get(media__slug=slug, instance=instance, parent=parent)
     except (KeyError, cm.CourseMediaLink.DoesNotExist) as e:
-        file_object = cm.File.objects.get(name=name)
+        file_object = cm.File.objects.get(slug=slug)
     else:
         if link.revision is None:
             file_object = link.media.file
@@ -179,15 +181,11 @@ def get_embedded_media_file(name, instance, parent):
             revision_object = Version.objects.get_for_object(link.media.file).get(
                 revision=link.revision
             )
-            file_object = revision_object._object_version.object
-
-            # is there a better way to get parent attributes
-            # from the version object?
-            file_object.name = revision_object.field_dict["name"]
+            file_object = cm.File(**revision_object.field_dict)
     return file_object
 
 
-def get_embedded_media_image(name, instance, parent):
+def get_embedded_media_image(slug, instance, parent):
     """
     Gets an embedded media image within a given instance context. Will return
     either the current version, or the revision specified in the media link.
@@ -196,9 +194,9 @@ def get_embedded_media_image(name, instance, parent):
     """
 
     try:
-        link = cm.CourseMediaLink.objects.get(media__name=name, instance=instance, parent=parent)
+        link = cm.CourseMediaLink.objects.get(media__slug=slug, instance=instance, parent=parent)
     except (KeyError, cm.CourseMediaLink.DoesNotExist) as e:
-        image_object = cm.Image.objects.get(name=name)
+        image_object = cm.Image.objects.get(slug=slug)
     else:
         if link.revision is None:
             image_object = link.media.image
@@ -206,11 +204,7 @@ def get_embedded_media_image(name, instance, parent):
             revision_object = Version.objects.get_for_object(link.media.image).get(
                 revision=link.revision
             )
-            image_object = revision_object._object_version.object
-
-            # is there a better way to get parent attributes
-            # from the version object?
-            image_object.name = revision_object.field_dict["name"]
+            image_object = cm.Image(**revision_object.field_dict)
     return image_object
 
 
@@ -231,8 +225,12 @@ def system_messages(view_func):
             request.session["cookies_accepted"] = False
 
         last_seen = request.COOKIES.get("notifications_seen")
+        msg_lang = translation.get_language()
         msg_count = 0
-        for message in get_notifications("system", last_seen, translation.get_language()):
+        notifications = get_notifications("system", last_seen, msg_lang)
+        notifications.extend(get_notifications(request.user.username, last_seen, msg_lang))
+
+        for message in notifications:
             messages.add_message(request, messages.INFO, message)
             msg_count += 1
 
@@ -298,17 +296,17 @@ def course_tree(tree, node, user, instance_obj, enrolled=False, staff=False):
         evaluation = exercise.get_user_evaluation(user, instance_obj)
 
         if embedded_count > 0:
-            grouped = embedded_links.exclude(embedded_page__evaluation_group="")
+            grouped = embedded_links.exclude(evaluation_group="")
             group_tags = (
-                grouped.order_by("embedded_page__evaluation_group")
-                .distinct("embedded_page__evaluation_group")
-                .values_list("embedded_page__evaluation_group", flat=True)
+                grouped.order_by("evaluation_group")
+                .distinct("evaluation_group")
+                .values_list("evaluation_group", flat=True)
             )
 
             embedded_count -= grouped.count() - len(group_tags)
 
             for tag in group_tags:
-                group_score, representative = best_result(user, instance_obj, tag)
+                group_score, representative = best_result(user, instance_obj, node.content, tag)
                 if group_score > -1:
                     correct_embedded += 1
                     if not grouped.filter(embedded_page=representative).exists():
@@ -316,13 +314,13 @@ def course_tree(tree, node, user, instance_obj, enrolled=False, staff=False):
                     page_score += group_score * representative.default_points * node.score_weight
                 page_max += representative.default_points * node.score_weight
 
-            for emb_link in embedded_links.filter(embedded_page__evaluation_group=""):
+            for emb_link in embedded_links.filter(evaluation_group=""):
                 emb_exercise = emb_link.embedded_page
                 correct, score = emb_exercise.get_user_evaluation(user, instance_obj)
-                page_max += emb_exercise.default_points * node.score_weight
+                page_max += emb_link.default_points * node.score_weight
                 if correct == "correct":
                     correct_embedded += 1
-                    page_score += score * emb_exercise.default_points * node.score_weight
+                    page_score += score * emb_link.default_points * node.score_weight
 
     deadline = node.deadline
     if user.is_authenticated:
@@ -366,4 +364,31 @@ def course_tree(tree, node, user, instance_obj, enrolled=False, staff=False):
             course_tree(tree, child, user, instance_obj, enrolled, staff)
         tree.append({"content": mark_safe("<")})
 
+
+def download_exercise_backend(request, exercise_id, field_name, filename, backend_model):
+    try:
+        exercise_object = cm.ContentPage.objects.get(id=exercise_id)
+    except cm.ContentPage.DoesNotExist as e:
+        return HttpResponseNotFound(_("This exercise does't exist"))
+
+    if not determine_access(request.user, exercise_object):
+        return HttpResponseForbidden(
+            _(
+                "Only course main responsible teachers are allowed "
+                "to download files through this interface."
+            )
+        )
+
+    fileobjects = backend_model.objects.filter(exercise=exercise_object)
+    for fileobject in fileobjects:
+        try:
+            fs_path = find_fs_path(filename, fileobject, field_name)
+        except FileNotFoundError as e:
+            pass
+        else:
+            break
+    else:
+        return HttpResponseNotFound(_("Requested file does not exist."))
+
+    return generate_download_response(fs_path)
 

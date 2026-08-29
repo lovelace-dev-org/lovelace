@@ -1,3 +1,4 @@
+import json
 from reversion.models import Version
 
 from django.http import (
@@ -8,10 +9,15 @@ from django.http import (
     JsonResponse,
 )
 from django.template import loader
+from django.utils.translation import gettext as _
 
 import feedback.models
+from feedback.models import ContentFeedbackQuestion
+from feedback.forms import ContentFeedbackConfigForm, FeedbackQuestionEditForm
 import courses.models
+from utils.access import ensure_staff
 from utils.content import first_title_from_content
+from utils.management import process_modelform, process_delete_confirm_form
 
 
 def textfield_feedback_stats(question, instance, content):
@@ -181,3 +187,93 @@ def receive(request, instance, content, question):
         return JsonResponse({"error": str(e)})
 
     return JsonResponse({"result": "Your feedback was received!"})
+
+
+# MANAGEMENT
+# |
+# v
+
+@ensure_staff
+def feedback_management_panel(request, course, instance, content):
+
+    questions = ContentFeedbackQuestion.objects.filter(origin=course).order_by("question")
+
+    c = {
+        "course": course,
+        "instance": instance,
+        "content": content,
+        "panel_refresh_url": request.path,
+        "questions": questions,
+    }
+    t = loader.get_template("feedback/feedback-management-panel.html")
+    return HttpResponse(t.render(c, request))
+
+@ensure_staff
+def edit_content_feedback(request, course, instance, content):
+    return process_modelform(
+        request,
+        ContentFeedbackConfigForm,
+        content,
+        form_id=f"{content.slug}-feedback-config",
+        comment=f"Change {content.slug} feedback questions",
+    )
+
+@ensure_staff
+def create_feedback_question(request, course, instance):
+    def post_save(question, form):
+        question.origin = course
+
+    return process_modelform(
+        request,
+        FeedbackQuestionEditForm,
+        None,
+        form_id=f"create-feedback-question",
+        comment=f"Create feedback question",
+        post_save_cb=post_save,
+        extra_response={
+            "refresh": True
+        }
+    )
+
+@ensure_staff
+def edit_feedback_question(request, course, instance, question):
+    form_cls = question.get_type_model().get_edit_form()
+
+    return process_modelform(
+        request,
+        form_cls,
+        question,
+        form_id=f"feedback-{question.slug}-edit-form",
+        comment=f"Edit feedback {question.slug}",
+        extra_response={
+            "refresh": True
+        }
+    )
+
+@ensure_staff
+def delete_feedback_question(request, course, instance, question):
+    if request.method == "POST" and question.contentpage_set.get_queryset().exists():
+        return JsonResponse(
+            {
+                "errors": {"main": [{"message": _("This question is used by one more or pages.")}]}
+            },
+            status=400
+        )
+
+    def delete_success(form):
+        question.delete()
+
+    return process_delete_confirm_form(
+        request,
+        delete_success,
+        extra_context={
+            "submit_override": "editing.submit_form",
+        },
+        extra_response={
+            "refresh": True
+        }
+    )
+
+
+
+

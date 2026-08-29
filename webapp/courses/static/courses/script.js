@@ -89,10 +89,13 @@ function build_toc (static_root_url) {
     // var topmost_ol = null;
     const headings = $.map([1, 2, 3, 4, 5, 6], function (i) {
         return "section.content h" + i + ".content-heading"
-    }).join(", ")
+    }).join(", ") + ", .calendar-date-heading"
     $(headings).each(function (index) {
         // TODO: http://stackoverflow.com/questions/123999/how-to-tell-if-a-dom-element-is-visible-in-the-current-viewport
-        const new_toc_level = parseInt(this.tagName[1])
+        let new_toc_level = parseInt(this.tagName[1])
+        if (isNaN(new_toc_level)) {
+            new_toc_level = $(this).attr("data-heading-level")
+        }
 
         if ($(this).closest("div.term-description").length > 0) {
             return
@@ -137,6 +140,8 @@ function build_toc (static_root_url) {
                 icon = static_root_url + "credited-16.png"
             } else if (status === "submitted") {
                 icon = static_root_url + "submitted-16.png"
+            } else if (status === "resubmitted") {
+                icon = static_root_url + "resubmitted-16.png"
             }
             icon_img = $(document.createElement("img"))
             icon_img.attr("src", icon)
@@ -369,7 +374,7 @@ function submit_ajax_form (form, success_extra_cb) {
             success_extra_cb(data)
         },
         error: function (jqxhr, status, type) {
-            const errors = JSON.parse(JSON.parse(jqxhr.responseText).errors)
+            const errors = JSON.parse(jqxhr.responseText).errors
             for (const [field, content] of Object.entries(errors)) {
                 console.log(field, content)
                 content.forEach(function (entry) {
@@ -513,6 +518,21 @@ function show_panel (event, caller, panel_type, panel_id, refresh) {
     } else {
         panel.addClass("panel--is-visible")
     }
+}
+
+function refresh_panel(container, url) {
+    console.log(url)
+    $.ajax({
+        type: "GET",
+        url,
+        success: function (data, status, jqxhr) {
+            container.html(data)
+            container.find("form :input[type!=hidden]").first().focus()
+        },
+        error: function (jqxhr, status, type) {
+            container.html(jqxhr.responseText)
+        }
+    })
 }
 
 function hide_panel (event, panel_id) {

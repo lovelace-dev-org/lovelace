@@ -3,15 +3,26 @@ from django.contrib import admin
 from django.db.models import Q
 from django.db import models, transaction
 from django import forms
+from django.http import (
+    HttpResponse,
+    JsonResponse,
+)
 from django.forms import Textarea, ModelForm
+from django.template import loader
+from django.utils.translation import gettext_lazy as _
+
 from django.utils import translation
 from django.utils.text import slugify
+
+from reversion import revisions as reversion
 from reversion.models import Version
+
 from modeltranslation.translator import translator
 import courses.models as cm
 from courses.widgets import ContentPreviewWidget, AdminFileWidget
 from utils.access import determine_access, determine_media_access
-from utils.archive import find_latest_version
+from utils.archive import find_latest_version, squash_revisions
+from utils.content import regenerate_nearest_cache
 from utils.data import serialize_single_python, export_json
 
 
@@ -38,7 +49,7 @@ class CourseContentAdmin(admin.ModelAdmin):
     content_type = ""
 
     @staticmethod
-    def content_access_list(request, model, content_type=None):
+    def content_access_list(request, model, content_type=None, origin=None):
         """
         Gets a queryset of content where the requesting user either:
         1) has edited the page previously
@@ -50,10 +61,16 @@ class CourseContentAdmin(admin.ModelAdmin):
         content is shown.
         """
 
-        if content_type:
-            qs = model.objects.filter(content_type=content_type)
+        if origin is None:
+            if content_type:
+                qs = model.objects.filter(content_type=content_type)
+            else:
+                qs = model.objects.all()
         else:
-            qs = model.objects.all()
+            if content_type:
+                qs = model.objects.filter(content_type=content_type, origin=origin)
+            else:
+                qs = model.objects.filter(origin=origin)
 
         if request.user.is_superuser:
             return qs
@@ -180,8 +197,11 @@ class CourseContentAdmin(admin.ModelAdmin):
 
 class CourseMediaAdmin(admin.ModelAdmin):
     @staticmethod
-    def media_access_list(request, model):
-        qs = model.objects.all()
+    def media_access_list(request, model, origin=None):
+        if origin is None:
+            qs = model.objects.all()
+        else:
+            qs = model.objects.filter(origin=origin)
 
         if request.user.is_superuser:
             return qs
@@ -224,27 +244,27 @@ class CourseMediaAdmin(admin.ModelAdmin):
         return False
 
 
-def clone_instance_files(instance):
+def clone_instance_files(old_instance, new_instance):
     """
     Creates cloned links to all instance files in a course instance.
     """
 
-    instance_files = cm.InstanceIncludeFile.objects.filter(course=instance.course)
-    for ifile in instance_files:
-        link = cm.InstanceIncludeFileToInstanceLink(
-            revision=None, include_file=ifile, instance=instance
-        )
+    if_links = cm.InstanceIncludeFileToInstanceLink.objects.filter(instance=old_instance)
+    for link in if_links:
+        link.pk = None
+        link.instance = new_instance
         link.save()
 
 
-def clone_terms(instance):
+def clone_terms(old_instance, new_instance):
     """
     Creates cloned links to all terms in a course instance.
     """
 
-    terms = cm.Term.objects.filter(origin=instance.course)
-    for term in terms:
-        link = cm.TermToInstanceLink(revision=None, term=term, instance=instance)
+    term_links = cm.TermToInstanceLink.objects.filter(instance=old_instance)
+    for link in term_links:
+        link.pk = None
+        link.instance = new_instance
         link.save()
 
 
@@ -282,6 +302,15 @@ def clone_content_graphs(old_instance, new_instance):
         )
         child_node.parentnode = new_parent
         child_node.save()
+
+
+def clone_embed_links(old_instance, new_instance):
+
+    embed_links = cm.EmbeddedLink.objects.filter(instance=old_instance)
+    for link in embed_links:
+        link.pk = None
+        link.instance = new_instance
+        link.save()
 
 
 def freeze_context_link(link_object, revisioned_attr, freeze_to=None):
@@ -374,6 +403,13 @@ class TranslationStaffForm(ModelForm):
         return super().get_initial_for_field(field, field_name)
 
     def save(self, commit=True):
+        # TODO: After updating Django check if this still needed
+        #       seems like an unnecessary hack?
+        for field_name, field in self.fields.items():
+            if isinstance(field, forms.FileField):
+                if self.cleaned_data[field_name] is False:
+                    self.cleaned_data[field_name] = None
+
         instance = super().save(commit=False)
         for lang_field_name in self._translated_field_names:
             setattr(instance, lang_field_name, self.cleaned_data.get(lang_field_name, ""))
@@ -393,6 +429,14 @@ class TranslationStaffForm(ModelForm):
         fields.sort(key=meta_listing_index)
         return fields
 
+    def field_changed(self, field):
+        for lang_code, __ in settings.LANGUAGES:
+            # Unset fileinfo is empty string in the model
+            current = getattr(self._instance, f"{field}_{lang_code}", "") or None
+            if current != self.cleaned_data[f"{field}_{lang_code}"]:
+                return True
+        return False
+
     def __init__(self, *args, requires=True, **kwargs):
         super().__init__(*args, **kwargs)
         self._instance = kwargs.get("instance")
@@ -410,11 +454,13 @@ class TranslationStaffForm(ModelForm):
                 for lang_code, __ in languages:
                     lang_field_name = f"{field_name}_{lang_code}"
                     if lang_code == settings.MODELTRANSLATION_DEFAULT_LANGUAGE:
+                        required = requires and not field.blank
                         self.fields[lang_field_name] = field.formfield(
                             label=f"{field.verbose_name} (default)".capitalize(),
-                            required=requires and not field.blank,
+                            required=required,
                         )
                     else:
+                        required = False
                         self.fields[lang_field_name] = field.formfield(
                             label=f"{field.verbose_name} ({lang_code})".capitalize(),
                             required=False
@@ -424,7 +470,13 @@ class TranslationStaffForm(ModelForm):
                             attrs={"class": "generic-textfield", "rows": 5}
                         )
                     elif isinstance(field, models.FileField):
-                        self.fields[lang_field_name].widget = forms.ClearableFileInput()
+                        try:
+                            widget = self.Meta.widgets[field_name]()
+                        except (AttributeError, KeyError):
+                            widget = forms.ClearableFileInput()
+                        widget.is_required = required
+                        self.fields[lang_field_name].widget = widget
+
                     self._translated_field_names.append(lang_field_name)
                 self.fields.pop(field_name)
 
@@ -464,8 +516,8 @@ def get_prefixed_slug(model_instance, origin, source_field, translated=True):
 
     :param Model model_instance: the model instance to attach the slug for
     :param Course origin: the course the model instance originally belongs to
-    :param source_field: name of the field from which slug should be generated from
-    :param translated: whether the field is managed by modeltranslation or not (default True)
+    :param str source_field: name of the field from which slug should be generated from
+    :param bool translated: whether the field is managed by modeltranslation or not (default True)
 
     :return: the prefixed slug as a string
     """
@@ -488,3 +540,114 @@ def get_prefixed_slug(model_instance, origin, source_field, translated=True):
     main_slug = main_slug.removeprefix(f"{prefix}-")
 
     return f"{prefix}-{main_slug}"
+
+
+def process_modelform(request, form_cls, model_instance, form_id, comment,
+                      parent=None,
+                      post_save_cb=None,
+                      extra_context=None,
+                      extra_response=None):
+    """
+    A general utility function for displaying and processing most instances of ModelForms.
+    Should be used for most views that are used for displaying and saving a form. Handles
+    creating revisions and refreshing cache. Other things can also be controlled with the optional
+    parameters.
+
+    :param Request request: request object
+    :param ModelForm form_cls: form class, must inherit ModelForm
+    :param Model model_instance: model instance being edited, can be None when creating new instance
+    :param str form_id: form's HTML id
+    :param str comment: comment for the automatically created revision
+    :param Model parent: the object's parent when relevant, used in revisioning and cache refresh
+    :param function post_save_cb: callback function for additional actions needed when saving the
+                                  form, will be given the model instance and the form
+    :param dict extra_context: extra/override context that will be updated into the form's rendering
+                               context
+    :param dict extra_response: extra data that will be updated into the JSON response when
+                                saving is successful
+
+    """
+
+    if request.method == "POST":
+        form = form_cls(request.POST, request.FILES, instance=model_instance)
+        if not form.is_valid():
+            errors = form.errors.get_json_data()
+            return JsonResponse({"errors": errors}, status=400)
+
+        with reversion.create_revision():
+            if post_save_cb:
+                saved_instance = form.save(commit=False)
+                post_save_cb(saved_instance, form)
+                saved_instance.save()
+            else:
+                form.save()
+            if parent:
+                parent.save()
+            reversion.set_user(request.user)
+            reversion.set_comment(comment)
+
+        if parent:
+            squash_revisions(parent, 1)
+        elif model_instance:
+            squash_revisions(model_instance, 1)
+
+        if getattr(form.Meta, "trigger_cache", False):
+            regenerate_nearest_cache(parent or model_instance)
+
+        response = {"status": "ok"}
+        extra_response and response.update(extra_response)
+        return JsonResponse(response)
+
+    form = form_cls(instance=model_instance)
+    form_t = loader.get_template("courses/base-edit-form.html")
+    form_c = {
+        "html_id": form_id,
+        "form_object": form,
+        "submit_url": request.path,
+        "html_class": "edit-form-widget",
+        "submit_override": "editing.submit_form"
+    }
+    extra_context and form_c.update(extra_context)
+    return HttpResponse(form_t.render(form_c, request))
+
+
+class ConfirmDeleteForm(forms.Form):
+    delete = forms.BooleanField(required=True, label=_("Confirm deletion"))
+
+
+
+def process_delete_confirm_form(request, success_callback, extra_context=None, extra_response=None):
+    """
+    Convenience function for displaying and processing a ConfirmDeleteForm. Can be used to reduce
+    boilerplate in delete views. The calling end simply needs to define a success callback that
+    carries out the deletion once the user has confirmed the operation.
+
+    :param Request request: request object
+    :param function success_callback: function that takes a form object as its argument
+    :param dict extra_context: extra context data to be added to the form template's rendering
+    """
+
+    if request.method == "POST":
+        form = ConfirmDeleteForm(request.POST)
+        if not form.is_valid():
+            errors = form.errors.get_json_data()
+            return JsonResponse({"errors": errors}, status=400)
+
+        success_callback(form)
+        response = {"status": "ok"}
+        extra_response and response.update(extra_response)
+        return JsonResponse(response)
+
+    form = ConfirmDeleteForm()
+    form_t = loader.get_template("courses/base-edit-form.html")
+    form_c = {
+        "form_object": form,
+        "submit_url": request.path,
+        "html_id": f"delete-confirm-form",
+        "html_class": "edit-form-widget",
+        "submit_label": _("Execute"),
+    }
+    extra_context and form_c.update(extra_context)
+    return HttpResponse(form_t.render(form_c, request))
+
+

@@ -6,7 +6,7 @@ from django.http import (
 )
 from django.template import loader
 from django.utils import translation
-from courses.forms import SystemMessageForm
+from courses.admin_forms import DataRetentionForm, SystemMessageForm
 from utils.access import ensure_admin
 from utils.notify import create_notifications, get_notifications, delete_notification
 
@@ -16,7 +16,7 @@ def manage_system_messages(request):
         form = SystemMessageForm(request.POST)
 
         if not form.is_valid():
-            errors = form.errors_as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         create_notifications(

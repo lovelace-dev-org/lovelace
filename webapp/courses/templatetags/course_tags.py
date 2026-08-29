@@ -4,6 +4,7 @@ from datetime import datetime
 from django.urls import reverse
 from django.utils.html import mark_safe
 from django import template
+from lovelace import plugins as lovelace_plugins
 from courses.models import Calendar, StudentGroup
 from courses import markupparser
 from utils.base import get_deadline_urgency
@@ -32,52 +33,28 @@ def render_markup(content, instance):
         block[1] for block in parser.parse(content, context=context)
     ))
 
+@register.simple_tag(takes_context=True)
+def content_page_addons(context, content_data, content_level):
+    return mark_safe("\n".join(
+        content_data.get_content_additions(content_data, context, content_level)
+    ))
+
+
+# {% base_static_extra %}
+@register.inclusion_tag("courses/static-files-include.html", takes_context=True)
+def base_static_extra(context):
+    includes = []
+    for module in lovelace_plugins["base-static"]:
+        includes.extend(module.includes.get_base_static_includes(context))
+
+    return {
+        "static_includes": includes
+    }
+
 # {% content_meta %}
 @register.inclusion_tag("courses/content-meta.html", takes_context=True)
 def content_meta(context):
     return context
-
-
-# {% lecture %}
-@register.inclusion_tag("courses/lecture.html", takes_context=True)
-def lecture(context):
-    return context
-
-
-# {% multiple_choice_exercise %}
-@register.inclusion_tag("courses/multiple-choice-exercise.html", takes_context=True)
-def multiple_choice_exercise(context):
-    return context
-
-
-# {% checkbox_exercise %}
-@register.inclusion_tag("courses/checkbox-exercise.html", takes_context=True)
-def checkbox_exercise(context):
-    return context
-
-
-# {% textfield_exercise %}
-@register.inclusion_tag("courses/textfield-exercise.html", takes_context=True)
-def textfield_exercise(context):
-    return context
-
-
-# {% file_upload_exercise %}
-@register.inclusion_tag("courses/file-upload-exercise.html", takes_context=True)
-def file_upload_exercise(context):
-    return context
-
-
-# {% feedbacks %}
-@register.inclusion_tag("feedback/feedbacks.html", takes_context=True)
-def feedbacks(context):
-    return context
-
-
-@register.inclusion_tag("faq/faq.html", takes_context=True)
-def faq(context):
-    return context
-
 
 # {% answer_date %}
 @register.filter
@@ -101,7 +78,9 @@ def preview_escape(block):
 
 @register.inclusion_tag("courses/embed-frame.html", takes_context=True)
 def embed_frame(context, content_data):
-    page = context["embedded_pages"][content_data["slug"]]
+    link = context["embedded_pages"][content_data["slug"]]
+    page = link.embedded_page
+
     if context["user"].is_active:
         answer_count = page.get_user_answers(page, context["user"], context["instance"]).count()
         evaluation, quotient = page.get_user_evaluation(context["user"], context["instance"])
@@ -113,6 +92,7 @@ def embed_frame(context, content_data):
     return {
         "emb": content_data,
         "embedded": True,
+        "staff_menu": content_data["staff_menu"],
         "meta": content_data["urls"],
         "revision": content_data["revision"],
         "user": context["user"],
@@ -120,19 +100,59 @@ def embed_frame(context, content_data):
         "course_staff": context["course_staff"],
         "course": context["course"],
         "instance": context["instance"],
+        "parent": context["content"],
+        "embed_link": link,
         "content": page,
         "answer_count": answer_count,
-        "attempts_left": page.answer_limit and page.answer_limit - answer_count,
+        "attempts_left": link.answer_limit and link.answer_limit - answer_count,
         "evaluation": evaluation,
         "score": quotient * content_data["max_points"],
         "max_points": content_data["max_points"],
         "editable_markups": context["editable_markups"],
     }
 
-@register.inclusion_tag("courses/embed_staff_extra.html", takes_context=True)
+
+@register.inclusion_tag("courses/user-menu-options.html", takes_context=True)
+def user_menu_extra(context):
+    options = []
+    for module in lovelace_plugins["user-menu"]:
+        options.extend(module.includes.get_user_menu_options(context))
+
+    return {
+        "menu_options": options,
+    }
+
+@register.inclusion_tag("courses/content-menu-options.html", takes_context=True)
+def content_menu_extra(context, content_data):
+    options = []
+    for module in lovelace_plugins["content-menu"]:
+        options.extend(module.includes.get_content_menu_options(context, content_data, "staff"))
+
+    return {
+        "menu_options": options,
+        "content": content_data,
+        "in_list": True
+    }
+
+# The implementation above is different from the ones below because we *know* that
+# content type is always Lecture in the above case whereas in the below case the
+# content type is unknown and can have type specific additions to the extra menus.
+
+
+@register.inclusion_tag("courses/embed-menu-options.html", takes_context=True)
+def embed_student_extra(context, content_data):
+    return {
+        "menu_options": content_data.get_student_extra(content_data, context),
+        "content": content_data,
+        "in_list": False,
+    }
+
+@register.inclusion_tag("courses/embed-menu-options.html", takes_context=True)
 def embed_staff_extra(context, content_data):
     return {
-        "extra_options": content_data.get_staff_extra(content_data, context)
+        "menu_options": content_data.get_staff_extra(content_data, context),
+        "content": content_data,
+        "in_list": True,
     }
 
 
@@ -143,8 +163,13 @@ def embed_frame_preview(content_data):
 
 @register.inclusion_tag("courses/calendar.html", takes_context=True)
 def calendar(context, calendar_data):
+    if calendar_data["calendar"] is None:
+        return {
+            "calendar": None
+        }
+
     calendar = (
-        Calendar.objects.filter(name=calendar_data["calendar"])
+        Calendar.objects.filter(slug=calendar_data["calendar"])
         .prefetch_related("calendardate_set", "calendardate_set__calendarreservation_set")
         .first()
     )

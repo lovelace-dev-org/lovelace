@@ -2,6 +2,7 @@ import os.path
 import re
 import django.conf
 from django.core.exceptions import ValidationError
+from django.core.validators import URLValidator
 from django.db.models import Count
 from django import forms
 from django.forms import fields
@@ -16,6 +17,7 @@ from modeltranslation.forms import TranslationModelForm
 
 from courses import blockparser
 from courses import markupparser
+from courses.widgets import AnswerWidgetRegistry, NoTrailingZerosInput
 from utils.formatters import display_name
 from utils.management import add_translated_charfields, TranslationStaffForm, get_prefixed_slug
 import courses.models as cm
@@ -46,17 +48,23 @@ class CodeReplaceExerciseForm(forms.Form):
 
 
 class FileEditForm(forms.ModelForm):
+
     def get_initial_for_field(self, field, field_name):
         default_value = super().get_initial_for_field(field, field_name)
         if isinstance(field, fields.FileField) and default_value:
-            default_value.media_slug = self.initial.get("name")
+            default_value.media_slug = self._instance.slug
             default_value.field_name = field_name
             default_value.filename = os.path.basename(default_value.name)
 
         return default_value
 
+    def __init__(self, *args, **kwargs):
+        self._instance = kwargs.get("instance")
+        super().__init__(*args, **kwargs)
+
 
 class ExerciseBackendForm(forms.ModelForm):
+
     def get_initial_for_field(self, field, field_name):
         default_value = super().get_initial_for_field(field, field_name)
         if isinstance(field, fields.FileField) and default_value:
@@ -84,23 +92,25 @@ class ContentForm(forms.ModelForm):
 
         parser = markupparser.LinkParser()
 
-        page_links, media_links = parser.parse(value)
-        for link in page_links:
+        links = parser.parse(value)
+        for link in links["page"]:
             if not cm.ContentPage.objects.filter(slug=link):
                 missing_pages.append(link)
                 messages.append(f"Content matching {link} does not exist")
+            if cm.ContentPage.objects.get(slug=link).content_type == "LECTURE":
+                messages.append(f"Unable to embed {link} because it's a lecture")
 
-        for link in media_links:
-            if not cm.CourseMedia.objects.filter(name=link):
+        for link in links["media"]:
+            if not cm.CourseMedia.objects.filter(slug=link):
                 missing_media.append(link)
                 messages.append(f"Media matching {link} does not exist")
 
         term_re = blockparser.BlockParser.tags["term"].regexp
 
-        term_links = {match.group("term_name") for match in term_re.finditer(value)}
+        term_links = {match.group("term_slug") for match in term_re.finditer(value)}
 
         for link in term_links:
-            if not cm.Term.objects.filter(**{"name_" + lang: link}):
+            if not cm.Term.objects.filter(slug=link):
                 missing_terms.append(link)
                 messages.append(f"Term matching {link} does not exist")
 
@@ -134,6 +144,17 @@ class ContentForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         self._instance = kwargs.get("instance")
         super().__init__(*args, **kwargs)
+        if "answer_widget" in self.fields:
+            self.fields["answer_widget"] = forms.ChoiceField(
+                widget = forms.Select(),
+                choices = (
+                    [(None, _("--USE-DEFAULT--"))] +
+                    [(widget, widget) for widget in AnswerWidgetRegistry.list_widgets()]
+                ),
+                required=False
+            )
+
+
 
 
 class TextfieldAnswerForm(forms.ModelForm):
@@ -181,6 +202,7 @@ class InstanceSettingsForm(TranslationStaffForm):
             "welcome_message",
             "content_license",
             "license_url",
+            "ws_server"
         ]
 
     def clean(self):
@@ -200,6 +222,9 @@ class InstanceSettingsForm(TranslationStaffForm):
         self._instance = kwargs.get("instance")
         available_content = kwargs.pop("available_content")
         super().__init__(*args, **kwargs)
+        print(self.fields["ws_server"].validators)
+        self.fields["ws_server"].validators = [URLValidator(schemes=["ws", "wss", "http", "https"])]
+        print(self.fields["ws_server"].validators)
 
         self.fields["frontpage"] = forms.ChoiceField(
             widget=forms.Select,
@@ -386,6 +411,39 @@ class NodeSettingsForm(ContextNodeForm):
         super().__init__(*args, **kwargs)
 
 
+
+class EmbedConfigForm(forms.ModelForm):
+
+    class Meta:
+        model = cm.EmbeddedLink
+        fields = [
+            "mandatory",
+            "correct_threshold",
+            "default_points",
+            "answer_limit",
+            "manually_evaluated",
+            "delayed_evaluation",
+            "evaluation_group",
+            "group_submission",
+        ]
+        widgets = {
+            "correct_threshold": NoTrailingZerosInput,
+            "default_points": NoTrailingZerosInput,
+        }
+
+    propagate = forms.ChoiceField(
+        widget=forms.Select,
+        label=_("Propagate changes to"),
+        choices=[
+            ("none", _("Don't propagate")),
+            ("instance", _("This task in this instance")),
+            ("live", _("This task in all live instances")),
+            ("all", _("This task in ALL instances")),
+        ]
+    )
+
+
+
 class IndexEntryForm(TranslationModelForm):
     class Meta:
         pass
@@ -395,7 +453,9 @@ class UserProfileForm(forms.ModelForm):
 
     class Meta:
         model = cm.UserProfile
-        fields = ["student_id", "data_policy", "language_preference", "dyslexic_fonts"]
+        fields = [
+            "student_id", "data_policy", "language_preference", "dyslexic_fonts"
+        ]
 
     def clean_data_policy(self):
         data_policy = self.cleaned_data.get("data_policy")
@@ -412,13 +472,14 @@ class UserForm(forms.ModelForm):
 
     class Meta:
         model = cm.User
-        fields = ["first_name", "last_name", "email"]
+        fields = ["username", "first_name", "last_name", "email"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["first_name"].required = True
         self.fields["last_name"].required = True
         self.fields["email"].required = True
+        self.fields["username"].disabled = True
 
 
 class GroupForm(forms.ModelForm):
@@ -517,7 +578,9 @@ class GroupMemberForm(forms.Form):
 class CalendarConfigForm(forms.ModelForm):
     class Meta:
         model = cm.Calendar
-        fields = ["allow_multiple", "lock_period", "lock_cancel"]
+        fields = [
+            "heading_level", "allow_multiple", "lock_period", "lock_cancel", "meeting_calendar"
+        ]
 
     def __init__(self, *args, **kwargs):
         available_content = kwargs.pop("available_content")
@@ -655,24 +718,6 @@ def process_delete_confirm_form(request, success_callback, extra_context={}):
     return HttpResponse(form_t.render(form_c, request))
 
 
-class SystemMessageForm(forms.Form):
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        add_translated_charfields(
-            self, "content",
-            _("Message content ({lang} - default)"),
-            _("Message content ({lang})"),
-            require_default=True
-        )
-        self.fields["expires"] = forms.DateTimeField(
-            label=_("Time this message expires"),
-            required=True,
-            input_formats=["%Y-%m-%dT%H:%M"],
-            widget=forms.widgets.DateTimeInput(attrs={"type": "datetime-local"}),
-        )
-
-
 class CourseMessageForm(TranslationStaffForm):
 
     class Meta:
@@ -689,3 +734,12 @@ class CourseMessageForm(TranslationStaffForm):
             #input_formats=["%Y-%m-%dT%H:%M"],
             #widget=forms.widgets.DateTimeInput(attrs={"type": "datetime-local"}),
         #)
+
+
+class TextfieldWidgetConfigurationForm(forms.ModelForm):
+
+    class Meta:
+        model = cm.TextfieldWidgetSettings
+        fields = ["rows"]
+
+

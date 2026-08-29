@@ -1,8 +1,10 @@
+from collections import defaultdict
 import datetime
 import os
 import random
 
 from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from django.http import (
     HttpResponse,
@@ -11,13 +13,19 @@ from django.http import (
     HttpResponseNotFound,
     JsonResponse,
 )
+from django.template import loader
 from django.urls import reverse
 from django.utils import translation
 from django.utils.translation import gettext as _
 
+from reversion import revisions as reversion
+
+from lovelace import plugins as lovelace_plugins
 from lovelace.celery import app as celery_app
 
 from courses import markupparser
+import courses.models as cm
+import courses.tasks as rpc_tasks
 
 from routine_exercise.models import (
     RoutineExercise,
@@ -28,11 +36,17 @@ from routine_exercise.models import (
     RoutineExerciseTemplate,
 )
 import routine_exercise.tasks as routine_tasks
+from routine_exercise.forms import BackendForm, CommandForm, TemplateForm
 
-from utils.access import ensure_enrolled_or_staff, determine_access
-from utils.archive import find_version_with_filename, get_archived_instances, get_single_archived
+from utils.access import ensure_enrolled_or_staff, ensure_staff, determine_access
+from utils.archive import (
+    find_version_with_filename, get_archived_instances, get_single_archived,
+    squash_revisions
+)
+from utils.content import download_exercise_backend
 from utils.exercise import render_json_feedback, update_completion
 from utils.files import generate_download_response, get_file_contents_b64
+from utils.management import process_modelform, process_delete_confirm_form
 from utils.notify import send_error_report
 
 
@@ -154,10 +168,11 @@ def _routine_payload(user, instance, content, revision, progress, answer=None):
 
 
 @ensure_enrolled_or_staff
-def get_routine_question(request, course, instance, content, revision):
+def get_routine_question(request, course, instance, parent, content):
     content = content.get_type_object()
-    if revision == "head":
-        revision = None
+    embed_link = cm.EmbeddedLink.objects.get(
+        embedded_page=content, instance=instance, parent=parent
+    )
 
     try:
         progress = RoutineExerciseProgress.objects.get(
@@ -177,16 +192,32 @@ def get_routine_question(request, course, instance, content, revision):
         user=request.user,
         instance=instance,
         exercise=content,
-        revision=revision,
+        revision=embed_link.revision,
         routineexerciseanswer=None,
     ).first()
 
     if question is None:
-        payload = _routine_payload(request.user, instance, content, revision, progress)
+        celery_status = rpc_tasks.get_celery_worker_status()
+        if "errors" in celery_status:
+            return JsonResponse(
+                {
+                    "error": _(
+                        "Question retrieval failed. Contact teaching staff (reason: {e})"
+                    ).format(e=celery_status["errors"])
+                }
+            )
+
+        payload = _routine_payload(request.user, instance, content, embed_link.revision, progress)
         task = routine_tasks.generate_question.delay(payload)
         progress_url = reverse(
             "routine_exercise:task_progress",
-            kwargs={"course": course, "instance": instance, "content": content, "task_id": task.id},
+            kwargs={
+                "course": course,
+                "instance": instance,
+                "content": content,
+                "parent": parent,
+                "task_id": task.id
+            },
         )
         data = {"task": "generate", "ready": False, "redirect": progress_url}
         return JsonResponse(data)
@@ -206,12 +237,17 @@ def get_routine_question(request, course, instance, content, revision):
 
 
 @ensure_enrolled_or_staff
-def routine_progress(request, course, instance, content, task_id):
+def routine_progress(request, course, instance, parent, content, task_id):
     task = celery_app.AsyncResult(id=task_id)
     if not task.ready():
         progress_url = reverse(
             "routine_exercise:task_progress",
-            kwargs={"course": course, "instance": instance, "content": content, "task_id": task.id},
+            kwargs={
+                "course": course,
+                "instance": instance,
+                "content": content,
+                "parent": parent,
+                "task_id": task.id},
         )
         data = {"state": task.state, "metadata": task.info, "redirect": progress_url}
         return JsonResponse(data)
@@ -230,6 +266,7 @@ def routine_progress(request, course, instance, content, task_id):
                     "user": request.user,
                     "course": course,
                     "instance": instance,
+                    "parent": parent,
                     "exercise": content,
                 },
             )
@@ -284,24 +321,36 @@ def routine_progress(request, course, instance, content, task_id):
         except RoutineExercise.DoesNotExist:
             return JsonResponse({"error": _("Unable to find matching answer.")})
 
+        embed_link = instance.embeddedlink_set.get_queryset().get(
+            embedded_page=content, parent=parent
+        )
+
         progress = _save_evaluation(request.user, instance, content, task_id, info)
         data = render_json_feedback(
-            info["data"]["log"], request, course, instance, content, answer.id
+            info["data"]["log"], request, course, instance, embed_link, content, answer.id
         )
         data["points"] = info["data"]["score"]
         data["max"] = info["data"]["max"]
 
         if progress.completed:
             data["evaluation"] = True
-            update_completion(content, instance, request.user, data, answer.answer_date)
+            update_completion(content, embed_link, instance, request.user, data, answer.answer_date)
             total_evaluation, quotient = content.get_user_evaluation(request.user, instance)
-            data["score"] = f"{quotient * content.default_points:.2f}"
+            data["score"] = f"{quotient * embed_link.default_points:.2f}"
             data["total_evaluation"] = total_evaluation
         else:
             data["score"] = f"{0:.2f}"
             data["total_evaluation"] = "ongoing"
         data["next_instance"] = True
         data["progress"] = progress.progress
+
+        data["extra_callbacks"] = []
+
+        for module in lovelace_plugins["exercise-triggers"]:
+            data["extra_callbacks"].extend(module.includes.get_exercise_trigger_callbacks(
+                instance, content, data
+            ))
+
         next_question = info["data"].get("next")
         if next_question:
             _save_question(request.user, instance, content, info, info["data"]["next"])
@@ -312,13 +361,15 @@ def routine_progress(request, course, instance, content, task_id):
 
 
 @ensure_enrolled_or_staff
-def check_routine_question(request, course, instance, content, revision):
+def check_routine_question(request, course, instance, parent, content):
     if request.method != "POST":
         return HttpResponseNotAllowed(["POST"])
 
+    embed_link = cm.EmbeddedLink.objects.get(
+        embedded_page=content, instance=instance, parent=parent
+    )
     content = content.get_type_object()
-    if revision == "head":
-        revision = None
+    revision = embed_link.revision
 
     try:
         question = RoutineExerciseQuestion.objects.get(
@@ -344,6 +395,12 @@ def check_routine_question(request, course, instance, content, revision):
     )
     payload = _routine_payload(request.user, instance, content, revision, progress, answer)
 
+    celery_status = rpc_tasks.get_celery_worker_status()
+    if "errors" in celery_status:
+        return HttpResponse(
+            _("Cannot connect to backend."), status=400
+        )
+
     task = routine_tasks.check_answer.delay(payload)
 
     answer.task_id = task.task_id
@@ -351,44 +408,230 @@ def check_routine_question(request, course, instance, content, revision):
 
     progress_url = reverse(
         "routine_exercise:task_progress",
-        kwargs={"course": course, "instance": instance, "content": content, "task_id": task.id},
+        kwargs={
+            "course": course,
+            "instance": instance,
+            "parent": parent,
+            "content": content,
+            "task_id": task.id,
+        },
     )
     data = {"task": "check", "ready": False, "redirect": progress_url}
     return JsonResponse(data)
 
+# ^
+# |
+# CHECKING VIEWS
+# CONFIGURATION VIEWS
+# |
+# v
+
+
+@ensure_staff
+def routine_backend_panel(request, course, instance, content):
+    backends = content.routineexercisebackendfile_set.get_queryset()
+    c = {
+        "course": course,
+        "instance": instance,
+        "content": content,
+        "backends": backends,
+        "panel_refresh_url": request.path,
+    }
+    t = loader.get_template("routine_exercise/routine-backend-panel.html")
+    return HttpResponse(t.render(c, request))
+
+@ensure_staff
+def edit_backend(request, course, instance, content, filename):
+    backend = RoutineExerciseBackendFile.objects.get(
+        exercise=content,
+        filename=filename,
+    )
+
+    return process_modelform(
+        request,
+        BackendForm,
+        backend,
+        form_id=f"{content.slug}-routine-backend-form",
+        comment=f"Change {content.slug} backend file {backend.filename}",
+        parent=content,
+        extra_response={
+            "refresh": True
+        }
+    )
+
+@ensure_staff
+def delete_backend(request, course, instance, content, filename):
+    backend = RoutineExerciseBackendFile.objects.get(
+        exercise=content,
+        filename=filename,
+    )
+
+    def delete_success(form):
+        with reversion.create_revision():
+            backend.delete()
+
+            # Save the content to include it in the revision
+            content.save()
+            reversion.set_user(request.user)
+            reversion.set_comment(
+                f"Delete exercise {content.slug} backend {backend.filename}"
+            )
+        squash_revisions(content, 1)
+
+    return process_delete_confirm_form(
+        request,
+        delete_success,
+        extra_context={
+            "submit_override": "editing.submit_form",
+        },
+        extra_response={
+            "refresh": True
+        }
+    )
+
+@ensure_staff
+def add_backend(request, course, instance, content):
+
+    def post_save(backend, form):
+        backend.exercise = content
+
+    return process_modelform(
+        request,
+        BackendForm,
+        None,
+        form_id=f"{content.slug}-routine-backend-form",
+        comment=f"Add {content.slug} backend file",
+        parent=content,
+        post_save_cb=post_save,
+        extra_response={
+            "refresh": True
+        }
+    )
+
+@ensure_staff
+def edit_command(request, course, instance, content):
+
+    try:
+        command = content.routineexercisebackendcommand
+    except ObjectDoesNotExist:
+        command = None
+
+    def post_save(command, form):
+        command.exercise = content
+
+    return process_modelform(
+        request,
+        CommandForm,
+        command,
+        form_id=f"{content.slug}-routine-command-form",
+        comment=f"Change {content.slug} backend command",
+        parent=content,
+        post_save_cb=post_save,
+        extra_response={
+            "refresh": True
+        }
+    )
+
+@ensure_staff
+def routine_template_panel(request, course, instance, content):
+    templates = content.routineexercisetemplate_set.get_queryset().order_by(
+        "question_class", "variant"
+    )
+    by_qc = defaultdict(list)
+    for template in templates:
+        by_qc[template.question_class].append(template)
+
+    c = {
+        "course": course,
+        "instance": instance,
+        "content": content,
+        "question_classes": by_qc.items(),
+        "panel_refresh_url": request.path,
+    }
+    t = loader.get_template("routine_exercise/routine-template-panel.html")
+    return HttpResponse(t.render(c, request))
+
+@ensure_staff
+def edit_template(request, course, instance, content, qc, variant):
+    template = RoutineExerciseTemplate.objects.get(
+        exercise=content,
+        question_class=qc,
+        variant=variant,
+    )
+
+    return process_modelform(
+        request,
+        TemplateForm,
+        template,
+        form_id=f"{content.slug}-routine-template-form",
+        comment=f"Change {content.slug} template {qc}-{variant}",
+        parent=content,
+        extra_response={
+            "refresh": True
+        }
+    )
+
+@ensure_staff
+def delete_template(request, course, instance, content, qc, variant):
+    template = RoutineExerciseTemplate.objects.get(
+        exercise=content,
+        question_class=qc,
+        variant=variant,
+    )
+
+    def delete_success(form):
+        with reversion.create_revision():
+            template.delete()
+
+            # Save the content to include it in the revision
+            content.save()
+            reversion.set_user(request.user)
+            reversion.set_comment(
+                f"Delete exercise {content.slug} template {qc}-{variant}"
+            )
+        squash_revisions(content, 1)
+
+    return process_delete_confirm_form(
+        request,
+        delete_success,
+        extra_context={
+            "submit_override": "editing.submit_form",
+        },
+        extra_response={
+            "refresh": True
+        }
+    )
+
+@ensure_staff
+def add_template(request, course, instance, content, qc):
+    def post_save(template, form):
+        if last := content.routineexercisetemplate_set.get_queryset().filter(
+            question_class=qc
+        ).order_by("variant").last():
+            variant = last.variant + 1
+        else:
+            variant = 1
+
+        template.question_class = qc
+        template.exercise = content
+        template.variant = variant
+
+    return process_modelform(
+        request,
+        TemplateForm,
+        None,
+        form_id=f"{content.slug}-routine-template-form",
+        comment=f"Add {content.slug} template",
+        parent=content,
+        post_save_cb=post_save,
+        extra_response={
+            "refresh": True
+        }
+    )
+
+
 
 def download_routine_exercise_backend(request, exercise_id, field_name, filename):
-    try:
-        exercise_object = RoutineExercise.objects.get(id=exercise_id)
-    except CourseInstance.DoesNotExist as e:
-        return HttpResponseNotFound(_("This exercise does't exist"))
-
-    if not determine_access(request.user, exercise_object):
-        return HttpResponseForbidden(
-            _(
-                "Only course main responsible teachers are allowed "
-                "to download files through this interface."
-            )
-        )
-
-    fileobjects = RoutineExerciseBackendFile.objects.filter(exercise=exercise_object)
-    try:
-        for fileobject in fileobjects:
-            if filename == os.path.basename(getattr(fileobject, field_name).name):
-                fs_path = os.path.join(
-                    settings.PRIVATE_STORAGE_FS_PATH, getattr(fileobject, field_name).name
-                )
-                break
-
-            # Archived file was requested
-            version = find_version_with_filename(fileobject, field_name, filename)
-            if version:
-                filename = version.field_dict[field_name].name
-                fs_path = os.path.join(settings.PRIVATE_STORAGE_FS_PATH, filename)
-                break
-        else:
-            return HttpResponseNotFound(_("Requested file does not exist."))
-    except AttributeError as e:
-        return HttpResponseNotFound(_("Requested file does not exist."))
-
-    return generate_download_response(fs_path)
+    return download_exercise_backend(
+        request, exercise_id, field_name, filename, RoutineExerciseBackendFile
+    )

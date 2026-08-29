@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.sites', # Required by allauth
     'django.contrib.messages',
+    'django.contrib.postgres',
     'django.contrib.staticfiles',
     'allauth',
     'allauth.account',
@@ -54,6 +55,8 @@ INSTALLED_APPS = [
     'multiexam',
     'reversion',
     'teacher_tools',
+    'ace',
+    'task_ws',
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -64,6 +67,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "allauth.account.middleware.AccountMiddleware"
 ]
 
 AUTHENTICATION_BACKENDS = [
@@ -98,6 +102,7 @@ if os.getenv("LOVELACE_USE_SHIBBOLETH"):
     MIDDLEWARE.append("courses.middleware.ShibbolethExceptionReporter")
     AUTHENTICATION_BACKENDS.append("shibboleth.backends.ShibbolethRemoteUserBackend")
 
+ENABLE_CELERY = True
 
 if os.getenv("ENABLE_MANAGEMENT_API"):
     ENABLE_MANAGEMENT_API = True
@@ -142,7 +147,7 @@ TEMPLATES = (
     },
 )
 
-DATA_RETENTION_PERIOD = os.getenv("LOVELACE_DATA_RETENTION", 12)
+DATA_RETENTION_PERIOD = int(os.getenv("LOVELACE_DATA_RETENTION", 12))
 
 #UNEDITABLE_MARKUPS = ["empty", "cleanup", "error", "embedded", "calendar"]
 ORPHAN_PREFIX = "null"
@@ -197,13 +202,17 @@ EMAIL_HOST_PASSWORD = os.getenv("LOVELACE_EMAIL_PWD", "")
 
 # E-mail settings
 EMAIL_SUBJECT_PREFIX = "[Lovelace] "
-DEFAULT_FROM_EMAIL = os.getenv("LOVELACE_EMAIL_FROM", "lovelace-notify")
+DEFAULT_FROM_EMAIL = os.getenv(
+    "LOVELACE_EMAIL_FROM",
+    f"lovelace-notify@{os.environ['LOVELACE_HOSTNAME']}"
+)
 
 # Allauth settings
 # For production, password min length of 32 or more recommended
+ALLAUTH_TRUSTED_PROXY_COUNT=int(os.getenv("LOVELACE_TRUSTED_PROXIES", 1))
 ACCOUNT_EMAIL_SUBJECT_PREFIX = "[Lovelace] "
 ACCOUNT_PASSWORD_MIN_LENGTH = 8
-ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']
 ACCOUNT_SESSION_REMEMBER = True
 ADMINS = [
     entry.rsplit(" ", 1) for entry in os.getenv("LOVELACE_ADMINS", "").split(":")
@@ -280,7 +289,14 @@ MEDIA_URL = "/media/"
 # in apps' "static/" subdirectories and in STATICFILES_DIRS.
 # Example: "/home/media/media.lawrence.com/static/"
 STATIC_ROOT = os.environ["STATIC_ROOT"]
-STATICFILES_STORAGE = "django.contrib.staticfiles.storage.ManifestStaticFilesStorage"
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.ManifestStaticFilesStorage",
+    }
+}
 
 # Additional locations of static files
 STATICFILES_DIRS = (
@@ -356,6 +372,20 @@ else:
     _CACHE_CONNECTION_POOL_KWARGS = {}
 
 
+if os.getenv("LOVELACE_WS_CACHE_USE_SSL"):
+    _WS_CACHE_CONNECTION_POOL_KWARGS = {
+        "ssl_cert_reqs": "required",
+        "ssl_ca_certs": os.environ["LOVELACE_WS_CLIENT_CA"],
+        "ssl_certfile": os.environ["LOVELACE_WS_CLIENT_CERT"],
+        "ssl_keyfile": os.environ["LOVELACE_WS_CLIENT_KEY"],
+    }
+else:
+    _WS_CACHE_CONNECTION_POOL_KWARGS = {}
+
+
+def plain_key(key, key_prefix, version):
+    return key
+
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
@@ -374,7 +404,19 @@ CACHES = {
             "CONNECTION_POOL_KWARGS": _CACHE_CONNECTION_POOL_KWARGS,
         },
     },
+    "ws_tickets": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": os.environ["LOVELACE_WS_CACHE"],
+        "KEY_FUNCTION": plain_key,
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "CONNECTION_POOL_KWARGS": _WS_CACHE_CONNECTION_POOL_KWARGS,
+            "SERIALIZER": "django_redis.serializers.json.JSONSerializer",
+        },
+    }
 }
+
+WS_TICKET_EXPIRY = 10
 
 # Stats generation is a time-consuming task. This configuration key allows you
 # to determine what hour of the day stats runs start

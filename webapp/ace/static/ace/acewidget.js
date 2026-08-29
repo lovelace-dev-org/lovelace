@@ -1,0 +1,89 @@
+// This object exists for the purpose of sending answer, currently
+var acewidget = {
+
+    read_editor_value: function (editor_id) {
+        const content = ace.edit(editor_id).getValue()
+        localStorage.setItem(editor_id + "-contents", content)
+        return content
+    },
+
+    reset_editor: function (widget_slug) {
+        const editor = ace.edit(widget_slug + "-ace-editor")
+        localStorage.removeItem(widget_slug + "-ace-editor-contents")
+        editor.setValue($("textarea#" + widget_slug + "-ace-initial").val())
+    },
+
+    save_base_file: function (event) {
+        event.preventDefault()
+        const form = $(this)
+        const widget_slug = form.find("input[name=widget_slug]").val()
+        const editor = ace.edit(widget_slug + "-ace-editor")
+        const content = editor.getValue()
+        form.find("input[name=editor_content]").val(content)
+
+        process_success = function (data) {
+            location.reload()
+        }
+
+        submit_ajax_form(form, process_success)
+    }
+}
+
+
+// This class is used when running with websockets
+var AceWidget = class {
+
+    constructor(addr, editor, preview, button_id, ticket_url) {
+        this.ws = new WSWrapper(addr, ticket_url)
+        this.editor = editor
+        this.preview = preview
+        this.button = $("button#" + button_id)
+        this.button.click((button) => this.connect_ws(button))
+        this.running = false
+    }
+
+    connect_ws() {
+        this.ws.connect(this)
+    }
+
+    begin() {
+        this.preview.init(this)
+        this.button.addClass("ace-button-running")
+        this.button.prop("disabled", true)
+        this.running = true
+        const content = this.editor.getValue()
+        localStorage.setItem(this.editor.container.id + "-contents", content)
+        this.ws.send({
+            "operation": "run",
+            "content": content,
+        })
+    }
+
+    send_input(input) {
+        if (this.running) {
+            this.ws.send({
+                "operation": "input",
+                "input": input,
+            })
+        }
+    }
+
+    receive(data) {
+        this.preview.receive(data)
+    }
+
+    error(msg) {
+        if (this.running) {
+            this.running = false
+            this.preview.receive(msg + "\n")
+        }
+    }
+
+    end(status) {
+        this.button.removeClass("ace-button-running")
+        this.button.prop("disabled", false)
+        this.preview.end()
+        this.running = false
+    }
+}
+

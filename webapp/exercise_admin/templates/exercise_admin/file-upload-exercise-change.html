@@ -132,6 +132,18 @@
       {% endfor %}
     </select>
   </div>
+  <div class="form-row">
+    <label for="exercise-answer_widget">Answer widget: </label>
+    <select id="exercise-answer_widget" name="exercise_answer_widget">
+      {% for value, label in answer_widget_choices %}
+        {% if value == exercise.answer_widget %}
+          <option value="{{ value }}" selected="selected">{{ label }}</option>
+        {% else %}
+          <option value="{{ value }}">{{ label }}</option>
+        {% endif %}
+      {% endfor %}
+    </select>
+  </div>
   {% for language_choice, _ in AVAILABLE_LANGUAGES %}{# TODO: Create a template tag filter for this #}
     <div class="translated {% if language_choice == CURRENT_LANGUAGE %}translated-visible{% endif %}"
          data-language-code="{{ language_choice }}">

@@ -68,13 +68,14 @@ urlpatterns = [
     ),
     # For viewing and changing user information
     path(
-        "answers/<user:user>/<course:course>/<instance:instance>/"
+        "answers/<user:user>/<course:course>/<instance:instance>/<content:parent>/"
         "<content:exercise>/<answer:answer>/",
         views.get_file_exercise_evaluation,
         name="get_file_exercise_evaluation",
     ),
     path(
-        "answers/<user:user>/<course:course>/<instance:instance>/<content:exercise>/",
+        "answers/<user:user>/<course:course>/<instance:instance>/<content:parent>/"
+        "<content:exercise>/",
         views.show_answers,
         name="show_answers",
     ),
@@ -87,9 +88,16 @@ urlpatterns = [
     path("user/<user:user>/", user_views.user),
     path("messages/", message_views.view_messages, name="view_messages"),
     path("profile/", user_views.user_profile),
-    # For calendar POST requests
+
+
+    # For calendar
     path(
-        "calendar/<calendar:calendar>/<event:event>/",
+        "calendar/my-calendar/",
+        calendar_views.user_calendar,
+        name="user_calendar",
+    ),
+    path(
+        "calendar/<instance:instance>/<calendar:calendar>/<event:event>/",
         calendar_views.calendar_reservation,
         name="calendar_reservation",
     ),
@@ -171,7 +179,8 @@ urlpatterns = [
         name="regen_page_cache",
     ),
     path(
-        "staff/<course:course>/<instance:instance>/<content:content>/editform/<str:action>/",
+        "staff/<course:course>/<instance:instance>/<content:content>/"
+        "editform/<str:action>/",
         staff_views.edit_form,
         name="content_edit_form",
     ),
@@ -179,6 +188,17 @@ urlpatterns = [
         "staff/<course:course>/<instance:instance>/<content:content>/add/",
         staff_views.add_form,
         name="content_add_form",
+    ),
+    path(
+        "staff/<course:course>/<instance:instance>/<content:parent>/<content:content>/"
+        "embed_settings/",
+        staff_views.configure_embed_link,
+        name="embed_settings",
+    ),
+    path(
+        "staff/<course:course>/<instance:instance>/<content:content>/widget_settings/",
+        staff_views.configure_answer_widget,
+        name="widget_settings",
     ),
     path(
         "staff/<course:course>/<instance:instance>/regen_cache/",
@@ -200,6 +220,77 @@ urlpatterns = [
         staff_views.import_instance,
         name="import",
     ),
+
+    # Staff URLs for fetching lists of things
+
+    path(
+        "staff/pages/",
+        staff_views.get_accessible_pages,
+        name="get_accessible_pages",
+    ),
+    path(
+        "staff/media/<str:media_type>/",
+        staff_views.get_accessible_media,
+        name="get_accessible_media",
+    ),
+    path(
+        "staff/terms/",
+        staff_views.get_accessible_terms,
+        name="get_accessible_terms",
+    ),
+    path(
+        "staff/calendars/",
+        staff_views.get_accessible_calendars,
+        name="get_accessible_calendars",
+    ),
+
+
+
+    # Staff URLs for exercise configuration
+
+    path(
+        "staff/<course:course>/<instance:instance>/<content:content>/checking/",
+        staff_views.answer_settings_panel,
+        name="answer_settings_panel",
+    ),
+
+    path(
+        "staff/<course:course>/<instance:instance>/<content:content>/change_widget/",
+        staff_views.change_answer_widget,
+        name="change_answer_widget",
+    ),
+
+    path(
+        "staff/<course:course>/<instance:instance>/<content:content>/choices/"
+        "add/<int:after>/",
+        staff_views.add_exercise_choice,
+        name="add_exercise_choice",
+    ),
+    path(
+        "staff/<course:course>/<instance:instance>/<content:content>/choices/"
+        "edit/<int:choice_id>/",
+        staff_views.edit_exercise_choice,
+        name="edit_exercise_choice",
+    ),
+    path(
+        "staff/<course:course>/<instance:instance>/<content:content>/choices/"
+        "delete/<int:choice_id>/",
+        staff_views.delete_exercise_choice,
+        name="delete_exercise_choice",
+    ),
+    path(
+        "staff/<course:course>/<instance:instance>/<content:content>/choices/"
+        "move/<int:choice_id>/<str:direction>/",
+        staff_views.move_exercise_choice,
+        name="move_exercise_choice",
+    ),
+    path(
+        "staff/<course:course>/<instance:instance>/<content:content>/choices/"
+        "generate/",
+        staff_views.generate_exercise_choices,
+        name="generate_exercise_choices",
+    ),
+
 
     # Staff URLs for messages
     path(
@@ -282,7 +373,7 @@ urlpatterns = [
         name="download_embedded_file",
     ),
     path(
-        "file-download/media/<slug:file_slug>/<str:field_name>/<str:filename>/",
+        "file-download/media/<utf8slug:file_slug>/<str:field_name>/<str:filename>/",
         views.download_media_file,
         name="download_media_file",
     ),
@@ -291,9 +382,18 @@ urlpatterns = [
         views.download_template_exercise_backend,
         name="download_template_exercise_backend",
     ),
+
+
+    # WS related
+    path(
+        "ws/<course:course>/<instance:instance>/<str:widget_id>/ticket/",
+        user_views.get_ws_ticket,
+        name="get_ws_ticket",
+    ),
+
     # Exercise sending for checking, progress and evaluation views
     path(
-        "<course:course>/<instance:instance>/<content:content>/<revision:revision>/check/",
+        "<course:course>/<instance:instance>/<content:parent>/<content:content>/check/",
         views.check_answer,
         name="check",
     ),
@@ -304,14 +404,14 @@ urlpatterns = [
         name="get_repeated_template_session",
     ),
     path(
-        "<course:course>/<instance:instance>/<content:content>/"
-        "<revision:revision>/progress/<slug:task_id>/",
+        "<course:course>/<instance:instance>/<content:parent>/<content:content>/"
+        "progress/<slug:task_id>/",
         views.check_progress,
         name="check_progress",
     ),
     path(
-        "<course:course>/<instance:instance>/<content:content>/"
-        "<revision:revision>/evaluation/<slug:task_id>/",
+        "<course:course>/<instance:instance>/<content:parent>/<content:content>/"
+        "evaluation/<slug:task_id>/",
         views.file_exercise_evaluation,
         name="file_exercise_evaluation",
     ),

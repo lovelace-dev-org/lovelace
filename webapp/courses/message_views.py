@@ -13,7 +13,12 @@ from django.utils.translation import gettext as _
 from django.utils import translation
 from courses.models import SavedMessage, CourseMessage, CourseEnrollment
 from courses.forms import MessageForm, CourseMessageForm
-from utils.access import ensure_staff, ensure_responsible, ensure_enrolled_or_staff
+from utils.access import (
+    ensure_enrolled_or_staff,
+    ensure_logged_in,
+    ensure_responsible,
+    ensure_staff,
+)
 from utils.formatters import display_name
 from utils.notify import (
     send_email,
@@ -37,7 +42,7 @@ def process_message_form(request, course, instance, recipients, form_label="", u
     if request.method == "POST":
         form = MessageForm(request.POST, saved=saved_msgs, load_url=load_url)
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         loaded_message = saved_msgs.filter(id=form.cleaned_data["saved_msgs"]).first()
@@ -132,7 +137,7 @@ def course_messages(request, course, instance):
         form = CourseMessageForm(request.POST)
 
         if not form.is_valid():
-            errors = form.errors_as_json()
+            errors = form.errors.get_json_data()
         else:
             message = form.save(commit=False)
             message.instance = instance
@@ -199,6 +204,7 @@ def remove_course_message(request, course, instance, msgid):
     return JsonResponse({"status": "ok"})
 
 
+@ensure_logged_in
 def view_messages(request):
     by_instance = []
     for enrollment in CourseEnrollment.get_user_enrollments(request.user):

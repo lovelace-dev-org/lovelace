@@ -1,3 +1,4 @@
+import secrets
 from django.http import (
     HttpResponse,
     JsonResponse,
@@ -8,6 +9,7 @@ from django.http import (
 )
 from django.template import loader
 from django.conf import settings
+from django.core.cache import caches
 from django.urls import reverse
 from django.utils.translation import gettext as _
 from django.contrib import auth, messages
@@ -242,7 +244,7 @@ def invite_members(request, course, instance, group):
     slots = instance.max_group_size - members - invites.count()
     form = GroupInviteForm(request.POST, slots=slots)
     if not form.is_valid(for_instance=instance):
-        errors = form.errors.as_json()
+        errors = form.errors.get_json_data()
         return JsonResponse({"errors": errors}, status=400)
 
     for user in form.invited_users:
@@ -293,6 +295,26 @@ def cancel_invitation(request, course, instance, group, invite):
 # ^
 # |
 # GROUP
+# WS
+# |
+# v
+
+@ensure_enrolled_or_staff
+def get_ws_ticket(request, course, instance, widget_id):
+    ticket_key = secrets.token_urlsafe(64)
+    ticket = {
+        "user_id": request.user.id,
+        "instance": instance.slug,
+        "widget": widget_id,
+    }
+    cache = caches["ws_tickets"]
+    cache.set(ticket_key, ticket, settings.WS_TICKET_EXPIRY)
+    return JsonResponse({"ticket": ticket_key})
+
+
+
+
+
 
 
 

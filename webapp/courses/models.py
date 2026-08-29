@@ -1,6 +1,7 @@
 """Django database models for courses."""
 
 import datetime
+from decimal import Decimal
 import itertools
 import operator
 import re
@@ -13,8 +14,9 @@ from html import escape
 from django.conf import settings
 from django.core import serializers
 from django.core.files.base import ContentFile
+from django.core.validators import MaxValueValidator, URLValidator
 from django.db import models, transaction
-from django.db.models import Q, Max, JSONField
+from django.db.models import F, Q, Max, JSONField
 from django.contrib.auth.models import User, Group
 from django.db.models.signals import post_save
 from django.urls import reverse
@@ -35,8 +37,10 @@ import magic
 
 from courses import blockparser
 from courses import markupparser
-import feedback.models
+from courses import widgets
+#import feedback.models
 from lovelace import plugins as lovelace_plugins
+from utils.base import parent_ordinal_sort
 from utils.data import (
     export_json, export_files, serialize_single_python, serialize_many_python
 )
@@ -54,7 +58,6 @@ from utils.management import (
     freeze_context_link,
     get_prefixed_slug,
 )
-
 
 class RollbackRevert(Exception):
     pass
@@ -78,6 +81,8 @@ class About(models.Model):
 # TODO: Separate profiles for students and teachers
 class UserProfile(models.Model):
     """User profile, which extends the Django's User model."""
+
+    user_data_models = []
 
     DATA_POLICY_CHOICES = (
         ("UNSELECTED", _("Not selected")),
@@ -120,6 +125,10 @@ class UserProfile(models.Model):
         verbose_name=_("Use dyslexic fonts (OpenDyslexic)."),
         default=False,
     )
+
+    @classmethod
+    def register_user_data_model(cls, model, fields):
+        cls.user_data_models.append((model, fields))
 
     def __str__(self):
         return f"{self.user}'s profile"
@@ -166,13 +175,31 @@ class StudentGroup(models.Model):
     members = models.ManyToManyField(User)
 
 
+
+
+class GroupInvitationManager(models.Manager):
+    """
+    Custom manager that allows querying for all invitations that belong to a course
+    instance.
+    """
+
+    def filter(self, *args, **kwargs):
+        if "instance" in kwargs:
+            kwargs["group__instance"] = kwargs["instance"]
+            kwargs.pop("instance")
+        return super().filter(*args, **kwargs)
+
+
 class GroupInvitation(models.Model):
     class Meta:
         unique_together = ("group", "user")
 
+    objects = GroupInvitationManager()
+
     group = models.ForeignKey("StudentGroup", on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sent_invitation")
+
 
 
 class SavedMessage(models.Model):
@@ -218,14 +245,36 @@ class SavedMessage(models.Model):
         return getattr(self, f"title_{lang_code}", "")
 
 
+
+class DeadlineExemptionManager(models.Manager):
+
+    """
+    Custom manager that allows querying for all exemptions that belong to a course
+    instance.
+    """
+
+    def filter(self, *args, **kwargs):
+        if "instance" in kwargs:
+            kwargs["contentgraph__instance"] = kwargs["instance"]
+            kwargs.pop("instance")
+        return super().filter(*args, **kwargs)
+
+
+
 class DeadlineExemption(models.Model):
 
     class Meta:
         unique_together = ("user", "contentgraph")
 
+    objects = DeadlineExemptionManager()
+
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     contentgraph = models.ForeignKey("ContentGraph", on_delete=models.CASCADE)
     new_deadline = models.DateTimeField(null=True)
+
+
+UserProfile.register_user_data_model(GroupInvitation, ["user", "sender"])
+UserProfile.register_user_data_model(DeadlineExemption, ["user"])
 
 
 # ^
@@ -351,6 +400,8 @@ class CourseEnrollment(models.Model):
         return enrollments
 
 
+UserProfile.register_user_data_model(CourseEnrollment, ["student"])
+
 class CourseInstance(models.Model):
     """
     A running instance of a course. Contains details about the start and end
@@ -394,6 +445,12 @@ class CourseInstance(models.Model):
         verbose_name="Automatic welcome message for accepted enrollments", blank=True
     )
     max_group_size = models.PositiveSmallIntegerField(null=True, blank=True)
+    ws_server = models.CharField(
+        verbose_name="WebSocket server address.",
+        max_length=255,
+        blank=True, null=True,
+        validators=[URLValidator(schemes=["ws", "wss", "http", "https"])]
+    )
 
     def natural_key(self):
         return [self.slug]
@@ -433,10 +490,13 @@ class CourseInstance(models.Model):
                 instance.save()
                 if was_primary:
                     instance.clear_content_tree_cache(regen_frozen=True)
+                    nodes = ContentGraph.objects.filter(instance=instance)
+                    for node in nodes:
+                        node.content.regenerate_cache(instance)
             self.clear_content_tree_cache(regen_frozen=True)
 
 
-    def get_content_tree(self, lang_code=None, staff=False):
+    def get_content_tree(self, lang_code=None, staff=False, guest=False):
         current_lang = translation.get_language()
         if lang_code is not None:
             translation.activate(lang_code)
@@ -446,6 +506,8 @@ class CourseInstance(models.Model):
         cache_key = f"{self.slug}_tree_{lang_code}"
         if staff:
             cache_key += "_staff"
+        elif guest:
+            cache_key += "_guest"
 
         cached_tree = cache.get(cache_key)
         if cached_tree:
@@ -453,6 +515,10 @@ class CourseInstance(models.Model):
 
         if staff:
             nodes = ContentGraph.objects.filter(instance=self, ordinal_number__gt=0)
+        elif guest:
+            nodes = ContentGraph.objects.filter(
+                instance=self, ordinal_number__gt=0, visible=True, require_enroll=False
+            )
         else:
             nodes = ContentGraph.objects.filter(instance=self, ordinal_number__gt=0, visible=True)
 
@@ -464,14 +530,14 @@ class CourseInstance(models.Model):
         )
         embeds_by_parent = defaultdict(dict)
         for link in embed_links:
-            task_group = link.embedded_page.evaluation_group
+            task_group = link.evaluation_group
             try:
                 embeds_by_parent[link.parent_id][task_group].append(
-                    (link.embedded_page_id, link.embedded_page.default_points)
+                    (link.embedded_page_id, link.default_points)
                 )
             except KeyError:
                 embeds_by_parent[link.parent_id][task_group] = [
-                    (link.embedded_page_id, link.embedded_page.default_points)
+                    (link.embedded_page_id, link.default_points)
                 ]
 
         nodes = list(nodes.order_by("parentnode"))
@@ -541,6 +607,8 @@ class CourseInstance(models.Model):
             cache.delete(f"{self.slug}_tree_{lang_code}")
             cache.delete(f"{self.slug}_tree_{lang_code}_staff")
 
+        cache.delete(f"{self.slug}_deadlines")
+
     def freeze(self, freeze_to=None):
         """
         Freezes the course instance by creating copies of content graph links
@@ -571,17 +639,8 @@ class CourseInstance(models.Model):
         for link in term_links:
             link.freeze(freeze_to)
 
-        from faq.models import FaqToInstanceLink
-
-        faq_links = FaqToInstanceLink.objects.filter(instance=self)
-        for link in faq_links:
-            link.freeze(freeze_to)
-
-        from assessment.models import AssessmentToExerciseLink
-
-        assessment_links = AssessmentToExerciseLink.objects.filter(instance=self)
-        for link in assessment_links:
-            link.freeze(freeze_to)
+        for module in lovelace_plugins["freeze"]:
+            module.models.freeze_context_links(self, freeze_to)
 
         contents = ContentGraph.objects.filter(instance=self)
         frontpage = None
@@ -601,6 +660,9 @@ class CourseInstance(models.Model):
             self.course.slug,
             export_target
         )
+
+        for grade in GradeThreshold.objects.filter(instance=self):
+            grade.export(self, export_target)
 
         for cg in ContentGraph.objects.filter(instance=self):
             cg.export(export_target)
@@ -634,7 +696,49 @@ class CourseInstance(models.Model):
         for module in lovelace_plugins["export"]:
             module.models.export_models(self, export_target)
 
+    def get_deadlines(self, user):
+        entries = []
+        exempt = []
 
+        cached = cache.get(f"{self.slug}_deadlines")
+
+        if not cached:
+            cgs = list(self.contentgraph_set.get_queryset().filter(deadline__isnull=False))
+            cgs.sort(key=parent_ordinal_sort)
+            for i, cg in enumerate(cgs):
+                instance_url = reverse("courses:course", kwargs={
+                    "course": self.course,
+                    "instance": self,
+                })
+                entries.append({
+                    "cg_id": cg.id,
+                    "deadline": cg.deadline,
+                    "course": self.course,
+                    "content": cg.content,
+                    "ordinal": i,
+                    "instance_url": instance_url,
+                    "content_url": reverse("courses:content", kwargs={
+                        "course": self.course,
+                        "instance": self,
+                        "content": cg.content,
+                    })
+                })
+        else:
+            entries = cached
+
+        exemptions = dict(
+            (e.contentgraph.id, e.new_deadline)
+            for e in DeadlineExemption.objects.filter(user=user, contentgraph__instance=self)
+        )
+        if not exemptions:
+            return entries
+
+        for entry in entries:
+            if new_dl := exemptions.get(entry["cg_id"]):
+                entry["deadline"] = new_dl
+
+        entries.sort(key=operator.itemgetter("deadline"))
+        return entries
 
     def finalize_import(self, document, pk_map):
         pass
@@ -651,7 +755,20 @@ class CourseInstance(models.Model):
         return []
 
 
-class GradeThreshold(models.Model):
+class GradeThresholdManager(models.Manager):
+
+    def get_by_natural_key(self, instance_slug, grade):
+        return self.get(instance__slug=instance_slug, grade=grade)
+
+
+class GradeThreshold(models.Model, ExportImportMixin):
+
+    class Meta:
+        unique_together = ("instance", "grade")
+
+
+    objects = GradeThresholdManager()
+
     instance = models.ForeignKey(
         "CourseInstance", null=False, blank=False, on_delete=models.CASCADE
     )
@@ -659,6 +776,9 @@ class GradeThreshold(models.Model):
     grade = models.CharField(
         max_length=4,
     )
+
+    def natural_key(self):
+        return [self.instance.slug, self.grade]
 
 
 class CourseMessage(models.Model):
@@ -744,6 +864,10 @@ class ContentGraph(models.Model):
     def natural_key(self):
         return (self.instance.slug, self.content.slug)
 
+    def delete(self, *args, **kwargs):
+        EmbeddedLink.objects.filter(parent=self.content, instance=self.instance).delete()
+        super().delete(*args, **kwargs)
+
     def get_revision_str(self):
         if self.revision is None:
             return "newest"
@@ -816,12 +940,13 @@ class CourseMedia(models.Model, ExportImportMixin):
     def natural_key(self):
         return (self.slug, )
 
-    def save(self, *args, **kwargs):
+    def save(self, *args, regen_cache=True, **kwargs):
         self.slug = get_prefixed_slug(self, self.origin, "name", translated=False)
         super().save(*args, **kwargs)
-        for link in self.coursemedialink_set.get_queryset():
-            if not link.instance.frozen:
-                link.parent.regenerate_cache(link.instance)
+        if regen_cache:
+            for link in self.coursemedialink_set.get_queryset().distinct("instance", "parent"):
+                if not link.instance.frozen:
+                    link.parent.regenerate_cache(link.instance)
 
 
 class MediaLinkManager(models.Manager):
@@ -850,7 +975,7 @@ class CourseMediaLink(models.Model, ExportImportMixin):
     )
 
     def natural_key(self):
-        return [self.parent.slug, self.media.slug, self.instance.slug]
+        return [self.parent and self.parent.slug, self.media.slug, self.instance.slug]
 
     class Meta:
         unique_together = ("instance", "media", "parent")
@@ -871,6 +996,9 @@ class File(CourseMedia):
     fileinfo = models.FileField(max_length=255, upload_to=get_file_upload_path)  # Translate
     download_as = models.CharField(
         verbose_name="Default name for the download dialog", max_length=200, null=True, blank=True
+    )
+    lexer = models.CharField(
+        verbose_name="Set lexer manually to", max_length=64, null=True, blank=True
     )
 
     def __str__(self):
@@ -956,11 +1084,6 @@ class TermToInstanceLink(models.Model, ExportImportMixin):
 
 
 class Term(models.Model, ExportImportMixin):
-    class Meta:
-        unique_together = (
-            "origin",
-            "name",
-        )
 
     objects = SlugManager()
 
@@ -1015,11 +1138,19 @@ class Term(models.Model, ExportImportMixin):
 
 
 class TermAlias(models.Model):
+    class Meta:
+        unique_together = (
+            "term",
+            f"name_{settings.MODELTRANSLATION_DEFAULT_LANGUAGE}"
+        )
+
     term = models.ForeignKey(Term, null=True, on_delete=models.CASCADE)
     name = models.CharField(verbose_name="Term", max_length=200)  # Translate
 
     def natural_key(self):
-        return self.term.natural_key() + [self.name]
+        return self.term.natural_key() + [getattr(
+            self, f"name_{settings.MODELTRANSLATION_DEFAULT_LANGUAGE}"
+        )]
 
 
 class TermTagManager(models.Manager):
@@ -1042,24 +1173,41 @@ class TermTag(models.Model):
 
 
 class TermTab(models.Model):
+    class Meta:
+        unique_together = (
+            "term",
+            f"title_{settings.MODELTRANSLATION_DEFAULT_LANGUAGE}"
+        )
+
     term = models.ForeignKey(Term, on_delete=models.CASCADE)
     title = models.CharField(verbose_name="Title of this tab", max_length=100)  # Translate
     description = models.TextField()  # Translate
 
     def natural_key(self):
-        return self.term.natural_key() + [self.title]
+        return self.term.natural_key() + [getattr(
+            self, f"title_{settings.MODELTRANSLATION_DEFAULT_LANGUAGE}"
+        )]
 
     def __str__(self):
         return self.title
 
 
 class TermLink(models.Model):
+    class Meta:
+        unique_together = (
+            "term",
+            f"url_{settings.MODELTRANSLATION_DEFAULT_LANGUAGE}"
+        )
+
     term = models.ForeignKey(Term, on_delete=models.CASCADE)
-    url = models.CharField(verbose_name="URL", max_length=300)  # Translate
+    url = models.CharField(verbose_name="URL", max_length=350)  # Translate
     link_text = models.CharField(verbose_name="Link text", max_length=80)  # Translate
 
     def natural_key(self):
-        return self.term.natural_key() + [self.url]
+        return self.term.natural_key() + [getattr(
+            self, f"url_{settings.MODELTRANSLATION_DEFAULT_LANGUAGE}"
+        )]
+
 
 
 
@@ -1089,8 +1237,15 @@ class Calendar(models.Model, ExportImportMixin):
     related_content = models.ForeignKey(
         "ContentPage", on_delete=models.SET_NULL, null=True, blank=True
     )
+    meeting_calendar = models.BooleanField(
+        verbose_name=_("Is a meeting calendar"),
+        default=True,
+        help_text=_("Meeting calendar reservations will show up in the host's personal calendar."),    )
     origin = models.ForeignKey(Course, verbose_name="Course", null=True, on_delete=models.SET_NULL)
     slug = models.SlugField(max_length=255, allow_unicode=True, blank=False)
+    heading_level = models.PositiveSmallIntegerField(
+        verbose_name=_("Date heading level"),
+    )
 
     def natural_key(self):
         return [self.name]
@@ -1108,6 +1263,7 @@ class CalendarDate(models.Model):
     """A single date on a calendar."""
 
     calendar = models.ForeignKey(Calendar, on_delete=models.CASCADE)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     event_name = models.CharField(verbose_name="Name of the event", max_length=200)  # Translate
     event_description = models.CharField(
         verbose_name="Description", max_length=200, blank=True, null=True
@@ -1141,6 +1297,7 @@ class CalendarReservation(models.Model):
 
     calendar_date = models.ForeignKey(CalendarDate, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    instance = models.ForeignKey(CourseInstance, on_delete=models.SET_NULL, null=True)
 
 
 # ^
@@ -1150,7 +1307,42 @@ class CalendarReservation(models.Model):
 # |
 # V
 
+class EmbeddedLinkQueryset(models.query.QuerySet):
+    """
+    Queryset with an overridden delete.
+    """
+
+    def delete(self):
+        """
+        When embedded pages are being unlinked from a course, there's a need to check
+        if that was the last reference to the page in that course instance. In case it was,
+        all things that are referencing the task itself become orphans and need to be cleaned up.
+
+        This delete method will delete all orphaned media links, as well as any other links
+        that have been registered as task references.
+        """
+
+        for model_inst in self:
+            peers = EmbeddedLink.objects.filter(
+                embedded_page=model_inst.embedded_page, instance=model_inst.instance
+            ).exclude(id=model_inst.id)
+            if not peers:
+                CourseMediaLink.objects.filter(
+                    parent=model_inst.embedded_page, instance=model_inst.instance
+                ).delete()
+                for module in lovelace_plugins.get("task_reference"):
+                    module.models.delete_orphan_references(
+                        model_inst.embedded_page,
+                        model_inst.instance
+                    )
+
+        super().delete()
+
+
 class EmbeddedLinkManager(models.Manager):
+
+    def get_queryset(self):
+        return EmbeddedLinkQueryset(self.model, using=self._db)
 
     def get_by_natural_key(self, instance_slug, parent_slug, content_slug):
         return self.get(
@@ -1161,6 +1353,10 @@ class EmbeddedLinkManager(models.Manager):
 
 
 class EmbeddedLink(models.Model, ExportImportMixin):
+
+    class Meta:
+        ordering = ["ordinal_number"]
+
     objects = EmbeddedLinkManager()
 
     parent = models.ForeignKey("ContentPage", related_name="emb_parent", on_delete=models.CASCADE)
@@ -1171,8 +1367,45 @@ class EmbeddedLink(models.Model, ExportImportMixin):
     ordinal_number = models.PositiveSmallIntegerField()
     instance = models.ForeignKey("CourseInstance", on_delete=models.CASCADE)
 
-    class Meta:
-        ordering = ["ordinal_number"]
+    mandatory = models.BooleanField(
+        verbose_name=_("Required to complete course"),
+        default=False
+    )
+
+    # Fields moved from ContentPage
+    correct_threshold = models.DecimalField(
+        default=1, max_digits=8, decimal_places=5,
+        verbose_name="Amount of completion required to mark this task correct",
+        help_text="Marked as a quotient, defaults to 1 indicating fully completed",
+        validators=[MaxValueValidator(Decimal("1"))]
+    )
+    manually_evaluated = models.BooleanField(
+        verbose_name="This exercise is evaluated by hand", default=False
+    )
+    delayed_evaluation = models.BooleanField(
+        verbose_name="This exercise is not immediately evaluated", default=False
+    )
+    evaluation_group = models.CharField(
+        max_length=32,
+        help_text="Evaluation group identifier for binding together mutually exclusive tasks.",
+        blank=True,
+    )
+    answer_limit = models.PositiveSmallIntegerField(
+        verbose_name="Limit number of allowed attempts to", blank=True, null=True
+    )
+    group_submission = models.BooleanField(
+        verbose_name="Answers can be submitted as a group", default=False
+    )
+    default_points = models.DecimalField(
+        default=1, max_digits=8, decimal_places=5,
+        verbose_name="Point value",
+        help_text="Amount of points a user can gain by finishing this exercise correctly in this course instance",
+    )
+
+
+
+    def delete(self, *args, **kwargs):
+        super().delete(*args, **kwargs)
 
     def natural_key(self):
         return (self.instance.slug, self.parent.slug, self.embedded_page.slug)
@@ -1182,6 +1415,7 @@ class EmbeddedLink(models.Model, ExportImportMixin):
 
     def set_instance(self, instance):
         self.instance = instance
+
 
 
 class ContentPage(models.Model, ExportImportMixin):
@@ -1203,30 +1437,20 @@ class ContentPage(models.Model, ExportImportMixin):
 
     class Meta:
         ordering = ("name",)
-        unique_together = ("name", "origin")
 
     objects = SlugManager()
 
-    # This will ideally be deprecated and replaced by a list generated dynamically from
-    # registered content types.
-    CONTENT_TYPE_CHOICES = (
-        ("LECTURE", "Lecture"),
-        ("TEXTFIELD_EXERCISE", "Textfield exercise"),
-        ("MULTIPLE_CHOICE_EXERCISE", "Multiple choice exercise"),
-        ("CHECKBOX_EXERCISE", "Checkbox exercise"),
-        ("FILE_UPLOAD_EXERCISE", "File upload exercise"),
-        ("REPEATED_TEMPLATE_EXERCISE", "Repeated template exercise"),
-        ("ROUTINE_EXERCISE", "Routine exercise"),
-        ("MULTIPLE_QUESTION_EXAM", "Multiple question exam"),
-    )
-
     # Dynamically registered content types go here.
     content_type_models = {}
+    answer_models = {}
+    user_answer_models = {}
+    config_forms = {}
 
     # Template to use for rendering this content type, all content type models must set their own.
-    template = "courses/blank.html"
+    default_answer_widget = "blank"
 
     # Template for answers page for tasks of this type, override if the default is not suitable.
+    answers_form_template = "courses/user-exercise-answers.html"
     answers_template = "courses/user-exercise-answers.html"
     answers_show_log = False
 
@@ -1246,22 +1470,9 @@ class ContentPage(models.Model, ExportImportMixin):
     content = models.TextField(
         verbose_name="Page content body", blank=True, default=""
     )  # Translate
-    default_points = models.IntegerField(
-        default=1,
-        help_text="The default points a user can gain by finishing this exercise correctly",
-    )
-    access_count = models.PositiveIntegerField(editable=False, default=0)
-    tags = ArrayField(
-        base_field=models.CharField(max_length=32, blank=True),
-        default=list,
-        blank=True,
-    )
-    evaluation_group = models.CharField(
-        max_length=32,
-        help_text="Evaluation group identifier for binding together mutually exclusive tasks.",
-        blank=True,
-    )
-    content_type = models.CharField(max_length=28, default="LECTURE", choices=CONTENT_TYPE_CHOICES)
+    question = models.TextField(blank=True, default="")  # Translate
+    answer_widget = models.CharField(max_length=32, blank=True, null=True)
+    content_type = models.CharField(max_length=28, default="LECTURE")
     embedded_pages = models.ManyToManyField(
         "self",
         blank=True,
@@ -1269,28 +1480,13 @@ class ContentPage(models.Model, ExportImportMixin):
         symmetrical=False,
         through_fields=("parent", "embedded_page", "instance"),
     )
-    feedback_questions = models.ManyToManyField(feedback.models.ContentFeedbackQuestion, blank=True)
 
-    question = models.TextField(blank=True, default="")  # Translate
-    manually_evaluated = models.BooleanField(
-        verbose_name="This exercise is evaluated by hand", default=False
-    )
-    delayed_evaluation = models.BooleanField(
-        verbose_name="This exercise is not immediately evaluated", default=False
-    )
-    answer_limit = models.PositiveSmallIntegerField(
-        verbose_name="Limit number of allowed attempts to", blank=True, null=True
-    )
-    group_submission = models.BooleanField(
-        verbose_name="Answers can be submitted as a group", default=False
-    )
-    ask_collaborators = models.BooleanField(
-        verbose_name="Ask the student to list collaborators", default=False
-    )
-    # ^
+    feedback_questions = models.ManyToManyField("feedback.ContentFeedbackQuestion", blank=True)
+
 
     @classmethod
-    def register_content_type(cls, constant_name, type_class, answer_class=None):
+    def register_content_type(cls, constant_name, type_class,
+                              answer_class=None, user_answer_class=None):
         if not issubclass(type_class, cls):
             raise TypeError(
                 _("Class {type_class} is not a subclass of {cls}").format(
@@ -1300,6 +1496,12 @@ class ContentPage(models.Model, ExportImportMixin):
             )
 
         cls.content_type_models[constant_name] = type_class
+        cls.answer_models[constant_name] = answer_class
+        cls.user_answer_models[constant_name] = user_answer_class
+
+    @classmethod
+    def register_config_form(cls, constant_name, form_class):
+        cls.config_forms[constant_name] = form_class
 
     def natural_key(self):
         return (self.slug, )
@@ -1444,6 +1646,25 @@ class ContentPage(models.Model, ExportImportMixin):
         question = blockparser.parseblock(escape(self.question, quote=False), context)
         return question
 
+    def get_config_form(self):
+        return self.config_forms[self.content_type]
+
+    def get_answer_widget(self, course):
+        if not self.answer_widget:
+            handle = self.default_answer_widget
+        else:
+            handle = self.answer_widget
+
+        # widget_slug = f"{course.prefix}-{self.slug.removeprefix(course.prefix + "-")}"
+        widget = widgets.AnswerWidgetRegistry.get_widget(
+            handle, course, self.slug
+        )
+        return widget
+
+    def export_answer_widget(self, instance, export_target):
+        answer_widget = self.get_answer_widget(instance.course)
+        answer_widget.export(instance, export_target)
+
     def count_pages(self, instance):
         """
         Counts the number of pages the content has been paginated to. Uses cache keys to avoid
@@ -1472,6 +1693,7 @@ class ContentPage(models.Model, ExportImportMixin):
         media_links = set()
 
         page_links_per_lang = {}
+        all_links = defaultdict(set)
 
         parser = markupparser.LinkParser()
         for lang_code, _ in settings.LANGUAGES:
@@ -1481,10 +1703,13 @@ class ContentPage(models.Model, ExportImportMixin):
                 version = Version.objects.get_for_object(self).get(revision_id=revision).field_dict
                 content = version[f"content_{lang_code}"]
 
-            lang_page_links, lang_media_links = parser.parse(content, instance)
-            page_links = page_links.union(lang_page_links)
-            media_links = media_links.union(lang_media_links)
+            links = parser.parse(content, instance)
+            for category, link_list in links.items():
+                all_links[category].update(link_list)
+
+            lang_page_links = links["page"]
             page_links_per_lang[lang_code] = lang_page_links
+
 
         old_page_links = list(
             EmbeddedLink.objects.filter(instance=instance, parent=self).values_list(
@@ -1493,41 +1718,50 @@ class ContentPage(models.Model, ExportImportMixin):
         )
         old_media_links = list(
             CourseMediaLink.objects.filter(instance=instance, parent=self).values_list(
-                "media__name", flat=True
+                "media__slug", flat=True
             )
         )
 
-        removed_page_links = set(old_page_links).difference(page_links)
-        removed_media_links = set(old_media_links).difference(media_links)
-        added_page_links = set(page_links).difference(old_page_links)
-        added_media_links = set(media_links).difference(old_media_links)
+        removed_page_links = set(old_page_links).difference(all_links["page"])
+        removed_media_links = set(old_media_links).difference(all_links["media"])
+        added_page_links = all_links["page"].difference(old_page_links)
+        added_media_links = all_links["media"].difference(old_media_links)
 
         EmbeddedLink.objects.filter(
             embedded_page__slug__in=removed_page_links, instance=instance, parent=self
         ).delete()
         CourseMediaLink.objects.filter(
-            media__name__in=removed_media_links, instance=instance, parent=self
+            media__slug__in=removed_media_links, instance=instance, parent=self
         ).delete()
 
         # set ordinal to zero at first, updated per language later
         for link_slug in added_page_links:
-            link_obj = EmbeddedLink(
-                parent=self,
-                embedded_page=ContentPage.objects.get(slug=link_slug),
-                revision=None,
-                ordinal_number=0,
-                instance=instance,
-            )
-            link_obj.save()
+            try:
+                link_obj = EmbeddedLink(
+                    parent=self,
+                    embedded_page=ContentPage.objects.get(slug=link_slug),
+                    revision=None,
+                    ordinal_number=0,
+                    instance=instance,
+                )
+                link_obj.save()
+            except ContentPage.DoesNotExist:
+                print("Broken reference:", link_slug)
 
         for link_slug in added_media_links:
-            link_obj = CourseMediaLink(
-                parent=self,
-                media=CourseMedia.objects.get(name=link_slug),
-                instance=instance,
-                revision=None,
-            )
-            link_obj.save()
+            try:
+                link_obj = CourseMediaLink(
+                    parent=self,
+                    media=CourseMedia.objects.get(slug=link_slug),
+                    instance=instance,
+                    revision=None,
+                )
+                link_obj.save()
+            except CourseMedia.DoesNotExist:
+                print("Broken reference:", link_slug)
+
+        for module in lovelace_plugins.get("context_links", []):
+            module.models.update_context_links(self, instance, all_links, revision)
 
         for lang_code, _ in settings.LANGUAGES:
             for i, link_slug in enumerate(page_links_per_lang[lang_code]):
@@ -1564,8 +1798,9 @@ class ContentPage(models.Model, ExportImportMixin):
             self.rendered_markup(instance, context, lang_code=lang_code, revision=revision)
         translation.activate(current_lang)
 
-        from faq.utils import regenerate_cache
-        regenerate_cache(instance, self)
+        for module in lovelace_plugins["content-cache"]:
+            module.utils.regenerate_content_cache(instance, self)
+
 
     def get_human_readable_type(self):
         humanized_type = self.content_type.replace("_", " ").lower()
@@ -1585,14 +1820,57 @@ class ContentPage(models.Model, ExportImportMixin):
         adminized_type = self.content_type.replace("_", "").lower()
         return reverse(f"admin:courses_{adminized_type}_change", args=(self.id,))
 
+    def get_checking_settings_url(self, context):
+        return None
+
+    def get_content_additions(self, context, content_level):
+        """
+        Returns content additions that plugins can provide. Content types can also override this
+        method to include their own dynamic content additions (= content additions that cannot be
+        cached - cacheable additions should be done elsewhere). The additions will be displayed
+        at the bottom of a content page whether it is used as a main page or embedded.
+        """
+
+        additions = []
+        for module in lovelace_plugins["content-addon"]:
+            additions.append(module.includes.get_content_page_additions(
+                context, self, content_level
+            ))
+
+        return additions
+
+    def get_student_extra(self, context):
+        """
+        Overriding this method allows content types to include additional student tools in the
+        left hand context menu. This method needs to return a list with
+        (link text, link target, link url)
+        tuples as its values. By default it includes all
+        """
+
+        options = []
+        for module in lovelace_plugins["embed-extra"]:
+            options.extend(module.includes.get_embed_frame_extra(
+                context, self, "student"
+            ))
+
+        return options
+
     def get_staff_extra(self, context):
         """
         Overriding this method allows content types to include additional staff tools in the
-        left hand context menu. This method needs to return a list with (link text, link url)
+        left hand context menu. This method needs to return a list with
+        (link text, link target, link url)
         tuples as its values.
         """
 
         return []
+
+    def get_answer_actions_extra(self, context, answer):
+        options = []
+        for module in lovelace_plugins["answer-actions"]:
+            options.extend(module.includes.get_answer_actions(context, self, answer))
+
+        return options
 
     def get_url_name(self):
         return get_prefixed_slug(self, self.origin, "name")
@@ -1600,7 +1878,7 @@ class ContentPage(models.Model, ExportImportMixin):
     def is_answerable(self):
         return self.content_type != "LECTURE"
 
-    def save_evaluation(self, user, evaluation, answer_object):
+    def save_evaluation(self, link, user, evaluation, answer_object):
         """
         Saves evaluation. This method has been designed in a way that it is generally compatible
         with all task types as it simply saves an evaluation that has been generated by the task
@@ -1612,7 +1890,7 @@ class ContentPage(models.Model, ExportImportMixin):
         Evaluation dictionary and its default values are defined as follows:
         - *evaluation: bool
         - points: float (0)
-        - max: float (exercise.default_points)
+        - max: float (link.default_points)
         - manual: bool (False)
         - evaluator: User (None)
         - test_results: string ("")
@@ -1628,15 +1906,16 @@ class ContentPage(models.Model, ExportImportMixin):
             if "points" in evaluation:
                 points = evaluation["points"]
             else:
-                points = self.default_points
+                points = link.default_points
                 evaluation["points"] = points
         else:
             points = 0
 
         evaluation_object = Evaluation(
             correct=correct,
+            completed=not evaluation.get("manual", False),
             points=points,
-            max_points=evaluation.get("max", self.default_points),
+            max_points=evaluation.get("max", link.default_points),
             evaluator=evaluation.get("evaluator"),
             test_results=evaluation.get("test_results", ""),
             feedback=evaluation.get("feedback", ""),
@@ -1647,18 +1926,16 @@ class ContentPage(models.Model, ExportImportMixin):
 
         answer_object.refresh_from_db()
 
-        update_completion(self, instance, user, evaluation, answer_object.answer_date)
-        if self.group_submission:
+        update_completion(self, link, instance, user, evaluation, answer_object.answer_date)
+        if link.group_submission:
+            type_object = self.get_type_object()
             for member in get_group_members(user, instance):
-                answer_object.pk = None
-                answer_object.useranswer_ptr = None
-                answer_object.user = member
-                answer_object.save()
-                update_completion(self, instance, member, evaluation, answer_object.answer_date)
+                type_object.copy_answer(answer_object, member)
+                update_completion(self, link, instance, member, evaluation, answer_object.answer_date)
 
         return evaluation_object
 
-    def update_evaluation(self, user, evaluation, answer_object, complete=True, overwrite=False):
+    def update_evaluation(self, link, user, evaluation, answer_object, complete=True, overwrite=False):
         """
         Updates an existing evaluation based on a new evaluation dictionary. See save_evaluation.
         This is used by tasks that use manual assesssment, or delayed evaluation.
@@ -1671,8 +1948,9 @@ class ContentPage(models.Model, ExportImportMixin):
 
         instance = answer_object.instance
         answer_object.evaluation.correct = evaluation["evaluation"]
+        answer_object.evaluation.completed = complete
         answer_object.evaluation.points = evaluation["points"]
-        answer_object.evaluation.max_points = evaluation.get("max", self.default_points)
+        answer_object.evaluation.max_points = evaluation.get("max", link.default_points)
         answer_object.evaluation.feedback = evaluation.get("feedback", "")
         answer_object.evaluation.evaluator = evaluation.get("evaluator", None)
         answer_object.evaluation.test_results = evaluation.get("test_results", "")
@@ -1681,13 +1959,23 @@ class ContentPage(models.Model, ExportImportMixin):
         answer_object.evaluation.save()
         if complete:
             update_completion(
-                self, instance, user, evaluation, answer_object.answer_date,
+                self, link, instance, user, evaluation, answer_object.answer_date,
                 overwrite=overwrite
             )
-            if self.group_submission:
+            if link.group_submission:
                 for member in get_group_members(user, instance):
+                    if not UserAnswer.objects.filter(
+                        user=member, evaluation=answer_object.evaluation
+                    ):
+                        task_answer = self.get_user_answers(self, user, instance).get(
+                            evaluation=answer_object.evaluation
+                        )
+                        task_answer.pk = None
+                        task_answer.useranswer_ptr = None
+                        task_answer.user = member
+                        task_answer.save()
                     update_completion(
-                        self, instance, member, evaluation, answer_object.answer_date,
+                        self, link, instance, member, evaluation, answer_object.answer_date,
                         overwrite=overwrite
                     )
 
@@ -1703,7 +1991,7 @@ class ContentPage(models.Model, ExportImportMixin):
         except UserTaskCompletion.DoesNotExist:
             return "unanswered", 0
 
-    def re_evaluate(self, user, instance):
+    def re_evaluate(self, link, user, instance):
         """
         Re-evaluates a task by picking the user's best result, and updating completion based on it.
         This method is primarily used when transfering records between instances that have different
@@ -1715,7 +2003,7 @@ class ContentPage(models.Model, ExportImportMixin):
         best_answer = (
             self.get_user_answers(self, user, instance)
             .filter(evaluation__correct=True)
-            .order_by("-evaluation__points")
+            .order_by("-evaluation__points", "answer_date")
             .first()
         )
         if not best_answer:
@@ -1724,10 +2012,15 @@ class ContentPage(models.Model, ExportImportMixin):
         evaluation = {
             "evaluation": True,
             "points": best_answer.evaluation.points,
-            "max": self.default_points,
+            "max": best_answer.evaluation.max_points,
         }
-        update_completion(self, instance, user, evaluation, best_answer.answer_date)
+        update_completion(self, link, instance, user, evaluation, best_answer.answer_date)
 
+    def copy_answer(self, answer_object, copy_owner):
+        answer_object.pk = None
+        answer_object.useranswer_ptr = None
+        answer_object.user = copy_owner
+        answer_object.save()
 
     # Abstract methods that proxy model classes need to implement.
     # v
@@ -1764,7 +2057,7 @@ class ContentPage(models.Model, ExportImportMixin):
         """
         raise NotImplementedError("base type has no method 'save_answer'")
 
-    def check_answer(self, user, ip, answer, files, answer_object, revision):
+    def check_answer(self, link, user, answer, files, answer_object):
         """
         A follow-up method for save_answer, similarly mandatory if using standard views. This
         function checks the answer and return an evaluation dictionary that should conform to the
@@ -1780,7 +2073,7 @@ class ContentPage(models.Model, ExportImportMixin):
 
         :return: evaluation as dictionary
         """
-        raise NotImplementedError("base type has no method 'save_answer'")
+        raise NotImplementedError("base type has no method 'check_answer'")
 
     # ^
 
@@ -1799,53 +2092,16 @@ class ContentPage(models.Model, ExportImportMixin):
 
     def get_type_object(self):
         # this seems to lose the revision info?
-        from routine_exercise.models import RoutineExercise
-        from multiexam.models import MultipleQuestionExam
-
-        type_models = {
-            "LECTURE": Lecture,
-            "TEXTFIELD_EXERCISE": TextfieldExercise,
-            "MULTIPLE_CHOICE_EXERCISE": MultipleChoiceExercise,
-            "CHECKBOX_EXERCISE": CheckboxExercise,
-            "FILE_UPLOAD_EXERCISE": FileUploadExercise,
-            "REPEATED_TEMPLATE_EXERCISE": RepeatedTemplateExercise,
-            "ROUTINE_EXERCISE": RoutineExercise,
-            "MULTIPLE_QUESTION_EXAM": MultipleQuestionExam,
-        }
-
-        return type_models[self.content_type].objects.get(id=self.id)
+        return self.content_type_models[self.content_type].objects.get(id=self.id)
 
     def get_type_model(self):
-        from routine_exercise.models import RoutineExercise
-        from multiexam.models import MultipleQuestionExam
-
-        type_models = {
-            "LECTURE": Lecture,
-            "TEXTFIELD_EXERCISE": TextfieldExercise,
-            "MULTIPLE_CHOICE_EXERCISE": MultipleChoiceExercise,
-            "CHECKBOX_EXERCISE": CheckboxExercise,
-            "FILE_UPLOAD_EXERCISE": FileUploadExercise,
-            "REPEATED_TEMPLATE_EXERCISE": RepeatedTemplateExercise,
-            "ROUTINE_EXERCISE": RoutineExercise,
-            "MULTIPLE_QUESTION_EXAM": MultipleQuestionExam,
-        }
-        return type_models[self.content_type]
+        return self.content_type_models[self.content_type]
 
     def get_answer_model(self):
-        from routine_exercise.models import RoutineExerciseAnswer
-        from multiexam.models import UserMultipleQuestionExamAnswer
+        return self.answer_models[self.content_type]
 
-        answer_models = {
-            "LECTURE": None,
-            "TEXTFIELD_EXERCISE": UserTextfieldExerciseAnswer,
-            "MULTIPLE_CHOICE_EXERCISE": UserMultipleChoiceExerciseAnswer,
-            "CHECKBOX_EXERCISE": UserCheckboxExerciseAnswer,
-            "FILE_UPLOAD_EXERCISE": UserFileUploadExerciseAnswer,
-            "REPEATED_TEMPLATE_EXERCISE": UserRepeatedTemplateExerciseAnswer,
-            "ROUTINE_EXERCISE": RoutineExerciseAnswer,
-            "MULTIPLE_QUESTION_EXAM": UserMultipleQuestionExamAnswer,
-        }
-        return answer_models[self.content_type]
+    def get_user_answer_model(self):
+        return self.user_answer_models[self.content_type]
 
     # HACK: Experimental way of implementing a better get_type_object
     def __getattribute__(self, name):
@@ -1856,14 +2112,18 @@ class ContentPage(models.Model, ExportImportMixin):
         """
 
         normal = [
+            "get_checking_settings_url",
             "get_choices",
             "get_rendered_content",
             "get_question",
             "save_answer",
             "check_answer",
             "get_user_answers",
+            "get_content_additions",
+            "get_student_extra",
             "get_staff_extra",
-            "template",
+            "get_answer_actions_extra",
+            "default_answer_widget",
             "answers_template",
             "answer_table_classes",
             "answers_show_log",
@@ -1898,7 +2158,7 @@ class Lecture(ContentPage):
         verbose_name = "lecture page"
         proxy = True
 
-    template = "courses/lecture.html"
+    default_answer_widget = "blank"
 
     def get_choices(self, revision=None):
         pass
@@ -1930,7 +2190,7 @@ class MultipleChoiceExercise(ContentPage):
         verbose_name = "multiple choice exercise"
         proxy = True
 
-    template = "courses/multiple-choice-exercise.html"
+    default_answer_widget = "radio"
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -1978,8 +2238,8 @@ class MultipleChoiceExercise(ContentPage):
         answer_object.save()
         return answer_object
 
-    def check_answer(self, user, ip, answer, files, answer_object, revision):
-        choices = self.get_choices(self, revision)
+    def check_answer(self, link, user, answer, files, answer_object):
+        choices = self.get_choices(self, link.revision)
 
         # quick hax:
         answered = int([v for k, v in answer.items() if k.endswith("-radio")][0])
@@ -2006,7 +2266,7 @@ class MultipleChoiceExercise(ContentPage):
             "evaluation": correct,
             "hints": hints,
             "comments": comments,
-            "points": correct * self.default_points,
+            "quotient": correct * 1,
         }
 
     def get_user_answers(self, user, instance, ignore_drafts=True):
@@ -2020,6 +2280,7 @@ class MultipleChoiceExercise(ContentPage):
 
     def export(self, instance, export_target):
         super(ContentPage, self).export(instance, export_target)
+        self.export_answer_widget(instance, export_target)
         export_json(
             serialize_many_python(self.get_choices(self)),
             f"{self.slug}_choices",
@@ -2033,7 +2294,7 @@ class CheckboxExercise(ContentPage):
         verbose_name = "checkbox exercise"
         proxy = True
 
-    template = "courses/checkbox-exercise.html"
+    default_answer_widget = "checkbox"
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -2079,42 +2340,53 @@ class CheckboxExercise(ContentPage):
         answer_object.save()
         return answer_object
 
-    def check_answer(self, user, ip, answer, files, answer_object, revision):
+    def check_answer(self, link, user, answer, files, answer_object):
         # Determine, if the given answer was correct and which hints to show
 
-        choices = self.get_choices(self, revision)
+        choices = self.get_choices(self, link.revision)
 
         # quick hax:
         answered = {choice.id: False for choice in choices}
         answered.update({int(i): True for i, _ in answer.items() if i.isdigit()})
 
-        correct = True
+        chosen_weight_sum = 0
+        total_weight_sum = 0
         hints = []
         comments = []
         chosen = []
+        correct_items = 0
         for choice in choices:
-            if answered[choice.id] and choice.correct and correct:
-                correct = True
-                chosen.append(choice)
-                if choice.comment:
-                    comments.append(choice.comment)
-            elif not answered[choice.id] and choice.correct:
-                correct = False
-                if choice.hint:
+            if choice.correct:
+                total_weight_sum += choice.weight
+                if answered[choice.id]:
+                    chosen_weight_sum += choice.weight
+                    chosen.append(choice)
+                    correct_items += 1
+                    if choice.comment:
+                        comments.append(choice.comment)
+                elif choice.hint:
                     hints.append(choice.hint)
-            elif answered[choice.id] and not choice.correct:
-                correct = False
-                if choice.hint:
-                    hints.append(choice.hint)
-                if choice.comment:
-                    comments.append(choice.comment)
-                chosen.append(choice)
+            else:
+                if answered[choice.id]:
+                    chosen_weight_sum -= choice.weight
+                    if choice.hint:
+                        hints.append(choice.hint)
+                    if choice.comment:
+                        comments.append(choice.comment)
+                    chosen.append(choice)
+                else:
+                    correct_items += 1
+
+        quotient = max(chosen_weight_sum / total_weight_sum, 0)
+        correct = quotient >= link.correct_threshold
 
         return {
             "evaluation": correct,
             "hints": hints,
             "comments": comments,
-            "points": correct * self.default_points,
+            "quotient": quotient,
+            "correct_items": correct_items,
+            "total_items": len(choices)
         }
 
     def get_user_answers(self, user, instance, ignore_drafts=True):
@@ -2128,6 +2400,7 @@ class CheckboxExercise(ContentPage):
 
     def export(self, instance, export_target):
         super(ContentPage, self).export(instance, export_target)
+        self.export_answer_widget(instance, export_target)
         export_json(
             serialize_many_python(self.get_choices(self)),
             f"{self.slug}_choices",
@@ -2140,7 +2413,7 @@ class TextfieldExercise(ContentPage):
         verbose_name = "text field exercise"
         proxy = True
 
-    template = "courses/textfield-exercise.html"
+    default_answer_widget = "textfield"
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -2164,6 +2437,15 @@ class TextfieldExercise(ContentPage):
     def get_question(self, context):
         return ContentPage._get_question(self, context)
 
+    def get_checking_settings_url(self, context):
+        return reverse(
+            "courses:answer_settings_panel", kwargs={
+                "course": context["course"],
+                "instance": context["instance"],
+                "content": self,
+            }
+        )
+
     def save_answer(self, user, ip, answer, files, instance, revision):
         if "answer" in answer.keys():
             given_answer = answer["answer"].replace("\r", "")
@@ -2181,8 +2463,8 @@ class TextfieldExercise(ContentPage):
         answer_object.save()
         return answer_object
 
-    def check_answer(self, user, ip, user_answer, files, answer_object, revision):
-        answers = self.get_choices(self, revision)
+    def check_answer(self, link, user, answer, files, answer_object):
+        answers = self.get_choices(self, link.revision)
 
         # Determine, if the given answer was correct and which hints/comments to show
         correct = False
@@ -2190,8 +2472,8 @@ class TextfieldExercise(ContentPage):
         comments = []
         errors = []
 
-        if "answer" in user_answer.keys():
-            given_answer = user_answer["answer"].replace("\r", "")
+        if "answer" in answer.keys():
+            given_answer = answer["answer"].replace("\r", "")
         else:
             return {"evaluation": False}
 
@@ -2251,7 +2533,7 @@ class TextfieldExercise(ContentPage):
             "hints": hints,
             "comments": comments,
             "errors": errors,
-            "points": correct * self.default_points
+            "quotient": correct * 1
         }
 
     def get_user_answers(self, user, instance, ignore_drafts=True):
@@ -2265,6 +2547,7 @@ class TextfieldExercise(ContentPage):
 
     def export(self, instance, export_target):
         super(ContentPage, self).export(instance, export_target)
+        self.export_answer_widget(instance, export_target)
         export_json(
             serialize_many_python(self.get_choices(self)),
             f"{self.slug}_choices",
@@ -2277,7 +2560,7 @@ class FileUploadExercise(ContentPage):
         verbose_name = "file upload exercise"
         proxy = True
 
-    template = "courses/file-upload-exercise.html"
+    default_answer_widget = "file"
     answers_show_log = True
 
     def save(self, *args, **kwargs):
@@ -2292,7 +2575,6 @@ class FileUploadExercise(ContentPage):
         super().save(*args, **kwargs)
         # create the extra settings model instance if one doesn't exist yet
         if not hasattr(self, "fileexercisesettings"):
-            print("Creating settings")
             extra_settings = FileExerciseSettings(exercise=self)
             extra_settings.save()
 
@@ -2326,7 +2608,7 @@ class FileUploadExercise(ContentPage):
                     answer=answer_object, fileinfo=uploaded_file
                 )
                 return_file.save()
-        elif self.fileexercisesettings.answer_mode == "TEXT":
+        elif self.fileexercisesettings.answer_mode != "FILE":
             if not self.fileexercisesettings.answer_filename:
                 raise InvalidExerciseAnswerException(
                     _("Task improperly configured, notify staff!")
@@ -2345,6 +2627,15 @@ class FileUploadExercise(ContentPage):
             raise InvalidExerciseAnswerException("No file was sent!")
         return answer_object
 
+    def copy_answer(self, answer_object, copy_owner):
+        attached_files = list(FileUploadExerciseReturnFile.objects.filter(answer=answer_object))
+        super().copy_answer(answer_object, copy_owner)
+        answer_object.refresh_from_db()
+        for file_ref in attached_files:
+            file_ref.pk = None
+            file_ref.answer = answer_object
+            file_ref.save()
+
     def get_choices(self, revision=None):
         return
 
@@ -2355,16 +2646,19 @@ class FileUploadExercise(ContentPage):
         return ContentPage._get_question(self, context)
 
     def get_admin_change_url(self):
+        # NOTE: Leaving this as is even though it references another app.
+        #       Eventually these links will be replaced by widgets
         return reverse("exercise_admin:file_upload_change", args=(self.id,))
 
-    def check_answer(self, user, ip, answer, files, answer_object, revision):
+    def check_answer(self, link, user, answer, files, answer_object):
         import courses.tasks as rpc_tasks
         from utils.exercise import file_upload_payload
 
-        if revision == "head":
-            revision = None
-
         if self.fileexercisetest_set.get_queryset():
+            celery_status = rpc_tasks.get_celery_worker_status()
+            if "errors" in celery_status:
+                return {"task_id": None, "errors": celery_status["errors"]}
+
             filelist = files.getlist("file")
             if not filelist and self.fileexercisesettings.answer_filename:
                 filelist.append(ContentFile(
@@ -2372,13 +2666,13 @@ class FileUploadExercise(ContentPage):
                     name=self.fileexercisesettings.answer_filename
                 ))
 
-            payload = file_upload_payload(self, filelist, answer_object.instance, revision)
+            payload = file_upload_payload(self, filelist, answer_object.instance, link.revision)
 
             result = rpc_tasks.run_tests.delay(payload=payload)
             answer_object.task_id = result.task_id
             answer_object.save()
             return {"task_id": result.task_id}
-        return {"evaluation": True, "manual": self.manually_evaluated}
+        return {"evaluation": True, "manual": link.manually_evaluated}
 
     def get_user_answers(self, user, instance, ignore_drafts=True):
         if instance is None:
@@ -2391,6 +2685,7 @@ class FileUploadExercise(ContentPage):
 
     def export(self, instance, export_target):
         super(ContentPage, self).export(instance, export_target)
+        self.export_answer_widget(instance, export_target)
         export_json(
             serialize_single_python(self.fileexercisesettings),
             f"{self.slug}_settings",
@@ -2409,8 +2704,6 @@ class RepeatedTemplateExercise(ContentPage):
     class Meta:
         verbose_name = "repeated template exercise"
         proxy = True
-
-    template = "courses/repeated-template-exercise.html"
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -2505,7 +2798,7 @@ class RepeatedTemplateExercise(ContentPage):
 
         return answer_object
 
-    def check_answer(self, user, ip, answer, files, answer_object, revision):
+    def check_answer(self, link, user, answer, files, answer_object):
         session = answer_object.session
         session_instance = (
             RepeatedTemplateExerciseSessionInstance.objects.filter(
@@ -2609,28 +2902,8 @@ class RepeatedTemplateExercise(ContentPage):
             "triggers": triggers,
             "next_instance": next_instance,
             "total_instances": total_instances,
-            "points": correct * self.default_points
+            "quotient": correct * 1
         }
-
-    def save_evaluation(self, user, evaluation, answer_object):
-        session = answer_object.session
-        instance_answers = UserRepeatedTemplateInstanceAnswer.objects.filter(
-            answer__session=session
-        )
-
-        if instance_answers.count() == session.total_instances():
-            incorrect_count = instance_answers.filter(correct=False).count()
-            if incorrect_count > 0:
-                correct = False
-                points = 0
-            else:
-                correct = True
-                points = self.default_points
-
-            evaluation_object = Evaluation(correct=correct, points=points)
-            evaluation_object.save()
-            answer_object.evaluation = evaluation_object
-            answer_object.save()
 
 
 # ^
@@ -2703,7 +2976,6 @@ class FileExerciseSettings(models.Model):
     )
     answer_filename = models.CharField(
         max_length=32,
-        null=True,
         blank=True,
         verbose_name=_("Filename to use for the answer"),
         help_text=_(
@@ -2716,6 +2988,12 @@ class FileExerciseSettings(models.Model):
 
     def natural_key(self):
         return (self.exercise.slug, )
+
+    def answer_language(self):
+        try:
+            return pygments.lexers.guess_lexer_for_filename(self.answer_filename, "").name.lower()
+        except pygments.util.ClassNotFound:
+            return "plain_text"
 
 
 class FileExerciseTestManager(models.Manager):
@@ -2926,6 +3204,32 @@ class FileExerciseTestExpectedStderr(FileExerciseTestExpectedOutput):
     def save(self, *args, **kwargs):
         self.output_type = "STDERR"
         super().save(*args, **kwargs)
+
+
+class WidgetSettingsManager(models.Manager):
+
+    def get_queryset(self):
+        return super().get_queryset().alias(name=F("key_slug"))
+
+    def get_by_natural_key(self, instance_slug, key_slug):
+        return self.get(instance__slug=instance_slug, key_slug=key_slug)
+
+
+class TextfieldWidgetSettings(models.Model, ExportImportMixin):
+
+    name = models.CharField(max_length=255)
+    slug = models.SlugField(max_length=255, unique=True)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    rows = models.PositiveSmallIntegerField(default=3)
+
+    objects = SlugManager()
+
+    def save(self, *args, **kwargs):
+        self.slug = get_prefixed_slug(self, self.course, "name", translated=False)
+        super().save(*args, **kwargs)
+
+    def natural_key(self):
+        return [self.slug]
 
 
 # ^
@@ -3201,9 +3505,16 @@ class TextfieldExerciseAnswer(models.Model):
     answer = models.TextField()  # Translate
     hint = models.TextField(blank=True)  # Translate
     comment = models.TextField(
-        verbose_name="Extra comment given upon entering a matching answer", blank=True
+        blank=True
     )  # Translate
     ordinal = models.PositiveIntegerField()
+
+    @classmethod
+    def get_edit_form(cls):
+        # NOTE: Just import from here now to avoid cyclic imports
+
+        from courses.config_forms import TextfieldExerciseAnswerForm
+        return TextfieldExerciseAnswerForm
 
     def __str__(self):
         if len(self.answer) > 76:
@@ -3214,7 +3525,14 @@ class TextfieldExerciseAnswer(models.Model):
         return [self.exercise.slug, self.ordinal]
 
     def save(self, *args, **kwargs):
-        self.answer = self.answer.replace("\r", "")
+        # TODO: why was this needed? If not needed, remove the fixed version below
+        # self.answer = self.answer.replace("\r", "")
+        for lang_code, __ in settings.LANGUAGES:
+            lang_field = f"answer_{lang_code}"
+            lang_answer = getattr(self, lang_field)
+            lang_answer = lang_answer.replace("\r", "")
+            setattr(self, lang_field, lang_answer)
+
         if self.ordinal is None:
             previous = TextfieldExerciseAnswer.objects.filter(
                 exercise=self.exercise,
@@ -3238,6 +3556,13 @@ class MultipleChoiceExerciseAnswer(models.Model):
         verbose_name="Extra comment given upon selection of this answer", blank=True
     )  # Translate
 
+    @classmethod
+    def get_edit_form(cls):
+        # NOTE: Just import from here now to avoid cyclic imports
+
+        from courses.config_forms import MultipleChoiceExerciseChoiceForm
+        return MultipleChoiceExerciseChoiceForm
+
     def __str__(self):
         return self.answer
 
@@ -3251,11 +3576,17 @@ class CheckboxExerciseAnswer(models.Model):
     exercise = models.ForeignKey(CheckboxExercise, null=True, on_delete=models.SET_NULL)
     correct = models.BooleanField(default=False)
     ordinal = models.PositiveIntegerField()
+    weight = models.PositiveSmallIntegerField(default=1)
     answer = models.TextField()  # Translate
     hint = models.TextField(blank=True)  # Translate
     comment = models.TextField(
         verbose_name="Extra comment given upon selection of this answer", blank=True
     )  # Translate
+
+    @classmethod
+    def get_edit_form(cls):
+        from courses.config_forms import CheckboxExerciseChoiceForm
+        return CheckboxExerciseChoiceForm
 
     def __str__(self):
         return self.answer
@@ -3386,6 +3717,9 @@ class Evaluation(models.Model):
     """Evaluation of a student's answer to an exercise."""
 
     correct = models.BooleanField(default=False)
+
+    # Default to True because manual/delayed evaluation is the exception
+    completed = models.BooleanField(default=True)
     suspect = models.BooleanField(default=False)
     points = models.DecimalField(default=0, max_digits=5, decimal_places=2)
 
@@ -3574,7 +3908,7 @@ class UserFileUploadExerciseAnswer(UserAnswer):
         repr_str = ""
         for fname, (type_info, contents) in returned_files.items():
             link_kw = {
-                "user": context["student"],
+                "user": self.user,
                 "course": context["course"],
                 "instance": context["instance"],
                 "answer": self,
@@ -3690,6 +4024,7 @@ class UserTaskCompletion(models.Model):
             ("incorrect", "The task has not been answered correctly"),
             ("credited", "The task has been credited by completing another task"),
             ("submitted", "An answer has been submitted, awaiting assessment"),
+            ("rebsubmitted", "A new answer answer has been submitted"),
             ("ongoing", "The task has been started"),
         ),
     )
@@ -3700,25 +4035,37 @@ class InvalidExerciseAnswerException(Exception):
     This exception is cast when an exercise answer cannot be processed.
     """
 
+UserProfile.register_user_data_model(UserAnswer, ["user"])
+UserProfile.register_user_data_model(UserTaskCompletion, ["user"])
+
 
 ContentPage.register_content_type("LECTURE", Lecture)
 ContentPage.register_content_type(
-    "MULTIPLE_CHOICE_EXERCISE", MultipleChoiceExercise, UserMultipleChoiceExerciseAnswer
+    "MULTIPLE_CHOICE_EXERCISE",
+    MultipleChoiceExercise, MultipleChoiceExerciseAnswer, UserMultipleChoiceExerciseAnswer,
 )
 ContentPage.register_content_type(
-    "CHECKBOX_EXERCISE", CheckboxExercise, UserCheckboxExerciseAnswer
+    "CHECKBOX_EXERCISE",
+    CheckboxExercise, CheckboxExerciseAnswer, UserCheckboxExerciseAnswer
 )
 ContentPage.register_content_type(
-    "TEXTFIELD_EXERCISE", TextfieldExercise, UserTextfieldExerciseAnswer
+    "TEXTFIELD_EXERCISE",
+    TextfieldExercise, TextfieldExerciseAnswer, UserTextfieldExerciseAnswer
 )
 ContentPage.register_content_type(
-    "FILE_UPLOAD_EXERCISE", FileUploadExercise, UserFileUploadExerciseAnswer
+    "FILE_UPLOAD_EXERCISE",
+    FileUploadExercise, None, UserFileUploadExerciseAnswer
 )
+ContentPage.register_content_type(
+    "REPEATED_TEMPLATE_EXERCISE", RepeatedTemplateExercise, UserRepeatedTemplateExerciseAnswer
+)
+
 
 def get_import_list():
     return [
         Course,
         CourseInstance,
+        GradeThreshold,
         Term,
         TermAlias,
         TermLink,
@@ -3733,6 +4080,7 @@ def get_import_list():
         CheckboxExerciseAnswer,
         MultipleChoiceExerciseAnswer,
         TextfieldExerciseAnswer,
+        TextfieldWidgetSettings,
         FileExerciseSettings,
         IncludeFileSettings,
         FileExerciseTestIncludeFile,

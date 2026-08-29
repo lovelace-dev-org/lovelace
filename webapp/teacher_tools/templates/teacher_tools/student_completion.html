@@ -64,12 +64,12 @@
     {% trans 'Page results' %}
     <ul class="results-page-list">
       {% for results in results_by_page %}
-        {% blocktrans with name=results.page.name done=results.done_count tasks=results.task_count points=results.points|floatformat:"2" available=results.points_available score=results.score|floatformat:"2" %}
+        {% blocktrans with name=results.page.name done=results.done_count tasks=results.task_count points=results.points|floatformat:"2" available=results.points_available|floatformat:"2" score=results.score|floatformat:"2" %}
           <li class="results-page-bullet tasks-collapsed" onclick="expand_task_list(this)">{{ name }} (Done: {{ done }}/{{ tasks }} | Points: {{ points }}/{{ available }} | Score: {{ score }})</li>
         {% endblocktrans %}
         <ul class="student-task-list">
           {% for task in results.tasks_list %}
-            <li class="task-bullet-{{ task.result }}"><a href="{{ task.answers_link }}">{{ task.eo.name }}</a> ({{ task.points|floatformat:"2" }} / {{ task.eo.default_points }})</li>
+            <li class="task-bullet-{{ task.result }}"><a href="{{ task.answers_link }}">{{ task.eo.name }}</a> ({{ task.points|floatformat:"2" }} / {{ task.link.default_points|floatformat:"2" }})</li>
           {% endfor %}
         </ul>
       {% endfor %}

@@ -1,0 +1,277 @@
+import operator
+import uuid
+from django import forms
+from django.conf import settings
+from django.core.files.base import ContentFile
+from django.urls import reverse
+from django.utils import translation
+from django.utils.translation import gettext as _
+from courses import markupparser
+from courses.widgets import AnswerWidgetRegistry, PreviewWidgetRegistry
+import courses.models as cm
+from courses.fields import OriginFilterField
+from courses.widgets import OriginFilterSelect
+from courses.edit_forms import LineEditMixin, EmbeddedObjectEditForm
+from utils.access import accessible_courses
+from utils.management import CourseMediaAdmin
+import ace.models
+
+class AceWidgetConfigurationForm(forms.ModelForm):
+
+    class Meta:
+        model = ace.models.AceWidgetSettings
+        exclude = ["name", "course", "slug"]
+
+    @property
+    def _options_url(self):
+        return reverse("courses:get_accessible_media", kwargs={
+            "media_type": "file"
+        })
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        if self.cleaned_data["new_base_file"]:
+            file_obj = ContentFile(b"")
+            postfix = uuid.uuid1()
+            default_fileinfo_field = f"fileinfo_{settings.MODELTRANSLATION_DEFAULT_LANGUAGE}"
+            new_file = cm.File(
+                name=f"{instance.name}-base-file-{postfix}",
+                typeinfo="Ace base file",
+                origin=self._origin,
+            )
+            getattr(new_file, default_fileinfo_field).save(f"base-file-{postfix}", file_obj)
+            instance.base_file = new_file
+            new_file.save()
+
+        instance.save()
+        return instance
+
+    def __init__(self, *args, **kwargs):
+        self._request = kwargs.pop("request")
+        instance = kwargs["instance"]
+        self._origin = kwargs.pop("origin")
+        super().__init__(*args, **kwargs)
+        origin = (instance.base_file and instance.base_file.origin) or self._origin
+        choices = sorted(((f.id, f.name)
+            for f in CourseMediaAdmin.media_access_list(
+                self._request, cm.File, origin=origin
+            )
+        ), key=operator.itemgetter(1))
+        access_list = accessible_courses(self._request.user).order_by("name")
+        self.fields["base_file"] = OriginFilterField(
+            widget=OriginFilterSelect(attrs={
+                "options_url": self._options_url,
+                "origin_options": access_list,
+                "initial_origin": origin,
+            }),
+            required=False,
+            model=cm.File,
+            access_list=access_list,
+            choices=[("", _("----NOT--SELECTED----"))] + choices,
+            initial=instance.base_file and instance.base_file.id,
+        )
+        self.fields["new_base_file"] = forms.BooleanField(
+            label=_("Create a blank base file"),
+            required=False,
+        )
+
+
+
+class AcePlusWidgetConfigurationForm(forms.ModelForm):
+
+    has_inline = True
+
+    class Meta:
+        model = ace.models.AcePlusWidgetSettings
+        fields = ["layout", "preview_widget", "ws_address"]
+
+    def is_valid(self):
+        if super().is_valid():
+            if not self._preview_subform.is_valid():
+                for field, error in self._preview_subform.errors.items():
+                    self.errors[f"extra-{field}"] = error
+                return False
+            if not self._ace_subform.is_valid():
+                for field, error in self._ace_subform.errors.items():
+                    self.errors[f"ace-{field}"] = error
+                return False
+            return True
+        return False
+
+    def save(self, commit=True):
+        model_inst = super().save(commit=False)
+        preview_settings = self._preview_subform.save(commit=False)
+        ace_settings = self._ace_subform.save(commit=False)
+        ace_settings.course = model_inst.course
+        ace_settings.name = model_inst.name
+        preview_settings.name = model_inst.name
+        preview_settings.course = model_inst.course
+        model_inst.ace_settings = ace_settings
+        if commit:
+            ace_settings.save()
+            model_inst.save()
+            preview_settings.save()
+        return model_inst
+
+    def get_inline_formset(self):
+        if self._preview_subform:
+            return [self._preview_subform, self._ace_subform]
+        return [self._ace_subform]
+
+    def __init__(self, *args, **kwargs):
+        widget_change_url = kwargs.pop("widget_change_url")
+        self._ace_subform = kwargs.pop("ace_form")
+        self._preview_subform = kwargs.pop("preview_form")
+        instance = kwargs.get("instance")
+        super().__init__(*args, **kwargs)
+        self.fields["preview_widget"] = forms.ChoiceField(
+            widget = forms.Select(attrs={
+                "onchange": "formtools.fetch_rows(event, this)",
+                "data-change-url": widget_change_url,
+            }),
+            choices = (
+                [(None, " -- ")] +
+                [(widget, widget) for widget in PreviewWidgetRegistry.list_widgets()]
+            ),
+            required=True,
+            initial=instance and instance.preview_widget,
+        )
+
+
+class AcePlusEditForm(LineEditMixin, EmbeddedObjectEditForm):
+
+    model_key_field = "slug"
+
+    _name = "ace-plus"
+    _markup = ace.markup.AcePlusMarkup
+    has_inline = True
+
+    class Meta:
+        model = ace.models.AcePlusWidgetSettings
+        fields = ["layout", "preview_widget", "ws_address"]
+        ref_field = "key_slug"
+        markup = ace.markup.AcePlusMarkup
+
+    def get_inline_formset(self):
+        if self._preview_subform:
+            return [self._preview_subform, self._ace_subform]
+        return [self._ace_subform]
+
+    def save(self, commit=True):
+        model_inst = super().save(commit=False)
+        model_inst.course = self._context["instance"].course
+        preview_settings = self._preview_subform.save(commit=False)
+        ace_settings = self._ace_subform.save(commit=False)
+        ace_settings.course = model_inst.course
+        ace_settings.name = model_inst.name
+        preview_settings.course = model_inst.course
+        preview_settings.name = model_inst.name
+        model_inst.ace_settings = ace_settings
+        if commit:
+            ace_settings.save()
+            model_inst.save()
+            preview_settings.save()
+        self._saved_inst = model_inst
+        return model_inst
+
+    def is_valid(self):
+        ace_valid = self._ace_subform.is_valid()
+        preview_valid = self._preview_subform.is_valid()
+        main_valid = super().is_valid()
+        if ace_valid and preview_valid and main_valid:
+            return True
+        return False
+
+    def generate_new_markup(self):
+        self.cleaned_data["slug"] = self._saved_inst.slug
+        return self._markup.markup_from_dict(self.cleaned_data).split("\n")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, requires=False, **kwargs)
+        instance = self._instance
+        request = self._context["request"]
+        course_inst = self._context["instance"]
+        self.fields["preview_widget"] = forms.ChoiceField(
+            widget = forms.Select(attrs={
+                "onchange": "formtools.fetch_rows(event, this)",
+                "data-change-url": reverse("ace:preview_subform", kwargs={
+                    "course": course_inst.course,
+                    "slug": "-default-",
+                }),
+            }),
+            choices = (
+                [(None, " -- ")] +
+                [(widget, widget) for widget in PreviewWidgetRegistry.list_widgets()]
+            ),
+            required=True,
+            initial=instance and instance.preview_widget,
+        )
+        self._ace_subform = AnswerWidgetRegistry.get_widget(
+            "ace", course_inst.course, instance.slug if instance else ""
+        ).get_configuration_form(
+            request,
+            data=request.POST if self.is_bound else None,
+            prefix="ace",
+            origin=self._context["course"],
+        )
+        if instance and instance.preview_widget:
+            preview_widget = PreviewWidgetRegistry.get_widget(
+                instance.preview_widget, course_inst.course, instance.slug
+            )
+        elif request.POST:
+            if "key_slug" in request.POST:
+                slug = request.POST["key_slug"]
+            else:
+                slug = f"{course_inst.course.prefix}-{request.POST["name"]}"
+            preview_widget = PreviewWidgetRegistry.get_widget(
+                request.POST["preview_widget"], course_inst.course,
+                slug
+            )
+        else:
+            preview_widget = None
+
+        self._preview_subform = preview_widget and preview_widget.get_configuration_form(
+            request,
+            data=request.POST if self.is_bound else None,
+            prefix="extra"
+        )
+
+class BaseFileSaveConfirmForm(forms.Form):
+
+
+    editor_content = forms.CharField(widget=forms.HiddenInput, required=False)
+
+    def __init__(self, *args, **kwargs):
+        widget_slug = kwargs.pop("widget_slug")
+        lang_file_exists = kwargs.pop("lang_file_exists")
+        super().__init__(*args, **kwargs)
+        self.fields["widget_slug"] = forms.CharField(
+            widget=forms.HiddenInput,
+            initial=widget_slug,
+        )
+        self.fields["filename"] = forms.CharField(
+            label=_("Save as"),
+            required=False,
+        )
+        if not lang_file_exists:
+            self.fields["write_to"] = forms.ChoiceField(
+                widget=forms.Select,
+                choices=[
+                    ("default", _("Update default language file")),
+                    ("new", _("Create file for current language"))
+                ],
+                initial="default",
+            )
+        self.fields["confirm_save"] = forms.BooleanField(
+            required=True,
+            label=_("Confirm save")
+        )
+
+
+
+
+
+def register_edit_forms():
+    markupparser.MarkupParser.register_form("ace-plus", "edit", AcePlusEditForm)
+
+

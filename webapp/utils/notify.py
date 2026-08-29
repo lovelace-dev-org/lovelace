@@ -4,6 +4,7 @@ from django.conf import settings
 from django.core.cache import caches
 from django.core.mail import get_connection, EmailMessage, send_mass_mail
 from django.utils import translation
+from unidecode import unidecode
 from utils.formatters import display_name
 
 
@@ -21,7 +22,7 @@ def send_error_report(instance, content, revision, errors, answer_url):
     """
 
     recipient = instance.email
-    mailfrom = f"{instance.slug}-notices@{settings.ALLOWED_HOSTS[0]}"
+    mailfrom = f"{unidecode(instance.slug)}-notices@{settings.ALLOWED_HOSTS[0]}"
     title = f"[LOVELACE NOTIFY] Checker error in {content.name}"
     body = ""
     body += "An error occurred during checking of student submission.\n"
@@ -65,7 +66,9 @@ def send_welcome_email(instance, user=None, lang_code=None, userlist=None):
         else:
             recipients = userlist.values_list("email", flat=True)
 
-        mailfrom = f"{instance.slug}-notices@{settings.ALLOWED_HOSTS[0]}"
+
+
+        mailfrom = f"{unidecode(instance.slug)}-notices@{settings.ALLOWED_HOSTS[0]}"
         title = f"[{instance.course.name}]"
         body = instance.welcome_message
         reply_to = instance.email
@@ -103,7 +106,7 @@ def send_email(recipients, sender, title, body):
 
 
 def send_bcc_email(instance, recipients, sender, title, body):
-    mailfrom = f"{instance.slug}-notices@{settings.ALLOWED_HOSTS[0]}"
+    mailfrom = f"{unidecode(instance.slug)}-notices@{settings.ALLOWED_HOSTS[0]}"
     connection = get_connection()
     mail = EmailMessage(
         title,
