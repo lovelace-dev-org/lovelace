@@ -1950,6 +1950,11 @@ div.expand-handle {
                 #fff;
 }
 
+.exam-button {
+    background: no-repeat url("/static/courses/exam-16.png") center/16px,
+                #fff;
+}
+
 .widget-change-button {
     background: no-repeat url("/static/courses/change-widget.png") center/18px,
                 #fff;

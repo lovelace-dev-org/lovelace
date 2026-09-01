@@ -325,8 +325,8 @@ class ExamTaskAttempt(models.Model):
             if settings.avoid_same:
                 past_choices = ExamTaskChoice.objects.filter(
                     attempt__task=self.task,
-                    user=user
-                ).values_list("embedlink__id")
+                    user=user,
+                ).exclude(opened=None).values_list("embedlink__id")
                 if remaining := task_qs.exclude(id__in=past_choices):
                     personal_pool = list(remaining)
 
