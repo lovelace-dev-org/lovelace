@@ -9,6 +9,7 @@ ALLOWED_WS_ORIGINS = os.environ["LOVELACE_WS_ORIGINS"].split(",")
 SECRET_KEY = os.environ["LOVELACE_SECRET_KEY"]
 INSTALLED_APPS = [
     "daphne",
+    'django.contrib.postgres',
     "modeltranslation",
     "courses",
     "feedback",   # included because courses hard-depends on it
@@ -62,3 +63,5 @@ WS_TIMEOUT = int(os.getenv("LOVELACE_WS_TIMEOUT", 30))
 WS_CHILD_MEMORY_LIMIT_HARD = os.getenv("LOVELACE_WS_MEMORY_LIMIT_HARD", "100m")
 WS_CHILD_MEMORY_LIMIT_SOFT = os.getenv("LOVELACE_WS_MEMORY_LIMIT_SOFT", "50m")
 WS_CHILD_CPU_LIMIT = os.getenv("LOVELACE_WS_CPU_LIMIT", "0.5")
+
+MODELTRANSLATION_DEFAULT_LANGUAGE = os.environ["LOVELACE_DEFAULT_LANG"]
