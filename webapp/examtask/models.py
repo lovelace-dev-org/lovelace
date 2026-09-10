@@ -18,7 +18,12 @@ class NoAttemptException(Exception):
 # v
 
 def get_attempt(task, instance, user):
-    all_attempts = ExamTaskAttempt.objects.filter(task=task, instance=instance)
+    all_attempts = ExamTaskAttempt.objects.filter(
+        task=task,
+        start__lt=datetime.datetime.now(),
+        end__gt=datetime.datetime.now(),
+        instance=instance,
+    )
     if not all_attempts:
         raise NoAttemptException
 
@@ -48,11 +53,6 @@ class ExamTask(cm.ContentPage):
         super().save(*args, **kwargs)
 
     def get_rendered_content(self, context):
-        """
-        Includes the multiexam content extra template into the rendered markup. This adds
-        the 'Start exam' button and related information to the task.
-        """
-
         content = cm.ContentPage._get_rendered_content(self, context)
         return content
 
@@ -282,6 +282,16 @@ class UserExamTaskAnswer(cm.UserAnswer):
 
 
 class ExamTaskAttempt(models.Model):
+
+    """
+    Exam attempt model.
+
+    For each target (each individual user, or everyone) overlapping attempts cannot exist.
+    Caution: creation of overlapping attempts is currently only checked on the form level,
+    not in this model. Which means it is still possible to create them via other means.
+
+    An attempt is considered inactive if its end date has passed.
+    """
 
     instance = models.ForeignKey(cm.CourseInstance, on_delete=models.CASCADE)
     title = models.CharField(max_length=256, blank=True)

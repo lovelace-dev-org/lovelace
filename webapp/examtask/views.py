@@ -84,7 +84,9 @@ def add_task_attempt(request, course, instance, parent, content):
         post_save_cb=post_save,
         extra_response={"refresh": True},
         form_extra={
-            "enrolled_students": instance.enrolled_users.get_queryset(),
+            "course_inst": instance,
+            "exam_task": content,
+            "parent": parent,
         }
     )
 
@@ -104,7 +106,9 @@ def edit_task_attempt(request, course, instance, parent, content, attempt):
         extra_response={"refresh": True},
         post_save_cb=post_save,
         form_extra={
-            "enrolled_students": instance.enrolled_users.get_queryset(),
+            "course_inst": instance,
+            "exam_task": content,
+            "parent": parent,
         }
     )
 

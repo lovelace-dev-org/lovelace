@@ -39,20 +39,6 @@ class ExamTaskSettingsForm(forms.ModelForm):
             )
         )
 
-        # self.fields["task_pool"] = ModelOriginFilterMultiField(
-        #     widget=OriginFilterMultiSelect(attrs={
-        #         "options_url": self._options_url,
-        #         "origin_options": accessible_courses,
-        #         "initial_origin": course,
-        #         "size": 10,
-        #     }),
-        #     label=_("Select tasks"),
-        #     queryset=accessible_pages,
-        #     required=True,
-        #     model=cm.ContentPage,
-        #     access_list=accessible_courses,
-        # )
-
 
 class ExamTaskAttemptForm(forms.ModelForm):
 
@@ -60,8 +46,26 @@ class ExamTaskAttemptForm(forms.ModelForm):
         model = ExamTaskAttempt
         fields = ["title", "start", "end", "user"]
 
+    def clean(self):
+        cleaned_data = super().clean()
+        if other_attempts := ExamTaskAttempt.objects.filter(
+            user=cleaned_data["user"],
+            instance=self._course_inst,
+            task=self._exam_task,
+            parent=self._parent,
+        ).exclude(id=self._instance.id):
+            if other_attempts.filter(
+                end__gte=cleaned_data["start"],
+                start__lte=cleaned_data["end"],
+            ).exists():
+                self.add_error("start", _("Time interval overlaps with another atttempt"))
+                self.add_error("end", _("Time interval overlaps with another atttempt"))
+
     def __init__(self, *args, **kwargs):
-        enrolled_students = kwargs.pop("enrolled_students")
+        self._course_inst = kwargs.pop("course_inst")
+        self._exam_task = kwargs.pop("exam_task")
+        self._parent = kwargs.pop("parent")
+        self._instance = kwargs.get("instance")
         super().__init__(*args, **kwargs)
         if not kwargs.get("instance"):
             self.fields["start"] = forms.DateTimeField(
@@ -77,7 +81,7 @@ class ExamTaskAttemptForm(forms.ModelForm):
                 widget=forms.widgets.DateTimeInput(attrs={"type": "datetime-local"}),
             )
         self.fields["user"] = forms.ModelChoiceField(
-            queryset=enrolled_students,
+            queryset=self._course_inst.enrolled_users.get_queryset(),
             required=False,
         )
 
