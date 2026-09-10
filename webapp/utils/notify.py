@@ -99,7 +99,7 @@ def send_email(recipients, sender, title, body):
                 title,
                 body,
                 sender,
-                [(display_name(recipient), recipient.email)],
+                [recipient.email],
             )
         )
     send_mass_mail(messages, connection=connection)

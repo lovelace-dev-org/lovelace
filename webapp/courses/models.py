@@ -2377,7 +2377,12 @@ class CheckboxExercise(ContentPage):
                 else:
                     correct_items += 1
 
-        quotient = max(chosen_weight_sum / total_weight_sum, 0)
+        try:
+            quotient = max(chosen_weight_sum / total_weight_sum, 0)
+        except ZeroDivisionError:
+            print("Total weight sum:", total_weight_sum)
+            quotient = 0
+
         correct = quotient >= link.correct_threshold
 
         return {
