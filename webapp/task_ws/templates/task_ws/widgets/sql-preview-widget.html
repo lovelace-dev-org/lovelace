@@ -1,0 +1,14 @@
+{% load i18n %}
+{% load static %}
+
+<link type="text/css" rel="stylesheet" href="{% static 'task_ws/sql.css' %}">
+
+<div id="{{ widget_slug }}-sql-window"
+     class="sql-window"></div>
+
+<script src="{% static 'task_ws/sqlwidget.js' %}"></script>
+<script>
+    var preview_widget = new SQLWidget(
+      "{{ widget_slug }}-sql-window",
+    )
+</script>
