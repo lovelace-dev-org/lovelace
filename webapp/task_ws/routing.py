@@ -9,4 +9,5 @@ websocket_urlpatterns = [
         consumers.InteractivePythonConsumer.as_asgi(), name="interactive_python"
     ),
     path("turtle/", consumers.TurtleConsumer.as_asgi(), name="turtle"),
+    path("sql/", consumers.SQLConsumer.as_asgi(), name="sql")
 ]
