@@ -43,14 +43,14 @@ var AceWidget = class {
     }
 
     connect_ws() {
+        this.running = true
+        this.preview.init(this)
+        this.button.addClass("ace-button-running")
+        this.button.prop("disabled", true)
         this.ws.connect(this)
     }
 
     begin() {
-        this.preview.init(this)
-        this.button.addClass("ace-button-running")
-        this.button.prop("disabled", true)
-        this.running = true
         const content = this.editor.getValue()
         localStorage.setItem(this.editor.container.id + "-contents", content)
         this.ws.send({

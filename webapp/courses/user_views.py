@@ -15,6 +15,7 @@ from django.utils.translation import gettext as _
 from django.contrib import auth, messages
 from django.shortcuts import redirect
 from django.db.utils import IntegrityError
+from redis.exceptions import RedisError
 
 from allauth.account.forms import LoginForm
 
@@ -308,7 +309,13 @@ def get_ws_ticket(request, course, instance, widget_id):
         "widget": widget_id,
     }
     cache = caches["ws_tickets"]
-    cache.set(ticket_key, ticket, settings.WS_TICKET_EXPIRY)
+    try:
+        cache.set(ticket_key, ticket, settings.WS_TICKET_EXPIRY)
+    except RedisError:
+        return JsonResponse({
+            "error": _("Websocket ticket backend unavailable.")
+        }, status=400)
+
     return JsonResponse({"ticket": ticket_key})
 
 
