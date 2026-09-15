@@ -36,13 +36,4 @@ class Migration(migrations.Migration):
             name='comment_fi',
             field=models.TextField(blank=True, null=True),
         ),
-        migrations.CreateModel(
-            name='CourseInstanceExamWindow',
-            fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('start_time', models.DateTimeField(verbose_name='Exam window start time')),
-                ('end_time', models.DateTimeField(verbose_name='Exam window end time')),
-                ('instance', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, to='courses.courseinstance')),
-            ],
-        ),
     ]

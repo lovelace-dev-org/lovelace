@@ -48,18 +48,21 @@ class ExamTaskAttemptForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
-        if other_attempts := ExamTaskAttempt.objects.filter(
+        other_attempts = ExamTaskAttempt.objects.filter(
             user=cleaned_data["user"],
             instance=self._course_inst,
             task=self._exam_task,
             parent=self._parent,
-        ).exclude(id=self._instance.id):
-            if other_attempts.filter(
-                end__gte=cleaned_data["start"],
-                start__lte=cleaned_data["end"],
-            ).exists():
-                self.add_error("start", _("Time interval overlaps with another atttempt"))
-                self.add_error("end", _("Time interval overlaps with another atttempt"))
+        )
+        if self._instance:
+            other_attempts = other.attempts.exclude(id=self._instance.id)
+
+        if other_attempts.filter(
+            end__gte=cleaned_data["start"],
+            start__lte=cleaned_data["end"],
+        ).exists():
+            self.add_error("start", _("Time interval overlaps with another attempt"))
+            self.add_error("end", _("Time interval overlaps with another attempt"))
 
     def __init__(self, *args, **kwargs):
         self._course_inst = kwargs.pop("course_inst")
@@ -84,7 +87,6 @@ class ExamTaskAttemptForm(forms.ModelForm):
             queryset=self._course_inst.enrolled_users.get_queryset(),
             required=False,
         )
-
         self.fields["propagate"] = forms.BooleanField(
             label=_("Apply to all exam tasks on this page"),
             required=False

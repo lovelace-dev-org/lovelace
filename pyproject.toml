@@ -7,13 +7,13 @@ packages = []
 
 [project]
 name = "lovelace"
-version = "2.1.0"
+version = "2.2.0"
 authors = [
     {name = "Miikka Salminen"},
     {name = "Mika Oja", email = "mika.oja@oulu.fi"}
 ]
 readme = "README.md"
-requires-python = ">3.10"
+requires-python = ">=3.12"
 dependencies = [
     "celery[redis]",
     "cerberus",
