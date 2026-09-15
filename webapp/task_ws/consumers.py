@@ -106,3 +106,8 @@ class InteractivePythonConsumer(WSBaseConsumer):
 class TurtleConsumer(WSBaseConsumer):
 
     container = "turtle-runner"
+
+class SQLConsumer(WSBaseConsumer):
+
+    container = "sql-runner"
+
