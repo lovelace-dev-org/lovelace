@@ -29,6 +29,7 @@ import courses.models as cm
 from courses.models import (
     Course,
     CourseInstance,
+    CourseInstanceExamWindow,
     ContentGraph,
     ContentPage,
     EmbeddedLink,
@@ -40,6 +41,7 @@ from courses.models import (
 from courses.forms import (
     CacheRegenForm,
     EmbedConfigForm,
+    ExamWindowForm,
     GroupForm,
     GroupMemberForm,
     InstanceCloneForm,
@@ -79,7 +81,7 @@ from utils.management import (
     clone_content_graphs,
     clone_embed_links,
     clone_grades,
-    process_delete_confirm_form,
+    process_confirm_form,
     process_modelform,
 )
 from lovelace import plugins as lovelace_plugins
@@ -256,6 +258,26 @@ def edit_grading(request, course, instance):
     }
     return HttpResponse(t.render(c, request))
 
+
+@ensure_responsible
+def edit_exam_window(request, course, instance):
+
+    try:
+        window = instance.courseinstanceexamwindow
+    except CourseInstanceExamWindow.DoesNotExist:
+        window = None
+
+    def post_save(window, form):
+        window.instance = instance
+
+    return process_modelform(
+        request,
+        ExamWindowForm,
+        window,
+        f"{instance.slug}-exam-window-form",
+        "",
+        post_save_cb=post_save,
+    )
 
 @ensure_responsible
 def regen_instance_cache(request, course, instance):
@@ -1024,7 +1046,7 @@ def delete_exercise_choice(request, course, instance, content, choice_id):
         regenerate_nearest_cache(content)
         squash_revisions(content, 1)
 
-    return process_delete_confirm_form(
+    return process_confirm_form(
         request, delete_success,
         extra_context={
             "submit_override": "editing.submit_form",

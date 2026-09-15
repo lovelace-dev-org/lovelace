@@ -148,6 +148,11 @@ urlpatterns = [
         name="edit_grading",
     ),
     path(
+        "staff/<course:course>/<instance:instance>/exam_window/",
+        staff_views.edit_exam_window,
+        name="edit_exam_window",
+    ),
+    path(
         "staff/<course:course>/<instance:instance>/create_content_node/",
         staff_views.create_content_node,
         name="create_content_node",

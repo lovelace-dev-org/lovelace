@@ -44,6 +44,18 @@ class OriginFilterSelect(forms.Select):
         return context
 
 
+class OriginFilterMultiSelect(forms.SelectMultiple):
+
+    template_name = "courses/widgets/origin-filter-multi-select.html"
+
+    def get_context(self, name, value, attrs):
+        context = super().get_context(name, value, attrs)
+        context["widget"]["options_url"] = self.attrs["options_url"]
+        context["widget"]["origins"] = self.attrs["origin_options"]
+        context["widget"]["initial_origin"] = self.attrs["initial_origin"]
+        return context
+
+
 class NoTrailingZerosInput(forms.NumberInput):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

@@ -81,6 +81,8 @@ def embed_frame(context, content_data):
     link = context["embedded_pages"][content_data["slug"]]
     page = link.embedded_page
 
+    content_data = page.dynamic_content(page, context, content_data)
+
     if context["user"].is_active:
         answer_count = page.get_user_answers(page, context["user"], context["instance"]).count()
         evaluation, quotient = page.get_user_evaluation(context["user"], context["instance"])

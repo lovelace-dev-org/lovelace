@@ -371,14 +371,14 @@ def view_submissions(request, course, instance, parent, content):
         if completion.state in ["correct", "incorrect", "resubmitted"]:
             try:
                 evaluated_answer = (
-                    UserAnswer.get_task_answers(content, instance, completion.user)
+                    content.get_user_answers(content, completion.user, instance)
                     .exclude(evaluation=None)
                     .exclude(evaluation__feedback="")
                     .latest("evaluation__evaluation_date")
                 )
             except UserAnswer.DoesNotExist:
                 href_args["answer"] = (
-                    UserAnswer.get_task_answers(content, instance, completion.user)
+                    content.get_user_answers(content, completion.user, instance)
                     .latest("answer_date")
                 )
                 unassessed.append(entry)
@@ -394,7 +394,7 @@ def view_submissions(request, course, instance, parent, content):
         else:
             unassessed.append(entry)
             href_args["answer"] = (
-                UserAnswer.get_task_answers(content, instance, completion.user)
+                content.get_user_answers(content, completion.user, instance)
                 .latest("answer_date")
             )
 

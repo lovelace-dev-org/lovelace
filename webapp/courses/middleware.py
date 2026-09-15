@@ -67,3 +67,22 @@ class WSTicketAuthMiddleware:
                 scope["user"] = ticket_data["user_id"]
 
         return await self.app(scope, receive, send)
+
+
+class ExamModeMiddleware:
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        response = self.get_response(request)
+        return response
+
+    def process_view(self, request, view_func, view_args, view_kwargs):
+        if instance := view_kwargs.get("instance"):
+            if not instance.exam_active(request.user):
+                return HttpResponseForbidden(_("No active exam for this instance"))
+
+
+
+
