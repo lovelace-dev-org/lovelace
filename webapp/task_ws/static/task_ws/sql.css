@@ -1,0 +1,18 @@
+tr:nth-child(even) {
+     background-color: #d3f2d0;
+}
+tr:hover {background-color: #d3f2d0;}
+
+.sql-window {
+    height: 100%; 
+    max-height: 600px;
+    border: 1px solid;
+    overflow: scroll;
+    font-size: 70%;
+}
+
+.sql-window td, .sql-window tr {
+    border: 2px solid #ddd !important;
+
+}
+

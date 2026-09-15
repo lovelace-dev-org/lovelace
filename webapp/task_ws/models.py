@@ -42,6 +42,21 @@ class TurtleWidgetSettings(models.Model, ExportImportMixin):
     def natural_key(self):
         return [self.slug]
 
+class SQLWidgetSettings(models.Model, ExportImportMixin):
+
+    objects = cm.SlugManager()
+
+    name = models.CharField(max_length=255)
+    slug = models.SlugField(max_length=255, unique=True)
+    course = models.ForeignKey(cm.Course, on_delete=models.CASCADE)
+
+    def save(self, *args, **kwargs):
+        self.slug = get_prefixed_slug(self, self.course, "name", translated=False)
+        super().save(*args, **kwargs)
+
+    def natural_key(self):
+        return [self.slug]
+
 
 def export_models(instance, export_target):
     pass
@@ -50,5 +65,6 @@ def get_import_list():
     return [
         TurtleWidgetSettings,
         XtermWidgetSettings,
+        SQLWidgetSettings
     ]
 
