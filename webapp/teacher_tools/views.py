@@ -62,7 +62,7 @@ from teacher_tools.forms import (
 )
 
 
-def download_answers(request, course, instance, content):
+def download_answers(request, course, instance, parent, content):
     if not determine_access(request.user, content, responsible_only=True):
         return HttpResponseForbidden(
             _("Only course main responsible teachers are allowed to download answer files.")

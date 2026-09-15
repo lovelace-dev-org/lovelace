@@ -83,11 +83,12 @@ def render_panel(request, course, instance, exercise, preopened=tuple()):
         "preopened": preopened,
     }
     if is_staff:
-        unlinked_questions = (
-            FaqQuestion.objects.filter(faqtoinstancelink__instance=instance)
-            .exclude(faqtoinstancelink__exercise=exercise)
-            .distinct("hook")
+        in_instance = (
+            FaqToInstanceLink.objects.filter(instance=instance).exclude(exercise=exercise)
+            .select_related("question")
         )
+
+        unlinked_questions = [link.question for link in in_instance]
         edit_form = FaqQuestionForm()
         link_form = FaqLinkForm(available_questions=unlinked_questions)
         c["edit_form"] = edit_form

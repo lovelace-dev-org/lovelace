@@ -893,11 +893,14 @@ def enroll(request, course, instance):
     status = instance.user_enroll_status(request.user)
 
     if status not in [None, "WITHDRAWN"]:
-        return HttpResponseBadRequest(_("You have already enrolled to this course."))
+        return JsonResponse({
+            "message": _("You have already enrolled to this course.")
+        })
 
     with transaction.atomic():
-        CourseEnrollment.objects.filter(instance=instance, student=request.user).delete()
-        enrollment = CourseEnrollment(instance=instance, student=request.user)
+        enrollment, __ = CourseEnrollment.objects.get_or_create(
+            instance=instance, student=request.user
+        )
 
         if not instance.manual_accept:
             enrollment.enrollment_state = "ACCEPTED"
