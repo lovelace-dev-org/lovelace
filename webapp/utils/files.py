@@ -17,15 +17,24 @@ upload_storage = FileSystemStorage(location=PRIVATE_UPLOAD)
 
 
 def find_fs_path(filename, fileobject, field_name):
+    """
+    Finds file system path for a file. Used in situations where version information
+    is not available and uses filename to determine what version of fileobject is needed.
+    If the current version's chosen field's file base name matches what is being looked
+    for, simply returns the path of that file. Otherwise locates the correct version and
+    finds the path there.
+    """
+
     try:
-        if filename == os.path.basename(getattr(fileobject, field_name).name):
-            fs_path = os.path.join(settings.MEDIA_ROOT, getattr(fileobject, field_name).name)
+        filefield = getattr(fileobject, field_name)
+        if filename == os.path.basename(filefield.name):
+            fs_path = filefield.file.name
         else:
             # Archived file was requested
             version = find_version_with_filename(fileobject, field_name, filename)
             if version:
                 filename = version.field_dict[field_name].name
-                fs_path = os.path.join(settings.MEDIA_ROOT, filename)
+                fs_path = os.path.join(filefield.storage.location, filename)
             else:
                 raise FileNotFoundError(_("Requested file does not exist."))
     except AttributeError as e:

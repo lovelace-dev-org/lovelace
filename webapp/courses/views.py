@@ -838,8 +838,8 @@ def download_media_file(request, file_slug, field_name, filename):
 
     # Try to find the file
     try:
-        fileobject = File.objects.get(name=file_slug)
-    except FileExerciseTestIncludeFile.DoesNotExist as e:
+        fileobject = File.objects.get(slug=file_slug)
+    except File.DoesNotExist as e:
         return HttpResponseNotFound(_("Requested file does not exist."))
 
     if not determine_media_access(request.user, fileobject):
