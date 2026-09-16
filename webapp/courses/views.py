@@ -340,7 +340,15 @@ def show_answers(request, user, course, instance, parent, exercise):
     Show the user's answers for a specific exercise on a specific course.
     """
 
-    embed_link = EmbeddedLink.objects.get(embedded_page=exercise, instance=instance, parent=parent)
+    try:
+        embed_link = EmbeddedLink.objects.get(
+            embedded_page=exercise, instance=instance, parent=parent
+        )
+    except EmbeddedLink.DoesNotExist:
+        return HttpResponseNotFound(
+            _("The exercise is not linked to this instance or has a different parent.")
+        )
+
     completion = UserTaskCompletion.objects.filter(
         user=user, instance=instance, exercise=exercise
     ).first()
