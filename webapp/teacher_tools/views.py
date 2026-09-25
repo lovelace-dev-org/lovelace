@@ -54,6 +54,7 @@ from teacher_tools.models import (
 )
 from teacher_tools.forms import (
     DeadlineExemptionForm,
+    MassDeadlineExemptionForm,
     MossnetForm,
     ReminderForm,
     BatchGradingForm,
@@ -851,6 +852,49 @@ def create_exemption(request, course, instance):
     return HttpResponse(form_t.render(form_c, request))
 
 @ensure_responsible
+def create_exemptions(request, course, instance):
+    students = instance.enrolled_users.get_queryset()
+    graphs = (
+        ContentGraph.objects.filter(instance=instance)
+        .exclude(deadline=None)
+    )
+    if request.method == "POST":
+        form = MassDeadlineExemptionForm(
+            request.POST,
+            students=students,
+            graphs=graphs,
+        )
+        if not form.is_valid():
+            errors = form.errors.get_json_data()
+            return JsonResponse({"errors": errors}, status=400)
+
+        for graph in form.cleaned_data["contentgraphs"]:
+            exemption = DeadlineExemption(
+                user=form.cleaned_data["user"],
+                contentgraph=graph,
+                new_deadline=graph.deadline + datetime.timedelta(days=form.cleaned_data["extendby"])
+            )
+            exemption.save()
+        return JsonResponse({"status": "ok"})
+
+    form = MassDeadlineExemptionForm(
+        students=students,
+        graphs=graphs,
+    )
+    form_t = loader.get_template("courses/base-edit-form.html")
+    form_c = {
+        "form_object": form,
+        "submit_url": request.path,
+        "html_id": f"create-exemptions-form",
+        "html_class": "management-form",
+    }
+    return HttpResponse(form_t.render(form_c, request))
+
+
+
+
+
+@ensure_responsible
 def delete_exemption(request, course, instance, user, graph_id):
     def success(form):
         DeadlineExemption.objects.filter(
@@ -858,12 +902,3 @@ def delete_exemption(request, course, instance, user, graph_id):
             contentgraph__id=graph_id,
         ).delete()
     return process_confirm_form(request, success)
-
-
-
-
-
-
-
-
-

@@ -111,6 +111,11 @@ urlpatterns = [
         name="create_exemption",
     ),
     path(
+        "<course:course>/<instance:instance>/create_exemptions/",
+        views.create_exemptions,
+        name="create_exemptions",
+    ),
+    path(
         "<course:course>/<instance:instance>/delete_exemption/<user:user>/<int:graph_id>/",
         views.delete_exemption,
         name="delete_exemption",

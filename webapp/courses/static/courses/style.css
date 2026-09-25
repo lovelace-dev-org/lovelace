@@ -1842,6 +1842,11 @@ div.expand-handle {
     color: #4CAF50;
 }
 
+.add-many-button {
+    background: no-repeat url("/static/courses/add-many-16.png") center/16px,
+                #fff;
+}
+
 .delete-button {
     color: #ff0000;
     box-shadow: 1px 1px 2px #ff2000;

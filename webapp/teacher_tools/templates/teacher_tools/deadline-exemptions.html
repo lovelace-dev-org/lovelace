@@ -77,5 +77,11 @@
         onclick="formtools.fetch_form(event, this)"
         data-url="{% url 'teacher_tools:create_exemption' course instance %}">+
     </button>
+    <button type="button"
+        class="staff-base-button add-many-button"
+        title="{% trans 'Create multiple exemptions' %}"
+        onclick="formtools.fetch_form(event, this)"
+        data-url="{% url 'teacher_tools:create_exemptions' course instance %}">
+    </button>
 {% endblock %}
 
