@@ -17,7 +17,7 @@ from .forms import StudentEntryForm
 
 def add_student_entry(request, course, instance, parent, content):
 
-    enrolled_students = instance.enrolled_users.get_queryset()
+    enrolled_students = instance.enrolled_users.get_queryset().order_by("last_name")
 
     if request.method == "POST":
         form = StudentEntryForm(request.POST, students=enrolled_students)

@@ -292,7 +292,7 @@ def regen_instance_cache(request, course, instance):
             nodes = nodes.filter(revision=None)
         for node in nodes:
             node.content.regenerate_cache(instance)
-        instance.clear_content_tree_cache()
+        instance.clear_content_tree_cache(regen_frozen=form.cleaned_data["regen_archived"])
         return JsonResponse({"status": "ok"})
 
     form = CacheRegenForm()
@@ -523,7 +523,7 @@ def create_content_node(request, course, instance):
 
         new_node.save()
         new_node.content.update_embedded_links(instance)
-        instance.clear_content_tree_cache()
+        instance.clear_content_tree_cache(regen_frozen=True)
         return JsonResponse({"status": "ok"}, status=201)
 
     form = NewContentNodeForm(available_content=available_content, course_instance=instance)
@@ -547,7 +547,7 @@ def remove_content_node(request, course, instance, node_id):
             node = ContentGraph.objects.get(id=node_id, instance=instance)
             EmbeddedLink.objects.filter(parent=node.content, instance=instance).delete()
             node.delete()
-            instance.clear_content_tree_cache()
+            instance.clear_content_tree_cache(regen_frozen=True)
         except ContentGraph.DoesNotExist:
             return HttpResponseNotFound(_("This content node doesn't exist"))
         return HttpResponse(status=204)
@@ -576,7 +576,7 @@ def node_settings(request, course, instance, node_id):
             return HttpResponseNotFound()
         node.content = content
         node.save()
-        instance.clear_content_tree_cache()
+        instance.clear_content_tree_cache(regen_frozen=True)
         return JsonResponse({"status": "ok"})
 
     form = NodeSettingsForm(
@@ -652,7 +652,7 @@ def move_content_node(request, course, instance, target_id, placement):
     active_node.parentnode = target_node.parentnode
     active_node.save()
 
-    instance.clear_content_tree_cache()
+    instance.clear_content_tree_cache(regen_frozen=True)
 
     return JsonResponse({"status": "ok"})
 
