@@ -34,6 +34,8 @@ class AceWidgetConfigurationForm(forms.ModelForm):
             file_obj = ContentFile(b"")
             postfix = uuid.uuid1()
             default_fileinfo_field = f"fileinfo_{settings.MODELTRANSLATION_DEFAULT_LANGUAGE}"
+
+            #!! instance does not have a name yet.
             new_file = cm.File(
                 name=f"{instance.name}-base-file-{postfix}",
                 typeinfo="Ace base file",
@@ -100,6 +102,7 @@ class AcePlusWidgetConfigurationForm(forms.ModelForm):
 
     def save(self, commit=True):
         model_inst = super().save(commit=False)
+        self._ace_subform.cleaned_data["name"] = model_inst.name
         preview_settings = self._preview_subform.save(commit=False)
         ace_settings = self._ace_subform.save(commit=False)
         ace_settings.course = model_inst.course
@@ -214,17 +217,23 @@ class AcePlusEditForm(LineEditMixin, EmbeddedObjectEditForm):
             prefix="ace",
             origin=self._context["course"],
         )
-        if instance and instance.preview_widget:
-            preview_widget = PreviewWidgetRegistry.get_widget(
-                instance.preview_widget, course_inst.course, instance.slug
-            )
+
+        preview_widget_handle = instance and instance.preview_widget
+
+        if instance:
+            slug = instance.slug
         elif request.POST:
             if "key_slug" in request.POST:
                 slug = request.POST["key_slug"]
             else:
                 slug = f"{course_inst.course.prefix}-{request.POST["name"]}"
+
+        if request.POST:
+            preview_widget_handle = request.POST["preview_widget"]
+
+        if preview_widget_handle:
             preview_widget = PreviewWidgetRegistry.get_widget(
-                request.POST["preview_widget"], course_inst.course,
+                preview_widget_handle, course_inst.course,
                 slug
             )
         else:

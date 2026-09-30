@@ -35,7 +35,8 @@ class XtermPreviewWidget(PreviewWidget):
                 name=self.slug.removeprefix(self.course.prefix + "-"),
                 course=self.course,
             )
-            settings.save()
+            if self.slug:
+                settings.save()
         return settings
 
     def export(self, instance, export_target):
@@ -74,7 +75,8 @@ class TurtlePreviewWidget(PreviewWidget):
                 name=self.slug.removeprefix(self.course.prefix + "-"),
                 course=self.course,
             )
-            settings.save()
+            if self.slug:
+                settings.save()
         return settings
 
     def export(self, instance, export_target):
@@ -112,6 +114,8 @@ class SQLPreviewWidget(PreviewWidget):
                 name=self.slug.removeprefix(self.course.prefix + "-"),
                 course=self.course,
             )
+            if self.slug:
+                settings.save()
         return settings
 
     def export(self, instance, export_target):

@@ -48,7 +48,8 @@ class AceAnswerWidget(AnswerWidget):
                 name=self.slug.removeprefix(self.course.prefix + "-"),
                 course=self.course,
             )
-            settings.save()
+            if self.slug:
+                settings.save()
         return settings
 
     def export(self, instance, export_target):
@@ -94,13 +95,13 @@ class AcePlusAnswerWidget(AnswerWidget):
 
     def get_configuration_form(self, request, data=None, prefix=None):
         ace_form = self.ace_widget.get_configuration_form(request, data, prefix="ace")
-        if self.preview_widget:
-            preview_form = self.preview_widget.get_configuration_form(request, data, prefix="extra")
-        elif data:
+        if data:
             preview_widget = PreviewWidgetRegistry.get_widget(
                 data["preview_widget"], self.course, self.slug
             )
             preview_form = preview_widget.get_configuration_form(request, data, prefix="extra")
+        elif self.preview_widget:
+            preview_form = self.preview_widget.get_configuration_form(request, data, prefix="extra")
         else:
             preview_form = None
 
@@ -124,7 +125,8 @@ class AcePlusAnswerWidget(AnswerWidget):
                 name=self.slug.removeprefix(self.course.prefix + "-"),
                 course=self.course,
             )
-            settings.save()
+            if self.slug:
+                settings.save()
         return settings
 
     def export(self, instance, export_target):
