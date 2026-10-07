@@ -87,13 +87,18 @@ if EXAM_MODE:
 if os.getenv("LOVELACE_USE_SHIBBOLETH"):
     ACCOUNT_USERNAME_VALIDATORS = "courses.adapter.username_validators"
     ACCOUNT_ADAPTER = "courses.adapter.LovelaceAccountAdapter"
-    SHIBBOLETH_ATTRIBUTE_MAP = {
-        "eppn": (True, "username"),
-        "givenName": (True, "first_name"),
-        "sn": (True, "last_name"),
-        "mail": (True, "email"),
-        "schacPersonalUniqueCode": (False, "student_id")
-    }
+    if EXAM_MODE:
+        SHIBBOLETH_ATTRIBUTE_MAP = {
+            "eppn": (True, "username"),
+        }
+    else:
+        SHIBBOLETH_ATTRIBUTE_MAP = {
+            "eppn": (True, "username"),
+            "givenName": (True, "first_name"),
+            "sn": (True, "last_name"),
+            "mail": (True, "email"),
+            "schacPersonalUniqueCode": (False, "student_id")
+        }
     _SERVER_ADDR = f"https://{ALLOWED_HOSTS[0]}"
     LOGIN_URL = f"{_SERVER_ADDR}/Shibboleth.sso/Login"
 
