@@ -1,0 +1,84 @@
+{% extends 'courses/base.html' %}
+{% load static %}
+{% load i18n %}
+{% load course_tags %}
+
+{% block extra-static %}
+  <link rel="stylesheet" href="{% static 'admin/css/vendor/select2/select2.css' %}">
+  <link rel="stylesheet" href="{% static 'admin/css/autocomplete.css' %}">
+  <script src="{% static 'admin/js/vendor/jquery/jquery.min.js' %}"></script>
+  <script src="{% static 'admin/js/vendor/select2/select2.full.js' %}"></script>
+  <script src="{% static 'admin/js/jquery.init.js' %}"></script>
+  <script src="{% static 'admin/js/autocomplete.js' %}"></script>
+{% endblock %}
+
+{% block page-title %}{% blocktrans with instance=instance.name %}
+  {{ instance }} staff management
+{% endblocktrans %}{% endblock %}
+
+{% block breadcrumb-links %}
+  <li><a href="{% url 'courses:index' %}">{% trans 'Courses' %}</a></li>
+  <div class="separator">»</div>
+  <li>
+    <a href="{% url 'courses:course' course instance %}">
+      {{ course.name }}&nbsp;/&nbsp;{{ instance.name }}
+    </a>
+  </li>
+{% endblock %}
+
+{% block page-content %}
+
+  <h1>
+    {% blocktrans with instance=instance.name %}
+      Manage course staff of {{ instance }}
+    {% endblocktrans %}
+  </h1>
+
+  <table class="fixed alternate-green">
+    <thead>
+      <tr>
+        <th class="interactive" onclick="sort_table(event, this, 0, 1)">{% trans 'User' %}</th>
+        <th class="interactive" onclick="sort_table(event, this, 1, 1)">{% trans 'Role' %}</th>
+        <th class="interactive" onclick="sort_table(event, this, 2, 1)">{% trans 'From' %}</th>
+        <th class="interactive" onclick="sort_table(event, this, 2, 1)">{% trans 'To' %}</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for record in permissions %}
+        <tr>
+          <td>{{ record.user|full_name }}</td>
+          <td>{{ record.get_role_display }}</td>
+          <td>{{ record.start_time|date:"Y-m-d, H:i" }}</td>
+          <td>{{ record.end_time|date:"Y-m-d, H:i" }}</td>
+          <td>
+            <button type="button"
+                class="staff-base-button delete-button"
+                title="{% trans 'Remove this staff member' %}"
+                onclick="formtools.fetch_form(event, this);"
+                data-url="{% url 'courses:remove_staff' course instance record.user  %}"
+                data-in-table="true"
+                data-colspan="5">x
+            </button>
+            <button type="button"
+                class="staff-base-button edit-button"
+                title="{% trans 'Edit permission' %}"
+                onclick="formtools.fetch_form(event, this);"
+                data-url="{% url 'courses:edit_permission' course instance record.user  %}"
+                data-in-table="true"
+                data-colspan="5">
+            </button>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <button type="button"
+          class="staff-base-button add-button"
+          title="{% trans 'Add staff member' %}"
+          onclick="formtools.fetch_form(event, this)"
+          data-url="{% url 'courses:add_staff' course instance %}">+
+  </button>
+
+{% endblock %}

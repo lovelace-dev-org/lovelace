@@ -108,8 +108,13 @@
   </form>
 </div>
 
-{% if submit_override %}
-  <script>
+<script>
+  {% if submit_override %}
       $("#{{ html_id }}").submit({{ submit_override }})
-  </script>
-{% endif %}
+  {% endif %}
+  $("#{{ html_id }}").get(0).dispatchEvent(
+    new CustomEvent("formset:added", {
+        bubbles: true,
+    }),
+  );
+</script>

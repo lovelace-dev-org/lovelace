@@ -782,6 +782,25 @@ class CourseInstanceExamWindow(models.Model):
     instance = models.OneToOneField("CourseInstance", on_delete=models.CASCADE)
 
 
+class CourseStaffPermission(models.Model):
+
+    class Meta:
+        unique_together = ("instance", "user")
+
+    instance = models.ForeignKey("CourseInstance", on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    role = models.CharField(
+        max_length=16,
+        choices=(
+            ("teacher", "Responsible teacher"),
+            ("ta", "Teaching assistant"),
+        )
+    )
+    start_time = models.DateTimeField(verbose_name=_("Contract start time"))
+    end_time = models.DateTimeField(verbose_name=_("Contract end time"), null=True, blank=True)
+
+
+
 class GradeThresholdManager(models.Manager):
 
     def get_by_natural_key(self, instance_slug, grade):

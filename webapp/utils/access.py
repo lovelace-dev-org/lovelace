@@ -1,3 +1,4 @@
+import datetime
 from functools import wraps
 
 
@@ -8,71 +9,29 @@ from django.utils.translation import gettext as _
 from reversion.models import Version
 import courses.models as cm
 
+def get_permissions(user):
+    return cm.CourseStaffPermission.objects.filter(
+        Q(end_time=None) | Q(end_time__gt=datetime.datetime.now()),
+        user=user,
+        start_time__lt=datetime.datetime.now()
+    )
 
-def determine_access(user, content, responsible_only=False):
-    """
-    Determines whether user has access to staff only functions of a content
-    object. Access is granted if:
-    * the user is superuser
-    * the user has created/edited the object
-    * the user is the main responsible of a course the content is found in
-    * the user is a member of the staff group of a course the content is found
-      in (can be disabled by setting responsible_only to True)
-    """
 
+def determine_access(user, model_inst, responsible_only=False):
     if not user.is_authenticated:
         return False
 
     if user.is_superuser:
         return True
 
-    if user.is_staff:
-        if Version.objects.get_for_object(content).filter(revision__user=user).exists():
-            return True
+    permissions = get_permissions(user).filter(
+        instance__course=model_inst.origin
+    )
+    if responsible_only:
+        permissions = permissions.filter(role="teacher")
 
-        if cm.Course.objects.filter(
-            Q(courseinstance__contentgraph__content=content)
-            | Q(courseinstance__contentgraph__content__embedded_pages=content)
-        ).filter(main_responsible=user):
-            return True
-
-        if not responsible_only:
-            if cm.Course.objects.filter(
-                Q(courseinstance__contentgraph__content=content)
-                | Q(courseinstance__contentgraph__content__embedded_pages=content)
-            ).filter(staff_group__user=user):
-                return True
-
-    return False
-
-
-def determine_media_access(user, media):
-    """
-    Determines whether user has access to staff only functions of a media
-    object. Access is granted if:
-    * the user is superuser
-    * the user has created/edited the object
-    * the user is the main responsible of a course the content is found in
-    * the user is a member of the staff group of a course the content is found
-      in
-    """
-
-    if not user.is_authenticated:
-        return False
-
-    if user.is_superuser:
+    if permissions:
         return True
-
-    if user.is_staff:
-        if Version.objects.get_for_object(media).filter(revision__user=user).exists():
-            return True
-
-        if (
-            media.coursemedialink_set.get_queryset()
-            .filter(instance__course__staff_group__user=user)
-            .distinct()
-        ):
-            return True
 
     return False
 
@@ -91,14 +50,15 @@ def is_course_staff(user, instance, responsible_only=False):
     if user.is_superuser:
         return True
 
-    if user.is_staff:
-        if not responsible_only:
-            if user in instance.course.staff_group.user_set.get_queryset():
-                return True
+    try:
+        permission = get_permissions(user).get(instance=instance)
+    except cm.CourseStaffPermission.DoesNotExist:
+        return False
 
-        return user == instance.course.main_responsible
+    if not responsible_only:
+        return True
 
-    return False
+    return permission.role == "teacher"
 
 
 def accessible_courses(user):
@@ -106,11 +66,10 @@ def accessible_courses(user):
     if user.is_superuser:
         return courses
 
-    if user.is_staff:
-        return courses.filter(
-            Q(main_responsible=user)
-            | Q(staff_group__user=user)
-        )
+    permissions = user.coursestaffpermission_set.get_queryset()
+    if permissions:
+        courses = set(permission.instance.course_id for permission in permissions)
+        return cm.Course.objects.filter(id__in=courses)
 
     return cm.Course.objects.none()
 

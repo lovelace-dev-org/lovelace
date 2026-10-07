@@ -6,6 +6,7 @@ import tempfile
 import zipfile
 
 from django.db import transaction
+from django.db.models import Q
 from django.conf import settings
 from django.http import (
     HttpResponse,
@@ -30,6 +31,7 @@ from courses.models import (
     Course,
     CourseInstance,
     CourseInstanceExamWindow,
+    CourseStaffPermission,
     ContentGraph,
     ContentPage,
     EmbeddedLink,
@@ -52,6 +54,7 @@ from courses.forms import (
     InstanceSettingsForm,
     NewContentNodeForm,
     NodeSettingsForm,
+    StaffPermissionForm,
 )
 import courses.config_forms as config_forms
 from courses.edit_forms import (
@@ -65,14 +68,15 @@ from courses.edit_forms import (
 from courses.widgets import AnswerWidgetRegistry
 from utils.access import (
     accessible_courses,
-    determine_media_access,
     ensure_responsible_or_supervisor,
     ensure_responsible,
     ensure_staff,
+    get_permissions,
 )
 from utils.archive import find_latest_version, squash_revisions
 from utils.content import regenerate_nearest_cache
 from utils.data import field_serializer, import_from_zip
+from utils.formatters import display_name
 from utils.management import (
     CourseContentAdmin,
     CourseMediaAdmin,
@@ -146,7 +150,6 @@ def instance_settings(request, course, instance):
         "submit_override": "toc.submit_form",
     }
     return HttpResponse(t.render(c, request))
-
 
 @ensure_staff
 def freeze_instance(request, course, instance):
@@ -874,6 +877,24 @@ def get_accessible_calendars(request):
     }
     return JsonResponse(data)
 
+def user_autocomplete(request):
+    if not CourseStaffPermission.objects.filter(user=request.user, role="teacher").exists():
+        results = []
+    else:
+        term = request.GET.get("term", "")
+        if not term:
+            results = []
+        else:
+            qs = User.objects.filter(Q(last_name__istartswith=term) | Q(first_name__istartswith=term))
+            results = [{"id": str(user.id), "text": display_name(user)} for user in qs]
+
+    return JsonResponse(
+        {
+            "results": results,
+            "pagination": False,
+        }
+    )
+
 
 
 # ^
@@ -1308,6 +1329,74 @@ def rename_group(request, course, instance, group):
 # ^
 # |
 # GROUP MANAGEMENT VIEWS
+# STAFF MANAGEMENT VIEWS
+# |
+# v
+
+
+@ensure_responsible
+def staff_management(request, course, instance):
+    permissions = CourseStaffPermission.objects.filter(instance=instance)
+    t = loader.get_template("courses/staff-management.html")
+    c = {
+        "permissions": permissions,
+        "course": course,
+        "instance": instance,
+        "is_responsible": True,
+        "course_staff": True,
+    }
+    return HttpResponse(t.render(c, request))
+
+@ensure_responsible
+def add_staff(request, course, instance):
+    def post_save(permission, form):
+        permission.instance = instance
+
+    return process_modelform(
+        request,
+        StaffPermissionForm,
+        None,
+        form_id=f"{instance.slug}-add-staff-form",
+        comment="",
+        parent=None,
+        post_save_cb=post_save,
+    )
+
+@ensure_responsible
+def remove_staff(request, course, instance, user):
+    def delete_success(form):
+        CourseStaffPermission.objects.filter(
+            instance=instance,
+            user=user,
+        ).delete()
+
+    return process_confirm_form(
+        request, delete_success,
+    )
+
+@ensure_responsible
+def edit_permission(request, course, instance, user):
+    try:
+        permission = CourseStaffPermission.objects.get(
+            instance=instance,
+            user=user,
+        )
+    except CourseStaffPermission.DoesNotExist:
+        return HttpResponseNotFound
+
+    return process_modelform(
+        request,
+        StaffPermissionForm,
+        permission,
+        form_id=f"{instance.slug}-edit-staff-form",
+        comment="",
+        parent=None,
+    )
+
+
+# ^
+# |
+# STAFF MANAGEMENT VIEWS
 # OTHER
 # |
 # v

@@ -20,12 +20,12 @@ const formtools = {
                     const colspan = button.attr("data-colspan")
                     const empty_tr = $("<tr class='form-tr collapse'><td colspan='" + colspan + "'></td></tr>")
                     const form_tr = $("<tr class='form-tr'><td colspan='" + colspan + "'></td></tr>")
-                    form_tr.children("td").append(form)
+                    form_tr.children("td").append(data)
                     button.parent().parent().after(form_tr)
                     //button.parent().parent().after(empty_tr)
                 }
                 else {
-                    button.after(form);
+                    button.after(data);
                 }
                 form.find("input[type!=hidden]").first().focus()
                 button.attr("onclick", "formtools.close_form(event, this)")

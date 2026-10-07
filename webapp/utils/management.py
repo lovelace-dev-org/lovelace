@@ -20,7 +20,7 @@ from reversion.models import Version
 from modeltranslation.translator import translator
 import courses.models as cm
 from courses.widgets import ContentPreviewWidget, AdminFileWidget
-from utils.access import determine_access, determine_media_access
+from utils.access import determine_access, get_permissions
 from utils.archive import find_latest_version, squash_revisions
 from utils.content import regenerate_nearest_cache
 from utils.data import serialize_single_python, export_json
@@ -75,23 +75,29 @@ class CourseContentAdmin(admin.ModelAdmin):
         if request.user.is_superuser:
             return qs
 
-        edited = (
-            Version.objects.get_for_model(model)
-            .filter(revision__user=request.user)
-            .values_list("object_id", flat=True)
+        permitted_courses = (
+            get_permissions(request.user)
+            .distinct("instance__course")
+            .values_list("instance__course")
         )
+        qs = qs.filter(origin__in=permitted_courses)
 
-        qs = qs.filter(
-            Q(id__in=list(edited))
-            | Q(contentgraph__instance__course__staff_group__user=request.user)
-            | Q(
-                embedlink__parent__contentgraph__instance__course__staff_group__user=request.user
-            )
-            | Q(contentgraph__instance__course__main_responsible=request.user)
-            | Q(
-                embedlink__parent__contentgraph__instance__course__main_responsible=request.user
-            )
-        ).distinct()
+        # edited = (
+        #     Version.objects.get_for_model(model)
+        #     .filter(revision__user=request.user)
+        #     .values_list("object_id", flat=True)
+        # )
+        # qs = qs.filter(
+        #     Q(id__in=list(edited))
+        #     | Q(contentgraph__instance__course__staff_group__user=request.user)
+        #     | Q(
+        #         embedlink__parent__contentgraph__instance__course__staff_group__user=request.user
+        #     )
+        #     | Q(contentgraph__instance__course__main_responsible=request.user)
+        #     | Q(
+        #         embedlink__parent__contentgraph__instance__course__main_responsible=request.user
+        #     )
+        # ).distinct()
 
         return qs
 
@@ -206,18 +212,12 @@ class CourseMediaAdmin(admin.ModelAdmin):
         if request.user.is_superuser:
             return qs
 
-        edited = (
-            Version.objects.get_for_model(model)
-            .filter(revision__user=request.user)
-            .values_list("object_id", flat=True)
+        permitted_courses = (
+            get_permissions(request.user)
+            .distinct("instance__course")
+            .values_list("instance__course")
         )
-
-        user_groups = request.user.groups.get_queryset()
-
-        return qs.filter(
-            Q(id__in=list(edited))
-            | Q(coursemedialink__instance__course__staff_group__in=user_groups)
-        ).distinct()
+        return qs.filter(origin__in=permitted_courses)
 
     def get_queryset(self, request):
         return CourseMediaAdmin.media_access_list(request, self.model)
@@ -225,12 +225,12 @@ class CourseMediaAdmin(admin.ModelAdmin):
     def has_change_permission(self, request, obj=None):
         if obj is None:
             return True
-        return determine_media_access(request.user, obj)
+        return determine_access(request.user, obj)
 
     def has_delete_permission(self, request, obj=None):
         if obj is None:
             return True
-        return determine_media_access(request.user, obj)
+        return determine_access(request.user, obj)
 
     def _match_groups(self, user, obj):
         user_groups = user.groups.get_queryset()

@@ -226,6 +226,29 @@ urlpatterns = [
         name="import",
     ),
 
+    # Staff URLs for staff management
+
+    path(
+        "staff/<course:course>/<instance:instance>/staff_management/",
+        staff_views.staff_management,
+        name="staff_management",
+    ),
+    path(
+        "staff/<course:course>/<instance:instance>/add_staff/",
+        staff_views.add_staff,
+        name="add_staff",
+    ),
+    path(
+        "staff/<course:course>/<instance:instance>/<user:user>/remove_staff/",
+        staff_views.remove_staff,
+        name="remove_staff",
+    ),
+    path(
+        "staff/<course:course>/<instance:instance>/<user:user>/edit_permission/",
+        staff_views.edit_permission,
+        name="edit_permission",
+    ),
+
     # Staff URLs for fetching lists of things
 
     path(
@@ -249,6 +272,11 @@ urlpatterns = [
         name="get_accessible_calendars",
     ),
 
+    path(
+        "staff/user-autocomplete/",
+        staff_views.user_autocomplete,
+        name="user_autocomplete"
+    ),
 
 
     # Staff URLs for exercise configuration

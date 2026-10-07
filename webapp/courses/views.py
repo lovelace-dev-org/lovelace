@@ -64,7 +64,6 @@ from courses.models import (
 from utils.access import (
     block_in_exam_mode,
     is_course_staff,
-    determine_media_access,
     ensure_enrolled_or_staff,
     ensure_owner_or_staff,
     determine_access,
@@ -861,7 +860,7 @@ def download_media_file(request, file_slug, field_name, filename):
     except File.DoesNotExist as e:
         return HttpResponseNotFound(_("Requested file does not exist."))
 
-    if not determine_media_access(request.user, fileobject):
+    if not determine_access(request.user, fileobject):
         return HttpResponseForbidden(
             _(
                 "Only course main responsible teachers are allowed to "

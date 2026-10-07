@@ -43,6 +43,10 @@
                 onclick="toc.fetch_form(event, this);"
                 data-url="{% url 'courses:instance_settings' course instance %}">
         </button>
+        <a class="button-style staff-button"
+           href="{% url 'courses:staff_management' course instance %}"
+           title="{% trans 'Course instance staff' %}">
+        </a>
         <button type="button"
                 class="staff-base-button freeze-button"
                 title="{% trans 'Freeze this course instance' %}"
