@@ -2,7 +2,7 @@
 {% load i18n %}
 
 <div class="assessment-panel"
-     data-source-url="{% url 'assessment:manage_assessment' course instance exercise %}">
+     data-source-url="{% url 'assessment:manage_assessment' course instance parent exercise %}">
      
     <div class="expand-handle"
          onclick="expand_next_div(this);"
@@ -16,7 +16,7 @@
     <div class="expand-handle"
          onclick="ase.update_exercise(event, this);"
          title="{% trans 'Writes the assessment total point value as the exercise point value' %}"
-         data-url="{% url 'assessment:update_exercise_points' course instance exercise sheet %}"
+         data-url="{% url 'assessment:update_exercise_points' course instance parent exercise sheet %}"
          data-csrf="{{ csrf_token }}"
     >{% trans 'Update exercise points' %}</div>
     

@@ -1,0 +1,10 @@
+{% load i18n %}
+
+{% if course_staff %}
+  <button id="answerless-{{ content.id }}-add-button"
+          class="staff-only collapsed staff-base-button add-button"
+          title="Add task entry"
+          onclick="editing.get_form(event, this)"
+          data-url="{% url 'answerless:add_student_entry' course instance content %}">
+  </button>
+{% endif %}

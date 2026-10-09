@@ -6,7 +6,8 @@ load_dotenv(os.getenv("DOTENV_PATH"))
 from lovelace.settings.factory import *
 
 DEBUG = True
-if os.getenv("DEBUG_TOOLBAR"):
+DEBUG_TOOLBAR = bool(os.getenv("DEBUG_TOOLBAR"))
+if DEBUG_TOOLBAR:
     INSTALLED_APPS.append('debug_toolbar')
     MIDDLEWARE.insert(0, 'debug_toolbar.middleware.DebugToolbarMiddleware')
     INTERNAL_IPS = ["127.0.0.1"]

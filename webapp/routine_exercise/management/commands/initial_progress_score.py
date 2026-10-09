@@ -1,3 +1,4 @@
+# OBSOLETE. These kinds of things should have been done in migrations.
 from django.core.management.base import BaseCommand
 from routine_exercise.models import RoutineExerciseProgress
 

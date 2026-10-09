@@ -17,13 +17,18 @@
          href="{{ answer_url }}">
       </a>
       <span class="confirm-tag">{% trans 'Link copied!' %}</span>
-    {% endif %}
-    {% if evaluation == True %}
-      <div class="exercise-score">{{ points }} / {{ max }}</div>
-    {% endif %}
-
-
   </div>
+  {% endif %}
+  {% if total_items %}
+    <div class="exercise-score">{% trans 'You got:' %} {{ correct_items }} / {{ total_items }}</div>
+  {% endif %}
+  {% if evaluation == True %}
+    <div class="exercise-score">
+      {% trans 'Score:' %} {{ points|floatformat:"2" }} / {{ max|floatformat:"2" }}
+    </div>
+  {% endif %}
+
+
   {% if comments %}
     <div class="exercise-comments">
       {% for comment in comments %}

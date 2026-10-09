@@ -1,0 +1,27 @@
+section > div.ace-container,
+div > div.ace-container {
+    margin-bottom: 1em;
+}
+
+div.ace-editor {
+    border: 2px solid #ddd;
+    padding: 2px;
+    resize: vertical;
+}
+
+div.ace-layout-horizontal {
+    display: flex;
+}
+
+div.ace-layout-vertical {
+    display: flex;
+    flex-direction: column;
+}
+
+div.ace-layout-horizontal > div {
+    width: 50%;
+}
+
+div.ace-layout-vertical  > div {
+    width: 100%;
+}

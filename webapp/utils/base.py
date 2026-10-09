@@ -17,3 +17,11 @@ def get_deadline_urgency(deadline, now):
         return "normal"
     return ""
 
+def parent_ordinal_sort(node):
+    ordinals = [node.ordinal_number]
+    parent_node = node.parentnode
+    while parent_node is not None:
+        ordinals.insert(0, parent_node.ordinal_number)
+        parent_node = parent_node.parentnode
+    return ordinals
+

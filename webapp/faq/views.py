@@ -10,7 +10,7 @@ from django.http import (
 from django.utils.translation import gettext as _
 from faq.models import FaqQuestion, FaqToInstanceLink
 from faq.forms import FaqQuestionForm
-from faq.utils import regenerate_cache, render_panel
+from faq.utils import regenerate_content_cache, render_panel
 from utils.access import ensure_staff
 
 
@@ -38,7 +38,7 @@ def save_question(request, course, instance, exercise):
         form = FaqQuestionForm(request.POST, instance=question)
 
     if not form.is_valid():
-        errors = form.errors.as_json()
+        errors = form.errors.get_json_data()
         return JsonResponse({"errors": errors}, status=400)
 
     with reversion.create_revision():
@@ -51,7 +51,7 @@ def save_question(request, course, instance, exercise):
             exercise=exercise,
         )
         link.save()
-    regenerate_cache(instance, exercise)
+    regenerate_content_cache(instance, exercise)
     content = render_panel(request, course, instance, exercise)
     return JsonResponse({"content": content})
 
@@ -83,7 +83,7 @@ def link_question(request, course, instance, exercise):
         question=question,
     )
     link.save()
-    regenerate_cache(instance, exercise)
+    regenerate_content_cache(instance, exercise)
     content = render_panel(request, course, instance, exercise)
     return JsonResponse({"content": content})
 
@@ -100,5 +100,5 @@ def unlink_question(request, course, instance, exercise, hook):
     except FaqToInstanceLink.DoesNotExist:
         return HttpResponseNotFound(_("The question is not linked"))
 
-    regenerate_cache(instance, exercise)
+    regenerate_content_cache(instance, exercise)
     return HttpResponse(status=204)

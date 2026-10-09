@@ -4,17 +4,18 @@ from django.db.models import Q, JSONField
 from django.template import loader
 from django.urls import reverse
 from django.utils.text import slugify
+from django.utils.translation import gettext_lazy as _
 
-from courses.models import ContentPage, CourseInstance, User
+import courses.models as cm
 
 from utils.data import export_json, export_files, serialize_many_python, serialize_single_python
 from utils.files import get_testfile_path, upload_storage
 from utils.management import ExportImportMixin
 
 
-class RoutineExercise(ContentPage):
-    template = "routine_exercise/routine-exercise.html"
+class RoutineExercise(cm.ContentPage):
     answers_template = "routine_exercise/user-answers.html"
+    default_answer_widget = "routine"
     answer_table_classes = "fixed"
 
     class Meta:
@@ -30,8 +31,8 @@ class RoutineExercise(ContentPage):
         self.content_type = "ROUTINE_EXERCISE"
         super().save(*args, **kwargs)
         RoutineExerciseQuestion.objects.filter(exercise=self, routineexerciseanswer=None).delete()
-        parents = ContentPage.objects.filter(embedded_pages=self).distinct()
-        for instance in CourseInstance.objects.filter(
+        parents = cm.ContentPage.objects.filter(embedded_pages=self).distinct()
+        for instance in cm.CourseInstance.objects.filter(
             Q(contentgraph__content=self) | Q(contentgraph__content__embedded_pages=self),
             frozen=False,
         ).distinct():
@@ -40,12 +41,12 @@ class RoutineExercise(ContentPage):
                 parent.regenerate_cache(instance)
 
     def get_rendered_content(self, context):
-        content = ContentPage._get_rendered_content(self, context)
+        content = cm.ContentPage._get_rendered_content(self, context)
         t = loader.get_template("routine_exercise/routine-exercise-content-extra.html")
         return content + [("extra", t.render(context), -1, 0)]
 
     def get_question(self, context):
-        return ContentPage._get_question(self, context)
+        return cm.ContentPage._get_question(self, context)
 
     def get_choices(self, revision=None):
         return
@@ -53,6 +54,34 @@ class RoutineExercise(ContentPage):
     def get_admin_change_url(self):
         adminized_type = self.content_type.replace("_", "").lower()
         return reverse(f"admin:routine_exercise_{adminized_type}_change", args=(self.id,))
+
+    def get_staff_extra(self, context):
+        """
+        Adds a link to attempt management page to the task's staff tools.
+        """
+
+        options = cm.ContentPage.get_staff_extra(self, context)
+        options.append((
+            _("Manage backends"),
+            "routine-backends",
+            "side-panel",
+            reverse("routine_exercise:routine_backend_panel", kwargs={
+                "course": context["course"],
+                "instance": context["instance"],
+                "content": self,
+            })
+        ))
+        options.append((
+            _("Manage templates"),
+            "routine-templates",
+            "side-panel",
+            reverse("routine_exercise:routine_template_panel", kwargs={
+                "course": context["course"],
+                "instance": context["instance"],
+                "content": self,
+            })
+        ))
+        return options
 
     def get_user_answers(self, user, instance, ignore_drafts=True):
         if instance is None:
@@ -66,7 +95,7 @@ class RoutineExercise(ContentPage):
 
         return answers
 
-    def re_evaluate(self, user, instance):
+    def re_evaluate(self, link, user, instance):
         from utils.exercise import update_completion
 
         progress = RoutineExerciseProgress.objects.filter(
@@ -96,19 +125,20 @@ class RoutineExercise(ContentPage):
         except AttributeError:
             return
 
-        update_completion(self, instance, user, evaluation, answer_date)
+        update_completion(self, link, instance, user, evaluation, answer_date)
 
     def save_answer(self, user, ip, answer, files, instance, revision):
         pass
 
-    def check_answer(self, user, ip, answer, files, answer_object, revision):
+    def check_answer(self, link, user, answer, files, answer_object):
         pass
 
     def save_evaluation(self, user, evaluation, answer_object):
         pass
 
     def export(self, instance, export_target):
-        super(ContentPage, self).export(instance, export_target)
+        super(cm.ContentPage, self).export(instance, export_target)
+        self.export_answer_widget(instance, export_target)
         export_json(
             serialize_single_python(self.routineexercisebackendcommand),
             f"{self.slug}_command",
@@ -130,8 +160,11 @@ class RoutineBackendManager(models.Manager):
 
 class RoutineExerciseBackendFile(models.Model, ExportImportMixin):
     class Meta:
+        unique_together = ("exercise", "filename")
         verbose_name = "routine exercise backend file"
         verbose_name_plural = "routine exercise backend files"
+
+    objects = RoutineBackendManager()
 
     exercise = models.ForeignKey(RoutineExercise, on_delete=models.CASCADE)
     filename = models.CharField(max_length=255, blank=True)
@@ -175,13 +208,19 @@ class RoutineTemplateManager(models.Manager):
 
 class RoutineExerciseTemplate(models.Model):
     class Meta:
+        unique_together = ("exercise", "variant", "question_class")
         verbose_name = "routine exercise template"
         verbose_name_plural = "routine exercise templates"
+
+    objects = RoutineTemplateManager()
 
     exercise = models.ForeignKey(RoutineExercise, on_delete=models.CASCADE)
     content = models.TextField()
     question_class = models.PositiveIntegerField()
     variant = models.PositiveIntegerField()
+
+    def natural_key(self):
+        return [self.exercise.slug, self.variant, self.question_class]
 
     def save(self, *args, **kwargs):
         if self.variant is None:
@@ -198,8 +237,8 @@ class RoutineExerciseTemplate(models.Model):
 
 class RoutineExerciseQuestion(models.Model):
     exercise = models.ForeignKey(RoutineExercise, on_delete=models.CASCADE)
-    instance = models.ForeignKey(CourseInstance, null=True, on_delete=models.SET_NULL)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    instance = models.ForeignKey(cm.CourseInstance, null=True, on_delete=models.SET_NULL)
+    user = models.ForeignKey(cm.User, on_delete=models.CASCADE)
     revision = models.PositiveIntegerField(null=True)
     language_code = models.CharField(max_length=7)
     question_class = models.PositiveIntegerField()
@@ -221,17 +260,20 @@ class RoutineExerciseProgress(models.Model):
         unique_together = ("exercise", "instance", "user")
 
     exercise = models.ForeignKey(RoutineExercise, on_delete=models.CASCADE)
-    instance = models.ForeignKey(CourseInstance, null=True, on_delete=models.SET_NULL)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    instance = models.ForeignKey(cm.CourseInstance, null=True, on_delete=models.SET_NULL)
+    user = models.ForeignKey(cm.User, on_delete=models.CASCADE)
     completed = models.BooleanField(default=False)
     progress = models.CharField(max_length=255)
     points = models.DecimalField(default=0, max_digits=5, decimal_places=2)
     max_points = models.PositiveIntegerField(default=1)
 
 
-ContentPage.register_content_type(
-    "ROUTINE_EXERCISE", RoutineExercise, RoutineExerciseAnswer
+cm.ContentPage.register_content_type(
+    "ROUTINE_EXERCISE", RoutineExercise, None, RoutineExerciseAnswer
 )
+
+cm.UserProfile.register_user_data_model(RoutineExerciseProgress, ["user"])
+cm.UserProfile.register_user_data_model(RoutineExerciseQuestion, ["user"])
 
 def export_models(instance, export_target):
     pass
@@ -242,4 +284,11 @@ def get_import_list():
         RoutineExerciseBackendCommand,
         RoutineExerciseBackendFile,
         RoutineExerciseTemplate
+    ]
+
+def get_content_follows():
+    return [
+        "routineexercisetemplate_set",
+        "routineexercisebackendfile_set",
+        "routineexercisebackendcommand",
     ]

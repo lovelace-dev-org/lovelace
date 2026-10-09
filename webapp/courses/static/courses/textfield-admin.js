@@ -5,6 +5,7 @@ function show_preview(event, a) {
     let textArea = caller.parent().next("div").children("textarea");
     let lang = textArea.attr("name").slice(-2);
     let questionArea = $("textarea[name*='question_" + lang + "']");
+    let answerWidget = $("select[name='answer_widget']").val();
     let url = caller.attr("href");
     let popup = $("div.popup");
     let csrf = $("form").find("input[name*='csrfmiddlewaretoken']").attr("value");
@@ -17,7 +18,7 @@ function show_preview(event, a) {
             content: textArea.val(),
             question: questionArea.val(),
             embedded: true,
-            form_template: "courses/textfield-exercise.html",
+            answer_widget: answerWidget ? answerWidget : "textfield"
         },
         dataType: "json",
         success: function(data, text_status, jqxhr_obj) {

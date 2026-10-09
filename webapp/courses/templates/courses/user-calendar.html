@@ -1,0 +1,77 @@
+{% extends 'courses/base.html' %}
+
+{% load i18n %}
+{% load static %}
+{% load course_tags %}
+
+{% block breadcrumb-links %}
+  <li><a href="{% url 'courses:index' %}">{% trans 'Courses' %}</a></li>
+  <div class="separator">»</div>
+  <li>{% trans 'My Calendar' %}</li>
+{% endblock %}
+
+{% block page-content %}
+  <h1>{% trans 'My Calendar' %}</h1>
+
+  {% for date, events in grouped_events %}
+    <div class="calendar-date-heading">
+      {{ date|date:"Y-m-d l" }}
+    </div>
+    <table class="fixed alternate-green">
+      <thead>
+        <tr>
+          <th>{% trans 'Start' %}</th>
+          <th>{% trans 'End' %}</th>
+          <th>{% trans 'Name' %}</th>
+          <th>{% trans 'Course' %}</th>
+          <th>{% trans 'With' %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for entry in events %}
+          <tr>
+            <td>{{ entry.event.start_time|date:"H:i" }}</td>
+            <td>{{ entry.event.end_time|date:"H:i" }}</td>
+            <td>{{ entry.event.event_name }}</td>
+            <td>{{ entry.event.calendar.origin.name}}</td>
+            <td>
+              {% if entry.role == "host" %}
+                {% if entry.answers_url %}
+                  <a href="{{ entry.answers_url }}">{{ entry.reserver }}</a>
+                {% else %}
+                  {{ entry.reserver }}
+                {% endif %}
+              {% elif entry.event.calendar.meeting_calendar %}
+                {{ entry.event.created_by|full_name }}
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endfor %}
+
+  <h1>{% trans 'Upcoming Deadlines' %}</h1>
+
+  <table class="fixed alternate-green">
+    <thead>
+      <tr>
+        <th>{% trans 'Deadline' %}</th>
+        <th>{% trans 'Course' %}</th>
+        <th>{% trans 'Content' %}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for entry in deadlines %}
+        <tr>
+          <td>{{ entry.deadline|date:"Y-m-d H:i" }}</td>
+          <td><a href="{{ entry.instance_url }}">{{ entry.course.name }}</a></td>
+          <td><a href="{{ entry.content_url }}">{{ entry.content.name }}</a></td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}
+
+
+

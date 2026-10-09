@@ -7,7 +7,7 @@ from reversion.admin import VersionAdmin
 from modeltranslation.admin import TranslationAdmin, TranslationStackedInline
 from utils.management import CourseContentAdmin
 from courses.forms import ContentForm, ExerciseBackendForm
-from multiexam.forms import QuestionPoolForm
+from multiexam.forms import BaseQuestionPoolForm
 from multiexam.models import (
     MultipleQuestionExam,
     ExamQuestionPool,
@@ -21,7 +21,7 @@ reversion.register(ExamQuestionPool)
 
 class QuestionPoolInline(TranslationStackedInline):
     model = ExamQuestionPool
-    form = QuestionPoolForm
+    form = BaseQuestionPoolForm
 
     formfield_overrides = {models.FileField: {"widget": AdminMultiexamFileWidget}}
 
@@ -35,19 +35,14 @@ class MultiExamAdmin(CourseContentAdmin, TranslationAdmin, VersionAdmin):
         (
             "Page information",
             {
-                "fields": ["name", "origin", "slug", "content", "question", "tags"],
+                "fields": ["name", "origin", "slug", "content", "question"],
             },
         ),
         (
             "Exercise miscellaneous",
             {
                 "fields": [
-                    "default_points",
-                    "answer_limit",
-                    "manually_evaluated",
-                    "delayed_evaluation",
-                    "group_submission",
-                    "evaluation_group",
+                    "answer_widget",
                 ],
                 "classes": ["wide"],
             },

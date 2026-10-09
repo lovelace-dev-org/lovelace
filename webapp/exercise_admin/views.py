@@ -39,6 +39,7 @@ from courses.models import (
     InstanceIncludeFile,
     InstanceIncludeFileToExerciseLink,
 )
+from courses.widgets import AnswerWidgetRegistry
 from feedback.models import (
     ContentFeedbackQuestion,
     TextfieldFeedbackQuestion,
@@ -47,7 +48,7 @@ from feedback.models import (
     MultipleChoiceFeedbackQuestion,
     MultipleChoiceFeedbackAnswer,
 )
-from utils.access import determine_access
+from utils.access import determine_access, accessible_courses
 from utils.content import regenerate_nearest_cache
 from utils.files import generate_download_response
 
@@ -96,19 +97,12 @@ def save_file_upload_exercise(
 ):
     deletions = []
     # Collect the content page data
-    # e_name = form_data['exercise_name']
-    # e_content = form_data['exercise_content']
-    e_default_points = form_data["exercise_default_points"]
-    e_evaluation_group = form_data["exercise_evaluation_group"]
-    e_tags = [tag for key, tag in sorted(form_data.items()) if key.startswith("exercise_tag")]
     e_feedback_questions = form_data.get("exercise_feedback_questions") or []
-    # e_question = form_data['exercise_question']
-    e_group_submission = form_data["exercise_group_submission"]
-    e_manually_evaluated = form_data["exercise_manually_evaluated"]
-    e_ask_collaborators = form_data["exercise_ask_collaborators"]
     e_allowed_filenames = form_data["exercise_allowed_filenames"]
     e_max_file_count = form_data["exercise_max_file_count"]
     e_answer_mode = form_data["exercise_answer_mode"]
+    e_answer_widget = form_data["exercise_answer_widget"]
+    e_origin = form_data["exercise_origin"]
 
     lang_list = get_lang_list()
     for lang_code, _ in lang_list:
@@ -121,18 +115,11 @@ def save_file_upload_exercise(
         e_question = form_data[f"exercise_question_{lang_code}"]
         setattr(exercise, f"question_{lang_code}", e_question)
 
-    # exercise.name = e_name
-    # exercise.content = e_content
-    exercise.default_points = e_default_points
-    exercise.evaluation_group = e_evaluation_group
-    exercise.tags = e_tags
-    # exercise.question = e_question
-    exercise.group_submission = e_group_submission
-    exercise.manually_evaluated = e_manually_evaluated
-    exercise.ask_collaborators = e_ask_collaborators
+    exercise.origin = Course.objects.get(slug=e_origin)
     exercise.save()
     # save() first so that m2m can be used (when adding a new exercise)
     exercise.feedback_questions.set(e_feedback_questions)
+    exercise.answer_widget = e_answer_widget
     exercise.save()
 
     extra_settings = exercise.fileexercisesettings
@@ -478,7 +465,7 @@ def file_upload_exercise(request, exercise_id=None, action=None):
     instance_files = InstanceIncludeFile.objects.all()
     instance_files_linked = [link.include_file for link in instance_file_links]
     instance_files_not_linked = [f for f in instance_files if f not in instance_files_linked]
-    instances = Course.objects.all().order_by("name")
+    courses = Course.objects.all().order_by("name")
 
     if request.method == "POST":
         form_contents = request.POST
@@ -594,9 +581,17 @@ def file_upload_exercise(request, exercise_id=None, action=None):
     c = {
         "add_or_edit": add_or_edit,
         "answer_mode_choices": FileExerciseSettings.ANSWER_MODE_CHOICES,
+        "answer_widget_choices": (
+            [("", _("--USE-DEFAULT--"))] +
+            [(widget, widget) for widget in AnswerWidgetRegistry.list_widgets()]
+        ),
         "exercise": exercise,
         "hints": hints,
-        "instances": instances,
+        "instances": courses,
+        "origin_choices": (
+            [(course.slug, course.name)
+             for course in accessible_courses(request.user).order_by("name")]
+        ),
         "include_files": include_files,
         "instance_files": instance_files,
         "instance_files_not_linked": instance_files_not_linked,

@@ -1,3 +1,4 @@
+import secrets
 from django.http import (
     HttpResponse,
     JsonResponse,
@@ -8,11 +9,13 @@ from django.http import (
 )
 from django.template import loader
 from django.conf import settings
+from django.core.cache import caches
 from django.urls import reverse
 from django.utils.translation import gettext as _
 from django.contrib import auth, messages
 from django.shortcuts import redirect
 from django.db.utils import IntegrityError
+from redis.exceptions import RedisError
 
 from allauth.account.forms import LoginForm
 
@@ -29,6 +32,7 @@ from courses.models import (
 from courses.forms import GroupConfigForm, GroupInviteForm, UserForm, UserProfileForm
 from courses.views import system_messages
 from utils.access import (
+    block_in_exam_mode,
     ensure_enrolled_or_staff,
     is_course_staff,
 )
@@ -89,6 +93,7 @@ def logout(request):
 # v
 
 
+@block_in_exam_mode
 def user_profile(request):
     """
     Allow the user to change information in their profile.
@@ -118,7 +123,7 @@ def user_profile(request):
     response = HttpResponse(t.render(c, request))
     return response
 
-
+@block_in_exam_mode
 def user(request, user):
     """
     Shows user information to the requesting user. The amount of information
@@ -155,6 +160,7 @@ def user(request, user):
 # v
 
 @ensure_enrolled_or_staff
+@block_in_exam_mode
 def group_info(request, course, instance):
     if instance.max_group_size is None:
         return HttpResponseNotAllowed(_("This course instance doesn't allow groups"))
@@ -242,7 +248,7 @@ def invite_members(request, course, instance, group):
     slots = instance.max_group_size - members - invites.count()
     form = GroupInviteForm(request.POST, slots=slots)
     if not form.is_valid(for_instance=instance):
-        errors = form.errors.as_json()
+        errors = form.errors.get_json_data()
         return JsonResponse({"errors": errors}, status=400)
 
     for user in form.invited_users:
@@ -293,6 +299,32 @@ def cancel_invitation(request, course, instance, group, invite):
 # ^
 # |
 # GROUP
+# WS
+# |
+# v
+
+@ensure_enrolled_or_staff
+def get_ws_ticket(request, course, instance, widget_id):
+    ticket_key = secrets.token_urlsafe(64)
+    ticket = {
+        "user_id": request.user.id,
+        "instance": instance.slug,
+        "widget": widget_id,
+    }
+    cache = caches["ws_tickets"]
+    try:
+        cache.set(ticket_key, ticket, settings.WS_TICKET_EXPIRY)
+    except RedisError:
+        return JsonResponse({
+            "error": _("Websocket ticket backend unavailable.")
+        }, status=400)
+
+    return JsonResponse({"ticket": ticket_key})
+
+
+
+
+
 
 
 

@@ -1,0 +1,9 @@
+{% load static %}
+
+{% for category, filename in static_includes %}
+  {% if category == "style" %}
+    <link rel="stylesheet" href="{% static filename %}">
+  {% elif category == "script" %}
+    <script src="{% static filename %}"></script>
+  {% endif %}
+{% endfor %}

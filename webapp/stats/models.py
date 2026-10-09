@@ -1,14 +1,14 @@
 import datetime
 
 from django.db import models
-from courses.models import ContentPage, CourseInstance, User
+import courses.models as cm
 
 
 class StudentTaskStats(models.Model):
-    student = models.ForeignKey(User, on_delete=models.CASCADE)
-    task = models.ForeignKey(ContentPage, on_delete=models.CASCADE)
+    student = models.ForeignKey(cm.User, on_delete=models.CASCADE)
+    task = models.ForeignKey(cm.ContentPage, on_delete=models.CASCADE)
     revision = models.PositiveIntegerField(blank=True, null=True)
-    instance = models.ForeignKey(CourseInstance, on_delete=models.CASCADE)
+    instance = models.ForeignKey(cm.CourseInstance, on_delete=models.CASCADE)
 
     total_answers = models.PositiveIntegerField(default=0)
     tries_until_correct = models.PositiveIntegerField(default=0)
@@ -25,9 +25,9 @@ class StudentTaskStats(models.Model):
 
 
 class TaskSummary(models.Model):
-    task = models.ForeignKey(ContentPage, on_delete=models.CASCADE)
+    task = models.ForeignKey(cm.ContentPage, on_delete=models.CASCADE)
     revision = models.PositiveIntegerField(blank=True, null=True)
-    instance = models.ForeignKey(CourseInstance, on_delete=models.CASCADE)
+    instance = models.ForeignKey(cm.CourseInstance, on_delete=models.CASCADE)
 
     # total_answers includes answers given after completing task
     total_answers = models.PositiveIntegerField(default=0)
@@ -61,3 +61,5 @@ class StudySession(models.Model):
     end = models.DateTimeField()
 
     tasks_answered = models.ManyToManyField("StudentTaskStats", blank=True)
+
+cm.UserProfile.register_user_data_model(StudentTaskStats, ["student"])

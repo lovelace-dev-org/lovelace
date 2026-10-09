@@ -11,11 +11,7 @@ from django.utils.text import slugify
 from django.utils.translation import gettext as _
 from django.contrib.auth.hashers import make_password, check_password
 
-hashed_pwd = make_password("plain_text")
-from courses.models import (
-    ContentPage, CourseInstance, Evaluation, User, UserAnswer,
-    InvalidExerciseAnswerException
-)
+import courses.models as cm
 
 from utils.archive import get_single_archived, find_latest_version
 from utils.data import (
@@ -59,13 +55,13 @@ def load_pool_file(basefile):
     return pool
 
 
-class MultipleQuestionExam(ContentPage):
+class MultipleQuestionExam(cm.ContentPage):
     """
     MultiExam content type model. Defines all of the behavior required for content types to be
     compatible with the rest of the main code.
     """
 
-    template = "multiexam/multiple-question-exam.html"
+    default_answer_widget = "multiexam"
 
     class Meta:
         verbose_name = "multiple question exam"
@@ -86,7 +82,7 @@ class MultipleQuestionExam(ContentPage):
         the 'Start exam' button and related information to the task.
         """
 
-        content = ContentPage._get_rendered_content(self, context)
+        content = cm.ContentPage._get_rendered_content(self, context)
         t = loader.get_template("multiexam/multiexam-content-extra.html")
         return content + [("extra", t.render(context), -1, 0)]
 
@@ -95,7 +91,7 @@ class MultipleQuestionExam(ContentPage):
         Gets the question part of the task, no changes to the default.
         """
 
-        return ContentPage._get_question(self, context)
+        return cm.ContentPage._get_question(self, context)
 
     def get_admin_change_url(self):
         """
@@ -110,14 +106,28 @@ class MultipleQuestionExam(ContentPage):
         Adds a link to attempt management page to the task's staff tools.
         """
 
-        return [(
+        options = cm.ContentPage.get_staff_extra(self, context)
+        options.append((
+            _("Edit question pool"),
+            "multiexam-question-pool",
+            "side-panel",
+            reverse("multiexam:edit_question_pool", kwargs={
+                "course": context["course"],
+                "instance": context["instance"],
+                "content": self,
+            })
+        ))
+        options.append((
             _("Manage attempts"),
+            "multiexam-attempts",
+            "self",
             reverse("multiexam:manage_attempts", kwargs={
                 "course": context["course"],
                 "instance": context["instance"],
                 "content": self,
             })
-        )]
+        ))
+        return options
 
     def get_choices(self, revision=None):
         """
@@ -137,11 +147,11 @@ class MultipleQuestionExam(ContentPage):
         try:
             attempt = MultipleQuestionExamAttempt.objects.get(id=answer.get("attempt_id"))
         except (KeyError, MultipleQuestionExamAttempt.DoesNotExist):
-            raise InvalidExerciseAnswerException(_("Matching exam attempt was not found"))
+            raise cm.InvalidExerciseAnswerException(_("Matching exam attempt was not found"))
 
         now = datetime.datetime.now()
         if not (attempt.open_from <= now <= attempt.open_to):
-            raise InvalidExerciseAnswerException(_("This exam is closed"))
+            raise cm.InvalidExerciseAnswerException(_("This exam is closed"))
 
         revision = attempt.revision or find_latest_version(self).revision_id
 
@@ -158,7 +168,7 @@ class MultipleQuestionExam(ContentPage):
         answer_object.save()
         return answer_object
 
-    def check_answer(self, user, ip, answer, files, answer_object, revision):
+    def check_answer(self, link, user, answer, files, answer_object):
         """
         Checks a student's answer against the exam attempt's script.
         """
@@ -166,7 +176,7 @@ class MultipleQuestionExam(ContentPage):
         try:
             attempt = MultipleQuestionExamAttempt.objects.get(id=answer.get("attempt_id"))
         except (KeyError, MultipleQuestionExamAttempt.DoesNotExist):
-            raise InvalidExerciseAnswerException("Matching exam attempt was not found")
+            raise cm.InvalidExerciseAnswerException("Matching exam attempt was not found")
 
         answer_record = querydict_to_answer(attempt, answer, include_certainty=False)
         script = attempt.load_exam_script(exclude_correct=False)
@@ -183,9 +193,10 @@ class MultipleQuestionExam(ContentPage):
 
         return {
             "evaluation": True,
-            "points": total_score,
-            "max": max_score,
+            "quotient": total_score / max_score,
             "test_results": json.dumps(results),
+            "correct_items": total_score,
+            "total_items": max_score,
         }
 
     def get_user_answers(self, user, instance, ignore_drafts=True):
@@ -207,7 +218,8 @@ class MultipleQuestionExam(ContentPage):
         the exam question pool file are exported into separate files.
         """
 
-        super(ContentPage, self).export(instance, export_target)
+        super(cm.ContentPage, self).export(instance, export_target)
+        self.export_answer_widget(instance, export_target)
         export_json(
             serialize_single_python(self.examquestionpool),
             f"{self.slug}_question_pool",
@@ -259,9 +271,9 @@ class MultipleQuestionExamAttempt(models.Model):
     """
 
     exam = models.ForeignKey(MultipleQuestionExam, on_delete=models.CASCADE)
-    instance = models.ForeignKey(CourseInstance, on_delete=models.CASCADE)
+    instance = models.ForeignKey(cm.CourseInstance, on_delete=models.CASCADE)
     revision = models.PositiveIntegerField(null=True, blank=True)
-    user = models.ForeignKey(User, null=True, on_delete=models.CASCADE)
+    user = models.ForeignKey(cm.User, null=True, on_delete=models.CASCADE)
     questions = models.JSONField()
     open_from = models.DateTimeField(
         verbose_name="Answerable from",
@@ -327,7 +339,7 @@ class MultipleQuestionExamAttempt(models.Model):
         return check_password(given_key, self.key)
 
 
-class UserMultipleQuestionExamAnswer(UserAnswer):
+class UserMultipleQuestionExamAnswer(cm.UserAnswer):
     """
     Answer model for multiexams.
     """
@@ -364,9 +376,12 @@ class UserMultipleQuestionExamAnswer(UserAnswer):
         return t.render(c)
 
 
-ContentPage.register_content_type(
-    "MULTIPLE_QUESTION_EXAM", MultipleQuestionExam, UserMultipleQuestionExamAnswer
+cm.ContentPage.register_content_type(
+    "MULTIPLE_QUESTION_EXAM", MultipleQuestionExam, None, UserMultipleQuestionExamAnswer
 )
+
+cm.UserProfile.register_user_data_model(MultipleQuestionExamAttempt, ["user"])
+
 
 def export_models(instance, export_target):
     """
@@ -384,4 +399,9 @@ def get_import_list():
     return [
         MultipleQuestionExam,
         ExamQuestionPool,
+    ]
+
+def get_content_follows():
+    return [
+        "examquestionpool"
     ]

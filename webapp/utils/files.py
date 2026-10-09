@@ -6,11 +6,41 @@ import magic
 from django.core.files.storage import FileSystemStorage
 from django.conf import settings
 from django.http import HttpResponse
+from django.utils.translation import gettext_lazy as _
+
+from utils.archive import find_version_with_filename
 
 mod_pat = re.compile("[wrx]")
 
 PRIVATE_UPLOAD = getattr(settings, "PRIVATE_STORAGE_FS_PATH", settings.MEDIA_ROOT)
 upload_storage = FileSystemStorage(location=PRIVATE_UPLOAD)
+
+
+def find_fs_path(filename, fileobject, field_name):
+    """
+    Finds file system path for a file. Used in situations where version information
+    is not available and uses filename to determine what version of fileobject is needed.
+    If the current version's chosen field's file base name matches what is being looked
+    for, simply returns the path of that file. Otherwise locates the correct version and
+    finds the path there.
+    """
+
+    try:
+        filefield = getattr(fileobject, field_name)
+        if filename == os.path.basename(filefield.name):
+            fs_path = filefield.file.name
+        else:
+            # Archived file was requested
+            version = find_version_with_filename(fileobject, field_name, filename)
+            if version:
+                filename = version.field_dict[field_name].name
+                fs_path = os.path.join(filefield.storage.location, filename)
+            else:
+                raise FileNotFoundError(_("Requested file does not exist."))
+    except AttributeError as e:
+        raise FileNotFoundError(_("Requested file does not exist.")) from e
+
+    return fs_path
 
 
 def generate_download_response(fs_path, dl_name=None):
