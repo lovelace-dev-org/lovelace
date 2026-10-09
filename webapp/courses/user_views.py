@@ -319,7 +319,10 @@ def get_ws_ticket(request, course, instance, widget_id):
             "error": _("Websocket ticket backend unavailable.")
         }, status=400)
 
-    return JsonResponse({"ticket": ticket_key})
+    return JsonResponse({
+        "ticket": ticket_key,
+        "ws_server": instance.ws_server,
+    })
 
 
 

@@ -1,6 +1,6 @@
 const WSWrapper = class {
     constructor(addr, ticket_url) {
-        this.addr = addr
+        this.path = addr
         this.socket = null
         this.ticket_url = ticket_url
     }
@@ -11,6 +11,7 @@ const WSWrapper = class {
             url: this.ticket_url,
             success: (data, status, jqxhr) => {
                 const ticket = data["ticket"]
+                this.addr = new URL(this.path, ticket["ws_server"]).href
                 this.open_ws(controller, ticket)
             },
             error: function(xhr, status, type) {

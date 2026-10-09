@@ -84,7 +84,6 @@ class AcePlusAnswerWidget(AnswerWidget):
             context["ace_preview_widget"] = self.preview_widget.render(context)
             context["ace_preview_cb"] = self.preview_widget.receive_callback
             context["ace_preview_ws"] = urllib.parse.urljoin(
-                context["instance"].ws_server,
                 urllib.parse.urlsplit(self.settings.ws_address).path
             )
         context["ace_layout"] = self.settings.layout
