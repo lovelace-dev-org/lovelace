@@ -83,9 +83,7 @@ class AcePlusAnswerWidget(AnswerWidget):
         if self.preview_widget:
             context["ace_preview_widget"] = self.preview_widget.render(context)
             context["ace_preview_cb"] = self.preview_widget.receive_callback
-            context["ace_preview_ws"] = urllib.parse.urljoin(
-                urllib.parse.urlsplit(self.settings.ws_address).path
-            )
+            context["ace_preview_ws"] = urllib.parse.urlsplit(self.settings.ws_address).path
         context["ace_layout"] = self.settings.layout
         context["widget_slug"] = self.slug
         t = loader.get_template(self.template)

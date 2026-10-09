@@ -11,7 +11,7 @@ const WSWrapper = class {
             url: this.ticket_url,
             success: (data, status, jqxhr) => {
                 const ticket = data["ticket"]
-                this.addr = new URL(this.path, ticket["ws_server"]).href
+                this.addr = new URL(this.path, data["ws_server"]).href
                 this.open_ws(controller, ticket)
             },
             error: function(xhr, status, type) {
@@ -59,16 +59,19 @@ const WSWrapper = class {
                         }
                         break;
                     default:
+                        controller.end("Error")
                         controller.error("Websocket returned unknown operation")
                 }
             }
             else {
+                controller.end("Error")
                 controller.error("Websocket error")
             }
         }
 
         const close = function (event) {
             controller.error("Websocket was closed")
+            controller.end()
         }
 
         this.socket.onmessage = receive

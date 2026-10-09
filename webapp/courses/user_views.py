@@ -319,9 +319,14 @@ def get_ws_ticket(request, course, instance, widget_id):
             "error": _("Websocket ticket backend unavailable.")
         }, status=400)
 
+    if settings.EXAM_MODE:
+        ws_server = settings.EXAM_WS_SERVER
+    else:
+        ws_server = instance.ws_server
+
     return JsonResponse({
         "ticket": ticket_key,
-        "ws_server": instance.ws_server,
+        "ws_server": ws_server,
     })
 
 
