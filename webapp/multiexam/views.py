@@ -146,6 +146,9 @@ def open_new_attempt(request, course, instance, content):
     or saves a filled form. Generation of questions for the attempt is also done at this point.
     """
 
+    if not hasattr(content, "examquestionpool"):
+        return HttpResponseNotFound(_("Exam doesn't have a question pool."))
+
     if request.method == "POST":
         form = ExamAttemptForm(
             request.POST,
