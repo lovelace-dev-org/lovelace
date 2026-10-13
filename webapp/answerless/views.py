@@ -54,7 +54,7 @@ def add_student_entry(request, course, instance, parent, content):
         else:
             evaluation["manual"] = False
 
-        content.save_evaluation(embed_link, user, evaluation, answer_object)
+        content.save_evaluation(content, embed_link, user, evaluation, answer_object)
         return JsonResponse({"status": "ok"})
 
     form = StudentEntryForm(students=enrolled_students)
