@@ -206,14 +206,16 @@ def ensure_enrolled_or_staff(function):
     @wraps(function)
     def wrap(request, course, instance, *args, **kwargs):
         try:
-            if cm.CourseEnrollment.objects.get(
+            enrollment = cm.CourseEnrollment.objects.get(
                 instance=instance, student=request.user
-            ).is_enrolled():
-                return function(request, course, instance, *args, **kwargs)
+            )
         except cm.CourseEnrollment.DoesNotExist:
             pass
         except TypeError:
             return HttpResponseForbidden(_("You must be enrolled to perform this action."))
+        else:
+            if enrollment.is_enrolled():
+                return function(request, course, instance, *args, **kwargs)
 
         if is_course_staff(request.user, instance):
             return function(request, course, instance, *args, **kwargs)
