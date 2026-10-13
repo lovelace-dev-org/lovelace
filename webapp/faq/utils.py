@@ -56,7 +56,7 @@ def cache_panel(instance, exercise, lang_code):
     return exercise_faq
 
 
-def regenerate_cache(instance, exercise):
+def regenerate_content_cache(instance, exercise):
     for lang_code, _ in settings.LANGUAGES:
         faq_key = f"{exercise.slug}_faq_{instance.slug}_{lang_code}"
         cache.delete(faq_key)
@@ -83,27 +83,15 @@ def render_panel(request, course, instance, exercise, preopened=tuple()):
         "preopened": preopened,
     }
     if is_staff:
-        unlinked_questions = (
-            FaqQuestion.objects.filter(faqtoinstancelink__instance=instance)
-            .exclude(faqtoinstancelink__exercise=exercise)
-            .distinct("hook")
+        in_instance = (
+            FaqToInstanceLink.objects.filter(instance=instance).exclude(exercise=exercise)
+            .select_related("question")
         )
+
+        unlinked_questions = [link.question for link in in_instance]
         edit_form = FaqQuestionForm()
         link_form = FaqLinkForm(available_questions=unlinked_questions)
         c["edit_form"] = edit_form
         c["link_form"] = link_form
 
     return t.render(c, request)
-
-
-def clone_faq_links(instance):
-    active_links = FaqToInstanceLink.objects.filter(
-        instance__course=instance.course, revision=None
-    ).distinct("question")
-    for link in active_links:
-        link.pk = None
-        link.instance = instance
-        try:
-            link.save()
-        except IntegrityError:
-            pass

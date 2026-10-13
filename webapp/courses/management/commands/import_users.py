@@ -35,6 +35,3 @@ class Command(BaseCommand):
         if options["group"]:
             group, created = Group.objects.get_or_create(name=options["group"])
             group.user_set.add(*imported_users)
-
-
-

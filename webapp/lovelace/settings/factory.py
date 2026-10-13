@@ -25,6 +25,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False # Use True when viewing through web browser
 
+
 # Change to your hostname for production or network development installations
 ALLOWED_HOSTS = os.environ["LOVELACE_HOSTNAME"].split(":") + [os.environ["LOVELACE_HOSTADDR"]]
 
@@ -40,6 +41,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.sites', # Required by allauth
     'django.contrib.messages',
+    'django.contrib.postgres',
     'django.contrib.staticfiles',
     'allauth',
     'allauth.account',
@@ -52,8 +54,12 @@ INSTALLED_APPS = [
     'assessment',
     'exercise_admin',
     'multiexam',
+    'answerless',
+    'examtask',
     'reversion',
     'teacher_tools',
+    'ace',
+    'task_ws',
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -64,6 +70,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "allauth.account.middleware.AccountMiddleware"
 ]
 
 AUTHENTICATION_BACKENDS = [
@@ -72,23 +79,32 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 SITE_ID = int(os.getenv("LOVELACE_SITE_ID", 1))
+EXAM_MODE = bool(os.getenv("LOVELACE_EXAM_MODE", False))
+if EXAM_MODE:
+    MIDDLEWARE.append("courses.middleware.ExamModeMiddleware")
+    EXAM_WS_SERVER = os.getenv("LOVELACE_EXAM_WS_SERVER")
 
 # Shibboleth related options
 if os.getenv("LOVELACE_USE_SHIBBOLETH"):
     ACCOUNT_USERNAME_VALIDATORS = "courses.adapter.username_validators"
     ACCOUNT_ADAPTER = "courses.adapter.LovelaceAccountAdapter"
-    SHIBBOLETH_ATTRIBUTE_MAP = {
-        "eppn": (True, "username"),
-        "givenName": (True, "first_name"),
-        "sn": (True, "last_name"),
-        "mail": (True, "email"),
-        "schacPersonalUniqueCode": (False, "student_id")
-    }
-    LOGIN_URL = "https://lovelace.oulu.fi/Shibboleth.sso/Login"
+    if EXAM_MODE:
+        SHIBBOLETH_ATTRIBUTE_MAP = {
+            "eppn": (True, "username"),
+        }
+    else:
+        SHIBBOLETH_ATTRIBUTE_MAP = {
+            "eppn": (True, "username"),
+            "givenName": (True, "first_name"),
+            "sn": (True, "last_name"),
+            "mail": (True, "email"),
+            "schacPersonalUniqueCode": (False, "student_id")
+        }
+    _SERVER_ADDR = f"https://{ALLOWED_HOSTS[0]}"
+    LOGIN_URL = f"{_SERVER_ADDR}/Shibboleth.sso/Login"
 
-    #SHIBBOLETH_LOGOUT_URL = "https://login.oulu.fi/idp/logout?return=%s"
-    SHIBBOLETH_LOGOUT_URL = "https://lovelace.oulu.fi/Shibboleth.sso/Logout?return=%s"
-    SHIBBOLETH_LOGOUT_REDIRECT_URL = "https://lovelace.oulu.fi"
+    SHIBBOLETH_LOGOUT_URL = f"{_SERVER_ADDR}/Shibboleth.sso/Logout?return=%s"
+    SHIBBOLETH_LOGOUT_REDIRECT_URL = _SERVER_ADDR
 
     INSTALLED_APPS.append("shibboleth")
     MIDDLEWARE.insert(
@@ -98,6 +114,7 @@ if os.getenv("LOVELACE_USE_SHIBBOLETH"):
     MIDDLEWARE.append("courses.middleware.ShibbolethExceptionReporter")
     AUTHENTICATION_BACKENDS.append("shibboleth.backends.ShibbolethRemoteUserBackend")
 
+ENABLE_CELERY = True
 
 if os.getenv("ENABLE_MANAGEMENT_API"):
     ENABLE_MANAGEMENT_API = True
@@ -142,7 +159,7 @@ TEMPLATES = (
     },
 )
 
-DATA_RETENTION_PERIOD = os.getenv("LOVELACE_DATA_RETENTION", 12)
+DATA_RETENTION_PERIOD = int(os.getenv("LOVELACE_DATA_RETENTION", 12))
 
 #UNEDITABLE_MARKUPS = ["empty", "cleanup", "error", "embedded", "calendar"]
 ORPHAN_PREFIX = "null"
@@ -197,13 +214,17 @@ EMAIL_HOST_PASSWORD = os.getenv("LOVELACE_EMAIL_PWD", "")
 
 # E-mail settings
 EMAIL_SUBJECT_PREFIX = "[Lovelace] "
-DEFAULT_FROM_EMAIL = os.getenv("LOVELACE_EMAIL_FROM", "lovelace-notify")
+DEFAULT_FROM_EMAIL = os.getenv(
+    "LOVELACE_EMAIL_FROM",
+    f"lovelace-notify@{os.environ['LOVELACE_HOSTNAME']}"
+)
 
 # Allauth settings
 # For production, password min length of 32 or more recommended
+ALLAUTH_TRUSTED_PROXY_COUNT=int(os.getenv("LOVELACE_TRUSTED_PROXIES", 1))
 ACCOUNT_EMAIL_SUBJECT_PREFIX = "[Lovelace] "
 ACCOUNT_PASSWORD_MIN_LENGTH = 8
-ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']
 ACCOUNT_SESSION_REMEMBER = True
 ADMINS = [
     entry.rsplit(" ", 1) for entry in os.getenv("LOVELACE_ADMINS", "").split(":")
@@ -280,7 +301,14 @@ MEDIA_URL = "/media/"
 # in apps' "static/" subdirectories and in STATICFILES_DIRS.
 # Example: "/home/media/media.lawrence.com/static/"
 STATIC_ROOT = os.environ["STATIC_ROOT"]
-STATICFILES_STORAGE = "django.contrib.staticfiles.storage.ManifestStaticFilesStorage"
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.ManifestStaticFilesStorage",
+    }
+}
 
 # Additional locations of static files
 STATICFILES_DIRS = (
@@ -356,6 +384,20 @@ else:
     _CACHE_CONNECTION_POOL_KWARGS = {}
 
 
+if os.getenv("LOVELACE_WS_CACHE_USE_SSL"):
+    _WS_CACHE_CONNECTION_POOL_KWARGS = {
+        "ssl_cert_reqs": "required",
+        "ssl_ca_certs": os.environ["LOVELACE_WS_CLIENT_CA"],
+        "ssl_certfile": os.environ["LOVELACE_WS_CLIENT_CERT"],
+        "ssl_keyfile": os.environ["LOVELACE_WS_CLIENT_KEY"],
+    }
+else:
+    _WS_CACHE_CONNECTION_POOL_KWARGS = {}
+
+
+def plain_key(key, key_prefix, version):
+    return key
+
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
@@ -374,7 +416,19 @@ CACHES = {
             "CONNECTION_POOL_KWARGS": _CACHE_CONNECTION_POOL_KWARGS,
         },
     },
+    "ws_tickets": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": os.environ["LOVELACE_WS_CACHE"],
+        "KEY_FUNCTION": plain_key,
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "CONNECTION_POOL_KWARGS": _WS_CACHE_CONNECTION_POOL_KWARGS,
+            "SERIALIZER": "django_redis.serializers.json.JSONSerializer",
+        },
+    }
 }
+
+WS_TICKET_EXPIRY = 10
 
 # Stats generation is a time-consuming task. This configuration key allows you
 # to determine what hour of the day stats runs start

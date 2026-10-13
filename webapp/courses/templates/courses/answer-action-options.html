@@ -1,0 +1,14 @@
+{% for label, button_cls, target, url in action_options %}
+    {% if target == "popup-panel" %}
+        <a class="button-style {{ button_cls}}"
+           href="{{ url }}"
+           title="{{ label }}"
+           onclick="show_results(event, this, 'results-{{ answer.id }}')">
+        </a>
+    {% else %}
+        <a class="button-style {{ button_cls}}"
+           href="{{ url }}"
+           title="{{ label }}">
+        </a>
+    {% endif %}
+{% endfor %}

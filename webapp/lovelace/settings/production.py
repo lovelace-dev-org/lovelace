@@ -1,5 +1,9 @@
 import os
 import sys
+from dotenv import load_dotenv
+
+load_dotenv(os.getenv("DOTENV_PATH"))
+
 from lovelace.settings.factory import *
 
 ALLOWED_HOSTS = os.environ["LOVELACE_HOSTNAME"].split(":")

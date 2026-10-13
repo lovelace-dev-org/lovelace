@@ -6,7 +6,8 @@ from django.urls.converters import StringConverter
 
 from django.urls import path, register_converter
 
-from model_path_converter import register_model_converter
+from lovelace import plugins as lovelace_plugins
+
 from courses.models import (
     Course,
     ContentPage,
@@ -19,7 +20,11 @@ from courses.models import (
     CalendarDate,
 )
 from feedback.models import ContentFeedbackQuestion
-from utils.converters import Utf8SlugConverter, RevisionConverter, InstanceConverter
+from utils.converters import (
+    Utf8SlugConverter, RevisionConverter, InstanceConverter,
+    register_model_converter
+)
+
 
 register_model_converter(Course, field="slug", base=Utf8SlugConverter)
 register_model_converter(ContentPage, name="content", field="slug", base=Utf8SlugConverter)
@@ -29,10 +34,11 @@ register_model_converter(GroupInvitation, "invite")
 register_model_converter(
     ContentFeedbackQuestion, name="feedback", field="slug", base=Utf8SlugConverter
 )
-register_model_converter(File, name="file", field="name", base=Utf8SlugConverter)
+register_model_converter(File, name="file", field="slug", base=Utf8SlugConverter)
 register_model_converter(UserAnswer, name="answer")
 register_converter(RevisionConverter, "revision")
 register_converter(InstanceConverter, "instance")
+register_converter(Utf8SlugConverter, "utf8slug")
 register_model_converter(Calendar, name="calendar")
 register_model_converter(CalendarDate, name="event")
 
@@ -58,6 +64,12 @@ urlpatterns = [
     path("multiexam/", include("multiexam.urls", namespace="multiexam")),
 ]
 
+for app in lovelace_plugins["urls"]:
+    urlpatterns.append(
+        path(f"{app.__name__}/", include(f"{app.__name__}.urls", namespace=app.__name__)),
+    )
+
+
 if settings.ENABLE_MANAGEMENT_API:
     urlpatterns.append(path("api/", include("api.urls", namespace="api")))
 
@@ -77,12 +89,13 @@ finally:
     )
 
 if settings.DEBUG:
-    try:
-        import debug_toolbar
-    except ModuleNotFoundError:
-        # Django Debug Toolbar not installed
-        pass
-    else:
-        urlpatterns = [
-            path("__debug__/", include(debug_toolbar.urls)),
-        ] + urlpatterns
+    if settings.DEBUG_TOOLBAR:
+        try:
+            import debug_toolbar
+        except ModuleNotFoundError:
+            # Django Debug Toolbar not installed
+            pass
+        else:
+            urlpatterns = [
+                path("__debug__/", include(debug_toolbar.urls)),
+            ] + urlpatterns

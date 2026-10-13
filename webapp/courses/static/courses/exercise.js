@@ -140,11 +140,10 @@ function exercise_success (data, result_div, error_div, form_parent) {
             const hint_text = $("section.content").find("#hint-id-" + hint_id)
             hint_text.attr({ class: "hint-active" })
         }
-        const panel = form_parent.children(".side-panel")
-        const handle = form_parent.parent().find("a.faq-panel-link")
-        if (data.has_faq) {
-            faq.handle_triggers(panel, handle, data.triggers)
-        }
+        data.extra_callbacks.forEach(function (obj_name) {
+            eval(obj_name).handle_triggers(form_parent, data.triggers)
+        })
+
     }
     if (data.messages) {
         msgs_div.find("div.msgs-list").html(data.messages)
@@ -247,13 +246,22 @@ function add_exercise_form_callbacks () {
             const submit_element = form_parent.find(":submit")
             submit_element.prop("disabled", true)
 
+            const data = new FormData(form[0])
+            const extra_key = form.attr("data-extra-key")
+            if (extra_key) {
+                const extra_cb = form.attr("data-extra-callback")
+                data.append(extra_key, eval(extra_cb))
+            }
+
+            console.log(data)
+
             // TODO: Use xhr and progressevent to measure upload progress
 
             $.ajax({
                 type: form.attr("method"),
                 url: form.attr("action"),
                 // data: form.serialize(), // This doesn't work for files with jQuery
-                data: new FormData(form[0]), // Use this instead
+                data: data, // Use this instead
                 processData: false, // And this
                 contentType: false, // And this
                 dataType: "json",
@@ -312,6 +320,7 @@ function start_repeated_template_session (e) {
 }
 
 function credit_eval_group (eval_group) {
+    console.log(eval_group)
     $("div.task-meta[data-eval-group='" + eval_group + "'] img").each(function () {
         if (!$(this).hasClass("correct")) {
             $(this).attr({

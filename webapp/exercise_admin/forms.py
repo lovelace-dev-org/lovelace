@@ -7,6 +7,7 @@ import feedback.models
 import courses.models as cm
 from courses import blockparser
 from courses import markupparser
+from courses.widgets import AnswerWidgetRegistry
 
 from .utils import get_default_lang, get_lang_list
 
@@ -260,14 +261,9 @@ def get_sanitized_choices(data, field_name):
 class CreateFileUploadExerciseForm(forms.Form):
     # exercise_name = forms.CharField(max_length=255, required=True, strip=True) # Translate
     # exercise_content = forms.CharField(required=False) # Translate
-    exercise_default_points = forms.IntegerField(required=True)
-    exercise_evaluation_group = forms.CharField(required=False)
     # tags handled at __init__
     exercise_feedback_questions = SimpleArrayField(forms.IntegerField(), required=False)
     # exercise_question = forms.CharField(required=False) # Translate
-    exercise_manually_evaluated = forms.BooleanField(required=False)
-    exercise_group_submission = forms.BooleanField(required=False)
-    exercise_ask_collaborators = forms.BooleanField(required=False)
     exercise_allowed_filenames = forms.CharField(required=False)
     exercise_max_file_count = forms.IntegerField(required=False)
     exercise_answer_mode = forms.ChoiceField(
@@ -301,6 +297,21 @@ class CreateFileUploadExerciseForm(forms.Form):
             self.fields[f"exercise_content_{lang_code}"] = forms.CharField(required=False)
             self.fields[f"exercise_question_{lang_code}"] = forms.CharField(required=False)
             self.fields[f"exercise_answer_filename_{lang_code}"] = forms.CharField(required=False)
+
+        self.fields["exercise_answer_widget"] = forms.ChoiceField(
+            widget = forms.Select(),
+            choices = (
+                [("", "--USE-DEFAULT--")] +
+                [(widget, widget) for widget in AnswerWidgetRegistry.list_widgets()]
+            ),
+            required=False
+        )
+        self.fields["exercise_origin"] = forms.ChoiceField(
+            widget = forms.Select(),
+            choices = (
+                [(course.slug, course.name) for course in cm.Course.objects.all()]
+            )
+        )
 
         # Other dynamic fields
 
@@ -493,22 +504,22 @@ class CreateFileUploadExerciseForm(forms.Form):
         messages = []
 
         parser = markupparser.LinkParser()
-        page_links, media_links = parser.parse(value)
-        for link in page_links:
+        links = parser.parse(value)
+        for link in links["page"]:
             if not cm.ContentPage.objects.filter(slug=link):
                 missing_pages.append(link)
                 messages.append(f"Content matching {link} does not exist")
 
-        for link in media_links:
-            if not cm.CourseMedia.objects.filter(name=link):
+        for link in links["media"]:
+            if not cm.CourseMedia.objects.filter(slug=link):
                 missing_media.append(link)
                 messages.append(f"Media matching {link} does not exist")
 
         term_re = blockparser.BlockParser.tags["term"].regexp
-        term_links = {match.group("term_name") for match in term_re.finditer(value)}
+        term_links = {match.group("term_slug") for match in term_re.finditer(value)}
 
         for link in term_links:
-            if not cm.Term.objects.filter(**{"name_" + lang: link}):
+            if not cm.Term.objects.filter(slug=link):
                 missing_terms.append(link)
                 messages.append(f"Term matching {link} does not exist")
 

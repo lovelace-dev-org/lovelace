@@ -1,0 +1,62 @@
+from django.template import loader
+import courses.models as cm
+import courses.forms
+from courses.widgets import AnswerWidget, AnswerWidgetRegistry
+
+class CheckboxAnswerWidget(AnswerWidget):
+
+    handle = "checkbox"
+    template = "courses/widgets/checkbox-answer-widget.html"
+
+
+class RadioAnswerWidget(AnswerWidget):
+
+    handle = "radio"
+    template = "courses/widgets/radio-answer-widget.html"
+
+
+class TextfieldAnswerWidget(AnswerWidget):
+
+    handle = "textfield"
+    template = "courses/widgets/textfield-answer-widget.html"
+    configurable = True
+
+    def render(self, context):
+        t = loader.get_template(self.template)
+        settings = self.get_settings()
+        context["widget_rows"] = settings.rows
+        context["widget_slug"] = settings.slug
+        return t.render(context)
+
+    def get_configuration_form(self, request, data=None):
+        return courses.forms.TextfieldWidgetConfigurationForm(data, instance=self.get_settings())
+
+    def get_settings(self):
+        try:
+            settings = cm.TextfieldWidgetSettings.objects.get(
+                slug=self.slug
+            )
+        except cm.TextfieldWidgetSettings.DoesNotExist:
+            settings = cm.TextfieldWidgetSettings(
+                name=self.slug.removeprefix(self.course.prefix + "-"),
+                course=self.course,
+            )
+        return settings
+
+    def export(self, instance, export_target):
+        settings = self.get_settings()
+        if settings.pk is not None:
+            settings.export(instance, export_target)
+
+
+class FileAnswerWidget(AnswerWidget):
+
+    handle = "file"
+    template = "courses/widgets/file-answer-widget.html"
+
+def register_answer_widgets():
+    AnswerWidgetRegistry.register_widget(AnswerWidget)
+    AnswerWidgetRegistry.register_widget(CheckboxAnswerWidget)
+    AnswerWidgetRegistry.register_widget(RadioAnswerWidget)
+    AnswerWidgetRegistry.register_widget(TextfieldAnswerWidget)
+    AnswerWidgetRegistry.register_widget(FileAnswerWidget)

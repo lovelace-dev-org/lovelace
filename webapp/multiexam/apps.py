@@ -1,6 +1,12 @@
 from django.apps import AppConfig
+from lovelace import register_plugin
 
 
-class MultiexamConfig(AppConfig):
+class MultiExamConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "multiexam"
+
+    def ready(self):
+        from multiexam import answer_widgets, includes
+        answer_widgets.register_answer_widgets()
+        register_plugin(self.module, ["base-static", "export", "import", "content-follow"])

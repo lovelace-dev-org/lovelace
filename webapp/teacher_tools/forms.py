@@ -1,4 +1,5 @@
 from django import forms
+from django.forms.models import ModelChoiceField, ModelMultipleChoiceField
 from django.utils.translation import gettext_lazy as _
 import courses.models as cm
 from teacher_tools.models import MossSettings, ReminderTemplate
@@ -126,6 +127,23 @@ class DeadlineExemptionForm(forms.ModelForm):
         self.fields["contentgraph"].queryset = available_content
         self.fields["user"].queryset = students
 
+
+class MassDeadlineExemptionForm(forms.Form):
+
+    def __init__(self, *args, **kwargs):
+        students = kwargs.pop("students")
+        available_content = kwargs.pop("graphs")
+        super().__init__(*args, **kwargs)
+        self.fields["user"] = ModelChoiceField(
+            queryset=students,
+        )
+        self.fields["extendby"] = forms.IntegerField(label=_("Extend by (days)"))
+        self.fields["contentgraphs"] = ModelMultipleChoiceField(
+            widget=forms.SelectMultiple(attrs={
+                "size": 10,
+            }),
+            queryset=available_content,
+        )
 
 
 class RecordSearchForm(forms.Form):

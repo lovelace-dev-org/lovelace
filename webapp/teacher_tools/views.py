@@ -1,4 +1,5 @@
 import datetime
+from decimal import Decimal
 import os.path
 import tempfile
 import zipfile
@@ -25,9 +26,9 @@ from lovelace.celery import app as celery_app
 from utils.access import determine_access, is_course_staff, ensure_responsible, ensure_staff
 from utils.archive import get_single_archived
 from utils.content import get_course_instance_tasks, get_embedded_parent
+from utils.management import process_confirm_form
 from utils.notify import send_welcome_email
 
-from courses.forms import process_delete_confirm_form
 from courses.models import (
     ContentGraph,
     CourseEnrollment,
@@ -53,6 +54,7 @@ from teacher_tools.models import (
 )
 from teacher_tools.forms import (
     DeadlineExemptionForm,
+    MassDeadlineExemptionForm,
     MossnetForm,
     ReminderForm,
     BatchGradingForm,
@@ -61,7 +63,7 @@ from teacher_tools.forms import (
 )
 
 
-def download_answers(request, course, instance, content):
+def download_answers(request, course, instance, parent, content):
     if not determine_access(request.user, content, responsible_only=True):
         return HttpResponseForbidden(
             _("Only course main responsible teachers are allowed to download answer files.")
@@ -213,7 +215,7 @@ def transfer_records(request, course, instance, user):
     if request.method == "POST":
         form = TransferRecordsForm(request.POST, instances=other_instances)
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         target_instance = CourseInstance.objects.get(id=form.cleaned_data["target_instance"])
@@ -251,10 +253,11 @@ def transfer_records(request, course, instance, user):
         new_enrollment.save()
 
         if form.cleaned_data["recalculate"]:
+            UserTaskCompletion.objects.filter(user=user, instance=target_instance).update(points=0)
             for __, task_links in get_course_instance_tasks(target_instance):
                 for task_link in task_links:
                     content = task_link.embedded_page.get_type_object()
-                    content.re_evaluate(user, target_instance)
+                    content.re_evaluate(task_link, user, target_instance)
 
         return redirect(
             reverse(
@@ -286,13 +289,8 @@ def transfer_records(request, course, instance, user):
 
 
 @ensure_staff
-def answer_summary(request, course, instance, content):
-    try:
-        parent, single_linked = get_embedded_parent(content, instance)
-    except EmbeddedLink.DoesNotExist:
-        return HttpResponseNotFound(_("The task was not linked on the requested course instance"))
-
-    answer_model = content.get_answer_model()
+def answer_summary(request, course, instance, parent, content):
+    answer_model = content.get_user_answer_model()
     answers = (
         answer_model.objects.filter(
             exercise=content,
@@ -308,7 +306,6 @@ def answer_summary(request, course, instance, content):
         "instance": instance,
         "content": content,
         "parent": parent,
-        "single_linked": single_linked,
         "answers": answers,
         "course_staff": True,
     }
@@ -439,7 +436,7 @@ def search_records(request, course, instance):
             if form.cleaned_data.get("last_name"):
                 query |= Q(last_name=form.cleaned_data.get("last_name"))
             if form.cleaned_data.get("first_name"):
-                query |= Q(last_name=form.cleaned_data.get("first_name"))
+                query |= Q(first_name=form.cleaned_data.get("first_name"))
             if form.cleaned_data.get("email"):
                 query |= Q(email=form.cleaned_data.get("email"))
             for user in User.objects.filter(query):
@@ -481,7 +478,7 @@ def manage_reminders(request, course, instance):
     if request.method != "POST":
         form = ReminderForm(request.POST, instance=saved_template)
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         if form.cleaned_data["reminder_action"] == "generate":
@@ -610,7 +607,7 @@ def reminders_progress(request, course, instance, task_id):
 
 
 @ensure_responsible
-def batch_grade_task(request, course, instance, content):
+def batch_grade_task(request, course, instance, parent, content):
     if content.content_type not in [
         "TEXTFIELD_EXERCISE",
         "CHECKBOX_EXERCISE",
@@ -619,7 +616,12 @@ def batch_grade_task(request, course, instance, content):
     ]:
         return HttpResponseForbidden(_("Batch grading is not supported for this task type"))
 
-    if content.manually_evaluated:
+    try:
+        link = EmbeddedLink.objects.get(instance=instance, embedded_page=content, parent=parent)
+    except EmbeddedLink.DoesNotExist:
+        return HttpResponseNotFound(_("Task is not linked to this course"))
+
+    if link.manually_evaluated:
         return HttpResponseForbidden(
             _("Batch grading is not possible for manually evaluated tasks")
         )
@@ -627,28 +629,15 @@ def batch_grade_task(request, course, instance, content):
     if request.method == "POST":
         form = BatchGradingForm(request.POST)
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
-
-        try:
-            parent, single_linked = get_embedded_parent(content, instance)
-        except EmbeddedLink.DoesNotExist:
-            return HttpResponseNotFound(
-                _("The task was not linked on the requested course instance")
-            )
-
-        link = EmbeddedLink.objects.filter(instance=instance, embedded_page=content).first()
-        if link is None:
-            return HttpResponseNotFound(_("Task is not linked to this course"))
 
         if link.revision is None:
             exercise = content
         else:
             exercise = get_single_archived(content, link.revision)
 
-        print(exercise)
-
-        answer_model = content.get_answer_model()
+        answer_model = content.get_user_answer_model()
         answers = (
             answer_model.objects.filter(
                 exercise=content,
@@ -678,15 +667,16 @@ def batch_grade_task(request, course, instance, content):
                 answer_form = reconstruct_answer_form(exercise.content_type, answer)
 
                 evaluation = exercise.check_answer(
-                    content, user, answer.answerer_ip, answer_form, [], answer, link.revision
+                    content, link, user, answer_form, [], answer
                 )
+                evaluation["points"] = Decimal(evaluation.get("quotient", 0)) * link.default_points
                 if evaluation["evaluation"]:
-                    exercise.update_evaluation(user, evaluation, answer)
+                    exercise.update_evaluation(link, user, evaluation, answer)
                     log.append(answer)
                     break
             else:
                 evaluation["points"] = 0
-                exercise.update_evaluation(user, evaluation, user_answers[0])
+                exercise.update_evaluation(link, user, evaluation, user_answers[0])
                 log.append(user_answers[0])
 
         translation.activate(current_lang)
@@ -697,7 +687,6 @@ def batch_grade_task(request, course, instance, content):
             "instance": instance,
             "content": content,
             "parent": parent,
-            "single_linked": single_linked,
             "answers": log,
             "course_staff": True,
         }
@@ -757,7 +746,7 @@ def exercise_plagiarism(request, course, instance, content):
     if request.method == "POST":
         form = MossnetForm(request.POST, other_instances=other_instances, instance=saved_settings)
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         if form.cleaned_data["save_settings"]:
@@ -843,7 +832,7 @@ def create_exemption(request, course, instance):
             graphs=graphs,
         )
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         form.save(commit=True)
@@ -863,19 +852,53 @@ def create_exemption(request, course, instance):
     return HttpResponse(form_t.render(form_c, request))
 
 @ensure_responsible
+def create_exemptions(request, course, instance):
+    students = instance.enrolled_users.get_queryset()
+    graphs = (
+        ContentGraph.objects.filter(instance=instance)
+        .exclude(deadline=None)
+    )
+    if request.method == "POST":
+        form = MassDeadlineExemptionForm(
+            request.POST,
+            students=students,
+            graphs=graphs,
+        )
+        if not form.is_valid():
+            errors = form.errors.get_json_data()
+            return JsonResponse({"errors": errors}, status=400)
+
+        for graph in form.cleaned_data["contentgraphs"]:
+            exemption = DeadlineExemption(
+                user=form.cleaned_data["user"],
+                contentgraph=graph,
+                new_deadline=graph.deadline + datetime.timedelta(days=form.cleaned_data["extendby"])
+            )
+            exemption.save()
+        return JsonResponse({"status": "ok"})
+
+    form = MassDeadlineExemptionForm(
+        students=students,
+        graphs=graphs,
+    )
+    form_t = loader.get_template("courses/base-edit-form.html")
+    form_c = {
+        "form_object": form,
+        "submit_url": request.path,
+        "html_id": f"create-exemptions-form",
+        "html_class": "management-form",
+    }
+    return HttpResponse(form_t.render(form_c, request))
+
+
+
+
+
+@ensure_responsible
 def delete_exemption(request, course, instance, user, graph_id):
     def success(form):
         DeadlineExemption.objects.filter(
             user=user,
             contentgraph__id=graph_id,
         ).delete()
-    return process_delete_confirm_form(request, success)
-
-
-
-
-
-
-
-
-
+    return process_confirm_form(request, success)

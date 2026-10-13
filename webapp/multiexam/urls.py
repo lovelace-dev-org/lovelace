@@ -1,5 +1,5 @@
 from django.urls import path
-from model_path_converter import register_model_converter
+from utils.converters import register_model_converter
 
 from . import views, models
 
@@ -49,7 +49,11 @@ urlpatterns = [
     ),
 
     # other
-
+    path(
+        "<course:course>/<instance:instance>/<content:content>/pool/edit/",
+        views.edit_question_pool,
+        name="edit_question_pool",
+    ),
     path(
         "file-download/multiexam/<int:exercise_id>/<str:field_name>/<str:filename>/",
         views.download_question_pool,

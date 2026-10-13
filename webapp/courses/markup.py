@@ -6,6 +6,7 @@ from django.urls import reverse
 from django.utils.safestring import mark_safe
 
 from django.utils.text import slugify
+from django.utils.translation import gettext_lazy as _
 
 import pygments
 from pygments.lexers import get_lexer_by_name, guess_lexer_for_filename
@@ -13,9 +14,16 @@ from pygments.formatters import HtmlFormatter
 
 from reversion.models import Version
 
-from courses.markupparser import MarkupParser, LinkParser, Markup
+from courses.markupparser import (
+    MarkupParser,
+    LinkParser,
+    Markup,
+    EmbeddedObjectNotAllowedError,
+    EmbeddedObjectNotFoundError,
+)
 from courses import blockparser
 import courses.models as cm
+from lovelace import plugins as lovelace_plugins
 from utils.archive import get_single_archived
 from utils.content import get_embedded_media_file, get_embedded_media_image
 from utils import snippets
@@ -49,7 +57,7 @@ class ParagraphMarkup(Markup):
         pass
 
     @classmethod
-    def build_links(cls, block, matchobj, instance, page_links, media_links):
+    def build_links(cls, block, matchobj, instance, links):
         """
         Finds inline links to media files. Necessary to ensure that all linked
         files are provided with a context link.
@@ -58,7 +66,7 @@ class ParagraphMarkup(Markup):
         for line in block:
             for tag in blockparser.BlockParser.tags["anchor"].regexp.findall(line):
                 if tag[0].startswith("file:"):
-                    media_links.append(tag[0].split("file:")[1])
+                    links["media"].append(tag[0].split("file:")[1])
 
     @classmethod
     def markup_from_dict(cls, form_data):
@@ -89,7 +97,7 @@ class CalendarMarkup(Markup):
     name = "Calendar"
     shortname = "calendar"
     description = "A calendar for time reservations."
-    regexp = re.compile(r"^\<\!calendar\=(?P<calendar_name>[^\s>]+)\>\s*$")
+    regexp = re.compile(r"^\<\!calendar\=(?P<calendar_slug>[^\s>]+)\>\s*$")
     markup_class = "embedded item"
     example = "<!calendar=course-project-demo-calendar>"
     inline = False
@@ -99,19 +107,19 @@ class CalendarMarkup(Markup):
 
     @classmethod
     def block(cls, block, settings, state):
-        if not cm.Calendar.objects.filter(name=settings["calendar_name"]).exists():
-            new_calendar = cm.Calendar(name=settings["calendar_name"])
-            new_calendar.save()
-        yield ("calendar", {"calendar": settings["calendar_name"]})
+        if not cm.Calendar.objects.filter(slug=settings["calendar_slug"]).exists():
+            yield ("calendar", {"calendar": None})
+        else:
+            yield ("calendar", {"calendar": settings["calendar_slug"]})
 
     @classmethod
     def settings(cls, matchobj, state):
-        settings = {"calendar_name": matchobj.group("calendar_name")}
+        settings = {"calendar_slug": matchobj.group("calendar_slug")}
         return settings
 
     @classmethod
     def markup_from_dict(cls, form_data):
-        return f"<!calendar={form_data['calendar_name']}>"
+        return f"<!calendar={form_data['calendar_slug']}>"
 
 
 class CodeMarkup(Markup):
@@ -140,7 +148,7 @@ class CodeMarkup(Markup):
     @classmethod
     def block(cls, block, settings, state):
         highlight = settings["highlight"]
-        yield "<div><pre class='normal'>"
+        yield "<div><pre class='block-code normal'>"
         text = ""
         if highlight:
             try:
@@ -221,12 +229,18 @@ class EmbeddedFileMarkup(Markup):
             except ValueError as e:
                 yield f"<div>Unable to decode file {settings['file_slug']} with utf-8.</div>"
                 return
-
-            try:
-                lexer = guess_lexer_for_filename(file_path, file_contents)
-            except pygments.util.ClassNotFound:
-                yield f"<div>Unable to find lexer for file {settings['file_slug']}.</div>"
+            except FileNotFoundError:
+                yield f"<div>File {settings['file_slug']} does not exist on disk.</div>"
                 return
+
+            if not file_object.lexer:
+                try:
+                    lexer = guess_lexer_for_filename(file_path, file_contents)
+                except pygments.util.ClassNotFound:
+                    yield f"<div>Unable to find lexer for file {settings['file_slug']}.</div>"
+                    return
+            else:
+                lexer = get_lexer_by_name(file_object.lexer)
 
             highlighted = pygments.highlight(file_contents, lexer, HtmlFormatter(nowrap=True))
 
@@ -258,9 +272,9 @@ class EmbeddedFileMarkup(Markup):
         return settings
 
     @classmethod
-    def build_links(cls, block, matchobj, instance, page_links, media_links):
+    def build_links(cls, block, matchobj, instance, links):
         slug = matchobj.group("file_slug")
-        media_links.append(slug)
+        links["media"].append(slug)
 
 
     @classmethod
@@ -333,64 +347,63 @@ class EmbeddedPageMarkup(Markup):
                 "instance": state["context"].get("instance"),
                 "choices": choices,
                 "revision": revision,
+                "parent": state["context"]["content"],
             }
             embedded_content = page.get_rendered_content(page, c)
             question = page.get_question(page, c)
-            t = loader.get_template(page.template)
-            rendered_form = t.render(c)
+            answer_widget = page.get_answer_widget(instance.course)
+            rendered_form = answer_widget.render(c)
 
             settings["content"] = embedded_content
             settings["question"] = question
             settings["form"] = rendered_form
             settings["revision"] = revision
-            settings["max_points"] = page.default_points
+            settings["max_points"] = link.default_points
+            settings["widget_configurable"] = answer_widget.configurable
             if instance is not None:
+                menu_options = [
+                    (_("Edit this exercise"), "admin", "self", page.get_admin_change_url()),
+                ]
+                if checking_setup_url := page.get_checking_settings_url(page, c):
+                    menu_options.append(
+                        (_("Checking settings"), "admin", "side-panel", checking_setup_url)
+                    )
+
+                for module in lovelace_plugins.get("embed-menu"):
+                    menu_options.extend(module.includes.get_embed_frame_options(
+                        state["context"],
+                        page,
+                        link,
+                        "staff",
+                    ))
+
+                menu_context = {
+                    "menu_options": menu_options,
+                    "content": page,
+                    "in_list": True
+                }
+                menu_template = loader.get_template("courses/embed-menu-options.html")
+                settings["staff_menu"] = menu_template.render(menu_context)
+
+
                 settings["urls"] = {
-                    "stats_url": reverse("stats:single_exercise", kwargs={"exercise": page}),
-                    "feedback_url": reverse(
-                        "feedback:statistics",
-                        kwargs={"instance": instance, "content": page},
-                    ),
-                    "download_url": reverse(
-                        "teacher_tools:download_answers",
-                        kwargs={
-                            "course": instance.course,
-                            "instance": instance,
-                            "content": page,
-                        },
-                    ),
-                    "summary_url": reverse(
-                        "teacher_tools:answer_summary",
-                        kwargs={
-                            "course": instance.course,
-                            "instance": instance,
-                            "content": page,
-                        },
-                    ),
-                    "batch_url": reverse(
-                        "teacher_tools:batch_grade",
-                        kwargs={
-                            "course": instance.course,
-                            "instance": instance,
-                            "content": page,
-                        },
-                    ),
-                    "reset_url": reverse(
-                        "teacher_tools:reset_completion",
-                        kwargs={
-                            "course": instance.course,
-                            "instance": instance,
-                            "content": page,
-                        },
-                    ),
                     "edit_url": page.get_admin_change_url(),
                     "submit_url": reverse(
                         "courses:check",
                         kwargs={
                             "course": instance.course,
                             "instance": instance,
+                            "parent": state["context"]["content"],
                             "content": page,
-                            "revision": revision or "head",
+                        },
+                    ),
+                    "embed_config_url": reverse(
+                        "courses:embed_settings",
+                        kwargs={
+                            "course": instance.course,
+                            "instance": instance,
+                            "parent": state["context"]["content"],
+                            "content": page,
                         },
                     ),
                     "edit_content_url": reverse("courses:content_edit_form", kwargs={
@@ -415,9 +428,9 @@ class EmbeddedPageMarkup(Markup):
         return settings
 
     @classmethod
-    def build_links(cls, block, matchobj, instance, page_links, media_links):
+    def build_links(cls, block, matchobj, instance, links):
         slug = matchobj.group("page_slug")
-        page_links.append(slug)
+        links["page"].append(slug)
 
     @classmethod
     def markup_from_dict(cls, form_data):
@@ -569,12 +582,12 @@ class EmbeddedScriptMarkup(Markup):
         return settings
 
     @classmethod
-    def build_links(cls, block, matchobj, instance, page_links, media_links):
+    def build_links(cls, block, matchobj, instance, links):
         slugs = [matchobj.group("script_slug")] + [
             m.split("=")[1] for m in matchobj.group("include").split(",")
         ]
         for slug in slugs:
-            media_links.append(slug)
+            links["media"].append(slug)
 
     @classmethod
     def markup_from_dict(cls, form_data):
@@ -591,8 +604,8 @@ class EmbeddedScriptMarkup(Markup):
                     where=form_data[f"include_files-{i}-where"],
                     itype=form_data[f"include_files-{i}-type"],
                     slug=(
-                        form_data[f"include_files-{i}-name"]
-                        or form_data[f"include_files-{i}-existing"]
+                        form_data[f"include_files-{i}-slug"]
+                        or form_data[f"include_files-{i}-existing"].slug
                     ),
                 )
                 for i in range(total_forms) if not form_data[f"include_files-{i}-delete"]
@@ -623,7 +636,7 @@ class EmbeddedVideoMarkup(Markup):
             raise EmbeddedObjectNotAllowedError("embedded videos are not allowed in tooltips")
 
         try:
-            videolink = cm.VideoLink.objects.get(name=settings["video_slug"])
+            videolink = cm.VideoLink.objects.get(slug=settings["video_slug"])
         except cm.VideoLink.DoesNotExist as e:
             yield f"<div>Video link {settings['video_slug']} not found.</div>"
             return
@@ -652,9 +665,9 @@ class EmbeddedVideoMarkup(Markup):
         return settings
 
     @classmethod
-    def build_links(cls, block, matchobj, instance, page_links, media_links):
+    def build_links(cls, block, matchobj, instance, links):
         slug = matchobj.group("video_slug")
-        media_links.append(slug)
+        links["media"].append(slug)
 
     @classmethod
     def markup_from_dict(cls, form_data):
@@ -735,7 +748,7 @@ class ImageMarkup(Markup):
     shortname = "image"
     description = "An image, img tag in HTML."
     regexp = re.compile(
-        r"^\<\!image\=(?P<image_name>[^>|]+)"
+        r"^\<\!image\=(?P<image_slug>[^>|]+)"
         r"(\|alt\=(?P<alt_text>[^|]+))?"
         r"(\|caption\=(?P<caption_text>(([\[]{2}[^|]+(\|.+)?[\]]{2})|([^|]))+))?"
         r"(\|align\=(?P<align>[^|]+))?\>\s*$"
@@ -752,15 +765,18 @@ class ImageMarkup(Markup):
         instance = state["context"].get("instance")
         try:
             image_object = get_embedded_media_image(
-                settings["image_name"], instance, state["context"].get("content")
+                settings["image_slug"], instance, state["context"].get("content")
             )
+            w = image_object.fileinfo.width
+            h = image_object.fileinfo.height
         except cm.Image.DoesNotExist as e:
-            yield f"<div>File {settings['image_name']} not found.</div>"
+            yield f"<div>File {settings['image_slug']} not found.</div>"
+            return
+        except FileNotFoundError:
+            yield f"<div>File {settings['image_slug']} not found on disk.</div>"
             return
 
         image_url = image_object.fileinfo.url
-        w = image_object.fileinfo.width
-        h = image_object.fileinfo.height
 
         MAX_IMG_WIDTH = 1000
 
@@ -798,7 +814,7 @@ class ImageMarkup(Markup):
 
     @classmethod
     def settings(cls, matchobj, state):
-        settings = {"image_name": escape(matchobj.group("image_name"))}
+        settings = {"image_slug": escape(matchobj.group("image_slug"))}
         try:
             settings["alt_text"] = escape(matchobj.group("alt_text"), quote=False)
         except AttributeError:
@@ -816,13 +832,13 @@ class ImageMarkup(Markup):
         return settings
 
     @classmethod
-    def build_links(cls, block, matchobj, instance, page_links, media_links):
-        slug = matchobj.group("image_name")
-        media_links.append(slug)
+    def build_links(cls, block, matchobj, instance, links):
+        slug = matchobj.group("image_slug")
+        links["media"].append(slug)
 
     @classmethod
     def markup_from_dict(cls, form_data):
-        markup = f"<!image={form_data['image_name']}"
+        markup = f"<!image={form_data['image_slug']}"
         if form_data.get("alt_text"):
             markup += f"|alt={form_data['alt_text']}"
         if form_data.get("caption_text"):

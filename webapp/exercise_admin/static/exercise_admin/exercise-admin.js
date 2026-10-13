@@ -2020,6 +2020,7 @@ function show_preview (button, lang) {
     const url = caller.attr("data-url")
     const popup = $("div#preview-popup")
     const csrf = $("form").find("input[name*='csrfmiddlewaretoken']").attr("value")
+    const answerWidget = $("select[name='exercise_answer_widget']").val();
 
     $.ajax({
         type: "POST",
@@ -2029,7 +2030,7 @@ function show_preview (button, lang) {
             content: textArea.val(),
             question: questionArea.val(),
             embedded: true,
-            form_template: "courses/file-upload-exercise.html"
+            answer_widget: answerWidget ? answerWidget : "file"
         },
         dataType: "json",
         success: function (data, text_status, jqxhr_obj) {

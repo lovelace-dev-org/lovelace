@@ -1,0 +1,11 @@
+{% load i18n %}
+
+{% if content.fileexercisesettings.allowed_filenames %}
+  <p>{% trans "Allowed filenames:" %} {{ content.fileexercisesettings.allowed_filenames|join:", " }}</p>
+{% endif %}
+  <div class="input-label-container">
+    <label for="file" class="file">{% trans "Submit your files here:" %}</label>
+    <input name="file" type="file" class="task_file" multiple="multiple">
+  </div>
+{% comment %}Use the accept and multiple properties for the file!{% endcomment %}
+
