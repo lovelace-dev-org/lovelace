@@ -18,7 +18,7 @@ const grp = {
             type: "GET",
             url,
             success: function (data, status, jqxhr) {
-                const form = $(data)
+                const form = $(data).find("form")
                 form.submit(grp.submit_form)
                 const form_tr = $("<tr class='form-tr'><td colspan='4'></td></tr>")
                 form_tr.children("td").append(form)

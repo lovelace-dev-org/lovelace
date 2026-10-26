@@ -6,6 +6,7 @@ from django.db import models, transaction
 from django.db.models.query import QuerySet
 from reversion.models import Version
 from reversion import revisions
+import reversion
 
 
 class CancelRevert(Exception):
@@ -119,7 +120,13 @@ def squash_revisions(model_instance, hours):
 
     now = datetime.datetime.now()
     span = datetime.timedelta(hours=hours)
-    versions = Version.objects.get_for_object(model_instance)
+    try:
+        versions = Version.objects.get_for_object(model_instance)
+    except reversion.errors.RegistrationError:
+        # We're trying to squash revisions for a model that's not in version control
+        # therefore do nothing
+        return
+
     latest = versions.latest("revision__date_created")
     versions.filter(revision__date_created__gte=now-span).exclude(id=latest.id).delete()
 

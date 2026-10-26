@@ -65,6 +65,17 @@ class FaqToInstanceLink(models.Model, ExportImportMixin):
     def set_instance(self, instance):
         self.instance = instance
 
+def clone_models(old_instance, new_instance):
+    active_links = FaqToInstanceLink.objects.filter(
+        instance=old_instance
+    )
+    for link in active_links:
+        link.pk = None
+        link.instance = new_instance
+        try:
+            link.save()
+        except IntegrityError:
+            pass
 
 def export_models(instance, export_target):
     faq_links = (
@@ -76,8 +87,15 @@ def export_models(instance, export_target):
         faq_link.question.export(instance, export_target)
         faq_link.export(instance, export_target)
 
+def freeze_context_links(instance, freeze_to):
+    for link in FaqToInstanceLink.objects.filter(instance=instance):
+        link.freeze(freeze_to)
+
 def get_import_list():
     return [
         FaqQuestion,
         FaqToInstanceLink,
     ]
+
+def delete_orphan_references(task, instance):
+    FaqToInstanceLink.objects.filter(exercise=task, instance=instance).delete()

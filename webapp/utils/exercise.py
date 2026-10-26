@@ -1,8 +1,10 @@
 import base64
+import decimal
 import json
 import logging
 from django.template import loader
 from django.urls import reverse
+
 from courses import markupparser
 from utils.archive import get_single_archived, get_archived_instances
 from utils.files import get_file_contents_b64
@@ -19,6 +21,7 @@ LINT_W = 12  # 12
 LINT_E = 13  # 13
 
 logger = logging.getLogger(__name__)
+
 
 # NOTE: the amount of reverts caused by this is disgusting.
 def file_upload_payload(exercise, student_files, instance, revision=None):
@@ -167,7 +170,7 @@ def compile_evaluation_data(request, evaluation_tree, evaluation_obj, context=No
     t_exercise = loader.get_template("courses/exercise-evaluation.html")
     c_exercise = {
         "evaluation": evaluation_obj.correct,
-        "manual": context["content_page"].manually_evaluated,
+        "manual": context["embed_link"].manually_evaluated,
         "answer_url": context.get("answer_url", ""),
         "points": evaluation_tree["points"],
         "max": evaluation_tree["max"],
@@ -187,7 +190,7 @@ def compile_evaluation_data(request, evaluation_tree, evaluation_obj, context=No
     return data
 
 
-def render_json_feedback(log, request, course, instance, content, answer_id=None):
+def render_json_feedback(log, request, course, instance, link, content, answer_id=None):
     """
     Renders exercise feedback from the exercise log JSON format. Parses
     messages, hints, triggers, and the final result from the log and returns
@@ -233,6 +236,7 @@ def render_json_feedback(log, request, course, instance, content, answer_id=None
                 "user": request.user,
                 "course": course,
                 "instance": instance,
+                "parent": link.parent,
                 "exercise": content,
             },
         )
@@ -244,7 +248,7 @@ def render_json_feedback(log, request, course, instance, content, answer_id=None
     t_exercise = loader.get_template("courses/exercise-evaluation.html")
     c_exercise = {
         "evaluation": log["result"]["correct"],
-        "manual": content.manually_evaluated,
+        "manual": link.manually_evaluated,
         "answer_url": request.build_absolute_uri(answer_url),
         "points": log["result"]["score"],
         "max": log["result"]["max"],
@@ -258,12 +262,12 @@ def render_json_feedback(log, request, course, instance, content, answer_id=None
     return feedback
 
 
-def apply_late_rule(exercise, evaluation, rule, days_late):
-    quotient = evaluation.get("points", 0) / evaluation.get("max", exercise.default_points)
+def apply_late_rule(exercise, link, evaluation, rule, days_late):
+    quotient = evaluation.get("points", 0) / evaluation.get("max", link.default_points)
     return eval(
         rule.format(
             p=evaluation.get("points", 0),
-            m=evaluation.get("max", exercise.default_points),
+            m=evaluation.get("max", link.default_points),
             q=quotient,
             d=days_late,
         )
@@ -279,8 +283,7 @@ def is_late(graph, user, answer_date):
     return deadline and (answer_date > deadline)
 
 
-def update_completion(exercise, instance, user, evaluation, answer_date, overwrite=False):
-    link = cm.EmbeddedLink.objects.filter(instance=instance, embedded_page=exercise).first()
+def update_completion(exercise, link, instance, user, evaluation, answer_date, overwrite=False):
     parent_graph = link.parent.contentgraph_set.get_queryset().get(instance=instance)
     late = is_late(parent_graph, user, answer_date)
 
@@ -289,13 +292,13 @@ def update_completion(exercise, instance, user, evaluation, answer_date, overwri
     if correct:
         if late and parent_graph.late_rule:
             days_late = (answer_date - parent_graph.deadline).days + 1
-            quotient = apply_late_rule(exercise, evaluation, parent_graph.late_rule, days_late)
+            quotient = apply_late_rule(exercise, link, evaluation, parent_graph.late_rule, days_late)
         else:
             try:
                 quotient = evaluation.get("points", 0) / evaluation.get(
-                    "max", exercise.default_points
+                    "max", link.default_points
                 )
-            except ZeroDivisionError:
+            except (ZeroDivisionError, decimal.InvalidOperation):
                 quotient = 0
     else:
         quotient = 0
@@ -327,24 +330,32 @@ def update_completion(exercise, instance, user, evaluation, answer_date, overwri
         if correct:
             if quotient > completion.points or overwrite:
                 completion.points = quotient
+
+        if evaluation.get("manual", False):
+            completion.state = "resubmitted"
+
         completion.save()
 
-    eval_group = get_single_archived(exercise, link.revision).evaluation_group
+    eval_group = link.evaluation_group
 
     if changed and correct and eval_group:
-        others = cm.ContentPage.objects.filter(evaluation_group=eval_group).exclude(id=exercise.id)
-        for task in others:
-            link = cm.EmbeddedLink.objects.filter(instance=instance, embedded_page=task).first()
-            if link is None:
-                continue
-            if get_single_archived(task, link.revision).evaluation_group != eval_group:
-                continue
+        others = cm.EmbeddedLink.objects.filter(
+            evaluation_group=eval_group,
+            instance=instance,
+            parent=link.parent
+        ).exclude(id=link.id)
+
+        print(others)
+
+        for group_link in others:
             try:
                 completion = cm.UserTaskCompletion.objects.get(
-                    exercise=task, instance=instance, user=user
+                    exercise=group_link.embedded_page, instance=instance, user=user
                 )
             except cm.UserTaskCompletion.DoesNotExist:
-                completion = cm.UserTaskCompletion(exercise=task, instance=instance, user=user)
+                completion = cm.UserTaskCompletion(
+                    exercise=group_link.embedded_page, instance=instance, user=user
+                )
                 completion.state = "credited"
                 completion.save()
             else:
@@ -355,14 +366,16 @@ def update_completion(exercise, instance, user, evaluation, answer_date, overwri
     return completion.state
 
 
-def best_result(user, instance, group_tag):
-    grouped_tasks = cm.ContentPage.objects.filter(evaluation_group=group_tag)
+def best_result(user, instance, parent, group_tag):
+    grouped_links = cm.EmbeddedLink.objects.filter(
+        evaluation_group=group_tag, parent=parent
+    ).prefetch_related("embedded_page")
     best_score = -1
-    best_task = grouped_tasks[0]
-    for task in grouped_tasks:
-        correct, score = task.get_user_evaluation(user, instance)
+    best_link = grouped_links[0].embedded_page
+    for link in grouped_links:
+        correct, score = task.embedded_page.get_user_evaluation(user, instance)
         if correct == "correct":
             if score > best_score:
                 best_score = score
-                best_task = task
-    return best_score, best_task
+                best_link = link
+    return best_score, best_link

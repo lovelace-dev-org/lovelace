@@ -14,12 +14,9 @@ if "shibboleth" in settings.INSTALLED_APPS:
 
     class LovelaceShibbolethRemoteUser(ShibbolethRemoteUserMiddleware):
         def make_profile(self, user, shib_meta):
-            profile = UserProfile()
-            profile.user = user
+            profile, __ = UserProfile.objects.get_or_create(user=user)
             try:
                 profile.student_id = int(shib_meta.get("student_id", "").rsplit(":", 1)[-1])
-                profile.first_name = str(shib_meta.get("first_name").encode("latin-1"), "utf-8")
-                profile.last_name = str(shib_meta.get("last_name").encode("latin-1"), "utf-8")
             except ValueError:
                 pass
             else:
@@ -67,3 +64,22 @@ class WSTicketAuthMiddleware:
                 scope["user"] = ticket_data["user_id"]
 
         return await self.app(scope, receive, send)
+
+
+class ExamModeMiddleware:
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        response = self.get_response(request)
+        return response
+
+    def process_view(self, request, view_func, view_args, view_kwargs):
+        if instance := view_kwargs.get("instance"):
+            if not instance.exam_active(request.user):
+                return HttpResponseForbidden(_("No active exam for this instance"))
+
+
+
+

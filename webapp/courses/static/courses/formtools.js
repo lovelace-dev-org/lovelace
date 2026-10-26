@@ -14,7 +14,7 @@ const formtools = {
             type: "GET",
             url,
             success: function (data, status, jqxhr) {
-                const form = $(data)
+                const form = $(data).find("form")
                 form.submit(formtools.submit_form)
                 if (button.attr("data-in-table")) {
                     const colspan = button.attr("data-colspan")
@@ -30,6 +30,20 @@ const formtools = {
                 form.find("input[type!=hidden]").first().focus()
                 button.attr("onclick", "formtools.close_form(event, this)")
             },
+            error: function (jqxhr, status, type) {
+                const error_div = $("<div class='error management-form'></div>")
+                error_div.html(jqxhr.responseText)
+                if (button.attr("data-in-table")) {
+                    const colspan = button.attr("data-colspan")
+                    const empty_tr = $("<tr class='form-tr collapse'><td colspan='" + colspan + "'></td></tr>")
+                    const error_tr = $("<tr class='form-tr'><td colspan='" + colspan + "'></td></tr>")
+                    error_tr.children("td").append(error_div)
+                    button.parent().parent().after(error_tr)
+                }
+                else {
+                    button.after(error_div);
+                }
+            }
         })
     },
 

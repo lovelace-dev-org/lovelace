@@ -51,12 +51,12 @@ class RoutineExerciseAdmin(CourseContentAdmin, TranslationAdmin, VersionAdmin):
         (
             "Page information",
             {
-                "fields": ["name", "origin", "slug", "content", "question", "tags"],
+                "fields": ["name", "origin", "slug", "content", "question"],
             },
         ),
         (
             "Exercise miscellaneous",
-            {"fields": ["default_points", "evaluation_group", "answer_widget"], "classes": ["wide"]},
+            {"fields": ["answer_widget"], "classes": ["wide"]},
         ),
         ("Feedback settings", {"fields": ["feedback_questions"]}),
     ]

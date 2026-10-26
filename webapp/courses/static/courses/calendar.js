@@ -12,7 +12,7 @@ const cal = {
             type: "GET",
             url,
             success: function (data, status, jqxhr) {
-                const form = $(data)
+                const form = $(data).find("form")
                 form.submit(cal.submit_form)
                 button.parent().after(form)
                 button.attr("onclick", "cal.close_form(event, this);")

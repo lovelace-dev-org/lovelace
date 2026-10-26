@@ -87,7 +87,11 @@ const faq = {
     },
 
     /* HANDLE_TRIGGERS */
-    handle_triggers: function (panel, handle, triggers) {
+    handle_triggers: function (form_parent, triggers) {
+
+        const panel = form_parent.children(".side-panel")
+        const handle = form_parent.parent().find("a[id$='faq-link']")
+
         const container = panel.children(".panel-container")
         if (container.html() === "" || panel.attr("data-panel-type") !== "faq") {
             const querystring = []

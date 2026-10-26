@@ -39,13 +39,38 @@ const editing = {
         editing.fetch_edit_form(url, source)
     },
 
+    get_select_options: function (event, caller) {
+        event.preventDefault()
+        event.stopPropagation()
+
+        const source = $(caller)
+        const address = source.attr("data-url") + "?origin=" + source.val()
+
+
+        $.ajax({
+            type: "GET",
+            url: address,
+            dataType: "json",
+            success: function (data) {
+                const target = source.nextAll("select")
+                console.log(target)
+                target.empty()
+                data.options.forEach(function (option) {
+                    target.append($("<option></option>").attr({
+                        "value": option.value,
+                    }).text(option.text))
+                })
+            }
+        })
+    },
+
     fetch_edit_form: function (address, caller) {
         $.ajax({
             type: "GET",
             url: address,
             success: function (data, status, jqxhr) {
                 const form = $(data)
-                caller.after(form)
+                caller.closest("div").after(form)
             }
         })
     },
@@ -55,9 +80,16 @@ const editing = {
         const form = $(this)
 
         process_success = function (data) {
-            console.log(location)
             if (data.redirect) {
                 location.replace(data.redirect)
+            } else if (data.refresh) {
+                const container = form.closest(".panel-container")
+                const content = container.children("div.panel-content")
+                if (content) {
+                    refresh_panel(container, content.attr("data-refresh-url"))
+                } else {
+                    location.reload()
+                }
             } else {
                 location.reload()
             }
@@ -66,6 +98,42 @@ const editing = {
         submit_ajax_form(form, process_success)
     },
 
+    move_item: function (event, caller, direction) {
+        event.preventDefault()
+        const button = $(caller)
+        button.attr(
+            "data-csrf",
+            button.closest("form").children("input[name='csrfmiddlewaretoken']").val()
+        )
+        const item_div = button.closest("div")
+
+        process_success = function (data) {
+            if (direction == "up") {
+                const prev_div = item_div.prev("div")
+                item_div.insertBefore(prev_div)
+            }
+            else {
+                const next_div = item_div.next("div")
+                item_div.insertAfter(next_div)
+            }
+        }
+        submit_ajax_action(button, process_success)
+    },
+
+    delete_item: function (event, caller) {
+        event.preventDefault()
+        const button = $(caller)
+        button.attr(
+            "data-csrf",
+            button.closest("form").children("input[name='csrfmiddlewaretoken']").val()
+        )
+        const item_div = button.closest("div")
+
+        process_success = function (data) {
+            item_div.remove()
+        }
+        submit_ajax_action(button, process_success)
+    },
 
     hide_widget_panel: function (event) {
         event.preventDefault()

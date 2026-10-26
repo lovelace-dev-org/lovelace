@@ -14,7 +14,14 @@ const WSWrapper = class {
                 this.open_ws(controller, ticket)
             },
             error: function(xhr, status, type) {
-                controller.error("Unauthorized")
+                const error = JSON.parse(xhr.responseText).error
+                if (error) {
+                    controller.error(error)
+                }
+                else {
+                    controller.error("Unauthorized")
+                }
+                controller.end()
             }
         })
     }
@@ -44,6 +51,10 @@ const WSWrapper = class {
                             socket.send(JSON.stringify({
                                 "operation": "read"
                             }))
+                        }
+                        else if (data["state"] == "timeout") {
+                            controller.end("Timeout")
+                            socket.close()
                         }
                         break;
                     default:

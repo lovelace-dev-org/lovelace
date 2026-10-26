@@ -8,15 +8,28 @@ from utils.data import (
 )
 from utils.management import get_prefixed_slug
 
+class AssessmentToExerciseLinkManager(models.Manager):
+
+    def get_by_natural_key(self, exercise_slug, instance_slug):
+        return self.get(
+            exercise__slug=exercise_slug,
+            instance__slug=instance_slug,
+        )
+
 
 class AssessmentToExerciseLink(models.Model):
+    class Meta:
+        unique_together = ("instance", "exercise")
+
+    objects = AssessmentToExerciseLinkManager()
+
     instance = models.ForeignKey("courses.CourseInstance", on_delete=models.CASCADE)
     exercise = models.ForeignKey("courses.ContentPage", on_delete=models.CASCADE)
     sheet = models.ForeignKey("AssessmentSheet", on_delete=models.CASCADE)
     revision = models.PositiveIntegerField(blank=True, null=True)
 
     def natural_key(self):
-        return self.sheet.natural_key() + [self.exercise.slug]
+        return [self.exercise.slug,  self.instance.slug]
 
     def freeze(self, freeze_to):
         try:
@@ -89,6 +102,9 @@ class AssessmentSectionManager(models.Manager):
 
 
 class AssessmentSection(models.Model):
+    class Meta:
+        unique_together = ("sheet", "ordinal_number")
+
     objects = AssessmentSectionManager()
 
     sheet = models.ForeignKey("AssessmentSheet", on_delete=models.CASCADE)
@@ -123,6 +139,11 @@ class AssessmentBulletManager(models.Manager):
 
 
 class AssessmentBullet(models.Model):
+    class Meta:
+        unique_together = ("sheet", "section", "ordinal_number")
+
+    objects = AssessmentBulletManager()
+
     sheet = models.ForeignKey("AssessmentSheet", on_delete=models.CASCADE)
     point_value = models.FloatField(blank=False, null=False)
     ordinal_number = models.PositiveSmallIntegerField()
@@ -135,6 +156,11 @@ class AssessmentBullet(models.Model):
     def natural_key(self):
         return list(self.section.natural_key()) + [str(self.ordinal_number)]
 
+def clone_models(old_instance, new_instance):
+    for link in AssessmentToExerciseLink.objects.filter(instance=old_instance):
+        link.id = None
+        link.instance = new_instance
+        link.save()
 
 def export_models(instance, export_target):
     links = (
@@ -145,6 +171,10 @@ def export_models(instance, export_target):
     for link in links:
         link.sheet.export(instance, export_target)
 
+def freeze_context_links(instance, freeze_to):
+    for link in AssessmentToExerciseLink.objects.filter(instance=instance):
+        link.freeze(freeze_to)
+
 def get_import_list():
     return [
         AssessmentSheet,
@@ -152,3 +182,8 @@ def get_import_list():
         AssessmentBullet,
         AssessmentToExerciseLink,
     ]
+
+def delete_orphan_references(content, instance):
+    AssessmentToExerciseLink.objects.filter(
+        exercise=content, instance=instance
+    ).delete()

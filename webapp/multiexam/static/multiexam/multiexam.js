@@ -87,7 +87,7 @@ const exam = {
         const form = $(this)
 
         process_success = function (data) {
-            exam.render_exam (form, data)
+            exam.render_exam(form.closest("div"), data)
             form.remove()
         }
 

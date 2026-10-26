@@ -4,12 +4,8 @@
 {% load course_tags %}
 
 {% block page-title %}{% blocktrans with instance=instance.name %}
-  {{ instance }} reminders
+  {{ instance }} mass email
 {% endblocktrans %}{% endblock %}
-
-{% block extra-static %}
-  <script src="{% static 'teacher_tools/reminders.js' %}"></script>
-{% endblock %}
 
 {% block breadcrumb-links %}
   <li><a href="{% url 'courses:index' %}">{% trans 'Courses' %}</a></li>

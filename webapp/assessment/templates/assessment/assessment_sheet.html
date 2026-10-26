@@ -19,9 +19,9 @@
     <li>{{ exercise.name }}</li>
   {% endif %}
   <div class="separator">»</div>
-  <li><a href="{% url 'assessment:view_submissions' course instance exercise %}">{% trans 'Submissions' %}</a></li>
+  <li><a href="{% url 'assessment:view_submissions' course instance parent exercise %}">{% trans 'Submissions' %}</a></li>
   <div class="separator">»</div>
-  <li><a href="{% url 'assessment:submission_assessment' course instance exercise student %}">
+  <li><a href="{% url 'assessment:submission_assessment' course instance parent exercise student answer %}">
     {% blocktrans with username=student.username exercise_name=exercise.name %}
         {{ username }}’s assessment for {{ exercise_name }}
     {% endblocktrans %}
@@ -36,10 +36,16 @@
         {% endblocktrans %}
     </h1>
 
+    <div class="paragraph">
+        {% blocktrans with lang_pref=student.userprofile.language_preference %}
+            Student's preferred communication language: {{ lang_pref }}
+        {% endblocktrans %}
+    </div>
+
     <form class="assessment-form"
           method="POST"
           enctype="multipart/form-data"
-          action="{% url 'assessment:submission_assessment' course instance exercise student %}">
+          action="{% url 'assessment:submission_assessment' course instance parent exercise student answer %}">
           
         {% csrf_token %}
     
