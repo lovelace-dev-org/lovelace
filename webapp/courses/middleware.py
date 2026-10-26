@@ -14,7 +14,7 @@ if "shibboleth" in settings.INSTALLED_APPS:
 
     class LovelaceShibbolethRemoteUser(ShibbolethRemoteUserMiddleware):
         def make_profile(self, user, shib_meta):
-            profile = UserProfile.objects.get_or_create(user=user)
+            profile, __ = UserProfile.objects.get_or_create(user=user)
             try:
                 profile.student_id = int(shib_meta.get("student_id", "").rsplit(":", 1)[-1])
             except ValueError:
