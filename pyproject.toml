@@ -7,7 +7,7 @@ packages = []
 
 [project]
 name = "lovelace"
-version = "2.2.0"
+version = "2.2.1"
 authors = [
     {name = "Miikka Salminen"},
     {name = "Mika Oja", email = "mika.oja@oulu.fi"}
