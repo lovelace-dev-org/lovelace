@@ -27,7 +27,7 @@ const formtools = {
                 else {
                     button.after(form);
                 }
-                form.find("input[type!=hidden]").first().focus()
+                form.find("input[type!=hidden]").first().trigger("focus")
                 button.attr("onclick", "formtools.close_form(event, this)")
             },
             error: function (jqxhr, status, type) {

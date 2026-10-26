@@ -1,1 +1,4051 @@
-"no use strict";!function(e){function t(e,t){var n=e,r="";while(n){var i=t[n];if(typeof i=="string")return i+r;if(i)return i.location.replace(/\/*$/,"/")+(r||i.main||i.name);if(i===!1)return"";var s=n.lastIndexOf("/");if(s===-1)break;r=n.substr(s)+r,n=n.slice(0,s)}return e}if(typeof e.window!="undefined"&&e.document)return;if(e.require&&e.define)return;e.console||(e.console=function(){var e=Array.prototype.slice.call(arguments,0);postMessage({type:"log",data:e})},e.console.error=e.console.warn=e.console.log=e.console.trace=e.console),e.window=e,e.ace=e,e.onerror=function(e,t,n,r,i){postMessage({type:"error",data:{message:e,data:i&&i.data,file:t,line:n,col:r,stack:i&&i.stack}})},e.normalizeModule=function(t,n){if(n.indexOf("!")!==-1){var r=n.split("!");return e.normalizeModule(t,r[0])+"!"+e.normalizeModule(t,r[1])}if(n.charAt(0)=="."){var i=t.split("/").slice(0,-1).join("/");n=(i?i+"/":"")+n;while(n.indexOf(".")!==-1&&s!=n){var s=n;n=n.replace(/^\.\//,"").replace(/\/\.\//,"/").replace(/[^\/]+\/\.\.\//,"")}}return n},e.require=function(r,i){i||(i=r,r=null);if(!i.charAt)throw new Error("worker.js require() accepts only (parentId, id) as arguments");i=e.normalizeModule(r,i);var s=e.require.modules[i];if(s)return s.initialized||(s.initialized=!0,s.exports=s.factory().exports),s.exports;if(!e.require.tlns)return console.log("unable to load "+i);var o=t(i,e.require.tlns);return o.slice(-3)!=".js"&&(o+=".js"),e.require.id=i,e.require.modules[i]={},importScripts(o),e.require(r,i)},e.require.modules={},e.require.tlns={},e.define=function(t,n,r){arguments.length==2?(r=n,typeof t!="string"&&(n=t,t=e.require.id)):arguments.length==1&&(r=t,n=[],t=e.require.id);if(typeof r!="function"){e.require.modules[t]={exports:r,initialized:!0};return}n.length||(n=["require","exports","module"]);var i=function(n){return e.require(t,n)};e.require.modules[t]={exports:{},factory:function(){var e=this,t=r.apply(this,n.slice(0,r.length).map(function(t){switch(t){case"require":return i;case"exports":return e.exports;case"module":return e;default:return i(t)}}));return t&&(e.exports=t),e}}},e.define.amd={},e.require.tlns={},e.initBaseUrls=function(t){for(var n in t)this.require.tlns[n]=t[n]},e.initSender=function(){var n=e.require("ace/lib/event_emitter").EventEmitter,r=e.require("ace/lib/oop"),i=function(){};return function(){r.implement(this,n),this.callback=function(e,t){postMessage({type:"call",id:t,data:e})},this.emit=function(e,t){postMessage({type:"event",name:e,data:t})}}.call(i.prototype),new i};var n=e.main=null,r=e.sender=null;e.onmessage=function(t){var i=t.data;if(i.event&&r)r._signal(i.event,i.data);else if(i.command)if(n[i.command])n[i.command].apply(n,i.args);else{if(!e[i.command])throw new Error("Unknown command:"+i.command);e[i.command].apply(e,i.args)}else if(i.init){e.initBaseUrls(i.tlns),r=e.sender=e.initSender();var s=this.require(i.module)[i.classname];n=e.main=new s(r)}}}(this),ace.define("ace/lib/oop",[],function(e,t,n){"use strict";t.inherits=function(e,t){e.super_=t,e.prototype=Object.create(t.prototype,{constructor:{value:e,enumerable:!1,writable:!0,configurable:!0}})},t.mixin=function(e,t){for(var n in t)e[n]=t[n];return e},t.implement=function(e,n){t.mixin(e,n)}}),ace.define("ace/lib/deep_copy",[],function(e,t,n){t.deepCopy=function r(e){if(typeof e!="object"||!e)return e;var t;if(Array.isArray(e)){t=[];for(var n=0;n<e.length;n++)t[n]=r(e[n]);return t}if(Object.prototype.toString.call(e)!=="[object Object]")return e;t={};for(var n in e)t[n]=r(e[n]);return t}}),ace.define("ace/lib/lang",[],function(e,t,n){"use strict";t.last=function(e){return e[e.length-1]},t.stringReverse=function(e){return e.split("").reverse().join("")},t.stringRepeat=function(e,t){var n="";while(t>0){t&1&&(n+=e);if(t>>=1)e+=e}return n};var r=/^\s\s*/,i=/\s\s*$/;t.stringTrimLeft=function(e){return e.replace(r,"")},t.stringTrimRight=function(e){return e.replace(i,"")},t.copyObject=function(e){var t={};for(var n in e)t[n]=e[n];return t},t.copyArray=function(e){var t=[];for(var n=0,r=e.length;n<r;n++)e[n]&&typeof e[n]=="object"?t[n]=this.copyObject(e[n]):t[n]=e[n];return t},t.deepCopy=e("./deep_copy").deepCopy,t.arrayToMap=function(e){var t={};for(var n=0;n<e.length;n++)t[e[n]]=1;return t},t.createMap=function(e){var t=Object.create(null);for(var n in e)t[n]=e[n];return t},t.arrayRemove=function(e,t){for(var n=0;n<=e.length;n++)t===e[n]&&e.splice(n,1)},t.escapeRegExp=function(e){return e.replace(/([.*+?^${}()|[\]\/\\])/g,"\\$1")},t.escapeHTML=function(e){return(""+e).replace(/&/g,"&#38;").replace(/"/g,"&#34;").replace(/'/g,"&#39;").replace(/</g,"&#60;")},t.getMatchOffsets=function(e,t){var n=[];return e.replace(t,function(e){n.push({offset:arguments[arguments.length-2],length:e.length})}),n},t.deferredCall=function(e){var t=null,n=function(){t=null,e()},r=function(e){return r.cancel(),t=setTimeout(n,e||0),r};return r.schedule=r,r.call=function(){return this.cancel(),e(),r},r.cancel=function(){return clearTimeout(t),t=null,r},r.isPending=function(){return t},r},t.delayedCall=function(e,t){var n=null,r=function(){n=null,e()},i=function(e){n==null&&(n=setTimeout(r,e||t))};return i.delay=function(e){n&&clearTimeout(n),n=setTimeout(r,e||t)},i.schedule=i,i.call=function(){this.cancel(),e()},i.cancel=function(){n&&clearTimeout(n),n=null},i.isPending=function(){return n},i},t.supportsLookbehind=function(){try{new RegExp("(?<=.)")}catch(e){return!1}return!0},t.skipEmptyMatch=function(e,t,n){return n&&e.codePointAt(t)>65535?2:1}}),ace.define("ace/apply_delta",[],function(e,t,n){"use strict";function r(e,t){throw console.log("Invalid Delta:",e),"Invalid Delta: "+t}function i(e,t){return t.row>=0&&t.row<e.length&&t.column>=0&&t.column<=e[t.row].length}function s(e,t){t.action!="insert"&&t.action!="remove"&&r(t,"delta.action must be 'insert' or 'remove'"),t.lines instanceof Array||r(t,"delta.lines must be an Array"),(!t.start||!t.end)&&r(t,"delta.start/end must be an present");var n=t.start;i(e,t.start)||r(t,"delta.start must be contained in document");var s=t.end;t.action=="remove"&&!i(e,s)&&r(t,"delta.end must contained in document for 'remove' actions");var o=s.row-n.row,u=s.column-(o==0?n.column:0);(o!=t.lines.length-1||t.lines[o].length!=u)&&r(t,"delta.range must match delta lines")}t.applyDelta=function(e,t,n){var r=t.start.row,i=t.start.column,s=e[r]||"";switch(t.action){case"insert":var o=t.lines;if(o.length===1)e[r]=s.substring(0,i)+t.lines[0]+s.substring(i);else{var u=[r,1].concat(t.lines);e.splice.apply(e,u),e[r]=s.substring(0,i)+e[r],e[r+t.lines.length-1]+=s.substring(i)}break;case"remove":var a=t.end.column,f=t.end.row;r===f?e[r]=s.substring(0,i)+s.substring(a):e.splice(r,f-r+1,s.substring(0,i)+e[f].substring(a))}}}),ace.define("ace/lib/event_emitter",[],function(e,t,n){"use strict";var r={},i=function(){this.propagationStopped=!0},s=function(){this.defaultPrevented=!0};r._emit=r._dispatchEvent=function(e,t){this._eventRegistry||(this._eventRegistry={}),this._defaultHandlers||(this._defaultHandlers={});var n=this._eventRegistry[e]||[],r=this._defaultHandlers[e];if(!n.length&&!r)return;if(typeof t!="object"||!t)t={};t.type||(t.type=e),t.stopPropagation||(t.stopPropagation=i),t.preventDefault||(t.preventDefault=s),n=n.slice();for(var o=0;o<n.length;o++){n[o](t,this);if(t.propagationStopped)break}if(r&&!t.defaultPrevented)return r(t,this)},r._signal=function(e,t){var n=(this._eventRegistry||{})[e];if(!n)return;n=n.slice();for(var r=0;r<n.length;r++)n[r](t,this)},r.once=function(e,t){var n=this;this.on(e,function r(){n.off(e,r),t.apply(null,arguments)});if(!t)return new Promise(function(e){t=e})},r.setDefaultHandler=function(e,t){var n=this._defaultHandlers;n||(n=this._defaultHandlers={_disabled_:{}});if(n[e]){var r=n[e],i=n._disabled_[e];i||(n._disabled_[e]=i=[]),i.push(r);var s=i.indexOf(t);s!=-1&&i.splice(s,1)}n[e]=t},r.removeDefaultHandler=function(e,t){var n=this._defaultHandlers;if(!n)return;var r=n._disabled_[e];if(n[e]==t)r&&this.setDefaultHandler(e,r.pop());else if(r){var i=r.indexOf(t);i!=-1&&r.splice(i,1)}},r.on=r.addEventListener=function(e,t,n){this._eventRegistry=this._eventRegistry||{};var r=this._eventRegistry[e];return r||(r=this._eventRegistry[e]=[]),r.indexOf(t)==-1&&r[n?"unshift":"push"](t),t},r.off=r.removeListener=r.removeEventListener=function(e,t){this._eventRegistry=this._eventRegistry||{};var n=this._eventRegistry[e];if(!n)return;var r=n.indexOf(t);r!==-1&&n.splice(r,1)},r.removeAllListeners=function(e){e||(this._eventRegistry=this._defaultHandlers=undefined),this._eventRegistry&&(this._eventRegistry[e]=undefined),this._defaultHandlers&&(this._defaultHandlers[e]=undefined)},t.EventEmitter=r}),ace.define("ace/range",[],function(e,t,n){"use strict";var r=function(){function e(e,t,n,r){this.start={row:e,column:t},this.end={row:n,column:r}}return e.prototype.isEqual=function(e){return this.start.row===e.start.row&&this.end.row===e.end.row&&this.start.column===e.start.column&&this.end.column===e.end.column},e.prototype.toString=function(){return"Range: ["+this.start.row+"/"+this.start.column+"] -> ["+this.end.row+"/"+this.end.column+"]"},e.prototype.contains=function(e,t){return this.compare(e,t)==0},e.prototype.compareRange=function(e){var t,n=e.end,r=e.start;return t=this.compare(n.row,n.column),t==1?(t=this.compare(r.row,r.column),t==1?2:t==0?1:0):t==-1?-2:(t=this.compare(r.row,r.column),t==-1?-1:t==1?42:0)},e.prototype.comparePoint=function(e){return this.compare(e.row,e.column)},e.prototype.containsRange=function(e){return this.comparePoint(e.start)==0&&this.comparePoint(e.end)==0},e.prototype.intersects=function(e){var t=this.compareRange(e);return t==-1||t==0||t==1},e.prototype.isEnd=function(e,t){return this.end.row==e&&this.end.column==t},e.prototype.isStart=function(e,t){return this.start.row==e&&this.start.column==t},e.prototype.setStart=function(e,t){typeof e=="object"?(this.start.column=e.column,this.start.row=e.row):(this.start.row=e,this.start.column=t)},e.prototype.setEnd=function(e,t){typeof e=="object"?(this.end.column=e.column,this.end.row=e.row):(this.end.row=e,this.end.column=t)},e.prototype.inside=function(e,t){return this.compare(e,t)==0?this.isEnd(e,t)||this.isStart(e,t)?!1:!0:!1},e.prototype.insideStart=function(e,t){return this.compare(e,t)==0?this.isEnd(e,t)?!1:!0:!1},e.prototype.insideEnd=function(e,t){return this.compare(e,t)==0?this.isStart(e,t)?!1:!0:!1},e.prototype.compare=function(e,t){return!this.isMultiLine()&&e===this.start.row?t<this.start.column?-1:t>this.end.column?1:0:e<this.start.row?-1:e>this.end.row?1:this.start.row===e?t>=this.start.column?0:-1:this.end.row===e?t<=this.end.column?0:1:0},e.prototype.compareStart=function(e,t){return this.start.row==e&&this.start.column==t?-1:this.compare(e,t)},e.prototype.compareEnd=function(e,t){return this.end.row==e&&this.end.column==t?1:this.compare(e,t)},e.prototype.compareInside=function(e,t){return this.end.row==e&&this.end.column==t?1:this.start.row==e&&this.start.column==t?-1:this.compare(e,t)},e.prototype.clipRows=function(t,n){if(this.end.row>n)var r={row:n+1,column:0};else if(this.end.row<t)var r={row:t,column:0};if(this.start.row>n)var i={row:n+1,column:0};else if(this.start.row<t)var i={row:t,column:0};return e.fromPoints(i||this.start,r||this.end)},e.prototype.extend=function(t,n){var r=this.compare(t,n);if(r==0)return this;if(r==-1)var i={row:t,column:n};else var s={row:t,column:n};return e.fromPoints(i||this.start,s||this.end)},e.prototype.isEmpty=function(){return this.start.row===this.end.row&&this.start.column===this.end.column},e.prototype.isMultiLine=function(){return this.start.row!==this.end.row},e.prototype.clone=function(){return e.fromPoints(this.start,this.end)},e.prototype.collapseRows=function(){return this.end.column==0?new e(this.start.row,0,Math.max(this.start.row,this.end.row-1),0):new e(this.start.row,0,this.end.row,0)},e.prototype.toScreenRange=function(t){var n=t.documentToScreenPosition(this.start),r=t.documentToScreenPosition(this.end);return new e(n.row,n.column,r.row,r.column)},e.prototype.moveBy=function(e,t){this.start.row+=e,this.start.column+=t,this.end.row+=e,this.end.column+=t},e}();r.fromPoints=function(e,t){return new r(e.row,e.column,t.row,t.column)},r.comparePoints=function(e,t){return e.row-t.row||e.column-t.column},t.Range=r}),ace.define("ace/anchor",[],function(e,t,n){"use strict";function o(e,t,n){var r=n?e.column<=t.column:e.column<t.column;return e.row<t.row||e.row==t.row&&r}function u(e,t,n){var r=e.action=="insert",i=(r?1:-1)*(e.end.row-e.start.row),s=(r?1:-1)*(e.end.column-e.start.column),u=e.start,a=r?u:e.end;return o(t,u,n)?{row:t.row,column:t.column}:o(a,t,!n)?{row:t.row+i,column:t.column+(t.row==a.row?s:0)}:{row:u.row,column:u.column}}var r=e("./lib/oop"),i=e("./lib/event_emitter").EventEmitter,s=function(){function e(e,t,n){this.$onChange=this.onChange.bind(this),this.attach(e),typeof t!="number"?this.setPosition(t.row,t.column):this.setPosition(t,n)}return e.prototype.getPosition=function(){return this.$clipPositionToDocument(this.row,this.column)},e.prototype.getDocument=function(){return this.document},e.prototype.onChange=function(e){if(e.start.row==e.end.row&&e.start.row!=this.row)return;if(e.start.row>this.row)return;var t=u(e,{row:this.row,column:this.column},this.$insertRight);this.setPosition(t.row,t.column,!0)},e.prototype.setPosition=function(e,t,n){var r;n?r={row:e,column:t}:r=this.$clipPositionToDocument(e,t);if(this.row==r.row&&this.column==r.column)return;var i={row:this.row,column:this.column};this.row=r.row,this.column=r.column,this._signal("change",{old:i,value:r})},e.prototype.detach=function(){this.document.off("change",this.$onChange)},e.prototype.attach=function(e){this.document=e||this.document,this.document.on("change",this.$onChange)},e.prototype.$clipPositionToDocument=function(e,t){var n={};return e>=this.document.getLength()?(n.row=Math.max(0,this.document.getLength()-1),n.column=this.document.getLine(n.row).length):e<0?(n.row=0,n.column=0):(n.row=e,n.column=Math.min(this.document.getLine(n.row).length,Math.max(0,t))),t<0&&(n.column=0),n},e}();s.prototype.$insertRight=!1,r.implement(s.prototype,i),t.Anchor=s}),ace.define("ace/document",[],function(e,t,n){"use strict";var r=e("./lib/oop"),i=e("./apply_delta").applyDelta,s=e("./lib/event_emitter").EventEmitter,o=e("./range").Range,u=e("./anchor").Anchor,a=function(){function e(e){this.$lines=[""],e.length===0?this.$lines=[""]:Array.isArray(e)?this.insertMergedLines({row:0,column:0},e):this.insert({row:0,column:0},e)}return e.prototype.setValue=function(e){var t=this.getLength()-1;this.remove(new o(0,0,t,this.getLine(t).length)),this.insert({row:0,column:0},e||"")},e.prototype.getValue=function(){return this.getAllLines().join(this.getNewLineCharacter())},e.prototype.createAnchor=function(e,t){return new u(this,e,t)},e.prototype.$detectNewLine=function(e){var t=e.match(/^.*?(\r\n|\r|\n)/m);this.$autoNewLine=t?t[1]:"\n",this._signal("changeNewLineMode")},e.prototype.getNewLineCharacter=function(){switch(this.$newLineMode){case"windows":return"\r\n";case"unix":return"\n";default:return this.$autoNewLine||"\n"}},e.prototype.setNewLineMode=function(e){if(this.$newLineMode===e)return;this.$newLineMode=e,this._signal("changeNewLineMode")},e.prototype.getNewLineMode=function(){return this.$newLineMode},e.prototype.isNewLine=function(e){return e=="\r\n"||e=="\r"||e=="\n"},e.prototype.getLine=function(e){return this.$lines[e]||""},e.prototype.getLines=function(e,t){return this.$lines.slice(e,t+1)},e.prototype.getAllLines=function(){return this.getLines(0,this.getLength())},e.prototype.getLength=function(){return this.$lines.length},e.prototype.getTextRange=function(e){return this.getLinesForRange(e).join(this.getNewLineCharacter())},e.prototype.getLinesForRange=function(e){var t;if(e.start.row===e.end.row)t=[this.getLine(e.start.row).substring(e.start.column,e.end.column)];else{t=this.getLines(e.start.row,e.end.row),t[0]=(t[0]||"").substring(e.start.column);var n=t.length-1;e.end.row-e.start.row==n&&(t[n]=t[n].substring(0,e.end.column))}return t},e.prototype.insertLines=function(e,t){return console.warn("Use of document.insertLines is deprecated. Use the insertFullLines method instead."),this.insertFullLines(e,t)},e.prototype.removeLines=function(e,t){return console.warn("Use of document.removeLines is deprecated. Use the removeFullLines method instead."),this.removeFullLines(e,t)},e.prototype.insertNewLine=function(e){return console.warn("Use of document.insertNewLine is deprecated. Use insertMergedLines(position, ['', '']) instead."),this.insertMergedLines(e,["",""])},e.prototype.insert=function(e,t){return this.getLength()<=1&&this.$detectNewLine(t),this.insertMergedLines(e,this.$split(t))},e.prototype.insertInLine=function(e,t){var n=this.clippedPos(e.row,e.column),r=this.pos(e.row,e.column+t.length);return this.applyDelta({start:n,end:r,action:"insert",lines:[t]},!0),this.clonePos(r)},e.prototype.clippedPos=function(e,t){var n=this.getLength();e===undefined?e=n:e<0?e=0:e>=n&&(e=n-1,t=undefined);var r=this.getLine(e);return t==undefined&&(t=r.length),t=Math.min(Math.max(t,0),r.length),{row:e,column:t}},e.prototype.clonePos=function(e){return{row:e.row,column:e.column}},e.prototype.pos=function(e,t){return{row:e,column:t}},e.prototype.$clipPosition=function(e){var t=this.getLength();return e.row>=t?(e.row=Math.max(0,t-1),e.column=this.getLine(t-1).length):(e.row=Math.max(0,e.row),e.column=Math.min(Math.max(e.column,0),this.getLine(e.row).length)),e},e.prototype.insertFullLines=function(e,t){e=Math.min(Math.max(e,0),this.getLength());var n=0;e<this.getLength()?(t=t.concat([""]),n=0):(t=[""].concat(t),e--,n=this.$lines[e].length),this.insertMergedLines({row:e,column:n},t)},e.prototype.insertMergedLines=function(e,t){var n=this.clippedPos(e.row,e.column),r={row:n.row+t.length-1,column:(t.length==1?n.column:0)+t[t.length-1].length};return this.applyDelta({start:n,end:r,action:"insert",lines:t}),this.clonePos(r)},e.prototype.remove=function(e){var t=this.clippedPos(e.start.row,e.start.column),n=this.clippedPos(e.end.row,e.end.column);return this.applyDelta({start:t,end:n,action:"remove",lines:this.getLinesForRange({start:t,end:n})}),this.clonePos(t)},e.prototype.removeInLine=function(e,t,n){var r=this.clippedPos(e,t),i=this.clippedPos(e,n);return this.applyDelta({start:r,end:i,action:"remove",lines:this.getLinesForRange({start:r,end:i})},!0),this.clonePos(r)},e.prototype.removeFullLines=function(e,t){e=Math.min(Math.max(0,e),this.getLength()-1),t=Math.min(Math.max(0,t),this.getLength()-1);var n=t==this.getLength()-1&&e>0,r=t<this.getLength()-1,i=n?e-1:e,s=n?this.getLine(i).length:0,u=r?t+1:t,a=r?0:this.getLine(u).length,f=new o(i,s,u,a),l=this.$lines.slice(e,t+1);return this.applyDelta({start:f.start,end:f.end,action:"remove",lines:this.getLinesForRange(f)}),l},e.prototype.removeNewLine=function(e){e<this.getLength()-1&&e>=0&&this.applyDelta({start:this.pos(e,this.getLine(e).length),end:this.pos(e+1,0),action:"remove",lines:["",""]})},e.prototype.replace=function(e,t){e instanceof o||(e=o.fromPoints(e.start,e.end));if(t.length===0&&e.isEmpty())return e.start;if(t==this.getTextRange(e))return e.end;this.remove(e);var n;return t?n=this.insert(e.start,t):n=e.start,n},e.prototype.applyDeltas=function(e){for(var t=0;t<e.length;t++)this.applyDelta(e[t])},e.prototype.revertDeltas=function(e){for(var t=e.length-1;t>=0;t--)this.revertDelta(e[t])},e.prototype.applyDelta=function(e,t){var n=e.action=="insert";if(n?e.lines.length<=1&&!e.lines[0]:!o.comparePoints(e.start,e.end))return;n&&e.lines.length>2e4?this.$splitAndapplyLargeDelta(e,2e4):(i(this.$lines,e,t),this._signal("change",e))},e.prototype.$safeApplyDelta=function(e){var t=this.$lines.length;(e.action=="remove"&&e.start.row<t&&e.end.row<t||e.action=="insert"&&e.start.row<=t)&&this.applyDelta(e)},e.prototype.$splitAndapplyLargeDelta=function(e,t){var n=e.lines,r=n.length-t+1,i=e.start.row,s=e.start.column;for(var o=0,u=0;o<r;o=u){u+=t-1;var a=n.slice(o,u);a.push(""),this.applyDelta({start:this.pos(i+o,s),end:this.pos(i+u,s=0),action:e.action,lines:a},!0)}e.lines=n.slice(o),e.start.row=i+o,e.start.column=s,this.applyDelta(e,!0)},e.prototype.revertDelta=function(e){this.$safeApplyDelta({start:this.clonePos(e.start),end:this.clonePos(e.end),action:e.action=="insert"?"remove":"insert",lines:e.lines.slice()})},e.prototype.indexToPosition=function(e,t){var n=this.$lines||this.getAllLines(),r=this.getNewLineCharacter().length;for(var i=t||0,s=n.length;i<s;i++){e-=n[i].length+r;if(e<0)return{row:i,column:e+n[i].length+r}}return{row:s-1,column:e+n[s-1].length+r}},e.prototype.positionToIndex=function(e,t){var n=this.$lines||this.getAllLines(),r=this.getNewLineCharacter().length,i=0,s=Math.min(e.row,n.length);for(var o=t||0;o<s;++o)i+=n[o].length+r;return i+e.column},e.prototype.$split=function(e){return e.split(/\r\n|\r|\n/)},e}();a.prototype.$autoNewLine="",a.prototype.$newLineMode="auto",r.implement(a.prototype,s),t.Document=a}),ace.define("ace/worker/mirror",[],function(e,t,n){"use strict";var r=e("../document").Document,i=e("../lib/lang"),s=t.Mirror=function(e){this.sender=e;var t=this.doc=new r(""),n=this.deferredUpdate=i.delayedCall(this.onUpdate.bind(this)),s=this;e.on("change",function(e){var r=e.data;if(r[0].start)t.applyDeltas(r);else for(var i=0;i<r.length;i+=2){var o,u;Array.isArray(r[i+1])?o={action:"insert",start:r[i],lines:r[i+1]}:o={action:"remove",start:r[i],end:r[i+1]};if((o.action=="insert"?o.start:o.end).row>=t.$lines.length)throw u=new Error("Invalid delta"),u.data={path:s.$path,linesLength:t.$lines.length,start:o.start,end:o.end},u;t.applyDelta(o,!0)}if(s.$timeout)return n.schedule(s.$timeout);s.onUpdate()})};(function(){this.$timeout=500,this.setTimeout=function(e){this.$timeout=e},this.setValue=function(e){this.doc.setValue(e),this.deferredUpdate.schedule(this.$timeout)},this.getValue=function(e){this.sender.callback(this.doc.getValue(),e)},this.onUpdate=function(){},this.isPending=function(){return this.deferredUpdate.isPending()}}).call(s.prototype)}),ace.define("ace/mode/html/saxparser",[],function(e,t,n){n.exports=function r(t,n,i){function s(u,a){if(!n[u]){if(!t[u]){var f=typeof e=="function"&&e;if(!a&&f)return f(u,!0);if(o)return o(u,!0);throw new Error("Cannot find module '"+u+"'")}var l=n[u]={exports:{}};t[u][0].call(l.exports,function(e){var n=t[u][1][e];return s(n?n:e)},l,l.exports,r,t,n,i)}return n[u].exports}var o=typeof e=="function"&&e;for(var u=0;u<i.length;u++)s(i[u]);return s}({1:[function(e,t,n){function r(e){if(e.namespaceURI==="http://www.w3.org/1999/xhtml")return e.localName==="applet"||e.localName==="caption"||e.localName==="marquee"||e.localName==="object"||e.localName==="table"||e.localName==="td"||e.localName==="th";if(e.namespaceURI==="http://www.w3.org/1998/Math/MathML")return e.localName==="mi"||e.localName==="mo"||e.localName==="mn"||e.localName==="ms"||e.localName==="mtext"||e.localName==="annotation-xml";if(e.namespaceURI==="http://www.w3.org/2000/svg")return e.localName==="foreignObject"||e.localName==="desc"||e.localName==="title"}function i(e){return r(e)||e.namespaceURI==="http://www.w3.org/1999/xhtml"&&e.localName==="ol"||e.namespaceURI==="http://www.w3.org/1999/xhtml"&&e.localName==="ul"}function s(e){return e.namespaceURI==="http://www.w3.org/1999/xhtml"&&e.localName==="table"||e.namespaceURI==="http://www.w3.org/1999/xhtml"&&e.localName==="html"}function o(e){return e.namespaceURI==="http://www.w3.org/1999/xhtml"&&e.localName==="tbody"||e.namespaceURI==="http://www.w3.org/1999/xhtml"&&e.localName==="tfoot"||e.namespaceURI==="http://www.w3.org/1999/xhtml"&&e.localName==="thead"||e.namespaceURI==="http://www.w3.org/1999/xhtml"&&e.localName==="html"}function u(e){return e.namespaceURI==="http://www.w3.org/1999/xhtml"&&e.localName==="tr"||e.namespaceURI==="http://www.w3.org/1999/xhtml"&&e.localName==="html"}function a(e){return r(e)||e.namespaceURI==="http://www.w3.org/1999/xhtml"&&e.localName==="button"}function f(e){return(e.namespaceURI!=="http://www.w3.org/1999/xhtml"||e.localName!=="optgroup")&&(e.namespaceURI!=="http://www.w3.org/1999/xhtml"||e.localName!=="option")}function l(){this.elements=[],this.rootNode=null,this.headElement=null,this.bodyElement=null}l.prototype._inScope=function(e,t){for(var n=this.elements.length-1;n>=0;n--){var r=this.elements[n];if(r.localName===e)return!0;if(t(r))return!1}},l.prototype.push=function(e){this.elements.push(e)},l.prototype.pushHtmlElement=function(e){this.rootNode=e.node,this.push(e)},l.prototype.pushHeadElement=function(e){this.headElement=e.node,this.push(e)},l.prototype.pushBodyElement=function(e){this.bodyElement=e.node,this.push(e)},l.prototype.pop=function(){return this.elements.pop()},l.prototype.remove=function(e){this.elements.splice(this.elements.indexOf(e),1)},l.prototype.popUntilPopped=function(e){var t;do t=this.pop();while(t.localName!=e)},l.prototype.popUntilTableScopeMarker=function(){while(!s(this.top))this.pop()},l.prototype.popUntilTableBodyScopeMarker=function(){while(!o(this.top))this.pop()},l.prototype.popUntilTableRowScopeMarker=function(){while(!u(this.top))this.pop()},l.prototype.item=function(e){return this.elements[e]},l.prototype.contains=function(e){return this.elements.indexOf(e)!==-1},l.prototype.inScope=function(e){return this._inScope(e,r)},l.prototype.inListItemScope=function(e){return this._inScope(e,i)},l.prototype.inTableScope=function(e){return this._inScope(e,s)},l.prototype.inButtonScope=function(e){return this._inScope(e,a)},l.prototype.inSelectScope=function(e){return this._inScope(e,f)},l.prototype.hasNumberedHeaderElementInScope=function(){for(var e=this.elements.length-1;e>=0;e--){var t=this.elements[e];if(t.isNumberedHeader())return!0;if(r(t))return!1}},l.prototype.furthestBlockForFormattingElement=function(e){var t=null;for(var n=this.elements.length-1;n>=0;n--){var r=this.elements[n];if(r.node===e)break;r.isSpecial()&&(t=r)}return t},l.prototype.findIndex=function(e){for(var t=this.elements.length-1;t>=0;t--)if(this.elements[t].localName==e)return t;return-1},l.prototype.remove_openElements_until=function(e){var t=!1,n;while(!t)n=this.elements.pop(),t=e(n);return n},Object.defineProperty(l.prototype,"top",{get:function(){return this.elements[this.elements.length-1]}}),Object.defineProperty(l.prototype,"length",{get:function(){return this.elements.length}}),n.ElementStack=l},{}],2:[function(e,t,n){function o(e){return e>="0"&&e<="9"||e>="a"&&e<="z"||e>="A"&&e<="Z"}function u(e){return e>="0"&&e<="9"||e>="a"&&e<="f"||e>="A"&&e<="F"}function a(e){return e>="0"&&e<="9"}var r=e("html5-entities"),i=e("./InputStream").InputStream,s={};Object.keys(r).forEach(function(e){for(var t=0;t<e.length;t++)s[e.substring(0,t+1)]=!0});var f={};f.consumeEntity=function(e,t,n){var f="",l="",c=e.char();if(c===i.EOF)return!1;l+=c;if(c=="	"||c=="\n"||c=="\x0b"||c==" "||c=="<"||c=="&")return e.unget(l),!1;if(n===c)return e.unget(l),!1;if(c=="#"){c=e.shift(1);if(c===i.EOF)return t._parseError("expected-numeric-entity-but-got-eof"),e.unget(l),!1;l+=c;var h=10,p=a;if(c=="x"||c=="X"){h=16,p=u,c=e.shift(1);if(c===i.EOF)return t._parseError("expected-numeric-entity-but-got-eof"),e.unget(l),!1;l+=c}if(p(c)){var d="";while(c!==i.EOF&&p(c))d+=c,c=e.char();d=parseInt(d,h);var v=this.replaceEntityNumbers(d);v&&(t._parseError("invalid-numeric-entity-replaced"),d=v);if(d>65535&&d<=1114111){d-=65536;var m=((1047552&d)>>10)+55296,g=(1023&d)+56320;f=String.fromCharCode(m,g)}else f=String.fromCharCode(d);return c!==";"&&(t._parseError("numeric-entity-without-semicolon"),e.unget(c)),f}return e.unget(l),t._parseError("expected-numeric-entity"),!1}if(c>="a"&&c<="z"||c>="A"&&c<="Z"){var y="";while(s[l]){r[l]&&(y=l);if(c==";")break;c=e.char();if(c===i.EOF)break;l+=c}return y?(f=r[y],c===";"||!n||!o(c)&&c!=="="?(l.length>y.length&&e.unget(l.substring(y.length)),c!==";"&&t._parseError("named-entity-without-semicolon"),f):(e.unget(l),!1)):(t._parseError("expected-named-entity"),e.unget(l),!1)}},f.replaceEntityNumbers=function(e){switch(e){case 0:return 65533;case 19:return 16;case 128:return 8364;case 129:return 129;case 130:return 8218;case 131:return 402;case 132:return 8222;case 133:return 8230;case 134:return 8224;case 135:return 8225;case 136:return 710;case 137:return 8240;case 138:return 352;case 139:return 8249;case 140:return 338;case 141:return 141;case 142:return 381;case 143:return 143;case 144:return 144;case 145:return 8216;case 146:return 8217;case 147:return 8220;case 148:return 8221;case 149:return 8226;case 150:return 8211;case 151:return 8212;case 152:return 732;case 153:return 8482;case 154:return 353;case 155:return 8250;case 156:return 339;case 157:return 157;case 158:return 382;case 159:return 376;default:if(e>=55296&&e<=57343||e>1114111)return 65533;if(e>=1&&e<=8||e>=14&&e<=31||e>=127&&e<=159||e>=64976&&e<=65007||e==11||e==65534||e==131070||e==3145726||e==196607||e==262142||e==262143||e==327678||e==327679||e==393214||e==393215||e==458750||e==458751||e==524286||e==524287||e==589822||e==589823||e==655358||e==655359||e==720894||e==720895||e==786430||e==786431||e==851966||e==851967||e==917502||e==917503||e==983038||e==983039||e==1048574||e==1048575||e==1114110||e==1114111)return e}},n.EntityParser=f},{"./InputStream":3,"html5-entities":12}],3:[function(e,t,n){function r(){this.data="",this.start=0,this.committed=0,this.eof=!1,this.lastLocation={line:0,column:0}}r.EOF=-1,r.DRAIN=-2,r.prototype={slice:function(){if(this.start>=this.data.length){if(!this.eof)throw r.DRAIN;return r.EOF}return this.data.slice(this.start,this.data.length)},"char":function(){if(!this.eof&&this.start>=this.data.length-1)throw r.DRAIN;if(this.start>=this.data.length)return r.EOF;var e=this.data[this.start++];return e==="\r"&&(e="\n"),e},advance:function(e){this.start+=e;if(this.start>=this.data.length){if(!this.eof)throw r.DRAIN;return r.EOF}this.committed>this.data.length/2&&(this.lastLocation=this.location(),this.data=this.data.slice(this.committed),this.start=this.start-this.committed,this.committed=0)},matchWhile:function(e){if(this.eof&&this.start>=this.data.length)return"";var t=new RegExp("^"+e+"+"),n=t.exec(this.slice());if(n){if(!this.eof&&n[0].length==this.data.length-this.start)throw r.DRAIN;return this.advance(n[0].length),n[0]}return""},matchUntil:function(e){var t,n;n=this.slice();if(n===r.EOF)return"";if(t=(new RegExp(e+(this.eof?"|$":""))).exec(n)){var i=this.data.slice(this.start,this.start+t.index);return this.advance(t.index),i.replace(/\r/g,"\n").replace(/\n{2,}/g,"\n")}throw r.DRAIN},append:function(e){this.data+=e},shift:function(e){if(!this.eof&&this.start+e>=this.data.length)throw r.DRAIN;if(this.eof&&this.start>=this.data.length)return r.EOF;var t=this.data.slice(this.start,this.start+e).toString();return this.advance(Math.min(e,this.data.length-this.start)),t},peek:function(e){if(!this.eof&&this.start+e>=this.data.length)throw r.DRAIN;return this.eof&&this.start>=this.data.length?r.EOF:this.data.slice(this.start,Math.min(this.start+e,this.data.length)).toString()},length:function(){return this.data.length-this.start-1},unget:function(e){if(e===r.EOF)return;this.start-=e.length},undo:function(){this.start=this.committed},commit:function(){this.committed=this.start},location:function(){var e=this.lastLocation.line,t=this.lastLocation.column,n=this.data.slice(0,this.committed),r=n.match(/\n/g),i=r?e+r.length:e,s=r?n.length-n.lastIndexOf("\n")-1:t+n.length;return{line:i,column:s}}},n.InputStream=r},{}],4:[function(e,t,n){function i(e,t,n,r){this.localName=t,this.namespaceURI=e,this.attributes=n,this.node=r}function s(e,t){for(var n=0;n<e.attributes.length;n++)if(e.attributes[n].nodeName==t)return e.attributes[n].nodeValue;return null}var r={"http://www.w3.org/1999/xhtml":["address","applet","area","article","aside","base","basefont","bgsound","blockquote","body","br","button","caption","center","col","colgroup","dd","details","dir","div","dl","dt","embed","fieldset","figcaption","figure","footer","form","frame","frameset","h1","h2","h3","h4","h5","h6","head","header","hgroup","hr","html","iframe","img","input","isindex","li","link","listing","main","marquee","menu","menuitem","meta","nav","noembed","noframes","noscript","object","ol","p","param","plaintext","pre","script","section","select","source","style","summary","table","tbody","td","textarea","tfoot","th","thead","title","tr","track","ul","wbr","xmp"],"http://www.w3.org/1998/Math/MathML":["mi","mo","mn","ms","mtext","annotation-xml"],"http://www.w3.org/2000/svg":["foreignObject","desc","title"]};i.prototype.isSpecial=function(){return this.namespaceURI in r&&r[this.namespaceURI].indexOf(this.localName)>-1},i.prototype.isFosterParenting=function(){return this.namespaceURI==="http://www.w3.org/1999/xhtml"?this.localName==="table"||this.localName==="tbody"||this.localName==="tfoot"||this.localName==="thead"||this.localName==="tr":!1},i.prototype.isNumberedHeader=function(){return this.namespaceURI==="http://www.w3.org/1999/xhtml"?this.localName==="h1"||this.localName==="h2"||this.localName==="h3"||this.localName==="h4"||this.localName==="h5"||this.localName==="h6":!1},i.prototype.isForeign=function(){return this.namespaceURI!="http://www.w3.org/1999/xhtml"},i.prototype.isHtmlIntegrationPoint=function(){if(this.namespaceURI==="http://www.w3.org/1998/Math/MathML"){if(this.localName!=="annotation-xml")return!1;var e=s(this,"encoding");return e?(e=e.toLowerCase(),e==="text/html"||e==="application/xhtml+xml"):!1}return this.namespaceURI==="http://www.w3.org/2000/svg"?this.localName==="foreignObject"||this.localName==="desc"||this.localName==="title":!1},i.prototype.isMathMLTextIntegrationPoint=function(){return this.namespaceURI==="http://www.w3.org/1998/Math/MathML"?this.localName==="mi"||this.localName==="mo"||this.localName==="mn"||this.localName==="ms"||this.localName==="mtext":!1},n.StackItem=i},{}],5:[function(e,t,n){function s(e){return e===" "||e==="\n"||e==="	"||e==="\r"||e==="\f"}function o(e){return e>="A"&&e<="Z"||e>="a"&&e<="z"}function u(e){this._tokenHandler=e,this._state=u.DATA,this._inputStream=new r,this._currentToken=null,this._temporaryBuffer="",this._additionalAllowedCharacter=""}var r=e("./InputStream").InputStream,i=e("./EntityParser").EntityParser;u.prototype._parseError=function(e,t){this._tokenHandler.parseError(e,t)},u.prototype._emitToken=function(e){if(e.type==="StartTag")for(var t=1;t<e.data.length;t++)e.data[t].nodeName||e.data.splice(t--,1);else e.type==="EndTag"&&(e.selfClosing&&this._parseError("self-closing-flag-on-end-tag"),e.data.length!==0&&this._parseError("attributes-in-end-tag"));this._tokenHandler.processToken(e),e.type==="StartTag"&&e.selfClosing&&!this._tokenHandler.isSelfClosingFlagAcknowledged()&&this._parseError("non-void-element-with-trailing-solidus",{name:e.name})},u.prototype._emitCurrentToken=function(){this._state=u.DATA,this._emitToken(this._currentToken)},u.prototype._currentAttribute=function(){return this._currentToken.data[this._currentToken.data.length-1]},u.prototype.setState=function(e){this._state=e},u.prototype.tokenize=function(e){function n(e){var n=e.char();if(n===r.EOF)return t._emitToken({type:"EOF",data:null}),!1;if(n==="&")t.setState(a);else if(n==="<")t.setState(j);else if(n==="\0")t._emitToken({type:"Characters",data:n}),e.commit();else{var i=e.matchUntil("&|<|\0");t._emitToken({type:"Characters",data:n+i}),e.commit()}return!0}function a(e){var r=i.consumeEntity(e,t);return t.setState(n),t._emitToken({type:"Characters",data:r||"&"}),!0}function f(e){var n=e.char();if(n===r.EOF)return t._emitToken({type:"EOF",data:null}),!1;if(n==="&")t.setState(l);else if(n==="<")t.setState(d);else if(n==="\0")t._parseError("invalid-codepoint"),t._emitToken({type:"Characters",data:"\ufffd"}),e.commit();else{var i=e.matchUntil("&|<|\0");t._emitToken({type:"Characters",data:n+i}),e.commit()}return!0}function l(e){var n=i.consumeEntity(e,t);return t.setState(f),t._emitToken({type:"Characters",data:n||"&"}),!0}function c(e){var n=e.char();if(n===r.EOF)return t._emitToken({type:"EOF",data:null}),!1;if(n==="<")t.setState(g);else if(n==="\0")t._parseError("invalid-codepoint"),t._emitToken({type:"Characters",data:"\ufffd"}),e.commit();else{var i=e.matchUntil("<|\0");t._emitToken({type:"Characters",data:n+i})}return!0}function h(e){var n=e.char();if(n===r.EOF)return t._emitToken({type:"EOF",data:null}),!1;if(n==="\0")t._parseError("invalid-codepoint"),t._emitToken({type:"Characters",data:"\ufffd"}),e.commit();else{var i=e.matchUntil("\0");t._emitToken({type:"Characters",data:n+i})}return!0}function p(e){var n=e.char();if(n===r.EOF)return t._emitToken({type:"EOF",data:null}),!1;if(n==="<")t.setState(w);else if(n==="\0")t._parseError("invalid-codepoint"),t._emitToken({type:"Characters",data:"\ufffd"}),e.commit();else{var i=e.matchUntil("<|\0");t._emitToken({type:"Characters",data:n+i})}return!0}function d(e){var n=e.char();return n==="/"?(this._temporaryBuffer="",t.setState(v)):(t._emitToken({type:"Characters",data:"<"}),e.unget(n),t.setState(f)),!0}function v(e){var n=e.char();return o(n)?(this._temporaryBuffer+=n,t.setState(m)):(t._emitToken({type:"Characters",data:"</"}),e.unget(n),t.setState(f)),!0}function m(e){var r=t._currentToken&&t._currentToken.name===this._temporaryBuffer.toLowerCase(),i=e.char();return s(i)&&r?(t._currentToken={type:"EndTag",name:this._temporaryBuffer,data:[],selfClosing:!1},t.setState(q)):i==="/"&&r?(t._currentToken={type:"EndTag",name:this._temporaryBuffer,data:[],selfClosing:!1},t.setState(K)):i===">"&&r?(t._currentToken={type:"EndTag",name:this._temporaryBuffer,data:[],selfClosing:!1},t._emitCurrentToken(),t.setState(n)):o(i)?(this._temporaryBuffer+=i,e.commit()):(t._emitToken({type:"Characters",data:"</"+this._temporaryBuffer}),e.unget(i),t.setState(f)),!0}function g(e){var n=e.char();return n==="/"?(this._temporaryBuffer="",t.setState(y)):(t._emitToken({type:"Characters",data:"<"}),e.unget(n),t.setState(c)),!0}function y(e){var n=e.char();return o(n)?(this._temporaryBuffer+=n,t.setState(b)):(t._emitToken({type:"Characters",data:"</"}),e.unget(n),t.setState(c)),!0}function b(e){var r=t._currentToken&&t._currentToken.name===this._temporaryBuffer.toLowerCase(),i=e.char();return s(i)&&r?(t._currentToken={type:"EndTag",name:this._temporaryBuffer,data:[],selfClosing:!1},t.setState(q)):i==="/"&&r?(t._currentToken={type:"EndTag",name:this._temporaryBuffer,data:[],selfClosing:!1},t.setState(K)):i===">"&&r?(t._currentToken={type:"EndTag",name:this._temporaryBuffer,data:[],selfClosing:!1},t._emitCurrentToken(),t.setState(n)):o(i)?(this._temporaryBuffer+=i,e.commit()):(t._emitToken({type:"Characters",data:"</"+this._temporaryBuffer}),e.unget(i),t.setState(c)),!0}function w(e){var n=e.char();return n==="/"?(this._temporaryBuffer="",t.setState(E)):n==="!"?(t._emitToken({type:"Characters",data:"<!"}),t.setState(x)):(t._emitToken({type:"Characters",data:"<"}),e.unget(n),t.setState(p)),!0}function E(e){var n=e.char();return o(n)?(this._temporaryBuffer+=n,t.setState(S)):(t._emitToken({type:"Characters",data:"</"}),e.unget(n),t.setState(p)),!0}function S(e){var n=t._currentToken&&t._currentToken.name===this._temporaryBuffer.toLowerCase(),r=e.char();return s(r)&&n?(t._currentToken={type:"EndTag",name:"script",data:[],selfClosing:!1},t.setState(q)):r==="/"&&n?(t._currentToken={type:"EndTag",name:"script",data:[],selfClosing:!1},t.setState(K)):r===">"&&n?(t._currentToken={type:"EndTag",name:"script",data:[],selfClosing:!1},t._emitCurrentToken()):o(r)?(this._temporaryBuffer+=r,e.commit()):(t._emitToken({type:"Characters",data:"</"+this._temporaryBuffer}),e.unget(r),t.setState(p)),!0}function x(e){var n=e.char();return n==="-"?(t._emitToken({type:"Characters",data:"-"}),t.setState(T)):(e.unget(n),t.setState(p)),!0}function T(e){var n=e.char();return n==="-"?(t._emitToken({type:"Characters",data:"-"}),t.setState(k)):(e.unget(n),t.setState(p)),!0}function N(e){var i=e.char();if(i===r.EOF)e.unget(i),t.setState(n);else if(i==="-")t._emitToken({type:"Characters",data:"-"}),t.setState(C);else if(i==="<")t.setState(L);else if(i==="\0")t._parseError("invalid-codepoint"),t._emitToken({type:"Characters",data:"\ufffd"}),e.commit();else{var s=e.matchUntil("<|-|\0");t._emitToken({type:"Characters",data:i+s})}return!0}function C(e){var i=e.char();return i===r.EOF?(e.unget(i),t.setState(n)):i==="-"?(t._emitToken({type:"Characters",data:"-"}),t.setState(k)):i==="<"?t.setState(L):i==="\0"?(t._parseError("invalid-codepoint"),t._emitToken({type:"Characters",data:"\ufffd"}),t.setState(N)):(t._emitToken({type:"Characters",data:i}),t.setState(N)),!0}function k(e){var i=e.char();return i===r.EOF?(t._parseError("eof-in-script"),e.unget(i),t.setState(n)):i==="<"?t.setState(L):i===">"?(t._emitToken({type:"Characters",data:">"}),t.setState(p)):i==="\0"?(t._parseError("invalid-codepoint"),t._emitToken({type:"Characters",data:"\ufffd"}),t.setState(N)):(t._emitToken({type:"Characters",data:i}),t.setState(N)),!0}function L(e){var n=e.char();return n==="/"?(this._temporaryBuffer="",t.setState(A)):o(n)?(t._emitToken({type:"Characters",data:"<"+n}),this._temporaryBuffer=n,t.setState(M)):(t._emitToken({type:"Characters",data:"<"}),e.unget(n),t.setState(N)),!0}function A(e){var n=e.char();return o(n)?(this._temporaryBuffer=n,t.setState(O)):(t._emitToken({type:"Characters",data:"</"}),e.unget(n),t.setState(N)),!0}function O(e){var r=t._currentToken&&t._currentToken.name===this._temporaryBuffer.toLowerCase(),i=e.char();return s(i)&&r?(t._currentToken={type:"EndTag",name:"script",data:[],selfClosing:!1},t.setState(q)):i==="/"&&r?(t._currentToken={type:"EndTag",name:"script",data:[],selfClosing:!1},t.setState(K)):i===">"&&r?(t._currentToken={type:"EndTag",name:"script",data:[],selfClosing:!1},t.setState(n),t._emitCurrentToken()):o(i)?(this._temporaryBuffer+=i,e.commit()):(t._emitToken({type:"Characters",data:"</"+this._temporaryBuffer}),e.unget(i),t.setState(N)),!0}function M(e){var n=e.char();return s(n)||n==="/"||n===">"?(t._emitToken({type:"Characters",data:n}),this._temporaryBuffer.toLowerCase()==="script"?t.setState(_):t.setState(N)):o(n)?(t._emitToken({type:"Characters",data:n}),this._temporaryBuffer+=n,e.commit()):(e.unget(n),t.setState(N)),!0}function _(e){var i=e.char();return i===r.EOF?(t._parseError("eof-in-script"),e.unget(i),t.setState(n)):i==="-"?(t._emitToken({type:"Characters",data:"-"}),t.setState(D)):i==="<"?(t._emitToken({type:"Characters",data:"<"}),t.setState(H)):i==="\0"?(t._parseError("invalid-codepoint"),t._emitToken({type:"Characters",data:"\ufffd"}),e.commit()):(t._emitToken({type:"Characters",data:i}),e.commit()),!0}function D(e){var i=e.char();return i===r.EOF?(t._parseError("eof-in-script"),e.unget(i),t.setState(n)):i==="-"?(t._emitToken({type:"Characters",data:"-"}),t.setState(P)):i==="<"?(t._emitToken({type:"Characters",data:"<"}),t.setState(H)):i==="\0"?(t._parseError("invalid-codepoint"),t._emitToken({type:"Characters",data:"\ufffd"}),t.setState(_)):(t._emitToken({type:"Characters",data:i}),t.setState(_)),!0}function P(e){var i=e.char();return i===r.EOF?(t._parseError("eof-in-script"),e.unget(i),t.setState(n)):i==="-"?(t._emitToken({type:"Characters",data:"-"}),e.commit()):i==="<"?(t._emitToken({type:"Characters",data:"<"}),t.setState(H)):i===">"?(t._emitToken({type:"Characters",data:">"}),t.setState(p)):i==="\0"?(t._parseError("invalid-codepoint"),t._emitToken({type:"Characters",data:"\ufffd"}),t.setState(_)):(t._emitToken({type:"Characters",data:i}),t.setState(_)),!0}function H(e){var n=e.char();return n==="/"?(t._emitToken({type:"Characters",data:"/"}),this._temporaryBuffer="",t.setState(B)):(e.unget(n),t.setState(_)),!0}function B(e){var n=e.char();return s(n)||n==="/"||n===">"?(t._emitToken({type:"Characters",data:n}),this._temporaryBuffer.toLowerCase()==="script"?t.setState(N):t.setState(_)):o(n)?(t._emitToken({type:"Characters",data:n}),this._temporaryBuffer+=n,e.commit()):(e.unget(n),t.setState(_)),!0}function j(e){var i=e.char();return i===r.EOF?(t._parseError("bare-less-than-sign-at-eof"),t._emitToken({type:"Characters",data:"<"}),e.unget(i),t.setState(n)):o(i)?(t._currentToken={type:"StartTag",name:i.toLowerCase(),data:[]},t.setState(I)):i==="!"?t.setState(G):i==="/"?t.setState(F):i===">"?(t._parseError("expected-tag-name-but-got-right-bracket"),t._emitToken({type:"Characters",data:"<>"}),t.setState(n)):i==="?"?(t._parseError("expected-tag-name-but-got-question-mark"),e.unget(i),t.setState(Q)):(t._parseError("expected-tag-name"),t._emitToken({type:"Characters",data:"<"}),e.unget(i),t.setState(n)),!0}function F(e){var i=e.char();return i===r.EOF?(t._parseError("expected-closing-tag-but-got-eof"),t._emitToken({type:"Characters",data:"</"}),e.unget(i),t.setState(n)):o(i)?(t._currentToken={type:"EndTag",name:i.toLowerCase(),data:[]},t.setState(I)):i===">"?(t._parseError("expected-closing-tag-but-got-right-bracket"),t.setState(n)):(t._parseError("expected-closing-tag-but-got-char",{data:i}),e.unget(i),t.setState(Q)),!0}function I(e){var i=e.char();return i===r.EOF?(t._parseError("eof-in-tag-name"),e.unget(i),t.setState(n)):s(i)?t.setState(q):o(i)?t._currentToken.name+=i.toLowerCase():i===">"?t._emitCurrentToken():i==="/"?t.setState(K):i==="\0"?(t._parseError("invalid-codepoint"),t._currentToken.name+="\ufffd"):t._currentToken.name+=i,e.commit(),!0}function q(e){var i=e.char();if(i===r.EOF)t._parseError("expected-attribute-name-but-got-eof"),e.unget(i),t.setState(n);else{if(s(i))return!0;o(i)?(t._currentToken.data.push({nodeName:i.toLowerCase(),nodeValue:""}),t.setState(R)):i===">"?t._emitCurrentToken():i==="/"?t.setState(K):i==="'"||i==='"'||i==="="||i==="<"?(t._parseError("invalid-character-in-attribute-name"),t._currentToken.data.push({nodeName:i,nodeValue:""}),t.setState(R)):i==="\0"?(t._parseError("invalid-codepoint"),t._currentToken.data.push({nodeName:"\ufffd",nodeValue:""})):(t._currentToken.data.push({nodeName:i,nodeValue:""}),t.setState(R))}return!0}function R(e){var i=e.char(),u=!0,a=!1;i===r.EOF?(t._parseError("eof-in-attribute-name"),e.unget(i),t.setState(n),a=!0):i==="="?t.setState(z):o(i)?(t._currentAttribute().nodeName+=i.toLowerCase(),u=!1):i===">"?a=!0:s(i)?t.setState(U):i==="/"?t.setState(K):i==="'"||i==='"'?(t._parseError("invalid-character-in-attribute-name"),t._currentAttribute().nodeName+=i,u=!1):i==="\0"?(t._parseError("invalid-codepoint"),t._currentAttribute().nodeName+="\ufffd"):(t._currentAttribute().nodeName+=i,u=!1);if(u){var f=t._currentToken.data,l=f[f.length-1];for(var c=f.length-2;c>=0;c--)if(l.nodeName===f[c].nodeName){t._parseError("duplicate-attribute",{name:l.nodeName}),l.nodeName=null;break}a&&t._emitCurrentToken()}else e.commit();return!0}function U(e){var i=e.char();if(i===r.EOF)t._parseError("expected-end-of-tag-but-got-eof"),e.unget(i),t.setState(n);else{if(s(i))return!0;i==="="?t.setState(z):i===">"?t._emitCurrentToken():o(i)?(t._currentToken.data.push({nodeName:i,nodeValue:""}),t.setState(R)):i==="/"?t.setState(K):i==="'"||i==='"'||i==="<"?(t._parseError("invalid-character-after-attribute-name"),t._currentToken.data.push({nodeName:i,nodeValue:""}),t.setState(R)):i==="\0"?(t._parseError("invalid-codepoint"),t._currentToken.data.push({nodeName:"\ufffd",nodeValue:""})):(t._currentToken.data.push({nodeName:i,nodeValue:""}),t.setState(R))}return!0}function z(e){var i=e.char();if(i===r.EOF)t._parseError("expected-attribute-value-but-got-eof"),e.unget(i),t.setState(n);else{if(s(i))return!0;i==='"'?t.setState(W):i==="&"?(t.setState(V),e.unget(i)):i==="'"?t.setState(X):i===">"?(t._parseError("expected-attribute-value-but-got-right-bracket"),t._emitCurrentToken()):i==="="||i==="<"||i==="`"?(t._parseError("unexpected-character-in-unquoted-attribute-value"),t._currentAttribute().nodeValue+=i,t.setState(V)):i==="\0"?(t._parseError("invalid-codepoint"),t._currentAttribute().nodeValue+="\ufffd"):(t._currentAttribute().nodeValue+=i,t.setState(V))}return!0}function W(e){var i=e.char();if(i===r.EOF)t._parseError("eof-in-attribute-value-double-quote"),e.unget(i),t.setState(n);else if(i==='"')t.setState(J);else if(i==="&")this._additionalAllowedCharacter='"',t.setState($);else if(i==="\0")t._parseError("invalid-codepoint"),t._currentAttribute().nodeValue+="\ufffd";else{var s=e.matchUntil('[\0"&]');i+=s,t._currentAttribute().nodeValue+=i}return!0}function X(e){var i=e.char();return i===r.EOF?(t._parseError("eof-in-attribute-value-single-quote"),e.unget(i),t.setState(n)):i==="'"?t.setState(J):i==="&"?(this._additionalAllowedCharacter="'",t.setState($)):i==="\0"?(t._parseError("invalid-codepoint"),t._currentAttribute().nodeValue+="\ufffd"):t._currentAttribute().nodeValue+=i+e.matchUntil("\0|['&]"),!0}function V(e){var i=e.char();if(i===r.EOF)t._parseError("eof-after-attribute-value"),e.unget(i),t.setState(n);else if(s(i))t.setState(q);else if(i==="&")this._additionalAllowedCharacter=">",t.setState($);else if(i===">")t._emitCurrentToken();else if(i==='"'||i==="'"||i==="="||i==="`"||i==="<")t._parseError("unexpected-character-in-unquoted-attribute-value"),t._currentAttribute().nodeValue+=i,e.commit();else if(i==="\0")t._parseError("invalid-codepoint"),t._currentAttribute().nodeValue+="\ufffd";else{var o=e.matchUntil("\0|[	\n\x0b\f \r&<>\"'=`]");o===r.EOF&&(t._parseError("eof-in-attribute-value-no-quotes"),t._emitCurrentToken()),e.commit(),t._currentAttribute().nodeValue+=i+o}return!0}function $(e){var n=i.consumeEntity(e,t,this._additionalAllowedCharacter);return this._currentAttribute().nodeValue+=n||"&",this._additionalAllowedCharacter==='"'?t.setState(W):this._additionalAllowedCharacter==="'"?t.setState(X):this._additionalAllowedCharacter===">"&&t.setState(V),!0}function J(e){var i=e.char();return i===r.EOF?(t._parseError("eof-after-attribute-value"),e.unget(i),t.setState(n)):s(i)?t.setState(q):i===">"?(t.setState(n),t._emitCurrentToken()):i==="/"?t.setState(K):(t._parseError("unexpected-character-after-attribute-value"),e.unget(i),t.setState(q)),!0}function K(e){var i=e.char();return i===r.EOF?(t._parseError("unexpected-eof-after-solidus-in-tag"),e.unget(i),t.setState(n)):i===">"?(t._currentToken.selfClosing=!0,t.setState(n),t._emitCurrentToken()):(t._parseError("unexpected-character-after-solidus-in-tag"),e.unget(i),t.setState(q)),!0}function Q(e){var r=e.matchUntil(">");return r=r.replace(/\u0000/g,"\ufffd"),e.char(),t._emitToken({type:"Comment",data:r}),t.setState(n),!0}function G(e){var n=e.shift(2);if(n==="--")t._currentToken={type:"Comment",data:""},t.setState(Z);else{var i=e.shift(5);if(i===r.EOF||n===r.EOF)return t._parseError("expected-dashes-or-doctype"),t.setState(Q),e.unget(n),!0;n+=i,n.toUpperCase()==="DOCTYPE"?(t._currentToken={type:"Doctype",name:"",publicId:null,systemId:null,forceQuirks:!1},t.setState(st)):t._tokenHandler.isCdataSectionAllowed()&&n==="[CDATA["?t.setState(Y):(t._parseError("expected-dashes-or-doctype"),e.unget(n),t.setState(Q))}return!0}function Y(e){var r=e.matchUntil("]]>");return e.shift(3),r&&t._emitToken({type:"Characters",data:r}),t.setState(n),!0}function Z(e){var i=e.char();return i===r.EOF?(t._parseError("eof-in-comment"),t._emitToken(t._currentToken),e.unget(i),t.setState(n)):i==="-"?t.setState(et):i===">"?(t._parseError("incorrect-comment"),t._emitToken(t._currentToken),t.setState(n)):i==="\0"?(t._parseError("invalid-codepoint"),t._currentToken.data+="\ufffd"):(t._currentToken.data+=i,t.setState(tt)),!0}function et(e){var i=e.char();return i===r.EOF?(t._parseError("eof-in-comment"),t._emitToken(t._currentToken),e.unget(i),t.setState(n)):i==="-"?t.setState(rt):i===">"?(t._parseError("incorrect-comment"),t._emitToken(t._currentToken),t.setState(n)):i==="\0"?(t._parseError("invalid-codepoint"),t._currentToken.data+="\ufffd"):(t._currentToken.data+="-"+i,t.setState(tt)),!0}function tt(e){var i=e.char();return i===r.EOF?(t._parseError("eof-in-comment"),t._emitToken(t._currentToken),e.unget(i),t.setState(n)):i==="-"?t.setState(nt):i==="\0"?(t._parseError("invalid-codepoint"),t._currentToken.data+="\ufffd"):(t._currentToken.data+=i,e.commit()),!0}function nt(e){var i=e.char();return i===r.EOF?(t._parseError("eof-in-comment-end-dash"),t._emitToken(t._currentToken),e.unget(i),t.setState(n)):i==="-"?t.setState(rt):i==="\0"?(t._parseError("invalid-codepoint"),t._currentToken.data+="-\ufffd",t.setState(tt)):(t._currentToken.data+="-"+i+e.matchUntil("\0|-"),e.char()),!0}function rt(e){var i=e.char();return i===r.EOF?(t._parseError("eof-in-comment-double-dash"),t._emitToken(t._currentToken),e.unget(i),t.setState(n)):i===">"?(t._emitToken(t._currentToken),t.setState(n)):i==="!"?(t._parseError("unexpected-bang-after-double-dash-in-comment"),t.setState(it)):i==="-"?(t._parseError("unexpected-dash-after-double-dash-in-comment"),t._currentToken.data+=i):i==="\0"?(t._parseError("invalid-codepoint"),t._currentToken.data+="--\ufffd",t.setState(tt)):(t._parseError("unexpected-char-in-comment"),t._currentToken.data+="--"+i,t.setState(tt)),!0}function it(e){var i=e.char();return i===r.EOF?(t._parseError("eof-in-comment-end-bang-state"),t._emitToken(t._currentToken),e.unget(i),t.setState(n)):i===">"?(t._emitToken(t._currentToken),t.setState(n)):i==="-"?(t._currentToken.data+="--!",t.setState(nt)):(t._currentToken.data+="--!"+i,t.setState(tt)),!0}function st(e){var i=e.char();return i===r.EOF?(t._parseError("expected-doctype-name-but-got-eof"),t._currentToken.forceQuirks=!0,e.unget(i),t.setState(n),t._emitCurrentToken()):s(i)?t.setState(ot):(t._parseError("need-space-after-doctype"),e.unget(i),t.setState(ot)),!0}function ot(e){var i=e.char();return i===r.EOF?(t._parseError("expected-doctype-name-but-got-eof"),t._currentToken.forceQuirks=!0,e.unget(i),t.setState(n),t._emitCurrentToken()):s(i)||(i===">"?(t._parseError("expected-doctype-name-but-got-right-bracket"),t._currentToken.forceQuirks=!0,t.setState(n),t._emitCurrentToken()):(o(i)&&(i=i.toLowerCase()),t._currentToken.name=i,t.setState(ut))),!0}function ut(e){var i=e.char();return i===r.EOF?(t._currentToken.forceQuirks=!0,e.unget(i),t._parseError("eof-in-doctype-name"),t.setState(n),t._emitCurrentToken()):s(i)?t.setState(at):i===">"?(t.setState(n),t._emitCurrentToken()):(o(i)&&(i=i.toLowerCase()),t._currentToken.name+=i,e.commit()),!0}function at(e){var i=e.char();if(i===r.EOF)t._currentToken.forceQuirks=!0,e.unget(i),t._parseError("eof-in-doctype"),t.setState(n),t._emitCurrentToken();else if(!s(i))if(i===">")t.setState(n),t._emitCurrentToken();else{if(["p","P"].indexOf(i)>-1){var o=[["u","U"],["b","B"],["l","L"],["i","I"],["c","C"]],u=o.every(function(t){return i=e.char(),t.indexOf(i)>-1});if(u)return t.setState(ft),!0}else if(["s","S"].indexOf(i)>-1){var o=[["y","Y"],["s","S"],["t","T"],["e","E"],["m","M"]],u=o.every(function(t){return i=e.char(),t.indexOf(i)>-1});if(u)return t.setState(vt),!0}e.unget(i),t._currentToken.forceQuirks=!0,i===r.EOF?(t._parseError("eof-in-doctype"),e.unget(i),t.setState(n),t._emitCurrentToken()):(t._parseError("expected-space-or-right-bracket-in-doctype",{data:i}),t.setState(wt))}return!0}function ft(e){var i=e.char();return i===r.EOF?(t._parseError("eof-in-doctype"),t._currentToken.forceQuirks=!0,e.unget(i),t.setState(n),t._emitCurrentToken()):s(i)?t.setState(lt):i==="'"||i==='"'?(t._parseError("unexpected-char-in-doctype"),e.unget(i),t.setState(lt)):(e.unget(i),t.setState(lt)),!0}function lt(e){var i=e.char();return i===r.EOF?(t._parseError("eof-in-doctype"),t._currentToken.forceQuirks=!0,e.unget(i),t.setState(n),t._emitCurrentToken()):s(i)||(i==='"'?(t._currentToken.publicId="",t.setState(ct)):i==="'"?(t._currentToken.publicId="",t.setState(ht)):i===">"?(t._parseError("unexpected-end-of-doctype"),t._currentToken.forceQuirks=!0,t.setState(n),t._emitCurrentToken()):(t._parseError("unexpected-char-in-doctype"),t._currentToken.forceQuirks=!0,t.setState(wt))),!0}function ct(e){var i=e.char();return i===r.EOF?(t._parseError("eof-in-doctype"),t._currentToken.forceQuirks=!0,e.unget(i),t.setState(n),t._emitCurrentToken()):i==='"'?t.setState(pt):i===">"?(t._parseError("unexpected-end-of-doctype"),t._currentToken.forceQuirks=!0,t.setState(n),t._emitCurrentToken()):t._currentToken.publicId+=i,!0}function ht(e){var i=e.char();return i===r.EOF?(t._parseError("eof-in-doctype"),t._currentToken.forceQuirks=!0,e.unget(i),t.setState(n),t._emitCurrentToken()):i==="'"?t.setState(pt):i===">"?(t._parseError("unexpected-end-of-doctype"),t._currentToken.forceQuirks=!0,t.setState(n),t._emitCurrentToken()):t._currentToken.publicId+=i,!0}function pt(e){var i=e.char();return i===r.EOF?(t._parseError("eof-in-doctype"),t._currentToken.forceQuirks=!0,t._emitCurrentToken(),e.unget(i),t.setState(n)):s(i)?t.setState(dt):i===">"?(t.setState(n),t._emitCurrentToken()):i==='"'?(t._parseError("unexpected-char-in-doctype"),t._currentToken.systemId="",t.setState(gt)):i==="'"?(t._parseError("unexpected-char-in-doctype"),t._currentToken.systemId="",t.setState(yt)):(t._parseError("unexpected-char-in-doctype"),t._currentToken.forceQuirks=!0,t.setState(wt)),!0}function dt(e){var i=e.char();return i===r.EOF?(t._parseError("eof-in-doctype"),t._currentToken.forceQuirks=!0,t._emitCurrentToken(),e.unget(i),t.setState(n)):s(i)||(i===">"?(t._emitCurrentToken(),t.setState(n)):i==='"'?(t._currentToken.systemId="",t.setState(gt)):i==="'"?(t._currentToken.systemId="",t.setState(yt)):(t._parseError("unexpected-char-in-doctype"),t._currentToken.forceQuirks=!0,t.setState(wt))),!0}function vt(e){var i=e.char();return i===r.EOF?(t._parseError("eof-in-doctype"),t._currentToken.forceQuirks=!0,t._emitCurrentToken(),e.unget(i),t.setState(n)):s(i)?t.setState(mt):i==="'"||i==='"'?(t._parseError("unexpected-char-in-doctype"),e.unget(i),t.setState(mt)):(e.unget(i),t.setState(mt)),!0}function mt(e){var i=e.char();return i===r.EOF?(t._parseError("eof-in-doctype"),t._currentToken.forceQuirks=!0,t._emitCurrentToken(),e.unget(i),t.setState(n)):s(i)||(i==='"'?(t._currentToken.systemId="",t.setState(gt)):i==="'"?(t._currentToken.systemId="",t.setState(yt)):i===">"?(t._parseError("unexpected-end-of-doctype"),t._currentToken.forceQuirks=!0,t._emitCurrentToken(),t.setState(n)):(t._parseError("unexpected-char-in-doctype"),t._currentToken.forceQuirks=!0,t.setState(wt))),!0}function gt(e){var i=e.char();return i===r.EOF?(t._parseError("eof-in-doctype"),t._currentToken.forceQuirks=!0,t._emitCurrentToken(),e.unget(i),t.setState(n)):i==='"'?t.setState(bt):i===">"?(t._parseError("unexpected-end-of-doctype"),t._currentToken.forceQuirks=!0,t._emitCurrentToken(),t.setState(n)):t._currentToken.systemId+=i,!0}function yt(e){var i=e.char();return i===r.EOF?(t._parseError("eof-in-doctype"),t._currentToken.forceQuirks=!0,t._emitCurrentToken(),e.unget(i),t.setState(n)):i==="'"?t.setState(bt):i===">"?(t._parseError("unexpected-end-of-doctype"),t._currentToken.forceQuirks=!0,t._emitCurrentToken(),t.setState(n)):t._currentToken.systemId+=i,!0}function bt(e){var i=e.char();return i===r.EOF?(t._parseError("eof-in-doctype"),t._currentToken.forceQuirks=!0,t._emitCurrentToken(),e.unget(i),t.setState(n)):s(i)||(i===">"?(t._emitCurrentToken(),t.setState(n)):(t._parseError("unexpected-char-in-doctype"),t.setState(wt))),!0}function wt(e){var i=e.char();return i===r.EOF?(e.unget(i),t._emitCurrentToken(),t.setState(n)):i===">"&&(t._emitCurrentToken(),t.setState(n)),!0}u.DATA=n,u.RCDATA=f,u.RAWTEXT=c,u.SCRIPT_DATA=p,u.PLAINTEXT=h,this._state=u.DATA,this._inputStream.append(e),this._tokenHandler.startTokenization(this),this._inputStream.eof=!0;var t=this;while(this._state.call(this,this._inputStream));},Object.defineProperty(u.prototype,"lineNumber",{get:function(){return this._inputStream.location().line}}),Object.defineProperty(u.prototype,"columnNumber",{get:function(){return this._inputStream.location().column}}),n.Tokenizer=u},{"./EntityParser":2,"./InputStream":3}],6:[function(e,t,n){function c(e){return e===" "||e==="\n"||e==="	"||e==="\r"||e==="\f"}function h(e){return c(e)||e==="\ufffd"}function p(e){for(var t=0;t<e.length;t++){var n=e[t];if(!c(n))return!1}return!0}function d(e){for(var t=0;t<e.length;t++){var n=e[t];if(!h(n))return!1}return!0}function v(e,t){for(var n=0;n<e.attributes.length;n++){var r=e.attributes[n];if(r.nodeName===t)return r}return null}function m(e){this.characters=e,this.current=0,this.end=this.characters.length}function g(){this.tokenizer=null,this.errorHandler=null,this.scriptingEnabled=!1,this.document=null,this.head=null,this.form=null,this.openElements=new a,this.activeFormattingElements=[],this.insertionMode=null,this.insertionModeName="",this.originalInsertionMode="",this.inQuirksMode=!1,this.compatMode="no quirks",this.framesetOk=!0,this.redirectAttachToFosterParent=!1,this.selfClosingFlagAcknowledged=!1,this.context="",this.pendingTableCharacters=[],this.shouldSkipLeadingNewline=!1;var e=this,t=this.insertionModes={};t.base={end_tag_handlers:{"-default":"endTagOther"},start_tag_handlers:{"-default":"startTagOther"},processEOF:function(){e.generateImpliedEndTags(),e.openElements.length>2?e.parseError("expected-closing-tag-but-got-eof"):e.openElements.length==2&&e.openElements.item(1).localName!="body"?e.parseError("expected-closing-tag-but-got-eof"):e.context&&e.openElements.length>1},processComment:function(t){e.insertComment(t,e.currentStackItem().node)},processDoctype:function(t,n,r,i){e.parseError("unexpected-doctype")},processStartTag:function(e,t,n){if(this[this.start_tag_handlers[e]])this[this.start_tag_handlers[e]](e,t,n);else{if(!this[this.start_tag_handlers["-default"]])throw new Error("No handler found for "+e);this[this.start_tag_handlers["-default"]](e,t,n)}},processEndTag:function(e){if(this[this.end_tag_handlers[e]])this[this.end_tag_handlers[e]](e);else{if(!this[this.end_tag_handlers["-default"]])throw new Error("No handler found for "+e);this[this.end_tag_handlers["-default"]](e)}},startTagHtml:function(e,n){t.inBody.startTagHtml(e,n)}},t.initial=Object.create(t.base),t.initial.processEOF=function(){e.parseError("expected-doctype-but-got-eof"),this.anythingElse(),e.insertionMode.processEOF()},t.initial.processComment=function(t){e.insertComment(t,e.document)},t.initial.processDoctype=function(t,n,r,i){function s(e){return n.toLowerCase().indexOf(e)===0}e.insertDoctype(t||"",n||"",r||""),i||t!="html"||n!=null&&(["+//silmaril//dtd html pro v0r11 19970101//","-//advasoft ltd//dtd html 3.0 aswedit + extensions//","-//as//dtd html 3.0 aswedit + extensions//","-//ietf//dtd html 2.0 level 1//","-//ietf//dtd html 2.0 level 2//","-//ietf//dtd html 2.0 strict level 1//","-//ietf//dtd html 2.0 strict level 2//","-//ietf//dtd html 2.0 strict//","-//ietf//dtd html 2.0//","-//ietf//dtd html 2.1e//","-//ietf//dtd html 3.0//","-//ietf//dtd html 3.0//","-//ietf//dtd html 3.2 final//","-//ietf//dtd html 3.2//","-//ietf//dtd html 3//","-//ietf//dtd html level 0//","-//ietf//dtd html level 0//","-//ietf//dtd html level 1//","-//ietf//dtd html level 1//","-//ietf//dtd html level 2//","-//ietf//dtd html level 2//","-//ietf//dtd html level 3//","-//ietf//dtd html level 3//","-//ietf//dtd html strict level 0//","-//ietf//dtd html strict level 0//","-//ietf//dtd html strict level 1//","-//ietf//dtd html strict level 1//","-//ietf//dtd html strict level 2//","-//ietf//dtd html strict level 2//","-//ietf//dtd html strict level 3//","-//ietf//dtd html strict level 3//","-//ietf//dtd html strict//","-//ietf//dtd html strict//","-//ietf//dtd html strict//","-//ietf//dtd html//","-//ietf//dtd html//","-//ietf//dtd html//","-//metrius//dtd metrius presentational//","-//microsoft//dtd internet explorer 2.0 html strict//","-//microsoft//dtd internet explorer 2.0 html//","-//microsoft//dtd internet explorer 2.0 tables//","-//microsoft//dtd internet explorer 3.0 html strict//","-//microsoft//dtd internet explorer 3.0 html//","-//microsoft//dtd internet explorer 3.0 tables//","-//netscape comm. corp.//dtd html//","-//netscape comm. corp.//dtd strict html//","-//o'reilly and associates//dtd html 2.0//","-//o'reilly and associates//dtd html extended 1.0//","-//spyglass//dtd html 2.0 extended//","-//sq//dtd html 2.0 hotmetal + extensions//","-//sun microsystems corp.//dtd hotjava html//","-//sun microsystems corp.//dtd hotjava strict html//","-//w3c//dtd html 3 1995-03-24//","-//w3c//dtd html 3.2 draft//","-//w3c//dtd html 3.2 final//","-//w3c//dtd html 3.2//","-//w3c//dtd html 3.2s draft//","-//w3c//dtd html 4.0 frameset//","-//w3c//dtd html 4.0 transitional//","-//w3c//dtd html experimental 19960712//","-//w3c//dtd html experimental 970421//","-//w3c//dtd w3 html//","-//w3o//dtd w3 html 3.0//","-//webtechs//dtd mozilla html 2.0//","-//webtechs//dtd mozilla html//","html"].some(s)||["-//w3o//dtd w3 html strict 3.0//en//","-/w3c/dtd html 4.0 transitional/en","html"].indexOf(n.toLowerCase())>-1||r==null&&["-//w3c//dtd html 4.01 transitional//","-//w3c//dtd html 4.01 frameset//"].some(s))||r!=null&&r.toLowerCase()=="http://www.ibm.com/data/dtd/v11/ibmxhtml1-transitional.dtd"?(e.compatMode="quirks",e.parseError("quirky-doctype")):n!=null&&(["-//w3c//dtd xhtml 1.0 transitional//","-//w3c//dtd xhtml 1.0 frameset//"].some(s)||r!=null&&["-//w3c//dtd html 4.01 transitional//","-//w3c//dtd html 4.01 frameset//"].indexOf(n.toLowerCase())>-1)?(e.compatMode="limited quirks",e.parseError("almost-standards-doctype")):n=="-//W3C//DTD HTML 4.0//EN"&&(r==null||r=="http://www.w3.org/TR/REC-html40/strict.dtd")||n=="-//W3C//DTD HTML 4.01//EN"&&(r==null||r=="http://www.w3.org/TR/html4/strict.dtd")||n=="-//W3C//DTD XHTML 1.0 Strict//EN"&&r=="http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"||n=="-//W3C//DTD XHTML 1.1//EN"&&r=="http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd"||(r!=null&&r!="about:legacy-compat"||n!=null)&&e.parseError("unknown-doctype"),e.setInsertionMode("beforeHTML")},t.initial.processCharacters=function(t){t.skipLeadingWhitespace();if(!t.length)return;e.parseError("expected-doctype-but-got-chars"),this.anythingElse(),e.insertionMode.processCharacters(t)},t.initial.processStartTag=function(t,n,r){e.parseError("expected-doctype-but-got-start-tag",{name:t}),this.anythingElse(),e.insertionMode.processStartTag(t,n,r)},t.initial.processEndTag=function(t){e.parseError("expected-doctype-but-got-end-tag",{name:t}),this.anythingElse(),e.insertionMode.processEndTag(t)},t.initial.anythingElse=function(){e.compatMode="quirks",e.setInsertionMode("beforeHTML")},t.beforeHTML=Object.create(t.base),t.beforeHTML.start_tag_handlers={html:"startTagHtml","-default":"startTagOther"},t.beforeHTML.processEOF=function(){this.anythingElse(),e.insertionMode.processEOF()},t.beforeHTML.processComment=function(t){e.insertComment(t,e.document)},t.beforeHTML.processCharacters=function(t){t.skipLeadingWhitespace();if(!t.length)return;this.anythingElse(),e.insertionMode.processCharacters(t)},t.beforeHTML.startTagHtml=function(t,n,r){e.insertHtmlElement(n),e.setInsertionMode("beforeHead")},t.beforeHTML.startTagOther=function(t,n,r){this.anythingElse(),e.insertionMode.processStartTag(t,n,r)},t.beforeHTML.processEndTag=function(t){this.anythingElse(),e.insertionMode.processEndTag(t)},t.beforeHTML.anythingElse=function(){e.insertHtmlElement(),e.setInsertionMode("beforeHead")},t.afterAfterBody=Object.create(t.base),t.afterAfterBody.start_tag_handlers={html:"startTagHtml","-default":"startTagOther"},t.afterAfterBody.processComment=function(t){e.insertComment(t,e.document)},t.afterAfterBody.processDoctype=function(e){t.inBody.processDoctype(e)},t.afterAfterBody.startTagHtml=function(e,n){t.inBody.startTagHtml(e,n)},t.afterAfterBody.startTagOther=function(t,n,r){e.parseError("unexpected-start-tag",{name:t}),e.setInsertionMode("inBody"),e.insertionMode.processStartTag(t,n,r)},t.afterAfterBody.endTagOther=function(t){e.parseError("unexpected-end-tag",{name:t}),e.setInsertionMode("inBody"),e.insertionMode.processEndTag(t)},t.afterAfterBody.processCharacters=function(n){if(!p(n.characters))return e.parseError("unexpected-char-after-body"),e.setInsertionMode("inBody"),e.insertionMode.processCharacters(n);t.inBody.processCharacters(n)},t.afterBody=Object.create(t.base),t.afterBody.end_tag_handlers={html:"endTagHtml","-default":"endTagOther"},t.afterBody.processComment=function(t){e.insertComment(t,e.openElements.rootNode)},t.afterBody.processCharacters=function(n){if(!p(n.characters))return e.parseError("unexpected-char-after-body"),e.setInsertionMode("inBody"),e.insertionMode.processCharacters(n);t.inBody.processCharacters(n)},t.afterBody.processStartTag=function(t,n,r){e.parseError("unexpected-start-tag-after-body",{name:t}),e.setInsertionMode("inBody"),e.insertionMode.processStartTag(t,n,r)},t.afterBody.endTagHtml=function(t){e.context?e.parseError("end-html-in-innerhtml"):e.setInsertionMode("afterAfterBody")},t.afterBody.endTagOther=function(t){e.parseError("unexpected-end-tag-after-body",{name:t}),e.setInsertionMode("inBody"),e.insertionMode.processEndTag(t)},t.afterFrameset=Object.create(t.base),t.afterFrameset.start_tag_handlers={html:"startTagHtml",noframes:"startTagNoframes","-default":"startTagOther"},t.afterFrameset.end_tag_handlers={html:"endTagHtml","-default":"endTagOther"},t.afterFrameset.processCharacters=function(t){var n=t.takeRemaining(),r="";for(var i=0;i<n.length;i++){var s=n[i];c(s)&&(r+=s)}r&&e.insertText(r),r.length<n.length&&e.parseError("expected-eof-but-got-char")},t.afterFrameset.startTagNoframes=function(e,n){t.inHead.processStartTag(e,n)},t.afterFrameset.startTagOther=function(t,n){e.parseError("unexpected-start-tag-after-frameset",{name:t})},t.afterFrameset.endTagHtml=function(t){e.setInsertionMode("afterAfterFrameset")},t.afterFrameset.endTagOther=function(t){e.parseError("unexpected-end-tag-after-frameset",{name:t})},t.beforeHead=Object.create(t.base),t.beforeHead.start_tag_handlers={html:"startTagHtml",head:"startTagHead","-default":"startTagOther"},t.beforeHead.end_tag_handlers={html:"endTagImplyHead",head:"endTagImplyHead",body:"endTagImplyHead",br:"endTagImplyHead","-default":"endTagOther"},t.beforeHead.processEOF=function(){this.startTagHead("head",[]),e.insertionMode.processEOF()},t.beforeHead.processCharacters=function(t){t.skipLeadingWhitespace();if(!t.length)return;this.startTagHead("head",[]),e.insertionMode.processCharacters(t)},t.beforeHead.startTagHead=function(t,n){e.insertHeadElement(n),e.setInsertionMode("inHead")},t.beforeHead.startTagOther=function(t,n,r){this.startTagHead("head",[]),e.insertionMode.processStartTag(t,n,r)},t.beforeHead.endTagImplyHead=function(t){this.startTagHead("head",[]),e.insertionMode.processEndTag(t)},t.beforeHead.endTagOther=function(t){e.parseError("end-tag-after-implied-root",{name:t})},t.inHead=Object.create(t.base),t.inHead.start_tag_handlers={html:"startTagHtml",head:"startTagHead",title:"startTagTitle",script:"startTagScript",style:"startTagNoFramesStyle",noscript:"startTagNoScript",noframes:"startTagNoFramesStyle",base:"startTagBaseBasefontBgsoundLink",basefont:"startTagBaseBasefontBgsoundLink",bgsound:"startTagBaseBasefontBgsoundLink",link:"startTagBaseBasefontBgsoundLink",meta:"startTagMeta","-default":"startTagOther"},t.inHead.end_tag_handlers={head:"endTagHead",html:"endTagHtmlBodyBr",body:"endTagHtmlBodyBr",br:"endTagHtmlBodyBr","-default":"endTagOther"},t.inHead.processEOF=function(){var t=e.currentStackItem().localName;["title","style","script"].indexOf(t)!=-1&&(e.parseError("expected-named-closing-tag-but-got-eof",{name:t}),e.popElement()),this.anythingElse(),e.insertionMode.processEOF()},t.inHead.processCharacters=function(t){var n=t.takeLeadingWhitespace();n&&e.insertText(n);if(!t.length)return;this.anythingElse(),e.insertionMode.processCharacters(t)},t.inHead.startTagHtml=function(e,n){t.inBody.processStartTag(e,n)},t.inHead.startTagHead=function(t,n){e.parseError("two-heads-are-not-better-than-one")},t.inHead.startTagTitle=function(t,n){e.processGenericRCDATAStartTag(t,n)},t.inHead.startTagNoScript=function(t,n){if(e.scriptingEnabled)return e.processGenericRawTextStartTag(t,n);e.insertElement(t,n),e.setInsertionMode("inHeadNoscript")},t.inHead.startTagNoFramesStyle=function(t,n){e.processGenericRawTextStartTag(t,n)},t.inHead.startTagScript=function(t,n){e.insertElement(t,n),e.tokenizer.setState(u.SCRIPT_DATA),e.originalInsertionMode=e.insertionModeName,e.setInsertionMode("text")},t.inHead.startTagBaseBasefontBgsoundLink=function(t,n){e.insertSelfClosingElement(t,n)},t.inHead.startTagMeta=function(t,n){e.insertSelfClosingElement(t,n)},t.inHead.startTagOther=function(t,n,r){this.anythingElse(),e.insertionMode.processStartTag(t,n,r)},t.inHead.endTagHead=function(t){e.openElements.item(e.openElements.length-1).localName=="head"?e.openElements.pop():e.parseError("unexpected-end-tag",{name:"head"}),e.setInsertionMode("afterHead")},t.inHead.endTagHtmlBodyBr=function(t){this.anythingElse(),e.insertionMode.processEndTag(t)},t.inHead.endTagOther=function(t){e.parseError("unexpected-end-tag",{name:t})},t.inHead.anythingElse=function(){this.endTagHead("head")},t.afterHead=Object.create(t.base),t.afterHead.start_tag_handlers={html:"startTagHtml",head:"startTagHead",body:"startTagBody",frameset:"startTagFrameset",base:"startTagFromHead",link:"startTagFromHead",meta:"startTagFromHead",script:"startTagFromHead",style:"startTagFromHead",title:"startTagFromHead","-default":"startTagOther"},t.afterHead.end_tag_handlers={body:"endTagBodyHtmlBr",html:"endTagBodyHtmlBr",br:"endTagBodyHtmlBr","-default":"endTagOther"},t.afterHead.processEOF=function(){this.anythingElse(),e.insertionMode.processEOF()},t.afterHead.processCharacters=function(t){var n=t.takeLeadingWhitespace();n&&e.insertText(n);if(!t.length)return;this.anythingElse(),e.insertionMode.processCharacters(t)},t.afterHead.startTagHtml=function(e,n){t.inBody.processStartTag(e,n)},t.afterHead.startTagBody=function(t,n){e.framesetOk=!1,e.insertBodyElement(n),e.setInsertionMode("inBody")},t.afterHead.startTagFrameset=function(t,n){e.insertElement(t,n),e.setInsertionMode("inFrameset")},t.afterHead.startTagFromHead=function(n,r,i){e.parseError("unexpected-start-tag-out-of-my-head",{name:n}),e.openElements.push(e.head),t.inHead.processStartTag(n,r,i),e.openElements.remove(e.head)},t.afterHead.startTagHead=function(t,n,r){e.parseError("unexpected-start-tag",{name:t})},t.afterHead.startTagOther=function(t,n,r){this.anythingElse(),e.insertionMode.processStartTag(t,n,r)},t.afterHead.endTagBodyHtmlBr=function(t){this.anythingElse(),e.insertionMode.processEndTag(t)},t.afterHead.endTagOther=function(t){e.parseError("unexpected-end-tag",{name:t})},t.afterHead.anythingElse=function(){e.insertBodyElement([]),e.setInsertionMode("inBody"),e.framesetOk=!0},t.inBody=Object.create(t.base),t.inBody.start_tag_handlers={html:"startTagHtml",head:"startTagMisplaced",base:"startTagProcessInHead",basefont:"startTagProcessInHead",bgsound:"startTagProcessInHead",link:"startTagProcessInHead",meta:"startTagProcessInHead",noframes:"startTagProcessInHead",script:"startTagProcessInHead",style:"startTagProcessInHead",title:"startTagProcessInHead",body:"startTagBody",form:"startTagForm",plaintext:"startTagPlaintext",a:"startTagA",button:"startTagButton",xmp:"startTagXmp",table:"startTagTable",hr:"startTagHr",image:"startTagImage",input:"startTagInput",textarea:"startTagTextarea",select:"startTagSelect",isindex:"startTagIsindex",applet:"startTagAppletMarqueeObject",marquee:"startTagAppletMarqueeObject",object:"startTagAppletMarqueeObject",li:"startTagListItem",dd:"startTagListItem",dt:"startTagListItem",address:"startTagCloseP",article:"startTagCloseP",aside:"startTagCloseP",blockquote:"startTagCloseP",center:"startTagCloseP",details:"startTagCloseP",dir:"startTagCloseP",div:"startTagCloseP",dl:"startTagCloseP",fieldset:"startTagCloseP",figcaption:"startTagCloseP",figure:"startTagCloseP",footer:"startTagCloseP",header:"startTagCloseP",hgroup:"startTagCloseP",main:"startTagCloseP",menu:"startTagCloseP",nav:"startTagCloseP",ol:"startTagCloseP",p:"startTagCloseP",section:"startTagCloseP",summary:"startTagCloseP",ul:"startTagCloseP",listing:"startTagPreListing",pre:"startTagPreListing",b:"startTagFormatting",big:"startTagFormatting",code:"startTagFormatting",em:"startTagFormatting",font:"startTagFormatting",i:"startTagFormatting",s:"startTagFormatting",small:"startTagFormatting",strike:"startTagFormatting",strong:"startTagFormatting",tt:"startTagFormatting",u:"startTagFormatting",nobr:"startTagNobr",area:"startTagVoidFormatting",br:"startTagVoidFormatting",embed:"startTagVoidFormatting",img:"startTagVoidFormatting",keygen:"startTagVoidFormatting",wbr:"startTagVoidFormatting",param:"startTagParamSourceTrack",source:"startTagParamSourceTrack",track:"startTagParamSourceTrack",iframe:"startTagIFrame",noembed:"startTagRawText",noscript:"startTagRawText",h1:"startTagHeading",h2:"startTagHeading",h3:"startTagHeading",h4:"startTagHeading",h5:"startTagHeading",h6:"startTagHeading",caption:"startTagMisplaced",col:"startTagMisplaced",colgroup:"startTagMisplaced",frame:"startTagMisplaced",frameset:"startTagFrameset",tbody:"startTagMisplaced",td:"startTagMisplaced",tfoot:"startTagMisplaced",th:"startTagMisplaced",thead:"startTagMisplaced",tr:"startTagMisplaced",option:"startTagOptionOptgroup",optgroup:"startTagOptionOptgroup",math:"startTagMath",svg:"startTagSVG",rt:"startTagRpRt",rp:"startTagRpRt","-default":"startTagOther"},t.inBody.end_tag_handlers={p:"endTagP",body:"endTagBody",html:"endTagHtml",address:"endTagBlock",article:"endTagBlock",aside:"endTagBlock",blockquote:"endTagBlock",button:"endTagBlock",center:"endTagBlock",details:"endTagBlock",dir:"endTagBlock",div:"endTagBlock",dl:"endTagBlock",fieldset:"endTagBlock",figcaption:"endTagBlock",figure:"endTagBlock",footer:"endTagBlock",header:"endTagBlock",hgroup:"endTagBlock",listing:"endTagBlock",main:"endTagBlock",menu:"endTagBlock",nav:"endTagBlock",ol:"endTagBlock",pre:"endTagBlock",section:"endTagBlock",summary:"endTagBlock",ul:"endTagBlock",form:"endTagForm",applet:"endTagAppletMarqueeObject",marquee:"endTagAppletMarqueeObject",object:"endTagAppletMarqueeObject",dd:"endTagListItem",dt:"endTagListItem",li:"endTagListItem",h1:"endTagHeading",h2:"endTagHeading",h3:"endTagHeading",h4:"endTagHeading",h5:"endTagHeading",h6:"endTagHeading",a:"endTagFormatting",b:"endTagFormatting",big:"endTagFormatting",code:"endTagFormatting",em:"endTagFormatting",font:"endTagFormatting",i:"endTagFormatting",nobr:"endTagFormatting",s:"endTagFormatting",small:"endTagFormatting",strike:"endTagFormatting",strong:"endTagFormatting",tt:"endTagFormatting",u:"endTagFormatting",br:"endTagBr","-default":"endTagOther"},t.inBody.processCharacters=function(t){e.shouldSkipLeadingNewline&&(e.shouldSkipLeadingNewline=!1,t.skipAtMostOneLeadingNewline()),e.reconstructActiveFormattingElements();var n=t.takeRemaining();n=n.replace(/\u0000/g,function(t,n){return e.parseError("invalid-codepoint"),""});if(!n)return;e.insertText(n),e.framesetOk&&!d(n)&&(e.framesetOk=!1)},t.inBody.startTagHtml=function(t,n){e.parseError("non-html-root"),e.addAttributesToElement(e.openElements.rootNode,n)},t.inBody.startTagProcessInHead=function(e,n){t.inHead.processStartTag(e,n)},t.inBody.startTagBody=function(t,n){e.parseError("unexpected-start-tag",{name:"body"}),e.openElements.length==1||e.openElements.item(1).localName!="body"?r.ok(e.context):(e.framesetOk=!1,e.addAttributesToElement(e.openElements.bodyElement,n))},t.inBody.startTagFrameset=function(t,n){e.parseError("unexpected-start-tag",{name:"frameset"});if(e.openElements.length==1||e.openElements.item(1).localName!="body")r.ok(e.context);else if(e.framesetOk){e.detachFromParent(e.openElements.bodyElement);while(e.openElements.length>1)e.openElements.pop();e.insertElement(t,n),e.setInsertionMode("inFrameset")}},t.inBody.startTagCloseP=function(t,n){e.openElements.inButtonScope("p")&&this.endTagP("p"),e.insertElement(t,n)},t.inBody.startTagPreListing=function(t,n){e.openElements.inButtonScope("p")&&this.endTagP("p"),e.insertElement(t,n),e.framesetOk=!1,e.shouldSkipLeadingNewline=!0},t.inBody.startTagForm=function(t,n){e.form?e.parseError("unexpected-start-tag",{name:t}):(e.openElements.inButtonScope("p")&&this.endTagP("p"),e.insertElement(t,n),e.form=e.currentStackItem())},t.inBody.startTagRpRt=function(t,n){e.openElements.inScope("ruby")&&(e.generateImpliedEndTags(),e.currentStackItem().localName!="ruby"&&e.parseError("unexpected-start-tag",{name:t})),e.insertElement(t,n)},t.inBody.startTagListItem=function(t,n){var r={li:["li"],dd:["dd","dt"],dt:["dd","dt"]},i=r[t],s=e.openElements;for(var o=s.length-1;o>=0;o--){var u=s.item(o);if(i.indexOf(u.localName)!=-1){e.insertionMode.processEndTag(u.localName);break}if(u.isSpecial()&&u.localName!=="p"&&u.localName!=="address"&&u.localName!=="div")break}e.openElements.inButtonScope("p")&&this.endTagP("p"),e.insertElement(t,n),e.framesetOk=!1},t.inBody.startTagPlaintext=function(t,n){e.openElements.inButtonScope("p")&&this.endTagP("p"),e.insertElement(t,n),e.tokenizer.setState(u.PLAINTEXT)},t.inBody.startTagHeading=function(t,n){e.openElements.inButtonScope("p")&&this.endTagP("p"),e.currentStackItem().isNumberedHeader()&&(e.parseError("unexpected-start-tag",{name:t}),e.popElement()),e.insertElement(t,n)},t.inBody.startTagA=function(t,n){var r=e.elementInActiveFormattingElements("a");r&&(e.parseError("unexpected-start-tag-implies-end-tag",{startName:"a",endName:"a"}),e.adoptionAgencyEndTag("a"),e.openElements.contains(r)&&e.openElements.remove(r),e.removeElementFromActiveFormattingElements(r)),e.reconstructActiveFormattingElements(),e.insertFormattingElement(t,n)},t.inBody.startTagFormatting=function(t,n){e.reconstructActiveFormattingElements(),e.insertFormattingElement(t,n)},t.inBody.startTagNobr=function(t,n){e.reconstructActiveFormattingElements(),e.openElements.inScope("nobr")&&(e.parseError("unexpected-start-tag-implies-end-tag",{startName:"nobr",endName:"nobr"}),this.processEndTag("nobr"),e.reconstructActiveFormattingElements()),e.insertFormattingElement(t,n)},t.inBody.startTagButton=function(t,n){e.openElements.inScope("button")?(e.parseError("unexpected-start-tag-implies-end-tag",{startName:"button",endName:"button"}),this.processEndTag("button"),e.insertionMode.processStartTag(t,n)):(e.framesetOk=!1,e.reconstructActiveFormattingElements(),e.insertElement(t,n))},t.inBody.startTagAppletMarqueeObject=function(t,n){e.reconstructActiveFormattingElements(),e.insertElement(t,n),e.activeFormattingElements.push(l),e.framesetOk=!1},t.inBody.endTagAppletMarqueeObject=function(t){e.openElements.inScope(t)?(e.generateImpliedEndTags(),e.currentStackItem().localName!=t&&e.parseError("end-tag-too-early",{name:t}),e.openElements.popUntilPopped(t),e.clearActiveFormattingElements()):e.parseError("unexpected-end-tag",{name:t})},t.inBody.startTagXmp=function(t,n){e.openElements.inButtonScope("p")&&this.processEndTag("p"),e.reconstructActiveFormattingElements(),e.processGenericRawTextStartTag(t,n),e.framesetOk=!1},t.inBody.startTagTable=function(t,n){e.compatMode!=="quirks"&&e.openElements.inButtonScope("p")&&this.processEndTag("p"),e.insertElement(t,n),e.setInsertionMode("inTable"),e.framesetOk=!1},t.inBody.startTagVoidFormatting=function(t,n){e.reconstructActiveFormattingElements(),e.insertSelfClosingElement(t,n),e.framesetOk=!1},t.inBody.startTagParamSourceTrack=function(t,n){e.insertSelfClosingElement(t,n)},t.inBody.startTagHr=function(t,n){e.openElements.inButtonScope("p")&&this.endTagP("p"),e.insertSelfClosingElement(t,n),e.framesetOk=!1},t.inBody.startTagImage=function(t,n){e.parseError("unexpected-start-tag-treated-as",{originalName:"image",newName:"img"}),this.processStartTag("img",n)},t.inBody.startTagInput=function(t,n){var r=e.framesetOk;this.startTagVoidFormatting(t,n);for(var i in n)if(n[i].nodeName=="type"){n[i].nodeValue.toLowerCase()=="hidden"&&(e.framesetOk=r);break}},t.inBody.startTagIsindex=function(t,n){e.parseError("deprecated-tag",{name:"isindex"}),e.selfClosingFlagAcknowledged=!0;if(e.form)return;var r=[],i=[],s="This is a searchable index. Enter search keywords: ";for(var o in n)switch(n[o].nodeName){case"action":r.push({nodeName:"action",nodeValue:n[o].nodeValue});break;case"prompt":s=n[o].nodeValue;break;case"name":break;default:i.push({nodeName:n[o].nodeName,nodeValue:n[o].nodeValue})}i.push({nodeName:"name",nodeValue:"isindex"}),this.processStartTag("form",r),this.processStartTag("hr"),this.processStartTag("label"),this.processCharacters(new m(s)),this.processStartTag("input",i),this.processEndTag("label"),this.processStartTag("hr"),this.processEndTag("form")},t.inBody.startTagTextarea=function(t,n){e.insertElement(t,n),e.tokenizer.setState(u.RCDATA),e.originalInsertionMode=e.insertionModeName,e.shouldSkipLeadingNewline=!0,e.framesetOk=!1,e.setInsertionMode("text")},t.inBody.startTagIFrame=function(t,n){e.framesetOk=!1,this.startTagRawText(t,n)},t.inBody.startTagRawText=function(t,n){e.processGenericRawTextStartTag(t,n)},t.inBody.startTagSelect=function(t,n){e.reconstructActiveFormattingElements(),e.insertElement(t,n),e.framesetOk=!1;var r=e.insertionModeName;r=="inTable"||r=="inCaption"||r=="inColumnGroup"||r=="inTableBody"||r=="inRow"||r=="inCell"?e.setInsertionMode("inSelectInTable"):e.setInsertionMode("inSelect")},t.inBody.startTagMisplaced=function(t,n){e.parseError("unexpected-start-tag-ignored",{name:t})},t.inBody.endTagMisplaced=function(t){e.parseError("unexpected-end-tag",{name:t})},t.inBody.endTagBr=function(t){e.parseError("unexpected-end-tag-treated-as",{originalName:"br",newName:"br element"}),e.reconstructActiveFormattingElements(),e.insertElement(t,[]),e.popElement()},t.inBody.startTagOptionOptgroup=function(t,n){e.currentStackItem().localName=="option"&&e.popElement(),e.reconstructActiveFormattingElements(),e.insertElement(t,n)},t.inBody.startTagOther=function(t,n){e.reconstructActiveFormattingElements(),e.insertElement(t,n)},t.inBody.endTagOther=function(t){var n;for(var r=e.openElements.length-1;r>0;r--){n=e.openElements.item(r);if(n.localName==t){e.generateImpliedEndTags(t),e.currentStackItem().localName!=t&&e.parseError("unexpected-end-tag",{name:t}),e.openElements.remove_openElements_until(function(e){return e===n});break}if(n.isSpecial()){e.parseError("unexpected-end-tag",{name:t});break}}},t.inBody.startTagMath=function(t,n,r){e.reconstructActiveFormattingElements(),n=e.adjustMathMLAttributes(n),n=e.adjustForeignAttributes(n),e.insertForeignElement(t,n,"http://www.w3.org/1998/Math/MathML",r)},t.inBody.startTagSVG=function(t,n,r){e.reconstructActiveFormattingElements(),n=e.adjustSVGAttributes(n),n=e.adjustForeignAttributes(n),e.insertForeignElement(t,n,"http://www.w3.org/2000/svg",r)},t.inBody.endTagP=function(t){e.openElements.inButtonScope("p")?(e.generateImpliedEndTags("p"),e.currentStackItem().localName!="p"&&e.parseError("unexpected-implied-end-tag",{name:"p"}),e.openElements.popUntilPopped(t)):(e.parseError("unexpected-end-tag",{name:"p"}),this.startTagCloseP("p",[]),this.endTagP("p"))},t.inBody.endTagBody=function(t){if(!e.openElements.inScope("body")){e.parseError("unexpected-end-tag",{name:t});return}e.currentStackItem().localName!="body"&&e.parseError("expected-one-end-tag-but-got-another",{expectedName:e.currentStackItem().localName,gotName:t}),e.setInsertionMode("afterBody")},t.inBody.endTagHtml=function(t){if(!e.openElements.inScope("body")){e.parseError("unexpected-end-tag",{name:t});return}e.currentStackItem().localName!="body"&&e.parseError("expected-one-end-tag-but-got-another",{expectedName:e.currentStackItem().localName,gotName:t}),e.setInsertionMode("afterBody"),e.insertionMode.processEndTag(t)},t.inBody.endTagBlock=function(t){e.openElements.inScope(t)?(e.generateImpliedEndTags(),e.currentStackItem().localName!=t&&e.parseError("end-tag-too-early",{name:t}),e.openElements.popUntilPopped(t)):e.parseError("unexpected-end-tag",{name:t})},t.inBody.endTagForm=function(t){var n=e.form;e.form=null,!n||!e.openElements.inScope(t)?e.parseError("unexpected-end-tag",{name:t}):(e.generateImpliedEndTags(),e.currentStackItem()!=n&&e.parseError("end-tag-too-early-ignored",{name:"form"}),e.openElements.remove(n))},t.inBody.endTagListItem=function(t){e.openElements.inListItemScope(t)?(e.generateImpliedEndTags(t),e.currentStackItem().localName!=t&&e.parseError("end-tag-too-early",{name:t}),e.openElements.popUntilPopped(t)):e.parseError("unexpected-end-tag",{name:t})},t.inBody.endTagHeading=function(t){if(!e.openElements.hasNumberedHeaderElementInScope()){e.parseError("unexpected-end-tag",{name:t});return}e.generateImpliedEndTags(),e.currentStackItem().localName!=t&&e.parseError("end-tag-too-early",{name:t}),e.openElements.remove_openElements_until(function(e){return e.isNumberedHeader()})},t.inBody.endTagFormatting=function(t,n){e.adoptionAgencyEndTag(t)||this.endTagOther(t,n)},t.inCaption=Object.create(t.base),t.inCaption.start_tag_handlers={html:"startTagHtml",caption:"startTagTableElement",col:"startTagTableElement",colgroup:"startTagTableElement",tbody:"startTagTableElement",td:"startTagTableElement",tfoot:"startTagTableElement",thead:"startTagTableElement",tr:"startTagTableElement","-default":"startTagOther"},t.inCaption.end_tag_handlers={caption:"endTagCaption",table:"endTagTable",body:"endTagIgnore",col:"endTagIgnore",colgroup:"endTagIgnore",html:"endTagIgnore",tbody:"endTagIgnore",td:"endTagIgnore",tfood:"endTagIgnore",thead:"endTagIgnore",tr:"endTagIgnore","-default":"endTagOther"},t.inCaption.processCharacters=function(e){t.inBody.processCharacters(e)},t.inCaption.startTagTableElement=function(t,n){e.parseError("unexpected-end-tag",{name:t});var r=!e.openElements.inTableScope("caption");e.insertionMode.processEndTag("caption"),r||e.insertionMode.processStartTag(t,n)},t.inCaption.startTagOther=function(e,n,r){t.inBody.processStartTag(e,n,r)},t.inCaption.endTagCaption=function(t){e.openElements.inTableScope("caption")?(e.generateImpliedEndTags(),e.currentStackItem().localName!="caption"&&e.parseError("expected-one-end-tag-but-got-another",{gotName:"caption",expectedName:e.currentStackItem().localName}),e.openElements.popUntilPopped("caption"),e.clearActiveFormattingElements(),e.setInsertionMode("inTable")):(r.ok(e.context),e.parseError("unexpected-end-tag",{name:t}))},t.inCaption.endTagTable=function(t){e.parseError("unexpected-end-table-in-caption");var n=!e.openElements.inTableScope("caption");e.insertionMode.processEndTag("caption"),n||e.insertionMode.processEndTag(t)},t.inCaption.endTagIgnore=function(t){e.parseError("unexpected-end-tag",{name:t})},t.inCaption.endTagOther=function(e){t.inBody.processEndTag(e)},t.inCell=Object.create(t.base),t.inCell.start_tag_handlers={html:"startTagHtml",caption:"startTagTableOther",col:"startTagTableOther",colgroup:"startTagTableOther",tbody:"startTagTableOther",td:"startTagTableOther",tfoot:"startTagTableOther",th:"startTagTableOther",thead:"startTagTableOther",tr:"startTagTableOther","-default":"startTagOther"},t.inCell.end_tag_handlers={td:"endTagTableCell",th:"endTagTableCell",body:"endTagIgnore",caption:"endTagIgnore",col:"endTagIgnore",colgroup:"endTagIgnore",html:"endTagIgnore",table:"endTagImply",tbody:"endTagImply",tfoot:"endTagImply",thead:"endTagImply",tr:"endTagImply","-default":"endTagOther"},t.inCell.processCharacters=function(e){t.inBody.processCharacters(e)},t.inCell.startTagTableOther=function(t,n,r){e.openElements.inTableScope("td")||e.openElements.inTableScope("th")?(this.closeCell(),e.insertionMode.processStartTag(t,n,r)):e.parseError("unexpected-start-tag",{name:t})},t.inCell.startTagOther=function(e,n,r){t.inBody.processStartTag(e,n,r)},t.inCell.endTagTableCell=function(t){e.openElements.inTableScope(t)?(e.generateImpliedEndTags(t),e.currentStackItem().localName!=t.toLowerCase()?(e.parseError("unexpected-cell-end-tag",{name:t}),e.openElements.popUntilPopped(t)):e.popElement(),e.clearActiveFormattingElements(),e.setInsertionMode("inRow")):e.parseError("unexpected-end-tag",{name:t})},t.inCell.endTagIgnore=function(t){e.parseError("unexpected-end-tag",{name:t})},t.inCell.endTagImply=function(t){e.openElements.inTableScope(t)?(this.closeCell(),e.insertionMode.processEndTag(t)):e.parseError("unexpected-end-tag",{name:t})},t.inCell.endTagOther=function(e){t.inBody.processEndTag(e)},t.inCell.closeCell=function(){e.openElements.inTableScope("td")?this.endTagTableCell("td"):e.openElements.inTableScope("th")&&this.endTagTableCell("th")},t.inColumnGroup=Object.create(t.base),t.inColumnGroup.start_tag_handlers={html:"startTagHtml",col:"startTagCol","-default":"startTagOther"},t.inColumnGroup.end_tag_handlers={colgroup:"endTagColgroup",col:"endTagCol","-default":"endTagOther"},t.inColumnGroup.ignoreEndTagColgroup=function(){return e.currentStackItem().localName=="html"},t.inColumnGroup.processCharacters=function(t){var n=t.takeLeadingWhitespace();n&&e.insertText(n);if(!t.length)return;var r=this.ignoreEndTagColgroup();this.endTagColgroup("colgroup"),r||e.insertionMode.processCharacters(t)},t.inColumnGroup.startTagCol=function(t,n){e.insertSelfClosingElement(t,n)},t.inColumnGroup.startTagOther=function(t,n,r){var i=this.ignoreEndTagColgroup();this.endTagColgroup("colgroup"),i||e.insertionMode.processStartTag(t,n,r)},t.inColumnGroup.endTagColgroup=function(t){this.ignoreEndTagColgroup()?(r.ok(e.context),e.parseError("unexpected-end-tag",{name:t})):(e.popElement(),e.setInsertionMode("inTable"))},t.inColumnGroup.endTagCol=function(t){e.parseError("no-end-tag",{name:"col"})},t.inColumnGroup.endTagOther=function(t){var n=this.ignoreEndTagColgroup();this.endTagColgroup("colgroup"),n||e.insertionMode.processEndTag(t)},t.inForeignContent=Object.create(t.base),t.inForeignContent.processStartTag=function(t,n,r){if(["b","big","blockquote","body","br","center","code","dd","div","dl","dt","em","embed","h1","h2","h3","h4","h5","h6","head","hr","i","img","li","listing","menu","meta","nobr","ol","p","pre","ruby","s","small","span","strong","strike","sub","sup","table","tt","u","ul","var"].indexOf(t)!=-1||t=="font"&&n.some(function(e){return["color","face","size"].indexOf(e.nodeName)>=0})){e.parseError("unexpected-html-element-in-foreign-content",{name:t});while(e.currentStackItem().isForeign()&&!e.currentStackItem().isHtmlIntegrationPoint()&&!e.currentStackItem().isMathMLTextIntegrationPoint())e.openElements.pop();e.insertionMode.processStartTag(t,n,r);return}e.currentStackItem().namespaceURI=="http://www.w3.org/1998/Math/MathML"&&(n=e.adjustMathMLAttributes(n)),e.currentStackItem().namespaceURI=="http://www.w3.org/2000/svg"&&(t=e.adjustSVGTagNameCase(t),n=e.adjustSVGAttributes(n)),n=e.adjustForeignAttributes(n),e.insertForeignElement(t,n,e.currentStackItem().namespaceURI,r)},t.inForeignContent.processEndTag=function(t){var n=e.currentStackItem(),r=e.openElements.length-1;n.localName.toLowerCase()!=t&&e.parseError("unexpected-end-tag",{name:t});for(;;){if(r===0)break;if(n.localName.toLowerCase()==t){while(e.openElements.pop()!=n);break}r-=1,n=e.openElements.item(r);if(n.isForeign())continue;e.insertionMode.processEndTag(t);break}},t.inForeignContent.processCharacters=function(t){var n=t.takeRemaining();n=n.replace(/\u0000/g,function(t,n){return e.parseError("invalid-codepoint"),"\ufffd"}),e.framesetOk&&!d(n)&&(e.framesetOk=!1),e.insertText(n)},t.inHeadNoscript=Object.create(t.base),t.inHeadNoscript.start_tag_handlers={html:"startTagHtml",basefont:"startTagBasefontBgsoundLinkMetaNoframesStyle",bgsound:"startTagBasefontBgsoundLinkMetaNoframesStyle",link:"startTagBasefontBgsoundLinkMetaNoframesStyle",meta:"startTagBasefontBgsoundLinkMetaNoframesStyle",noframes:"startTagBasefontBgsoundLinkMetaNoframesStyle",style:"startTagBasefontBgsoundLinkMetaNoframesStyle",head:"startTagHeadNoscript",noscript:"startTagHeadNoscript","-default":"startTagOther"},t.inHeadNoscript.end_tag_handlers={noscript:"endTagNoscript",br:"endTagBr","-default":"endTagOther"},t.inHeadNoscript.processCharacters=function(t){var n=t.takeLeadingWhitespace();n&&e.insertText(n);if(!t.length)return;e.parseError("unexpected-char-in-frameset"),this.anythingElse(),e.insertionMode.processCharacters(t)},t.inHeadNoscript.processComment=function(e){t.inHead.processComment(e)},t.inHeadNoscript.startTagBasefontBgsoundLinkMetaNoframesStyle=function(e,n){t.inHead.processStartTag(e,n)},t.inHeadNoscript.startTagHeadNoscript=function(t,n){e.parseError("unexpected-start-tag-in-frameset",{name:t})},t.inHeadNoscript.startTagOther=function(t,n){e.parseError("unexpected-start-tag-in-frameset",{name:t}),this.anythingElse(),e.insertionMode.processStartTag(t,n)},t.inHeadNoscript.endTagBr=function(t,n){e.parseError("unexpected-end-tag-in-frameset",{name:t}),this.anythingElse(),e.insertionMode.processEndTag(t,n)},t.inHeadNoscript.endTagNoscript=function(t,n){e.popElement(),e.setInsertionMode("inHead")},t.inHeadNoscript.endTagOther=function(t,n){e.parseError("unexpected-end-tag-in-frameset",{name:t})},t.inHeadNoscript.anythingElse=function(){e.popElement(),e.setInsertionMode("inHead")},t.inFrameset=Object.create(t.base),t.inFrameset.start_tag_handlers={html:"startTagHtml",frameset:"startTagFrameset",frame:"startTagFrame",noframes:"startTagNoframes","-default":"startTagOther"},t.inFrameset.end_tag_handlers={frameset:"endTagFrameset",noframes:"endTagNoframes","-default":"endTagOther"},t.inFrameset.processCharacters=function(t){e.parseError("unexpected-char-in-frameset")},t.inFrameset.startTagFrameset=function(t,n){e.insertElement(t,n)},t.inFrameset.startTagFrame=function(t,n){e.insertSelfClosingElement(t,n)},t.inFrameset.startTagNoframes=function(e,n){t.inBody.processStartTag(e,n)},t.inFrameset.startTagOther=function(t,n){e.parseError("unexpected-start-tag-in-frameset",{name:t})},t.inFrameset.endTagFrameset=function(t,n){e.currentStackItem().localName=="html"?e.parseError("unexpected-frameset-in-frameset-innerhtml"):e.popElement(),!e.context&&e.currentStackItem().localName!="frameset"&&e.setInsertionMode("afterFrameset")},t.inFrameset.endTagNoframes=function(e){t.inBody.processEndTag(e)},t.inFrameset.endTagOther=function(t){e.parseError("unexpected-end-tag-in-frameset",{name:t})},t.inTable=Object.create(t.base),t.inTable.start_tag_handlers={html:"startTagHtml",caption:"startTagCaption",colgroup:"startTagColgroup",col:"startTagCol",table:"startTagTable",tbody:"startTagRowGroup",tfoot:"startTagRowGroup",thead:"startTagRowGroup",td:"startTagImplyTbody",th:"startTagImplyTbody",tr:"startTagImplyTbody",style:"startTagStyleScript",script:"startTagStyleScript",input:"startTagInput",form:"startTagForm","-default":"startTagOther"},t.inTable.end_tag_handlers={table:"endTagTable",body:"endTagIgnore",caption:"endTagIgnore",col:"endTagIgnore",colgroup:"endTagIgnore",html:"endTagIgnore",tbody:"endTagIgnore",td:"endTagIgnore",tfoot:"endTagIgnore",th:"endTagIgnore",thead:"endTagIgnore",tr:"endTagIgnore","-default":"endTagOther"},t.inTable.processCharacters=function(n){if(e.currentStackItem().isFosterParenting()){var r=e.insertionModeName;e.setInsertionMode("inTableText"),e.originalInsertionMode=r,e.insertionMode.processCharacters(n)}else e.redirectAttachToFosterParent=!0,t.inBody.processCharacters(n),e.redirectAttachToFosterParent=!1},t.inTable.startTagCaption=function(t,n){e.openElements.popUntilTableScopeMarker(),e.activeFormattingElements.push(l),e.insertElement(t,n),e.setInsertionMode("inCaption")},t.inTable.startTagColgroup=function(t,n){e.openElements.popUntilTableScopeMarker(),e.insertElement(t,n),e.setInsertionMode("inColumnGroup")},t.inTable.startTagCol=function(t,n){this.startTagColgroup("colgroup",[]),e.insertionMode.processStartTag(t,n)},t.inTable.startTagRowGroup=function(t,n){e.openElements.popUntilTableScopeMarker(),e.insertElement(t,n),e.setInsertionMode("inTableBody")},t.inTable.startTagImplyTbody=function(t,n){this.startTagRowGroup("tbody",[]),e.insertionMode.processStartTag(t,n)},t.inTable.startTagTable=function(t,n){e.parseError("unexpected-start-tag-implies-end-tag",{startName:"table",endName:"table"}),e.insertionMode.processEndTag("table"),e.context||e.insertionMode.processStartTag(t,n)},t.inTable.startTagStyleScript=function(e,n){t.inHead.processStartTag(e,n)},t.inTable.startTagInput=function(t,n){for(var r in n)if(n[r].nodeName.toLowerCase()=="type"){if(n[r].nodeValue.toLowerCase()=="hidden"){e.parseError("unexpected-hidden-input-in-table"),e.insertElement(t,n),e.openElements.pop();return}break}this.startTagOther(t,n)},t.inTable.startTagForm=function(t,n){e.parseError("unexpected-form-in-table"),e.form||(e.insertElement(t,n),e.form=e.currentStackItem(),e.openElements.pop())},t.inTable.startTagOther=function(n,r,i){e.parseError("unexpected-start-tag-implies-table-voodoo",{name:n}),e.redirectAttachToFosterParent=!0,t.inBody.processStartTag(n,r,i),e.redirectAttachToFosterParent=!1},t.inTable.endTagTable=function(t){e.openElements.inTableScope(t)?(e.generateImpliedEndTags(),e.currentStackItem().localName!=t&&e.parseError("end-tag-too-early-named",{gotName:"table",expectedName:e.currentStackItem().localName}),e.openElements.popUntilPopped("table"),e.resetInsertionMode()):(r.ok(e.context),e.parseError("unexpected-end-tag",{name:t}))},t.inTable.endTagIgnore=function(t){e.parseError("unexpected-end-tag",{name:t})},t.inTable.endTagOther=function(n){e.parseError("unexpected-end-tag-implies-table-voodoo",{name:n}),e.redirectAttachToFosterParent=!0,t.inBody.processEndTag(n),e.redirectAttachToFosterParent=!1},t.inTableText=Object.create(t.base),t.inTableText.flushCharacters=function(){var t=e.pendingTableCharacters.join("");p(t)?e.insertText(t):(e.redirectAttachToFosterParent=!0,e.reconstructActiveFormattingElements(),e.insertText(t),e.framesetOk=!1,e.redirectAttachToFosterParent=!1),e.pendingTableCharacters=[]},t.inTableText.processComment=function(t){this.flushCharacters(),e.setInsertionMode(e.originalInsertionMode),e.insertionMode.processComment(t)},t.inTableText.processEOF=function(t){this.flushCharacters(),e.setInsertionMode(e.originalInsertionMode),e.insertionMode.processEOF()},t.inTableText.processCharacters=function(t){var n=t.takeRemaining();n=n.replace(/\u0000/g,function(t,n){return e.parseError("invalid-codepoint"),""});if(!n)return;e.pendingTableCharacters.push(n)},t.inTableText.processStartTag=function(t,n,r){this.flushCharacters(),e.setInsertionMode(e.originalInsertionMode),e.insertionMode.processStartTag(t,n,r)},t.inTableText.processEndTag=function(t,n){this.flushCharacters(),e.setInsertionMode(e.originalInsertionMode),e.insertionMode.processEndTag(t,n)},t.inTableBody=Object.create(t.base),t.inTableBody.start_tag_handlers={html:"startTagHtml",tr:"startTagTr",td:"startTagTableCell",th:"startTagTableCell",caption:"startTagTableOther",col:"startTagTableOther",colgroup:"startTagTableOther",tbody:"startTagTableOther",tfoot:"startTagTableOther",thead:"startTagTableOther","-default":"startTagOther"},t.inTableBody.end_tag_handlers={table:"endTagTable",tbody:"endTagTableRowGroup",tfoot:"endTagTableRowGroup",thead:"endTagTableRowGroup",body:"endTagIgnore",caption:"endTagIgnore",col:"endTagIgnore",colgroup:"endTagIgnore",html:"endTagIgnore",td:"endTagIgnore",th:"endTagIgnore",tr:"endTagIgnore","-default":"endTagOther"},t.inTableBody.processCharacters=function(e){t.inTable.processCharacters(e)},t.inTableBody.startTagTr=function(t,n){e.openElements.popUntilTableBodyScopeMarker(),e.insertElement(t,n),e.setInsertionMode("inRow")},t.inTableBody.startTagTableCell=function(t,n){e.parseError("unexpected-cell-in-table-body",{name:t}),this.startTagTr("tr",[]),e.insertionMode.processStartTag(t,n)},t.inTableBody.startTagTableOther=function(t,n){e.openElements.inTableScope("tbody")||e.openElements.inTableScope("thead")||e.openElements.inTableScope("tfoot")?(e.openElements.popUntilTableBodyScopeMarker(),this.endTagTableRowGroup(e.currentStackItem().localName),e.insertionMode.processStartTag(t,n)):e.parseError("unexpected-start-tag",{name:t})},t.inTableBody.startTagOther=function(e,n){t.inTable.processStartTag(e,n)},t.inTableBody.endTagTableRowGroup=function(t){e.openElements.inTableScope(t)?(e.openElements.popUntilTableBodyScopeMarker(),e.popElement(),e.setInsertionMode("inTable")):e.parseError("unexpected-end-tag-in-table-body",{name:t})},t.inTableBody.endTagTable=function(t){e.openElements.inTableScope("tbody")||e.openElements.inTableScope("thead")||e.openElements.inTableScope("tfoot")?(e.openElements.popUntilTableBodyScopeMarker(),this.endTagTableRowGroup(e.currentStackItem().localName),e.insertionMode.processEndTag(t)):e.parseError("unexpected-end-tag",{name:t})},t.inTableBody.endTagIgnore=function(t){e.parseError("unexpected-end-tag-in-table-body",{name:t})},t.inTableBody.endTagOther=function(e){t.inTable.processEndTag(e)},t.inSelect=Object.create(t.base),t.inSelect.start_tag_handlers={html:"startTagHtml",option:"startTagOption",optgroup:"startTagOptgroup",select:"startTagSelect",input:"startTagInput",keygen:"startTagInput",textarea:"startTagInput",script:"startTagScript","-default":"startTagOther"},t.inSelect.end_tag_handlers={option:"endTagOption",optgroup:"endTagOptgroup",select:"endTagSelect",caption:"endTagTableElements",table:"endTagTableElements",tbody:"endTagTableElements",tfoot:"endTagTableElements",thead:"endTagTableElements",tr:"endTagTableElements",td:"endTagTableElements",th:"endTagTableElements","-default":"endTagOther"},t.inSelect.processCharacters=function(t){var n=t.takeRemaining();n=n.replace(/\u0000/g,function(t,n){return e.parseError("invalid-codepoint"),""});if(!n)return;e.insertText(n)},t.inSelect.startTagOption=function(t,n){e.currentStackItem().localName=="option"&&e.popElement(),e.insertElement(t,n)},t.inSelect.startTagOptgroup=function(t,n){e.currentStackItem().localName=="option"&&e.popElement(),e.currentStackItem().localName=="optgroup"&&e.popElement(),e.insertElement(t,n)},t.inSelect.endTagOption=function(t){if(e.currentStackItem().localName!=="option"){e.parseError("unexpected-end-tag-in-select",{name:t});return}e.popElement()},t.inSelect.endTagOptgroup=function(t){e.currentStackItem().localName=="option"&&e.openElements.item(e.openElements.length-2).localName=="optgroup"&&e.popElement(),e.currentStackItem().localName=="optgroup"?e.popElement():e.parseError("unexpected-end-tag-in-select",{name:"optgroup"})},t.inSelect.startTagSelect=function(t){e.parseError("unexpected-select-in-select"),this.endTagSelect("select")},t.inSelect.endTagSelect=function(t){e.openElements.inTableScope("select")?(e.openElements.popUntilPopped("select"),e.resetInsertionMode()):e.parseError("unexpected-end-tag",{name:t})},t.inSelect.startTagInput=function(t,n){e.parseError("unexpected-input-in-select"),e.openElements.inSelectScope("select")&&(this.endTagSelect("select"),e.insertionMode.processStartTag(t,n))},t.inSelect.startTagScript=function(e,n){t.inHead.processStartTag(e,n)},t.inSelect.endTagTableElements=function(t){e.parseError("unexpected-end-tag-in-select",{name:t}),e.openElements.inTableScope(t)&&(this.endTagSelect("select"),e.insertionMode.processEndTag(t))},t.inSelect.startTagOther=function(t,n){e.parseError("unexpected-start-tag-in-select",{name:t})},t.inSelect.endTagOther=function(t){e.parseError("unexpected-end-tag-in-select",{name:t})},t.inSelectInTable=Object.create(t.base),t.inSelectInTable.start_tag_handlers={caption:"startTagTable",table:"startTagTable",tbody:"startTagTable",tfoot:"startTagTable",thead:"startTagTable",tr:"startTagTable",td:"startTagTable",th:"startTagTable","-default":"startTagOther"},t.inSelectInTable.end_tag_handlers={caption:"endTagTable",table:"endTagTable",tbody:"endTagTable",tfoot:"endTagTable",thead:"endTagTable",tr:"endTagTable",td:"endTagTable",th:"endTagTable","-default":"endTagOther"},t.inSelectInTable.processCharacters=function(e){t.inSelect.processCharacters(e)},t.inSelectInTable.startTagTable=function(t,n){e.parseError("unexpected-table-element-start-tag-in-select-in-table",{name:t}),this.endTagOther("select"),e.insertionMode.processStartTag(t,n)},t.inSelectInTable.startTagOther=function(e,n,r){t.inSelect.processStartTag(e,n,r)},t.inSelectInTable.endTagTable=function(t){e.parseError("unexpected-table-element-end-tag-in-select-in-table",{name:t}),e.openElements.inTableScope(t)&&(this.endTagOther("select"),e.insertionMode.processEndTag(t))},t.inSelectInTable.endTagOther=function(e){t.inSelect.processEndTag(e)},t.inRow=Object.create(t.base),t.inRow.start_tag_handlers={html:"startTagHtml",td:"startTagTableCell",th:"startTagTableCell",caption:"startTagTableOther",col:"startTagTableOther",colgroup:"startTagTableOther",tbody:"startTagTableOther",tfoot:"startTagTableOther",thead:"startTagTableOther",tr:"startTagTableOther","-default":"startTagOther"},t.inRow.end_tag_handlers={tr:"endTagTr",table:"endTagTable",tbody:"endTagTableRowGroup",tfoot:"endTagTableRowGroup",thead:"endTagTableRowGroup",body:"endTagIgnore",caption:"endTagIgnore",col:"endTagIgnore",colgroup:"endTagIgnore",html:"endTagIgnore",td:"endTagIgnore",th:"endTagIgnore","-default":"endTagOther"},t.inRow.processCharacters=function(e){t.inTable.processCharacters(e)},t.inRow.startTagTableCell=function(t,n){e.openElements.popUntilTableRowScopeMarker(),e.insertElement(t,n),e.setInsertionMode("inCell"),e.activeFormattingElements.push(l)},t.inRow.startTagTableOther=function(t,n){var r=this.ignoreEndTagTr();this.endTagTr("tr"),r||e.insertionMode.processStartTag(t,n)},t.inRow.startTagOther=function(e,n,r){t.inTable.processStartTag(e,n,r)},t.inRow.endTagTr=function(t){this.ignoreEndTagTr()?(r.ok(e.context),e.parseError("unexpected-end-tag",{name:t})):(e.openElements.popUntilTableRowScopeMarker(),e.popElement(),e.setInsertionMode("inTableBody"))},t.inRow.endTagTable=function(t){var n=this.ignoreEndTagTr();this.endTagTr("tr"),n||e.insertionMode.processEndTag(t)},t.inRow.endTagTableRowGroup=function(t){e.openElements.inTableScope(t)?(this.endTagTr("tr"),e.insertionMode.processEndTag(t)):e.parseError("unexpected-end-tag",{name:t})},t.inRow.endTagIgnore=function(t){e.parseError("unexpected-end-tag-in-table-row",{name:t})},t.inRow.endTagOther=function(e){t.inTable.processEndTag(e)},t.inRow.ignoreEndTagTr=function(){return!e.openElements.inTableScope("tr")},t.afterAfterFrameset=Object.create(t.base),t.afterAfterFrameset.start_tag_handlers={html:"startTagHtml",noframes:"startTagNoFrames","-default":"startTagOther"},t.afterAfterFrameset.processEOF=function(){},t.afterAfterFrameset.processComment=function(t){e.insertComment(t,e.document)},t.afterAfterFrameset.processCharacters=function(t){var n=t.takeRemaining(),r="";for(var i=0;i<n.length;i++){var s=n[i];c(s)&&(r+=s)}r&&(e.reconstructActiveFormattingElements(),e.insertText(r)),r.length<n.length&&e.parseError("expected-eof-but-got-char")},t.afterAfterFrameset.startTagNoFrames=function(e,n){t.inHead.processStartTag(e,n)},t.afterAfterFrameset.startTagOther=function(t,n,r){e.parseError("expected-eof-but-got-start-tag",{name:t})},t.afterAfterFrameset.processEndTag=function(t,n){e.parseError("expected-eof-but-got-end-tag",{name:t})},t.text=Object.create(t.base),t.text.start_tag_handlers={"-default":"startTagOther"},t.text.end_tag_handlers={script:"endTagScript","-default":"endTagOther"},t.text.processCharacters=function(t){e.shouldSkipLeadingNewline&&(e.shouldSkipLeadingNewline=!1,t.skipAtMostOneLeadingNewline());var n=t.takeRemaining();if(!n)return;e.insertText(n)},t.text.processEOF=function(){e.parseError("expected-named-closing-tag-but-got-eof",{name:e.currentStackItem().localName}),e.openElements.pop(),e.setInsertionMode(e.originalInsertionMode),e.insertionMode.processEOF()},t.text.startTagOther=function(e){throw"Tried to process start tag "+e+" in RCDATA/RAWTEXT mode"},t.text.endTagScript=function(t){var n=e.openElements.pop();r.ok(n.localName=="script"),e.setInsertionMode(e.originalInsertionMode)},t.text.endTagOther=function(t){e.openElements.pop(),e.setInsertionMode(e.originalInsertionMode)}}function y(e,t){return e.replace(new RegExp("{[0-9a-z-]+}","gi"),function(e){return t[e.slice(1,-1)]||e})}var r=e("assert"),i=e("./messages.json"),s=e("./constants"),o=e("events").EventEmitter,u=e("./Tokenizer").Tokenizer,a=e("./ElementStack").ElementStack,f=e("./StackItem").StackItem,l={};m.prototype.skipAtMostOneLeadingNewline=function(){this.characters[this.current]==="\n"&&this.current++},m.prototype.skipLeadingWhitespace=function(){while(c(this.characters[this.current]))if(++this.current==this.end)return},m.prototype.skipLeadingNonWhitespace=function(){while(!c(this.characters[this.current]))if(++this.current==this.end)return},m.prototype.takeRemaining=function(){return this.characters.substring(this.current)},m.prototype.takeLeadingWhitespace=function(){var e=this.current;return this.skipLeadingWhitespace(),e===this.current?"":this.characters.substring(e,this.current-e)},Object.defineProperty(m.prototype,"length",{get:function(){return this.end-this.current}}),g.prototype.setInsertionMode=function(e){this.insertionMode=this.insertionModes[e],this.insertionModeName=e},g.prototype.adoptionAgencyEndTag=function(e){function i(e){return e===r}var t=8,n=3,r,s=0;while(s++<t){r=this.elementInActiveFormattingElements(e);if(!r||this.openElements.contains(r)&&!this.openElements.inScope(r.localName))return this.parseError("adoption-agency-1.1",{name:e}),!1;if(!this.openElements.contains(r))return this.parseError("adoption-agency-1.2",{name:e}),this.removeElementFromActiveFormattingElements(r),!0;this.openElements.inScope(r.localName)||this.parseError("adoption-agency-4.4",{name:e}),r!=this.currentStackItem()&&this.parseError("adoption-agency-1.3",{name:e});var o=this.openElements.furthestBlockForFormattingElement(r.node);if(!o)return this.openElements.remove_openElements_until(i),this.removeElementFromActiveFormattingElements(r),!0;var u=this.openElements.elements.indexOf(r),a=this.openElements.item(u-1),l=this.activeFormattingElements.indexOf(r),c=o,h=o,p=this.openElements.elements.indexOf(c),d=0;while(d++<n){p-=1,c=this.openElements.item(p);if(this.activeFormattingElements.indexOf(c)<0){this.openElements.elements.splice(p,1);continue}if(c==r)break;h==o&&(l=this.activeFormattingElements.indexOf(c)+1);var v=this.createElement(c.namespaceURI,c.localName,c.attributes),m=new f(c.namespaceURI,c.localName,c.attributes,v);this.activeFormattingElements[this.activeFormattingElements.indexOf(c)]=m,this.openElements.elements[this.openElements.elements.indexOf(c)]=m,c=m,this.detachFromParent(h.node),this.attachNode(h.node,c.node),h=c}this.detachFromParent(h.node),a.isFosterParenting()?this.insertIntoFosterParent(h.node):this.attachNode(h.node,a.node);var v=this.createElement("http://www.w3.org/1999/xhtml",r.localName,r.attributes),g=new f(r.namespaceURI,r.localName,r.attributes,v);this.reparentChildren(o.node,v),this.attachNode(v,o.node),this.removeElementFromActiveFormattingElements(r),this.activeFormattingElements.splice(Math.min(l,this.activeFormattingElements.length),0,g),this.openElements.remove(r),this.openElements.elements.splice(this.openElements.elements.indexOf(o)+1,0,g)}return!0},g.prototype.start=function(){throw"Not mplemented"},g.prototype.startTokenization=function(e){this.tokenizer=e,this.compatMode="no quirks",this.originalInsertionMode="initial",this.framesetOk=!0,this.openElements=new a,this.activeFormattingElements=[],this.start();if(this.context){switch(this.context){case"title":case"textarea":this.tokenizer.setState(u.RCDATA);break;case"style":case"xmp":case"iframe":case"noembed":case"noframes":this.tokenizer.setState(u.RAWTEXT);break;case"script":this.tokenizer.setState(u.SCRIPT_DATA);break;case"noscript":this.scriptingEnabled&&this.tokenizer.setState(u.RAWTEXT);break;case"plaintext":this.tokenizer.setState(u.PLAINTEXT)}this.insertHtmlElement(),this.context==="head"?this.insertHeadElement():this.insertBodyElement(),this.resetInsertionMode()}else this.setInsertionMode("initial")},g.prototype.processToken=function(e){this.selfClosingFlagAcknowledged=!1;var t=this.openElements.top||null,n;!t||!t.isForeign()||t.isMathMLTextIntegrationPoint()&&(e.type=="StartTag"&&!(e.name in{mglyph:0,malignmark:0})||e.type==="Characters")||t.namespaceURI=="http://www.w3.org/1998/Math/MathML"&&t.localName=="annotation-xml"&&e.type=="StartTag"&&e.name=="svg"||t.isHtmlIntegrationPoint()&&e.type in{StartTag:0,Characters:0}||e.type=="EOF"?n=this.insertionMode:n=this.insertionModes.inForeignContent;switch(e.type){case"Characters":var r=new m(e.data);n.processCharacters(r);break;case"Comment":n.processComment(e.data);break;case"StartTag":n.processStartTag(e.name,e.data,e.selfClosing);break;case"EndTag":n.processEndTag(e.name);break;case"Doctype":n.processDoctype(e.name,e.publicId,e.systemId,e.forceQuirks);break;case"EOF":n.processEOF()}},g.prototype.isCdataSectionAllowed=function(){return this.openElements.length>0&&this.currentStackItem().isForeign()},g.prototype.isSelfClosingFlagAcknowledged=function(){return this.selfClosingFlagAcknowledged},g.prototype.createElement=function(e,t,n){throw new Error("Not implemented")},g.prototype.attachNode=function(e,t){throw new Error("Not implemented")},g.prototype.attachNodeToFosterParent=function(e,t,n){throw new Error("Not implemented")},g.prototype.detachFromParent=function(e){throw new Error("Not implemented")},g.prototype.addAttributesToElement=function(e,t){throw new Error("Not implemented")},g.prototype.insertHtmlElement=function(e){var t=this.createElement("http://www.w3.org/1999/xhtml","html",e);return this.attachNode(t,this.document),this.openElements.pushHtmlElement(new f("http://www.w3.org/1999/xhtml","html",e,t)),t},g.prototype.insertHeadElement=function(e){var t=this.createElement("http://www.w3.org/1999/xhtml","head",e);return this.head=new f("http://www.w3.org/1999/xhtml","head",e,t),this.attachNode(t,this.openElements.top.node),this.openElements.pushHeadElement(this.head),t},g.prototype.insertBodyElement=function(e){var t=this.createElement("http://www.w3.org/1999/xhtml","body",e);return this.attachNode(t,this.openElements.top.node),this.openElements.pushBodyElement(new f("http://www.w3.org/1999/xhtml","body",e,t)),t},g.prototype.insertIntoFosterParent=function(e){var t=this.openElements.findIndex("table"),n=this.openElements.item(t).node;if(t===0)return this.attachNode(e,n);this.attachNodeToFosterParent(e,n,this.openElements.item(t-1).node)},g.prototype.insertElement=function(e,t,n,r){n||(n="http://www.w3.org/1999/xhtml");var i=this.createElement(n,e,t);this.shouldFosterParent()?this.insertIntoFosterParent(i):this.attachNode(i,this.openElements.top.node),r||this.openElements.push(new f(n,e,t,i))},g.prototype.insertFormattingElement=function(e,t){this.insertElement(e,t,"http://www.w3.org/1999/xhtml"),this.appendElementToActiveFormattingElements(this.currentStackItem())},g.prototype.insertSelfClosingElement=function(e,t){this.selfClosingFlagAcknowledged=!0,this.insertElement(e,t,"http://www.w3.org/1999/xhtml",!0)},g.prototype.insertForeignElement=function(e,t,n,r){r&&(this.selfClosingFlagAcknowledged=!0),this.insertElement(e,t,n,r)},g.prototype.insertComment=function(e,t){throw new Error("Not implemented")},g.prototype.insertDoctype=function(e,t,n){throw new Error("Not implemented")},g.prototype.insertText=function(e){throw new Error("Not implemented")},g.prototype.currentStackItem=function(){return this.openElements.top},g.prototype.popElement=function(){return this.openElements.pop()},g.prototype.shouldFosterParent=function(){return this.redirectAttachToFosterParent&&this.currentStackItem().isFosterParenting()},g.prototype.generateImpliedEndTags=function(e){var t=this.openElements.top.localName;["dd","dt","li","option","optgroup","p","rp","rt"].indexOf(t)!=-1&&t!=e&&(this.popElement(),this.generateImpliedEndTags(e))},g.prototype.reconstructActiveFormattingElements=function(){if(this.activeFormattingElements.length===0)return;var e=this.activeFormattingElements.length-1,t=this.activeFormattingElements[e];if(t==l||this.openElements.contains(t))return;while(t!=l&&!this.openElements.contains(t)){e-=1,t=this.activeFormattingElements[e];if(!t)break}for(;;){e+=1,t=this.activeFormattingElements[e],this.insertElement(t.localName,t.attributes);var n=this.currentStackItem();this.activeFormattingElements[e]=n;if(n==this.activeFormattingElements[this.activeFormattingElements.length-1])break}},g.prototype.ensureNoahsArkCondition=function(e){var t=3;if(this.activeFormattingElements.length<t)return;var n=[],r=e.attributes.length;for(var i=this.activeFormattingElements.length-1;i>=0;i--){var s=this.activeFormattingElements[i];if(s===l)break;if(e.localName!==s.localName||e.namespaceURI!==s.namespaceURI)continue;if(s.attributes.length!=r)continue;n.push(s)}if(n.length<t)return;var o=[],u=e.attributes;for(var i=0;i<u.length;i++){var a=u[i];for(var f=0;f<n.length;f++){var s=n[f],c=v(s,a.nodeName);c&&c.nodeValue===a.nodeValue&&o.push(s)}if(o.length<t)return;n=o,o=[]}for(var i=t-1;i<n.length;i++)this.removeElementFromActiveFormattingElements(n[i])},g.prototype.appendElementToActiveFormattingElements=function(e){this.ensureNoahsArkCondition(e),this.activeFormattingElements.push(e)},g.prototype.removeElementFromActiveFormattingElements=function(e){var t=this.activeFormattingElements.indexOf(e);t>=0&&this.activeFormattingElements.splice(t,1)},g.prototype.elementInActiveFormattingElements=function(e){var t=this.activeFormattingElements;for(var n=t.length-1;n>=0;n--){if(t[n]==l)break;if(t[n].localName==e)return t[n]}return!1},g.prototype.clearActiveFormattingElements=function(){while(this.activeFormattingElements.length!==0&&this.activeFormattingElements.pop()!=l);},g.prototype.reparentChildren=function(e,t){throw new Error("Not implemented")},g.prototype.setFragmentContext=function(e){this.context=e},g.prototype.parseError=function(e,t){if(!this.errorHandler)return;var n=y(i[e],t);this.errorHandler.error(n,this.tokenizer._inputStream.location(),e)},g.prototype.resetInsertionMode=function(){var e=!1,t=null;for(var n=this.openElements.length-1;n>=0;n--){t=this.openElements.item(n),n===0&&(r.ok(this.context),e=!0,t=new f("http://www.w3.org/1999/xhtml",this.context,[],null));if(t.namespaceURI==="http://www.w3.org/1999/xhtml"){if(t.localName==="select")return this.setInsertionMode("inSelect");if(t.localName==="td"||t.localName==="th")return this.setInsertionMode("inCell");if(t.localName==="tr")return this.setInsertionMode("inRow");if(t.localName==="tbody"||t.localName==="thead"||t.localName==="tfoot")return this.setInsertionMode("inTableBody");if(t.localName==="caption")return this.setInsertionMode("inCaption");if(t.localName==="colgroup")return this.setInsertionMode("inColumnGroup");if(t.localName==="table")return this.setInsertionMode("inTable");if(t.localName==="head")return this.setInsertionMode("inHead");if(t.localName==="body")return this.setInsertionMode("inBody");if(t.localName==="frameset")return this.setInsertionMode("inFrameset");if(t.localName==="html")return this.openElements.headElement?this.setInsertionMode("afterHead"):this.setInsertionMode("beforeHead")}if(e)return this.setInsertionMode("inBody")}},g.prototype.processGenericRCDATAStartTag=function(e,t){this.insertElement(e,t),this.tokenizer.setState(u.RCDATA),this.originalInsertionMode=this.insertionModeName,this.setInsertionMode("text")},g.prototype.processGenericRawTextStartTag=function(e,t){this.insertElement(e,t),this.tokenizer.setState(u.RAWTEXT),this.originalInsertionMode=this.insertionModeName,this.setInsertionMode("text")},g.prototype.adjustMathMLAttributes=function(e){return e.forEach(function(e){e.namespaceURI="http://www.w3.org/1998/Math/MathML",s.MATHMLAttributeMap[e.nodeName]&&(e.nodeName=s.MATHMLAttributeMap[e.nodeName])}),e},g.prototype.adjustSVGTagNameCase=function(e){return s.SVGTagMap[e]||e},g.prototype.adjustSVGAttributes=function(e){return e.forEach(function(e){e.namespaceURI="http://www.w3.org/2000/svg",s.SVGAttributeMap[e.nodeName]&&(e.nodeName=s.SVGAttributeMap[e.nodeName])}),e},g.prototype.adjustForeignAttributes=function(e){for(var t=0;t<e.length;t++){var n=e[t],r=s.ForeignAttributeMap[n.nodeName];r&&(n.nodeName=r.localName,n.prefix=r.prefix,n.namespaceURI=r.namespaceURI)}return e},n.TreeBuilder=g},{"./ElementStack":1,"./StackItem":4,"./Tokenizer":5,"./constants":7,"./messages.json":8,assert:13,events:16}],7:[function(e,t,n){n.SVGTagMap={altglyph:"altGlyph",altglyphdef:"altGlyphDef",altglyphitem:"altGlyphItem",animatecolor:"animateColor",animatemotion:"animateMotion",animatetransform:"animateTransform",clippath:"clipPath",feblend:"feBlend",fecolormatrix:"feColorMatrix",fecomponenttransfer:"feComponentTransfer",fecomposite:"feComposite",feconvolvematrix:"feConvolveMatrix",fediffuselighting:"feDiffuseLighting",fedisplacementmap:"feDisplacementMap",fedistantlight:"feDistantLight",feflood:"feFlood",fefunca:"feFuncA",fefuncb:"feFuncB",fefuncg:"feFuncG",fefuncr:"feFuncR",fegaussianblur:"feGaussianBlur",feimage:"feImage",femerge:"feMerge",femergenode:"feMergeNode",femorphology:"feMorphology",feoffset:"feOffset",fepointlight:"fePointLight",fespecularlighting:"feSpecularLighting",fespotlight:"feSpotLight",fetile:"feTile",feturbulence:"feTurbulence",foreignobject:"foreignObject",glyphref:"glyphRef",lineargradient:"linearGradient",radialgradient:"radialGradient",textpath:"textPath"},n.MATHMLAttributeMap={definitionurl:"definitionURL"},n.SVGAttributeMap={attributename:"attributeName",attributetype:"attributeType",basefrequency:"baseFrequency",baseprofile:"baseProfile",calcmode:"calcMode",clippathunits:"clipPathUnits",contentscripttype:"contentScriptType",contentstyletype:"contentStyleType",diffuseconstant:"diffuseConstant",edgemode:"edgeMode",externalresourcesrequired:"externalResourcesRequired",filterres:"filterRes",filterunits:"filterUnits",glyphref:"glyphRef",gradienttransform:"gradientTransform",gradientunits:"gradientUnits",kernelmatrix:"kernelMatrix",kernelunitlength:"kernelUnitLength",keypoints:"keyPoints",keysplines:"keySplines",keytimes:"keyTimes",lengthadjust:"lengthAdjust",limitingconeangle:"limitingConeAngle",markerheight:"markerHeight",markerunits:"markerUnits",markerwidth:"markerWidth",maskcontentunits:"maskContentUnits",maskunits:"maskUnits",numoctaves:"numOctaves",pathlength:"pathLength",patterncontentunits:"patternContentUnits",patterntransform:"patternTransform",patternunits:"patternUnits",pointsatx:"pointsAtX",pointsaty:"pointsAtY",pointsatz:"pointsAtZ",preservealpha:"preserveAlpha",preserveaspectratio:"preserveAspectRatio",primitiveunits:"primitiveUnits",refx:"refX",refy:"refY",repeatcount:"repeatCount",repeatdur:"repeatDur",requiredextensions:"requiredExtensions",requiredfeatures:"requiredFeatures",specularconstant:"specularConstant",specularexponent:"specularExponent",spreadmethod:"spreadMethod",startoffset:"startOffset",stddeviation:"stdDeviation",stitchtiles:"stitchTiles",surfacescale:"surfaceScale",systemlanguage:"systemLanguage",tablevalues:"tableValues",targetx:"targetX",targety:"targetY",textlength:"textLength",viewbox:"viewBox",viewtarget:"viewTarget",xchannelselector:"xChannelSelector",ychannelselector:"yChannelSelector",zoomandpan:"zoomAndPan"},n.ForeignAttributeMap={"xlink:actuate":{prefix:"xlink",localName:"actuate",namespaceURI:"http://www.w3.org/1999/xlink"},"xlink:arcrole":{prefix:"xlink",localName:"arcrole",namespaceURI:"http://www.w3.org/1999/xlink"},"xlink:href":{prefix:"xlink",localName:"href",namespaceURI:"http://www.w3.org/1999/xlink"},"xlink:role":{prefix:"xlink",localName:"role",namespaceURI:"http://www.w3.org/1999/xlink"},"xlink:show":{prefix:"xlink",localName:"show",namespaceURI:"http://www.w3.org/1999/xlink"},"xlink:title":{prefix:"xlink",localName:"title",namespaceURI:"http://www.w3.org/1999/xlink"},"xlink:type":{prefix:"xlink",localName:"title",namespaceURI:"http://www.w3.org/1999/xlink"},"xml:base":{prefix:"xml",localName:"base",namespaceURI:"http://www.w3.org/XML/1998/namespace"},"xml:lang":{prefix:"xml",localName:"lang",namespaceURI:"http://www.w3.org/XML/1998/namespace"},"xml:space":{prefix:"xml",localName:"space",namespaceURI:"http://www.w3.org/XML/1998/namespace"},xmlns:{prefix:null,localName:"xmlns",namespaceURI:"http://www.w3.org/2000/xmlns/"},"xmlns:xlink":{prefix:"xmlns",localName:"xlink",namespaceURI:"http://www.w3.org/2000/xmlns/"}}},{}],8:[function(e,t,n){t.exports={"null-character":"Null character in input stream, replaced with U+FFFD.","invalid-codepoint":"Invalid codepoint in stream","incorrectly-placed-solidus":"Solidus (/) incorrectly placed in tag.","incorrect-cr-newline-entity":"Incorrect CR newline entity, replaced with LF.","illegal-windows-1252-entity":"Entity used with illegal number (windows-1252 reference).","cant-convert-numeric-entity":"Numeric entity couldn't be converted to character (codepoint U+{charAsInt}).","invalid-numeric-entity-replaced":"Numeric entity represents an illegal codepoint. Expanded to the C1 controls range.","numeric-entity-without-semicolon":"Numeric entity didn't end with ';'.","expected-numeric-entity-but-got-eof":"Numeric entity expected. Got end of file instead.","expected-numeric-entity":"Numeric entity expected but none found.","named-entity-without-semicolon":"Named entity didn't end with ';'.","expected-named-entity":"Named entity expected. Got none.","attributes-in-end-tag":"End tag contains unexpected attributes.","self-closing-flag-on-end-tag":"End tag contains unexpected self-closing flag.","bare-less-than-sign-at-eof":"End of file after <.","expected-tag-name-but-got-right-bracket":"Expected tag name. Got '>' instead.","expected-tag-name-but-got-question-mark":"Expected tag name. Got '?' instead. (HTML doesn't support processing instructions.)","expected-tag-name":"Expected tag name. Got something else instead.","expected-closing-tag-but-got-right-bracket":"Expected closing tag. Got '>' instead. Ignoring '</>'.","expected-closing-tag-but-got-eof":"Expected closing tag. Unexpected end of file.","expected-closing-tag-but-got-char":"Expected closing tag. Unexpected character '{data}' found.","eof-in-tag-name":"Unexpected end of file in the tag name.","expected-attribute-name-but-got-eof":"Unexpected end of file. Expected attribute name instead.","eof-in-attribute-name":"Unexpected end of file in attribute name.","invalid-character-in-attribute-name":"Invalid character in attribute name.","duplicate-attribute":"Dropped duplicate attribute '{name}' on tag.","expected-end-of-tag-but-got-eof":"Unexpected end of file. Expected = or end of tag.","expected-attribute-value-but-got-eof":"Unexpected end of file. Expected attribute value.","expected-attribute-value-but-got-right-bracket":"Expected attribute value. Got '>' instead.","unexpected-character-in-unquoted-attribute-value":"Unexpected character in unquoted attribute","invalid-character-after-attribute-name":"Unexpected character after attribute name.","unexpected-character-after-attribute-value":"Unexpected character after attribute value.","eof-in-attribute-value-double-quote":'Unexpected end of file in attribute value (").',"eof-in-attribute-value-single-quote":"Unexpected end of file in attribute value (').","eof-in-attribute-value-no-quotes":"Unexpected end of file in attribute value.","eof-after-attribute-value":"Unexpected end of file after attribute value.","unexpected-eof-after-solidus-in-tag":"Unexpected end of file in tag. Expected >.","unexpected-character-after-solidus-in-tag":"Unexpected character after / in tag. Expected >.","expected-dashes-or-doctype":"Expected '--' or 'DOCTYPE'. Not found.","unexpected-bang-after-double-dash-in-comment":"Unexpected ! after -- in comment.","incorrect-comment":"Incorrect comment.","eof-in-comment":"Unexpected end of file in comment.","eof-in-comment-end-dash":"Unexpected end of file in comment (-).","unexpected-dash-after-double-dash-in-comment":"Unexpected '-' after '--' found in comment.","eof-in-comment-double-dash":"Unexpected end of file in comment (--).","eof-in-comment-end-bang-state":"Unexpected end of file in comment.","unexpected-char-in-comment":"Unexpected character in comment found.","need-space-after-doctype":"No space after literal string 'DOCTYPE'.","expected-doctype-name-but-got-right-bracket":"Unexpected > character. Expected DOCTYPE name.","expected-doctype-name-but-got-eof":"Unexpected end of file. Expected DOCTYPE name.","eof-in-doctype-name":"Unexpected end of file in DOCTYPE name.","eof-in-doctype":"Unexpected end of file in DOCTYPE.","expected-space-or-right-bracket-in-doctype":"Expected space or '>'. Got '{data}'.","unexpected-end-of-doctype":"Unexpected end of DOCTYPE.","unexpected-char-in-doctype":"Unexpected character in DOCTYPE.","eof-in-bogus-doctype":"Unexpected end of file in bogus doctype.","eof-in-innerhtml":"Unexpected EOF in inner html mode.","unexpected-doctype":"Unexpected DOCTYPE. Ignored.","non-html-root":"html needs to be the first start tag.","expected-doctype-but-got-eof":"Unexpected End of file. Expected DOCTYPE.","unknown-doctype":"Erroneous DOCTYPE. Expected <!DOCTYPE html>.","quirky-doctype":"Quirky doctype. Expected <!DOCTYPE html>.","almost-standards-doctype":"Almost standards mode doctype. Expected <!DOCTYPE html>.","obsolete-doctype":"Obsolete doctype. Expected <!DOCTYPE html>.","expected-doctype-but-got-chars":"Non-space characters found without seeing a doctype first. Expected e.g. <!DOCTYPE html>.","expected-doctype-but-got-start-tag":"Start tag seen without seeing a doctype first. Expected e.g. <!DOCTYPE html>.","expected-doctype-but-got-end-tag":"End tag seen without seeing a doctype first. Expected e.g. <!DOCTYPE html>.","end-tag-after-implied-root":"Unexpected end tag ({name}) after the (implied) root element.","expected-named-closing-tag-but-got-eof":"Unexpected end of file. Expected end tag ({name}).","two-heads-are-not-better-than-one":"Unexpected start tag head in existing head. Ignored.","unexpected-end-tag":"Unexpected end tag ({name}). Ignored.","unexpected-implied-end-tag":"End tag {name} implied, but there were open elements.","unexpected-start-tag-out-of-my-head":"Unexpected start tag ({name}) that can be in head. Moved.","unexpected-start-tag":"Unexpected start tag ({name}).","missing-end-tag":"Missing end tag ({name}).","missing-end-tags":"Missing end tags ({name}).","unexpected-start-tag-implies-end-tag":"Unexpected start tag ({startName}) implies end tag ({endName}).","unexpected-start-tag-treated-as":"Unexpected start tag ({originalName}). Treated as {newName}.","deprecated-tag":"Unexpected start tag {name}. Don't use it!","unexpected-start-tag-ignored":"Unexpected start tag {name}. Ignored.","expected-one-end-tag-but-got-another":"Unexpected end tag ({gotName}). Missing end tag ({expectedName}).","end-tag-too-early":"End tag ({name}) seen too early. Expected other end tag.","end-tag-too-early-named":"Unexpected end tag ({gotName}). Expected end tag ({expectedName}.","end-tag-too-early-ignored":"End tag ({name}) seen too early. Ignored.","adoption-agency-1.1":"End tag ({name}) violates step 1, paragraph 1 of the adoption agency algorithm.","adoption-agency-1.2":"End tag ({name}) violates step 1, paragraph 2 of the adoption agency algorithm.","adoption-agency-1.3":"End tag ({name}) violates step 1, paragraph 3 of the adoption agency algorithm.","adoption-agency-4.4":"End tag ({name}) violates step 4, paragraph 4 of the adoption agency algorithm.","unexpected-end-tag-treated-as":"Unexpected end tag ({originalName}). Treated as {newName}.","no-end-tag":"This element ({name}) has no end tag.","unexpected-implied-end-tag-in-table":"Unexpected implied end tag ({name}) in the table phase.","unexpected-implied-end-tag-in-table-body":"Unexpected implied end tag ({name}) in the table body phase.","unexpected-char-implies-table-voodoo":"Unexpected non-space characters in table context caused voodoo mode.","unexpected-hidden-input-in-table":"Unexpected input with type hidden in table context.","unexpected-form-in-table":"Unexpected form in table context.","unexpected-start-tag-implies-table-voodoo":"Unexpected start tag ({name}) in table context caused voodoo mode.","unexpected-end-tag-implies-table-voodoo":"Unexpected end tag ({name}) in table context caused voodoo mode.","unexpected-cell-in-table-body":"Unexpected table cell start tag ({name}) in the table body phase.","unexpected-cell-end-tag":"Got table cell end tag ({name}) while required end tags are missing.","unexpected-end-tag-in-table-body":"Unexpected end tag ({name}) in the table body phase. Ignored.","unexpected-implied-end-tag-in-table-row":"Unexpected implied end tag ({name}) in the table row phase.","unexpected-end-tag-in-table-row":"Unexpected end tag ({name}) in the table row phase. Ignored.","unexpected-select-in-select":"Unexpected select start tag in the select phase treated as select end tag.","unexpected-input-in-select":"Unexpected input start tag in the select phase.","unexpected-start-tag-in-select":"Unexpected start tag token ({name}) in the select phase. Ignored.","unexpected-end-tag-in-select":"Unexpected end tag ({name}) in the select phase. Ignored.","unexpected-table-element-start-tag-in-select-in-table":"Unexpected table element start tag ({name}) in the select in table phase.","unexpected-table-element-end-tag-in-select-in-table":"Unexpected table element end tag ({name}) in the select in table phase.","unexpected-char-after-body":"Unexpected non-space characters in the after body phase.","unexpected-start-tag-after-body":"Unexpected start tag token ({name}) in the after body phase.","unexpected-end-tag-after-body":"Unexpected end tag token ({name}) in the after body phase.","unexpected-char-in-frameset":"Unepxected characters in the frameset phase. Characters ignored.","unexpected-start-tag-in-frameset":"Unexpected start tag token ({name}) in the frameset phase. Ignored.","unexpected-frameset-in-frameset-innerhtml":"Unexpected end tag token (frameset in the frameset phase (innerHTML).","unexpected-end-tag-in-frameset":"Unexpected end tag token ({name}) in the frameset phase. Ignored.","unexpected-char-after-frameset":"Unexpected non-space characters in the after frameset phase. Ignored.","unexpected-start-tag-after-frameset":"Unexpected start tag ({name}) in the after frameset phase. Ignored.","unexpected-end-tag-after-frameset":"Unexpected end tag ({name}) in the after frameset phase. Ignored.","expected-eof-but-got-char":"Unexpected non-space characters. Expected end of file.","expected-eof-but-got-start-tag":"Unexpected start tag ({name}). Expected end of file.","expected-eof-but-got-end-tag":"Unexpected end tag ({name}). Expected end of file.","unexpected-end-table-in-caption":"Unexpected end table tag in caption. Generates implied end caption.","end-html-in-innerhtml":"Unexpected html end tag in inner html mode.","eof-in-table":"Unexpected end of file. Expected table content.","eof-in-script":"Unexpected end of file. Expected script content.","non-void-element-with-trailing-solidus":"Trailing solidus not allowed on element {name}.","unexpected-html-element-in-foreign-content":'HTML start tag "{name}" in a foreign namespace context.',"unexpected-start-tag-in-table":"Unexpected {name}. Expected table content."}},{}],9:[function(e,t,n){function o(){this.contentHandler=null,this._errorHandler=null,this._treeBuilder=new r,this._tokenizer=new i(this._treeBuilder),this._scriptingEnabled=!1}var r=e("./SAXTreeBuilder").SAXTreeBuilder,i=e("../Tokenizer").Tokenizer,s=e("./TreeParser").TreeParser;o.prototype.parse=function(e,t){t&&this._treeBuilder.setFragmentContext(t),this._tokenizer.tokenize(e);var n=this._treeBuilder.document;n&&(new s(this.contentHandler)).parse(n)},o.prototype.parseFragment=function(e,t){this._treeBuilder.setFragmentContext(t),this._tokenizer.tokenize(e);var n=this._treeBuilder.getFragment();n&&(new s(this.contentHandler)).parse(n)},Object.defineProperty(o.prototype,"scriptingEnabled",{get:function(){return this._scriptingEnabled},set:function(e){this._scriptingEnabled=e,this._treeBuilder.scriptingEnabled=e}}),Object.defineProperty(o.prototype,"errorHandler",{get:function(){return this._errorHandler},set:function(e){this._errorHandler=e,this._treeBuilder.errorHandler=e}}),n.SAXParser=o},{"../Tokenizer":5,"./SAXTreeBuilder":10,"./TreeParser":11}],10:[function(e,t,n){function s(){i.call(this)}function o(e,t){for(var n=0;n<e.attributes.length;n++){var r=e.attributes[n];if(r.nodeName===t)return r.nodeValue}}function a(e){e?(this.columnNumber=e.columnNumber,this.lineNumber=e.lineNumber):(this.columnNumber=-1,this.lineNumber=-1),this.parentNode=null,this.nextSibling=null,this.firstChild=null}function f(e){a.call(this,e),this.lastChild=null,this._endLocator=null}function l(e){f.call(this,e),this.nodeType=u.DOCUMENT}function c(){f.call(this,new Locator),this.nodeType=u.DOCUMENT_FRAGMENT}function h(e,t,n,r,i,s){f.call(this,e),this.uri=t,this.localName=n,this.qName=r,this.attributes=i,this.prefixMappings=s,this.nodeType=u.ELEMENT}function p(e,t){a.call(this,e),this.data=t,this.nodeType=u.CHARACTERS}function d(e,t){a.call(this,e),this.data=t,this.nodeType=u.IGNORABLE_WHITESPACE}function v(e,t){a.call(this,e),this.data=t,this.nodeType=u.COMMENT}function m(e){f.call(this,e),this.nodeType=u.CDATA}function g(e){f.call(this),this.name=e,this.nodeType=u.ENTITY}function y(e){a.call(this),this.name=e,this.nodeType=u.SKIPPED_ENTITY}function b(e,t){a.call(this),this.target=e,this.data=t}function w(e,t,n){f.call(this),this.name=e,this.publicIdentifier=t,this.systemIdentifier=n,this.nodeType=u.DTD}var r=e("util"),i=e("../TreeBuilder").TreeBuilder;r.inherits(s,i),s.prototype.start=function(e){this.document=new l(this.tokenizer)},s.prototype.end=function(){this.document.endLocator=this.tokenizer},s.prototype.insertDoctype=function(e,t,n){var r=new w(this.tokenizer,e,t,n);r.endLocator=this.tokenizer,this.document.appendChild(r)},s.prototype.createElement=function(e,t,n){var r=new h(this.tokenizer,e,t,t,n||[]);return r},s.prototype.insertComment=function(e,t){t||(t=this.currentStackItem());var n=new v(this.tokenizer,e);t.appendChild(n)},s.prototype.appendCharacters=function(e,t){var n=new p(this.tokenizer,t);e.appendChild(n)},s.prototype.insertText=function(e){if(this.redirectAttachToFosterParent&&this.openElements.top.isFosterParenting()){var t=this.openElements.findIndex("table"),n=this.openElements.item(t),r=n.node;if(t===0)return this.appendCharacters(r,e);var i=new p(this.tokenizer,e),s=r.parentNode;if(s){s.insertBetween(i,r.previousSibling,r);return}var o=this.openElements.item(t-1).node;o.appendChild(i);return}this.appendCharacters(this.currentStackItem().node,e)},s.prototype.attachNode=function(e,t){t.appendChild(e)},s.prototype.attachNodeToFosterParent=function(e,t,n){var r=t.parentNode;r?r.insertBetween(e,t.previousSibling,t):n.appendChild(e)},s.prototype.detachFromParent=function(e){e.detach()},s.prototype.reparentChildren=function(e,t){t.appendChildren(e.firstChild)},s.prototype.getFragment=function(){var e=new c;return this.reparentChildren(this.openElements.rootNode,e),e},s.prototype.addAttributesToElement=function(e,t){for(var n=0;n<t.length;n++){var r=t[n];o(e,r.nodeName)||e.attributes.push(r)}};var u={CDATA:1,CHARACTERS:2,COMMENT:3,DOCUMENT:4,DOCUMENT_FRAGMENT:5,DTD:6,ELEMENT:7,ENTITY:8,IGNORABLE_WHITESPACE:9,PROCESSING_INSTRUCTION:10,SKIPPED_ENTITY:11};a.prototype.visit=function(e){throw new Error("Not Implemented")},a.prototype.revisit=function(e){return},a.prototype.detach=function(){this.parentNode!==null&&(this.parentNode.removeChild(this),this.parentNode=null)},Object.defineProperty(a.prototype,"previousSibling",{get:function(){var e=null,t=this.parentNode.firstChild;for(;;){if(this==t)return e;e=t,t=t.nextSibling}}}),f.prototype=Object.create(a.prototype),f.prototype.insertBefore=function(e,t){if(!t)return this.appendChild(e);e.detach(),e.parentNode=this;if(this.firstChild==t)e.nextSibling=t,this.firstChild=e;else{var n=this.firstChild,r=this.firstChild.nextSibling;while(r!=t)n=r,r=r.nextSibling;n.nextSibling=e,e.nextSibling=r}return e},f.prototype.insertBetween=function(e,t,n){return n?(e.detach(),e.parentNode=this,e.nextSibling=n,t?t.nextSibling=e:firstChild=e,e):this.appendChild(e)},f.prototype.appendChild=function(e){return e.detach(),e.parentNode=this,this.firstChild?this.lastChild.nextSibling=e:this.firstChild=e,this.lastChild=e,e},f.prototype.appendChildren=function(e){var t=e.firstChild;if(!t)return;var n=e;this.firstChild?this.lastChild.nextSibling=t:this.firstChild=t,this.lastChild=n.lastChild;do t.parentNode=this;while(t=t.nextSibling);n.firstChild=null,n.lastChild=null},f.prototype.removeChild=function(e){if(this.firstChild==e)this.firstChild=e.nextSibling,this.lastChild==e&&(this.lastChild=null);else{var t=this.firstChild,n=this.firstChild.nextSibling;while(n!=e)t=n,n=n.nextSibling;t.nextSibling=e.nextSibling,this.lastChild==e&&(this.lastChild=t)}return e.parentNode=null,e},Object.defineProperty(f.prototype,"endLocator",{get:function(){return this._endLocator},set:function(e){this._endLocator={lineNumber:e.lineNumber,columnNumber:e.columnNumber}}}),l.prototype=Object.create(f.prototype),l.prototype.visit=function(e){e.startDocument(this)},l.prototype.revisit=function(e){e.endDocument(this.endLocator)},c.prototype=Object.create(f.prototype),c.prototype.visit=function(e){},h.prototype=Object.create(f.prototype),h.prototype.visit=function(e){if(this.prefixMappings)for(var t in prefixMappings){var n=prefixMappings[t];e.startPrefixMapping(n.getPrefix(),n.getUri(),this)}e.startElement(this.uri,this.localName,this.qName,this.attributes,this)},h.prototype.revisit=function(e){e.endElement(this.uri,this.localName,this.qName,this.endLocator);if(this.prefixMappings)for(var t in prefixMappings){var n=prefixMappings[t];e.endPrefixMapping(n.getPrefix(),this.endLocator)}},p.prototype=Object.create(a.prototype),p.prototype.visit=function(e){e.characters(this.data,0,this.data.length,this)},d.prototype=Object.create(a.prototype),d.prototype.visit=function(e){e.ignorableWhitespace(this.data,0,this.data.length,this)},v.prototype=Object.create(a.prototype),v.prototype.visit=function(e){e.comment(this.data,0,this.data.length,this)},m.prototype=Object.create(f.prototype),m.prototype.visit=function(e){e.startCDATA(this)},m.prototype.revisit=function(e){e.endCDATA(this.endLocator)},g.prototype=Object.create(f.prototype),g.prototype.visit=function(e){e.startEntity(this.name,this)},g.prototype.revisit=function(e){e.endEntity(this.name)},y.prototype=Object.create(a.prototype),y.prototype.visit=function(e){e.skippedEntity(this.name,this)},b.prototype=Object.create(a.prototype),b.prototype.visit=function(e){e.processingInstruction(this.target,this.data,this)},b.prototype.getNodeType=function(){return u.PROCESSING_INSTRUCTION},w.prototype=Object.create(f.prototype),w.prototype.visit=function(e){e.startDTD(this.name,this.publicIdentifier,this.systemIdentifier,this)},w.prototype.revisit=function(e){e.endDTD()},n.SAXTreeBuilder=s},{"../TreeBuilder":6,util:20}],11:[function(e,t,n){function r(e,t){this.contentHandler,this.lexicalHandler,this.locatorDelegate;if(!e)throw new IllegalArgumentException("contentHandler was null.");this.contentHandler=e,t?this.lexicalHandler=t:this.lexicalHandler=new i}function i(){}r.prototype.parse=function(e){this.contentHandler.documentLocator=this;var t=e,n;for(;;){t.visit(this);if(n=t.firstChild){t=n;continue}for(;;){t.revisit(this);if(t==e)return;if(n=t.nextSibling){t=n;break}t=t.parentNode}}},r.prototype.characters=function(e,t,n,r){this.locatorDelegate=r,this.contentHandler.characters(e,t,n)},r.prototype.endDocument=function(e){this.locatorDelegate=e,this.contentHandler.endDocument()},r.prototype.endElement=function(e,t,n,r){this.locatorDelegate=r,this.contentHandler.endElement(e,t,n)},r.prototype.endPrefixMapping=function(e,t){this.locatorDelegate=t,this.contentHandler.endPrefixMapping(e)},r.prototype.ignorableWhitespace=function(e,t,n,r){this.locatorDelegate=r,this.contentHandler.ignorableWhitespace(e,t,n)},r.prototype.processingInstruction=function(e,t,n){this.locatorDelegate=n,this.contentHandler.processingInstruction(e,t)},r.prototype.skippedEntity=function(e,t){this.locatorDelegate=t,this.contentHandler.skippedEntity(e)},r.prototype.startDocument=function(e){this.locatorDelegate=e,this.contentHandler.startDocument()},r.prototype.startElement=function(e,t,n,r,i){this.locatorDelegate=i,this.contentHandler.startElement(e,t,n,r)},r.prototype.startPrefixMapping=function(e,t,n){this.locatorDelegate=n,this.contentHandler.startPrefixMapping(e,t)},r.prototype.comment=function(e,t,n,r){this.locatorDelegate=r,this.lexicalHandler.comment(e,t,n)},r.prototype.endCDATA=function(e){this.locatorDelegate=e,this.lexicalHandler.endCDATA()},r.prototype.endDTD=function(e){this.locatorDelegate=e,this.lexicalHandler.endDTD()},r.prototype.endEntity=function(e,t){this.locatorDelegate=t,this.lexicalHandler.endEntity(e)},r.prototype.startCDATA=function(e){this.locatorDelegate=e,this.lexicalHandler.startCDATA()},r.prototype.startDTD=function(e,t,n,r){this.locatorDelegate=r,this.lexicalHandler.startDTD(e,t,n)},r.prototype.startEntity=function(e,t){this.locatorDelegate=t,this.lexicalHandler.startEntity(e)},Object.defineProperty(r.prototype,"columnNumber",{get:function(){return this.locatorDelegate?this.locatorDelegate.columnNumber:-1}}),Object.defineProperty(r.prototype,"lineNumber",{get:function(){return this.locatorDelegate?this.locatorDelegate.lineNumber:-1}}),i.prototype.comment=function(){},i.prototype.endCDATA=function(){},i.prototype.endDTD=function(){},i.prototype.endEntity=function(){},i.prototype.startCDATA=function(){},i.prototype.startDTD=function(){},i.prototype.startEntity=function(){},n.TreeParser=r},{}],12:[function(e,t,n){t.exports={"Aacute;":"\u00c1",Aacute:"\u00c1","aacute;":"\u00e1",aacute:"\u00e1","Abreve;":"\u0102","abreve;":"\u0103","ac;":"\u223e","acd;":"\u223f","acE;":"\u223e\u0333","Acirc;":"\u00c2",Acirc:"\u00c2","acirc;":"\u00e2",acirc:"\u00e2","acute;":"\u00b4",acute:"\u00b4","Acy;":"\u0410","acy;":"\u0430","AElig;":"\u00c6",AElig:"\u00c6","aelig;":"\u00e6",aelig:"\u00e6","af;":"\u2061","Afr;":"\ud835\udd04","afr;":"\ud835\udd1e","Agrave;":"\u00c0",Agrave:"\u00c0","agrave;":"\u00e0",agrave:"\u00e0","alefsym;":"\u2135","aleph;":"\u2135","Alpha;":"\u0391","alpha;":"\u03b1","Amacr;":"\u0100","amacr;":"\u0101","amalg;":"\u2a3f","amp;":"&",amp:"&","AMP;":"&",AMP:"&","andand;":"\u2a55","And;":"\u2a53","and;":"\u2227","andd;":"\u2a5c","andslope;":"\u2a58","andv;":"\u2a5a","ang;":"\u2220","ange;":"\u29a4","angle;":"\u2220","angmsdaa;":"\u29a8","angmsdab;":"\u29a9","angmsdac;":"\u29aa","angmsdad;":"\u29ab","angmsdae;":"\u29ac","angmsdaf;":"\u29ad","angmsdag;":"\u29ae","angmsdah;":"\u29af","angmsd;":"\u2221","angrt;":"\u221f","angrtvb;":"\u22be","angrtvbd;":"\u299d","angsph;":"\u2222","angst;":"\u00c5","angzarr;":"\u237c","Aogon;":"\u0104","aogon;":"\u0105","Aopf;":"\ud835\udd38","aopf;":"\ud835\udd52","apacir;":"\u2a6f","ap;":"\u2248","apE;":"\u2a70","ape;":"\u224a","apid;":"\u224b","apos;":"'","ApplyFunction;":"\u2061","approx;":"\u2248","approxeq;":"\u224a","Aring;":"\u00c5",Aring:"\u00c5","aring;":"\u00e5",aring:"\u00e5","Ascr;":"\ud835\udc9c","ascr;":"\ud835\udcb6","Assign;":"\u2254","ast;":"*","asymp;":"\u2248","asympeq;":"\u224d","Atilde;":"\u00c3",Atilde:"\u00c3","atilde;":"\u00e3",atilde:"\u00e3","Auml;":"\u00c4",Auml:"\u00c4","auml;":"\u00e4",auml:"\u00e4","awconint;":"\u2233","awint;":"\u2a11","backcong;":"\u224c","backepsilon;":"\u03f6","backprime;":"\u2035","backsim;":"\u223d","backsimeq;":"\u22cd","Backslash;":"\u2216","Barv;":"\u2ae7","barvee;":"\u22bd","barwed;":"\u2305","Barwed;":"\u2306","barwedge;":"\u2305","bbrk;":"\u23b5","bbrktbrk;":"\u23b6","bcong;":"\u224c","Bcy;":"\u0411","bcy;":"\u0431","bdquo;":"\u201e","becaus;":"\u2235","because;":"\u2235","Because;":"\u2235","bemptyv;":"\u29b0","bepsi;":"\u03f6","bernou;":"\u212c","Bernoullis;":"\u212c","Beta;":"\u0392","beta;":"\u03b2","beth;":"\u2136","between;":"\u226c","Bfr;":"\ud835\udd05","bfr;":"\ud835\udd1f","bigcap;":"\u22c2","bigcirc;":"\u25ef","bigcup;":"\u22c3","bigodot;":"\u2a00","bigoplus;":"\u2a01","bigotimes;":"\u2a02","bigsqcup;":"\u2a06","bigstar;":"\u2605","bigtriangledown;":"\u25bd","bigtriangleup;":"\u25b3","biguplus;":"\u2a04","bigvee;":"\u22c1","bigwedge;":"\u22c0","bkarow;":"\u290d","blacklozenge;":"\u29eb","blacksquare;":"\u25aa","blacktriangle;":"\u25b4","blacktriangledown;":"\u25be","blacktriangleleft;":"\u25c2","blacktriangleright;":"\u25b8","blank;":"\u2423","blk12;":"\u2592","blk14;":"\u2591","blk34;":"\u2593","block;":"\u2588","bne;":"=\u20e5","bnequiv;":"\u2261\u20e5","bNot;":"\u2aed","bnot;":"\u2310","Bopf;":"\ud835\udd39","bopf;":"\ud835\udd53","bot;":"\u22a5","bottom;":"\u22a5","bowtie;":"\u22c8","boxbox;":"\u29c9","boxdl;":"\u2510","boxdL;":"\u2555","boxDl;":"\u2556","boxDL;":"\u2557","boxdr;":"\u250c","boxdR;":"\u2552","boxDr;":"\u2553","boxDR;":"\u2554","boxh;":"\u2500","boxH;":"\u2550","boxhd;":"\u252c","boxHd;":"\u2564","boxhD;":"\u2565","boxHD;":"\u2566","boxhu;":"\u2534","boxHu;":"\u2567","boxhU;":"\u2568","boxHU;":"\u2569","boxminus;":"\u229f","boxplus;":"\u229e","boxtimes;":"\u22a0","boxul;":"\u2518","boxuL;":"\u255b","boxUl;":"\u255c","boxUL;":"\u255d","boxur;":"\u2514","boxuR;":"\u2558","boxUr;":"\u2559","boxUR;":"\u255a","boxv;":"\u2502","boxV;":"\u2551","boxvh;":"\u253c","boxvH;":"\u256a","boxVh;":"\u256b","boxVH;":"\u256c","boxvl;":"\u2524","boxvL;":"\u2561","boxVl;":"\u2562","boxVL;":"\u2563","boxvr;":"\u251c","boxvR;":"\u255e","boxVr;":"\u255f","boxVR;":"\u2560","bprime;":"\u2035","breve;":"\u02d8","Breve;":"\u02d8","brvbar;":"\u00a6",brvbar:"\u00a6","bscr;":"\ud835\udcb7","Bscr;":"\u212c","bsemi;":"\u204f","bsim;":"\u223d","bsime;":"\u22cd","bsolb;":"\u29c5","bsol;":"\\","bsolhsub;":"\u27c8","bull;":"\u2022","bullet;":"\u2022","bump;":"\u224e","bumpE;":"\u2aae","bumpe;":"\u224f","Bumpeq;":"\u224e","bumpeq;":"\u224f","Cacute;":"\u0106","cacute;":"\u0107","capand;":"\u2a44","capbrcup;":"\u2a49","capcap;":"\u2a4b","cap;":"\u2229","Cap;":"\u22d2","capcup;":"\u2a47","capdot;":"\u2a40","CapitalDifferentialD;":"\u2145","caps;":"\u2229\ufe00","caret;":"\u2041","caron;":"\u02c7","Cayleys;":"\u212d","ccaps;":"\u2a4d","Ccaron;":"\u010c","ccaron;":"\u010d","Ccedil;":"\u00c7",Ccedil:"\u00c7","ccedil;":"\u00e7",ccedil:"\u00e7","Ccirc;":"\u0108","ccirc;":"\u0109","Cconint;":"\u2230","ccups;":"\u2a4c","ccupssm;":"\u2a50","Cdot;":"\u010a","cdot;":"\u010b","cedil;":"\u00b8",cedil:"\u00b8","Cedilla;":"\u00b8","cemptyv;":"\u29b2","cent;":"\u00a2",cent:"\u00a2","centerdot;":"\u00b7","CenterDot;":"\u00b7","cfr;":"\ud835\udd20","Cfr;":"\u212d","CHcy;":"\u0427","chcy;":"\u0447","check;":"\u2713","checkmark;":"\u2713","Chi;":"\u03a7","chi;":"\u03c7","circ;":"\u02c6","circeq;":"\u2257","circlearrowleft;":"\u21ba","circlearrowright;":"\u21bb","circledast;":"\u229b","circledcirc;":"\u229a","circleddash;":"\u229d","CircleDot;":"\u2299","circledR;":"\u00ae","circledS;":"\u24c8","CircleMinus;":"\u2296","CirclePlus;":"\u2295","CircleTimes;":"\u2297","cir;":"\u25cb","cirE;":"\u29c3","cire;":"\u2257","cirfnint;":"\u2a10","cirmid;":"\u2aef","cirscir;":"\u29c2","ClockwiseContourIntegral;":"\u2232","CloseCurlyDoubleQuote;":"\u201d","CloseCurlyQuote;":"\u2019","clubs;":"\u2663","clubsuit;":"\u2663","colon;":":","Colon;":"\u2237","Colone;":"\u2a74","colone;":"\u2254","coloneq;":"\u2254","comma;":",","commat;":"@","comp;":"\u2201","compfn;":"\u2218","complement;":"\u2201","complexes;":"\u2102","cong;":"\u2245","congdot;":"\u2a6d","Congruent;":"\u2261","conint;":"\u222e","Conint;":"\u222f","ContourIntegral;":"\u222e","copf;":"\ud835\udd54","Copf;":"\u2102","coprod;":"\u2210","Coproduct;":"\u2210","copy;":"\u00a9",copy:"\u00a9","COPY;":"\u00a9",COPY:"\u00a9","copysr;":"\u2117","CounterClockwiseContourIntegral;":"\u2233","crarr;":"\u21b5","cross;":"\u2717","Cross;":"\u2a2f","Cscr;":"\ud835\udc9e","cscr;":"\ud835\udcb8","csub;":"\u2acf","csube;":"\u2ad1","csup;":"\u2ad0","csupe;":"\u2ad2","ctdot;":"\u22ef","cudarrl;":"\u2938","cudarrr;":"\u2935","cuepr;":"\u22de","cuesc;":"\u22df","cularr;":"\u21b6","cularrp;":"\u293d","cupbrcap;":"\u2a48","cupcap;":"\u2a46","CupCap;":"\u224d","cup;":"\u222a","Cup;":"\u22d3","cupcup;":"\u2a4a","cupdot;":"\u228d","cupor;":"\u2a45","cups;":"\u222a\ufe00","curarr;":"\u21b7","curarrm;":"\u293c","curlyeqprec;":"\u22de","curlyeqsucc;":"\u22df","curlyvee;":"\u22ce","curlywedge;":"\u22cf","curren;":"\u00a4",curren:"\u00a4","curvearrowleft;":"\u21b6","curvearrowright;":"\u21b7","cuvee;":"\u22ce","cuwed;":"\u22cf","cwconint;":"\u2232","cwint;":"\u2231","cylcty;":"\u232d","dagger;":"\u2020","Dagger;":"\u2021","daleth;":"\u2138","darr;":"\u2193","Darr;":"\u21a1","dArr;":"\u21d3","dash;":"\u2010","Dashv;":"\u2ae4","dashv;":"\u22a3","dbkarow;":"\u290f","dblac;":"\u02dd","Dcaron;":"\u010e","dcaron;":"\u010f","Dcy;":"\u0414","dcy;":"\u0434","ddagger;":"\u2021","ddarr;":"\u21ca","DD;":"\u2145","dd;":"\u2146","DDotrahd;":"\u2911","ddotseq;":"\u2a77","deg;":"\u00b0",deg:"\u00b0","Del;":"\u2207","Delta;":"\u0394","delta;":"\u03b4","demptyv;":"\u29b1","dfisht;":"\u297f","Dfr;":"\ud835\udd07","dfr;":"\ud835\udd21","dHar;":"\u2965","dharl;":"\u21c3","dharr;":"\u21c2","DiacriticalAcute;":"\u00b4","DiacriticalDot;":"\u02d9","DiacriticalDoubleAcute;":"\u02dd","DiacriticalGrave;":"`","DiacriticalTilde;":"\u02dc","diam;":"\u22c4","diamond;":"\u22c4","Diamond;":"\u22c4","diamondsuit;":"\u2666","diams;":"\u2666","die;":"\u00a8","DifferentialD;":"\u2146","digamma;":"\u03dd","disin;":"\u22f2","div;":"\u00f7","divide;":"\u00f7",divide:"\u00f7","divideontimes;":"\u22c7","divonx;":"\u22c7","DJcy;":"\u0402","djcy;":"\u0452","dlcorn;":"\u231e","dlcrop;":"\u230d","dollar;":"$","Dopf;":"\ud835\udd3b","dopf;":"\ud835\udd55","Dot;":"\u00a8","dot;":"\u02d9","DotDot;":"\u20dc","doteq;":"\u2250","doteqdot;":"\u2251","DotEqual;":"\u2250","dotminus;":"\u2238","dotplus;":"\u2214","dotsquare;":"\u22a1","doublebarwedge;":"\u2306","DoubleContourIntegral;":"\u222f","DoubleDot;":"\u00a8","DoubleDownArrow;":"\u21d3","DoubleLeftArrow;":"\u21d0","DoubleLeftRightArrow;":"\u21d4","DoubleLeftTee;":"\u2ae4","DoubleLongLeftArrow;":"\u27f8","DoubleLongLeftRightArrow;":"\u27fa","DoubleLongRightArrow;":"\u27f9","DoubleRightArrow;":"\u21d2","DoubleRightTee;":"\u22a8","DoubleUpArrow;":"\u21d1","DoubleUpDownArrow;":"\u21d5","DoubleVerticalBar;":"\u2225","DownArrowBar;":"\u2913","downarrow;":"\u2193","DownArrow;":"\u2193","Downarrow;":"\u21d3","DownArrowUpArrow;":"\u21f5","DownBreve;":"\u0311","downdownarrows;":"\u21ca","downharpoonleft;":"\u21c3","downharpoonright;":"\u21c2","DownLeftRightVector;":"\u2950","DownLeftTeeVector;":"\u295e","DownLeftVectorBar;":"\u2956","DownLeftVector;":"\u21bd","DownRightTeeVector;":"\u295f","DownRightVectorBar;":"\u2957","DownRightVector;":"\u21c1","DownTeeArrow;":"\u21a7","DownTee;":"\u22a4","drbkarow;":"\u2910","drcorn;":"\u231f","drcrop;":"\u230c","Dscr;":"\ud835\udc9f","dscr;":"\ud835\udcb9","DScy;":"\u0405","dscy;":"\u0455","dsol;":"\u29f6","Dstrok;":"\u0110","dstrok;":"\u0111","dtdot;":"\u22f1","dtri;":"\u25bf","dtrif;":"\u25be","duarr;":"\u21f5","duhar;":"\u296f","dwangle;":"\u29a6","DZcy;":"\u040f","dzcy;":"\u045f","dzigrarr;":"\u27ff","Eacute;":"\u00c9",Eacute:"\u00c9","eacute;":"\u00e9",eacute:"\u00e9","easter;":"\u2a6e","Ecaron;":"\u011a","ecaron;":"\u011b","Ecirc;":"\u00ca",Ecirc:"\u00ca","ecirc;":"\u00ea",ecirc:"\u00ea","ecir;":"\u2256","ecolon;":"\u2255","Ecy;":"\u042d","ecy;":"\u044d","eDDot;":"\u2a77","Edot;":"\u0116","edot;":"\u0117","eDot;":"\u2251","ee;":"\u2147","efDot;":"\u2252","Efr;":"\ud835\udd08","efr;":"\ud835\udd22","eg;":"\u2a9a","Egrave;":"\u00c8",Egrave:"\u00c8","egrave;":"\u00e8",egrave:"\u00e8","egs;":"\u2a96","egsdot;":"\u2a98","el;":"\u2a99","Element;":"\u2208","elinters;":"\u23e7","ell;":"\u2113","els;":"\u2a95","elsdot;":"\u2a97","Emacr;":"\u0112","emacr;":"\u0113","empty;":"\u2205","emptyset;":"\u2205","EmptySmallSquare;":"\u25fb","emptyv;":"\u2205","EmptyVerySmallSquare;":"\u25ab","emsp13;":"\u2004","emsp14;":"\u2005","emsp;":"\u2003","ENG;":"\u014a","eng;":"\u014b","ensp;":"\u2002","Eogon;":"\u0118","eogon;":"\u0119","Eopf;":"\ud835\udd3c","eopf;":"\ud835\udd56","epar;":"\u22d5","eparsl;":"\u29e3","eplus;":"\u2a71","epsi;":"\u03b5","Epsilon;":"\u0395","epsilon;":"\u03b5","epsiv;":"\u03f5","eqcirc;":"\u2256","eqcolon;":"\u2255","eqsim;":"\u2242","eqslantgtr;":"\u2a96","eqslantless;":"\u2a95","Equal;":"\u2a75","equals;":"=","EqualTilde;":"\u2242","equest;":"\u225f","Equilibrium;":"\u21cc","equiv;":"\u2261","equivDD;":"\u2a78","eqvparsl;":"\u29e5","erarr;":"\u2971","erDot;":"\u2253","escr;":"\u212f","Escr;":"\u2130","esdot;":"\u2250","Esim;":"\u2a73","esim;":"\u2242","Eta;":"\u0397","eta;":"\u03b7","ETH;":"\u00d0",ETH:"\u00d0","eth;":"\u00f0",eth:"\u00f0","Euml;":"\u00cb",Euml:"\u00cb","euml;":"\u00eb",euml:"\u00eb","euro;":"\u20ac","excl;":"!","exist;":"\u2203","Exists;":"\u2203","expectation;":"\u2130","exponentiale;":"\u2147","ExponentialE;":"\u2147","fallingdotseq;":"\u2252","Fcy;":"\u0424","fcy;":"\u0444","female;":"\u2640","ffilig;":"\ufb03","fflig;":"\ufb00","ffllig;":"\ufb04","Ffr;":"\ud835\udd09","ffr;":"\ud835\udd23","filig;":"\ufb01","FilledSmallSquare;":"\u25fc","FilledVerySmallSquare;":"\u25aa","fjlig;":"fj","flat;":"\u266d","fllig;":"\ufb02","fltns;":"\u25b1","fnof;":"\u0192","Fopf;":"\ud835\udd3d","fopf;":"\ud835\udd57","forall;":"\u2200","ForAll;":"\u2200","fork;":"\u22d4","forkv;":"\u2ad9","Fouriertrf;":"\u2131","fpartint;":"\u2a0d","frac12;":"\u00bd",frac12:"\u00bd","frac13;":"\u2153","frac14;":"\u00bc",frac14:"\u00bc","frac15;":"\u2155","frac16;":"\u2159","frac18;":"\u215b","frac23;":"\u2154","frac25;":"\u2156","frac34;":"\u00be",frac34:"\u00be","frac35;":"\u2157","frac38;":"\u215c","frac45;":"\u2158","frac56;":"\u215a","frac58;":"\u215d","frac78;":"\u215e","frasl;":"\u2044","frown;":"\u2322","fscr;":"\ud835\udcbb","Fscr;":"\u2131","gacute;":"\u01f5","Gamma;":"\u0393","gamma;":"\u03b3","Gammad;":"\u03dc","gammad;":"\u03dd","gap;":"\u2a86","Gbreve;":"\u011e","gbreve;":"\u011f","Gcedil;":"\u0122","Gcirc;":"\u011c","gcirc;":"\u011d","Gcy;":"\u0413","gcy;":"\u0433","Gdot;":"\u0120","gdot;":"\u0121","ge;":"\u2265","gE;":"\u2267","gEl;":"\u2a8c","gel;":"\u22db","geq;":"\u2265","geqq;":"\u2267","geqslant;":"\u2a7e","gescc;":"\u2aa9","ges;":"\u2a7e","gesdot;":"\u2a80","gesdoto;":"\u2a82","gesdotol;":"\u2a84","gesl;":"\u22db\ufe00","gesles;":"\u2a94","Gfr;":"\ud835\udd0a","gfr;":"\ud835\udd24","gg;":"\u226b","Gg;":"\u22d9","ggg;":"\u22d9","gimel;":"\u2137","GJcy;":"\u0403","gjcy;":"\u0453","gla;":"\u2aa5","gl;":"\u2277","glE;":"\u2a92","glj;":"\u2aa4","gnap;":"\u2a8a","gnapprox;":"\u2a8a","gne;":"\u2a88","gnE;":"\u2269","gneq;":"\u2a88","gneqq;":"\u2269","gnsim;":"\u22e7","Gopf;":"\ud835\udd3e","gopf;":"\ud835\udd58","grave;":"`","GreaterEqual;":"\u2265","GreaterEqualLess;":"\u22db","GreaterFullEqual;":"\u2267","GreaterGreater;":"\u2aa2","GreaterLess;":"\u2277","GreaterSlantEqual;":"\u2a7e","GreaterTilde;":"\u2273","Gscr;":"\ud835\udca2","gscr;":"\u210a","gsim;":"\u2273","gsime;":"\u2a8e","gsiml;":"\u2a90","gtcc;":"\u2aa7","gtcir;":"\u2a7a","gt;":">",gt:">","GT;":">",GT:">","Gt;":"\u226b","gtdot;":"\u22d7","gtlPar;":"\u2995","gtquest;":"\u2a7c","gtrapprox;":"\u2a86","gtrarr;":"\u2978","gtrdot;":"\u22d7","gtreqless;":"\u22db","gtreqqless;":"\u2a8c","gtrless;":"\u2277","gtrsim;":"\u2273","gvertneqq;":"\u2269\ufe00","gvnE;":"\u2269\ufe00","Hacek;":"\u02c7","hairsp;":"\u200a","half;":"\u00bd","hamilt;":"\u210b","HARDcy;":"\u042a","hardcy;":"\u044a","harrcir;":"\u2948","harr;":"\u2194","hArr;":"\u21d4","harrw;":"\u21ad","Hat;":"^","hbar;":"\u210f","Hcirc;":"\u0124","hcirc;":"\u0125","hearts;":"\u2665","heartsuit;":"\u2665","hellip;":"\u2026","hercon;":"\u22b9","hfr;":"\ud835\udd25","Hfr;":"\u210c","HilbertSpace;":"\u210b","hksearow;":"\u2925","hkswarow;":"\u2926","hoarr;":"\u21ff","homtht;":"\u223b","hookleftarrow;":"\u21a9","hookrightarrow;":"\u21aa","hopf;":"\ud835\udd59","Hopf;":"\u210d","horbar;":"\u2015","HorizontalLine;":"\u2500","hscr;":"\ud835\udcbd","Hscr;":"\u210b","hslash;":"\u210f","Hstrok;":"\u0126","hstrok;":"\u0127","HumpDownHump;":"\u224e","HumpEqual;":"\u224f","hybull;":"\u2043","hyphen;":"\u2010","Iacute;":"\u00cd",Iacute:"\u00cd","iacute;":"\u00ed",iacute:"\u00ed","ic;":"\u2063","Icirc;":"\u00ce",Icirc:"\u00ce","icirc;":"\u00ee",icirc:"\u00ee","Icy;":"\u0418","icy;":"\u0438","Idot;":"\u0130","IEcy;":"\u0415","iecy;":"\u0435","iexcl;":"\u00a1",iexcl:"\u00a1","iff;":"\u21d4","ifr;":"\ud835\udd26","Ifr;":"\u2111","Igrave;":"\u00cc",Igrave:"\u00cc","igrave;":"\u00ec",igrave:"\u00ec","ii;":"\u2148","iiiint;":"\u2a0c","iiint;":"\u222d","iinfin;":"\u29dc","iiota;":"\u2129","IJlig;":"\u0132","ijlig;":"\u0133","Imacr;":"\u012a","imacr;":"\u012b","image;":"\u2111","ImaginaryI;":"\u2148","imagline;":"\u2110","imagpart;":"\u2111","imath;":"\u0131","Im;":"\u2111","imof;":"\u22b7","imped;":"\u01b5","Implies;":"\u21d2","incare;":"\u2105","in;":"\u2208","infin;":"\u221e","infintie;":"\u29dd","inodot;":"\u0131","intcal;":"\u22ba","int;":"\u222b","Int;":"\u222c","integers;":"\u2124","Integral;":"\u222b","intercal;":"\u22ba","Intersection;":"\u22c2","intlarhk;":"\u2a17","intprod;":"\u2a3c","InvisibleComma;":"\u2063","InvisibleTimes;":"\u2062","IOcy;":"\u0401","iocy;":"\u0451","Iogon;":"\u012e","iogon;":"\u012f","Iopf;":"\ud835\udd40","iopf;":"\ud835\udd5a","Iota;":"\u0399","iota;":"\u03b9","iprod;":"\u2a3c","iquest;":"\u00bf",iquest:"\u00bf","iscr;":"\ud835\udcbe","Iscr;":"\u2110","isin;":"\u2208","isindot;":"\u22f5","isinE;":"\u22f9","isins;":"\u22f4","isinsv;":"\u22f3","isinv;":"\u2208","it;":"\u2062","Itilde;":"\u0128","itilde;":"\u0129","Iukcy;":"\u0406","iukcy;":"\u0456","Iuml;":"\u00cf",Iuml:"\u00cf","iuml;":"\u00ef",iuml:"\u00ef","Jcirc;":"\u0134","jcirc;":"\u0135","Jcy;":"\u0419","jcy;":"\u0439","Jfr;":"\ud835\udd0d","jfr;":"\ud835\udd27","jmath;":"\u0237","Jopf;":"\ud835\udd41","jopf;":"\ud835\udd5b","Jscr;":"\ud835\udca5","jscr;":"\ud835\udcbf","Jsercy;":"\u0408","jsercy;":"\u0458","Jukcy;":"\u0404","jukcy;":"\u0454","Kappa;":"\u039a","kappa;":"\u03ba","kappav;":"\u03f0","Kcedil;":"\u0136","kcedil;":"\u0137","Kcy;":"\u041a","kcy;":"\u043a","Kfr;":"\ud835\udd0e","kfr;":"\ud835\udd28","kgreen;":"\u0138","KHcy;":"\u0425","khcy;":"\u0445","KJcy;":"\u040c","kjcy;":"\u045c","Kopf;":"\ud835\udd42","kopf;":"\ud835\udd5c","Kscr;":"\ud835\udca6","kscr;":"\ud835\udcc0","lAarr;":"\u21da","Lacute;":"\u0139","lacute;":"\u013a","laemptyv;":"\u29b4","lagran;":"\u2112","Lambda;":"\u039b","lambda;":"\u03bb","lang;":"\u27e8","Lang;":"\u27ea","langd;":"\u2991","langle;":"\u27e8","lap;":"\u2a85","Laplacetrf;":"\u2112","laquo;":"\u00ab",laquo:"\u00ab","larrb;":"\u21e4","larrbfs;":"\u291f","larr;":"\u2190","Larr;":"\u219e","lArr;":"\u21d0","larrfs;":"\u291d","larrhk;":"\u21a9","larrlp;":"\u21ab","larrpl;":"\u2939","larrsim;":"\u2973","larrtl;":"\u21a2","latail;":"\u2919","lAtail;":"\u291b","lat;":"\u2aab","late;":"\u2aad","lates;":"\u2aad\ufe00","lbarr;":"\u290c","lBarr;":"\u290e","lbbrk;":"\u2772","lbrace;":"{","lbrack;":"[","lbrke;":"\u298b","lbrksld;":"\u298f","lbrkslu;":"\u298d","Lcaron;":"\u013d","lcaron;":"\u013e","Lcedil;":"\u013b","lcedil;":"\u013c","lceil;":"\u2308","lcub;":"{","Lcy;":"\u041b","lcy;":"\u043b","ldca;":"\u2936","ldquo;":"\u201c","ldquor;":"\u201e","ldrdhar;":"\u2967","ldrushar;":"\u294b","ldsh;":"\u21b2","le;":"\u2264","lE;":"\u2266","LeftAngleBracket;":"\u27e8","LeftArrowBar;":"\u21e4","leftarrow;":"\u2190","LeftArrow;":"\u2190","Leftarrow;":"\u21d0","LeftArrowRightArrow;":"\u21c6","leftarrowtail;":"\u21a2","LeftCeiling;":"\u2308","LeftDoubleBracket;":"\u27e6","LeftDownTeeVector;":"\u2961","LeftDownVectorBar;":"\u2959","LeftDownVector;":"\u21c3","LeftFloor;":"\u230a","leftharpoondown;":"\u21bd","leftharpoonup;":"\u21bc","leftleftarrows;":"\u21c7","leftrightarrow;":"\u2194","LeftRightArrow;":"\u2194","Leftrightarrow;":"\u21d4","leftrightarrows;":"\u21c6","leftrightharpoons;":"\u21cb","leftrightsquigarrow;":"\u21ad","LeftRightVector;":"\u294e","LeftTeeArrow;":"\u21a4","LeftTee;":"\u22a3","LeftTeeVector;":"\u295a","leftthreetimes;":"\u22cb","LeftTriangleBar;":"\u29cf","LeftTriangle;":"\u22b2","LeftTriangleEqual;":"\u22b4","LeftUpDownVector;":"\u2951","LeftUpTeeVector;":"\u2960","LeftUpVectorBar;":"\u2958","LeftUpVector;":"\u21bf","LeftVectorBar;":"\u2952","LeftVector;":"\u21bc","lEg;":"\u2a8b","leg;":"\u22da","leq;":"\u2264","leqq;":"\u2266","leqslant;":"\u2a7d","lescc;":"\u2aa8","les;":"\u2a7d","lesdot;":"\u2a7f","lesdoto;":"\u2a81","lesdotor;":"\u2a83","lesg;":"\u22da\ufe00","lesges;":"\u2a93","lessapprox;":"\u2a85","lessdot;":"\u22d6","lesseqgtr;":"\u22da","lesseqqgtr;":"\u2a8b","LessEqualGreater;":"\u22da","LessFullEqual;":"\u2266","LessGreater;":"\u2276","lessgtr;":"\u2276","LessLess;":"\u2aa1","lesssim;":"\u2272","LessSlantEqual;":"\u2a7d","LessTilde;":"\u2272","lfisht;":"\u297c","lfloor;":"\u230a","Lfr;":"\ud835\udd0f","lfr;":"\ud835\udd29","lg;":"\u2276","lgE;":"\u2a91","lHar;":"\u2962","lhard;":"\u21bd","lharu;":"\u21bc","lharul;":"\u296a","lhblk;":"\u2584","LJcy;":"\u0409","ljcy;":"\u0459","llarr;":"\u21c7","ll;":"\u226a","Ll;":"\u22d8","llcorner;":"\u231e","Lleftarrow;":"\u21da","llhard;":"\u296b","lltri;":"\u25fa","Lmidot;":"\u013f","lmidot;":"\u0140","lmoustache;":"\u23b0","lmoust;":"\u23b0","lnap;":"\u2a89","lnapprox;":"\u2a89","lne;":"\u2a87","lnE;":"\u2268","lneq;":"\u2a87","lneqq;":"\u2268","lnsim;":"\u22e6","loang;":"\u27ec","loarr;":"\u21fd","lobrk;":"\u27e6","longleftarrow;":"\u27f5","LongLeftArrow;":"\u27f5","Longleftarrow;":"\u27f8","longleftrightarrow;":"\u27f7","LongLeftRightArrow;":"\u27f7","Longleftrightarrow;":"\u27fa","longmapsto;":"\u27fc","longrightarrow;":"\u27f6","LongRightArrow;":"\u27f6","Longrightarrow;":"\u27f9","looparrowleft;":"\u21ab","looparrowright;":"\u21ac","lopar;":"\u2985","Lopf;":"\ud835\udd43","lopf;":"\ud835\udd5d","loplus;":"\u2a2d","lotimes;":"\u2a34","lowast;":"\u2217","lowbar;":"_","LowerLeftArrow;":"\u2199","LowerRightArrow;":"\u2198","loz;":"\u25ca","lozenge;":"\u25ca","lozf;":"\u29eb","lpar;":"(","lparlt;":"\u2993","lrarr;":"\u21c6","lrcorner;":"\u231f","lrhar;":"\u21cb","lrhard;":"\u296d","lrm;":"\u200e","lrtri;":"\u22bf","lsaquo;":"\u2039","lscr;":"\ud835\udcc1","Lscr;":"\u2112","lsh;":"\u21b0","Lsh;":"\u21b0","lsim;":"\u2272","lsime;":"\u2a8d","lsimg;":"\u2a8f","lsqb;":"[","lsquo;":"\u2018","lsquor;":"\u201a","Lstrok;":"\u0141","lstrok;":"\u0142","ltcc;":"\u2aa6","ltcir;":"\u2a79","lt;":"<",lt:"<","LT;":"<",LT:"<","Lt;":"\u226a","ltdot;":"\u22d6","lthree;":"\u22cb","ltimes;":"\u22c9","ltlarr;":"\u2976","ltquest;":"\u2a7b","ltri;":"\u25c3","ltrie;":"\u22b4","ltrif;":"\u25c2","ltrPar;":"\u2996","lurdshar;":"\u294a","luruhar;":"\u2966","lvertneqq;":"\u2268\ufe00","lvnE;":"\u2268\ufe00","macr;":"\u00af",macr:"\u00af","male;":"\u2642","malt;":"\u2720","maltese;":"\u2720","Map;":"\u2905","map;":"\u21a6","mapsto;":"\u21a6","mapstodown;":"\u21a7","mapstoleft;":"\u21a4","mapstoup;":"\u21a5","marker;":"\u25ae","mcomma;":"\u2a29","Mcy;":"\u041c","mcy;":"\u043c","mdash;":"\u2014","mDDot;":"\u223a","measuredangle;":"\u2221","MediumSpace;":"\u205f","Mellintrf;":"\u2133","Mfr;":"\ud835\udd10","mfr;":"\ud835\udd2a","mho;":"\u2127","micro;":"\u00b5",micro:"\u00b5","midast;":"*","midcir;":"\u2af0","mid;":"\u2223","middot;":"\u00b7",middot:"\u00b7","minusb;":"\u229f","minus;":"\u2212","minusd;":"\u2238","minusdu;":"\u2a2a","MinusPlus;":"\u2213","mlcp;":"\u2adb","mldr;":"\u2026","mnplus;":"\u2213","models;":"\u22a7","Mopf;":"\ud835\udd44","mopf;":"\ud835\udd5e","mp;":"\u2213","mscr;":"\ud835\udcc2","Mscr;":"\u2133","mstpos;":"\u223e","Mu;":"\u039c","mu;":"\u03bc","multimap;":"\u22b8","mumap;":"\u22b8","nabla;":"\u2207","Nacute;":"\u0143","nacute;":"\u0144","nang;":"\u2220\u20d2","nap;":"\u2249","napE;":"\u2a70\u0338","napid;":"\u224b\u0338","napos;":"\u0149","napprox;":"\u2249","natural;":"\u266e","naturals;":"\u2115","natur;":"\u266e","nbsp;":"\u00a0",nbsp:"\u00a0","nbump;":"\u224e\u0338","nbumpe;":"\u224f\u0338","ncap;":"\u2a43","Ncaron;":"\u0147","ncaron;":"\u0148","Ncedil;":"\u0145","ncedil;":"\u0146","ncong;":"\u2247","ncongdot;":"\u2a6d\u0338","ncup;":"\u2a42","Ncy;":"\u041d","ncy;":"\u043d","ndash;":"\u2013","nearhk;":"\u2924","nearr;":"\u2197","neArr;":"\u21d7","nearrow;":"\u2197","ne;":"\u2260","nedot;":"\u2250\u0338","NegativeMediumSpace;":"\u200b","NegativeThickSpace;":"\u200b","NegativeThinSpace;":"\u200b","NegativeVeryThinSpace;":"\u200b","nequiv;":"\u2262","nesear;":"\u2928","nesim;":"\u2242\u0338","NestedGreaterGreater;":"\u226b","NestedLessLess;":"\u226a","NewLine;":"\n","nexist;":"\u2204","nexists;":"\u2204","Nfr;":"\ud835\udd11","nfr;":"\ud835\udd2b","ngE;":"\u2267\u0338","nge;":"\u2271","ngeq;":"\u2271","ngeqq;":"\u2267\u0338","ngeqslant;":"\u2a7e\u0338","nges;":"\u2a7e\u0338","nGg;":"\u22d9\u0338","ngsim;":"\u2275","nGt;":"\u226b\u20d2","ngt;":"\u226f","ngtr;":"\u226f","nGtv;":"\u226b\u0338","nharr;":"\u21ae","nhArr;":"\u21ce","nhpar;":"\u2af2","ni;":"\u220b","nis;":"\u22fc","nisd;":"\u22fa","niv;":"\u220b","NJcy;":"\u040a","njcy;":"\u045a","nlarr;":"\u219a","nlArr;":"\u21cd","nldr;":"\u2025","nlE;":"\u2266\u0338","nle;":"\u2270","nleftarrow;":"\u219a","nLeftarrow;":"\u21cd","nleftrightarrow;":"\u21ae","nLeftrightarrow;":"\u21ce","nleq;":"\u2270","nleqq;":"\u2266\u0338","nleqslant;":"\u2a7d\u0338","nles;":"\u2a7d\u0338","nless;":"\u226e","nLl;":"\u22d8\u0338","nlsim;":"\u2274","nLt;":"\u226a\u20d2","nlt;":"\u226e","nltri;":"\u22ea","nltrie;":"\u22ec","nLtv;":"\u226a\u0338","nmid;":"\u2224","NoBreak;":"\u2060","NonBreakingSpace;":"\u00a0","nopf;":"\ud835\udd5f","Nopf;":"\u2115","Not;":"\u2aec","not;":"\u00ac",not:"\u00ac","NotCongruent;":"\u2262","NotCupCap;":"\u226d","NotDoubleVerticalBar;":"\u2226","NotElement;":"\u2209","NotEqual;":"\u2260","NotEqualTilde;":"\u2242\u0338","NotExists;":"\u2204","NotGreater;":"\u226f","NotGreaterEqual;":"\u2271","NotGreaterFullEqual;":"\u2267\u0338","NotGreaterGreater;":"\u226b\u0338","NotGreaterLess;":"\u2279","NotGreaterSlantEqual;":"\u2a7e\u0338","NotGreaterTilde;":"\u2275","NotHumpDownHump;":"\u224e\u0338","NotHumpEqual;":"\u224f\u0338","notin;":"\u2209","notindot;":"\u22f5\u0338","notinE;":"\u22f9\u0338","notinva;":"\u2209","notinvb;":"\u22f7","notinvc;":"\u22f6","NotLeftTriangleBar;":"\u29cf\u0338","NotLeftTriangle;":"\u22ea","NotLeftTriangleEqual;":"\u22ec","NotLess;":"\u226e","NotLessEqual;":"\u2270","NotLessGreater;":"\u2278","NotLessLess;":"\u226a\u0338","NotLessSlantEqual;":"\u2a7d\u0338","NotLessTilde;":"\u2274","NotNestedGreaterGreater;":"\u2aa2\u0338","NotNestedLessLess;":"\u2aa1\u0338","notni;":"\u220c","notniva;":"\u220c","notnivb;":"\u22fe","notnivc;":"\u22fd","NotPrecedes;":"\u2280","NotPrecedesEqual;":"\u2aaf\u0338","NotPrecedesSlantEqual;":"\u22e0","NotReverseElement;":"\u220c","NotRightTriangleBar;":"\u29d0\u0338","NotRightTriangle;":"\u22eb","NotRightTriangleEqual;":"\u22ed","NotSquareSubset;":"\u228f\u0338","NotSquareSubsetEqual;":"\u22e2","NotSquareSuperset;":"\u2290\u0338","NotSquareSupersetEqual;":"\u22e3","NotSubset;":"\u2282\u20d2","NotSubsetEqual;":"\u2288","NotSucceeds;":"\u2281","NotSucceedsEqual;":"\u2ab0\u0338","NotSucceedsSlantEqual;":"\u22e1","NotSucceedsTilde;":"\u227f\u0338","NotSuperset;":"\u2283\u20d2","NotSupersetEqual;":"\u2289","NotTilde;":"\u2241","NotTildeEqual;":"\u2244","NotTildeFullEqual;":"\u2247","NotTildeTilde;":"\u2249","NotVerticalBar;":"\u2224","nparallel;":"\u2226","npar;":"\u2226","nparsl;":"\u2afd\u20e5","npart;":"\u2202\u0338","npolint;":"\u2a14","npr;":"\u2280","nprcue;":"\u22e0","nprec;":"\u2280","npreceq;":"\u2aaf\u0338","npre;":"\u2aaf\u0338","nrarrc;":"\u2933\u0338","nrarr;":"\u219b","nrArr;":"\u21cf","nrarrw;":"\u219d\u0338","nrightarrow;":"\u219b","nRightarrow;":"\u21cf","nrtri;":"\u22eb","nrtrie;":"\u22ed","nsc;":"\u2281","nsccue;":"\u22e1","nsce;":"\u2ab0\u0338","Nscr;":"\ud835\udca9","nscr;":"\ud835\udcc3","nshortmid;":"\u2224","nshortparallel;":"\u2226","nsim;":"\u2241","nsime;":"\u2244","nsimeq;":"\u2244","nsmid;":"\u2224","nspar;":"\u2226","nsqsube;":"\u22e2","nsqsupe;":"\u22e3","nsub;":"\u2284","nsubE;":"\u2ac5\u0338","nsube;":"\u2288","nsubset;":"\u2282\u20d2","nsubseteq;":"\u2288","nsubseteqq;":"\u2ac5\u0338","nsucc;":"\u2281","nsucceq;":"\u2ab0\u0338","nsup;":"\u2285","nsupE;":"\u2ac6\u0338","nsupe;":"\u2289","nsupset;":"\u2283\u20d2","nsupseteq;":"\u2289","nsupseteqq;":"\u2ac6\u0338","ntgl;":"\u2279","Ntilde;":"\u00d1",Ntilde:"\u00d1","ntilde;":"\u00f1",ntilde:"\u00f1","ntlg;":"\u2278","ntriangleleft;":"\u22ea","ntrianglelefteq;":"\u22ec","ntriangleright;":"\u22eb","ntrianglerighteq;":"\u22ed","Nu;":"\u039d","nu;":"\u03bd","num;":"#","numero;":"\u2116","numsp;":"\u2007","nvap;":"\u224d\u20d2","nvdash;":"\u22ac","nvDash;":"\u22ad","nVdash;":"\u22ae","nVDash;":"\u22af","nvge;":"\u2265\u20d2","nvgt;":">\u20d2","nvHarr;":"\u2904","nvinfin;":"\u29de","nvlArr;":"\u2902","nvle;":"\u2264\u20d2","nvlt;":"<\u20d2","nvltrie;":"\u22b4\u20d2","nvrArr;":"\u2903","nvrtrie;":"\u22b5\u20d2","nvsim;":"\u223c\u20d2","nwarhk;":"\u2923","nwarr;":"\u2196","nwArr;":"\u21d6","nwarrow;":"\u2196","nwnear;":"\u2927","Oacute;":"\u00d3",Oacute:"\u00d3","oacute;":"\u00f3",oacute:"\u00f3","oast;":"\u229b","Ocirc;":"\u00d4",Ocirc:"\u00d4","ocirc;":"\u00f4",ocirc:"\u00f4","ocir;":"\u229a","Ocy;":"\u041e","ocy;":"\u043e","odash;":"\u229d","Odblac;":"\u0150","odblac;":"\u0151","odiv;":"\u2a38","odot;":"\u2299","odsold;":"\u29bc","OElig;":"\u0152","oelig;":"\u0153","ofcir;":"\u29bf","Ofr;":"\ud835\udd12","ofr;":"\ud835\udd2c","ogon;":"\u02db","Ograve;":"\u00d2",Ograve:"\u00d2","ograve;":"\u00f2",ograve:"\u00f2","ogt;":"\u29c1","ohbar;":"\u29b5","ohm;":"\u03a9","oint;":"\u222e","olarr;":"\u21ba","olcir;":"\u29be","olcross;":"\u29bb","oline;":"\u203e","olt;":"\u29c0","Omacr;":"\u014c","omacr;":"\u014d","Omega;":"\u03a9","omega;":"\u03c9","Omicron;":"\u039f","omicron;":"\u03bf","omid;":"\u29b6","ominus;":"\u2296","Oopf;":"\ud835\udd46","oopf;":"\ud835\udd60","opar;":"\u29b7","OpenCurlyDoubleQuote;":"\u201c","OpenCurlyQuote;":"\u2018","operp;":"\u29b9","oplus;":"\u2295","orarr;":"\u21bb","Or;":"\u2a54","or;":"\u2228","ord;":"\u2a5d","order;":"\u2134","orderof;":"\u2134","ordf;":"\u00aa",ordf:"\u00aa","ordm;":"\u00ba",ordm:"\u00ba","origof;":"\u22b6","oror;":"\u2a56","orslope;":"\u2a57","orv;":"\u2a5b","oS;":"\u24c8","Oscr;":"\ud835\udcaa","oscr;":"\u2134","Oslash;":"\u00d8",Oslash:"\u00d8","oslash;":"\u00f8",oslash:"\u00f8","osol;":"\u2298","Otilde;":"\u00d5",Otilde:"\u00d5","otilde;":"\u00f5",otilde:"\u00f5","otimesas;":"\u2a36","Otimes;":"\u2a37","otimes;":"\u2297","Ouml;":"\u00d6",Ouml:"\u00d6","ouml;":"\u00f6",ouml:"\u00f6","ovbar;":"\u233d","OverBar;":"\u203e","OverBrace;":"\u23de","OverBracket;":"\u23b4","OverParenthesis;":"\u23dc","para;":"\u00b6",para:"\u00b6","parallel;":"\u2225","par;":"\u2225","parsim;":"\u2af3","parsl;":"\u2afd","part;":"\u2202","PartialD;":"\u2202","Pcy;":"\u041f","pcy;":"\u043f","percnt;":"%","period;":".","permil;":"\u2030","perp;":"\u22a5","pertenk;":"\u2031","Pfr;":"\ud835\udd13","pfr;":"\ud835\udd2d","Phi;":"\u03a6","phi;":"\u03c6","phiv;":"\u03d5","phmmat;":"\u2133","phone;":"\u260e","Pi;":"\u03a0","pi;":"\u03c0","pitchfork;":"\u22d4","piv;":"\u03d6","planck;":"\u210f","planckh;":"\u210e","plankv;":"\u210f","plusacir;":"\u2a23","plusb;":"\u229e","pluscir;":"\u2a22","plus;":"+","plusdo;":"\u2214","plusdu;":"\u2a25","pluse;":"\u2a72","PlusMinus;":"\u00b1","plusmn;":"\u00b1",plusmn:"\u00b1","plussim;":"\u2a26","plustwo;":"\u2a27","pm;":"\u00b1","Poincareplane;":"\u210c","pointint;":"\u2a15","popf;":"\ud835\udd61","Popf;":"\u2119","pound;":"\u00a3",pound:"\u00a3","prap;":"\u2ab7","Pr;":"\u2abb","pr;":"\u227a","prcue;":"\u227c","precapprox;":"\u2ab7","prec;":"\u227a","preccurlyeq;":"\u227c","Precedes;":"\u227a","PrecedesEqual;":"\u2aaf","PrecedesSlantEqual;":"\u227c","PrecedesTilde;":"\u227e","preceq;":"\u2aaf","precnapprox;":"\u2ab9","precneqq;":"\u2ab5","precnsim;":"\u22e8","pre;":"\u2aaf","prE;":"\u2ab3","precsim;":"\u227e","prime;":"\u2032","Prime;":"\u2033","primes;":"\u2119","prnap;":"\u2ab9","prnE;":"\u2ab5","prnsim;":"\u22e8","prod;":"\u220f","Product;":"\u220f","profalar;":"\u232e","profline;":"\u2312","profsurf;":"\u2313","prop;":"\u221d","Proportional;":"\u221d","Proportion;":"\u2237","propto;":"\u221d","prsim;":"\u227e","prurel;":"\u22b0","Pscr;":"\ud835\udcab","pscr;":"\ud835\udcc5","Psi;":"\u03a8","psi;":"\u03c8","puncsp;":"\u2008","Qfr;":"\ud835\udd14","qfr;":"\ud835\udd2e","qint;":"\u2a0c","qopf;":"\ud835\udd62","Qopf;":"\u211a","qprime;":"\u2057","Qscr;":"\ud835\udcac","qscr;":"\ud835\udcc6","quaternions;":"\u210d","quatint;":"\u2a16","quest;":"?","questeq;":"\u225f","quot;":'"',quot:'"',"QUOT;":'"',QUOT:'"',"rAarr;":"\u21db","race;":"\u223d\u0331","Racute;":"\u0154","racute;":"\u0155","radic;":"\u221a","raemptyv;":"\u29b3","rang;":"\u27e9","Rang;":"\u27eb","rangd;":"\u2992","range;":"\u29a5","rangle;":"\u27e9","raquo;":"\u00bb",raquo:"\u00bb","rarrap;":"\u2975","rarrb;":"\u21e5","rarrbfs;":"\u2920","rarrc;":"\u2933","rarr;":"\u2192","Rarr;":"\u21a0","rArr;":"\u21d2","rarrfs;":"\u291e","rarrhk;":"\u21aa","rarrlp;":"\u21ac","rarrpl;":"\u2945","rarrsim;":"\u2974","Rarrtl;":"\u2916","rarrtl;":"\u21a3","rarrw;":"\u219d","ratail;":"\u291a","rAtail;":"\u291c","ratio;":"\u2236","rationals;":"\u211a","rbarr;":"\u290d","rBarr;":"\u290f","RBarr;":"\u2910","rbbrk;":"\u2773","rbrace;":"}","rbrack;":"]","rbrke;":"\u298c","rbrksld;":"\u298e","rbrkslu;":"\u2990","Rcaron;":"\u0158","rcaron;":"\u0159","Rcedil;":"\u0156","rcedil;":"\u0157","rceil;":"\u2309","rcub;":"}","Rcy;":"\u0420","rcy;":"\u0440","rdca;":"\u2937","rdldhar;":"\u2969","rdquo;":"\u201d","rdquor;":"\u201d","rdsh;":"\u21b3","real;":"\u211c","realine;":"\u211b","realpart;":"\u211c","reals;":"\u211d","Re;":"\u211c","rect;":"\u25ad","reg;":"\u00ae",reg:"\u00ae","REG;":"\u00ae",REG:"\u00ae","ReverseElement;":"\u220b","ReverseEquilibrium;":"\u21cb","ReverseUpEquilibrium;":"\u296f","rfisht;":"\u297d","rfloor;":"\u230b","rfr;":"\ud835\udd2f","Rfr;":"\u211c","rHar;":"\u2964","rhard;":"\u21c1","rharu;":"\u21c0","rharul;":"\u296c","Rho;":"\u03a1","rho;":"\u03c1","rhov;":"\u03f1","RightAngleBracket;":"\u27e9","RightArrowBar;":"\u21e5","rightarrow;":"\u2192","RightArrow;":"\u2192","Rightarrow;":"\u21d2","RightArrowLeftArrow;":"\u21c4","rightarrowtail;":"\u21a3","RightCeiling;":"\u2309","RightDoubleBracket;":"\u27e7","RightDownTeeVector;":"\u295d","RightDownVectorBar;":"\u2955","RightDownVector;":"\u21c2","RightFloor;":"\u230b","rightharpoondown;":"\u21c1","rightharpoonup;":"\u21c0","rightleftarrows;":"\u21c4","rightleftharpoons;":"\u21cc","rightrightarrows;":"\u21c9","rightsquigarrow;":"\u219d","RightTeeArrow;":"\u21a6","RightTee;":"\u22a2","RightTeeVector;":"\u295b","rightthreetimes;":"\u22cc","RightTriangleBar;":"\u29d0","RightTriangle;":"\u22b3","RightTriangleEqual;":"\u22b5","RightUpDownVector;":"\u294f","RightUpTeeVector;":"\u295c","RightUpVectorBar;":"\u2954","RightUpVector;":"\u21be","RightVectorBar;":"\u2953","RightVector;":"\u21c0","ring;":"\u02da","risingdotseq;":"\u2253","rlarr;":"\u21c4","rlhar;":"\u21cc","rlm;":"\u200f","rmoustache;":"\u23b1","rmoust;":"\u23b1","rnmid;":"\u2aee","roang;":"\u27ed","roarr;":"\u21fe","robrk;":"\u27e7","ropar;":"\u2986","ropf;":"\ud835\udd63","Ropf;":"\u211d","roplus;":"\u2a2e","rotimes;":"\u2a35","RoundImplies;":"\u2970","rpar;":")","rpargt;":"\u2994","rppolint;":"\u2a12","rrarr;":"\u21c9","Rrightarrow;":"\u21db","rsaquo;":"\u203a","rscr;":"\ud835\udcc7","Rscr;":"\u211b","rsh;":"\u21b1","Rsh;":"\u21b1","rsqb;":"]","rsquo;":"\u2019","rsquor;":"\u2019","rthree;":"\u22cc","rtimes;":"\u22ca","rtri;":"\u25b9","rtrie;":"\u22b5","rtrif;":"\u25b8","rtriltri;":"\u29ce","RuleDelayed;":"\u29f4","ruluhar;":"\u2968","rx;":"\u211e","Sacute;":"\u015a","sacute;":"\u015b","sbquo;":"\u201a","scap;":"\u2ab8","Scaron;":"\u0160","scaron;":"\u0161","Sc;":"\u2abc","sc;":"\u227b","sccue;":"\u227d","sce;":"\u2ab0","scE;":"\u2ab4","Scedil;":"\u015e","scedil;":"\u015f","Scirc;":"\u015c","scirc;":"\u015d","scnap;":"\u2aba","scnE;":"\u2ab6","scnsim;":"\u22e9","scpolint;":"\u2a13","scsim;":"\u227f","Scy;":"\u0421","scy;":"\u0441","sdotb;":"\u22a1","sdot;":"\u22c5","sdote;":"\u2a66","searhk;":"\u2925","searr;":"\u2198","seArr;":"\u21d8","searrow;":"\u2198","sect;":"\u00a7",sect:"\u00a7","semi;":";","seswar;":"\u2929","setminus;":"\u2216","setmn;":"\u2216","sext;":"\u2736","Sfr;":"\ud835\udd16","sfr;":"\ud835\udd30","sfrown;":"\u2322","sharp;":"\u266f","SHCHcy;":"\u0429","shchcy;":"\u0449","SHcy;":"\u0428","shcy;":"\u0448","ShortDownArrow;":"\u2193","ShortLeftArrow;":"\u2190","shortmid;":"\u2223","shortparallel;":"\u2225","ShortRightArrow;":"\u2192","ShortUpArrow;":"\u2191","shy;":"\u00ad",shy:"\u00ad","Sigma;":"\u03a3","sigma;":"\u03c3","sigmaf;":"\u03c2","sigmav;":"\u03c2","sim;":"\u223c","simdot;":"\u2a6a","sime;":"\u2243","simeq;":"\u2243","simg;":"\u2a9e","simgE;":"\u2aa0","siml;":"\u2a9d","simlE;":"\u2a9f","simne;":"\u2246","simplus;":"\u2a24","simrarr;":"\u2972","slarr;":"\u2190","SmallCircle;":"\u2218","smallsetminus;":"\u2216","smashp;":"\u2a33","smeparsl;":"\u29e4","smid;":"\u2223","smile;":"\u2323","smt;":"\u2aaa","smte;":"\u2aac","smtes;":"\u2aac\ufe00","SOFTcy;":"\u042c","softcy;":"\u044c","solbar;":"\u233f","solb;":"\u29c4","sol;":"/","Sopf;":"\ud835\udd4a","sopf;":"\ud835\udd64","spades;":"\u2660","spadesuit;":"\u2660","spar;":"\u2225","sqcap;":"\u2293","sqcaps;":"\u2293\ufe00","sqcup;":"\u2294","sqcups;":"\u2294\ufe00","Sqrt;":"\u221a","sqsub;":"\u228f","sqsube;":"\u2291","sqsubset;":"\u228f","sqsubseteq;":"\u2291","sqsup;":"\u2290","sqsupe;":"\u2292","sqsupset;":"\u2290","sqsupseteq;":"\u2292","square;":"\u25a1","Square;":"\u25a1","SquareIntersection;":"\u2293","SquareSubset;":"\u228f","SquareSubsetEqual;":"\u2291","SquareSuperset;":"\u2290","SquareSupersetEqual;":"\u2292","SquareUnion;":"\u2294","squarf;":"\u25aa","squ;":"\u25a1","squf;":"\u25aa","srarr;":"\u2192","Sscr;":"\ud835\udcae","sscr;":"\ud835\udcc8","ssetmn;":"\u2216","ssmile;":"\u2323","sstarf;":"\u22c6","Star;":"\u22c6","star;":"\u2606","starf;":"\u2605","straightepsilon;":"\u03f5","straightphi;":"\u03d5","strns;":"\u00af","sub;":"\u2282","Sub;":"\u22d0","subdot;":"\u2abd","subE;":"\u2ac5","sube;":"\u2286","subedot;":"\u2ac3","submult;":"\u2ac1","subnE;":"\u2acb","subne;":"\u228a","subplus;":"\u2abf","subrarr;":"\u2979","subset;":"\u2282","Subset;":"\u22d0","subseteq;":"\u2286","subseteqq;":"\u2ac5","SubsetEqual;":"\u2286","subsetneq;":"\u228a","subsetneqq;":"\u2acb","subsim;":"\u2ac7","subsub;":"\u2ad5","subsup;":"\u2ad3","succapprox;":"\u2ab8","succ;":"\u227b","succcurlyeq;":"\u227d","Succeeds;":"\u227b","SucceedsEqual;":"\u2ab0","SucceedsSlantEqual;":"\u227d","SucceedsTilde;":"\u227f","succeq;":"\u2ab0","succnapprox;":"\u2aba","succneqq;":"\u2ab6","succnsim;":"\u22e9","succsim;":"\u227f","SuchThat;":"\u220b","sum;":"\u2211","Sum;":"\u2211","sung;":"\u266a","sup1;":"\u00b9",sup1:"\u00b9","sup2;":"\u00b2",sup2:"\u00b2","sup3;":"\u00b3",sup3:"\u00b3","sup;":"\u2283","Sup;":"\u22d1","supdot;":"\u2abe","supdsub;":"\u2ad8","supE;":"\u2ac6","supe;":"\u2287","supedot;":"\u2ac4","Superset;":"\u2283","SupersetEqual;":"\u2287","suphsol;":"\u27c9","suphsub;":"\u2ad7","suplarr;":"\u297b","supmult;":"\u2ac2","supnE;":"\u2acc","supne;":"\u228b","supplus;":"\u2ac0","supset;":"\u2283","Supset;":"\u22d1","supseteq;":"\u2287","supseteqq;":"\u2ac6","supsetneq;":"\u228b","supsetneqq;":"\u2acc","supsim;":"\u2ac8","supsub;":"\u2ad4","supsup;":"\u2ad6","swarhk;":"\u2926","swarr;":"\u2199","swArr;":"\u21d9","swarrow;":"\u2199","swnwar;":"\u292a","szlig;":"\u00df",szlig:"\u00df","Tab;":"	","target;":"\u2316","Tau;":"\u03a4","tau;":"\u03c4","tbrk;":"\u23b4","Tcaron;":"\u0164","tcaron;":"\u0165","Tcedil;":"\u0162","tcedil;":"\u0163","Tcy;":"\u0422","tcy;":"\u0442","tdot;":"\u20db","telrec;":"\u2315","Tfr;":"\ud835\udd17","tfr;":"\ud835\udd31","there4;":"\u2234","therefore;":"\u2234","Therefore;":"\u2234","Theta;":"\u0398","theta;":"\u03b8","thetasym;":"\u03d1","thetav;":"\u03d1","thickapprox;":"\u2248","thicksim;":"\u223c","ThickSpace;":"\u205f\u200a","ThinSpace;":"\u2009","thinsp;":"\u2009","thkap;":"\u2248","thksim;":"\u223c","THORN;":"\u00de",THORN:"\u00de","thorn;":"\u00fe",thorn:"\u00fe","tilde;":"\u02dc","Tilde;":"\u223c","TildeEqual;":"\u2243","TildeFullEqual;":"\u2245","TildeTilde;":"\u2248","timesbar;":"\u2a31","timesb;":"\u22a0","times;":"\u00d7",times:"\u00d7","timesd;":"\u2a30","tint;":"\u222d","toea;":"\u2928","topbot;":"\u2336","topcir;":"\u2af1","top;":"\u22a4","Topf;":"\ud835\udd4b","topf;":"\ud835\udd65","topfork;":"\u2ada","tosa;":"\u2929","tprime;":"\u2034","trade;":"\u2122","TRADE;":"\u2122","triangle;":"\u25b5","triangledown;":"\u25bf","triangleleft;":"\u25c3","trianglelefteq;":"\u22b4","triangleq;":"\u225c","triangleright;":"\u25b9","trianglerighteq;":"\u22b5","tridot;":"\u25ec","trie;":"\u225c","triminus;":"\u2a3a","TripleDot;":"\u20db","triplus;":"\u2a39","trisb;":"\u29cd","tritime;":"\u2a3b","trpezium;":"\u23e2","Tscr;":"\ud835\udcaf","tscr;":"\ud835\udcc9","TScy;":"\u0426","tscy;":"\u0446","TSHcy;":"\u040b","tshcy;":"\u045b","Tstrok;":"\u0166","tstrok;":"\u0167","twixt;":"\u226c","twoheadleftarrow;":"\u219e","twoheadrightarrow;":"\u21a0","Uacute;":"\u00da",Uacute:"\u00da","uacute;":"\u00fa",uacute:"\u00fa","uarr;":"\u2191","Uarr;":"\u219f","uArr;":"\u21d1","Uarrocir;":"\u2949","Ubrcy;":"\u040e","ubrcy;":"\u045e","Ubreve;":"\u016c","ubreve;":"\u016d","Ucirc;":"\u00db",Ucirc:"\u00db","ucirc;":"\u00fb",ucirc:"\u00fb","Ucy;":"\u0423","ucy;":"\u0443","udarr;":"\u21c5","Udblac;":"\u0170","udblac;":"\u0171","udhar;":"\u296e","ufisht;":"\u297e","Ufr;":"\ud835\udd18","ufr;":"\ud835\udd32","Ugrave;":"\u00d9",Ugrave:"\u00d9","ugrave;":"\u00f9",ugrave:"\u00f9","uHar;":"\u2963","uharl;":"\u21bf","uharr;":"\u21be","uhblk;":"\u2580","ulcorn;":"\u231c","ulcorner;":"\u231c","ulcrop;":"\u230f","ultri;":"\u25f8","Umacr;":"\u016a","umacr;":"\u016b","uml;":"\u00a8",uml:"\u00a8","UnderBar;":"_","UnderBrace;":"\u23df","UnderBracket;":"\u23b5","UnderParenthesis;":"\u23dd","Union;":"\u22c3","UnionPlus;":"\u228e","Uogon;":"\u0172","uogon;":"\u0173","Uopf;":"\ud835\udd4c","uopf;":"\ud835\udd66","UpArrowBar;":"\u2912","uparrow;":"\u2191","UpArrow;":"\u2191","Uparrow;":"\u21d1","UpArrowDownArrow;":"\u21c5","updownarrow;":"\u2195","UpDownArrow;":"\u2195","Updownarrow;":"\u21d5","UpEquilibrium;":"\u296e","upharpoonleft;":"\u21bf","upharpoonright;":"\u21be","uplus;":"\u228e","UpperLeftArrow;":"\u2196","UpperRightArrow;":"\u2197","upsi;":"\u03c5","Upsi;":"\u03d2","upsih;":"\u03d2","Upsilon;":"\u03a5","upsilon;":"\u03c5","UpTeeArrow;":"\u21a5","UpTee;":"\u22a5","upuparrows;":"\u21c8","urcorn;":"\u231d","urcorner;":"\u231d","urcrop;":"\u230e","Uring;":"\u016e","uring;":"\u016f","urtri;":"\u25f9","Uscr;":"\ud835\udcb0","uscr;":"\ud835\udcca","utdot;":"\u22f0","Utilde;":"\u0168","utilde;":"\u0169","utri;":"\u25b5","utrif;":"\u25b4","uuarr;":"\u21c8","Uuml;":"\u00dc",Uuml:"\u00dc","uuml;":"\u00fc",uuml:"\u00fc","uwangle;":"\u29a7","vangrt;":"\u299c","varepsilon;":"\u03f5","varkappa;":"\u03f0","varnothing;":"\u2205","varphi;":"\u03d5","varpi;":"\u03d6","varpropto;":"\u221d","varr;":"\u2195","vArr;":"\u21d5","varrho;":"\u03f1","varsigma;":"\u03c2","varsubsetneq;":"\u228a\ufe00","varsubsetneqq;":"\u2acb\ufe00","varsupsetneq;":"\u228b\ufe00","varsupsetneqq;":"\u2acc\ufe00","vartheta;":"\u03d1","vartriangleleft;":"\u22b2","vartriangleright;":"\u22b3","vBar;":"\u2ae8","Vbar;":"\u2aeb","vBarv;":"\u2ae9","Vcy;":"\u0412","vcy;":"\u0432","vdash;":"\u22a2","vDash;":"\u22a8","Vdash;":"\u22a9","VDash;":"\u22ab","Vdashl;":"\u2ae6","veebar;":"\u22bb","vee;":"\u2228","Vee;":"\u22c1","veeeq;":"\u225a","vellip;":"\u22ee","verbar;":"|","Verbar;":"\u2016","vert;":"|","Vert;":"\u2016","VerticalBar;":"\u2223","VerticalLine;":"|","VerticalSeparator;":"\u2758","VerticalTilde;":"\u2240","VeryThinSpace;":"\u200a","Vfr;":"\ud835\udd19","vfr;":"\ud835\udd33","vltri;":"\u22b2","vnsub;":"\u2282\u20d2","vnsup;":"\u2283\u20d2","Vopf;":"\ud835\udd4d","vopf;":"\ud835\udd67","vprop;":"\u221d","vrtri;":"\u22b3","Vscr;":"\ud835\udcb1","vscr;":"\ud835\udccb","vsubnE;":"\u2acb\ufe00","vsubne;":"\u228a\ufe00","vsupnE;":"\u2acc\ufe00","vsupne;":"\u228b\ufe00","Vvdash;":"\u22aa","vzigzag;":"\u299a","Wcirc;":"\u0174","wcirc;":"\u0175","wedbar;":"\u2a5f","wedge;":"\u2227","Wedge;":"\u22c0","wedgeq;":"\u2259","weierp;":"\u2118","Wfr;":"\ud835\udd1a","wfr;":"\ud835\udd34","Wopf;":"\ud835\udd4e","wopf;":"\ud835\udd68","wp;":"\u2118","wr;":"\u2240","wreath;":"\u2240","Wscr;":"\ud835\udcb2","wscr;":"\ud835\udccc","xcap;":"\u22c2","xcirc;":"\u25ef","xcup;":"\u22c3","xdtri;":"\u25bd","Xfr;":"\ud835\udd1b","xfr;":"\ud835\udd35","xharr;":"\u27f7","xhArr;":"\u27fa","Xi;":"\u039e","xi;":"\u03be","xlarr;":"\u27f5","xlArr;":"\u27f8","xmap;":"\u27fc","xnis;":"\u22fb","xodot;":"\u2a00","Xopf;":"\ud835\udd4f","xopf;":"\ud835\udd69","xoplus;":"\u2a01","xotime;":"\u2a02","xrarr;":"\u27f6","xrArr;":"\u27f9","Xscr;":"\ud835\udcb3","xscr;":"\ud835\udccd","xsqcup;":"\u2a06","xuplus;":"\u2a04","xutri;":"\u25b3","xvee;":"\u22c1","xwedge;":"\u22c0","Yacute;":"\u00dd",Yacute:"\u00dd","yacute;":"\u00fd",yacute:"\u00fd","YAcy;":"\u042f","yacy;":"\u044f","Ycirc;":"\u0176","ycirc;":"\u0177","Ycy;":"\u042b","ycy;":"\u044b","yen;":"\u00a5",yen:"\u00a5","Yfr;":"\ud835\udd1c","yfr;":"\ud835\udd36","YIcy;":"\u0407","yicy;":"\u0457","Yopf;":"\ud835\udd50","yopf;":"\ud835\udd6a","Yscr;":"\ud835\udcb4","yscr;":"\ud835\udcce","YUcy;":"\u042e","yucy;":"\u044e","yuml;":"\u00ff",yuml:"\u00ff","Yuml;":"\u0178","Zacute;":"\u0179","zacute;":"\u017a","Zcaron;":"\u017d","zcaron;":"\u017e","Zcy;":"\u0417","zcy;":"\u0437","Zdot;":"\u017b","zdot;":"\u017c","zeetrf;":"\u2128","ZeroWidthSpace;":"\u200b","Zeta;":"\u0396","zeta;":"\u03b6","zfr;":"\ud835\udd37","Zfr;":"\u2128","ZHcy;":"\u0416","zhcy;":"\u0436","zigrarr;":"\u21dd","zopf;":"\ud835\udd6b","Zopf;":"\u2124","Zscr;":"\ud835\udcb5","zscr;":"\ud835\udccf","zwj;":"\u200d","zwnj;":"\u200c"}},{}],13:[function(e,t,n){function u(e,t){return r.isUndefined(t)?""+t:r.isNumber(t)&&(isNaN(t)||!isFinite(t))?t.toString():r.isFunction(t)||r.isRegExp(t)?t.toString():t}function a(e,t){return r.isString(e)?e.length<t?e:e.slice(0,t):e}function f(e){return a(JSON.stringify(e.actual,u),128)+" "+e.operator+" "+a(JSON.stringify(e.expected,u),128)}function l(e,t,n,r,i){throw new o.AssertionError({message:n,actual:e,expected:t,operator:r,stackStartFunction:i})}function c(e,t){e||l(e,!0,t,"==",o.ok)}function h(e,t){if(e===t)return!0;if(r.isBuffer(e)&&r.isBuffer(t)){if(e.length!=t.length)return!1;for(var n=0;n<e.length;n++)if(e[n]!==t[n])return!1;return!0}return r.isDate(e)&&r.isDate(t)?e.getTime()===t.getTime():r.isRegExp(e)&&r.isRegExp(t)?e.source===t.source&&e.global===t.global&&e.multiline===t.multiline&&e.lastIndex===t.lastIndex&&e.ignoreCase===t.ignoreCase:!r.isObject(e)&&!r.isObject(t)?e==t:d(e,t)}function p(e){return Object.prototype.toString.call(e)=="[object Arguments]"}function d(e,t){if(r.isNullOrUndefined(e)||r.isNullOrUndefined(t))return!1;if(e.prototype!==t.prototype)return!1;if(p(e))return p(t)?(e=i.call(e),t=i.call(t),h(e,t)):!1;try{var n=g(e),s=g(t),o,u}catch(a){return!1}if(n.length!=s.length)return!1;n.sort(),s.sort();for(u=n.length-1;u>=0;u--)if(n[u]!=s[u])return!1;for(u=n.length-1;u>=0;u--){o=n[u];if(!h(e[o],t[o]))return!1}return!0}function v(e,t){return!e||!t?!1:Object.prototype.toString.call(t)=="[object RegExp]"?t.test(e):e instanceof t?!0:t.call({},e)===!0?!0:!1}function m(e,t,n,i){var s;r.isString(n)&&(i=n,n=null);try{t()}catch(o){s=o}i=(n&&n.name?" ("+n.name+").":".")+(i?" "+i:"."),e&&!s&&l(s,n,"Missing expected exception"+i),!e&&v(s,n)&&l(s,n,"Got unwanted exception"+i);if(e&&s&&n&&!v(s,n)||!e&&s)throw s}var r=e("util/"),i=Array.prototype.slice,s=Object.prototype.hasOwnProperty,o=t.exports=c;o.AssertionError=function(t){this.name="AssertionError",this.actual=t.actual,this.expected=t.expected,this.operator=t.operator,t.message?(this.message=t.message,this.generatedMessage=!1):(this.message=f(this),this.generatedMessage=!0);var n=t.stackStartFunction||l;if(Error.captureStackTrace)Error.captureStackTrace(this,n);else{var r=new Error;if(r.stack){var i=r.stack,s=n.name,o=i.indexOf("\n"+s);if(o>=0){var u=i.indexOf("\n",o+1);i=i.substring(u+1)}this.stack=i}}},r.inherits(o.AssertionError,Error),o.fail=l,o.ok=c,o.equal=function(t,n,r){t!=n&&l(t,n,r,"==",o.equal)},o.notEqual=function(t,n,r){t==n&&l(t,n,r,"!=",o.notEqual)},o.deepEqual=function(t,n,r){h(t,n)||l(t,n,r,"deepEqual",o.deepEqual)},o.notDeepEqual=function(t,n,r){h(t,n)&&l(t,n,r,"notDeepEqual",o.notDeepEqual)},o.strictEqual=function(t,n,r){t!==n&&l(t,n,r,"===",o.strictEqual)},o.notStrictEqual=function(t,n,r){t===n&&l(t,n,r,"!==",o.notStrictEqual)},o.throws=function(e,t,n){m.apply(this,[!0].concat(i.call(arguments)))},o.doesNotThrow=function(e,t){m.apply(this,[!1].concat(i.call(arguments)))},o.ifError=function(e){if(e)throw e};var g=Object.keys||function(e){var t=[];for(var n in e)s.call(e,n)&&t.push(n);return t}},{"util/":15}],14:[function(e,t,n){t.exports=function(t){return t&&typeof t=="object"&&typeof t.copy=="function"&&typeof t.fill=="function"&&typeof t.readUInt8=="function"}},{}],15:[function(e,t,n){(function(t,r){function u(e,t){var r={seen:[],stylize:f};return arguments.length>=3&&(r.depth=arguments[2]),arguments.length>=4&&(r.colors=arguments[3]),y(t)?r.showHidden=t:t&&n._extend(r,t),T(r.showHidden)&&(r.showHidden=!1),T(r.depth)&&(r.depth=2),T(r.colors)&&(r.colors=!1),T(r.customInspect)&&(r.customInspect=!0),r.colors&&(r.stylize=a),c(r,e,r.depth)}function a(e,t){var n=u.styles[t];return n?"["+u.colors[n][0]+"m"+e+"["+u.colors[n][1]+"m":e}function f(e,t){return e}function l(e){var t={};return e.forEach(function(e,n){t[e]=!0}),t}function c(e,t,r){if(e.customInspect&&t&&A(t.inspect)&&t.inspect!==n.inspect&&(!t.constructor||t.constructor.prototype!==t)){var i=t.inspect(r,e);return S(i)||(i=c(e,i,r)),i}var s=h(e,t);if(s)return s;var o=Object.keys(t),u=l(o);e.showHidden&&(o=Object.getOwnPropertyNames(t));if(L(t)&&(o.indexOf("message")>=0||o.indexOf("description")>=0))return p(t);if(o.length===0){if(A(t)){var a=t.name?": "+t.name:"";return e.stylize("[Function"+a+"]","special")}if(N(t))return e.stylize(RegExp.prototype.toString.call(t),"regexp");if(k(t))return e.stylize(Date.prototype.toString.call(t),"date");if(L(t))return p(t)}var f="",y=!1,b=["{","}"];g(t)&&(y=!0,b=["[","]"]);if(A(t)){var w=t.name?": "+t.name:"";f=" [Function"+w+"]"}N(t)&&(f=" "+RegExp.prototype.toString.call(t)),k(t)&&(f=" "+Date.prototype.toUTCString.call(t)),L(t)&&(f=" "+p(t));if(o.length!==0||!!y&&t.length!=0){if(r<0)return N(t)?e.stylize(RegExp.prototype.toString.call(t),"regexp"):e.stylize("[Object]","special");e.seen.push(t);var E;return y?E=d(e,t,r,u,o):E=o.map(function(n){return v(e,t,r,u,n,y)}),e.seen.pop(),m(E,f,b)}return b[0]+f+b[1]}function h(e,t){if(T(t))return e.stylize("undefined","undefined");if(S(t)){var n="'"+JSON.stringify(t).replace(/^"|"$/g,"").replace(/'/g,"\\'").replace(/\\"/g,'"')+"'";return e.stylize(n,"string")}if(E(t))return e.stylize(""+t,"number");if(y(t))return e.stylize(""+t,"boolean");if(b(t))return e.stylize("null","null")}function p(e){return"["+Error.prototype.toString.call(e)+"]"}function d(e,t,n,r,i){var s=[];for(var o=0,u=t.length;o<u;++o)H(t,String(o))?s.push(v(e,t,n,r,String(o),!0)):s.push("");return i.forEach(function(i){i.match(/^\d+$/)||s.push(v(e,t,n,r,i,!0))}),s}function v(e,t,n,r,i,s){var o,u,a;a=Object.getOwnPropertyDescriptor(t,i)||{value:t[i]},a.get?a.set?u=e.stylize("[Getter/Setter]","special"):u=e.stylize("[Getter]","special"):a.set&&(u=e.stylize("[Setter]","special")),H(r,i)||(o="["+i+"]"),u||(e.seen.indexOf(a.value)<0?(b(n)?u=c(e,a.value,null):u=c(e,a.value,n-1),u.indexOf("\n")>-1&&(s?u=u.split("\n").map(function(e){return"  "+e}).join("\n").substr(2):u="\n"+u.split("\n").map(function(e){return"   "+e}).join("\n"))):u=e.stylize("[Circular]","special"));if(T(o)){if(s&&i.match(/^\d+$/))return u;o=JSON.stringify(""+i),o.match(/^"([a-zA-Z_][a-zA-Z_0-9]*)"$/)?(o=o.substr(1,o.length-2),o=e.stylize(o,"name")):(o=o.replace(/'/g,"\\'").replace(/\\"/g,'"').replace(/(^"|"$)/g,"'"),o=e.stylize(o,"string"))}return o+": "+u}function m(e,t,n){var r=0,i=e.reduce(function(e,t){return r++,t.indexOf("\n")>=0&&r++,e+t.replace(/\u001b\[\d\d?m/g,"").length+1},0);return i>60?n[0]+(t===""?"":t+"\n ")+" "+e.join(",\n  ")+" "+n[1]:n[0]+t+" "+e.join(", ")+" "+n[1]}function g(e){return Array.isArray(e)}function y(e){return typeof e=="boolean"}function b(e){return e===null}function w(e){return e==null}function E(e){return typeof e=="number"}function S(e){return typeof e=="string"}function x(e){return typeof e=="symbol"}function T(e){return e===void 0}function N(e){return C(e)&&M(e)==="[object RegExp]"}function C(e){return typeof e=="object"&&e!==null}function k(e){return C(e)&&M(e)==="[object Date]"}function L(e){return C(e)&&(M(e)==="[object Error]"||e instanceof Error)}function A(e){return typeof e=="function"}function O(e){return e===null||typeof e=="boolean"||typeof e=="number"||typeof e=="string"||typeof e=="symbol"||typeof e=="undefined"}function M(e){return Object.prototype.toString.call(e)}function _(e){return e<10?"0"+e.toString(10):e.toString(10)}function P(){var e=new Date,t=[_(e.getHours()),_(e.getMinutes()),_(e.getSeconds())].join(":");return[e.getDate(),D[e.getMonth()],t].join(" ")}function H(e,t){return Object.prototype.hasOwnProperty.call(e,t)}var i=/%[sdj%]/g;n.format=function(e){if(!S(e)){var t=[];for(var n=0;n<arguments.length;n++)t.push(u(arguments[n]));return t.join(" ")}var n=1,r=arguments,s=r.length,o=String(e).replace(i,function(e){if(e==="%%")return"%";if(n>=s)return e;switch(e){case"%s":return String(r[n++]);case"%d":return Number(r[n++]);case"%j":try{return JSON.stringify(r[n++])}catch(t){return"[Circular]"};default:return e}});for(var a=r[n];n<s;a=r[++n])b(a)||!C(a)?o+=" "+a:o+=" "+u(a);return o},n.deprecate=function(e,i){function o(){if(!s){if(t.throwDeprecation)throw new Error(i);t.traceDeprecation?console.trace(i):console.error(i),s=!0}return e.apply(this,arguments)}if(T(r.process))return function(){return n.deprecate(e,i).apply(this,arguments)};if(t.noDeprecation===!0)return e;var s=!1;return o};var s={},o;n.debuglog=function(e){T(o)&&(o=t.env.NODE_DEBUG||""),e=e.toUpperCase();if(!s[e])if((new RegExp("\\b"+e+"\\b","i")).test(o)){var r=t.pid;s[e]=function(){var t=n.format.apply(n,arguments);console.error("%s %d: %s",e,r,t)}}else s[e]=function(){};return s[e]},n.inspect=u,u.colors={bold:[1,22],italic:[3,23],underline:[4,24],inverse:[7,27],white:[37,39],grey:[90,39],black:[30,39],blue:[34,39],cyan:[36,39],green:[32,39],magenta:[35,39],red:[31,39],yellow:[33,39]},u.styles={special:"cyan",number:"yellow","boolean":"yellow","undefined":"grey","null":"bold",string:"green",date:"magenta",regexp:"red"},n.isArray=g,n.isBoolean=y,n.isNull=b,n.isNullOrUndefined=w,n.isNumber=E,n.isString=S,n.isSymbol=x,n.isUndefined=T,n.isRegExp=N,n.isObject=C,n.isDate=k,n.isError=L,n.isFunction=A,n.isPrimitive=O,n.isBuffer=e("./support/isBuffer");var D=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];n.log=function(){console.log("%s - %s",P(),n.format.apply(n,arguments))},n.inherits=e("inherits"),n._extend=function(e,t){if(!t||!C(t))return e;var n=Object.keys(t),r=n.length;while(r--)e[n[r]]=t[n[r]];return e}}).call(this,e("/usr/local/lib/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js"),typeof self!="undefined"?self:typeof window!="undefined"?window:{})},{"./support/isBuffer":14,"/usr/local/lib/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js":18,inherits:17}],16:[function(e,t,n){function r(){this._events=this._events||{},this._maxListeners=this._maxListeners||undefined}function i(e){return typeof e=="function"}function s(e){return typeof e=="number"}function o(e){return typeof e=="object"&&e!==null}function u(e){return e===void 0}t.exports=r,r.EventEmitter=r,r.prototype._events=undefined,r.prototype._maxListeners=undefined,r.defaultMaxListeners=10,r.prototype.setMaxListeners=function(e){if(!s(e)||e<0||isNaN(e))throw TypeError("n must be a positive number");return this._maxListeners=e,this},r.prototype.emit=function(e){var t,n,r,s,a,f;this._events||(this._events={});if(e==="error")if(!this._events.error||o(this._events.error)&&!this._events.error.length)throw t=arguments[1],t instanceof Error?t:TypeError('Uncaught, unspecified "error" event.');n=this._events[e];if(u(n))return!1;if(i(n))switch(arguments.length){case 1:n.call(this);break;case 2:n.call(this,arguments[1]);break;case 3:n.call(this,arguments[1],arguments[2]);break;default:r=arguments.length,s=new Array(r-1);for(a=1;a<r;a++)s[a-1]=arguments[a];n.apply(this,s)}else if(o(n)){r=arguments.length,s=new Array(r-1);for(a=1;a<r;a++)s[a-1]=arguments[a];f=n.slice(),r=f.length;for(a=0;a<r;a++)f[a].apply(this,s)}return!0},r.prototype.addListener=function(e,t){var n;if(!i(t))throw TypeError("listener must be a function");this._events||(this._events={}),this._events.newListener&&this.emit("newListener",e,i(t.listener)?t.listener:t),this._events[e]?o(this._events[e])?this._events[e].push(t):this._events[e]=[this._events[e],t]:this._events[e]=t;if(o(this._events[e])&&!this._events[e].warned){var n;u(this._maxListeners)?n=r.defaultMaxListeners:n=this._maxListeners,n&&n>0&&this._events[e].length>n&&(this._events[e].warned=!0,console.error("(node) warning: possible EventEmitter memory leak detected. %d listeners added. Use emitter.setMaxListeners() to increase limit.",this._events[e].length),console.trace())}return this},r.prototype.on=r.prototype.addListener,r.prototype.once=function(e,t){function r(){this.removeListener(e,r),n||(n=!0,t.apply(this,arguments))}if(!i(t))throw TypeError("listener must be a function");var n=!1;return r.listener=t,this.on(e,r),this},r.prototype.removeListener=function(e,t){var n,r,s,u;if(!i(t))throw TypeError("listener must be a function");if(!this._events||!this._events[e])return this;n=this._events[e],s=n.length,r=-1;if(n===t||i(n.listener)&&n.listener===t)delete this._events[e],this._events.removeListener&&this.emit("removeListener",e,t);else if(o(n)){for(u=s;u-->0;)if(n[u]===t||n[u].listener&&n[u].listener===t){r=u;break}if(r<0)return this;n.length===1?(n.length=0,delete this._events[e]):n.splice(r,1),this._events.removeListener&&this.emit("removeListener",e,t)}return this},r.prototype.removeAllListeners=function(e){var t,n;if(!this._events)return this;if(!this._events.removeListener)return arguments.length===0?this._events={}:this._events[e]&&delete this._events[e],this;if(arguments.length===0){for(t in this._events){if(t==="removeListener")continue;this.removeAllListeners(t)}return this.removeAllListeners("removeListener"),this._events={},this}n=this._events[e];if(i(n))this.removeListener(e,n);else while(n.length)this.removeListener(e,n[n.length-1]);return delete this._events[e],this},r.prototype.listeners=function(e){var t;return!this._events||!this._events[e]?t=[]:i(this._events[e])?t=[this._events[e]]:t=this._events[e].slice(),t},r.listenerCount=function(e,t){var n;return!e._events||!e._events[t]?n=0:i(e._events[t])?n=1:n=e._events[t].length,n}},{}],17:[function(e,t,n){typeof Object.create=="function"?t.exports=function(t,n){t.super_=n,t.prototype=Object.create(n.prototype,{constructor:{value:t,enumerable:!1,writable:!0,configurable:!0}})}:t.exports=function(t,n){t.super_=n;var r=function(){};r.prototype=n.prototype,t.prototype=new r,t.prototype.constructor=t}},{}],18:[function(e,t,n){function i(){}var r=t.exports={};r.nextTick=function(){var e=typeof window!="undefined"&&window.setImmediate,t=typeof window!="undefined"&&window.postMessage&&window.addEventListener;if(e)return function(e){return window.setImmediate(e)};if(t){var n=[];return window.addEventListener("message",function(e){var t=e.source;if((t===window||t===null)&&e.data==="process-tick"){e.stopPropagation();if(n.length>0){var r=n.shift();r()}}},!0),function(t){n.push(t),window.postMessage("process-tick","*")}}return function(t){setTimeout(t,0)}}(),r.title="browser",r.browser=!0,r.env={},r.argv=[],r.on=i,r.once=i,r.off=i,r.emit=i,r.binding=function(e){throw new Error("process.binding is not supported")},r.cwd=function(){return"/"},r.chdir=function(e){throw new Error("process.chdir is not supported")}},{}],19:[function(e,t,n){t.exports=e(14)},{}],20:[function(e,t,n){t.exports=e(15)},{"./support/isBuffer":19,"/usr/local/lib/node_modules/browserify/node_modules/insert-module-globals/node_modules/process/browser.js":18,inherits:17}]},{},[9])(9)}),ace.define("ace/mode/html_worker",[],function(e,t,n){"use strict";var r=e("../lib/oop"),i=e("../lib/lang"),s=e("../worker/mirror").Mirror,o=e("./html/saxparser").SAXParser,u={"expected-doctype-but-got-start-tag":"info","expected-doctype-but-got-chars":"info","non-html-root":"info"},a=t.Worker=function(e){s.call(this,e),this.setTimeout(400),this.context=null};r.inherits(a,s),function(){this.setOptions=function(e){this.context=e.context},this.onUpdate=function(){var e=this.doc.getValue();if(!e)return;var t=new o,n=[],r=function(){};t.contentHandler={startDocument:r,endDocument:r,startElement:r,endElement:r,characters:r},t.errorHandler={error:function(e,t,r){n.push({row:t.line,column:t.column,text:e,type:u[r]||"error"})}},t.parse(e,this.context),this.sender.emit("error",n)}}.call(a.prototype)})
+"no use strict";
+!(function(window) {
+if (typeof window.window != "undefined" && window.document)
+    return;
+if (window.require && window.define)
+    return;
+
+if (!window.console) {
+    window.console = function() {
+        var msgs = Array.prototype.slice.call(arguments, 0);
+        postMessage({type: "log", data: msgs});
+    };
+    window.console.error =
+    window.console.warn = 
+    window.console.log =
+    window.console.trace = window.console;
+}
+window.window = window;
+window.ace = window;
+
+window.onerror = function(message, file, line, col, err) {
+    postMessage({type: "error", data: {
+        message: message,
+        data: err && err.data,
+        file: file,
+        line: line, 
+        col: col,
+        stack: err && err.stack
+    }});
+};
+
+window.normalizeModule = function(parentId, moduleName) {
+    // normalize plugin requires
+    if (moduleName.indexOf("!") !== -1) {
+        var chunks = moduleName.split("!");
+        return window.normalizeModule(parentId, chunks[0]) + "!" + window.normalizeModule(parentId, chunks[1]);
+    }
+    // normalize relative requires
+    if (moduleName.charAt(0) == ".") {
+        var base = parentId.split("/").slice(0, -1).join("/");
+        moduleName = (base ? base + "/" : "") + moduleName;
+        
+        while (moduleName.indexOf(".") !== -1 && previous != moduleName) {
+            var previous = moduleName;
+            moduleName = moduleName.replace(/^\.\//, "").replace(/\/\.\//, "/").replace(/[^\/]+\/\.\.\//, "");
+        }
+    }
+    
+    return moduleName;
+};
+
+window.require = function require(parentId, id) {
+    if (!id) {
+        id = parentId;
+        parentId = null;
+    }
+    if (!id.charAt)
+        throw new Error("worker.js require() accepts only (parentId, id) as arguments");
+
+    id = window.normalizeModule(parentId, id);
+
+    var module = window.require.modules[id];
+    if (module) {
+        if (!module.initialized) {
+            module.initialized = true;
+            module.exports = module.factory().exports;
+        }
+        return module.exports;
+    }
+   
+    if (!window.require.tlns)
+        return console.log("unable to load " + id);
+    
+    var path = resolveModuleId(id, window.require.tlns);
+    if (path.slice(-3) != ".js") path += ".js";
+    
+    window.require.id = id;
+    window.require.modules[id] = {}; // prevent infinite loop on broken modules
+    importScripts(path);
+    return window.require(parentId, id);
+};
+function resolveModuleId(id, paths) {
+    var testPath = id, tail = "";
+    while (testPath) {
+        var alias = paths[testPath];
+        if (typeof alias == "string") {
+            return alias + tail;
+        } else if (alias) {
+            return  alias.location.replace(/\/*$/, "/") + (tail || alias.main || alias.name);
+        } else if (alias === false) {
+            return "";
+        }
+        var i = testPath.lastIndexOf("/");
+        if (i === -1) break;
+        tail = testPath.substr(i) + tail;
+        testPath = testPath.slice(0, i);
+    }
+    return id;
+}
+window.require.modules = {};
+window.require.tlns = {};
+
+window.define = function(id, deps, factory) {
+    if (arguments.length == 2) {
+        factory = deps;
+        if (typeof id != "string") {
+            deps = id;
+            id = window.require.id;
+        }
+    } else if (arguments.length == 1) {
+        factory = id;
+        deps = [];
+        id = window.require.id;
+    }
+    
+    if (typeof factory != "function") {
+        window.require.modules[id] = {
+            exports: factory,
+            initialized: true
+        };
+        return;
+    }
+
+    if (!deps.length)
+        // If there is no dependencies, we inject "require", "exports" and
+        // "module" as dependencies, to provide CommonJS compatibility.
+        deps = ["require", "exports", "module"];
+
+    var req = function(childId) {
+        return window.require(id, childId);
+    };
+
+    window.require.modules[id] = {
+        exports: {},
+        factory: function() {
+            var module = this;
+            var returnExports = factory.apply(this, deps.slice(0, factory.length).map(function(dep) {
+                switch (dep) {
+                    // Because "require", "exports" and "module" aren't actual
+                    // dependencies, we must handle them seperately.
+                    case "require": return req;
+                    case "exports": return module.exports;
+                    case "module":  return module;
+                    // But for all other dependencies, we can just go ahead and
+                    // require them.
+                    default:        return req(dep);
+                }
+            }));
+            if (returnExports)
+                module.exports = returnExports;
+            return module;
+        }
+    };
+};
+window.define.amd = {};
+window.require.tlns = {};
+window.initBaseUrls  = function initBaseUrls(topLevelNamespaces) {
+    for (var i in topLevelNamespaces)
+        this.require.tlns[i] = topLevelNamespaces[i];
+};
+
+window.initSender = function initSender() {
+
+    var EventEmitter = window.require("ace/lib/event_emitter").EventEmitter;
+    var oop = window.require("ace/lib/oop");
+    
+    var Sender = function() {};
+    
+    (function() {
+        
+        oop.implement(this, EventEmitter);
+                
+        this.callback = function(data, callbackId) {
+            postMessage({
+                type: "call",
+                id: callbackId,
+                data: data
+            });
+        };
+    
+        this.emit = function(name, data) {
+            postMessage({
+                type: "event",
+                name: name,
+                data: data
+            });
+        };
+        
+    }).call(Sender.prototype);
+    
+    return new Sender();
+};
+
+var main = window.main = null;
+var sender = window.sender = null;
+
+window.onmessage = function(e) {
+    var msg = e.data;
+    if (msg.event && sender) {
+        sender._signal(msg.event, msg.data);
+    }
+    else if (msg.command) {
+        if (main[msg.command])
+            main[msg.command].apply(main, msg.args);
+        else if (window[msg.command])
+            window[msg.command].apply(window, msg.args);
+        else
+            throw new Error("Unknown command:" + msg.command);
+    }
+    else if (msg.init) {
+        window.initBaseUrls(msg.tlns);
+        sender = window.sender = window.initSender();
+        var clazz = this.require(msg.module)[msg.classname];
+        main = window.main = new clazz(sender);
+    }
+};
+})(this);
+
+define("ace/lib/oop", [], function(require, exports, module) {
+"use strict";
+exports.inherits = function(ctor, superCtor) {
+    ctor.super_ = superCtor;
+    ctor.prototype = Object.create(superCtor.prototype, {
+        constructor: {
+            value: ctor,
+            enumerable: false,
+            writable: true,
+            configurable: true
+        }
+    });
+};
+
+/**
+ * Implements mixin properties into the prototype of an object.
+ * @template T
+ * @param {T} obj - The prototype of the target object.
+ * @param {Object} mixin - The source object.
+ * @returns {T & Object} The merged prototype.
+ */
+exports.mixin = function(obj, mixin) {
+    for (var key in mixin) {
+        obj[key] = mixin[key];
+    }
+    return obj;
+};
+
+/**
+ * Implements mixin properties into the prototype of an object.
+ * @template T
+ * @param {T} proto - The prototype of the target object.
+ * @param {Object} mixin - The source object.
+ * @returns {T & Object} The merged prototype.
+ */
+exports.implement = function(proto, mixin) {
+    exports.mixin(proto, mixin);
+};
+});
+
+define("ace/lib/event_emitter", [], function(require, exports, module) {
+"use strict";
+/**@type {any}*/
+var EventEmitter = {};
+var stopPropagation = function() { this.propagationStopped = true; };
+var preventDefault = function() { this.defaultPrevented = true; };
+
+EventEmitter._emit =
+EventEmitter._dispatchEvent = function(eventName, e) {
+    this._eventRegistry || (this._eventRegistry = {});
+    this._defaultHandlers || (this._defaultHandlers = {});
+
+    var listeners = this._eventRegistry[eventName] || [];
+    var defaultHandler = this._defaultHandlers[eventName];
+    if (!listeners.length && !defaultHandler)
+        return;
+
+    if (typeof e != "object" || !e)
+        e = {};
+
+    if (!e.type)
+        e.type = eventName;
+    if (!e.stopPropagation)
+        e.stopPropagation = stopPropagation;
+    if (!e.preventDefault)
+        e.preventDefault = preventDefault;
+
+    listeners = listeners.slice();
+    for (var i=0; i<listeners.length; i++) {
+        listeners[i](e, this);
+        if (e.propagationStopped)
+            break;
+    }
+    
+    if (defaultHandler && !e.defaultPrevented)
+        return defaultHandler(e, this);
+};
+
+
+EventEmitter._signal = function(eventName, e) {
+    var listeners = (this._eventRegistry || {})[eventName];
+    if (!listeners)
+        return;
+    listeners = listeners.slice();
+    for (var i=0; i<listeners.length; i++)
+        listeners[i](e, this);
+};
+
+EventEmitter.once = function(eventName, callback) {
+    var _self = this;
+    this.on(eventName, function newCallback() {
+        _self.off(eventName, newCallback);
+        callback.apply(null, arguments);
+    });
+    if (!callback) {
+        /*global Promise*/
+        return new Promise(function(resolve) {
+            callback = resolve;
+        });
+    }
+};
+
+
+EventEmitter.setDefaultHandler = function(eventName, callback) {
+    /**@type {any}*/
+    var handlers = this._defaultHandlers;
+    if (!handlers)
+        handlers = this._defaultHandlers = {_disabled_: {}};
+    
+    if (handlers[eventName]) {
+        var old = handlers[eventName];
+        var disabled = handlers._disabled_[eventName];
+        if (!disabled)
+            handlers._disabled_[eventName] = disabled = [];
+        disabled.push(old);
+        var i = disabled.indexOf(callback);
+        if (i != -1) 
+            disabled.splice(i, 1);
+    }
+    handlers[eventName] = callback;
+};
+EventEmitter.removeDefaultHandler = function(eventName, callback) {
+    var handlers = this._defaultHandlers;
+    if (!handlers)
+        return;
+    var disabled = handlers._disabled_[eventName];
+    
+    if (handlers[eventName] == callback) {
+        if (disabled)
+            this.setDefaultHandler(eventName, disabled.pop());
+    } else if (disabled) {
+        var i = disabled.indexOf(callback);
+        if (i != -1)
+            disabled.splice(i, 1);
+    }
+};
+
+EventEmitter.on =
+EventEmitter.addEventListener = function(eventName, callback, capturing) {
+    this._eventRegistry = this._eventRegistry || {};
+
+    var listeners = this._eventRegistry[eventName];
+    if (!listeners)
+        listeners = this._eventRegistry[eventName] = [];
+
+    if (listeners.indexOf(callback) == -1)
+        listeners[capturing ? "unshift" : "push"](callback);
+    return callback;
+};
+
+EventEmitter.off =
+EventEmitter.removeListener =
+EventEmitter.removeEventListener = function(eventName, callback) {
+    this._eventRegistry = this._eventRegistry || {};
+
+    var listeners = this._eventRegistry[eventName];
+    if (!listeners)
+        return;
+
+    var index = listeners.indexOf(callback);
+    if (index !== -1)
+        listeners.splice(index, 1);
+};
+/**
+ * @this {EventEmitter}
+ */
+EventEmitter.removeAllListeners = function(eventName) {
+    if (!eventName) this._eventRegistry = this._defaultHandlers = undefined;
+    if (this._eventRegistry) this._eventRegistry[eventName] = undefined;
+    if (this._defaultHandlers) this._defaultHandlers[eventName] = undefined;
+};
+
+exports.EventEmitter = EventEmitter;
+});
+
+define("ace/mode/html_worker", [], function(require, exports, module) {
+"use strict";
+var define = undefined;
+var aceLegacyWorkerModule;
+var aceLegacyWorkerModule = (() => {
+  var __create = Object.create;
+  var __defProp = Object.defineProperty;
+  var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+  var __getOwnPropNames = Object.getOwnPropertyNames;
+  var __getOwnPropSymbols = Object.getOwnPropertySymbols;
+  var __getProtoOf = Object.getPrototypeOf;
+  var __hasOwnProp = Object.prototype.hasOwnProperty;
+  var __propIsEnum = Object.prototype.propertyIsEnumerable;
+  var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+  var __spreadValues = (a, b) => {
+    for (var prop in b || (b = {}))
+      if (__hasOwnProp.call(b, prop))
+        __defNormalProp(a, prop, b[prop]);
+    if (__getOwnPropSymbols)
+      for (var prop of __getOwnPropSymbols(b)) {
+        if (__propIsEnum.call(b, prop))
+          __defNormalProp(a, prop, b[prop]);
+      }
+    return a;
+  };
+  var __commonJS = (cb, mod) => function __require() {
+    return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
+  };
+  var __export = (target, all) => {
+    for (var name in all)
+      __defProp(target, name, { get: all[name], enumerable: true });
+  };
+  var __copyProps = (to, from, except, desc) => {
+    if (from && typeof from === "object" || typeof from === "function") {
+      for (let key of __getOwnPropNames(from))
+        if (!__hasOwnProp.call(to, key) && key !== except)
+          __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+    }
+    return to;
+  };
+  var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+    // If the importer is in node compatibility mode or this is not an ESM
+    // file that has been converted to a CommonJS file using a Babel-
+    // compatible transform (i.e. "__esModule" has not been set), then set
+    // "default" to the CommonJS "module.exports" for node compatibility.
+    isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+    mod
+  ));
+  var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+
+  // ../../node_modules/ace-code/src/lib/deep_copy.js
+  var require_deep_copy = __commonJS({
+    "../../node_modules/ace-code/src/lib/deep_copy.js"(exports) {
+      exports.deepCopy = function deepCopy(obj) {
+        if (typeof obj !== "object" || !obj)
+          return obj;
+        var copy;
+        if (Array.isArray(obj)) {
+          copy = [];
+          for (let key = 0; key < obj.length; key++) {
+            copy[key] = deepCopy(obj[key]);
+          }
+          return copy;
+        }
+        if (Object.prototype.toString.call(obj) !== "[object Object]")
+          return obj;
+        copy = {};
+        for (let key in obj)
+          copy[key] = deepCopy(obj[key]);
+        return copy;
+      };
+    }
+  });
+
+  // ../../node_modules/ace-code/src/lib/lang.js
+  var require_lang = __commonJS({
+    "../../node_modules/ace-code/src/lib/lang.js"(exports) {
+      "use strict";
+      exports.last = function(a) {
+        return a[a.length - 1];
+      };
+      exports.stringReverse = function(string) {
+        return string.split("").reverse().join("");
+      };
+      exports.stringRepeat = function(string, count) {
+        var result = "";
+        while (count > 0) {
+          if (count & 1)
+            result += string;
+          if (count >>= 1)
+            string += string;
+        }
+        return result;
+      };
+      var trimBeginRegexp = /^\s\s*/;
+      var trimEndRegexp = /\s\s*$/;
+      exports.stringTrimLeft = function(string) {
+        return string.replace(trimBeginRegexp, "");
+      };
+      exports.stringTrimRight = function(string) {
+        return string.replace(trimEndRegexp, "");
+      };
+      exports.copyObject = function(obj) {
+        var copy = {};
+        for (var key in obj) {
+          copy[key] = obj[key];
+        }
+        return copy;
+      };
+      exports.copyArray = function(array) {
+        var copy = [];
+        for (var i = 0, l = array.length; i < l; i++) {
+          if (array[i] && typeof array[i] == "object")
+            copy[i] = this.copyObject(array[i]);
+          else
+            copy[i] = array[i];
+        }
+        return copy;
+      };
+      exports.deepCopy = require_deep_copy().deepCopy;
+      exports.arrayToMap = function(arr) {
+        var map = {};
+        for (var i = 0; i < arr.length; i++) {
+          map[arr[i]] = 1;
+        }
+        return map;
+      };
+      exports.createMap = function(props) {
+        var map = /* @__PURE__ */ Object.create(null);
+        for (var i in props) {
+          map[i] = props[i];
+        }
+        return map;
+      };
+      exports.arrayRemove = function(array, value) {
+        for (var i = 0; i <= array.length; i++) {
+          if (value === array[i]) {
+            array.splice(i, 1);
+          }
+        }
+      };
+      exports.escapeRegExp = function(str) {
+        return str.replace(/([.*+?^${}()|[\]\/\\])/g, "\\$1");
+      };
+      exports.escapeHTML = function(str) {
+        return ("" + str).replace(/&/g, "&#38;").replace(/"/g, "&#34;").replace(/'/g, "&#39;").replace(/</g, "&#60;");
+      };
+      exports.getMatchOffsets = function(string, regExp) {
+        var matches = [];
+        string.replace(regExp, function(str) {
+          matches.push({
+            offset: arguments[arguments.length - 2],
+            length: str.length
+          });
+        });
+        return matches;
+      };
+      exports.deferredCall = function(fcn) {
+        var timer = null;
+        var callback = function() {
+          timer = null;
+          fcn();
+        };
+        var deferred = function(timeout) {
+          deferred.cancel();
+          timer = setTimeout(callback, timeout || 0);
+          return deferred;
+        };
+        deferred.schedule = deferred;
+        deferred.call = function() {
+          this.cancel();
+          fcn();
+          return deferred;
+        };
+        deferred.cancel = function() {
+          clearTimeout(timer);
+          timer = null;
+          return deferred;
+        };
+        deferred.isPending = function() {
+          return timer;
+        };
+        return deferred;
+      };
+      exports.delayedCall = function(fcn, defaultTimeout) {
+        var timer = null;
+        var callback = function() {
+          timer = null;
+          fcn();
+        };
+        var _self = function(timeout) {
+          if (timer == null)
+            timer = setTimeout(callback, timeout || defaultTimeout);
+        };
+        _self.delay = function(timeout) {
+          timer && clearTimeout(timer);
+          timer = setTimeout(callback, timeout || defaultTimeout);
+        };
+        _self.schedule = _self;
+        _self.call = function() {
+          this.cancel();
+          fcn();
+        };
+        _self.cancel = function() {
+          timer && clearTimeout(timer);
+          timer = null;
+        };
+        _self.isPending = function() {
+          return timer;
+        };
+        return _self;
+      };
+      exports.supportsLookbehind = function() {
+        try {
+          new RegExp("(?<=.)");
+        } catch (e) {
+          return false;
+        }
+        return true;
+      };
+      exports.skipEmptyMatch = function(line, last, supportsUnicodeFlag) {
+        return supportsUnicodeFlag && line.codePointAt(last) > 65535 ? 2 : 1;
+      };
+    }
+  });
+
+  // ../../node_modules/ace-code/src/lib/oop.js
+  var require_oop = __commonJS({
+    "../../node_modules/ace-code/src/lib/oop.js"(exports) {
+      "use strict";
+      exports.inherits = function(ctor, superCtor) {
+        ctor.super_ = superCtor;
+        ctor.prototype = Object.create(superCtor.prototype, {
+          constructor: {
+            value: ctor,
+            enumerable: false,
+            writable: true,
+            configurable: true
+          }
+        });
+      };
+      exports.mixin = function(obj, mixin) {
+        for (var key in mixin) {
+          obj[key] = mixin[key];
+        }
+        return obj;
+      };
+      exports.implement = function(proto, mixin) {
+        exports.mixin(proto, mixin);
+      };
+    }
+  });
+
+  // ../../node_modules/ace-code/src/apply_delta.js
+  var require_apply_delta = __commonJS({
+    "../../node_modules/ace-code/src/apply_delta.js"(exports) {
+      "use strict";
+      exports.applyDelta = function(docLines, delta, doNotValidate) {
+        var row = delta.start.row;
+        var startColumn = delta.start.column;
+        var line = docLines[row] || "";
+        switch (delta.action) {
+          case "insert":
+            var lines = delta.lines;
+            if (lines.length === 1) {
+              docLines[row] = line.substring(0, startColumn) + delta.lines[0] + line.substring(startColumn);
+            } else {
+              var args = [row, 1].concat(delta.lines);
+              docLines.splice.apply(docLines, args);
+              docLines[row] = line.substring(0, startColumn) + docLines[row];
+              docLines[row + delta.lines.length - 1] += line.substring(startColumn);
+            }
+            break;
+          case "remove":
+            var endColumn = delta.end.column;
+            var endRow = delta.end.row;
+            if (row === endRow) {
+              docLines[row] = line.substring(0, startColumn) + line.substring(endColumn);
+            } else {
+              docLines.splice(
+                row,
+                endRow - row + 1,
+                line.substring(0, startColumn) + docLines[endRow].substring(endColumn)
+              );
+            }
+            break;
+        }
+      };
+    }
+  });
+
+  // ../../node_modules/ace-code/src/lib/event_emitter.js
+  var require_event_emitter = __commonJS({
+    "../../node_modules/ace-code/src/lib/event_emitter.js"(exports) {
+      "use strict";
+      var EventEmitter2 = {};
+      var stopPropagation = function() {
+        this.propagationStopped = true;
+      };
+      var preventDefault = function() {
+        this.defaultPrevented = true;
+      };
+      EventEmitter2._emit = EventEmitter2._dispatchEvent = function(eventName, e) {
+        this._eventRegistry || (this._eventRegistry = {});
+        this._defaultHandlers || (this._defaultHandlers = {});
+        var listeners = this._eventRegistry[eventName] || [];
+        var defaultHandler = this._defaultHandlers[eventName];
+        if (!listeners.length && !defaultHandler)
+          return;
+        if (typeof e != "object" || !e)
+          e = {};
+        if (!e.type)
+          e.type = eventName;
+        if (!e.stopPropagation)
+          e.stopPropagation = stopPropagation;
+        if (!e.preventDefault)
+          e.preventDefault = preventDefault;
+        listeners = listeners.slice();
+        for (var i = 0; i < listeners.length; i++) {
+          listeners[i](e, this);
+          if (e.propagationStopped)
+            break;
+        }
+        if (defaultHandler && !e.defaultPrevented)
+          return defaultHandler(e, this);
+      };
+      EventEmitter2._signal = function(eventName, e) {
+        var listeners = (this._eventRegistry || {})[eventName];
+        if (!listeners)
+          return;
+        listeners = listeners.slice();
+        for (var i = 0; i < listeners.length; i++)
+          listeners[i](e, this);
+      };
+      EventEmitter2.once = function(eventName, callback) {
+        var _self = this;
+        this.on(eventName, function newCallback() {
+          _self.off(eventName, newCallback);
+          callback.apply(null, arguments);
+        });
+        if (!callback) {
+          return new Promise(function(resolve) {
+            callback = resolve;
+          });
+        }
+      };
+      EventEmitter2.setDefaultHandler = function(eventName, callback) {
+        var handlers = this._defaultHandlers;
+        if (!handlers)
+          handlers = this._defaultHandlers = { _disabled_: {} };
+        if (handlers[eventName]) {
+          var old = handlers[eventName];
+          var disabled = handlers._disabled_[eventName];
+          if (!disabled)
+            handlers._disabled_[eventName] = disabled = [];
+          disabled.push(old);
+          var i = disabled.indexOf(callback);
+          if (i != -1)
+            disabled.splice(i, 1);
+        }
+        handlers[eventName] = callback;
+      };
+      EventEmitter2.removeDefaultHandler = function(eventName, callback) {
+        var handlers = this._defaultHandlers;
+        if (!handlers)
+          return;
+        var disabled = handlers._disabled_[eventName];
+        if (handlers[eventName] == callback) {
+          if (disabled)
+            this.setDefaultHandler(eventName, disabled.pop());
+        } else if (disabled) {
+          var i = disabled.indexOf(callback);
+          if (i != -1)
+            disabled.splice(i, 1);
+        }
+      };
+      EventEmitter2.on = EventEmitter2.addEventListener = function(eventName, callback, capturing) {
+        this._eventRegistry = this._eventRegistry || {};
+        var listeners = this._eventRegistry[eventName];
+        if (!listeners)
+          listeners = this._eventRegistry[eventName] = [];
+        if (listeners.indexOf(callback) == -1)
+          listeners[capturing ? "unshift" : "push"](callback);
+        return callback;
+      };
+      EventEmitter2.off = EventEmitter2.removeListener = EventEmitter2.removeEventListener = function(eventName, callback) {
+        this._eventRegistry = this._eventRegistry || {};
+        var listeners = this._eventRegistry[eventName];
+        if (!listeners)
+          return;
+        var index = listeners.indexOf(callback);
+        if (index !== -1)
+          listeners.splice(index, 1);
+      };
+      EventEmitter2.removeAllListeners = function(eventName) {
+        if (!eventName) this._eventRegistry = this._defaultHandlers = void 0;
+        if (this._eventRegistry) this._eventRegistry[eventName] = void 0;
+        if (this._defaultHandlers) this._defaultHandlers[eventName] = void 0;
+      };
+      exports.EventEmitter = EventEmitter2;
+    }
+  });
+
+  // ../../node_modules/ace-code/src/range.js
+  var require_range = __commonJS({
+    "../../node_modules/ace-code/src/range.js"(exports) {
+      "use strict";
+      var Range2 = class _Range {
+        /**
+         * Creates a new `Range` object with the given starting and ending rows and columns.
+         * @param {Number} [startRow] The starting row
+         * @param {Number} [startColumn] The starting column
+         * @param {Number} [endRow] The ending row
+         * @param {Number} [endColumn] The ending column
+         * @constructor
+         **/
+        constructor(startRow, startColumn, endRow, endColumn) {
+          this.start = {
+            row: startRow,
+            column: startColumn
+          };
+          this.end = {
+            row: endRow,
+            column: endColumn
+          };
+        }
+        /**
+         * Returns `true` if and only if the starting row and column, and ending row and column, are equivalent to those given by `range`.
+         * @param {IRange} range A range to check against
+         * @return {Boolean}
+         **/
+        isEqual(range) {
+          return this.start.row === range.start.row && this.end.row === range.end.row && this.start.column === range.start.column && this.end.column === range.end.column;
+        }
+        /**
+         * Returns a string containing the range's row and column information, given like this:
+         * ```
+         *    [start.row/start.column] -> [end.row/end.column]
+         * ```
+         * @return {String}
+         **/
+        toString() {
+          return "Range: [" + this.start.row + "/" + this.start.column + "] -> [" + this.end.row + "/" + this.end.column + "]";
+        }
+        /**
+         * Returns `true` if the `row` and `column` provided are within the given range. This can better be expressed as returning `true` if:
+         * ```javascript
+         *    this.start.row <= row <= this.end.row &&
+         *    this.start.column <= column <= this.end.column
+         * ```
+         * @param {Number} row A row to check for
+         * @param {Number} column A column to check for
+         * @returns {Boolean}
+         * @related [[Range.compare]]
+         **/
+        contains(row, column) {
+          return this.compare(row, column) == 0;
+        }
+        /**
+         * Compares `this` range (A) with another range (B).
+         * @param {IRange} range A range to compare with
+         * @related [[Range.compare]]
+         * @returns {Number} This method returns one of the following numbers:
+         * * `-2`: (B) is in front of (A), and doesn't intersect with (A)
+         * * `-1`: (B) begins before (A) but ends inside of (A)
+         * * `0`: (B) is completely inside of (A)
+         * * `+1`: (B) begins inside of (A) but ends outside of (A)
+         * * `+2`: (B) is after (A) and doesn't intersect with (A)
+         * * `42`: FTW state: (B) ends in (A) but starts outside of (A)
+         **/
+        compareRange(range) {
+          var cmp, end = range.end, start = range.start;
+          cmp = this.compare(end.row, end.column);
+          if (cmp == 1) {
+            cmp = this.compare(start.row, start.column);
+            if (cmp == 1) {
+              return 2;
+            } else if (cmp == 0) {
+              return 1;
+            } else {
+              return 0;
+            }
+          } else if (cmp == -1) {
+            return -2;
+          } else {
+            cmp = this.compare(start.row, start.column);
+            if (cmp == -1) {
+              return -1;
+            } else if (cmp == 1) {
+              return 42;
+            } else {
+              return 0;
+            }
+          }
+        }
+        /**
+         * Compares the row and column of `p` with the starting and ending [[Point]]'s of the calling range (by calling [[Range.compare]]).
+         * @param {Point} p A point to compare with
+         * @related [[Range.compare]]
+         * @returns {Number}
+         **/
+        comparePoint(p) {
+          return this.compare(p.row, p.column);
+        }
+        /**
+         * Checks the start and end [[Point]]'s of `range` and compares them to the calling range. Returns `true` if the `range` is contained within the caller's range.
+         * @param {IRange} range A range to compare with
+         * @returns {Boolean}
+         * @related [[Range.comparePoint]]
+         **/
+        containsRange(range) {
+          return this.comparePoint(range.start) == 0 && this.comparePoint(range.end) == 0;
+        }
+        /**
+         * Returns `true` if passed in `range` intersects with the one calling this method.
+         * @param {IRange} range A range to compare with
+         * @returns {Boolean}
+         **/
+        intersects(range) {
+          var cmp = this.compareRange(range);
+          return cmp == -1 || cmp == 0 || cmp == 1;
+        }
+        /**
+         * Returns `true` if the caller's ending row is the same as `row`, and if the caller's ending column is the same as `column`.
+         * @param {Number} row A row to compare with
+         * @param {Number} column A column to compare with
+         * @returns {Boolean}
+         **/
+        isEnd(row, column) {
+          return this.end.row == row && this.end.column == column;
+        }
+        /**
+         * Returns `true` if the caller's starting row is the same as `row`, and if the caller's starting column is the same as `column`.
+         * @param {Number} row A row to compare with
+         * @param {Number} column A column to compare with
+         * @returns {Boolean}
+         **/
+        isStart(row, column) {
+          return this.start.row == row && this.start.column == column;
+        }
+        /**
+         * Sets the starting row and column for the range.
+         * @param {Number|Point} row A row to set
+         * @param {Number} [column] A column to set
+         *
+         **/
+        setStart(row, column) {
+          if (typeof row == "object") {
+            this.start.column = row.column;
+            this.start.row = row.row;
+          } else {
+            this.start.row = row;
+            this.start.column = column;
+          }
+        }
+        /**
+         * Sets the starting row and column for the range.
+         * @param {Number|Point} row A row to set
+         * @param {Number} [column] A column to set
+         *
+         **/
+        setEnd(row, column) {
+          if (typeof row == "object") {
+            this.end.column = row.column;
+            this.end.row = row.row;
+          } else {
+            this.end.row = row;
+            this.end.column = column;
+          }
+        }
+        /**
+         * Returns `true` if the `row` and `column` are within the given range.
+         * @param {Number} row A row to compare with
+         * @param {Number} column A column to compare with
+         * @returns {Boolean}
+         * @related [[Range.compare]]
+         **/
+        inside(row, column) {
+          if (this.compare(row, column) == 0) {
+            if (this.isEnd(row, column) || this.isStart(row, column)) {
+              return false;
+            } else {
+              return true;
+            }
+          }
+          return false;
+        }
+        /**
+         * Returns `true` if the `row` and `column` are within the given range's starting [[Point]].
+         * @param {Number} row A row to compare with
+         * @param {Number} column A column to compare with
+         * @returns {Boolean}
+         * @related [[Range.compare]]
+         **/
+        insideStart(row, column) {
+          if (this.compare(row, column) == 0) {
+            if (this.isEnd(row, column)) {
+              return false;
+            } else {
+              return true;
+            }
+          }
+          return false;
+        }
+        /**
+         * Returns `true` if the `row` and `column` are within the given range's ending [[Point]].
+         * @param {Number} row A row to compare with
+         * @param {Number} column A column to compare with
+         * @returns {Boolean}
+         * @related [[Range.compare]]
+         *
+         **/
+        insideEnd(row, column) {
+          if (this.compare(row, column) == 0) {
+            if (this.isStart(row, column)) {
+              return false;
+            } else {
+              return true;
+            }
+          }
+          return false;
+        }
+        /**
+         * Compares the `row` and `column` with the starting and ending [[Point]]'s of the calling range.
+         * @param {Number} row A row to compare with
+         * @param {Number} column A column to compare with
+         * @returns {Number} This method returns one of the following numbers:
+         * * `1` if `row` is greater than the calling range
+         * * `-1` if `row` is less then the calling range
+         * * `0` otherwise
+         *
+         * If the starting row of the calling range is equal to `row`, and:
+         * * `column` is greater than or equal to the calling range's starting column, this returns `0`
+         * * Otherwise, it returns -1
+         *
+         * If the ending row of the calling range is equal to `row`, and:
+         * * `column` is less than or equal to the calling range's ending column, this returns `0`
+         * * Otherwise, it returns 1
+         **/
+        compare(row, column) {
+          if (!this.isMultiLine()) {
+            if (row === this.start.row) {
+              return column < this.start.column ? -1 : column > this.end.column ? 1 : 0;
+            }
+          }
+          if (row < this.start.row)
+            return -1;
+          if (row > this.end.row)
+            return 1;
+          if (this.start.row === row)
+            return column >= this.start.column ? 0 : -1;
+          if (this.end.row === row)
+            return column <= this.end.column ? 0 : 1;
+          return 0;
+        }
+        /**
+         * Compares the `row` and `column` with the starting and ending [[Point]]'s of the calling range.
+         * @param {Number} row A row to compare with
+         * @param {Number} column A column to compare with
+         * @returns {Number} This method returns one of the following numbers:
+         * * `-1` if calling range's starting column and calling range's starting row are equal `row` and `column`
+         * * Otherwise, it returns the value after calling [[Range.compare `compare()`]].
+         **/
+        compareStart(row, column) {
+          if (this.start.row == row && this.start.column == column) {
+            return -1;
+          } else {
+            return this.compare(row, column);
+          }
+        }
+        /**
+         * Compares the `row` and `column` with the starting and ending [[Point]]'s of the calling range.
+         * @param {Number} row A row to compare with
+         * @param {Number} column A column to compare with
+         * @returns {Number} This method returns one of the following numbers:
+         * * `1` if calling range's ending column and calling range's ending row are equal `row` and `column`.
+         * * Otherwise, it returns the value after calling [[Range.compare `compare()`]].
+         */
+        compareEnd(row, column) {
+          if (this.end.row == row && this.end.column == column) {
+            return 1;
+          } else {
+            return this.compare(row, column);
+          }
+        }
+        /**
+         * Compares the `row` and `column` with the start and end [[Point]]'s of the calling range.
+         * @param {Number} row A row to compare with
+         * @param {Number} column A column to compare with
+         * @returns {Number} This method returns one of the following numbers:
+         * * `1` if the ending row of the calling range is equal to `row`, and the ending column of the calling range is equal to `column`
+         * * `-1` if the starting row of the calling range is equal to `row`, and the starting column of the calling range is equal to `column`
+         * * Otherwise, it returns the value after calling [[Range.compare `compare()`]].
+         **/
+        compareInside(row, column) {
+          if (this.end.row == row && this.end.column == column) {
+            return 1;
+          } else if (this.start.row == row && this.start.column == column) {
+            return -1;
+          } else {
+            return this.compare(row, column);
+          }
+        }
+        /**
+         * Returns the part of the current `Range` that occurs within the boundaries of `firstRow` and `lastRow` as a new `Range` object.
+         * @param {Number} firstRow The starting row
+         * @param {Number} lastRow The ending row
+         * @returns {Range}
+        **/
+        clipRows(firstRow, lastRow) {
+          if (this.end.row > lastRow)
+            var end = { row: lastRow + 1, column: 0 };
+          else if (this.end.row < firstRow)
+            var end = { row: firstRow, column: 0 };
+          if (this.start.row > lastRow)
+            var start = { row: lastRow + 1, column: 0 };
+          else if (this.start.row < firstRow)
+            var start = { row: firstRow, column: 0 };
+          return _Range.fromPoints(start || this.start, end || this.end);
+        }
+        /**
+         * Changes the `row` and `column` for the calling range for both the starting and ending [[Point]]'s.
+         * @param {Number} row A new row to extend to
+         * @param {Number} column A new column to extend to
+         * @returns {Range} The original range with the new row
+        **/
+        extend(row, column) {
+          var cmp = this.compare(row, column);
+          if (cmp == 0)
+            return this;
+          else if (cmp == -1)
+            var start = { row, column };
+          else
+            var end = { row, column };
+          return _Range.fromPoints(start || this.start, end || this.end);
+        }
+        /**
+         * Returns `true` if the calling range is empty (starting [[Point]] == ending [[Point]]).
+         * @returns {Boolean}
+         **/
+        isEmpty() {
+          return this.start.row === this.end.row && this.start.column === this.end.column;
+        }
+        /**
+         * Returns `true` if the range spans across multiple lines.
+         * @returns {Boolean}
+        **/
+        isMultiLine() {
+          return this.start.row !== this.end.row;
+        }
+        /**
+         * Returns a duplicate of the calling range.
+         * @returns {Range}
+        **/
+        clone() {
+          return _Range.fromPoints(this.start, this.end);
+        }
+        /**
+         * Returns a range containing the starting and ending rows of the original range, but with a column value of `0`.
+         * @returns {Range}
+        **/
+        collapseRows() {
+          if (this.end.column == 0)
+            return new _Range(this.start.row, 0, Math.max(this.start.row, this.end.row - 1), 0);
+          else
+            return new _Range(this.start.row, 0, this.end.row, 0);
+        }
+        /**
+         * Given the current `Range`, this function converts those starting and ending [[Point]]'s into screen positions, and then returns a new `Range` object.
+         * @param {EditSession} session The `EditSession` to retrieve coordinates from
+         * @returns {Range}
+        **/
+        toScreenRange(session) {
+          var screenPosStart = session.documentToScreenPosition(this.start);
+          var screenPosEnd = session.documentToScreenPosition(this.end);
+          return new _Range(
+            screenPosStart.row,
+            screenPosStart.column,
+            screenPosEnd.row,
+            screenPosEnd.column
+          );
+        }
+        /**
+         * Shift the calling range by `row` and `column` values.
+         * @param {Number} row
+         * @param {Number} column
+         * @experimental
+         */
+        moveBy(row, column) {
+          this.start.row += row;
+          this.start.column += column;
+          this.end.row += row;
+          this.end.column += column;
+        }
+      };
+      Range2.fromPoints = function(start, end) {
+        return new Range2(start.row, start.column, end.row, end.column);
+      };
+      Range2.comparePoints = function(p1, p2) {
+        return p1.row - p2.row || p1.column - p2.column;
+      };
+      exports.Range = Range2;
+    }
+  });
+
+  // ../../node_modules/htmlhint/dist/core/htmlparser.js
+  var require_htmlparser = __commonJS({
+    "../../node_modules/htmlhint/dist/core/htmlparser.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      var HTMLParser = class {
+        constructor() {
+          this._listeners = {};
+          this._mapCdataTags = this.makeMap("script,style");
+          this._arrBlocks = [];
+          this.lastEvent = null;
+        }
+        makeMap(str) {
+          const obj = {};
+          const items = str.split(",");
+          for (let i = 0; i < items.length; i++) {
+            obj[items[i]] = true;
+          }
+          return obj;
+        }
+        parse(html) {
+          const mapCdataTags = this._mapCdataTags;
+          const regTag = /<(?:\/([^\s>]+)\s*|!--([\s\S]*?)--|!([^>]*?)|([\w\-:]+)((?:\s+[^\s"'>\/=\x00-\x0F\x7F\x80-\x9F]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'>]*))?)*?)\s*(\/?))>/g;
+          const regAttr = /\s*([^\s"'>\/=\x00-\x0F\x7F\x80-\x9F]+)(?:\s*=\s*(?:(")([^"]*)"|(')([^']*)'|([^\s"'>]*)))?/g;
+          const regLine = /\r?\n/g;
+          let match;
+          let matchIndex;
+          let lastIndex = 0;
+          let tagName;
+          let arrAttrs;
+          let tagCDATA = null;
+          let attrsCDATA;
+          let arrCDATA = [];
+          let lastCDATAIndex = 0;
+          let text;
+          let lastLineIndex = 0;
+          let line = 1;
+          const arrBlocks = this._arrBlocks;
+          this.fire("start", {
+            pos: 0,
+            line: 1,
+            col: 1
+          });
+          const isMapCdataTagsRequired = () => {
+            const attrType = arrAttrs.find((attr) => attr.name === "type") || {
+              value: ""
+            };
+            return mapCdataTags[tagName] && attrType.value.indexOf("text/ng-template") === -1;
+          };
+          const saveBlock = (type, raw, pos, data) => {
+            const col = pos - lastLineIndex + 1;
+            if (data === void 0) {
+              data = {};
+            }
+            data.raw = raw;
+            data.pos = pos;
+            data.line = line;
+            data.col = col;
+            arrBlocks.push(data);
+            this.fire(type, data);
+            while (regLine.exec(raw)) {
+              line++;
+              lastLineIndex = pos + regLine.lastIndex;
+            }
+          };
+          while (match = regTag.exec(html)) {
+            matchIndex = match.index;
+            if (matchIndex > lastIndex) {
+              text = html.substring(lastIndex, matchIndex);
+              if (tagCDATA) {
+                arrCDATA.push(text);
+              } else {
+                saveBlock("text", text, lastIndex);
+              }
+            }
+            lastIndex = regTag.lastIndex;
+            if (tagName = match[1]) {
+              if (tagCDATA && tagName === tagCDATA) {
+                text = arrCDATA.join("");
+                saveBlock("cdata", text, lastCDATAIndex, {
+                  tagName: tagCDATA,
+                  attrs: attrsCDATA
+                });
+                tagCDATA = null;
+                attrsCDATA = void 0;
+                arrCDATA = [];
+              }
+              if (!tagCDATA) {
+                saveBlock("tagend", match[0], matchIndex, {
+                  tagName
+                });
+                continue;
+              }
+            }
+            if (tagCDATA) {
+              arrCDATA.push(match[0]);
+            } else {
+              if (tagName = match[4]) {
+                arrAttrs = [];
+                const attrs = match[5];
+                let attrMatch;
+                let attrMatchCount = 0;
+                while (attrMatch = regAttr.exec(attrs)) {
+                  const name = attrMatch[1];
+                  const quote = attrMatch[2] ? attrMatch[2] : attrMatch[4] ? attrMatch[4] : "";
+                  const value = attrMatch[3] ? attrMatch[3] : attrMatch[5] ? attrMatch[5] : attrMatch[6] ? attrMatch[6] : "";
+                  arrAttrs.push({
+                    name,
+                    value,
+                    quote,
+                    index: attrMatch.index,
+                    raw: attrMatch[0]
+                  });
+                  attrMatchCount += attrMatch[0].length;
+                }
+                if (attrMatchCount === attrs.length) {
+                  saveBlock("tagstart", match[0], matchIndex, {
+                    tagName,
+                    attrs: arrAttrs,
+                    close: match[6]
+                  });
+                  if (isMapCdataTagsRequired()) {
+                    tagCDATA = tagName;
+                    attrsCDATA = arrAttrs.concat();
+                    arrCDATA = [];
+                    lastCDATAIndex = lastIndex;
+                  }
+                } else {
+                  saveBlock("text", match[0], matchIndex);
+                }
+              } else if (match[2] || match[3]) {
+                saveBlock("comment", match[0], matchIndex, {
+                  content: match[2] || match[3],
+                  long: match[2] ? true : false
+                });
+              }
+            }
+          }
+          if (html.length > lastIndex) {
+            text = html.substring(lastIndex, html.length);
+            saveBlock("text", text, lastIndex);
+          }
+          this.fire("end", {
+            pos: lastIndex,
+            line,
+            col: html.length - lastLineIndex + 1
+          });
+        }
+        addListener(types, listener) {
+          const _listeners = this._listeners;
+          const arrTypes = types.split(/[,\s]/);
+          let type;
+          for (let i = 0, l = arrTypes.length; i < l; i++) {
+            type = arrTypes[i];
+            if (_listeners[type] === void 0) {
+              _listeners[type] = [];
+            }
+            _listeners[type].push(listener);
+          }
+        }
+        fire(type, data) {
+          if (data === void 0) {
+            data = {};
+          }
+          data.type = type;
+          let listeners = [];
+          const listenersType = this._listeners[type];
+          const listenersAll = this._listeners["all"];
+          if (listenersType !== void 0) {
+            listeners = listeners.concat(listenersType);
+          }
+          if (listenersAll !== void 0) {
+            listeners = listeners.concat(listenersAll);
+          }
+          const lastEvent = this.lastEvent;
+          if (lastEvent !== null) {
+            delete lastEvent["lastEvent"];
+            data.lastEvent = lastEvent;
+          }
+          this.lastEvent = data;
+          for (let i = 0, l = listeners.length; i < l; i++) {
+            listeners[i].call(this, data);
+          }
+        }
+        removeListener(type, listener) {
+          const listenersType = this._listeners[type];
+          if (listenersType !== void 0) {
+            for (let i = 0, l = listenersType.length; i < l; i++) {
+              if (listenersType[i] === listener) {
+                listenersType.splice(i, 1);
+                break;
+              }
+            }
+          }
+        }
+        fixPos(event, index) {
+          const text = event.raw.substr(0, index);
+          const arrLines = text.split(/\r?\n/);
+          const lineCount = arrLines.length - 1;
+          let line = event.line;
+          let col;
+          if (lineCount > 0) {
+            line += lineCount;
+            col = arrLines[lineCount].length + 1;
+          } else {
+            col = event.col + index;
+          }
+          return {
+            line,
+            col
+          };
+        }
+        getMapAttrs(arrAttrs) {
+          const mapAttrs = {};
+          let attr;
+          for (let i = 0, l = arrAttrs.length; i < l; i++) {
+            attr = arrAttrs[i];
+            mapAttrs[attr.name] = attr.value;
+          }
+          return mapAttrs;
+        }
+      };
+      exports.default = HTMLParser;
+    }
+  });
+
+  // ../../node_modules/htmlhint/dist/core/reporter.js
+  var require_reporter = __commonJS({
+    "../../node_modules/htmlhint/dist/core/reporter.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      var Reporter = class {
+        constructor(html, ruleset, disabledRulesMap = {}) {
+          this.html = html;
+          this.lines = html.split(/\r?\n/);
+          const match = /\r?\n/.exec(html);
+          this.brLen = match !== null ? match[0].length : 0;
+          this.ruleset = ruleset;
+          this.messages = [];
+          this.disabledRulesMap = disabledRulesMap;
+        }
+        info(message, line, col, rule, raw) {
+          this.report("info", message, line, col, rule, raw);
+        }
+        warn(message, line, col, rule, raw) {
+          this.report("warning", message, line, col, rule, raw);
+        }
+        error(message, line, col, rule, raw) {
+          this.report("error", message, line, col, rule, raw);
+        }
+        report(type, message, line, col, rule, raw) {
+          const lineDisabled = this.disabledRulesMap[line];
+          if (lineDisabled) {
+            if (lineDisabled.all === true) {
+              return;
+            }
+            if (lineDisabled.rules && lineDisabled.rules.has(rule.id)) {
+              return;
+            }
+          }
+          const lines = this.lines;
+          const brLen = this.brLen;
+          let evidence = "";
+          let evidenceLen = 0;
+          for (let i = line - 1, lineCount = lines.length; i < lineCount; i++) {
+            evidence = lines[i];
+            evidenceLen = evidence.length;
+            if (col > evidenceLen && line < lineCount) {
+              line++;
+              col -= evidenceLen;
+              if (col !== 1) {
+                col -= brLen;
+              }
+            } else {
+              break;
+            }
+          }
+          this.messages.push({
+            type,
+            message,
+            raw,
+            evidence,
+            line,
+            col,
+            rule: {
+              id: rule.id,
+              description: rule.description,
+              link: `https://htmlhint.com/rules/${rule.id}`
+            }
+          });
+        }
+      };
+      exports.default = Reporter;
+    }
+  });
+
+  // ../../node_modules/htmlhint/dist/core/rules/alt-require.js
+  var require_alt_require = __commonJS({
+    "../../node_modules/htmlhint/dist/core/rules/alt-require.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.default = {
+        id: "alt-require",
+        description: "The alt attribute of an <img> element must be present and alt attribute of area[href] and input[type=image] must have a value.",
+        init(parser, reporter) {
+          parser.addListener("tagstart", (event) => {
+            const tagName = event.tagName.toLowerCase();
+            const mapAttrs = parser.getMapAttrs(event.attrs);
+            const col = event.col + tagName.length + 1;
+            let selector;
+            if (tagName === "img" && !("alt" in mapAttrs)) {
+              reporter.warn("An alt attribute must be present on <img> elements.", event.line, col, this, event.raw);
+            } else if (tagName === "area" && "href" in mapAttrs || tagName === "input" && mapAttrs["type"] === "image") {
+              if (!("alt" in mapAttrs) || mapAttrs["alt"] === "") {
+                selector = tagName === "area" ? "area[href]" : "input[type=image]";
+                reporter.warn(`The alt attribute of ${selector} must have a value.`, event.line, col, this, event.raw);
+              }
+            }
+          });
+        }
+      };
+    }
+  });
+
+  // ../../node_modules/htmlhint/dist/core/rules/attr-lowercase.js
+  var require_attr_lowercase = __commonJS({
+    "../../node_modules/htmlhint/dist/core/rules/attr-lowercase.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      var svgIgnores = [
+        "allowReorder",
+        "attributeName",
+        "attributeType",
+        "autoReverse",
+        "baseFrequency",
+        "baseProfile",
+        "calcMode",
+        "clipPath",
+        "clipPathUnits",
+        "contentScriptType",
+        "contentStyleType",
+        "diffuseConstant",
+        "edgeMode",
+        "externalResourcesRequired",
+        "filterRes",
+        "filterUnits",
+        "glyphRef",
+        "gradientTransform",
+        "gradientUnits",
+        "kernelMatrix",
+        "kernelUnitLength",
+        "keyPoints",
+        "keySplines",
+        "keyTimes",
+        "lengthAdjust",
+        "limitingConeAngle",
+        "markerHeight",
+        "markerUnits",
+        "markerWidth",
+        "maskContentUnits",
+        "maskUnits",
+        "numOctaves",
+        "onBlur",
+        "onChange",
+        "onClick",
+        "onFocus",
+        "onKeyUp",
+        "onLoad",
+        "pathLength",
+        "patternContentUnits",
+        "patternTransform",
+        "patternUnits",
+        "pointsAtX",
+        "pointsAtY",
+        "pointsAtZ",
+        "preserveAlpha",
+        "preserveAspectRatio",
+        "primitiveUnits",
+        "refX",
+        "refY",
+        "repeatCount",
+        "repeatDur",
+        "requiredExtensions",
+        "requiredFeatures",
+        "specularConstant",
+        "specularExponent",
+        "spreadMethod",
+        "startOffset",
+        "stdDeviation",
+        "stitchTiles",
+        "surfaceScale",
+        "systemLanguage",
+        "tableValues",
+        "targetX",
+        "targetY",
+        "textLength",
+        "viewBox",
+        "viewTarget",
+        "xChannelSelector",
+        "yChannelSelector",
+        "zoomAndPan"
+      ];
+      function testAgainstStringOrRegExp(value, comparison) {
+        if (comparison instanceof RegExp) {
+          return comparison.test(value) ? { match: value, pattern: comparison } : false;
+        }
+        const firstComparisonChar = comparison[0];
+        const lastComparisonChar = comparison[comparison.length - 1];
+        const secondToLastComparisonChar = comparison[comparison.length - 2];
+        const comparisonIsRegex = firstComparisonChar === "/" && (lastComparisonChar === "/" || secondToLastComparisonChar === "/" && lastComparisonChar === "i");
+        const hasCaseInsensitiveFlag = comparisonIsRegex && lastComparisonChar === "i";
+        if (comparisonIsRegex) {
+          const valueMatches = hasCaseInsensitiveFlag ? new RegExp(comparison.slice(1, -2), "i").test(value) : new RegExp(comparison.slice(1, -1)).test(value);
+          return valueMatches;
+        }
+        return value === comparison;
+      }
+      exports.default = {
+        id: "attr-lowercase",
+        description: "All attribute names must be in lowercase.",
+        init(parser, reporter, options) {
+          const exceptions = (Array.isArray(options) ? options : []).concat(svgIgnores);
+          parser.addListener("tagstart", (event) => {
+            const attrs = event.attrs;
+            let attr;
+            const col = event.col + event.tagName.length + 1;
+            for (let i = 0, l = attrs.length; i < l; i++) {
+              attr = attrs[i];
+              const attrName = attr.name;
+              if (!exceptions.find((exp) => testAgainstStringOrRegExp(attrName, exp)) && attrName !== attrName.toLowerCase()) {
+                reporter.error(`The attribute name of [ ${attrName} ] must be in lowercase.`, event.line, col + attr.index, this, attr.raw);
+              }
+            }
+          });
+        }
+      };
+    }
+  });
+
+  // ../../node_modules/htmlhint/dist/core/rules/attr-no-duplication.js
+  var require_attr_no_duplication = __commonJS({
+    "../../node_modules/htmlhint/dist/core/rules/attr-no-duplication.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.default = {
+        id: "attr-no-duplication",
+        description: "Elements cannot have duplicate attributes.",
+        init(parser, reporter) {
+          parser.addListener("tagstart", (event) => {
+            const attrs = event.attrs;
+            let attr;
+            let attrName;
+            const col = event.col + event.tagName.length + 1;
+            const mapAttrName = {};
+            for (let i = 0, l = attrs.length; i < l; i++) {
+              attr = attrs[i];
+              attrName = attr.name;
+              if (mapAttrName[attrName] === true) {
+                reporter.error(`Duplicate of attribute name [ ${attr.name} ] was found.`, event.line, col + attr.index, this, attr.raw);
+              }
+              mapAttrName[attrName] = true;
+            }
+          });
+        }
+      };
+    }
+  });
+
+  // ../../node_modules/htmlhint/dist/core/rules/attr-no-unnecessary-whitespace.js
+  var require_attr_no_unnecessary_whitespace = __commonJS({
+    "../../node_modules/htmlhint/dist/core/rules/attr-no-unnecessary-whitespace.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.default = {
+        id: "attr-no-unnecessary-whitespace",
+        description: "No spaces between attribute names and values.",
+        init(parser, reporter, options) {
+          const exceptions = Array.isArray(options) ? options : [];
+          parser.addListener("tagstart", (event) => {
+            const attrs = event.attrs;
+            const col = event.col + event.tagName.length + 1;
+            for (let i = 0; i < attrs.length; i++) {
+              if (exceptions.indexOf(attrs[i].name) === -1) {
+                const match = /(\s*)=(\s*)/.exec(attrs[i].raw.trim());
+                if (match && (match[1].length !== 0 || match[2].length !== 0)) {
+                  reporter.error(`The attribute '${attrs[i].name}' must not have spaces between the name and value.`, event.line, col + attrs[i].index, this, attrs[i].raw);
+                }
+              }
+            }
+          });
+        }
+      };
+    }
+  });
+
+  // ../../node_modules/htmlhint/dist/core/rules/attr-value-no-duplication.js
+  var require_attr_value_no_duplication = __commonJS({
+    "../../node_modules/htmlhint/dist/core/rules/attr-value-no-duplication.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.default = {
+        id: "attr-value-no-duplication",
+        description: "Class attributes should not contain duplicate values. Other attributes can be checked via configuration.",
+        init(parser, reporter, options) {
+          const defaultAttributesToCheck = ["class"];
+          const attributesToCheck = Array.isArray(options) ? options : defaultAttributesToCheck;
+          parser.addListener("tagstart", (event) => {
+            const attrs = event.attrs;
+            let attr;
+            const col = event.col + event.tagName.length + 1;
+            for (let i = 0, l = attrs.length; i < l; i++) {
+              attr = attrs[i];
+              const attrName = attr.name.toLowerCase();
+              if (!attributesToCheck.includes(attrName)) {
+                continue;
+              }
+              if (!attr.value || !/\s/.test(attr.value)) {
+                continue;
+              }
+              const values = attr.value.trim().split(/\s+/);
+              const duplicateMap = {};
+              for (const value of values) {
+                if (value && duplicateMap[value] === true) {
+                  reporter.error(`Duplicate value [ ${value} ] was found in attribute [ ${attr.name} ].`, event.line, col + attr.index, this, attr.raw);
+                  break;
+                }
+                duplicateMap[value] = true;
+              }
+            }
+          });
+        }
+      };
+    }
+  });
+
+  // ../../node_modules/htmlhint/dist/core/rules/attr-sorted.js
+  var require_attr_sorted = __commonJS({
+    "../../node_modules/htmlhint/dist/core/rules/attr-sorted.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.default = {
+        id: "attr-sorted",
+        description: "Attribute tags must be in proper order.",
+        init(parser, reporter) {
+          const orderMap = {};
+          const sortOrder = [
+            "class",
+            "id",
+            "name",
+            "src",
+            "for",
+            "type",
+            "rel",
+            "href",
+            "value",
+            "title",
+            "alt",
+            "role"
+          ];
+          for (let i = 0; i < sortOrder.length; i++) {
+            orderMap[sortOrder[i]] = i;
+          }
+          parser.addListener("tagstart", (event) => {
+            const attrs = event.attrs;
+            const listOfAttributes = [];
+            for (let i = 0; i < attrs.length; i++) {
+              listOfAttributes.push(attrs[i].name);
+            }
+            const originalAttrs = JSON.stringify(listOfAttributes);
+            listOfAttributes.sort((a, b) => {
+              if (orderMap[a] !== void 0) {
+                if (orderMap[b] !== void 0) {
+                  return orderMap[a] - orderMap[b];
+                }
+                return -1;
+              }
+              if (a.startsWith("data-")) {
+                if (b.startsWith("data-")) {
+                  return a.localeCompare(b);
+                }
+                return 1;
+              }
+              if (orderMap[b] !== void 0) {
+                return 1;
+              }
+              if (b.startsWith("data-")) {
+                return -1;
+              }
+              return a.localeCompare(b);
+            });
+            if (originalAttrs !== JSON.stringify(listOfAttributes)) {
+              reporter.error(`Inaccurate order ${originalAttrs} should be in hierarchy ${JSON.stringify(listOfAttributes)} `, event.line, event.col, this, event.raw);
+            }
+          });
+        }
+      };
+    }
+  });
+
+  // ../../node_modules/htmlhint/dist/core/rules/attr-unsafe-chars.js
+  var require_attr_unsafe_chars = __commonJS({
+    "../../node_modules/htmlhint/dist/core/rules/attr-unsafe-chars.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.default = {
+        id: "attr-unsafe-chars",
+        description: "Attribute values cannot contain unsafe chars.",
+        init(parser, reporter) {
+          parser.addListener("tagstart", (event) => {
+            const attrs = event.attrs;
+            let attr;
+            const col = event.col + event.tagName.length + 1;
+            const regUnsafe = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f\u00ad\u0600-\u0604\u070f\u17b4\u17b5\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufeff\ufff0-\uffff]/;
+            let match;
+            for (let i = 0, l = attrs.length; i < l; i++) {
+              attr = attrs[i];
+              match = regUnsafe.exec(attr.value);
+              if (match !== null) {
+                const unsafeCode = escape(match[0]).replace(/%u/, "\\u").replace(/%/, "\\x");
+                reporter.warn(`The value of attribute [ ${attr.name} ] cannot contain an unsafe char [ ${unsafeCode} ].`, event.line, col + attr.index, this, attr.raw);
+              }
+            }
+          });
+        }
+      };
+    }
+  });
+
+  // ../../node_modules/htmlhint/dist/core/rules/attr-value-double-quotes.js
+  var require_attr_value_double_quotes = __commonJS({
+    "../../node_modules/htmlhint/dist/core/rules/attr-value-double-quotes.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.default = {
+        id: "attr-value-double-quotes",
+        description: "Attribute values must be in double quotes.",
+        init(parser, reporter) {
+          parser.addListener("tagstart", (event) => {
+            const attrs = event.attrs;
+            let attr;
+            const col = event.col + event.tagName.length + 1;
+            for (let i = 0, l = attrs.length; i < l; i++) {
+              attr = attrs[i];
+              if (attr.value !== "" && attr.quote !== '"' || attr.value === "" && attr.quote === "'") {
+                reporter.error(`The value of attribute [ ${attr.name} ] must be in double quotes.`, event.line, col + attr.index, this, attr.raw);
+              }
+            }
+          });
+        }
+      };
+    }
+  });
+
+  // ../../node_modules/htmlhint/dist/core/rules/attr-value-not-empty.js
+  var require_attr_value_not_empty = __commonJS({
+    "../../node_modules/htmlhint/dist/core/rules/attr-value-not-empty.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.default = {
+        id: "attr-value-not-empty",
+        description: "All attributes must have values.",
+        init(parser, reporter) {
+          parser.addListener("tagstart", (event) => {
+            const attrs = event.attrs;
+            let attr;
+            const col = event.col + event.tagName.length + 1;
+            for (let i = 0, l = attrs.length; i < l; i++) {
+              attr = attrs[i];
+              if (attr.quote === "" && attr.value === "") {
+                reporter.warn(`The attribute [ ${attr.name} ] must have a value.`, event.line, col + attr.index, this, attr.raw);
+              }
+            }
+          });
+        }
+      };
+    }
+  });
+
+  // ../../node_modules/htmlhint/dist/core/rules/attr-value-single-quotes.js
+  var require_attr_value_single_quotes = __commonJS({
+    "../../node_modules/htmlhint/dist/core/rules/attr-value-single-quotes.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.default = {
+        id: "attr-value-single-quotes",
+        description: "Attribute values must be in single quotes.",
+        init(parser, reporter) {
+          parser.addListener("tagstart", (event) => {
+            const attrs = event.attrs;
+            let attr;
+            const col = event.col + event.tagName.length + 1;
+            for (let i = 0, l = attrs.length; i < l; i++) {
+              attr = attrs[i];
+              if (attr.value !== "" && attr.quote !== "'" || attr.value === "" && attr.quote === '"') {
+                reporter.error(`The value of attribute [ ${attr.name} ] must be in single quotes.`, event.line, col + attr.index, this, attr.raw);
+              }
+            }
+          });
+        }
+      };
+    }
+  });
+
+  // ../../node_modules/htmlhint/dist/core/rules/attr-whitespace.js
+  var require_attr_whitespace = __commonJS({
+    "../../node_modules/htmlhint/dist/core/rules/attr-whitespace.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.default = {
+        id: "attr-whitespace",
+        description: "All attributes should be separated by only one space and not have leading/trailing whitespace.",
+        init(parser, reporter, options) {
+          const exceptions = Array.isArray(options) ? options : [];
+          parser.addListener("tagstart", (event) => {
+            const attrs = event.attrs;
+            let attr;
+            const col = event.col + event.tagName.length + 1;
+            attrs.forEach((elem) => {
+              attr = elem;
+              const attrName = elem.name;
+              if (exceptions.indexOf(attrName) !== -1) {
+                return;
+              }
+              if (elem.value.trim() !== elem.value) {
+                reporter.error(`The attributes of [ ${attrName} ] must not have leading or trailing whitespace.`, event.line, col + attr.index, this, attr.raw);
+              }
+              if (elem.value.replace(/ +(?= )/g, "") !== elem.value) {
+                reporter.error(`The attributes of [ ${attrName} ] must be separated by only one space.`, event.line, col + attr.index, this, attr.raw);
+              }
+            });
+          });
+        }
+      };
+    }
+  });
+
+  // ../../node_modules/htmlhint/dist/core/rules/button-type-require.js
+  var require_button_type_require = __commonJS({
+    "../../node_modules/htmlhint/dist/core/rules/button-type-require.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.default = {
+        id: "button-type-require",
+        description: 'The type attribute of a <button> element must be present with a valid value: "button", "submit", or "reset".',
+        init(parser, reporter) {
+          parser.addListener("tagstart", (event) => {
+            const tagName = event.tagName.toLowerCase();
+            if (tagName === "button") {
+              const mapAttrs = parser.getMapAttrs(event.attrs);
+              const col = event.col + tagName.length + 1;
+              if (mapAttrs.type === void 0) {
+                reporter.warn("The type attribute must be present on <button> elements.", event.line, col, this, event.raw);
+              } else {
+                const typeValue = mapAttrs.type.toLowerCase();
+                if (typeValue !== "button" && typeValue !== "submit" && typeValue !== "reset") {
+                  reporter.warn('The type attribute of <button> must have a valid value: "button", "submit", or "reset".', event.line, col, this, event.raw);
+                }
+              }
+            }
+          });
+        }
+      };
+    }
+  });
+
+  // ../../node_modules/htmlhint/dist/core/rules/doctype-first.js
+  var require_doctype_first = __commonJS({
+    "../../node_modules/htmlhint/dist/core/rules/doctype-first.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.default = {
+        id: "doctype-first",
+        description: "Doctype must be declared first (comments and whitespace allowed before DOCTYPE).",
+        init(parser, reporter) {
+          let doctypeFound = false;
+          let nonCommentContentBeforeDoctype = false;
+          const allEvent = (event) => {
+            if (event.type === "start" || event.type === "text" && /^\s*$/.test(event.raw)) {
+              return;
+            }
+            if (doctypeFound) {
+              return;
+            }
+            if (event.type === "comment" && event.long === false && /^DOCTYPE\s+/i.test(event.content)) {
+              doctypeFound = true;
+              if (nonCommentContentBeforeDoctype) {
+                reporter.error("Doctype must be declared before any non-comment content.", event.line, event.col, this, event.raw);
+              }
+              return;
+            }
+            if (event.type === "comment") {
+              return;
+            }
+            nonCommentContentBeforeDoctype = true;
+            reporter.error("Doctype must be declared before any non-comment content.", event.line, event.col, this, event.raw);
+            parser.removeListener("all", allEvent);
+          };
+          parser.addListener("all", allEvent);
+        }
+      };
+    }
+  });
+
+  // ../../node_modules/htmlhint/dist/core/rules/doctype-html5.js
+  var require_doctype_html5 = __commonJS({
+    "../../node_modules/htmlhint/dist/core/rules/doctype-html5.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.default = {
+        id: "doctype-html5",
+        description: 'Invalid doctype. Use: "<!DOCTYPE html>"',
+        init(parser, reporter) {
+          const onComment = (event) => {
+            if (event.long === false && event.content.toLowerCase() !== "doctype html") {
+              reporter.warn('Invalid doctype. Use: "<!DOCTYPE html>"', event.line, event.col, this, event.raw);
+            }
+          };
+          const onTagStart = () => {
+            parser.removeListener("comment", onComment);
+            parser.removeListener("tagstart", onTagStart);
+          };
+          parser.addListener("all", onComment);
+          parser.addListener("tagstart", onTagStart);
+        }
+      };
+    }
+  });
+
+  // ../../node_modules/htmlhint/dist/core/rules/empty-tag-not-self-closed.js
+  var require_empty_tag_not_self_closed = __commonJS({
+    "../../node_modules/htmlhint/dist/core/rules/empty-tag-not-self-closed.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.default = {
+        id: "empty-tag-not-self-closed",
+        description: "Empty tags must not use self closed syntax.",
+        init(parser, reporter) {
+          const mapEmptyTags = parser.makeMap("area,base,basefont,bgsound,br,col,frame,hr,img,input,isindex,link,meta,param,embed,track,command,source,keygen,wbr");
+          parser.addListener("tagstart", (event) => {
+            const tagName = event.tagName.toLowerCase();
+            if (mapEmptyTags[tagName] !== void 0) {
+              if (event.close) {
+                reporter.error(`The empty tag : [ ${tagName} ] must not use self closed syntax.`, event.line, event.col, this, event.raw);
+              }
+            }
+          });
+        }
+      };
+    }
+  });
+
+  // ../../node_modules/htmlhint/dist/core/rules/form-method-require.js
+  var require_form_method_require = __commonJS({
+    "../../node_modules/htmlhint/dist/core/rules/form-method-require.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.default = {
+        id: "form-method-require",
+        description: 'The method attribute of a <form> element must be present with a valid value: "get", "post", or "dialog".',
+        init(parser, reporter) {
+          const onTagStart = (event) => {
+            const tagName = event.tagName.toLowerCase();
+            if (tagName === "form") {
+              const mapAttrs = parser.getMapAttrs(event.attrs);
+              const col = event.col + tagName.length + 1;
+              if (mapAttrs.method === void 0) {
+                reporter.warn("The method attribute must be present on <form> elements.", event.line, col, this, event.raw);
+              } else {
+                const methodValue = mapAttrs.method.toLowerCase();
+                if (methodValue !== "get" && methodValue !== "post" && methodValue !== "dialog") {
+                  reporter.warn('The method attribute of <form> must have a valid value: "get", "post", or "dialog".', event.line, col, this, event.raw);
+                }
+              }
+            }
+          };
+          parser.addListener("tagstart", onTagStart);
+        }
+      };
+    }
+  });
+
+  // ../../node_modules/htmlhint/dist/core/rules/frame-title-require.js
+  var require_frame_title_require = __commonJS({
+    "../../node_modules/htmlhint/dist/core/rules/frame-title-require.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.default = {
+        id: "frame-title-require",
+        description: "A <frame> or <iframe> element must have an accessible name.",
+        init(parser, reporter) {
+          parser.addListener("tagstart", (event) => {
+            const tagName = event.tagName.toLowerCase();
+            const mapAttrs = parser.getMapAttrs(event.attrs);
+            const col = event.col + tagName.length + 1;
+            if (tagName === "frame" || tagName === "iframe") {
+              const role = mapAttrs["role"];
+              if (role === "presentation" || role === "none") {
+                return;
+              }
+              const hasAriaLabel = "aria-label" in mapAttrs && mapAttrs["aria-label"].trim() !== "";
+              const hasAriaLabelledby = "aria-labelledby" in mapAttrs && mapAttrs["aria-labelledby"].trim() !== "";
+              const hasTitle = "title" in mapAttrs && mapAttrs["title"].trim() !== "";
+              if (!hasAriaLabel && !hasAriaLabelledby && !hasTitle) {
+                reporter.warn(`A <${tagName}> element must have an accessible name.`, event.line, col, this, event.raw);
+              }
+            }
+          });
+        }
+      };
+    }
+  });
+
+  // ../../node_modules/htmlhint/dist/core/rules/h1-require.js
+  var require_h1_require = __commonJS({
+    "../../node_modules/htmlhint/dist/core/rules/h1-require.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.default = {
+        id: "h1-require",
+        description: "<h1> must be present in <body> tag and not be empty.",
+        init(parser, reporter) {
+          let bodyDepth = 0;
+          let hasH1InBody = false;
+          let bodyTagEvent = null;
+          let currentH1Event = null;
+          let h1IsEmpty = false;
+          const onTagStart = (event) => {
+            const tagName = event.tagName.toLowerCase();
+            if (tagName === "body") {
+              bodyDepth++;
+              if (bodyDepth === 1) {
+                hasH1InBody = false;
+                bodyTagEvent = event;
+              }
+            } else if (tagName === "h1" && bodyDepth > 0) {
+              hasH1InBody = true;
+              currentH1Event = event;
+              h1IsEmpty = true;
+            }
+          };
+          const onText = (event) => {
+            if (currentH1Event && h1IsEmpty) {
+              if (event.raw && !/^\s*$/.test(event.raw)) {
+                h1IsEmpty = false;
+              }
+            }
+          };
+          const onTagEnd = (event) => {
+            const tagName = event.tagName.toLowerCase();
+            if (tagName === "h1" && currentH1Event) {
+              if (h1IsEmpty) {
+                reporter.warn("<h1> tag must not be empty.", currentH1Event.line, currentH1Event.col, this, currentH1Event.raw);
+              }
+              currentH1Event = null;
+            } else if (tagName === "body") {
+              if (bodyDepth === 1 && !hasH1InBody && bodyTagEvent) {
+                reporter.warn("<h1> must be present in <body> tag.", bodyTagEvent.line, bodyTagEvent.col, this, bodyTagEvent.raw);
+              }
+              bodyDepth--;
+              if (bodyDepth < 0)
+                bodyDepth = 0;
+            }
+          };
+          parser.addListener("tagstart", onTagStart);
+          parser.addListener("tagend", onTagEnd);
+          parser.addListener("text", onText);
+          parser.addListener("end", () => {
+            if (bodyDepth > 0 && !hasH1InBody && bodyTagEvent) {
+              reporter.warn("<h1> must be present in <body> tag.", bodyTagEvent.line, bodyTagEvent.col, this, bodyTagEvent.raw);
+            }
+          });
+        }
+      };
+    }
+  });
+
+  // ../../node_modules/htmlhint/dist/core/rules/head-script-disabled.js
+  var require_head_script_disabled = __commonJS({
+    "../../node_modules/htmlhint/dist/core/rules/head-script-disabled.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.default = {
+        id: "head-script-disabled",
+        description: "The <script> tag cannot be used in a <head> tag.",
+        init(parser, reporter, options) {
+          const reScript = /^(text\/javascript|application\/javascript)$/i;
+          let isInHead = false;
+          const onTagStart = (event) => {
+            const mapAttrs = parser.getMapAttrs(event.attrs);
+            const type = mapAttrs.type;
+            const defer = mapAttrs.defer;
+            const tagName = event.tagName.toLowerCase();
+            if (tagName === "head") {
+              isInHead = true;
+            }
+            if (isInHead === true && tagName === "script") {
+              const isModule = type === "module";
+              const isDeferred = defer !== void 0;
+              const isAsync = mapAttrs.async !== void 0;
+              const isExecutableScript = !type || reScript.test(type) === true || isModule;
+              if (isExecutableScript) {
+                if (options === "allow-non-blocking") {
+                  if (!isModule && !isDeferred && !isAsync) {
+                    reporter.warn('The <script> tag cannot be used in a <head> tag unless it has type="module", defer, or async attribute.', event.line, event.col, this, event.raw);
+                  }
+                } else {
+                  reporter.warn("The <script> tag cannot be used in a <head> tag.", event.line, event.col, this, event.raw);
+                }
+              }
+            }
+          };
+          const onTagEnd = (event) => {
+            if (event.tagName.toLowerCase() === "head") {
+              parser.removeListener("tagstart", onTagStart);
+              parser.removeListener("tagend", onTagEnd);
+            }
+          };
+          parser.addListener("tagstart", onTagStart);
+          parser.addListener("tagend", onTagEnd);
+        }
+      };
+    }
+  });
+
+  // ../../node_modules/htmlhint/dist/core/rules/href-abs-or-rel.js
+  var require_href_abs_or_rel = __commonJS({
+    "../../node_modules/htmlhint/dist/core/rules/href-abs-or-rel.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.default = {
+        id: "href-abs-or-rel",
+        description: "An href attribute must be either absolute or relative.",
+        init(parser, reporter, options) {
+          const hrefMode = options === "abs" ? "absolute" : "relative";
+          parser.addListener("tagstart", (event) => {
+            const attrs = event.attrs;
+            let attr;
+            const col = event.col + event.tagName.length + 1;
+            for (let i = 0, l = attrs.length; i < l; i++) {
+              attr = attrs[i];
+              if (attr.name === "href") {
+                if (hrefMode === "absolute" && /^\w+?:/.test(attr.value) === false || hrefMode === "relative" && /^https?:\/\//.test(attr.value) === true) {
+                  reporter.warn(`The value of the href attribute [ ${attr.value} ] must be ${hrefMode}.`, event.line, col + attr.index, this, attr.raw);
+                }
+                break;
+              }
+            }
+          });
+        }
+      };
+    }
+  });
+
+  // ../../node_modules/htmlhint/dist/core/rules/html-lang-require.js
+  var require_html_lang_require = __commonJS({
+    "../../node_modules/htmlhint/dist/core/rules/html-lang-require.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      var regular = "(art-lojban|cel-gaulish|no-bok|no-nyn|zh-guoyu|zh-hakka|zh-min|zh-min-nan|zh-xiang)";
+      var irregular = "(en-GB-oed|i-ami|i-bnn|i-default|i-enochian|i-hak|i-klingon|i-lux|i-mingo|i-navajo|i-pwn|i-tao|i-tay|i-tsu|sgn-BE-FR|sgn-BE-NL|sgn-CH-DE)";
+      var grandfathered = `(?<grandfathered>${irregular}|${regular})`;
+      var privateUse = "(?<privateUse>x(-[A-Za-z0-9]{1,8})+)";
+      var privateUse2 = "(?<privateUse2>x(-[A-Za-z0-9]{1,8})+)";
+      var singleton = "[0-9A-WY-Za-wy-z]";
+      var extension = `(?<extension>${singleton}(-[A-Za-z0-9]{2,8})+)`;
+      var variant = "(?<variant>[A-Za-z0-9]{5,8}|[0-9][A-Za-z0-9]{3})";
+      var region = "(?<region>[A-Za-z]{2}|[0-9]{3})";
+      var script = "(?<script>[A-Za-z]{4})";
+      var extlang = "(?<extlang>[A-Za-z]{3}(-[A-Za-z]{3}){0,2})";
+      var language = `(?<language>([A-Za-z]{2,3}(-${extlang})?)|[A-Za-z]{4}|[A-Za-z]{5,8})`;
+      var langtag = `(${language}(-${script})?(-${region})?(-${variant})*(-${extension})*(-${privateUse})?)`;
+      var languageTag = `(${grandfathered}|${langtag}|${privateUse2})`;
+      exports.default = {
+        id: "html-lang-require",
+        description: "The lang attribute of an <html> element must be present and should be valid.",
+        init(parser, reporter) {
+          parser.addListener("tagstart", (event) => {
+            const tagName = event.tagName.toLowerCase();
+            const mapAttrs = parser.getMapAttrs(event.attrs);
+            const col = event.col + tagName.length + 1;
+            const langValidityPattern = new RegExp(languageTag, "g");
+            if (tagName === "html") {
+              if ("lang" in mapAttrs) {
+                if (!mapAttrs["lang"]) {
+                  reporter.warn("The lang attribute of <html> element must have a value.", event.line, col, this, event.raw);
+                } else if (!langValidityPattern.test(mapAttrs["lang"])) {
+                  reporter.warn("The lang attribute value of <html> element must be a valid BCP47.", event.line, col, this, event.raw);
+                }
+              } else {
+                reporter.warn("An lang attribute must be present on <html> elements.", event.line, col, this, event.raw);
+              }
+            }
+          });
+        }
+      };
+    }
+  });
+
+  // ../../node_modules/htmlhint/dist/core/rules/id-class-ad-disabled.js
+  var require_id_class_ad_disabled = __commonJS({
+    "../../node_modules/htmlhint/dist/core/rules/id-class-ad-disabled.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.default = {
+        id: "id-class-ad-disabled",
+        description: "The id and class attributes cannot use the ad keyword, it will be blocked by adblock software.",
+        init(parser, reporter) {
+          parser.addListener("tagstart", (event) => {
+            const attrs = event.attrs;
+            let attr;
+            let attrName;
+            const col = event.col + event.tagName.length + 1;
+            for (let i = 0, l = attrs.length; i < l; i++) {
+              attr = attrs[i];
+              attrName = attr.name;
+              if (/^(id|class)$/i.test(attrName)) {
+                if (/(^|[-_])ad([-_]|$)/i.test(attr.value)) {
+                  reporter.warn(`The value of attribute ${attrName} cannot use the ad keyword.`, event.line, col + attr.index, this, attr.raw);
+                }
+              }
+            }
+          });
+        }
+      };
+    }
+  });
+
+  // ../../node_modules/htmlhint/dist/core/rules/id-class-value.js
+  var require_id_class_value = __commonJS({
+    "../../node_modules/htmlhint/dist/core/rules/id-class-value.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.default = {
+        id: "id-class-value",
+        description: "The id and class attribute values must meet the specified rules.",
+        init(parser, reporter, options) {
+          const arrRules = {
+            underline: {
+              regId: /^[a-z\d]+(_[a-z\d]+)*$/,
+              message: "The id and class attribute values must be in lowercase and split by an underscore."
+            },
+            dash: {
+              regId: /^[a-z\d]+(-[a-z\d]+)*$/,
+              message: "The id and class attribute values must be in lowercase and split by a dash."
+            },
+            hump: {
+              regId: /^[a-z][a-zA-Z\d]*([A-Z][a-zA-Z\d]*)*$/,
+              message: "The id and class attribute values must meet the camelCase style."
+            }
+          };
+          let rule;
+          if (typeof options === "string") {
+            rule = arrRules[options];
+          } else {
+            rule = options;
+          }
+          if (typeof rule === "object" && rule.regId) {
+            let regId = rule.regId;
+            const message = rule.message;
+            if (!(regId instanceof RegExp)) {
+              regId = new RegExp(regId);
+            }
+            parser.addListener("tagstart", (event) => {
+              const attrs = event.attrs;
+              let attr;
+              const col = event.col + event.tagName.length + 1;
+              for (let i = 0, l1 = attrs.length; i < l1; i++) {
+                attr = attrs[i];
+                if (attr.name.toLowerCase() === "id") {
+                  if (regId.test(attr.value) === false) {
+                    reporter.warn(message, event.line, col + attr.index, this, attr.raw);
+                  }
+                }
+                if (attr.name.toLowerCase() === "class") {
+                  const arrClass = attr.value.split(/\s+/g);
+                  let classValue;
+                  for (let j = 0, l2 = arrClass.length; j < l2; j++) {
+                    classValue = arrClass[j];
+                    if (classValue && regId.test(classValue) === false) {
+                      reporter.warn(message, event.line, col + attr.index, this, classValue);
+                    }
+                  }
+                }
+              }
+            });
+          }
+        }
+      };
+    }
+  });
+
+  // ../../node_modules/htmlhint/dist/core/rules/id-unique.js
+  var require_id_unique = __commonJS({
+    "../../node_modules/htmlhint/dist/core/rules/id-unique.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.default = {
+        id: "id-unique",
+        description: "The value of id attributes must be unique.",
+        init(parser, reporter) {
+          const mapIdCount = {};
+          parser.addListener("tagstart", (event) => {
+            const attrs = event.attrs;
+            let attr;
+            let id;
+            const col = event.col + event.tagName.length + 1;
+            for (let i = 0, l = attrs.length; i < l; i++) {
+              attr = attrs[i];
+              if (attr.name.toLowerCase() === "id") {
+                id = attr.value;
+                if (id) {
+                  if (mapIdCount[id] === void 0) {
+                    mapIdCount[id] = 1;
+                  } else {
+                    mapIdCount[id]++;
+                  }
+                  if (mapIdCount[id] > 1) {
+                    reporter.error(`The id value [ ${id} ] must be unique.`, event.line, col + attr.index, this, attr.raw);
+                  }
+                }
+                break;
+              }
+            }
+          });
+        }
+      };
+    }
+  });
+
+  // ../../node_modules/htmlhint/dist/core/rules/inline-script-disabled.js
+  var require_inline_script_disabled = __commonJS({
+    "../../node_modules/htmlhint/dist/core/rules/inline-script-disabled.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.default = {
+        id: "inline-script-disabled",
+        description: "Inline script cannot be used.",
+        init(parser, reporter) {
+          parser.addListener("tagstart", (event) => {
+            const attrs = event.attrs;
+            let attr;
+            const col = event.col + event.tagName.length + 1;
+            let attrName;
+            const reEvent = /^on(unload|message|submit|select|scroll|resize|mouseover|mouseout|mousemove|mouseleave|mouseenter|mousedown|load|keyup|keypress|keydown|focus|dblclick|click|change|blur|error)$/i;
+            for (let i = 0, l = attrs.length; i < l; i++) {
+              attr = attrs[i];
+              attrName = attr.name.toLowerCase();
+              if (reEvent.test(attrName) === true) {
+                reporter.warn(`Inline script [ ${attr.raw} ] cannot be used.`, event.line, col + attr.index, this, attr.raw);
+              } else if (attrName === "src" || attrName === "href") {
+                if (/^\s*javascript:/i.test(attr.value)) {
+                  reporter.warn(`Inline script [ ${attr.raw} ] cannot be used.`, event.line, col + attr.index, this, attr.raw);
+                }
+              }
+            }
+          });
+        }
+      };
+    }
+  });
+
+  // ../../node_modules/htmlhint/dist/core/rules/inline-style-disabled.js
+  var require_inline_style_disabled = __commonJS({
+    "../../node_modules/htmlhint/dist/core/rules/inline-style-disabled.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.default = {
+        id: "inline-style-disabled",
+        description: "Inline style cannot be used.",
+        init(parser, reporter) {
+          parser.addListener("tagstart", (event) => {
+            const attrs = event.attrs;
+            let attr;
+            const col = event.col + event.tagName.length + 1;
+            for (let i = 0, l = attrs.length; i < l; i++) {
+              attr = attrs[i];
+              if (attr.name.toLowerCase() === "style") {
+                reporter.warn(`Inline style [ ${attr.raw} ] cannot be used.`, event.line, col + attr.index, this, attr.raw);
+              }
+            }
+          });
+        }
+      };
+    }
+  });
+
+  // ../../node_modules/htmlhint/dist/core/rules/input-requires-label.js
+  var require_input_requires_label = __commonJS({
+    "../../node_modules/htmlhint/dist/core/rules/input-requires-label.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.default = {
+        id: "input-requires-label",
+        description: "All [ input ] tags must have a corresponding [ label ] tag. ",
+        init(parser, reporter) {
+          const labelTags = [];
+          const inputTags = [];
+          parser.addListener("tagstart", (event) => {
+            const tagName = event.tagName.toLowerCase();
+            const mapAttrs = parser.getMapAttrs(event.attrs);
+            const col = event.col + tagName.length + 1;
+            if (tagName === "input") {
+              if (mapAttrs["type"] !== "hidden") {
+                inputTags.push({ event, col, id: mapAttrs["id"] });
+              }
+            }
+            if (tagName === "label") {
+              if ("for" in mapAttrs && mapAttrs["for"] !== "") {
+                labelTags.push({ event, col, forValue: mapAttrs["for"] });
+              }
+            }
+          });
+          parser.addListener("end", () => {
+            inputTags.forEach((inputTag) => {
+              if (!hasMatchingLabelTag(inputTag)) {
+                reporter.warn("No matching [ label ] tag found.", inputTag.event.line, inputTag.col, this, inputTag.event.raw);
+              }
+            });
+          });
+          function hasMatchingLabelTag(inputTag) {
+            let found = false;
+            labelTags.forEach((labelTag) => {
+              if (inputTag.id && inputTag.id === labelTag.forValue) {
+                found = true;
+              }
+            });
+            return found;
+          }
+        }
+      };
+    }
+  });
+
+  // ../../node_modules/htmlhint/dist/core/rules/link-rel-canonical-require.js
+  var require_link_rel_canonical_require = __commonJS({
+    "../../node_modules/htmlhint/dist/core/rules/link-rel-canonical-require.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.default = {
+        id: "link-rel-canonical-require",
+        description: '<link rel="canonical"> with non-blank href must be present in <head> tag.',
+        init(parser, reporter) {
+          let headSeen = false;
+          let linkCanonicalSeen = false;
+          let linkCanonicalHref = "";
+          let headEvent = null;
+          const onTagStart = (event) => {
+            const tagName = event.tagName.toLowerCase();
+            if (tagName === "head") {
+              headSeen = true;
+              headEvent = event;
+            } else if (tagName === "link") {
+              const mapAttrs = parser.getMapAttrs(event.attrs);
+              if (mapAttrs["rel"] && mapAttrs["rel"].toLowerCase() === "canonical") {
+                linkCanonicalSeen = true;
+                linkCanonicalHref = mapAttrs["href"] || "";
+              }
+            }
+          };
+          parser.addListener("tagstart", onTagStart);
+          parser.addListener("end", () => {
+            if (headSeen && headEvent) {
+              if (!linkCanonicalSeen) {
+                reporter.error('<link rel="canonical"> must be present in <head> tag.', headEvent.line, headEvent.col, this, headEvent.raw);
+              } else if (linkCanonicalHref.trim() === "") {
+                reporter.error('<link rel="canonical"> href attribute must not be empty.', headEvent.line, headEvent.col, this, headEvent.raw);
+              }
+            }
+          });
+        }
+      };
+    }
+  });
+
+  // ../../node_modules/htmlhint/dist/core/rules/main-require.js
+  var require_main_require = __commonJS({
+    "../../node_modules/htmlhint/dist/core/rules/main-require.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.default = {
+        id: "main-require",
+        description: "<main> must be present in <body> tag.",
+        init(parser, reporter) {
+          let bodyDepth = 0;
+          let hasMainInBody = false;
+          let bodyTagEvent = null;
+          const onTagStart = (event) => {
+            const tagName = event.tagName.toLowerCase();
+            if (tagName === "body") {
+              bodyDepth++;
+              if (bodyDepth === 1) {
+                hasMainInBody = false;
+                bodyTagEvent = event;
+              }
+            } else if (tagName === "main" && bodyDepth > 0) {
+              hasMainInBody = true;
+            }
+          };
+          const onTagEnd = (event) => {
+            const tagName = event.tagName.toLowerCase();
+            if (tagName === "body") {
+              if (bodyDepth === 1 && !hasMainInBody && bodyTagEvent) {
+                reporter.warn("<main> must be present in <body> tag.", bodyTagEvent.line, bodyTagEvent.col, this, bodyTagEvent.raw);
+              }
+              bodyDepth--;
+              if (bodyDepth < 0)
+                bodyDepth = 0;
+            }
+          };
+          parser.addListener("tagstart", onTagStart);
+          parser.addListener("tagend", onTagEnd);
+          parser.addListener("end", () => {
+            if (bodyDepth > 0 && !hasMainInBody && bodyTagEvent) {
+              reporter.warn("<main> must be present in <body> tag.", bodyTagEvent.line, bodyTagEvent.col, this, bodyTagEvent.raw);
+            }
+          });
+        }
+      };
+    }
+  });
+
+  // ../../node_modules/htmlhint/dist/core/rules/meta-charset-require.js
+  var require_meta_charset_require = __commonJS({
+    "../../node_modules/htmlhint/dist/core/rules/meta-charset-require.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.default = {
+        id: "meta-charset-require",
+        description: '<meta charset=""> must be present in <head> tag.',
+        init(parser, reporter) {
+          let headSeen = false;
+          let metaCharsetSeen = false;
+          let metaCharsetContent = "";
+          let headEvent = null;
+          const onTagStart = (event) => {
+            const tagName = event.tagName.toLowerCase();
+            if (tagName === "head") {
+              headSeen = true;
+              headEvent = event;
+            } else if (tagName === "meta") {
+              const mapAttrs = parser.getMapAttrs(event.attrs);
+              if (mapAttrs["charset"] !== void 0) {
+                metaCharsetSeen = true;
+                metaCharsetContent = mapAttrs["charset"] || "";
+              }
+            }
+          };
+          parser.addListener("tagstart", onTagStart);
+          parser.addListener("end", () => {
+            if (headSeen && headEvent) {
+              if (!metaCharsetSeen) {
+                reporter.error('<meta charset=""> must be present in <head> tag.', headEvent.line, headEvent.col, this, headEvent.raw);
+              } else if (metaCharsetContent.trim() === "") {
+                reporter.error('<meta charset=""> value must not be empty.', headEvent.line, headEvent.col, this, headEvent.raw);
+              }
+            }
+          });
+        }
+      };
+    }
+  });
+
+  // ../../node_modules/htmlhint/dist/core/rules/meta-description-require.js
+  var require_meta_description_require = __commonJS({
+    "../../node_modules/htmlhint/dist/core/rules/meta-description-require.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.default = {
+        id: "meta-description-require",
+        description: '<meta name="description"> with non-blank content must be present in <head> tag.',
+        init(parser, reporter) {
+          let headSeen = false;
+          let metaDescriptionSeen = false;
+          let metaDescriptionContent = "";
+          let headEvent = null;
+          const onTagStart = (event) => {
+            const tagName = event.tagName.toLowerCase();
+            if (tagName === "head") {
+              headSeen = true;
+              headEvent = event;
+            } else if (tagName === "meta") {
+              const mapAttrs = parser.getMapAttrs(event.attrs);
+              if (mapAttrs["name"] && mapAttrs["name"].toLowerCase() === "description") {
+                metaDescriptionSeen = true;
+                metaDescriptionContent = mapAttrs["content"] || "";
+              }
+            }
+          };
+          parser.addListener("tagstart", onTagStart);
+          parser.addListener("end", () => {
+            if (headSeen && headEvent) {
+              if (!metaDescriptionSeen) {
+                reporter.error('<meta name="description"> must be present in <head> tag.', headEvent.line, headEvent.col, this, headEvent.raw);
+              } else if (metaDescriptionContent.trim() === "") {
+                reporter.error('<meta name="description"> content attribute must not be empty.', headEvent.line, headEvent.col, this, headEvent.raw);
+              }
+            }
+          });
+        }
+      };
+    }
+  });
+
+  // ../../node_modules/htmlhint/dist/core/rules/meta-viewport-require.js
+  var require_meta_viewport_require = __commonJS({
+    "../../node_modules/htmlhint/dist/core/rules/meta-viewport-require.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.default = {
+        id: "meta-viewport-require",
+        description: '<meta name="viewport"> with non-blank content must be present in <head> tag.',
+        init(parser, reporter) {
+          let headSeen = false;
+          let metaViewportSeen = false;
+          let metaViewportContent = "";
+          let headEvent = null;
+          const onTagStart = (event) => {
+            const tagName = event.tagName.toLowerCase();
+            if (tagName === "head") {
+              headSeen = true;
+              headEvent = event;
+            } else if (tagName === "meta") {
+              const mapAttrs = parser.getMapAttrs(event.attrs);
+              if (mapAttrs["name"] && mapAttrs["name"].toLowerCase() === "viewport") {
+                metaViewportSeen = true;
+                metaViewportContent = mapAttrs["content"] || "";
+              }
+            }
+          };
+          parser.addListener("tagstart", onTagStart);
+          parser.addListener("end", () => {
+            if (headSeen && headEvent) {
+              if (!metaViewportSeen) {
+                reporter.error('<meta name="viewport"> must be present in <head> tag.', headEvent.line, headEvent.col, this, headEvent.raw);
+              } else if (metaViewportContent.trim() === "") {
+                reporter.error('<meta name="viewport"> content attribute must not be empty.', headEvent.line, headEvent.col, this, headEvent.raw);
+              }
+            }
+          });
+        }
+      };
+    }
+  });
+
+  // ../../node_modules/htmlhint/dist/core/rules/script-disabled.js
+  var require_script_disabled = __commonJS({
+    "../../node_modules/htmlhint/dist/core/rules/script-disabled.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.default = {
+        id: "script-disabled",
+        description: "The <script> tag cannot be used.",
+        init(parser, reporter) {
+          parser.addListener("tagstart", (event) => {
+            if (event.tagName.toLowerCase() === "script") {
+              reporter.error("The <script> tag cannot be used.", event.line, event.col, this, event.raw);
+            }
+          });
+        }
+      };
+    }
+  });
+
+  // ../../node_modules/htmlhint/dist/core/rules/space-tab-mixed-disabled.js
+  var require_space_tab_mixed_disabled = __commonJS({
+    "../../node_modules/htmlhint/dist/core/rules/space-tab-mixed-disabled.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.default = {
+        id: "space-tab-mixed-disabled",
+        description: "Do not mix tabs and spaces for indentation.",
+        init(parser, reporter, options) {
+          let indentMode = "nomix";
+          let spaceLengthRequire = null;
+          if (typeof options === "string") {
+            const match = /^([a-z]+)(\d+)?/.exec(options);
+            if (match) {
+              indentMode = match[1];
+              spaceLengthRequire = match[2] && parseInt(match[2], 10);
+            }
+          }
+          parser.addListener("text", (event) => {
+            const raw = event.raw;
+            const reMixed = /(^|\r?\n)([ \t]+)/g;
+            let match;
+            while (match = reMixed.exec(raw)) {
+              const fixedPos = parser.fixPos(event, match.index + match[1].length);
+              if (fixedPos.col !== 1) {
+                continue;
+              }
+              const whiteSpace = match[2];
+              if (indentMode === "space") {
+                if (spaceLengthRequire) {
+                  if (/^ +$/.test(whiteSpace) === false || whiteSpace.length % spaceLengthRequire !== 0) {
+                    reporter.warn(`Please use space for indentation and keep ${spaceLengthRequire} length.`, fixedPos.line, 1, this, event.raw);
+                  }
+                } else {
+                  if (/^ +$/.test(whiteSpace) === false) {
+                    reporter.warn("Please use space for indentation.", fixedPos.line, 1, this, event.raw);
+                  }
+                }
+              } else if (indentMode === "tab" && /^\t+$/.test(whiteSpace) === false) {
+                reporter.warn("Please use tab for indentation.", fixedPos.line, 1, this, event.raw);
+              } else if (/ +\t|\t+ /.test(whiteSpace) === true) {
+                reporter.warn("Do not mix tabs and spaces for indentation.", fixedPos.line, 1, this, event.raw);
+              }
+            }
+          });
+        }
+      };
+    }
+  });
+
+  // ../../node_modules/htmlhint/dist/core/rules/spec-char-escape.js
+  var require_spec_char_escape = __commonJS({
+    "../../node_modules/htmlhint/dist/core/rules/spec-char-escape.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.default = {
+        id: "spec-char-escape",
+        description: "Special characters must be escaped.",
+        init(parser, reporter) {
+          parser.addListener("text", (event) => {
+            const raw = event.raw;
+            const reSpecChar = /([<>])/g;
+            let match;
+            while (match = reSpecChar.exec(raw)) {
+              const fixedPos = parser.fixPos(event, match.index);
+              reporter.error(`Special characters must be escaped : [ ${match[0]} ].`, fixedPos.line, fixedPos.col, this, event.raw);
+            }
+          });
+        }
+      };
+    }
+  });
+
+  // ../../node_modules/htmlhint/dist/core/rules/src-not-empty.js
+  var require_src_not_empty = __commonJS({
+    "../../node_modules/htmlhint/dist/core/rules/src-not-empty.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.default = {
+        id: "src-not-empty",
+        description: "The src attribute of an img(script,link) must have a value.",
+        init(parser, reporter) {
+          parser.addListener("tagstart", (event) => {
+            const tagName = event.tagName;
+            const attrs = event.attrs;
+            let attr;
+            const col = event.col + tagName.length + 1;
+            for (let i = 0, l = attrs.length; i < l; i++) {
+              attr = attrs[i];
+              if ((/^(img|script|embed|bgsound|iframe)$/.test(tagName) === true && attr.name === "src" || tagName === "link" && attr.name === "href" || tagName === "object" && attr.name === "data") && attr.value === "") {
+                reporter.error(`The attribute [ ${attr.name} ] of the tag [ ${tagName} ] must have a value.`, event.line, col + attr.index, this, attr.raw);
+              }
+            }
+          });
+        }
+      };
+    }
+  });
+
+  // ../../node_modules/htmlhint/dist/core/rules/style-disabled.js
+  var require_style_disabled = __commonJS({
+    "../../node_modules/htmlhint/dist/core/rules/style-disabled.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.default = {
+        id: "style-disabled",
+        description: "<style> tags cannot be used.",
+        init(parser, reporter) {
+          parser.addListener("tagstart", (event) => {
+            if (event.tagName.toLowerCase() === "style") {
+              reporter.warn("The <style> tag cannot be used.", event.line, event.col, this, event.raw);
+            }
+          });
+        }
+      };
+    }
+  });
+
+  // ../../node_modules/htmlhint/dist/core/rules/tag-no-obsolete.js
+  var require_tag_no_obsolete = __commonJS({
+    "../../node_modules/htmlhint/dist/core/rules/tag-no-obsolete.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      var OBSOLETE_TAGS = [
+        "applet",
+        "acronym",
+        "bgsound",
+        "dir",
+        "frame",
+        "frameset",
+        "noframes",
+        "isindex",
+        "keygen",
+        "listing",
+        "menuitem",
+        "nextid",
+        "noembed",
+        "plaintext",
+        "rb",
+        "rtc",
+        "strike",
+        "xmp",
+        "basefont",
+        "big",
+        "blink",
+        "center",
+        "font",
+        "marquee",
+        "multicol",
+        "nobr",
+        "spacer",
+        "tt"
+      ];
+      exports.default = {
+        id: "tag-no-obsolete",
+        description: "Disallows the use of obsolete HTML tags.",
+        init(parser, reporter, _options) {
+          parser.addListener("tagstart,tagend", (event) => {
+            const tagName = event.tagName.toLowerCase();
+            if (OBSOLETE_TAGS.includes(tagName)) {
+              reporter.error(`The tag [ ${event.tagName} ] is obsolete in HTML5 and should not be used.`, event.line, event.col, this, event.raw);
+            }
+          });
+        }
+      };
+    }
+  });
+
+  // ../../node_modules/htmlhint/dist/core/rules/tagname-lowercase.js
+  var require_tagname_lowercase = __commonJS({
+    "../../node_modules/htmlhint/dist/core/rules/tagname-lowercase.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      var svgTagNameIgnores = [
+        "animateMotion",
+        "animateTransform",
+        "clipPath",
+        "feBlend",
+        "feColorMatrix",
+        "feComponentTransfer",
+        "feComposite",
+        "feConvolveMatrix",
+        "feDiffuseLighting",
+        "feDisplacementMap",
+        "feDistantLight",
+        "feDropShadow",
+        "feFlood",
+        "feFuncA",
+        "feFuncB",
+        "feFuncG",
+        "feFuncR",
+        "feGaussianBlur",
+        "feImage",
+        "feMerge",
+        "feMergeNode",
+        "feMorphology",
+        "feOffset",
+        "fePointLight",
+        "feSpecularLighting",
+        "feSpotLight",
+        "feTile",
+        "feTurbulence",
+        "foreignObject",
+        "linearGradient",
+        "radialGradient",
+        "textPath"
+      ];
+      function testAgainstStringOrRegExp(value, comparison) {
+        if (comparison instanceof RegExp) {
+          return comparison.test(value) ? { match: value, pattern: comparison } : false;
+        }
+        const firstComparisonChar = comparison[0];
+        const lastComparisonChar = comparison[comparison.length - 1];
+        const secondToLastComparisonChar = comparison[comparison.length - 2];
+        const comparisonIsRegex = firstComparisonChar === "/" && (lastComparisonChar === "/" || secondToLastComparisonChar === "/" && lastComparisonChar === "i");
+        const hasCaseInsensitiveFlag = comparisonIsRegex && lastComparisonChar === "i";
+        if (comparisonIsRegex) {
+          const valueMatches = hasCaseInsensitiveFlag ? new RegExp(comparison.slice(1, -2), "i").test(value) : new RegExp(comparison.slice(1, -1)).test(value);
+          return valueMatches;
+        }
+        return value === comparison;
+      }
+      exports.default = {
+        id: "tagname-lowercase",
+        description: "All html element names must be in lowercase.",
+        init(parser, reporter, options) {
+          const exceptions = (Array.isArray(options) ? options : []).concat(svgTagNameIgnores);
+          parser.addListener("tagstart,tagend", (event) => {
+            const tagName = event.tagName;
+            if (!exceptions.find((exp) => testAgainstStringOrRegExp(tagName, exp)) && tagName !== tagName.toLowerCase()) {
+              reporter.error(`The html element name of [ ${tagName} ] must be in lowercase.`, event.line, event.col, this, event.raw);
+            }
+          });
+        }
+      };
+    }
+  });
+
+  // ../../node_modules/htmlhint/dist/core/rules/tagname-specialchars.js
+  var require_tagname_specialchars = __commonJS({
+    "../../node_modules/htmlhint/dist/core/rules/tagname-specialchars.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.default = {
+        id: "tagname-specialchars",
+        description: "All special characters must be escaped.",
+        init(parser, reporter) {
+          const specialchars = /[^a-zA-Z0-9\-:_]/;
+          parser.addListener("tagstart,tagend", (event) => {
+            const tagName = event.tagName;
+            if (specialchars.test(tagName)) {
+              reporter.error(`The html element name of [ ${tagName} ] contains special character.`, event.line, event.col, this, event.raw);
+            }
+          });
+        }
+      };
+    }
+  });
+
+  // ../../node_modules/htmlhint/dist/core/rules/tag-pair.js
+  var require_tag_pair = __commonJS({
+    "../../node_modules/htmlhint/dist/core/rules/tag-pair.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.default = {
+        id: "tag-pair",
+        description: "Tag must be paired.",
+        init(parser, reporter) {
+          const stack = [];
+          const mapEmptyTags = parser.makeMap("area,base,basefont,br,col,frame,hr,img,input,isindex,link,meta,param,embed,track,command,source,keygen,wbr");
+          parser.addListener("tagstart", (event) => {
+            const tagName = event.tagName.toLowerCase();
+            if (mapEmptyTags[tagName] === void 0 && !event.close) {
+              stack.push({
+                tagName,
+                line: event.line,
+                col: event.col,
+                raw: event.raw
+              });
+            }
+          });
+          parser.addListener("tagend", (event) => {
+            const tagName = event.tagName.toLowerCase();
+            let pos;
+            for (pos = stack.length - 1; pos >= 0; pos--) {
+              if (stack[pos].tagName === tagName) {
+                break;
+              }
+            }
+            if (pos >= 0) {
+              const arrTags = [];
+              for (let i = stack.length - 1; i > pos; i--) {
+                arrTags.push(`</${stack[i].tagName}>`);
+              }
+              if (arrTags.length > 0) {
+                const lastEvent = stack[stack.length - 1];
+                reporter.error(`Tag must be paired, missing: [ ${arrTags.join("")} ], start tag match failed [ ${lastEvent.raw} ] on line ${lastEvent.line}.`, lastEvent.line || event.line, lastEvent.col || event.col, this, event.raw);
+              }
+              stack.length = pos;
+            } else {
+              reporter.error(`Tag must be paired, no start tag: [ ${event.raw} ]`, event.line, event.col, this, event.raw);
+            }
+          });
+          parser.addListener("end", (event) => {
+            const arrTags = [];
+            for (let i = stack.length - 1; i >= 0; i--) {
+              arrTags.push(`</${stack[i].tagName}>`);
+            }
+            if (arrTags.length > 0) {
+              const lastEvent = stack[stack.length - 1];
+              reporter.error(`Tag must be paired, missing: [ ${arrTags.join("")} ], open tag match failed [ ${lastEvent.raw} ] on line ${lastEvent.line}.`, event.line, event.col, this, "");
+            }
+          });
+        }
+      };
+    }
+  });
+
+  // ../../node_modules/htmlhint/dist/core/rules/tags-check.js
+  var require_tags_check = __commonJS({
+    "../../node_modules/htmlhint/dist/core/rules/tags-check.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      var tagsTypings = {
+        a: {
+          selfclosing: false,
+          attrsRequired: ["href", "title"],
+          redundantAttrs: ["alt"]
+        },
+        div: {
+          selfclosing: false
+        },
+        main: {
+          selfclosing: false,
+          redundantAttrs: ["role"]
+        },
+        nav: {
+          selfclosing: false,
+          redundantAttrs: ["role"]
+        },
+        script: {
+          attrsOptional: [
+            ["async", "async"],
+            ["defer", "defer"]
+          ]
+        },
+        img: {
+          selfclosing: true,
+          attrsRequired: ["src", "alt", "title"]
+        }
+      };
+      exports.default = {
+        id: "tags-check",
+        description: "Checks html tags.",
+        init(parser, reporter, options) {
+          tagsTypings = __spreadValues(__spreadValues({}, tagsTypings), options);
+          parser.addListener("tagstart", (event) => {
+            const attrs = event.attrs;
+            const col = event.col + event.tagName.length + 1;
+            const tagName = event.tagName.toLowerCase();
+            if (tagsTypings[tagName]) {
+              const currentTagType = tagsTypings[tagName];
+              if (currentTagType.selfclosing === true && !event.close) {
+                reporter.warn(`The <${tagName}> tag must be selfclosing.`, event.line, event.col, this, event.raw);
+              } else if (currentTagType.selfclosing === false && event.close) {
+                reporter.warn(`The <${tagName}> tag must not be selfclosing.`, event.line, event.col, this, event.raw);
+              }
+              if (Array.isArray(currentTagType.attrsRequired)) {
+                const attrsRequired = currentTagType.attrsRequired;
+                attrsRequired.forEach((id) => {
+                  if (Array.isArray(id)) {
+                    const copyOfId = id.map((a) => a);
+                    const realID = copyOfId.shift();
+                    const values = copyOfId;
+                    if (attrs.some((attr) => attr.name === realID)) {
+                      attrs.forEach((attr) => {
+                        if (attr.name === realID && values.indexOf(attr.value) === -1) {
+                          reporter.error(`The <${tagName}> tag must have attr '${realID}' with one value of '${values.join("' or '")}'.`, event.line, col, this, event.raw);
+                        }
+                      });
+                    } else {
+                      reporter.error(`The <${tagName}> tag must have attr '${realID}'.`, event.line, col, this, event.raw);
+                    }
+                  } else if (!attrs.some((attr) => id.split("|").indexOf(attr.name) !== -1)) {
+                    reporter.error(`The <${tagName}> tag must have attr '${id}'.`, event.line, col, this, event.raw);
+                  }
+                });
+              }
+              if (Array.isArray(currentTagType.attrsOptional)) {
+                const attrsOptional = currentTagType.attrsOptional;
+                attrsOptional.forEach((id) => {
+                  if (Array.isArray(id)) {
+                    const copyOfId = id.map((a) => a);
+                    const realID = copyOfId.shift();
+                    const values = copyOfId;
+                    if (attrs.some((attr) => attr.name === realID)) {
+                      attrs.forEach((attr) => {
+                        if (attr.name === realID && values.indexOf(attr.value) === -1) {
+                          reporter.error(`The <${tagName}> tag must have optional attr '${realID}' with one value of '${values.join("' or '")}'.`, event.line, col, this, event.raw);
+                        }
+                      });
+                    }
+                  }
+                });
+              }
+              if (Array.isArray(currentTagType.redundantAttrs)) {
+                const redundantAttrs = currentTagType.redundantAttrs;
+                redundantAttrs.forEach((attrName) => {
+                  if (attrs.some((attr) => attr.name === attrName)) {
+                    reporter.error(`The attr '${attrName}' is redundant for <${tagName}> and should be omitted.`, event.line, col, this, event.raw);
+                  }
+                });
+              }
+            }
+          });
+        }
+      };
+    }
+  });
+
+  // ../../node_modules/htmlhint/dist/core/rules/tag-self-close.js
+  var require_tag_self_close = __commonJS({
+    "../../node_modules/htmlhint/dist/core/rules/tag-self-close.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.default = {
+        id: "tag-self-close",
+        description: "Empty tags must be self closed.",
+        init(parser, reporter) {
+          const mapEmptyTags = parser.makeMap("area,base,basefont,bgsound,br,col,frame,hr,img,input,isindex,link,meta,param,embed,track,command,source,keygen,wbr");
+          parser.addListener("tagstart", (event) => {
+            const tagName = event.tagName.toLowerCase();
+            if (mapEmptyTags[tagName] !== void 0) {
+              if (!event.close) {
+                reporter.warn(`The empty tag : [ ${tagName} ] must be self closed.`, event.line, event.col, this, event.raw);
+              }
+            }
+          });
+        }
+      };
+    }
+  });
+
+  // ../../node_modules/htmlhint/dist/core/rules/title-require.js
+  var require_title_require = __commonJS({
+    "../../node_modules/htmlhint/dist/core/rules/title-require.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.default = {
+        id: "title-require",
+        description: "<title> must be present in <head> tag.",
+        init(parser, reporter) {
+          let headBegin = false;
+          let hasTitle = false;
+          const onTagStart = (event) => {
+            const tagName = event.tagName.toLowerCase();
+            if (tagName === "head") {
+              headBegin = true;
+            } else if (tagName === "title" && headBegin) {
+              hasTitle = true;
+            }
+          };
+          const onTagEnd = (event) => {
+            const tagName = event.tagName.toLowerCase();
+            if (hasTitle && tagName === "title") {
+              const lastEvent = event.lastEvent;
+              if (lastEvent.type !== "text" || lastEvent.type === "text" && /^\s*$/.test(lastEvent.raw) === true) {
+                reporter.error("<title></title> must not be empty.", event.line, event.col, this, event.raw);
+              }
+            } else if (tagName === "head") {
+              if (hasTitle === false) {
+                reporter.error("<title> must be present in <head> tag.", event.line, event.col, this, event.raw);
+              }
+              parser.removeListener("tagstart", onTagStart);
+              parser.removeListener("tagend", onTagEnd);
+            }
+          };
+          parser.addListener("tagstart", onTagStart);
+          parser.addListener("tagend", onTagEnd);
+        }
+      };
+    }
+  });
+
+  // ../../node_modules/htmlhint/dist/core/rules/index.js
+  var require_rules = __commonJS({
+    "../../node_modules/htmlhint/dist/core/rules/index.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.titleRequire = exports.tagSelfClose = exports.tagsCheck = exports.tagPair = exports.tagnameSpecialChars = exports.tagnameLowercase = exports.tagNoObsolete = exports.styleDisabled = exports.srcNotEmpty = exports.specCharEscape = exports.spaceTabMixedDisabled = exports.scriptDisabled = exports.metaViewportRequire = exports.metaDescriptionRequire = exports.metaCharsetRequire = exports.mainRequire = exports.linkRelCanonicalRequire = exports.inputRequiresLabel = exports.inlineStyleDisabled = exports.inlineScriptDisabled = exports.idUnique = exports.idClassValue = exports.idClassAdDisabled = exports.htmlLangRequire = exports.hrefAbsOrRel = exports.headScriptDisabled = exports.h1Require = exports.frameTitleRequire = exports.formMethodRequire = exports.emptyTagNotSelfClosed = exports.doctypeHTML5 = exports.doctypeFirst = exports.buttonTypeRequire = exports.attrWhitespace = exports.attrValueSingleQuotes = exports.attrValueNotEmpty = exports.attrValueDoubleQuotes = exports.attrUnsafeChars = exports.attrSort = exports.attrValueNoDuplication = exports.attrNoUnnecessaryWhitespace = exports.attrNoDuplication = exports.attrLowercase = exports.altRequire = void 0;
+      var alt_require_1 = require_alt_require();
+      Object.defineProperty(exports, "altRequire", { enumerable: true, get: function() {
+        return alt_require_1.default;
+      } });
+      var attr_lowercase_1 = require_attr_lowercase();
+      Object.defineProperty(exports, "attrLowercase", { enumerable: true, get: function() {
+        return attr_lowercase_1.default;
+      } });
+      var attr_no_duplication_1 = require_attr_no_duplication();
+      Object.defineProperty(exports, "attrNoDuplication", { enumerable: true, get: function() {
+        return attr_no_duplication_1.default;
+      } });
+      var attr_no_unnecessary_whitespace_1 = require_attr_no_unnecessary_whitespace();
+      Object.defineProperty(exports, "attrNoUnnecessaryWhitespace", { enumerable: true, get: function() {
+        return attr_no_unnecessary_whitespace_1.default;
+      } });
+      var attr_value_no_duplication_1 = require_attr_value_no_duplication();
+      Object.defineProperty(exports, "attrValueNoDuplication", { enumerable: true, get: function() {
+        return attr_value_no_duplication_1.default;
+      } });
+      var attr_sorted_1 = require_attr_sorted();
+      Object.defineProperty(exports, "attrSort", { enumerable: true, get: function() {
+        return attr_sorted_1.default;
+      } });
+      var attr_unsafe_chars_1 = require_attr_unsafe_chars();
+      Object.defineProperty(exports, "attrUnsafeChars", { enumerable: true, get: function() {
+        return attr_unsafe_chars_1.default;
+      } });
+      var attr_value_double_quotes_1 = require_attr_value_double_quotes();
+      Object.defineProperty(exports, "attrValueDoubleQuotes", { enumerable: true, get: function() {
+        return attr_value_double_quotes_1.default;
+      } });
+      var attr_value_not_empty_1 = require_attr_value_not_empty();
+      Object.defineProperty(exports, "attrValueNotEmpty", { enumerable: true, get: function() {
+        return attr_value_not_empty_1.default;
+      } });
+      var attr_value_single_quotes_1 = require_attr_value_single_quotes();
+      Object.defineProperty(exports, "attrValueSingleQuotes", { enumerable: true, get: function() {
+        return attr_value_single_quotes_1.default;
+      } });
+      var attr_whitespace_1 = require_attr_whitespace();
+      Object.defineProperty(exports, "attrWhitespace", { enumerable: true, get: function() {
+        return attr_whitespace_1.default;
+      } });
+      var button_type_require_1 = require_button_type_require();
+      Object.defineProperty(exports, "buttonTypeRequire", { enumerable: true, get: function() {
+        return button_type_require_1.default;
+      } });
+      var doctype_first_1 = require_doctype_first();
+      Object.defineProperty(exports, "doctypeFirst", { enumerable: true, get: function() {
+        return doctype_first_1.default;
+      } });
+      var doctype_html5_1 = require_doctype_html5();
+      Object.defineProperty(exports, "doctypeHTML5", { enumerable: true, get: function() {
+        return doctype_html5_1.default;
+      } });
+      var empty_tag_not_self_closed_1 = require_empty_tag_not_self_closed();
+      Object.defineProperty(exports, "emptyTagNotSelfClosed", { enumerable: true, get: function() {
+        return empty_tag_not_self_closed_1.default;
+      } });
+      var form_method_require_1 = require_form_method_require();
+      Object.defineProperty(exports, "formMethodRequire", { enumerable: true, get: function() {
+        return form_method_require_1.default;
+      } });
+      var frame_title_require_1 = require_frame_title_require();
+      Object.defineProperty(exports, "frameTitleRequire", { enumerable: true, get: function() {
+        return frame_title_require_1.default;
+      } });
+      var h1_require_1 = require_h1_require();
+      Object.defineProperty(exports, "h1Require", { enumerable: true, get: function() {
+        return h1_require_1.default;
+      } });
+      var head_script_disabled_1 = require_head_script_disabled();
+      Object.defineProperty(exports, "headScriptDisabled", { enumerable: true, get: function() {
+        return head_script_disabled_1.default;
+      } });
+      var href_abs_or_rel_1 = require_href_abs_or_rel();
+      Object.defineProperty(exports, "hrefAbsOrRel", { enumerable: true, get: function() {
+        return href_abs_or_rel_1.default;
+      } });
+      var html_lang_require_1 = require_html_lang_require();
+      Object.defineProperty(exports, "htmlLangRequire", { enumerable: true, get: function() {
+        return html_lang_require_1.default;
+      } });
+      var id_class_ad_disabled_1 = require_id_class_ad_disabled();
+      Object.defineProperty(exports, "idClassAdDisabled", { enumerable: true, get: function() {
+        return id_class_ad_disabled_1.default;
+      } });
+      var id_class_value_1 = require_id_class_value();
+      Object.defineProperty(exports, "idClassValue", { enumerable: true, get: function() {
+        return id_class_value_1.default;
+      } });
+      var id_unique_1 = require_id_unique();
+      Object.defineProperty(exports, "idUnique", { enumerable: true, get: function() {
+        return id_unique_1.default;
+      } });
+      var inline_script_disabled_1 = require_inline_script_disabled();
+      Object.defineProperty(exports, "inlineScriptDisabled", { enumerable: true, get: function() {
+        return inline_script_disabled_1.default;
+      } });
+      var inline_style_disabled_1 = require_inline_style_disabled();
+      Object.defineProperty(exports, "inlineStyleDisabled", { enumerable: true, get: function() {
+        return inline_style_disabled_1.default;
+      } });
+      var input_requires_label_1 = require_input_requires_label();
+      Object.defineProperty(exports, "inputRequiresLabel", { enumerable: true, get: function() {
+        return input_requires_label_1.default;
+      } });
+      var link_rel_canonical_require_1 = require_link_rel_canonical_require();
+      Object.defineProperty(exports, "linkRelCanonicalRequire", { enumerable: true, get: function() {
+        return link_rel_canonical_require_1.default;
+      } });
+      var main_require_1 = require_main_require();
+      Object.defineProperty(exports, "mainRequire", { enumerable: true, get: function() {
+        return main_require_1.default;
+      } });
+      var meta_charset_require_1 = require_meta_charset_require();
+      Object.defineProperty(exports, "metaCharsetRequire", { enumerable: true, get: function() {
+        return meta_charset_require_1.default;
+      } });
+      var meta_description_require_1 = require_meta_description_require();
+      Object.defineProperty(exports, "metaDescriptionRequire", { enumerable: true, get: function() {
+        return meta_description_require_1.default;
+      } });
+      var meta_viewport_require_1 = require_meta_viewport_require();
+      Object.defineProperty(exports, "metaViewportRequire", { enumerable: true, get: function() {
+        return meta_viewport_require_1.default;
+      } });
+      var script_disabled_1 = require_script_disabled();
+      Object.defineProperty(exports, "scriptDisabled", { enumerable: true, get: function() {
+        return script_disabled_1.default;
+      } });
+      var space_tab_mixed_disabled_1 = require_space_tab_mixed_disabled();
+      Object.defineProperty(exports, "spaceTabMixedDisabled", { enumerable: true, get: function() {
+        return space_tab_mixed_disabled_1.default;
+      } });
+      var spec_char_escape_1 = require_spec_char_escape();
+      Object.defineProperty(exports, "specCharEscape", { enumerable: true, get: function() {
+        return spec_char_escape_1.default;
+      } });
+      var src_not_empty_1 = require_src_not_empty();
+      Object.defineProperty(exports, "srcNotEmpty", { enumerable: true, get: function() {
+        return src_not_empty_1.default;
+      } });
+      var style_disabled_1 = require_style_disabled();
+      Object.defineProperty(exports, "styleDisabled", { enumerable: true, get: function() {
+        return style_disabled_1.default;
+      } });
+      var tag_no_obsolete_1 = require_tag_no_obsolete();
+      Object.defineProperty(exports, "tagNoObsolete", { enumerable: true, get: function() {
+        return tag_no_obsolete_1.default;
+      } });
+      var tagname_lowercase_1 = require_tagname_lowercase();
+      Object.defineProperty(exports, "tagnameLowercase", { enumerable: true, get: function() {
+        return tagname_lowercase_1.default;
+      } });
+      var tagname_specialchars_1 = require_tagname_specialchars();
+      Object.defineProperty(exports, "tagnameSpecialChars", { enumerable: true, get: function() {
+        return tagname_specialchars_1.default;
+      } });
+      var tag_pair_1 = require_tag_pair();
+      Object.defineProperty(exports, "tagPair", { enumerable: true, get: function() {
+        return tag_pair_1.default;
+      } });
+      var tags_check_1 = require_tags_check();
+      Object.defineProperty(exports, "tagsCheck", { enumerable: true, get: function() {
+        return tags_check_1.default;
+      } });
+      var tag_self_close_1 = require_tag_self_close();
+      Object.defineProperty(exports, "tagSelfClose", { enumerable: true, get: function() {
+        return tag_self_close_1.default;
+      } });
+      var title_require_1 = require_title_require();
+      Object.defineProperty(exports, "titleRequire", { enumerable: true, get: function() {
+        return title_require_1.default;
+      } });
+    }
+  });
+
+  // ../../node_modules/htmlhint/dist/core/core.js
+  var require_core = __commonJS({
+    "../../node_modules/htmlhint/dist/core/core.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.HTMLParser = exports.Reporter = exports.HTMLRules = exports.HTMLHint = void 0;
+      var htmlparser_1 = require_htmlparser();
+      exports.HTMLParser = htmlparser_1.default;
+      var reporter_1 = require_reporter();
+      exports.Reporter = reporter_1.default;
+      var HTMLRules = require_rules();
+      exports.HTMLRules = HTMLRules;
+      var HTMLHintCore = class {
+        constructor() {
+          this.rules = {};
+          this.defaultRuleset = {
+            "tagname-lowercase": true,
+            "attr-lowercase": true,
+            "attr-value-double-quotes": true,
+            "doctype-first": true,
+            "tag-pair": true,
+            "spec-char-escape": true,
+            "id-unique": true,
+            "src-not-empty": true,
+            "attr-no-duplication": true,
+            "title-require": true
+          };
+        }
+        addRule(rule) {
+          this.rules[rule.id] = rule;
+        }
+        verify(html, ruleset = this.defaultRuleset) {
+          if (Object.keys(ruleset).length === 0) {
+            ruleset = this.defaultRuleset;
+          }
+          html = html.replace(/^\s*<!--\s*htmlhint\s+([^\r\n]+?)\s*-->/i, (all, strRuleset) => {
+            strRuleset.replace(/(?:^|,)\s*([^:,]+)\s*(?:\:\s*([^,\s]+))?/g, (all2, ruleId, value) => {
+              ruleset[ruleId] = value !== void 0 && value.length > 0 ? JSON.parse(value) : true;
+              return "";
+            });
+            return "";
+          });
+          const disabledRulesMap = this.parseDisableComments(html);
+          const parser = new htmlparser_1.default();
+          const reporter = new reporter_1.default(html, ruleset, disabledRulesMap);
+          const rules = this.rules;
+          let rule;
+          for (const id in ruleset) {
+            rule = rules[id];
+            if (rule !== void 0 && ruleset[id] !== false) {
+              rule.init(parser, reporter, ruleset[id]);
+            }
+          }
+          parser.parse(html);
+          return reporter.messages;
+        }
+        parseDisableComments(html) {
+          var _a;
+          const disabledRulesMap = {};
+          const lines = html.split(/\r?\n/);
+          const regComment = /<!--\s*htmlhint-(disable|enable)(?:-next-line)?(?:\s+([^\r\n]+?))?\s*-->/gi;
+          const comments = [];
+          let match;
+          while ((match = regComment.exec(html)) !== null) {
+            const beforeMatch = html.substring(0, match.index);
+            const lineNumber = beforeMatch.split(/\r?\n/).length;
+            const command = match[1].toLowerCase();
+            const isNextLine = match[0].includes("-next-line");
+            const rulesStr = (_a = match[2]) === null || _a === void 0 ? void 0 : _a.trim();
+            comments.push({
+              line: lineNumber,
+              command,
+              isNextLine,
+              rulesStr
+            });
+          }
+          let currentDisabledRules = null;
+          let isAllDisabled = false;
+          for (let i = 0; i < lines.length; i++) {
+            const line = i + 1;
+            const commentOnLine = comments.find((c) => c.line === line);
+            if (commentOnLine) {
+              if (commentOnLine.command === "disable") {
+                if (commentOnLine.isNextLine) {
+                  const nextLine = line + 1;
+                  if (commentOnLine.rulesStr) {
+                    const rules = commentOnLine.rulesStr.split(/\s+/).filter((r) => r.length > 0);
+                    if (!disabledRulesMap[nextLine]) {
+                      disabledRulesMap[nextLine] = {};
+                    }
+                    if (!disabledRulesMap[nextLine].rules) {
+                      disabledRulesMap[nextLine].rules = /* @__PURE__ */ new Set();
+                    }
+                    rules.forEach((r) => disabledRulesMap[nextLine].rules.add(r));
+                  } else {
+                    if (!disabledRulesMap[nextLine]) {
+                      disabledRulesMap[nextLine] = {};
+                    }
+                    disabledRulesMap[nextLine].all = true;
+                  }
+                } else {
+                  if (commentOnLine.rulesStr) {
+                    const rules = commentOnLine.rulesStr.split(/\s+/).filter((r) => r.length > 0);
+                    currentDisabledRules = new Set(rules);
+                    isAllDisabled = false;
+                  } else {
+                    currentDisabledRules = null;
+                    isAllDisabled = true;
+                  }
+                }
+              } else if (commentOnLine.command === "enable") {
+                currentDisabledRules = null;
+                isAllDisabled = false;
+              }
+            }
+            if (currentDisabledRules !== null || isAllDisabled) {
+              if (!disabledRulesMap[line]) {
+                disabledRulesMap[line] = {};
+              }
+              if (isAllDisabled && disabledRulesMap[line].all !== true) {
+                disabledRulesMap[line].all = true;
+              } else if (currentDisabledRules) {
+                if (!disabledRulesMap[line].rules) {
+                  disabledRulesMap[line].rules = /* @__PURE__ */ new Set();
+                }
+                currentDisabledRules.forEach((r) => disabledRulesMap[line].rules.add(r));
+              }
+            }
+          }
+          return disabledRulesMap;
+        }
+        format(arrMessages, options = {}) {
+          const arrLogs = [];
+          const colors = {
+            white: "",
+            grey: "",
+            red: "",
+            reset: ""
+          };
+          if (options.colors) {
+            colors.white = "\x1B[37m";
+            colors.grey = "\x1B[90m";
+            colors.red = "\x1B[31m";
+            colors.reset = "\x1B[39m";
+          }
+          const indent = options.indent || 0;
+          arrMessages.forEach((hint) => {
+            const leftWindow = 40;
+            const rightWindow = leftWindow + 20;
+            let evidence = hint.evidence;
+            const line = hint.line;
+            const col = hint.col;
+            const evidenceCount = evidence.length;
+            let leftCol = col > leftWindow + 1 ? col - leftWindow : 1;
+            let rightCol = evidence.length > col + rightWindow ? col + rightWindow : evidenceCount;
+            if (col < leftWindow + 1) {
+              rightCol += leftWindow - col + 1;
+            }
+            evidence = evidence.replace(/\t/g, " ").substring(leftCol - 1, rightCol);
+            if (leftCol > 1) {
+              evidence = `...${evidence}`;
+              leftCol -= 3;
+            }
+            if (rightCol < evidenceCount) {
+              evidence += "...";
+            }
+            arrLogs.push(`${colors.white + repeatStr(indent)}L${line} |${colors.grey}${evidence}${colors.reset}`);
+            let pointCol = col - leftCol;
+            const match = evidence.substring(0, pointCol).match(/[^\u0000-\u00ff]/g);
+            if (match !== null) {
+              pointCol += match.length;
+            }
+            arrLogs.push(`${colors.white + repeatStr(indent) + repeatStr(String(line).length + 3 + pointCol)}^ ${colors.red}${hint.message} (${hint.rule.id})${colors.reset}`);
+          });
+          return arrLogs;
+        }
+      };
+      function repeatStr(n, str) {
+        return new Array(n + 1).join(str || " ");
+      }
+      exports.HTMLHint = new HTMLHintCore();
+      Object.values(HTMLRules).forEach((rule) => {
+        exports.HTMLHint.addRule(rule);
+      });
+    }
+  });
+
+  // src/workers/html-worker.ts
+  var html_worker_exports = {};
+  __export(html_worker_exports, {
+    HtmlWorker: () => HtmlWorker
+  });
+
+  // src/mirror.ts
+  var lang = __toESM(require_lang());
+
+  // src/min-document.ts
+  var oop = require_oop();
+  var applyDelta = require_apply_delta().applyDelta;
+  var EventEmitter = require_event_emitter().EventEmitter;
+  var Range = require_range().Range;
+  var MinDocument = class {
+    constructor(textOrLines) {
+      this.$autoNewLine = "";
+      this.$newLineMode = "auto";
+      this.$lines = [""];
+      if (textOrLines.length === 0) {
+        this.$lines = [""];
+      } else if (Array.isArray(textOrLines)) {
+        this.insertMergedLines({ row: 0, column: 0 }, textOrLines);
+      } else {
+        this.insert({ row: 0, column: 0 }, textOrLines);
+      }
+    }
+    setValue(text) {
+      var len = this.getLength() - 1;
+      this.remove(new Range(0, 0, len, this.getLine(len).length));
+      this.insert({ row: 0, column: 0 }, text || "");
+    }
+    getValue() {
+      return this.getAllLines().join(this.getNewLineCharacter());
+    }
+    $detectNewLine(text) {
+      var match = text.match(/^.*?(\r\n|\r|\n)/m);
+      this.$autoNewLine = match ? match[1] : "\n";
+      this._signal("changeNewLineMode");
+    }
+    getNewLineCharacter() {
+      switch (this.$newLineMode) {
+        case "windows":
+          return "\r\n";
+        case "unix":
+          return "\n";
+        default:
+          return this.$autoNewLine || "\n";
+      }
+    }
+    setNewLineMode(newLineMode) {
+      if (this.$newLineMode === newLineMode)
+        return;
+      this.$newLineMode = newLineMode;
+      this._signal("changeNewLineMode");
+    }
+    getNewLineMode() {
+      return this.$newLineMode;
+    }
+    isNewLine(text) {
+      return text == "\r\n" || text == "\r" || text == "\n";
+    }
+    getLine(row) {
+      return this.$lines[row] || "";
+    }
+    getLines(firstRow, lastRow) {
+      return this.$lines.slice(firstRow, lastRow + 1);
+    }
+    getAllLines() {
+      return this.getLines(0, this.getLength());
+    }
+    getLength() {
+      return this.$lines.length;
+    }
+    getTextRange(range) {
+      return this.getLinesForRange(range).join(this.getNewLineCharacter());
+    }
+    getLinesForRange(range) {
+      var lines;
+      if (range.start.row === range.end.row) {
+        lines = [this.getLine(range.start.row).substring(range.start.column, range.end.column)];
+      } else {
+        lines = this.getLines(range.start.row, range.end.row);
+        lines[0] = (lines[0] || "").substring(range.start.column);
+        var l = lines.length - 1;
+        if (range.end.row - range.start.row == l)
+          lines[l] = lines[l].substring(0, range.end.column);
+      }
+      return lines;
+    }
+    insert(position, text) {
+      if (this.getLength() <= 1)
+        this.$detectNewLine(text);
+      return this.insertMergedLines(position, this.$split(text));
+    }
+    insertInLine(position, text) {
+      var start = this.clippedPos(position.row, position.column);
+      var end = this.pos(position.row, position.column + text.length);
+      this.applyDelta({
+        start,
+        end,
+        action: "insert",
+        lines: [text]
+      }, true);
+      return this.clonePos(end);
+    }
+    clippedPos(row, column) {
+      var length = this.getLength();
+      if (row === void 0) {
+        row = length;
+      } else if (row < 0) {
+        row = 0;
+      } else if (row >= length) {
+        row = length - 1;
+        column = void 0;
+      }
+      var line = this.getLine(row);
+      if (column == void 0)
+        column = line.length;
+      column = Math.min(Math.max(column, 0), line.length);
+      return { row, column };
+    }
+    clonePos(pos) {
+      return { row: pos.row, column: pos.column };
+    }
+    pos(row, column) {
+      return { row, column };
+    }
+    $clipPosition(position) {
+      var length = this.getLength();
+      if (position.row >= length) {
+        position.row = Math.max(0, length - 1);
+        position.column = this.getLine(length - 1).length;
+      } else {
+        position.row = Math.max(0, position.row);
+        position.column = Math.min(Math.max(position.column, 0), this.getLine(position.row).length);
+      }
+      return position;
+    }
+    insertFullLines(row, lines) {
+      row = Math.min(Math.max(row, 0), this.getLength());
+      var column = 0;
+      if (row < this.getLength()) {
+        lines = lines.concat([""]);
+        column = 0;
+      } else {
+        lines = [""].concat(lines);
+        row--;
+        column = this.$lines[row].length;
+      }
+      this.insertMergedLines({ row, column }, lines);
+    }
+    insertMergedLines(position, lines) {
+      var start = this.clippedPos(position.row, position.column);
+      var end = {
+        row: start.row + lines.length - 1,
+        column: (lines.length == 1 ? start.column : 0) + lines[lines.length - 1].length
+      };
+      this.applyDelta({
+        start,
+        end,
+        action: "insert",
+        lines
+      });
+      return this.clonePos(end);
+    }
+    remove(range) {
+      var start = this.clippedPos(range.start.row, range.start.column);
+      var end = this.clippedPos(range.end.row, range.end.column);
+      this.applyDelta({
+        start,
+        end,
+        action: "remove",
+        lines: this.getLinesForRange({ start, end })
+      });
+      return this.clonePos(start);
+    }
+    removeInLine(row, startColumn, endColumn) {
+      var start = this.clippedPos(row, startColumn);
+      var end = this.clippedPos(row, endColumn);
+      this.applyDelta({
+        start,
+        end,
+        action: "remove",
+        lines: this.getLinesForRange({ start, end })
+      }, true);
+      return this.clonePos(start);
+    }
+    removeFullLines(firstRow, lastRow) {
+      firstRow = Math.min(Math.max(0, firstRow), this.getLength() - 1);
+      lastRow = Math.min(Math.max(0, lastRow), this.getLength() - 1);
+      var deleteFirstNewLine = lastRow == this.getLength() - 1 && firstRow > 0;
+      var deleteLastNewLine = lastRow < this.getLength() - 1;
+      var startRow = deleteFirstNewLine ? firstRow - 1 : firstRow;
+      var startCol = deleteFirstNewLine ? this.getLine(startRow).length : 0;
+      var endRow = deleteLastNewLine ? lastRow + 1 : lastRow;
+      var endCol = deleteLastNewLine ? 0 : this.getLine(endRow).length;
+      var range = new Range(startRow, startCol, endRow, endCol);
+      var deletedLines = this.$lines.slice(firstRow, lastRow + 1);
+      this.applyDelta({
+        start: range.start,
+        end: range.end,
+        action: "remove",
+        lines: this.getLinesForRange(range)
+      });
+      return deletedLines;
+    }
+    removeNewLine(row) {
+      if (row < this.getLength() - 1 && row >= 0) {
+        this.applyDelta({
+          start: this.pos(row, this.getLine(row).length),
+          end: this.pos(row + 1, 0),
+          action: "remove",
+          lines: ["", ""]
+        });
+      }
+    }
+    replace(range, text) {
+      if (!(range instanceof Range))
+        range = Range.fromPoints(range.start, range.end);
+      if (text.length === 0 && range.isEmpty())
+        return range.start;
+      if (text == this.getTextRange(range))
+        return range.end;
+      this.remove(range);
+      var end;
+      if (text) {
+        end = this.insert(range.start, text);
+      } else {
+        end = range.start;
+      }
+      return end;
+    }
+    applyDeltas(deltas) {
+      for (var i = 0; i < deltas.length; i++) {
+        this.applyDelta(deltas[i]);
+      }
+    }
+    revertDeltas(deltas) {
+      for (var i = deltas.length - 1; i >= 0; i--) {
+        this.revertDelta(deltas[i]);
+      }
+    }
+    /**
+     * Applies `delta` to the document.
+     * @param {Delta} delta A delta object (can include "insert" and "remove" actions)
+     * @param {boolean} [doNotValidate]
+     **/
+    applyDelta(delta, doNotValidate) {
+      var isInsert = delta.action == "insert";
+      if (isInsert ? delta.lines.length <= 1 && !delta.lines[0] : !Range.comparePoints(delta.start, delta.end)) {
+        return;
+      }
+      if (isInsert && delta.lines.length > 2e4) {
+        this.$splitAndapplyLargeDelta(delta, 2e4);
+      } else {
+        applyDelta(this.$lines, delta, doNotValidate);
+        this._signal("change", delta);
+      }
+    }
+    /**
+     * @param {Delta} delta
+     */
+    $safeApplyDelta(delta) {
+      var docLength = this.$lines.length;
+      if (delta.action == "remove" && delta.start.row < docLength && delta.end.row < docLength || delta.action == "insert" && delta.start.row <= docLength) {
+        this.applyDelta(delta);
+      }
+    }
+    $splitAndapplyLargeDelta(delta, MAX) {
+      var lines = delta.lines;
+      var l = lines.length - MAX + 1;
+      var row = delta.start.row;
+      var column = delta.start.column;
+      for (var from = 0, to = 0; from < l; from = to) {
+        to += MAX - 1;
+        var chunk = lines.slice(from, to);
+        chunk.push("");
+        this.applyDelta({
+          start: this.pos(row + from, column),
+          end: this.pos(row + to, column = 0),
+          action: delta.action,
+          lines: chunk
+        }, true);
+      }
+      delta.lines = lines.slice(from);
+      delta.start.row = row + from;
+      delta.start.column = column;
+      this.applyDelta(delta, true);
+    }
+    revertDelta(delta) {
+      this.$safeApplyDelta({
+        start: this.clonePos(delta.start),
+        end: this.clonePos(delta.end),
+        action: delta.action == "insert" ? "remove" : "insert",
+        lines: delta.lines.slice()
+      });
+    }
+    indexToPosition(index, startRow) {
+      var lines = this.$lines || this.getAllLines();
+      var newlineLength = this.getNewLineCharacter().length;
+      for (var i = startRow || 0, l = lines.length; i < l; i++) {
+        index -= lines[i].length + newlineLength;
+        if (index < 0)
+          return { row: i, column: index + lines[i].length + newlineLength };
+      }
+      return { row: l - 1, column: index + lines[l - 1].length + newlineLength };
+    }
+    positionToIndex(pos, startRow) {
+      var lines = this.$lines || this.getAllLines();
+      var newlineLength = this.getNewLineCharacter().length;
+      var index = 0;
+      var row = Math.min(pos.row, lines.length);
+      for (var i = startRow || 0; i < row; ++i)
+        index += lines[i].length + newlineLength;
+      return index + pos.column;
+    }
+    $split(text) {
+      return text.split(/\r\n|\r|\n/);
+    }
+  };
+  oop.implement(MinDocument.prototype, EventEmitter);
+
+  // src/mirror.ts
+  var Mirror = class {
+    constructor(sender) {
+      this.$timeout = 500;
+      this.sender = sender;
+      var doc = this.doc = new MinDocument("");
+      var deferredUpdate = this.deferredUpdate = lang.delayedCall(
+        this.onUpdate.bind(this)
+      );
+      var _self = this;
+      sender.on("change", function(e) {
+        var data = e.data;
+        if (data[0].start) {
+          doc.applyDeltas(data);
+        } else {
+          for (var i = 0; i < data.length; i += 2) {
+            var d, err;
+            if (Array.isArray(data[i + 1])) {
+              d = { action: "insert", start: data[i], lines: data[i + 1] };
+            } else {
+              d = { action: "remove", start: data[i], end: data[i + 1] };
+            }
+            if ((d.action == "insert" ? d.start : d.end).row >= doc["$lines"].length) {
+              err = new Error("Invalid delta");
+              err.data = {
+                path: _self.$path,
+                linesLength: doc["$lines"].length,
+                start: d.start,
+                end: d.end
+              };
+              throw err;
+            }
+            doc.applyDelta(d, true);
+          }
+        }
+        if (_self.$timeout) return deferredUpdate.schedule(_self.$timeout);
+        _self.onUpdate();
+      });
+    }
+    setTimeout(timeout) {
+      this.$timeout = timeout;
+    }
+    setValue(value) {
+      this.doc.setValue(value);
+      this.deferredUpdate.schedule(this.$timeout);
+    }
+    getValue(callbackId) {
+      this.sender.callback(this.doc.getValue(), callbackId);
+    }
+    isPending() {
+      return this.deferredUpdate.isPending();
+    }
+  };
+
+  // src/workers/html-worker.ts
+  var import_htmlhint = __toESM(require_core());
+  var HtmlWorker = class extends Mirror {
+    constructor(sender) {
+      super(sender);
+      this.defaultValidationOptions = {
+        "attr-no-duplication": true,
+        "body-no-duplicates": true,
+        "head-body-descendents-html": true,
+        "head-no-duplicates": true,
+        "head-valid-children": true,
+        "html-no-duplicates": true,
+        "html-root-node": true,
+        "html-valid-children": true,
+        "html-valid-children-order": true,
+        "img-src-required": true,
+        "invalid-attribute-char": true,
+        "nested-paragraphs": true,
+        "spec-char-escape": true,
+        "src-not-empty": true,
+        "tag-pair": true
+      };
+      this.setTimeout(500);
+      this.parser = import_htmlhint.HTMLHint;
+    }
+    setOptions(options) {
+      if (options && options.context) {
+        delete options.context;
+      }
+      this.validationOptions = options.validationOptions;
+    }
+    onUpdate() {
+      var _a;
+      var value = this.doc.getValue();
+      var errors = [];
+      try {
+        let options = (_a = this.validationOptions) != null ? _a : this.defaultValidationOptions;
+        errors = this.parser.verify(value, options).map((el) => {
+          return {
+            row: el.line - 1,
+            column: el.col - 1,
+            text: el.message,
+            type: el.type === "error" ? "error" : el.type === "warning" ? "warning" : "info"
+          };
+        });
+      } catch (e) {
+        console.error(e);
+      }
+      this.sender.emit("error", errors);
+    }
+  };
+  return __toCommonJS(html_worker_exports);
+})();
+aceLegacyWorkerModule = aceLegacyWorkerModule.default || aceLegacyWorkerModule;
+
+exports.Worker = aceLegacyWorkerModule.HtmlWorker;
+});

@@ -16,7 +16,7 @@ function show_feedbacks (header_elem, expand_str, collapse_str, expand_img, coll
 }
 
 function select_choice (elem) {
-    $(elem).closest("form").submit()
+    $(elem).closest("form").trigger("submit")
 }
 
 function select_stars (star_elem, star_num) {
@@ -64,7 +64,7 @@ function add_feedback_form_callbacks () {
     feedback_forms.each(function () {
         const form = $(this)
 
-        form.submit(function (event) {
+        form.on("submit", function (event) {
             event.preventDefault()
 
             const form_parent = form.parent()

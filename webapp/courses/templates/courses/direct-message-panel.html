@@ -8,6 +8,6 @@
 </div>
 
 <script>
-    $("div.messaging-panel form").submit(submit_message);
-    $("div.messaging-panel form select").change(load_saved_fields);
+    $("div.messaging-panel form").on("submit", submit_message);
+    $("div.messaging-panel form select").on("change", load_saved_fields);
 </script>

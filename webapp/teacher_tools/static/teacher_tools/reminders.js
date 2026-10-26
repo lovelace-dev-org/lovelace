@@ -115,5 +115,5 @@ function process_progress (data) {
 }
 
 $(document).ready(function () {
-    $("#reminder-form").submit(submit_reminders)
+    $("#reminder-form").on("submit", submit_reminders)
 })

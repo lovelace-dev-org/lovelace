@@ -24,7 +24,7 @@ const exam = {
                 else {
                     button.after(form);
                 }
-                form.find("input[type!=hidden]").first().focus()
+                form.find("input[type!=hidden]").first().trigger("focus")
                 button.attr("onclick", "exam.close_form(event, this)")
             },
         })
@@ -178,10 +178,10 @@ const exam = {
 }
 
 $(document).ready(function () {
-    $(".popup").click(function () {
+    $(".popup").on("click", function () {
         $(this).css({ opacity: "0", "pointer-events": "none" })
     })
-    $(".popup > div").click(function (event) {
+    $(".popup > div").on("click", function (event) {
         event.stopPropagation()
     })
 })

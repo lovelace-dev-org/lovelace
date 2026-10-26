@@ -76,7 +76,7 @@ def get_answer_actions(context, content, answer):
     parent = context["parent"]
     link = context["embed_link"]
 
-    if not link.manually_evaluated:
+    if not link.manually_evaluated or not answer.evaluation:
         return []
 
     buttons = []

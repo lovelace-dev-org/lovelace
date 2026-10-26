@@ -16,7 +16,7 @@ const cal = {
                 form.submit(cal.submit_form)
                 button.parent().after(form)
                 button.attr("onclick", "cal.close_form(event, this);")
-                form.find("input[type!=hidden]").first().focus()
+                form.find("input[type!=hidden]").first().trigger("focus")
             }
         })
     },

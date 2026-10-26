@@ -52,5 +52,5 @@ function process_moss_progress (data) {
 }
 
 $(document).ready(function () {
-    $("#plagiarism-form").submit(request_moss)
+    $("#plagiarism-form").on("submit", request_moss)
 })

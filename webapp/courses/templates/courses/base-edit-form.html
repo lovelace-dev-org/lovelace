@@ -110,6 +110,6 @@
 
 {% if submit_override %}
   <script>
-      $("#{{ html_id }}").submit({{ submit_override }})
+      $("#{{ html_id }}").on("submit", {{ submit_override }})
   </script>
 {% endif %}

@@ -38,7 +38,7 @@ var AceWidget = class {
         this.editor = editor
         this.preview = preview
         this.button = $("button#" + button_id)
-        this.button.click((button) => this.connect_ws(button))
+        this.button.on("click", (button) => this.connect_ws(button))
         this.running = false
     }
 

@@ -161,7 +161,7 @@ function exercise_success (data, result_div, error_div, form_parent) {
         form_parent.parent().find("form.exercise-form :input").prop("disabled", true)
         const interaction_button = form_parent.parent().find("button.rt-interaction")
         interaction_button.prop("disabled", false)
-        interaction_button.focus()
+        interaction_button.trigger("focus")
         if (data.next_instance === null && data.evaluation === false) {
             interaction_button.html(interaction_button.attr("data-start-over-text"))
         } else if (data.next_instance === null) {
@@ -233,7 +233,7 @@ function add_exercise_form_callbacks () {
     exercise_forms.each(function () {
         const form = $(this)
 
-        form.submit(function (event) {
+        form.on("submit", function (event) {
             event.preventDefault()
 
             const form_parent = form.parent()
@@ -252,8 +252,6 @@ function add_exercise_form_callbacks () {
                 const extra_cb = form.attr("data-extra-callback")
                 data.append(extra_key, eval(extra_cb))
             }
-
-            console.log(data)
 
             // TODO: Use xhr and progressevent to measure upload progress
 
@@ -308,7 +306,7 @@ function start_repeated_template_session (e) {
             }
         },
         error: function (xhr, status, type) {
-            console.log(status)
+            // console.log(status)
         }
     })
 
@@ -320,7 +318,6 @@ function start_repeated_template_session (e) {
 }
 
 function credit_eval_group (eval_group) {
-    console.log(eval_group)
     $("div.task-meta[data-eval-group='" + eval_group + "'] img").each(function () {
         if (!$(this).hasClass("correct")) {
             $(this).attr({

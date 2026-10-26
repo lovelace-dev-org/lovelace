@@ -47,11 +47,13 @@ declare module '@xterm/xterm' {
 
     /**
      * When enabled the cursor will be set to the beginning of the next line
-     * with every new line. This is equivalent to sending '\r\n' for each '\n'.
-     * Normally the termios settings of the underlying PTY deals with the
-     * translation of '\n' to '\r\n' and this setting should not be used. If you
+     * with every new line. This is equivalent to sending `\r\n` for each `\n`.
+     * Normally the settings of the underlying PTY (`termios`) deal with the
+     * translation of `\n` to `\r\n` and this setting should not be used. If you
      * deal with data from a non-PTY related source, this settings might be
      * useful.
+     *
+     * @see https://pubs.opengroup.org/onlinepubs/007904975/basedefs/termios.h.html
      */
     convertEol?: boolean;
 
@@ -106,12 +108,7 @@ declare module '@xterm/xterm' {
     drawBoldTextInBrightColors?: boolean;
 
     /**
-     * The modifier key hold to multiply scroll speed.
-     */
-    fastScrollModifier?: 'none' | 'alt' | 'ctrl' | 'shift';
-
-    /**
-     * The scroll speed multiplier used for fast scrolling.
+     * The scroll speed multiplier used for fast scrolling when `Alt` is held.
      */
     fastScrollSensitivity?: number;
 
@@ -210,6 +207,13 @@ declare module '@xterm/xterm' {
     minimumContrastRatio?: number;
 
     /**
+     * Whether to reflow the line containing the cursor when the terminal is
+     * resized. Defaults to false, because shells usually handle this
+     * themselves.
+     */
+    reflowCursorLine?: boolean;
+
+    /**
      * Whether to rescale glyphs horizontally that are a single cell wide but
      * have glyphs that would overlap following cell(s). This typically happens
      * for ambiguous width characters (eg. the roman numeral characters U+2160+)
@@ -247,6 +251,13 @@ declare module '@xterm/xterm' {
     scrollback?: number;
 
     /**
+     * If enabled the Erase in Display All (ED2) escape sequence will push
+     * erased text to scrollback, instead of clearing only the viewport portion.
+     * This emulates PuTTY's default clear screen behavior.
+     */
+    scrollOnEraseInDisplay?: boolean;
+
+    /**
      * Whether to scroll to the bottom whenever there is some user input. The
      * default is true.
      */
@@ -272,25 +283,6 @@ declare module '@xterm/xterm' {
      * The color theme of the terminal.
      */
     theme?: ITheme;
-
-    /**
-     * Whether "Windows mode" is enabled. Because Windows backends winpty and
-     * conpty operate by doing line wrapping on their side, xterm.js does not
-     * have access to wrapped lines. When Windows mode is enabled the following
-     * changes will be in effect:
-     *
-     * - Reflow is disabled.
-     * - Lines are assumed to be wrapped if the last character of the line is
-     *   not whitespace.
-     *
-     * When using conpty on Windows 11 version >= 21376, it is recommended to
-     * disable this because native text wrapping sequences are output correctly
-     * thanks to https://github.com/microsoft/terminal/issues/405
-     *
-     * @deprecated Use {@link windowsPty}. This value will be ignored if
-     * windowsPty is set.
-     */
-    windowsMode?: boolean;
 
     /**
      * Compatibility information when the pty is known to be hosted on Windows.
@@ -323,10 +315,10 @@ declare module '@xterm/xterm' {
     windowOptions?: IWindowOptions;
 
     /**
-     * The width, in pixels, of the canvas for the overview ruler. The overview
-     * ruler will be hidden when not set.
+     * Controls the visibility and style of the overview ruler which visualizes
+     * decorations underneath the scroll bar.
      */
-    overviewRulerWidth?: number;
+    overviewRuler?: IOverviewRulerOptions;
   }
 
   /**
@@ -366,6 +358,27 @@ declare module '@xterm/xterm' {
      * be transparent)
      */
     selectionInactiveBackground?: string;
+    /**
+     * The scrollbar slider background color. Defaults to
+     * {@link ITerminalOptions.foreground foreground} with 20% opacity.
+     */
+    scrollbarSliderBackground?: string;
+    /**
+     * The scrollbar slider background color when hovered. Defaults to
+     * {@link ITerminalOptions.foreground foreground} with 40% opacity.
+     */
+    scrollbarSliderHoverBackground?: string;
+    /**
+     * The scrollbar slider background color when clicked. Defaults to
+     * {@link ITerminalOptions.foreground foreground} with 50% opacity.
+     */
+    scrollbarSliderActiveBackground?: string;
+    /**
+     * The border color of the overview ruler. This visually separates the
+     * terminal from the scroll bar when {@link IOverviewRulerOptions.width} is
+     * set. When this is not set it defaults to black (`#000000`).
+     */
+    overviewRulerBorder?: string;
     /** ANSI black (eg. `\x1b[30m`) */
     black?: string;
     /** ANSI red (eg. `\x1b[31m`) */
@@ -586,16 +599,13 @@ declare module '@xterm/xterm' {
      * What layer to render the decoration at when {@link backgroundColor} or
      * {@link foregroundColor} are used. `'bottom'` will render under the
      * selection, `'top`' will render above the selection\*.
-     *
-     * *\* The selection will render on top regardless of layer on the canvas
-     * renderer due to how it renders selection separately.*
      */
     readonly layer?: 'bottom' | 'top';
 
     /**
      * When defined, renders the decoration in the overview ruler to the right
-     * of the terminal. {@link ITerminalOptions.overviewRulerWidth} must be set
-     * in order to see the overview ruler.
+     * of the terminal. {@link IOverviewRulerOptions.width} must be set in order
+     * to see the overview ruler.
      * @param color The color of the decoration.
      * @param position The position of the decoration.
      */
@@ -616,6 +626,28 @@ declare module '@xterm/xterm' {
      * being printed to the terminal when `screenReaderMode` is enabled.
      */
     tooMuchOutput: string;
+  }
+
+  export interface IOverviewRulerOptions {
+    /**
+     * When defined, renders decorations in the overview ruler to the right of
+     * the terminal. This must be set in order to see the overview ruler.
+     * @param color The color of the decoration.
+     * @param position The position of the decoration.
+     */
+    width?: number;
+
+    /**
+     * Whether to show the top border of the overview ruler, which uses the
+     * {@link ITheme.overviewRulerBorder} color.
+     */
+    showTopBorder?: boolean;
+
+    /**
+     * Whether to show the bottom border of the overview ruler, which uses the
+     * {@link ITheme.overviewRulerBorder} color.
+     */
+    showBottomBorder?: boolean;
   }
 
   /**
@@ -1090,7 +1122,7 @@ declare module '@xterm/xterm' {
      * render together, since they aren't drawn as optimally as individual
      * characters.
      *
-     * NOTE: character joiners are only used by the canvas renderer.
+     * NOTE: character joiners are only used by the webgl renderer.
      *
      * @param handler The function that determines character joins. It is called
      * with a string of text that is eligible for joining and returns an array
@@ -1102,7 +1134,7 @@ declare module '@xterm/xterm' {
 
     /**
      * (EXPERIMENTAL) Deregisters the character joiner if one was registered.
-     * NOTE: character joiners are only used by the canvas renderer.
+     * NOTE: character joiners are only used by the webgl renderer.
      * @param joinerId The character joiner's ID (returned after register)
      */
     deregisterCharacterJoiner(joinerId: number): void;
@@ -1207,21 +1239,31 @@ declare module '@xterm/xterm' {
 
     /**
      * Write data to the terminal.
+     *
+     * Note that the change will not be reflected in the {@link buffer}
+     * immediately as the data is processed asynchronously. Provide a
+     * {@link callback} to know when the data was processed.
      * @param data The data to write to the terminal. This can either be raw
      * bytes given as Uint8Array from the pty or a string. Raw bytes will always
      * be treated as UTF-8 encoded, string data as UTF-16.
      * @param callback Optional callback that fires when the data was processed
-     * by the parser.
+     * by the parser. This callback must be provided and awaited in order for
+     * {@link buffer} to reflect the change in the write.
      */
     write(data: string | Uint8Array, callback?: () => void): void;
 
     /**
      * Writes data to the terminal, followed by a break line character (\n).
+     *
+     * Note that the change will not be reflected in the {@link buffer}
+     * immediately as the data is processed asynchronously. Provide a
+     * {@link callback} to know when the data was processed.
      * @param data The data to write to the terminal. This can either be raw
      * bytes given as Uint8Array from the pty or a string. Raw bytes will always
      * be treated as UTF-8 encoded, string data as UTF-16.
      * @param callback Optional callback that fires when the data was processed
-     * by the parser.
+     * by the parser. This callback must be provided and awaited in order for
+     * {@link buffer} to reflect the change in the write.
      */
     writeln(data: string | Uint8Array, callback?: () => void): void;
 
@@ -1241,7 +1283,7 @@ declare module '@xterm/xterm' {
     refresh(start: number, end: number): void;
 
     /**
-     * Clears the texture atlas of the canvas renderer if it's active. Doing
+     * Clears the texture atlas of the webgl renderer if it's active. Doing
      * this will force a redraw of all glyphs which can workaround issues
      * causing the texture to become corrupt, for example Chromium/Nvidia has an
      * issue where the texture gets messed up when resuming the OS from sleep.
@@ -1900,6 +1942,13 @@ declare module '@xterm/xterm' {
      * Send FocusIn/FocusOut events: `CSI ? 1 0 0 4 h`
      */
     readonly sendFocusMode: boolean;
+    /**
+     * Synchronized Output Mode: `CSI ? 2 0 2 6 h`
+     *
+     * When enabled, output is buffered and only rendered when the mode is
+     * disabled, allowing for atomic screen updates without tearing.
+     */
+    readonly synchronizedOutputMode: boolean;
     /**
      * Auto-Wrap Mode (DECAWM): `CSI ? 7 h`
      */

@@ -137,7 +137,7 @@
   {% endif %}
 
   <script>
-    $(".invite-form").submit(grp.submit_form);
+    $(".invite-form").on("submit", grp.submit_form);
   </script>
 
 {% endblock %}

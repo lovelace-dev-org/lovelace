@@ -49,7 +49,7 @@ function get_routine_question (e, url) {
 
     const input_element = exercise.find("form :input")
     input_element.prop("disabled", false)
-    input_element[1].focus()
+    input_element[1].trigger("focus")
     $(input_element[1]).val("")
     button.prop("disabled", true)
 }

@@ -120,8 +120,8 @@
     </form>
     
     <script>
-        $(".assessment-form").submit(ase.submit_assessment);
-        $(".points-input").change(ase.update_section_score);
+        $(".assessment-form").on("submit", ase.submit_assessment);
+        $(".points-input").on("change", ase.update_section_score);
     </script>
     
 {% endblock %}
