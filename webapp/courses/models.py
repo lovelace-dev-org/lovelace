@@ -764,7 +764,7 @@ class CourseInstance(models.Model):
             return self.notes.split(",")
         return []
 
-    def exam_active(self, user):
+    def exam_active(self, user=None):
         try:
             window = self.courseinstanceexamwindow
         except CourseInstanceExamWindow.DoesNotExist:

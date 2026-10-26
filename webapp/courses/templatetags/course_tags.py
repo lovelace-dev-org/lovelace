@@ -1,6 +1,7 @@
 import itertools
 import time
 from datetime import datetime
+from django.conf import settings
 from django.urls import reverse
 from django.utils.html import mark_safe
 from django import template
@@ -39,6 +40,9 @@ def content_page_addons(context, content_data, content_level):
         content_data.get_content_additions(content_data, context, content_level)
     ))
 
+@register.simple_tag
+def get_exam_mode():
+    return settings.EXAM_MODE
 
 # {% base_static_extra %}
 @register.inclusion_tag("courses/static-files-include.html", takes_context=True)

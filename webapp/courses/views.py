@@ -99,7 +99,14 @@ logger = logging.getLogger(__name__)
 @system_messages
 def index(request):
     # This cannot be ordered on DB level because of translations
-    course_list = list(Course.objects.all())
+    if settings.EXAM_MODE:
+        now = datetime.datetime.now()
+        course_list = list(Course.objects.filter(
+           courseinstance__courseinstanceexamwindow__start_time__lte=now,
+           courseinstance__courseinstanceexamwindow__end_time__gte=now,
+        ))
+    else:
+        course_list = list(Course.objects.all())
 
     def name_key(course):
         return course.name.lower()
