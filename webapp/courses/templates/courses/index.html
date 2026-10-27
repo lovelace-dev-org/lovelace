@@ -16,8 +16,13 @@
 {% block toc %}{% endblock %}
 
 {% block page-content %}
+{% get_exam_mode as EXAM_MODE %}
 {% if course_list %}
-  <h1>{% trans 'Available courses' %}</h1>
+  {% if EXAM_MODE %}
+    <h1>{% trans 'Available exams' %}</h1>
+  {% else %}
+    <h1>{% trans 'Available courses' %}</h1>
+  {% endif %}
   <ul class="index-list">
     {% for course in course_list %}
       {% if request.user.is_staff or not course.staff_course %}
@@ -36,20 +41,22 @@
               {% for instance in course.get_instances %}
                 {% with request.user|enrolled:instance as enroll_status %}
                   {% if instance.is_active or enroll_status == "ACCEPTED" or request.user.is_staff %}
-                    <div class="
-                        index-course-instance
-                        {% if not instance.is_active and enroll_status != 'ACCEPTED' %}
-                          inactive collapsed
-                        {% endif %}
-                        ">
-                      <a href="{% url 'courses:course' course instance %}">{{ instance.name }}</a>
-                      <div>
-                        {% for tag in instance.split_notes %}
-                          <span class="index-instance-tag">{{ tag }}</span>
-                        {% endfor %}
+                    {% if not EXAM_MODE or instance.exam_active %}
+                      <div class="
+                          index-course-instance
+                          {% if not instance.is_active and enroll_status != 'ACCEPTED' %}
+                            inactive collapsed
+                          {% endif %}
+                          ">
+                        <a href="{% url 'courses:course' course instance %}">{{ instance.name }}</a>
+                        <div>
+                          {% for tag in instance.split_notes %}
+                            <span class="index-instance-tag">{{ tag }}</span>
+                          {% endfor %}
+                        </div>
+                        {% enroll_widget course instance enroll_status %}
                       </div>
-                      {% enroll_widget course instance enroll_status %}
-                    </div>
+                    {% endif %}
                   {% endif %}
                 {% endwith %}
               {% endfor %}

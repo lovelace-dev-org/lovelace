@@ -40,9 +40,11 @@ def content_page_addons(context, content_data, content_level):
         content_data.get_content_additions(content_data, context, content_level)
     ))
 
-@register.simple_tag
 def get_debug_mode():
     return settings.DEBUG
+
+def get_exam_mode():
+    return settings.EXAM_MODE
 
 # {% base_static_extra %}
 @register.inclusion_tag("courses/static-files-include.html", takes_context=True)
