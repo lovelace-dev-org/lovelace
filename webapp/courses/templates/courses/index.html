@@ -92,6 +92,10 @@
     {% endfor %}
   </ul>
 {% else %}
-  <p>{% trans 'No courses available!' %}</p>
+  {% if EXAM_MODE %}
+    <p>{% trans 'No exams available!' %}</p>
+  {% else %}
+    <p>{% trans 'No courses available!' %}</p>
+  {% endif %}
 {% endif %}
 {% endblock %}

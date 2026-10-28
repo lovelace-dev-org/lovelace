@@ -100,12 +100,15 @@ logger = logging.getLogger(__name__)
 def index(request):
     # This cannot be ordered on DB level because of translations
     if settings.EXAM_MODE:
-        now = datetime.datetime.now()
-        course_list = list(Course.objects.filter(
-           courseinstance__courseinstanceexamwindow__start_time__lte=now,
-           courseinstance__courseinstanceexamwindow__end_time__gte=now,
-           courseinstance__courseenrollment__student=request.user,
-        ))
+        if request.user.is_authenticated:
+            now = datetime.datetime.now()
+            course_list = list(Course.objects.filter(
+            courseinstance__courseinstanceexamwindow__start_time__lte=now,
+            courseinstance__courseinstanceexamwindow__end_time__gte=now,
+            courseinstance__courseenrollment__student=request.user,
+            ))
+        else:
+            course_list = []
     else:
         course_list = list(Course.objects.all())
 
