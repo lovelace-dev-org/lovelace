@@ -350,6 +350,11 @@ class ExamTaskAttempt(models.Model):
         except ExamTaskChoice.DoesNotExist:
             return None
 
+        #TODO: change 4 hours to task settings field
+        if choice.opened:
+            if datetime.datetime.now() > choice.opened + datetime.timedelta(hours=4):
+                return None
+
         return choice
 
     def reset_tasks(self):

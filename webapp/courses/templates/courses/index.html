@@ -41,7 +41,7 @@
               {% for instance in course.get_instances %}
                 {% with request.user|enrolled:instance as enroll_status %}
                   {% if instance.is_active or enroll_status == "ACCEPTED" or request.user.is_staff %}
-                    {% if not EXAM_MODE or instance.exam_active %}
+                    {% if not EXAM_MODE or instance.exam_active and enroll_status == "ACCEPTED" %}
                       <div class="
                           index-course-instance
                           {% if not instance.is_active and enroll_status != 'ACCEPTED' %}
@@ -54,7 +54,9 @@
                             <span class="index-instance-tag">{{ tag }}</span>
                           {% endfor %}
                         </div>
-                        {% enroll_widget course instance enroll_status %}
+                        {% if not EXAM_MODE %}
+                          {% enroll_widget course instance enroll_status %}
+                        {% endif %}
                       </div>
                     {% endif %}
                   {% endif %}

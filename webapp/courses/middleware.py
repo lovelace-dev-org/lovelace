@@ -79,6 +79,8 @@ class ExamModeMiddleware:
         if instance := view_kwargs.get("instance"):
             if not instance.exam_active(request.user):
                 return HttpResponseForbidden(_("No active exam for this instance"))
+            if instance.user_enroll_status(request.user) != "ACCEPTED":
+                return HttpResponseForbidden(_("Only enrolled users can view content in exam mode"))
 
 
 
