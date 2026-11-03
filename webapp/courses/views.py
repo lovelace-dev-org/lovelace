@@ -423,6 +423,9 @@ def check_answer(request, course, instance, parent, content):
     files = request.FILES
 
     embed_link = EmbeddedLink.objects.get(embedded_page=content, instance=instance, parent=parent)
+    parent_cg = ContentGraph.objects.get(content=parent, instance=instance)
+    if parent_cg.visibility == "exam-only" and not settings.EXAM_MODE:
+        return JsonResponse({"result": _("Cannot answer this task outside exam mode")})
 
     if embed_link.revision is None:
         latest = Version.objects.get_for_object(content).latest("revision__date_created")
