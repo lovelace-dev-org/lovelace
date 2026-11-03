@@ -55,7 +55,7 @@ class ExamTaskAttemptForm(forms.ModelForm):
             parent=self._parent,
         )
         if self._instance:
-            other_attempts = other.attempts.exclude(id=self._instance.id)
+            other_attempts = other_attempts.exclude(id=self._instance.id)
 
         if other_attempts.filter(
             end__gte=cleaned_data["start"],
