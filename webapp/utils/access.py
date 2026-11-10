@@ -152,6 +152,10 @@ def ensure_staff(function):
     is not part of the staff.
     """
 
+    import inspect
+    print("DEPRECATION WARNING: Deprecated decorator 'ensure_staff'")
+    print("In {1} on line {2}".format(*inspect.stack()[1]))
+
     @wraps(function)
     def wrap(request, course, instance, *args, **kwargs):
         if get_staff_role(request.user, instance):
@@ -168,6 +172,10 @@ def ensure_responsible(function):
     if the user is not teh responsible teacher.
     """
 
+    import inspect
+    print("DEPRECATION WARNING: Deprecated decorator 'ensure_responsible'")
+    print("In {1} on line {2}".format(*inspect.stack()[1]))
+
     @wraps(function)
     def wrap(request, course, instance, *args, **kwargs):
         if get_staff_role(request.user, instance).permit_management:
@@ -183,6 +191,10 @@ def ensure_enrolled_or_staff(function):
     users only. Returns HttpResponseForbidden instead of calling the wrapped
     function if the user is not enrolled and not part of the staff.
     """
+
+    import inspect
+    print("DEPRECATION WARNING: Deprecated decorator 'ensure_enrolled_or_staff'")
+    print("In {1} on line {2}".format(*inspect.stack()[1]))
 
     @wraps(function)
     def wrap(request, course, instance, *args, **kwargs):
@@ -212,6 +224,10 @@ def ensure_owner_or_staff(function):
     returned instead of calling the wrapped function.
     """
 
+    import inspect
+    print("DEPRECATION WARNING: Deprecated decorator 'ensure_owner_or_staff'")
+    print("In {1} on line {2}".format(*inspect.stack()[1]))
+
     @wraps(function)
     def wrap(request, user, course, instance, *args, **kwargs):
         if request.user == user or get_staff_role(request.user, instance):
@@ -228,6 +244,10 @@ def ensure_responsible_or_supervisor(function):
     supervisor. Returns HttpResponseForbidden instead of calling the wrapped
     function if the user is neither of those.
     """
+
+    import inspect
+    print("DEPRECATION WARNING: Deprecated decorator 'ensure_responsible_or_supervisor'")
+    print("In {1} on line {2}".format(*inspect.stack()[1]))
 
     @wraps(function)
     def wrap(request, course, instance, group, *args, **kwargs):

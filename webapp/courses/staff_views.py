@@ -68,9 +68,7 @@ from courses.edit_forms import (
 from courses.widgets import AnswerWidgetRegistry
 from utils.access import (
     accessible_courses,
-    ensure_responsible_or_supervisor,
-    ensure_responsible,
-    ensure_staff,
+    ensure_permission,
     get_permissions,
 )
 from utils.archive import find_latest_version, squash_revisions
@@ -94,7 +92,7 @@ from lovelace import plugins as lovelace_plugins
 # |
 # v
 
-@ensure_staff
+@ensure_permission("permit_management")
 def instance_settings(request, course, instance):
     content_access = CourseContentAdmin.content_access_list(request, ContentPage, "LECTURE")
     available_content = content_access.defer("content").all()
@@ -151,7 +149,7 @@ def instance_settings(request, course, instance):
     }
     return HttpResponse(t.render(c, request))
 
-@ensure_staff
+@ensure_permission("permit_management")
 def freeze_instance(request, course, instance):
     if request.method == "POST":
         form = InstanceFreezeForm(
@@ -183,7 +181,7 @@ def freeze_instance(request, course, instance):
     return HttpResponse(t.render(c, request))
 
 
-@ensure_staff
+@ensure_permission("permit_management")
 def clone_instance(request, course, instance):
     if request.method == "POST":
         old_pk = instance.id
@@ -232,7 +230,7 @@ def clone_instance(request, course, instance):
     return HttpResponse(t.render(c, request))
 
 
-@ensure_responsible
+@ensure_permission("permit_grading")
 def edit_grading(request, course, instance):
     if request.method == "POST":
         form = InstanceGradingForm(
@@ -262,7 +260,7 @@ def edit_grading(request, course, instance):
     return HttpResponse(t.render(c, request))
 
 
-@ensure_responsible
+@ensure_permission("permit_grading")
 def edit_exam_window(request, course, instance):
 
     try:
@@ -282,7 +280,7 @@ def edit_exam_window(request, course, instance):
         post_save_cb=post_save,
     )
 
-@ensure_responsible
+@ensure_permission("permit_edit_material")
 def regen_instance_cache(request, course, instance):
     if request.method == "POST":
         form = CacheRegenForm(request.POST)
@@ -312,7 +310,7 @@ def regen_instance_cache(request, course, instance):
     return HttpResponse(form_t.render(form_c, request))
 
 
-@ensure_staff
+@ensure_permission("permit_edit_material")
 def termify(request, course, instance):
     form_kwargs = {
         "accessible_courses": accessible_courses(request.user).order_by("name"),
@@ -382,7 +380,7 @@ def termify(request, course, instance):
     return HttpResponse(form_t.render(form_c, request))
 
 
-@ensure_staff
+@ensure_permission("permit_management")
 def export_instance(request, course, instance):
     if request.method == "POST":
         form = InstanceExportForm(request.POST)
@@ -413,7 +411,7 @@ def export_instance(request, course, instance):
 
 
 
-@ensure_responsible
+@ensure_permission("permit_management")
 def import_instance(request, course, instance):
     if request.method == "POST":
         form = InstanceImportForm(request.POST, request.FILES)
@@ -454,7 +452,7 @@ def import_instance(request, course, instance):
 
 
 
-@ensure_staff
+@ensure_permission("permit_edit_instance")
 def create_content_node(request, course, instance):
     content_access = CourseContentAdmin.content_access_list(request, ContentPage, "LECTURE")
     available_content = content_access.defer("content").all()
@@ -543,7 +541,7 @@ def create_content_node(request, course, instance):
     return HttpResponse(t.render(c, request))
 
 
-@ensure_staff
+@ensure_permission("permit_edit_instance")
 def remove_content_node(request, course, instance, node_id):
     if request.method == "POST":
         try:
@@ -557,7 +555,7 @@ def remove_content_node(request, course, instance, node_id):
     return HttpResponseNotAllowed(["POST"])
 
 
-@ensure_staff
+@ensure_permission("permit_edit_instance")
 def node_settings(request, course, instance, node_id):
     content_access = CourseContentAdmin.content_access_list(request, ContentPage, "LECTURE")
     available_content = content_access.defer("content").all()
@@ -599,7 +597,7 @@ def node_settings(request, course, instance, node_id):
     return HttpResponse(t.render(c, request))
 
 
-@ensure_staff
+@ensure_permission("permit_edit_instance")
 def move_content_node(request, course, instance, target_id, placement):
     if not request.method == "POST":
         return HttpResponseNotAllowed(["POST"])
@@ -670,7 +668,7 @@ def move_content_node(request, course, instance, target_id, placement):
 
 
 
-@ensure_responsible
+@ensure_permission("permit_edit_content")
 def regen_page_cache(request, course, instance, content):
     if request.method == "POST":
         form = CacheRegenForm(request.POST)
@@ -702,7 +700,7 @@ def regen_page_cache(request, course, instance, content):
     return HttpResponse(form_t.render(form_c, request))
 
 
-@ensure_staff
+@ensure_permission("permit_edit_content")
 def edit_form(request, course, instance, content, action):
     context = {
         "course": course,
@@ -764,7 +762,7 @@ def edit_form(request, course, instance, content, action):
     return HttpResponse(form_t.render(form_c, request))
 
 
-@ensure_staff
+@ensure_permission("permit_edit_content")
 def add_form(request, course, instance, content):
     course_access = accessible_courses(request.user)
 
@@ -904,7 +902,7 @@ def user_autocomplete(request):
 # |
 # v
 
-@ensure_staff
+@ensure_permission("permit_edit_content")
 def configure_embed_link(request, course, instance, parent, content):
     embed_link = EmbeddedLink.objects.get(embedded_page=content, instance=instance, parent=parent)
 
@@ -947,7 +945,7 @@ def configure_embed_link(request, course, instance, parent, content):
     }
     return HttpResponse(form_t.render(form_c, request))
 
-@ensure_staff
+@ensure_permission("permit_edit_content")
 def change_answer_widget(request, course, instance, content):
     if request.method == "POST":
         form = config_forms.AnswerWidgetChangeForm(request.POST, instance=content)
@@ -977,7 +975,7 @@ def change_answer_widget(request, course, instance, content):
     }
     return HttpResponse(form_t.render(form_c, request))
 
-@ensure_staff
+@ensure_permission("permit_edit_content")
 def configure_answer_widget(request, course, instance, content):
     widget = content.get_answer_widget(course)
 
@@ -1003,7 +1001,7 @@ def configure_answer_widget(request, course, instance, content):
     return HttpResponse(form_t.render(form_c, request))
 
 
-@ensure_staff
+@ensure_permission("permit_edit_content")
 def add_exercise_choice(request, course, instance, content, after):
     choice_cls = content.get_answer_model()
     if choice_cls is None:
@@ -1046,7 +1044,7 @@ def _get_choice(content, choice_id):
     except choice_cls.DoesNotExist:
         raise ValueError(_("No choice found with the given ID"))
 
-@ensure_staff
+@ensure_permission("permit_edit_content")
 def delete_exercise_choice(request, course, instance, content, choice_id):
     try:
         choice = _get_choice(content, choice_id)
@@ -1074,7 +1072,7 @@ def delete_exercise_choice(request, course, instance, content, choice_id):
         }
     )
 
-@ensure_staff
+@ensure_permission("permit_edit_content")
 def move_exercise_choice(request, course, instance, content, choice_id, direction):
     try:
         choice = _get_choice(content, choice_id)
@@ -1112,7 +1110,7 @@ def move_exercise_choice(request, course, instance, content, choice_id, directio
     squash_revisions(content, 1)
     return JsonResponse({"status": "ok"})
 
-@ensure_staff
+@ensure_permission("permit_edit_content")
 def edit_exercise_choice(request, course, instance, content, choice_id):
     try:
         choice = _get_choice(content, choice_id)
@@ -1134,7 +1132,7 @@ def edit_exercise_choice(request, course, instance, content, choice_id):
         extra_response=extra,
     )
 
-@ensure_staff
+@ensure_permission("permit_edit_content")
 def generate_exercise_choices(request, course, instance, content):
     if content.get_choices(content):
         return JsonResponse({
@@ -1175,7 +1173,7 @@ def generate_exercise_choices(request, course, instance, content):
     }
     return HttpResponse(form_t.render(form_c, request))
 
-@ensure_staff
+@ensure_permission("permit_edit_content")
 def answer_settings_panel(request, course, instance, content):
     choice_cls = content.get_answer_model()
     if choice_cls is None:
@@ -1204,7 +1202,7 @@ def answer_settings_panel(request, course, instance, content):
 # v
 
 
-@ensure_staff
+@ensure_permission("permit_groups")
 def group_management(request, course, instance):
     if request.user == course.main_responsible or request.user.is_superuser:
         groups = StudentGroup.objects.filter(instance=instance).order_by("name")
@@ -1229,7 +1227,7 @@ def group_management(request, course, instance):
     return HttpResponse(t.render(c, request))
 
 
-@ensure_responsible
+@ensure_permission("permit_groups")
 def create_group(request, course, instance):
     staff_members = course.staff_group.user_set.get_queryset().order_by("last_name")
     if request.method == "POST":
@@ -1255,7 +1253,7 @@ def create_group(request, course, instance):
     return HttpResponse(t.render(c, request))
 
 
-@ensure_responsible
+@ensure_permission("permit_groups")
 def remove_group(request, course, instance, group):
     if group.instance == instance:
         group.delete()
@@ -1263,7 +1261,7 @@ def remove_group(request, course, instance, group):
     return HttpResponseForbidden()
 
 
-@ensure_responsible_or_supervisor
+@ensure_permission("permit_groups")
 def add_member(request, course, instance, group):
     enrolled_students = instance.enrolled_users.get_queryset()
     if request.method == "POST":
@@ -1294,7 +1292,7 @@ def add_member(request, course, instance, group):
     return HttpResponse(t.render(c, request))
 
 
-@ensure_responsible
+@ensure_permission("permit_groups")
 def set_supervisor(request, course, instance, group):
     if group.instance != instance:
         return HttpResponseForbidden()
@@ -1310,13 +1308,13 @@ def set_supervisor(request, course, instance, group):
     return JsonResponse({"status": "ok"})
 
 
-@ensure_responsible_or_supervisor
+@ensure_permission("permit_groups")
 def remove_member(request, course, instance, group, member):
     group.members.remove(member)
     return JsonResponse({"status": "ok"})
 
 
-@ensure_responsible_or_supervisor
+@ensure_permission("permit_groups")
 def rename_group(request, course, instance, group):
     name = request.POST.get("extra[name]")
     if name:
@@ -1334,7 +1332,7 @@ def rename_group(request, course, instance, group):
 # v
 
 
-@ensure_responsible
+@ensure_permission("permit_management")
 def staff_management(request, course, instance):
     permissions = CourseStaffPermission.objects.filter(instance=instance)
     t = loader.get_template("courses/staff-management.html")
@@ -1347,7 +1345,7 @@ def staff_management(request, course, instance):
     }
     return HttpResponse(t.render(c, request))
 
-@ensure_responsible
+@ensure_permission("permit_management")
 def add_staff(request, course, instance):
     def post_save(permission, form):
         permission.instance = instance
@@ -1362,7 +1360,7 @@ def add_staff(request, course, instance):
         post_save_cb=post_save,
     )
 
-@ensure_responsible
+@ensure_permission("permit_management")
 def remove_staff(request, course, instance, user):
     def delete_success(form):
         CourseStaffPermission.objects.filter(
@@ -1374,7 +1372,7 @@ def remove_staff(request, course, instance, user):
         request, delete_success,
     )
 
-@ensure_responsible
+@ensure_permission("permit_management")
 def edit_permission(request, course, instance, user):
     try:
         permission = CourseStaffPermission.objects.get(
@@ -1401,7 +1399,7 @@ def edit_permission(request, course, instance, user):
 # |
 # v
 
-
+# NOTE: this is going the way of dinosaurs
 def content_preview(request, field_name):
     if not request.user.is_staff and not request.user.is_superuser:
         return HttpResponseForbidden(_("Only staff members can access this view"))

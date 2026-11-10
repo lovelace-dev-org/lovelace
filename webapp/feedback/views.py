@@ -15,7 +15,7 @@ import feedback.models
 from feedback.models import ContentFeedbackQuestion
 from feedback.forms import ContentFeedbackConfigForm, FeedbackQuestionEditForm
 import courses.models
-from utils.access import ensure_staff
+from utils.access import ensure_staff, ensure_permission
 from utils.content import first_title_from_content
 from utils.management import process_modelform, process_confirm_form
 

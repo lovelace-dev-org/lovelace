@@ -34,6 +34,7 @@ from courses.views import system_messages
 from utils.access import (
     block_in_exam_mode,
     ensure_enrolled_or_staff,
+    ensure_enrolled_or_permission,
     get_staff_role,
 )
 from utils.users import get_group_members

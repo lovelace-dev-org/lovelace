@@ -54,6 +54,16 @@ class Migration(migrations.Migration):
             name='permit_submit_answer',
             field=models.BooleanField(default=False),
         ),
+        migrations.AddField(
+            model_name='coursestaffpermission',
+            name='permit_feedback',
+            field=models.BooleanField(default=False),
+        ),
+        migrations.AddField(
+            model_name='coursestaffpermission',
+            name='permit_groups',
+            field=models.BooleanField(default=False),
+        ),
         migrations.AlterField(
             model_name='coursestaffpermission',
             name='end_time',

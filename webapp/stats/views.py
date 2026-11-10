@@ -31,7 +31,7 @@ from courses.models import (
     UserRepeatedTemplateInstanceAnswer,
     UserTextfieldExerciseAnswer,
 )
-from utils.access import ensure_responsible
+from utils.access import ensure_responsible, ensure_permission
 
 import stats.tasks as stat_tasks
 from .models import TaskSummary
@@ -681,7 +681,7 @@ class ZeroUsersException(Exception):
 # v
 
 
-@ensure_responsible
+@ensure_permission("permit_management")
 def instance_console(request, course, instance):
     task_meta = cache.get(f"{instance.slug}_stat_meta")
     task_meta = task_meta and json.loads(task_meta)
@@ -709,7 +709,7 @@ def instance_console(request, course, instance):
     return HttpResponse(t.render(c, request))
 
 
-@ensure_responsible
+@ensure_permission("permit_management")
 def generate_instance_stats(request, course, instance):
     task_meta = cache.get(f"{instance.slug}_stat_meta")
     task_meta = task_meta and json.loads(task_meta)

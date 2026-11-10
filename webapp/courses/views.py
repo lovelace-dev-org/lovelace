@@ -637,7 +637,7 @@ def get_repeated_template_session(request, course, instance, content, revision):
     return JsonResponse(data)
 
 
-@ensure_enrolled_or_staff
+@ensure_enrolled_or_permission("permit_submit_answer")
 def check_progress(request, course, instance, parent, content, task_id):
     # Based on https://djangosnippets.org/snippets/2898/
     task = celery_app.AsyncResult(id=task_id)
@@ -664,7 +664,7 @@ def check_progress(request, course, instance, parent, content, task_id):
         data = {"state": task.state, "metadata": info, "redirect": progress_url}
     return JsonResponse(data)
 
-
+# TODO: this is not a view, why does it have an URL?
 def file_exercise_evaluation(request, course, instance, parent, content, task_id, task=None):
     if task is None:
         task = celery_app.AsyncResult(task_id)
@@ -763,7 +763,7 @@ def file_exercise_evaluation(request, course, instance, parent, content, task_id
 # v
 
 
-@ensure_owner_or_staff
+@ensure_owner_or_permission("permit_view_answers")
 def get_file_exercise_evaluation(request, user, course, instance, parent, exercise, answer):
     embed_link = EmbeddedLink.objects.get(embedded_page=exercise, instance=instance, parent=parent)
 
@@ -789,7 +789,7 @@ def get_file_exercise_evaluation(request, user, course, instance, parent, exerci
     return HttpResponse(t_view.render(data, request))
 
 
-@ensure_owner_or_staff
+@ensure_owner_or_permission("permit_view_answers")
 def show_answer_file_content(request, user, course, instance, answer, filename):
     try:
         files = FileUploadExerciseReturnFile.objects.filter(answer=answer, answer__user=user)
@@ -814,7 +814,7 @@ def show_answer_file_content(request, user, course, instance, answer, filename):
 # v
 
 
-@ensure_owner_or_staff
+@ensure_owner_or_permission("permit_view_answers")
 def download_answer_file(request, user, course, instance, answer, filename):
     try:
         files = FileUploadExerciseReturnFile.objects.filter(answer=answer, answer__user=user)

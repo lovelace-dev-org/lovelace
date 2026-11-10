@@ -827,6 +827,8 @@ class CourseStaffPermission(models.Model):
     permit_grading = models.BooleanField(default=False)
     permit_evaluate = models.BooleanField(default=False)
     permit_messages = models.BooleanField(default=False)
+    permit_groups = models.BooleanField(default=False)
+    permit_feedback = models.BooleanField(default=False)
 
     start_time = models.DateTimeField(verbose_name=_("Contract start time"))
     end_time = models.DateTimeField(verbose_name=_("Contract end time"), null=True, blank=True)
