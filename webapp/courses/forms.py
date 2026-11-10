@@ -727,7 +727,7 @@ class StaffPermissionForm(forms.ModelForm):
 
     class Meta:
         model = cm.CourseStaffPermission
-        fields = ["user", "role", "start_time", "end_time"]
+        exclude = ["instance"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

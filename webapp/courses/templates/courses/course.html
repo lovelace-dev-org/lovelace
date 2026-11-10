@@ -37,6 +37,7 @@
 {% if course_staff %}
   <div class="staff-panel staff-only collapsed">
     <div>
+      {% if course_staff.permit_management %}
         <button type="button"
                 class="staff-base-button settings-button"
                 title="{% trans 'Course instance settings' %}"
@@ -72,18 +73,6 @@
                 data-url="{% url 'courses:edit_exam_window' course instance %}">
         </button>
         <button type="button"
-                class="staff-base-button refresh-button"
-                title="{% trans 'Regenerate cache for this instance' %}"
-                onclick="toc.fetch_form(event, this);"
-                data-url="{% url 'courses:regen_instance_cache' course instance %}">
-        </button>
-        <button type="button"
-                class="staff-base-button termify-button"
-                title="{% trans 'Termify words in this instance' %}"
-                onclick="toc.fetch_form(event, this);"
-                data-url="{% url 'courses:termify' course instance %}">
-        </button>
-        <button type="button"
                 class="staff-base-button export-button"
                 title="{% trans 'Export this instance' %}"
                 onclick="toc.fetch_form(event, this);"
@@ -95,6 +84,19 @@
                 onclick="toc.fetch_form(event, this);"
                 data-url="{% url 'courses:import' course instance %}">
         </button>
+      {% endif %}
+      <button type="button"
+              class="staff-base-button refresh-button"
+              title="{% trans 'Regenerate cache for this instance' %}"
+              onclick="toc.fetch_form(event, this);"
+              data-url="{% url 'courses:regen_instance_cache' course instance %}">
+      </button>
+      <button type="button"
+              class="staff-base-button termify-button"
+              title="{% trans 'Termify words in this instance' %}"
+              onclick="toc.fetch_form(event, this);"
+              data-url="{% url 'courses:termify' course instance %}">
+      </button>
     </div>
   </div>
 {% endif %}

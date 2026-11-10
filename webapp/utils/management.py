@@ -313,6 +313,7 @@ def clone_embed_links(old_instance, new_instance):
         link.save()
 
 
+
 def freeze_context_link(link_object, revisioned_attr, freeze_to=None):
     """
     Utility function to freeze a context link (e.g. ContentGraph) by setting its revision

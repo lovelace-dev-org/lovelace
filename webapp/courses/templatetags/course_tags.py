@@ -3,6 +3,7 @@ import time
 from datetime import datetime
 from django.urls import reverse
 from django.utils.html import mark_safe
+from django.utils.translation import gettext as _
 from django import template
 from lovelace import plugins as lovelace_plugins
 from courses.models import Calendar, StudentGroup
@@ -22,6 +23,10 @@ def full_name(user):
 def enrolled(user, instance):
     return instance.user_enroll_status(user)
 
+@register.filter
+def staff(user, instance):
+    return instance.user_staff_status(user)
+
 @register.simple_tag
 def render_markup(content, instance):
     context = {
@@ -38,6 +43,12 @@ def content_page_addons(context, content_data, content_level):
     return mark_safe("\n".join(
         content_data.get_content_additions(content_data, context, content_level)
     ))
+
+# TODO: make this render icons instead of just permission count
+@register.simple_tag
+def permission_icons(permission):
+    permitted = permission.get_permissions()
+    return len(permitted)
 
 
 # {% base_static_extra %}
@@ -117,6 +128,7 @@ def embed_frame(context, content_data):
 @register.inclusion_tag("courses/user-menu-options.html", takes_context=True)
 def user_menu_extra(context):
     options = []
+
     for module in lovelace_plugins["user-menu"]:
         options.extend(module.includes.get_user_menu_options(context))
 
@@ -343,9 +355,3 @@ def progress_widget(context, node_item):
         "deadline": dl_string,
         "dl_urgency": urgency
     }
-
-
-
-
-
-

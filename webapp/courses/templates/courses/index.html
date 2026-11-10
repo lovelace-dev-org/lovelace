@@ -35,7 +35,7 @@
             <div class="index-course-wrapper">
               {% for instance in course.get_instances %}
                 {% with request.user|enrolled:instance as enroll_status %}
-                  {% if instance.is_active or enroll_status == "ACCEPTED" or request.user.is_staff %}
+                  {% if instance.is_active or enroll_status == "ACCEPTED" or request.user|staff:instance %}
                     <div class="
                         index-course-instance
                         {% if not instance.is_active and enroll_status != 'ACCEPTED' %}

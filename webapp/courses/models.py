@@ -479,9 +479,39 @@ class CourseInstance(models.Model):
         except CourseEnrollment.DoesNotExist as e:
             return None
 
+    def user_staff_status(self, user):
+        if not user.is_active:
+            return None
+
+        if user.is_superuser:
+            return CourseStaffPermission.superuser_role(user, self)
+
+        try:
+            return CourseStaffPermission.objects.get(
+                Q(end_time=None) | Q(end_time__gt=datetime.datetime.now()),
+                user=user,
+                instance=self,
+                start_time__lt=datetime.datetime.now()
+            )
+        except CourseStaffPermission.DoesNotExist:
+            return None
+
+    def set_default_responsible(self):
+        responsible = self.course.main_responsible
+        permission, __ = CourseStaffPermission.get_or_create(
+            instance=self,
+            user=responsible,
+            start_time=datetime.datetime.now(),
+        )
+        permission.permit_all()
+        permission.save()
+
     def save(self, *args, **kwargs):
         self.slug = self.get_url_name()
+        is_new = self.pk is None
         super().save(*args, **kwargs)
+        if is_new:
+            self.set_default_responsible()
 
         if not self._was_primary and self.primary:
             for instance in CourseInstance.objects.filter(course=self.course).exclude(pk=self.pk):
@@ -789,16 +819,48 @@ class CourseStaffPermission(models.Model):
 
     instance = models.ForeignKey("CourseInstance", on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    role = models.CharField(
-        max_length=16,
-        choices=(
-            ("teacher", "Responsible teacher"),
-            ("ta", "Teaching assistant"),
-        )
-    )
+    permit_management = models.BooleanField(default=False)
+    permit_view_answers = models.BooleanField(default=False)
+    permit_submit_answer = models.BooleanField(default=False)
+    permit_edit_material = models.BooleanField(default=False)
+    permit_edit_instance = models.BooleanField(default=False)
+    permit_grading = models.BooleanField(default=False)
+    permit_evaluate = models.BooleanField(default=False)
+    permit_messages = models.BooleanField(default=False)
+
     start_time = models.DateTimeField(verbose_name=_("Contract start time"))
     end_time = models.DateTimeField(verbose_name=_("Contract end time"), null=True, blank=True)
 
+    @classmethod
+    def superuser_role(cls, user, instance):
+        """
+        Return a virtual role for admin users.
+        """
+
+        permission = cls(
+            user=user,
+            instance=instance,
+            start_time=datetime.datetime.now(),
+        )
+        permission.permit_all()
+        return permission
+
+    def permit_all(self):
+        """
+        Shorthand for giving all permissions.
+        """
+
+        for field in self._meta.get_fields():
+            if field.name.startswith("permit"):
+                setattr(self, field.name, True)
+
+    def get_permissions(self):
+        permissions = []
+        for field in self._meta.get_fields():
+            if field.name.startswith("permit"):
+                if getattr(self, field.name, False):
+                    permissions.append(field.name.removeprefix("permit_"))
+        return permissions
 
 
 class GradeThresholdManager(models.Manager):

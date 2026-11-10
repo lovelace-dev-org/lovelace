@@ -23,7 +23,7 @@ from django.urls import reverse
 from django.utils import translation
 from lovelace.celery import app as celery_app
 
-from utils.access import determine_access, is_course_staff, ensure_responsible, ensure_staff
+from utils.access import determine_access, get_staff_role, ensure_responsible, ensure_staff
 from utils.archive import get_single_archived
 from utils.content import get_course_instance_tasks, get_embedded_parent
 from utils.management import process_confirm_form
@@ -113,7 +113,7 @@ def download_answers(request, course, instance, parent, content):
 
 
 def manage_enrollments(request, course, instance):
-    if not is_course_staff(request.user, instance, responsible_only=True):
+    if get_staff_role(request.user, instance) != "teacher":
         return HttpResponseForbidden(
             _("Only course main responsible teachers are allowed to manage enrollments.")
         )

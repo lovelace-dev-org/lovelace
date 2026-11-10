@@ -34,7 +34,7 @@ from courses.views import system_messages
 from utils.access import (
     block_in_exam_mode,
     ensure_enrolled_or_staff,
-    is_course_staff,
+    get_staff_role,
 )
 from utils.users import get_group_members
 
@@ -212,7 +212,7 @@ def group_info(request, course, instance):
         "instance": instance,
         "invited_to": invited_to,
         "is_supervisor": is_supervisor,
-        "course_staff": is_course_staff(request.user, instance),
+        "course_staff": get_staff_role(request.user, instance),
     }
 
     if slots and group:

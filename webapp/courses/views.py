@@ -63,9 +63,11 @@ from courses.models import (
 )
 from utils.access import (
     block_in_exam_mode,
-    is_course_staff,
+    get_staff_role,
     ensure_enrolled_or_staff,
     ensure_owner_or_staff,
+    ensure_owner_or_permission,
+    ensure_enrolled_or_permission,
     determine_access,
 )
 from utils.archive import find_version_with_filename, get_single_archived
@@ -149,7 +151,7 @@ def course_instances(request, course):
 def course(request, course, instance):
     enroll_state = instance.user_enroll_status(request.user)
     enrolled = enroll_state in ["ACCEPTED", "COMPLETED"]
-    staff = is_course_staff(request.user, instance)
+    staff = get_staff_role(request.user, instance)
 
     if settings.EXAM_MODE and not enrolled and not staff:
         return HttpResponseForbidden(
@@ -221,7 +223,7 @@ def _page_context(request, course, instance, content, pagenum=None):
     evaluation = None
     answer_count = None
     enrolled = False
-    course_staff = False
+    course_staff = None
     if request.user.is_authenticated:
         if (
             request.user.is_active
@@ -242,8 +244,7 @@ def _page_context(request, course, instance, content, pagenum=None):
                 enrolled = True
         except CourseEnrollment.DoesNotExist:
             pass
-        if is_course_staff(request.user, instance):
-            course_staff = True
+        course_staff = get_staff_role(request.user, instance)
 
     if not content_graph.visible and not course_staff:
         return HttpResponseNotFound(_("This content is (currently) only available to course staff"))
@@ -332,7 +333,7 @@ def content(request, course, instance, content, pagenum=None):
     return HttpResponse(t.render(c, request))
 
 
-@ensure_owner_or_staff
+@ensure_owner_or_permission("permit_view_answers")
 @block_in_exam_mode
 def show_answers(request, user, course, instance, parent, exercise):
     """
@@ -380,7 +381,7 @@ def show_answers(request, user, course, instance, parent, exercise):
         "completion": completion,
         "student": user,
         "username": user.username,
-        "course_staff": is_course_staff(request.user, instance),
+        "course_staff": get_staff_role(request.user, instance),
         "enrolled_instances": CourseEnrollment.get_enrolled_instances(
             instance, user, exclude_current=True
         ),
@@ -396,7 +397,7 @@ def show_answers(request, user, course, instance, parent, exercise):
 # v
 
 
-@ensure_enrolled_or_staff
+@ensure_enrolled_or_permission("permit_submit_answer")
 def check_answer(request, course, instance, parent, content):
     """
     Saves and evaluates a user's answer to an exercise and sends the results

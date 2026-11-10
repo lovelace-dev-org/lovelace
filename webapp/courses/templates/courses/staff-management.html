@@ -38,7 +38,7 @@
     <thead>
       <tr>
         <th class="interactive" onclick="sort_table(event, this, 0, 1)">{% trans 'User' %}</th>
-        <th class="interactive" onclick="sort_table(event, this, 1, 1)">{% trans 'Role' %}</th>
+        <th class="interactive" onclick="sort_table(event, this, 1, 1)">{% trans 'Permissions' %}</th>
         <th class="interactive" onclick="sort_table(event, this, 2, 1)">{% trans 'From' %}</th>
         <th class="interactive" onclick="sort_table(event, this, 2, 1)">{% trans 'To' %}</th>
         <th></th>
@@ -48,7 +48,7 @@
       {% for record in permissions %}
         <tr>
           <td>{{ record.user|full_name }}</td>
-          <td>{{ record.get_role_display }}</td>
+          <td>{% permission_icons record %}</td>
           <td>{{ record.start_time|date:"Y-m-d, H:i" }}</td>
           <td>{{ record.end_time|date:"Y-m-d, H:i" }}</td>
           <td>

@@ -30,7 +30,7 @@ from assessment.utils import get_sectioned_sheet, serializable_assessment, copy_
 from utils.access import (
     ensure_owner_or_staff,
     ensure_staff,
-    is_course_staff,
+    get_staff_role,
 )
 from utils.content import get_embedded_parent
 from utils.formatters import display_name
@@ -513,7 +513,7 @@ def view_assessment(request, user, course, instance, parent, exercise, answer):
     except json.JSONDecodeError:
         return HttpResponseNotFound(_("Assessment not found"))
 
-    if not assessment.get("completed") and not is_course_staff(request.user, instance):
+    if not assessment.get("completed") and not get_staff_role(request.user, instance):
         return HttpResponseNotFound(_("Assessment is not completed"))
 
     t = loader.get_template("assessment/assessment_view.html")
