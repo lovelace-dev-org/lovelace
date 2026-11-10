@@ -8,6 +8,8 @@
 <script src="{% static 'courses/groups.js' %}"></script>
 {% endblock %}
 
+{% block page-title %}{% trans 'Group Info' %}{% endblock %}
+
 {% block breadcrumb-links %}
   <li><a href="{% url 'courses:index' %}">{% trans 'Courses' %}</a></li>
   <div class="separator">»</div>

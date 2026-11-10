@@ -388,6 +388,10 @@ def view_submissions(request, course, instance, parent, content):
                 if evaluated_answer.evaluation.suspect:
                     suspect.append(entry)
                 elif completion.state == "resubmitted":
+                    href_args["answer"] = (
+                        content.get_user_answers(content, completion.user, instance)
+                        .latest("answer_date")
+                    )
                     resubmitted.append(entry)
                 else:
                     assessed.append(entry)
@@ -463,9 +467,20 @@ def submission_assessment(request, course, instance, parent, exercise, user, ans
         suspect = answer.evaluation.suspect
         comment = answer.evaluation.comment
     except (UserAnswer.DoesNotExist, json.JSONDecodeError):
-        assessment = {}
-        suspect = False
-        comment = ""
+        past_answers = exercise.get_user_answers(exercise, user, instance).order_by("-answer_date")
+        for past_answer in past_answers:
+            try:
+                assessment = json.loads(past_answer.evaluation.feedback)
+            except json.JSONDecodeError:
+                continue
+
+            suspect = past_answer.evaluation.suspect
+            comment = past_answer.evaluation.comment
+            break
+        else:
+            assessment = {}
+            suspect = False
+            comment = ""
 
     max_score = 0
     section_scores = {}
