@@ -4,6 +4,8 @@
 {% load static %}
 {% load course_tags %}
 
+{% block page-title %}{% trans 'My Calendar' %}{% endblock %}
+
 {% block breadcrumb-links %}
   <li><a href="{% url 'courses:index' %}">{% trans 'Courses' %}</a></li>
   <div class="separator">»</div>

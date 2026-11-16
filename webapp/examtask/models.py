@@ -8,6 +8,7 @@ from django.utils.translation import gettext as _
 
 import courses.models as cm
 
+from utils.exercise import update_completion
 from utils.management import ExportImportMixin
 
 class NoAttemptException(Exception):
@@ -190,8 +191,13 @@ class ExamTask(cm.ContentPage):
     def save_evaluation(self, link, user, evaluation, answer_object):
         attempt = get_attempt(self, answer_object.instance, user)
         exercise = attempt.get_user_task(user).embedlink.embedded_page
-        exercise.save_evaluation(exercise, link, user, evaluation, answer_object.task_answer)
-        return cm.ContentPage.save_evaluation(self, link, user, evaluation, answer_object)
+        evaluation_obj = exercise.save_evaluation(exercise, link, user, evaluation, answer_object.task_answer)
+        answer_object.evaluation = evaluation_obj
+        answer_object.save()
+        update_completion(self, link, answer_object.instance, user, evaluation, answer_object.answer_date)
+        return evaluation_obj
+
+        #return cm.ContentPage.save_evaluation(self, link, user, evaluation, answer_object)
 
     def get_user_answers(self, user, instance, ignore_drafts=True):
         return UserExamTaskAnswer.objects.filter(

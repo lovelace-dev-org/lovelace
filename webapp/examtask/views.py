@@ -153,33 +153,7 @@ def update_evaluations(request, course, instance, parent, content):
             embedded_page=content
         )
         for user in instance.enrolled_users.get_queryset():
-            attempt = get_attempt(content, instance, user)
-            exercise = attempt.get_user_task(user)
-            best_answer = (
-                exercise.get_user_answers(exercise, user, instance)
-                .order_by("-evaluation__points", "answer_date")
-                .first()
-            )
-            exam_answer = UserExamTaskAnswer.objects.get(task_answer=best_answer)
-            evaluation = best_answer.evaluation
-            quotient = evaluation.points / evaluation.max_points
-            content.update_evaluation(
-                link,
-                user,
-                {
-                    "evaluation": evaluation.correct,
-                    "points": quotient * link.default_points,
-                    "max": link.default_points,
-                    "feedback": evaluation.feedback,
-                    "evaluator": evaluation.evaluator,
-                    "test_results": evaluation.test_results,
-                    "suspect": evaluation.suspect,
-                    "comment": evaluation.comment,
-                },
-                exam_answer,
-                complete=evaluation.completed,
-                overwrite=True,
-            )
+            content.re_evaluate(link, user, instance)
 
     return process_confirm_form(
         request, confirmed,
