@@ -572,7 +572,11 @@ class CourseInstance(models.Model):
 
             page_count = node.content.count_pages(self)
             embeds = embeds_by_parent[node.content_id]
-            embedded_count = max(len(embeds) - 1, 0) + len(embeds.get("", []))
+
+            # Empty string is the key for non-grouped tasks.
+            # Therefore the total amount of tasks is the number of named groups
+            # plus the number of tasks in the nameless "group"
+            embedded_count = max(len(embeds) - ("" in embeds), 0) + len(embeds.get("", []))
             page_score = (
                 sum(task[1] for task in embeds.get("", []))
                 + sum(embeds[tag][0][1] for tag in embeds if tag)
