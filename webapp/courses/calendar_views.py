@@ -182,8 +182,9 @@ def adjust_slots(request, course, instance, event, action):
 
 @ensure_staff
 def calendar_config(request, course, instance, calendar):
-    content_access = CourseContentAdmin.content_access_list(request, ContentPage)
-    available_content = content_access.defer("content").all()
+    available_content = ContentPage.objects.filter(
+        embedlink__instance=instance,
+    ).exclude(content_type="LECTURE").defer("content").all()
 
     if request.method == "POST":
         form = CalendarConfigForm(
@@ -193,13 +194,7 @@ def calendar_config(request, course, instance, calendar):
             errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
-        try:
-            content = ContentPage.objects.get(id=form.cleaned_data["related_content"])
-        except ContentPage.DoesNotExist:
-            content = None
-        calendar = form.save(commit=False)
-        calendar.related_content = content
-        calendar.save()
+        calendar = form.save()
         return JsonResponse({"status": "ok"})
 
     form = CalendarConfigForm(

@@ -28,6 +28,11 @@
               deta-querystring="">
           </a>
       </div>
+      {% for notice in staff_notices %}
+        <div class="error">
+          {{ notice }}
+        </div>
+      {% endfor %}
     {% endif %}
 
     {% if calendar.lock_period %}

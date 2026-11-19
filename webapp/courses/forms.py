@@ -590,20 +590,14 @@ class CalendarConfigForm(forms.ModelForm):
     class Meta:
         model = cm.Calendar
         fields = [
-            "heading_level", "allow_multiple", "lock_period", "lock_cancel", "meeting_calendar"
+            "heading_level", "allow_multiple", "lock_period", "lock_cancel", "meeting_calendar",
+            "related_content"
         ]
 
     def __init__(self, *args, **kwargs):
         available_content = kwargs.pop("available_content")
         super().__init__(*args, **kwargs)
-        self.fields["related_content"] = forms.ChoiceField(
-            widget=forms.Select,
-            label=_("Choose content to link"),
-            choices=[
-                (0, _("-- no content --")),
-            ]
-            + [(c.id, c.name) for c in available_content],
-        )
+        self.fields["related_content"].queryset = available_content
 
 
 class CalendarSchedulingForm(forms.Form):

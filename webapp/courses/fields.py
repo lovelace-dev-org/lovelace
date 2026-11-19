@@ -1,7 +1,8 @@
 from django.forms.fields import ChoiceField, MultipleChoiceField
-from django.forms.models import ModelMultipleChoiceField
+from django.forms.models import ModelChoiceField, ModelMultipleChoiceField
 from courses.widgets import OriginFilterSelect, OriginFilterMultiSelect
 from utils.access import accessible_courses
+
 
 class OriginFilterField(ChoiceField):
     """
@@ -29,6 +30,21 @@ class OriginFilterField(ChoiceField):
         self._model = kwargs.pop("model")
         self._access_list = kwargs.pop("access_list")
         super().__init__(choices=choices, **kwargs)
+
+
+class ModelOriginFilterField(ModelChoiceField):
+
+    widget = OriginFilterSelect
+
+    def valid_value(self, value):
+        if value:
+            return value.origin in self._access_list
+        return value is None
+
+    def __init__(self, *, queryset=(), **kwargs):
+        self._model = kwargs.pop("model")
+        self._access_list = kwargs.pop("access_list")
+        super().__init__(queryset=queryset, **kwargs)
 
 
 class OriginFilterMultiField(MultipleChoiceField):
