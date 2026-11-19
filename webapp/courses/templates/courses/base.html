@@ -8,8 +8,11 @@
     {% load static %}
     {% load i18n %}
     {% get_debug_mode as DEBUG_MODE %}
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:400,400italic,700,700italic%26subset=latin,latin-ext">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inconsolata">
+    {% get_exam_mode as EXAM_MODE %}
+    {% if not EXAM_MODE %}
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:400,400italic,700,700italic%26subset=latin,latin-ext">
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inconsolata">
+    {% endif %}
     <link rel="icon" href="{% static 'courses/favicon.png' %}">
     <link rel="stylesheet" href="{% static 'courses/style.css' %}">
     <link rel="stylesheet" href="{% static 'courses/medium-screens.css' %}" media="(max-width: 1912px)">
