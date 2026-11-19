@@ -453,14 +453,11 @@ def import_instance(request, course, instance):
 
 @ensure_staff
 def create_content_node(request, course, instance):
-    content_access = CourseContentAdmin.content_access_list(request, ContentPage, "LECTURE")
-    available_content = content_access.defer("content").all()
-
     if request.method == "POST":
         form = NewContentNodeForm(
             request.POST,
-            available_content=available_content,
-            course_instance=instance
+            user=request.user,
+            course=course
         )
         if not form.is_valid():
             errors = form.errors.get_json_data()
@@ -480,31 +477,18 @@ def create_content_node(request, course, instance):
             else:
                 parent = active_node.parentnode
 
-        if form.cleaned_data["content"] == "0":
+        if not form.cleaned_data["content"]:
             with reversion.create_revision():
                 page = Lecture(origin=course)
-                setattr(
-                    page,
-                    f"name_{settings.MODELTRANSLATION_DEFAULT_LANGUAGE}",
-                    form.cleaned_data["new_page_name"]
-                )
-                if form.cleaned_data["multi_language"]:
-                    setattr(
-                        page,
-                        f"content_{settings.MODELTRANSLATION_DEFAULT_LANGUAGE}",
-                        f"= {form.cleaned_data['new_page_name']} ="
-                    )
-                    for lang_code, __ in settings.LANGUAGES:
-                        if lang_code != settings.MODELTRANSLATION_DEFAULT_LANGUAGE:
-                            setattr(page, f"content_{lang_code}", "TBD")
+                for lang_code, __ in settings.LANGUAGES:
+                    field_name = f"new_page_name_{lang_code}"
+                    lang_name = form.cleaned_data[field_name]
+                    setattr(page, f"name_{lang_code}", lang_name)
 
                 page.save()
                 reversion.set_user(request.user)
         else:
-            try:
-                page = Lecture.objects.get(id=form.cleaned_data["content"])
-            except Lecture.DoesNotExist:
-                return HttpResponseNotFound()
+            page = form.cleaned_data["content"]
 
         new_node = form.save(commit=False)
         new_node.instance = instance
@@ -526,7 +510,7 @@ def create_content_node(request, course, instance):
         instance.clear_content_tree_cache(regen_frozen=True)
         return JsonResponse({"status": "ok"}, status=201)
 
-    form = NewContentNodeForm(available_content=available_content, course_instance=instance)
+    form = NewContentNodeForm(user=request.user, course=course)
     t = loader.get_template("courses/base-edit-form.html")
     c = {
         "form_object": form,
@@ -564,23 +548,26 @@ def node_settings(request, course, instance, node_id):
         return HttpResponseNotFound(_("This content node doesn't exist"))
 
     if request.method == "POST":
-        form = NodeSettingsForm(request.POST, available_content=available_content, instance=node)
+        form = NodeSettingsForm(
+            request.POST,
+            instance=node,
+            user=request.user,
+            course=course
+        )
         if not form.is_valid():
             errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         node = form.save(commit=False)
-        try:
-            content = ContentPage.objects.get(id=form.cleaned_data["content"])
-        except ContentPage.DoesNotExist:
-            return HttpResponseNotFound()
-        node.content = content
+        node.content = form.cleaned_data["content"]
         node.save()
         instance.clear_content_tree_cache(regen_frozen=True)
         return JsonResponse({"status": "ok"})
 
     form = NodeSettingsForm(
-        instance=node, available_content=available_content, initial={"content": node.content.id}
+        instance=node,
+        user=request.user,
+        course=course
     )
     t = loader.get_template("courses/base-edit-form.html")
     c = {
@@ -816,15 +803,20 @@ def add_form(request, course, instance, content):
     return HttpResponse(form_t.render(form_c, request))
 
 
-def get_accessible_pages(request):
+def get_accessible_pages(request, toplevel=False):
     origin = Course.objects.get(slug=request.GET.get("origin"))
-    content_access = CourseContentAdmin.content_access_list(
-        request, ContentPage, origin=origin
-    ).order_by("name")
+    if toplevel:
+        content_access = CourseContentAdmin.content_access_list(
+            request, ContentPage, origin=origin, content_type="LECTURE"
+        ).order_by("name")
+    else:
+        content_access = CourseContentAdmin.content_access_list(
+            request, ContentPage, origin=origin
+        ).exclude(content_type="LECTURE").order_by("name")
     data = {
         "options": [{"value": "", "text": _("----NOT--SELECTED----")}] + [
             {"value": page.id, "text": page.name}
-            for page in content_access if page.content_type != "LECTURE"
+            for page in content_access
         ]
     }
     return JsonResponse(data)

@@ -1561,6 +1561,18 @@ class ContentPage(models.Model, ExportImportMixin):
         else:
             self.slug = slugify(self.slug, allow_unicode=True)
 
+        # When creating a new page, for each language where name is set
+        # also create default content (page title in heading level 1)
+        if not self.pk:
+            for lang_code, __ in settings.LANGUAGES:
+                lang_name = getattr(self, f"name_{lang_code}", "")
+                if lang_name:
+                    setattr(
+                        self,
+                        f"content_{lang_code}",
+                        f"= {lang_name} =",
+                    )
+
         super().save(*args, **kwargs)
 
     def replace_lines(self, line_idx, new_lines, delete_count=1):

@@ -1,6 +1,7 @@
 import os.path
 import re
 import django.conf
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import URLValidator
 from django.db.models import Count
@@ -11,13 +12,16 @@ from django.http import (
     JsonResponse,
 )
 from django.template import loader
+from django.urls import reverse
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from modeltranslation.forms import TranslationModelForm
 
 from courses import blockparser
 from courses import markupparser
-from courses.widgets import AnswerWidgetRegistry, NoTrailingZerosInput
+from courses.fields import OriginFilterField
+from courses.widgets import AnswerWidgetRegistry, NoTrailingZerosInput, OriginFilterSelect
+from utils.access import accessible_courses
 from utils.formatters import display_name
 from utils.management import add_translated_charfields, TranslationStaffForm, get_prefixed_slug
 import courses.models as cm
@@ -343,15 +347,29 @@ class ContextNodeForm(forms.ModelForm):
         return rule
 
     def __init__(self, *args, **kwargs):
-        available_content = kwargs.pop("available_content")
+        user = kwargs.pop("user")
+        self._course = kwargs.pop("course")
+        instance = kwargs.get("instance")
         super().__init__(*args, **kwargs)
-        self.fields["content"] = forms.ChoiceField(
-            widget=forms.Select,
-            label=_("Choose content to link"),
-            choices=[
-                (0, _("----NEW--PAGE----")),
-            ]
-            + [(c.id, c.name) for c in available_content],
+
+        access_list = accessible_courses(user)
+        origin = instance and instance.content.origin or self._course
+        queryset = cm.ContentPage.objects.filter(
+            content_type="LECTURE",
+            origin=origin,
+        )
+
+        self.fields["content"] = OriginFilterField(
+            widget=OriginFilterSelect(attrs={
+                "options_url": reverse("courses:get_accessible_lectures"),
+                "origin_options": access_list,
+                "initial_origin": origin,
+            }),
+            label=_("Choose existing page"),
+            choices=[(0, _("--NO-CONTENT--"))] + [(page.id, page.name) for page in queryset],
+            required=False,
+            model=cm.ContentPage,
+            access_list=access_list,
         )
 
 
@@ -368,21 +386,21 @@ class NewContentNodeForm(ContextNodeForm):
             "deadline",
             "late_rule",
             "evergreen",
+            "content",
         ]
 
     def clean(self):
         cleaned_data = super().clean()
-        course = self._course_instance.course
-        print(cleaned_data)
-        if cleaned_data.get("content", "0") == "0":
-            new_name = cleaned_data.get("new_page_name")
+        if not cleaned_data.get("content"):
+            default_lang_field = f"new_page_name_{settings.MODELTRANSLATION_DEFAULT_LANGUAGE}"
+            new_name = cleaned_data.get(default_lang_field)
             if not new_name:
-                self.add_error("new_page_name", _("Cannot be empty when creating new page"))
+                self.add_error(default_lang_field, _("Cannot be empty when creating new page"))
                 return
 
             base_slug = slugify(new_name)
-            base_slug = base_slug.removeprefix(f"{course.prefix}-")
-            slug = f"{course.prefix}-{base_slug}"
+            base_slug = base_slug.removeprefix(f"{self._course.prefix}-")
+            slug = f"{self._course.prefix}-{base_slug}"
             if cm.ContentPage.objects.filter(slug=slug).exists():
                 self.add_error("new_page_name", _("Name causes slug conflict"))
                 return
@@ -390,17 +408,27 @@ class NewContentNodeForm(ContextNodeForm):
         return cleaned_data
 
     def __init__(self, *args, **kwargs):
-        self._course_instance = kwargs.pop("course_instance")
         super().__init__(*args, **kwargs)
         self.fields["make_child"] = forms.BooleanField(
             label=_("Make this node a child of the selected node"), required=False
         )
-        self.fields["new_page_name"] = forms.CharField(
-            label=_("Name for new page (in default language)"), required=False
+        languages = sorted(
+            settings.LANGUAGES,
+            key=lambda x: x[0] == settings.MODELTRANSLATION_DEFAULT_LANGUAGE,
+            reverse=True,
         )
-        self.fields["multi_language"] = forms.BooleanField(
-            label=_("Initialize as a multi language page."), required=False
-        )
+        for lang_code, __ in languages:
+            lang_field_name = f"new_page_name_{lang_code}"
+            if lang_code == settings.MODELTRANSLATION_DEFAULT_LANGUAGE:
+                self.fields[lang_field_name] = forms.CharField(
+                    label=f"Name for new page (default)",
+                    required=True,
+                )
+            else:
+                self.fields[lang_field_name] = forms.CharField(
+                    label=f"Name for new page ({lang_code})",
+                    required=False,
+                )
 
 
 class NodeSettingsForm(ContextNodeForm):
@@ -416,6 +444,7 @@ class NodeSettingsForm(ContextNodeForm):
             "deadline",
             "late_rule",
             "evergreen",
+            "content",
         ]
 
     def __init__(self, *args, **kwargs):

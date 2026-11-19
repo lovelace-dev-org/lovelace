@@ -234,6 +234,12 @@ urlpatterns = [
         name="get_accessible_pages",
     ),
     path(
+        "staff/pages/toplevel/",
+        staff_views.get_accessible_pages,
+        {"toplevel": True},
+        name="get_accessible_lectures",
+    ),
+    path(
         "staff/media/<str:media_type>/",
         staff_views.get_accessible_media,
         name="get_accessible_media",

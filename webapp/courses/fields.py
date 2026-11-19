@@ -15,7 +15,7 @@ class OriginFilterField(ChoiceField):
     widget = OriginFilterSelect
 
     def to_python(self, value):
-        if value:
+        if int(value):
             inst = self._model.objects.get(id=value)
         else:
             return None
@@ -30,21 +30,6 @@ class OriginFilterField(ChoiceField):
         self._model = kwargs.pop("model")
         self._access_list = kwargs.pop("access_list")
         super().__init__(choices=choices, **kwargs)
-
-
-class ModelOriginFilterField(ModelChoiceField):
-
-    widget = OriginFilterSelect
-
-    def valid_value(self, value):
-        if value:
-            return value.origin in self._access_list
-        return value is None
-
-    def __init__(self, *, queryset=(), **kwargs):
-        self._model = kwargs.pop("model")
-        self._access_list = kwargs.pop("access_list")
-        super().__init__(queryset=queryset, **kwargs)
 
 
 class OriginFilterMultiField(MultipleChoiceField):
