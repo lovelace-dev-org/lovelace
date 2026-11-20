@@ -1,5 +1,6 @@
 import datetime
 import random
+from django.core.exceptions import FieldError
 from django.db import models
 from django.template import loader
 from django.urls import reverse
@@ -277,6 +278,24 @@ class UserExamTaskAnswer(cm.UserAnswer):
         cm.UserAnswer, on_delete=models.CASCADE, related_name="exam_proxy_answer"
     )
 
+    def get_html_repr(self, context):
+        if not context["course_staff"]:
+            return ""
+
+        # TODO: This is a very silly workaround for the fact that
+        # UserAnswer is not referencing the answered content directly
+        for answer_model in cm.ContentPage.user_answer_models.values():
+            if answer_model and answer_model != UserExamTaskAnswer:
+                try:
+                    given_answer = answer_model.objects.get(
+                        useranswer_ptr=self.task_answer
+                    )
+                except (answer_model.DoesNotExist, FieldError):
+                    continue
+                else:
+                    return given_answer.exercise.name + "<br />" + given_answer.get_html_repr(context)
+
+        return ""
 
 
 # ^
@@ -383,7 +402,7 @@ class ExamTaskChoice(models.Model):
 
 
 cm.ContentPage.register_content_type(
-    "EXAM_TASK", ExamTask, None, None
+    "EXAM_TASK", ExamTask, None, UserExamTaskAnswer,
 )
 
 def clone_models(old_instance, new_instance):

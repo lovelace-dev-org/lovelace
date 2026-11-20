@@ -324,7 +324,7 @@ class CodeEditForm(LineEditMixin, MarkupEditForm):
             choices=(
                 [("", _("----NO--HIGHLIGHT----"))] +
                 [
-                    (aliases[0], name) if aliases else (name, name)
+                    (name, name) if aliases else (name, name)
                     for name, aliases, __, __ in pygments.lexers.get_all_lexers()
                 ]
             ),
