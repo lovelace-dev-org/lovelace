@@ -18,7 +18,7 @@ from django.utils.translation import gettext as _
 
 from courses.models import User
 
-from utils.access import ensure_enrolled_or_staff, determine_access, ensure_staff, ensure_responsible
+from utils.access import determine_access, ensure_permission, ensure_enrolled_or_permission
 from utils.archive import get_single_archived, find_latest_version, find_version_with_filename
 from utils.content import get_embedded_parent, download_exercise_backend
 from utils.files import generate_download_response, get_file_contents_b64
@@ -41,7 +41,7 @@ from multiexam.forms import (
 )
 from multiexam.utils import compare_exams, generate_attempt_questions, process_questions
 
-@ensure_enrolled_or_staff
+@ensure_enrolled_or_permission("permit_submit_answer")
 def get_exam_attempt(request, course, instance, content):
     """
     Gets an attempt for an exam. Tries to find an open attempt, and gives an error if one is not
@@ -116,7 +116,7 @@ def get_exam_attempt(request, course, instance, content):
 # |
 # v
 
-@ensure_responsible
+@ensure_permission("permit_grading")
 def manage_attempts(request, course, instance, content):
     """
     Management view for exam attempts.
@@ -139,7 +139,7 @@ def manage_attempts(request, course, instance, content):
     }
     return HttpResponse(t.render(c, request))
 
-@ensure_responsible
+@ensure_permission("permit_grading")
 def open_new_attempt(request, course, instance, content):
     """
     View for opening a new attempt. Depending on the HTTP method used either displays the form,
@@ -197,7 +197,7 @@ def open_new_attempt(request, course, instance, content):
     return HttpResponse(form_t.render(form_c, request))
 
 
-@ensure_responsible
+@ensure_permission("permit_grading")
 def preview_attempt(request, course, instance, attempt):
     """
     View for getting a preview for an exam attempt.
@@ -215,7 +215,7 @@ def preview_attempt(request, course, instance, attempt):
     return HttpResponse(t.render(c, request))
 
 
-@ensure_responsible
+@ensure_permission("permit_grading")
 def attempt_settings(request, course, instance, attempt):
     """
     A view for changing attempt settings.
@@ -254,7 +254,7 @@ def attempt_settings(request, course, instance, attempt):
     }
     return HttpResponse(form_t.render(form_c, request))
 
-@ensure_responsible
+@ensure_permission("permit_grading")
 def delete_attempt(request, course, instance, attempt):
     """
     View for deleting an attempt.
@@ -272,7 +272,7 @@ def delete_attempt(request, course, instance, attempt):
     }
     return process_confirm_form(request, success, extra)
 
-@ensure_responsible
+@ensure_permission("permit_grading")
 def refresh_attempts(request, course, instance, content):
 
     if request.method == "POST":
@@ -323,7 +323,7 @@ def refresh_attempts(request, course, instance, content):
 # |
 # v
 
-@ensure_staff
+@ensure_permission("permit_edit_material")
 def edit_question_pool(request, course, instance, content):
     try:
         question_pool = content.examquestionpool

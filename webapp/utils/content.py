@@ -12,7 +12,7 @@ from django.utils import translation
 from reversion.models import Version, Revision
 from courses import markupparser
 import courses.models as cm
-from utils.access import is_course_staff, determine_access
+from utils.access import get_staff_role, determine_access
 from utils.archive import find_version_with_filename
 from utils.exercise import best_result
 from utils.files import find_fs_path, generate_download_response
@@ -356,7 +356,7 @@ def course_tree(tree, node, user, instance_obj, enrolled=False, staff=False):
     if list_item not in tree:
         tree.append(list_item)
 
-    if is_course_staff(user, instance_obj):
+    if get_staff_role(user, instance_obj):
         children = cm.ContentGraph.objects.filter(parentnode=node, instance=instance_obj).order_by(
             "ordinal_number"
         )

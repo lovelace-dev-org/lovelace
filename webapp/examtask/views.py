@@ -12,7 +12,7 @@ from django.utils.translation import gettext as _
 
 import courses.models as cm
 
-from utils.access import accessible_courses, ensure_staff
+from utils.access import accessible_courses, ensure_permission
 from utils.management import (
     CourseContentAdmin,
     process_confirm_form,
@@ -24,7 +24,7 @@ from .utils import propagate_attempt
 
 # Create your views here.
 
-@ensure_staff
+@ensure_permission("permit_grading")
 def exam_task_settings(request, course, instance, parent, content):
     settings, _ = ExamTaskSettings.objects.get_or_create(
         instance=instance,
@@ -49,7 +49,7 @@ def exam_task_settings(request, course, instance, parent, content):
         parent=parent,
     )
 
-@ensure_staff
+@ensure_permission("permit_grading")
 def exam_task_attempts(request, course, instance, parent, content):
 
     attempts = ExamTaskAttempt.objects.filter(instance=instance, task=content).order_by("start")
@@ -64,7 +64,7 @@ def exam_task_attempts(request, course, instance, parent, content):
     }
     return HttpResponse(t.render(c, request))
 
-@ensure_staff
+@ensure_permission("permit_grading")
 def add_task_attempt(request, course, instance, parent, content):
     def post_save(attempt, form):
         attempt.instance = instance
@@ -90,7 +90,7 @@ def add_task_attempt(request, course, instance, parent, content):
         }
     )
 
-@ensure_staff
+@ensure_permission("permit_grading")
 def edit_task_attempt(request, course, instance, parent, content, attempt):
 
     def post_save(attempt, form):
@@ -112,7 +112,7 @@ def edit_task_attempt(request, course, instance, parent, content, attempt):
         }
     )
 
-@ensure_staff
+@ensure_permission("permit_grading")
 def delete_task_attempt(request, course, instance, parent, content, attempt):
 
     def delete_success(form):
@@ -127,7 +127,7 @@ def delete_task_attempt(request, course, instance, parent, content, attempt):
         extra_response={"refresh": True},
     )
 
-@ensure_staff
+@ensure_permission("permit_grading")
 def rerandomize_tasks(request, course, instance, parent, content, attempt):
 
     def confirmed(form):
@@ -143,7 +143,7 @@ def rerandomize_tasks(request, course, instance, parent, content, attempt):
         extra_response={"refresh": True},
     )
 
-@ensure_staff
+@ensure_permission("permit_evaluation")
 def update_evaluations(request, course, instance, parent, content):
 
     def confirmed(form):

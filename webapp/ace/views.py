@@ -14,7 +14,7 @@ from reversion import revisions as reversion
 
 import courses.models as cm
 from courses.widgets import PreviewWidgetRegistry
-from utils.access import ensure_staff
+from utils.access import ensure_permission
 from utils.content import regenerate_nearest_cache
 
 from ace.forms import BaseFileSaveConfirmForm
@@ -38,7 +38,7 @@ def get_widget_subform(request, course, slug):
     form_c = {"form": form}
     return HttpResponse(form_t.render(form_c, request))
 
-@ensure_staff
+@ensure_permission("permit_edit_content")
 def save_base_file(request, course, instance, slug):
 
     widget = AceWidgetSettings.objects.get(slug=slug)

@@ -7,7 +7,7 @@ def get_user_menu_options(context):
     instance = context.get("instance")
     if not instance:
         return []
-    if not context.get("course_staff"):
+    if context.get("course_staff") != "teacher":
         return []
 
 

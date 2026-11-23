@@ -1,7 +1,8 @@
 from decimal import Decimal
 from django import forms
 from django.template import loader
-
+from django.urls import reverse
+from django.contrib.admin.widgets import AutocompleteSelect
 
 class AdminFileWidget(forms.ClearableFileInput):
     template_name = "courses/widgets/modified_file_input.html"
@@ -123,4 +124,9 @@ class PreviewWidget(Widget):
 
     pass
 
+
+class UserAutocompleteSelect(AutocompleteSelect):
+
+    def get_url(self):
+        return reverse("courses:user_autocomplete")
 

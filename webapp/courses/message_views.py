@@ -14,10 +14,9 @@ from django.utils import translation
 from courses.models import SavedMessage, CourseMessage, CourseEnrollment
 from courses.forms import MessageForm, CourseMessageForm
 from utils.access import (
-    ensure_enrolled_or_staff,
+    ensure_enrolled_or_permission,
     ensure_logged_in,
-    ensure_responsible,
-    ensure_staff,
+    ensure_permission,
 )
 from utils.formatters import display_name
 from utils.notify import (
@@ -86,7 +85,7 @@ def process_message_form(request, course, instance, recipients, form_label="", u
     return HttpResponse(t.render(c, request))
 
 
-@ensure_staff
+@ensure_permission("permit_messages")
 def direct_message(request, course, instance, user):
     enrolled_students = instance.enrolled_users.get_queryset()
     if enrolled_students.filter(id=user.id).exists():
@@ -100,7 +99,7 @@ def direct_message(request, course, instance, user):
     return HttpResponseForbidden(_("User is not enrolled to this course instance"))
 
 
-@ensure_responsible
+@ensure_permission("permit_messages")
 def mass_email(request, course, instance):
     recipients = instance.enrolled_users.get_queryset().filter(
         courseenrollment__enrollment_state="ACCEPTED"
@@ -115,7 +114,7 @@ def mass_email(request, course, instance):
     )
 
 
-@ensure_staff
+@ensure_permission("permit_messages")
 def load_message(request, course, instance, msgid):
     try:
         message = SavedMessage.objects.get(course=course, id=msgid)
@@ -131,7 +130,7 @@ def load_message(request, course, instance, msgid):
 # |
 # v
 
-@ensure_responsible
+@ensure_permission("permit_messages")
 def course_messages(request, course, instance):
     if request.method == "POST":
         form = CourseMessageForm(request.POST)
@@ -192,7 +191,7 @@ def course_messages(request, course, instance):
 
     return HttpResponse(t.render(c, request))
 
-@ensure_responsible
+@ensure_permission("permit_messages")
 def remove_course_message(request, course, instance, msgid):
     try:
         message = CourseMessage.objects.get(id=msgid)

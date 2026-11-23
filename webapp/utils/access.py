@@ -1,4 +1,5 @@
-from functools import wraps
+import datetime
+from functools import total_ordering, wraps
 
 
 from django.db.models import Q
@@ -8,71 +9,37 @@ from django.utils.translation import gettext as _
 from reversion.models import Version
 import courses.models as cm
 
+def get_permissions(user):
+    return cm.CourseStaffPermission.objects.filter(
+        Q(end_time=None) | Q(end_time__gt=datetime.datetime.now()),
+        user=user,
+        start_time__lt=datetime.datetime.now()
+    )
 
-def determine_access(user, content, responsible_only=False):
-    """
-    Determines whether user has access to staff only functions of a content
-    object. Access is granted if:
-    * the user is superuser
-    * the user has created/edited the object
-    * the user is the main responsible of a course the content is found in
-    * the user is a member of the staff group of a course the content is found
-      in (can be disabled by setting responsible_only to True)
-    """
+def get_permission(user, instance):
+    return cm.CourseStaffPermission.objects.filter(
+        Q(end_time=None) | Q(end_time__gt=datetime.datetime.now()),
+        instance=instance,
+        user=user,
+        start_time__lt=datetime.datetime.now()
+    ).first()
 
+
+def determine_access(user, model_inst, responsible_only=False):
     if not user.is_authenticated:
         return False
 
     if user.is_superuser:
         return True
 
-    if user.is_staff:
-        if Version.objects.get_for_object(content).filter(revision__user=user).exists():
-            return True
+    permissions = get_permissions(user).filter(
+        instance__course=model_inst.origin
+    )
+    if responsible_only:
+        permissions = permissions.filter(role="teacher")
 
-        if cm.Course.objects.filter(
-            Q(courseinstance__contentgraph__content=content)
-            | Q(courseinstance__contentgraph__content__embedded_pages=content)
-        ).filter(main_responsible=user):
-            return True
-
-        if not responsible_only:
-            if cm.Course.objects.filter(
-                Q(courseinstance__contentgraph__content=content)
-                | Q(courseinstance__contentgraph__content__embedded_pages=content)
-            ).filter(staff_group__user=user):
-                return True
-
-    return False
-
-
-def determine_media_access(user, media):
-    """
-    Determines whether user has access to staff only functions of a media
-    object. Access is granted if:
-    * the user is superuser
-    * the user has created/edited the object
-    * the user is the main responsible of a course the content is found in
-    * the user is a member of the staff group of a course the content is found
-      in
-    """
-
-    if not user.is_authenticated:
-        return False
-
-    if user.is_superuser:
+    if permissions:
         return True
-
-    if user.is_staff:
-        if Version.objects.get_for_object(media).filter(revision__user=user).exists():
-            return True
-
-        if (
-            media.coursemedialink_set.get_queryset()
-            .filter(instance__course__staff_group__user=user)
-            .distinct()
-        ):
-            return True
 
     return False
 
@@ -85,34 +52,56 @@ def is_course_staff(user, instance, responsible_only=False):
     staff group members are not included.
     """
 
+    print("DEPRECATION WARNING: is_course_staff is deprecated, use get_staff_role instead")
+
     if not user.is_authenticated:
         return False
 
     if user.is_superuser:
         return True
 
-    if user.is_staff:
-        if not responsible_only:
-            if user in instance.course.staff_group.user_set.get_queryset():
-                return True
+    try:
+        permission = get_permissions(user).get(instance=instance)
+    except cm.CourseStaffPermission.DoesNotExist:
+        return False
 
-        return user == instance.course.main_responsible
+    if not responsible_only:
+        return True
 
-    return False
+    return permission.permit_management
 
+
+def get_staff_role(user, instance):
+    if not user.is_authenticated:
+        return None
+
+    if user.is_superuser:
+        return cm.CourseStaffPermission.superuser_role(user, instance)
+
+    try:
+        return get_permissions(user).get(instance=instance)
+    except cm.CourseStaffPermission.DoesNotExist:
+        return None
 
 def accessible_courses(user):
     courses = cm.Course.objects.all()
     if user.is_superuser:
         return courses
 
-    if user.is_staff:
-        return courses.filter(
-            Q(main_responsible=user)
-            | Q(staff_group__user=user)
-        )
+    permissions = user.coursestaffpermission_set.get_queryset()
+    if permissions:
+        courses = set(permission.instance.course_id for permission in permissions)
+        return cm.Course.objects.filter(id__in=courses)
 
     return cm.Course.objects.none()
+
+def check_permission(user, instance, attr):
+    if permission := get_permission(user, instance):
+        if getattr(permission, attr, False):
+            return True
+
+    return False
+
 
 
 # ^
@@ -164,100 +153,65 @@ def ensure_admin(function):
 
     return wrap
 
-def ensure_staff(function):
+def ensure_permission(attr):
     """
-    Decorator for limiting access to a function to course staff only. Returns
-    HttpResponseForbidden instead of calling the wrapped function if the user
-    is not part of the staff.
-    """
-
-    @wraps(function)
-    def wrap(request, course, instance, *args, **kwargs):
-        if is_course_staff(request.user, instance):
-            return function(request, course, instance, *args, **kwargs)
-        return HttpResponseForbidden(_("This view is limited to course staff."))
-
-    return wrap
-
-
-def ensure_responsible(function):
-    """
-    Decorator for limiting access to a function to course responsible teacher
-    only. Returns HttpResponseForbidden instead of calling the wrapped function
-    if the user is not teh responsible teacher.
+    Decorator for limiting access to a view based on the accessing user having
+    the correct permission. Returns HttpResponseForbidden if permission object doesn't
+    exist, or doesn't have the required permission set to True.
     """
 
-    @wraps(function)
-    def wrap(request, course, instance, *args, **kwargs):
-        if is_course_staff(request.user, instance, True):
-            return function(request, course, instance, *args, **kwargs)
-        return HttpResponseForbidden(_("This view is limited to main responsible teacher."))
+    def decorator(function):
 
-    return wrap
+        @wraps(function)
+        def wrap(request, course, instance, *args, **kwargs):
+            if permission := get_staff_role(request.user, instance):
+                if getattr(permission, attr):
+                    return function(request, course, instance, *args, **kwargs)
+            return HttpResponseForbidden(_("This view is limited to course staff."))
+
+        return wrap
+    return decorator
+
+def ensure_enrolled_or_permission(attr):
+
+    def decorator(function):
+
+        @wraps(function)
+        def wrap(request, user, course, instance, *args, **kwargs):
+            try:
+                if cm.CourseEnrollment.objects.get(
+                    instance=instance, student=request.user
+                ).is_enrolled():
+                    return function(request, course, instance, *args, **kwargs)
+            except cm.CourseEnrollment.DoesNotExist:
+                pass
+            except TypeError:
+                return HttpResponseForbidden(_("You must be enrolled to perform this action."))
+
+            if permission := get_staff_role(request.user, instance):
+                if getattr(permission, attr):
+                    return function(request, course, instance, *args, **kwargs)
+            return HttpResponseForbidden(_("This view is limited to course staff."))
+        return wrap
+    return decorator
 
 
-def ensure_enrolled_or_staff(function):
+def ensure_owner_or_permission(attr):
     """
-    Decorator for limiting access to a function to course staff and enrolled
-    users only. Returns HttpResponseForbidden instead of calling the wrapped
-    function if the user is not enrolled and not part of the staff.
-    """
-
-    @wraps(function)
-    def wrap(request, course, instance, *args, **kwargs):
-        try:
-            enrollment = cm.CourseEnrollment.objects.get(
-                instance=instance, student=request.user
-            )
-        except cm.CourseEnrollment.DoesNotExist:
-            pass
-        except TypeError:
-            return HttpResponseForbidden(_("You must be enrolled to perform this action."))
-        else:
-            if enrollment.is_enrolled():
-                return function(request, course, instance, *args, **kwargs)
-
-        if is_course_staff(request.user, instance):
-            return function(request, course, instance, *args, **kwargs)
-
-        return HttpResponseForbidden(_("You must be enrolled to perform this action."))
-
-    return wrap
-
-
-def ensure_owner_or_staff(function):
-    """
-    Decorator for limiting access to a function dealing with a specified user's
-    data. Access is granted if the user is requesting their own data, or if the
-    user is part of the course staff. Otherwise HttpResponseForbidden is
-    returned instead of calling the wrapped function.
+    Decorator for limiting access to a view based on the accessing user either owning it or having
+    the correct permission. Returns HttpResponseForbidden if permission object doesn't
+    exist, or doesn't have the required permission set to True.
     """
 
-    @wraps(function)
-    def wrap(request, user, course, instance, *args, **kwargs):
-        if request.user == user or is_course_staff(request.user, instance):
-            return function(request, user, course, instance, *args, **kwargs)
-        return HttpResponseForbidden(_("This view is limited to content owners and staff"))
+    def decorator(function):
 
-    return wrap
-
-
-def ensure_responsible_or_supervisor(function):
-    """
-    Decorator for limiting access to student group management. Access is only
-    granted for the course responsible teacher, and the group's designated
-    supervisor. Returns HttpResponseForbidden instead of calling the wrapped
-    function if the user is neither of those.
-    """
-
-    @wraps(function)
-    def wrap(request, course, instance, group, *args, **kwargs):
-        if request.user.is_superuser or request.user in (
-            course.main_responsible,
-            group.supervisor,
-        ):
-            return function(request, course, instance, group, *args, **kwargs)
-        return HttpResponseForbidden(_("This view is limited to group supervisor"))
-
-    return wrap
-
+        @wraps(function)
+        def wrap(request, user, course, instance, *args, **kwargs):
+            if request.user == user:
+                return function(request, user, course, instance, *args, **kwargs)
+            if permission := get_staff_role(request.user, instance):
+                if getattr(permission, attr):
+                    return function(request, course, instance, *args, **kwargs)
+            return HttpResponseForbidden(_("This view is limited to course staff."))
+        return wrap
+    return decorator

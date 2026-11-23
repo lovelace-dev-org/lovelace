@@ -28,9 +28,9 @@ from assessment.forms import (
 from assessment.utils import get_sectioned_sheet, serializable_assessment, copy_sheet
 
 from utils.access import (
-    ensure_owner_or_staff,
-    ensure_staff,
-    is_course_staff,
+    ensure_owner_or_permission,
+    ensure_permission,
+    get_staff_role,
 )
 from utils.content import get_embedded_parent
 from utils.formatters import display_name
@@ -51,7 +51,7 @@ def view_assessment_sheet(request, course, instance, parent, content):
     return HttpResponse(panel_t.render(panel_c, request))
 
 
-@ensure_staff
+@ensure_permission("permit_grading")
 def manage_assessment(request, course, instance, parent, content):
     course_sheets = AssessmentSheet.objects.filter(origin=course)
     sheet_link = AssessmentToExerciseLink.objects.filter(
@@ -127,7 +127,7 @@ def manage_assessment(request, course, instance, parent, content):
     return HttpResponse(panel_t.render(panel_c, request))
 
 
-@ensure_staff
+@ensure_permission("permit_grading")
 def create_bullet(request, course, instance, sheet):
     if request.method == "POST":
         form = NewBulletForm(request.POST)
@@ -172,7 +172,7 @@ def create_bullet(request, course, instance, sheet):
     return HttpResponse(t.render(c, request))
 
 
-@ensure_staff
+@ensure_permission("permit_grading")
 def edit_section(request, course, instance, sheet, section=None):
     if request.method == "POST":
         form = SectionForm(request.POST, instance=section)
@@ -207,7 +207,7 @@ def edit_section(request, course, instance, sheet, section=None):
     return HttpResponse(t.render(c, request))
 
 
-@ensure_staff
+@ensure_permission("permit_grading")
 def delete_section(request, course, instance, sheet, section):
     if request.method != "POST":
         return HttpResponseNotAllowed(["POST"])
@@ -220,7 +220,7 @@ def delete_section(request, course, instance, sheet, section):
     return HttpResponse(status=204)
 
 
-@ensure_staff
+@ensure_permission("permit_grading")
 def move_bullet(request, course, instance, sheet, target_bullet, placement):
     if request.method != "POST":
         return HttpResponseNotAllowed(["POST"])
@@ -253,7 +253,7 @@ def move_bullet(request, course, instance, sheet, target_bullet, placement):
     return JsonResponse({"status": "ok"})
 
 
-@ensure_staff
+@ensure_permission("permit_grading")
 def edit_bullet(request, course, instance, sheet, bullet):
     if request.method == "POST":
         form = AssessmentBulletForm(request.POST, instance=bullet)
@@ -281,7 +281,7 @@ def edit_bullet(request, course, instance, sheet, bullet):
     return HttpResponse(t.render(c, request))
 
 
-@ensure_staff
+@ensure_permission("permit_grading")
 def delete_bullet(request, course, instance, sheet, bullet):
     if request.method != "POST":
         return HttpResponseNotAllowed(["POST"])
@@ -292,7 +292,7 @@ def delete_bullet(request, course, instance, sheet, bullet):
     return HttpResponse(status=204)
 
 
-@ensure_staff
+@ensure_permission("permit_edit_content")
 def update_exercise_points(request, course, instance, parent, content, sheet):
     sheet_link = AssessmentToExerciseLink.objects.filter(
         exercise=content,
@@ -310,7 +310,7 @@ def update_exercise_points(request, course, instance, parent, content, sheet):
     return JsonResponse({"status": "ok"})
 
 
-@ensure_staff
+@ensure_permission("permit_evaluation")
 def view_submissions(request, course, instance, parent, content):
     users = (
         instance.enrolled_users.get_queryset().order_by("last_name", "first_name", "username").all()
@@ -423,7 +423,7 @@ def view_submissions(request, course, instance, parent, content):
     return HttpResponse(t.render(c, request))
 
 
-@ensure_staff
+@ensure_permission("permit_evaluation")
 def submission_assessment(request, course, instance, parent, exercise, user, answer):
     try:
         sheet_link = AssessmentToExerciseLink.objects.get(instance=instance, exercise=exercise)
@@ -519,7 +519,7 @@ def submission_assessment(request, course, instance, parent, exercise, user, ans
     return HttpResponse(t.render(c, request))
 
 
-@ensure_owner_or_staff
+@ensure_owner_or_permission("permit_evaluation")
 def view_assessment(request, user, course, instance, parent, exercise, answer):
     try:
         assessment = json.loads(answer.evaluation.feedback)
@@ -528,7 +528,7 @@ def view_assessment(request, user, course, instance, parent, exercise, answer):
     except json.JSONDecodeError:
         return HttpResponseNotFound(_("Assessment not found"))
 
-    if not assessment.get("completed") and not is_course_staff(request.user, instance):
+    if not assessment.get("completed") and not get_staff_role(request.user, instance):
         return HttpResponseNotFound(_("Assessment is not completed"))
 
     t = loader.get_template("assessment/assessment_view.html")

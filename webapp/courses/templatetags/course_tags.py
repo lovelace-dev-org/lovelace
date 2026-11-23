@@ -24,6 +24,10 @@ def full_name(user):
 def enrolled(user, instance):
     return instance.user_enroll_status(user)
 
+@register.filter
+def staff(user, instance):
+    return instance.user_staff_status(user)
+
 @register.simple_tag
 def render_markup(content, instance):
     context = {
@@ -48,6 +52,12 @@ def get_debug_mode():
 @register.simple_tag
 def get_exam_mode():
     return settings.EXAM_MODE
+
+# TODO: make this render icons instead of just permission count
+@register.simple_tag
+def permission_icons(permission):
+    permitted = permission.get_permissions()
+    return len(permitted)
 
 # {% base_static_extra %}
 @register.inclusion_tag("courses/static-files-include.html", takes_context=True)
@@ -126,6 +136,7 @@ def embed_frame(context, content_data):
 @register.inclusion_tag("courses/user-menu-options.html", takes_context=True)
 def user_menu_extra(context):
     options = []
+
     for module in lovelace_plugins["user-menu"]:
         options.extend(module.includes.get_user_menu_options(context))
 
@@ -374,9 +385,3 @@ def progress_widget(context, node_item):
         "deadline": dl_string,
         "dl_urgency": urgency
     }
-
-
-
-
-
-

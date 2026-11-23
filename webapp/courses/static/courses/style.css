@@ -2121,3 +2121,8 @@ div.user-menu-separator hr {
 tr.edit-form-error-tr {
     color: #a33;
 }
+
+span.select2-selection {
+    --bg-color: #e9e9ed;
+    --border-color: black;
+}

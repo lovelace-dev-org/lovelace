@@ -15,12 +15,19 @@ from django.template import loader
 from django.urls import reverse
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
+from django.contrib import admin
+
 from modeltranslation.forms import TranslationModelForm
 
 from courses import blockparser
 from courses import markupparser
 from courses.fields import OriginFilterField
-from courses.widgets import AnswerWidgetRegistry, NoTrailingZerosInput, OriginFilterSelect
+from courses.widgets import (
+    AnswerWidgetRegistry,
+    NoTrailingZerosInput,
+    OriginFilterSelect,
+    UserAutocompleteSelect,
+)
 from utils.access import accessible_courses
 from utils.formatters import display_name
 from utils.management import add_translated_charfields, TranslationStaffForm, get_prefixed_slug
@@ -743,4 +750,20 @@ class TextfieldWidgetConfigurationForm(forms.ModelForm):
         model = cm.TextfieldWidgetSettings
         fields = ["rows"]
 
+
+class StaffPermissionForm(forms.ModelForm):
+
+    class Meta:
+        model = cm.CourseStaffPermission
+        exclude = ["instance"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["user"] = forms.ModelChoiceField(
+            queryset=cm.User.objects.all(),
+            widget=UserAutocompleteSelect(
+                cm.CourseStaffPermission._meta.get_field("user").remote_field,
+                admin.site,
+            ),
+        )
 

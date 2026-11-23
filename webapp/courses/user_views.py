@@ -33,8 +33,9 @@ from courses.forms import GroupConfigForm, GroupInviteForm, UserForm, UserProfil
 from courses.views import system_messages
 from utils.access import (
     block_in_exam_mode,
-    ensure_enrolled_or_staff,
-    is_course_staff,
+    ensure_enrolled_or_permission,
+    ensure_permission,
+    get_staff_role,
 )
 from utils.users import get_group_members
 
@@ -159,7 +160,7 @@ def user(request, user):
 # |
 # v
 
-@ensure_enrolled_or_staff
+@ensure_enrolled_or_permission("permit_groups")
 @block_in_exam_mode
 def group_info(request, course, instance):
     if instance.max_group_size is None:
@@ -212,7 +213,7 @@ def group_info(request, course, instance):
         "instance": instance,
         "invited_to": invited_to,
         "is_supervisor": is_supervisor,
-        "course_staff": is_course_staff(request.user, instance),
+        "course_staff": get_staff_role(request.user, instance),
     }
 
     if slots and group:
@@ -303,7 +304,7 @@ def cancel_invitation(request, course, instance, group, invite):
 # |
 # v
 
-@ensure_enrolled_or_staff
+@ensure_enrolled_or_permission("permit_submit_answer")
 def get_ws_ticket(request, course, instance, widget_id):
     ticket_key = secrets.token_urlsafe(64)
     ticket = {

@@ -38,7 +38,7 @@ from routine_exercise.models import (
 import routine_exercise.tasks as routine_tasks
 from routine_exercise.forms import BackendForm, CommandForm, TemplateForm
 
-from utils.access import ensure_enrolled_or_staff, ensure_staff, determine_access
+from utils.access import ensure_enrolled_or_permission, ensure_permission, determine_access
 from utils.archive import (
     find_version_with_filename, get_archived_instances, get_single_archived,
     squash_revisions
@@ -167,7 +167,7 @@ def _routine_payload(user, instance, content, revision, progress, answer=None):
     return payload
 
 
-@ensure_enrolled_or_staff
+@ensure_enrolled_or_permission("permit_submit_answer")
 def get_routine_question(request, course, instance, parent, content):
     content = content.get_type_object()
     embed_link = cm.EmbeddedLink.objects.get(
@@ -236,7 +236,7 @@ def get_routine_question(request, course, instance, parent, content):
     return JsonResponse(data)
 
 
-@ensure_enrolled_or_staff
+@ensure_enrolled_or_permission("permit_submit_answer")
 def routine_progress(request, course, instance, parent, content, task_id):
     task = celery_app.AsyncResult(id=task_id)
     if not task.ready():
@@ -360,7 +360,7 @@ def routine_progress(request, course, instance, parent, content, task_id):
     return JsonResponse({"error": _("Invalid task type.")})
 
 
-@ensure_enrolled_or_staff
+@ensure_enrolled_or_permission("permit_submit_answer")
 def check_routine_question(request, course, instance, parent, content):
     if request.method != "POST":
         return HttpResponseNotAllowed(["POST"])
@@ -427,7 +427,7 @@ def check_routine_question(request, course, instance, parent, content):
 # v
 
 
-@ensure_staff
+@ensure_enrolled_or_permission("permit_edit_content")
 def routine_backend_panel(request, course, instance, content):
     backends = content.routineexercisebackendfile_set.get_queryset()
     c = {
@@ -440,7 +440,7 @@ def routine_backend_panel(request, course, instance, content):
     t = loader.get_template("routine_exercise/routine-backend-panel.html")
     return HttpResponse(t.render(c, request))
 
-@ensure_staff
+@ensure_enrolled_or_permission("permit_edit_content")
 def edit_backend(request, course, instance, content, filename):
     backend = RoutineExerciseBackendFile.objects.get(
         exercise=content,
@@ -459,7 +459,7 @@ def edit_backend(request, course, instance, content, filename):
         }
     )
 
-@ensure_staff
+@ensure_enrolled_or_permission("permit_edit_content")
 def delete_backend(request, course, instance, content, filename):
     backend = RoutineExerciseBackendFile.objects.get(
         exercise=content,
@@ -489,7 +489,7 @@ def delete_backend(request, course, instance, content, filename):
         }
     )
 
-@ensure_staff
+@ensure_enrolled_or_permission("permit_edit_content")
 def add_backend(request, course, instance, content):
 
     def post_save(backend, form):
@@ -508,7 +508,7 @@ def add_backend(request, course, instance, content):
         }
     )
 
-@ensure_staff
+@ensure_enrolled_or_permission("permit_edit_content")
 def edit_command(request, course, instance, content):
 
     try:
@@ -532,7 +532,7 @@ def edit_command(request, course, instance, content):
         }
     )
 
-@ensure_staff
+@ensure_enrolled_or_permission("permit_edit_content")
 def routine_template_panel(request, course, instance, content):
     templates = content.routineexercisetemplate_set.get_queryset().order_by(
         "question_class", "variant"
@@ -551,7 +551,7 @@ def routine_template_panel(request, course, instance, content):
     t = loader.get_template("routine_exercise/routine-template-panel.html")
     return HttpResponse(t.render(c, request))
 
-@ensure_staff
+@ensure_enrolled_or_permission("permit_edit_content")
 def edit_template(request, course, instance, content, qc, variant):
     template = RoutineExerciseTemplate.objects.get(
         exercise=content,
@@ -571,7 +571,7 @@ def edit_template(request, course, instance, content, qc, variant):
         }
     )
 
-@ensure_staff
+@ensure_enrolled_or_permission("permit_edit_content")
 def delete_template(request, course, instance, content, qc, variant):
     template = RoutineExerciseTemplate.objects.get(
         exercise=content,
@@ -602,7 +602,7 @@ def delete_template(request, course, instance, content, qc, variant):
         }
     )
 
-@ensure_staff
+@ensure_enrolled_or_permission("permit_edit_content")
 def add_template(request, course, instance, content, qc):
     def post_save(template, form):
         if last := content.routineexercisetemplate_set.get_queryset().filter(

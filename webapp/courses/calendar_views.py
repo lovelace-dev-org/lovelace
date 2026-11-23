@@ -22,7 +22,7 @@ from courses.models import (
     StudentGroup,
 )
 import courses.message_views as messaging
-from utils.access import ensure_staff
+from utils.access import ensure_permission
 from utils.formatters import display_name
 from utils.management import CourseContentAdmin
 
@@ -118,7 +118,7 @@ def user_calendar(request):
     }
     return HttpResponse(t.render(c, request))
 
-@ensure_staff
+@ensure_permission("permit_calendar")
 def calendar_scheduling(request, course, instance, calendar):
     if request.method == "POST":
         form = CalendarSchedulingForm(request.POST)
@@ -155,7 +155,7 @@ def calendar_scheduling(request, course, instance, calendar):
     return HttpResponse(t.render(c, request))
 
 
-@ensure_staff
+@ensure_permission("permit_calendar")
 def adjust_slots(request, course, instance, event, action):
     if request.method != "POST":
         return HttpResponseNotAllowed(["POST"])
@@ -180,7 +180,7 @@ def adjust_slots(request, course, instance, event, action):
     )
 
 
-@ensure_staff
+@ensure_permission("permit_calendar")
 def calendar_config(request, course, instance, calendar):
     available_content = ContentPage.objects.filter(
         embedlink__instance=instance,
@@ -211,7 +211,7 @@ def calendar_config(request, course, instance, calendar):
     return HttpResponse(t.render(c, request))
 
 
-@ensure_staff
+@ensure_permission("permit_messages")
 def message_reservers(request, course, instance, calendar):
     cal_dates = calendar.calendardate_set.get_queryset()
     reservers = set()

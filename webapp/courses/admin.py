@@ -30,6 +30,7 @@ from courses.models import (
     Course,
     CourseInstance,
     CourseMedia,
+    CourseStaffPermission,
     File,
     FileUploadExercise,
     FileExerciseTest,
@@ -653,6 +654,13 @@ class CourseAdmin(TranslationAdmin, VersionAdmin):
 
 
 admin.site.register(Course, CourseAdmin)
+
+
+class CourseStaffPermissionAdmin(admin.ModelAdmin):
+    autocomplete_fields = ["user"]
+
+
+admin.site.register(CourseStaffPermission, CourseStaffPermissionAdmin)
 
 
 class AllMethodCachingQueryset(models.query.QuerySet):

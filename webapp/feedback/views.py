@@ -15,7 +15,7 @@ import feedback.models
 from feedback.models import ContentFeedbackQuestion
 from feedback.forms import ContentFeedbackConfigForm, FeedbackQuestionEditForm
 import courses.models
-from utils.access import ensure_staff
+from utils.access import check_permission, ensure_permission
 from utils.content import first_title_from_content
 from utils.management import process_modelform, process_confirm_form
 
@@ -87,7 +87,7 @@ def multiple_choice_feedback_stats(question, instance, content):
 
 
 def content_feedback_stats(request, instance, content):
-    if not request.user.is_authenticated or not request.user.is_active or not request.user.is_staff:
+    if not check_permission(request.user, instance, "permit_feedback"):
         return HttpResponseForbidden("Only logged in admins can view feedback statistics!")
 
     links = courses.models.EmbeddedLink.objects.filter(embedded_page=content, instance=instance)
@@ -193,7 +193,7 @@ def receive(request, instance, content, question):
 # |
 # v
 
-@ensure_staff
+@ensure_permission("permit_edit_material")
 def feedback_management_panel(request, course, instance, content):
 
     questions = ContentFeedbackQuestion.objects.filter(origin=course).order_by("question")
@@ -208,7 +208,7 @@ def feedback_management_panel(request, course, instance, content):
     t = loader.get_template("feedback/feedback-management-panel.html")
     return HttpResponse(t.render(c, request))
 
-@ensure_staff
+@ensure_permission("permit_edit_material")
 def edit_content_feedback(request, course, instance, content):
     return process_modelform(
         request,
@@ -218,7 +218,7 @@ def edit_content_feedback(request, course, instance, content):
         comment=f"Change {content.slug} feedback questions",
     )
 
-@ensure_staff
+@ensure_permission("permit_edit_material")
 def create_feedback_question(request, course, instance):
     def post_save(question, form):
         question.origin = course
@@ -235,7 +235,7 @@ def create_feedback_question(request, course, instance):
         }
     )
 
-@ensure_staff
+@ensure_permission("permit_edit_material")
 def edit_feedback_question(request, course, instance, question):
     form_cls = question.get_type_model().get_edit_form()
 
@@ -250,7 +250,7 @@ def edit_feedback_question(request, course, instance, question):
         }
     )
 
-@ensure_staff
+@ensure_permission("permit_edit_material")
 def delete_feedback_question(request, course, instance, question):
     if request.method == "POST" and question.contentpage_set.get_queryset().exists():
         return JsonResponse(
