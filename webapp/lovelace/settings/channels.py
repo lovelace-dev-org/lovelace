@@ -3,8 +3,12 @@ from dotenv import load_dotenv
 
 load_dotenv(os.getenv("DOTENV_PATH"))
 
-ALLOWED_HOSTS = os.environ["LOVELACE_HOSTNAME"].split(":") + [os.environ["LOVELACE_HOSTADDR"]]
+ALLOWED_HOSTS = os.environ["LOVELACE_HOSTNAME"].split(
+    ":") + [os.environ["LOVELACE_HOSTADDR"]]
 ALLOWED_WS_ORIGINS = os.environ["LOVELACE_WS_ORIGINS"].split(",")
+COMPILER_EXPLORER_URL = os.environ["COMPILER_EXPLORER_URL"]
+if COMPILER_EXPLORER_URL.endswith("/"):
+    COMPILER_EXPLORER_URL = COMPILER_EXPLORER_URL[:-1]
 
 SECRET_KEY = os.environ["LOVELACE_SECRET_KEY"]
 INSTALLED_APPS = [

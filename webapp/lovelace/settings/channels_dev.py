@@ -1,0 +1,93 @@
+import os
+from dotenv import load_dotenv
+import logging
+
+load_dotenv(os.getenv("DOTENV_PATH"))
+
+COMPILER_EXPLORER_URL = os.environ["COMPILER_EXPLORER_URL"]
+if COMPILER_EXPLORER_URL.endswith("/"):
+    COMPILER_EXPLORER_URL = COMPILER_EXPLORER_URL[:-1]
+
+STATIC_URL = "/static/"
+
+DEBUG = True
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'daphne': {
+            'handlers': [
+                'console',
+            ],
+            'level': 'DEBUG'
+        },
+    },
+}
+
+ALLOWED_HOSTS = os.environ["LOVELACE_HOSTNAME"].split(
+    ":") + [os.environ["LOVELACE_HOSTADDR"]]
+ALLOWED_WS_ORIGINS = os.environ["LOVELACE_WS_ORIGINS"].split(",")
+
+SECRET_KEY = os.environ["LOVELACE_SECRET_KEY"]
+INSTALLED_APPS = [
+    "daphne",
+    "modeltranslation",
+    "courses",
+    "feedback",   # included because courses hard-depends on it
+    "faq",        # included because courses soft-depends on it
+    "task_ws",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "django.contrib.postgres",
+]
+TIME_ZONE = "Europe/Helsinki"
+
+ASGI_APPLICATION = "lovelace.asgi.application"
+ROOT_URLCONF = "lovelace.channel_urls"
+ENABLE_CELERY = False
+DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
+
+if os.getenv("LOVELACE_DB_USE_SSL"):
+    _DB_OPTIONS = {
+        "sslmode": "require",
+        "sslcert": os.environ["LOVELACE_CLIENT_CERT"],
+        "sslkey": os.environ["LOVELACE_CLIENT_KEY"],
+        "sslrootcert": os.environ["LOVELACE_CLIENT_CA"],
+    }
+else:
+    _DB_OPTIONS = {}
+
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.environ["LOVELACE_DB_NAME"],
+        "USER": os.environ["LOVELACE_DB_USER"],
+        "PASSWORD": os.environ["LOVELACE_DB_PASS"],
+        "HOST": os.environ["LOVELACE_DB_HOST"],
+        "PORT": os.environ["LOVELACE_DB_PORT"],
+        "OPTIONS": _DB_OPTIONS,
+    }
+}
+
+TICKET_CACHE_URL = os.environ["LOVELACE_WS_CACHE"]
+if os.getenv("LOVELACE_WS_CACHE_USE_SSL"):
+    TICKET_CACHE_URL += (
+        "?ssl_cert_reqs=required"
+        f"&ssl_ca_certs={os.environ['LOVELACE_WS_CLIENT_CA']}"
+        f"&ssl_certfile={os.environ['LOVELACE_WS_CLIENT_CERT']}"
+        f"&ssl_keyfile={os.environ['LOVELACE_WS_CLIENT_KEY']}"
+    )
+
+WS_TIMEOUT = int(os.getenv("LOVELACE_WS_TIMEOUT", 30))
+WS_CHILD_MEMORY_LIMIT_HARD = os.getenv("LOVELACE_WS_MEMORY_LIMIT_HARD", "100m")
+WS_CHILD_MEMORY_LIMIT_SOFT = os.getenv("LOVELACE_WS_MEMORY_LIMIT_SOFT", "50m")
+WS_CHILD_CPU_LIMIT = os.getenv("LOVELACE_WS_CPU_LIMIT", "0.5")

@@ -1,3 +1,14 @@
+/**
+ * @typedef {Object} WSController
+ * @property {() => void} begin Called on websocket open
+ * @property {(data: string) => void} receive
+ * Called when receiving data from the websocket with a "read" operation.
+ * 
+ * The "status" field of the operation packet must be "ok" 
+ * @property {(data: string) => void} end Called when the websocket connection is closed due to timeout or a successful "read" operation.
+ * @property {(data: string, error: string|undefined) => void} error Called on receive and error. Additionally called when the websocket is closed.
+ */
+
 const WSWrapper = class {
     constructor(addr, ticket_url) {
         this.path = addr
@@ -62,6 +73,9 @@ const WSWrapper = class {
                         controller.end("Error")
                         controller.error("Websocket returned unknown operation")
                 }
+            }
+            else if (data["status"] == "failed" && data["reason"]) {
+                controller.error("Websocket failed", data["reason"])
             }
             else {
                 controller.end("Error")

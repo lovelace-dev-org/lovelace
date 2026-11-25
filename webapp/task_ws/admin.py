@@ -2,8 +2,12 @@ from django.contrib import admin
 
 from reversion.admin import VersionAdmin
 
-from task_ws.models import XtermWidgetSettings, TurtleWidgetSettings, SQLWidgetSettings
+from task_ws.models import (
+    XtermWidgetSettings, TurtleWidgetSettings, 
+    CompilerExplorerWidgetSettings, SQLWidgetSettings
+)
 # Register your models here.
+
 
 class XtermWidgetAdmin(VersionAdmin):
 
@@ -18,6 +22,12 @@ class TurtleWidgetAdmin(VersionAdmin):
     save_on_top = True
     list_display = ["slug", "course"]
 
+
+class CompilerExplorerWidgetAdmin(VersionAdmin):
+
+    content_type = "COMPILER_EXPLORER"
+    
+    
 class SQLWidgetAdmin(VersionAdmin):
 
     content_type = "SQL"
@@ -27,4 +37,6 @@ class SQLWidgetAdmin(VersionAdmin):
 
 admin.site.register(XtermWidgetSettings, XtermWidgetAdmin)
 admin.site.register(TurtleWidgetSettings, TurtleWidgetAdmin)
+admin.site.register(CompilerExplorerWidgetSettings,
+                    CompilerExplorerWidgetAdmin)
 admin.site.register(SQLWidgetSettings, SQLWidgetAdmin)

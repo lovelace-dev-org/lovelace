@@ -126,7 +126,64 @@ class SQLPreviewWidget(PreviewWidget):
 
 
 
+class CompilerExplorerWidget(PreviewWidget):
+
+    handle = "ce"
+    template = "task_ws/widgets/ce-preview-widget.html"
+    configurable = True
+    receive_callback = "compilerexplorerwidget.receive"
+
+    def escape_string_js(self, s):
+        # if the string is templated into a javascript template string (`like this`),
+        # there are some characters we need to escape to prevent breaking the template
+
+        # escape $ to prevent breaking template string interpolation
+        s = s.replace("$", "\\$")
+        s = s.replace("`", "\\`")  # escape ` to prevent ending the string
+        # escape all backslashes to block all escape sequences which prevents invalid escape sequences
+        s = s.replace("\\", "\\\\")
+
+        return s
+
+    def render(self, context):
+        t = loader.get_template(self.template)
+        settings = self.get_settings()
+        print(settings)
+        context["xterm_rows"] = settings.rows
+        context["widget_slug"] = settings.slug
+        context["stdin"] = self.escape_string_js(settings.default_stdin)
+        context["compiler"] = self.escape_string_js(settings.compiler)
+        context["compiler_args"] = self.escape_string_js(
+            settings.compiler_args)
+        return t.render(context)
+
+    def get_configuration_form(self, request, data=None, prefix=None):
+        return task_ws.forms.CompilerExplorerWidgetConfigurationForm(
+            data,
+            instance=self.get_settings(),
+            prefix=prefix
+        )
+
+    def get_settings(self):
+        try:
+            settings = task_ws.models.CompilerExplorerWidgetSettings.objects.get(
+                slug=self.slug
+            )
+        except task_ws.models.CompilerExplorerWidgetSettings.DoesNotExist:
+            settings = task_ws.models.CompilerExplorerWidgetSettings(
+                name=self.slug.removeprefix(self.course.prefix + "-"),
+                course=self.course,
+            )
+        return settings
+
+    def export(self, instance, export_target):
+        settings = self.get_settings()
+        if settings.pk is not None:
+            settings.export(instance, export_target)
+
+
 def register_preview_widgets():
     PreviewWidgetRegistry.register_widget(XtermPreviewWidget)
     PreviewWidgetRegistry.register_widget(TurtlePreviewWidget)
+    PreviewWidgetRegistry.register_widget(CompilerExplorerWidget)
     PreviewWidgetRegistry.register_widget(SQLPreviewWidget)
