@@ -7,8 +7,12 @@
 
     {% load static %}
     {% load i18n %}
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:400,400italic,700,700italic%26subset=latin,latin-ext">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inconsolata">
+    {% get_debug_mode as DEBUG_MODE %}
+    {% get_exam_mode as EXAM_MODE %}
+    {% if not EXAM_MODE %}
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:400,400italic,700,700italic%26subset=latin,latin-ext">
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inconsolata">
+    {% endif %}
     <link rel="icon" href="{% static 'courses/favicon.png' %}">
     <link rel="stylesheet" href="{% static 'courses/style.css' %}">
     <link rel="stylesheet" href="{% static 'courses/medium-screens.css' %}" media="(max-width: 1912px)">
@@ -23,7 +27,12 @@
     {% endif %}
 
     <script src="{% static 'courses/katex.min.js' %}"></script>
-    <script src="{% static 'courses/jquery-3.6.4.min.js' %}"></script>
+    <script src="{% static 'courses/jquery-4.0.0.min.js' %}"></script>
+    {% if DEBUG_MODE %}
+      <script src="{% static 'courses/jquery-migrate-4.0.2.js' %}"></script>
+    {% else %}
+      <script src="{% static 'courses/jquery-migrate-4.0.2.min.js' %}"></script>
+    {% endif %}
     <script src="{% static 'courses/jquery.slimscroll.min.js' %}"></script>
     <script src="{% static 'courses/jquery.dirty.js' %}"></script>
     <script src="{% static 'courses/script.js' %}"></script>
@@ -142,6 +151,9 @@
                       {{ user.userprofile.unread_messages }}
                     </span>
                   {% endif %}
+                </div>
+                <div class="user-settings">
+                  <a href="/calendar/my-calendar/">{% trans 'My Calendar' %}</a>
                 </div>
                 {% if course and instance and instance.max_group_size %}
                     <div class="user-settings">

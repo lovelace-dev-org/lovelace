@@ -31,13 +31,13 @@ function show_results (e, elem, results_div) {
 }
 
 $(document).ready(function () {
-    $(".popup").click(function () {
+    $(".popup").on("click", function () {
         $(this).css({ opacity: "0", "pointer-events": "none" })
     })
-    $(".popup > div").click(function (event) {
+    $(".popup > div").on("click", function (event) {
         event.stopPropagation()
     })
-    $(".popup > pre").click(function (event) {
+    $(".popup > pre").on("click", function (event) {
         event.stopPropagation()
     })
 })

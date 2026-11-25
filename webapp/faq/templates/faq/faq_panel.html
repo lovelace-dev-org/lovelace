@@ -96,8 +96,8 @@
                 >{% trans 'Clear Form' %}</button>
             </form>
             <script>
-                $("#{{ exercise.slug }}-faq-edit-form").submit(faq.submit_edit_form);
-                $("#{{ exercise.slug }}-faq-link-form").submit(faq.submit_link_form);
+                $("#{{ exercise.slug }}-faq-edit-form").on("submit", faq.submit_edit_form);
+                $("#{{ exercise.slug }}-faq-link-form").on("submit", faq.submit_link_form);
             </script>
         </div>
         

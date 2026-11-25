@@ -25,6 +25,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False # Use True when viewing through web browser
 
+
 # Change to your hostname for production or network development installations
 ALLOWED_HOSTS = os.environ["LOVELACE_HOSTNAME"].split(":") + [os.environ["LOVELACE_HOSTADDR"]]
 
@@ -53,6 +54,8 @@ INSTALLED_APPS = [
     'assessment',
     'exercise_admin',
     'multiexam',
+    'answerless',
+    'examtask',
     'reversion',
     'teacher_tools',
     'ace',
@@ -76,23 +79,32 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 SITE_ID = int(os.getenv("LOVELACE_SITE_ID", 1))
+EXAM_MODE = bool(os.getenv("LOVELACE_EXAM_MODE", False))
+if EXAM_MODE:
+    MIDDLEWARE.append("courses.middleware.ExamModeMiddleware")
+    EXAM_WS_SERVER = os.getenv("LOVELACE_EXAM_WS_SERVER")
 
 # Shibboleth related options
 if os.getenv("LOVELACE_USE_SHIBBOLETH"):
     ACCOUNT_USERNAME_VALIDATORS = "courses.adapter.username_validators"
     ACCOUNT_ADAPTER = "courses.adapter.LovelaceAccountAdapter"
-    SHIBBOLETH_ATTRIBUTE_MAP = {
-        "eppn": (True, "username"),
-        "givenName": (True, "first_name"),
-        "sn": (True, "last_name"),
-        "mail": (True, "email"),
-        "schacPersonalUniqueCode": (False, "student_id")
-    }
-    LOGIN_URL = "https://lovelace.oulu.fi/Shibboleth.sso/Login"
+    if EXAM_MODE:
+        SHIBBOLETH_ATTRIBUTE_MAP = {
+            "eppn": (True, "username"),
+        }
+    else:
+        SHIBBOLETH_ATTRIBUTE_MAP = {
+            "eppn": (True, "username"),
+            "givenName": (True, "first_name"),
+            "sn": (True, "last_name"),
+            "mail": (True, "email"),
+            "schacPersonalUniqueCode": (False, "student_id")
+        }
+    _SERVER_ADDR = f"https://{ALLOWED_HOSTS[0]}"
+    LOGIN_URL = f"{_SERVER_ADDR}/Shibboleth.sso/Login"
 
-    #SHIBBOLETH_LOGOUT_URL = "https://login.oulu.fi/idp/logout?return=%s"
-    SHIBBOLETH_LOGOUT_URL = "https://lovelace.oulu.fi/Shibboleth.sso/Logout?return=%s"
-    SHIBBOLETH_LOGOUT_REDIRECT_URL = "https://lovelace.oulu.fi"
+    SHIBBOLETH_LOGOUT_URL = f"{_SERVER_ADDR}/Shibboleth.sso/Logout?return=%s"
+    SHIBBOLETH_LOGOUT_REDIRECT_URL = _SERVER_ADDR
 
     INSTALLED_APPS.append("shibboleth")
     MIDDLEWARE.insert(

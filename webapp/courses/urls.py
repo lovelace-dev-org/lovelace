@@ -88,9 +88,16 @@ urlpatterns = [
     path("user/<user:user>/", user_views.user),
     path("messages/", message_views.view_messages, name="view_messages"),
     path("profile/", user_views.user_profile),
-    # For calendar POST requests
+
+
+    # For calendar
     path(
-        "calendar/<calendar:calendar>/<event:event>/",
+        "calendar/my-calendar/",
+        calendar_views.user_calendar,
+        name="user_calendar",
+    ),
+    path(
+        "calendar/<instance:instance>/<calendar:calendar>/<event:event>/",
         calendar_views.calendar_reservation,
         name="calendar_reservation",
     ),
@@ -141,6 +148,11 @@ urlpatterns = [
         name="edit_grading",
     ),
     path(
+        "staff/<course:course>/<instance:instance>/exam_window/",
+        staff_views.edit_exam_window,
+        name="edit_exam_window",
+    ),
+    path(
         "staff/<course:course>/<instance:instance>/create_content_node/",
         staff_views.create_content_node,
         name="create_content_node",
@@ -172,7 +184,8 @@ urlpatterns = [
         name="regen_page_cache",
     ),
     path(
-        "staff/<course:course>/<instance:instance>/<content:content>/editform/<str:action>/",
+        "staff/<course:course>/<instance:instance>/<content:content>/"
+        "editform/<str:action>/",
         staff_views.edit_form,
         name="content_edit_form",
     ),
@@ -212,6 +225,111 @@ urlpatterns = [
         staff_views.import_instance,
         name="import",
     ),
+
+    # Staff URLs for staff management
+
+    path(
+        "staff/<course:course>/<instance:instance>/staff_management/",
+        staff_views.staff_management,
+        name="staff_management",
+    ),
+    path(
+        "staff/<course:course>/<instance:instance>/add_staff/",
+        staff_views.add_staff,
+        name="add_staff",
+    ),
+    path(
+        "staff/<course:course>/<instance:instance>/<user:user>/remove_staff/",
+        staff_views.remove_staff,
+        name="remove_staff",
+    ),
+    path(
+        "staff/<course:course>/<instance:instance>/<user:user>/edit_permission/",
+        staff_views.edit_permission,
+        name="edit_permission",
+    ),
+
+    # Staff URLs for fetching lists of things
+
+    path(
+        "staff/pages/",
+        staff_views.get_accessible_pages,
+        name="get_accessible_pages",
+    ),
+    path(
+        "staff/pages/toplevel/",
+        staff_views.get_accessible_pages,
+        {"toplevel": True},
+        name="get_accessible_lectures",
+    ),
+    path(
+        "staff/media/<str:media_type>/",
+        staff_views.get_accessible_media,
+        name="get_accessible_media",
+    ),
+    path(
+        "staff/terms/",
+        staff_views.get_accessible_terms,
+        name="get_accessible_terms",
+    ),
+    path(
+        "staff/calendars/",
+        staff_views.get_accessible_calendars,
+        name="get_accessible_calendars",
+    ),
+
+    path(
+        "staff/user-autocomplete/",
+        staff_views.user_autocomplete,
+        name="user_autocomplete"
+    ),
+
+
+    # Staff URLs for exercise configuration
+
+    path(
+        "staff/<course:course>/<instance:instance>/<content:content>/checking/",
+        staff_views.answer_settings_panel,
+        name="answer_settings_panel",
+    ),
+
+    path(
+        "staff/<course:course>/<instance:instance>/<content:content>/change_widget/",
+        staff_views.change_answer_widget,
+        name="change_answer_widget",
+    ),
+
+    path(
+        "staff/<course:course>/<instance:instance>/<content:content>/choices/"
+        "add/<int:after>/",
+        staff_views.add_exercise_choice,
+        name="add_exercise_choice",
+    ),
+    path(
+        "staff/<course:course>/<instance:instance>/<content:content>/choices/"
+        "edit/<int:choice_id>/",
+        staff_views.edit_exercise_choice,
+        name="edit_exercise_choice",
+    ),
+    path(
+        "staff/<course:course>/<instance:instance>/<content:content>/choices/"
+        "delete/<int:choice_id>/",
+        staff_views.delete_exercise_choice,
+        name="delete_exercise_choice",
+    ),
+    path(
+        "staff/<course:course>/<instance:instance>/<content:content>/choices/"
+        "move/<int:choice_id>/<str:direction>/",
+        staff_views.move_exercise_choice,
+        name="move_exercise_choice",
+    ),
+    path(
+        "staff/<course:course>/<instance:instance>/<content:content>/choices/"
+        "generate/",
+        staff_views.generate_exercise_choices,
+        name="generate_exercise_choices",
+    ),
+
 
     # Staff URLs for messages
     path(

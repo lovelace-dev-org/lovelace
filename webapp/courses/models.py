@@ -40,6 +40,7 @@ from courses import markupparser
 from courses import widgets
 #import feedback.models
 from lovelace import plugins as lovelace_plugins
+from utils.base import parent_ordinal_sort
 from utils.data import (
     export_json, export_files, serialize_single_python, serialize_many_python
 )
@@ -478,9 +479,39 @@ class CourseInstance(models.Model):
         except CourseEnrollment.DoesNotExist as e:
             return None
 
+    def user_staff_status(self, user):
+        if not user.is_active:
+            return None
+
+        if user.is_superuser:
+            return CourseStaffPermission.superuser_role(user, self)
+
+        try:
+            return CourseStaffPermission.objects.get(
+                Q(end_time=None) | Q(end_time__gt=datetime.datetime.now()),
+                user=user,
+                instance=self,
+                start_time__lt=datetime.datetime.now()
+            )
+        except CourseStaffPermission.DoesNotExist:
+            return None
+
+    def set_default_responsible(self):
+        responsible = self.course.main_responsible
+        permission, __ = CourseStaffPermission.get_or_create(
+            instance=self,
+            user=responsible,
+            start_time=datetime.datetime.now(),
+        )
+        permission.permit_all()
+        permission.save()
+
     def save(self, *args, **kwargs):
         self.slug = self.get_url_name()
+        is_new = self.pk is None
         super().save(*args, **kwargs)
+        if is_new:
+            self.set_default_responsible()
 
         if not self._was_primary and self.primary:
             for instance in CourseInstance.objects.filter(course=self.course).exclude(pk=self.pk):
@@ -495,7 +526,7 @@ class CourseInstance(models.Model):
             self.clear_content_tree_cache(regen_frozen=True)
 
 
-    def get_content_tree(self, lang_code=None, staff=False, guest=False):
+    def get_content_tree(self, lang_code=None, mode=None):
         current_lang = translation.get_language()
         if lang_code is not None:
             translation.activate(lang_code)
@@ -503,10 +534,11 @@ class CourseInstance(models.Model):
             lang_code = current_lang
 
         cache_key = f"{self.slug}_tree_{lang_code}"
-        if staff:
-            cache_key += "_staff"
-        elif guest:
-            cache_key += "_guest"
+        if mode:
+            cache_key += f"_{mode}"
+
+        staff = mode == "staff"
+        guest = mode == "guest"
 
         cached_tree = cache.get(cache_key)
         if cached_tree:
@@ -514,12 +546,18 @@ class CourseInstance(models.Model):
 
         if staff:
             nodes = ContentGraph.objects.filter(instance=self, ordinal_number__gt=0)
-        elif guest:
-            nodes = ContentGraph.objects.filter(
-                instance=self, ordinal_number__gt=0, visible=True, require_enroll=False
-            )
         else:
-            nodes = ContentGraph.objects.filter(instance=self, ordinal_number__gt=0, visible=True)
+            if guest:
+                nodes = ContentGraph.objects.filter(
+                    instance=self, ordinal_number__gt=0, visible=True, require_enroll=False
+                )
+            else:
+                nodes = ContentGraph.objects.filter(instance=self, ordinal_number__gt=0, visible=True)
+
+            if settings.EXAM_MODE:
+                nodes = nodes.exclude(visibility="no-exam")
+            # else:
+            #     nodes = nodes.exclude(visibility="exam-only")
 
         nodes = nodes.select_related("parentnode", "content").defer("content__content")
         embed_links = (
@@ -564,7 +602,11 @@ class CourseInstance(models.Model):
 
             page_count = node.content.count_pages(self)
             embeds = embeds_by_parent[node.content_id]
-            embedded_count = max(len(embeds) - 1, 0) + len(embeds.get("", []))
+
+            # Empty string is the key for non-grouped tasks.
+            # Therefore the total amount of tasks is the number of named groups
+            # plus the number of tasks in the nameless "group"
+            embedded_count = max(len(embeds) - ("" in embeds), 0) + len(embeds.get("", []))
             page_score = (
                 sum(task[1] for task in embeds.get("", []))
                 + sum(embeds[tag][0][1] for tag in embeds if tag)
@@ -579,6 +621,7 @@ class CourseInstance(models.Model):
                     "content": node.content
                 }),
                 "visible": node.visible,
+                "accessible": node.is_accessible(),
                 "require_enroll": node.require_enroll,
                 "page_count": page_count,
                 "deadline": node.deadline,
@@ -605,6 +648,10 @@ class CourseInstance(models.Model):
         for lang_code, _ in settings.LANGUAGES:
             cache.delete(f"{self.slug}_tree_{lang_code}")
             cache.delete(f"{self.slug}_tree_{lang_code}_staff")
+            cache.delete(f"{self.slug}_tree_{lang_code}_guest")
+            cache.delete(f"{self.slug}_tree_{lang_code}_exam")
+
+        cache.delete(f"{self.slug}_deadlines")
 
     def freeze(self, freeze_to=None):
         """
@@ -693,7 +740,49 @@ class CourseInstance(models.Model):
         for module in lovelace_plugins["export"]:
             module.models.export_models(self, export_target)
 
+    def get_deadlines(self, user):
+        entries = []
+        exempt = []
 
+        cached = cache.get(f"{self.slug}_deadlines")
+
+        if not cached:
+            cgs = list(self.contentgraph_set.get_queryset().filter(deadline__isnull=False))
+            cgs.sort(key=parent_ordinal_sort)
+            for i, cg in enumerate(cgs):
+                instance_url = reverse("courses:course", kwargs={
+                    "course": self.course,
+                    "instance": self,
+                })
+                entries.append({
+                    "cg_id": cg.id,
+                    "deadline": cg.deadline,
+                    "course": self.course,
+                    "content": cg.content,
+                    "ordinal": i,
+                    "instance_url": instance_url,
+                    "content_url": reverse("courses:content", kwargs={
+                        "course": self.course,
+                        "instance": self,
+                        "content": cg.content,
+                    })
+                })
+        else:
+            entries = cached
+
+        exemptions = dict(
+            (e.contentgraph.id, e.new_deadline)
+            for e in DeadlineExemption.objects.filter(user=user, contentgraph__instance=self)
+        )
+        if not exemptions:
+            return entries
+
+        for entry in entries:
+            if new_dl := exemptions.get(entry["cg_id"]):
+                entry["deadline"] = new_dl
+
+        entries.sort(key=operator.itemgetter("deadline"))
+        return entries
 
     def finalize_import(self, document, pk_map):
         pass
@@ -708,6 +797,77 @@ class CourseInstance(models.Model):
         if self.notes:
             return self.notes.split(",")
         return []
+
+    def exam_active(self, user=None):
+        try:
+            window = self.courseinstanceexamwindow
+        except CourseInstanceExamWindow.DoesNotExist:
+            return False
+        else:
+            if window.start_time <= datetime.datetime.now() <= window.end_time:
+                return True
+        return False
+
+
+class CourseInstanceExamWindow(models.Model):
+
+    start_time = models.DateTimeField(verbose_name=_("Exam window start time"))
+    end_time = models.DateTimeField(verbose_name=_("Exam window end time"))
+    instance = models.OneToOneField("CourseInstance", on_delete=models.CASCADE)
+
+
+class CourseStaffPermission(models.Model):
+
+    class Meta:
+        unique_together = ("instance", "user")
+
+    instance = models.ForeignKey("CourseInstance", on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    permit_management = models.BooleanField(default=False)
+    permit_view_answers = models.BooleanField(default=False)
+    permit_submit_answer = models.BooleanField(default=False)
+    permit_edit_material = models.BooleanField(default=False)
+    permit_edit_instance = models.BooleanField(default=False)
+    permit_grading = models.BooleanField(default=False)
+    permit_evaluate = models.BooleanField(default=False)
+    permit_messages = models.BooleanField(default=False)
+    permit_groups = models.BooleanField(default=False)
+    permit_feedback = models.BooleanField(default=False)
+    permit_calendar = models.BooleanField(default=False)
+
+    start_time = models.DateTimeField(verbose_name=_("Contract start time"))
+    end_time = models.DateTimeField(verbose_name=_("Contract end time"), null=True, blank=True)
+
+    @classmethod
+    def superuser_role(cls, user, instance):
+        """
+        Return a virtual role for admin users.
+        """
+
+        permission = cls(
+            user=user,
+            instance=instance,
+            start_time=datetime.datetime.now(),
+        )
+        permission.permit_all()
+        return permission
+
+    def permit_all(self):
+        """
+        Shorthand for giving all permissions.
+        """
+
+        for field in self._meta.get_fields():
+            if field.name.startswith("permit"):
+                setattr(self, field.name, True)
+
+    def get_permissions(self):
+        permissions = []
+        for field in self._meta.get_fields():
+            if field.name.startswith("permit"):
+                if getattr(self, field.name, False):
+                    permissions.append(field.name.removeprefix("permit_"))
+        return permissions
 
 
 class GradeThresholdManager(models.Manager):
@@ -811,6 +971,15 @@ class ContentGraph(models.Model):
     scored = models.BooleanField(verbose_name="Does this exercise affect scoring", default=True)
     ordinal_number = models.PositiveSmallIntegerField()
     visible = models.BooleanField(verbose_name="Is this content visible to students", default=True)
+    visibility = models.CharField(
+        max_length=16,
+        choices=(
+            ("both", "Always visible"),
+            ("exam-only", "Only visible in Exam Mode"),
+            ("no-exam", "Not visible in Exam Mode"),
+        ),
+        default="both",
+    )
     revision = models.PositiveIntegerField(
         verbose_name="The specific revision of the content", blank=True, null=True  # null = current
     )
@@ -860,6 +1029,13 @@ class ContentGraph(models.Model):
     def set_instance(self, instance):
         self.instance = instance
 
+    def is_accessible(self):
+        if self.visibility == "exam-only" and not settings.EXAM_MODE:
+            return False
+        elif self.visibility == "no-exam" and settings.EXAM_MODE:
+            return False
+        return True
+
     def __str__(self):
         return f"No. {self.ordinal_number} – {self.content.slug} ({self.get_revision_str()})"
 
@@ -899,7 +1075,7 @@ class CourseMedia(models.Model, ExportImportMixin):
         self.slug = get_prefixed_slug(self, self.origin, "name", translated=False)
         super().save(*args, **kwargs)
         if regen_cache:
-            for link in self.coursemedialink_set.get_queryset():
+            for link in self.coursemedialink_set.get_queryset().distinct("instance", "parent"):
                 if not link.instance.frozen:
                     link.parent.regenerate_cache(link.instance)
 
@@ -1039,11 +1215,6 @@ class TermToInstanceLink(models.Model, ExportImportMixin):
 
 
 class Term(models.Model, ExportImportMixin):
-    class Meta:
-        unique_together = (
-            "origin",
-            "name",
-        )
 
     objects = SlugManager()
 
@@ -1101,14 +1272,16 @@ class TermAlias(models.Model):
     class Meta:
         unique_together = (
             "term",
-            "name"
+            f"name_{settings.MODELTRANSLATION_DEFAULT_LANGUAGE}"
         )
 
     term = models.ForeignKey(Term, null=True, on_delete=models.CASCADE)
     name = models.CharField(verbose_name="Term", max_length=200)  # Translate
 
     def natural_key(self):
-        return self.term.natural_key() + [self.name]
+        return self.term.natural_key() + [getattr(
+            self, f"name_{settings.MODELTRANSLATION_DEFAULT_LANGUAGE}"
+        )]
 
 
 class TermTagManager(models.Manager):
@@ -1134,7 +1307,7 @@ class TermTab(models.Model):
     class Meta:
         unique_together = (
             "term",
-            "title"
+            f"title_{settings.MODELTRANSLATION_DEFAULT_LANGUAGE}"
         )
 
     term = models.ForeignKey(Term, on_delete=models.CASCADE)
@@ -1142,7 +1315,9 @@ class TermTab(models.Model):
     description = models.TextField()  # Translate
 
     def natural_key(self):
-        return self.term.natural_key() + [self.title]
+        return self.term.natural_key() + [getattr(
+            self, f"title_{settings.MODELTRANSLATION_DEFAULT_LANGUAGE}"
+        )]
 
     def __str__(self):
         return self.title
@@ -1152,7 +1327,7 @@ class TermLink(models.Model):
     class Meta:
         unique_together = (
             "term",
-            "url"
+            f"url_{settings.MODELTRANSLATION_DEFAULT_LANGUAGE}"
         )
 
     term = models.ForeignKey(Term, on_delete=models.CASCADE)
@@ -1160,7 +1335,10 @@ class TermLink(models.Model):
     link_text = models.CharField(verbose_name="Link text", max_length=80)  # Translate
 
     def natural_key(self):
-        return self.term.natural_key() + [self.url]
+        return self.term.natural_key() + [getattr(
+            self, f"url_{settings.MODELTRANSLATION_DEFAULT_LANGUAGE}"
+        )]
+
 
 
 
@@ -1190,6 +1368,10 @@ class Calendar(models.Model, ExportImportMixin):
     related_content = models.ForeignKey(
         "ContentPage", on_delete=models.SET_NULL, null=True, blank=True
     )
+    meeting_calendar = models.BooleanField(
+        verbose_name=_("Is a meeting calendar"),
+        default=True,
+        help_text=_("Meeting calendar reservations will show up in the host's personal calendar."),    )
     origin = models.ForeignKey(Course, verbose_name="Course", null=True, on_delete=models.SET_NULL)
     slug = models.SlugField(max_length=255, allow_unicode=True, blank=False)
     heading_level = models.PositiveSmallIntegerField(
@@ -1212,6 +1394,7 @@ class CalendarDate(models.Model):
     """A single date on a calendar."""
 
     calendar = models.ForeignKey(Calendar, on_delete=models.CASCADE)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     event_name = models.CharField(verbose_name="Name of the event", max_length=200)  # Translate
     event_description = models.CharField(
         verbose_name="Description", max_length=200, blank=True, null=True
@@ -1245,20 +1428,12 @@ class CalendarReservation(models.Model):
 
     calendar_date = models.ForeignKey(CalendarDate, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    instance = models.ForeignKey(CourseInstance, on_delete=models.SET_NULL, null=True)
 
 
 # ^
 # |
 # CALENDAR
-# ANSWER WIDGETS
-# |
-# V
-
-
-
-# ^
-# |
-# ANSWER WIDGETS
 # CONTENT BASE
 # |
 # V
@@ -1315,9 +1490,9 @@ class EmbeddedLink(models.Model, ExportImportMixin):
 
     objects = EmbeddedLinkManager()
 
-    parent = models.ForeignKey("ContentPage", related_name="emb_parent", on_delete=models.CASCADE)
+    parent = models.ForeignKey("ContentPage", related_name="parentlink", on_delete=models.CASCADE)
     embedded_page = models.ForeignKey(
-        "ContentPage", related_name="emb_embedded", on_delete=models.RESTRICT
+        "ContentPage", related_name="embedlink", on_delete=models.RESTRICT
     )
     revision = models.PositiveIntegerField(blank=True, null=True)
     ordinal_number = models.PositiveSmallIntegerField()
@@ -1372,6 +1547,8 @@ class EmbeddedLink(models.Model, ExportImportMixin):
     def set_instance(self, instance):
         self.instance = instance
 
+    def __str__(self):
+        return f"{self.parent.name} > {self.embedded_page.name}"
 
 
 class ContentPage(models.Model, ExportImportMixin):
@@ -1393,13 +1570,14 @@ class ContentPage(models.Model, ExportImportMixin):
 
     class Meta:
         ordering = ("name",)
-        unique_together = ("name", "origin")
 
     objects = SlugManager()
 
     # Dynamically registered content types go here.
     content_type_models = {}
     answer_models = {}
+    user_answer_models = {}
+    config_forms = {}
 
     # Template to use for rendering this content type, all content type models must set their own.
     default_answer_widget = "blank"
@@ -1440,7 +1618,8 @@ class ContentPage(models.Model, ExportImportMixin):
 
 
     @classmethod
-    def register_content_type(cls, constant_name, type_class, answer_class=None):
+    def register_content_type(cls, constant_name, type_class,
+                              answer_class=None, user_answer_class=None):
         if not issubclass(type_class, cls):
             raise TypeError(
                 _("Class {type_class} is not a subclass of {cls}").format(
@@ -1451,6 +1630,11 @@ class ContentPage(models.Model, ExportImportMixin):
 
         cls.content_type_models[constant_name] = type_class
         cls.answer_models[constant_name] = answer_class
+        cls.user_answer_models[constant_name] = user_answer_class
+
+    @classmethod
+    def register_config_form(cls, constant_name, form_class):
+        cls.config_forms[constant_name] = form_class
 
     def natural_key(self):
         return (self.slug, )
@@ -1460,6 +1644,18 @@ class ContentPage(models.Model, ExportImportMixin):
             self.slug = self.get_url_name()
         else:
             self.slug = slugify(self.slug, allow_unicode=True)
+
+        # When creating a new page, for each language where name is set
+        # also create default content (page title in heading level 1)
+        if not self.pk:
+            for lang_code, __ in settings.LANGUAGES:
+                lang_name = getattr(self, f"name_{lang_code}", "")
+                if lang_name:
+                    setattr(
+                        self,
+                        f"content_{lang_code}",
+                        f"= {lang_name} =",
+                    )
 
         super().save(*args, **kwargs)
 
@@ -1595,15 +1791,18 @@ class ContentPage(models.Model, ExportImportMixin):
         question = blockparser.parseblock(escape(self.question, quote=False), context)
         return question
 
+    def get_config_form(self):
+        return self.config_forms[self.content_type]
+
     def get_answer_widget(self, course):
         if not self.answer_widget:
             handle = self.default_answer_widget
         else:
             handle = self.answer_widget
 
-        widget_slug = f"{course.prefix}-{self.slug.removeprefix(course.prefix + "-")}"
+        # widget_slug = f"{course.prefix}-{self.slug.removeprefix(course.prefix + "-")}"
         widget = widgets.AnswerWidgetRegistry.get_widget(
-            handle, course, widget_slug
+            handle, course, self.slug
         )
         return widget
 
@@ -1682,23 +1881,29 @@ class ContentPage(models.Model, ExportImportMixin):
 
         # set ordinal to zero at first, updated per language later
         for link_slug in added_page_links:
-            link_obj = EmbeddedLink(
-                parent=self,
-                embedded_page=ContentPage.objects.get(slug=link_slug),
-                revision=None,
-                ordinal_number=0,
-                instance=instance,
-            )
-            link_obj.save()
+            try:
+                link_obj = EmbeddedLink(
+                    parent=self,
+                    embedded_page=ContentPage.objects.get(slug=link_slug),
+                    revision=None,
+                    ordinal_number=0,
+                    instance=instance,
+                )
+                link_obj.save()
+            except ContentPage.DoesNotExist:
+                print("Broken reference:", link_slug)
 
         for link_slug in added_media_links:
-            link_obj = CourseMediaLink(
-                parent=self,
-                media=CourseMedia.objects.get(slug=link_slug),
-                instance=instance,
-                revision=None,
-            )
-            link_obj.save()
+            try:
+                link_obj = CourseMediaLink(
+                    parent=self,
+                    media=CourseMedia.objects.get(slug=link_slug),
+                    instance=instance,
+                    revision=None,
+                )
+                link_obj.save()
+            except CourseMedia.DoesNotExist:
+                print("Broken reference:", link_slug)
 
         for module in lovelace_plugins.get("context_links", []):
             module.models.update_context_links(self, instance, all_links, revision)
@@ -1759,6 +1964,12 @@ class ContentPage(models.Model, ExportImportMixin):
 
         adminized_type = self.content_type.replace("_", "").lower()
         return reverse(f"admin:courses_{adminized_type}_change", args=(self.id,))
+
+    def get_checking_settings_url(self, context):
+        return None
+
+    def dynamic_content(self, context, cached_content):
+        return cached_content
 
     def get_content_additions(self, context, content_level):
         """
@@ -1928,7 +2139,7 @@ class ContentPage(models.Model, ExportImportMixin):
         except UserTaskCompletion.DoesNotExist:
             return "unanswered", 0
 
-    def re_evaluate(self, user, instance):
+    def re_evaluate(self, link, user, instance):
         """
         Re-evaluates a task by picking the user's best result, and updating completion based on it.
         This method is primarily used when transfering records between instances that have different
@@ -1951,7 +2162,7 @@ class ContentPage(models.Model, ExportImportMixin):
             "points": best_answer.evaluation.points,
             "max": best_answer.evaluation.max_points,
         }
-        update_completion(self, instance, user, evaluation, best_answer.answer_date)
+        update_completion(self, link, instance, user, evaluation, best_answer.answer_date)
 
     def copy_answer(self, answer_object, copy_owner):
         answer_object.pk = None
@@ -2037,6 +2248,9 @@ class ContentPage(models.Model, ExportImportMixin):
     def get_answer_model(self):
         return self.answer_models[self.content_type]
 
+    def get_user_answer_model(self):
+        return self.user_answer_models[self.content_type]
+
     # HACK: Experimental way of implementing a better get_type_object
     def __getattribute__(self, name):
         """
@@ -2046,11 +2260,14 @@ class ContentPage(models.Model, ExportImportMixin):
         """
 
         normal = [
+            "dynamic_content",
+            "get_checking_settings_url",
             "get_choices",
             "get_rendered_content",
             "get_question",
             "save_answer",
             "check_answer",
+            "save_evaluation",
             "get_user_answers",
             "get_content_additions",
             "get_student_extra",
@@ -2276,7 +2493,7 @@ class CheckboxExercise(ContentPage):
     def check_answer(self, link, user, answer, files, answer_object):
         # Determine, if the given answer was correct and which hints to show
 
-        choices = self.get_choices(self, revision)
+        choices = self.get_choices(self, link.revision)
 
         # quick hax:
         answered = {choice.id: False for choice in choices}
@@ -2310,7 +2527,12 @@ class CheckboxExercise(ContentPage):
                 else:
                     correct_items += 1
 
-        quotient = max(chosen_weight_sum / total_weight_sum, 0)
+        try:
+            quotient = max(chosen_weight_sum / total_weight_sum, 0)
+        except ZeroDivisionError:
+            print("Total weight sum:", total_weight_sum)
+            quotient = 0
+
         correct = quotient >= link.correct_threshold
 
         return {
@@ -2369,6 +2591,15 @@ class TextfieldExercise(ContentPage):
 
     def get_question(self, context):
         return ContentPage._get_question(self, context)
+
+    def get_checking_settings_url(self, context):
+        return reverse(
+            "courses:answer_settings_panel", kwargs={
+                "course": context["course"],
+                "instance": context["instance"],
+                "content": self,
+            }
+        )
 
     def save_answer(self, user, ip, answer, files, instance, revision):
         if "answer" in answer.keys():
@@ -3429,9 +3660,16 @@ class TextfieldExerciseAnswer(models.Model):
     answer = models.TextField()  # Translate
     hint = models.TextField(blank=True)  # Translate
     comment = models.TextField(
-        verbose_name="Extra comment given upon entering a matching answer", blank=True
+        blank=True
     )  # Translate
     ordinal = models.PositiveIntegerField()
+
+    @classmethod
+    def get_edit_form(cls):
+        # NOTE: Just import from here now to avoid cyclic imports
+
+        from courses.config_forms import TextfieldExerciseAnswerForm
+        return TextfieldExerciseAnswerForm
 
     def __str__(self):
         if len(self.answer) > 76:
@@ -3442,7 +3680,14 @@ class TextfieldExerciseAnswer(models.Model):
         return [self.exercise.slug, self.ordinal]
 
     def save(self, *args, **kwargs):
-        self.answer = self.answer.replace("\r", "")
+        # TODO: why was this needed? If not needed, remove the fixed version below
+        # self.answer = self.answer.replace("\r", "")
+        for lang_code, __ in settings.LANGUAGES:
+            lang_field = f"answer_{lang_code}"
+            lang_answer = getattr(self, lang_field)
+            lang_answer = lang_answer.replace("\r", "")
+            setattr(self, lang_field, lang_answer)
+
         if self.ordinal is None:
             previous = TextfieldExerciseAnswer.objects.filter(
                 exercise=self.exercise,
@@ -3466,6 +3711,13 @@ class MultipleChoiceExerciseAnswer(models.Model):
         verbose_name="Extra comment given upon selection of this answer", blank=True
     )  # Translate
 
+    @classmethod
+    def get_edit_form(cls):
+        # NOTE: Just import from here now to avoid cyclic imports
+
+        from courses.config_forms import MultipleChoiceExerciseChoiceForm
+        return MultipleChoiceExerciseChoiceForm
+
     def __str__(self):
         return self.answer
 
@@ -3485,6 +3737,11 @@ class CheckboxExerciseAnswer(models.Model):
     comment = models.TextField(
         verbose_name="Extra comment given upon selection of this answer", blank=True
     )  # Translate
+
+    @classmethod
+    def get_edit_form(cls):
+        from courses.config_forms import CheckboxExerciseChoiceForm
+        return CheckboxExerciseChoiceForm
 
     def __str__(self):
         return self.answer
@@ -3939,16 +4196,20 @@ UserProfile.register_user_data_model(UserTaskCompletion, ["user"])
 
 ContentPage.register_content_type("LECTURE", Lecture)
 ContentPage.register_content_type(
-    "MULTIPLE_CHOICE_EXERCISE", MultipleChoiceExercise, UserMultipleChoiceExerciseAnswer
+    "MULTIPLE_CHOICE_EXERCISE",
+    MultipleChoiceExercise, MultipleChoiceExerciseAnswer, UserMultipleChoiceExerciseAnswer,
 )
 ContentPage.register_content_type(
-    "CHECKBOX_EXERCISE", CheckboxExercise, UserCheckboxExerciseAnswer
+    "CHECKBOX_EXERCISE",
+    CheckboxExercise, CheckboxExerciseAnswer, UserCheckboxExerciseAnswer
 )
 ContentPage.register_content_type(
-    "TEXTFIELD_EXERCISE", TextfieldExercise, UserTextfieldExerciseAnswer
+    "TEXTFIELD_EXERCISE",
+    TextfieldExercise, TextfieldExerciseAnswer, UserTextfieldExerciseAnswer
 )
 ContentPage.register_content_type(
-    "FILE_UPLOAD_EXERCISE", FileUploadExercise, UserFileUploadExerciseAnswer
+    "FILE_UPLOAD_EXERCISE",
+    FileUploadExercise, None, UserFileUploadExerciseAnswer
 )
 ContentPage.register_content_type(
     "REPEATED_TEMPLATE_EXERCISE", RepeatedTemplateExercise, UserRepeatedTemplateExerciseAnswer

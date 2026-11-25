@@ -31,16 +31,16 @@ $(document).ready(function () {
     $("div.add-instance-file-table-div").slimScroll({
         height: "225px"
     })
-    $("#edit-feedback-popup, #edit-instance-files-popup").click(function () {
+    $("#edit-feedback-popup, #edit-instance-files-popup").on("click", function () {
         close_popup($(this))
     })
-    $("section.included-files div.popup").click(function () {
+    $("section.included-files div.popup").on("click", function () {
         close_included_file_popup($(this), $(this).attr("data-file-id"))
     })
-    $("#edit-instance-files-popup").click(function () {
+    $("#edit-instance-files-popup").on("click", function () {
         close_instance_file_popup()
     })
-    $(".popup > div").click(function (event) {
+    $(".popup > div").on("click", function (event) {
         event.stopPropagation()
     })
     $("input[type=text].exercise-tag-input").each(function () {
@@ -1110,10 +1110,10 @@ function create_included_file_popup (default_lang) {
     popup.attr("data-file-id", id)
     $("#include-file-popups").append(popup)
     update_included_file_ok_button_state(id, default_lang)
-    $("#edit-included-file-" + id).click(function () {
+    $("#edit-included-file-" + id).on("click", function () {
         close_included_file_popup(popup, popup.attr("data-file-id"))
     })
-    $("#edit-included-file-" + id + " > div").click(function (event) {
+    $("#edit-included-file-" + id + " > div").on("click", function (event) {
         event.stopPropagation()
     })
     include_file_enum++
@@ -2046,10 +2046,10 @@ function show_preview (button, lang) {
 }
 
 $(document).ready(function () {
-    $("#preview-popup").click(function () {
+    $("#preview-popup").on("click", function () {
         $(this).css({ opacity: "0", "pointer-events": "none" })
     })
-    $("#preview-popup > div").click(function (event) {
+    $("#preview-popup > div").on("click", function (event) {
         event.stopPropagation()
     })
 })

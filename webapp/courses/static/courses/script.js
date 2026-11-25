@@ -374,7 +374,7 @@ function submit_ajax_form (form, success_extra_cb) {
             success_extra_cb(data)
         },
         error: function (jqxhr, status, type) {
-            const errors = JSON.parse(JSON.parse(jqxhr.responseText).errors)
+            const errors = JSON.parse(jqxhr.responseText).errors
             for (const [field, content] of Object.entries(errors)) {
                 console.log(field, content)
                 content.forEach(function (entry) {
@@ -506,7 +506,7 @@ function show_panel (event, caller, panel_type, panel_id, refresh) {
             success: function (data, status, jqxhr) {
                 container.html(data)
                 panel.attr("data-panel-type", panel_type)
-                container.find("form :input[type!=hidden]").first().focus()
+                container.find("form :input[type!=hidden]").first().trigger("focus")
             },
             error: function (jqxhr, status, type) {
                 container.html(jqxhr.responseText)
@@ -518,6 +518,21 @@ function show_panel (event, caller, panel_type, panel_id, refresh) {
     } else {
         panel.addClass("panel--is-visible")
     }
+}
+
+function refresh_panel(container, url) {
+    console.log(url)
+    $.ajax({
+        type: "GET",
+        url,
+        success: function (data, status, jqxhr) {
+            container.html(data)
+            container.find("form :input[type!=hidden]").first().trigger("focus")
+        },
+        error: function (jqxhr, status, type) {
+            container.html(jqxhr.responseText)
+        }
+    })
 }
 
 function hide_panel (event, panel_id) {
@@ -652,18 +667,18 @@ function sort_table (event, caller, field, order, is_number) {
 }
 
 $(document).ready(function () {
-    $(".popup").click(function () {
+    $(".popup").on("click", function () {
         $(this).css({ opacity: "0", "pointer-events": "none" })
     })
-    $(".popup > div").click(function (event) {
+    $(".popup > div").on("click", function (event) {
         event.stopPropagation()
     })
-    $(".popup > pre").click(function (event) {
+    $(".popup > pre").on("click", function (event) {
         event.stopPropagation()
     })
 
-    $(".enroll-form").submit(submit_enrollment)
-    $(".withdraw-form").submit(withdraw_enrollment)
+    $(".enroll-form").on("submit", submit_enrollment)
+    $(".withdraw-form").on("submit", withdraw_enrollment)
     if (sessionStorage.getItem("staff_view") === "1") {
         $(".staff-only").toggleClass("collapsed")
         $(".student-only").toggleClass("collapsed")

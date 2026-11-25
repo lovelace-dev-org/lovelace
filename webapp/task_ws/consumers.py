@@ -383,3 +383,9 @@ class CompilerExplorerConsumer(AsyncWebsocketConsumer):
             "status": "failed",
             "reason": "Error during run request"
         }
+      
+      
+class SQLConsumer(WSBaseConsumer):
+
+    container = "sql-runner"
+

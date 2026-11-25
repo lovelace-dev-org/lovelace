@@ -7,6 +7,7 @@ from django.utils.translation import gettext as _
 from courses.forms import ExerciseBackendForm
 from multiexam.models import MultipleQuestionExamAttempt, ExamQuestionPool
 from multiexam.utils import validate_exam, compare_exams, render_error
+from multiexam.widgets import AdminMultiexamFileWidget
 from utils.formatters import display_name
 from utils.management import add_translated_charfields, TranslationStaffForm
 
@@ -111,7 +112,7 @@ class ExamAttemptKeyForm(forms.Form):
 
 
 
-class QuestionPoolForm(ExerciseBackendForm):
+class BaseQuestionPoolForm(ExerciseBackendForm):
 
     def clean(self):
         cleaned_data = super().clean()
@@ -124,7 +125,12 @@ class QuestionPoolForm(ExerciseBackendForm):
                     content_per_lang[lang_code] = content
                 else:
                     try:
-                        existing = ExamQuestionPool.objects.get(id=cleaned_data["id"].id)
+                        # This is a weird hack because admin site puts a model
+                        # into "id"
+                        if isinstance(cleaned_data["id"], ExamQuestionPool):
+                            existing = cleaned_data["id"]
+                        else:
+                            existing = ExamQuestionPool.objects.get(id=cleaned_data["id"])
                     except (AttributeError, ExamQuestionPool.DoesNotExist):
                         continue
                     else:
@@ -162,9 +168,21 @@ class QuestionPoolForm(ExerciseBackendForm):
                 return
 
 
+class QuestionPoolForm(BaseQuestionPoolForm, TranslationStaffForm):
 
+    class Meta:
+        model = ExamQuestionPool
+        fields = ["fileinfo"]
+        widgets = {
+            "fileinfo": AdminMultiexamFileWidget,
+        }
 
-
-
-
-
+    def __init__(self, *args, **kwargs):
+        instance = kwargs.get("instance")
+        super().__init__(*args, **kwargs)
+        self.fields["id"] = forms.IntegerField(
+            widget=forms.HiddenInput,
+            initial=instance and instance.id,
+            required=False
+        )
+        self.initial["exercise"] = instance and instance.exercise.id

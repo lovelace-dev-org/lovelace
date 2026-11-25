@@ -71,7 +71,7 @@
             {% else %}
               <span title="{% trans 'Unknown' %}">?</span>
             {% endif %}
-            {{ answer.evaluation.points }} / {{ answer.evaluation.max_points }}
+            {{ answer.evaluation.points|floatformat:"2" }} / {{ answer.evaluation.max_points|floatformat:"2" }}
           </td>
         </tr>
       {% endfor %}

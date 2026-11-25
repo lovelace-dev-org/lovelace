@@ -8,12 +8,25 @@ var acewidget = {
     },
 
     reset_editor: function (widget_slug) {
-        console.log(widget_slug)
         const editor = ace.edit(widget_slug + "-ace-editor")
         localStorage.removeItem(widget_slug + "-ace-editor-contents")
         editor.setValue($("textarea#" + widget_slug + "-ace-initial").val())
-    }
+    },
 
+    save_base_file: function (event) {
+        event.preventDefault()
+        const form = $(this)
+        const widget_slug = form.find("input[name=widget_slug]").val()
+        const editor = ace.edit(widget_slug + "-ace-editor")
+        const content = editor.getValue()
+        form.find("input[name=editor_content]").val(content)
+
+        process_success = function (data) {
+            location.reload()
+        }
+
+        submit_ajax_form(form, process_success)
+    }
 }
 
 /**
@@ -44,7 +57,7 @@ var AceWidget = class {
         /**  @type {WSPreviewWidget} */
         this.preview = preview
         this.button = $("button#" + button_id)
-        this.button.click((button) => {
+        this.button.on("click", (button) => {
             if (this.clicked)
                 return
 
@@ -59,14 +72,14 @@ var AceWidget = class {
         if (this.preview.preInit) {
             this.preview.preInit()
         }
+        this.running = true
+        this.preview.init(this)
+        this.button.addClass("ace-button-running")
+        this.button.prop("disabled", true)
         this.ws.connect(this)
     }
 
     begin() {
-        this.preview.init(this)
-        this.button.addClass("ace-button-running")
-        this.button.prop("disabled", true)
-        this.running = true
         const content = this.editor.getValue()
         localStorage.setItem(this.editor.container.id + "-contents", content)
 

@@ -30,6 +30,7 @@ from courses.models import (
     Course,
     CourseInstance,
     CourseMedia,
+    CourseStaffPermission,
     File,
     FileUploadExercise,
     FileExerciseTest,
@@ -83,7 +84,6 @@ from utils.management import CourseContentAdmin, CourseMediaAdmin
 content_follow_extra = []
 for module in lovelace_plugins["content-follow"]:
     content_follow_extra.extend(module.get_content_follows())
-
 
 reversion.register(
     ContentPage,
@@ -654,6 +654,13 @@ class CourseAdmin(TranslationAdmin, VersionAdmin):
 
 
 admin.site.register(Course, CourseAdmin)
+
+
+class CourseStaffPermissionAdmin(admin.ModelAdmin):
+    autocomplete_fields = ["user"]
+
+
+admin.site.register(CourseStaffPermission, CourseStaffPermissionAdmin)
 
 
 class AllMethodCachingQueryset(models.query.QuerySet):

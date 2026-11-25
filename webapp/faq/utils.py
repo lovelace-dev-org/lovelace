@@ -9,7 +9,7 @@ from django.utils.translation import gettext as _
 from courses import markupparser
 from faq.models import FaqQuestion, FaqToInstanceLink
 from faq.forms import FaqQuestionForm, FaqLinkForm
-from utils.access import is_course_staff
+from utils.access import get_staff_role
 from utils.archive import get_single_archived
 
 
@@ -72,7 +72,7 @@ def render_panel(request, course, instance, exercise, preopened=tuple()):
         except ValueError:
             return HttpResponseNotFound(_("FAQ for this exercise was not found"))
 
-    is_staff = is_course_staff(request.user, instance)
+    is_staff = get_staff_role(request.user, instance)
     t = loader.get_template("faq/faq_panel.html")
     c = {
         "course": course,
@@ -83,11 +83,12 @@ def render_panel(request, course, instance, exercise, preopened=tuple()):
         "preopened": preopened,
     }
     if is_staff:
-        unlinked_questions = (
-            FaqQuestion.objects.filter(faqtoinstancelink__instance=instance)
-            .exclude(faqtoinstancelink__exercise=exercise)
-            .distinct("hook")
+        in_instance = (
+            FaqToInstanceLink.objects.filter(instance=instance).exclude(exercise=exercise)
+            .select_related("question")
         )
+
+        unlinked_questions = [link.question for link in in_instance]
         edit_form = FaqQuestionForm()
         link_form = FaqLinkForm(available_questions=unlinked_questions)
         c["edit_form"] = edit_form

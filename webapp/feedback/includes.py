@@ -34,6 +34,15 @@ def get_content_menu_options(context, content, category):
                 kwargs={"instance": instance, "content": content},
             ),
         ))
+        options.append((
+            _("Manage feedback"),
+            "feedback-management",
+            "side-panel",
+            reverse(
+                "feedback:feedback_management",
+                kwargs={"course": instance.course, "instance": instance, "content": content},
+            ),
+        ))
     return options
 
 def get_embed_frame_options(context, content, link, category):
@@ -47,6 +56,15 @@ def get_embed_frame_options(context, content, link, category):
             reverse(
                 "feedback:statistics",
                 kwargs={"instance": instance, "content": content},
+            ),
+        ))
+        options.append((
+            _("Edit feedback questions"),
+            "feedback-questions",
+            "side-panel",
+            reverse(
+                "feedback:edit_content_feedback",
+                kwargs={"course": instance.course, "instance": instance, "content": content},
             ),
         ))
 

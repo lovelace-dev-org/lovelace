@@ -239,9 +239,6 @@ class MarkupParser:
         return parsed_string
 
     def tag(self, text, replace_in, replaces, tag):
-        if not self._ready:
-            raise ParserUninitializedError("compile() not called")
-
         self._state = {
             "open_block": "paragraph",
             "open": False
@@ -251,7 +248,7 @@ class MarkupParser:
 
         replaces = [
             re.compile(
-                f"(?<!{tag[0]})(?P<word>[{old[0].upper()}{old[0]}]{old[1:]})(?P<punct>[- ,.?!;:])"
+                f"(?<!{re.escape(tag[0])})(?P<word>[{old[0].upper()}{old[0]}]{old[1:]})(?P<punct>[- ,.?!;:])"
             ) for old in replaces
         ]
 

@@ -62,10 +62,10 @@ from courses.models import (
     UserTextfieldExerciseAnswer,
 )
 from utils.access import (
-    is_course_staff,
-    determine_media_access,
-    ensure_enrolled_or_staff,
-    ensure_owner_or_staff,
+    block_in_exam_mode,
+    get_staff_role,
+    ensure_owner_or_permission,
+    ensure_enrolled_or_permission,
     determine_access,
 )
 from utils.archive import find_version_with_filename, get_single_archived
@@ -98,7 +98,18 @@ logger = logging.getLogger(__name__)
 @system_messages
 def index(request):
     # This cannot be ordered on DB level because of translations
-    course_list = list(Course.objects.all())
+    if settings.EXAM_MODE:
+        if request.user.is_authenticated:
+            now = datetime.datetime.now()
+            course_list = list(Course.objects.filter(
+                courseinstance__courseinstanceexamwindow__start_time__lte=now,
+                courseinstance__courseinstanceexamwindow__end_time__gte=now,
+                courseinstance__courseenrollment__student=request.user,
+            ))
+        else:
+            course_list = []
+    else:
+        course_list = list(Course.objects.all())
 
     def name_key(course):
         return course.name.lower()
@@ -147,6 +158,15 @@ def course_instances(request, course):
 
 @system_messages
 def course(request, course, instance):
+    enroll_state = instance.user_enroll_status(request.user)
+    enrolled = enroll_state in ["ACCEPTED", "COMPLETED"]
+    staff = get_staff_role(request.user, instance)
+
+    if settings.EXAM_MODE and not enrolled and not staff:
+        return HttpResponseForbidden(
+            _("Only enrolled users can view this content in exam mode")
+        )
+
     frontpage = instance.frontpage
     if frontpage:
         context = _page_context(request, course, instance, frontpage)
@@ -155,19 +175,20 @@ def course(request, course, instance):
 
     context["course"] = course
     context["instance"] = instance
-
-    if is_course_staff(request.user, instance):
-        context["course_staff"] = True
-    else:
-        context["course_staff"] = False
-
-    enroll_state = instance.user_enroll_status(request.user)
-    enrolled = enroll_state in ["ACCEPTED", "COMPLETED"]
     context["enroll_state"] = enroll_state
+    context["course_staff"] = staff
+
+    if staff:
+        view_mode = "staff"
+    elif not enrolled:
+        view_mode = "guest"
+    elif settings.EXAM_MODE:
+        view_mode = "exam"
+    else:
+        view_mode = None
 
     context["content_tree"] = instance.get_content_tree(
-        staff=context["course_staff"],
-        guest=not enrolled
+        mode=view_mode
     )
 
     if enrolled:
@@ -211,7 +232,7 @@ def _page_context(request, course, instance, content, pagenum=None):
     evaluation = None
     answer_count = None
     enrolled = False
-    course_staff = False
+    course_staff = None
     if request.user.is_authenticated:
         if (
             request.user.is_active
@@ -232,15 +253,17 @@ def _page_context(request, course, instance, content, pagenum=None):
                 enrolled = True
         except CourseEnrollment.DoesNotExist:
             pass
-        if is_course_staff(request.user, instance):
-            course_staff = True
+        course_staff = get_staff_role(request.user, instance)
 
     if not content_graph.visible and not course_staff:
         return HttpResponseNotFound(_("This content is (currently) only available to course staff"))
 
-    if content_graph.require_enroll:
+    if content_graph.require_enroll or content_graph.visibility == "exam-only":
         if not (enrolled or course_staff):
             return HttpResponseNotFound(_("This content is only available to enrolled users"))
+
+    if settings.EXAM_MODE and content_graph.visibility == "no-exam":
+        return HttpResponseNotFound(_("This content is not accessible in exam mode"))
 
     revision = content_graph.revision
     content_type = content.content_type
@@ -319,13 +342,22 @@ def content(request, course, instance, content, pagenum=None):
     return HttpResponse(t.render(c, request))
 
 
-@ensure_owner_or_staff
+@ensure_owner_or_permission("permit_view_answers")
+@block_in_exam_mode
 def show_answers(request, user, course, instance, parent, exercise):
     """
     Show the user's answers for a specific exercise on a specific course.
     """
 
-    embed_link = EmbeddedLink.objects.get(embedded_page=exercise, instance=instance, parent=parent)
+    try:
+        embed_link = EmbeddedLink.objects.get(
+            embedded_page=exercise, instance=instance, parent=parent
+        )
+    except EmbeddedLink.DoesNotExist:
+        return HttpResponseNotFound(
+            _("The exercise is not linked to this instance or has a different parent.")
+        )
+
     completion = UserTaskCompletion.objects.filter(
         user=user, instance=instance, exercise=exercise
     ).first()
@@ -358,7 +390,7 @@ def show_answers(request, user, course, instance, parent, exercise):
         "completion": completion,
         "student": user,
         "username": user.username,
-        "course_staff": is_course_staff(request.user, instance),
+        "course_staff": get_staff_role(request.user, instance),
         "enrolled_instances": CourseEnrollment.get_enrolled_instances(
             instance, user, exclude_current=True
         ),
@@ -374,7 +406,7 @@ def show_answers(request, user, course, instance, parent, exercise):
 # v
 
 
-@ensure_enrolled_or_staff
+@ensure_enrolled_or_permission("permit_submit_answer")
 def check_answer(request, course, instance, parent, content):
     """
     Saves and evaluates a user's answer to an exercise and sends the results
@@ -389,15 +421,17 @@ def check_answer(request, course, instance, parent, content):
     files = request.FILES
 
     embed_link = EmbeddedLink.objects.get(embedded_page=content, instance=instance, parent=parent)
+    parent_cg = ContentGraph.objects.get(content=parent, instance=instance)
+    if parent_cg.visibility == "exam-only" and not settings.EXAM_MODE:
+        return JsonResponse({"result": _("Cannot answer this task outside exam mode")})
 
     if embed_link.revision is None:
         latest = Version.objects.get_for_object(content).latest("revision__date_created")
         answered_revision = latest.revision_id
-        revision = None
         exercise = content
     else:
-        answered_revision = revision
-        exercise = get_single_archived(content, revision)
+        answered_revision = embed_link.revision
+        exercise = get_single_archived(content, answered_revision)
 
     answer_count = exercise.get_user_answers(exercise, user, instance).count()
     if embed_link.answer_limit is not None and answer_count >= embed_link.answer_limit:
@@ -422,23 +456,18 @@ def check_answer(request, course, instance, parent, content):
         if embed_link.manually_evaluated:
             evaluation["manual"] = True
             evaluation["evaluation"] = False
-            if exercise.content_type == "FILE_UPLOAD_EXERCISE":
-                task_id = evaluation.get("task_id")
-                if task_id is not None:
-                    return check_progress(request, course, instance, parent, content, task_id)
-                elif errors := evaluation.get("errors"):
-                    return JsonResponse({"result": errors})
+            if task_id := evaluation.get("task_id"):
+                return check_progress(request, course, instance, parent, content, task_id)
+            if errors := evaluation.get("errors"):
+                return JsonResponse({"result": errors})
         else:
             evaluation["manual"] = False
-            if exercise.content_type == "FILE_UPLOAD_EXERCISE":
-                task_id = evaluation.get("task_id")
-                if task_id is not None:
-                    return check_progress(request, course, instance, parent, content, task_id)
-                elif errors := evaluation.get("errors"):
-                    print(errors)
-                    return JsonResponse({"result": errors})
+            if task_id := evaluation.get("task_id"):
+                return check_progress(request, course, instance, parent, content, task_id)
+            if errors := evaluation.get("errors"):
+                return JsonResponse({"result": errors})
 
-    exercise.save_evaluation(embed_link, user, evaluation, answer_object)
+    exercise.save_evaluation(exercise, embed_link, user, evaluation, answer_object)
 
     msg_context = {
         "course_slug": course.slug,
@@ -469,7 +498,7 @@ def check_answer(request, course, instance, parent, content):
     total_evaluation, quotient = exercise.get_user_evaluation(user, instance)
     score = quotient * embed_link.default_points
 
-    if not evaluation["evaluation"] or score < embed_link.default_points:
+    if not evaluation["evaluation"] or evaluation["quotient"] < 1:
         parser = markupparser.MarkupParser()
         hints = [
             "".join(
@@ -499,7 +528,7 @@ def check_answer(request, course, instance, parent, content):
 
 
 # Legacy task type intended to be entirely phased out and replaced by routine exercise
-@ensure_enrolled_or_staff
+@ensure_enrolled_or_permission("permit_submit_answer")
 def get_repeated_template_session(request, course, instance, content, revision):
     check_results = check_exercise_accessible(request, course, instance, content)
     check_error = check_results.get("error")
@@ -610,10 +639,17 @@ def get_repeated_template_session(request, course, instance, content, revision):
         "progress": f"{session_instance.ordinal_number + 1} / {total_instances}",
     }
 
+    data["extra_callbacks"] = []
+
+    for module in lovelace_plugins["exercise-triggers"]:
+        data["extra_callbacks"].extend(module.includes.get_exercise_trigger_callbacks(
+            instance, content, data
+        ))
+
     return JsonResponse(data)
 
 
-@ensure_enrolled_or_staff
+@ensure_enrolled_or_permission("permit_submit_answer")
 def check_progress(request, course, instance, parent, content, task_id):
     # Based on https://djangosnippets.org/snippets/2898/
     task = celery_app.AsyncResult(id=task_id)
@@ -640,7 +676,7 @@ def check_progress(request, course, instance, parent, content, task_id):
         data = {"state": task.state, "metadata": info, "redirect": progress_url}
     return JsonResponse(data)
 
-
+# TODO: this is not a view, why does it have an URL?
 def file_exercise_evaluation(request, course, instance, parent, content, task_id, task=None):
     if task is None:
         task = celery_app.AsyncResult(task_id)
@@ -648,7 +684,7 @@ def file_exercise_evaluation(request, course, instance, parent, content, task_id
     embed_link = EmbeddedLink.objects.get(embedded_page=content, instance=instance, parent=parent)
 
     if embed_link.revision is not None:
-        content = get_single_archived(content, revision)
+        content = get_single_archived(content, embed_link.revision)
     answers = content.get_user_answers(content, request.user, instance)
     answer_count = answers.count()
     evaluated_answer = answers.get(task_id=task_id)
@@ -659,6 +695,7 @@ def file_exercise_evaluation(request, course, instance, parent, content, task_id
     task.forget()
 
     evaluation_obj = content.save_evaluation(
+        content,
         embed_link,
         request.user,
         {
@@ -708,7 +745,7 @@ def file_exercise_evaluation(request, course, instance, parent, content, task_id
             data["errors"] = _(
                 "Checking program was unable to finish due to an error. Contact course staff."
             )
-            send_error_report(instance, content, revision, errors, answer_url)
+            send_error_report(instance, content, embed_link.revision, errors, answer_url)
 
 
     total_evaluation, quotient = content.get_user_evaluation(request.user, instance)
@@ -738,7 +775,7 @@ def file_exercise_evaluation(request, course, instance, parent, content, task_id
 # v
 
 
-@ensure_owner_or_staff
+@ensure_owner_or_permission("permit_view_answers")
 def get_file_exercise_evaluation(request, user, course, instance, parent, exercise, answer):
     embed_link = EmbeddedLink.objects.get(embedded_page=exercise, instance=instance, parent=parent)
 
@@ -764,7 +801,7 @@ def get_file_exercise_evaluation(request, user, course, instance, parent, exerci
     return HttpResponse(t_view.render(data, request))
 
 
-@ensure_owner_or_staff
+@ensure_owner_or_permission("permit_view_answers")
 def show_answer_file_content(request, user, course, instance, answer, filename):
     try:
         files = FileUploadExerciseReturnFile.objects.filter(answer=answer, answer__user=user)
@@ -789,7 +826,7 @@ def show_answer_file_content(request, user, course, instance, answer, filename):
 # v
 
 
-@ensure_owner_or_staff
+@ensure_owner_or_permission("permit_view_answers")
 def download_answer_file(request, user, course, instance, answer, filename):
     try:
         files = FileUploadExerciseReturnFile.objects.filter(answer=answer, answer__user=user)
@@ -832,11 +869,11 @@ def download_media_file(request, file_slug, field_name, filename):
 
     # Try to find the file
     try:
-        fileobject = File.objects.get(name=file_slug)
-    except FileExerciseTestIncludeFile.DoesNotExist as e:
+        fileobject = File.objects.get(slug=file_slug)
+    except File.DoesNotExist as e:
         return HttpResponseNotFound(_("Requested file does not exist."))
 
-    if not determine_media_access(request.user, fileobject):
+    if not determine_access(request.user, fileobject):
         return HttpResponseForbidden(
             _(
                 "Only course main responsible teachers are allowed to "
@@ -874,6 +911,9 @@ def enroll(request, course, instance):
     if not request.user.is_authenticated:
         return HttpResponseForbidden(_("Only logged in users can enroll to courses."))
 
+    if settings.EXAM_MODE:
+        return HttpResponseForbidden(_("Courses can't be enrolled to in exam mode."))
+
     if not request.user.userprofile.completed:
         response = JsonResponse({
             "message": _(
@@ -887,11 +927,14 @@ def enroll(request, course, instance):
     status = instance.user_enroll_status(request.user)
 
     if status not in [None, "WITHDRAWN"]:
-        return HttpResponseBadRequest(_("You have already enrolled to this course."))
+        return JsonResponse({
+            "message": _("You have already enrolled to this course.")
+        })
 
     with transaction.atomic():
-        CourseEnrollment.objects.filter(instance=instance, student=request.user).delete()
-        enrollment = CourseEnrollment(instance=instance, student=request.user)
+        enrollment, __ = CourseEnrollment.objects.get_or_create(
+            instance=instance, student=request.user
+        )
 
         if not instance.manual_accept:
             enrollment.enrollment_state = "ACCEPTED"

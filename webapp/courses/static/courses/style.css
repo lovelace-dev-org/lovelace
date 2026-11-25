@@ -22,8 +22,8 @@ body {
 }
 
 .collapsed {
-    visibility: hidden;
-    display: none;
+    visibility: hidden !important;
+    display: none !important;
 }
 
 div#container {
@@ -1842,6 +1842,11 @@ div.expand-handle {
     color: #4CAF50;
 }
 
+.add-many-button {
+    background: no-repeat url("/static/courses/add-many-16.png") center/16px,
+                #fff;
+}
+
 .delete-button {
     color: #ff0000;
     box-shadow: 1px 1px 2px #ff2000;
@@ -1947,6 +1952,21 @@ div.expand-handle {
 
 .import-button {
     background: no-repeat url("/static/courses/import-16.png") center/16px,
+                #fff;
+}
+
+.exam-button {
+    background: no-repeat url("/static/courses/exam-16.png") center/16px,
+                #fff;
+}
+
+.widget-change-button {
+    background: no-repeat url("/static/courses/change-widget.png") center/18px,
+                #fff;
+}
+
+.widget-settings-button {
+    background: no-repeat url("/static/courses/widget-settings.png") center/18px,
                 #fff;
 }
 
@@ -2100,4 +2120,9 @@ div.user-menu-separator hr {
 
 tr.edit-form-error-tr {
     color: #a33;
+}
+
+span.select2-selection {
+    --bg-color: #e9e9ed;
+    --border-color: black;
 }

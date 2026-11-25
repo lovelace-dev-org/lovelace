@@ -22,11 +22,11 @@ const toc = {
             url,
             success: function (data, status, jqxhr) {
                 const form = $(data)
-                form.children("input[name=active_node]").val(node_id)
+                form.find("input[name=active_node]").val(node_id)
                 button.parent().after(form)
                 button.attr("onclick", "toc.close_form(event, this);")
                 toc.active_button = button
-                form.find("input[type!=hidden]").first().focus()
+                form.find("input[type!=hidden]").first().trigger("focus")
             }
         })
     },

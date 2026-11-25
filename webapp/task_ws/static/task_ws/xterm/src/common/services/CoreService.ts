@@ -4,10 +4,10 @@
  */
 
 import { clone } from 'common/Clone';
-import { EventEmitter } from 'common/EventEmitter';
-import { Disposable } from 'common/Lifecycle';
+import { Disposable } from 'vs/base/common/lifecycle';
 import { IDecPrivateModes, IModes } from 'common/Types';
 import { IBufferService, ICoreService, ILogService, IOptionsService } from 'common/services/Services';
+import { Emitter } from 'vs/base/common/event';
 
 const DEFAULT_MODES: IModes = Object.freeze({
   insertMode: false
@@ -17,9 +17,12 @@ const DEFAULT_DEC_PRIVATE_MODES: IDecPrivateModes = Object.freeze({
   applicationCursorKeys: false,
   applicationKeypad: false,
   bracketedPasteMode: false,
+  cursorBlink: undefined,
+  cursorStyle: undefined,
   origin: false,
   reverseWraparound: false,
   sendFocus: false,
+  synchronizedOutput: false,
   wraparound: true // defaults: xterm - true, vt100 - false
 });
 
@@ -31,13 +34,13 @@ export class CoreService extends Disposable implements ICoreService {
   public modes: IModes;
   public decPrivateModes: IDecPrivateModes;
 
-  private readonly _onData = this.register(new EventEmitter<string>());
+  private readonly _onData = this._register(new Emitter<string>());
   public readonly onData = this._onData.event;
-  private readonly _onUserInput = this.register(new EventEmitter<void>());
+  private readonly _onUserInput = this._register(new Emitter<void>());
   public readonly onUserInput = this._onUserInput.event;
-  private readonly _onBinary = this.register(new EventEmitter<string>());
+  private readonly _onBinary = this._register(new Emitter<string>());
   public readonly onBinary = this._onBinary.event;
-  private readonly _onRequestScrollToBottom = this.register(new EventEmitter<void>());
+  private readonly _onRequestScrollToBottom = this._register(new Emitter<void>());
   public readonly onRequestScrollToBottom = this._onRequestScrollToBottom.event;
 
   constructor(
@@ -73,7 +76,8 @@ export class CoreService extends Disposable implements ICoreService {
     }
 
     // Fire onData API
-    this._logService.debug(`sending data "${data}"`, () => data.split('').map(e => e.charCodeAt(0)));
+    this._logService.debug(`sending data "${data}"`);
+    this._logService.trace(`sending data (codes)`, () => data.split('').map(e => e.charCodeAt(0)));
     this._onData.fire(data);
   }
 
@@ -81,7 +85,8 @@ export class CoreService extends Disposable implements ICoreService {
     if (this._optionsService.rawOptions.disableStdin) {
       return;
     }
-    this._logService.debug(`sending binary "${data}"`, () => data.split('').map(e => e.charCodeAt(0)));
+    this._logService.debug(`sending binary "${data}"`);
+    this._logService.trace(`sending binary (codes)`, () => data.split('').map(e => e.charCodeAt(0)));
     this._onBinary.fire(data);
   }
 }

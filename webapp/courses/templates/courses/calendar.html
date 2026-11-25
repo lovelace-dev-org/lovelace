@@ -28,6 +28,11 @@
               deta-querystring="">
           </a>
       </div>
+      {% for notice in staff_notices %}
+        <div class="error">
+          {{ notice }}
+        </div>
+      {% endfor %}
     {% endif %}
 
     {% if calendar.lock_period %}
@@ -47,7 +52,7 @@
           <span class="anchor-offset" id='{{ calendar.slug }}-{{ date|date:"Y-m-d" }}'>
         </div>
         {% for event, reservations in events %}
-          <form method="POST" action="{% url 'courses:calendar_reservation' calendar event %}">
+          <form method="POST" action="{% url 'courses:calendar_reservation' instance calendar event %}">
             {% csrf_token %}
             <input type="hidden"
                   name="reserve"

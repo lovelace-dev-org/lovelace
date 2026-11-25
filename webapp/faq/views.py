@@ -11,7 +11,7 @@ from django.utils.translation import gettext as _
 from faq.models import FaqQuestion, FaqToInstanceLink
 from faq.forms import FaqQuestionForm
 from faq.utils import regenerate_content_cache, render_panel
-from utils.access import ensure_staff
+from utils.access import ensure_permission
 
 
 def get_faq_panel(request, course, instance, exercise):
@@ -19,7 +19,7 @@ def get_faq_panel(request, course, instance, exercise):
     return HttpResponse(render_panel(request, course, instance, exercise, preopen_hooks))
 
 
-@ensure_staff
+@ensure_permission("permit_edit_content")
 def save_question(request, course, instance, exercise):
     if request.method != "POST":
         return HttpResponseNotAllowed(["POST"])
@@ -38,7 +38,7 @@ def save_question(request, course, instance, exercise):
         form = FaqQuestionForm(request.POST, instance=question)
 
     if not form.is_valid():
-        errors = form.errors.as_json()
+        errors = form.errors.get_json_data()
         return JsonResponse({"errors": errors}, status=400)
 
     with reversion.create_revision():
@@ -56,7 +56,7 @@ def save_question(request, course, instance, exercise):
     return JsonResponse({"content": content})
 
 
-@ensure_staff
+@ensure_permission("permit_edit_content")
 def get_editable_question(request, course, instance, exercise, hook):
     try:
         question = FaqQuestion.objects.get(hook=hook)
@@ -68,7 +68,7 @@ def get_editable_question(request, course, instance, exercise, hook):
     )
 
 
-@ensure_staff
+@ensure_permission("permit_edit_content")
 def link_question(request, course, instance, exercise):
     try:
         question = FaqQuestion.objects.get(
@@ -88,7 +88,7 @@ def link_question(request, course, instance, exercise):
     return JsonResponse({"content": content})
 
 
-@ensure_staff
+@ensure_permission("permit_edit_content")
 def unlink_question(request, course, instance, exercise, hook):
     if request.method != "POST":
         return HttpResponseNotAllowed(["POST"])

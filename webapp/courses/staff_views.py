@@ -1,9 +1,12 @@
 from html import escape
 import json
 import os
+import string
 import tempfile
 import zipfile
 
+from django.db import transaction
+from django.db.models import Q
 from django.conf import settings
 from django.http import (
     HttpResponse,
@@ -27,6 +30,8 @@ import courses.models as cm
 from courses.models import (
     Course,
     CourseInstance,
+    CourseInstanceExamWindow,
+    CourseStaffPermission,
     ContentGraph,
     ContentPage,
     EmbeddedLink,
@@ -38,6 +43,7 @@ from courses.models import (
 from courses.forms import (
     CacheRegenForm,
     EmbedConfigForm,
+    ExamWindowForm,
     GroupForm,
     GroupMemberForm,
     InstanceCloneForm,
@@ -48,7 +54,9 @@ from courses.forms import (
     InstanceSettingsForm,
     NewContentNodeForm,
     NodeSettingsForm,
+    StaffPermissionForm,
 )
+import courses.config_forms as config_forms
 from courses.edit_forms import (
     get_form,
     save_form,
@@ -59,20 +67,24 @@ from courses.edit_forms import (
 )
 from courses.widgets import AnswerWidgetRegistry
 from utils.access import (
-    determine_media_access,
-    ensure_responsible_or_supervisor,
-    ensure_responsible,
-    ensure_staff,
+    accessible_courses,
+    ensure_permission,
+    get_permissions,
 )
 from utils.archive import find_latest_version, squash_revisions
 from utils.content import regenerate_nearest_cache
 from utils.data import field_serializer, import_from_zip
+from utils.formatters import display_name
 from utils.management import (
     CourseContentAdmin,
+    CourseMediaAdmin,
     clone_instance_files,
     clone_terms,
     clone_content_graphs,
+    clone_embed_links,
     clone_grades,
+    process_confirm_form,
+    process_modelform,
 )
 from lovelace import plugins as lovelace_plugins
 
@@ -80,7 +92,7 @@ from lovelace import plugins as lovelace_plugins
 # |
 # v
 
-@ensure_staff
+@ensure_permission("permit_management")
 def instance_settings(request, course, instance):
     content_access = CourseContentAdmin.content_access_list(request, ContentPage, "LECTURE")
     available_content = content_access.defer("content").all()
@@ -90,7 +102,7 @@ def instance_settings(request, course, instance):
             request.POST, instance=instance, available_content=available_content
         )
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         instance = form.save(commit=False)
@@ -137,15 +149,14 @@ def instance_settings(request, course, instance):
     }
     return HttpResponse(t.render(c, request))
 
-
-@ensure_staff
+@ensure_permission("permit_management")
 def freeze_instance(request, course, instance):
     if request.method == "POST":
         form = InstanceFreezeForm(
             request.POST,
         )
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         instance.freeze(freeze_to=form.cleaned_data["freeze_to"])
@@ -170,13 +181,13 @@ def freeze_instance(request, course, instance):
     return HttpResponse(t.render(c, request))
 
 
-@ensure_staff
+@ensure_permission("permit_management")
 def clone_instance(request, course, instance):
     if request.method == "POST":
         old_pk = instance.id
         form = InstanceCloneForm(request.POST, instance=instance)
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         new_instance = form.save(commit=False)
@@ -188,10 +199,11 @@ def clone_instance(request, course, instance):
         new_instance.save()
         new_instance.refresh_from_db()
         old_instance = CourseInstance.objects.get(id=old_pk)
+        clone_embed_links(old_instance, new_instance)
         clone_content_graphs(old_instance, new_instance)
         clone_grades(old_instance, new_instance)
-        clone_instance_files(new_instance)
-        clone_terms(new_instance)
+        clone_instance_files(old_instance, new_instance)
+        clone_terms(old_instance, new_instance)
         for module in lovelace_plugins["clone"]:
             module.models.clone_models(old_instance, new_instance)
 
@@ -218,7 +230,7 @@ def clone_instance(request, course, instance):
     return HttpResponse(t.render(c, request))
 
 
-@ensure_responsible
+@ensure_permission("permit_grading")
 def edit_grading(request, course, instance):
     if request.method == "POST":
         form = InstanceGradingForm(
@@ -226,7 +238,7 @@ def edit_grading(request, course, instance):
             instance=instance,
         )
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         form.save()
@@ -248,12 +260,32 @@ def edit_grading(request, course, instance):
     return HttpResponse(t.render(c, request))
 
 
-@ensure_responsible
+@ensure_permission("permit_grading")
+def edit_exam_window(request, course, instance):
+
+    try:
+        window = instance.courseinstanceexamwindow
+    except CourseInstanceExamWindow.DoesNotExist:
+        window = None
+
+    def post_save(window, form):
+        window.instance = instance
+
+    return process_modelform(
+        request,
+        ExamWindowForm,
+        window,
+        f"{instance.slug}-exam-window-form",
+        "",
+        post_save_cb=post_save,
+    )
+
+@ensure_permission("permit_edit_material")
 def regen_instance_cache(request, course, instance):
     if request.method == "POST":
         form = CacheRegenForm(request.POST)
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         nodes = ContentGraph.objects.filter(instance=instance)
@@ -261,7 +293,7 @@ def regen_instance_cache(request, course, instance):
             nodes = nodes.filter(revision=None)
         for node in nodes:
             node.content.regenerate_cache(instance)
-        instance.clear_content_tree_cache()
+        instance.clear_content_tree_cache(regen_frozen=form.cleaned_data["regen_archived"])
         return JsonResponse({"status": "ok"})
 
     form = CacheRegenForm()
@@ -278,13 +310,17 @@ def regen_instance_cache(request, course, instance):
     return HttpResponse(form_t.render(form_c, request))
 
 
-@ensure_staff
+@ensure_permission("permit_edit_material")
 def termify(request, course, instance):
-    terms = Term.objects.filter(course=course)
+    form_kwargs = {
+        "accessible_courses": accessible_courses(request.user).order_by("name"),
+        "course": course,
+        "course_terms": Term.objects.filter(origin=course).order_by("name")
+    }
     if request.method == "POST":
-        form = TermifyForm(request.POST, course_terms=terms)
+        form = TermifyForm(request.POST, **form_kwargs)
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         words_to_replace = [form.cleaned_data["baseword"]]
@@ -317,7 +353,7 @@ def termify(request, course, instance):
                     getattr(page, field),
                     form.cleaned_data["replace_in"],
                     replaces,
-                    (f"[!term={form.cleaned_data['term']}!]", "[!term!]")
+                    (f"[!term={form.cleaned_data['term'].slug}!]", "[!term!]")
                 )
                 if n:
                     setattr(page, field, "\n".join(termified_lines))
@@ -332,7 +368,7 @@ def termify(request, course, instance):
             squash_revisions(page, 1)
         return JsonResponse({"status": "ok"})
 
-    form = TermifyForm(course_terms=terms)
+    form = TermifyForm(**form_kwargs)
     form_t = loader.get_template("courses/base-edit-form.html")
     form_c = {
         "form_object": form,
@@ -344,12 +380,12 @@ def termify(request, course, instance):
     return HttpResponse(form_t.render(form_c, request))
 
 
-@ensure_staff
+@ensure_permission("permit_management")
 def export_instance(request, course, instance):
     if request.method == "POST":
         form = InstanceExportForm(request.POST)
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         data = []
@@ -375,12 +411,12 @@ def export_instance(request, course, instance):
 
 
 
-@ensure_responsible
+@ensure_permission("permit_management")
 def import_instance(request, course, instance):
     if request.method == "POST":
         form = InstanceImportForm(request.POST, request.FILES)
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         source = form.cleaned_data["import_file"]
@@ -416,19 +452,16 @@ def import_instance(request, course, instance):
 
 
 
-@ensure_staff
+@ensure_permission("permit_edit_instance")
 def create_content_node(request, course, instance):
-    content_access = CourseContentAdmin.content_access_list(request, ContentPage, "LECTURE")
-    available_content = content_access.defer("content").all()
-
     if request.method == "POST":
         form = NewContentNodeForm(
             request.POST,
-            available_content=available_content,
-            course_instance=instance
+            user=request.user,
+            course=course
         )
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         try:
@@ -445,31 +478,18 @@ def create_content_node(request, course, instance):
             else:
                 parent = active_node.parentnode
 
-        if form.cleaned_data["content"] == "0":
+        if not form.cleaned_data["content"]:
             with reversion.create_revision():
                 page = Lecture(origin=course)
-                setattr(
-                    page,
-                    f"name_{settings.MODELTRANSLATION_DEFAULT_LANGUAGE}",
-                    form.cleaned_data["new_page_name"]
-                )
-                if form.cleaned_data["multi_language"]:
-                    setattr(
-                        page,
-                        f"content_{settings.MODELTRANSLATION_DEFAULT_LANGUAGE}",
-                        f"= {form.cleaned_data['new_page_name']} ="
-                    )
-                    for lang_code, __ in settings.LANGUAGES:
-                        if lang_code != settings.MODELTRANSLATION_DEFAULT_LANGUAGE:
-                            setattr(page, f"content_{lang_code}", "TBD")
+                for lang_code, __ in settings.LANGUAGES:
+                    field_name = f"new_page_name_{lang_code}"
+                    lang_name = form.cleaned_data[field_name]
+                    setattr(page, f"name_{lang_code}", lang_name)
 
                 page.save()
                 reversion.set_user(request.user)
         else:
-            try:
-                page = Lecture.objects.get(id=form.cleaned_data["content"])
-            except Lecture.DoesNotExist:
-                return HttpResponseNotFound()
+            page = form.cleaned_data["content"]
 
         new_node = form.save(commit=False)
         new_node.instance = instance
@@ -488,10 +508,10 @@ def create_content_node(request, course, instance):
 
         new_node.save()
         new_node.content.update_embedded_links(instance)
-        instance.clear_content_tree_cache()
+        instance.clear_content_tree_cache(regen_frozen=True)
         return JsonResponse({"status": "ok"}, status=201)
 
-    form = NewContentNodeForm(available_content=available_content, course_instance=instance)
+    form = NewContentNodeForm(user=request.user, course=course)
     t = loader.get_template("courses/base-edit-form.html")
     c = {
         "form_object": form,
@@ -505,21 +525,21 @@ def create_content_node(request, course, instance):
     return HttpResponse(t.render(c, request))
 
 
-@ensure_staff
+@ensure_permission("permit_edit_instance")
 def remove_content_node(request, course, instance, node_id):
     if request.method == "POST":
         try:
             node = ContentGraph.objects.get(id=node_id, instance=instance)
             EmbeddedLink.objects.filter(parent=node.content, instance=instance).delete()
             node.delete()
-            instance.clear_content_tree_cache()
+            instance.clear_content_tree_cache(regen_frozen=True)
         except ContentGraph.DoesNotExist:
             return HttpResponseNotFound(_("This content node doesn't exist"))
         return HttpResponse(status=204)
     return HttpResponseNotAllowed(["POST"])
 
 
-@ensure_staff
+@ensure_permission("permit_edit_instance")
 def node_settings(request, course, instance, node_id):
     content_access = CourseContentAdmin.content_access_list(request, ContentPage, "LECTURE")
     available_content = content_access.defer("content").all()
@@ -529,23 +549,26 @@ def node_settings(request, course, instance, node_id):
         return HttpResponseNotFound(_("This content node doesn't exist"))
 
     if request.method == "POST":
-        form = NodeSettingsForm(request.POST, available_content=available_content, instance=node)
+        form = NodeSettingsForm(
+            request.POST,
+            instance=node,
+            user=request.user,
+            course=course
+        )
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         node = form.save(commit=False)
-        try:
-            content = ContentPage.objects.get(id=form.cleaned_data["content"])
-        except ContentPage.DoesNotExist:
-            return HttpResponseNotFound()
-        node.content = content
+        node.content = form.cleaned_data["content"]
         node.save()
-        instance.clear_content_tree_cache()
+        instance.clear_content_tree_cache(regen_frozen=True)
         return JsonResponse({"status": "ok"})
 
     form = NodeSettingsForm(
-        instance=node, available_content=available_content, initial={"content": node.content.id}
+        instance=node,
+        user=request.user,
+        course=course
     )
     t = loader.get_template("courses/base-edit-form.html")
     c = {
@@ -561,7 +584,7 @@ def node_settings(request, course, instance, node_id):
     return HttpResponse(t.render(c, request))
 
 
-@ensure_staff
+@ensure_permission("permit_edit_instance")
 def move_content_node(request, course, instance, target_id, placement):
     if not request.method == "POST":
         return HttpResponseNotAllowed(["POST"])
@@ -617,7 +640,7 @@ def move_content_node(request, course, instance, target_id, placement):
     active_node.parentnode = target_node.parentnode
     active_node.save()
 
-    instance.clear_content_tree_cache()
+    instance.clear_content_tree_cache(regen_frozen=True)
 
     return JsonResponse({"status": "ok"})
 
@@ -632,12 +655,12 @@ def move_content_node(request, course, instance, target_id, placement):
 
 
 
-@ensure_responsible
+@ensure_permission("permit_edit_content")
 def regen_page_cache(request, course, instance, content):
     if request.method == "POST":
         form = CacheRegenForm(request.POST)
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         node = ContentGraph.objects.get(instance=instance, content=content)
@@ -664,7 +687,7 @@ def regen_page_cache(request, course, instance, content):
     return HttpResponse(form_t.render(form_c, request))
 
 
-@ensure_staff
+@ensure_permission("permit_edit_content")
 def edit_form(request, course, instance, content, action):
     context = {
         "course": course,
@@ -692,7 +715,7 @@ def edit_form(request, course, instance, content, action):
             block_type, position, context, action, request.POST, request.FILES,
         )
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         with reversion.create_revision():
@@ -726,14 +749,16 @@ def edit_form(request, course, instance, content, action):
     return HttpResponse(form_t.render(form_c, request))
 
 
-@ensure_staff
+@ensure_permission("permit_edit_content")
 def add_form(request, course, instance, content):
+    course_access = accessible_courses(request.user)
+
     if request.method == "POST":
         line_idx = int(request.POST.get("line_idx"))
         line_count = int(request.POST.get("line_count"))
-        form = BlockTypeSelectForm(request.POST, line_idx=line_idx)
+        form = BlockTypeSelectForm(request.POST, line_idx=line_idx, course_access=course_access)
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         query = (
@@ -763,7 +788,9 @@ def add_form(request, course, instance, content):
 
     line_idx = int(request.GET.get("line"))
     line_count = int(request.GET.get("size"))
-    form = BlockTypeSelectForm(line_idx=line_idx, line_count=line_count)
+    form = BlockTypeSelectForm(
+        line_idx=line_idx, line_count=line_count, course_access=course_access,
+    )
     form_t = loader.get_template("courses/base-edit-form.html")
     form_id = f"line-add-form"
     form_c = {
@@ -777,6 +804,89 @@ def add_form(request, course, instance, content):
     return HttpResponse(form_t.render(form_c, request))
 
 
+def get_accessible_pages(request, toplevel=False):
+    origin = Course.objects.get(slug=request.GET.get("origin"))
+    if toplevel:
+        content_access = CourseContentAdmin.content_access_list(
+            request, ContentPage, origin=origin, content_type="LECTURE"
+        ).order_by("name")
+    else:
+        content_access = CourseContentAdmin.content_access_list(
+            request, ContentPage, origin=origin
+        ).exclude(content_type="LECTURE").order_by("name")
+    data = {
+        "options": [{"value": "", "text": _("----NOT--SELECTED----")}] + [
+            {"value": page.id, "text": page.name}
+            for page in content_access
+        ]
+    }
+    return JsonResponse(data)
+
+
+def get_accessible_media(request, media_type):
+    origin = Course.objects.get(slug=request.GET.get("origin"))
+    if media_type == "file":
+        model = cm.File
+    elif media_type == "image":
+        model = cm.Image
+    elif media_type == "videolink":
+        model = cm.VideoLink
+    else:
+        return HttpResponseNotFound(_("Media type doesn't exist"))
+
+    media_access = CourseMediaAdmin.media_access_list(
+        request, model, origin=origin
+    ).order_by("name")
+    data = {
+        "options": [{"value": "", "text": _("----NOT--SELECTED----")}] + [
+            {"value": media.id, "text": media.name}
+            for media in media_access
+        ]
+    }
+    return JsonResponse(data)
+
+def get_accessible_terms(request):
+    origin = Course.objects.get(slug=request.GET.get("origin"))
+    terms = cm.Term.objects.filter(origin=origin).order_by("name")
+    data = {
+        "options": [{"value": "", "text": _("----NOT--SELECTED----")}] + [
+            {"value": term.id, "text": term.name}
+            for term in terms
+        ]
+    }
+    return JsonResponse(data)
+
+def get_accessible_calendars(request):
+    origin = Course.objects.get(slug=request.GET.get("origin"))
+    calendars = cm.Calendar.objects.filter(origin=origin).order_by("name")
+    data = {
+        "options": [{"value": "", "text": _("----NOT--SELECTED----")}] + [
+            {"value": calendar.id, "text": calendar.name}
+            for calendar in calendars
+        ]
+    }
+    return JsonResponse(data)
+
+def user_autocomplete(request):
+    if not CourseStaffPermission.objects.filter(user=request.user, role="teacher").exists():
+        results = []
+    else:
+        term = request.GET.get("term", "")
+        if not term:
+            results = []
+        else:
+            qs = User.objects.filter(Q(last_name__istartswith=term) | Q(first_name__istartswith=term))
+            results = [{"id": str(user.id), "text": display_name(user)} for user in qs]
+
+    return JsonResponse(
+        {
+            "results": results,
+            "pagination": False,
+        }
+    )
+
+
+
 # ^
 # |
 # PAGE CONTENT MANAGEMENT VIEWS
@@ -784,7 +894,7 @@ def add_form(request, course, instance, content):
 # |
 # v
 
-@ensure_staff
+@ensure_permission("permit_edit_content")
 def configure_embed_link(request, course, instance, parent, content):
     embed_link = EmbeddedLink.objects.get(embedded_page=content, instance=instance, parent=parent)
 
@@ -808,7 +918,7 @@ def configure_embed_link(request, course, instance, parent, content):
         for link in affected:
             form = EmbedConfigForm(request.POST, instance=link)
             if not form.is_valid():
-                errors = form.errors.as_json()
+                errors = form.errors.get_json_data()
                 return JsonResponse({"errors": errors}, status=400)
 
             form.save()
@@ -827,15 +937,44 @@ def configure_embed_link(request, course, instance, parent, content):
     }
     return HttpResponse(form_t.render(form_c, request))
 
+@ensure_permission("permit_edit_content")
+def change_answer_widget(request, course, instance, content):
+    if request.method == "POST":
+        form = config_forms.AnswerWidgetChangeForm(request.POST, instance=content)
+        if not form.is_valid():
+            errors = form.errors.get_json_data()
+            return JsonResponse({"errors": errors}, status=400)
 
-@ensure_staff
+        with reversion.create_revision():
+            form.save()
+            reversion.set_user(request.user)
+            reversion.set_comment(
+                f"Change answer widget of {content.slug}"
+            )
+
+        regenerate_nearest_cache(content)
+        squash_revisions(content, 1)
+        return JsonResponse({"status": "ok"})
+
+    form = config_forms.AnswerWidgetChangeForm(instance=content)
+    form_t = loader.get_template("courses/base-edit-form.html")
+    form_c = {
+        "html_id": f"{content.slug}-widget-config-form",
+        "form_object": form,
+        "submit_url": request.path,
+        "html_class": "edit-form-widget",
+        "submit_override": "editing.submit_form"
+    }
+    return HttpResponse(form_t.render(form_c, request))
+
+@ensure_permission("permit_edit_content")
 def configure_answer_widget(request, course, instance, content):
     widget = content.get_answer_widget(course)
 
     if request.method == "POST":
         form = widget.get_configuration_form(request, data=request.POST)
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         form.save()
@@ -853,6 +992,200 @@ def configure_answer_widget(request, course, instance, content):
     }
     return HttpResponse(form_t.render(form_c, request))
 
+
+@ensure_permission("permit_edit_content")
+def add_exercise_choice(request, course, instance, content, after):
+    choice_cls = content.get_answer_model()
+    if choice_cls is None:
+        return JsonResponse(
+            {"errors": _("No choice class associated with this content type")},
+            status=400
+        )
+
+    form_cls = choice_cls.get_edit_form()
+    extra = {}
+    if getattr(form_cls.Meta, "refresh_mode", None) == "refresh":
+        extra["refresh"] = True
+
+    def post_save(choice, form):
+        choice.exercise = content
+        for choice_after in choice_cls.objects.filter(exercise=content, ordinal__gt=after):
+            choice_after.ordinal += 1
+            choice_after.save()
+
+        choice.ordinal = after + 1
+
+    return process_modelform(
+        request,
+        form_cls,
+        None,
+        form_id=f"{content.slug}-add-choice-form",
+        comment=f"Add {content.slug} choice",
+        parent=content,
+        post_save_cb=post_save,
+        extra_response=extra,
+    )
+
+def _get_choice(content, choice_id):
+    choice_cls = content.get_answer_model()
+    if choice_cls is None:
+        raise ValueError(_("No choice class associated with this content type"))
+
+    try:
+        return choice_cls.objects.get(id=choice_id)
+    except choice_cls.DoesNotExist:
+        raise ValueError(_("No choice found with the given ID"))
+
+@ensure_permission("permit_edit_content")
+def delete_exercise_choice(request, course, instance, content, choice_id):
+    try:
+        choice = _get_choice(content, choice_id)
+    except ValueError as e:
+        return JsonResponse({"errors": str(e)}, status=400)
+
+    def delete_success(form):
+        with reversion.create_revision():
+            choice.delete()
+
+            # Save the content to include it in the revision
+            content.save()
+            reversion.set_user(request.user)
+            reversion.set_comment(
+                f"Delete exercise {content.slug} choice {choice.answer} ({choice_id})"
+            )
+
+        regenerate_nearest_cache(content)
+        squash_revisions(content, 1)
+
+    return process_confirm_form(
+        request, delete_success,
+        extra_context={
+            "submit_override": "editing.submit_form",
+        }
+    )
+
+@ensure_permission("permit_edit_content")
+def move_exercise_choice(request, course, instance, content, choice_id, direction):
+    try:
+        choice = _get_choice(content, choice_id)
+    except ValueError as e:
+        return JsonResponse({"errors": str(e)}, status=400)
+
+    if direction == "up":
+        peer = choice.__class__.objects.filter(
+            ordinal__lt=choice.ordinal, exercise=content
+        ).order_by("-ordinal").first()
+    else:
+        peer = choice.__class__.objects.filter(
+            ordinal__gt=choice.ordinal, exercise=content
+        ).order_by("ordinal").first()
+
+    if peer is None:
+        return JsonResponse({"errors": _("Already first")}, status=400)
+
+    pos = choice.ordinal
+    choice.ordinal = peer.ordinal
+    peer.ordinal = pos
+
+    with reversion.create_revision():
+        choice.save()
+        peer.save()
+
+        # Save the content to include it in the revision
+        content.save()
+        reversion.set_user(request.user)
+        reversion.set_comment(
+            f"Move exercise {content.slug} choice {choice.answer} ({choice_id}) {direction}"
+        )
+
+    regenerate_nearest_cache(content)
+    squash_revisions(content, 1)
+    return JsonResponse({"status": "ok"})
+
+@ensure_permission("permit_edit_content")
+def edit_exercise_choice(request, course, instance, content, choice_id):
+    try:
+        choice = _get_choice(content, choice_id)
+    except ValueError as e:
+        return JsonResponse({"errors": str(e)}, status=400)
+
+    form_cls = choice.get_edit_form()
+    extra = {}
+    if getattr(form_cls.Meta, "refresh_mode", None) == "refresh":
+        extra["refresh"] = True
+
+    return process_modelform(
+        request,
+        form_cls,
+        choice,
+        form_id=f"{content.slug}-edit-choice-form",
+        comment=f"Edit {content.slug} choice {choice.answer}",
+        parent=content,
+        extra_response=extra,
+    )
+
+@ensure_permission("permit_edit_content")
+def generate_exercise_choices(request, course, instance, content):
+    if content.get_choices(content):
+        return JsonResponse({
+            "errors": _("Autogenerate is only supported if there are no existing choices")
+        }, status=400)
+
+    if request.method == "POST":
+        form = config_forms.GenerateChoicesForm(request.POST)
+        if not form.is_valid():
+            errors = form.errors.get_json_data()
+            return JsonResponse({"errors": errors}, status=400)
+
+        choice_cls = content.get_answer_model()
+        pattern = string.ascii_uppercase[:form.cleaned_data["amount"]]
+        with reversion.create_revision():
+            for i, char in enumerate(pattern, start=1):
+                choice = choice_cls(
+                    exercise=content,
+                    ordinal=i,
+                )
+                setattr(choice, f"answer_{settings.MODELTRANSLATION_DEFAULT_LANGUAGE}", char)
+                choice.save()
+            content.save()
+            reversion.set_user(request.user)
+            reversion.set_comment(f"Autogenerate choices for {content.slug}")
+
+        regenerate_nearest_cache(content)
+        return JsonResponse({"status": "ok"})
+
+    form = config_forms.GenerateChoicesForm()
+    form_t = loader.get_template("courses/base-edit-form.html")
+    form_c = {
+        "html_id": f"{content.slug}-generate-choices-form",
+        "form_object": form,
+        "submit_url": request.path,
+        "html_class": "edit-form-widget",
+        "submit_override": "editing.submit_form"
+    }
+    return HttpResponse(form_t.render(form_c, request))
+
+@ensure_permission("permit_edit_content")
+def answer_settings_panel(request, course, instance, content):
+    choice_cls = content.get_answer_model()
+    if choice_cls is None:
+        return JsonResponse(
+            {"errors": _("No choice class associated with this content type")},
+            status=400
+        )
+
+    answers = choice_cls.objects.filter(exercise=content).order_by("-correct")
+    c = {
+        "answers": list(answers),
+        "course": course,
+        "instance": instance,
+        "content": content,
+        "panel_refresh_url": request.path
+    }
+    t = loader.get_template("courses/answer-settings-panel.html")
+    return HttpResponse(t.render(c, request))
+
+
 # ^
 # |
 # CONTENT CONFIGURATION VIEWS
@@ -861,7 +1194,7 @@ def configure_answer_widget(request, course, instance, content):
 # v
 
 
-@ensure_staff
+@ensure_permission("permit_groups")
 def group_management(request, course, instance):
     if request.user == course.main_responsible or request.user.is_superuser:
         groups = StudentGroup.objects.filter(instance=instance).order_by("name")
@@ -886,13 +1219,13 @@ def group_management(request, course, instance):
     return HttpResponse(t.render(c, request))
 
 
-@ensure_responsible
+@ensure_permission("permit_groups")
 def create_group(request, course, instance):
     staff_members = course.staff_group.user_set.get_queryset().order_by("last_name")
     if request.method == "POST":
         form = GroupForm(request.POST, staff=staff_members)
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         group = form.save(commit=False)
@@ -912,7 +1245,7 @@ def create_group(request, course, instance):
     return HttpResponse(t.render(c, request))
 
 
-@ensure_responsible
+@ensure_permission("permit_groups")
 def remove_group(request, course, instance, group):
     if group.instance == instance:
         group.delete()
@@ -920,13 +1253,13 @@ def remove_group(request, course, instance, group):
     return HttpResponseForbidden()
 
 
-@ensure_responsible_or_supervisor
+@ensure_permission("permit_groups")
 def add_member(request, course, instance, group):
     enrolled_students = instance.enrolled_users.get_queryset()
     if request.method == "POST":
         form = GroupMemberForm(request.POST, students=enrolled_students)
         if not form.is_valid(instance):
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         user = enrolled_students.get(id=form.cleaned_data["student"])
@@ -951,7 +1284,7 @@ def add_member(request, course, instance, group):
     return HttpResponse(t.render(c, request))
 
 
-@ensure_responsible
+@ensure_permission("permit_groups")
 def set_supervisor(request, course, instance, group):
     if group.instance != instance:
         return HttpResponseForbidden()
@@ -967,13 +1300,13 @@ def set_supervisor(request, course, instance, group):
     return JsonResponse({"status": "ok"})
 
 
-@ensure_responsible_or_supervisor
+@ensure_permission("permit_groups")
 def remove_member(request, course, instance, group, member):
     group.members.remove(member)
     return JsonResponse({"status": "ok"})
 
 
-@ensure_responsible_or_supervisor
+@ensure_permission("permit_groups")
 def rename_group(request, course, instance, group):
     name = request.POST.get("extra[name]")
     if name:
@@ -986,11 +1319,79 @@ def rename_group(request, course, instance, group):
 # ^
 # |
 # GROUP MANAGEMENT VIEWS
-# OTHER
+# STAFF MANAGEMENT VIEWS
 # |
 # v
 
 
+@ensure_permission("permit_management")
+def staff_management(request, course, instance):
+    permissions = CourseStaffPermission.objects.filter(instance=instance)
+    t = loader.get_template("courses/staff-management.html")
+    c = {
+        "permissions": permissions,
+        "course": course,
+        "instance": instance,
+        "is_responsible": True,
+        "course_staff": True,
+    }
+    return HttpResponse(t.render(c, request))
+
+@ensure_permission("permit_management")
+def add_staff(request, course, instance):
+    def post_save(permission, form):
+        permission.instance = instance
+
+    return process_modelform(
+        request,
+        StaffPermissionForm,
+        None,
+        form_id=f"{instance.slug}-add-staff-form",
+        comment="",
+        parent=None,
+        post_save_cb=post_save,
+    )
+
+@ensure_permission("permit_management")
+def remove_staff(request, course, instance, user):
+    def delete_success(form):
+        CourseStaffPermission.objects.filter(
+            instance=instance,
+            user=user,
+        ).delete()
+
+    return process_confirm_form(
+        request, delete_success,
+    )
+
+@ensure_permission("permit_management")
+def edit_permission(request, course, instance, user):
+    try:
+        permission = CourseStaffPermission.objects.get(
+            instance=instance,
+            user=user,
+        )
+    except CourseStaffPermission.DoesNotExist:
+        return HttpResponseNotFound
+
+    return process_modelform(
+        request,
+        StaffPermissionForm,
+        permission,
+        form_id=f"{instance.slug}-edit-staff-form",
+        comment="",
+        parent=None,
+    )
+
+
+# ^
+# |
+# STAFF MANAGEMENT VIEWS
+# OTHER
+# |
+# v
+
+# NOTE: this is going the way of dinosaurs
 def content_preview(request, field_name):
     if not request.user.is_staff and not request.user.is_superuser:
         return HttpResponseForbidden(_("Only staff members can access this view"))

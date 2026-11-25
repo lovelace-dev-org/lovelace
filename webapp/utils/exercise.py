@@ -1,4 +1,5 @@
 import base64
+import decimal
 import json
 import logging
 from django.template import loader
@@ -297,7 +298,7 @@ def update_completion(exercise, link, instance, user, evaluation, answer_date, o
                 quotient = evaluation.get("points", 0) / evaluation.get(
                     "max", link.default_points
                 )
-            except ZeroDivisionError:
+            except (ZeroDivisionError, decimal.InvalidOperation):
                 quotient = 0
     else:
         quotient = 0
@@ -343,6 +344,8 @@ def update_completion(exercise, link, instance, user, evaluation, answer_date, o
             instance=instance,
             parent=link.parent
         ).exclude(id=link.id)
+
+        print(others)
 
         for group_link in others:
             try:

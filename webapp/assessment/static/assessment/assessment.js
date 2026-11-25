@@ -21,7 +21,7 @@ const ase = {
             type: "GET",
             url,
             success: function (data, status, jqxhr) {
-                const form = $(data)
+                const form = $(data).find("form")
                 form.submit(ase.submit_form)
                 form.children("input[name=active_bullet]").val(bullet_id)
                 form.children("input[name=active_section]").val(section)

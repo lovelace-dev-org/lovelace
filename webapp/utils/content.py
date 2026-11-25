@@ -12,7 +12,7 @@ from django.utils import translation
 from reversion.models import Version, Revision
 from courses import markupparser
 import courses.models as cm
-from utils.access import is_course_staff, determine_access
+from utils.access import get_staff_role, determine_access
 from utils.archive import find_version_with_filename
 from utils.exercise import best_result
 from utils.files import find_fs_path, generate_download_response
@@ -123,6 +123,13 @@ def get_embedded_parent(content, instance):
         return link.parent, True
 
 
+def get_siblings(content, parent, instance):
+    return cm.ContentPage.objects.filter(
+        content_type=content.content_type,
+        embedlink__parent=parent,
+        embedlink__instance=instance,
+    ).exclude(id=content.id)
+
 # Modified from reversion.models.Revision.revert
 # NOTE: Outdated, functions in utils.archive should be used.
 def get_archived_instances(main_obj, revision_id):
@@ -225,8 +232,12 @@ def system_messages(view_func):
             request.session["cookies_accepted"] = False
 
         last_seen = request.COOKIES.get("notifications_seen")
+        msg_lang = translation.get_language()
         msg_count = 0
-        for message in get_notifications("system", last_seen, translation.get_language()):
+        notifications = get_notifications("system", last_seen, msg_lang)
+        notifications.extend(get_notifications(request.user.username, last_seen, msg_lang))
+
+        for message in notifications:
             messages.add_message(request, messages.INFO, message)
             msg_count += 1
 
@@ -345,7 +356,7 @@ def course_tree(tree, node, user, instance_obj, enrolled=False, staff=False):
     if list_item not in tree:
         tree.append(list_item)
 
-    if is_course_staff(user, instance_obj):
+    if get_staff_role(user, instance_obj):
         children = cm.ContentGraph.objects.filter(parentnode=node, instance=instance_obj).order_by(
             "ordinal_number"
         )

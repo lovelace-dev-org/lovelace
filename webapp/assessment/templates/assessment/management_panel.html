@@ -117,7 +117,7 @@
     {% endif %}
     
     <script>
-        $("#{{ exercise.slug }}-assessment-select").submit(ase.submit_form);
+        $("#{{ exercise.slug }}-assessment-select").on("submit", ase.submit_form);
     </script>
     
     

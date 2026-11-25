@@ -143,7 +143,7 @@ function collapse_task_list (page_bullet) {
 }
 
 $(document).ready(function () {
-    $(".teacher-form").submit(process_many)
+    $(".teacher-form").on("submit", process_many)
 })
 
 function request_csv (event, a) {
@@ -229,5 +229,5 @@ function submit_reminders (event) {
 }
 
 $(document).ready(function () {
-    $("#reminder-form").submit(submit_reminders)
+    $("#reminder-form").on("submit", submit_reminders)
 })

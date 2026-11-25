@@ -1,4 +1,5 @@
 import datetime
+from decimal import Decimal
 import os.path
 import tempfile
 import zipfile
@@ -22,12 +23,12 @@ from django.urls import reverse
 from django.utils import translation
 from lovelace.celery import app as celery_app
 
-from utils.access import determine_access, is_course_staff, ensure_responsible, ensure_staff
+from utils.access import determine_access, get_staff_role, ensure_permission
 from utils.archive import get_single_archived
 from utils.content import get_course_instance_tasks, get_embedded_parent
+from utils.management import process_confirm_form
 from utils.notify import send_welcome_email
 
-from courses.forms import process_delete_confirm_form
 from courses.models import (
     ContentGraph,
     CourseEnrollment,
@@ -53,6 +54,7 @@ from teacher_tools.models import (
 )
 from teacher_tools.forms import (
     DeadlineExemptionForm,
+    MassDeadlineExemptionForm,
     MossnetForm,
     ReminderForm,
     BatchGradingForm,
@@ -61,7 +63,7 @@ from teacher_tools.forms import (
 )
 
 
-def download_answers(request, course, instance, content):
+def download_answers(request, course, instance, parent, content):
     if not determine_access(request.user, content, responsible_only=True):
         return HttpResponseForbidden(
             _("Only course main responsible teachers are allowed to download answer files.")
@@ -109,13 +111,8 @@ def download_answers(request, course, instance, content):
 # |
 # v
 
-
+@ensure_permission("permit_management")
 def manage_enrollments(request, course, instance):
-    if not is_course_staff(request.user, instance, responsible_only=True):
-        return HttpResponseForbidden(
-            _("Only course main responsible teachers are allowed to manage enrollments.")
-        )
-
     if request.method == "POST":
         form = request.POST
 
@@ -204,7 +201,7 @@ def manage_enrollments(request, course, instance):
     return HttpResponse(t.render(c, request))
 
 
-@ensure_responsible
+@ensure_permission("permit_grading")
 def transfer_records(request, course, instance, user):
     other_instances = (
         CourseInstance.objects.filter(course=course).exclude(id=instance.id).order_by("name")
@@ -213,7 +210,7 @@ def transfer_records(request, course, instance, user):
     if request.method == "POST":
         form = TransferRecordsForm(request.POST, instances=other_instances)
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         target_instance = CourseInstance.objects.get(id=form.cleaned_data["target_instance"])
@@ -255,7 +252,7 @@ def transfer_records(request, course, instance, user):
             for __, task_links in get_course_instance_tasks(target_instance):
                 for task_link in task_links:
                     content = task_link.embedded_page.get_type_object()
-                    content.re_evaluate(user, target_instance)
+                    content.re_evaluate(task_link, user, target_instance)
 
         return redirect(
             reverse(
@@ -286,9 +283,9 @@ def transfer_records(request, course, instance, user):
 
 
 
-@ensure_staff
+@ensure_permission("permit_view_answers")
 def answer_summary(request, course, instance, parent, content):
-    answer_model = content.get_answer_model()
+    answer_model = content.get_user_answer_model()
     answers = (
         answer_model.objects.filter(
             exercise=content,
@@ -310,7 +307,7 @@ def answer_summary(request, course, instance, parent, content):
     return HttpResponse(t.render(c, request))
 
 
-@ensure_staff
+@ensure_permission("permit_grading")
 def student_course_completion(request, course, instance, user):
     tasks_by_page = get_course_instance_tasks(instance)
     results_by_page, total_points, total_missing, total_points_available = compile_student_results(
@@ -334,7 +331,7 @@ def student_course_completion(request, course, instance, user):
     return HttpResponse(t.render(c, request))
 
 
-@ensure_responsible
+@ensure_permission("permit_grading")
 def calculate_grades(request, course, instance):
     tasks_by_page = get_course_instance_tasks(instance)
     users = instance.enrolled_users.get_queryset()
@@ -361,13 +358,13 @@ def calculate_grades(request, course, instance):
     return JsonResponse(grades_by_id)
 
 
-@ensure_responsible
+@ensure_permission("permit_grading")
 def course_completion_csv(request, course, instance):
     task = teacher_tasks.generate_completion_csv.delay(course.slug, instance.slug)
     return course_completion_csv_progress(request, course, instance, task.id)
 
 
-@ensure_responsible
+@ensure_permission("permit_grading")
 def course_completion_csv_progress(request, course, instance, task_id):
     task = celery_app.AsyncResult(id=task_id)
     if not task.ready():
@@ -387,7 +384,7 @@ def course_completion_csv_progress(request, course, instance, task_id):
     return JsonResponse(data)
 
 
-@ensure_responsible
+@ensure_permission("permit_grading")
 def course_completion_csv_download(request, course, instance, task_id):
     task = celery_app.AsyncResult(id=task_id)
     if not task.ready():
@@ -407,7 +404,7 @@ def course_completion_csv_download(request, course, instance, task_id):
     return response
 
 
-@ensure_staff
+@ensure_permission("permit_grading")
 def course_completion(request, course, instance):
     users = (
         instance.enrolled_users.get_queryset()
@@ -420,7 +417,7 @@ def course_completion(request, course, instance):
     return HttpResponse(t.render(c, request))
 
 
-@ensure_responsible
+@ensure_permission("permit_grading")
 def search_records(request, course, instance):
     if request.method == "POST":
         form = RecordSearchForm(request.POST)
@@ -470,13 +467,13 @@ def search_records(request, course, instance):
 # v
 
 
-@ensure_responsible
+@ensure_permission("permit_management")
 def manage_reminders(request, course, instance):
     saved_template = ReminderTemplate.objects.filter(instance=instance).first()
     if request.method != "POST":
         form = ReminderForm(request.POST, instance=saved_template)
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         if form.cleaned_data["reminder_action"] == "generate":
@@ -565,7 +562,7 @@ def manage_reminders(request, course, instance):
     return HttpResponse(t.render(c, request))
 
 
-@ensure_responsible
+@ensure_permission("permit_management")
 def load_reminders(request, course, instance):
     reminder_cache = cache.get(f"{instance.slug}_reminders")
     if reminder_cache is None:
@@ -574,13 +571,13 @@ def load_reminders(request, course, instance):
     return JsonResponse({"reminders": reminder_cache["reminders"], "submit_text": _("Send emails")})
 
 
-@ensure_responsible
+@ensure_permission("permit_management")
 def discard_reminders(request, course, instance):
     cache.delete(f"{instance.slug}_reminders")
     return JsonResponse({"success": True, "submit_text": _("Generate reminders")})
 
 
-@ensure_responsible
+@ensure_permission("permit_management")
 def reminders_progress(request, course, instance, task_id):
     task = celery_app.AsyncResult(id=task_id)
     if task.ready():
@@ -604,7 +601,7 @@ def reminders_progress(request, course, instance, task_id):
 # v
 
 
-@ensure_responsible
+@ensure_permission("permit_grading")
 def batch_grade_task(request, course, instance, parent, content):
     if content.content_type not in [
         "TEXTFIELD_EXERCISE",
@@ -627,7 +624,7 @@ def batch_grade_task(request, course, instance, parent, content):
     if request.method == "POST":
         form = BatchGradingForm(request.POST)
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         if link.revision is None:
@@ -635,7 +632,7 @@ def batch_grade_task(request, course, instance, parent, content):
         else:
             exercise = get_single_archived(content, link.revision)
 
-        answer_model = content.get_answer_model()
+        answer_model = content.get_user_answer_model()
         answers = (
             answer_model.objects.filter(
                 exercise=content,
@@ -667,6 +664,7 @@ def batch_grade_task(request, course, instance, parent, content):
                 evaluation = exercise.check_answer(
                     content, link, user, answer_form, [], answer
                 )
+                evaluation["points"] = Decimal(evaluation.get("quotient", 0)) * link.default_points
                 if evaluation["evaluation"]:
                     exercise.update_evaluation(link, user, evaluation, answer)
                     log.append(answer)
@@ -701,7 +699,7 @@ def batch_grade_task(request, course, instance, parent, content):
     return HttpResponse(form_t.render(form_c, request))
 
 
-@ensure_responsible
+@ensure_permission("permit_grading")
 def reset_completion(request, course, instance, content):
     if content.content_type not in [
         "TEXTFIELD_EXERCISE",
@@ -734,7 +732,7 @@ def reset_completion(request, course, instance, content):
     return HttpResponse(t.render(c, request))
 
 
-@ensure_responsible
+@ensure_permission("permit_grading")
 def exercise_plagiarism(request, course, instance, content):
     saved_settings = MossSettings.objects.filter(exercise=content).first()
     other_instances = CourseInstance.objects.filter(course=course).exclude(pk=instance.pk)
@@ -743,7 +741,7 @@ def exercise_plagiarism(request, course, instance, content):
     if request.method == "POST":
         form = MossnetForm(request.POST, other_instances=other_instances, instance=saved_settings)
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         if form.cleaned_data["save_settings"]:
@@ -778,7 +776,7 @@ def exercise_plagiarism(request, course, instance, content):
     return HttpResponse(t.render(c, request))
 
 
-@ensure_responsible
+@ensure_permission("permit_grading")
 def moss_progress(request, course, instance, content, task_id):
     task = celery_app.AsyncResult(id=task_id)
     if task.ready():
@@ -801,7 +799,7 @@ def moss_progress(request, course, instance, content, task_id):
 # v
 
 
-@ensure_responsible
+@ensure_permission("permit_grading")
 def manage_exemptions(request, course, instance):
     exemptions = DeadlineExemption.objects.filter(
         contentgraph__instance=instance
@@ -815,7 +813,7 @@ def manage_exemptions(request, course, instance):
     }
     return HttpResponse(t.render(c, request))
 
-@ensure_responsible
+@ensure_permission("permit_grading")
 def create_exemption(request, course, instance):
     students = instance.enrolled_users.get_queryset()
     graphs = (
@@ -829,7 +827,7 @@ def create_exemption(request, course, instance):
             graphs=graphs,
         )
         if not form.is_valid():
-            errors = form.errors.as_json()
+            errors = form.errors.get_json_data()
             return JsonResponse({"errors": errors}, status=400)
 
         form.save(commit=True)
@@ -848,20 +846,50 @@ def create_exemption(request, course, instance):
     }
     return HttpResponse(form_t.render(form_c, request))
 
-@ensure_responsible
+@ensure_permission("permit_grading")
+def create_exemptions(request, course, instance):
+    students = instance.enrolled_users.get_queryset()
+    graphs = (
+        ContentGraph.objects.filter(instance=instance)
+        .exclude(deadline=None)
+    )
+    if request.method == "POST":
+        form = MassDeadlineExemptionForm(
+            request.POST,
+            students=students,
+            graphs=graphs,
+        )
+        if not form.is_valid():
+            errors = form.errors.get_json_data()
+            return JsonResponse({"errors": errors}, status=400)
+
+        for graph in form.cleaned_data["contentgraphs"]:
+            exemption = DeadlineExemption(
+                user=form.cleaned_data["user"],
+                contentgraph=graph,
+                new_deadline=graph.deadline + datetime.timedelta(days=form.cleaned_data["extendby"])
+            )
+            exemption.save()
+        return JsonResponse({"status": "ok"})
+
+    form = MassDeadlineExemptionForm(
+        students=students,
+        graphs=graphs,
+    )
+    form_t = loader.get_template("courses/base-edit-form.html")
+    form_c = {
+        "form_object": form,
+        "submit_url": request.path,
+        "html_id": f"create-exemptions-form",
+        "html_class": "management-form",
+    }
+    return HttpResponse(form_t.render(form_c, request))
+
+@ensure_permission("permit_grading")
 def delete_exemption(request, course, instance, user, graph_id):
     def success(form):
         DeadlineExemption.objects.filter(
             user=user,
             contentgraph__id=graph_id,
         ).delete()
-    return process_delete_confirm_form(request, success)
-
-
-
-
-
-
-
-
-
+    return process_confirm_form(request, success)

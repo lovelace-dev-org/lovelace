@@ -1,7 +1,8 @@
 from decimal import Decimal
 from django import forms
 from django.template import loader
-
+from django.urls import reverse
+from django.contrib.admin.widgets import AutocompleteSelect
 
 class AdminFileWidget(forms.ClearableFileInput):
     template_name = "courses/widgets/modified_file_input.html"
@@ -21,6 +22,39 @@ class ContentPreviewWidget(forms.Textarea):
         """Render the widget as an HTML string."""
         context = self.get_context(name, value, attrs)
         return self._render(self.template_name, context, renderer)
+
+
+class OriginFilterSelect(forms.Select):
+    """
+    A widget class that adds an additional select with which the user
+    can fetch options from different origins. Instances of this widget
+    always need three mandatory attributes to be passed to them.
+
+    * options_url: the URL to use in Ajax calls to update the displayed options
+    * origins: list of available origins (Course)
+    * initial_origin: the initial value for the origin selector
+    """
+
+    template_name = "courses/widgets/origin-filter-select.html"
+
+    def get_context(self, name, value, attrs):
+        context = super().get_context(name, value, attrs)
+        context["widget"]["options_url"] = self.attrs["options_url"]
+        context["widget"]["origins"] = self.attrs["origin_options"]
+        context["widget"]["initial_origin"] = self.attrs["initial_origin"]
+        return context
+
+
+class OriginFilterMultiSelect(forms.SelectMultiple):
+
+    template_name = "courses/widgets/origin-filter-multi-select.html"
+
+    def get_context(self, name, value, attrs):
+        context = super().get_context(name, value, attrs)
+        context["widget"]["options_url"] = self.attrs["options_url"]
+        context["widget"]["origins"] = self.attrs["origin_options"]
+        context["widget"]["initial_origin"] = self.attrs["initial_origin"]
+        return context
 
 
 class NoTrailingZerosInput(forms.NumberInput):
@@ -90,4 +124,9 @@ class PreviewWidget(Widget):
 
     pass
 
+
+class UserAutocompleteSelect(AutocompleteSelect):
+
+    def get_url(self):
+        return reverse("courses:user_autocomplete")
 

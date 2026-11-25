@@ -49,7 +49,11 @@ urlpatterns = [
     ),
 
     # other
-
+    path(
+        "<course:course>/<instance:instance>/<content:content>/pool/edit/",
+        views.edit_question_pool,
+        name="edit_question_pool",
+    ),
     path(
         "file-download/multiexam/<int:exercise_id>/<str:field_name>/<str:filename>/",
         views.download_question_pool,

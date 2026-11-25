@@ -14,22 +14,36 @@ const formtools = {
             type: "GET",
             url,
             success: function (data, status, jqxhr) {
-                const form = $(data)
+                const form = $(data).find("form")
                 form.submit(formtools.submit_form)
                 if (button.attr("data-in-table")) {
                     const colspan = button.attr("data-colspan")
                     const empty_tr = $("<tr class='form-tr collapse'><td colspan='" + colspan + "'></td></tr>")
                     const form_tr = $("<tr class='form-tr'><td colspan='" + colspan + "'></td></tr>")
-                    form_tr.children("td").append(form)
+                    form_tr.children("td").append(data)
                     button.parent().parent().after(form_tr)
                     //button.parent().parent().after(empty_tr)
                 }
                 else {
-                    button.after(form);
+                    button.after(data);
                 }
-                form.find("input[type!=hidden]").first().focus()
+                form.find("input[type!=hidden]").first().trigger("focus")
                 button.attr("onclick", "formtools.close_form(event, this)")
             },
+            error: function (jqxhr, status, type) {
+                const error_div = $("<div class='error management-form'></div>")
+                error_div.html(jqxhr.responseText)
+                if (button.attr("data-in-table")) {
+                    const colspan = button.attr("data-colspan")
+                    const empty_tr = $("<tr class='form-tr collapse'><td colspan='" + colspan + "'></td></tr>")
+                    const error_tr = $("<tr class='form-tr'><td colspan='" + colspan + "'></td></tr>")
+                    error_tr.children("td").append(error_div)
+                    button.parent().parent().after(error_tr)
+                }
+                else {
+                    button.after(error_div);
+                }
+            }
         })
     },
 

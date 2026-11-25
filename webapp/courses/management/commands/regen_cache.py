@@ -22,7 +22,7 @@ class Command(BaseCommand):
                 print(f"Skipping frozen instance {instance}")
                 continue
 
-            instance.clear_content_tree_cache
+            instance.clear_content_tree_cache()
             instance_slug = instance.slug
             for lang, __ in lang_list:
                 cache.set(

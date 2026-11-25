@@ -7,7 +7,7 @@
             <a id="{{ content.slug}}-{{ id_label}}-link"
                class="embed-panel-link"
                href="{{ url }}"
-               onclick="show_panel(event, this, 'embed-meta-panel', '{{ content.slug }}-panel');"
+               onclick="show_panel(event, this, 'embed-meta-{{ id_label }}-panel', '{{ content.slug }}-panel');"
                data-querystring="">{{ label }}
             </a>
         {% else %}

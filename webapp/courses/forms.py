@@ -1,6 +1,7 @@
 import os.path
 import re
 import django.conf
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import URLValidator
 from django.db.models import Count
@@ -11,13 +12,23 @@ from django.http import (
     JsonResponse,
 )
 from django.template import loader
+from django.urls import reverse
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
+from django.contrib import admin
+
 from modeltranslation.forms import TranslationModelForm
 
 from courses import blockparser
 from courses import markupparser
-from courses.widgets import AnswerWidgetRegistry, NoTrailingZerosInput
+from courses.fields import OriginFilterField
+from courses.widgets import (
+    AnswerWidgetRegistry,
+    NoTrailingZerosInput,
+    OriginFilterSelect,
+    UserAutocompleteSelect,
+)
+from utils.access import accessible_courses
 from utils.formatters import display_name
 from utils.management import add_translated_charfields, TranslationStaffForm, get_prefixed_slug
 import courses.models as cm
@@ -48,17 +59,23 @@ class CodeReplaceExerciseForm(forms.Form):
 
 
 class FileEditForm(forms.ModelForm):
+
     def get_initial_for_field(self, field, field_name):
         default_value = super().get_initial_for_field(field, field_name)
         if isinstance(field, fields.FileField) and default_value:
-            default_value.media_slug = self.initial.get("name")
+            default_value.media_slug = self._instance.slug
             default_value.field_name = field_name
             default_value.filename = os.path.basename(default_value.name)
 
         return default_value
 
+    def __init__(self, *args, **kwargs):
+        self._instance = kwargs.get("instance")
+        super().__init__(*args, **kwargs)
+
 
 class ExerciseBackendForm(forms.ModelForm):
+
     def get_initial_for_field(self, field, field_name):
         default_value = super().get_initial_for_field(field, field_name)
         if isinstance(field, fields.FileField) and default_value:
@@ -91,7 +108,7 @@ class ContentForm(forms.ModelForm):
             if not cm.ContentPage.objects.filter(slug=link):
                 missing_pages.append(link)
                 messages.append(f"Content matching {link} does not exist")
-            if cm.ContentPage.objects.get(slug=link).content_type == "LECTURE":
+            elif cm.ContentPage.objects.get(slug=link).content_type == "LECTURE":
                 messages.append(f"Unable to embed {link} because it's a lecture")
 
         for link in links["media"]:
@@ -297,6 +314,15 @@ InstanceGradingForm = forms.inlineformset_factory(
     extra=1,
 )
 
+class ExamWindowForm(forms.ModelForm):
+
+    class Meta:
+        model = cm.CourseInstanceExamWindow
+        fields = ["start_time", "end_time"]
+
+
+
+
 
 class ContextNodeForm(forms.ModelForm):
 
@@ -328,15 +354,29 @@ class ContextNodeForm(forms.ModelForm):
         return rule
 
     def __init__(self, *args, **kwargs):
-        available_content = kwargs.pop("available_content")
+        user = kwargs.pop("user")
+        self._course = kwargs.pop("course")
+        instance = kwargs.get("instance")
         super().__init__(*args, **kwargs)
-        self.fields["content"] = forms.ChoiceField(
-            widget=forms.Select,
-            label=_("Choose content to link"),
-            choices=[
-                (0, _("----NEW--PAGE----")),
-            ]
-            + [(c.id, c.name) for c in available_content],
+
+        access_list = accessible_courses(user)
+        origin = instance and instance.content.origin or self._course
+        queryset = cm.ContentPage.objects.filter(
+            content_type="LECTURE",
+            origin=origin,
+        )
+
+        self.fields["content"] = OriginFilterField(
+            widget=OriginFilterSelect(attrs={
+                "options_url": reverse("courses:get_accessible_lectures"),
+                "origin_options": access_list,
+                "initial_origin": origin,
+            }),
+            label=_("Choose existing page"),
+            choices=[(0, _("--NO-CONTENT--"))] + [(page.id, page.name) for page in queryset],
+            required=False,
+            model=cm.ContentPage,
+            access_list=access_list,
         )
 
 
@@ -345,6 +385,7 @@ class NewContentNodeForm(ContextNodeForm):
         model = cm.ContentGraph
         fields = [
             "visible",
+            "visibility",
             "require_enroll",
             "scored",
             "score_weight",
@@ -352,21 +393,21 @@ class NewContentNodeForm(ContextNodeForm):
             "deadline",
             "late_rule",
             "evergreen",
+            "content",
         ]
 
     def clean(self):
         cleaned_data = super().clean()
-        course = self._course_instance.course
-        print(cleaned_data)
-        if cleaned_data.get("content", "0") == "0":
-            new_name = cleaned_data.get("new_page_name")
+        if not cleaned_data.get("content"):
+            default_lang_field = f"new_page_name_{settings.MODELTRANSLATION_DEFAULT_LANGUAGE}"
+            new_name = cleaned_data.get(default_lang_field)
             if not new_name:
-                self.add_error("new_page_name", _("Cannot be empty when creating new page"))
+                self.add_error(default_lang_field, _("Cannot be empty when creating new page"))
                 return
 
             base_slug = slugify(new_name)
-            base_slug = base_slug.removeprefix(f"{course.prefix}-")
-            slug = f"{course.prefix}-{base_slug}"
+            base_slug = base_slug.removeprefix(f"{self._course.prefix}-")
+            slug = f"{self._course.prefix}-{base_slug}"
             if cm.ContentPage.objects.filter(slug=slug).exists():
                 self.add_error("new_page_name", _("Name causes slug conflict"))
                 return
@@ -374,17 +415,27 @@ class NewContentNodeForm(ContextNodeForm):
         return cleaned_data
 
     def __init__(self, *args, **kwargs):
-        self._course_instance = kwargs.pop("course_instance")
         super().__init__(*args, **kwargs)
         self.fields["make_child"] = forms.BooleanField(
             label=_("Make this node a child of the selected node"), required=False
         )
-        self.fields["new_page_name"] = forms.CharField(
-            label=_("Name for new page (in default language)"), required=False
+        languages = sorted(
+            settings.LANGUAGES,
+            key=lambda x: x[0] == settings.MODELTRANSLATION_DEFAULT_LANGUAGE,
+            reverse=True,
         )
-        self.fields["multi_language"] = forms.BooleanField(
-            label=_("Initialize as a multi language page."), required=False
-        )
+        for lang_code, __ in languages:
+            lang_field_name = f"new_page_name_{lang_code}"
+            if lang_code == settings.MODELTRANSLATION_DEFAULT_LANGUAGE:
+                self.fields[lang_field_name] = forms.CharField(
+                    label=f"Name for new page (default)",
+                    required=True,
+                )
+            else:
+                self.fields[lang_field_name] = forms.CharField(
+                    label=f"Name for new page ({lang_code})",
+                    required=False,
+                )
 
 
 class NodeSettingsForm(ContextNodeForm):
@@ -392,6 +443,7 @@ class NodeSettingsForm(ContextNodeForm):
         model = cm.ContentGraph
         fields = [
             "visible",
+            "visibility",
             "require_enroll",
             "scored",
             "score_weight",
@@ -399,6 +451,7 @@ class NodeSettingsForm(ContextNodeForm):
             "deadline",
             "late_rule",
             "evergreen",
+            "content",
         ]
 
     def __init__(self, *args, **kwargs):
@@ -572,19 +625,15 @@ class GroupMemberForm(forms.Form):
 class CalendarConfigForm(forms.ModelForm):
     class Meta:
         model = cm.Calendar
-        fields = ["heading_level", "allow_multiple", "lock_period", "lock_cancel"]
+        fields = [
+            "heading_level", "allow_multiple", "lock_period", "lock_cancel", "meeting_calendar",
+            "related_content"
+        ]
 
     def __init__(self, *args, **kwargs):
         available_content = kwargs.pop("available_content")
         super().__init__(*args, **kwargs)
-        self.fields["related_content"] = forms.ChoiceField(
-            widget=forms.Select,
-            label=_("Choose content to link"),
-            choices=[
-                (0, _("-- no content --")),
-            ]
-            + [(c.id, c.name) for c in available_content],
-        )
+        self.fields["related_content"].queryset = available_content
 
 
 class CalendarSchedulingForm(forms.Form):
@@ -677,57 +726,6 @@ class ConfirmDeleteForm(forms.Form):
     delete = forms.BooleanField(required=True, label=_("Confirm deletion"))
 
 
-def process_delete_confirm_form(request, success_callback, extra_context={}):
-    """
-    Convenience function for displaying and processing a ConfirmDeleteForm. Can be used to reduce
-    boilerplate in delete views. The calling end simply needs to define a success callback that
-    carries out the deletion once the user has confirmed the operation.
-
-    :param Request request: request object
-    :param function success_callback: function that takes a form object as its argument
-    :param dict extra_context: extra context data to be added to the form template's rendering
-    """
-
-    if request.method == "POST":
-        form = ConfirmDeleteForm(request.POST)
-        if not form.is_valid():
-            errors = form.errors_as_json()
-            return JsonResponse({"errors": errors}, status=400)
-
-        success_callback(form)
-        return JsonResponse({"status": "ok"})
-
-    form = ConfirmDeleteForm()
-    form_t = loader.get_template("courses/base-edit-form.html")
-    form_c = {
-        "form_object": form,
-        "submit_url": request.path,
-        "html_id": f"delete-confirm-form",
-        "html_class": "management-form",
-        "submit_label": _("Execute"),
-    }
-    form_c.update(extra_context)
-    return HttpResponse(form_t.render(form_c, request))
-
-
-class SystemMessageForm(forms.Form):
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        add_translated_charfields(
-            self, "content",
-            _("Message content ({lang} - default)"),
-            _("Message content ({lang})"),
-            require_default=True
-        )
-        self.fields["expires"] = forms.DateTimeField(
-            label=_("Time this message expires"),
-            required=True,
-            input_formats=["%Y-%m-%dT%H:%M"],
-            widget=forms.widgets.DateTimeInput(attrs={"type": "datetime-local"}),
-        )
-
-
 class CourseMessageForm(TranslationStaffForm):
 
     class Meta:
@@ -752,4 +750,20 @@ class TextfieldWidgetConfigurationForm(forms.ModelForm):
         model = cm.TextfieldWidgetSettings
         fields = ["rows"]
 
+
+class StaffPermissionForm(forms.ModelForm):
+
+    class Meta:
+        model = cm.CourseStaffPermission
+        exclude = ["instance"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["user"] = forms.ModelChoiceField(
+            queryset=cm.User.objects.all(),
+            widget=UserAutocompleteSelect(
+                cm.CourseStaffPermission._meta.get_field("user").remote_field,
+                admin.site,
+            ),
+        )
 

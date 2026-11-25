@@ -15,6 +15,7 @@ from django.utils.translation import gettext as _
 from django.contrib import auth, messages
 from django.shortcuts import redirect
 from django.db.utils import IntegrityError
+from redis.exceptions import RedisError
 
 from allauth.account.forms import LoginForm
 
@@ -31,8 +32,10 @@ from courses.models import (
 from courses.forms import GroupConfigForm, GroupInviteForm, UserForm, UserProfileForm
 from courses.views import system_messages
 from utils.access import (
-    ensure_enrolled_or_staff,
-    is_course_staff,
+    block_in_exam_mode,
+    ensure_enrolled_or_permission,
+    ensure_permission,
+    get_staff_role,
 )
 from utils.users import get_group_members
 
@@ -91,6 +94,7 @@ def logout(request):
 # v
 
 
+@block_in_exam_mode
 def user_profile(request):
     """
     Allow the user to change information in their profile.
@@ -120,7 +124,7 @@ def user_profile(request):
     response = HttpResponse(t.render(c, request))
     return response
 
-
+@block_in_exam_mode
 def user(request, user):
     """
     Shows user information to the requesting user. The amount of information
@@ -156,7 +160,8 @@ def user(request, user):
 # |
 # v
 
-@ensure_enrolled_or_staff
+@ensure_enrolled_or_permission("permit_groups")
+@block_in_exam_mode
 def group_info(request, course, instance):
     if instance.max_group_size is None:
         return HttpResponseNotAllowed(_("This course instance doesn't allow groups"))
@@ -208,7 +213,7 @@ def group_info(request, course, instance):
         "instance": instance,
         "invited_to": invited_to,
         "is_supervisor": is_supervisor,
-        "course_staff": is_course_staff(request.user, instance),
+        "course_staff": get_staff_role(request.user, instance),
     }
 
     if slots and group:
@@ -244,7 +249,7 @@ def invite_members(request, course, instance, group):
     slots = instance.max_group_size - members - invites.count()
     form = GroupInviteForm(request.POST, slots=slots)
     if not form.is_valid(for_instance=instance):
-        errors = form.errors.as_json()
+        errors = form.errors.get_json_data()
         return JsonResponse({"errors": errors}, status=400)
 
     for user in form.invited_users:
@@ -299,7 +304,7 @@ def cancel_invitation(request, course, instance, group, invite):
 # |
 # v
 
-@ensure_enrolled_or_staff
+@ensure_enrolled_or_permission("permit_submit_answer")
 def get_ws_ticket(request, course, instance, widget_id):
     ticket_key = secrets.token_urlsafe(64)
     ticket = {
@@ -308,8 +313,22 @@ def get_ws_ticket(request, course, instance, widget_id):
         "widget": widget_id,
     }
     cache = caches["ws_tickets"]
-    cache.set(ticket_key, ticket, settings.WS_TICKET_EXPIRY)
-    return JsonResponse({"ticket": ticket_key})
+    try:
+        cache.set(ticket_key, ticket, settings.WS_TICKET_EXPIRY)
+    except RedisError:
+        return JsonResponse({
+            "error": _("Websocket ticket backend unavailable.")
+        }, status=400)
+
+    if settings.EXAM_MODE:
+        ws_server = settings.EXAM_WS_SERVER
+    else:
+        ws_server = instance.ws_server
+
+    return JsonResponse({
+        "ticket": ticket_key,
+        "ws_server": ws_server,
+    })
 
 
 

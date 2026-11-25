@@ -7,7 +7,7 @@
             <a id="{{ content.slug}}-{{ id_label}}-link"
                class="content-panel-link"
                href="{{ url }}"
-               onclick="show_panel(event, this, 'content-meta-panel', '{{ content.slug }}-panel');"
+               onclick="show_panel(event, this, 'content-{{ id_label }}-panel', 'message-panel');"
                data-querystring="">{{ label }}
             </a>
         {% else %}

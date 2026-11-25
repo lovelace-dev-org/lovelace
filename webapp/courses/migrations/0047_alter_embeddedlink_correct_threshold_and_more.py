@@ -5,6 +5,25 @@ from decimal import Decimal
 from django.db import migrations, models
 
 
+
+def standardize_choice_ordinals(apps, schema_editor):
+    ContentPage = apps.get_model("courses", "contentpage")
+    CheckboxExerciseAnswer = apps.get_model("courses", "checkboxexerciseanswer")
+    MultipleChoiceExerciseAnswer = apps.get_model("courses", "multiplechoiceexerciseanswer")
+
+    for page in ContentPage.objects.all():
+        if page.content_type == "CHECKBOX_EXERCISE":
+            choices = CheckboxExerciseAnswer.objects.filter(exercise=page).order_by("ordinal")
+        elif page.content_type == "MULTIPLE_CHOICE_EXERCISE":
+            choices = MultipleChoiceExerciseAnswer.objects.filter(exercise=page).order_by("ordinal")
+        else:
+            continue
+
+        for i, choice in enumerate(choices, start=1):
+            choice.ordinal = i
+            choice.save()
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -22,4 +41,5 @@ class Migration(migrations.Migration):
             name='default_points',
             field=models.DecimalField(decimal_places=5, default=1, help_text='Amount of points a user can gain by finishing this exercise correctly in this course instance', max_digits=8, verbose_name='Point value'),
         ),
+        migrations.RunPython(standardize_choice_ordinals)
     ]

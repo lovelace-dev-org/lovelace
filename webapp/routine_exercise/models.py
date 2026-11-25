@@ -4,6 +4,7 @@ from django.db.models import Q, JSONField
 from django.template import loader
 from django.urls import reverse
 from django.utils.text import slugify
+from django.utils.translation import gettext_lazy as _
 
 import courses.models as cm
 
@@ -54,6 +55,34 @@ class RoutineExercise(cm.ContentPage):
         adminized_type = self.content_type.replace("_", "").lower()
         return reverse(f"admin:routine_exercise_{adminized_type}_change", args=(self.id,))
 
+    def get_staff_extra(self, context):
+        """
+        Adds a link to attempt management page to the task's staff tools.
+        """
+
+        options = cm.ContentPage.get_staff_extra(self, context)
+        options.append((
+            _("Manage backends"),
+            "routine-backends",
+            "side-panel",
+            reverse("routine_exercise:routine_backend_panel", kwargs={
+                "course": context["course"],
+                "instance": context["instance"],
+                "content": self,
+            })
+        ))
+        options.append((
+            _("Manage templates"),
+            "routine-templates",
+            "side-panel",
+            reverse("routine_exercise:routine_template_panel", kwargs={
+                "course": context["course"],
+                "instance": context["instance"],
+                "content": self,
+            })
+        ))
+        return options
+
     def get_user_answers(self, user, instance, ignore_drafts=True):
         if instance is None:
             answers = RoutineExerciseAnswer.objects.filter(
@@ -66,7 +95,7 @@ class RoutineExercise(cm.ContentPage):
 
         return answers
 
-    def re_evaluate(self, user, instance):
+    def re_evaluate(self, link, user, instance):
         from utils.exercise import update_completion
 
         progress = RoutineExerciseProgress.objects.filter(
@@ -96,7 +125,7 @@ class RoutineExercise(cm.ContentPage):
         except AttributeError:
             return
 
-        update_completion(self, instance, user, evaluation, answer_date)
+        update_completion(self, link, instance, user, evaluation, answer_date)
 
     def save_answer(self, user, ip, answer, files, instance, revision):
         pass
@@ -134,6 +163,8 @@ class RoutineExerciseBackendFile(models.Model, ExportImportMixin):
         unique_together = ("exercise", "filename")
         verbose_name = "routine exercise backend file"
         verbose_name_plural = "routine exercise backend files"
+
+    objects = RoutineBackendManager()
 
     exercise = models.ForeignKey(RoutineExercise, on_delete=models.CASCADE)
     filename = models.CharField(max_length=255, blank=True)
@@ -180,6 +211,8 @@ class RoutineExerciseTemplate(models.Model):
         unique_together = ("exercise", "variant", "question_class")
         verbose_name = "routine exercise template"
         verbose_name_plural = "routine exercise templates"
+
+    objects = RoutineTemplateManager()
 
     exercise = models.ForeignKey(RoutineExercise, on_delete=models.CASCADE)
     content = models.TextField()
@@ -236,7 +269,7 @@ class RoutineExerciseProgress(models.Model):
 
 
 cm.ContentPage.register_content_type(
-    "ROUTINE_EXERCISE", RoutineExercise, RoutineExerciseAnswer
+    "ROUTINE_EXERCISE", RoutineExercise, None, RoutineExerciseAnswer
 )
 
 cm.UserProfile.register_user_data_model(RoutineExerciseProgress, ["user"])

@@ -89,12 +89,13 @@ finally:
     )
 
 if settings.DEBUG:
-    try:
-        import debug_toolbar
-    except ModuleNotFoundError:
-        # Django Debug Toolbar not installed
-        pass
-    else:
-        urlpatterns = [
-            path("__debug__/", include(debug_toolbar.urls)),
-        ] + urlpatterns
+    if settings.DEBUG_TOOLBAR:
+        try:
+            import debug_toolbar
+        except ModuleNotFoundError:
+            # Django Debug Toolbar not installed
+            pass
+        else:
+            urlpatterns = [
+                path("__debug__/", include(debug_toolbar.urls)),
+            ] + urlpatterns

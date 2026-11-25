@@ -1,1 +1,12764 @@
-"no use strict";!function(e){function t(e,t){var n=e,r="";while(n){var i=t[n];if(typeof i=="string")return i+r;if(i)return i.location.replace(/\/*$/,"/")+(r||i.main||i.name);if(i===!1)return"";var s=n.lastIndexOf("/");if(s===-1)break;r=n.substr(s)+r,n=n.slice(0,s)}return e}if(typeof e.window!="undefined"&&e.document)return;if(e.require&&e.define)return;e.console||(e.console=function(){var e=Array.prototype.slice.call(arguments,0);postMessage({type:"log",data:e})},e.console.error=e.console.warn=e.console.log=e.console.trace=e.console),e.window=e,e.ace=e,e.onerror=function(e,t,n,r,i){postMessage({type:"error",data:{message:e,data:i&&i.data,file:t,line:n,col:r,stack:i&&i.stack}})},e.normalizeModule=function(t,n){if(n.indexOf("!")!==-1){var r=n.split("!");return e.normalizeModule(t,r[0])+"!"+e.normalizeModule(t,r[1])}if(n.charAt(0)=="."){var i=t.split("/").slice(0,-1).join("/");n=(i?i+"/":"")+n;while(n.indexOf(".")!==-1&&s!=n){var s=n;n=n.replace(/^\.\//,"").replace(/\/\.\//,"/").replace(/[^\/]+\/\.\.\//,"")}}return n},e.require=function(r,i){i||(i=r,r=null);if(!i.charAt)throw new Error("worker.js require() accepts only (parentId, id) as arguments");i=e.normalizeModule(r,i);var s=e.require.modules[i];if(s)return s.initialized||(s.initialized=!0,s.exports=s.factory().exports),s.exports;if(!e.require.tlns)return console.log("unable to load "+i);var o=t(i,e.require.tlns);return o.slice(-3)!=".js"&&(o+=".js"),e.require.id=i,e.require.modules[i]={},importScripts(o),e.require(r,i)},e.require.modules={},e.require.tlns={},e.define=function(t,n,r){arguments.length==2?(r=n,typeof t!="string"&&(n=t,t=e.require.id)):arguments.length==1&&(r=t,n=[],t=e.require.id);if(typeof r!="function"){e.require.modules[t]={exports:r,initialized:!0};return}n.length||(n=["require","exports","module"]);var i=function(n){return e.require(t,n)};e.require.modules[t]={exports:{},factory:function(){var e=this,t=r.apply(this,n.slice(0,r.length).map(function(t){switch(t){case"require":return i;case"exports":return e.exports;case"module":return e;default:return i(t)}}));return t&&(e.exports=t),e}}},e.define.amd={},e.require.tlns={},e.initBaseUrls=function(t){for(var n in t)this.require.tlns[n]=t[n]},e.initSender=function(){var n=e.require("ace/lib/event_emitter").EventEmitter,r=e.require("ace/lib/oop"),i=function(){};return function(){r.implement(this,n),this.callback=function(e,t){postMessage({type:"call",id:t,data:e})},this.emit=function(e,t){postMessage({type:"event",name:e,data:t})}}.call(i.prototype),new i};var n=e.main=null,r=e.sender=null;e.onmessage=function(t){var i=t.data;if(i.event&&r)r._signal(i.event,i.data);else if(i.command)if(n[i.command])n[i.command].apply(n,i.args);else{if(!e[i.command])throw new Error("Unknown command:"+i.command);e[i.command].apply(e,i.args)}else if(i.init){e.initBaseUrls(i.tlns),r=e.sender=e.initSender();var s=this.require(i.module)[i.classname];n=e.main=new s(r)}}}(this),ace.define("ace/lib/oop",[],function(e,t,n){"use strict";t.inherits=function(e,t){e.super_=t,e.prototype=Object.create(t.prototype,{constructor:{value:e,enumerable:!1,writable:!0,configurable:!0}})},t.mixin=function(e,t){for(var n in t)e[n]=t[n];return e},t.implement=function(e,n){t.mixin(e,n)}}),ace.define("ace/lib/deep_copy",[],function(e,t,n){t.deepCopy=function r(e){if(typeof e!="object"||!e)return e;var t;if(Array.isArray(e)){t=[];for(var n=0;n<e.length;n++)t[n]=r(e[n]);return t}if(Object.prototype.toString.call(e)!=="[object Object]")return e;t={};for(var n in e)t[n]=r(e[n]);return t}}),ace.define("ace/lib/lang",[],function(e,t,n){"use strict";t.last=function(e){return e[e.length-1]},t.stringReverse=function(e){return e.split("").reverse().join("")},t.stringRepeat=function(e,t){var n="";while(t>0){t&1&&(n+=e);if(t>>=1)e+=e}return n};var r=/^\s\s*/,i=/\s\s*$/;t.stringTrimLeft=function(e){return e.replace(r,"")},t.stringTrimRight=function(e){return e.replace(i,"")},t.copyObject=function(e){var t={};for(var n in e)t[n]=e[n];return t},t.copyArray=function(e){var t=[];for(var n=0,r=e.length;n<r;n++)e[n]&&typeof e[n]=="object"?t[n]=this.copyObject(e[n]):t[n]=e[n];return t},t.deepCopy=e("./deep_copy").deepCopy,t.arrayToMap=function(e){var t={};for(var n=0;n<e.length;n++)t[e[n]]=1;return t},t.createMap=function(e){var t=Object.create(null);for(var n in e)t[n]=e[n];return t},t.arrayRemove=function(e,t){for(var n=0;n<=e.length;n++)t===e[n]&&e.splice(n,1)},t.escapeRegExp=function(e){return e.replace(/([.*+?^${}()|[\]\/\\])/g,"\\$1")},t.escapeHTML=function(e){return(""+e).replace(/&/g,"&#38;").replace(/"/g,"&#34;").replace(/'/g,"&#39;").replace(/</g,"&#60;")},t.getMatchOffsets=function(e,t){var n=[];return e.replace(t,function(e){n.push({offset:arguments[arguments.length-2],length:e.length})}),n},t.deferredCall=function(e){var t=null,n=function(){t=null,e()},r=function(e){return r.cancel(),t=setTimeout(n,e||0),r};return r.schedule=r,r.call=function(){return this.cancel(),e(),r},r.cancel=function(){return clearTimeout(t),t=null,r},r.isPending=function(){return t},r},t.delayedCall=function(e,t){var n=null,r=function(){n=null,e()},i=function(e){n==null&&(n=setTimeout(r,e||t))};return i.delay=function(e){n&&clearTimeout(n),n=setTimeout(r,e||t)},i.schedule=i,i.call=function(){this.cancel(),e()},i.cancel=function(){n&&clearTimeout(n),n=null},i.isPending=function(){return n},i},t.supportsLookbehind=function(){try{new RegExp("(?<=.)")}catch(e){return!1}return!0},t.skipEmptyMatch=function(e,t,n){return n&&e.codePointAt(t)>65535?2:1}}),ace.define("ace/apply_delta",[],function(e,t,n){"use strict";function r(e,t){throw console.log("Invalid Delta:",e),"Invalid Delta: "+t}function i(e,t){return t.row>=0&&t.row<e.length&&t.column>=0&&t.column<=e[t.row].length}function s(e,t){t.action!="insert"&&t.action!="remove"&&r(t,"delta.action must be 'insert' or 'remove'"),t.lines instanceof Array||r(t,"delta.lines must be an Array"),(!t.start||!t.end)&&r(t,"delta.start/end must be an present");var n=t.start;i(e,t.start)||r(t,"delta.start must be contained in document");var s=t.end;t.action=="remove"&&!i(e,s)&&r(t,"delta.end must contained in document for 'remove' actions");var o=s.row-n.row,u=s.column-(o==0?n.column:0);(o!=t.lines.length-1||t.lines[o].length!=u)&&r(t,"delta.range must match delta lines")}t.applyDelta=function(e,t,n){var r=t.start.row,i=t.start.column,s=e[r]||"";switch(t.action){case"insert":var o=t.lines;if(o.length===1)e[r]=s.substring(0,i)+t.lines[0]+s.substring(i);else{var u=[r,1].concat(t.lines);e.splice.apply(e,u),e[r]=s.substring(0,i)+e[r],e[r+t.lines.length-1]+=s.substring(i)}break;case"remove":var a=t.end.column,f=t.end.row;r===f?e[r]=s.substring(0,i)+s.substring(a):e.splice(r,f-r+1,s.substring(0,i)+e[f].substring(a))}}}),ace.define("ace/lib/event_emitter",[],function(e,t,n){"use strict";var r={},i=function(){this.propagationStopped=!0},s=function(){this.defaultPrevented=!0};r._emit=r._dispatchEvent=function(e,t){this._eventRegistry||(this._eventRegistry={}),this._defaultHandlers||(this._defaultHandlers={});var n=this._eventRegistry[e]||[],r=this._defaultHandlers[e];if(!n.length&&!r)return;if(typeof t!="object"||!t)t={};t.type||(t.type=e),t.stopPropagation||(t.stopPropagation=i),t.preventDefault||(t.preventDefault=s),n=n.slice();for(var o=0;o<n.length;o++){n[o](t,this);if(t.propagationStopped)break}if(r&&!t.defaultPrevented)return r(t,this)},r._signal=function(e,t){var n=(this._eventRegistry||{})[e];if(!n)return;n=n.slice();for(var r=0;r<n.length;r++)n[r](t,this)},r.once=function(e,t){var n=this;this.on(e,function r(){n.off(e,r),t.apply(null,arguments)});if(!t)return new Promise(function(e){t=e})},r.setDefaultHandler=function(e,t){var n=this._defaultHandlers;n||(n=this._defaultHandlers={_disabled_:{}});if(n[e]){var r=n[e],i=n._disabled_[e];i||(n._disabled_[e]=i=[]),i.push(r);var s=i.indexOf(t);s!=-1&&i.splice(s,1)}n[e]=t},r.removeDefaultHandler=function(e,t){var n=this._defaultHandlers;if(!n)return;var r=n._disabled_[e];if(n[e]==t)r&&this.setDefaultHandler(e,r.pop());else if(r){var i=r.indexOf(t);i!=-1&&r.splice(i,1)}},r.on=r.addEventListener=function(e,t,n){this._eventRegistry=this._eventRegistry||{};var r=this._eventRegistry[e];return r||(r=this._eventRegistry[e]=[]),r.indexOf(t)==-1&&r[n?"unshift":"push"](t),t},r.off=r.removeListener=r.removeEventListener=function(e,t){this._eventRegistry=this._eventRegistry||{};var n=this._eventRegistry[e];if(!n)return;var r=n.indexOf(t);r!==-1&&n.splice(r,1)},r.removeAllListeners=function(e){e||(this._eventRegistry=this._defaultHandlers=undefined),this._eventRegistry&&(this._eventRegistry[e]=undefined),this._defaultHandlers&&(this._defaultHandlers[e]=undefined)},t.EventEmitter=r}),ace.define("ace/range",[],function(e,t,n){"use strict";var r=function(){function e(e,t,n,r){this.start={row:e,column:t},this.end={row:n,column:r}}return e.prototype.isEqual=function(e){return this.start.row===e.start.row&&this.end.row===e.end.row&&this.start.column===e.start.column&&this.end.column===e.end.column},e.prototype.toString=function(){return"Range: ["+this.start.row+"/"+this.start.column+"] -> ["+this.end.row+"/"+this.end.column+"]"},e.prototype.contains=function(e,t){return this.compare(e,t)==0},e.prototype.compareRange=function(e){var t,n=e.end,r=e.start;return t=this.compare(n.row,n.column),t==1?(t=this.compare(r.row,r.column),t==1?2:t==0?1:0):t==-1?-2:(t=this.compare(r.row,r.column),t==-1?-1:t==1?42:0)},e.prototype.comparePoint=function(e){return this.compare(e.row,e.column)},e.prototype.containsRange=function(e){return this.comparePoint(e.start)==0&&this.comparePoint(e.end)==0},e.prototype.intersects=function(e){var t=this.compareRange(e);return t==-1||t==0||t==1},e.prototype.isEnd=function(e,t){return this.end.row==e&&this.end.column==t},e.prototype.isStart=function(e,t){return this.start.row==e&&this.start.column==t},e.prototype.setStart=function(e,t){typeof e=="object"?(this.start.column=e.column,this.start.row=e.row):(this.start.row=e,this.start.column=t)},e.prototype.setEnd=function(e,t){typeof e=="object"?(this.end.column=e.column,this.end.row=e.row):(this.end.row=e,this.end.column=t)},e.prototype.inside=function(e,t){return this.compare(e,t)==0?this.isEnd(e,t)||this.isStart(e,t)?!1:!0:!1},e.prototype.insideStart=function(e,t){return this.compare(e,t)==0?this.isEnd(e,t)?!1:!0:!1},e.prototype.insideEnd=function(e,t){return this.compare(e,t)==0?this.isStart(e,t)?!1:!0:!1},e.prototype.compare=function(e,t){return!this.isMultiLine()&&e===this.start.row?t<this.start.column?-1:t>this.end.column?1:0:e<this.start.row?-1:e>this.end.row?1:this.start.row===e?t>=this.start.column?0:-1:this.end.row===e?t<=this.end.column?0:1:0},e.prototype.compareStart=function(e,t){return this.start.row==e&&this.start.column==t?-1:this.compare(e,t)},e.prototype.compareEnd=function(e,t){return this.end.row==e&&this.end.column==t?1:this.compare(e,t)},e.prototype.compareInside=function(e,t){return this.end.row==e&&this.end.column==t?1:this.start.row==e&&this.start.column==t?-1:this.compare(e,t)},e.prototype.clipRows=function(t,n){if(this.end.row>n)var r={row:n+1,column:0};else if(this.end.row<t)var r={row:t,column:0};if(this.start.row>n)var i={row:n+1,column:0};else if(this.start.row<t)var i={row:t,column:0};return e.fromPoints(i||this.start,r||this.end)},e.prototype.extend=function(t,n){var r=this.compare(t,n);if(r==0)return this;if(r==-1)var i={row:t,column:n};else var s={row:t,column:n};return e.fromPoints(i||this.start,s||this.end)},e.prototype.isEmpty=function(){return this.start.row===this.end.row&&this.start.column===this.end.column},e.prototype.isMultiLine=function(){return this.start.row!==this.end.row},e.prototype.clone=function(){return e.fromPoints(this.start,this.end)},e.prototype.collapseRows=function(){return this.end.column==0?new e(this.start.row,0,Math.max(this.start.row,this.end.row-1),0):new e(this.start.row,0,this.end.row,0)},e.prototype.toScreenRange=function(t){var n=t.documentToScreenPosition(this.start),r=t.documentToScreenPosition(this.end);return new e(n.row,n.column,r.row,r.column)},e.prototype.moveBy=function(e,t){this.start.row+=e,this.start.column+=t,this.end.row+=e,this.end.column+=t},e}();r.fromPoints=function(e,t){return new r(e.row,e.column,t.row,t.column)},r.comparePoints=function(e,t){return e.row-t.row||e.column-t.column},t.Range=r}),ace.define("ace/anchor",[],function(e,t,n){"use strict";function o(e,t,n){var r=n?e.column<=t.column:e.column<t.column;return e.row<t.row||e.row==t.row&&r}function u(e,t,n){var r=e.action=="insert",i=(r?1:-1)*(e.end.row-e.start.row),s=(r?1:-1)*(e.end.column-e.start.column),u=e.start,a=r?u:e.end;return o(t,u,n)?{row:t.row,column:t.column}:o(a,t,!n)?{row:t.row+i,column:t.column+(t.row==a.row?s:0)}:{row:u.row,column:u.column}}var r=e("./lib/oop"),i=e("./lib/event_emitter").EventEmitter,s=function(){function e(e,t,n){this.$onChange=this.onChange.bind(this),this.attach(e),typeof t!="number"?this.setPosition(t.row,t.column):this.setPosition(t,n)}return e.prototype.getPosition=function(){return this.$clipPositionToDocument(this.row,this.column)},e.prototype.getDocument=function(){return this.document},e.prototype.onChange=function(e){if(e.start.row==e.end.row&&e.start.row!=this.row)return;if(e.start.row>this.row)return;var t=u(e,{row:this.row,column:this.column},this.$insertRight);this.setPosition(t.row,t.column,!0)},e.prototype.setPosition=function(e,t,n){var r;n?r={row:e,column:t}:r=this.$clipPositionToDocument(e,t);if(this.row==r.row&&this.column==r.column)return;var i={row:this.row,column:this.column};this.row=r.row,this.column=r.column,this._signal("change",{old:i,value:r})},e.prototype.detach=function(){this.document.off("change",this.$onChange)},e.prototype.attach=function(e){this.document=e||this.document,this.document.on("change",this.$onChange)},e.prototype.$clipPositionToDocument=function(e,t){var n={};return e>=this.document.getLength()?(n.row=Math.max(0,this.document.getLength()-1),n.column=this.document.getLine(n.row).length):e<0?(n.row=0,n.column=0):(n.row=e,n.column=Math.min(this.document.getLine(n.row).length,Math.max(0,t))),t<0&&(n.column=0),n},e}();s.prototype.$insertRight=!1,r.implement(s.prototype,i),t.Anchor=s}),ace.define("ace/document",[],function(e,t,n){"use strict";var r=e("./lib/oop"),i=e("./apply_delta").applyDelta,s=e("./lib/event_emitter").EventEmitter,o=e("./range").Range,u=e("./anchor").Anchor,a=function(){function e(e){this.$lines=[""],e.length===0?this.$lines=[""]:Array.isArray(e)?this.insertMergedLines({row:0,column:0},e):this.insert({row:0,column:0},e)}return e.prototype.setValue=function(e){var t=this.getLength()-1;this.remove(new o(0,0,t,this.getLine(t).length)),this.insert({row:0,column:0},e||"")},e.prototype.getValue=function(){return this.getAllLines().join(this.getNewLineCharacter())},e.prototype.createAnchor=function(e,t){return new u(this,e,t)},e.prototype.$detectNewLine=function(e){var t=e.match(/^.*?(\r\n|\r|\n)/m);this.$autoNewLine=t?t[1]:"\n",this._signal("changeNewLineMode")},e.prototype.getNewLineCharacter=function(){switch(this.$newLineMode){case"windows":return"\r\n";case"unix":return"\n";default:return this.$autoNewLine||"\n"}},e.prototype.setNewLineMode=function(e){if(this.$newLineMode===e)return;this.$newLineMode=e,this._signal("changeNewLineMode")},e.prototype.getNewLineMode=function(){return this.$newLineMode},e.prototype.isNewLine=function(e){return e=="\r\n"||e=="\r"||e=="\n"},e.prototype.getLine=function(e){return this.$lines[e]||""},e.prototype.getLines=function(e,t){return this.$lines.slice(e,t+1)},e.prototype.getAllLines=function(){return this.getLines(0,this.getLength())},e.prototype.getLength=function(){return this.$lines.length},e.prototype.getTextRange=function(e){return this.getLinesForRange(e).join(this.getNewLineCharacter())},e.prototype.getLinesForRange=function(e){var t;if(e.start.row===e.end.row)t=[this.getLine(e.start.row).substring(e.start.column,e.end.column)];else{t=this.getLines(e.start.row,e.end.row),t[0]=(t[0]||"").substring(e.start.column);var n=t.length-1;e.end.row-e.start.row==n&&(t[n]=t[n].substring(0,e.end.column))}return t},e.prototype.insertLines=function(e,t){return console.warn("Use of document.insertLines is deprecated. Use the insertFullLines method instead."),this.insertFullLines(e,t)},e.prototype.removeLines=function(e,t){return console.warn("Use of document.removeLines is deprecated. Use the removeFullLines method instead."),this.removeFullLines(e,t)},e.prototype.insertNewLine=function(e){return console.warn("Use of document.insertNewLine is deprecated. Use insertMergedLines(position, ['', '']) instead."),this.insertMergedLines(e,["",""])},e.prototype.insert=function(e,t){return this.getLength()<=1&&this.$detectNewLine(t),this.insertMergedLines(e,this.$split(t))},e.prototype.insertInLine=function(e,t){var n=this.clippedPos(e.row,e.column),r=this.pos(e.row,e.column+t.length);return this.applyDelta({start:n,end:r,action:"insert",lines:[t]},!0),this.clonePos(r)},e.prototype.clippedPos=function(e,t){var n=this.getLength();e===undefined?e=n:e<0?e=0:e>=n&&(e=n-1,t=undefined);var r=this.getLine(e);return t==undefined&&(t=r.length),t=Math.min(Math.max(t,0),r.length),{row:e,column:t}},e.prototype.clonePos=function(e){return{row:e.row,column:e.column}},e.prototype.pos=function(e,t){return{row:e,column:t}},e.prototype.$clipPosition=function(e){var t=this.getLength();return e.row>=t?(e.row=Math.max(0,t-1),e.column=this.getLine(t-1).length):(e.row=Math.max(0,e.row),e.column=Math.min(Math.max(e.column,0),this.getLine(e.row).length)),e},e.prototype.insertFullLines=function(e,t){e=Math.min(Math.max(e,0),this.getLength());var n=0;e<this.getLength()?(t=t.concat([""]),n=0):(t=[""].concat(t),e--,n=this.$lines[e].length),this.insertMergedLines({row:e,column:n},t)},e.prototype.insertMergedLines=function(e,t){var n=this.clippedPos(e.row,e.column),r={row:n.row+t.length-1,column:(t.length==1?n.column:0)+t[t.length-1].length};return this.applyDelta({start:n,end:r,action:"insert",lines:t}),this.clonePos(r)},e.prototype.remove=function(e){var t=this.clippedPos(e.start.row,e.start.column),n=this.clippedPos(e.end.row,e.end.column);return this.applyDelta({start:t,end:n,action:"remove",lines:this.getLinesForRange({start:t,end:n})}),this.clonePos(t)},e.prototype.removeInLine=function(e,t,n){var r=this.clippedPos(e,t),i=this.clippedPos(e,n);return this.applyDelta({start:r,end:i,action:"remove",lines:this.getLinesForRange({start:r,end:i})},!0),this.clonePos(r)},e.prototype.removeFullLines=function(e,t){e=Math.min(Math.max(0,e),this.getLength()-1),t=Math.min(Math.max(0,t),this.getLength()-1);var n=t==this.getLength()-1&&e>0,r=t<this.getLength()-1,i=n?e-1:e,s=n?this.getLine(i).length:0,u=r?t+1:t,a=r?0:this.getLine(u).length,f=new o(i,s,u,a),l=this.$lines.slice(e,t+1);return this.applyDelta({start:f.start,end:f.end,action:"remove",lines:this.getLinesForRange(f)}),l},e.prototype.removeNewLine=function(e){e<this.getLength()-1&&e>=0&&this.applyDelta({start:this.pos(e,this.getLine(e).length),end:this.pos(e+1,0),action:"remove",lines:["",""]})},e.prototype.replace=function(e,t){e instanceof o||(e=o.fromPoints(e.start,e.end));if(t.length===0&&e.isEmpty())return e.start;if(t==this.getTextRange(e))return e.end;this.remove(e);var n;return t?n=this.insert(e.start,t):n=e.start,n},e.prototype.applyDeltas=function(e){for(var t=0;t<e.length;t++)this.applyDelta(e[t])},e.prototype.revertDeltas=function(e){for(var t=e.length-1;t>=0;t--)this.revertDelta(e[t])},e.prototype.applyDelta=function(e,t){var n=e.action=="insert";if(n?e.lines.length<=1&&!e.lines[0]:!o.comparePoints(e.start,e.end))return;n&&e.lines.length>2e4?this.$splitAndapplyLargeDelta(e,2e4):(i(this.$lines,e,t),this._signal("change",e))},e.prototype.$safeApplyDelta=function(e){var t=this.$lines.length;(e.action=="remove"&&e.start.row<t&&e.end.row<t||e.action=="insert"&&e.start.row<=t)&&this.applyDelta(e)},e.prototype.$splitAndapplyLargeDelta=function(e,t){var n=e.lines,r=n.length-t+1,i=e.start.row,s=e.start.column;for(var o=0,u=0;o<r;o=u){u+=t-1;var a=n.slice(o,u);a.push(""),this.applyDelta({start:this.pos(i+o,s),end:this.pos(i+u,s=0),action:e.action,lines:a},!0)}e.lines=n.slice(o),e.start.row=i+o,e.start.column=s,this.applyDelta(e,!0)},e.prototype.revertDelta=function(e){this.$safeApplyDelta({start:this.clonePos(e.start),end:this.clonePos(e.end),action:e.action=="insert"?"remove":"insert",lines:e.lines.slice()})},e.prototype.indexToPosition=function(e,t){var n=this.$lines||this.getAllLines(),r=this.getNewLineCharacter().length;for(var i=t||0,s=n.length;i<s;i++){e-=n[i].length+r;if(e<0)return{row:i,column:e+n[i].length+r}}return{row:s-1,column:e+n[s-1].length+r}},e.prototype.positionToIndex=function(e,t){var n=this.$lines||this.getAllLines(),r=this.getNewLineCharacter().length,i=0,s=Math.min(e.row,n.length);for(var o=t||0;o<s;++o)i+=n[o].length+r;return i+e.column},e.prototype.$split=function(e){return e.split(/\r\n|\r|\n/)},e}();a.prototype.$autoNewLine="",a.prototype.$newLineMode="auto",r.implement(a.prototype,s),t.Document=a}),ace.define("ace/worker/mirror",[],function(e,t,n){"use strict";var r=e("../document").Document,i=e("../lib/lang"),s=t.Mirror=function(e){this.sender=e;var t=this.doc=new r(""),n=this.deferredUpdate=i.delayedCall(this.onUpdate.bind(this)),s=this;e.on("change",function(e){var r=e.data;if(r[0].start)t.applyDeltas(r);else for(var i=0;i<r.length;i+=2){var o,u;Array.isArray(r[i+1])?o={action:"insert",start:r[i],lines:r[i+1]}:o={action:"remove",start:r[i],end:r[i+1]};if((o.action=="insert"?o.start:o.end).row>=t.$lines.length)throw u=new Error("Invalid delta"),u.data={path:s.$path,linesLength:t.$lines.length,start:o.start,end:o.end},u;t.applyDelta(o,!0)}if(s.$timeout)return n.schedule(s.$timeout);s.onUpdate()})};(function(){this.$timeout=500,this.setTimeout=function(e){this.$timeout=e},this.setValue=function(e){this.doc.setValue(e),this.deferredUpdate.schedule(this.$timeout)},this.getValue=function(e){this.sender.callback(this.doc.getValue(),e)},this.onUpdate=function(){},this.isPending=function(){return this.deferredUpdate.isPending()}}).call(s.prototype)}),ace.define("ace/mode/css/csslint",[],function(e,t,n){var r=function(){function s(e,t,n,r){"use strict";this.messages=[],this.stats=[],this.lines=e,this.ruleset=t,this.allow=n,this.allow||(this.allow={}),this.ignore=r,this.ignore||(this.ignore=[])}var e=e||{},t=t||{},n=function(){var e;return e=function(){function t(n,r,i){function s(u,a){if(!r[u]){if(!n[u]){var f="function"==typeof e&&e;if(!a&&f)return f(u,!0);if(o)return o(u,!0);var l=new Error("Cannot find module '"+u+"'");throw l.code="MODULE_NOT_FOUND",l}var c=r[u]={exports:{}};n[u][0].call(c.exports,function(e){var t=n[u][1][e];return s(t||e)},c,c.exports,t,n,r,i)}return r[u].exports}for(var o="function"==typeof e&&e,u=0;u<i.length;u++)s(i[u]);return s}return t}()({1:[function(e,t,n){"use strict";var r=t.exports={__proto__:null,aliceblue:"#f0f8ff",antiquewhite:"#faebd7",aqua:"#00ffff",aquamarine:"#7fffd4",azure:"#f0ffff",beige:"#f5f5dc",bisque:"#ffe4c4",black:"#000000",blanchedalmond:"#ffebcd",blue:"#0000ff",blueviolet:"#8a2be2",brown:"#a52a2a",burlywood:"#deb887",cadetblue:"#5f9ea0",chartreuse:"#7fff00",chocolate:"#d2691e",coral:"#ff7f50",cornflowerblue:"#6495ed",cornsilk:"#fff8dc",crimson:"#dc143c",cyan:"#00ffff",darkblue:"#00008b",darkcyan:"#008b8b",darkgoldenrod:"#b8860b",darkgray:"#a9a9a9",darkgreen:"#006400",darkgrey:"#a9a9a9",darkkhaki:"#bdb76b",darkmagenta:"#8b008b",darkolivegreen:"#556b2f",darkorange:"#ff8c00",darkorchid:"#9932cc",darkred:"#8b0000",darksalmon:"#e9967a",darkseagreen:"#8fbc8f",darkslateblue:"#483d8b",darkslategray:"#2f4f4f",darkslategrey:"#2f4f4f",darkturquoise:"#00ced1",darkviolet:"#9400d3",deeppink:"#ff1493",deepskyblue:"#00bfff",dimgray:"#696969",dimgrey:"#696969",dodgerblue:"#1e90ff",firebrick:"#b22222",floralwhite:"#fffaf0",forestgreen:"#228b22",fuchsia:"#ff00ff",gainsboro:"#dcdcdc",ghostwhite:"#f8f8ff",gold:"#ffd700",goldenrod:"#daa520",gray:"#808080",green:"#008000",greenyellow:"#adff2f",grey:"#808080",honeydew:"#f0fff0",hotpink:"#ff69b4",indianred:"#cd5c5c",indigo:"#4b0082",ivory:"#fffff0",khaki:"#f0e68c",lavender:"#e6e6fa",lavenderblush:"#fff0f5",lawngreen:"#7cfc00",lemonchiffon:"#fffacd",lightblue:"#add8e6",lightcoral:"#f08080",lightcyan:"#e0ffff",lightgoldenrodyellow:"#fafad2",lightgray:"#d3d3d3",lightgreen:"#90ee90",lightgrey:"#d3d3d3",lightpink:"#ffb6c1",lightsalmon:"#ffa07a",lightseagreen:"#20b2aa",lightskyblue:"#87cefa",lightslategray:"#778899",lightslategrey:"#778899",lightsteelblue:"#b0c4de",lightyellow:"#ffffe0",lime:"#00ff00",limegreen:"#32cd32",linen:"#faf0e6",magenta:"#ff00ff",maroon:"#800000",mediumaquamarine:"#66cdaa",mediumblue:"#0000cd",mediumorchid:"#ba55d3",mediumpurple:"#9370db",mediumseagreen:"#3cb371",mediumslateblue:"#7b68ee",mediumspringgreen:"#00fa9a",mediumturquoise:"#48d1cc",mediumvioletred:"#c71585",midnightblue:"#191970",mintcream:"#f5fffa",mistyrose:"#ffe4e1",moccasin:"#ffe4b5",navajowhite:"#ffdead",navy:"#000080",oldlace:"#fdf5e6",olive:"#808000",olivedrab:"#6b8e23",orange:"#ffa500",orangered:"#ff4500",orchid:"#da70d6",palegoldenrod:"#eee8aa",palegreen:"#98fb98",paleturquoise:"#afeeee",palevioletred:"#db7093",papayawhip:"#ffefd5",peachpuff:"#ffdab9",peru:"#cd853f",pink:"#ffc0cb",plum:"#dda0dd",powderblue:"#b0e0e6",purple:"#800080",rebeccapurple:"#663399",red:"#ff0000",rosybrown:"#bc8f8f",royalblue:"#4169e1",saddlebrown:"#8b4513",salmon:"#fa8072",sandybrown:"#f4a460",seagreen:"#2e8b57",seashell:"#fff5ee",sienna:"#a0522d",silver:"#c0c0c0",skyblue:"#87ceeb",slateblue:"#6a5acd",slategray:"#708090",slategrey:"#708090",snow:"#fffafa",springgreen:"#00ff7f",steelblue:"#4682b4",tan:"#d2b48c",teal:"#008080",thistle:"#d8bfd8",tomato:"#ff6347",turquoise:"#40e0d0",violet:"#ee82ee",wheat:"#f5deb3",white:"#ffffff",whitesmoke:"#f5f5f5",yellow:"#ffff00",yellowgreen:"#9acd32",currentColor:"The value of the 'color' property.",activeborder:"Active window border.",activecaption:"Active window caption.",appworkspace:"Background color of multiple document interface.",background:"Desktop background.",buttonface:"The face background color for 3-D elements that appear 3-D due to one layer of surrounding border.",buttonhighlight:"The color of the border facing the light source for 3-D elements that appear 3-D due to one layer of surrounding border.",buttonshadow:"The color of the border away from the light source for 3-D elements that appear 3-D due to one layer of surrounding border.",buttontext:"Text on push buttons.",captiontext:"Text in caption, size box, and scrollbar arrow box.",graytext:"Grayed (disabled) text. This color is set to #000 if the current display driver does not support a solid gray color.",greytext:"Greyed (disabled) text. This color is set to #000 if the current display driver does not support a solid grey color.",highlight:"Item(s) selected in a control.",highlighttext:"Text of item(s) selected in a control.",inactiveborder:"Inactive window border.",inactivecaption:"Inactive window caption.",inactivecaptiontext:"Color of text in an inactive caption.",infobackground:"Background color for tooltip controls.",infotext:"Text color for tooltip controls.",menu:"Menu background.",menutext:"Text in menus.",scrollbar:"Scroll bar gray area.",threeddarkshadow:"The color of the darker (generally outer) of the two borders away from the light source for 3-D elements that appear 3-D due to two concentric layers of surrounding border.",threedface:"The face background color for 3-D elements that appear 3-D due to two concentric layers of surrounding border.",threedhighlight:"The color of the lighter (generally outer) of the two borders facing the light source for 3-D elements that appear 3-D due to two concentric layers of surrounding border.",threedlightshadow:"The color of the darker (generally inner) of the two borders facing the light source for 3-D elements that appear 3-D due to two concentric layers of surrounding border.",threedshadow:"The color of the lighter (generally inner) of the two borders away from the light source for 3-D elements that appear 3-D due to two concentric layers of surrounding border.",window:"Window background.",windowframe:"Window frame.",windowtext:"Text in windows."}},{}],2:[function(e,t,n){"use strict";function s(e,t,n){r.call(this,e,t,n,i.COMBINATOR_TYPE),this.type="unknown",/^\s+$/.test(e)?this.type="descendant":e===">"?this.type="child":e==="+"?this.type="adjacent-sibling":e==="~"&&(this.type="sibling")}t.exports=s;var r=e("../util/SyntaxUnit"),i=e("./Parser");s.prototype=new r,s.prototype.constructor=s},{"../util/SyntaxUnit":26,"./Parser":6}],3:[function(e,t,n){"use strict";function s(e,t){this.match=function(t){var n;return t.mark(),n=e(t),n?t.drop():t.restore(),n},this.toString=typeof t=="function"?t:function(){return t}}t.exports=s;var r=e("../util/StringReader"),i=e("../util/SyntaxError");s.prec={MOD:5,SEQ:4,ANDAND:3,OROR:2,ALT:1},s.parse=function(e){var t,n,o,u,a,f,l,c,h;t=new r(e),n=function(e){var n=t.readMatch(e);if(n===null)throw new i("Expected "+e,t.getLine(),t.getCol());return n},o=function(){var e=[u()];while(t.readMatch(" | ")!==null)e.push(u());return e.length===1?e[0]:s.alt.apply(s,e)},u=function(){var e=[a()];while(t.readMatch(" || ")!==null)e.push(a());return e.length===1?e[0]:s.oror.apply(s,e)},a=function(){var e=[f()];while(t.readMatch(" && ")!==null)e.push(f());return e.length===1?e[0]:s.andand.apply(s,e)},f=function(){var e=[l()];while(t.readMatch(/^ (?![&|\]])/)!==null)e.push(l());return e.length===1?e[0]:s.seq.apply(s,e)},l=function(){var e=c();if(t.readMatch("?")!==null)return e.question();if(t.readMatch("*")!==null)return e.star();if(t.readMatch("+")!==null)return e.plus();if(t.readMatch("#")!==null)return e.hash();if(t.readMatch(/^\{\s*/)!==null){var r=n(/^\d+/);n(/^\s*,\s*/);var i=n(/^\d+/);return n(/^\s*\}/),e.braces(Number(r),Number(i))}return e},c=function(){if(t.readMatch("[ ")!==null){var e=o();return n(" ]"),e}return s.fromType(n(/^[^ ?*+#{]+/))},h=o();if(!t.eof())throw new i("Expected end of string",t.getLine(),t.getCol());return h},s.cast=function(e){return e instanceof s?e:s.parse(e)},s.fromType=function(t){var n=e("./ValidationTypes");return new s(function(e){return e.hasNext()&&n.isType(e,t)},t)},s.seq=function(){var e=Array.prototype.slice.call(arguments).map(s.cast);return e.length===1?e[0]:new s(function(t){var n,r=!0;for(n=0;r&&n<e.length;n++)r=e[n].match(t);return r},function(t){var n=s.prec.SEQ,r=e.map(function(e){return e.toString(n)}).join(" ");return t>n&&(r="[ "+r+" ]"),r})},s.alt=function(){var e=Array.prototype.slice.call(arguments).map(s.cast);return e.length===1?e[0]:new s(function(t){var n,r=!1;for(n=0;!r&&n<e.length;n++)r=e[n].match(t);return r},function(t){var n=s.prec.ALT,r=e.map(function(e){return e.toString(n)}).join(" | ");return t>n&&(r="[ "+r+" ]"),r})},s.many=function(t){var n=Array.prototype.slice.call(arguments,1).reduce(function(t,n){if(n.expand){var r=e("./ValidationTypes");t.push.apply(t,r.complex[n.expand].options)}else t.push(s.cast(n));return t},[]);t===!0&&(t=n.map(function(){return!0}));var r=new s(function(e){var r=[],i=0,s=0,o=function(e){return s===0?(i=Math.max(e,i),e===n.length):e===i},u=function(i){for(var s=0;s<n.length;s++){if(r[s])continue;e.mark();if(n[s].match(e)){r[s]=!0;if(u(i+(t===!1||t[s]?1:0)))return e.drop(),!0;e.restore(),r[s]=!1}else e.drop()}return o(i)};u(0)||(s++,u(0));if(t===!1)return i>0;for(var a=0;a<n.length;a++)if(t[a]&&!r[a])return!1;return!0},function(e){var r=t===!1?s.prec.OROR:s.prec.ANDAND,i=n.map(function(e,n){return t!==!1&&!t[n]?e.toString(s.prec.MOD)+"?":e.toString(r)}).join(t===!1?" || ":" && ");return e>r&&(i="[ "+i+" ]"),i});return r.options=n,r},s.andand=function(){var e=Array.prototype.slice.call(arguments);return e.unshift(!0),s.many.apply(s,e)},s.oror=function(){var e=Array.prototype.slice.call(arguments);return e.unshift(!1),s.many.apply(s,e)},s.prototype={constructor:s,match:function(){throw new Error("unimplemented")},toString:function(){throw new Error("unimplemented")},func:function(){return this.match.bind(this)},then:function(e){return s.seq(this,e)},or:function(e){return s.alt(this,e)},andand:function(e){return s.many(!0,this,e)},oror:function(e){return s.many(!1,this,e)},star:function(){return this.braces(0,Infinity,"*")},plus:function(){return this.braces(1,Infinity,"+")},question:function(){return this.braces(0,1,"?")},hash:function(){return this.braces(1,Infinity,"#",s.cast(","))},braces:function(e,t,n,r){var i=this,o=r?r.then(this):this;return n||(n="{"+e+","+t+"}"),new s(function(n){var s=!0,u;for(u=0;u<t;u++){u>0&&r?s=o.match(n):s=i.match(n);if(!s)break}return u>=e},function(){return i.toString(s.prec.MOD)+n})}}},{"../util/StringReader":24,"../util/SyntaxError":25,"./ValidationTypes":21}],4:[function(e,t,n){"use strict";function s(e,t){r.call(this,"("+e+(t!==null?":"+t:"")+")",e.startLine,e.startCol,i.MEDIA_FEATURE_TYPE),this.name=e,this.value=t}t.exports=s;var r=e("../util/SyntaxUnit"),i=e("./Parser");s.prototype=new r,s.prototype.constructor=s},{"../util/SyntaxUnit":26,"./Parser":6}],5:[function(e,t,n){"use strict";function s(e,t,n,s,o){r.call(this,(e?e+" ":"")+(t?t:"")+(t&&n.length>0?" and ":"")+n.join(" and "),s,o,i.MEDIA_QUERY_TYPE),this.modifier=e,this.mediaType=t,this.features=n}t.exports=s;var r=e("../util/SyntaxUnit"),i=e("./Parser");s.prototype=new r,s.prototype.constructor=s},{"../util/SyntaxUnit":26,"./Parser":6}],6:[function(e,t,n){"use strict";function y(e){r.call(this),this.options=e||{},this._tokenStream=null}t.exports=y;var r=e("../util/EventTarget"),i=e("../util/SyntaxError"),s=e("../util/SyntaxUnit"),o=e("./Combinator"),u=e("./MediaFeature"),a=e("./MediaQuery"),f=e("./PropertyName"),l=e("./PropertyValue"),c=e("./PropertyValuePart"),h=e("./Selector"),p=e("./SelectorPart"),d=e("./SelectorSubPart"),v=e("./TokenStream"),m=e("./Tokens"),g=e("./Validation");y.DEFAULT_TYPE=0,y.COMBINATOR_TYPE=1,y.MEDIA_FEATURE_TYPE=2,y.MEDIA_QUERY_TYPE=3,y.PROPERTY_NAME_TYPE=4,y.PROPERTY_VALUE_TYPE=5,y.PROPERTY_VALUE_PART_TYPE=6,y.SELECTOR_TYPE=7,y.SELECTOR_PART_TYPE=8,y.SELECTOR_SUB_PART_TYPE=9,y.prototype=function(){var e=new r,t,n={__proto__:null,constructor:y,DEFAULT_TYPE:0,COMBINATOR_TYPE:1,MEDIA_FEATURE_TYPE:2,MEDIA_QUERY_TYPE:3,PROPERTY_NAME_TYPE:4,PROPERTY_VALUE_TYPE:5,PROPERTY_VALUE_PART_TYPE:6,SELECTOR_TYPE:7,SELECTOR_PART_TYPE:8,SELECTOR_SUB_PART_TYPE:9,_stylesheet:function(){var e=this._tokenStream,t,n,r;this.fire("startstylesheet"),this._charset(),this._skipCruft();while(e.peek()===m.IMPORT_SYM)this._import(),this._skipCruft();while(e.peek()===m.NAMESPACE_SYM)this._namespace(),this._skipCruft();r=e.peek();while(r>m.EOF){try{switch(r){case m.MEDIA_SYM:this._media(),this._skipCruft();break;case m.PAGE_SYM:this._page(),this._skipCruft();break;case m.FONT_FACE_SYM:this._font_face(),this._skipCruft();break;case m.KEYFRAMES_SYM:this._keyframes(),this._skipCruft();break;case m.VIEWPORT_SYM:this._viewport(),this._skipCruft();break;case m.DOCUMENT_SYM:this._document(),this._skipCruft();break;case m.SUPPORTS_SYM:this._supports(),this._skipCruft();break;case m.UNKNOWN_SYM:e.get();if(!!this.options.strict)throw new i("Unknown @ rule.",e.LT(0).startLine,e.LT(0).startCol);this.fire({type:"error",error:null,message:"Unknown @ rule: "+e.LT(0).value+".",line:e.LT(0).startLine,col:e.LT(0).startCol}),t=0;while(e.advance([m.LBRACE,m.RBRACE])===m.LBRACE)t++;while(t)e.advance([m.RBRACE]),t--;break;case m.S:this._readWhitespace();break;default:if(!this._ruleset())switch(r){case m.CHARSET_SYM:throw n=e.LT(1),this._charset(!1),new i("@charset not allowed here.",n.startLine,n.startCol);case m.IMPORT_SYM:throw n=e.LT(1),this._import(!1),new i("@import not allowed here.",n.startLine,n.startCol);case m.NAMESPACE_SYM:throw n=e.LT(1),this._namespace(!1),new i("@namespace not allowed here.",n.startLine,n.startCol);default:e.get(),this._unexpectedToken(e.token())}}}catch(s){if(!(s instanceof i&&!this.options.strict))throw s;this.fire({type:"error",error:s,message:s.message,line:s.line,col:s.col})}r=e.peek()}r!==m.EOF&&this._unexpectedToken(e.token()),this.fire("endstylesheet")},_charset:function(e){var t=this._tokenStream,n,r,i,s;t.match(m.CHARSET_SYM)&&(i=t.token().startLine,s=t.token().startCol,this._readWhitespace(),t.mustMatch(m.STRING),r=t.token(),n=r.value,this._readWhitespace(),t.mustMatch(m.SEMICOLON),e!==!1&&this.fire({type:"charset",charset:n,line:i,col:s}))},_import:function(e){var t=this._tokenStream,n,r,i=[];t.mustMatch(m.IMPORT_SYM),r=t.token(),this._readWhitespace(),t.mustMatch([m.STRING,m.URI]),n=t.token().value.replace(/^(?:url\()?["']?([^"']+?)["']?\)?$/,"$1"),this._readWhitespace(),i=this._media_query_list(),t.mustMatch(m.SEMICOLON),this._readWhitespace(),e!==!1&&this.fire({type:"import",uri:n,media:i,line:r.startLine,col:r.startCol})},_namespace:function(e){var t=this._tokenStream,n,r,i,s;t.mustMatch(m.NAMESPACE_SYM),n=t.token().startLine,r=t.token().startCol,this._readWhitespace(),t.match(m.IDENT)&&(i=t.token().value,this._readWhitespace()),t.mustMatch([m.STRING,m.URI]),s=t.token().value.replace(/(?:url\()?["']([^"']+)["']\)?/,"$1"),this._readWhitespace(),t.mustMatch(m.SEMICOLON),this._readWhitespace(),e!==!1&&this.fire({type:"namespace",prefix:i,uri:s,line:n,col:r})},_supports:function(e){var t=this._tokenStream,n,r;if(t.match(m.SUPPORTS_SYM)){n=t.token().startLine,r=t.token().startCol,this._readWhitespace(),this._supports_condition(),this._readWhitespace(),t.mustMatch(m.LBRACE),this._readWhitespace(),e!==!1&&this.fire({type:"startsupports",line:n,col:r});for(;;)if(!this._ruleset())break;t.mustMatch(m.RBRACE),this._readWhitespace(),this.fire({type:"endsupports",line:n,col:r})}},_supports_condition:function(){var e=this._tokenStream,t;if(e.match(m.IDENT))t=e.token().value.toLowerCase(),t==="not"?(e.mustMatch(m.S),this._supports_condition_in_parens()):e.unget();else{this._supports_condition_in_parens(),this._readWhitespace();while(e.peek()===m.IDENT){t=e.LT(1).value.toLowerCase();if(t==="and"||t==="or")e.mustMatch(m.IDENT),this._readWhitespace(),this._supports_condition_in_parens(),this._readWhitespace()}}},_supports_condition_in_parens:function(){var e=this._tokenStream,t;e.match(m.LPAREN)?(this._readWhitespace(),e.match(m.IDENT)?(t=e.token().value.toLowerCase(),t==="not"?(this._readWhitespace(),this._supports_condition(),this._readWhitespace(),e.mustMatch(m.RPAREN)):(e.unget(),this._supports_declaration_condition(!1))):(this._supports_condition(),this._readWhitespace(),e.mustMatch(m.RPAREN))):this._supports_declaration_condition()},_supports_declaration_condition:function(e){var t=this._tokenStream;e!==!1&&t.mustMatch(m.LPAREN),this._readWhitespace(),this._declaration(),t.mustMatch(m.RPAREN)},_media:function(){var e=this._tokenStream,t,n,r;e.mustMatch(m.MEDIA_SYM),t=e.token().startLine,n=e.token().startCol,this._readWhitespace(),r=this._media_query_list(),e.mustMatch(m.LBRACE),this._readWhitespace(),this.fire({type:"startmedia",media:r,line:t,col:n});for(;;)if(e.peek()===m.PAGE_SYM)this._page();else if(e.peek()===m.FONT_FACE_SYM)this._font_face();else if(e.peek()===m.VIEWPORT_SYM)this._viewport();else if(e.peek()===m.DOCUMENT_SYM)this._document();else if(e.peek()===m.SUPPORTS_SYM)this._supports();else if(e.peek()===m.MEDIA_SYM)this._media();else if(!this._ruleset())break;e.mustMatch(m.RBRACE),this._readWhitespace(),this.fire({type:"endmedia",media:r,line:t,col:n})},_media_query_list:function(){var e=this._tokenStream,t=[];this._readWhitespace(),(e.peek()===m.IDENT||e.peek()===m.LPAREN)&&t.push(this._media_query());while(e.match(m.COMMA))this._readWhitespace(),t.push(this._media_query());return t},_media_query:function(){var e=this._tokenStream,t=null,n=null,r=null,i=[];e.match(m.IDENT)&&(n=e.token().value.toLowerCase(),n!=="only"&&n!=="not"?(e.unget(),n=null):r=e.token()),this._readWhitespace(),e.peek()===m.IDENT?(t=this._media_type(),r===null&&(r=e.token())):e.peek()===m.LPAREN&&(r===null&&(r=e.LT(1)),i.push(this._media_expression()));if(t===null&&i.length===0)return null;this._readWhitespace();while(e.match(m.IDENT))e.token().value.toLowerCase()!=="and"&&this._unexpectedToken(e.token()),this._readWhitespace(),i.push(this._media_expression());return new a(n,t,i,r.startLine,r.startCol)},_media_type:function(){return this._media_feature()},_media_expression:function(){var e=this._tokenStream,t=null,n,r=null;return e.mustMatch(m.LPAREN),this._readWhitespace(),t=this._media_feature(),this._readWhitespace(),e.match(m.COLON)&&(this._readWhitespace(),n=e.LT(1),r=this._expression()),e.mustMatch(m.RPAREN),this._readWhitespace(),new u(t,r?new s(r,n.startLine,n.startCol):null)},_media_feature:function(){var e=this._tokenStream;return this._readWhitespace(),e.mustMatch(m.IDENT),s.fromToken(e.token())},_page:function(){var e=this._tokenStream,t,n,r=null,i=null;e.mustMatch(m.PAGE_SYM),t=e.token().startLine,n=e.token().startCol,this._readWhitespace(),e.match(m.IDENT)&&(r=e.token().value,r.toLowerCase()==="auto"&&this._unexpectedToken(e.token())),e.peek()===m.COLON&&(i=this._pseudo_page()),this._readWhitespace(),this.fire({type:"startpage",id:r,pseudo:i,line:t,col:n}),this._readDeclarations(!0,!0),this.fire({type:"endpage",id:r,pseudo:i,line:t,col:n})},_margin:function(){var e=this._tokenStream,t,n,r=this._margin_sym();return r?(t=e.token().startLine,n=e.token().startCol,this.fire({type:"startpagemargin",margin:r,line:t,col:n}),this._readDeclarations(!0),this.fire({type:"endpagemargin",margin:r,line:t,col:n}),!0):!1},_margin_sym:function(){var e=this._tokenStream;return e.match([m.TOPLEFTCORNER_SYM,m.TOPLEFT_SYM,m.TOPCENTER_SYM,m.TOPRIGHT_SYM,m.TOPRIGHTCORNER_SYM,m.BOTTOMLEFTCORNER_SYM,m.BOTTOMLEFT_SYM,m.BOTTOMCENTER_SYM,m.BOTTOMRIGHT_SYM,m.BOTTOMRIGHTCORNER_SYM,m.LEFTTOP_SYM,m.LEFTMIDDLE_SYM,m.LEFTBOTTOM_SYM,m.RIGHTTOP_SYM,m.RIGHTMIDDLE_SYM,m.RIGHTBOTTOM_SYM])?s.fromToken(e.token()):null},_pseudo_page:function(){var e=this._tokenStream;return e.mustMatch(m.COLON),e.mustMatch(m.IDENT),e.token().value},_font_face:function(){var e=this._tokenStream,t,n;e.mustMatch(m.FONT_FACE_SYM),t=e.token().startLine,n=e.token().startCol,this._readWhitespace(),this.fire({type:"startfontface",line:t,col:n}),this._readDeclarations(!0),this.fire({type:"endfontface",line:t,col:n})},_viewport:function(){var e=this._tokenStream,t,n;e.mustMatch(m.VIEWPORT_SYM),t=e.token().startLine,n=e.token().startCol,this._readWhitespace(),this.fire({type:"startviewport",line:t,col:n}),this._readDeclarations(!0),this.fire({type:"endviewport",line:t,col:n})},_document:function(){var e=this._tokenStream,t,n=[],r="";e.mustMatch(m.DOCUMENT_SYM),t=e.token(),/^@-([^-]+)-/.test(t.value)&&(r=RegExp.$1),this._readWhitespace(),n.push(this._document_function());while(e.match(m.COMMA))this._readWhitespace(),n.push(this._document_function());e.mustMatch(m.LBRACE),this._readWhitespace(),this.fire({type:"startdocument",functions:n,prefix:r,line:t.startLine,col:t.startCol});var i=!0;while(i)switch(e.peek()){case m.PAGE_SYM:this._page();break;case m.FONT_FACE_SYM:this._font_face();break;case m.VIEWPORT_SYM:this._viewport();break;case m.MEDIA_SYM:this._media();break;case m.KEYFRAMES_SYM:this._keyframes();break;case m.DOCUMENT_SYM:this._document();break;default:i=Boolean(this._ruleset())}e.mustMatch(m.RBRACE),t=e.token(),this._readWhitespace(),this.fire({type:"enddocument",functions:n,prefix:r,line:t.startLine,col:t.startCol})},_document_function:function(){var e=this._tokenStream,t;return e.match(m.URI)?(t=e.token().value,this._readWhitespace()):t=this._function(),t},_operator:function(e){var t=this._tokenStream,n=null;if(t.match([m.SLASH,m.COMMA])||e&&t.match([m.PLUS,m.STAR,m.MINUS]))n=t.token(),this._readWhitespace();return n?c.fromToken(n):null},_combinator:function(){var e=this._tokenStream,t=null,n;return e.match([m.PLUS,m.GREATER,m.TILDE])&&(n=e.token(),t=new o(n.value,n.startLine,n.startCol),this._readWhitespace()),t},_unary_operator:function(){var e=this._tokenStream;return e.match([m.MINUS,m.PLUS])?e.token().value:null},_property:function(){var e=this._tokenStream,t=null,n=null,r="",i,s,o;e.peek()===m.STAR&&this.options.starHack&&(e.get(),i=e.token(),n=i.value,s=i.startLine,o=i.startCol),e.peek()===m.MINUS&&(e.get(),i=e.token(),r=i.value,s=i.startLine,o=i.startCol);if(e.match(m.IDENT))i=e.token(),r+=i.value,r.charAt(0)==="_"&&this.options.underscoreHack&&(n="_",r=r.substring(1)),t=new f(r,n,s||i.startLine,o||i.startCol),this._readWhitespace();else{var u=e.peek();u!==m.EOF&&u!==m.RBRACE&&this._unexpectedToken(e.LT(1))}return t},_ruleset:function(){var e=this._tokenStream,t,n;try{n=this._selectors_group()}catch(r){if(r instanceof i&&!this.options.strict){this.fire({type:"error",error:r,message:r.message,line:r.line,col:r.col}),t=e.advance([m.RBRACE]);if(t!==m.RBRACE)throw r;return!0}throw r}return n&&(this.fire({type:"startrule",selectors:n,line:n[0].line,col:n[0].col}),this._readDeclarations(!0),this.fire({type:"endrule",selectors:n,line:n[0].line,col:n[0].col})),n},_selectors_group:function(){var e=this._tokenStream,t=[],n;n=this._selector();if(n!==null){t.push(n);while(e.match(m.COMMA))this._readWhitespace(),n=this._selector(),n!==null?t.push(n):this._unexpectedToken(e.LT(1))}return t.length?t:null},_selector:function(){var e=this._tokenStream,t=[],n=null,r=null,i=null;n=this._simple_selector_sequence();if(n===null)return null;t.push(n);do{r=this._combinator();if(r!==null)t.push(r),n=this._simple_selector_sequence(),n===null?this._unexpectedToken(e.LT(1)):t.push(n);else{if(!this._readWhitespace())break;i=new o(e.token().value,e.token().startLine,e.token().startCol),r=this._combinator(),n=this._simple_selector_sequence(),n===null?r!==null&&this._unexpectedToken(e.LT(1)):(r!==null?t.push(r):t.push(i),t.push(n))}}while(!0);return new h(t,t[0].line,t[0].col)},_simple_selector_sequence:function(){var e=this._tokenStream,t=null,n=[],r="",i=[function(){return e.match(m.HASH)?new d(e.token().value,"id",e.token().startLine,e.token().startCol):null},this._class,this._attrib,this._pseudo,this._negation],s=0,o=i.length,u=null,a,f;a=e.LT(1).startLine,f=e.LT(1).startCol,t=this._type_selector(),t||(t=this._universal()),t!==null&&(r+=t);for(;;){if(e.peek()===m.S)break;while(s<o&&u===null)u=i[s++].call(this);if(u===null){if(r==="")return null;break}s=0,n.push(u),r+=u.toString(),u=null}return r!==""?new p(t,n,r,a,f):null},_type_selector:function(){var e=this._tokenStream,t=this._namespace_prefix(),n=this._element_name();return n?(t&&(n.text=t+n.text,n.col-=t.length),n):(t&&(e.unget(),t.length>1&&e.unget()),null)},_class:function(){var e=this._tokenStream,t;return e.match(m.DOT)?(e.mustMatch(m.IDENT),t=e.token(),new d("."+t.value,"class",t.startLine,t.startCol-1)):null},_element_name:function(){var e=this._tokenStream,t;return e.match(m.IDENT)?(t=e.token(),new d(t.value,"elementName",t.startLine,t.startCol)):null},_namespace_prefix:function(){var e=this._tokenStream,t="";if(e.LA(1)===m.PIPE||e.LA(2)===m.PIPE)e.match([m.IDENT,m.STAR])&&(t+=e.token().value),e.mustMatch(m.PIPE),t+="|";return t.length?t:null},_universal:function(){var e=this._tokenStream,t="",n;return n=this._namespace_prefix(),n&&(t+=n),e.match(m.STAR)&&(t+="*"),t.length?t:null},_attrib:function(){var e=this._tokenStream,t=null,n,r;return e.match(m.LBRACKET)?(r=e.token(),t=r.value,t+=this._readWhitespace(),n=this._namespace_prefix(),n&&(t+=n),e.mustMatch(m.IDENT),t+=e.token().value,t+=this._readWhitespace(),e.match([m.PREFIXMATCH,m.SUFFIXMATCH,m.SUBSTRINGMATCH,m.EQUALS,m.INCLUDES,m.DASHMATCH])&&(t+=e.token().value,t+=this._readWhitespace(),e.mustMatch([m.IDENT,m.STRING]),t+=e.token().value,t+=this._readWhitespace()),e.mustMatch(m.RBRACKET),new d(t+"]","attribute",r.startLine,r.startCol)):null},_pseudo:function(){var e=this._tokenStream,t=null,n=":",r,s;if(e.match(m.COLON)){e.match(m.COLON)&&(n+=":"),e.match(m.IDENT)?(t=e.token().value,r=e.token().startLine,s=e.token().startCol-n.length):e.peek()===m.FUNCTION&&(r=e.LT(1).startLine,s=e.LT(1).startCol-n.length,t=this._functional_pseudo());if(!t){var o=e.LT(1).startLine,u=e.LT(0).startCol;throw new i("Expected a `FUNCTION` or `IDENT` after colon at line "+o+", col "+u+".",o,u)}t=new d(n+t,"pseudo",r,s)}return t},_functional_pseudo:function(){var e=this._tokenStream,t=null;return e.match(m.FUNCTION)&&(t=e.token().value,t+=this._readWhitespace(),t+=this._expression(),e.mustMatch(m.RPAREN),t+=")"),t},_expression:function(){var e=this._tokenStream,t="";while(e.match([m.PLUS,m.MINUS,m.DIMENSION,m.NUMBER,m.STRING,m.IDENT,m.LENGTH,m.FREQ,m.ANGLE,m.TIME,m.RESOLUTION,m.SLASH]))t+=e.token().value,t+=this._readWhitespace();return t.length?t:null},_negation:function(){var e=this._tokenStream,t,n,r="",i,s=null;return e.match(m.NOT)&&(r=e.token().value,t=e.token().startLine,n=e.token().startCol,r+=this._readWhitespace(),i=this._negation_arg(),r+=i,r+=this._readWhitespace(),e.match(m.RPAREN),r+=e.token().value,s=new d(r,"not",t,n),s.args.push(i)),s},_negation_arg:function(){var e=this._tokenStream,t=[this._type_selector,this._universal,function(){return e.match(m.HASH)?new d(e.token().value,"id",e.token().startLine,e.token().startCol):null},this._class,this._attrib,this._pseudo],n=null,r=0,i=t.length,s,o,u;s=e.LT(1).startLine,o=e.LT(1).startCol;while(r<i&&n===null)n=t[r].call(this),r++;return n===null&&this._unexpectedToken(e.LT(1)),n.type==="elementName"?u=new p(n,[],n.toString(),s,o):u=new p(null,[n],n.toString(),s,o),u},_declaration:function(){var e=this._tokenStream,t=null,n=null,r=null,i=null,s="";t=this._property();if(t!==null){e.mustMatch(m.COLON),this._readWhitespace(),n=this._expr(),(!n||n.length===0)&&this._unexpectedToken(e.LT(1)),r=this._prio(),s=t.toString();if(this.options.starHack&&t.hack==="*"||this.options.underscoreHack&&t.hack==="_")s=t.text;try{this._validateProperty(s,n)}catch(o){i=o}return this.fire({type:"property",property:t,value:n,important:r,line:t.line,col:t.col,invalid:i}),!0}return!1},_prio:function(){var e=this._tokenStream,t=e.match(m.IMPORTANT_SYM);return this._readWhitespace(),t},_expr:function(e){var t=[],n=null,r=null;n=this._term(e);if(n!==null){t.push(n);do{r=this._operator(e),r&&t.push(r),n=this._term(e);if(n===null)break;t.push(n)}while(!0)}return t.length>0?new l(t,t[0].line,t[0].col):null},_term:function(e){var t=this._tokenStream,n=null,r=null,i=null,s=null,o,u,a;return n=this._unary_operator(),n!==null&&(u=t.token().startLine,a=t.token().startCol),t.peek()===m.IE_FUNCTION&&this.options.ieFilters?(r=this._ie_function(),n===null&&(u=t.token().startLine,a=t.token().startCol)):e&&t.match([m.LPAREN,m.LBRACE,m.LBRACKET])?(o=t.token(),i=o.endChar,r=o.value+this._expr(e).text,n===null&&(u=t.token().startLine,a=t.token().startCol),t.mustMatch(m.type(i)),r+=i,this._readWhitespace()):t.match([m.NUMBER,m.PERCENTAGE,m.LENGTH,m.ANGLE,m.TIME,m.FREQ,m.STRING,m.IDENT,m.URI,m.UNICODE_RANGE])?(r=t.token().value,n===null&&(u=t.token().startLine,a=t.token().startCol,s=c.fromToken(t.token())),this._readWhitespace()):(o=this._hexcolor(),o===null?(n===null&&(u=t.LT(1).startLine,a=t.LT(1).startCol),r===null&&(t.LA(3)===m.EQUALS&&this.options.ieFilters?r=this._ie_function():r=this._function())):(r=o.value,n===null&&(u=o.startLine,a=o.startCol))),s!==null?s:r!==null?new c(n!==null?n+r:r,u,a):null},_function:function(){var e=this._tokenStream,t=null,n=null,r;if(e.match(m.FUNCTION)){t=e.token().value,this._readWhitespace(),n=this._expr(!0),t+=n;if(this.options.ieFilters&&e.peek()===m.EQUALS)do{this._readWhitespace()&&(t+=e.token().value),e.LA(0)===m.COMMA&&(t+=e.token().value),e.match(m.IDENT),t+=e.token().value,e.match(m.EQUALS),t+=e.token().value,r=e.peek();while(r!==m.COMMA&&r!==m.S&&r!==m.RPAREN)e.get(),t+=e.token().value,r=e.peek()}while(e.match([m.COMMA,m.S]));e.match(m.RPAREN),t+=")",this._readWhitespace()}return t},_ie_function:function(){var e=this._tokenStream,t=null,n;if(e.match([m.IE_FUNCTION,m.FUNCTION])){t=e.token().value;do{this._readWhitespace()&&(t+=e.token().value),e.LA(0)===m.COMMA&&(t+=e.token().value),e.match(m.IDENT),t+=e.token().value,e.match(m.EQUALS),t+=e.token().value,n=e.peek();while(n!==m.COMMA&&n!==m.S&&n!==m.RPAREN)e.get(),t+=e.token().value,n=e.peek()}while(e.match([m.COMMA,m.S]));e.match(m.RPAREN),t+=")",this._readWhitespace()}return t},_hexcolor:function(){var e=this._tokenStream,t=null,n;if(e.match(m.HASH)){t=e.token(),n=t.value;if(!/#[a-f0-9]{3,6}/i.test(n))throw new i("Expected a hex color but found '"+n+"' at line "+t.startLine+", col "+t.startCol+".",t.startLine,t.startCol);this._readWhitespace()}return t},_keyframes:function(){var e=this._tokenStream,t,n,r,i="";e.mustMatch(m.KEYFRAMES_SYM),t=e.token(),/^@-([^-]+)-/.test(t.value)&&(i=RegExp.$1),this._readWhitespace(),r=this._keyframe_name(),this._readWhitespace(),e.mustMatch(m.LBRACE),this.fire({type:"startkeyframes",name:r,prefix:i,line:t.startLine,col:t.startCol}),this._readWhitespace(),n=e.peek();while(n===m.IDENT||n===m.PERCENTAGE)this._keyframe_rule(),this._readWhitespace(),n=e.peek();this.fire({type:"endkeyframes",name:r,prefix:i,line:t.startLine,col:t.startCol}),this._readWhitespace(),e.mustMatch(m.RBRACE),this._readWhitespace()},_keyframe_name:function(){var e=this._tokenStream;return e.mustMatch([m.IDENT,m.STRING]),s.fromToken(e.token())},_keyframe_rule:function(){var e=this._key_list();this.fire({type:"startkeyframerule",keys:e,line:e[0].line,col:e[0].col}),this._readDeclarations(!0),this.fire({type:"endkeyframerule",keys:e,line:e[0].line,col:e[0].col})},_key_list:function(){var e=this._tokenStream,t=[];t.push(this._key()),this._readWhitespace();while(e.match(m.COMMA))this._readWhitespace(),t.push(this._key()),this._readWhitespace();return t},_key:function(){var e=this._tokenStream,t;if(e.match(m.PERCENTAGE))return s.fromToken(e.token());if(e.match(m.IDENT)){t=e.token();if(/from|to/i.test(t.value))return s.fromToken(t);e.unget()}this._unexpectedToken(e.LT(1))},_skipCruft:function(){while(this._tokenStream.match([m.S,m.CDO,m.CDC]));},_readDeclarations:function(e,t){var n=this._tokenStream,r;this._readWhitespace(),e&&n.mustMatch(m.LBRACE),this._readWhitespace();try{for(;;){if(!(n.match(m.SEMICOLON)||t&&this._margin())){if(!this._declaration())break;if(!n.match(m.SEMICOLON))break}this._readWhitespace()}n.mustMatch(m.RBRACE),this._readWhitespace()}catch(s){if(!(s instanceof i&&!this.options.strict))throw s;this.fire({type:"error",error:s,message:s.message,line:s.line,col:s.col}),r=n.advance([m.SEMICOLON,m.RBRACE]);if(r===m.SEMICOLON)this._readDeclarations(!1,t);else if(r!==m.EOF&&r!==m.RBRACE)throw s}},_readWhitespace:function(){var e=this._tokenStream,t="";while(e.match(m.S))t+=e.token().value;return t},_unexpectedToken:function(e){throw new i("Unexpected token '"+e.value+"' at line "+e.startLine+", col "+e.startCol+".",e.startLine,e.startCol)},_verifyEnd:function(){this._tokenStream.LA(1)!==m.EOF&&this._unexpectedToken(this._tokenStream.LT(1))},_validateProperty:function(e,t){g.validate(e,t)},parse:function(e){this._tokenStream=new v(e,m),this._stylesheet()},parseStyleSheet:function(e){return this.parse(e)},parseMediaQuery:function(e){this._tokenStream=new v(e,m);var t=this._media_query();return this._verifyEnd(),t},parsePropertyValue:function(e){this._tokenStream=new v(e,m),this._readWhitespace();var t=this._expr();return this._readWhitespace(),this._verifyEnd(),t},parseRule:function(e){this._tokenStream=new v(e,m),this._readWhitespace();var t=this._ruleset();return this._readWhitespace(),this._verifyEnd(),t},parseSelector:function(e){this._tokenStream=new v(e,m),this._readWhitespace();var t=this._selector();return this._readWhitespace(),this._verifyEnd(),t},parseStyleAttribute:function(e){e+="}",this._tokenStream=new v(e,m),this._readDeclarations()}};for(t in n)Object.prototype.hasOwnProperty.call(n,t)&&(e[t]=n[t]);return e}()},{"../util/EventTarget":23,"../util/SyntaxError":25,"../util/SyntaxUnit":26,"./Combinator":2,"./MediaFeature":4,"./MediaQuery":5,"./PropertyName":8,"./PropertyValue":9,"./PropertyValuePart":11,"./Selector":13,"./SelectorPart":14,"./SelectorSubPart":15,"./TokenStream":17,"./Tokens":18,"./Validation":19}],7:[function(e,t,n){"use strict";var r=t.exports={__proto__:null,"align-items":"flex-start | flex-end | center | baseline | stretch","align-content":"flex-start | flex-end | center | space-between | space-around | stretch","align-self":"auto | flex-start | flex-end | center | baseline | stretch",all:"initial | inherit | unset","-webkit-align-items":"flex-start | flex-end | center | baseline | stretch","-webkit-align-content":"flex-start | flex-end | center | space-between | space-around | stretch","-webkit-align-self":"auto | flex-start | flex-end | center | baseline | stretch","alignment-adjust":"auto | baseline | before-edge | text-before-edge | middle | central | after-edge | text-after-edge | ideographic | alphabetic | hanging | mathematical | <percentage> | <length>","alignment-baseline":"auto | baseline | use-script | before-edge | text-before-edge | after-edge | text-after-edge | central | middle | ideographic | alphabetic | hanging | mathematical",animation:1,"animation-delay":"<time>#","animation-direction":"<single-animation-direction>#","animation-duration":"<time>#","animation-fill-mode":"[ none | forwards | backwards | both ]#","animation-iteration-count":"[ <number> | infinite ]#","animation-name":"[ none | <single-animation-name> ]#","animation-play-state":"[ running | paused ]#","animation-timing-function":1,"-moz-animation-delay":"<time>#","-moz-animation-direction":"[ normal | alternate ]#","-moz-animation-duration":"<time>#","-moz-animation-iteration-count":"[ <number> | infinite ]#","-moz-animation-name":"[ none | <single-animation-name> ]#","-moz-animation-play-state":"[ running | paused ]#","-ms-animation-delay":"<time>#","-ms-animation-direction":"[ normal | alternate ]#","-ms-animation-duration":"<time>#","-ms-animation-iteration-count":"[ <number> | infinite ]#","-ms-animation-name":"[ none | <single-animation-name> ]#","-ms-animation-play-state":"[ running | paused ]#","-webkit-animation-delay":"<time>#","-webkit-animation-direction":"[ normal | alternate ]#","-webkit-animation-duration":"<time>#","-webkit-animation-fill-mode":"[ none | forwards | backwards | both ]#","-webkit-animation-iteration-count":"[ <number> | infinite ]#","-webkit-animation-name":"[ none | <single-animation-name> ]#","-webkit-animation-play-state":"[ running | paused ]#","-o-animation-delay":"<time>#","-o-animation-direction":"[ normal | alternate ]#","-o-animation-duration":"<time>#","-o-animation-iteration-count":"[ <number> | infinite ]#","-o-animation-name":"[ none | <single-animation-name> ]#","-o-animation-play-state":"[ running | paused ]#",appearance:"none | auto","-moz-appearance":"none | button | button-arrow-down | button-arrow-next | button-arrow-previous | button-arrow-up | button-bevel | button-focus | caret | checkbox | checkbox-container | checkbox-label | checkmenuitem | dualbutton | groupbox | listbox | listitem | menuarrow | menubar | menucheckbox | menuimage | menuitem | menuitemtext | menulist | menulist-button | menulist-text | menulist-textfield | menupopup | menuradio | menuseparator | meterbar | meterchunk | progressbar | progressbar-vertical | progresschunk | progresschunk-vertical | radio | radio-container | radio-label | radiomenuitem | range | range-thumb | resizer | resizerpanel | scale-horizontal | scalethumbend | scalethumb-horizontal | scalethumbstart | scalethumbtick | scalethumb-vertical | scale-vertical | scrollbarbutton-down | scrollbarbutton-left | scrollbarbutton-right | scrollbarbutton-up | scrollbarthumb-horizontal | scrollbarthumb-vertical | scrollbartrack-horizontal | scrollbartrack-vertical | searchfield | separator | sheet | spinner | spinner-downbutton | spinner-textfield | spinner-upbutton | splitter | statusbar | statusbarpanel | tab | tabpanel | tabpanels | tab-scroll-arrow-back | tab-scroll-arrow-forward | textfield | textfield-multiline | toolbar | toolbarbutton | toolbarbutton-dropdown | toolbargripper | toolbox | tooltip | treeheader | treeheadercell | treeheadersortarrow | treeitem | treeline | treetwisty | treetwistyopen | treeview | -moz-mac-unified-toolbar | -moz-win-borderless-glass | -moz-win-browsertabbar-toolbox | -moz-win-communicationstext | -moz-win-communications-toolbox | -moz-win-exclude-glass | -moz-win-glass | -moz-win-mediatext | -moz-win-media-toolbox | -moz-window-button-box | -moz-window-button-box-maximized | -moz-window-button-close | -moz-window-button-maximize | -moz-window-button-minimize | -moz-window-button-restore | -moz-window-frame-bottom | -moz-window-frame-left | -moz-window-frame-right | -moz-window-titlebar | -moz-window-titlebar-maximized","-ms-appearance":"none | icon | window | desktop | workspace | document | tooltip | dialog | button | push-button | hyperlink | radio | radio-button | checkbox | menu-item | tab | menu | menubar | pull-down-menu | pop-up-menu | list-menu | radio-group | checkbox-group | outline-tree | range | field | combo-box | signature | password | normal","-webkit-appearance":"none | button | button-bevel | caps-lock-indicator | caret | checkbox | default-button | listbox | listitem | media-fullscreen-button | media-mute-button | media-play-button | media-seek-back-button | media-seek-forward-button | media-slider | media-sliderthumb | menulist | menulist-button | menulist-text | menulist-textfield | push-button | radio | searchfield | searchfield-cancel-button | searchfield-decoration | searchfield-results-button | searchfield-results-decoration | slider-horizontal | slider-vertical | sliderthumb-horizontal | sliderthumb-vertical | square-button | textarea | textfield | scrollbarbutton-down | scrollbarbutton-left | scrollbarbutton-right | scrollbarbutton-up | scrollbargripper-horizontal | scrollbargripper-vertical | scrollbarthumb-horizontal | scrollbarthumb-vertical | scrollbartrack-horizontal | scrollbartrack-vertical","-o-appearance":"none | window | desktop | workspace | document | tooltip | dialog | button | push-button | hyperlink | radio | radio-button | checkbox | menu-item | tab | menu | menubar | pull-down-menu | pop-up-menu | list-menu | radio-group | checkbox-group | outline-tree | range | field | combo-box | signature | password | normal",azimuth:"<azimuth>","backface-visibility":"visible | hidden",background:1,"background-attachment":"<attachment>#","background-clip":"<box>#","background-color":"<color>","background-image":"<bg-image>#","background-origin":"<box>#","background-position":"<bg-position>","background-repeat":"<repeat-style>#","background-size":"<bg-size>#","baseline-shift":"baseline | sub | super | <percentage> | <length>",behavior:1,binding:1,bleed:"<length>","bookmark-label":"<content> | <attr> | <string>","bookmark-level":"none | <integer>","bookmark-state":"open | closed","bookmark-target":"none | <uri> | <attr>",border:"<border-width> || <border-style> || <color>","border-bottom":"<border-width> || <border-style> || <color>","border-bottom-color":"<color>","border-bottom-left-radius":"<x-one-radius>","border-bottom-right-radius":"<x-one-radius>","border-bottom-style":"<border-style>","border-bottom-width":"<border-width>","border-collapse":"collapse | separate","border-color":"<color>{1,4}","border-image":1,"border-image-outset":"[ <length> | <number> ]{1,4}","border-image-repeat":"[ stretch | repeat | round | space ]{1,2}","border-image-slice":"<border-image-slice>","border-image-source":"<image> | none","border-image-width":"[ <length> | <percentage> | <number> | auto ]{1,4}","border-left":"<border-width> || <border-style> || <color>","border-left-color":"<color>","border-left-style":"<border-style>","border-left-width":"<border-width>","border-radius":"<border-radius>","border-right":"<border-width> || <border-style> || <color>","border-right-color":"<color>","border-right-style":"<border-style>","border-right-width":"<border-width>","border-spacing":"<length>{1,2}","border-style":"<border-style>{1,4}","border-top":"<border-width> || <border-style> || <color>","border-top-color":"<color>","border-top-left-radius":"<x-one-radius>","border-top-right-radius":"<x-one-radius>","border-top-style":"<border-style>","border-top-width":"<border-width>","border-width":"<border-width>{1,4}",bottom:"<margin-width>","-moz-box-align":"start | end | center | baseline | stretch","-moz-box-decoration-break":"slice | clone","-moz-box-direction":"normal | reverse","-moz-box-flex":"<number>","-moz-box-flex-group":"<integer>","-moz-box-lines":"single | multiple","-moz-box-ordinal-group":"<integer>","-moz-box-orient":"horizontal | vertical | inline-axis | block-axis","-moz-box-pack":"start | end | center | justify","-o-box-decoration-break":"slice | clone","-webkit-box-align":"start | end | center | baseline | stretch","-webkit-box-decoration-break":"slice | clone","-webkit-box-direction":"normal | reverse","-webkit-box-flex":"<number>","-webkit-box-flex-group":"<integer>","-webkit-box-lines":"single | multiple","-webkit-box-ordinal-group":"<integer>","-webkit-box-orient":"horizontal | vertical | inline-axis | block-axis","-webkit-box-pack":"start | end | center | justify","box-decoration-break":"slice | clone","box-shadow":"<box-shadow>","box-sizing":"content-box | border-box","break-after":"auto | always | avoid | left | right | page | column | avoid-page | avoid-column","break-before":"auto | always | avoid | left | right | page | column | avoid-page | avoid-column","break-inside":"auto | avoid | avoid-page | avoid-column","caption-side":"top | bottom",clear:"none | right | left | both",clip:"<shape> | auto","-webkit-clip-path":"<clip-source> | <clip-path> | none","clip-path":"<clip-source> | <clip-path> | none","clip-rule":"nonzero | evenodd",color:"<color>","color-interpolation":"auto | sRGB | linearRGB","color-interpolation-filters":"auto | sRGB | linearRGB","color-profile":1,"color-rendering":"auto | optimizeSpeed | optimizeQuality","column-count":"<integer> | auto","column-fill":"auto | balance","column-gap":"<length> | normal","column-rule":"<border-width> || <border-style> || <color>","column-rule-color":"<color>","column-rule-style":"<border-style>","column-rule-width":"<border-width>","column-span":"none | all","column-width":"<length> | auto",columns:1,content:1,"counter-increment":1,"counter-reset":1,crop:"<shape> | auto",cue:"cue-after | cue-before","cue-after":1,"cue-before":1,cursor:1,direction:"ltr | rtl",display:"inline | block | list-item | inline-block | table | inline-table | table-row-group | table-header-group | table-footer-group | table-row | table-column-group | table-column | table-cell | table-caption | grid | inline-grid | run-in | ruby | ruby-base | ruby-text | ruby-base-container | ruby-text-container | contents | none | -moz-box | -moz-inline-block | -moz-inline-box | -moz-inline-grid | -moz-inline-stack | -moz-inline-table | -moz-grid | -moz-grid-group | -moz-grid-line | -moz-groupbox | -moz-deck | -moz-popup | -moz-stack | -moz-marker | -webkit-box | -webkit-inline-box | -ms-flexbox | -ms-inline-flexbox | flex | -webkit-flex | inline-flex | -webkit-inline-flex","dominant-baseline":"auto | use-script | no-change | reset-size | ideographic | alphabetic | hanging | mathematical | central | middle | text-after-edge | text-before-edge","drop-initial-after-adjust":"central | middle | after-edge | text-after-edge | ideographic | alphabetic | mathematical | <percentage> | <length>","drop-initial-after-align":"baseline | use-script | before-edge | text-before-edge | after-edge | text-after-edge | central | middle | ideographic | alphabetic | hanging | mathematical","drop-initial-before-adjust":"before-edge | text-before-edge | central | middle | hanging | mathematical | <percentage> | <length>","drop-initial-before-align":"caps-height | baseline | use-script | before-edge | text-before-edge | after-edge | text-after-edge | central | middle | ideographic | alphabetic | hanging | mathematical","drop-initial-size":"auto | line | <length> | <percentage>","drop-initial-value":"<integer>",elevation:"<angle> | below | level | above | higher | lower","empty-cells":"show | hide","enable-background":1,fill:"<paint>","fill-opacity":"<opacity-value>","fill-rule":"nonzero | evenodd",filter:"<filter-function-list> | none",fit:"fill | hidden | meet | slice","fit-position":1,flex:"<flex>","flex-basis":"<width>","flex-direction":"row | row-reverse | column | column-reverse","flex-flow":"<flex-direction> || <flex-wrap>","flex-grow":"<number>","flex-shrink":"<number>","flex-wrap":"nowrap | wrap | wrap-reverse","-webkit-flex":"<flex>","-webkit-flex-basis":"<width>","-webkit-flex-direction":"row | row-reverse | column | column-reverse","-webkit-flex-flow":"<flex-direction> || <flex-wrap>","-webkit-flex-grow":"<number>","-webkit-flex-shrink":"<number>","-webkit-flex-wrap":"nowrap | wrap | wrap-reverse","-ms-flex":"<flex>","-ms-flex-align":"start | end | center | stretch | baseline","-ms-flex-direction":"row | row-reverse | column | column-reverse","-ms-flex-order":"<number>","-ms-flex-pack":"start | end | center | justify | distribute","-ms-flex-wrap":"nowrap | wrap | wrap-reverse","float":"left | right | none","float-offset":1,"flood-color":1,"flood-opacity":"<opacity-value>",font:"<font-shorthand> | caption | icon | menu | message-box | small-caption | status-bar","font-family":"<font-family>","font-feature-settings":"<feature-tag-value> | normal","font-kerning":"auto | normal | none","font-size":"<font-size>","font-size-adjust":"<number> | none","font-stretch":"<font-stretch>","font-style":"<font-style>","font-variant":"<font-variant> | normal | none","font-variant-alternates":"<font-variant-alternates> | normal","font-variant-caps":"<font-variant-caps> | normal","font-variant-east-asian":"<font-variant-east-asian> | normal","font-variant-ligatures":"<font-variant-ligatures> | normal | none","font-variant-numeric":"<font-variant-numeric> | normal","font-variant-position":"normal | sub | super","font-weight":"<font-weight>",gap:"[ <length> | <percentage> ]{1,2}","glyph-orientation-horizontal":"<glyph-angle>","glyph-orientation-vertical":"auto | <glyph-angle>",grid:1,"grid-area":1,"grid-auto-columns":1,"grid-auto-flow":1,"grid-auto-position":1,"grid-auto-rows":1,"grid-cell-stacking":"columns | rows | layer","grid-column":1,"grid-columns":1,"grid-column-align":"start | end | center | stretch","grid-column-sizing":1,"grid-column-start":1,"grid-column-end":1,"grid-column-span":"<integer>","grid-flow":"none | rows | columns","grid-gap":"[ <length> | <percentage> ]{1,2}","grid-layer":"<integer>","grid-row":1,"grid-rows":1,"grid-row-align":"start | end | center | stretch","grid-row-gap":1,"grid-row-start":1,"grid-row-end":1,"grid-row-span":"<integer>","grid-row-sizing":1,"grid-template":1,"grid-template-areas":1,"grid-template-columns":1,"grid-template-rows":1,"hanging-punctuation":1,height:"<margin-width> | <content-sizing>","hyphenate-after":"<integer> | auto","hyphenate-before":"<integer> | auto","hyphenate-character":"<string> | auto","hyphenate-lines":"no-limit | <integer>","hyphenate-resource":1,hyphens:"none | manual | auto",icon:1,"image-orientation":"angle | auto","image-rendering":"auto | optimizeSpeed | optimizeQuality","image-resolution":1,"ime-mode":"auto | normal | active | inactive | disabled","inline-box-align":"last | <integer>","justify-content":"flex-start | flex-end | center | space-between | space-around | space-evenly | stretch","-webkit-justify-content":"flex-start | flex-end | center | space-between | space-around | space-evenly | stretch",kerning:"auto | <length>",left:"<margin-width>","letter-spacing":"<length> | normal","line-height":"<line-height>","line-break":"auto | loose | normal | strict","line-stacking":1,"line-stacking-ruby":"exclude-ruby | include-ruby","line-stacking-shift":"consider-shifts | disregard-shifts","line-stacking-strategy":"inline-line-height | block-line-height | max-height | grid-height","list-style":1,"list-style-image":"<uri> | none","list-style-position":"inside | outside","list-style-type":"disc | circle | square | decimal | decimal-leading-zero | lower-roman | upper-roman | lower-greek | lower-latin | upper-latin | armenian | georgian | lower-alpha | upper-alpha | none",margin:"<margin-width>{1,4}","margin-bottom":"<margin-width>","margin-left":"<margin-width>","margin-right":"<margin-width>","margin-top":"<margin-width>",mark:1,"mark-after":1,"mark-before":1,marker:1,"marker-end":1,"marker-mid":1,"marker-start":1,marks:1,"marquee-direction":1,"marquee-play-count":1,"marquee-speed":1,"marquee-style":1,mask:1,"max-height":"<length> | <percentage> | <content-sizing> | none","max-width":"<length> | <percentage> | <content-sizing> | none","min-height":"<length> | <percentage> | <content-sizing> | contain-floats | -moz-contain-floats | -webkit-contain-floats","min-width":"<length> | <percentage> | <content-sizing> | contain-floats | -moz-contain-floats | -webkit-contain-floats","mix-blend-mode":"<blend-mode>","move-to":1,"nav-down":1,"nav-index":1,"nav-left":1,"nav-right":1,"nav-up":1,"object-fit":"fill | contain | cover | none | scale-down","object-position":"<position>",opacity:"<opacity-value>",order:"<integer>","-webkit-order":"<integer>",orphans:"<integer>",outline:1,"outline-color":"<color> | invert","outline-offset":1,"outline-style":"<border-style>","outline-width":"<border-width>",overflow:"visible | hidden | scroll | auto","overflow-style":1,"overflow-wrap":"normal | break-word","overflow-x":1,"overflow-y":1,padding:"<padding-width>{1,4}","padding-bottom":"<padding-width>","padding-left":"<padding-width>","padding-right":"<padding-width>","padding-top":"<padding-width>",page:1,"page-break-after":"auto | always | avoid | left | right","page-break-before":"auto | always | avoid | left | right","page-break-inside":"auto | avoid","page-policy":1,pause:1,"pause-after":1,"pause-before":1,perspective:1,"perspective-origin":1,phonemes:1,pitch:1,"pitch-range":1,"play-during":1,"pointer-events":"auto | none | visiblePainted | visibleFill | visibleStroke | visible | painted | fill | stroke | all",position:"static | relative | absolute | fixed | sticky | -webkit-sticky","presentation-level":1,"punctuation-trim":1,quotes:1,"rendering-intent":1,resize:1,rest:1,"rest-after":1,"rest-before":1,richness:1,right:"<margin-width>",rotation:1,"rotation-point":1,"ruby-align":1,"ruby-overhang":1,"ruby-position":1,"ruby-span":1,"shape-rendering":"auto | optimizeSpeed | crispEdges | geometricPrecision",size:1,speak:"normal | none | spell-out","speak-header":"once | always","speak-numeral":"digits | continuous","speak-punctuation":"code | none","speech-rate":1,src:1,"stop-color":1,"stop-opacity":"<opacity-value>",stress:1,"string-set":1,stroke:"<paint>","stroke-dasharray":"none | <dasharray>","stroke-dashoffset":"<percentage> | <length>","stroke-linecap":"butt | round | square","stroke-linejoin":"miter | round | bevel","stroke-miterlimit":"<miterlimit>","stroke-opacity":"<opacity-value>","stroke-width":"<percentage> | <length>","table-layout":"auto | fixed","tab-size":"<integer> | <length>",target:1,"target-name":1,"target-new":1,"target-position":1,"text-align":"left | right | center | justify | match-parent | start | end","text-align-last":1,"text-anchor":"start | middle | end","text-decoration":"<text-decoration-line> || <text-decoration-style> || <text-decoration-color>","text-decoration-color":"<text-decoration-color>","text-decoration-line":"<text-decoration-line>","text-decoration-style":"<text-decoration-style>","text-decoration-skip":"none | [ objects || spaces || ink || edges || box-decoration ]","-webkit-text-decoration-skip":"none | [ objects || spaces || ink || edges || box-decoration ]","text-underline-position":"auto | [ under || [ left | right ] ]","text-emphasis":1,"text-height":1,"text-indent":"<length> | <percentage>","text-justify":"auto | none | inter-word | inter-ideograph | inter-cluster | distribute | kashida","text-outline":1,"text-overflow":1,"text-rendering":"auto | optimizeSpeed | optimizeLegibility | geometricPrecision","text-shadow":1,"text-transform":"capitalize | uppercase | lowercase | none","text-wrap":"normal | none | avoid",top:"<margin-width>","-ms-touch-action":"auto | none | pan-x | pan-y | pan-left | pan-right | pan-up | pan-down | manipulation","touch-action":"auto | none | pan-x | pan-y | pan-left | pan-right | pan-up | pan-down | manipulation",transform:1,"transform-origin":1,"transform-style":1,transition:1,"transition-delay":1,"transition-duration":1,"transition-property":1,"transition-timing-function":1,"unicode-bidi":"normal | embed | isolate | bidi-override | isolate-override | plaintext","user-modify":"read-only | read-write | write-only","user-select":"auto | text | none | contain | all","vertical-align":"auto | use-script | baseline | sub | super | top | text-top | central | middle | bottom | text-bottom | <percentage> | <length>",visibility:"visible | hidden | collapse","voice-balance":1,"voice-duration":1,"voice-family":1,"voice-pitch":1,"voice-pitch-range":1,"voice-rate":1,"voice-stress":1,"voice-volume":1,volume:1,"white-space":"normal | pre | nowrap | pre-wrap | pre-line | -pre-wrap | -o-pre-wrap | -moz-pre-wrap | -hp-pre-wrap","white-space-collapse":1,widows:"<integer>",width:"<length> | <percentage> | <content-sizing> | auto","will-change":"<will-change>","word-break":"normal | keep-all | break-all | break-word","word-spacing":"<length> | normal","word-wrap":"normal | break-word","writing-mode":"horizontal-tb | vertical-rl | vertical-lr | lr-tb | rl-tb | tb-rl | bt-rl | tb-lr | bt-lr | lr-bt | rl-bt | lr | rl | tb","z-index":"<integer> | auto",zoom:"<number> | <percentage> | normal"}},{}],8:[function(e,t,n){"use strict";function s(e,t,n,s){r.call(this,e,n,s,i.PROPERTY_NAME_TYPE),this.hack=t}t.exports=s;var r=e("../util/SyntaxUnit"),i=e("./Parser");s.prototype=new r,s.prototype.constructor=s,s.prototype.toString=function(){return(this.hack?this.hack:"")+this.text}},{"../util/SyntaxUnit":26,"./Parser":6}],9:[function(e,t,n){"use strict";function s(e,t,n){r.call(this,e.join(" "),t,n,i.PROPERTY_VALUE_TYPE),this.parts=e}t.exports=s;var r=e("../util/SyntaxUnit"),i=e("./Parser");s.prototype=new r,s.prototype.constructor=s},{"../util/SyntaxUnit":26,"./Parser":6}],10:[function(e,t,n){"use strict";function r(e){this._i=0,this._parts=e.parts,this._marks=[],this.value=e}t.exports=r,r.prototype.count=function(){return this._parts.length},r.prototype.isFirst=function(){return this._i===0},r.prototype.hasNext=function(){return this._i<this._parts.length},r.prototype.mark=function(){this._marks.push(this._i)},r.prototype.peek=function(e){return this.hasNext()?this._parts[this._i+(e||0)]:null},r.prototype.next=function(){return this.hasNext()?this._parts[this._i++]:null},r.prototype.previous=function(){return this._i>0?this._parts[--this._i]:null},r.prototype.restore=function(){this._marks.length&&(this._i=this._marks.pop())},r.prototype.drop=function(){this._marks.pop()}},{}],11:[function(e,t,n){"use strict";function u(e,t,n,o){var a=o||{};r.call(this,e,t,n,s.PROPERTY_VALUE_PART_TYPE),this.type="unknown";var f;if(/^([+-]?[\d.]+)([a-z]+)$/i.test(e)){this.type="dimension",this.value=Number(RegExp.$1),this.units=RegExp.$2;switch(this.units.toLowerCase()){case"em":case"rem":case"ex":case"px":case"cm":case"mm":case"in":case"pt":case"pc":case"ch":case"vh":case"vw":case"vmax":case"vmin":this.type="length";break;case"fr":this.type="grid";break;case"deg":case"rad":case"grad":case"turn":this.type="angle";break;case"ms":case"s":this.type="time";break;case"hz":case"khz":this.type="frequency";break;case"dpi":case"dpcm":this.type="resolution"}}else/^([+-]?[\d.]+)%$/i.test(e)?(this.type="percentage",this.value=Number(RegExp.$1)):/^([+-]?\d+)$/i.test(e)?(this.type="integer",this.value=Number(RegExp.$1)):/^([+-]?[\d.]+)$/i.test(e)?(this.type="number",this.value=Number(RegExp.$1)):/^#([a-f0-9]{3,6})/i.test(e)?(this.type="color",f=RegExp.$1,f.length===3?(this.red=parseInt(f.charAt(0)+f.charAt(0),16),this.green=parseInt(f.charAt(1)+f.charAt(1),16),this.blue=parseInt(f.charAt(2)+f.charAt(2),16)):(this.red=parseInt(f.substring(0,2),16),this.green=parseInt(f.substring(2,4),16),this.blue=parseInt(f.substring(4,6),16))):/^rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/i.test(e)?(this.type="color",this.red=Number(RegExp.$1),this.green=Number(RegExp.$2),this.blue=Number(RegExp.$3)):/^rgb\(\s*(\d+)%\s*,\s*(\d+)%\s*,\s*(\d+)%\s*\)/i.test(e)?(this.type="color",this.red=Number(RegExp.$1)*255/100,this.green=Number(RegExp.$2)*255/100,this.blue=Number(RegExp.$3)*255/100):/^rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*([\d.]+)\s*\)/i.test(e)?(this.type="color",this.red=Number(RegExp.$1),this.green=Number(RegExp.$2),this.blue=Number(RegExp.$3),this.alpha=Number(RegExp.$4)):/^rgba\(\s*(\d+)%\s*,\s*(\d+)%\s*,\s*(\d+)%\s*,\s*([\d.]+)\s*\)/i.test(e)?(this.type="color",this.red=Number(RegExp.$1)*255/100,this.green=Number(RegExp.$2)*255/100,this.blue=Number(RegExp.$3)*255/100,this.alpha=Number(RegExp.$4)):/^hsl\(\s*(\d+)\s*,\s*(\d+)%\s*,\s*(\d+)%\s*\)/i.test(e)?(this.type="color",this.hue=Number(RegExp.$1),this.saturation=Number(RegExp.$2)/100,this.lightness=Number(RegExp.$3)/100):/^hsla\(\s*(\d+)\s*,\s*(\d+)%\s*,\s*(\d+)%\s*,\s*([\d.]+)\s*\)/i.test(e)?(this.type="color",this.hue=Number(RegExp.$1),this.saturation=Number(RegExp.$2)/100,this.lightness=Number(RegExp.$3)/100,this.alpha=Number(RegExp.$4)):/^url\(("([^\\"]|\.)*")\)/i.test(e)?(this.type="uri",this.uri=u.parseString(RegExp.$1)):/^([^(]+)\(/i.test(e)?(this.type="function",this.name=RegExp.$1,this.value=e):/^"([^\n\r\f\\"]|\\\r\n|\\[^\r0-9a-f]|\\[0-9a-f]{1,6}(\r\n|[ \n\r\t\f])?)*"/i.test(e)?(this.type="string",this.value=u.parseString(e)):/^'([^\n\r\f\\']|\\\r\n|\\[^\r0-9a-f]|\\[0-9a-f]{1,6}(\r\n|[ \n\r\t\f])?)*'/i.test(e)?(this.type="string",this.value=u.parseString(e)):i[e.toLowerCase()]?(this.type="color",f=i[e.toLowerCase()].substring(1),this.red=parseInt(f.substring(0,2),16),this.green=parseInt(f.substring(2,4),16),this.blue=parseInt(f.substring(4,6),16)):/^[,/]$/.test(e)?(this.type="operator",this.value=e):/^-?[a-z_\u00A0-\uFFFF][a-z0-9\-_\u00A0-\uFFFF]*$/i.test(e)&&(this.type="identifier",this.value=e);this.wasIdent=Boolean(a.ident)}t.exports=u;var r=e("../util/SyntaxUnit"),i=e("./Colors"),s=e("./Parser"),o=e("./Tokens");u.prototype=new r,u.prototype.constructor=u,u.parseString=function(e){e=e.slice(1,-1);var t=function(e,t){if(/^(\n|\r\n|\r|\f)$/.test(t))return"";var n=/^[0-9a-f]{1,6}/i.exec(t);if(n){var r=parseInt(n[0],16);return String.fromCodePoint?String.fromCodePoint(r):String.fromCharCode(r)}return t};return e.replace(/\\(\r\n|[^\r0-9a-f]|[0-9a-f]{1,6}(\r\n|[ \n\r\t\f])?)/ig,t)},u.serializeString=function(e){var t=function(e,t){if(t==='"')return"\\"+t;var n=String.codePointAt?String.codePointAt(0):String.charCodeAt(0);return"\\"+n.toString(16)+" "};return'"'+e.replace(/["\r\n\f]/g,t)+'"'},u.fromToken=function(e){var t=new u(e.value,e.startLine,e.startCol,{ident:e.type===o.IDENT});return t}},{"../util/SyntaxUnit":26,"./Colors":1,"./Parser":6,"./Tokens":18}],12:[function(e,t,n){"use strict";var r=t.exports={__proto__:null,":first-letter":1,":first-line":1,":before":1,":after":1};r.ELEMENT=1,r.CLASS=2,r.isElement=function(e){return e.indexOf("::")===0||r[e.toLowerCase()]===r.ELEMENT}},{}],13:[function(e,t,n){"use strict";function o(e,t,n){r.call(this,e.join(" "),t,n,i.SELECTOR_TYPE),this.parts=e,this.specificity=s.calculate(this)}t.exports=o;var r=e("../util/SyntaxUnit"),i=e("./Parser"),s=e("./Specificity");o.prototype=new r,o.prototype.constructor=o},{"../util/SyntaxUnit":26,"./Parser":6,"./Specificity":16}],14:[function(e,t,n){"use strict";function s(e,t,n,s,o){r.call(this,n,s,o,i.SELECTOR_PART_TYPE),this.elementName=e,this.modifiers=t}t.exports=s;var r=e("../util/SyntaxUnit"),i=e("./Parser");s.prototype=new r,s.prototype.constructor=s},{"../util/SyntaxUnit":26,"./Parser":6}],15:[function(e,t,n){"use strict";function s(e,t,n,s){r.call(this,e,n,s,i.SELECTOR_SUB_PART_TYPE),this.type=t,this.args=[]}t.exports=s;var r=e("../util/SyntaxUnit"),i=e("./Parser");s.prototype=new r,s.prototype.constructor=s},{"../util/SyntaxUnit":26,"./Parser":6}],16:[function(e,t,n){"use strict";function s(e,t,n,r){this.a=e,this.b=t,this.c=n,this.d=r}t.exports=s;var r=e("./Pseudos"),i=e("./SelectorPart");s.prototype={constructor:s,compare:function(e){var t=["a","b","c","d"],n,r;for(n=0,r=t.length;n<r;n++){if(this[t[n]]<e[t[n]])return-1;if(this[t[n]]>e[t[n]])return 1}return 0},valueOf:function(){return this.a*1e3+this.b*100+this.c*10+this.d},toString:function(){return this.a+","+this.b+","+this.c+","+this.d}},s.calculate=function(e){function l(e){var t,n,i,s,o=e.elementName?e.elementName.text:"",h;o&&o.charAt(o.length-1)!=="*"&&f++;for(t=0,i=e.modifiers.length;t<i;t++){h=e.modifiers[t];switch(h.type){case"class":case"attribute":a++;break;case"id":u++;break;case"pseudo":r.isElement(h.text)?f++:a++;break;case"not":for(n=0,s=h.args.length;n<s;n++)l(h.args[n])}}}var t,n,o,u=0,a=0,f=0;for(t=0,n=e.parts.length;t<n;t++)o=e.parts[t],o instanceof i&&l(o);return new s(0,u,a,f)}},{"./Pseudos":12,"./SelectorPart":14}],17:[function(e,t,n){"use strict";function l(e){return e!=null&&o.test(e)}function c(e){return e!=null&&/\d/.test(e)}function h(e){return e!=null&&f.test(e)}function p(e){return e!=null&&a.test(e)}function d(e){return e!=null&&/[a-z_\u00A0-\uFFFF\\]/i.test(e)}function v(e){return e!=null&&(d(e)||/[0-9\-\\]/.test(e))}function m(e){return e!=null&&(d(e)||/-\\/.test(e))}function g(e,t){for(var n in t)Object.prototype.hasOwnProperty.call(t,n)&&(e[n]=t[n]);return e}function y(e){return typeof e=="string"&&(e[0]==="-"&&d(e[1])||d(e[0]))}function b(e){return typeof e=="string"&&(c(e[0])||e[0]==="."&&c(e[1]))}function w(e){r.call(this,e,s)}t.exports=w;var r=e("../util/TokenStreamBase"),i=e("./PropertyValuePart"),s=e("./Tokens"),o=/^[0-9a-fA-F]$/,u=/^[\u00A0-\uFFFF]$/,a=/\n|\r\n|\r|\f/,f=/\u0009|\u000a|\u000c|\u000d|\u0020/;w.prototype=g(new r,{_getToken:function(){var e,t=this._reader,n=null,r=t.getLine(),i=t.getCol();e=t.read();while(e){switch(e){case"/":t.peek()==="*"?n=this.commentToken(e,r,i):n=this.charToken(e,r,i);break;case"|":case"~":case"^":case"$":case"*":t.peek()==="="?n=this.comparisonToken(e,r,i):n=this.charToken(e,r,i);break;case'"':case"'":n=this.stringToken(e,r,i);break;case"#":v(t.peek())?n=this.hashToken(e,r,i):n=this.charToken(e,r,i);break;case".":c(t.peek())?n=this.numberToken(e,r,i):n=this.charToken(e,r,i);break;case"-":if(b(t.peekCount(2))){n=this.numberToken(e,r,i);break}t.peekCount(2)==="->"?n=this.htmlCommentEndToken(e,r,i):n=this._getDefaultToken(e,r,i);break;case"+":b(t.peekCount(2))?n=this.numberToken(e,r,i):n=this.charToken(e,r,i);break;case"!":n=this.importantToken(e,r,i);break;case"@":n=this.atRuleToken(e,r,i);break;case":":n=this.notToken(e,r,i);break;case"<":n=this.htmlCommentStartToken(e,r,i);break;case"\\":/[^\r\n\f]/.test(t.peek())?n=this.identOrFunctionToken(this.readEscape(e,!0),r,i):n=this.charToken(e,r,i);break;case"U":case"u":t.peek()==="+"?n=this.unicodeRangeToken(e,r,i):n=this._getDefaultToken(e,r,i);break;default:n=this._getDefaultToken(e,r,i)}break}return!n&&e===null&&(n=this.createToken(s.EOF,null,r,i)),n},_getDefaultToken:function(e,t,n){var r=this._reader,i=null;return c(e)?i=this.numberToken(e,t,n):h(e)?i=this.whitespaceToken(e,t,n):y(e+r.peekCount(1))?i=this.identOrFunctionToken(e,t,n):i=this.charToken(e,t,n),i},createToken:function(e,t,n,r,i){var s=this._reader;return i=i||{},{value:t,type:e,channel:i.channel,endChar:i.endChar,hide:i.hide||!1,startLine:n,startCol:r,endLine:s.getLine(),endCol:s.getCol()}},atRuleToken:function(e,t,n){var r=e,i=this._reader,o=s.CHAR,u;i.mark(),u=this.readName(),r=e+u,o=s.type(r.toLowerCase());if(o===s.CHAR||o===s.UNKNOWN)r.length>1?o=s.UNKNOWN_SYM:(o=s.CHAR,r=e,i.reset());return this.createToken(o,r,t,n)},charToken:function(e,t,n){var r=s.type(e),i={};return r===-1?r=s.CHAR:i.endChar=s[r].endChar,this.createToken(r,e,t,n,i)},commentToken:function(e,t,n){var r=this.readComment(e);return this.createToken(s.COMMENT,r,t,n)},comparisonToken:function(e,t,n){var r=this._reader,i=e+r.read(),o=s.type(i)||s.CHAR;return this.createToken(o,i,t,n)},hashToken:function(e,t,n){var r=this.readName(e);return this.createToken(s.HASH,r,t,n)},htmlCommentStartToken:function(e,t,n){var r=this._reader,i=e;return r.mark(),i+=r.readCount(3),i==="<!--"?this.createToken(s.CDO,i,t,n):(r.reset(),this.charToken(e,t,n))},htmlCommentEndToken:function(e,t,n){var r=this._reader,i=e;return r.mark(),i+=r.readCount(2),i==="-->"?this.createToken(s.CDC,i,t,n):(r.reset(),this.charToken(e,t,n))},identOrFunctionToken:function(e,t,n){var r=this._reader,i=this.readName(e),o=s.IDENT,u=["url(","url-prefix(","domain("],a;return r.peek()==="("?(i+=r.read(),u.indexOf(i.toLowerCase())>-1?(r.mark(),a=this.readURI(i),a===null?(r.reset(),o=s.FUNCTION):(o=s.URI,i=a)):o=s.FUNCTION):r.peek()===":"&&i.toLowerCase()==="progid"&&(i+=r.readTo("("),o=s.IE_FUNCTION),this.createToken(o,i,t,n)},importantToken:function(e,t,n){var r=this._reader,i=e,o=s.CHAR,u,a;r.mark(),a=r.read();while(a){if(a==="/"){if(r.peek()!=="*")break;u=this.readComment(a);if(u==="")break}else{if(!h(a)){if(/i/i.test(a)){u=r.readCount(8),/mportant/i.test(u)&&(i+=a+u,o=s.IMPORTANT_SYM);break}break}i+=a+this.readWhitespace()}a=r.read()}return o===s.CHAR?(r.reset(),this.charToken(e,t,n)):this.createToken(o,i,t,n)},notToken:function(e,t,n){var r=this._reader,i=e;return r.mark(),i+=r.readCount(4),i.toLowerCase()===":not("?this.createToken(s.NOT,i,t,n):(r.reset(),this.charToken(e,t,n))},numberToken:function(e,t,n){var r=this._reader,i=this.readNumber(e),o,u=s.NUMBER,a=r.peek();return m(a)?(o=this.readName(r.read()),i+=o,/^em$|^ex$|^px$|^gd$|^rem$|^vw$|^vh$|^fr$|^vmax$|^vmin$|^ch$|^cm$|^mm$|^in$|^pt$|^pc$/i.test(o)?u=s.LENGTH:/^deg|^rad$|^grad$|^turn$/i.test(o)?u=s.ANGLE:/^ms$|^s$/i.test(o)?u=s.TIME:/^hz$|^khz$/i.test(o)?u=s.FREQ:/^dpi$|^dpcm$/i.test(o)?u=s.RESOLUTION:u=s.DIMENSION):a==="%"&&(i+=r.read(),u=s.PERCENTAGE),this.createToken(u,i,t,n)},stringToken:function(e,t,n){var r=e,i=e,o=this._reader,u=s.STRING,a=o.read(),f;while(a){i+=a;if(a==="\\"){a=o.read();if(a===null)break;if(/[^\r\n\f0-9a-f]/i.test(a))i+=a;else{for(f=0;l(a)&&f<6;f++)i+=a,a=o.read();a==="\r"&&o.peek()==="\n"&&(i+=a,a=o.read());if(!h(a))continue;i+=a}}else{if(a===r)break;if(p(o.peek())){u=s.INVALID;break}}a=o.read()}return a===null&&(u=s.INVALID),this.createToken(u,i,t,n)},unicodeRangeToken:function(e,t,n){var r=this._reader,i=e,o,u=s.CHAR;return r.peek()==="+"&&(r.mark(),i+=r.read(),i+=this.readUnicodeRangePart(!0),i.length===2?r.reset():(u=s.UNICODE_RANGE,i.indexOf("?")===-1&&r.peek()==="-"&&(r.mark(),o=r.read(),o+=this.readUnicodeRangePart(!1),o.length===1?r.reset():i+=o))),this.createToken(u,i,t,n)},whitespaceToken:function(e,t,n){var r=e+this.readWhitespace();return this.createToken(s.S,r,t,n)},readUnicodeRangePart:function(e){var t=this._reader,n="",r=t.peek();while(l(r)&&n.length<6)t.read(),n+=r,r=t.peek();if(e)while(r==="?"&&n.length<6)t.read(),n+=r,r=t.peek();return n},readWhitespace:function(){var e=this._reader,t="",n=e.peek();while(h(n))e.read(),t+=n,n=e.peek();return t},readNumber:function(e){var t=this._reader,n=e,r=e===".",i=t.peek();while(i){if(c(i))n+=t.read();else{if(i!==".")break;if(r)break;r=!0,n+=t.read()}i=t.peek()}return n},readString:function(){var e=this.stringToken(this._reader.read(),0,0);return e.type===s.INVALID?null:e.value},readURI:function(e){var t=this._reader,n=e,r="",s=t.peek();while(s&&h(s))t.read(),s=t.peek();s==="'"||s==='"'?(r=this.readString(),r!==null&&(r=i.parseString(r))):r=this.readUnquotedURL(),s=t.peek();while(s&&h(s))t.read(),s=t.peek();return r===null||s!==")"?n=null:n+=i.serializeString(r)+t.read(),n},readUnquotedURL:function(e){var t=this._reader,n=e||"",r;for(r=t.peek();r;r=t.peek())if(u.test(r)||/^[-!#$%&*-[\]-~]$/.test(r))n+=r,t.read();else{if(r!=="\\")break;if(!/^[^\r\n\f]$/.test(t.peek(2)))break;n+=this.readEscape(t.read(),!0)}return n},readName:function(e){var t=this._reader,n=e||"",r;for(r=t.peek();r;r=t.peek())if(r==="\\"){if(!/^[^\r\n\f]$/.test(t.peek(2)))break;n+=this.readEscape(t.read(),!0)}else{if(!v(r))break;n+=t.read()}return n},readEscape:function(e,t){var n=this._reader,r=e||"",i=0,s=n.peek();if(l(s))do r+=n.read(),s=n.peek();while(s&&l(s)&&++i<6);if(r.length===1){if(!/^[^\r\n\f0-9a-f]$/.test(s))throw new Error("Bad escape sequence.");n.read();if(t)return s}else s==="\r"?(n.read(),n.peek()==="\n"&&(s+=n.read())):/^[ \t\n\f]$/.test(s)?n.read():s="";if(t){var o=parseInt(r.slice(e.length),16);return String.fromCodePoint?String.fromCodePoint(o):String.fromCharCode(o)}return r+s},readComment:function(e){var t=this._reader,n=e||"",r=t.read();if(r==="*"){while(r){n+=r;if(n.length>2&&r==="*"&&t.peek()==="/"){n+=t.read();break}r=t.read()}return n}return""}})},{"../util/TokenStreamBase":27,"./PropertyValuePart":11,"./Tokens":18}],18:[function(e,t,n){"use strict";var r=t.exports=[{name:"CDO"},{name:"CDC"},{name:"S",whitespace:!0},{name:"COMMENT",comment:!0,hide:!0,channel:"comment"},{name:"INCLUDES",text:"~="},{name:"DASHMATCH",text:"|="},{name:"PREFIXMATCH",text:"^="},{name:"SUFFIXMATCH",text:"$="},{name:"SUBSTRINGMATCH",text:"*="},{name:"STRING"},{name:"IDENT"},{name:"HASH"},{name:"IMPORT_SYM",text:"@import"},{name:"PAGE_SYM",text:"@page"},{name:"MEDIA_SYM",text:"@media"},{name:"FONT_FACE_SYM",text:"@font-face"},{name:"CHARSET_SYM",text:"@charset"},{name:"NAMESPACE_SYM",text:"@namespace"},{name:"SUPPORTS_SYM",text:"@supports"},{name:"VIEWPORT_SYM",text:["@viewport","@-ms-viewport","@-o-viewport"]},{name:"DOCUMENT_SYM",text:["@document","@-moz-document"]},{name:"UNKNOWN_SYM"},{name:"KEYFRAMES_SYM",text:["@keyframes","@-webkit-keyframes","@-moz-keyframes","@-o-keyframes"]},{name:"IMPORTANT_SYM"},{name:"LENGTH"},{name:"ANGLE"},{name:"TIME"},{name:"FREQ"},{name:"DIMENSION"},{name:"PERCENTAGE"},{name:"NUMBER"},{name:"URI"},{name:"FUNCTION"},{name:"UNICODE_RANGE"},{name:"INVALID"},{name:"PLUS",text:"+"},{name:"GREATER",text:">"},{name:"COMMA",text:","},{name:"TILDE",text:"~"},{name:"NOT"},{name:"TOPLEFTCORNER_SYM",text:"@top-left-corner"},{name:"TOPLEFT_SYM",text:"@top-left"},{name:"TOPCENTER_SYM",text:"@top-center"},{name:"TOPRIGHT_SYM",text:"@top-right"},{name:"TOPRIGHTCORNER_SYM",text:"@top-right-corner"},{name:"BOTTOMLEFTCORNER_SYM",text:"@bottom-left-corner"},{name:"BOTTOMLEFT_SYM",text:"@bottom-left"},{name:"BOTTOMCENTER_SYM",text:"@bottom-center"},{name:"BOTTOMRIGHT_SYM",text:"@bottom-right"},{name:"BOTTOMRIGHTCORNER_SYM",text:"@bottom-right-corner"},{name:"LEFTTOP_SYM",text:"@left-top"},{name:"LEFTMIDDLE_SYM",text:"@left-middle"},{name:"LEFTBOTTOM_SYM",text:"@left-bottom"},{name:"RIGHTTOP_SYM",text:"@right-top"},{name:"RIGHTMIDDLE_SYM",text:"@right-middle"},{name:"RIGHTBOTTOM_SYM",text:"@right-bottom"},{name:"RESOLUTION",state:"media"},{name:"IE_FUNCTION"},{name:"CHAR"},{name:"PIPE",text:"|"},{name:"SLASH",text:"/"},{name:"MINUS",text:"-"},{name:"STAR",text:"*"},{name:"LBRACE",endChar:"}",text:"{"},{name:"RBRACE",text:"}"},{name:"LBRACKET",endChar:"]",text:"["},{name:"RBRACKET",text:"]"},{name:"EQUALS",text:"="},{name:"COLON",text:":"},{name:"SEMICOLON",text:";"},{name:"LPAREN",endChar:")",text:"("},{name:"RPAREN",text:")"},{name:"DOT",text:"."}];(function(){var e=[],t=Object.create(null);r.UNKNOWN=-1,r.unshift({name:"EOF"});for(var n=0,i=r.length;n<i;n++){e.push(r[n].name),r[r[n].name]=n;if(r[n].text)if(r[n].text instanceof Array)for(var s=0;s<r[n].text.length;s++)t[r[n].text[s]]=n;else t[r[n].text]=n}r.name=function(t){return e[t]},r.type=function(e){return t[e]||-1}})()},{}],19:[function(e,t,n){"use strict";var r=e("./Matcher"),i=e("./Properties"),s=e("./ValidationTypes"),o=e("./ValidationError"),u=e("./PropertyValueIterator"),a=t.exports={validate:function(e,t){var n=e.toString().toLowerCase(),r=new u(t),a=i[n],f;if(!a){if(n.indexOf("-")!==0)throw new o("Unknown property '"+e+"'.",e.line,e.col)}else if(typeof a!="number"){if(s.isAny(r,"inherit | initial | unset")){if(r.hasNext())throw f=r.next(),new o("Expected end of value but found '"+f+"'.",f.line,f.col);return}this.singleProperty(a,r)}},singleProperty:function(e,t){var n=!1,i=t.value,u;n=r.parse(e).match(t);if(!n)throw t.hasNext()&&!t.isFirst()?(u=t.peek(),new o("Expected end of value but found '"+u+"'.",u.line,u.col)):new o("Expected ("+s.describe(e)+") but found '"+i+"'.",i.line,i.col);if(t.hasNext())throw u=t.next(),new o("Expected end of value but found '"+u+"'.",u.line,u.col)}}},{"./Matcher":3,"./Properties":7,"./PropertyValueIterator":10,"./ValidationError":20,"./ValidationTypes":21}],20:[function(e,t,n){"use strict";function r(e,t,n){this.col=n,this.line=t,this.message=e}t.exports=r,r.prototype=new Error},{}],21:[function(e,t,n){"use strict";function s(e,t){Object.keys(t).forEach(function(n){e[n]=t[n]})}var r=t.exports,i=e("./Matcher");s(r,{isLiteral:function(e,t){var n=e.text.toString().toLowerCase(),r=t.split(" | "),i,s,o=!1;for(i=0,s=r.length;i<s&&!o;i++)r[i].charAt(0)==="<"?o=this.simple[r[i]](e):r[i].slice(-2)==="()"?o=e.type==="function"&&e.name===r[i].slice(0,-2):n===r[i].toLowerCase()&&(o=!0);return o},isSimple:function(e){return Boolean(this.simple[e])},isComplex:function(e){return Boolean(this.complex[e])},describe:function(e){return this.complex[e]instanceof i?this.complex[e].toString(0):e},isAny:function(e,t){var n=t.split(" | "),r,i,s=!1;for(r=0,i=n.length;r<i&&!s&&e.hasNext();r++)s=this.isType(e,n[r]);return s},isAnyOfGroup:function(e,t){var n=t.split(" || "),r,i,s=!1;for(r=0,i=n.length;r<i&&!s;r++)s=this.isType(e,n[r]);return s?n[r-1]:!1},isType:function(e,t){var n=e.peek(),r=!1;return t.charAt(0)!=="<"?(r=this.isLiteral(n,t),r&&e.next()):this.simple[t]?(r=this.simple[t](n),r&&e.next()):this.complex[t]instanceof i?r=this.complex[t].match(e):r=this.complex[t](e),r},simple:{__proto__:null,"<absolute-size>":"xx-small | x-small | small | medium | large | x-large | xx-large","<animateable-feature>":"scroll-position | contents | <animateable-feature-name>","<animateable-feature-name>":function(e){return this["<ident>"](e)&&!/^(unset|initial|inherit|will-change|auto|scroll-position|contents)$/i.test(e)},"<angle>":function(e){return e.type==="angle"},"<attachment>":"scroll | fixed | local","<attr>":"attr()","<basic-shape>":"inset() | circle() | ellipse() | polygon()","<bg-image>":"<image> | <gradient> | none","<border-style>":"none | hidden | dotted | dashed | solid | double | groove | ridge | inset | outset","<border-width>":"<length> | thin | medium | thick","<box>":"padding-box | border-box | content-box","<clip-source>":"<uri>","<color>":function(e){return e.type==="color"||String(e)==="transparent"||String(e)==="currentColor"},"<color-svg>":function(e){return e.type==="color"},"<content>":"content()","<content-sizing>":"fill-available | -moz-available | -webkit-fill-available | max-content | -moz-max-content | -webkit-max-content | min-content | -moz-min-content | -webkit-min-content | fit-content | -moz-fit-content | -webkit-fit-content","<feature-tag-value>":function(e){return e.type==="function"&&/^[A-Z0-9]{4}$/i.test(e)},"<filter-function>":"blur() | brightness() | contrast() | custom() | drop-shadow() | grayscale() | hue-rotate() | invert() | opacity() | saturate() | sepia()","<flex-basis>":"<width>","<flex-direction>":"row | row-reverse | column | column-reverse","<flex-grow>":"<number>","<flex-shrink>":"<number>","<flex-wrap>":"nowrap | wrap | wrap-reverse","<font-size>":"<absolute-size> | <relative-size> | <length> | <percentage>","<font-stretch>":"normal | ultra-condensed | extra-condensed | condensed | semi-condensed | semi-expanded | expanded | extra-expanded | ultra-expanded","<font-style>":"normal | italic | oblique","<font-variant-caps>":"small-caps | all-small-caps | petite-caps | all-petite-caps | unicase | titling-caps","<font-variant-css21>":"normal | small-caps","<font-weight>":"normal | bold | bolder | lighter | 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900","<generic-family>":"serif | sans-serif | cursive | fantasy | monospace","<geometry-box>":"<shape-box> | fill-box | stroke-box | view-box","<glyph-angle>":function(e){return e.type==="angle"&&e.units==="deg"},"<gradient>":function(e){return e.type==="function"&&/^(?:-(?:ms|moz|o|webkit)-)?(?:repeating-)?(?:radial-|linear-)?gradient/i.test(e)},"<icccolor>":"cielab() | cielch() | cielchab() | icc-color() | icc-named-color()","<ident>":function(e){return e.type==="identifier"||e.wasIdent},"<ident-not-generic-family>":function(e){return this["<ident>"](e)&&!this["<generic-family>"](e)},"<image>":"<uri>","<integer>":function(e){return e.type==="integer"},"<length>":function(e){return e.type==="function"&&/^(?:-(?:ms|moz|o|webkit)-)?calc/i.test(e)?!0:e.type==="length"||e.type==="number"||e.type==="integer"||String(e)==="0"},"<line>":function(e){return e.type==="integer"},"<line-height>":"<number> | <length> | <percentage> | normal","<margin-width>":"<length> | <percentage> | auto","<miterlimit>":function(e){return this["<number>"](e)&&e.value>=1},"<nonnegative-length-or-percentage>":function(e){return(this["<length>"](e)||this["<percentage>"](e))&&(String(e)==="0"||e.type==="function"||e.value>=0)},"<nonnegative-number-or-percentage>":function(e){return(this["<number>"](e)||this["<percentage>"](e))&&(String(e)==="0"||e.type==="function"||e.value>=0)},"<number>":function(e){return e.type==="number"||this["<integer>"](e)},"<opacity-value>":function(e){return this["<number>"](e)&&e.value>=0&&e.value<=1},"<padding-width>":"<nonnegative-length-or-percentage>","<percentage>":function(e){return e.type==="percentage"||String(e)==="0"},"<relative-size>":"smaller | larger","<shape>":"rect() | inset-rect()","<shape-box>":"<box> | margin-box","<single-animation-direction>":"normal | reverse | alternate | alternate-reverse","<single-animation-name>":function(e){return this["<ident>"](e)&&/^-?[a-z_][-a-z0-9_]+$/i.test(e)&&!/^(none|unset|initial|inherit)$/i.test(e)},"<string>":function(e){return e.type==="string"},"<time>":function(e){return e.type==="time"},"<uri>":function(e){return e.type==="uri"},"<width>":"<margin-width>"},complex:{__proto__:null,"<azimuth>":"<angle> | [ [ left-side | far-left | left | center-left | center | center-right | right | far-right | right-side ] || behind ] | leftwards | rightwards","<bg-position>":"<position>#","<bg-size>":"[ <length> | <percentage> | auto ]{1,2} | cover | contain","<blend-mode>":"normal | multiply | screen | overlay | darken | lighten | color-dodge | color-burn | hard-light | soft-light | difference | exclusion | hue | saturation | color | luminosity","<border-image-slice>":i.many([!0],i.cast("<nonnegative-number-or-percentage>"),i.cast("<nonnegative-number-or-percentage>"),i.cast("<nonnegative-number-or-percentage>"),i.cast("<nonnegative-number-or-percentage>"),"fill"),"<border-radius>":"<nonnegative-length-or-percentage>{1,4} [ / <nonnegative-length-or-percentage>{1,4} ]?","<box-shadow>":"none | <shadow>#","<clip-path>":"<basic-shape> || <geometry-box>","<dasharray>":i.cast("<nonnegative-length-or-percentage>").braces(1,Infinity,"#",i.cast(",").question()),"<family-name>":"<string> | <ident-not-generic-family> <ident>*","<filter-function-list>":"[ <filter-function> | <uri> ]+","<flex>":"none | [ <flex-grow> <flex-shrink>? || <flex-basis> ]","<font-family>":"[ <generic-family> | <family-name> ]#","<font-shorthand>":"[ <font-style> || <font-variant-css21> || <font-weight> || <font-stretch> ]? <font-size> [ / <line-height> ]? <font-family>","<font-variant-alternates>":"stylistic() || historical-forms || styleset() || character-variant() || swash() || ornaments() || annotation()","<font-variant-ligatures>":"[ common-ligatures | no-common-ligatures ] || [ discretionary-ligatures | no-discretionary-ligatures ] || [ historical-ligatures | no-historical-ligatures ] || [ contextual | no-contextual ]","<font-variant-numeric>":"[ lining-nums | oldstyle-nums ] || [ proportional-nums | tabular-nums ] || [ diagonal-fractions | stacked-fractions ] || ordinal || slashed-zero","<font-variant-east-asian>":"[ jis78 | jis83 | jis90 | jis04 | simplified | traditional ] || [ full-width | proportional-width ] || ruby","<paint>":"<paint-basic> | <uri> <paint-basic>?","<paint-basic>":"none | currentColor | <color-svg> <icccolor>?","<position>":"[ center | [ left | right ] [ <percentage> | <length> ]? ] && [ center | [ top | bottom ] [ <percentage> | <length> ]? ] | [ left | center | right | <percentage> | <length> ] [ top | center | bottom | <percentage> | <length> ] | [ left | center | right | top | bottom | <percentage> | <length> ]","<repeat-style>":"repeat-x | repeat-y | [ repeat | space | round | no-repeat ]{1,2}","<shadow>":i.many([!0],i.cast("<length>").braces(2,4),"inset","<color>"),"<text-decoration-color>":"<color>","<text-decoration-line>":"none | [ underline || overline || line-through || blink ]","<text-decoration-style>":"solid | double | dotted | dashed | wavy","<will-change>":"auto | <animateable-feature>#","<x-one-radius>":"[ <length> | <percentage> ]{1,2}"}}),Object.keys(r.simple).forEach(function(e){var t=r.simple[e];typeof t=="string"&&(r.simple[e]=function(e){return r.isLiteral(e,t)})}),Object.keys(r.complex).forEach(function(e){var t=r.complex[e];typeof t=="string"&&(r.complex[e]=i.parse(t))}),r.complex["<font-variant>"]=i.oror({expand:"<font-variant-ligatures>"},{expand:"<font-variant-alternates>"},"<font-variant-caps>",{expand:"<font-variant-numeric>"},{expand:"<font-variant-east-asian>"})},{"./Matcher":3}],22:[function(e,t,n){"use strict";t.exports={Colors:e("./Colors"),Combinator:e("./Combinator"),Parser:e("./Parser"),PropertyName:e("./PropertyName"),PropertyValue:e("./PropertyValue"),PropertyValuePart:e("./PropertyValuePart"),Matcher:e("./Matcher"),MediaFeature:e("./MediaFeature"),MediaQuery:e("./MediaQuery"),Selector:e("./Selector"),SelectorPart:e("./SelectorPart"),SelectorSubPart:e("./SelectorSubPart"),Specificity:e("./Specificity"),TokenStream:e("./TokenStream"),Tokens:e("./Tokens"),ValidationError:e("./ValidationError")}},{"./Colors":1,"./Combinator":2,"./Matcher":3,"./MediaFeature":4,"./MediaQuery":5,"./Parser":6,"./PropertyName":8,"./PropertyValue":9,"./PropertyValuePart":11,"./Selector":13,"./SelectorPart":14,"./SelectorSubPart":15,"./Specificity":16,"./TokenStream":17,"./Tokens":18,"./ValidationError":20}],23:[function(e,t,n){"use strict";function r(){this._listeners=Object.create(null)}t.exports=r,r.prototype={constructor:r,addListener:function(e,t){this._listeners[e]||(this._listeners[e]=[]),this._listeners[e].push(t)},fire:function(e){typeof e=="string"&&(e={type:e}),typeof e.target!="undefined"&&(e.target=this);if(typeof e.type=="undefined")throw new Error("Event object missing 'type' property.");if(this._listeners[e.type]){var t=this._listeners[e.type].concat();for(var n=0,r=t.length;n<r;n++)t[n].call(this,e)}},removeListener:function(e,t){if(this._listeners[e]){var n=this._listeners[e];for(var r=0,i=n.length;r<i;r++)if(n[r]===t){n.splice(r,1);break}}}}},{}],24:[function(e,t,n){"use strict";function r(e){this._input=e.replace(/(\r\n?|\n)/g,"\n"),this._line=1,this._col=1,this._cursor=0}t.exports=r,r.prototype={constructor:r,getCol:function(){return this._col},getLine:function(){return this._line},eof:function(){return this._cursor===this._input.length},peek:function(e){var t=null;return e=typeof e=="undefined"?1:e,this._cursor<this._input.length&&(t=this._input.charAt(this._cursor+e-1)),t},read:function(){var e=null;return this._cursor<this._input.length&&(this._input.charAt(this._cursor)==="\n"?(this._line++,this._col=1):this._col++,e=this._input.charAt(this._cursor++)),e},mark:function(){this._bookmark={cursor:this._cursor,line:this._line,col:this._col}},reset:function(){this._bookmark&&(this._cursor=this._bookmark.cursor,this._line=this._bookmark.line,this._col=this._bookmark.col,delete this._bookmark)},peekCount:function(e){return e=typeof e=="undefined"?1:Math.max(e,0),this._input.substring(this._cursor,this._cursor+e)},readTo:function(e){var t="",n;while(t.length<e.length||t.lastIndexOf(e)!==t.length-e.length){n=this.read();if(!n)throw new Error('Expected "'+e+'" at line '+this._line+", col "+this._col+".");t+=n}return t},readWhile:function(e){var t="",n=this.peek();while(n!==null&&e(n))t+=this.read(),n=this.peek();return t},readMatch:function(e){var t=this._input.substring(this._cursor),n=null;return typeof e=="string"?t.slice(0,e.length)===e&&(n=this.readCount(e.length)):e instanceof RegExp&&e.test(t)&&(n=this.readCount(RegExp.lastMatch.length)),n},readCount:function(e){var t="";while(e--)t+=this.read();return t}}},{}],25:[function(e,t,n){"use strict";function r(e,t,n){Error.call(this),this.name=this.constructor.name,this.col=n,this.line=t,this.message=e}t.exports=r,r.prototype=Object.create(Error.prototype),r.prototype.constructor=r},{}],26:[function(e,t,n){"use strict";function r(e,t,n,r){this.col=n,this.line=t,this.text=e,this.type=r}t.exports=r,r.fromToken=function(e){return new r(e.value,e.startLine,e.startCol)},r.prototype={constructor:r,valueOf:function(){return this.toString()},toString:function(){return this.text}}},{}],27:[function(e,t,n){"use strict";function s(e,t){this._reader=new r(e?e.toString():""),this._token=null,this._tokenData=t,this._lt=[],this._ltIndex=0,this._ltIndexCache=[]}t.exports=s;var r=e("./StringReader"),i=e("./SyntaxError");s.createTokenData=function(e){var t=[],n=Object.create(null),r=e.concat([]),i=0,s=r.length+1;r.UNKNOWN=-1,r.unshift({name:"EOF"});for(;i<s;i++)t.push(r[i].name),r[r[i].name]=i,r[i].text&&(n[r[i].text]=i);return r.name=function(e){return t[e]},r.type=function(e){return n[e]},r},s.prototype={constructor:s,match:function(e,t){e instanceof Array||(e=[e]);var n=this.get(t),r=0,i=e.length;while(r<i)if(n===e[r++])return!0;return this.unget(),!1},mustMatch:function(e){var t;e instanceof Array||(e=[e]);if(!this.match.apply(this,arguments))throw t=this.LT(1),new i("Expected "+this._tokenData[e[0]].name+" at line "+t.startLine+", col "+t.startCol+".",t.startLine,t.startCol)},advance:function(e,t){while(this.LA(0)!==0&&!this.match(e,t))this.get();return this.LA(0)},get:function(e){var t=this._tokenData,n=0,r,i;if(this._lt.length&&this._ltIndex>=0&&this._ltIndex<this._lt.length){n++,this._token=this._lt[this._ltIndex++],i=t[this._token.type];while(typeof i.channel!="undefined"&&e!==i.channel&&this._ltIndex<this._lt.length)this._token=this._lt[this._ltIndex++],i=t[this._token.type],n++;if((typeof i.channel=="undefined"||e===i.channel)&&this._ltIndex<=this._lt.length)return this._ltIndexCache.push(n),this._token.type}return r=this._getToken(),r.type>-1&&!t[r.type].hide&&(r.channel=t[r.type].channel,this._token=r,this._lt.push(r),this._ltIndexCache.push(this._lt.length-this._ltIndex+n),this._lt.length>5&&this._lt.shift(),this._ltIndexCache.length>5&&this._ltIndexCache.shift(),this._ltIndex=this._lt.length),i=t[r.type],i&&(i.hide||typeof i.channel!="undefined"&&e!==i.channel)?this.get(e):r.type},LA:function(e){var t=e,n;if(e>0){if(e>5)throw new Error("Too much lookahead.");while(t)n=this.get(),t--;while(t<e)this.unget(),t++}else if(e<0){if(!this._lt[this._ltIndex+e])throw new Error("Too much lookbehind.");n=this._lt[this._ltIndex+e].type}else n=this._token.type;return n},LT:function(e){return this.LA(e),this._lt[this._ltIndex+e-1]},peek:function(){return this.LA(1)},token:function(){return this._token},tokenName:function(e){return e<0||e>this._tokenData.length?"UNKNOWN_TOKEN":this._tokenData[e].name},tokenType:function(e){return this._tokenData[e]||-1},unget:function(){if(!this._ltIndexCache.length)throw new Error("Too much lookahead.");this._ltIndex-=this._ltIndexCache.pop(),this._token=this._lt[this._ltIndex-1]}}},{"./StringReader":24,"./SyntaxError":25}],28:[function(e,t,n){"use strict";t.exports={StringReader:e("./StringReader"),SyntaxError:e("./SyntaxError"),SyntaxUnit:e("./SyntaxUnit"),EventTarget:e("./EventTarget"),TokenStreamBase:e("./TokenStreamBase")}},{"./EventTarget":23,"./StringReader":24,"./SyntaxError":25,"./SyntaxUnit":26,"./TokenStreamBase":27}],parserlib:[function(e,t,n){"use strict";t.exports={css:e("./css"),util:e("./util")}},{"./css":22,"./util":28}]},{},[]),e("parserlib")}(),r=function(){"use strict";function e(e,t){return t!=null&&e instanceof t}function s(n,o,u,a,f){function d(n,u){if(n===null)return null;if(u===0)return n;var v,m;if(typeof n!="object")return n;if(e(n,t))v=new t;else if(e(n,r))v=new r;else if(e(n,i))v=new i(function(e,t){n.then(function(t){e(d(t,u-1))},function(e){t(d(e,u-1))})});else if(s.__isArray(n))v=[];else if(s.__isRegExp(n))v=new RegExp(n.source,l(n)),n.lastIndex&&(v.lastIndex=n.lastIndex);else if(s.__isDate(n))v=new Date(n.getTime());else{if(p&&Buffer.isBuffer(n))return Buffer.allocUnsafe?v=Buffer.allocUnsafe(n.length):v=new Buffer(n.length),n.copy(v),v;e(n,Error)?v=Object.create(n):typeof a=="undefined"?(m=Object.getPrototypeOf(n),v=Object.create(m)):(v=Object.create(a),m=a)}if(o){var g=c.indexOf(n);if(g!=-1)return h[g];c.push(n),h.push(v)}e(n,t)&&n.forEach(function(e,t){var n=d(t,u-1),r=d(e,u-1);v.set(n,r)}),e(n,r)&&n.forEach(function(e){var t=d(e,u-1);v.add(t)});for(var y in n){var b;m&&(b=Object.getOwnPropertyDescriptor(m,y));if(b&&b.set==null)continue;v[y]=d(n[y],u-1)}if(Object.getOwnPropertySymbols){var w=Object.getOwnPropertySymbols(n);for(var y=0;y<w.length;y++){var E=w[y],S=Object.getOwnPropertyDescriptor(n,E);if(S&&!S.enumerable&&!f)continue;v[E]=d(n[E],u-1),S.enumerable||Object.defineProperty(v,E,{enumerable:!1})}}if(f){var x=Object.getOwnPropertyNames(n);for(var y=0;y<x.length;y++){var T=x[y],S=Object.getOwnPropertyDescriptor(n,T);if(S&&S.enumerable)continue;v[T]=d(n[T],u-1),Object.defineProperty(v,T,{enumerable:!1})}}return v}typeof o=="object"&&(u=o.depth,a=o.prototype,f=o.includeNonEnumerable,o=o.circular);var c=[],h=[],p=typeof Buffer!="undefined";return typeof o=="undefined"&&(o=!0),typeof u=="undefined"&&(u=Infinity),d(n,u)}function o(e){return Object.prototype.toString.call(e)}function u(e){return typeof e=="object"&&o(e)==="[object Date]"}function a(e){return typeof e=="object"&&o(e)==="[object Array]"}function f(e){return typeof e=="object"&&o(e)==="[object RegExp]"}function l(e){var t="";return e.global&&(t+="g"),e.ignoreCase&&(t+="i"),e.multiline&&(t+="m"),t}var t;try{t=Map}catch(n){t=function(){}}var r;try{r=Set}catch(n){r=function(){}}var i;try{i=Promise}catch(n){i=function(){}}return s.clonePrototype=function(t){if(t===null)return null;var n=function(){};return n.prototype=t,new n},s.__objToStr=o,s.__isDate=u,s.__isArray=a,s.__isRegExp=f,s.__getRegExpFlags=l,s}();typeof e=="object"&&e.exports&&(e.exports=r);var i=function(){"use strict";function a(e,t){var n,r=e&&e.match(o),i=r&&r[1];return i&&(n={"true":2,"":1,"false":0,2:2,1:1,0:0},i.toLowerCase().split(",").forEach(function(e){var r=e.split(":"),i=r[0]||"",s=r[1]||"";t[i.trim()]=n[s.trim()]})),t}var e=[],t=[],o=/\/\*\s*csslint([^\*]*)\*\//,u=new n.util.EventTarget;return u.version="1.0.5",u.addRule=function(t){e.push(t),e[t.id]=t},u.clearRules=function(){e=[]},u.getRules=function(){return[].concat(e).sort(function(e,t){return e.id>t.id?1:0})},u.getRuleset=function(){var t={},n=0,r=e.length;while(n<r)t[e[n++].id]=1;return t},u.addFormatter=function(e){t[e.id]=e},u.getFormatter=function(e){return t[e]},u.format=function(e,t,n,r){var i=u.getFormatter(n),s=null;return i&&(s=i.startFormat(),s+=i.formatResults(e,t,r||{}),s+=i.endFormat()),s},u.hasFormat=function(e){return t.hasOwnProperty(e)},u.verify=function(t,f){var l=0,c,h,p={},d=[],v,m=new n.css.Parser({starHack:!0,ieFilters:!0,underscoreHack:!0,strict:!1});h=t.replace(/\n\r?/g,"$split$").split("$split$"),i.Util.forEach(h,function(e,t){var n=e&&e.match(/\/\*[ \t]*csslint[ \t]+allow:[ \t]*([^\*]*)\*\//i),r=n&&n[1],i={};r&&(r.toLowerCase().split(",").forEach(function(e){i[e.trim()]=!0}),Object.keys(i).length>0&&(p[t+1]=i))});var g=null,y=null;i.Util.forEach(h,function(e,t){g===null&&e.match(/\/\*[ \t]*csslint[ \t]+ignore:start[ \t]*\*\//i)&&(g=t),e.match(/\/\*[ \t]*csslint[ \t]+ignore:end[ \t]*\*\//i)&&(y=t),g!==null&&y!==null&&(d.push([g,y]),g=y=null)}),g!==null&&d.push([g,h.length]),f||(f=u.getRuleset()),o.test(t)&&(f=r(f),f=a(t,f)),c=new s(h,f,p,d),f.errors=2;for(l in f)f.hasOwnProperty(l)&&f[l]&&e[l]&&e[l].init(m,c);try{m.parse(t)}catch(b){c.error("Fatal error, cannot continue: "+b.message,b.line,b.col,{})}return v={messages:c.messages,stats:c.stats,ruleset:c.ruleset,allow:c.allow,ignore:c.ignore},v.messages.sort(function(e,t){return e.rollup&&!t.rollup?1:!e.rollup&&t.rollup?-1:e.line-t.line}),v},u}();return s.prototype={constructor:s,error:function(e,t,n,r){"use strict";this.messages.push({type:"error",line:t,col:n,message:e,evidence:this.lines[t-1],rule:r||{}})},warn:function(e,t,n,r){"use strict";this.report(e,t,n,r)},report:function(e,t,n,r){"use strict";if(this.allow.hasOwnProperty(t)&&this.allow[t].hasOwnProperty(r.id))return;if(this.isIgnored(t))return;this.messages.push({type:this.ruleset[r.id]===2?"error":"warning",line:t,col:n,message:e,evidence:this.lines[t-1],rule:r})},info:function(e,t,n,r){"use strict";this.messages.push({type:"info",line:t,col:n,message:e,evidence:this.lines[t-1],rule:r})},rollupError:function(e,t){"use strict";this.messages.push({type:"error",rollup:!0,message:e,rule:t})},rollupWarn:function(e,t){"use strict";this.messages.push({type:"warning",rollup:!0,message:e,rule:t})},stat:function(e,t){"use strict";this.stats[e]=t},isIgnored:function(e){"use strict";var t=!1;return i.Util.forEach(this.ignore,function(n){n[0]<=e&&e<=n[1]&&(t=!0)}),t}},i._Reporter=s,i.Util={mix:function(e,t){"use strict";var n;for(n in t)t.hasOwnProperty(n)&&(e[n]=t[n]);return n},indexOf:function(e,t){"use strict";if(e.indexOf)return e.indexOf(t);for(var n=0,r=e.length;n<r;n++)if(e[n]===t)return n;return-1},forEach:function(e,t){"use strict";if(e.forEach)return e.forEach(t);for(var n=0,r=e.length;n<r;n++)t(e[n],n,e)}},i.addRule({id:"box-model",name:"Beware of broken box size",desc:"Don't use width or height when using padding or border.",url:"https://github.com/CSSLint/csslint/wiki/Beware-of-box-model-size",browsers:"All",init:function(e,t){"use strict";function u(){s={},o=!1}function a(){var e,u;if(!o){if(s.height)for(e in i)i.hasOwnProperty(e)&&s[e]&&(u=s[e].value,(e!=="padding"||u.parts.length!==2||u.parts[0].value!==0)&&t.report("Using height with "+e+" can sometimes make elements larger than you expect.",s[e].line,s[e].col,n));if(s.width)for(e in r)r.hasOwnProperty(e)&&s[e]&&(u=s[e].value,(e!=="padding"||u.parts.length!==2||u.parts[1].value!==0)&&t.report("Using width with "+e+" can sometimes make elements larger than you expect.",s[e].line,s[e].col,n))}}var n=this,r={border:1,"border-left":1,"border-right":1,padding:1,"padding-left":1,"padding-right":1},i={border:1,"border-bottom":1,"border-top":1,padding:1,"padding-bottom":1,"padding-top":1},s,o=!1;e.addListener("startrule",u),e.addListener("startfontface",u),e.addListener("startpage",u),e.addListener("startpagemargin",u),e.addListener("startkeyframerule",u),e.addListener("startviewport",u),e.addListener("property",function(e){var t=e.property.text.toLowerCase();i[t]||r[t]?!/^0\S*$/.test(e.value)&&(t!=="border"||e.value.toString()!=="none")&&(s[t]={line:e.property.line,col:e.property.col,value:e.value}):/^(width|height)/i.test(t)&&/^(length|percentage)/.test(e.value.parts[0].type)?s[t]=1:t==="box-sizing"&&(o=!0)}),e.addListener("endrule",a),e.addListener("endfontface",a),e.addListener("endpage",a),e.addListener("endpagemargin",a),e.addListener("endkeyframerule",a),e.addListener("endviewport",a)}}),i.addRule({id:"bulletproof-font-face",name:"Use the bulletproof @font-face syntax",desc:"Use the bulletproof @font-face syntax to avoid 404's in old IE (http://www.fontspring.com/blog/the-new-bulletproof-font-face-syntax).",url:"https://github.com/CSSLint/csslint/wiki/Bulletproof-font-face",browsers:"All",init:function(e,t){"use strict";var n=this,r=!1,i=!0,s=!1,o,u;e.addListener("startfontface",function(){r=!0}),e.addListener("property",function(e){if(!r)return;var t=e.property.toString().toLowerCase(),n=e.value.toString();o=e.line,u=e.col;if(t==="src"){var a=/^\s?url\(['"].+\.eot\?.*['"]\)\s*format\(['"]embedded-opentype['"]\).*$/i;!n.match(a)&&i?(s=!0,i=!1):n.match(a)&&!i&&(s=!1)}}),e.addListener("endfontface",function(){r=!1,s&&t.report("@font-face declaration doesn't follow the fontspring bulletproof syntax.",o,u,n)})}}),i.addRule({id:"compatible-vendor-prefixes",name:"Require compatible vendor prefixes",desc:"Include all compatible vendor prefixes to reach a wider range of users.",url:"https://github.com/CSSLint/csslint/wiki/Require-compatible-vendor-prefixes",browsers:"All",init:function(e,t){"use strict";var n=this,r,s,o,u,a,f,l,c=!1,h=Array.prototype.push,p=[];r={animation:"webkit","animation-delay":"webkit","animation-direction":"webkit","animation-duration":"webkit","animation-fill-mode":"webkit","animation-iteration-count":"webkit","animation-name":"webkit","animation-play-state":"webkit","animation-timing-function":"webkit",appearance:"webkit moz","border-end":"webkit moz","border-end-color":"webkit moz","border-end-style":"webkit moz","border-end-width":"webkit moz","border-image":"webkit moz o","border-radius":"webkit","border-start":"webkit moz","border-start-color":"webkit moz","border-start-style":"webkit moz","border-start-width":"webkit moz","box-align":"webkit moz","box-direction":"webkit moz","box-flex":"webkit moz","box-lines":"webkit","box-ordinal-group":"webkit moz","box-orient":"webkit moz","box-pack":"webkit moz","box-sizing":"","box-shadow":"","column-count":"webkit moz ms","column-gap":"webkit moz ms","column-rule":"webkit moz ms","column-rule-color":"webkit moz ms","column-rule-style":"webkit moz ms","column-rule-width":"webkit moz ms","column-width":"webkit moz ms",flex:"webkit ms","flex-basis":"webkit","flex-direction":"webkit ms","flex-flow":"webkit","flex-grow":"webkit","flex-shrink":"webkit",hyphens:"epub moz","line-break":"webkit ms","margin-end":"webkit moz","margin-start":"webkit moz","marquee-speed":"webkit wap","marquee-style":"webkit wap","padding-end":"webkit moz","padding-start":"webkit moz","tab-size":"moz o","text-size-adjust":"webkit ms",transform:"webkit ms","transform-origin":"webkit ms",transition:"","transition-delay":"","transition-duration":"","transition-property":"","transition-timing-function":"","user-modify":"webkit moz","user-select":"webkit moz ms","word-break":"epub ms","writing-mode":"epub ms"};for(o in r)if(r.hasOwnProperty(o)){u=[],a=r[o].split(" ");for(f=0,l=a.length;f<l;f++)u.push("-"+a[f]+"-"+o);r[o]=u,h.apply(p,u)}e.addListener("startrule",function(){s=[]}),e.addListener("startkeyframes",function(e){c=e.prefix||!0}),e.addListener("endkeyframes",function(){c=!1}),e.addListener("property",function(e){var t=e.property;i.Util.indexOf(p,t.text)>-1&&(!c||typeof c!="string"||t.text.indexOf("-"+c+"-")!==0)&&s.push(t)}),e.addListener("endrule",function(){if(!s.length)return;var e={},o,u,a,f,l,c,h,p,d,v;for(o=0,u=s.length;o<u;o++){a=s[o];for(f in r)r.hasOwnProperty(f)&&(l=r[f],i.Util.indexOf(l,a.text)>-1&&(e[f]||(e[f]={full:l.slice(0),actual:[],actualNodes:[]}),i.Util.indexOf(e[f].actual,a.text)===-1&&(e[f].actual.push(a.text),e[f].actualNodes.push(a))))}for(f in e)if(e.hasOwnProperty(f)){c=e[f],h=c.full,p=c.actual;if(h.length>p.length)for(o=0,u=h.length;o<u;o++)d=h[o],i.Util.indexOf(p,d)===-1&&(v=p.length===1?p[0]:p.length===2?p.join(" and "):p.join(", "),t.report("The property "+d+" is compatible with "+v+" and should be included as well.",c.actualNodes[0].line,c.actualNodes[0].col,n))}})}}),i.addRule({id:"display-property-grouping",name:"Require properties appropriate for display",desc:"Certain properties shouldn't be used with certain display property values.",url:"https://github.com/CSSLint/csslint/wiki/Require-properties-appropriate-for-display",browsers:"All",init:function(e,t){"use strict";function s(e,s,o){i[e]&&(typeof r[e]!="string"||i[e].value.toLowerCase()!==r[e])&&t.report(o||e+" can't be used with display: "+s+".",i[e].line,i[e].col,n)}function o(){i={}}function u(){var e=i.display?i.display.value:null;if(e)switch(e){case"inline":s("height",e),s("width",e),s("margin",e),s("margin-top",e),s("margin-bottom",e),s("float",e,"display:inline has no effect on floated elements (but may be used to fix the IE6 double-margin bug).");break;case"block":s("vertical-align",e);break;case"inline-block":s("float",e);break;default:e.indexOf("table-")===0&&(s("margin",e),s("margin-left",e),s("margin-right",e),s("margin-top",e),s("margin-bottom",e),s("float",e))}}var n=this,r={display:1,"float":"none",height:1,width:1,margin:1,"margin-left":1,"margin-right":1,"margin-bottom":1,"margin-top":1,padding:1,"padding-left":1,"padding-right":1,"padding-bottom":1,"padding-top":1,"vertical-align":1},i;e.addListener("startrule",o),e.addListener("startfontface",o),e.addListener("startkeyframerule",o),e.addListener("startpagemargin",o),e.addListener("startpage",o),e.addListener("startviewport",o),e.addListener("property",function(e){var t=e.property.text.toLowerCase();r[t]&&(i[t]={value:e.value.text,line:e.property.line,col:e.property.col})}),e.addListener("endrule",u),e.addListener("endfontface",u),e.addListener("endkeyframerule",u),e.addListener("endpagemargin",u),e.addListener("endpage",u),e.addListener("endviewport",u)}}),i.addRule({id:"duplicate-background-images",name:"Disallow duplicate background images",desc:"Every background-image should be unique. Use a common class for e.g. sprites.",url:"https://github.com/CSSLint/csslint/wiki/Disallow-duplicate-background-images",browsers:"All",init:function(e,t){"use strict";var n=this,r={};e.addListener("property",function(e){var i=e.property.text,s=e.value,o,u;if(i.match(/background/i))for(o=0,u=s.parts.length;o<u;o++)s.parts[o].type==="uri"&&(typeof r[s.parts[o].uri]=="undefined"?r[s.parts[o].uri]=e:t.report("Background image '"+s.parts[o].uri+"' was used multiple times, first declared at line "+r[s.parts[o].uri].line+", col "+r[s.parts[o].uri].col+".",e.line,e.col,n))})}}),i.addRule({id:"duplicate-properties",name:"Disallow duplicate properties",desc:"Duplicate properties must appear one after the other.",url:"https://github.com/CSSLint/csslint/wiki/Disallow-duplicate-properties",browsers:"All",init:function(e,t){"use strict";function s(){r={}}var n=this,r,i;e.addListener("startrule",s),e.addListener("startfontface",s),e.addListener("startpage",s),e.addListener("startpagemargin",s),e.addListener("startkeyframerule",s),e.addListener("startviewport",s),e.addListener("property",function(e){var s=e.property,o=s.text.toLowerCase();r[o]&&(i!==o||r[o]===e.value.text)&&t.report("Duplicate property '"+e.property+"' found.",e.line,e.col,n),r[o]=e.value.text,i=o})}}),i.addRule({id:"empty-rules",name:"Disallow empty rules",desc:"Rules without any properties specified should be removed.",url:"https://github.com/CSSLint/csslint/wiki/Disallow-empty-rules",browsers:"All",init:function(e,t){"use strict";var n=this,r=0;e.addListener("startrule",function(){r=0}),e.addListener("property",function(){r++}),e.addListener("endrule",function(e){var i=e.selectors;r===0&&t.report("Rule is empty.",i[0].line,i[0].col,n)})}}),i.addRule({id:"errors",name:"Parsing Errors",desc:"This rule looks for recoverable syntax errors.",browsers:"All",init:function(e,t){"use strict";var n=this;e.addListener("error",function(e){t.error(e.message,e.line,e.col,n)})}}),i.addRule({id:"floats",name:"Disallow too many floats",desc:"This rule tests if the float property is used too many times",url:"https://github.com/CSSLint/csslint/wiki/Disallow-too-many-floats",browsers:"All",init:function(e,t){"use strict";var n=this,r=0;e.addListener("property",function(e){t.isIgnored(e.property.line)||e.property.text.toLowerCase()==="float"&&e.value.text.toLowerCase()!=="none"&&r++}),e.addListener("endstylesheet",function(){t.stat("floats",r),r>=10&&t.rollupWarn("Too many floats ("+r+"), you're probably using them for layout. Consider using a grid system instead.",n)})}}),i.addRule({id:"font-faces",name:"Don't use too many web fonts",desc:"Too many different web fonts in the same stylesheet.",url:"https://github.com/CSSLint/csslint/wiki/Don%27t-use-too-many-web-fonts",browsers:"All",init:function(e,t){"use strict";var n=this,r=0;e.addListener("startfontface",function(e){t.isIgnored(e.line)||r++}),e.addListener("endstylesheet",function(){r>5&&t.rollupWarn("Too many @font-face declarations ("+r+").",n)})}}),i.addRule({id:"font-sizes",name:"Disallow too many font sizes",desc:"Checks the number of font-size declarations.",url:"https://github.com/CSSLint/csslint/wiki/Don%27t-use-too-many-font-size-declarations",browsers:"All",init:function(e,t){"use strict";var n=this,r=0;e.addListener("property",function(e){t.isIgnored(e.property.line)||e.property.toString()==="font-size"&&r++}),e.addListener("endstylesheet",function(){t.stat("font-sizes",r),r>=10&&t.rollupWarn("Too many font-size declarations ("+r+"), abstraction needed.",n)})}}),i.addRule({id:"gradients",name:"Require all gradient definitions",desc:"When using a vendor-prefixed gradient, make sure to use them all.",url:"https://github.com/CSSLint/csslint/wiki/Require-all-gradient-definitions",browsers:"All",init:function(e,t){"use strict";var n=this,r;e.addListener("startrule",function(){r={moz:0,webkit:0,oldWebkit:0,o:0}}),e.addListener("property",function(e){/\-(moz|o|webkit)(?:\-(?:linear|radial))\-gradient/i.test(e.value)?r[RegExp.$1]=1:/\-webkit\-gradient/i.test(e.value)&&(r.oldWebkit=1)}),e.addListener("endrule",function(e){var i=[];r.moz||i.push("Firefox 3.6+"),r.webkit||i.push("Webkit (Safari 5+, Chrome)"),r.oldWebkit||i.push("Old Webkit (Safari 4+, Chrome)"),r.o||i.push("Opera 11.1+"),i.length&&i.length<4&&t.report("Missing vendor-prefixed CSS gradients for "+i.join(", ")+".",e.selectors[0].line,e.selectors[0].col,n)})}}),i.addRule({id:"ids",name:"Disallow IDs in selectors",desc:"Selectors should not contain IDs.",url:"https://github.com/CSSLint/csslint/wiki/Disallow-IDs-in-selectors",browsers:"All",init:function(e,t){"use strict";var n=this;e.addListener("startrule",function(r){var i=r.selectors,s,o,u,a,f,l,c;for(f=0;f<i.length;f++){s=i[f],a=0;for(l=0;l<s.parts.length;l++){o=s.parts[l];if(o.type===e.SELECTOR_PART_TYPE)for(c=0;c<o.modifiers.length;c++)u=o.modifiers[c],u.type==="id"&&a++}a===1?t.report("Don't use IDs in selectors.",s.line,s.col,n):a>1&&t.report(a+" IDs in the selector, really?",s.line,s.col,n)}})}}),i.addRule({id:"import-ie-limit",name:"@import limit on IE6-IE9",desc:"IE6-9 supports up to 31 @import per stylesheet",browsers:"IE6, IE7, IE8, IE9",init:function(e,t){"use strict";function s(){i=0}var n=this,r=31,i=0;e.addListener("startpage",s),e.addListener("import",function(){i++}),e.addListener("endstylesheet",function(){i>r&&t.rollupError("Too many @import rules ("+i+"). IE6-9 supports up to 31 import per stylesheet.",n)})}}),i.addRule({id:"import",name:"Disallow @import",desc:"Don't use @import, use <link> instead.",url:"https://github.com/CSSLint/csslint/wiki/Disallow-%40import",browsers:"All",init:function(e,t){"use strict";var n=this;e.addListener("import",function(e){t.report("@import prevents parallel downloads, use <link> instead.",e.line,e.col,n)})}}),i.addRule({id:"important",name:"Disallow !important",desc:"Be careful when using !important declaration",url:"https://github.com/CSSLint/csslint/wiki/Disallow-%21important",browsers:"All",init:function(e,t){"use strict";var n=this,r=0;e.addListener("property",function(e){t.isIgnored(e.line)||e.important===!0&&(r++,t.report("Use of !important",e.line,e.col,n))}),e.addListener("endstylesheet",function(){t.stat("important",r),r>=10&&t.rollupWarn("Too many !important declarations ("+r+"), try to use less than 10 to avoid specificity issues.",n)})}}),i.addRule({id:"known-properties",name:"Require use of known properties",desc:"Properties should be known (listed in CSS3 specification) or be a vendor-prefixed property.",url:"https://github.com/CSSLint/csslint/wiki/Require-use-of-known-properties",browsers:"All",init:function(e,t){"use strict";var n=this;e.addListener("property",function(e){e.invalid&&t.report(e.invalid.message,e.line,e.col,n)})}}),i.addRule({id:"order-alphabetical",name:"Alphabetical order",desc:"Assure properties are in alphabetical order",browsers:"All",init:function(e,t){"use strict";var n=this,r,i=function(){r=[]},s=function(e){var i=r.join(","),s=r.sort().join(",");i!==s&&t.report("Rule doesn't have all its properties in alphabetical order.",e.line,e.col,n)};e.addListener("startrule",i),e.addListener("startfontface",i),e.addListener("startpage",i),e.addListener("startpagemargin",i),e.addListener("startkeyframerule",i),e.addListener("startviewport",i),e.addListener("property",function(e){var t=e.property.text,n=t.toLowerCase().replace(/^-.*?-/,"");r.push(n)}),e.addListener("endrule",s),e.addListener("endfontface",s),e.addListener("endpage",s),e.addListener("endpagemargin",s),e.addListener("endkeyframerule",s),e.addListener("endviewport",s)}}),i.addRule({id:"outline-none",name:"Disallow outline: none",desc:"Use of outline: none or outline: 0 should be limited to :focus rules.",url:"https://github.com/CSSLint/csslint/wiki/Disallow-outline%3Anone",browsers:"All",tags:["Accessibility"],init:function(e,t){"use strict";function i(e){e.selectors?r={line:e.line,col:e.col,selectors:e.selectors,propCount:0,outline:!1}:r=null}function s(){r&&r.outline&&(r.selectors.toString().toLowerCase().indexOf(":focus")===-1?t.report("Outlines should only be modified using :focus.",r.line,r.col,n):r.propCount===1&&t.report("Outlines shouldn't be hidden unless other visual changes are made.",r.line,r.col,n))}var n=this,r;e.addListener("startrule",i),e.addListener("startfontface",i),e.addListener("startpage",i),e.addListener("startpagemargin",i),e.addListener("startkeyframerule",i),e.addListener("startviewport",i),e.addListener("property",function(e){var t=e.property.text.toLowerCase(),n=e.value;r&&(r.propCount++,t==="outline"&&(n.toString()==="none"||n.toString()==="0")&&(r.outline=!0))}),e.addListener("endrule",s),e.addListener("endfontface",s),e.addListener("endpage",s),e.addListener("endpagemargin",s),e.addListener("endkeyframerule",s),e.addListener("endviewport",s)}}),i.addRule({id:"overqualified-elements",name:"Disallow overqualified elements",desc:"Don't use classes or IDs with elements (a.foo or a#foo).",url:"https://github.com/CSSLint/csslint/wiki/Disallow-overqualified-elements",browsers:"All",init:function(e,t){"use strict";var n=this,r={};e.addListener("startrule",function(i){var s=i.selectors,o,u,a,f,l,c;for(f=0;f<s.length;f++){o=s[f];for(l=0;l<o.parts.length;l++){u=o.parts[l];if(u.type===e.SELECTOR_PART_TYPE)for(c=0;c<u.modifiers.length;c++)a=u.modifiers[c],u.elementName&&a.type==="id"?t.report("Element ("+u+") is overqualified, just use "+a+" without element name.",u.line,u.col,n):a.type==="class"&&(r[a]||(r[a]=[]),r[a].push({modifier:a,part:u}))}}}),e.addListener("endstylesheet",function(){var e;for(e in r)r.hasOwnProperty(e)&&r[e].length===1&&r[e][0].part.elementName&&t.report("Element ("+r[e][0].part+") is overqualified, just use "+r[e][0].modifier+" without element name.",r[e][0].part.line,r[e][0].part.col,n)})}}),i.addRule({id:"regex-selectors",name:"Disallow selectors that look like regexs",desc:"Selectors that look like regular expressions are slow and should be avoided.",url:"https://github.com/CSSLint/csslint/wiki/Disallow-selectors-that-look-like-regular-expressions",browsers:"All",init:function(e,t){"use strict";var n=this;e.addListener("startrule",function(r){var i=r.selectors,s,o,u,a,f,l;for(a=0;a<i.length;a++){s=i[a];for(f=0;f<s.parts.length;f++){o=s.parts[f];if(o.type===e.SELECTOR_PART_TYPE)for(l=0;l<o.modifiers.length;l++)u=o.modifiers[l],u.type==="attribute"&&/([~\|\^\$\*]=)/.test(u)&&t.report("Attribute selectors with "+RegExp.$1+" are slow!",u.line,u.col,n)}}})}}),i.addRule({id:"rules-count",name:"Rules Count",desc:"Track how many rules there are.",browsers:"All",init:function(e,t){"use strict";var n=0;e.addListener("startrule",function(){n++}),e.addListener("endstylesheet",function(){t.stat("rule-count",n)})}}),i.addRule({id:"selector-max-approaching",name:"Warn when approaching the 4095 selector limit for IE",desc:"Will warn when selector count is >= 3800 selectors.",browsers:"IE",init:function(e,t){"use strict";var n=this,r=0;e.addListener("startrule",function(e){r+=e.selectors.length}),e.addListener("endstylesheet",function(){r>=3800&&t.report("You have "+r+" selectors. Internet Explorer supports a maximum of 4095 selectors per stylesheet. Consider refactoring.",0,0,n)})}}),i.addRule({id:"selector-max",name:"Error when past the 4095 selector limit for IE",desc:"Will error when selector count is > 4095.",browsers:"IE",init:function(e,t){"use strict";var n=this,r=0;e.addListener("startrule",function(e){r+=e.selectors.length}),e.addListener("endstylesheet",function(){r>4095&&t.report("You have "+r+" selectors. Internet Explorer supports a maximum of 4095 selectors per stylesheet. Consider refactoring.",0,0,n)})}}),i.addRule({id:"selector-newline",name:"Disallow new-line characters in selectors",desc:"New-line characters in selectors are usually a forgotten comma and not a descendant combinator.",browsers:"All",init:function(e,t){"use strict";function r(e){var r,i,s,o,u,a,f,l,c,h,p,d=e.selectors;for(r=0,i=d.length;r<i;r++){s=d[r];for(o=0,a=s.parts.length;o<a;o++)for(u=o+1;u<a;u++)f=s.parts[o],l=s.parts[u],c=f.type,h=f.line,p=l.line,c==="descendant"&&p>h&&t.report("newline character found in selector (forgot a comma?)",h,d[r].parts[0].col,n)}}var n=this;e.addListener("startrule",r)}}),i.addRule({id:"shorthand",name:"Require shorthand properties",desc:"Use shorthand properties where possible.",url:"https://github.com/CSSLint/csslint/wiki/Require-shorthand-properties",browsers:"All",init:function(e,t){"use strict";function f(){u={}}function l(e){var r,i,s,o;for(r in a)if(a.hasOwnProperty(r)){o=0;for(i=0,s=a[r].length;i<s;i++)o+=u[a[r][i]]?1:0;o===a[r].length&&t.report("The properties "+a[r].join(", ")+" can be replaced by "+r+".",e.line,e.col,n)}}var n=this,r,i,s,o={},u,a={margin:["margin-top","margin-bottom","margin-left","margin-right"],padding:["padding-top","padding-bottom","padding-left","padding-right"]};for(r in a)if(a.hasOwnProperty(r))for(i=0,s=a[r].length;i<s;i++)o[a[r][i]]=r;e.addListener("startrule",f),e.addListener("startfontface",f),e.addListener("property",function(e){var t=e.property.toString().toLowerCase();o[t]&&(u[t]=1)}),e.addListener("endrule",l),e.addListener("endfontface",l)}}),i.addRule({id:"star-property-hack",name:"Disallow properties with a star prefix",desc:"Checks for the star property hack (targets IE6/7)",url:"https://github.com/CSSLint/csslint/wiki/Disallow-star-hack",browsers:"All",init:function(e,t){"use strict";var n=this;e.addListener("property",function(e){var r=e.property;r.hack==="*"&&t.report("Property with star prefix found.",e.property.line,e.property.col,n)})}}),i.addRule({id:"text-indent",name:"Disallow negative text-indent",desc:"Checks for text indent less than -99px",url:"https://github.com/CSSLint/csslint/wiki/Disallow-negative-text-indent",browsers:"All",init:function(e,t){"use strict";function s(){r=!1,i="inherit"}function o(){r&&i!=="ltr"&&t.report("Negative text-indent doesn't work well with RTL. If you use text-indent for image replacement explicitly set direction for that item to ltr.",r.line,r.col,n)}var n=this,r,i;e.addListener("startrule",s),e.addListener("startfontface",s),e.addListener("property",function(e){var t=e.property.toString().toLowerCase(),n=e.value;t==="text-indent"&&n.parts[0].value<-99?r=e.property:t==="direction"&&n.toString()==="ltr"&&(i="ltr")}),e.addListener("endrule",o),e.addListener("endfontface",o)}}),i.addRule({id:"underscore-property-hack",name:"Disallow properties with an underscore prefix",desc:"Checks for the underscore property hack (targets IE6)",url:"https://github.com/CSSLint/csslint/wiki/Disallow-underscore-hack",browsers:"All",init:function(e,t){"use strict";var n=this;e.addListener("property",function(e){var r=e.property;r.hack==="_"&&t.report("Property with underscore prefix found.",e.property.line,e.property.col,n)})}}),i.addRule({id:"universal-selector",name:"Disallow universal selector",desc:"The universal selector (*) is known to be slow.",url:"https://github.com/CSSLint/csslint/wiki/Disallow-universal-selector",browsers:"All",init:function(e,t){"use strict";var n=this;e.addListener("startrule",function(e){var r=e.selectors,i,s,o;for(o=0;o<r.length;o++)i=r[o],s=i.parts[i.parts.length-1],s.elementName==="*"&&t.report(n.desc,s.line,s.col,n)})}}),i.addRule({id:"unqualified-attributes",name:"Disallow unqualified attribute selectors",desc:"Unqualified attribute selectors are known to be slow.",url:"https://github.com/CSSLint/csslint/wiki/Disallow-unqualified-attribute-selectors",browsers:"All",init:function(e,t){"use strict";var n=this;e.addListener("startrule",function(r){var i=r.selectors,s=!1,o,u,a,f,l;for(f=0;f<i.length;f++){o=i[f],u=o.parts[o.parts.length-1];if(u.type===e.SELECTOR_PART_TYPE){for(l=0;l<u.modifiers.length;l++){a=u.modifiers[l];if(a.type==="class"||a.type==="id"){s=!0;break}}if(!s)for(l=0;l<u.modifiers.length;l++)a=u.modifiers[l],a.type==="attribute"&&(!u.elementName||u.elementName==="*")&&t.report(n.desc,u.line,u.col,n)}}})}}),i.addRule({id:"vendor-prefix",name:"Require standard property with vendor prefix",desc:"When using a vendor-prefixed property, make sure to include the standard one.",url:"https://github.com/CSSLint/csslint/wiki/Require-standard-property-with-vendor-prefix",browsers:"All",init:function(e,t){"use strict";function o(){r={},i=1}function u(){var e,i,o,u,a,f=[];for(e in r)s[e]&&f.push({actual:e,needed:s[e]});for(i=0,o=f.length;i<o;i++)u=f[i].needed,a=f[i].actual,r[u]?r[u][0].pos<r[a][0].pos&&t.report("Standard property '"+u+"' should come after vendor-prefixed property '"+a+"'.",r[a][0].name.line,r[a][0].name.col,n):t.report("Missing standard property '"+u+"' to go along with '"+a+"'.",r[a][0].name.line,r[a][0].name.col,n)}var n=this,r,i,s={"-webkit-border-radius":"border-radius","-webkit-border-top-left-radius":"border-top-left-radius","-webkit-border-top-right-radius":"border-top-right-radius","-webkit-border-bottom-left-radius":"border-bottom-left-radius","-webkit-border-bottom-right-radius":"border-bottom-right-radius","-o-border-radius":"border-radius","-o-border-top-left-radius":"border-top-left-radius","-o-border-top-right-radius":"border-top-right-radius","-o-border-bottom-left-radius":"border-bottom-left-radius","-o-border-bottom-right-radius":"border-bottom-right-radius","-moz-border-radius":"border-radius","-moz-border-radius-topleft":"border-top-left-radius","-moz-border-radius-topright":"border-top-right-radius","-moz-border-radius-bottomleft":"border-bottom-left-radius","-moz-border-radius-bottomright":"border-bottom-right-radius","-moz-column-count":"column-count","-webkit-column-count":"column-count","-moz-column-gap":"column-gap","-webkit-column-gap":"column-gap","-moz-column-rule":"column-rule","-webkit-column-rule":"column-rule","-moz-column-rule-style":"column-rule-style","-webkit-column-rule-style":"column-rule-style","-moz-column-rule-color":"column-rule-color","-webkit-column-rule-color":"column-rule-color","-moz-column-rule-width":"column-rule-width","-webkit-column-rule-width":"column-rule-width","-moz-column-width":"column-width","-webkit-column-width":"column-width","-webkit-column-span":"column-span","-webkit-columns":"columns","-moz-box-shadow":"box-shadow","-webkit-box-shadow":"box-shadow","-moz-transform":"transform","-webkit-transform":"transform","-o-transform":"transform","-ms-transform":"transform","-moz-transform-origin":"transform-origin","-webkit-transform-origin":"transform-origin","-o-transform-origin":"transform-origin","-ms-transform-origin":"transform-origin","-moz-box-sizing":"box-sizing","-webkit-box-sizing":"box-sizing"};e.addListener("startrule",o),e.addListener("startfontface",o),e.addListener("startpage",o),e.addListener("startpagemargin",o),e.addListener("startkeyframerule",o),e.addListener("startviewport",o),e.addListener("property",function(e){var t=e.property.text.toLowerCase();r[t]||(r[t]=[]),r[t].push({name:e.property,value:e.value,pos:i++})}),e.addListener("endrule",u),e.addListener("endfontface",u),e.addListener("endpage",u),e.addListener("endpagemargin",u),e.addListener("endkeyframerule",u),e.addListener("endviewport",u)}}),i.addRule({id:"zero-units",name:"Disallow units for 0 values",desc:"You don't need to specify units when a value is 0.",url:"https://github.com/CSSLint/csslint/wiki/Disallow-units-for-zero-values",browsers:"All",init:function(e,t){"use strict";var n=this;e.addListener("property",function(e){var r=e.value.parts,i=0,s=r.length;while(i<s)(r[i].units||r[i].type==="percentage")&&r[i].value===0&&r[i].type!=="time"&&t.report("Values of 0 shouldn't have units specified.",r[i].line,r[i].col,n),i++})}}),function(){"use strict";var e=function(e){return!e||e.constructor!==String?"":e.replace(/["&><]/g,function(e){switch(e){case'"':return"&quot;";case"&":return"&amp;";case"<":return"&lt;";case">":return"&gt;"}})};i.addFormatter({id:"checkstyle-xml",name:"Checkstyle XML format",startFormat:function(){return'<?xml version="1.0" encoding="utf-8"?><checkstyle>'},endFormat:function(){return"</checkstyle>"},readError:function(t,n){return'<file name="'+e(t)+'"><error line="0" column="0" severty="error" message="'+e(n)+'"></error></file>'},formatResults:function(t,n){var r=t.messages,s=[],o=function(e){return!!e&&"name"in e?"net.csslint."+e.name.replace(/\s/g,""):""};return r.length>0&&(s.push('<file name="'+n+'">'),i.Util.forEach(r,function(t){t.rollup||s.push('<error line="'+t.line+'" column="'+t.col+'" severity="'+t.type+'"'+' message="'+e(t.message)+'" source="'+o(t.rule)+'"/>')}),s.push("</file>")),s.join("")}})}(),i.addFormatter({id:"compact",name:"Compact, 'porcelain' format",startFormat:function(){"use strict";return""},endFormat:function(){"use strict";return""},formatResults:function(e,t,n){"use strict";var r=e.messages,s="";n=n||{};var o=function(e){return e.charAt(0).toUpperCase()+e.slice(1)};return r.length===0?n.quiet?"":t+": Lint Free!":(i.Util.forEach(r,function(e){e.rollup?s+=t+": "+o(e.type)+" - "+e.message+" ("+e.rule.id+")\n":s+=t+": line "+e.line+", col "+e.col+", "+o(e.type)+" - "+e.message+" ("+e.rule.id+")\n"}),s)}}),i.addFormatter({id:"csslint-xml",name:"CSSLint XML format",startFormat:function(){"use strict";return'<?xml version="1.0" encoding="utf-8"?><csslint>'},endFormat:function(){"use strict";return"</csslint>"},formatResults:function(e,t){"use strict";var n=e.messages,r=[],s=function(e){return!e||e.constructor!==String?"":e.replace(/"/g,"'").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")};return n.length>0&&(r.push('<file name="'+t+'">'),i.Util.forEach(n,function(e){e.rollup?r.push('<issue severity="'+e.type+'" reason="'+s(e.message)+'" evidence="'+s(e.evidence)+'"/>'):r.push('<issue line="'+e.line+'" char="'+e.col+'" severity="'+e.type+'"'+' reason="'+s(e.message)+'" evidence="'+s(e.evidence)+'"/>')}),r.push("</file>")),r.join("")}}),i.addFormatter({id:"json",name:"JSON",startFormat:function(){"use strict";return this.json=[],""},endFormat:function(){"use strict";var e="";return this.json.length>0&&(this.json.length===1?e=JSON.stringify(this.json[0]):e=JSON.stringify(this.json)),e},formatResults:function(e,t,n){"use strict";return(e.messages.length>0||!n.quiet)&&this.json.push({filename:t,messages:e.messages,stats:e.stats}),""}}),i.addFormatter({id:"junit-xml",name:"JUNIT XML format",startFormat:function(){"use strict";return'<?xml version="1.0" encoding="utf-8"?><testsuites>'},endFormat:function(){"use strict";return"</testsuites>"},formatResults:function(e,t){"use strict";var n=e.messages,r=[],i={error:0,failure:0},s=function(e){return!!e&&"name"in e?"net.csslint."+e.name.replace(/\s/g,""):""},o=function(e){return!e||e.constructor!==String?"":e.replace(/"/g,"'").replace(/</g,"&lt;").replace(/>/g,"&gt;")};return n.length>0&&(n.forEach(function(e){var t=e.type==="warning"?"error":e.type;e.rollup||(r.push('<testcase time="0" name="'+s(e.rule)+'">'),r.push("<"+t+' message="'+o(e.message)+'"><![CDATA['+e.line+":"+e.col+":"+o(e.evidence)+"]]></"+t+">"),r.push("</testcase>"),i[t]+=1)}),r.unshift('<testsuite time="0" tests="'+n.length+'" skipped="0" errors="'+i.error+'" failures="'+i.failure+'" package="net.csslint" name="'+t+'">'),r.push("</testsuite>")),r.join("")}}),i.addFormatter({id:"lint-xml",name:"Lint XML format",startFormat:function(){"use strict";return'<?xml version="1.0" encoding="utf-8"?><lint>'},endFormat:function(){"use strict";return"</lint>"},formatResults:function(e,t){"use strict";var n=e.messages,r=[],s=function(e){return!e||e.constructor!==String?"":e.replace(/"/g,"'").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")};return n.length>0&&(r.push('<file name="'+t+'">'),i.Util.forEach(n,function(e){if(e.rollup)r.push('<issue severity="'+e.type+'" reason="'+s(e.message)+'" evidence="'+s(e.evidence)+'"/>');else{var t="";e.rule&&e.rule.id&&(t='rule="'+s(e.rule.id)+'" '),r.push("<issue "+t+'line="'+e.line+'" char="'+e.col+'" severity="'+e.type+'"'+' reason="'+s(e.message)+'" evidence="'+s(e.evidence)+'"/>')}}),r.push("</file>")),r.join("")}}),i.addFormatter({id:"text",name:"Plain Text",startFormat:function(){"use strict";return""},endFormat:function(){"use strict";return""},formatResults:function(e,t,n){"use strict";var r=e.messages,s="";n=n||{};if(r.length===0)return n.quiet?"":"\n\ncsslint: No errors in "+t+".";s="\n\ncsslint: There ",r.length===1?s+="is 1 problem":s+="are "+r.length+" problems",s+=" in "+t+".";var o=t.lastIndexOf("/"),u=t;return o===-1&&(o=t.lastIndexOf("\\")),o>-1&&(u=t.substring(o+1)),i.Util.forEach(r,function(e,t){s=s+"\n\n"+u,e.rollup?(s+="\n"+(t+1)+": "+e.type,s+="\n"+e.message):(s+="\n"+(t+1)+": "+e.type+" at line "+e.line+", col "+e.col,s+="\n"+e.message,s+="\n"+e.evidence)}),s}}),i}();n.exports.CSSLint=r}),ace.define("ace/mode/css_worker",[],function(e,t,n){"use strict";var r=e("../lib/oop"),i=e("../lib/lang"),s=e("../worker/mirror").Mirror,o=e("./css/csslint").CSSLint,u=t.Worker=function(e){s.call(this,e),this.setTimeout(400),this.ruleset=null,this.setDisabledRules("ids|order-alphabetical"),this.setInfoRules("adjoining-classes|zero-units|gradients|box-model|import|outline-none|vendor-prefix")};r.inherits(u,s),function(){this.setInfoRules=function(e){typeof e=="string"&&(e=e.split("|")),this.infoRules=i.arrayToMap(e),this.doc.getValue()&&this.deferredUpdate.schedule(100)},this.setDisabledRules=function(e){if(!e)this.ruleset=null;else{typeof e=="string"&&(e=e.split("|"));var t={};o.getRules().forEach(function(e){t[e.id]=!0}),e.forEach(function(e){delete t[e]}),this.ruleset=t}this.doc.getValue()&&this.deferredUpdate.schedule(100)},this.onUpdate=function(){var e=this.doc.getValue();if(!e)return this.sender.emit("annotate",[]);var t=this.infoRules,n=o.verify(e,this.ruleset);this.sender.emit("annotate",n.messages.map(function(e){return{row:e.line-1,column:e.col-1,text:e.message,type:t[e.rule.id]?"info":e.type,rule:e.rule.name}}))}}.call(u.prototype)})
+"no use strict";
+!(function(window) {
+if (typeof window.window != "undefined" && window.document)
+    return;
+if (window.require && window.define)
+    return;
+
+if (!window.console) {
+    window.console = function() {
+        var msgs = Array.prototype.slice.call(arguments, 0);
+        postMessage({type: "log", data: msgs});
+    };
+    window.console.error =
+    window.console.warn = 
+    window.console.log =
+    window.console.trace = window.console;
+}
+window.window = window;
+window.ace = window;
+
+window.onerror = function(message, file, line, col, err) {
+    postMessage({type: "error", data: {
+        message: message,
+        data: err && err.data,
+        file: file,
+        line: line, 
+        col: col,
+        stack: err && err.stack
+    }});
+};
+
+window.normalizeModule = function(parentId, moduleName) {
+    // normalize plugin requires
+    if (moduleName.indexOf("!") !== -1) {
+        var chunks = moduleName.split("!");
+        return window.normalizeModule(parentId, chunks[0]) + "!" + window.normalizeModule(parentId, chunks[1]);
+    }
+    // normalize relative requires
+    if (moduleName.charAt(0) == ".") {
+        var base = parentId.split("/").slice(0, -1).join("/");
+        moduleName = (base ? base + "/" : "") + moduleName;
+        
+        while (moduleName.indexOf(".") !== -1 && previous != moduleName) {
+            var previous = moduleName;
+            moduleName = moduleName.replace(/^\.\//, "").replace(/\/\.\//, "/").replace(/[^\/]+\/\.\.\//, "");
+        }
+    }
+    
+    return moduleName;
+};
+
+window.require = function require(parentId, id) {
+    if (!id) {
+        id = parentId;
+        parentId = null;
+    }
+    if (!id.charAt)
+        throw new Error("worker.js require() accepts only (parentId, id) as arguments");
+
+    id = window.normalizeModule(parentId, id);
+
+    var module = window.require.modules[id];
+    if (module) {
+        if (!module.initialized) {
+            module.initialized = true;
+            module.exports = module.factory().exports;
+        }
+        return module.exports;
+    }
+   
+    if (!window.require.tlns)
+        return console.log("unable to load " + id);
+    
+    var path = resolveModuleId(id, window.require.tlns);
+    if (path.slice(-3) != ".js") path += ".js";
+    
+    window.require.id = id;
+    window.require.modules[id] = {}; // prevent infinite loop on broken modules
+    importScripts(path);
+    return window.require(parentId, id);
+};
+function resolveModuleId(id, paths) {
+    var testPath = id, tail = "";
+    while (testPath) {
+        var alias = paths[testPath];
+        if (typeof alias == "string") {
+            return alias + tail;
+        } else if (alias) {
+            return  alias.location.replace(/\/*$/, "/") + (tail || alias.main || alias.name);
+        } else if (alias === false) {
+            return "";
+        }
+        var i = testPath.lastIndexOf("/");
+        if (i === -1) break;
+        tail = testPath.substr(i) + tail;
+        testPath = testPath.slice(0, i);
+    }
+    return id;
+}
+window.require.modules = {};
+window.require.tlns = {};
+
+window.define = function(id, deps, factory) {
+    if (arguments.length == 2) {
+        factory = deps;
+        if (typeof id != "string") {
+            deps = id;
+            id = window.require.id;
+        }
+    } else if (arguments.length == 1) {
+        factory = id;
+        deps = [];
+        id = window.require.id;
+    }
+    
+    if (typeof factory != "function") {
+        window.require.modules[id] = {
+            exports: factory,
+            initialized: true
+        };
+        return;
+    }
+
+    if (!deps.length)
+        // If there is no dependencies, we inject "require", "exports" and
+        // "module" as dependencies, to provide CommonJS compatibility.
+        deps = ["require", "exports", "module"];
+
+    var req = function(childId) {
+        return window.require(id, childId);
+    };
+
+    window.require.modules[id] = {
+        exports: {},
+        factory: function() {
+            var module = this;
+            var returnExports = factory.apply(this, deps.slice(0, factory.length).map(function(dep) {
+                switch (dep) {
+                    // Because "require", "exports" and "module" aren't actual
+                    // dependencies, we must handle them seperately.
+                    case "require": return req;
+                    case "exports": return module.exports;
+                    case "module":  return module;
+                    // But for all other dependencies, we can just go ahead and
+                    // require them.
+                    default:        return req(dep);
+                }
+            }));
+            if (returnExports)
+                module.exports = returnExports;
+            return module;
+        }
+    };
+};
+window.define.amd = {};
+window.require.tlns = {};
+window.initBaseUrls  = function initBaseUrls(topLevelNamespaces) {
+    for (var i in topLevelNamespaces)
+        this.require.tlns[i] = topLevelNamespaces[i];
+};
+
+window.initSender = function initSender() {
+
+    var EventEmitter = window.require("ace/lib/event_emitter").EventEmitter;
+    var oop = window.require("ace/lib/oop");
+    
+    var Sender = function() {};
+    
+    (function() {
+        
+        oop.implement(this, EventEmitter);
+                
+        this.callback = function(data, callbackId) {
+            postMessage({
+                type: "call",
+                id: callbackId,
+                data: data
+            });
+        };
+    
+        this.emit = function(name, data) {
+            postMessage({
+                type: "event",
+                name: name,
+                data: data
+            });
+        };
+        
+    }).call(Sender.prototype);
+    
+    return new Sender();
+};
+
+var main = window.main = null;
+var sender = window.sender = null;
+
+window.onmessage = function(e) {
+    var msg = e.data;
+    if (msg.event && sender) {
+        sender._signal(msg.event, msg.data);
+    }
+    else if (msg.command) {
+        if (main[msg.command])
+            main[msg.command].apply(main, msg.args);
+        else if (window[msg.command])
+            window[msg.command].apply(window, msg.args);
+        else
+            throw new Error("Unknown command:" + msg.command);
+    }
+    else if (msg.init) {
+        window.initBaseUrls(msg.tlns);
+        sender = window.sender = window.initSender();
+        var clazz = this.require(msg.module)[msg.classname];
+        main = window.main = new clazz(sender);
+    }
+};
+})(this);
+
+define("ace/lib/oop", [], function(require, exports, module) {
+"use strict";
+exports.inherits = function(ctor, superCtor) {
+    ctor.super_ = superCtor;
+    ctor.prototype = Object.create(superCtor.prototype, {
+        constructor: {
+            value: ctor,
+            enumerable: false,
+            writable: true,
+            configurable: true
+        }
+    });
+};
+
+/**
+ * Implements mixin properties into the prototype of an object.
+ * @template T
+ * @param {T} obj - The prototype of the target object.
+ * @param {Object} mixin - The source object.
+ * @returns {T & Object} The merged prototype.
+ */
+exports.mixin = function(obj, mixin) {
+    for (var key in mixin) {
+        obj[key] = mixin[key];
+    }
+    return obj;
+};
+
+/**
+ * Implements mixin properties into the prototype of an object.
+ * @template T
+ * @param {T} proto - The prototype of the target object.
+ * @param {Object} mixin - The source object.
+ * @returns {T & Object} The merged prototype.
+ */
+exports.implement = function(proto, mixin) {
+    exports.mixin(proto, mixin);
+};
+});
+
+define("ace/lib/event_emitter", [], function(require, exports, module) {
+"use strict";
+/**@type {any}*/
+var EventEmitter = {};
+var stopPropagation = function() { this.propagationStopped = true; };
+var preventDefault = function() { this.defaultPrevented = true; };
+
+EventEmitter._emit =
+EventEmitter._dispatchEvent = function(eventName, e) {
+    this._eventRegistry || (this._eventRegistry = {});
+    this._defaultHandlers || (this._defaultHandlers = {});
+
+    var listeners = this._eventRegistry[eventName] || [];
+    var defaultHandler = this._defaultHandlers[eventName];
+    if (!listeners.length && !defaultHandler)
+        return;
+
+    if (typeof e != "object" || !e)
+        e = {};
+
+    if (!e.type)
+        e.type = eventName;
+    if (!e.stopPropagation)
+        e.stopPropagation = stopPropagation;
+    if (!e.preventDefault)
+        e.preventDefault = preventDefault;
+
+    listeners = listeners.slice();
+    for (var i=0; i<listeners.length; i++) {
+        listeners[i](e, this);
+        if (e.propagationStopped)
+            break;
+    }
+    
+    if (defaultHandler && !e.defaultPrevented)
+        return defaultHandler(e, this);
+};
+
+
+EventEmitter._signal = function(eventName, e) {
+    var listeners = (this._eventRegistry || {})[eventName];
+    if (!listeners)
+        return;
+    listeners = listeners.slice();
+    for (var i=0; i<listeners.length; i++)
+        listeners[i](e, this);
+};
+
+EventEmitter.once = function(eventName, callback) {
+    var _self = this;
+    this.on(eventName, function newCallback() {
+        _self.off(eventName, newCallback);
+        callback.apply(null, arguments);
+    });
+    if (!callback) {
+        /*global Promise*/
+        return new Promise(function(resolve) {
+            callback = resolve;
+        });
+    }
+};
+
+
+EventEmitter.setDefaultHandler = function(eventName, callback) {
+    /**@type {any}*/
+    var handlers = this._defaultHandlers;
+    if (!handlers)
+        handlers = this._defaultHandlers = {_disabled_: {}};
+    
+    if (handlers[eventName]) {
+        var old = handlers[eventName];
+        var disabled = handlers._disabled_[eventName];
+        if (!disabled)
+            handlers._disabled_[eventName] = disabled = [];
+        disabled.push(old);
+        var i = disabled.indexOf(callback);
+        if (i != -1) 
+            disabled.splice(i, 1);
+    }
+    handlers[eventName] = callback;
+};
+EventEmitter.removeDefaultHandler = function(eventName, callback) {
+    var handlers = this._defaultHandlers;
+    if (!handlers)
+        return;
+    var disabled = handlers._disabled_[eventName];
+    
+    if (handlers[eventName] == callback) {
+        if (disabled)
+            this.setDefaultHandler(eventName, disabled.pop());
+    } else if (disabled) {
+        var i = disabled.indexOf(callback);
+        if (i != -1)
+            disabled.splice(i, 1);
+    }
+};
+
+EventEmitter.on =
+EventEmitter.addEventListener = function(eventName, callback, capturing) {
+    this._eventRegistry = this._eventRegistry || {};
+
+    var listeners = this._eventRegistry[eventName];
+    if (!listeners)
+        listeners = this._eventRegistry[eventName] = [];
+
+    if (listeners.indexOf(callback) == -1)
+        listeners[capturing ? "unshift" : "push"](callback);
+    return callback;
+};
+
+EventEmitter.off =
+EventEmitter.removeListener =
+EventEmitter.removeEventListener = function(eventName, callback) {
+    this._eventRegistry = this._eventRegistry || {};
+
+    var listeners = this._eventRegistry[eventName];
+    if (!listeners)
+        return;
+
+    var index = listeners.indexOf(callback);
+    if (index !== -1)
+        listeners.splice(index, 1);
+};
+/**
+ * @this {EventEmitter}
+ */
+EventEmitter.removeAllListeners = function(eventName) {
+    if (!eventName) this._eventRegistry = this._defaultHandlers = undefined;
+    if (this._eventRegistry) this._eventRegistry[eventName] = undefined;
+    if (this._defaultHandlers) this._defaultHandlers[eventName] = undefined;
+};
+
+exports.EventEmitter = EventEmitter;
+});
+
+define("ace/mode/css_worker", [], function(require, exports, module) {
+"use strict";
+var define = undefined;
+var aceLegacyWorkerModule;
+var aceLegacyWorkerModule = (() => {
+  var __create = Object.create;
+  var __defProp = Object.defineProperty;
+  var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+  var __getOwnPropNames = Object.getOwnPropertyNames;
+  var __getProtoOf = Object.getPrototypeOf;
+  var __hasOwnProp = Object.prototype.hasOwnProperty;
+  var __commonJS = (cb, mod) => function __require() {
+    return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
+  };
+  var __export = (target, all) => {
+    for (var name in all)
+      __defProp(target, name, { get: all[name], enumerable: true });
+  };
+  var __copyProps = (to, from, except, desc) => {
+    if (from && typeof from === "object" || typeof from === "function") {
+      for (let key of __getOwnPropNames(from))
+        if (!__hasOwnProp.call(to, key) && key !== except)
+          __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+    }
+    return to;
+  };
+  var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+    // If the importer is in node compatibility mode or this is not an ESM
+    // file that has been converted to a CommonJS file using a Babel-
+    // compatible transform (i.e. "__esModule" has not been set), then set
+    // "default" to the CommonJS "module.exports" for node compatibility.
+    isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+    mod
+  ));
+  var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+  var __async = (__this, __arguments, generator) => {
+    return new Promise((resolve, reject) => {
+      var fulfilled = (value) => {
+        try {
+          step(generator.next(value));
+        } catch (e) {
+          reject(e);
+        }
+      };
+      var rejected = (value) => {
+        try {
+          step(generator.throw(value));
+        } catch (e) {
+          reject(e);
+        }
+      };
+      var step = (x) => x.done ? resolve(x.value) : Promise.resolve(x.value).then(fulfilled, rejected);
+      step((generator = generator.apply(__this, __arguments)).next());
+    });
+  };
+
+  // ../../node_modules/ace-code/src/lib/deep_copy.js
+  var require_deep_copy = __commonJS({
+    "../../node_modules/ace-code/src/lib/deep_copy.js"(exports) {
+      exports.deepCopy = function deepCopy(obj) {
+        if (typeof obj !== "object" || !obj)
+          return obj;
+        var copy;
+        if (Array.isArray(obj)) {
+          copy = [];
+          for (let key = 0; key < obj.length; key++) {
+            copy[key] = deepCopy(obj[key]);
+          }
+          return copy;
+        }
+        if (Object.prototype.toString.call(obj) !== "[object Object]")
+          return obj;
+        copy = {};
+        for (let key in obj)
+          copy[key] = deepCopy(obj[key]);
+        return copy;
+      };
+    }
+  });
+
+  // ../../node_modules/ace-code/src/lib/lang.js
+  var require_lang = __commonJS({
+    "../../node_modules/ace-code/src/lib/lang.js"(exports) {
+      "use strict";
+      exports.last = function(a) {
+        return a[a.length - 1];
+      };
+      exports.stringReverse = function(string) {
+        return string.split("").reverse().join("");
+      };
+      exports.stringRepeat = function(string, count) {
+        var result = "";
+        while (count > 0) {
+          if (count & 1)
+            result += string;
+          if (count >>= 1)
+            string += string;
+        }
+        return result;
+      };
+      var trimBeginRegexp = /^\s\s*/;
+      var trimEndRegexp = /\s\s*$/;
+      exports.stringTrimLeft = function(string) {
+        return string.replace(trimBeginRegexp, "");
+      };
+      exports.stringTrimRight = function(string) {
+        return string.replace(trimEndRegexp, "");
+      };
+      exports.copyObject = function(obj) {
+        var copy = {};
+        for (var key in obj) {
+          copy[key] = obj[key];
+        }
+        return copy;
+      };
+      exports.copyArray = function(array) {
+        var copy = [];
+        for (var i = 0, l = array.length; i < l; i++) {
+          if (array[i] && typeof array[i] == "object")
+            copy[i] = this.copyObject(array[i]);
+          else
+            copy[i] = array[i];
+        }
+        return copy;
+      };
+      exports.deepCopy = require_deep_copy().deepCopy;
+      exports.arrayToMap = function(arr) {
+        var map = {};
+        for (var i = 0; i < arr.length; i++) {
+          map[arr[i]] = 1;
+        }
+        return map;
+      };
+      exports.createMap = function(props) {
+        var map = /* @__PURE__ */ Object.create(null);
+        for (var i in props) {
+          map[i] = props[i];
+        }
+        return map;
+      };
+      exports.arrayRemove = function(array, value) {
+        for (var i = 0; i <= array.length; i++) {
+          if (value === array[i]) {
+            array.splice(i, 1);
+          }
+        }
+      };
+      exports.escapeRegExp = function(str) {
+        return str.replace(/([.*+?^${}()|[\]\/\\])/g, "\\$1");
+      };
+      exports.escapeHTML = function(str) {
+        return ("" + str).replace(/&/g, "&#38;").replace(/"/g, "&#34;").replace(/'/g, "&#39;").replace(/</g, "&#60;");
+      };
+      exports.getMatchOffsets = function(string, regExp) {
+        var matches2 = [];
+        string.replace(regExp, function(str) {
+          matches2.push({
+            offset: arguments[arguments.length - 2],
+            length: str.length
+          });
+        });
+        return matches2;
+      };
+      exports.deferredCall = function(fcn) {
+        var timer = null;
+        var callback = function() {
+          timer = null;
+          fcn();
+        };
+        var deferred = function(timeout) {
+          deferred.cancel();
+          timer = setTimeout(callback, timeout || 0);
+          return deferred;
+        };
+        deferred.schedule = deferred;
+        deferred.call = function() {
+          this.cancel();
+          fcn();
+          return deferred;
+        };
+        deferred.cancel = function() {
+          clearTimeout(timer);
+          timer = null;
+          return deferred;
+        };
+        deferred.isPending = function() {
+          return timer;
+        };
+        return deferred;
+      };
+      exports.delayedCall = function(fcn, defaultTimeout) {
+        var timer = null;
+        var callback = function() {
+          timer = null;
+          fcn();
+        };
+        var _self = function(timeout) {
+          if (timer == null)
+            timer = setTimeout(callback, timeout || defaultTimeout);
+        };
+        _self.delay = function(timeout) {
+          timer && clearTimeout(timer);
+          timer = setTimeout(callback, timeout || defaultTimeout);
+        };
+        _self.schedule = _self;
+        _self.call = function() {
+          this.cancel();
+          fcn();
+        };
+        _self.cancel = function() {
+          timer && clearTimeout(timer);
+          timer = null;
+        };
+        _self.isPending = function() {
+          return timer;
+        };
+        return _self;
+      };
+      exports.supportsLookbehind = function() {
+        try {
+          new RegExp("(?<=.)");
+        } catch (e) {
+          return false;
+        }
+        return true;
+      };
+      exports.skipEmptyMatch = function(line, last, supportsUnicodeFlag) {
+        return supportsUnicodeFlag && line.codePointAt(last) > 65535 ? 2 : 1;
+      };
+    }
+  });
+
+  // ../../node_modules/ace-code/src/lib/oop.js
+  var require_oop = __commonJS({
+    "../../node_modules/ace-code/src/lib/oop.js"(exports) {
+      "use strict";
+      exports.inherits = function(ctor, superCtor) {
+        ctor.super_ = superCtor;
+        ctor.prototype = Object.create(superCtor.prototype, {
+          constructor: {
+            value: ctor,
+            enumerable: false,
+            writable: true,
+            configurable: true
+          }
+        });
+      };
+      exports.mixin = function(obj, mixin) {
+        for (var key in mixin) {
+          obj[key] = mixin[key];
+        }
+        return obj;
+      };
+      exports.implement = function(proto, mixin) {
+        exports.mixin(proto, mixin);
+      };
+    }
+  });
+
+  // ../../node_modules/ace-code/src/apply_delta.js
+  var require_apply_delta = __commonJS({
+    "../../node_modules/ace-code/src/apply_delta.js"(exports) {
+      "use strict";
+      exports.applyDelta = function(docLines, delta, doNotValidate) {
+        var row = delta.start.row;
+        var startColumn = delta.start.column;
+        var line = docLines[row] || "";
+        switch (delta.action) {
+          case "insert":
+            var lines = delta.lines;
+            if (lines.length === 1) {
+              docLines[row] = line.substring(0, startColumn) + delta.lines[0] + line.substring(startColumn);
+            } else {
+              var args = [row, 1].concat(delta.lines);
+              docLines.splice.apply(docLines, args);
+              docLines[row] = line.substring(0, startColumn) + docLines[row];
+              docLines[row + delta.lines.length - 1] += line.substring(startColumn);
+            }
+            break;
+          case "remove":
+            var endColumn = delta.end.column;
+            var endRow = delta.end.row;
+            if (row === endRow) {
+              docLines[row] = line.substring(0, startColumn) + line.substring(endColumn);
+            } else {
+              docLines.splice(
+                row,
+                endRow - row + 1,
+                line.substring(0, startColumn) + docLines[endRow].substring(endColumn)
+              );
+            }
+            break;
+        }
+      };
+    }
+  });
+
+  // ../../node_modules/ace-code/src/lib/event_emitter.js
+  var require_event_emitter = __commonJS({
+    "../../node_modules/ace-code/src/lib/event_emitter.js"(exports) {
+      "use strict";
+      var EventEmitter2 = {};
+      var stopPropagation = function() {
+        this.propagationStopped = true;
+      };
+      var preventDefault = function() {
+        this.defaultPrevented = true;
+      };
+      EventEmitter2._emit = EventEmitter2._dispatchEvent = function(eventName, e) {
+        this._eventRegistry || (this._eventRegistry = {});
+        this._defaultHandlers || (this._defaultHandlers = {});
+        var listeners = this._eventRegistry[eventName] || [];
+        var defaultHandler = this._defaultHandlers[eventName];
+        if (!listeners.length && !defaultHandler)
+          return;
+        if (typeof e != "object" || !e)
+          e = {};
+        if (!e.type)
+          e.type = eventName;
+        if (!e.stopPropagation)
+          e.stopPropagation = stopPropagation;
+        if (!e.preventDefault)
+          e.preventDefault = preventDefault;
+        listeners = listeners.slice();
+        for (var i = 0; i < listeners.length; i++) {
+          listeners[i](e, this);
+          if (e.propagationStopped)
+            break;
+        }
+        if (defaultHandler && !e.defaultPrevented)
+          return defaultHandler(e, this);
+      };
+      EventEmitter2._signal = function(eventName, e) {
+        var listeners = (this._eventRegistry || {})[eventName];
+        if (!listeners)
+          return;
+        listeners = listeners.slice();
+        for (var i = 0; i < listeners.length; i++)
+          listeners[i](e, this);
+      };
+      EventEmitter2.once = function(eventName, callback) {
+        var _self = this;
+        this.on(eventName, function newCallback() {
+          _self.off(eventName, newCallback);
+          callback.apply(null, arguments);
+        });
+        if (!callback) {
+          return new Promise(function(resolve) {
+            callback = resolve;
+          });
+        }
+      };
+      EventEmitter2.setDefaultHandler = function(eventName, callback) {
+        var handlers = this._defaultHandlers;
+        if (!handlers)
+          handlers = this._defaultHandlers = { _disabled_: {} };
+        if (handlers[eventName]) {
+          var old = handlers[eventName];
+          var disabled = handlers._disabled_[eventName];
+          if (!disabled)
+            handlers._disabled_[eventName] = disabled = [];
+          disabled.push(old);
+          var i = disabled.indexOf(callback);
+          if (i != -1)
+            disabled.splice(i, 1);
+        }
+        handlers[eventName] = callback;
+      };
+      EventEmitter2.removeDefaultHandler = function(eventName, callback) {
+        var handlers = this._defaultHandlers;
+        if (!handlers)
+          return;
+        var disabled = handlers._disabled_[eventName];
+        if (handlers[eventName] == callback) {
+          if (disabled)
+            this.setDefaultHandler(eventName, disabled.pop());
+        } else if (disabled) {
+          var i = disabled.indexOf(callback);
+          if (i != -1)
+            disabled.splice(i, 1);
+        }
+      };
+      EventEmitter2.on = EventEmitter2.addEventListener = function(eventName, callback, capturing) {
+        this._eventRegistry = this._eventRegistry || {};
+        var listeners = this._eventRegistry[eventName];
+        if (!listeners)
+          listeners = this._eventRegistry[eventName] = [];
+        if (listeners.indexOf(callback) == -1)
+          listeners[capturing ? "unshift" : "push"](callback);
+        return callback;
+      };
+      EventEmitter2.off = EventEmitter2.removeListener = EventEmitter2.removeEventListener = function(eventName, callback) {
+        this._eventRegistry = this._eventRegistry || {};
+        var listeners = this._eventRegistry[eventName];
+        if (!listeners)
+          return;
+        var index = listeners.indexOf(callback);
+        if (index !== -1)
+          listeners.splice(index, 1);
+      };
+      EventEmitter2.removeAllListeners = function(eventName) {
+        if (!eventName) this._eventRegistry = this._defaultHandlers = void 0;
+        if (this._eventRegistry) this._eventRegistry[eventName] = void 0;
+        if (this._defaultHandlers) this._defaultHandlers[eventName] = void 0;
+      };
+      exports.EventEmitter = EventEmitter2;
+    }
+  });
+
+  // ../../node_modules/ace-code/src/range.js
+  var require_range = __commonJS({
+    "../../node_modules/ace-code/src/range.js"(exports) {
+      "use strict";
+      var Range3 = class _Range {
+        /**
+         * Creates a new `Range` object with the given starting and ending rows and columns.
+         * @param {Number} [startRow] The starting row
+         * @param {Number} [startColumn] The starting column
+         * @param {Number} [endRow] The ending row
+         * @param {Number} [endColumn] The ending column
+         * @constructor
+         **/
+        constructor(startRow, startColumn, endRow, endColumn) {
+          this.start = {
+            row: startRow,
+            column: startColumn
+          };
+          this.end = {
+            row: endRow,
+            column: endColumn
+          };
+        }
+        /**
+         * Returns `true` if and only if the starting row and column, and ending row and column, are equivalent to those given by `range`.
+         * @param {IRange} range A range to check against
+         * @return {Boolean}
+         **/
+        isEqual(range) {
+          return this.start.row === range.start.row && this.end.row === range.end.row && this.start.column === range.start.column && this.end.column === range.end.column;
+        }
+        /**
+         * Returns a string containing the range's row and column information, given like this:
+         * ```
+         *    [start.row/start.column] -> [end.row/end.column]
+         * ```
+         * @return {String}
+         **/
+        toString() {
+          return "Range: [" + this.start.row + "/" + this.start.column + "] -> [" + this.end.row + "/" + this.end.column + "]";
+        }
+        /**
+         * Returns `true` if the `row` and `column` provided are within the given range. This can better be expressed as returning `true` if:
+         * ```javascript
+         *    this.start.row <= row <= this.end.row &&
+         *    this.start.column <= column <= this.end.column
+         * ```
+         * @param {Number} row A row to check for
+         * @param {Number} column A column to check for
+         * @returns {Boolean}
+         * @related [[Range.compare]]
+         **/
+        contains(row, column) {
+          return this.compare(row, column) == 0;
+        }
+        /**
+         * Compares `this` range (A) with another range (B).
+         * @param {IRange} range A range to compare with
+         * @related [[Range.compare]]
+         * @returns {Number} This method returns one of the following numbers:
+         * * `-2`: (B) is in front of (A), and doesn't intersect with (A)
+         * * `-1`: (B) begins before (A) but ends inside of (A)
+         * * `0`: (B) is completely inside of (A)
+         * * `+1`: (B) begins inside of (A) but ends outside of (A)
+         * * `+2`: (B) is after (A) and doesn't intersect with (A)
+         * * `42`: FTW state: (B) ends in (A) but starts outside of (A)
+         **/
+        compareRange(range) {
+          var cmp, end = range.end, start = range.start;
+          cmp = this.compare(end.row, end.column);
+          if (cmp == 1) {
+            cmp = this.compare(start.row, start.column);
+            if (cmp == 1) {
+              return 2;
+            } else if (cmp == 0) {
+              return 1;
+            } else {
+              return 0;
+            }
+          } else if (cmp == -1) {
+            return -2;
+          } else {
+            cmp = this.compare(start.row, start.column);
+            if (cmp == -1) {
+              return -1;
+            } else if (cmp == 1) {
+              return 42;
+            } else {
+              return 0;
+            }
+          }
+        }
+        /**
+         * Compares the row and column of `p` with the starting and ending [[Point]]'s of the calling range (by calling [[Range.compare]]).
+         * @param {Point} p A point to compare with
+         * @related [[Range.compare]]
+         * @returns {Number}
+         **/
+        comparePoint(p) {
+          return this.compare(p.row, p.column);
+        }
+        /**
+         * Checks the start and end [[Point]]'s of `range` and compares them to the calling range. Returns `true` if the `range` is contained within the caller's range.
+         * @param {IRange} range A range to compare with
+         * @returns {Boolean}
+         * @related [[Range.comparePoint]]
+         **/
+        containsRange(range) {
+          return this.comparePoint(range.start) == 0 && this.comparePoint(range.end) == 0;
+        }
+        /**
+         * Returns `true` if passed in `range` intersects with the one calling this method.
+         * @param {IRange} range A range to compare with
+         * @returns {Boolean}
+         **/
+        intersects(range) {
+          var cmp = this.compareRange(range);
+          return cmp == -1 || cmp == 0 || cmp == 1;
+        }
+        /**
+         * Returns `true` if the caller's ending row is the same as `row`, and if the caller's ending column is the same as `column`.
+         * @param {Number} row A row to compare with
+         * @param {Number} column A column to compare with
+         * @returns {Boolean}
+         **/
+        isEnd(row, column) {
+          return this.end.row == row && this.end.column == column;
+        }
+        /**
+         * Returns `true` if the caller's starting row is the same as `row`, and if the caller's starting column is the same as `column`.
+         * @param {Number} row A row to compare with
+         * @param {Number} column A column to compare with
+         * @returns {Boolean}
+         **/
+        isStart(row, column) {
+          return this.start.row == row && this.start.column == column;
+        }
+        /**
+         * Sets the starting row and column for the range.
+         * @param {Number|Point} row A row to set
+         * @param {Number} [column] A column to set
+         *
+         **/
+        setStart(row, column) {
+          if (typeof row == "object") {
+            this.start.column = row.column;
+            this.start.row = row.row;
+          } else {
+            this.start.row = row;
+            this.start.column = column;
+          }
+        }
+        /**
+         * Sets the starting row and column for the range.
+         * @param {Number|Point} row A row to set
+         * @param {Number} [column] A column to set
+         *
+         **/
+        setEnd(row, column) {
+          if (typeof row == "object") {
+            this.end.column = row.column;
+            this.end.row = row.row;
+          } else {
+            this.end.row = row;
+            this.end.column = column;
+          }
+        }
+        /**
+         * Returns `true` if the `row` and `column` are within the given range.
+         * @param {Number} row A row to compare with
+         * @param {Number} column A column to compare with
+         * @returns {Boolean}
+         * @related [[Range.compare]]
+         **/
+        inside(row, column) {
+          if (this.compare(row, column) == 0) {
+            if (this.isEnd(row, column) || this.isStart(row, column)) {
+              return false;
+            } else {
+              return true;
+            }
+          }
+          return false;
+        }
+        /**
+         * Returns `true` if the `row` and `column` are within the given range's starting [[Point]].
+         * @param {Number} row A row to compare with
+         * @param {Number} column A column to compare with
+         * @returns {Boolean}
+         * @related [[Range.compare]]
+         **/
+        insideStart(row, column) {
+          if (this.compare(row, column) == 0) {
+            if (this.isEnd(row, column)) {
+              return false;
+            } else {
+              return true;
+            }
+          }
+          return false;
+        }
+        /**
+         * Returns `true` if the `row` and `column` are within the given range's ending [[Point]].
+         * @param {Number} row A row to compare with
+         * @param {Number} column A column to compare with
+         * @returns {Boolean}
+         * @related [[Range.compare]]
+         *
+         **/
+        insideEnd(row, column) {
+          if (this.compare(row, column) == 0) {
+            if (this.isStart(row, column)) {
+              return false;
+            } else {
+              return true;
+            }
+          }
+          return false;
+        }
+        /**
+         * Compares the `row` and `column` with the starting and ending [[Point]]'s of the calling range.
+         * @param {Number} row A row to compare with
+         * @param {Number} column A column to compare with
+         * @returns {Number} This method returns one of the following numbers:
+         * * `1` if `row` is greater than the calling range
+         * * `-1` if `row` is less then the calling range
+         * * `0` otherwise
+         *
+         * If the starting row of the calling range is equal to `row`, and:
+         * * `column` is greater than or equal to the calling range's starting column, this returns `0`
+         * * Otherwise, it returns -1
+         *
+         * If the ending row of the calling range is equal to `row`, and:
+         * * `column` is less than or equal to the calling range's ending column, this returns `0`
+         * * Otherwise, it returns 1
+         **/
+        compare(row, column) {
+          if (!this.isMultiLine()) {
+            if (row === this.start.row) {
+              return column < this.start.column ? -1 : column > this.end.column ? 1 : 0;
+            }
+          }
+          if (row < this.start.row)
+            return -1;
+          if (row > this.end.row)
+            return 1;
+          if (this.start.row === row)
+            return column >= this.start.column ? 0 : -1;
+          if (this.end.row === row)
+            return column <= this.end.column ? 0 : 1;
+          return 0;
+        }
+        /**
+         * Compares the `row` and `column` with the starting and ending [[Point]]'s of the calling range.
+         * @param {Number} row A row to compare with
+         * @param {Number} column A column to compare with
+         * @returns {Number} This method returns one of the following numbers:
+         * * `-1` if calling range's starting column and calling range's starting row are equal `row` and `column`
+         * * Otherwise, it returns the value after calling [[Range.compare `compare()`]].
+         **/
+        compareStart(row, column) {
+          if (this.start.row == row && this.start.column == column) {
+            return -1;
+          } else {
+            return this.compare(row, column);
+          }
+        }
+        /**
+         * Compares the `row` and `column` with the starting and ending [[Point]]'s of the calling range.
+         * @param {Number} row A row to compare with
+         * @param {Number} column A column to compare with
+         * @returns {Number} This method returns one of the following numbers:
+         * * `1` if calling range's ending column and calling range's ending row are equal `row` and `column`.
+         * * Otherwise, it returns the value after calling [[Range.compare `compare()`]].
+         */
+        compareEnd(row, column) {
+          if (this.end.row == row && this.end.column == column) {
+            return 1;
+          } else {
+            return this.compare(row, column);
+          }
+        }
+        /**
+         * Compares the `row` and `column` with the start and end [[Point]]'s of the calling range.
+         * @param {Number} row A row to compare with
+         * @param {Number} column A column to compare with
+         * @returns {Number} This method returns one of the following numbers:
+         * * `1` if the ending row of the calling range is equal to `row`, and the ending column of the calling range is equal to `column`
+         * * `-1` if the starting row of the calling range is equal to `row`, and the starting column of the calling range is equal to `column`
+         * * Otherwise, it returns the value after calling [[Range.compare `compare()`]].
+         **/
+        compareInside(row, column) {
+          if (this.end.row == row && this.end.column == column) {
+            return 1;
+          } else if (this.start.row == row && this.start.column == column) {
+            return -1;
+          } else {
+            return this.compare(row, column);
+          }
+        }
+        /**
+         * Returns the part of the current `Range` that occurs within the boundaries of `firstRow` and `lastRow` as a new `Range` object.
+         * @param {Number} firstRow The starting row
+         * @param {Number} lastRow The ending row
+         * @returns {Range}
+        **/
+        clipRows(firstRow, lastRow) {
+          if (this.end.row > lastRow)
+            var end = { row: lastRow + 1, column: 0 };
+          else if (this.end.row < firstRow)
+            var end = { row: firstRow, column: 0 };
+          if (this.start.row > lastRow)
+            var start = { row: lastRow + 1, column: 0 };
+          else if (this.start.row < firstRow)
+            var start = { row: firstRow, column: 0 };
+          return _Range.fromPoints(start || this.start, end || this.end);
+        }
+        /**
+         * Changes the `row` and `column` for the calling range for both the starting and ending [[Point]]'s.
+         * @param {Number} row A new row to extend to
+         * @param {Number} column A new column to extend to
+         * @returns {Range} The original range with the new row
+        **/
+        extend(row, column) {
+          var cmp = this.compare(row, column);
+          if (cmp == 0)
+            return this;
+          else if (cmp == -1)
+            var start = { row, column };
+          else
+            var end = { row, column };
+          return _Range.fromPoints(start || this.start, end || this.end);
+        }
+        /**
+         * Returns `true` if the calling range is empty (starting [[Point]] == ending [[Point]]).
+         * @returns {Boolean}
+         **/
+        isEmpty() {
+          return this.start.row === this.end.row && this.start.column === this.end.column;
+        }
+        /**
+         * Returns `true` if the range spans across multiple lines.
+         * @returns {Boolean}
+        **/
+        isMultiLine() {
+          return this.start.row !== this.end.row;
+        }
+        /**
+         * Returns a duplicate of the calling range.
+         * @returns {Range}
+        **/
+        clone() {
+          return _Range.fromPoints(this.start, this.end);
+        }
+        /**
+         * Returns a range containing the starting and ending rows of the original range, but with a column value of `0`.
+         * @returns {Range}
+        **/
+        collapseRows() {
+          if (this.end.column == 0)
+            return new _Range(this.start.row, 0, Math.max(this.start.row, this.end.row - 1), 0);
+          else
+            return new _Range(this.start.row, 0, this.end.row, 0);
+        }
+        /**
+         * Given the current `Range`, this function converts those starting and ending [[Point]]'s into screen positions, and then returns a new `Range` object.
+         * @param {EditSession} session The `EditSession` to retrieve coordinates from
+         * @returns {Range}
+        **/
+        toScreenRange(session) {
+          var screenPosStart = session.documentToScreenPosition(this.start);
+          var screenPosEnd = session.documentToScreenPosition(this.end);
+          return new _Range(
+            screenPosStart.row,
+            screenPosStart.column,
+            screenPosEnd.row,
+            screenPosEnd.column
+          );
+        }
+        /**
+         * Shift the calling range by `row` and `column` values.
+         * @param {Number} row
+         * @param {Number} column
+         * @experimental
+         */
+        moveBy(row, column) {
+          this.start.row += row;
+          this.start.column += column;
+          this.end.row += row;
+          this.end.column += column;
+        }
+      };
+      Range3.fromPoints = function(start, end) {
+        return new Range3(start.row, start.column, end.row, end.column);
+      };
+      Range3.comparePoints = function(p1, p2) {
+        return p1.row - p2.row || p1.column - p2.column;
+      };
+      exports.Range = Range3;
+    }
+  });
+
+  // src/workers/css-worker.ts
+  var css_worker_exports = {};
+  __export(css_worker_exports, {
+    CssWorker: () => CssWorker
+  });
+
+  // src/mirror.ts
+  var lang = __toESM(require_lang());
+
+  // src/min-document.ts
+  var oop = require_oop();
+  var applyDelta = require_apply_delta().applyDelta;
+  var EventEmitter = require_event_emitter().EventEmitter;
+  var Range = require_range().Range;
+  var MinDocument = class {
+    constructor(textOrLines) {
+      this.$autoNewLine = "";
+      this.$newLineMode = "auto";
+      this.$lines = [""];
+      if (textOrLines.length === 0) {
+        this.$lines = [""];
+      } else if (Array.isArray(textOrLines)) {
+        this.insertMergedLines({ row: 0, column: 0 }, textOrLines);
+      } else {
+        this.insert({ row: 0, column: 0 }, textOrLines);
+      }
+    }
+    setValue(text) {
+      var len = this.getLength() - 1;
+      this.remove(new Range(0, 0, len, this.getLine(len).length));
+      this.insert({ row: 0, column: 0 }, text || "");
+    }
+    getValue() {
+      return this.getAllLines().join(this.getNewLineCharacter());
+    }
+    $detectNewLine(text) {
+      var match = text.match(/^.*?(\r\n|\r|\n)/m);
+      this.$autoNewLine = match ? match[1] : "\n";
+      this._signal("changeNewLineMode");
+    }
+    getNewLineCharacter() {
+      switch (this.$newLineMode) {
+        case "windows":
+          return "\r\n";
+        case "unix":
+          return "\n";
+        default:
+          return this.$autoNewLine || "\n";
+      }
+    }
+    setNewLineMode(newLineMode) {
+      if (this.$newLineMode === newLineMode)
+        return;
+      this.$newLineMode = newLineMode;
+      this._signal("changeNewLineMode");
+    }
+    getNewLineMode() {
+      return this.$newLineMode;
+    }
+    isNewLine(text) {
+      return text == "\r\n" || text == "\r" || text == "\n";
+    }
+    getLine(row) {
+      return this.$lines[row] || "";
+    }
+    getLines(firstRow, lastRow) {
+      return this.$lines.slice(firstRow, lastRow + 1);
+    }
+    getAllLines() {
+      return this.getLines(0, this.getLength());
+    }
+    getLength() {
+      return this.$lines.length;
+    }
+    getTextRange(range) {
+      return this.getLinesForRange(range).join(this.getNewLineCharacter());
+    }
+    getLinesForRange(range) {
+      var lines;
+      if (range.start.row === range.end.row) {
+        lines = [this.getLine(range.start.row).substring(range.start.column, range.end.column)];
+      } else {
+        lines = this.getLines(range.start.row, range.end.row);
+        lines[0] = (lines[0] || "").substring(range.start.column);
+        var l = lines.length - 1;
+        if (range.end.row - range.start.row == l)
+          lines[l] = lines[l].substring(0, range.end.column);
+      }
+      return lines;
+    }
+    insert(position, text) {
+      if (this.getLength() <= 1)
+        this.$detectNewLine(text);
+      return this.insertMergedLines(position, this.$split(text));
+    }
+    insertInLine(position, text) {
+      var start = this.clippedPos(position.row, position.column);
+      var end = this.pos(position.row, position.column + text.length);
+      this.applyDelta({
+        start,
+        end,
+        action: "insert",
+        lines: [text]
+      }, true);
+      return this.clonePos(end);
+    }
+    clippedPos(row, column) {
+      var length = this.getLength();
+      if (row === void 0) {
+        row = length;
+      } else if (row < 0) {
+        row = 0;
+      } else if (row >= length) {
+        row = length - 1;
+        column = void 0;
+      }
+      var line = this.getLine(row);
+      if (column == void 0)
+        column = line.length;
+      column = Math.min(Math.max(column, 0), line.length);
+      return { row, column };
+    }
+    clonePos(pos) {
+      return { row: pos.row, column: pos.column };
+    }
+    pos(row, column) {
+      return { row, column };
+    }
+    $clipPosition(position) {
+      var length = this.getLength();
+      if (position.row >= length) {
+        position.row = Math.max(0, length - 1);
+        position.column = this.getLine(length - 1).length;
+      } else {
+        position.row = Math.max(0, position.row);
+        position.column = Math.min(Math.max(position.column, 0), this.getLine(position.row).length);
+      }
+      return position;
+    }
+    insertFullLines(row, lines) {
+      row = Math.min(Math.max(row, 0), this.getLength());
+      var column = 0;
+      if (row < this.getLength()) {
+        lines = lines.concat([""]);
+        column = 0;
+      } else {
+        lines = [""].concat(lines);
+        row--;
+        column = this.$lines[row].length;
+      }
+      this.insertMergedLines({ row, column }, lines);
+    }
+    insertMergedLines(position, lines) {
+      var start = this.clippedPos(position.row, position.column);
+      var end = {
+        row: start.row + lines.length - 1,
+        column: (lines.length == 1 ? start.column : 0) + lines[lines.length - 1].length
+      };
+      this.applyDelta({
+        start,
+        end,
+        action: "insert",
+        lines
+      });
+      return this.clonePos(end);
+    }
+    remove(range) {
+      var start = this.clippedPos(range.start.row, range.start.column);
+      var end = this.clippedPos(range.end.row, range.end.column);
+      this.applyDelta({
+        start,
+        end,
+        action: "remove",
+        lines: this.getLinesForRange({ start, end })
+      });
+      return this.clonePos(start);
+    }
+    removeInLine(row, startColumn, endColumn) {
+      var start = this.clippedPos(row, startColumn);
+      var end = this.clippedPos(row, endColumn);
+      this.applyDelta({
+        start,
+        end,
+        action: "remove",
+        lines: this.getLinesForRange({ start, end })
+      }, true);
+      return this.clonePos(start);
+    }
+    removeFullLines(firstRow, lastRow) {
+      firstRow = Math.min(Math.max(0, firstRow), this.getLength() - 1);
+      lastRow = Math.min(Math.max(0, lastRow), this.getLength() - 1);
+      var deleteFirstNewLine = lastRow == this.getLength() - 1 && firstRow > 0;
+      var deleteLastNewLine = lastRow < this.getLength() - 1;
+      var startRow = deleteFirstNewLine ? firstRow - 1 : firstRow;
+      var startCol = deleteFirstNewLine ? this.getLine(startRow).length : 0;
+      var endRow = deleteLastNewLine ? lastRow + 1 : lastRow;
+      var endCol = deleteLastNewLine ? 0 : this.getLine(endRow).length;
+      var range = new Range(startRow, startCol, endRow, endCol);
+      var deletedLines = this.$lines.slice(firstRow, lastRow + 1);
+      this.applyDelta({
+        start: range.start,
+        end: range.end,
+        action: "remove",
+        lines: this.getLinesForRange(range)
+      });
+      return deletedLines;
+    }
+    removeNewLine(row) {
+      if (row < this.getLength() - 1 && row >= 0) {
+        this.applyDelta({
+          start: this.pos(row, this.getLine(row).length),
+          end: this.pos(row + 1, 0),
+          action: "remove",
+          lines: ["", ""]
+        });
+      }
+    }
+    replace(range, text) {
+      if (!(range instanceof Range))
+        range = Range.fromPoints(range.start, range.end);
+      if (text.length === 0 && range.isEmpty())
+        return range.start;
+      if (text == this.getTextRange(range))
+        return range.end;
+      this.remove(range);
+      var end;
+      if (text) {
+        end = this.insert(range.start, text);
+      } else {
+        end = range.start;
+      }
+      return end;
+    }
+    applyDeltas(deltas) {
+      for (var i = 0; i < deltas.length; i++) {
+        this.applyDelta(deltas[i]);
+      }
+    }
+    revertDeltas(deltas) {
+      for (var i = deltas.length - 1; i >= 0; i--) {
+        this.revertDelta(deltas[i]);
+      }
+    }
+    /**
+     * Applies `delta` to the document.
+     * @param {Delta} delta A delta object (can include "insert" and "remove" actions)
+     * @param {boolean} [doNotValidate]
+     **/
+    applyDelta(delta, doNotValidate) {
+      var isInsert = delta.action == "insert";
+      if (isInsert ? delta.lines.length <= 1 && !delta.lines[0] : !Range.comparePoints(delta.start, delta.end)) {
+        return;
+      }
+      if (isInsert && delta.lines.length > 2e4) {
+        this.$splitAndapplyLargeDelta(delta, 2e4);
+      } else {
+        applyDelta(this.$lines, delta, doNotValidate);
+        this._signal("change", delta);
+      }
+    }
+    /**
+     * @param {Delta} delta
+     */
+    $safeApplyDelta(delta) {
+      var docLength = this.$lines.length;
+      if (delta.action == "remove" && delta.start.row < docLength && delta.end.row < docLength || delta.action == "insert" && delta.start.row <= docLength) {
+        this.applyDelta(delta);
+      }
+    }
+    $splitAndapplyLargeDelta(delta, MAX) {
+      var lines = delta.lines;
+      var l = lines.length - MAX + 1;
+      var row = delta.start.row;
+      var column = delta.start.column;
+      for (var from = 0, to = 0; from < l; from = to) {
+        to += MAX - 1;
+        var chunk = lines.slice(from, to);
+        chunk.push("");
+        this.applyDelta({
+          start: this.pos(row + from, column),
+          end: this.pos(row + to, column = 0),
+          action: delta.action,
+          lines: chunk
+        }, true);
+      }
+      delta.lines = lines.slice(from);
+      delta.start.row = row + from;
+      delta.start.column = column;
+      this.applyDelta(delta, true);
+    }
+    revertDelta(delta) {
+      this.$safeApplyDelta({
+        start: this.clonePos(delta.start),
+        end: this.clonePos(delta.end),
+        action: delta.action == "insert" ? "remove" : "insert",
+        lines: delta.lines.slice()
+      });
+    }
+    indexToPosition(index, startRow) {
+      var lines = this.$lines || this.getAllLines();
+      var newlineLength = this.getNewLineCharacter().length;
+      for (var i = startRow || 0, l = lines.length; i < l; i++) {
+        index -= lines[i].length + newlineLength;
+        if (index < 0)
+          return { row: i, column: index + lines[i].length + newlineLength };
+      }
+      return { row: l - 1, column: index + lines[l - 1].length + newlineLength };
+    }
+    positionToIndex(pos, startRow) {
+      var lines = this.$lines || this.getAllLines();
+      var newlineLength = this.getNewLineCharacter().length;
+      var index = 0;
+      var row = Math.min(pos.row, lines.length);
+      for (var i = startRow || 0; i < row; ++i)
+        index += lines[i].length + newlineLength;
+      return index + pos.column;
+    }
+    $split(text) {
+      return text.split(/\r\n|\r|\n/);
+    }
+  };
+  oop.implement(MinDocument.prototype, EventEmitter);
+
+  // src/mirror.ts
+  var Mirror = class {
+    constructor(sender) {
+      this.$timeout = 500;
+      this.sender = sender;
+      var doc = this.doc = new MinDocument("");
+      var deferredUpdate = this.deferredUpdate = lang.delayedCall(
+        this.onUpdate.bind(this)
+      );
+      var _self = this;
+      sender.on("change", function(e) {
+        var data = e.data;
+        if (data[0].start) {
+          doc.applyDeltas(data);
+        } else {
+          for (var i = 0; i < data.length; i += 2) {
+            var d, err;
+            if (Array.isArray(data[i + 1])) {
+              d = { action: "insert", start: data[i], lines: data[i + 1] };
+            } else {
+              d = { action: "remove", start: data[i], end: data[i + 1] };
+            }
+            if ((d.action == "insert" ? d.start : d.end).row >= doc["$lines"].length) {
+              err = new Error("Invalid delta");
+              err.data = {
+                path: _self.$path,
+                linesLength: doc["$lines"].length,
+                start: d.start,
+                end: d.end
+              };
+              throw err;
+            }
+            doc.applyDelta(d, true);
+          }
+        }
+        if (_self.$timeout) return deferredUpdate.schedule(_self.$timeout);
+        _self.onUpdate();
+      });
+    }
+    setTimeout(timeout) {
+      this.$timeout = timeout;
+    }
+    setValue(value) {
+      this.doc.setValue(value);
+      this.deferredUpdate.schedule(this.$timeout);
+    }
+    getValue(callbackId) {
+      this.sender.callback(this.doc.getValue(), callbackId);
+    }
+    isPending() {
+      return this.deferredUpdate.isPending();
+    }
+  };
+
+  // src/vscode-text-document-min.ts
+  var MinTextDocument = class {
+    constructor(uri, languageId, version, content) {
+      this._uri = uri;
+      this._languageId = languageId;
+      this._version = version;
+      this._content = content;
+      this._lineOffsets = void 0;
+    }
+    get uri() {
+      return this._uri;
+    }
+    get languageId() {
+      return this._languageId;
+    }
+    get version() {
+      return this._version;
+    }
+    getText(range) {
+      if (range) {
+        const start = this.offsetAt(range.start);
+        const end = this.offsetAt(range.end);
+        return this._content.substring(start, end);
+      }
+      return this._content;
+    }
+    getLineOffsets() {
+      if (this._lineOffsets === void 0) {
+        this._lineOffsets = computeLineOffsets(this._content, true);
+      }
+      return this._lineOffsets;
+    }
+    positionAt(offset) {
+      offset = Math.max(Math.min(offset, this._content.length), 0);
+      const lineOffsets = this.getLineOffsets();
+      let low = 0, high = lineOffsets.length;
+      if (high === 0) {
+        return { line: 0, character: offset };
+      }
+      while (low < high) {
+        const mid = Math.floor((low + high) / 2);
+        if (lineOffsets[mid] > offset) {
+          high = mid;
+        } else {
+          low = mid + 1;
+        }
+      }
+      const line = low - 1;
+      offset = this.ensureBeforeEOL(offset, lineOffsets[line]);
+      return { line, character: offset - lineOffsets[line] };
+    }
+    offsetAt(position) {
+      const lineOffsets = this.getLineOffsets();
+      if (position.line >= lineOffsets.length) {
+        return this._content.length;
+      } else if (position.line < 0) {
+        return 0;
+      }
+      const lineOffset = lineOffsets[position.line];
+      if (position.character <= 0) {
+        return lineOffset;
+      }
+      const nextLineOffset = position.line + 1 < lineOffsets.length ? lineOffsets[position.line + 1] : this._content.length;
+      const offset = Math.min(lineOffset + position.character, nextLineOffset);
+      return this.ensureBeforeEOL(offset, lineOffset);
+    }
+    ensureBeforeEOL(offset, lineOffset) {
+      while (offset > lineOffset && isEOL(this._content.charCodeAt(offset - 1))) {
+        offset--;
+      }
+      return offset;
+    }
+    get lineCount() {
+      return this.getLineOffsets().length;
+    }
+  };
+  function computeLineOffsets(text, isAtLineStart, textOffset = 0) {
+    const result = isAtLineStart ? [textOffset] : [];
+    for (let i = 0; i < text.length; i++) {
+      const ch = text.charCodeAt(i);
+      if (isEOL(ch)) {
+        if (ch === 13 /* CarriageReturn */ && i + 1 < text.length && text.charCodeAt(i + 1) === 10 /* LineFeed */) {
+          i++;
+        }
+        result.push(textOffset + i + 1);
+      }
+    }
+    return result;
+  }
+  function isEOL(char) {
+    return char === 13 /* CarriageReturn */ || char === 10 /* LineFeed */;
+  }
+
+  // src/utils.ts
+  function toAnnotations(diagnostics) {
+    return diagnostics == null ? void 0 : diagnostics.map((el) => {
+      const annotation = {
+        row: el.range.start.line,
+        column: el.range.start.character,
+        text: el.message,
+        type: el.severity === 1 ? "error" : el.severity === 2 ? "warning" : "info",
+        code: el.code,
+        data: el.data
+      };
+      return annotation;
+    });
+  }
+
+  // ../../node_modules/vscode-css-languageservice/lib/esm/parser/cssScanner.js
+  var TokenType;
+  (function(TokenType2) {
+    TokenType2[TokenType2["Ident"] = 0] = "Ident";
+    TokenType2[TokenType2["AtKeyword"] = 1] = "AtKeyword";
+    TokenType2[TokenType2["String"] = 2] = "String";
+    TokenType2[TokenType2["BadString"] = 3] = "BadString";
+    TokenType2[TokenType2["UnquotedString"] = 4] = "UnquotedString";
+    TokenType2[TokenType2["Hash"] = 5] = "Hash";
+    TokenType2[TokenType2["Num"] = 6] = "Num";
+    TokenType2[TokenType2["Percentage"] = 7] = "Percentage";
+    TokenType2[TokenType2["Dimension"] = 8] = "Dimension";
+    TokenType2[TokenType2["UnicodeRange"] = 9] = "UnicodeRange";
+    TokenType2[TokenType2["CDO"] = 10] = "CDO";
+    TokenType2[TokenType2["CDC"] = 11] = "CDC";
+    TokenType2[TokenType2["Colon"] = 12] = "Colon";
+    TokenType2[TokenType2["SemiColon"] = 13] = "SemiColon";
+    TokenType2[TokenType2["CurlyL"] = 14] = "CurlyL";
+    TokenType2[TokenType2["CurlyR"] = 15] = "CurlyR";
+    TokenType2[TokenType2["ParenthesisL"] = 16] = "ParenthesisL";
+    TokenType2[TokenType2["ParenthesisR"] = 17] = "ParenthesisR";
+    TokenType2[TokenType2["BracketL"] = 18] = "BracketL";
+    TokenType2[TokenType2["BracketR"] = 19] = "BracketR";
+    TokenType2[TokenType2["Whitespace"] = 20] = "Whitespace";
+    TokenType2[TokenType2["Includes"] = 21] = "Includes";
+    TokenType2[TokenType2["Dashmatch"] = 22] = "Dashmatch";
+    TokenType2[TokenType2["SubstringOperator"] = 23] = "SubstringOperator";
+    TokenType2[TokenType2["PrefixOperator"] = 24] = "PrefixOperator";
+    TokenType2[TokenType2["SuffixOperator"] = 25] = "SuffixOperator";
+    TokenType2[TokenType2["Delim"] = 26] = "Delim";
+    TokenType2[TokenType2["EMS"] = 27] = "EMS";
+    TokenType2[TokenType2["EXS"] = 28] = "EXS";
+    TokenType2[TokenType2["Length"] = 29] = "Length";
+    TokenType2[TokenType2["Angle"] = 30] = "Angle";
+    TokenType2[TokenType2["Time"] = 31] = "Time";
+    TokenType2[TokenType2["Freq"] = 32] = "Freq";
+    TokenType2[TokenType2["Exclamation"] = 33] = "Exclamation";
+    TokenType2[TokenType2["Resolution"] = 34] = "Resolution";
+    TokenType2[TokenType2["Comma"] = 35] = "Comma";
+    TokenType2[TokenType2["Charset"] = 36] = "Charset";
+    TokenType2[TokenType2["EscapedJavaScript"] = 37] = "EscapedJavaScript";
+    TokenType2[TokenType2["BadEscapedJavaScript"] = 38] = "BadEscapedJavaScript";
+    TokenType2[TokenType2["Comment"] = 39] = "Comment";
+    TokenType2[TokenType2["SingleLineComment"] = 40] = "SingleLineComment";
+    TokenType2[TokenType2["EOF"] = 41] = "EOF";
+    TokenType2[TokenType2["ContainerQueryLength"] = 42] = "ContainerQueryLength";
+    TokenType2[TokenType2["CustomToken"] = 43] = "CustomToken";
+  })(TokenType || (TokenType = {}));
+  var MultiLineStream = class {
+    constructor(source) {
+      this.source = source;
+      this.len = source.length;
+      this.position = 0;
+    }
+    substring(from, to = this.position) {
+      return this.source.substring(from, to);
+    }
+    eos() {
+      return this.len <= this.position;
+    }
+    pos() {
+      return this.position;
+    }
+    goBackTo(pos) {
+      this.position = pos;
+    }
+    goBack(n) {
+      this.position -= n;
+    }
+    advance(n) {
+      this.position += n;
+    }
+    nextChar() {
+      return this.source.charCodeAt(this.position++) || 0;
+    }
+    peekChar(n = 0) {
+      return this.source.charCodeAt(this.position + n) || 0;
+    }
+    lookbackChar(n = 0) {
+      return this.source.charCodeAt(this.position - n) || 0;
+    }
+    advanceIfChar(ch) {
+      if (ch === this.source.charCodeAt(this.position)) {
+        this.position++;
+        return true;
+      }
+      return false;
+    }
+    advanceIfChars(ch) {
+      if (this.position + ch.length > this.source.length) {
+        return false;
+      }
+      let i = 0;
+      for (; i < ch.length; i++) {
+        if (this.source.charCodeAt(this.position + i) !== ch[i]) {
+          return false;
+        }
+      }
+      this.advance(i);
+      return true;
+    }
+    advanceWhileChar(condition) {
+      const posNow = this.position;
+      while (this.position < this.len && condition(this.source.charCodeAt(this.position))) {
+        this.position++;
+      }
+      return this.position - posNow;
+    }
+  };
+  var _a = "a".charCodeAt(0);
+  var _f = "f".charCodeAt(0);
+  var _z = "z".charCodeAt(0);
+  var _u = "u".charCodeAt(0);
+  var _A = "A".charCodeAt(0);
+  var _F = "F".charCodeAt(0);
+  var _Z = "Z".charCodeAt(0);
+  var _0 = "0".charCodeAt(0);
+  var _9 = "9".charCodeAt(0);
+  var _TLD = "~".charCodeAt(0);
+  var _HAT = "^".charCodeAt(0);
+  var _EQS = "=".charCodeAt(0);
+  var _PIP = "|".charCodeAt(0);
+  var _MIN = "-".charCodeAt(0);
+  var _USC = "_".charCodeAt(0);
+  var _PRC = "%".charCodeAt(0);
+  var _MUL = "*".charCodeAt(0);
+  var _LPA = "(".charCodeAt(0);
+  var _RPA = ")".charCodeAt(0);
+  var _LAN = "<".charCodeAt(0);
+  var _RAN = ">".charCodeAt(0);
+  var _ATS = "@".charCodeAt(0);
+  var _HSH = "#".charCodeAt(0);
+  var _DLR = "$".charCodeAt(0);
+  var _BSL = "\\".charCodeAt(0);
+  var _FSL = "/".charCodeAt(0);
+  var _NWL = "\n".charCodeAt(0);
+  var _CAR = "\r".charCodeAt(0);
+  var _LFD = "\f".charCodeAt(0);
+  var _DQO = '"'.charCodeAt(0);
+  var _SQO = "'".charCodeAt(0);
+  var _WSP = " ".charCodeAt(0);
+  var _TAB = "	".charCodeAt(0);
+  var _SEM = ";".charCodeAt(0);
+  var _COL = ":".charCodeAt(0);
+  var _CUL = "{".charCodeAt(0);
+  var _CUR = "}".charCodeAt(0);
+  var _BRL = "[".charCodeAt(0);
+  var _BRR = "]".charCodeAt(0);
+  var _CMA = ",".charCodeAt(0);
+  var _DOT = ".".charCodeAt(0);
+  var _BNG = "!".charCodeAt(0);
+  var _QSM = "?".charCodeAt(0);
+  var _PLS = "+".charCodeAt(0);
+  var staticTokenTable = {};
+  staticTokenTable[_SEM] = TokenType.SemiColon;
+  staticTokenTable[_COL] = TokenType.Colon;
+  staticTokenTable[_CUL] = TokenType.CurlyL;
+  staticTokenTable[_CUR] = TokenType.CurlyR;
+  staticTokenTable[_BRR] = TokenType.BracketR;
+  staticTokenTable[_BRL] = TokenType.BracketL;
+  staticTokenTable[_LPA] = TokenType.ParenthesisL;
+  staticTokenTable[_RPA] = TokenType.ParenthesisR;
+  staticTokenTable[_CMA] = TokenType.Comma;
+  var staticUnitTable = {};
+  staticUnitTable["em"] = TokenType.EMS;
+  staticUnitTable["ex"] = TokenType.EXS;
+  staticUnitTable["px"] = TokenType.Length;
+  staticUnitTable["cm"] = TokenType.Length;
+  staticUnitTable["mm"] = TokenType.Length;
+  staticUnitTable["in"] = TokenType.Length;
+  staticUnitTable["pt"] = TokenType.Length;
+  staticUnitTable["pc"] = TokenType.Length;
+  staticUnitTable["deg"] = TokenType.Angle;
+  staticUnitTable["rad"] = TokenType.Angle;
+  staticUnitTable["grad"] = TokenType.Angle;
+  staticUnitTable["ms"] = TokenType.Time;
+  staticUnitTable["s"] = TokenType.Time;
+  staticUnitTable["hz"] = TokenType.Freq;
+  staticUnitTable["khz"] = TokenType.Freq;
+  staticUnitTable["%"] = TokenType.Percentage;
+  staticUnitTable["fr"] = TokenType.Percentage;
+  staticUnitTable["dpi"] = TokenType.Resolution;
+  staticUnitTable["dpcm"] = TokenType.Resolution;
+  staticUnitTable["cqw"] = TokenType.ContainerQueryLength;
+  staticUnitTable["cqh"] = TokenType.ContainerQueryLength;
+  staticUnitTable["cqi"] = TokenType.ContainerQueryLength;
+  staticUnitTable["cqb"] = TokenType.ContainerQueryLength;
+  staticUnitTable["cqmin"] = TokenType.ContainerQueryLength;
+  staticUnitTable["cqmax"] = TokenType.ContainerQueryLength;
+  var Scanner = class {
+    constructor() {
+      this.stream = new MultiLineStream("");
+      this.ignoreComment = true;
+      this.ignoreWhitespace = true;
+      this.inURL = false;
+    }
+    setSource(input) {
+      this.stream = new MultiLineStream(input);
+    }
+    finishToken(offset, type, text) {
+      return {
+        offset,
+        len: this.stream.pos() - offset,
+        type,
+        text: text || this.stream.substring(offset)
+      };
+    }
+    substring(offset, len) {
+      return this.stream.substring(offset, offset + len);
+    }
+    pos() {
+      return this.stream.pos();
+    }
+    goBackTo(pos) {
+      this.stream.goBackTo(pos);
+    }
+    scanUnquotedString() {
+      const offset = this.stream.pos();
+      const content = [];
+      if (this._unquotedString(content)) {
+        return this.finishToken(offset, TokenType.UnquotedString, content.join(""));
+      }
+      return null;
+    }
+    scan() {
+      const triviaToken = this.trivia();
+      if (triviaToken !== null) {
+        return triviaToken;
+      }
+      const offset = this.stream.pos();
+      if (this.stream.eos()) {
+        return this.finishToken(offset, TokenType.EOF);
+      }
+      return this.scanNext(offset);
+    }
+    /**
+     * Read the range as described in https://www.w3.org/TR/CSS21/syndata.html#tokenization
+     * Assume the `u` has aleady been consumed
+     * @returns if reading the unicode was successful
+     */
+    tryScanUnicode() {
+      const offset = this.stream.pos();
+      if (!this.stream.eos() && this._unicodeRange()) {
+        return this.finishToken(offset, TokenType.UnicodeRange);
+      }
+      this.stream.goBackTo(offset);
+      return void 0;
+    }
+    scanNext(offset) {
+      if (this.stream.advanceIfChars([_LAN, _BNG, _MIN, _MIN])) {
+        return this.finishToken(offset, TokenType.CDO);
+      }
+      if (this.stream.advanceIfChars([_MIN, _MIN, _RAN])) {
+        return this.finishToken(offset, TokenType.CDC);
+      }
+      let content = [];
+      if (this.ident(content)) {
+        return this.finishToken(offset, TokenType.Ident, content.join(""));
+      }
+      if (this.stream.advanceIfChar(_ATS)) {
+        content = ["@"];
+        if (this._name(content)) {
+          const keywordText = content.join("");
+          if (keywordText === "@charset") {
+            return this.finishToken(offset, TokenType.Charset, keywordText);
+          }
+          return this.finishToken(offset, TokenType.AtKeyword, keywordText);
+        } else {
+          return this.finishToken(offset, TokenType.Delim);
+        }
+      }
+      if (this.stream.advanceIfChar(_HSH)) {
+        content = ["#"];
+        if (this._name(content)) {
+          return this.finishToken(offset, TokenType.Hash, content.join(""));
+        } else {
+          return this.finishToken(offset, TokenType.Delim);
+        }
+      }
+      if (this.stream.advanceIfChar(_BNG)) {
+        return this.finishToken(offset, TokenType.Exclamation);
+      }
+      if (this._number()) {
+        const pos = this.stream.pos();
+        content = [this.stream.substring(offset, pos)];
+        if (this.stream.advanceIfChar(_PRC)) {
+          return this.finishToken(offset, TokenType.Percentage);
+        } else if (this.ident(content)) {
+          const dim = this.stream.substring(pos).toLowerCase();
+          const tokenType2 = staticUnitTable[dim];
+          if (typeof tokenType2 !== "undefined") {
+            return this.finishToken(offset, tokenType2, content.join(""));
+          } else {
+            return this.finishToken(offset, TokenType.Dimension, content.join(""));
+          }
+        }
+        return this.finishToken(offset, TokenType.Num);
+      }
+      content = [];
+      let tokenType = this._string(content);
+      if (tokenType !== null) {
+        return this.finishToken(offset, tokenType, content.join(""));
+      }
+      tokenType = staticTokenTable[this.stream.peekChar()];
+      if (typeof tokenType !== "undefined") {
+        this.stream.advance(1);
+        return this.finishToken(offset, tokenType);
+      }
+      if (this.stream.peekChar(0) === _TLD && this.stream.peekChar(1) === _EQS) {
+        this.stream.advance(2);
+        return this.finishToken(offset, TokenType.Includes);
+      }
+      if (this.stream.peekChar(0) === _PIP && this.stream.peekChar(1) === _EQS) {
+        this.stream.advance(2);
+        return this.finishToken(offset, TokenType.Dashmatch);
+      }
+      if (this.stream.peekChar(0) === _MUL && this.stream.peekChar(1) === _EQS) {
+        this.stream.advance(2);
+        return this.finishToken(offset, TokenType.SubstringOperator);
+      }
+      if (this.stream.peekChar(0) === _HAT && this.stream.peekChar(1) === _EQS) {
+        this.stream.advance(2);
+        return this.finishToken(offset, TokenType.PrefixOperator);
+      }
+      if (this.stream.peekChar(0) === _DLR && this.stream.peekChar(1) === _EQS) {
+        this.stream.advance(2);
+        return this.finishToken(offset, TokenType.SuffixOperator);
+      }
+      this.stream.nextChar();
+      return this.finishToken(offset, TokenType.Delim);
+    }
+    trivia() {
+      while (true) {
+        const offset = this.stream.pos();
+        if (this._whitespace()) {
+          if (!this.ignoreWhitespace) {
+            return this.finishToken(offset, TokenType.Whitespace);
+          }
+        } else if (this.comment()) {
+          if (!this.ignoreComment) {
+            return this.finishToken(offset, TokenType.Comment);
+          }
+        } else {
+          return null;
+        }
+      }
+    }
+    comment() {
+      if (this.stream.advanceIfChars([_FSL, _MUL])) {
+        let success = false, hot = false;
+        this.stream.advanceWhileChar((ch) => {
+          if (hot && ch === _FSL) {
+            success = true;
+            return false;
+          }
+          hot = ch === _MUL;
+          return true;
+        });
+        if (success) {
+          this.stream.advance(1);
+        }
+        return true;
+      }
+      return false;
+    }
+    _number() {
+      let npeek = 0;
+      let hasDot = false;
+      const peekFirst = this.stream.peekChar();
+      if (peekFirst === _PLS || peekFirst === _MIN) {
+        npeek++;
+      }
+      if (this.stream.peekChar(npeek) === _DOT) {
+        npeek++;
+        hasDot = true;
+      }
+      const ch = this.stream.peekChar(npeek);
+      if (ch >= _0 && ch <= _9) {
+        this.stream.advance(npeek + 1);
+        this.stream.advanceWhileChar((ch2) => {
+          return ch2 >= _0 && ch2 <= _9 || !hasDot && ch2 === _DOT;
+        });
+        return true;
+      }
+      return false;
+    }
+    _newline(result) {
+      const ch = this.stream.peekChar();
+      switch (ch) {
+        case _CAR:
+        case _LFD:
+        case _NWL:
+          this.stream.advance(1);
+          result.push(String.fromCharCode(ch));
+          if (ch === _CAR && this.stream.advanceIfChar(_NWL)) {
+            result.push("\n");
+          }
+          return true;
+      }
+      return false;
+    }
+    _escape(result, includeNewLines) {
+      let ch = this.stream.peekChar();
+      if (ch === _BSL) {
+        this.stream.advance(1);
+        ch = this.stream.peekChar();
+        let hexNumCount = 0;
+        while (hexNumCount < 6 && (ch >= _0 && ch <= _9 || ch >= _a && ch <= _f || ch >= _A && ch <= _F)) {
+          this.stream.advance(1);
+          ch = this.stream.peekChar();
+          hexNumCount++;
+        }
+        if (hexNumCount > 0) {
+          try {
+            const hexVal = parseInt(this.stream.substring(this.stream.pos() - hexNumCount), 16);
+            if (hexVal) {
+              result.push(String.fromCharCode(hexVal));
+            }
+          } catch (e) {
+          }
+          if (ch === _WSP || ch === _TAB) {
+            this.stream.advance(1);
+          } else {
+            this._newline([]);
+          }
+          return true;
+        }
+        if (ch !== _CAR && ch !== _LFD && ch !== _NWL) {
+          this.stream.advance(1);
+          result.push(String.fromCharCode(ch));
+          return true;
+        } else if (includeNewLines) {
+          return this._newline(result);
+        }
+      }
+      return false;
+    }
+    _stringChar(closeQuote, result) {
+      const ch = this.stream.peekChar();
+      if (ch !== 0 && ch !== closeQuote && ch !== _BSL && ch !== _CAR && ch !== _LFD && ch !== _NWL) {
+        this.stream.advance(1);
+        result.push(String.fromCharCode(ch));
+        return true;
+      }
+      return false;
+    }
+    _string(result) {
+      if (this.stream.peekChar() === _SQO || this.stream.peekChar() === _DQO) {
+        const closeQuote = this.stream.nextChar();
+        result.push(String.fromCharCode(closeQuote));
+        while (this._stringChar(closeQuote, result) || this._escape(result, true)) {
+        }
+        if (this.stream.peekChar() === closeQuote) {
+          this.stream.nextChar();
+          result.push(String.fromCharCode(closeQuote));
+          return TokenType.String;
+        } else {
+          return TokenType.BadString;
+        }
+      }
+      return null;
+    }
+    _unquotedChar(result) {
+      const ch = this.stream.peekChar();
+      if (ch !== 0 && ch !== _BSL && ch !== _SQO && ch !== _DQO && ch !== _LPA && ch !== _RPA && ch !== _WSP && ch !== _TAB && ch !== _NWL && ch !== _LFD && ch !== _CAR) {
+        this.stream.advance(1);
+        result.push(String.fromCharCode(ch));
+        return true;
+      }
+      return false;
+    }
+    _unquotedString(result) {
+      let hasContent = false;
+      while (this._unquotedChar(result) || this._escape(result)) {
+        hasContent = true;
+      }
+      return hasContent;
+    }
+    _whitespace() {
+      const n = this.stream.advanceWhileChar((ch) => {
+        return ch === _WSP || ch === _TAB || ch === _NWL || ch === _LFD || ch === _CAR;
+      });
+      return n > 0;
+    }
+    _name(result) {
+      let matched = false;
+      while (this._identChar(result) || this._escape(result)) {
+        matched = true;
+      }
+      return matched;
+    }
+    ident(result) {
+      const pos = this.stream.pos();
+      const hasMinus = this._minus(result);
+      if (hasMinus) {
+        if (this._minus(result) || this._identFirstChar(result) || this._escape(result)) {
+          while (this._identChar(result) || this._escape(result)) {
+          }
+          return true;
+        }
+      } else if (this._identFirstChar(result) || this._escape(result)) {
+        while (this._identChar(result) || this._escape(result)) {
+        }
+        return true;
+      }
+      this.stream.goBackTo(pos);
+      return false;
+    }
+    _identFirstChar(result) {
+      const ch = this.stream.peekChar();
+      if (ch === _USC || // _
+      ch >= _a && ch <= _z || // a-z
+      ch >= _A && ch <= _Z || // A-Z
+      ch >= 128 && ch <= 65535) {
+        this.stream.advance(1);
+        result.push(String.fromCharCode(ch));
+        return true;
+      }
+      return false;
+    }
+    _minus(result) {
+      const ch = this.stream.peekChar();
+      if (ch === _MIN) {
+        this.stream.advance(1);
+        result.push(String.fromCharCode(ch));
+        return true;
+      }
+      return false;
+    }
+    _identChar(result) {
+      const ch = this.stream.peekChar();
+      if (ch === _USC || // _
+      ch === _MIN || // -
+      ch >= _a && ch <= _z || // a-z
+      ch >= _A && ch <= _Z || // A-Z
+      ch >= _0 && ch <= _9 || // 0/9
+      ch >= 128 && ch <= 65535) {
+        this.stream.advance(1);
+        result.push(String.fromCharCode(ch));
+        return true;
+      }
+      return false;
+    }
+    _unicodeRange() {
+      if (this.stream.advanceIfChar(_PLS)) {
+        const isHexDigit = (ch) => ch >= _0 && ch <= _9 || ch >= _a && ch <= _f || ch >= _A && ch <= _F;
+        const codePoints = this.stream.advanceWhileChar(isHexDigit) + this.stream.advanceWhileChar((ch) => ch === _QSM);
+        if (codePoints >= 1 && codePoints <= 6) {
+          if (this.stream.advanceIfChar(_MIN)) {
+            const digits = this.stream.advanceWhileChar(isHexDigit);
+            if (digits >= 1 && digits <= 6) {
+              return true;
+            }
+          } else {
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+  };
+
+  // ../../node_modules/vscode-css-languageservice/lib/esm/utils/strings.js
+  function trim(str, regexp) {
+    const m = regexp.exec(str);
+    if (m && m[0].length) {
+      return str.substr(0, str.length - m[0].length);
+    }
+    return str;
+  }
+
+  // ../../node_modules/vscode-css-languageservice/lib/esm/parser/cssNodes.js
+  var NodeType;
+  (function(NodeType2) {
+    NodeType2[NodeType2["Undefined"] = 0] = "Undefined";
+    NodeType2[NodeType2["Identifier"] = 1] = "Identifier";
+    NodeType2[NodeType2["Stylesheet"] = 2] = "Stylesheet";
+    NodeType2[NodeType2["Ruleset"] = 3] = "Ruleset";
+    NodeType2[NodeType2["Selector"] = 4] = "Selector";
+    NodeType2[NodeType2["SimpleSelector"] = 5] = "SimpleSelector";
+    NodeType2[NodeType2["SelectorInterpolation"] = 6] = "SelectorInterpolation";
+    NodeType2[NodeType2["SelectorCombinator"] = 7] = "SelectorCombinator";
+    NodeType2[NodeType2["SelectorCombinatorParent"] = 8] = "SelectorCombinatorParent";
+    NodeType2[NodeType2["SelectorCombinatorSibling"] = 9] = "SelectorCombinatorSibling";
+    NodeType2[NodeType2["SelectorCombinatorAllSiblings"] = 10] = "SelectorCombinatorAllSiblings";
+    NodeType2[NodeType2["SelectorCombinatorShadowPiercingDescendant"] = 11] = "SelectorCombinatorShadowPiercingDescendant";
+    NodeType2[NodeType2["Page"] = 12] = "Page";
+    NodeType2[NodeType2["PageBoxMarginBox"] = 13] = "PageBoxMarginBox";
+    NodeType2[NodeType2["ClassSelector"] = 14] = "ClassSelector";
+    NodeType2[NodeType2["IdentifierSelector"] = 15] = "IdentifierSelector";
+    NodeType2[NodeType2["ElementNameSelector"] = 16] = "ElementNameSelector";
+    NodeType2[NodeType2["PseudoSelector"] = 17] = "PseudoSelector";
+    NodeType2[NodeType2["AttributeSelector"] = 18] = "AttributeSelector";
+    NodeType2[NodeType2["Declaration"] = 19] = "Declaration";
+    NodeType2[NodeType2["Declarations"] = 20] = "Declarations";
+    NodeType2[NodeType2["Property"] = 21] = "Property";
+    NodeType2[NodeType2["Expression"] = 22] = "Expression";
+    NodeType2[NodeType2["BinaryExpression"] = 23] = "BinaryExpression";
+    NodeType2[NodeType2["Term"] = 24] = "Term";
+    NodeType2[NodeType2["Operator"] = 25] = "Operator";
+    NodeType2[NodeType2["Value"] = 26] = "Value";
+    NodeType2[NodeType2["StringLiteral"] = 27] = "StringLiteral";
+    NodeType2[NodeType2["URILiteral"] = 28] = "URILiteral";
+    NodeType2[NodeType2["EscapedValue"] = 29] = "EscapedValue";
+    NodeType2[NodeType2["Function"] = 30] = "Function";
+    NodeType2[NodeType2["NumericValue"] = 31] = "NumericValue";
+    NodeType2[NodeType2["HexColorValue"] = 32] = "HexColorValue";
+    NodeType2[NodeType2["RatioValue"] = 33] = "RatioValue";
+    NodeType2[NodeType2["MixinDeclaration"] = 34] = "MixinDeclaration";
+    NodeType2[NodeType2["MixinReference"] = 35] = "MixinReference";
+    NodeType2[NodeType2["VariableName"] = 36] = "VariableName";
+    NodeType2[NodeType2["VariableDeclaration"] = 37] = "VariableDeclaration";
+    NodeType2[NodeType2["Prio"] = 38] = "Prio";
+    NodeType2[NodeType2["Interpolation"] = 39] = "Interpolation";
+    NodeType2[NodeType2["NestedProperties"] = 40] = "NestedProperties";
+    NodeType2[NodeType2["ExtendsReference"] = 41] = "ExtendsReference";
+    NodeType2[NodeType2["SelectorPlaceholder"] = 42] = "SelectorPlaceholder";
+    NodeType2[NodeType2["Debug"] = 43] = "Debug";
+    NodeType2[NodeType2["If"] = 44] = "If";
+    NodeType2[NodeType2["Else"] = 45] = "Else";
+    NodeType2[NodeType2["For"] = 46] = "For";
+    NodeType2[NodeType2["Each"] = 47] = "Each";
+    NodeType2[NodeType2["While"] = 48] = "While";
+    NodeType2[NodeType2["MixinContentReference"] = 49] = "MixinContentReference";
+    NodeType2[NodeType2["MixinContentDeclaration"] = 50] = "MixinContentDeclaration";
+    NodeType2[NodeType2["Media"] = 51] = "Media";
+    NodeType2[NodeType2["Scope"] = 52] = "Scope";
+    NodeType2[NodeType2["Keyframe"] = 53] = "Keyframe";
+    NodeType2[NodeType2["FontFace"] = 54] = "FontFace";
+    NodeType2[NodeType2["Import"] = 55] = "Import";
+    NodeType2[NodeType2["Namespace"] = 56] = "Namespace";
+    NodeType2[NodeType2["Invocation"] = 57] = "Invocation";
+    NodeType2[NodeType2["FunctionDeclaration"] = 58] = "FunctionDeclaration";
+    NodeType2[NodeType2["ReturnStatement"] = 59] = "ReturnStatement";
+    NodeType2[NodeType2["MediaQuery"] = 60] = "MediaQuery";
+    NodeType2[NodeType2["MediaCondition"] = 61] = "MediaCondition";
+    NodeType2[NodeType2["MediaFeature"] = 62] = "MediaFeature";
+    NodeType2[NodeType2["FunctionParameter"] = 63] = "FunctionParameter";
+    NodeType2[NodeType2["FunctionArgument"] = 64] = "FunctionArgument";
+    NodeType2[NodeType2["KeyframeSelector"] = 65] = "KeyframeSelector";
+    NodeType2[NodeType2["ViewPort"] = 66] = "ViewPort";
+    NodeType2[NodeType2["Document"] = 67] = "Document";
+    NodeType2[NodeType2["AtApplyRule"] = 68] = "AtApplyRule";
+    NodeType2[NodeType2["CustomPropertyDeclaration"] = 69] = "CustomPropertyDeclaration";
+    NodeType2[NodeType2["CustomPropertySet"] = 70] = "CustomPropertySet";
+    NodeType2[NodeType2["ListEntry"] = 71] = "ListEntry";
+    NodeType2[NodeType2["Supports"] = 72] = "Supports";
+    NodeType2[NodeType2["SupportsCondition"] = 73] = "SupportsCondition";
+    NodeType2[NodeType2["NamespacePrefix"] = 74] = "NamespacePrefix";
+    NodeType2[NodeType2["GridLine"] = 75] = "GridLine";
+    NodeType2[NodeType2["Plugin"] = 76] = "Plugin";
+    NodeType2[NodeType2["UnknownAtRule"] = 77] = "UnknownAtRule";
+    NodeType2[NodeType2["Use"] = 78] = "Use";
+    NodeType2[NodeType2["ModuleConfiguration"] = 79] = "ModuleConfiguration";
+    NodeType2[NodeType2["Forward"] = 80] = "Forward";
+    NodeType2[NodeType2["ForwardVisibility"] = 81] = "ForwardVisibility";
+    NodeType2[NodeType2["Module"] = 82] = "Module";
+    NodeType2[NodeType2["UnicodeRange"] = 83] = "UnicodeRange";
+    NodeType2[NodeType2["Layer"] = 84] = "Layer";
+    NodeType2[NodeType2["LayerNameList"] = 85] = "LayerNameList";
+    NodeType2[NodeType2["LayerName"] = 86] = "LayerName";
+    NodeType2[NodeType2["PropertyAtRule"] = 87] = "PropertyAtRule";
+    NodeType2[NodeType2["Container"] = 88] = "Container";
+    NodeType2[NodeType2["ModuleConfig"] = 89] = "ModuleConfig";
+    NodeType2[NodeType2["SelectorList"] = 90] = "SelectorList";
+    NodeType2[NodeType2["StartingStyleAtRule"] = 91] = "StartingStyleAtRule";
+  })(NodeType || (NodeType = {}));
+  var ReferenceType;
+  (function(ReferenceType2) {
+    ReferenceType2[ReferenceType2["Mixin"] = 0] = "Mixin";
+    ReferenceType2[ReferenceType2["Rule"] = 1] = "Rule";
+    ReferenceType2[ReferenceType2["Variable"] = 2] = "Variable";
+    ReferenceType2[ReferenceType2["Function"] = 3] = "Function";
+    ReferenceType2[ReferenceType2["Keyframe"] = 4] = "Keyframe";
+    ReferenceType2[ReferenceType2["Unknown"] = 5] = "Unknown";
+    ReferenceType2[ReferenceType2["Module"] = 6] = "Module";
+    ReferenceType2[ReferenceType2["Forward"] = 7] = "Forward";
+    ReferenceType2[ReferenceType2["ForwardVisibility"] = 8] = "ForwardVisibility";
+    ReferenceType2[ReferenceType2["Property"] = 9] = "Property";
+  })(ReferenceType || (ReferenceType = {}));
+  var Node = class {
+    get end() {
+      return this.offset + this.length;
+    }
+    constructor(offset = -1, len = -1, nodeType) {
+      this.parent = null;
+      this.offset = offset;
+      this.length = len;
+      if (nodeType) {
+        this.nodeType = nodeType;
+      }
+    }
+    set type(type) {
+      this.nodeType = type;
+    }
+    get type() {
+      return this.nodeType || NodeType.Undefined;
+    }
+    getTextProvider() {
+      let node = this;
+      while (node && !node.textProvider) {
+        node = node.parent;
+      }
+      if (node) {
+        return node.textProvider;
+      }
+      return () => {
+        return "unknown";
+      };
+    }
+    getText() {
+      return this.getTextProvider()(this.offset, this.length);
+    }
+    matches(str) {
+      return this.length === str.length && this.getTextProvider()(this.offset, this.length) === str;
+    }
+    startsWith(str) {
+      return this.length >= str.length && this.getTextProvider()(this.offset, str.length) === str;
+    }
+    endsWith(str) {
+      return this.length >= str.length && this.getTextProvider()(this.end - str.length, str.length) === str;
+    }
+    accept(visitor) {
+      if (visitor(this) && this.children) {
+        for (const child of this.children) {
+          child.accept(visitor);
+        }
+      }
+    }
+    acceptVisitor(visitor) {
+      this.accept(visitor.visitNode.bind(visitor));
+    }
+    adoptChild(node, index = -1) {
+      if (node.parent && node.parent.children) {
+        const idx = node.parent.children.indexOf(node);
+        if (idx >= 0) {
+          node.parent.children.splice(idx, 1);
+        }
+      }
+      node.parent = this;
+      let children = this.children;
+      if (!children) {
+        children = this.children = [];
+      }
+      if (index !== -1) {
+        children.splice(index, 0, node);
+      } else {
+        children.push(node);
+      }
+      return node;
+    }
+    attachTo(parent, index = -1) {
+      if (parent) {
+        parent.adoptChild(this, index);
+      }
+      return this;
+    }
+    collectIssues(results) {
+      if (this.issues) {
+        results.push.apply(results, this.issues);
+      }
+    }
+    addIssue(issue) {
+      if (!this.issues) {
+        this.issues = [];
+      }
+      this.issues.push(issue);
+    }
+    hasIssue(rule) {
+      return Array.isArray(this.issues) && this.issues.some((i) => i.getRule() === rule);
+    }
+    isErroneous(recursive = false) {
+      if (this.issues && this.issues.length > 0) {
+        return true;
+      }
+      return recursive && Array.isArray(this.children) && this.children.some((c) => c.isErroneous(true));
+    }
+    setNode(field, node, index = -1) {
+      if (node) {
+        node.attachTo(this, index);
+        this[field] = node;
+        return true;
+      }
+      return false;
+    }
+    addChild(node) {
+      if (node) {
+        if (!this.children) {
+          this.children = [];
+        }
+        node.attachTo(this);
+        this.updateOffsetAndLength(node);
+        return true;
+      }
+      return false;
+    }
+    updateOffsetAndLength(node) {
+      if (node.offset < this.offset || this.offset === -1) {
+        this.offset = node.offset;
+      }
+      const nodeEnd = node.end;
+      if (nodeEnd > this.end || this.length === -1) {
+        this.length = nodeEnd - this.offset;
+      }
+    }
+    hasChildren() {
+      return !!this.children && this.children.length > 0;
+    }
+    getChildren() {
+      return this.children ? this.children.slice(0) : [];
+    }
+    getChild(index) {
+      if (this.children && index < this.children.length) {
+        return this.children[index];
+      }
+      return null;
+    }
+    addChildren(nodes) {
+      for (const node of nodes) {
+        this.addChild(node);
+      }
+    }
+    findFirstChildBeforeOffset(offset) {
+      if (this.children) {
+        let current = null;
+        for (let i = this.children.length - 1; i >= 0; i--) {
+          current = this.children[i];
+          if (current.offset <= offset) {
+            return current;
+          }
+        }
+      }
+      return null;
+    }
+    findChildAtOffset(offset, goDeep) {
+      const current = this.findFirstChildBeforeOffset(offset);
+      if (current && current.end >= offset) {
+        if (goDeep) {
+          return current.findChildAtOffset(offset, true) || current;
+        }
+        return current;
+      }
+      return null;
+    }
+    encloses(candidate) {
+      return this.offset <= candidate.offset && this.offset + this.length >= candidate.offset + candidate.length;
+    }
+    getParent() {
+      let result = this.parent;
+      while (result instanceof Nodelist) {
+        result = result.parent;
+      }
+      return result;
+    }
+    findParent(type) {
+      let result = this;
+      while (result && result.type !== type) {
+        result = result.parent;
+      }
+      return result;
+    }
+    findAParent(...types) {
+      let result = this;
+      while (result && !types.some((t2) => result.type === t2)) {
+        result = result.parent;
+      }
+      return result;
+    }
+    setData(key, value) {
+      if (!this.options) {
+        this.options = {};
+      }
+      this.options[key] = value;
+    }
+    getData(key) {
+      if (!this.options || !this.options.hasOwnProperty(key)) {
+        return null;
+      }
+      return this.options[key];
+    }
+  };
+  var Nodelist = class extends Node {
+    constructor(parent, index = -1) {
+      super(-1, -1);
+      this.attachTo(parent, index);
+      this.offset = -1;
+      this.length = -1;
+    }
+  };
+  var UnicodeRange = class extends Node {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.UnicodeRange;
+    }
+    setRangeStart(rangeStart) {
+      return this.setNode("rangeStart", rangeStart);
+    }
+    getRangeStart() {
+      return this.rangeStart;
+    }
+    setRangeEnd(rangeEnd) {
+      return this.setNode("rangeEnd", rangeEnd);
+    }
+    getRangeEnd() {
+      return this.rangeEnd;
+    }
+  };
+  var Identifier = class extends Node {
+    constructor(offset, length) {
+      super(offset, length);
+      this.isCustomProperty = false;
+    }
+    get type() {
+      return NodeType.Identifier;
+    }
+    containsInterpolation() {
+      return this.hasChildren();
+    }
+  };
+  var Stylesheet = class extends Node {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.Stylesheet;
+    }
+  };
+  var Declarations = class extends Node {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.Declarations;
+    }
+  };
+  var BodyDeclaration = class extends Node {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    getDeclarations() {
+      return this.declarations;
+    }
+    setDeclarations(decls) {
+      return this.setNode("declarations", decls);
+    }
+  };
+  var RuleSet = class extends BodyDeclaration {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.Ruleset;
+    }
+    getSelectors() {
+      if (!this.selectors) {
+        this.selectors = new Nodelist(this);
+      }
+      return this.selectors;
+    }
+    isNested() {
+      return !!this.parent && this.parent.findParent(NodeType.Declarations) !== null;
+    }
+  };
+  var Selector = class extends Node {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.Selector;
+    }
+  };
+  var SimpleSelector = class extends Node {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.SimpleSelector;
+    }
+  };
+  var AbstractDeclaration = class extends Node {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+  };
+  var CustomPropertySet = class extends BodyDeclaration {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.CustomPropertySet;
+    }
+  };
+  var Declaration = class _Declaration extends AbstractDeclaration {
+    constructor(offset, length) {
+      super(offset, length);
+      this.property = null;
+    }
+    get type() {
+      return NodeType.Declaration;
+    }
+    setProperty(node) {
+      return this.setNode("property", node);
+    }
+    getProperty() {
+      return this.property;
+    }
+    getFullPropertyName() {
+      const propertyName = this.property ? this.property.getName() : "unknown";
+      if (this.parent instanceof Declarations && this.parent.getParent() instanceof NestedProperties) {
+        const parentDecl = this.parent.getParent().getParent();
+        if (parentDecl instanceof _Declaration) {
+          return parentDecl.getFullPropertyName() + propertyName;
+        }
+      }
+      return propertyName;
+    }
+    getNonPrefixedPropertyName() {
+      const propertyName = this.getFullPropertyName();
+      if (propertyName && propertyName.charAt(0) === "-") {
+        const vendorPrefixEnd = propertyName.indexOf("-", 1);
+        if (vendorPrefixEnd !== -1) {
+          return propertyName.substring(vendorPrefixEnd + 1);
+        }
+      }
+      return propertyName;
+    }
+    setValue(value) {
+      return this.setNode("value", value);
+    }
+    getValue() {
+      return this.value;
+    }
+    setNestedProperties(value) {
+      return this.setNode("nestedProperties", value);
+    }
+    getNestedProperties() {
+      return this.nestedProperties;
+    }
+  };
+  var CustomPropertyDeclaration = class extends Declaration {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.CustomPropertyDeclaration;
+    }
+    setPropertySet(value) {
+      return this.setNode("propertySet", value);
+    }
+    getPropertySet() {
+      return this.propertySet;
+    }
+  };
+  var Property = class extends Node {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.Property;
+    }
+    setIdentifier(value) {
+      return this.setNode("identifier", value);
+    }
+    getIdentifier() {
+      return this.identifier;
+    }
+    getName() {
+      return trim(this.getText(), /[_\+]+$/);
+    }
+    isCustomProperty() {
+      return !!this.identifier && this.identifier.isCustomProperty;
+    }
+  };
+  var Invocation = class extends Node {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.Invocation;
+    }
+    getArguments() {
+      if (!this.arguments) {
+        this.arguments = new Nodelist(this);
+      }
+      return this.arguments;
+    }
+  };
+  var Function = class extends Invocation {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.Function;
+    }
+    setIdentifier(node) {
+      return this.setNode("identifier", node, 0);
+    }
+    getIdentifier() {
+      return this.identifier;
+    }
+    getName() {
+      return this.identifier ? this.identifier.getText() : "";
+    }
+  };
+  var FunctionParameter = class extends Node {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.FunctionParameter;
+    }
+    setIdentifier(node) {
+      return this.setNode("identifier", node, 0);
+    }
+    getIdentifier() {
+      return this.identifier;
+    }
+    getName() {
+      return this.identifier ? this.identifier.getText() : "";
+    }
+    setDefaultValue(node) {
+      return this.setNode("defaultValue", node, 0);
+    }
+    getDefaultValue() {
+      return this.defaultValue;
+    }
+  };
+  var FunctionArgument = class extends Node {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.FunctionArgument;
+    }
+    setIdentifier(node) {
+      return this.setNode("identifier", node, 0);
+    }
+    getIdentifier() {
+      return this.identifier;
+    }
+    getName() {
+      return this.identifier ? this.identifier.getText() : "";
+    }
+    setValue(node) {
+      return this.setNode("value", node, 0);
+    }
+    getValue() {
+      return this.value;
+    }
+  };
+  var IfStatement = class extends BodyDeclaration {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.If;
+    }
+    setExpression(node) {
+      return this.setNode("expression", node, 0);
+    }
+    setElseClause(elseClause) {
+      return this.setNode("elseClause", elseClause);
+    }
+  };
+  var ForStatement = class extends BodyDeclaration {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.For;
+    }
+    setVariable(node) {
+      return this.setNode("variable", node, 0);
+    }
+  };
+  var EachStatement = class extends BodyDeclaration {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.Each;
+    }
+    getVariables() {
+      if (!this.variables) {
+        this.variables = new Nodelist(this);
+      }
+      return this.variables;
+    }
+  };
+  var WhileStatement = class extends BodyDeclaration {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.While;
+    }
+  };
+  var ElseStatement = class extends BodyDeclaration {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.Else;
+    }
+  };
+  var FunctionDeclaration = class extends BodyDeclaration {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.FunctionDeclaration;
+    }
+    setIdentifier(node) {
+      return this.setNode("identifier", node, 0);
+    }
+    getIdentifier() {
+      return this.identifier;
+    }
+    getName() {
+      return this.identifier ? this.identifier.getText() : "";
+    }
+    getParameters() {
+      if (!this.parameters) {
+        this.parameters = new Nodelist(this);
+      }
+      return this.parameters;
+    }
+  };
+  var ViewPort = class extends BodyDeclaration {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.ViewPort;
+    }
+  };
+  var FontFace = class extends BodyDeclaration {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.FontFace;
+    }
+  };
+  var NestedProperties = class extends BodyDeclaration {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.NestedProperties;
+    }
+  };
+  var Keyframe = class extends BodyDeclaration {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.Keyframe;
+    }
+    setKeyword(keyword) {
+      return this.setNode("keyword", keyword, 0);
+    }
+    getKeyword() {
+      return this.keyword;
+    }
+    setIdentifier(node) {
+      return this.setNode("identifier", node, 0);
+    }
+    getIdentifier() {
+      return this.identifier;
+    }
+    getName() {
+      return this.identifier ? this.identifier.getText() : "";
+    }
+  };
+  var KeyframeSelector = class extends BodyDeclaration {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.KeyframeSelector;
+    }
+  };
+  var Import = class extends Node {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.Import;
+    }
+    setMedialist(node) {
+      if (node) {
+        node.attachTo(this);
+        return true;
+      }
+      return false;
+    }
+  };
+  var Use = class extends Node {
+    get type() {
+      return NodeType.Use;
+    }
+    setParameters(value) {
+      return this.setNode("parameters", value);
+    }
+    getParameters() {
+      return this.parameters;
+    }
+    setIdentifier(node) {
+      return this.setNode("identifier", node, 0);
+    }
+    getIdentifier() {
+      return this.identifier;
+    }
+  };
+  var ModuleConfiguration = class extends Node {
+    get type() {
+      return NodeType.ModuleConfiguration;
+    }
+    setIdentifier(node) {
+      return this.setNode("identifier", node, 0);
+    }
+    getIdentifier() {
+      return this.identifier;
+    }
+    getName() {
+      return this.identifier ? this.identifier.getText() : "";
+    }
+    setValue(node) {
+      return this.setNode("value", node, 0);
+    }
+    getValue() {
+      return this.value;
+    }
+  };
+  var Forward = class extends Node {
+    get type() {
+      return NodeType.Forward;
+    }
+    setIdentifier(node) {
+      return this.setNode("identifier", node, 0);
+    }
+    getIdentifier() {
+      return this.identifier;
+    }
+    setParameters(value) {
+      return this.setNode("parameters", value);
+    }
+    getParameters() {
+      return this.parameters;
+    }
+  };
+  var ForwardVisibility = class extends Node {
+    get type() {
+      return NodeType.ForwardVisibility;
+    }
+    setIdentifier(node) {
+      return this.setNode("identifier", node, 0);
+    }
+    getIdentifier() {
+      return this.identifier;
+    }
+  };
+  var Namespace = class extends Node {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.Namespace;
+    }
+  };
+  var Media = class extends BodyDeclaration {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.Media;
+    }
+  };
+  var Scope = class extends BodyDeclaration {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.Scope;
+    }
+  };
+  var ScopeLimits = class extends Node {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.Scope;
+    }
+    getScopeStart() {
+      return this.scopeStart;
+    }
+    setScopeStart(right) {
+      return this.setNode("scopeStart", right);
+    }
+    getScopeEnd() {
+      return this.scopeEnd;
+    }
+    setScopeEnd(right) {
+      return this.setNode("scopeEnd", right);
+    }
+    getName() {
+      let name = "";
+      if (this.scopeStart) {
+        name += this.scopeStart.getText();
+      }
+      if (this.scopeEnd) {
+        name += `${this.scopeStart ? " " : ""}\u2192 ${this.scopeEnd.getText()}`;
+      }
+      return name;
+    }
+  };
+  var Supports = class extends BodyDeclaration {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.Supports;
+    }
+  };
+  var Layer = class extends BodyDeclaration {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.Layer;
+    }
+    setNames(names) {
+      return this.setNode("names", names);
+    }
+    getNames() {
+      return this.names;
+    }
+  };
+  var PropertyAtRule = class extends BodyDeclaration {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.PropertyAtRule;
+    }
+    setName(node) {
+      if (node) {
+        node.attachTo(this);
+        this.name = node;
+        return true;
+      }
+      return false;
+    }
+    getName() {
+      return this.name;
+    }
+  };
+  var StartingStyleAtRule = class extends BodyDeclaration {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.StartingStyleAtRule;
+    }
+  };
+  var Document = class extends BodyDeclaration {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.Document;
+    }
+  };
+  var Container = class extends BodyDeclaration {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.Container;
+    }
+  };
+  var Medialist = class extends Node {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+  };
+  var MediaQuery = class extends Node {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.MediaQuery;
+    }
+  };
+  var MediaCondition = class extends Node {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.MediaCondition;
+    }
+  };
+  var MediaFeature = class extends Node {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.MediaFeature;
+    }
+  };
+  var SupportsCondition = class extends Node {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.SupportsCondition;
+    }
+  };
+  var Page = class extends BodyDeclaration {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.Page;
+    }
+  };
+  var PageBoxMarginBox = class extends BodyDeclaration {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.PageBoxMarginBox;
+    }
+  };
+  var Expression = class extends Node {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.Expression;
+    }
+  };
+  var BinaryExpression = class extends Node {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.BinaryExpression;
+    }
+    setLeft(left) {
+      return this.setNode("left", left);
+    }
+    getLeft() {
+      return this.left;
+    }
+    setRight(right) {
+      return this.setNode("right", right);
+    }
+    getRight() {
+      return this.right;
+    }
+    setOperator(value) {
+      return this.setNode("operator", value);
+    }
+    getOperator() {
+      return this.operator;
+    }
+  };
+  var Term = class extends Node {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.Term;
+    }
+    setOperator(value) {
+      return this.setNode("operator", value);
+    }
+    getOperator() {
+      return this.operator;
+    }
+    setExpression(value) {
+      return this.setNode("expression", value);
+    }
+    getExpression() {
+      return this.expression;
+    }
+  };
+  var AttributeSelector = class extends Node {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.AttributeSelector;
+    }
+    setNamespacePrefix(value) {
+      return this.setNode("namespacePrefix", value);
+    }
+    getNamespacePrefix() {
+      return this.namespacePrefix;
+    }
+    setIdentifier(value) {
+      return this.setNode("identifier", value);
+    }
+    getIdentifier() {
+      return this.identifier;
+    }
+    setOperator(operator) {
+      return this.setNode("operator", operator);
+    }
+    getOperator() {
+      return this.operator;
+    }
+    setValue(value) {
+      return this.setNode("value", value);
+    }
+    getValue() {
+      return this.value;
+    }
+  };
+  var HexColorValue = class extends Node {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.HexColorValue;
+    }
+  };
+  var RatioValue = class extends Node {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.RatioValue;
+    }
+  };
+  var _dot = ".".charCodeAt(0);
+  var _02 = "0".charCodeAt(0);
+  var _92 = "9".charCodeAt(0);
+  var NumericValue = class extends Node {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.NumericValue;
+    }
+    getValue() {
+      const raw = this.getText();
+      let unitIdx = 0;
+      let code;
+      for (let i = 0, len = raw.length; i < len; i++) {
+        code = raw.charCodeAt(i);
+        if (!(_02 <= code && code <= _92 || code === _dot)) {
+          break;
+        }
+        unitIdx += 1;
+      }
+      return {
+        value: raw.substring(0, unitIdx),
+        unit: unitIdx < raw.length ? raw.substring(unitIdx) : void 0
+      };
+    }
+  };
+  var VariableDeclaration = class extends AbstractDeclaration {
+    constructor(offset, length) {
+      super(offset, length);
+      this.needsSemicolon = true;
+    }
+    get type() {
+      return NodeType.VariableDeclaration;
+    }
+    setVariable(node) {
+      if (node) {
+        node.attachTo(this);
+        this.variable = node;
+        return true;
+      }
+      return false;
+    }
+    getVariable() {
+      return this.variable;
+    }
+    getName() {
+      return this.variable ? this.variable.getName() : "";
+    }
+    setValue(node) {
+      if (node) {
+        node.attachTo(this);
+        this.value = node;
+        return true;
+      }
+      return false;
+    }
+    getValue() {
+      return this.value;
+    }
+  };
+  var Interpolation = class extends Node {
+    // private _interpolations: void; // workaround for https://github.com/Microsoft/TypeScript/issues/18276
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.Interpolation;
+    }
+  };
+  var Variable = class extends Node {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.VariableName;
+    }
+    getName() {
+      return this.getText();
+    }
+  };
+  var ExtendsReference = class extends Node {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.ExtendsReference;
+    }
+    getSelectors() {
+      if (!this.selectors) {
+        this.selectors = new Nodelist(this);
+      }
+      return this.selectors;
+    }
+  };
+  var MixinContentReference = class extends Node {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.MixinContentReference;
+    }
+    getArguments() {
+      if (!this.arguments) {
+        this.arguments = new Nodelist(this);
+      }
+      return this.arguments;
+    }
+  };
+  var MixinContentDeclaration = class extends BodyDeclaration {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.MixinContentDeclaration;
+    }
+    getParameters() {
+      if (!this.parameters) {
+        this.parameters = new Nodelist(this);
+      }
+      return this.parameters;
+    }
+  };
+  var MixinReference = class extends Node {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.MixinReference;
+    }
+    getNamespaces() {
+      if (!this.namespaces) {
+        this.namespaces = new Nodelist(this);
+      }
+      return this.namespaces;
+    }
+    setIdentifier(node) {
+      return this.setNode("identifier", node, 0);
+    }
+    getIdentifier() {
+      return this.identifier;
+    }
+    getName() {
+      return this.identifier ? this.identifier.getText() : "";
+    }
+    getArguments() {
+      if (!this.arguments) {
+        this.arguments = new Nodelist(this);
+      }
+      return this.arguments;
+    }
+    setContent(node) {
+      return this.setNode("content", node);
+    }
+    getContent() {
+      return this.content;
+    }
+  };
+  var MixinDeclaration = class extends BodyDeclaration {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.MixinDeclaration;
+    }
+    setIdentifier(node) {
+      return this.setNode("identifier", node, 0);
+    }
+    getIdentifier() {
+      return this.identifier;
+    }
+    getName() {
+      return this.identifier ? this.identifier.getText() : "";
+    }
+    getParameters() {
+      if (!this.parameters) {
+        this.parameters = new Nodelist(this);
+      }
+      return this.parameters;
+    }
+    setGuard(node) {
+      if (node) {
+        node.attachTo(this);
+        this.guard = node;
+      }
+      return false;
+    }
+  };
+  var UnknownAtRule = class extends BodyDeclaration {
+    constructor(offset, length) {
+      super(offset, length);
+    }
+    get type() {
+      return NodeType.UnknownAtRule;
+    }
+    setAtRuleName(atRuleName) {
+      this.atRuleName = atRuleName;
+    }
+    getAtRuleName() {
+      return this.atRuleName;
+    }
+  };
+  var ListEntry = class extends Node {
+    get type() {
+      return NodeType.ListEntry;
+    }
+    setKey(node) {
+      return this.setNode("key", node, 0);
+    }
+    setValue(node) {
+      return this.setNode("value", node, 1);
+    }
+  };
+  var LessGuard = class extends Node {
+    getConditions() {
+      if (!this.conditions) {
+        this.conditions = new Nodelist(this);
+      }
+      return this.conditions;
+    }
+  };
+  var GuardCondition = class extends Node {
+    setVariable(node) {
+      return this.setNode("variable", node);
+    }
+  };
+  var Module = class extends Node {
+    get type() {
+      return NodeType.Module;
+    }
+    setIdentifier(node) {
+      return this.setNode("identifier", node, 0);
+    }
+    getIdentifier() {
+      return this.identifier;
+    }
+  };
+  var Level;
+  (function(Level2) {
+    Level2[Level2["Ignore"] = 1] = "Ignore";
+    Level2[Level2["Warning"] = 2] = "Warning";
+    Level2[Level2["Error"] = 4] = "Error";
+  })(Level || (Level = {}));
+  var Marker = class {
+    constructor(node, rule, level, message, offset = node.offset, length = node.length) {
+      this.node = node;
+      this.rule = rule;
+      this.level = level;
+      this.message = message || rule.message;
+      this.offset = offset;
+      this.length = length;
+    }
+    getRule() {
+      return this.rule;
+    }
+    getLevel() {
+      return this.level;
+    }
+    getOffset() {
+      return this.offset;
+    }
+    getLength() {
+      return this.length;
+    }
+    getNode() {
+      return this.node;
+    }
+    getMessage() {
+      return this.message;
+    }
+  };
+  var ParseErrorCollector = class _ParseErrorCollector {
+    static entries(node) {
+      const visitor = new _ParseErrorCollector();
+      node.acceptVisitor(visitor);
+      return visitor.entries;
+    }
+    constructor() {
+      this.entries = [];
+    }
+    visitNode(node) {
+      if (node.isErroneous()) {
+        node.collectIssues(this.entries);
+      }
+      return true;
+    }
+  };
+
+  // ../../node_modules/@vscode/l10n/dist/browser.js
+  var bundle;
+  function t(...args) {
+    var _a2;
+    const firstArg = args[0];
+    let key;
+    let message;
+    let formatArgs;
+    if (typeof firstArg === "string") {
+      key = firstArg;
+      message = firstArg;
+      args.splice(0, 1);
+      formatArgs = !args || typeof args[0] !== "object" ? args : args[0];
+    } else if (firstArg instanceof Array) {
+      const replacements = args.slice(1);
+      if (firstArg.length !== replacements.length + 1) {
+        throw new Error("expected a string as the first argument to l10n.t");
+      }
+      let str = firstArg[0];
+      for (let i = 1; i < firstArg.length; i++) {
+        str += `{${i - 1}}` + firstArg[i];
+      }
+      return t(str, ...replacements);
+    } else {
+      message = firstArg.message;
+      key = message;
+      if (firstArg.comment && firstArg.comment.length > 0) {
+        key += `/${Array.isArray(firstArg.comment) ? firstArg.comment.join("") : firstArg.comment}`;
+      }
+      formatArgs = (_a2 = firstArg.args) != null ? _a2 : {};
+    }
+    const messageFromBundle = bundle == null ? void 0 : bundle[key];
+    if (!messageFromBundle) {
+      return format(message, formatArgs);
+    }
+    if (typeof messageFromBundle === "string") {
+      return format(messageFromBundle, formatArgs);
+    }
+    if (messageFromBundle.comment) {
+      return format(messageFromBundle.message, formatArgs);
+    }
+    return format(message, formatArgs);
+  }
+  var _format2Regexp = /{([^}]+)}/g;
+  function format(template, values2) {
+    if (Object.keys(values2).length === 0) {
+      return template;
+    }
+    return template.replace(_format2Regexp, (match, group) => {
+      var _a2;
+      return (_a2 = values2[group]) != null ? _a2 : match;
+    });
+  }
+
+  // ../../node_modules/vscode-css-languageservice/lib/esm/parser/cssErrors.js
+  var CSSIssueType = class {
+    constructor(id, message) {
+      this.id = id;
+      this.message = message;
+    }
+  };
+  var ParseError = {
+    NumberExpected: new CSSIssueType("css-numberexpected", t("number expected")),
+    ConditionExpected: new CSSIssueType("css-conditionexpected", t("condition expected")),
+    RuleOrSelectorExpected: new CSSIssueType("css-ruleorselectorexpected", t("at-rule or selector expected")),
+    DotExpected: new CSSIssueType("css-dotexpected", t("dot expected")),
+    ColonExpected: new CSSIssueType("css-colonexpected", t("colon expected")),
+    SemiColonExpected: new CSSIssueType("css-semicolonexpected", t("semi-colon expected")),
+    TermExpected: new CSSIssueType("css-termexpected", t("term expected")),
+    ExpressionExpected: new CSSIssueType("css-expressionexpected", t("expression expected")),
+    OperatorExpected: new CSSIssueType("css-operatorexpected", t("operator expected")),
+    IdentifierExpected: new CSSIssueType("css-identifierexpected", t("identifier expected")),
+    PercentageExpected: new CSSIssueType("css-percentageexpected", t("percentage expected")),
+    URIOrStringExpected: new CSSIssueType("css-uriorstringexpected", t("uri or string expected")),
+    URIExpected: new CSSIssueType("css-uriexpected", t("URI expected")),
+    VariableNameExpected: new CSSIssueType("css-varnameexpected", t("variable name expected")),
+    VariableValueExpected: new CSSIssueType("css-varvalueexpected", t("variable value expected")),
+    PropertyValueExpected: new CSSIssueType("css-propertyvalueexpected", t("property value expected")),
+    LeftCurlyExpected: new CSSIssueType("css-lcurlyexpected", t("{ expected")),
+    RightCurlyExpected: new CSSIssueType("css-rcurlyexpected", t("} expected")),
+    LeftSquareBracketExpected: new CSSIssueType("css-rbracketexpected", t("[ expected")),
+    RightSquareBracketExpected: new CSSIssueType("css-lbracketexpected", t("] expected")),
+    LeftParenthesisExpected: new CSSIssueType("css-lparentexpected", t("( expected")),
+    RightParenthesisExpected: new CSSIssueType("css-rparentexpected", t(") expected")),
+    CommaExpected: new CSSIssueType("css-commaexpected", t("comma expected")),
+    PageDirectiveOrDeclarationExpected: new CSSIssueType("css-pagedirordeclexpected", t("page directive or declaraton expected")),
+    UnknownAtRule: new CSSIssueType("css-unknownatrule", t("at-rule unknown")),
+    UnknownKeyword: new CSSIssueType("css-unknownkeyword", t("unknown keyword")),
+    SelectorExpected: new CSSIssueType("css-selectorexpected", t("selector expected")),
+    StringLiteralExpected: new CSSIssueType("css-stringliteralexpected", t("string literal expected")),
+    WhitespaceExpected: new CSSIssueType("css-whitespaceexpected", t("whitespace expected")),
+    MediaQueryExpected: new CSSIssueType("css-mediaqueryexpected", t("media query expected")),
+    IdentifierOrWildcardExpected: new CSSIssueType("css-idorwildcardexpected", t("identifier or wildcard expected")),
+    WildcardExpected: new CSSIssueType("css-wildcardexpected", t("wildcard expected")),
+    IdentifierOrVariableExpected: new CSSIssueType("css-idorvarexpected", t("identifier or variable expected")),
+    IfConditionExpected: new CSSIssueType("css-ifconditionexpected", t("if condition expected"))
+  };
+
+  // ../../node_modules/vscode-languageserver-types/lib/esm/main.js
+  var DocumentUri;
+  (function(DocumentUri2) {
+    function is(value) {
+      return typeof value === "string";
+    }
+    DocumentUri2.is = is;
+  })(DocumentUri || (DocumentUri = {}));
+  var URI;
+  (function(URI2) {
+    function is(value) {
+      return typeof value === "string";
+    }
+    URI2.is = is;
+  })(URI || (URI = {}));
+  var integer;
+  (function(integer2) {
+    integer2.MIN_VALUE = -2147483648;
+    integer2.MAX_VALUE = 2147483647;
+    function is(value) {
+      return typeof value === "number" && integer2.MIN_VALUE <= value && value <= integer2.MAX_VALUE;
+    }
+    integer2.is = is;
+  })(integer || (integer = {}));
+  var uinteger;
+  (function(uinteger2) {
+    uinteger2.MIN_VALUE = 0;
+    uinteger2.MAX_VALUE = 2147483647;
+    function is(value) {
+      return typeof value === "number" && uinteger2.MIN_VALUE <= value && value <= uinteger2.MAX_VALUE;
+    }
+    uinteger2.is = is;
+  })(uinteger || (uinteger = {}));
+  var Position;
+  (function(Position2) {
+    function create(line, character) {
+      if (line === Number.MAX_VALUE) {
+        line = uinteger.MAX_VALUE;
+      }
+      if (character === Number.MAX_VALUE) {
+        character = uinteger.MAX_VALUE;
+      }
+      return { line, character };
+    }
+    Position2.create = create;
+    function is(value) {
+      let candidate = value;
+      return Is.objectLiteral(candidate) && Is.uinteger(candidate.line) && Is.uinteger(candidate.character);
+    }
+    Position2.is = is;
+  })(Position || (Position = {}));
+  var Range2;
+  (function(Range3) {
+    function create(one, two, three, four) {
+      if (Is.uinteger(one) && Is.uinteger(two) && Is.uinteger(three) && Is.uinteger(four)) {
+        return { start: Position.create(one, two), end: Position.create(three, four) };
+      } else if (Position.is(one) && Position.is(two)) {
+        return { start: one, end: two };
+      } else {
+        throw new Error(`Range#create called with invalid arguments[${one}, ${two}, ${three}, ${four}]`);
+      }
+    }
+    Range3.create = create;
+    function is(value) {
+      let candidate = value;
+      return Is.objectLiteral(candidate) && Position.is(candidate.start) && Position.is(candidate.end);
+    }
+    Range3.is = is;
+  })(Range2 || (Range2 = {}));
+  var Location;
+  (function(Location2) {
+    function create(uri, range) {
+      return { uri, range };
+    }
+    Location2.create = create;
+    function is(value) {
+      let candidate = value;
+      return Is.objectLiteral(candidate) && Range2.is(candidate.range) && (Is.string(candidate.uri) || Is.undefined(candidate.uri));
+    }
+    Location2.is = is;
+  })(Location || (Location = {}));
+  var LocationLink;
+  (function(LocationLink2) {
+    function create(targetUri, targetRange, targetSelectionRange, originSelectionRange) {
+      return { targetUri, targetRange, targetSelectionRange, originSelectionRange };
+    }
+    LocationLink2.create = create;
+    function is(value) {
+      let candidate = value;
+      return Is.objectLiteral(candidate) && Range2.is(candidate.targetRange) && Is.string(candidate.targetUri) && Range2.is(candidate.targetSelectionRange) && (Range2.is(candidate.originSelectionRange) || Is.undefined(candidate.originSelectionRange));
+    }
+    LocationLink2.is = is;
+  })(LocationLink || (LocationLink = {}));
+  var Color;
+  (function(Color2) {
+    function create(red, green, blue, alpha) {
+      return {
+        red,
+        green,
+        blue,
+        alpha
+      };
+    }
+    Color2.create = create;
+    function is(value) {
+      const candidate = value;
+      return Is.objectLiteral(candidate) && Is.numberRange(candidate.red, 0, 1) && Is.numberRange(candidate.green, 0, 1) && Is.numberRange(candidate.blue, 0, 1) && Is.numberRange(candidate.alpha, 0, 1);
+    }
+    Color2.is = is;
+  })(Color || (Color = {}));
+  var ColorInformation;
+  (function(ColorInformation2) {
+    function create(range, color) {
+      return {
+        range,
+        color
+      };
+    }
+    ColorInformation2.create = create;
+    function is(value) {
+      const candidate = value;
+      return Is.objectLiteral(candidate) && Range2.is(candidate.range) && Color.is(candidate.color);
+    }
+    ColorInformation2.is = is;
+  })(ColorInformation || (ColorInformation = {}));
+  var ColorPresentation;
+  (function(ColorPresentation2) {
+    function create(label, textEdit, additionalTextEdits) {
+      return {
+        label,
+        textEdit,
+        additionalTextEdits
+      };
+    }
+    ColorPresentation2.create = create;
+    function is(value) {
+      const candidate = value;
+      return Is.objectLiteral(candidate) && Is.string(candidate.label) && (Is.undefined(candidate.textEdit) || TextEdit.is(candidate)) && (Is.undefined(candidate.additionalTextEdits) || Is.typedArray(candidate.additionalTextEdits, TextEdit.is));
+    }
+    ColorPresentation2.is = is;
+  })(ColorPresentation || (ColorPresentation = {}));
+  var FoldingRangeKind;
+  (function(FoldingRangeKind2) {
+    FoldingRangeKind2.Comment = "comment";
+    FoldingRangeKind2.Imports = "imports";
+    FoldingRangeKind2.Region = "region";
+  })(FoldingRangeKind || (FoldingRangeKind = {}));
+  var FoldingRange;
+  (function(FoldingRange2) {
+    function create(startLine, endLine, startCharacter, endCharacter, kind, collapsedText) {
+      const result = {
+        startLine,
+        endLine
+      };
+      if (Is.defined(startCharacter)) {
+        result.startCharacter = startCharacter;
+      }
+      if (Is.defined(endCharacter)) {
+        result.endCharacter = endCharacter;
+      }
+      if (Is.defined(kind)) {
+        result.kind = kind;
+      }
+      if (Is.defined(collapsedText)) {
+        result.collapsedText = collapsedText;
+      }
+      return result;
+    }
+    FoldingRange2.create = create;
+    function is(value) {
+      const candidate = value;
+      return Is.objectLiteral(candidate) && Is.uinteger(candidate.startLine) && Is.uinteger(candidate.startLine) && (Is.undefined(candidate.startCharacter) || Is.uinteger(candidate.startCharacter)) && (Is.undefined(candidate.endCharacter) || Is.uinteger(candidate.endCharacter)) && (Is.undefined(candidate.kind) || Is.string(candidate.kind));
+    }
+    FoldingRange2.is = is;
+  })(FoldingRange || (FoldingRange = {}));
+  var DiagnosticRelatedInformation;
+  (function(DiagnosticRelatedInformation2) {
+    function create(location, message) {
+      return {
+        location,
+        message
+      };
+    }
+    DiagnosticRelatedInformation2.create = create;
+    function is(value) {
+      let candidate = value;
+      return Is.defined(candidate) && Location.is(candidate.location) && Is.string(candidate.message);
+    }
+    DiagnosticRelatedInformation2.is = is;
+  })(DiagnosticRelatedInformation || (DiagnosticRelatedInformation = {}));
+  var DiagnosticSeverity;
+  (function(DiagnosticSeverity2) {
+    DiagnosticSeverity2.Error = 1;
+    DiagnosticSeverity2.Warning = 2;
+    DiagnosticSeverity2.Information = 3;
+    DiagnosticSeverity2.Hint = 4;
+  })(DiagnosticSeverity || (DiagnosticSeverity = {}));
+  var DiagnosticTag;
+  (function(DiagnosticTag2) {
+    DiagnosticTag2.Unnecessary = 1;
+    DiagnosticTag2.Deprecated = 2;
+  })(DiagnosticTag || (DiagnosticTag = {}));
+  var CodeDescription;
+  (function(CodeDescription2) {
+    function is(value) {
+      const candidate = value;
+      return Is.objectLiteral(candidate) && Is.string(candidate.href);
+    }
+    CodeDescription2.is = is;
+  })(CodeDescription || (CodeDescription = {}));
+  var Diagnostic;
+  (function(Diagnostic2) {
+    function create(range, message, severity, code, source, relatedInformation) {
+      let result = { range, message };
+      if (Is.defined(severity)) {
+        result.severity = severity;
+      }
+      if (Is.defined(code)) {
+        result.code = code;
+      }
+      if (Is.defined(source)) {
+        result.source = source;
+      }
+      if (Is.defined(relatedInformation)) {
+        result.relatedInformation = relatedInformation;
+      }
+      return result;
+    }
+    Diagnostic2.create = create;
+    function is(value) {
+      var _a2;
+      let candidate = value;
+      return Is.defined(candidate) && Range2.is(candidate.range) && Is.string(candidate.message) && (Is.number(candidate.severity) || Is.undefined(candidate.severity)) && (Is.integer(candidate.code) || Is.string(candidate.code) || Is.undefined(candidate.code)) && (Is.undefined(candidate.codeDescription) || Is.string((_a2 = candidate.codeDescription) === null || _a2 === void 0 ? void 0 : _a2.href)) && (Is.string(candidate.source) || Is.undefined(candidate.source)) && (Is.undefined(candidate.relatedInformation) || Is.typedArray(candidate.relatedInformation, DiagnosticRelatedInformation.is));
+    }
+    Diagnostic2.is = is;
+  })(Diagnostic || (Diagnostic = {}));
+  var Command;
+  (function(Command2) {
+    function create(title, command, ...args) {
+      let result = { title, command };
+      if (Is.defined(args) && args.length > 0) {
+        result.arguments = args;
+      }
+      return result;
+    }
+    Command2.create = create;
+    function is(value) {
+      let candidate = value;
+      return Is.defined(candidate) && Is.string(candidate.title) && Is.string(candidate.command);
+    }
+    Command2.is = is;
+  })(Command || (Command = {}));
+  var TextEdit;
+  (function(TextEdit2) {
+    function replace(range, newText) {
+      return { range, newText };
+    }
+    TextEdit2.replace = replace;
+    function insert(position, newText) {
+      return { range: { start: position, end: position }, newText };
+    }
+    TextEdit2.insert = insert;
+    function del(range) {
+      return { range, newText: "" };
+    }
+    TextEdit2.del = del;
+    function is(value) {
+      const candidate = value;
+      return Is.objectLiteral(candidate) && Is.string(candidate.newText) && Range2.is(candidate.range);
+    }
+    TextEdit2.is = is;
+  })(TextEdit || (TextEdit = {}));
+  var ChangeAnnotation;
+  (function(ChangeAnnotation2) {
+    function create(label, needsConfirmation, description) {
+      const result = { label };
+      if (needsConfirmation !== void 0) {
+        result.needsConfirmation = needsConfirmation;
+      }
+      if (description !== void 0) {
+        result.description = description;
+      }
+      return result;
+    }
+    ChangeAnnotation2.create = create;
+    function is(value) {
+      const candidate = value;
+      return Is.objectLiteral(candidate) && Is.string(candidate.label) && (Is.boolean(candidate.needsConfirmation) || candidate.needsConfirmation === void 0) && (Is.string(candidate.description) || candidate.description === void 0);
+    }
+    ChangeAnnotation2.is = is;
+  })(ChangeAnnotation || (ChangeAnnotation = {}));
+  var ChangeAnnotationIdentifier;
+  (function(ChangeAnnotationIdentifier2) {
+    function is(value) {
+      const candidate = value;
+      return Is.string(candidate);
+    }
+    ChangeAnnotationIdentifier2.is = is;
+  })(ChangeAnnotationIdentifier || (ChangeAnnotationIdentifier = {}));
+  var AnnotatedTextEdit;
+  (function(AnnotatedTextEdit2) {
+    function replace(range, newText, annotation) {
+      return { range, newText, annotationId: annotation };
+    }
+    AnnotatedTextEdit2.replace = replace;
+    function insert(position, newText, annotation) {
+      return { range: { start: position, end: position }, newText, annotationId: annotation };
+    }
+    AnnotatedTextEdit2.insert = insert;
+    function del(range, annotation) {
+      return { range, newText: "", annotationId: annotation };
+    }
+    AnnotatedTextEdit2.del = del;
+    function is(value) {
+      const candidate = value;
+      return TextEdit.is(candidate) && (ChangeAnnotation.is(candidate.annotationId) || ChangeAnnotationIdentifier.is(candidate.annotationId));
+    }
+    AnnotatedTextEdit2.is = is;
+  })(AnnotatedTextEdit || (AnnotatedTextEdit = {}));
+  var TextDocumentEdit;
+  (function(TextDocumentEdit2) {
+    function create(textDocument, edits) {
+      return { textDocument, edits };
+    }
+    TextDocumentEdit2.create = create;
+    function is(value) {
+      let candidate = value;
+      return Is.defined(candidate) && OptionalVersionedTextDocumentIdentifier.is(candidate.textDocument) && Array.isArray(candidate.edits);
+    }
+    TextDocumentEdit2.is = is;
+  })(TextDocumentEdit || (TextDocumentEdit = {}));
+  var CreateFile;
+  (function(CreateFile2) {
+    function create(uri, options, annotation) {
+      let result = {
+        kind: "create",
+        uri
+      };
+      if (options !== void 0 && (options.overwrite !== void 0 || options.ignoreIfExists !== void 0)) {
+        result.options = options;
+      }
+      if (annotation !== void 0) {
+        result.annotationId = annotation;
+      }
+      return result;
+    }
+    CreateFile2.create = create;
+    function is(value) {
+      let candidate = value;
+      return candidate && candidate.kind === "create" && Is.string(candidate.uri) && (candidate.options === void 0 || (candidate.options.overwrite === void 0 || Is.boolean(candidate.options.overwrite)) && (candidate.options.ignoreIfExists === void 0 || Is.boolean(candidate.options.ignoreIfExists))) && (candidate.annotationId === void 0 || ChangeAnnotationIdentifier.is(candidate.annotationId));
+    }
+    CreateFile2.is = is;
+  })(CreateFile || (CreateFile = {}));
+  var RenameFile;
+  (function(RenameFile2) {
+    function create(oldUri, newUri, options, annotation) {
+      let result = {
+        kind: "rename",
+        oldUri,
+        newUri
+      };
+      if (options !== void 0 && (options.overwrite !== void 0 || options.ignoreIfExists !== void 0)) {
+        result.options = options;
+      }
+      if (annotation !== void 0) {
+        result.annotationId = annotation;
+      }
+      return result;
+    }
+    RenameFile2.create = create;
+    function is(value) {
+      let candidate = value;
+      return candidate && candidate.kind === "rename" && Is.string(candidate.oldUri) && Is.string(candidate.newUri) && (candidate.options === void 0 || (candidate.options.overwrite === void 0 || Is.boolean(candidate.options.overwrite)) && (candidate.options.ignoreIfExists === void 0 || Is.boolean(candidate.options.ignoreIfExists))) && (candidate.annotationId === void 0 || ChangeAnnotationIdentifier.is(candidate.annotationId));
+    }
+    RenameFile2.is = is;
+  })(RenameFile || (RenameFile = {}));
+  var DeleteFile;
+  (function(DeleteFile2) {
+    function create(uri, options, annotation) {
+      let result = {
+        kind: "delete",
+        uri
+      };
+      if (options !== void 0 && (options.recursive !== void 0 || options.ignoreIfNotExists !== void 0)) {
+        result.options = options;
+      }
+      if (annotation !== void 0) {
+        result.annotationId = annotation;
+      }
+      return result;
+    }
+    DeleteFile2.create = create;
+    function is(value) {
+      let candidate = value;
+      return candidate && candidate.kind === "delete" && Is.string(candidate.uri) && (candidate.options === void 0 || (candidate.options.recursive === void 0 || Is.boolean(candidate.options.recursive)) && (candidate.options.ignoreIfNotExists === void 0 || Is.boolean(candidate.options.ignoreIfNotExists))) && (candidate.annotationId === void 0 || ChangeAnnotationIdentifier.is(candidate.annotationId));
+    }
+    DeleteFile2.is = is;
+  })(DeleteFile || (DeleteFile = {}));
+  var WorkspaceEdit;
+  (function(WorkspaceEdit2) {
+    function is(value) {
+      let candidate = value;
+      return candidate && (candidate.changes !== void 0 || candidate.documentChanges !== void 0) && (candidate.documentChanges === void 0 || candidate.documentChanges.every((change) => {
+        if (Is.string(change.kind)) {
+          return CreateFile.is(change) || RenameFile.is(change) || DeleteFile.is(change);
+        } else {
+          return TextDocumentEdit.is(change);
+        }
+      }));
+    }
+    WorkspaceEdit2.is = is;
+  })(WorkspaceEdit || (WorkspaceEdit = {}));
+  var TextDocumentIdentifier;
+  (function(TextDocumentIdentifier2) {
+    function create(uri) {
+      return { uri };
+    }
+    TextDocumentIdentifier2.create = create;
+    function is(value) {
+      let candidate = value;
+      return Is.defined(candidate) && Is.string(candidate.uri);
+    }
+    TextDocumentIdentifier2.is = is;
+  })(TextDocumentIdentifier || (TextDocumentIdentifier = {}));
+  var VersionedTextDocumentIdentifier;
+  (function(VersionedTextDocumentIdentifier2) {
+    function create(uri, version) {
+      return { uri, version };
+    }
+    VersionedTextDocumentIdentifier2.create = create;
+    function is(value) {
+      let candidate = value;
+      return Is.defined(candidate) && Is.string(candidate.uri) && Is.integer(candidate.version);
+    }
+    VersionedTextDocumentIdentifier2.is = is;
+  })(VersionedTextDocumentIdentifier || (VersionedTextDocumentIdentifier = {}));
+  var OptionalVersionedTextDocumentIdentifier;
+  (function(OptionalVersionedTextDocumentIdentifier2) {
+    function create(uri, version) {
+      return { uri, version };
+    }
+    OptionalVersionedTextDocumentIdentifier2.create = create;
+    function is(value) {
+      let candidate = value;
+      return Is.defined(candidate) && Is.string(candidate.uri) && (candidate.version === null || Is.integer(candidate.version));
+    }
+    OptionalVersionedTextDocumentIdentifier2.is = is;
+  })(OptionalVersionedTextDocumentIdentifier || (OptionalVersionedTextDocumentIdentifier = {}));
+  var TextDocumentItem;
+  (function(TextDocumentItem2) {
+    function create(uri, languageId, version, text) {
+      return { uri, languageId, version, text };
+    }
+    TextDocumentItem2.create = create;
+    function is(value) {
+      let candidate = value;
+      return Is.defined(candidate) && Is.string(candidate.uri) && Is.string(candidate.languageId) && Is.integer(candidate.version) && Is.string(candidate.text);
+    }
+    TextDocumentItem2.is = is;
+  })(TextDocumentItem || (TextDocumentItem = {}));
+  var MarkupKind;
+  (function(MarkupKind2) {
+    MarkupKind2.PlainText = "plaintext";
+    MarkupKind2.Markdown = "markdown";
+    function is(value) {
+      const candidate = value;
+      return candidate === MarkupKind2.PlainText || candidate === MarkupKind2.Markdown;
+    }
+    MarkupKind2.is = is;
+  })(MarkupKind || (MarkupKind = {}));
+  var MarkupContent;
+  (function(MarkupContent2) {
+    function is(value) {
+      const candidate = value;
+      return Is.objectLiteral(value) && MarkupKind.is(candidate.kind) && Is.string(candidate.value);
+    }
+    MarkupContent2.is = is;
+  })(MarkupContent || (MarkupContent = {}));
+  var CompletionItemKind;
+  (function(CompletionItemKind2) {
+    CompletionItemKind2.Text = 1;
+    CompletionItemKind2.Method = 2;
+    CompletionItemKind2.Function = 3;
+    CompletionItemKind2.Constructor = 4;
+    CompletionItemKind2.Field = 5;
+    CompletionItemKind2.Variable = 6;
+    CompletionItemKind2.Class = 7;
+    CompletionItemKind2.Interface = 8;
+    CompletionItemKind2.Module = 9;
+    CompletionItemKind2.Property = 10;
+    CompletionItemKind2.Unit = 11;
+    CompletionItemKind2.Value = 12;
+    CompletionItemKind2.Enum = 13;
+    CompletionItemKind2.Keyword = 14;
+    CompletionItemKind2.Snippet = 15;
+    CompletionItemKind2.Color = 16;
+    CompletionItemKind2.File = 17;
+    CompletionItemKind2.Reference = 18;
+    CompletionItemKind2.Folder = 19;
+    CompletionItemKind2.EnumMember = 20;
+    CompletionItemKind2.Constant = 21;
+    CompletionItemKind2.Struct = 22;
+    CompletionItemKind2.Event = 23;
+    CompletionItemKind2.Operator = 24;
+    CompletionItemKind2.TypeParameter = 25;
+  })(CompletionItemKind || (CompletionItemKind = {}));
+  var InsertTextFormat;
+  (function(InsertTextFormat2) {
+    InsertTextFormat2.PlainText = 1;
+    InsertTextFormat2.Snippet = 2;
+  })(InsertTextFormat || (InsertTextFormat = {}));
+  var CompletionItemTag;
+  (function(CompletionItemTag2) {
+    CompletionItemTag2.Deprecated = 1;
+  })(CompletionItemTag || (CompletionItemTag = {}));
+  var InsertReplaceEdit;
+  (function(InsertReplaceEdit2) {
+    function create(newText, insert, replace) {
+      return { newText, insert, replace };
+    }
+    InsertReplaceEdit2.create = create;
+    function is(value) {
+      const candidate = value;
+      return candidate && Is.string(candidate.newText) && Range2.is(candidate.insert) && Range2.is(candidate.replace);
+    }
+    InsertReplaceEdit2.is = is;
+  })(InsertReplaceEdit || (InsertReplaceEdit = {}));
+  var InsertTextMode;
+  (function(InsertTextMode2) {
+    InsertTextMode2.asIs = 1;
+    InsertTextMode2.adjustIndentation = 2;
+  })(InsertTextMode || (InsertTextMode = {}));
+  var CompletionItemLabelDetails;
+  (function(CompletionItemLabelDetails2) {
+    function is(value) {
+      const candidate = value;
+      return candidate && (Is.string(candidate.detail) || candidate.detail === void 0) && (Is.string(candidate.description) || candidate.description === void 0);
+    }
+    CompletionItemLabelDetails2.is = is;
+  })(CompletionItemLabelDetails || (CompletionItemLabelDetails = {}));
+  var CompletionItem;
+  (function(CompletionItem2) {
+    function create(label) {
+      return { label };
+    }
+    CompletionItem2.create = create;
+  })(CompletionItem || (CompletionItem = {}));
+  var CompletionList;
+  (function(CompletionList2) {
+    function create(items, isIncomplete) {
+      return { items: items ? items : [], isIncomplete: !!isIncomplete };
+    }
+    CompletionList2.create = create;
+  })(CompletionList || (CompletionList = {}));
+  var MarkedString;
+  (function(MarkedString2) {
+    function fromPlainText(plainText) {
+      return plainText.replace(/[\\`*_{}[\]()#+\-.!]/g, "\\$&");
+    }
+    MarkedString2.fromPlainText = fromPlainText;
+    function is(value) {
+      const candidate = value;
+      return Is.string(candidate) || Is.objectLiteral(candidate) && Is.string(candidate.language) && Is.string(candidate.value);
+    }
+    MarkedString2.is = is;
+  })(MarkedString || (MarkedString = {}));
+  var Hover;
+  (function(Hover2) {
+    function is(value) {
+      let candidate = value;
+      return !!candidate && Is.objectLiteral(candidate) && (MarkupContent.is(candidate.contents) || MarkedString.is(candidate.contents) || Is.typedArray(candidate.contents, MarkedString.is)) && (value.range === void 0 || Range2.is(value.range));
+    }
+    Hover2.is = is;
+  })(Hover || (Hover = {}));
+  var ParameterInformation;
+  (function(ParameterInformation2) {
+    function create(label, documentation) {
+      return documentation ? { label, documentation } : { label };
+    }
+    ParameterInformation2.create = create;
+  })(ParameterInformation || (ParameterInformation = {}));
+  var SignatureInformation;
+  (function(SignatureInformation2) {
+    function create(label, documentation, ...parameters) {
+      let result = { label };
+      if (Is.defined(documentation)) {
+        result.documentation = documentation;
+      }
+      if (Is.defined(parameters)) {
+        result.parameters = parameters;
+      } else {
+        result.parameters = [];
+      }
+      return result;
+    }
+    SignatureInformation2.create = create;
+  })(SignatureInformation || (SignatureInformation = {}));
+  var DocumentHighlightKind;
+  (function(DocumentHighlightKind2) {
+    DocumentHighlightKind2.Text = 1;
+    DocumentHighlightKind2.Read = 2;
+    DocumentHighlightKind2.Write = 3;
+  })(DocumentHighlightKind || (DocumentHighlightKind = {}));
+  var DocumentHighlight;
+  (function(DocumentHighlight2) {
+    function create(range, kind) {
+      let result = { range };
+      if (Is.number(kind)) {
+        result.kind = kind;
+      }
+      return result;
+    }
+    DocumentHighlight2.create = create;
+  })(DocumentHighlight || (DocumentHighlight = {}));
+  var SymbolKind;
+  (function(SymbolKind2) {
+    SymbolKind2.File = 1;
+    SymbolKind2.Module = 2;
+    SymbolKind2.Namespace = 3;
+    SymbolKind2.Package = 4;
+    SymbolKind2.Class = 5;
+    SymbolKind2.Method = 6;
+    SymbolKind2.Property = 7;
+    SymbolKind2.Field = 8;
+    SymbolKind2.Constructor = 9;
+    SymbolKind2.Enum = 10;
+    SymbolKind2.Interface = 11;
+    SymbolKind2.Function = 12;
+    SymbolKind2.Variable = 13;
+    SymbolKind2.Constant = 14;
+    SymbolKind2.String = 15;
+    SymbolKind2.Number = 16;
+    SymbolKind2.Boolean = 17;
+    SymbolKind2.Array = 18;
+    SymbolKind2.Object = 19;
+    SymbolKind2.Key = 20;
+    SymbolKind2.Null = 21;
+    SymbolKind2.EnumMember = 22;
+    SymbolKind2.Struct = 23;
+    SymbolKind2.Event = 24;
+    SymbolKind2.Operator = 25;
+    SymbolKind2.TypeParameter = 26;
+  })(SymbolKind || (SymbolKind = {}));
+  var SymbolTag;
+  (function(SymbolTag2) {
+    SymbolTag2.Deprecated = 1;
+  })(SymbolTag || (SymbolTag = {}));
+  var SymbolInformation;
+  (function(SymbolInformation2) {
+    function create(name, kind, range, uri, containerName) {
+      let result = {
+        name,
+        kind,
+        location: { uri, range }
+      };
+      if (containerName) {
+        result.containerName = containerName;
+      }
+      return result;
+    }
+    SymbolInformation2.create = create;
+  })(SymbolInformation || (SymbolInformation = {}));
+  var WorkspaceSymbol;
+  (function(WorkspaceSymbol2) {
+    function create(name, kind, uri, range) {
+      return range !== void 0 ? { name, kind, location: { uri, range } } : { name, kind, location: { uri } };
+    }
+    WorkspaceSymbol2.create = create;
+  })(WorkspaceSymbol || (WorkspaceSymbol = {}));
+  var DocumentSymbol;
+  (function(DocumentSymbol2) {
+    function create(name, detail, kind, range, selectionRange, children) {
+      let result = {
+        name,
+        detail,
+        kind,
+        range,
+        selectionRange
+      };
+      if (children !== void 0) {
+        result.children = children;
+      }
+      return result;
+    }
+    DocumentSymbol2.create = create;
+    function is(value) {
+      let candidate = value;
+      return candidate && Is.string(candidate.name) && Is.number(candidate.kind) && Range2.is(candidate.range) && Range2.is(candidate.selectionRange) && (candidate.detail === void 0 || Is.string(candidate.detail)) && (candidate.deprecated === void 0 || Is.boolean(candidate.deprecated)) && (candidate.children === void 0 || Array.isArray(candidate.children)) && (candidate.tags === void 0 || Array.isArray(candidate.tags));
+    }
+    DocumentSymbol2.is = is;
+  })(DocumentSymbol || (DocumentSymbol = {}));
+  var CodeActionKind;
+  (function(CodeActionKind2) {
+    CodeActionKind2.Empty = "";
+    CodeActionKind2.QuickFix = "quickfix";
+    CodeActionKind2.Refactor = "refactor";
+    CodeActionKind2.RefactorExtract = "refactor.extract";
+    CodeActionKind2.RefactorInline = "refactor.inline";
+    CodeActionKind2.RefactorRewrite = "refactor.rewrite";
+    CodeActionKind2.Source = "source";
+    CodeActionKind2.SourceOrganizeImports = "source.organizeImports";
+    CodeActionKind2.SourceFixAll = "source.fixAll";
+  })(CodeActionKind || (CodeActionKind = {}));
+  var CodeActionTriggerKind;
+  (function(CodeActionTriggerKind2) {
+    CodeActionTriggerKind2.Invoked = 1;
+    CodeActionTriggerKind2.Automatic = 2;
+  })(CodeActionTriggerKind || (CodeActionTriggerKind = {}));
+  var CodeActionContext;
+  (function(CodeActionContext2) {
+    function create(diagnostics, only, triggerKind) {
+      let result = { diagnostics };
+      if (only !== void 0 && only !== null) {
+        result.only = only;
+      }
+      if (triggerKind !== void 0 && triggerKind !== null) {
+        result.triggerKind = triggerKind;
+      }
+      return result;
+    }
+    CodeActionContext2.create = create;
+    function is(value) {
+      let candidate = value;
+      return Is.defined(candidate) && Is.typedArray(candidate.diagnostics, Diagnostic.is) && (candidate.only === void 0 || Is.typedArray(candidate.only, Is.string)) && (candidate.triggerKind === void 0 || candidate.triggerKind === CodeActionTriggerKind.Invoked || candidate.triggerKind === CodeActionTriggerKind.Automatic);
+    }
+    CodeActionContext2.is = is;
+  })(CodeActionContext || (CodeActionContext = {}));
+  var CodeAction;
+  (function(CodeAction2) {
+    function create(title, kindOrCommandOrEdit, kind) {
+      let result = { title };
+      let checkKind = true;
+      if (typeof kindOrCommandOrEdit === "string") {
+        checkKind = false;
+        result.kind = kindOrCommandOrEdit;
+      } else if (Command.is(kindOrCommandOrEdit)) {
+        result.command = kindOrCommandOrEdit;
+      } else {
+        result.edit = kindOrCommandOrEdit;
+      }
+      if (checkKind && kind !== void 0) {
+        result.kind = kind;
+      }
+      return result;
+    }
+    CodeAction2.create = create;
+    function is(value) {
+      let candidate = value;
+      return candidate && Is.string(candidate.title) && (candidate.diagnostics === void 0 || Is.typedArray(candidate.diagnostics, Diagnostic.is)) && (candidate.kind === void 0 || Is.string(candidate.kind)) && (candidate.edit !== void 0 || candidate.command !== void 0) && (candidate.command === void 0 || Command.is(candidate.command)) && (candidate.isPreferred === void 0 || Is.boolean(candidate.isPreferred)) && (candidate.edit === void 0 || WorkspaceEdit.is(candidate.edit));
+    }
+    CodeAction2.is = is;
+  })(CodeAction || (CodeAction = {}));
+  var CodeLens;
+  (function(CodeLens2) {
+    function create(range, data) {
+      let result = { range };
+      if (Is.defined(data)) {
+        result.data = data;
+      }
+      return result;
+    }
+    CodeLens2.create = create;
+    function is(value) {
+      let candidate = value;
+      return Is.defined(candidate) && Range2.is(candidate.range) && (Is.undefined(candidate.command) || Command.is(candidate.command));
+    }
+    CodeLens2.is = is;
+  })(CodeLens || (CodeLens = {}));
+  var FormattingOptions;
+  (function(FormattingOptions2) {
+    function create(tabSize, insertSpaces) {
+      return { tabSize, insertSpaces };
+    }
+    FormattingOptions2.create = create;
+    function is(value) {
+      let candidate = value;
+      return Is.defined(candidate) && Is.uinteger(candidate.tabSize) && Is.boolean(candidate.insertSpaces);
+    }
+    FormattingOptions2.is = is;
+  })(FormattingOptions || (FormattingOptions = {}));
+  var DocumentLink;
+  (function(DocumentLink2) {
+    function create(range, target, data) {
+      return { range, target, data };
+    }
+    DocumentLink2.create = create;
+    function is(value) {
+      let candidate = value;
+      return Is.defined(candidate) && Range2.is(candidate.range) && (Is.undefined(candidate.target) || Is.string(candidate.target));
+    }
+    DocumentLink2.is = is;
+  })(DocumentLink || (DocumentLink = {}));
+  var SelectionRange;
+  (function(SelectionRange2) {
+    function create(range, parent) {
+      return { range, parent };
+    }
+    SelectionRange2.create = create;
+    function is(value) {
+      let candidate = value;
+      return Is.objectLiteral(candidate) && Range2.is(candidate.range) && (candidate.parent === void 0 || SelectionRange2.is(candidate.parent));
+    }
+    SelectionRange2.is = is;
+  })(SelectionRange || (SelectionRange = {}));
+  var SemanticTokenTypes;
+  (function(SemanticTokenTypes2) {
+    SemanticTokenTypes2["namespace"] = "namespace";
+    SemanticTokenTypes2["type"] = "type";
+    SemanticTokenTypes2["class"] = "class";
+    SemanticTokenTypes2["enum"] = "enum";
+    SemanticTokenTypes2["interface"] = "interface";
+    SemanticTokenTypes2["struct"] = "struct";
+    SemanticTokenTypes2["typeParameter"] = "typeParameter";
+    SemanticTokenTypes2["parameter"] = "parameter";
+    SemanticTokenTypes2["variable"] = "variable";
+    SemanticTokenTypes2["property"] = "property";
+    SemanticTokenTypes2["enumMember"] = "enumMember";
+    SemanticTokenTypes2["event"] = "event";
+    SemanticTokenTypes2["function"] = "function";
+    SemanticTokenTypes2["method"] = "method";
+    SemanticTokenTypes2["macro"] = "macro";
+    SemanticTokenTypes2["keyword"] = "keyword";
+    SemanticTokenTypes2["modifier"] = "modifier";
+    SemanticTokenTypes2["comment"] = "comment";
+    SemanticTokenTypes2["string"] = "string";
+    SemanticTokenTypes2["number"] = "number";
+    SemanticTokenTypes2["regexp"] = "regexp";
+    SemanticTokenTypes2["operator"] = "operator";
+    SemanticTokenTypes2["decorator"] = "decorator";
+  })(SemanticTokenTypes || (SemanticTokenTypes = {}));
+  var SemanticTokenModifiers;
+  (function(SemanticTokenModifiers2) {
+    SemanticTokenModifiers2["declaration"] = "declaration";
+    SemanticTokenModifiers2["definition"] = "definition";
+    SemanticTokenModifiers2["readonly"] = "readonly";
+    SemanticTokenModifiers2["static"] = "static";
+    SemanticTokenModifiers2["deprecated"] = "deprecated";
+    SemanticTokenModifiers2["abstract"] = "abstract";
+    SemanticTokenModifiers2["async"] = "async";
+    SemanticTokenModifiers2["modification"] = "modification";
+    SemanticTokenModifiers2["documentation"] = "documentation";
+    SemanticTokenModifiers2["defaultLibrary"] = "defaultLibrary";
+  })(SemanticTokenModifiers || (SemanticTokenModifiers = {}));
+  var SemanticTokens;
+  (function(SemanticTokens2) {
+    function is(value) {
+      const candidate = value;
+      return Is.objectLiteral(candidate) && (candidate.resultId === void 0 || typeof candidate.resultId === "string") && Array.isArray(candidate.data) && (candidate.data.length === 0 || typeof candidate.data[0] === "number");
+    }
+    SemanticTokens2.is = is;
+  })(SemanticTokens || (SemanticTokens = {}));
+  var InlineValueText;
+  (function(InlineValueText2) {
+    function create(range, text) {
+      return { range, text };
+    }
+    InlineValueText2.create = create;
+    function is(value) {
+      const candidate = value;
+      return candidate !== void 0 && candidate !== null && Range2.is(candidate.range) && Is.string(candidate.text);
+    }
+    InlineValueText2.is = is;
+  })(InlineValueText || (InlineValueText = {}));
+  var InlineValueVariableLookup;
+  (function(InlineValueVariableLookup2) {
+    function create(range, variableName, caseSensitiveLookup) {
+      return { range, variableName, caseSensitiveLookup };
+    }
+    InlineValueVariableLookup2.create = create;
+    function is(value) {
+      const candidate = value;
+      return candidate !== void 0 && candidate !== null && Range2.is(candidate.range) && Is.boolean(candidate.caseSensitiveLookup) && (Is.string(candidate.variableName) || candidate.variableName === void 0);
+    }
+    InlineValueVariableLookup2.is = is;
+  })(InlineValueVariableLookup || (InlineValueVariableLookup = {}));
+  var InlineValueEvaluatableExpression;
+  (function(InlineValueEvaluatableExpression2) {
+    function create(range, expression) {
+      return { range, expression };
+    }
+    InlineValueEvaluatableExpression2.create = create;
+    function is(value) {
+      const candidate = value;
+      return candidate !== void 0 && candidate !== null && Range2.is(candidate.range) && (Is.string(candidate.expression) || candidate.expression === void 0);
+    }
+    InlineValueEvaluatableExpression2.is = is;
+  })(InlineValueEvaluatableExpression || (InlineValueEvaluatableExpression = {}));
+  var InlineValueContext;
+  (function(InlineValueContext2) {
+    function create(frameId, stoppedLocation) {
+      return { frameId, stoppedLocation };
+    }
+    InlineValueContext2.create = create;
+    function is(value) {
+      const candidate = value;
+      return Is.defined(candidate) && Range2.is(value.stoppedLocation);
+    }
+    InlineValueContext2.is = is;
+  })(InlineValueContext || (InlineValueContext = {}));
+  var InlayHintKind;
+  (function(InlayHintKind2) {
+    InlayHintKind2.Type = 1;
+    InlayHintKind2.Parameter = 2;
+    function is(value) {
+      return value === 1 || value === 2;
+    }
+    InlayHintKind2.is = is;
+  })(InlayHintKind || (InlayHintKind = {}));
+  var InlayHintLabelPart;
+  (function(InlayHintLabelPart2) {
+    function create(value) {
+      return { value };
+    }
+    InlayHintLabelPart2.create = create;
+    function is(value) {
+      const candidate = value;
+      return Is.objectLiteral(candidate) && (candidate.tooltip === void 0 || Is.string(candidate.tooltip) || MarkupContent.is(candidate.tooltip)) && (candidate.location === void 0 || Location.is(candidate.location)) && (candidate.command === void 0 || Command.is(candidate.command));
+    }
+    InlayHintLabelPart2.is = is;
+  })(InlayHintLabelPart || (InlayHintLabelPart = {}));
+  var InlayHint;
+  (function(InlayHint2) {
+    function create(position, label, kind) {
+      const result = { position, label };
+      if (kind !== void 0) {
+        result.kind = kind;
+      }
+      return result;
+    }
+    InlayHint2.create = create;
+    function is(value) {
+      const candidate = value;
+      return Is.objectLiteral(candidate) && Position.is(candidate.position) && (Is.string(candidate.label) || Is.typedArray(candidate.label, InlayHintLabelPart.is)) && (candidate.kind === void 0 || InlayHintKind.is(candidate.kind)) && candidate.textEdits === void 0 || Is.typedArray(candidate.textEdits, TextEdit.is) && (candidate.tooltip === void 0 || Is.string(candidate.tooltip) || MarkupContent.is(candidate.tooltip)) && (candidate.paddingLeft === void 0 || Is.boolean(candidate.paddingLeft)) && (candidate.paddingRight === void 0 || Is.boolean(candidate.paddingRight));
+    }
+    InlayHint2.is = is;
+  })(InlayHint || (InlayHint = {}));
+  var StringValue;
+  (function(StringValue2) {
+    function createSnippet(value) {
+      return { kind: "snippet", value };
+    }
+    StringValue2.createSnippet = createSnippet;
+  })(StringValue || (StringValue = {}));
+  var InlineCompletionItem;
+  (function(InlineCompletionItem2) {
+    function create(insertText, filterText, range, command) {
+      return { insertText, filterText, range, command };
+    }
+    InlineCompletionItem2.create = create;
+  })(InlineCompletionItem || (InlineCompletionItem = {}));
+  var InlineCompletionList;
+  (function(InlineCompletionList2) {
+    function create(items) {
+      return { items };
+    }
+    InlineCompletionList2.create = create;
+  })(InlineCompletionList || (InlineCompletionList = {}));
+  var InlineCompletionTriggerKind;
+  (function(InlineCompletionTriggerKind2) {
+    InlineCompletionTriggerKind2.Invoked = 0;
+    InlineCompletionTriggerKind2.Automatic = 1;
+  })(InlineCompletionTriggerKind || (InlineCompletionTriggerKind = {}));
+  var SelectedCompletionInfo;
+  (function(SelectedCompletionInfo2) {
+    function create(range, text) {
+      return { range, text };
+    }
+    SelectedCompletionInfo2.create = create;
+  })(SelectedCompletionInfo || (SelectedCompletionInfo = {}));
+  var InlineCompletionContext;
+  (function(InlineCompletionContext2) {
+    function create(triggerKind, selectedCompletionInfo) {
+      return { triggerKind, selectedCompletionInfo };
+    }
+    InlineCompletionContext2.create = create;
+  })(InlineCompletionContext || (InlineCompletionContext = {}));
+  var WorkspaceFolder;
+  (function(WorkspaceFolder2) {
+    function is(value) {
+      const candidate = value;
+      return Is.objectLiteral(candidate) && URI.is(candidate.uri) && Is.string(candidate.name);
+    }
+    WorkspaceFolder2.is = is;
+  })(WorkspaceFolder || (WorkspaceFolder = {}));
+  var TextDocument;
+  (function(TextDocument3) {
+    function create(uri, languageId, version, content) {
+      return new FullTextDocument(uri, languageId, version, content);
+    }
+    TextDocument3.create = create;
+    function is(value) {
+      let candidate = value;
+      return Is.defined(candidate) && Is.string(candidate.uri) && (Is.undefined(candidate.languageId) || Is.string(candidate.languageId)) && Is.uinteger(candidate.lineCount) && Is.func(candidate.getText) && Is.func(candidate.positionAt) && Is.func(candidate.offsetAt) ? true : false;
+    }
+    TextDocument3.is = is;
+    function applyEdits(document, edits) {
+      let text = document.getText();
+      let sortedEdits = mergeSort2(edits, (a, b) => {
+        let diff = a.range.start.line - b.range.start.line;
+        if (diff === 0) {
+          return a.range.start.character - b.range.start.character;
+        }
+        return diff;
+      });
+      let lastModifiedOffset = text.length;
+      for (let i = sortedEdits.length - 1; i >= 0; i--) {
+        let e = sortedEdits[i];
+        let startOffset = document.offsetAt(e.range.start);
+        let endOffset = document.offsetAt(e.range.end);
+        if (endOffset <= lastModifiedOffset) {
+          text = text.substring(0, startOffset) + e.newText + text.substring(endOffset, text.length);
+        } else {
+          throw new Error("Overlapping edit");
+        }
+        lastModifiedOffset = startOffset;
+      }
+      return text;
+    }
+    TextDocument3.applyEdits = applyEdits;
+    function mergeSort2(data, compare) {
+      if (data.length <= 1) {
+        return data;
+      }
+      const p = data.length / 2 | 0;
+      const left = data.slice(0, p);
+      const right = data.slice(p);
+      mergeSort2(left, compare);
+      mergeSort2(right, compare);
+      let leftIdx = 0;
+      let rightIdx = 0;
+      let i = 0;
+      while (leftIdx < left.length && rightIdx < right.length) {
+        let ret = compare(left[leftIdx], right[rightIdx]);
+        if (ret <= 0) {
+          data[i++] = left[leftIdx++];
+        } else {
+          data[i++] = right[rightIdx++];
+        }
+      }
+      while (leftIdx < left.length) {
+        data[i++] = left[leftIdx++];
+      }
+      while (rightIdx < right.length) {
+        data[i++] = right[rightIdx++];
+      }
+      return data;
+    }
+  })(TextDocument || (TextDocument = {}));
+  var FullTextDocument = class {
+    constructor(uri, languageId, version, content) {
+      this._uri = uri;
+      this._languageId = languageId;
+      this._version = version;
+      this._content = content;
+      this._lineOffsets = void 0;
+    }
+    get uri() {
+      return this._uri;
+    }
+    get languageId() {
+      return this._languageId;
+    }
+    get version() {
+      return this._version;
+    }
+    getText(range) {
+      if (range) {
+        let start = this.offsetAt(range.start);
+        let end = this.offsetAt(range.end);
+        return this._content.substring(start, end);
+      }
+      return this._content;
+    }
+    update(event, version) {
+      this._content = event.text;
+      this._version = version;
+      this._lineOffsets = void 0;
+    }
+    getLineOffsets() {
+      if (this._lineOffsets === void 0) {
+        let lineOffsets = [];
+        let text = this._content;
+        let isLineStart = true;
+        for (let i = 0; i < text.length; i++) {
+          if (isLineStart) {
+            lineOffsets.push(i);
+            isLineStart = false;
+          }
+          let ch = text.charAt(i);
+          isLineStart = ch === "\r" || ch === "\n";
+          if (ch === "\r" && i + 1 < text.length && text.charAt(i + 1) === "\n") {
+            i++;
+          }
+        }
+        if (isLineStart && text.length > 0) {
+          lineOffsets.push(text.length);
+        }
+        this._lineOffsets = lineOffsets;
+      }
+      return this._lineOffsets;
+    }
+    positionAt(offset) {
+      offset = Math.max(Math.min(offset, this._content.length), 0);
+      let lineOffsets = this.getLineOffsets();
+      let low = 0, high = lineOffsets.length;
+      if (high === 0) {
+        return Position.create(0, offset);
+      }
+      while (low < high) {
+        let mid = Math.floor((low + high) / 2);
+        if (lineOffsets[mid] > offset) {
+          high = mid;
+        } else {
+          low = mid + 1;
+        }
+      }
+      let line = low - 1;
+      return Position.create(line, offset - lineOffsets[line]);
+    }
+    offsetAt(position) {
+      let lineOffsets = this.getLineOffsets();
+      if (position.line >= lineOffsets.length) {
+        return this._content.length;
+      } else if (position.line < 0) {
+        return 0;
+      }
+      let lineOffset = lineOffsets[position.line];
+      let nextLineOffset = position.line + 1 < lineOffsets.length ? lineOffsets[position.line + 1] : this._content.length;
+      return Math.max(Math.min(lineOffset + position.character, nextLineOffset), lineOffset);
+    }
+    get lineCount() {
+      return this.getLineOffsets().length;
+    }
+  };
+  var Is;
+  (function(Is2) {
+    const toString = Object.prototype.toString;
+    function defined(value) {
+      return typeof value !== "undefined";
+    }
+    Is2.defined = defined;
+    function undefined2(value) {
+      return typeof value === "undefined";
+    }
+    Is2.undefined = undefined2;
+    function boolean(value) {
+      return value === true || value === false;
+    }
+    Is2.boolean = boolean;
+    function string(value) {
+      return toString.call(value) === "[object String]";
+    }
+    Is2.string = string;
+    function number(value) {
+      return toString.call(value) === "[object Number]";
+    }
+    Is2.number = number;
+    function numberRange(value, min, max) {
+      return toString.call(value) === "[object Number]" && min <= value && value <= max;
+    }
+    Is2.numberRange = numberRange;
+    function integer2(value) {
+      return toString.call(value) === "[object Number]" && -2147483648 <= value && value <= 2147483647;
+    }
+    Is2.integer = integer2;
+    function uinteger2(value) {
+      return toString.call(value) === "[object Number]" && 0 <= value && value <= 2147483647;
+    }
+    Is2.uinteger = uinteger2;
+    function func(value) {
+      return toString.call(value) === "[object Function]";
+    }
+    Is2.func = func;
+    function objectLiteral(value) {
+      return value !== null && typeof value === "object";
+    }
+    Is2.objectLiteral = objectLiteral;
+    function typedArray(value, check) {
+      return Array.isArray(value) && value.every(check);
+    }
+    Is2.typedArray = typedArray;
+  })(Is || (Is = {}));
+
+  // ../../node_modules/vscode-languageserver-textdocument/lib/esm/main.js
+  var FullTextDocument2 = class _FullTextDocument {
+    constructor(uri, languageId, version, content) {
+      this._uri = uri;
+      this._languageId = languageId;
+      this._version = version;
+      this._content = content;
+      this._lineOffsets = void 0;
+    }
+    get uri() {
+      return this._uri;
+    }
+    get languageId() {
+      return this._languageId;
+    }
+    get version() {
+      return this._version;
+    }
+    getText(range) {
+      if (range) {
+        const start = this.offsetAt(range.start);
+        const end = this.offsetAt(range.end);
+        return this._content.substring(start, end);
+      }
+      return this._content;
+    }
+    update(changes, version) {
+      for (const change of changes) {
+        if (_FullTextDocument.isIncremental(change)) {
+          const range = getWellformedRange(change.range);
+          const startOffset = this.offsetAt(range.start);
+          const endOffset = this.offsetAt(range.end);
+          this._content = this._content.substring(0, startOffset) + change.text + this._content.substring(endOffset, this._content.length);
+          const startLine = Math.max(range.start.line, 0);
+          const endLine = Math.max(range.end.line, 0);
+          let lineOffsets = this._lineOffsets;
+          const addedLineOffsets = computeLineOffsets2(change.text, false, startOffset);
+          if (endLine - startLine === addedLineOffsets.length) {
+            for (let i = 0, len = addedLineOffsets.length; i < len; i++) {
+              lineOffsets[i + startLine + 1] = addedLineOffsets[i];
+            }
+          } else {
+            if (addedLineOffsets.length < 1e4) {
+              lineOffsets.splice(startLine + 1, endLine - startLine, ...addedLineOffsets);
+            } else {
+              this._lineOffsets = lineOffsets = lineOffsets.slice(0, startLine + 1).concat(addedLineOffsets, lineOffsets.slice(endLine + 1));
+            }
+          }
+          const diff = change.text.length - (endOffset - startOffset);
+          if (diff !== 0) {
+            for (let i = startLine + 1 + addedLineOffsets.length, len = lineOffsets.length; i < len; i++) {
+              lineOffsets[i] = lineOffsets[i] + diff;
+            }
+          }
+        } else if (_FullTextDocument.isFull(change)) {
+          this._content = change.text;
+          this._lineOffsets = void 0;
+        } else {
+          throw new Error("Unknown change event received");
+        }
+      }
+      this._version = version;
+    }
+    getLineOffsets() {
+      if (this._lineOffsets === void 0) {
+        this._lineOffsets = computeLineOffsets2(this._content, true);
+      }
+      return this._lineOffsets;
+    }
+    positionAt(offset) {
+      offset = Math.max(Math.min(offset, this._content.length), 0);
+      const lineOffsets = this.getLineOffsets();
+      let low = 0, high = lineOffsets.length;
+      if (high === 0) {
+        return { line: 0, character: offset };
+      }
+      while (low < high) {
+        const mid = Math.floor((low + high) / 2);
+        if (lineOffsets[mid] > offset) {
+          high = mid;
+        } else {
+          low = mid + 1;
+        }
+      }
+      const line = low - 1;
+      offset = this.ensureBeforeEOL(offset, lineOffsets[line]);
+      return { line, character: offset - lineOffsets[line] };
+    }
+    offsetAt(position) {
+      const lineOffsets = this.getLineOffsets();
+      if (position.line >= lineOffsets.length) {
+        return this._content.length;
+      } else if (position.line < 0) {
+        return 0;
+      }
+      const lineOffset = lineOffsets[position.line];
+      if (position.character <= 0) {
+        return lineOffset;
+      }
+      const nextLineOffset = position.line + 1 < lineOffsets.length ? lineOffsets[position.line + 1] : this._content.length;
+      const offset = Math.min(lineOffset + position.character, nextLineOffset);
+      return this.ensureBeforeEOL(offset, lineOffset);
+    }
+    ensureBeforeEOL(offset, lineOffset) {
+      while (offset > lineOffset && isEOL2(this._content.charCodeAt(offset - 1))) {
+        offset--;
+      }
+      return offset;
+    }
+    get lineCount() {
+      return this.getLineOffsets().length;
+    }
+    static isIncremental(event) {
+      const candidate = event;
+      return candidate !== void 0 && candidate !== null && typeof candidate.text === "string" && candidate.range !== void 0 && (candidate.rangeLength === void 0 || typeof candidate.rangeLength === "number");
+    }
+    static isFull(event) {
+      const candidate = event;
+      return candidate !== void 0 && candidate !== null && typeof candidate.text === "string" && candidate.range === void 0 && candidate.rangeLength === void 0;
+    }
+  };
+  var TextDocument2;
+  (function(TextDocument3) {
+    function create(uri, languageId, version, content) {
+      return new FullTextDocument2(uri, languageId, version, content);
+    }
+    TextDocument3.create = create;
+    function update(document, changes, version) {
+      if (document instanceof FullTextDocument2) {
+        document.update(changes, version);
+        return document;
+      } else {
+        throw new Error("TextDocument.update: document must be created by TextDocument.create");
+      }
+    }
+    TextDocument3.update = update;
+    function applyEdits(document, edits) {
+      const text = document.getText();
+      const sortedEdits = mergeSort(edits.map(getWellformedEdit), (a, b) => {
+        const diff = a.range.start.line - b.range.start.line;
+        if (diff === 0) {
+          return a.range.start.character - b.range.start.character;
+        }
+        return diff;
+      });
+      let lastModifiedOffset = 0;
+      const spans = [];
+      for (const e of sortedEdits) {
+        const startOffset = document.offsetAt(e.range.start);
+        if (startOffset < lastModifiedOffset) {
+          throw new Error("Overlapping edit");
+        } else if (startOffset > lastModifiedOffset) {
+          spans.push(text.substring(lastModifiedOffset, startOffset));
+        }
+        if (e.newText.length) {
+          spans.push(e.newText);
+        }
+        lastModifiedOffset = document.offsetAt(e.range.end);
+      }
+      spans.push(text.substr(lastModifiedOffset));
+      return spans.join("");
+    }
+    TextDocument3.applyEdits = applyEdits;
+  })(TextDocument2 || (TextDocument2 = {}));
+  function mergeSort(data, compare) {
+    if (data.length <= 1) {
+      return data;
+    }
+    const p = data.length / 2 | 0;
+    const left = data.slice(0, p);
+    const right = data.slice(p);
+    mergeSort(left, compare);
+    mergeSort(right, compare);
+    let leftIdx = 0;
+    let rightIdx = 0;
+    let i = 0;
+    while (leftIdx < left.length && rightIdx < right.length) {
+      const ret = compare(left[leftIdx], right[rightIdx]);
+      if (ret <= 0) {
+        data[i++] = left[leftIdx++];
+      } else {
+        data[i++] = right[rightIdx++];
+      }
+    }
+    while (leftIdx < left.length) {
+      data[i++] = left[leftIdx++];
+    }
+    while (rightIdx < right.length) {
+      data[i++] = right[rightIdx++];
+    }
+    return data;
+  }
+  function computeLineOffsets2(text, isAtLineStart, textOffset = 0) {
+    const result = isAtLineStart ? [textOffset] : [];
+    for (let i = 0; i < text.length; i++) {
+      const ch = text.charCodeAt(i);
+      if (isEOL2(ch)) {
+        if (ch === 13 && i + 1 < text.length && text.charCodeAt(i + 1) === 10) {
+          i++;
+        }
+        result.push(textOffset + i + 1);
+      }
+    }
+    return result;
+  }
+  function isEOL2(char) {
+    return char === 13 || char === 10;
+  }
+  function getWellformedRange(range) {
+    const start = range.start;
+    const end = range.end;
+    if (start.line > end.line || start.line === end.line && start.character > end.character) {
+      return { start: end, end: start };
+    }
+    return range;
+  }
+  function getWellformedEdit(textEdit) {
+    const range = getWellformedRange(textEdit.range);
+    if (range !== textEdit.range) {
+      return { newText: textEdit.newText, range };
+    }
+    return textEdit;
+  }
+
+  // ../../node_modules/vscode-css-languageservice/lib/esm/cssLanguageTypes.js
+  var ClientCapabilities;
+  (function(ClientCapabilities2) {
+    ClientCapabilities2.LATEST = {
+      textDocument: {
+        completion: {
+          completionItem: {
+            documentationFormat: [MarkupKind.Markdown, MarkupKind.PlainText]
+          }
+        },
+        hover: {
+          contentFormat: [MarkupKind.Markdown, MarkupKind.PlainText]
+        }
+      }
+    };
+  })(ClientCapabilities || (ClientCapabilities = {}));
+  var FileType;
+  (function(FileType2) {
+    FileType2[FileType2["Unknown"] = 0] = "Unknown";
+    FileType2[FileType2["File"] = 1] = "File";
+    FileType2[FileType2["Directory"] = 2] = "Directory";
+    FileType2[FileType2["SymbolicLink"] = 64] = "SymbolicLink";
+  })(FileType || (FileType = {}));
+
+  // ../../node_modules/vscode-css-languageservice/lib/esm/languageFacts/entry.js
+  var missingBaselineBrowserFormatter = new Intl.ListFormat("en", {
+    style: "long",
+    type: "disjunction"
+  });
+
+  // ../../node_modules/vscode-css-languageservice/lib/esm/languageFacts/colors.js
+  var colorFunctions = [
+    {
+      label: "rgb",
+      func: "rgb($red, $green, $blue)",
+      insertText: "rgb(${1:red}, ${2:green}, ${3:blue})",
+      desc: t("Creates a Color from red, green, and blue values.")
+    },
+    {
+      label: "rgba",
+      func: "rgba($red, $green, $blue, $alpha)",
+      insertText: "rgba(${1:red}, ${2:green}, ${3:blue}, ${4:alpha})",
+      desc: t("Creates a Color from red, green, blue, and alpha values.")
+    },
+    {
+      label: "rgb relative",
+      func: "rgb(from $color $red $green $blue)",
+      insertText: "rgb(from ${1:color} ${2:r} ${3:g} ${4:b})",
+      desc: t("Creates a Color from the red, green, and blue values of another Color.")
+    },
+    {
+      label: "hsl",
+      func: "hsl($hue, $saturation, $lightness)",
+      insertText: "hsl(${1:hue}, ${2:saturation}, ${3:lightness})",
+      desc: t("Creates a Color from hue, saturation, and lightness values.")
+    },
+    {
+      label: "hsla",
+      func: "hsla($hue, $saturation, $lightness, $alpha)",
+      insertText: "hsla(${1:hue}, ${2:saturation}, ${3:lightness}, ${4:alpha})",
+      desc: t("Creates a Color from hue, saturation, lightness, and alpha values.")
+    },
+    {
+      label: "hsl relative",
+      func: "hsl(from $color $hue $saturation $lightness)",
+      insertText: "hsl(from ${1:color} ${2:h} ${3:s} ${4:l})",
+      desc: t("Creates a Color from the hue, saturation, and lightness values of another Color.")
+    },
+    {
+      label: "hwb",
+      func: "hwb($hue $white $black)",
+      insertText: "hwb(${1:hue} ${2:white} ${3:black})",
+      desc: t("Creates a Color from hue, white, and black values.")
+    },
+    {
+      label: "hwb relative",
+      func: "hwb(from $color $hue $white $black)",
+      insertText: "hwb(from ${1:color} ${2:h} ${3:w} ${4:b})",
+      desc: t("Creates a Color from the hue, white, and black values of another Color.")
+    },
+    {
+      label: "lab",
+      func: "lab($lightness $a $b)",
+      insertText: "lab(${1:lightness} ${2:a} ${3:b})",
+      desc: t("Creates a Color from lightness, a, and b values.")
+    },
+    {
+      label: "lab relative",
+      func: "lab(from $color $lightness $a $b)",
+      insertText: "lab(from ${1:color} ${2:l} ${3:a} ${4:b})",
+      desc: t("Creates a Color from the lightness, a, and b values of another Color.")
+    },
+    {
+      label: "oklab",
+      func: "oklab($lightness $a $b)",
+      insertText: "oklab(${1:lightness} ${2:a} ${3:b})",
+      desc: t("Creates a Color from lightness, a, and b values.")
+    },
+    {
+      label: "oklab relative",
+      func: "oklab(from $color $lightness $a $b)",
+      insertText: "oklab(from ${1:color} ${2:l} ${3:a} ${4:b})",
+      desc: t("Creates a Color from the lightness, a, and b values of another Color.")
+    },
+    {
+      label: "lch",
+      func: "lch($lightness $chroma $hue)",
+      insertText: "lch(${1:lightness} ${2:chroma} ${3:hue})",
+      desc: t("Creates a Color from lightness, chroma, and hue values.")
+    },
+    {
+      label: "lch relative",
+      func: "lch(from $color $lightness $chroma $hue)",
+      insertText: "lch(from ${1:color} ${2:l} ${3:c} ${4:h})",
+      desc: t("Creates a Color from the lightness, chroma, and hue values of another Color.")
+    },
+    {
+      label: "oklch",
+      func: "oklch($lightness $chroma $hue)",
+      insertText: "oklch(${1:lightness} ${2:chroma} ${3:hue})",
+      desc: t("Creates a Color from lightness, chroma, and hue values.")
+    },
+    {
+      label: "oklch relative",
+      func: "oklch(from $color $lightness $chroma $hue)",
+      insertText: "oklch(from ${1:color} ${2:l} ${3:c} ${4:h})",
+      desc: t("Creates a Color from the lightness, chroma, and hue values of another Color.")
+    },
+    {
+      label: "color",
+      func: "color($color-space $red $green $blue)",
+      insertText: "color(${1|srgb,srgb-linear,display-p3,a98-rgb,prophoto-rgb,rec2020,xyx,xyz-d50,xyz-d65|} ${2:red} ${3:green} ${4:blue})",
+      desc: t("Creates a Color in a specific color space from red, green, and blue values.")
+    },
+    {
+      label: "color relative",
+      func: "color(from $color $color-space $red $green $blue)",
+      insertText: "color(from ${1:color} ${2|srgb,srgb-linear,display-p3,a98-rgb,prophoto-rgb,rec2020,xyx,xyz-d50,xyz-d65|} ${3:r} ${4:g} ${5:b})",
+      desc: t("Creates a Color in a specific color space from the red, green, and blue values of another Color.")
+    },
+    {
+      label: "color-mix",
+      func: "color-mix(in $color-space, $color $percentage, $color $percentage)",
+      insertText: "color-mix(in ${1|srgb,srgb-linear,lab,oklab,xyz,xyz-d50,xyz-d65|}, ${3:color} ${4:percentage}, ${5:color} ${6:percentage})",
+      desc: t("Mix two colors together in a rectangular color space.")
+    },
+    {
+      label: "color-mix hue",
+      func: "color-mix(in $color-space $interpolation-method hue, $color $percentage, $color $percentage)",
+      insertText: "color-mix(in ${1|hsl,hwb,lch,oklch|} ${2|shorter hue,longer hue,increasing hue,decreasing hue|}, ${3:color} ${4:percentage}, ${5:color} ${6:percentage})",
+      desc: t("Mix two colors together in a polar color space.")
+    },
+    {
+      label: "lab",
+      func: "lab($lightness $channel_a $channel_b $alpha)",
+      insertText: "lab(${1:lightness} ${2:a} ${3:b} ${4:alpha})",
+      desc: t("css.builtin.lab", "Creates a Color from Lightness, Channel a, Channel b and alpha values.")
+    },
+    {
+      label: "lab relative",
+      func: "lab(from $color $lightness $channel_a $channel_b $alpha)",
+      insertText: "lab(from ${1:color} ${2:lightness} ${3:channel_a} ${4:channel_b} ${5:alpha})",
+      desc: t("css.builtin.lab", "Creates a Color from Lightness, Channel a, Channel b and alpha values of another Color.")
+    },
+    {
+      label: "lch",
+      func: "lch($lightness $chrome $hue $alpha)",
+      insertText: "lch(${1:lightness} ${2:chrome} ${3:hue} ${4:alpha})",
+      desc: t("css.builtin.lab", "Creates a Color from Lightness, Chroma, Hue and alpha values.")
+    },
+    {
+      label: "lch relative",
+      func: "lch(from $color $lightness $chrome $hue $alpha)",
+      insertText: "lch(from ${1:color} ${2:lightness} ${3:chrome} ${4:hue} ${5:alpha})",
+      desc: t("css.builtin.lab", "Creates a Color from Lightness, Chroma, Hue and alpha values of another Color.")
+    }
+  ];
+  var colors = {
+    aliceblue: "#f0f8ff",
+    antiquewhite: "#faebd7",
+    aqua: "#00ffff",
+    aquamarine: "#7fffd4",
+    azure: "#f0ffff",
+    beige: "#f5f5dc",
+    bisque: "#ffe4c4",
+    black: "#000000",
+    blanchedalmond: "#ffebcd",
+    blue: "#0000ff",
+    blueviolet: "#8a2be2",
+    brown: "#a52a2a",
+    burlywood: "#deb887",
+    cadetblue: "#5f9ea0",
+    chartreuse: "#7fff00",
+    chocolate: "#d2691e",
+    coral: "#ff7f50",
+    cornflowerblue: "#6495ed",
+    cornsilk: "#fff8dc",
+    crimson: "#dc143c",
+    cyan: "#00ffff",
+    darkblue: "#00008b",
+    darkcyan: "#008b8b",
+    darkgoldenrod: "#b8860b",
+    darkgray: "#a9a9a9",
+    darkgrey: "#a9a9a9",
+    darkgreen: "#006400",
+    darkkhaki: "#bdb76b",
+    darkmagenta: "#8b008b",
+    darkolivegreen: "#556b2f",
+    darkorange: "#ff8c00",
+    darkorchid: "#9932cc",
+    darkred: "#8b0000",
+    darksalmon: "#e9967a",
+    darkseagreen: "#8fbc8f",
+    darkslateblue: "#483d8b",
+    darkslategray: "#2f4f4f",
+    darkslategrey: "#2f4f4f",
+    darkturquoise: "#00ced1",
+    darkviolet: "#9400d3",
+    deeppink: "#ff1493",
+    deepskyblue: "#00bfff",
+    dimgray: "#696969",
+    dimgrey: "#696969",
+    dodgerblue: "#1e90ff",
+    firebrick: "#b22222",
+    floralwhite: "#fffaf0",
+    forestgreen: "#228b22",
+    fuchsia: "#ff00ff",
+    gainsboro: "#dcdcdc",
+    ghostwhite: "#f8f8ff",
+    gold: "#ffd700",
+    goldenrod: "#daa520",
+    gray: "#808080",
+    grey: "#808080",
+    green: "#008000",
+    greenyellow: "#adff2f",
+    honeydew: "#f0fff0",
+    hotpink: "#ff69b4",
+    indianred: "#cd5c5c",
+    indigo: "#4b0082",
+    ivory: "#fffff0",
+    khaki: "#f0e68c",
+    lavender: "#e6e6fa",
+    lavenderblush: "#fff0f5",
+    lawngreen: "#7cfc00",
+    lemonchiffon: "#fffacd",
+    lightblue: "#add8e6",
+    lightcoral: "#f08080",
+    lightcyan: "#e0ffff",
+    lightgoldenrodyellow: "#fafad2",
+    lightgray: "#d3d3d3",
+    lightgrey: "#d3d3d3",
+    lightgreen: "#90ee90",
+    lightpink: "#ffb6c1",
+    lightsalmon: "#ffa07a",
+    lightseagreen: "#20b2aa",
+    lightskyblue: "#87cefa",
+    lightslategray: "#778899",
+    lightslategrey: "#778899",
+    lightsteelblue: "#b0c4de",
+    lightyellow: "#ffffe0",
+    lime: "#00ff00",
+    limegreen: "#32cd32",
+    linen: "#faf0e6",
+    magenta: "#ff00ff",
+    maroon: "#800000",
+    mediumaquamarine: "#66cdaa",
+    mediumblue: "#0000cd",
+    mediumorchid: "#ba55d3",
+    mediumpurple: "#9370d8",
+    mediumseagreen: "#3cb371",
+    mediumslateblue: "#7b68ee",
+    mediumspringgreen: "#00fa9a",
+    mediumturquoise: "#48d1cc",
+    mediumvioletred: "#c71585",
+    midnightblue: "#191970",
+    mintcream: "#f5fffa",
+    mistyrose: "#ffe4e1",
+    moccasin: "#ffe4b5",
+    navajowhite: "#ffdead",
+    navy: "#000080",
+    oldlace: "#fdf5e6",
+    olive: "#808000",
+    olivedrab: "#6b8e23",
+    orange: "#ffa500",
+    orangered: "#ff4500",
+    orchid: "#da70d6",
+    palegoldenrod: "#eee8aa",
+    palegreen: "#98fb98",
+    paleturquoise: "#afeeee",
+    palevioletred: "#d87093",
+    papayawhip: "#ffefd5",
+    peachpuff: "#ffdab9",
+    peru: "#cd853f",
+    pink: "#ffc0cb",
+    plum: "#dda0dd",
+    powderblue: "#b0e0e6",
+    purple: "#800080",
+    red: "#ff0000",
+    rebeccapurple: "#663399",
+    rosybrown: "#bc8f8f",
+    royalblue: "#4169e1",
+    saddlebrown: "#8b4513",
+    salmon: "#fa8072",
+    sandybrown: "#f4a460",
+    seagreen: "#2e8b57",
+    seashell: "#fff5ee",
+    sienna: "#a0522d",
+    silver: "#c0c0c0",
+    skyblue: "#87ceeb",
+    slateblue: "#6a5acd",
+    slategray: "#708090",
+    slategrey: "#708090",
+    snow: "#fffafa",
+    springgreen: "#00ff7f",
+    steelblue: "#4682b4",
+    tan: "#d2b48c",
+    teal: "#008080",
+    thistle: "#d8bfd8",
+    tomato: "#ff6347",
+    turquoise: "#40e0d0",
+    violet: "#ee82ee",
+    wheat: "#f5deb3",
+    white: "#ffffff",
+    whitesmoke: "#f5f5f5",
+    yellow: "#ffff00",
+    yellowgreen: "#9acd32"
+  };
+  var colorsRegExp = new RegExp(`^(${Object.keys(colors).join("|")})$`, "i");
+  var colorKeywords = {
+    "currentColor": "The value of the 'color' property. The computed value of the 'currentColor' keyword is the computed value of the 'color' property. If the 'currentColor' keyword is set on the 'color' property itself, it is treated as 'color:inherit' at parse time.",
+    "transparent": "Fully transparent. This keyword can be considered a shorthand for rgba(0,0,0,0) which is its computed value."
+  };
+  var colorKeywordsRegExp = new RegExp(`^(${Object.keys(colorKeywords).join("|")})$`, "i");
+  var DEGREES_PER_CIRCLE = 360;
+  var RADIANS_TO_DEGREES_FACTOR = DEGREES_PER_CIRCLE / 2 / Math.PI;
+  var DEGREES_TO_RADIANS_FACTOR = Math.PI / 180;
+
+  // ../../node_modules/vscode-css-languageservice/lib/esm/languageFacts/builtinData.js
+  var units = {
+    "length": ["cap", "ch", "cm", "cqb", "cqh", "cqi", "cqmax", "cqmin", "cqw", "dvb", "dvh", "dvi", "dvw", "em", "ex", "ic", "in", "lh", "lvb", "lvh", "lvi", "lvw", "mm", "pc", "pt", "px", "q", "rcap", "rch", "rem", "rex", "ric", "rlh", "svb", "svh", "svi", "svw", "vb", "vh", "vi", "vmax", "vmin", "vw"],
+    "angle": ["deg", "rad", "grad", "turn"],
+    "time": ["ms", "s"],
+    "frequency": ["Hz", "kHz"],
+    "resolution": ["dpi", "dpcm", "dppx"],
+    "percentage": ["%", "fr"]
+  };
+  var pageBoxDirectives = [
+    "@bottom-center",
+    "@bottom-left",
+    "@bottom-left-corner",
+    "@bottom-right",
+    "@bottom-right-corner",
+    "@left-bottom",
+    "@left-middle",
+    "@left-top",
+    "@right-bottom",
+    "@right-middle",
+    "@right-top",
+    "@top-center",
+    "@top-left",
+    "@top-left-corner",
+    "@top-right",
+    "@top-right-corner"
+  ];
+
+  // ../../node_modules/vscode-css-languageservice/lib/esm/utils/objects.js
+  function values(obj) {
+    return Object.keys(obj).map((key) => obj[key]);
+  }
+  function isDefined(obj) {
+    return typeof obj !== "undefined";
+  }
+
+  // ../../node_modules/vscode-css-languageservice/lib/esm/parser/cssParser.js
+  var Parser = class {
+    constructor(scnr = new Scanner()) {
+      this.keyframeRegex = /^@(\-(webkit|ms|moz|o)\-)?keyframes$/i;
+      this.scanner = scnr;
+      this.token = { type: TokenType.EOF, offset: -1, len: 0, text: "" };
+      this.prevToken = void 0;
+    }
+    peekIdent(text) {
+      return TokenType.Ident === this.token.type && text.length === this.token.text.length && text === this.token.text.toLowerCase();
+    }
+    peekKeyword(text) {
+      return TokenType.AtKeyword === this.token.type && text.length === this.token.text.length && text === this.token.text.toLowerCase();
+    }
+    peekDelim(text) {
+      return TokenType.Delim === this.token.type && text === this.token.text;
+    }
+    peek(type) {
+      return type === this.token.type;
+    }
+    peekOne(...types) {
+      return types.indexOf(this.token.type) !== -1;
+    }
+    peekRegExp(type, regEx) {
+      if (type !== this.token.type) {
+        return false;
+      }
+      return regEx.test(this.token.text);
+    }
+    hasWhitespace() {
+      return !!this.prevToken && this.prevToken.offset + this.prevToken.len !== this.token.offset;
+    }
+    consumeToken() {
+      this.prevToken = this.token;
+      this.token = this.scanner.scan();
+    }
+    acceptUnicodeRange() {
+      const token = this.scanner.tryScanUnicode();
+      if (token) {
+        this.prevToken = token;
+        this.token = this.scanner.scan();
+        return true;
+      }
+      return false;
+    }
+    mark() {
+      return {
+        prev: this.prevToken,
+        curr: this.token,
+        pos: this.scanner.pos()
+      };
+    }
+    restoreAtMark(mark) {
+      this.prevToken = mark.prev;
+      this.token = mark.curr;
+      this.scanner.goBackTo(mark.pos);
+    }
+    try(func) {
+      const pos = this.mark();
+      const node = func();
+      if (!node) {
+        this.restoreAtMark(pos);
+        return null;
+      }
+      return node;
+    }
+    acceptOneKeyword(keywords) {
+      if (TokenType.AtKeyword === this.token.type) {
+        for (const keyword of keywords) {
+          if (keyword.length === this.token.text.length && keyword === this.token.text.toLowerCase()) {
+            this.consumeToken();
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+    accept(type) {
+      if (type === this.token.type) {
+        this.consumeToken();
+        return true;
+      }
+      return false;
+    }
+    acceptIdent(text) {
+      if (this.peekIdent(text)) {
+        this.consumeToken();
+        return true;
+      }
+      return false;
+    }
+    acceptKeyword(text) {
+      if (this.peekKeyword(text)) {
+        this.consumeToken();
+        return true;
+      }
+      return false;
+    }
+    acceptDelim(text) {
+      if (this.peekDelim(text)) {
+        this.consumeToken();
+        return true;
+      }
+      return false;
+    }
+    acceptRegexp(regEx) {
+      if (regEx.test(this.token.text)) {
+        this.consumeToken();
+        return true;
+      }
+      return false;
+    }
+    _parseRegexp(regEx) {
+      let node = this.createNode(NodeType.Identifier);
+      do {
+      } while (this.acceptRegexp(regEx));
+      return this.finish(node);
+    }
+    acceptUnquotedString() {
+      const pos = this.scanner.pos();
+      this.scanner.goBackTo(this.token.offset);
+      const unquoted = this.scanner.scanUnquotedString();
+      if (unquoted) {
+        this.token = unquoted;
+        this.consumeToken();
+        return true;
+      }
+      this.scanner.goBackTo(pos);
+      return false;
+    }
+    resync(resyncTokens, resyncStopTokens) {
+      while (true) {
+        if (resyncTokens && resyncTokens.indexOf(this.token.type) !== -1) {
+          this.consumeToken();
+          return true;
+        } else if (resyncStopTokens && resyncStopTokens.indexOf(this.token.type) !== -1) {
+          return true;
+        } else {
+          if (this.token.type === TokenType.EOF) {
+            return false;
+          }
+          this.token = this.scanner.scan();
+        }
+      }
+    }
+    createNode(nodeType) {
+      return new Node(this.token.offset, this.token.len, nodeType);
+    }
+    create(ctor) {
+      return new ctor(this.token.offset, this.token.len);
+    }
+    finish(node, error, resyncTokens, resyncStopTokens) {
+      if (!(node instanceof Nodelist)) {
+        if (error) {
+          this.markError(node, error, resyncTokens, resyncStopTokens);
+        }
+        if (this.prevToken) {
+          const prevEnd = this.prevToken.offset + this.prevToken.len;
+          node.length = prevEnd > node.offset ? prevEnd - node.offset : 0;
+        }
+      }
+      return node;
+    }
+    markError(node, error, resyncTokens, resyncStopTokens) {
+      if (this.token !== this.lastErrorToken) {
+        node.addIssue(new Marker(node, error, Level.Error, void 0, this.token.offset, this.token.len));
+        this.lastErrorToken = this.token;
+      }
+      if (resyncTokens || resyncStopTokens) {
+        this.resync(resyncTokens, resyncStopTokens);
+      }
+    }
+    parseStylesheet(textDocument) {
+      const versionId = textDocument.version;
+      const text = textDocument.getText();
+      const textProvider = (offset, length) => {
+        if (textDocument.version !== versionId) {
+          throw new Error("Underlying model has changed, AST is no longer valid");
+        }
+        return text.substr(offset, length);
+      };
+      return this.internalParse(text, this._parseStylesheet, textProvider);
+    }
+    internalParse(input, parseFunc, textProvider) {
+      this.scanner.setSource(input);
+      this.token = this.scanner.scan();
+      const node = parseFunc.bind(this)();
+      if (node) {
+        if (textProvider) {
+          node.textProvider = textProvider;
+        } else {
+          node.textProvider = (offset, length) => {
+            return input.substr(offset, length);
+          };
+        }
+      }
+      return node;
+    }
+    _parseStylesheet() {
+      const node = this.create(Stylesheet);
+      while (node.addChild(this._parseStylesheetStart())) {
+      }
+      let inRecovery = false;
+      do {
+        let hasMatch = false;
+        do {
+          hasMatch = false;
+          const statement = this._parseStylesheetStatement();
+          if (statement) {
+            node.addChild(statement);
+            hasMatch = true;
+            inRecovery = false;
+            if (!this.peek(TokenType.EOF) && this._needsSemicolonAfter(statement) && !this.accept(TokenType.SemiColon)) {
+              this.markError(node, ParseError.SemiColonExpected);
+            }
+          }
+          while (this.accept(TokenType.SemiColon) || this.accept(TokenType.CDO) || this.accept(TokenType.CDC)) {
+            hasMatch = true;
+            inRecovery = false;
+          }
+        } while (hasMatch);
+        if (this.peek(TokenType.EOF)) {
+          break;
+        }
+        if (!inRecovery) {
+          if (this.peek(TokenType.AtKeyword)) {
+            this.markError(node, ParseError.UnknownAtRule);
+          } else {
+            this.markError(node, ParseError.RuleOrSelectorExpected);
+          }
+          inRecovery = true;
+        }
+        this.consumeToken();
+      } while (!this.peek(TokenType.EOF));
+      return this.finish(node);
+    }
+    _parseStylesheetStart() {
+      return this._parseCharset();
+    }
+    _parseStylesheetStatement(isNested = false) {
+      if (this.peek(TokenType.AtKeyword)) {
+        return this._parseStylesheetAtStatement(isNested);
+      }
+      return this._parseRuleset(isNested);
+    }
+    _parseStylesheetAtStatement(isNested = false) {
+      return this._parseImport() || this._parseMedia(isNested) || this._parseScope() || this._parsePage() || this._parseFontFace() || this._parseKeyframe() || this._parseSupports(isNested) || this._parseLayer(isNested) || this._parsePropertyAtRule() || this._parseViewPort() || this._parseNamespace() || this._parseDocument() || this._parseContainer(isNested) || this._parseStartingStyleAtRule(isNested) || this._parseUnknownAtRule();
+    }
+    _tryParseRuleset(isNested) {
+      const mark = this.mark();
+      if (this._parseSelector(isNested)) {
+        while (this.accept(TokenType.Comma) && this._parseSelector(isNested)) {
+        }
+        if (this.accept(TokenType.CurlyL)) {
+          this.restoreAtMark(mark);
+          return this._parseRuleset(isNested);
+        }
+      }
+      this.restoreAtMark(mark);
+      return null;
+    }
+    _parseRuleset(isNested = false) {
+      const node = this.create(RuleSet);
+      const selectors = node.getSelectors();
+      if (!selectors.addChild(this._parseSelector(isNested))) {
+        return null;
+      }
+      while (this.accept(TokenType.Comma)) {
+        if (!selectors.addChild(this._parseSelector(isNested))) {
+          return this.finish(node, ParseError.SelectorExpected);
+        }
+      }
+      return this._parseBody(node, this._parseRuleSetDeclaration.bind(this));
+    }
+    _parseRuleSetDeclarationAtStatement() {
+      return this._parseMedia(true) || this._parseScope() || this._parseSupports(true) || this._parseLayer(true) || this._parseContainer(true) || this._parseStartingStyleAtRule(true) || this._parseUnknownAtRule();
+    }
+    _parseRuleSetDeclaration() {
+      if (this.peek(TokenType.AtKeyword)) {
+        return this._parseRuleSetDeclarationAtStatement();
+      }
+      if (!this.peek(TokenType.Ident)) {
+        return this._parseRuleset(true);
+      }
+      return this._tryParseRuleset(true) || this._parseDeclaration();
+    }
+    _needsSemicolonAfter(node) {
+      switch (node.type) {
+        case NodeType.Keyframe:
+        case NodeType.ViewPort:
+        case NodeType.Media:
+        case NodeType.Ruleset:
+        case NodeType.Namespace:
+        case NodeType.If:
+        case NodeType.For:
+        case NodeType.Each:
+        case NodeType.While:
+        case NodeType.MixinDeclaration:
+        case NodeType.FunctionDeclaration:
+        case NodeType.MixinContentDeclaration:
+        case NodeType.Scope:
+          return false;
+        case NodeType.ExtendsReference:
+        case NodeType.MixinContentReference:
+        case NodeType.ReturnStatement:
+        case NodeType.MediaQuery:
+        case NodeType.Debug:
+        case NodeType.Import:
+        case NodeType.AtApplyRule:
+        case NodeType.CustomPropertyDeclaration:
+          return true;
+        case NodeType.VariableDeclaration:
+          return node.needsSemicolon;
+        case NodeType.MixinReference:
+          return !node.getContent();
+        case NodeType.Declaration:
+          return !node.getNestedProperties();
+      }
+      return false;
+    }
+    _parseDeclarations(parseDeclaration) {
+      const node = this.create(Declarations);
+      if (!this.accept(TokenType.CurlyL)) {
+        return null;
+      }
+      let decl = parseDeclaration();
+      while (node.addChild(decl)) {
+        if (this.peek(TokenType.CurlyR)) {
+          break;
+        }
+        if (this._needsSemicolonAfter(decl) && !this.accept(TokenType.SemiColon)) {
+          return this.finish(node, ParseError.SemiColonExpected, [TokenType.SemiColon, TokenType.CurlyR]);
+        }
+        if (decl && this.prevToken && this.prevToken.type === TokenType.SemiColon) {
+          decl.semicolonPosition = this.prevToken.offset;
+        }
+        while (this.accept(TokenType.SemiColon)) {
+        }
+        decl = parseDeclaration();
+      }
+      if (!this.accept(TokenType.CurlyR)) {
+        return this.finish(node, ParseError.RightCurlyExpected, [TokenType.CurlyR, TokenType.SemiColon]);
+      }
+      return this.finish(node);
+    }
+    _parseBody(node, parseDeclaration) {
+      if (!node.setDeclarations(this._parseDeclarations(parseDeclaration))) {
+        return this.finish(node, ParseError.LeftCurlyExpected, [TokenType.CurlyR, TokenType.SemiColon]);
+      }
+      return this.finish(node);
+    }
+    _parseSelector(isNested) {
+      const node = this.create(Selector);
+      let hasContent = false;
+      if (isNested) {
+        hasContent = node.addChild(this._parseCombinator());
+      }
+      while (node.addChild(this._parseSimpleSelector())) {
+        hasContent = true;
+        node.addChild(this._parseCombinator());
+      }
+      return hasContent ? this.finish(node) : null;
+    }
+    _parseDeclaration(stopTokens, standaloneCustomPropertyValid = false) {
+      const customProperty = this._tryParseCustomPropertyDeclaration(stopTokens, standaloneCustomPropertyValid);
+      if (customProperty) {
+        return customProperty;
+      }
+      const node = this.create(Declaration);
+      if (!node.setProperty(this._parseProperty())) {
+        return null;
+      }
+      if (!this.accept(TokenType.Colon)) {
+        return this.finish(node, ParseError.ColonExpected, [TokenType.Colon], stopTokens || [TokenType.SemiColon]);
+      }
+      if (this.prevToken) {
+        node.colonPosition = this.prevToken.offset;
+      }
+      if (!node.setValue(this._parseExpr())) {
+        return this.finish(node, ParseError.PropertyValueExpected);
+      }
+      node.addChild(this._parsePrio());
+      if (this.peek(TokenType.SemiColon)) {
+        node.semicolonPosition = this.token.offset;
+      }
+      return this.finish(node);
+    }
+    _tryParseCustomPropertyDeclaration(stopTokens, standaloneCustomPropertyValid = false) {
+      if (!this.peekRegExp(TokenType.Ident, /^--/)) {
+        return null;
+      }
+      const node = this.create(CustomPropertyDeclaration);
+      if (!node.setProperty(this._parseProperty())) {
+        return null;
+      }
+      if (!this.accept(TokenType.Colon)) {
+        if (standaloneCustomPropertyValid) {
+          return this.finish(node);
+        }
+        return this.finish(node, ParseError.ColonExpected, [TokenType.Colon]);
+      }
+      if (this.prevToken) {
+        node.colonPosition = this.prevToken.offset;
+      }
+      const mark = this.mark();
+      if (this.peek(TokenType.CurlyL)) {
+        const propertySet = this.create(CustomPropertySet);
+        const declarations = this._parseDeclarations(this._parseRuleSetDeclaration.bind(this));
+        if (propertySet.setDeclarations(declarations) && !declarations.isErroneous(true)) {
+          propertySet.addChild(this._parsePrio());
+          if (this.peek(TokenType.SemiColon)) {
+            this.finish(propertySet);
+            node.setPropertySet(propertySet);
+            node.semicolonPosition = this.token.offset;
+            return this.finish(node);
+          }
+        }
+        this.restoreAtMark(mark);
+      }
+      const expression = this._parseExpr();
+      if (expression && !expression.isErroneous(true)) {
+        this._parsePrio();
+        if (this.peekOne(...stopTokens || [], TokenType.SemiColon, TokenType.EOF)) {
+          node.setValue(expression);
+          if (this.peek(TokenType.SemiColon)) {
+            node.semicolonPosition = this.token.offset;
+          }
+          return this.finish(node);
+        }
+      }
+      this.restoreAtMark(mark);
+      node.addChild(this._parseCustomPropertyValue(stopTokens));
+      node.addChild(this._parsePrio());
+      if (isDefined(node.colonPosition) && this.token.offset === node.colonPosition + 1) {
+        return this.finish(node, ParseError.PropertyValueExpected);
+      }
+      return this.finish(node);
+    }
+    /**
+     * Parse custom property values.
+     *
+     * Based on https://www.w3.org/TR/css-variables/#syntax
+     *
+     * This code is somewhat unusual, as the allowed syntax is incredibly broad,
+     * parsing almost any sequence of tokens, save for a small set of exceptions.
+     * Unbalanced delimitors, invalid tokens, and declaration
+     * terminators like semicolons and !important directives (when not inside
+     * of delimitors).
+     */
+    _parseCustomPropertyValue(stopTokens = [TokenType.CurlyR]) {
+      const node = this.create(Node);
+      const isTopLevel = () => curlyDepth === 0 && parensDepth === 0 && bracketsDepth === 0;
+      const onStopToken = () => stopTokens.indexOf(this.token.type) !== -1;
+      let curlyDepth = 0;
+      let parensDepth = 0;
+      let bracketsDepth = 0;
+      done: while (true) {
+        switch (this.token.type) {
+          case TokenType.SemiColon:
+            if (isTopLevel()) {
+              break done;
+            }
+            break;
+          case TokenType.Exclamation:
+            if (isTopLevel()) {
+              break done;
+            }
+            break;
+          case TokenType.CurlyL:
+            curlyDepth++;
+            break;
+          case TokenType.CurlyR:
+            curlyDepth--;
+            if (curlyDepth < 0) {
+              if (onStopToken() && parensDepth === 0 && bracketsDepth === 0) {
+                break done;
+              }
+              return this.finish(node, ParseError.LeftCurlyExpected);
+            }
+            break;
+          case TokenType.ParenthesisL:
+            parensDepth++;
+            break;
+          case TokenType.ParenthesisR:
+            parensDepth--;
+            if (parensDepth < 0) {
+              if (onStopToken() && bracketsDepth === 0 && curlyDepth === 0) {
+                break done;
+              }
+              return this.finish(node, ParseError.LeftParenthesisExpected);
+            }
+            break;
+          case TokenType.BracketL:
+            bracketsDepth++;
+            break;
+          case TokenType.BracketR:
+            bracketsDepth--;
+            if (bracketsDepth < 0) {
+              return this.finish(node, ParseError.LeftSquareBracketExpected);
+            }
+            break;
+          case TokenType.BadString:
+            break done;
+          case TokenType.EOF:
+            let error = ParseError.RightCurlyExpected;
+            if (bracketsDepth > 0) {
+              error = ParseError.RightSquareBracketExpected;
+            } else if (parensDepth > 0) {
+              error = ParseError.RightParenthesisExpected;
+            }
+            return this.finish(node, error);
+        }
+        this.consumeToken();
+      }
+      return this.finish(node);
+    }
+    _tryToParseDeclaration(stopTokens) {
+      const mark = this.mark();
+      if (this._parseProperty() && this.accept(TokenType.Colon)) {
+        this.restoreAtMark(mark);
+        return this._parseDeclaration(stopTokens);
+      }
+      this.restoreAtMark(mark);
+      return null;
+    }
+    _parseProperty() {
+      const node = this.create(Property);
+      const mark = this.mark();
+      if (this.acceptDelim("*") || this.acceptDelim("_")) {
+        if (this.hasWhitespace()) {
+          this.restoreAtMark(mark);
+          return null;
+        }
+      }
+      if (node.setIdentifier(this._parsePropertyIdentifier())) {
+        return this.finish(node);
+      }
+      return null;
+    }
+    _parsePropertyIdentifier() {
+      return this._parseIdent();
+    }
+    _parseCharset() {
+      if (!this.peek(TokenType.Charset)) {
+        return null;
+      }
+      const node = this.create(Node);
+      this.consumeToken();
+      if (!this.accept(TokenType.String)) {
+        return this.finish(node, ParseError.IdentifierExpected);
+      }
+      if (!this.accept(TokenType.SemiColon)) {
+        return this.finish(node, ParseError.SemiColonExpected);
+      }
+      return this.finish(node);
+    }
+    _parseImport() {
+      if (!this.peekKeyword("@import")) {
+        return null;
+      }
+      const node = this.create(Import);
+      this.consumeToken();
+      if (!node.addChild(this._parseURILiteral()) && !node.addChild(this._parseStringLiteral())) {
+        return this.finish(node, ParseError.URIOrStringExpected);
+      }
+      return this._completeParseImport(node);
+    }
+    _completeParseImport(node) {
+      if (this.acceptIdent("layer")) {
+        if (this.accept(TokenType.ParenthesisL)) {
+          if (!node.addChild(this._parseLayerName())) {
+            return this.finish(node, ParseError.IdentifierExpected, [TokenType.SemiColon]);
+          }
+          if (!this.accept(TokenType.ParenthesisR)) {
+            return this.finish(node, ParseError.RightParenthesisExpected, [TokenType.ParenthesisR], []);
+          }
+        }
+      }
+      if (this.acceptIdent("supports")) {
+        if (this.accept(TokenType.ParenthesisL)) {
+          node.addChild(this._tryToParseDeclaration() || this._parseSupportsCondition());
+          if (!this.accept(TokenType.ParenthesisR)) {
+            return this.finish(node, ParseError.RightParenthesisExpected, [TokenType.ParenthesisR], []);
+          }
+        }
+      }
+      if (!this.peek(TokenType.SemiColon) && !this.peek(TokenType.EOF)) {
+        node.setMedialist(this._parseMediaQueryList());
+      }
+      return this.finish(node);
+    }
+    _parseNamespace() {
+      if (!this.peekKeyword("@namespace")) {
+        return null;
+      }
+      const node = this.create(Namespace);
+      this.consumeToken();
+      if (!node.addChild(this._parseURILiteral())) {
+        node.addChild(this._parseIdent());
+        if (!node.addChild(this._parseURILiteral()) && !node.addChild(this._parseStringLiteral())) {
+          return this.finish(node, ParseError.URIExpected, [TokenType.SemiColon]);
+        }
+      }
+      if (!this.accept(TokenType.SemiColon)) {
+        return this.finish(node, ParseError.SemiColonExpected);
+      }
+      return this.finish(node);
+    }
+    _parseFontFace() {
+      if (!this.peekKeyword("@font-face")) {
+        return null;
+      }
+      const node = this.create(FontFace);
+      this.consumeToken();
+      return this._parseBody(node, this._parseRuleSetDeclaration.bind(this));
+    }
+    _parseViewPort() {
+      if (!this.peekKeyword("@-ms-viewport") && !this.peekKeyword("@-o-viewport") && !this.peekKeyword("@viewport")) {
+        return null;
+      }
+      const node = this.create(ViewPort);
+      this.consumeToken();
+      return this._parseBody(node, this._parseRuleSetDeclaration.bind(this));
+    }
+    _parseKeyframe() {
+      if (!this.peekRegExp(TokenType.AtKeyword, this.keyframeRegex)) {
+        return null;
+      }
+      const node = this.create(Keyframe);
+      const atNode = this.create(Node);
+      this.consumeToken();
+      node.setKeyword(this.finish(atNode));
+      if (atNode.matches("@-ms-keyframes")) {
+        this.markError(atNode, ParseError.UnknownKeyword);
+      }
+      if (!node.setIdentifier(this._parseKeyframeIdent())) {
+        return this.finish(node, ParseError.IdentifierExpected, [TokenType.CurlyR]);
+      }
+      return this._parseBody(node, this._parseKeyframeSelector.bind(this));
+    }
+    _parseKeyframeIdent() {
+      return this._parseIdent([ReferenceType.Keyframe]);
+    }
+    _parseKeyframeSelector() {
+      const node = this.create(KeyframeSelector);
+      let hasContent = false;
+      if (node.addChild(this._parseIdent())) {
+        hasContent = true;
+      }
+      if (this.accept(TokenType.Percentage)) {
+        hasContent = true;
+      }
+      if (!hasContent) {
+        return null;
+      }
+      while (this.accept(TokenType.Comma)) {
+        hasContent = false;
+        if (node.addChild(this._parseIdent())) {
+          hasContent = true;
+        }
+        if (this.accept(TokenType.Percentage)) {
+          hasContent = true;
+        }
+        if (!hasContent) {
+          return this.finish(node, ParseError.PercentageExpected);
+        }
+      }
+      return this._parseBody(node, this._parseRuleSetDeclaration.bind(this));
+    }
+    _tryParseKeyframeSelector() {
+      const node = this.create(KeyframeSelector);
+      const pos = this.mark();
+      let hasContent = false;
+      if (node.addChild(this._parseIdent())) {
+        hasContent = true;
+      }
+      if (this.accept(TokenType.Percentage)) {
+        hasContent = true;
+      }
+      if (!hasContent) {
+        return null;
+      }
+      while (this.accept(TokenType.Comma)) {
+        hasContent = false;
+        if (node.addChild(this._parseIdent())) {
+          hasContent = true;
+        }
+        if (this.accept(TokenType.Percentage)) {
+          hasContent = true;
+        }
+        if (!hasContent) {
+          this.restoreAtMark(pos);
+          return null;
+        }
+      }
+      if (!this.peek(TokenType.CurlyL)) {
+        this.restoreAtMark(pos);
+        return null;
+      }
+      return this._parseBody(node, this._parseRuleSetDeclaration.bind(this));
+    }
+    _parsePropertyAtRule() {
+      if (!this.peekKeyword("@property")) {
+        return null;
+      }
+      const node = this.create(PropertyAtRule);
+      this.consumeToken();
+      if (!this.peekRegExp(TokenType.Ident, /^--/) || !node.setName(this._parseIdent([ReferenceType.Property]))) {
+        return this.finish(node, ParseError.IdentifierExpected);
+      }
+      return this._parseBody(node, this._parseDeclaration.bind(this));
+    }
+    _parseStartingStyleAtRule(isNested = false) {
+      if (!this.peekKeyword("@starting-style")) {
+        return null;
+      }
+      const node = this.create(StartingStyleAtRule);
+      this.consumeToken();
+      return this._parseBody(node, this._parseStartingStyleDeclaration.bind(this, isNested));
+    }
+    // this method is the same as ._parseContainerDeclaration()
+    // which is the same as ._parseMediaDeclaration(),
+    // _parseSupportsDeclaration, and ._parseLayerDeclaration()
+    _parseStartingStyleDeclaration(isNested = false) {
+      if (isNested) {
+        return this._tryParseRuleset(true) || this._tryToParseDeclaration() || this._parseStylesheetStatement(true);
+      }
+      return this._parseStylesheetStatement(false);
+    }
+    _parseLayer(isNested = false) {
+      if (!this.peekKeyword("@layer")) {
+        return null;
+      }
+      const node = this.create(Layer);
+      this.consumeToken();
+      const names = this._parseLayerNameList();
+      if (names) {
+        node.setNames(names);
+      }
+      if ((!names || names.getChildren().length === 1) && this.peek(TokenType.CurlyL)) {
+        return this._parseBody(node, this._parseLayerDeclaration.bind(this, isNested));
+      }
+      if (!this.accept(TokenType.SemiColon)) {
+        return this.finish(node, ParseError.SemiColonExpected);
+      }
+      return this.finish(node);
+    }
+    _parseLayerDeclaration(isNested = false) {
+      if (isNested) {
+        return this._tryParseRuleset(true) || this._tryToParseDeclaration() || this._parseStylesheetStatement(true);
+      }
+      return this._parseStylesheetStatement(false);
+    }
+    _parseLayerNameList() {
+      const node = this.createNode(NodeType.LayerNameList);
+      if (!node.addChild(this._parseLayerName())) {
+        return null;
+      }
+      while (this.accept(TokenType.Comma)) {
+        if (!node.addChild(this._parseLayerName())) {
+          return this.finish(node, ParseError.IdentifierExpected);
+        }
+      }
+      return this.finish(node);
+    }
+    _parseLayerName() {
+      const node = this.createNode(NodeType.LayerName);
+      if (!node.addChild(this._parseIdent())) {
+        return null;
+      }
+      while (!this.hasWhitespace() && this.acceptDelim(".")) {
+        if (this.hasWhitespace() || !node.addChild(this._parseIdent())) {
+          return this.finish(node, ParseError.IdentifierExpected);
+        }
+      }
+      return this.finish(node);
+    }
+    _parseSupports(isNested = false) {
+      if (!this.peekKeyword("@supports")) {
+        return null;
+      }
+      const node = this.create(Supports);
+      this.consumeToken();
+      node.addChild(this._parseSupportsCondition());
+      return this._parseBody(node, this._parseSupportsDeclaration.bind(this, isNested));
+    }
+    _parseSupportsDeclaration(isNested = false) {
+      if (isNested) {
+        return this._tryParseRuleset(true) || this._tryToParseDeclaration() || this._parseStylesheetStatement(true);
+      }
+      return this._parseStylesheetStatement(false);
+    }
+    _parseSupportsCondition() {
+      const node = this.create(SupportsCondition);
+      if (this.acceptIdent("not")) {
+        node.addChild(this._parseSupportsConditionInParens());
+      } else {
+        node.addChild(this._parseSupportsConditionInParens());
+        if (this.peekRegExp(TokenType.Ident, /^(and|or)$/i)) {
+          const text = this.token.text.toLowerCase();
+          while (this.acceptIdent(text)) {
+            node.addChild(this._parseSupportsConditionInParens());
+          }
+        }
+      }
+      return this.finish(node);
+    }
+    _parseSupportsConditionInParens() {
+      const node = this.create(SupportsCondition);
+      if (this.accept(TokenType.ParenthesisL)) {
+        if (this.prevToken) {
+          node.lParent = this.prevToken.offset;
+        }
+        if (!node.addChild(this._tryToParseDeclaration([TokenType.ParenthesisR]))) {
+          if (!this._parseSupportsCondition()) {
+            return this.finish(node, ParseError.ConditionExpected);
+          }
+        }
+        if (!this.accept(TokenType.ParenthesisR)) {
+          return this.finish(node, ParseError.RightParenthesisExpected, [TokenType.ParenthesisR], []);
+        }
+        if (this.prevToken) {
+          node.rParent = this.prevToken.offset;
+        }
+        return this.finish(node);
+      } else if (this.peek(TokenType.Ident)) {
+        const pos = this.mark();
+        this.consumeToken();
+        if (!this.hasWhitespace() && this.accept(TokenType.ParenthesisL)) {
+          let openParentCount = 1;
+          while (this.token.type !== TokenType.EOF && openParentCount !== 0) {
+            if (this.token.type === TokenType.ParenthesisL) {
+              openParentCount++;
+            } else if (this.token.type === TokenType.ParenthesisR) {
+              openParentCount--;
+            }
+            this.consumeToken();
+          }
+          return this.finish(node);
+        } else {
+          this.restoreAtMark(pos);
+        }
+      }
+      return this.finish(node, ParseError.LeftParenthesisExpected, [], [TokenType.ParenthesisL]);
+    }
+    _parseMediaDeclaration(isNested = false) {
+      if (isNested) {
+        return this._tryParseRuleset(true) || this._tryToParseDeclaration() || this._parseStylesheetStatement(true);
+      }
+      return this._parseStylesheetStatement(false);
+    }
+    _parseMedia(isNested = false) {
+      if (!this.peekKeyword("@media")) {
+        return null;
+      }
+      const node = this.create(Media);
+      this.consumeToken();
+      if (!node.addChild(this._parseMediaQueryList())) {
+        return this.finish(node, ParseError.MediaQueryExpected);
+      }
+      return this._parseBody(node, this._parseMediaDeclaration.bind(this, isNested));
+    }
+    _parseMediaQueryList() {
+      const node = this.create(Medialist);
+      if (!node.addChild(this._parseMediaQuery())) {
+        return this.finish(node, ParseError.MediaQueryExpected);
+      }
+      while (this.accept(TokenType.Comma)) {
+        if (!node.addChild(this._parseMediaQuery())) {
+          return this.finish(node, ParseError.MediaQueryExpected);
+        }
+      }
+      return this.finish(node);
+    }
+    _parseMediaQuery() {
+      const node = this.create(MediaQuery);
+      const pos = this.mark();
+      this.acceptIdent("not");
+      if (!this.peek(TokenType.ParenthesisL)) {
+        if (this.acceptIdent("only")) {
+        }
+        if (!node.addChild(this._parseIdent())) {
+          return null;
+        }
+        if (this.acceptIdent("and")) {
+          node.addChild(this._parseMediaCondition());
+        }
+      } else {
+        this.restoreAtMark(pos);
+        node.addChild(this._parseMediaCondition());
+      }
+      return this.finish(node);
+    }
+    _parseRatio() {
+      const pos = this.mark();
+      const node = this.create(RatioValue);
+      if (!this._parseNumeric()) {
+        return null;
+      }
+      if (!this.acceptDelim("/")) {
+        this.restoreAtMark(pos);
+        return null;
+      }
+      if (!this._parseNumeric()) {
+        return this.finish(node, ParseError.NumberExpected);
+      }
+      return this.finish(node);
+    }
+    _parseBooleanExpression(parseTest) {
+      const node = this.create(Node);
+      if (this.acceptIdent("not")) {
+        if (!node.addChild(this._parseBooleanExpressionGroup(parseTest))) {
+          return null;
+        }
+      } else {
+        if (!node.addChild(this._parseBooleanExpressionGroup(parseTest))) {
+          return null;
+        }
+        if (this.peekIdent("and")) {
+          while (this.acceptIdent("and")) {
+            if (!node.addChild(this._parseBooleanExpressionGroup(parseTest))) {
+              return null;
+            }
+          }
+        } else if (this.peekIdent("or")) {
+          while (this.acceptIdent("or")) {
+            if (!node.addChild(this._parseBooleanExpressionGroup(parseTest))) {
+              return null;
+            }
+          }
+        }
+      }
+      return this.finish(node);
+    }
+    _parseBooleanExpressionGroup(parseTest) {
+      const node = this.create(Node);
+      const pos = this.mark();
+      if (this.accept(TokenType.ParenthesisL)) {
+        if (node.addChild(this._parseBooleanExpression(parseTest))) {
+          if (!this.accept(TokenType.ParenthesisR)) {
+            return this.finish(node, ParseError.RightParenthesisExpected, [], [TokenType.CurlyL]);
+          }
+          return this.finish(node);
+        }
+        this.restoreAtMark(pos);
+      }
+      if (!node.addChild(parseTest())) {
+        return null;
+      }
+      ;
+      return this.finish(node);
+    }
+    _parseMediaCondition() {
+      const node = this.create(MediaCondition);
+      this.acceptIdent("not");
+      let parseExpression = true;
+      while (parseExpression) {
+        if (!this.accept(TokenType.ParenthesisL)) {
+          return this.finish(node, ParseError.LeftParenthesisExpected, [], [TokenType.CurlyL]);
+        }
+        if (this.peek(TokenType.ParenthesisL) || this.peekIdent("not")) {
+          node.addChild(this._parseMediaCondition());
+        } else {
+          node.addChild(this._parseMediaFeature());
+        }
+        if (!this.accept(TokenType.ParenthesisR)) {
+          return this.finish(node, ParseError.RightParenthesisExpected, [], [TokenType.CurlyL]);
+        }
+        parseExpression = this.acceptIdent("and") || this.acceptIdent("or");
+      }
+      return this.finish(node);
+    }
+    _parseMediaFeature() {
+      const resyncStopToken = [TokenType.ParenthesisR];
+      const node = this.create(MediaFeature);
+      if (node.addChild(this._parseMediaFeatureName())) {
+        if (this.accept(TokenType.Colon)) {
+          if (!node.addChild(this._parseMediaFeatureValue())) {
+            return this.finish(node, ParseError.TermExpected, [], resyncStopToken);
+          }
+        } else if (this._parseMediaFeatureRangeOperator()) {
+          if (!node.addChild(this._parseMediaFeatureValue())) {
+            return this.finish(node, ParseError.TermExpected, [], resyncStopToken);
+          }
+          if (this._parseMediaFeatureRangeOperator()) {
+            if (!node.addChild(this._parseMediaFeatureValue())) {
+              return this.finish(node, ParseError.TermExpected, [], resyncStopToken);
+            }
+          }
+        } else {
+        }
+      } else if (node.addChild(this._parseMediaFeatureValue())) {
+        if (!this._parseMediaFeatureRangeOperator()) {
+          return this.finish(node, ParseError.OperatorExpected, [], resyncStopToken);
+        }
+        if (!node.addChild(this._parseMediaFeatureName())) {
+          return this.finish(node, ParseError.IdentifierExpected, [], resyncStopToken);
+        }
+        if (this._parseMediaFeatureRangeOperator()) {
+          if (!node.addChild(this._parseMediaFeatureValue())) {
+            return this.finish(node, ParseError.TermExpected, [], resyncStopToken);
+          }
+        }
+      } else {
+        return this.finish(node, ParseError.IdentifierExpected, [], resyncStopToken);
+      }
+      return this.finish(node);
+    }
+    _parseMediaFeatureRangeOperator() {
+      if (this.acceptDelim("<") || this.acceptDelim(">")) {
+        if (!this.hasWhitespace()) {
+          this.acceptDelim("=");
+        }
+        return true;
+      } else if (this.acceptDelim("=")) {
+        return true;
+      }
+      return false;
+    }
+    _parseMediaFeatureName() {
+      return this._parseIdent();
+    }
+    _parseMediaFeatureValue() {
+      return this._parseRatio() || this._parseTermExpression();
+    }
+    _parseScope() {
+      if (!this.peekKeyword("@scope")) {
+        return null;
+      }
+      const node = this.create(Scope);
+      this.consumeToken();
+      node.addChild(this._parseScopeLimits());
+      return this._parseBody(node, this._parseScopeDeclaration.bind(this));
+    }
+    _parseScopeDeclaration() {
+      const isNested = true;
+      return this._tryParseRuleset(isNested) || this._tryToParseDeclaration() || this._parseStylesheetStatement(isNested);
+    }
+    _parseScopeLimits() {
+      const node = this.create(ScopeLimits);
+      if (this.accept(TokenType.ParenthesisL)) {
+        if (!node.setScopeStart(this._parseScopeSelectorList())) {
+          return this.finish(node, ParseError.SelectorExpected, [], [TokenType.ParenthesisR]);
+        }
+        if (!this.accept(TokenType.ParenthesisR)) {
+          return this.finish(node, ParseError.RightParenthesisExpected, [], [TokenType.CurlyL]);
+        }
+      }
+      if (this.acceptIdent("to")) {
+        if (!this.accept(TokenType.ParenthesisL)) {
+          return this.finish(node, ParseError.LeftParenthesisExpected, [], [TokenType.CurlyL]);
+        }
+        if (!node.setScopeEnd(this._parseScopeSelectorList())) {
+          return this.finish(node, ParseError.SelectorExpected, [], [TokenType.ParenthesisR]);
+        }
+        if (!this.accept(TokenType.ParenthesisR)) {
+          return this.finish(node, ParseError.RightParenthesisExpected, [], [TokenType.CurlyL]);
+        }
+      }
+      return this.finish(node);
+    }
+    _parseScopeSelectorList() {
+      const selectors = this.createNode(NodeType.SelectorList);
+      if (!selectors.addChild(this._parseSelector(true))) {
+        return null;
+      }
+      while (this.accept(TokenType.Comma) && selectors.addChild(this._parseSelector(true))) {
+      }
+      return this.finish(selectors);
+    }
+    _parseMedium() {
+      const node = this.create(Node);
+      if (node.addChild(this._parseIdent())) {
+        return this.finish(node);
+      } else {
+        return null;
+      }
+    }
+    _parsePageDeclaration() {
+      return this._parsePageMarginBox() || this._parseRuleSetDeclaration();
+    }
+    _parsePage() {
+      if (!this.peekKeyword("@page")) {
+        return null;
+      }
+      const node = this.create(Page);
+      this.consumeToken();
+      if (node.addChild(this._parsePageSelector())) {
+        while (this.accept(TokenType.Comma)) {
+          if (!node.addChild(this._parsePageSelector())) {
+            return this.finish(node, ParseError.IdentifierExpected);
+          }
+        }
+      }
+      return this._parseBody(node, this._parsePageDeclaration.bind(this));
+    }
+    _parsePageMarginBox() {
+      if (!this.peek(TokenType.AtKeyword)) {
+        return null;
+      }
+      const node = this.create(PageBoxMarginBox);
+      if (!this.acceptOneKeyword(pageBoxDirectives)) {
+        this.markError(node, ParseError.UnknownAtRule, [], [TokenType.CurlyL]);
+      }
+      return this._parseBody(node, this._parseRuleSetDeclaration.bind(this));
+    }
+    _parsePageSelector() {
+      if (!this.peek(TokenType.Ident) && !this.peek(TokenType.Colon)) {
+        return null;
+      }
+      const node = this.create(Node);
+      node.addChild(this._parseIdent());
+      if (this.accept(TokenType.Colon)) {
+        if (!node.addChild(this._parseIdent())) {
+          return this.finish(node, ParseError.IdentifierExpected);
+        }
+      }
+      return this.finish(node);
+    }
+    _parseDocument() {
+      if (!this.peekKeyword("@-moz-document")) {
+        return null;
+      }
+      const node = this.create(Document);
+      this.consumeToken();
+      this.resync([], [TokenType.CurlyL]);
+      return this._parseBody(node, this._parseStylesheetStatement.bind(this));
+    }
+    _parseContainerDeclaration(isNested = false) {
+      if (isNested) {
+        return this._tryParseRuleset(true) || this._tryToParseDeclaration() || this._parseStylesheetStatement(true);
+      }
+      return this._parseStylesheetStatement(false);
+    }
+    _parseContainer(isNested = false) {
+      if (!this.peekKeyword("@container")) {
+        return null;
+      }
+      const node = this.create(Container);
+      this.consumeToken();
+      node.addChild(this._parseIdent());
+      if (node.addChild(this._parseContainerQuery())) {
+        while (this.accept(TokenType.Comma)) {
+          if (this.peek(TokenType.CurlyL)) {
+            break;
+          }
+          node.addChild(this._parseIdent());
+          node.addChild(this._parseContainerQuery());
+        }
+      }
+      return this._parseBody(node, this._parseContainerDeclaration.bind(this, isNested));
+    }
+    _parseContainerQuery() {
+      const node = this.create(Node);
+      if (this.acceptIdent("not")) {
+        node.addChild(this._parseContainerQueryInParens());
+      } else {
+        node.addChild(this._parseContainerQueryInParens(true));
+        if (this.peekIdent("and")) {
+          while (this.acceptIdent("and")) {
+            node.addChild(this._parseContainerQueryInParens());
+          }
+        } else if (this.peekIdent("or")) {
+          while (this.acceptIdent("or")) {
+            node.addChild(this._parseContainerQueryInParens());
+          }
+        }
+      }
+      return this.finish(node);
+    }
+    _parseContainerQueryInParens(optional = false) {
+      const node = this.create(Node);
+      if (this.accept(TokenType.ParenthesisL)) {
+        if (this.peekIdent("not") || this.peek(TokenType.ParenthesisL)) {
+          node.addChild(this._parseContainerQuery());
+        } else {
+          node.addChild(this._parseMediaFeature());
+        }
+        if (!this.accept(TokenType.ParenthesisR)) {
+          return this.finish(node, ParseError.RightParenthesisExpected, [], [TokenType.CurlyL]);
+        }
+      } else if (this.acceptIdent("style")) {
+        if (this.hasWhitespace() || !this.accept(TokenType.ParenthesisL)) {
+          return this.finish(node, ParseError.LeftParenthesisExpected, [], [TokenType.CurlyL]);
+        }
+        node.addChild(this._parseStyleQuery());
+        if (!this.accept(TokenType.ParenthesisR)) {
+          return this.finish(node, ParseError.RightParenthesisExpected, [], [TokenType.CurlyL]);
+        }
+      } else {
+        if (optional) {
+          return null;
+        }
+        return this.finish(node, ParseError.LeftParenthesisExpected, [], [TokenType.CurlyL]);
+      }
+      return this.finish(node);
+    }
+    _parseStyleQuery() {
+      const node = this.create(Node);
+      if (this.acceptIdent("not")) {
+        node.addChild(this._parseStyleInParens());
+      } else if (this.peek(TokenType.ParenthesisL)) {
+        node.addChild(this._parseStyleInParens());
+        if (this.peekIdent("and")) {
+          while (this.acceptIdent("and")) {
+            node.addChild(this._parseStyleInParens());
+          }
+        } else if (this.peekIdent("or")) {
+          while (this.acceptIdent("or")) {
+            node.addChild(this._parseStyleInParens());
+          }
+        }
+      } else {
+        node.addChild(this._parseDeclaration([TokenType.ParenthesisR], true));
+      }
+      return this.finish(node);
+    }
+    _parseStyleInParens() {
+      const node = this.create(Node);
+      if (this.accept(TokenType.ParenthesisL)) {
+        node.addChild(this._parseStyleQuery());
+        if (!this.accept(TokenType.ParenthesisR)) {
+          return this.finish(node, ParseError.RightParenthesisExpected, [], [TokenType.CurlyL]);
+        }
+      } else {
+        return this.finish(node, ParseError.LeftParenthesisExpected, [], [TokenType.CurlyL]);
+      }
+      return this.finish(node);
+    }
+    // https://www.w3.org/TR/css-syntax-3/#consume-an-at-rule
+    _parseUnknownAtRule() {
+      if (!this.peek(TokenType.AtKeyword)) {
+        return null;
+      }
+      const node = this.create(UnknownAtRule);
+      node.addChild(this._parseUnknownAtRuleName());
+      const isTopLevel = () => curlyDepth === 0 && parensDepth === 0 && bracketsDepth === 0;
+      let curlyLCount = 0;
+      let curlyDepth = 0;
+      let parensDepth = 0;
+      let bracketsDepth = 0;
+      done: while (true) {
+        switch (this.token.type) {
+          case TokenType.SemiColon:
+            if (isTopLevel()) {
+              break done;
+            }
+            break;
+          case TokenType.EOF:
+            if (curlyDepth > 0) {
+              return this.finish(node, ParseError.RightCurlyExpected);
+            } else if (bracketsDepth > 0) {
+              return this.finish(node, ParseError.RightSquareBracketExpected);
+            } else if (parensDepth > 0) {
+              return this.finish(node, ParseError.RightParenthesisExpected);
+            } else {
+              return this.finish(node);
+            }
+          case TokenType.CurlyL:
+            curlyLCount++;
+            curlyDepth++;
+            break;
+          case TokenType.CurlyR:
+            curlyDepth--;
+            if (curlyLCount > 0 && curlyDepth === 0) {
+              this.consumeToken();
+              if (bracketsDepth > 0) {
+                return this.finish(node, ParseError.RightSquareBracketExpected);
+              } else if (parensDepth > 0) {
+                return this.finish(node, ParseError.RightParenthesisExpected);
+              }
+              break done;
+            }
+            if (curlyDepth < 0) {
+              if (parensDepth === 0 && bracketsDepth === 0) {
+                break done;
+              }
+              return this.finish(node, ParseError.LeftCurlyExpected);
+            }
+            break;
+          case TokenType.ParenthesisL:
+            parensDepth++;
+            break;
+          case TokenType.ParenthesisR:
+            parensDepth--;
+            if (parensDepth < 0) {
+              return this.finish(node, ParseError.LeftParenthesisExpected);
+            }
+            break;
+          case TokenType.BracketL:
+            bracketsDepth++;
+            break;
+          case TokenType.BracketR:
+            bracketsDepth--;
+            if (bracketsDepth < 0) {
+              return this.finish(node, ParseError.LeftSquareBracketExpected);
+            }
+            break;
+        }
+        this.consumeToken();
+      }
+      return node;
+    }
+    _parseUnknownAtRuleName() {
+      const node = this.create(Node);
+      if (this.accept(TokenType.AtKeyword)) {
+        return this.finish(node);
+      }
+      return node;
+    }
+    _parseOperator() {
+      if (this.peekDelim("/") || this.peekDelim("*") || this.peekDelim("+") || this.peekDelim("-") || this.peek(TokenType.Dashmatch) || this.peek(TokenType.Includes) || this.peek(TokenType.SubstringOperator) || this.peek(TokenType.PrefixOperator) || this.peek(TokenType.SuffixOperator) || this.peekDelim("=")) {
+        const node = this.createNode(NodeType.Operator);
+        this.consumeToken();
+        return this.finish(node);
+      } else {
+        return null;
+      }
+    }
+    _parseUnaryOperator() {
+      if (!this.peekDelim("+") && !this.peekDelim("-")) {
+        return null;
+      }
+      const node = this.create(Node);
+      this.consumeToken();
+      return this.finish(node);
+    }
+    _parseCombinator() {
+      if (this.peekDelim(">")) {
+        const node = this.create(Node);
+        this.consumeToken();
+        const mark = this.mark();
+        if (!this.hasWhitespace() && this.acceptDelim(">")) {
+          if (!this.hasWhitespace() && this.acceptDelim(">")) {
+            node.type = NodeType.SelectorCombinatorShadowPiercingDescendant;
+            return this.finish(node);
+          }
+          this.restoreAtMark(mark);
+        }
+        node.type = NodeType.SelectorCombinatorParent;
+        return this.finish(node);
+      } else if (this.peekDelim("+")) {
+        const node = this.create(Node);
+        this.consumeToken();
+        node.type = NodeType.SelectorCombinatorSibling;
+        return this.finish(node);
+      } else if (this.peekDelim("~")) {
+        const node = this.create(Node);
+        this.consumeToken();
+        node.type = NodeType.SelectorCombinatorAllSiblings;
+        return this.finish(node);
+      } else if (this.peekDelim("/")) {
+        const node = this.create(Node);
+        this.consumeToken();
+        const mark = this.mark();
+        if (!this.hasWhitespace() && this.acceptIdent("deep") && !this.hasWhitespace() && this.acceptDelim("/")) {
+          node.type = NodeType.SelectorCombinatorShadowPiercingDescendant;
+          return this.finish(node);
+        }
+        this.restoreAtMark(mark);
+      }
+      return null;
+    }
+    _parseSimpleSelector() {
+      const node = this.create(SimpleSelector);
+      let c = 0;
+      if (node.addChild(this._parseElementName() || this._parseNestingSelector())) {
+        c++;
+      }
+      while ((c === 0 || !this.hasWhitespace()) && node.addChild(this._parseSimpleSelectorBody())) {
+        c++;
+      }
+      return c > 0 ? this.finish(node) : null;
+    }
+    _parseNestingSelector() {
+      if (this.peekDelim("&")) {
+        const node = this.createNode(NodeType.SelectorCombinator);
+        this.consumeToken();
+        return this.finish(node);
+      }
+      return null;
+    }
+    _parseSimpleSelectorBody() {
+      return this._parsePseudo() || this._parseHash() || this._parseClass() || this._parseAttrib();
+    }
+    _parseSelectorIdent() {
+      return this._parseIdent();
+    }
+    _parseHash() {
+      if (!this.peek(TokenType.Hash) && !this.peekDelim("#")) {
+        return null;
+      }
+      const node = this.createNode(NodeType.IdentifierSelector);
+      if (this.acceptDelim("#")) {
+        if (this.hasWhitespace() || !node.addChild(this._parseSelectorIdent())) {
+          return this.finish(node, ParseError.IdentifierExpected);
+        }
+      } else {
+        this.consumeToken();
+      }
+      return this.finish(node);
+    }
+    _parseClass() {
+      if (!this.peekDelim(".")) {
+        return null;
+      }
+      const node = this.createNode(NodeType.ClassSelector);
+      this.consumeToken();
+      if (this.hasWhitespace() || !node.addChild(this._parseSelectorIdent())) {
+        return this.finish(node, ParseError.IdentifierExpected);
+      }
+      return this.finish(node);
+    }
+    _parseElementName() {
+      const pos = this.mark();
+      const node = this.createNode(NodeType.ElementNameSelector);
+      node.addChild(this._parseNamespacePrefix());
+      if (!node.addChild(this._parseSelectorIdent()) && !this.acceptDelim("*")) {
+        this.restoreAtMark(pos);
+        return null;
+      }
+      return this.finish(node);
+    }
+    _parseNamespacePrefix() {
+      const pos = this.mark();
+      const node = this.createNode(NodeType.NamespacePrefix);
+      if (!node.addChild(this._parseIdent()) && !this.acceptDelim("*")) {
+      }
+      if (!this.acceptDelim("|")) {
+        this.restoreAtMark(pos);
+        return null;
+      }
+      return this.finish(node);
+    }
+    _parseAttrib() {
+      if (!this.peek(TokenType.BracketL)) {
+        return null;
+      }
+      const node = this.create(AttributeSelector);
+      this.consumeToken();
+      node.setNamespacePrefix(this._parseNamespacePrefix());
+      if (!node.setIdentifier(this._parseIdent())) {
+        return this.finish(node, ParseError.IdentifierExpected);
+      }
+      if (node.setOperator(this._parseOperator())) {
+        node.setValue(this._parseBinaryExpr());
+        this.acceptIdent("i");
+        this.acceptIdent("s");
+      }
+      if (!this.accept(TokenType.BracketR)) {
+        return this.finish(node, ParseError.RightSquareBracketExpected);
+      }
+      return this.finish(node);
+    }
+    _parsePseudo() {
+      const node = this._tryParsePseudoIdentifier();
+      if (node) {
+        if (!this.hasWhitespace() && this.accept(TokenType.ParenthesisL)) {
+          const tryAsSelector = () => {
+            const selectors = this.createNode(NodeType.SelectorList);
+            if (!selectors.addChild(this._parseSelector(true))) {
+              return null;
+            }
+            while (this.accept(TokenType.Comma) && selectors.addChild(this._parseSelector(true))) {
+            }
+            if (this.peek(TokenType.ParenthesisR)) {
+              return this.finish(selectors);
+            }
+            return null;
+          };
+          let hasSelector = node.addChild(this.try(tryAsSelector));
+          if (!hasSelector) {
+            while (!this.peekIdent("of") && (node.addChild(this._parseTerm()) || node.addChild(this._parseOperator()))) {
+            }
+            if (this.acceptIdent("of") && !node.addChild(this.try(tryAsSelector))) {
+              return this.finish(node, ParseError.SelectorExpected);
+            }
+          }
+          if (!this.accept(TokenType.ParenthesisR)) {
+            return this.finish(node, ParseError.RightParenthesisExpected);
+          }
+        }
+        return this.finish(node);
+      }
+      return null;
+    }
+    _tryParsePseudoIdentifier() {
+      if (!this.peek(TokenType.Colon)) {
+        return null;
+      }
+      const pos = this.mark();
+      const node = this.createNode(NodeType.PseudoSelector);
+      this.consumeToken();
+      if (this.hasWhitespace()) {
+        this.restoreAtMark(pos);
+        return null;
+      }
+      this.accept(TokenType.Colon);
+      if (this.hasWhitespace() || !node.addChild(this._parseIdent())) {
+        return this.finish(node, ParseError.IdentifierExpected);
+      }
+      return this.finish(node);
+    }
+    _tryParsePrio() {
+      const mark = this.mark();
+      const prio = this._parsePrio();
+      if (prio) {
+        return prio;
+      }
+      this.restoreAtMark(mark);
+      return null;
+    }
+    _parsePrio() {
+      if (!this.peek(TokenType.Exclamation)) {
+        return null;
+      }
+      const node = this.createNode(NodeType.Prio);
+      if (this.accept(TokenType.Exclamation) && this.acceptIdent("important")) {
+        return this.finish(node);
+      }
+      return null;
+    }
+    _parseExpr(stopOnComma = false) {
+      const node = this.create(Expression);
+      if (!node.addChild(this._parseBinaryExpr())) {
+        return null;
+      }
+      while (true) {
+        if (this.peek(TokenType.Comma)) {
+          if (stopOnComma) {
+            return this.finish(node);
+          }
+          this.consumeToken();
+        }
+        if (!node.addChild(this._parseBinaryExpr())) {
+          break;
+        }
+      }
+      return this.finish(node);
+    }
+    _parseUnicodeRange() {
+      if (!this.peekIdent("u")) {
+        return null;
+      }
+      const node = this.create(UnicodeRange);
+      if (!this.acceptUnicodeRange()) {
+        return null;
+      }
+      return this.finish(node);
+    }
+    _parseNamedLine() {
+      if (!this.peek(TokenType.BracketL)) {
+        return null;
+      }
+      const node = this.createNode(NodeType.GridLine);
+      this.consumeToken();
+      while (node.addChild(this._parseIdent())) {
+      }
+      if (!this.accept(TokenType.BracketR)) {
+        return this.finish(node, ParseError.RightSquareBracketExpected);
+      }
+      return this.finish(node);
+    }
+    _parseBinaryExpr(preparsedLeft, preparsedOper) {
+      let node = this.create(BinaryExpression);
+      if (!node.setLeft(preparsedLeft || this._parseTerm())) {
+        return null;
+      }
+      if (!node.setOperator(preparsedOper || this._parseOperator())) {
+        return this.finish(node);
+      }
+      if (!node.setRight(this._parseTerm())) {
+        return this.finish(node, ParseError.TermExpected);
+      }
+      node = this.finish(node);
+      const operator = this._parseOperator();
+      if (operator) {
+        node = this._parseBinaryExpr(node, operator);
+      }
+      return this.finish(node);
+    }
+    _parseTerm() {
+      let node = this.create(Term);
+      node.setOperator(this._parseUnaryOperator());
+      if (node.setExpression(this._parseTermExpression())) {
+        return this.finish(node);
+      }
+      return null;
+    }
+    _parseTermExpression() {
+      return this._parseURILiteral() || // url before function
+      this._parseUnicodeRange() || this._parseFunction() || // function before ident
+      this._parseIdent() || this._parseStringLiteral() || this._parseNumeric() || this._parseHexColor() || this._parseOperation() || this._parseNamedLine();
+    }
+    _parseOperation() {
+      if (!this.peek(TokenType.ParenthesisL)) {
+        return null;
+      }
+      const node = this.create(Node);
+      this.consumeToken();
+      node.addChild(this._parseExpr());
+      if (!this.accept(TokenType.ParenthesisR)) {
+        return this.finish(node, ParseError.RightParenthesisExpected);
+      }
+      return this.finish(node);
+    }
+    _parseNumeric() {
+      if (this.peek(TokenType.Num) || this.peek(TokenType.Percentage) || this.peek(TokenType.Resolution) || this.peek(TokenType.Length) || this.peek(TokenType.EMS) || this.peek(TokenType.EXS) || this.peek(TokenType.Angle) || this.peek(TokenType.Time) || this.peek(TokenType.Dimension) || this.peek(TokenType.ContainerQueryLength) || this.peek(TokenType.Freq)) {
+        const node = this.create(NumericValue);
+        this.consumeToken();
+        return this.finish(node);
+      }
+      return null;
+    }
+    _parseStringLiteral() {
+      if (!this.peek(TokenType.String) && !this.peek(TokenType.BadString)) {
+        return null;
+      }
+      const node = this.createNode(NodeType.StringLiteral);
+      this.consumeToken();
+      return this.finish(node);
+    }
+    _parseURILiteral() {
+      if (!this.peekRegExp(TokenType.Ident, /^url(-prefix)?$/i)) {
+        return null;
+      }
+      const pos = this.mark();
+      const node = this.createNode(NodeType.URILiteral);
+      this.accept(TokenType.Ident);
+      if (this.hasWhitespace() || !this.peek(TokenType.ParenthesisL)) {
+        this.restoreAtMark(pos);
+        return null;
+      }
+      this.scanner.inURL = true;
+      this.consumeToken();
+      node.addChild(this._parseURLArgument());
+      this.scanner.inURL = false;
+      if (!this.accept(TokenType.ParenthesisR)) {
+        return this.finish(node, ParseError.RightParenthesisExpected);
+      }
+      return this.finish(node);
+    }
+    _parseURLArgument() {
+      const node = this.create(Node);
+      if (!this.accept(TokenType.String) && !this.accept(TokenType.BadString) && !this.acceptUnquotedString()) {
+        return null;
+      }
+      return this.finish(node);
+    }
+    _parseIdent(referenceTypes) {
+      if (!this.peek(TokenType.Ident)) {
+        return null;
+      }
+      const node = this.create(Identifier);
+      if (referenceTypes) {
+        node.referenceTypes = referenceTypes;
+      }
+      node.isCustomProperty = this.peekRegExp(TokenType.Ident, /^--/);
+      this.consumeToken();
+      return this.finish(node);
+    }
+    _parseFunction() {
+      const pos = this.mark();
+      const node = this.create(Function);
+      let parseArgument = this._parseFunctionArgument.bind(this);
+      let separator = TokenType.Comma;
+      if (this.peekIdent("if")) {
+        parseArgument = this._parseIfBranch.bind(this);
+        separator = TokenType.SemiColon;
+      }
+      if (!node.setIdentifier(this._parseFunctionIdentifier())) {
+        return null;
+      }
+      if (this.hasWhitespace() || !this.accept(TokenType.ParenthesisL)) {
+        this.restoreAtMark(pos);
+        return null;
+      }
+      if (node.getArguments().addChild(parseArgument())) {
+        while (this.accept(separator)) {
+          if (this.peek(TokenType.ParenthesisR)) {
+            break;
+          }
+          if (!node.getArguments().addChild(parseArgument())) {
+            this.markError(node, ParseError.ExpressionExpected);
+          }
+        }
+      }
+      if (!this.accept(TokenType.ParenthesisR)) {
+        return this.finish(node, ParseError.RightParenthesisExpected);
+      }
+      return this.finish(node);
+    }
+    _parseFunctionIdentifier() {
+      if (!this.peek(TokenType.Ident)) {
+        return null;
+      }
+      const node = this.create(Identifier);
+      node.referenceTypes = [ReferenceType.Function];
+      if (this.acceptIdent("progid")) {
+        if (this.accept(TokenType.Colon)) {
+          while (this.accept(TokenType.Ident) && this.acceptDelim(".")) {
+          }
+        }
+        return this.finish(node);
+      }
+      this.consumeToken();
+      return this.finish(node);
+    }
+    _parseFunctionArgument() {
+      const node = this.create(FunctionArgument);
+      if (node.setValue(this._parseExpr(true))) {
+        return this.finish(node);
+      }
+      return null;
+    }
+    _parseIfBranch() {
+      const node = this.create(Node);
+      if (!node.addChild(this._parseIfCondition())) {
+        return this.finish(node, ParseError.IfConditionExpected, [], [TokenType.SemiColon]);
+      }
+      if (!this.accept(TokenType.Colon)) {
+        return this.finish(node, ParseError.ColonExpected, [], [TokenType.SemiColon]);
+      }
+      node.addChild(this._parseExpr());
+      return this.finish(node);
+    }
+    _parseIfCondition() {
+      const node = this.create(Node);
+      if (this.peekIdent("else")) {
+        node.addChild(this._parseIdent());
+        return this.finish(node);
+      }
+      return this._parseBooleanExpression(this._parseIfTest.bind(this));
+    }
+    _parseIfTest() {
+      const node = this.create(Node);
+      if (this.acceptIdent("supports")) {
+        if (this.hasWhitespace() || !this.accept(TokenType.ParenthesisL)) {
+          return this.finish(node, ParseError.LeftParenthesisExpected, [], [TokenType.Colon]);
+        }
+        node.addChild(this._tryToParseDeclaration() || this._parseSupportsCondition());
+        if (!this.accept(TokenType.ParenthesisR)) {
+          return this.finish(node, ParseError.RightParenthesisExpected, [], [TokenType.Colon]);
+        }
+        return this.finish(node);
+      }
+      if (this.acceptIdent("media")) {
+        if (this.hasWhitespace() || !this.accept(TokenType.ParenthesisL)) {
+          return this.finish(node, ParseError.LeftParenthesisExpected, [], [TokenType.Colon]);
+        }
+        const pos = this.mark();
+        const condition = this._parseMediaCondition();
+        if (condition && !condition.isErroneous()) {
+          node.addChild(condition);
+        } else {
+          this.restoreAtMark(pos);
+          node.addChild(this._parseMediaFeature());
+        }
+        if (!this.accept(TokenType.ParenthesisR)) {
+          return this.finish(node, ParseError.RightParenthesisExpected, [], [TokenType.Colon]);
+        }
+        return this.finish(node);
+      }
+      if (this.acceptIdent("style")) {
+        if (this.hasWhitespace() || !this.accept(TokenType.ParenthesisL)) {
+          return this.finish(node, ParseError.LeftParenthesisExpected, [], [TokenType.Colon]);
+        }
+        node.addChild(this._parseStyleQuery());
+        if (!this.accept(TokenType.ParenthesisR)) {
+          return this.finish(node, ParseError.RightParenthesisExpected, [], [TokenType.Colon]);
+        }
+        return this.finish(node);
+      }
+      return null;
+    }
+    _parseHexColor() {
+      if (this.peekRegExp(TokenType.Hash, /^#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{4}|[A-Fa-f0-9]{6}|[A-Fa-f0-9]{8})$/g)) {
+        const node = this.create(HexColorValue);
+        this.consumeToken();
+        return this.finish(node);
+      } else {
+        return null;
+      }
+    }
+  };
+
+  // ../../node_modules/vscode-css-languageservice/lib/esm/services/lintRules.js
+  var Warning = Level.Warning;
+  var Error2 = Level.Error;
+  var Ignore = Level.Ignore;
+  var Rule = class {
+    constructor(id, message, defaultValue) {
+      this.id = id;
+      this.message = message;
+      this.defaultValue = defaultValue;
+    }
+  };
+  var Setting = class {
+    constructor(id, message, defaultValue) {
+      this.id = id;
+      this.message = message;
+      this.defaultValue = defaultValue;
+    }
+  };
+  var Rules = {
+    AllVendorPrefixes: new Rule("compatibleVendorPrefixes", t("When using a vendor-specific prefix make sure to also include all other vendor-specific properties"), Ignore),
+    IncludeStandardPropertyWhenUsingVendorPrefix: new Rule("vendorPrefix", t("When using a vendor-specific prefix also include the standard property"), Warning),
+    DuplicateDeclarations: new Rule("duplicateProperties", t("Do not use duplicate style definitions"), Ignore),
+    EmptyRuleSet: new Rule("emptyRules", t("Do not use empty rulesets"), Warning),
+    ImportStatemement: new Rule("importStatement", t("Import statements do not load in parallel"), Ignore),
+    BewareOfBoxModelSize: new Rule("boxModel", t("Do not use width or height when using padding or border"), Ignore),
+    UniversalSelector: new Rule("universalSelector", t("The universal selector (*) is known to be slow"), Ignore),
+    ZeroWithUnit: new Rule("zeroUnits", t("No unit for zero needed"), Ignore),
+    RequiredPropertiesForFontFace: new Rule("fontFaceProperties", t("@font-face rule must define 'src' and 'font-family' properties"), Warning),
+    HexColorLength: new Rule("hexColorLength", t("Hex colors must consist of three, four, six or eight hex numbers"), Error2),
+    ArgsInColorFunction: new Rule("argumentsInColorFunction", t("Invalid number of parameters"), Error2),
+    UnknownProperty: new Rule("unknownProperties", t("Unknown property."), Warning),
+    UnknownAtRules: new Rule("unknownAtRules", t("Unknown at-rule."), Warning),
+    IEStarHack: new Rule("ieHack", t("IE hacks are only necessary when supporting IE7 and older"), Ignore),
+    UnknownVendorSpecificProperty: new Rule("unknownVendorSpecificProperties", t("Unknown vendor specific property."), Ignore),
+    PropertyIgnoredDueToDisplay: new Rule("propertyIgnoredDueToDisplay", t("Property is ignored due to the display."), Warning),
+    AvoidImportant: new Rule("important", t("Avoid using !important. It is an indication that the specificity of the entire CSS has gotten out of control and needs to be refactored."), Ignore),
+    AvoidFloat: new Rule("float", t("Avoid using 'float'. Floats lead to fragile CSS that is easy to break if one aspect of the layout changes."), Ignore),
+    AvoidIdSelector: new Rule("idSelector", t("Selectors should not contain IDs because these rules are too tightly coupled with the HTML."), Ignore)
+  };
+  var Settings = {
+    ValidProperties: new Setting("validProperties", t("A list of properties that are not validated against the `unknownProperties` rule."), [])
+  };
+  var LintConfigurationSettings = class {
+    constructor(conf = {}) {
+      this.conf = conf;
+    }
+    getRule(rule) {
+      if (this.conf.hasOwnProperty(rule.id)) {
+        const level = toLevel(this.conf[rule.id]);
+        if (level) {
+          return level;
+        }
+      }
+      return rule.defaultValue;
+    }
+    getSetting(setting) {
+      return this.conf[setting.id];
+    }
+  };
+  function toLevel(level) {
+    switch (level) {
+      case "ignore":
+        return Level.Ignore;
+      case "warning":
+        return Level.Warning;
+      case "error":
+        return Level.Error;
+    }
+    return null;
+  }
+
+  // ../../node_modules/vscode-css-languageservice/lib/esm/utils/arrays.js
+  function includes(array, item) {
+    return array.indexOf(item) !== -1;
+  }
+  function union(...arrays) {
+    const result = [];
+    for (const array of arrays) {
+      for (const item of array) {
+        if (!includes(result, item)) {
+          result.push(item);
+        }
+      }
+    }
+    return result;
+  }
+
+  // ../../node_modules/vscode-css-languageservice/lib/esm/services/lintUtil.js
+  var Element = class {
+    constructor(decl) {
+      this.fullPropertyName = decl.getFullPropertyName().toLowerCase();
+      this.node = decl;
+    }
+  };
+  function setSide(model, side, value, property) {
+    const state = model[side];
+    state.value = value;
+    if (value) {
+      if (!includes(state.properties, property)) {
+        state.properties.push(property);
+      }
+    }
+  }
+  function setAllSides(model, value, property) {
+    setSide(model, "top", value, property);
+    setSide(model, "right", value, property);
+    setSide(model, "bottom", value, property);
+    setSide(model, "left", value, property);
+  }
+  function updateModelWithValue(model, side, value, property) {
+    if (side === "top" || side === "right" || side === "bottom" || side === "left") {
+      setSide(model, side, value, property);
+    } else {
+      setAllSides(model, value, property);
+    }
+  }
+  function updateModelWithList(model, values2, property) {
+    switch (values2.length) {
+      case 1:
+        updateModelWithValue(model, void 0, values2[0], property);
+        break;
+      case 2:
+        updateModelWithValue(model, "top", values2[0], property);
+        updateModelWithValue(model, "bottom", values2[0], property);
+        updateModelWithValue(model, "right", values2[1], property);
+        updateModelWithValue(model, "left", values2[1], property);
+        break;
+      case 3:
+        updateModelWithValue(model, "top", values2[0], property);
+        updateModelWithValue(model, "right", values2[1], property);
+        updateModelWithValue(model, "left", values2[1], property);
+        updateModelWithValue(model, "bottom", values2[2], property);
+        break;
+      case 4:
+        updateModelWithValue(model, "top", values2[0], property);
+        updateModelWithValue(model, "right", values2[1], property);
+        updateModelWithValue(model, "bottom", values2[2], property);
+        updateModelWithValue(model, "left", values2[3], property);
+        break;
+    }
+  }
+  function matches(value, candidates) {
+    for (let candidate of candidates) {
+      if (value.matches(candidate)) {
+        return true;
+      }
+    }
+    return false;
+  }
+  function checkLineWidth(value, allowsKeywords = true) {
+    if (allowsKeywords && matches(value, ["initial", "unset"])) {
+      return false;
+    }
+    return parseFloat(value.getText()) !== 0;
+  }
+  function checkLineWidthList(nodes, allowsKeywords = true) {
+    return nodes.map((node) => checkLineWidth(node, allowsKeywords));
+  }
+  function checkLineStyle(valueNode, allowsKeywords = true) {
+    if (matches(valueNode, ["none", "hidden"])) {
+      return false;
+    }
+    if (allowsKeywords && matches(valueNode, ["initial", "unset"])) {
+      return false;
+    }
+    return true;
+  }
+  function checkLineStyleList(nodes, allowsKeywords = true) {
+    return nodes.map((node) => checkLineStyle(node, allowsKeywords));
+  }
+  function checkBorderShorthand(node) {
+    const children = node.getChildren();
+    if (children.length === 1) {
+      const value = children[0];
+      return checkLineWidth(value) && checkLineStyle(value);
+    }
+    for (const child of children) {
+      const value = child;
+      if (!checkLineWidth(
+        value,
+        /* allowsKeywords: */
+        false
+      ) || !checkLineStyle(
+        value,
+        /* allowsKeywords: */
+        false
+      )) {
+        return false;
+      }
+    }
+    return true;
+  }
+  function calculateBoxModel(propertyTable) {
+    const model = {
+      top: { value: false, properties: [] },
+      right: { value: false, properties: [] },
+      bottom: { value: false, properties: [] },
+      left: { value: false, properties: [] }
+    };
+    for (const property of propertyTable) {
+      const value = property.node.value;
+      if (typeof value === "undefined") {
+        continue;
+      }
+      switch (property.fullPropertyName) {
+        case "box-sizing":
+          return {
+            top: { value: false, properties: [] },
+            right: { value: false, properties: [] },
+            bottom: { value: false, properties: [] },
+            left: { value: false, properties: [] }
+          };
+        case "width":
+          model.width = property;
+          break;
+        case "height":
+          model.height = property;
+          break;
+        default:
+          const segments = property.fullPropertyName.split("-");
+          switch (segments[0]) {
+            case "border":
+              switch (segments[1]) {
+                case void 0:
+                case "top":
+                case "right":
+                case "bottom":
+                case "left":
+                  switch (segments[2]) {
+                    case void 0:
+                      updateModelWithValue(model, segments[1], checkBorderShorthand(value), property);
+                      break;
+                    case "width":
+                      updateModelWithValue(model, segments[1], checkLineWidth(value, false), property);
+                      break;
+                    case "style":
+                      updateModelWithValue(model, segments[1], checkLineStyle(value, true), property);
+                      break;
+                  }
+                  break;
+                case "width":
+                  updateModelWithList(model, checkLineWidthList(value.getChildren(), false), property);
+                  break;
+                case "style":
+                  updateModelWithList(model, checkLineStyleList(value.getChildren(), true), property);
+                  break;
+              }
+              break;
+            case "padding":
+              if (segments.length === 1) {
+                updateModelWithList(model, checkLineWidthList(value.getChildren(), true), property);
+              } else {
+                updateModelWithValue(model, segments[1], checkLineWidth(value, true), property);
+              }
+              break;
+          }
+          break;
+      }
+    }
+    return model;
+  }
+
+  // ../../node_modules/vscode-css-languageservice/lib/esm/services/lint.js
+  var NodesByRootMap = class {
+    constructor() {
+      this.data = {};
+    }
+    add(root, name, node) {
+      let entry = this.data[root];
+      if (!entry) {
+        entry = { nodes: [], names: [] };
+        this.data[root] = entry;
+      }
+      entry.names.push(name);
+      if (node) {
+        entry.nodes.push(node);
+      }
+    }
+  };
+  var LintVisitor = class _LintVisitor {
+    static entries(node, document, settings, cssDataManager, entryFilter) {
+      const visitor = new _LintVisitor(document, settings, cssDataManager);
+      node.acceptVisitor(visitor);
+      visitor.completeValidations();
+      return visitor.getEntries(entryFilter);
+    }
+    constructor(document, settings, cssDataManager) {
+      this.cssDataManager = cssDataManager;
+      this.warnings = [];
+      this.settings = settings;
+      this.documentText = document.getText();
+      this.keyframes = new NodesByRootMap();
+      this.validProperties = {};
+      const properties = settings.getSetting(Settings.ValidProperties);
+      if (Array.isArray(properties)) {
+        properties.forEach((p) => {
+          if (typeof p === "string") {
+            const name = p.trim().toLowerCase();
+            if (name.length) {
+              this.validProperties[name] = true;
+            }
+          }
+        });
+      }
+    }
+    isValidPropertyDeclaration(element) {
+      const propertyName = element.fullPropertyName;
+      return this.validProperties[propertyName];
+    }
+    fetch(input, s) {
+      const elements = [];
+      for (const curr of input) {
+        if (curr.fullPropertyName === s) {
+          elements.push(curr);
+        }
+      }
+      return elements;
+    }
+    fetchWithValue(input, s, v) {
+      const elements = [];
+      for (const inputElement of input) {
+        if (inputElement.fullPropertyName === s) {
+          const expression = inputElement.node.getValue();
+          if (expression && this.findValueInExpression(expression, v)) {
+            elements.push(inputElement);
+          }
+        }
+      }
+      return elements;
+    }
+    findValueInExpression(expression, v) {
+      let found = false;
+      expression.accept((node) => {
+        if (node.type === NodeType.Identifier && node.matches(v)) {
+          found = true;
+        }
+        return !found;
+      });
+      return found;
+    }
+    getEntries(filter = Level.Warning | Level.Error) {
+      return this.warnings.filter((entry) => {
+        return (entry.getLevel() & filter) !== 0;
+      });
+    }
+    addEntry(node, rule, details) {
+      const entry = new Marker(node, rule, this.settings.getRule(rule), details);
+      this.warnings.push(entry);
+    }
+    getMissingNames(expected, actual) {
+      const expectedClone = expected.slice(0);
+      for (let i = 0; i < actual.length; i++) {
+        const k = expectedClone.indexOf(actual[i]);
+        if (k !== -1) {
+          expectedClone[k] = null;
+        }
+      }
+      let result = null;
+      for (let i = 0; i < expectedClone.length; i++) {
+        const curr = expectedClone[i];
+        if (curr) {
+          if (result === null) {
+            result = t("'{0}'", curr);
+          } else {
+            result = t("{0}, '{1}'", result, curr);
+          }
+        }
+      }
+      return result;
+    }
+    visitNode(node) {
+      switch (node.type) {
+        case NodeType.UnknownAtRule:
+          return this.visitUnknownAtRule(node);
+        case NodeType.Keyframe:
+          return this.visitKeyframe(node);
+        case NodeType.FontFace:
+          return this.visitFontFace(node);
+        case NodeType.Ruleset:
+          return this.visitRuleSet(node);
+        case NodeType.SimpleSelector:
+          return this.visitSimpleSelector(node);
+        case NodeType.Function:
+          return this.visitFunction(node);
+        case NodeType.NumericValue:
+          return this.visitNumericValue(node);
+        case NodeType.Import:
+          return this.visitImport(node);
+        case NodeType.HexColorValue:
+          return this.visitHexColorValue(node);
+        case NodeType.Prio:
+          return this.visitPrio(node);
+        case NodeType.IdentifierSelector:
+          return this.visitIdentifierSelector(node);
+      }
+      return true;
+    }
+    completeValidations() {
+      this.validateKeyframes();
+    }
+    visitUnknownAtRule(node) {
+      const atRuleName = node.getChild(0);
+      if (!atRuleName) {
+        return false;
+      }
+      const atDirective = this.cssDataManager.getAtDirective(atRuleName.getText());
+      if (atDirective) {
+        return false;
+      }
+      this.addEntry(atRuleName, Rules.UnknownAtRules, `Unknown at rule ${atRuleName.getText()}`);
+      return true;
+    }
+    visitKeyframe(node) {
+      const keyword = node.getKeyword();
+      if (!keyword) {
+        return false;
+      }
+      const text = keyword.getText();
+      this.keyframes.add(node.getName(), text, text !== "@keyframes" ? keyword : null);
+      return true;
+    }
+    validateKeyframes() {
+      const expected = ["@-webkit-keyframes", "@-moz-keyframes", "@-o-keyframes"];
+      for (const name in this.keyframes.data) {
+        const actual = this.keyframes.data[name].names;
+        const needsStandard = actual.indexOf("@keyframes") === -1;
+        if (!needsStandard && actual.length === 1) {
+          continue;
+        }
+        const missingVendorSpecific = this.getMissingNames(expected, actual);
+        if (missingVendorSpecific || needsStandard) {
+          for (const node of this.keyframes.data[name].nodes) {
+            if (needsStandard) {
+              const message = t("Always define standard rule '@keyframes' when defining keyframes.");
+              this.addEntry(node, Rules.IncludeStandardPropertyWhenUsingVendorPrefix, message);
+            }
+            if (missingVendorSpecific) {
+              const message = t("Always include all vendor specific rules: Missing: {0}", missingVendorSpecific);
+              this.addEntry(node, Rules.AllVendorPrefixes, message);
+            }
+          }
+        }
+      }
+      return true;
+    }
+    visitSimpleSelector(node) {
+      const firstChar = this.documentText.charAt(node.offset);
+      if (node.length === 1 && firstChar === "*") {
+        this.addEntry(node, Rules.UniversalSelector);
+      }
+      return true;
+    }
+    visitIdentifierSelector(node) {
+      this.addEntry(node, Rules.AvoidIdSelector);
+      return true;
+    }
+    visitImport(node) {
+      this.addEntry(node, Rules.ImportStatemement);
+      return true;
+    }
+    visitRuleSet(node) {
+      const declarations = node.getDeclarations();
+      if (!declarations) {
+        return false;
+      }
+      if (!declarations.hasChildren()) {
+        this.addEntry(node.getSelectors(), Rules.EmptyRuleSet);
+      }
+      const propertyTable = [];
+      for (const element of declarations.getChildren()) {
+        if (element instanceof Declaration) {
+          propertyTable.push(new Element(element));
+        }
+      }
+      const boxModel = calculateBoxModel(propertyTable);
+      if (boxModel.width) {
+        let properties = [];
+        if (boxModel.right.value) {
+          properties = union(properties, boxModel.right.properties);
+        }
+        if (boxModel.left.value) {
+          properties = union(properties, boxModel.left.properties);
+        }
+        if (properties.length !== 0) {
+          for (const item of properties) {
+            this.addEntry(item.node, Rules.BewareOfBoxModelSize);
+          }
+          this.addEntry(boxModel.width.node, Rules.BewareOfBoxModelSize);
+        }
+      }
+      if (boxModel.height) {
+        let properties = [];
+        if (boxModel.top.value) {
+          properties = union(properties, boxModel.top.properties);
+        }
+        if (boxModel.bottom.value) {
+          properties = union(properties, boxModel.bottom.properties);
+        }
+        if (properties.length !== 0) {
+          for (const item of properties) {
+            this.addEntry(item.node, Rules.BewareOfBoxModelSize);
+          }
+          this.addEntry(boxModel.height.node, Rules.BewareOfBoxModelSize);
+        }
+      }
+      let displayElems = this.fetchWithValue(propertyTable, "display", "inline-block");
+      if (displayElems.length > 0) {
+        const elem = this.fetch(propertyTable, "float");
+        for (let index = 0; index < elem.length; index++) {
+          const node2 = elem[index].node;
+          const value = node2.getValue();
+          if (value && !value.matches("none")) {
+            this.addEntry(node2, Rules.PropertyIgnoredDueToDisplay, t("inline-block is ignored due to the float. If 'float' has a value other than 'none', the box is floated and 'display' is treated as 'block'"));
+          }
+        }
+      }
+      displayElems = this.fetchWithValue(propertyTable, "display", "block");
+      if (displayElems.length > 0) {
+        const elem = this.fetch(propertyTable, "vertical-align");
+        for (let index = 0; index < elem.length; index++) {
+          this.addEntry(elem[index].node, Rules.PropertyIgnoredDueToDisplay, t("Property is ignored due to the display. With 'display: block', vertical-align should not be used."));
+        }
+      }
+      const elements = this.fetch(propertyTable, "float");
+      for (let index = 0; index < elements.length; index++) {
+        const element = elements[index];
+        if (!this.isValidPropertyDeclaration(element)) {
+          this.addEntry(element.node, Rules.AvoidFloat);
+        }
+      }
+      for (let i = 0; i < propertyTable.length; i++) {
+        const element = propertyTable[i];
+        if (element.fullPropertyName !== "background" && !this.validProperties[element.fullPropertyName]) {
+          const value = element.node.getValue();
+          if (value && this.documentText.charAt(value.offset) !== "-") {
+            const elements2 = this.fetch(propertyTable, element.fullPropertyName);
+            if (elements2.length > 1) {
+              for (let k = 0; k < elements2.length; k++) {
+                const value2 = elements2[k].node.getValue();
+                if (value2 && this.documentText.charAt(value2.offset) !== "-" && elements2[k] !== element) {
+                  this.addEntry(element.node, Rules.DuplicateDeclarations);
+                }
+              }
+            }
+          }
+        }
+      }
+      const isExportBlock = node.getSelectors().matches(":export");
+      if (!isExportBlock) {
+        const propertiesBySuffix = new NodesByRootMap();
+        let containsUnknowns = false;
+        for (const element of propertyTable) {
+          const decl = element.node;
+          if (this.isCSSDeclaration(decl)) {
+            let name = element.fullPropertyName;
+            const firstChar = name.charAt(0);
+            if (firstChar === "-") {
+              if (name.charAt(1) !== "-") {
+                if (!this.cssDataManager.isKnownProperty(name) && !this.validProperties[name]) {
+                  this.addEntry(decl.getProperty(), Rules.UnknownVendorSpecificProperty);
+                }
+                const nonPrefixedName = decl.getNonPrefixedPropertyName();
+                propertiesBySuffix.add(nonPrefixedName, name, decl.getProperty());
+              }
+            } else {
+              const fullName = name;
+              if (firstChar === "*" || firstChar === "_") {
+                this.addEntry(decl.getProperty(), Rules.IEStarHack);
+                name = name.substr(1);
+              }
+              if (!this.cssDataManager.isKnownProperty(fullName) && !this.cssDataManager.isKnownProperty(name)) {
+                if (!this.validProperties[name]) {
+                  this.addEntry(decl.getProperty(), Rules.UnknownProperty, t("Unknown property: '{0}'", decl.getFullPropertyName()));
+                }
+              }
+              propertiesBySuffix.add(name, name, null);
+            }
+          } else {
+            containsUnknowns = true;
+          }
+        }
+        if (!containsUnknowns) {
+          for (const suffix in propertiesBySuffix.data) {
+            const entry = propertiesBySuffix.data[suffix];
+            const actual = entry.names;
+            const needsStandard = this.cssDataManager.isStandardProperty(suffix) && actual.indexOf(suffix) === -1;
+            if (!needsStandard && actual.length === 1) {
+              continue;
+            }
+            const entriesThatNeedStandard = new Set(needsStandard ? entry.nodes : []);
+            if (needsStandard) {
+              const pseudoElements = this.getContextualVendorSpecificPseudoElements(node);
+              for (const node2 of entry.nodes) {
+                const propertyName = node2.getName();
+                const prefix = propertyName.substring(0, propertyName.length - suffix.length);
+                if (pseudoElements.some((x) => x.startsWith(prefix))) {
+                  entriesThatNeedStandard.delete(node2);
+                }
+              }
+            }
+            const expected = [];
+            for (let i = 0, len = _LintVisitor.prefixes.length; i < len; i++) {
+              const prefix = _LintVisitor.prefixes[i];
+              if (this.cssDataManager.isStandardProperty(prefix + suffix)) {
+                expected.push(prefix + suffix);
+              }
+            }
+            const missingVendorSpecific = this.getMissingNames(expected, actual);
+            if (missingVendorSpecific || needsStandard) {
+              for (const node2 of entry.nodes) {
+                if (needsStandard && entriesThatNeedStandard.has(node2)) {
+                  const message = t("Also define the standard property '{0}' for compatibility", suffix);
+                  this.addEntry(node2, Rules.IncludeStandardPropertyWhenUsingVendorPrefix, message);
+                }
+                if (missingVendorSpecific) {
+                  const message = t("Always include all vendor specific properties: Missing: {0}", missingVendorSpecific);
+                  this.addEntry(node2, Rules.AllVendorPrefixes, message);
+                }
+              }
+            }
+          }
+        }
+      }
+      return true;
+    }
+    /**
+     * Walks up the syntax tree (starting from given `node`) and captures vendor
+     * specific pseudo-element selectors.
+     * @returns An array of vendor specific pseudo-elements; or empty if none
+     * was found.
+     */
+    getContextualVendorSpecificPseudoElements(node) {
+      function walkDown(s, n) {
+        var _a2;
+        for (const child of n.getChildren()) {
+          if (child.type === NodeType.PseudoSelector) {
+            const pseudoElement = (_a2 = child.getChildren()[0]) == null ? void 0 : _a2.getText();
+            if (pseudoElement) {
+              s.add(pseudoElement);
+            }
+          }
+          walkDown(s, child);
+        }
+      }
+      function walkUp(s, n) {
+        if (n.type === NodeType.Ruleset) {
+          for (const selector of n.getSelectors().getChildren()) {
+            walkDown(s, selector);
+          }
+        }
+        return n.parent ? walkUp(s, n.parent) : void 0;
+      }
+      const result = /* @__PURE__ */ new Set();
+      walkUp(result, node);
+      return Array.from(result);
+    }
+    visitPrio(node) {
+      this.addEntry(node, Rules.AvoidImportant);
+      return true;
+    }
+    visitNumericValue(node) {
+      const funcDecl = node.findParent(NodeType.Function);
+      if (funcDecl && funcDecl.getName() === "calc") {
+        return true;
+      }
+      const decl = node.findParent(NodeType.Declaration);
+      if (decl) {
+        const declValue = decl.getValue();
+        if (declValue) {
+          const value = node.getValue();
+          if (!value.unit || units.length.indexOf(value.unit.toLowerCase()) === -1) {
+            return true;
+          }
+          if (parseFloat(value.value) === 0 && !!value.unit && !this.validProperties[decl.getFullPropertyName()]) {
+            this.addEntry(node, Rules.ZeroWithUnit);
+          }
+        }
+      }
+      return true;
+    }
+    visitFontFace(node) {
+      const declarations = node.getDeclarations();
+      if (!declarations) {
+        return false;
+      }
+      let definesSrc = false, definesFontFamily = false;
+      let containsUnknowns = false;
+      for (const node2 of declarations.getChildren()) {
+        if (this.isCSSDeclaration(node2)) {
+          const name = node2.getProperty().getName().toLowerCase();
+          if (name === "src") {
+            definesSrc = true;
+          }
+          if (name === "font-family") {
+            definesFontFamily = true;
+          }
+        } else {
+          containsUnknowns = true;
+        }
+      }
+      if (!containsUnknowns && (!definesSrc || !definesFontFamily)) {
+        this.addEntry(node, Rules.RequiredPropertiesForFontFace);
+      }
+      return true;
+    }
+    isCSSDeclaration(node) {
+      if (node instanceof Declaration) {
+        if (!node.getValue()) {
+          return false;
+        }
+        const property = node.getProperty();
+        if (!property) {
+          return false;
+        }
+        const identifier = property.getIdentifier();
+        if (!identifier || identifier.containsInterpolation()) {
+          return false;
+        }
+        return true;
+      }
+      return false;
+    }
+    visitHexColorValue(node) {
+      const length = node.length;
+      if (length !== 9 && length !== 7 && length !== 5 && length !== 4) {
+        this.addEntry(node, Rules.HexColorLength);
+      }
+      return false;
+    }
+    visitFunction(node) {
+      const fnName = node.getName().toLowerCase();
+      let expectedAttrCount = -1;
+      let actualAttrCount = 0;
+      switch (fnName) {
+        case "rgb(":
+        case "hsl(":
+          expectedAttrCount = 3;
+          break;
+        case "rgba(":
+        case "hsla(":
+          expectedAttrCount = 4;
+          break;
+      }
+      if (expectedAttrCount !== -1) {
+        node.getArguments().accept((n) => {
+          if (n instanceof BinaryExpression) {
+            actualAttrCount += 1;
+            return false;
+          }
+          return true;
+        });
+        if (actualAttrCount !== expectedAttrCount) {
+          this.addEntry(node, Rules.ArgsInColorFunction);
+        }
+      }
+      return true;
+    }
+  };
+  LintVisitor.prefixes = [
+    "-ms-",
+    "-moz-",
+    "-o-",
+    "-webkit-"
+    // Quite common
+    //		'-xv-', '-atsc-', '-wap-', '-khtml-', 'mso-', 'prince-', '-ah-', '-hp-', '-ro-', '-rim-', '-tc-' // Quite un-common
+  ];
+
+  // ../../node_modules/vscode-css-languageservice/lib/esm/services/cssValidation.js
+  var CSSValidation = class {
+    constructor(cssDataManager) {
+      this.cssDataManager = cssDataManager;
+    }
+    configure(settings) {
+      this.settings = settings;
+    }
+    doValidation(document, stylesheet, settings = this.settings) {
+      if (settings && settings.validate === false) {
+        return [];
+      }
+      const entries = [];
+      entries.push.apply(entries, ParseErrorCollector.entries(stylesheet));
+      entries.push.apply(entries, LintVisitor.entries(stylesheet, document, new LintConfigurationSettings(settings && settings.lint), this.cssDataManager));
+      const ruleIds = [];
+      for (const r in Rules) {
+        ruleIds.push(Rules[r].id);
+      }
+      function toDiagnostic(marker) {
+        const range = Range2.create(document.positionAt(marker.getOffset()), document.positionAt(marker.getOffset() + marker.getLength()));
+        const source = document.languageId;
+        return {
+          code: marker.getRule().id,
+          source,
+          message: marker.getMessage(),
+          severity: marker.getLevel() === Level.Warning ? DiagnosticSeverity.Warning : DiagnosticSeverity.Error,
+          range
+        };
+      }
+      return entries.filter((entry) => entry.getLevel() !== Level.Ignore).map(toDiagnostic);
+    }
+  };
+
+  // ../../node_modules/vscode-css-languageservice/lib/esm/languageFacts/dataProvider.js
+  var CSSDataProvider = class {
+    /**
+     * Currently, unversioned data uses the V1 implementation
+     * In the future when the provider handles multiple versions of HTML custom data,
+     * use the latest implementation for unversioned data
+     */
+    constructor(data) {
+      this._properties = [];
+      this._atDirectives = [];
+      this._pseudoClasses = [];
+      this._pseudoElements = [];
+      this.addData(data);
+    }
+    provideProperties() {
+      return this._properties;
+    }
+    provideAtDirectives() {
+      return this._atDirectives;
+    }
+    providePseudoClasses() {
+      return this._pseudoClasses;
+    }
+    providePseudoElements() {
+      return this._pseudoElements;
+    }
+    addData(data) {
+      if (Array.isArray(data.properties)) {
+        for (const prop of data.properties) {
+          if (isPropertyData(prop)) {
+            this._properties.push(prop);
+          }
+        }
+      }
+      if (Array.isArray(data.atDirectives)) {
+        for (const prop of data.atDirectives) {
+          if (isAtDirective(prop)) {
+            this._atDirectives.push(prop);
+          }
+        }
+      }
+      if (Array.isArray(data.pseudoClasses)) {
+        for (const prop of data.pseudoClasses) {
+          if (isPseudoClassData(prop)) {
+            this._pseudoClasses.push(prop);
+          }
+        }
+      }
+      if (Array.isArray(data.pseudoElements)) {
+        for (const prop of data.pseudoElements) {
+          if (isPseudoElementData(prop)) {
+            this._pseudoElements.push(prop);
+          }
+        }
+      }
+    }
+  };
+  function isPropertyData(d) {
+    return typeof d.name === "string";
+  }
+  function isAtDirective(d) {
+    return typeof d.name === "string";
+  }
+  function isPseudoClassData(d) {
+    return typeof d.name === "string";
+  }
+  function isPseudoElementData(d) {
+    return typeof d.name === "string";
+  }
+
+  // ../../node_modules/vscode-css-languageservice/lib/esm/parser/scssScanner.js
+  var _FSL2 = "/".charCodeAt(0);
+  var _NWL2 = "\n".charCodeAt(0);
+  var _CAR2 = "\r".charCodeAt(0);
+  var _LFD2 = "\f".charCodeAt(0);
+  var _DLR2 = "$".charCodeAt(0);
+  var _HSH2 = "#".charCodeAt(0);
+  var _CUL2 = "{".charCodeAt(0);
+  var _EQS2 = "=".charCodeAt(0);
+  var _BNG2 = "!".charCodeAt(0);
+  var _LAN2 = "<".charCodeAt(0);
+  var _RAN2 = ">".charCodeAt(0);
+  var _DOT2 = ".".charCodeAt(0);
+  var _ATS2 = "@".charCodeAt(0);
+  var customTokenValue = TokenType.CustomToken;
+  var VariableName = customTokenValue++;
+  var InterpolationFunction = customTokenValue++;
+  var Default = customTokenValue++;
+  var EqualsOperator = customTokenValue++;
+  var NotEqualsOperator = customTokenValue++;
+  var GreaterEqualsOperator = customTokenValue++;
+  var SmallerEqualsOperator = customTokenValue++;
+  var Ellipsis = customTokenValue++;
+  var Module2 = customTokenValue++;
+  var SCSSScanner = class extends Scanner {
+    scanNext(offset) {
+      if (this.stream.advanceIfChar(_DLR2)) {
+        const content = ["$"];
+        if (this.ident(content)) {
+          return this.finishToken(offset, VariableName, content.join(""));
+        } else {
+          this.stream.goBackTo(offset);
+        }
+      }
+      if (this.stream.advanceIfChars([_HSH2, _CUL2])) {
+        return this.finishToken(offset, InterpolationFunction);
+      }
+      if (this.stream.advanceIfChars([_EQS2, _EQS2])) {
+        return this.finishToken(offset, EqualsOperator);
+      }
+      if (this.stream.advanceIfChars([_BNG2, _EQS2])) {
+        return this.finishToken(offset, NotEqualsOperator);
+      }
+      if (this.stream.advanceIfChar(_LAN2)) {
+        if (this.stream.advanceIfChar(_EQS2)) {
+          return this.finishToken(offset, SmallerEqualsOperator);
+        }
+        return this.finishToken(offset, TokenType.Delim);
+      }
+      if (this.stream.advanceIfChar(_RAN2)) {
+        if (this.stream.advanceIfChar(_EQS2)) {
+          return this.finishToken(offset, GreaterEqualsOperator);
+        }
+        return this.finishToken(offset, TokenType.Delim);
+      }
+      if (this.stream.advanceIfChars([_DOT2, _DOT2, _DOT2])) {
+        return this.finishToken(offset, Ellipsis);
+      }
+      return super.scanNext(offset);
+    }
+    comment() {
+      if (super.comment()) {
+        return true;
+      }
+      if (!this.inURL && this.stream.advanceIfChars([_FSL2, _FSL2])) {
+        this.stream.advanceWhileChar((ch) => {
+          switch (ch) {
+            case _NWL2:
+            case _CAR2:
+            case _LFD2:
+              return false;
+            default:
+              return true;
+          }
+        });
+        return true;
+      } else {
+        return false;
+      }
+    }
+  };
+
+  // ../../node_modules/vscode-css-languageservice/lib/esm/parser/scssErrors.js
+  var SCSSIssueType = class {
+    constructor(id, message) {
+      this.id = id;
+      this.message = message;
+    }
+  };
+  var SCSSParseError = {
+    FromExpected: new SCSSIssueType("scss-fromexpected", t("'from' expected")),
+    ThroughOrToExpected: new SCSSIssueType("scss-throughexpected", t("'through' or 'to' expected")),
+    InExpected: new SCSSIssueType("scss-fromexpected", t("'in' expected"))
+  };
+
+  // ../../node_modules/vscode-css-languageservice/lib/esm/parser/scssParser.js
+  var SCSSParser = class extends Parser {
+    constructor() {
+      super(new SCSSScanner());
+    }
+    _parseStylesheetStatement(isNested = false) {
+      if (this.peek(TokenType.AtKeyword)) {
+        return this._parseWarnAndDebug() || this._parseControlStatement() || this._parseMixinDeclaration() || this._parseMixinContent() || this._parseMixinReference() || this._parseFunctionDeclaration() || this._parseForward() || this._parseUse() || this._parseRuleset(isNested) || super._parseStylesheetAtStatement(isNested);
+      }
+      return this._parseRuleset(true) || this._parseVariableDeclaration();
+    }
+    _parseImport() {
+      if (!this.peekKeyword("@import")) {
+        return null;
+      }
+      const node = this.create(Import);
+      this.consumeToken();
+      if (!node.addChild(this._parseURILiteral()) && !node.addChild(this._parseStringLiteral())) {
+        return this.finish(node, ParseError.URIOrStringExpected);
+      }
+      while (this.accept(TokenType.Comma)) {
+        if (!node.addChild(this._parseURILiteral()) && !node.addChild(this._parseStringLiteral())) {
+          return this.finish(node, ParseError.URIOrStringExpected);
+        }
+      }
+      return this._completeParseImport(node);
+    }
+    // scss variables: $font-size: 12px;
+    _parseVariableDeclaration(panic = []) {
+      if (!this.peek(VariableName)) {
+        return null;
+      }
+      const node = this.create(VariableDeclaration);
+      if (!node.setVariable(this._parseVariable())) {
+        return null;
+      }
+      if (!this.accept(TokenType.Colon)) {
+        return this.finish(node, ParseError.ColonExpected);
+      }
+      if (this.prevToken) {
+        node.colonPosition = this.prevToken.offset;
+      }
+      if (!node.setValue(this._parseExpr())) {
+        return this.finish(node, ParseError.VariableValueExpected, [], panic);
+      }
+      while (this.peek(TokenType.Exclamation)) {
+        if (node.addChild(this._tryParsePrio())) {
+        } else {
+          this.consumeToken();
+          if (!this.peekRegExp(TokenType.Ident, /^(default|global)$/)) {
+            return this.finish(node, ParseError.UnknownKeyword);
+          }
+          this.consumeToken();
+        }
+      }
+      if (this.peek(TokenType.SemiColon)) {
+        node.semicolonPosition = this.token.offset;
+      }
+      return this.finish(node);
+    }
+    _parseMediaCondition() {
+      return this._parseInterpolation() || super._parseMediaCondition();
+    }
+    _parseMediaFeatureRangeOperator() {
+      return this.accept(SmallerEqualsOperator) || this.accept(GreaterEqualsOperator) || super._parseMediaFeatureRangeOperator();
+    }
+    _parseMediaFeatureName() {
+      return this._parseModuleMember() || this._parseFunction() || this._parseIdent() || this._parseVariable();
+    }
+    _parseKeyframeSelector() {
+      return this._tryParseKeyframeSelector() || this._parseControlStatement(this._parseKeyframeSelector.bind(this)) || this._parseWarnAndDebug() || this._parseMixinReference() || this._parseFunctionDeclaration() || this._parseVariableDeclaration() || this._parseMixinContent();
+    }
+    _parseVariable() {
+      if (!this.peek(VariableName)) {
+        return null;
+      }
+      const node = this.create(Variable);
+      this.consumeToken();
+      return node;
+    }
+    _parseModuleMember() {
+      const pos = this.mark();
+      const node = this.create(Module);
+      if (!node.setIdentifier(this._parseIdent([ReferenceType.Module]))) {
+        return null;
+      }
+      if (this.hasWhitespace() || !this.acceptDelim(".") || this.hasWhitespace()) {
+        this.restoreAtMark(pos);
+        return null;
+      }
+      if (!node.addChild(this._parseVariable() || this._parseFunction())) {
+        return this.finish(node, ParseError.IdentifierOrVariableExpected);
+      }
+      return node;
+    }
+    _parseIdent(referenceTypes) {
+      if (!this.peek(TokenType.Ident) && !this.peek(InterpolationFunction) && !this.peekDelim("-")) {
+        return null;
+      }
+      const node = this.create(Identifier);
+      node.referenceTypes = referenceTypes;
+      node.isCustomProperty = this.peekRegExp(TokenType.Ident, /^--/);
+      let hasContent = false;
+      const indentInterpolation = () => {
+        const pos = this.mark();
+        if (this.acceptDelim("-")) {
+          if (!this.hasWhitespace()) {
+            this.acceptDelim("-");
+          }
+          if (this.hasWhitespace()) {
+            this.restoreAtMark(pos);
+            return null;
+          }
+        }
+        return this._parseInterpolation();
+      };
+      while (this.accept(TokenType.Ident) || node.addChild(indentInterpolation()) || hasContent && this.acceptRegexp(/^[\w-]/)) {
+        hasContent = true;
+        if (this.hasWhitespace()) {
+          break;
+        }
+      }
+      return hasContent ? this.finish(node) : null;
+    }
+    _parseTermExpression() {
+      return this._parseModuleMember() || this._parseVariable() || this._parseNestingSelector() || //this._tryParsePrio() ||
+      super._parseTermExpression();
+    }
+    _parseInterpolation() {
+      if (this.peek(InterpolationFunction)) {
+        const node = this.create(Interpolation);
+        this.consumeToken();
+        if (!node.addChild(this._parseExpr()) && !this._parseNestingSelector()) {
+          if (this.accept(TokenType.CurlyR)) {
+            return this.finish(node);
+          }
+          return this.finish(node, ParseError.ExpressionExpected);
+        }
+        if (!this.accept(TokenType.CurlyR)) {
+          return this.finish(node, ParseError.RightCurlyExpected);
+        }
+        return this.finish(node);
+      }
+      return null;
+    }
+    _parseOperator() {
+      if (this.peek(EqualsOperator) || this.peek(NotEqualsOperator) || this.peek(GreaterEqualsOperator) || this.peek(SmallerEqualsOperator) || this.peekDelim(">") || this.peekDelim("<") || this.peekIdent("and") || this.peekIdent("or") || this.peekDelim("%")) {
+        const node = this.createNode(NodeType.Operator);
+        this.consumeToken();
+        return this.finish(node);
+      }
+      return super._parseOperator();
+    }
+    _parseUnaryOperator() {
+      if (this.peekIdent("not")) {
+        const node = this.create(Node);
+        this.consumeToken();
+        return this.finish(node);
+      }
+      return super._parseUnaryOperator();
+    }
+    _parseRuleSetDeclaration() {
+      if (this.peek(TokenType.AtKeyword)) {
+        return this._parseKeyframe() || this._parseImport() || this._parseMedia(true) || this._parseFontFace() || this._parseWarnAndDebug() || this._parseControlStatement() || this._parseFunctionDeclaration() || this._parseExtends() || this._parseMixinReference() || this._parseMixinContent() || this._parseMixinDeclaration() || this._parseRuleset(true) || this._parseSupports(true) || this._parseLayer() || this._parsePropertyAtRule() || this._parseContainer(true) || this._parseRuleSetDeclarationAtStatement();
+      }
+      return this._parseVariableDeclaration() || this._tryParseRuleset(true) || this._parseDeclaration();
+    }
+    _parseDeclaration(stopTokens) {
+      const custonProperty = this._tryParseCustomPropertyDeclaration(stopTokens);
+      if (custonProperty) {
+        return custonProperty;
+      }
+      const node = this.create(Declaration);
+      if (!node.setProperty(this._parseProperty())) {
+        return null;
+      }
+      if (!this.accept(TokenType.Colon)) {
+        return this.finish(node, ParseError.ColonExpected, [TokenType.Colon], stopTokens || [TokenType.SemiColon]);
+      }
+      if (this.prevToken) {
+        node.colonPosition = this.prevToken.offset;
+      }
+      let hasContent = false;
+      if (node.setValue(this._parseExpr())) {
+        hasContent = true;
+        node.addChild(this._parsePrio());
+      }
+      if (this.peek(TokenType.CurlyL)) {
+        node.setNestedProperties(this._parseNestedProperties());
+      } else {
+        if (!hasContent) {
+          return this.finish(node, ParseError.PropertyValueExpected);
+        }
+      }
+      if (this.peek(TokenType.SemiColon)) {
+        node.semicolonPosition = this.token.offset;
+      }
+      return this.finish(node);
+    }
+    _parseNestedProperties() {
+      const node = this.create(NestedProperties);
+      return this._parseBody(node, this._parseDeclaration.bind(this));
+    }
+    _parseExtends() {
+      if (this.peekKeyword("@extend")) {
+        const node = this.create(ExtendsReference);
+        this.consumeToken();
+        if (!node.getSelectors().addChild(this._parseSimpleSelector())) {
+          return this.finish(node, ParseError.SelectorExpected);
+        }
+        while (this.accept(TokenType.Comma)) {
+          node.getSelectors().addChild(this._parseSimpleSelector());
+        }
+        if (this.accept(TokenType.Exclamation)) {
+          if (!this.acceptIdent("optional")) {
+            return this.finish(node, ParseError.UnknownKeyword);
+          }
+        }
+        return this.finish(node);
+      }
+      return null;
+    }
+    _parseSimpleSelectorBody() {
+      return this._parseSelectorPlaceholder() || super._parseSimpleSelectorBody();
+    }
+    _parseNestingSelector() {
+      if (this.peekDelim("&")) {
+        const node = this.createNode(NodeType.SelectorCombinator);
+        this.consumeToken();
+        while (!this.hasWhitespace() && (this.acceptDelim("-") || this.accept(TokenType.Num) || this.accept(TokenType.Dimension) || node.addChild(this._parseIdent()) || this.acceptDelim("&"))) {
+        }
+        return this.finish(node);
+      }
+      return null;
+    }
+    _parseSelectorPlaceholder() {
+      if (this.peekDelim("%")) {
+        const node = this.createNode(NodeType.SelectorPlaceholder);
+        this.consumeToken();
+        this._parseIdent();
+        return this.finish(node);
+      } else if (this.peekKeyword("@at-root")) {
+        const node = this.createNode(NodeType.SelectorPlaceholder);
+        this.consumeToken();
+        if (this.accept(TokenType.ParenthesisL)) {
+          if (!this.acceptIdent("with") && !this.acceptIdent("without")) {
+            return this.finish(node, ParseError.IdentifierExpected);
+          }
+          if (!this.accept(TokenType.Colon)) {
+            return this.finish(node, ParseError.ColonExpected);
+          }
+          if (!node.addChild(this._parseIdent())) {
+            return this.finish(node, ParseError.IdentifierExpected);
+          }
+          if (!this.accept(TokenType.ParenthesisR)) {
+            return this.finish(node, ParseError.RightParenthesisExpected, [TokenType.CurlyR]);
+          }
+        }
+        return this.finish(node);
+      }
+      return null;
+    }
+    _parseElementName() {
+      const pos = this.mark();
+      const node = super._parseElementName();
+      if (node && !this.hasWhitespace() && this.peek(TokenType.ParenthesisL)) {
+        this.restoreAtMark(pos);
+        return null;
+      }
+      return node;
+    }
+    _tryParsePseudoIdentifier() {
+      return this._parseInterpolation() || super._tryParsePseudoIdentifier();
+    }
+    _parseWarnAndDebug() {
+      if (!this.peekKeyword("@debug") && !this.peekKeyword("@warn") && !this.peekKeyword("@error")) {
+        return null;
+      }
+      const node = this.createNode(NodeType.Debug);
+      this.consumeToken();
+      node.addChild(this._parseExpr());
+      return this.finish(node);
+    }
+    _parseControlStatement(parseStatement = this._parseRuleSetDeclaration.bind(this)) {
+      if (!this.peek(TokenType.AtKeyword)) {
+        return null;
+      }
+      return this._parseIfStatement(parseStatement) || this._parseForStatement(parseStatement) || this._parseEachStatement(parseStatement) || this._parseWhileStatement(parseStatement);
+    }
+    _parseIfStatement(parseStatement) {
+      if (!this.peekKeyword("@if")) {
+        return null;
+      }
+      return this._internalParseIfStatement(parseStatement);
+    }
+    _internalParseIfStatement(parseStatement) {
+      const node = this.create(IfStatement);
+      this.consumeToken();
+      if (!node.setExpression(this._parseExpr(true))) {
+        return this.finish(node, ParseError.ExpressionExpected);
+      }
+      this._parseBody(node, parseStatement);
+      if (this.acceptKeyword("@else")) {
+        if (this.peekIdent("if")) {
+          node.setElseClause(this._internalParseIfStatement(parseStatement));
+        } else if (this.peek(TokenType.CurlyL)) {
+          const elseNode = this.create(ElseStatement);
+          this._parseBody(elseNode, parseStatement);
+          node.setElseClause(elseNode);
+        }
+      }
+      return this.finish(node);
+    }
+    _parseForStatement(parseStatement) {
+      if (!this.peekKeyword("@for")) {
+        return null;
+      }
+      const node = this.create(ForStatement);
+      this.consumeToken();
+      if (!node.setVariable(this._parseVariable())) {
+        return this.finish(node, ParseError.VariableNameExpected, [TokenType.CurlyR]);
+      }
+      if (!this.acceptIdent("from")) {
+        return this.finish(node, SCSSParseError.FromExpected, [TokenType.CurlyR]);
+      }
+      if (!node.addChild(this._parseBinaryExpr())) {
+        return this.finish(node, ParseError.ExpressionExpected, [TokenType.CurlyR]);
+      }
+      if (!this.acceptIdent("to") && !this.acceptIdent("through")) {
+        return this.finish(node, SCSSParseError.ThroughOrToExpected, [TokenType.CurlyR]);
+      }
+      if (!node.addChild(this._parseBinaryExpr())) {
+        return this.finish(node, ParseError.ExpressionExpected, [TokenType.CurlyR]);
+      }
+      return this._parseBody(node, parseStatement);
+    }
+    _parseEachStatement(parseStatement) {
+      if (!this.peekKeyword("@each")) {
+        return null;
+      }
+      const node = this.create(EachStatement);
+      this.consumeToken();
+      const variables = node.getVariables();
+      if (!variables.addChild(this._parseVariable())) {
+        return this.finish(node, ParseError.VariableNameExpected, [TokenType.CurlyR]);
+      }
+      while (this.accept(TokenType.Comma)) {
+        if (!variables.addChild(this._parseVariable())) {
+          return this.finish(node, ParseError.VariableNameExpected, [TokenType.CurlyR]);
+        }
+      }
+      this.finish(variables);
+      if (!this.acceptIdent("in")) {
+        return this.finish(node, SCSSParseError.InExpected, [TokenType.CurlyR]);
+      }
+      if (!node.addChild(this._parseExpr())) {
+        return this.finish(node, ParseError.ExpressionExpected, [TokenType.CurlyR]);
+      }
+      return this._parseBody(node, parseStatement);
+    }
+    _parseWhileStatement(parseStatement) {
+      if (!this.peekKeyword("@while")) {
+        return null;
+      }
+      const node = this.create(WhileStatement);
+      this.consumeToken();
+      if (!node.addChild(this._parseBinaryExpr())) {
+        return this.finish(node, ParseError.ExpressionExpected, [TokenType.CurlyR]);
+      }
+      return this._parseBody(node, parseStatement);
+    }
+    _parseFunctionBodyDeclaration() {
+      return this._parseVariableDeclaration() || this._parseReturnStatement() || this._parseWarnAndDebug() || this._parseControlStatement(this._parseFunctionBodyDeclaration.bind(this));
+    }
+    _parseFunctionDeclaration() {
+      if (!this.peekKeyword("@function")) {
+        return null;
+      }
+      const node = this.create(FunctionDeclaration);
+      this.consumeToken();
+      if (!node.setIdentifier(this._parseIdent([ReferenceType.Function]))) {
+        return this.finish(node, ParseError.IdentifierExpected, [TokenType.CurlyR]);
+      }
+      if (!this.accept(TokenType.ParenthesisL)) {
+        return this.finish(node, ParseError.LeftParenthesisExpected, [TokenType.CurlyR]);
+      }
+      if (node.getParameters().addChild(this._parseParameterDeclaration())) {
+        while (this.accept(TokenType.Comma)) {
+          if (this.peek(TokenType.ParenthesisR)) {
+            break;
+          }
+          if (!node.getParameters().addChild(this._parseParameterDeclaration())) {
+            return this.finish(node, ParseError.VariableNameExpected);
+          }
+        }
+      }
+      if (!this.accept(TokenType.ParenthesisR)) {
+        return this.finish(node, ParseError.RightParenthesisExpected, [TokenType.CurlyR]);
+      }
+      return this._parseBody(node, this._parseFunctionBodyDeclaration.bind(this));
+    }
+    _parseReturnStatement() {
+      if (!this.peekKeyword("@return")) {
+        return null;
+      }
+      const node = this.createNode(NodeType.ReturnStatement);
+      this.consumeToken();
+      if (!node.addChild(this._parseExpr())) {
+        return this.finish(node, ParseError.ExpressionExpected);
+      }
+      return this.finish(node);
+    }
+    _parseMixinDeclaration() {
+      if (!this.peekKeyword("@mixin")) {
+        return null;
+      }
+      const node = this.create(MixinDeclaration);
+      this.consumeToken();
+      if (!node.setIdentifier(this._parseIdent([ReferenceType.Mixin]))) {
+        return this.finish(node, ParseError.IdentifierExpected, [TokenType.CurlyR]);
+      }
+      if (this.accept(TokenType.ParenthesisL)) {
+        if (node.getParameters().addChild(this._parseParameterDeclaration())) {
+          while (this.accept(TokenType.Comma)) {
+            if (this.peek(TokenType.ParenthesisR)) {
+              break;
+            }
+            if (!node.getParameters().addChild(this._parseParameterDeclaration())) {
+              return this.finish(node, ParseError.VariableNameExpected);
+            }
+          }
+        }
+        if (!this.accept(TokenType.ParenthesisR)) {
+          return this.finish(node, ParseError.RightParenthesisExpected, [TokenType.CurlyR]);
+        }
+      }
+      return this._parseBody(node, this._parseRuleSetDeclaration.bind(this));
+    }
+    _parseParameterDeclaration() {
+      const node = this.create(FunctionParameter);
+      if (!node.setIdentifier(this._parseVariable())) {
+        return null;
+      }
+      if (this.accept(Ellipsis)) {
+      }
+      if (this.accept(TokenType.Colon)) {
+        if (!node.setDefaultValue(this._parseExpr(true))) {
+          return this.finish(node, ParseError.VariableValueExpected, [], [TokenType.Comma, TokenType.ParenthesisR]);
+        }
+      }
+      return this.finish(node);
+    }
+    _parseMixinContent() {
+      if (!this.peekKeyword("@content")) {
+        return null;
+      }
+      const node = this.create(MixinContentReference);
+      this.consumeToken();
+      if (this.accept(TokenType.ParenthesisL)) {
+        if (node.getArguments().addChild(this._parseFunctionArgument())) {
+          while (this.accept(TokenType.Comma)) {
+            if (this.peek(TokenType.ParenthesisR)) {
+              break;
+            }
+            if (!node.getArguments().addChild(this._parseFunctionArgument())) {
+              return this.finish(node, ParseError.ExpressionExpected);
+            }
+          }
+        }
+        if (!this.accept(TokenType.ParenthesisR)) {
+          return this.finish(node, ParseError.RightParenthesisExpected);
+        }
+      }
+      return this.finish(node);
+    }
+    _parseMixinReference() {
+      if (!this.peekKeyword("@include")) {
+        return null;
+      }
+      const node = this.create(MixinReference);
+      this.consumeToken();
+      const firstIdent = this._parseIdent([ReferenceType.Mixin]);
+      if (!node.setIdentifier(firstIdent)) {
+        return this.finish(node, ParseError.IdentifierExpected, [TokenType.CurlyR]);
+      }
+      if (!this.hasWhitespace() && this.acceptDelim(".") && !this.hasWhitespace()) {
+        const secondIdent = this._parseIdent([ReferenceType.Mixin]);
+        if (!secondIdent) {
+          return this.finish(node, ParseError.IdentifierExpected, [TokenType.CurlyR]);
+        }
+        const moduleToken = this.create(Module);
+        firstIdent.referenceTypes = [ReferenceType.Module];
+        moduleToken.setIdentifier(firstIdent);
+        node.setIdentifier(secondIdent);
+        node.addChild(moduleToken);
+      }
+      if (this.accept(TokenType.ParenthesisL)) {
+        if (node.getArguments().addChild(this._parseFunctionArgument())) {
+          while (this.accept(TokenType.Comma)) {
+            if (this.peek(TokenType.ParenthesisR)) {
+              break;
+            }
+            if (!node.getArguments().addChild(this._parseFunctionArgument())) {
+              return this.finish(node, ParseError.ExpressionExpected);
+            }
+          }
+        }
+        if (!this.accept(TokenType.ParenthesisR)) {
+          return this.finish(node, ParseError.RightParenthesisExpected);
+        }
+      }
+      if (this.peekIdent("using") || this.peek(TokenType.CurlyL)) {
+        node.setContent(this._parseMixinContentDeclaration());
+      }
+      return this.finish(node);
+    }
+    _parseMixinContentDeclaration() {
+      const node = this.create(MixinContentDeclaration);
+      if (this.acceptIdent("using")) {
+        if (!this.accept(TokenType.ParenthesisL)) {
+          return this.finish(node, ParseError.LeftParenthesisExpected, [TokenType.CurlyL]);
+        }
+        if (node.getParameters().addChild(this._parseParameterDeclaration())) {
+          while (this.accept(TokenType.Comma)) {
+            if (this.peek(TokenType.ParenthesisR)) {
+              break;
+            }
+            if (!node.getParameters().addChild(this._parseParameterDeclaration())) {
+              return this.finish(node, ParseError.VariableNameExpected);
+            }
+          }
+        }
+        if (!this.accept(TokenType.ParenthesisR)) {
+          return this.finish(node, ParseError.RightParenthesisExpected, [TokenType.CurlyL]);
+        }
+      }
+      if (this.peek(TokenType.CurlyL)) {
+        this._parseBody(node, this._parseMixinReferenceBodyStatement.bind(this));
+      }
+      return this.finish(node);
+    }
+    _parseMixinReferenceBodyStatement() {
+      return this._tryParseKeyframeSelector() || this._parseRuleSetDeclaration();
+    }
+    _parseIfTest() {
+      const node = this.create(Node);
+      if (this.acceptIdent("sass")) {
+        if (this.hasWhitespace() || !this.accept(TokenType.ParenthesisL)) {
+          return this.finish(node, ParseError.LeftParenthesisExpected, [], [TokenType.CurlyL]);
+        }
+        node.addChild(this._parseExpr());
+        if (!this.accept(TokenType.ParenthesisR)) {
+          return this.finish(node, ParseError.RightParenthesisExpected, [], [TokenType.CurlyL]);
+        }
+        return this.finish(node);
+      }
+      return super._parseIfTest();
+    }
+    _parseFunction() {
+      const pos = this.mark();
+      const node = this.create(Function);
+      let isIf = this.peekIdent("if");
+      if (!node.setIdentifier(this._parseFunctionIdentifier())) {
+        return null;
+      }
+      if (this.hasWhitespace() || !this.accept(TokenType.ParenthesisL)) {
+        this.restoreAtMark(pos);
+        return null;
+      }
+      let firstArgument;
+      let parseArgument = this._parseFunctionArgument.bind(this);
+      let separator = TokenType.Comma;
+      if (!isIf) {
+        firstArgument = this._parseFunctionArgument();
+      } else {
+        const pos2 = this.mark();
+        firstArgument = this._parseIfBranch();
+        if (firstArgument && !firstArgument.isErroneous()) {
+          parseArgument = this._parseIfBranch.bind(this);
+          separator = TokenType.SemiColon;
+        } else {
+          this.restoreAtMark(pos2);
+          firstArgument = this._parseFunctionArgument();
+        }
+      }
+      if (node.getArguments().addChild(firstArgument)) {
+        while (this.accept(separator)) {
+          if (this.peek(TokenType.ParenthesisR)) {
+            break;
+          }
+          if (!node.getArguments().addChild(parseArgument())) {
+            this.markError(node, ParseError.ExpressionExpected);
+          }
+        }
+      }
+      if (!this.accept(TokenType.ParenthesisR)) {
+        return this.finish(node, ParseError.RightParenthesisExpected);
+      }
+      return this.finish(node);
+    }
+    _parseFunctionArgument() {
+      const node = this.create(FunctionArgument);
+      const pos = this.mark();
+      const argument = this._parseVariable();
+      if (argument) {
+        if (!this.accept(TokenType.Colon)) {
+          if (this.accept(Ellipsis)) {
+            node.setValue(argument);
+            return this.finish(node);
+          } else {
+            this.restoreAtMark(pos);
+          }
+        } else {
+          node.setIdentifier(argument);
+        }
+      }
+      if (node.setValue(this._parseExpr(true))) {
+        this.accept(Ellipsis);
+        node.addChild(this._parsePrio());
+        return this.finish(node);
+      } else if (node.setValue(this._tryParsePrio())) {
+        return this.finish(node);
+      }
+      return null;
+    }
+    _parseURLArgument() {
+      const pos = this.mark();
+      const node = super._parseURLArgument();
+      if (!node || !this.peek(TokenType.ParenthesisR)) {
+        this.restoreAtMark(pos);
+        const node2 = this.create(Node);
+        node2.addChild(this._parseBinaryExpr());
+        return this.finish(node2);
+      }
+      return node;
+    }
+    _parseOperation() {
+      if (!this.peek(TokenType.ParenthesisL)) {
+        return null;
+      }
+      const node = this.create(Node);
+      this.consumeToken();
+      while (node.addChild(this._parseListElement())) {
+        this.accept(TokenType.Comma);
+      }
+      if (!this.accept(TokenType.ParenthesisR)) {
+        return this.finish(node, ParseError.RightParenthesisExpected);
+      }
+      return this.finish(node);
+    }
+    _parseListElement() {
+      const node = this.create(ListEntry);
+      const child = this._parseBinaryExpr();
+      if (!child) {
+        return null;
+      }
+      if (this.accept(TokenType.Colon)) {
+        node.setKey(child);
+        if (!node.setValue(this._parseBinaryExpr())) {
+          return this.finish(node, ParseError.ExpressionExpected);
+        }
+      } else {
+        node.setValue(child);
+      }
+      return this.finish(node);
+    }
+    _parseUse() {
+      if (!this.peekKeyword("@use")) {
+        return null;
+      }
+      const node = this.create(Use);
+      this.consumeToken();
+      if (!node.addChild(this._parseStringLiteral())) {
+        return this.finish(node, ParseError.StringLiteralExpected);
+      }
+      if (!this.peek(TokenType.SemiColon) && !this.peek(TokenType.EOF)) {
+        if (!this.peekRegExp(TokenType.Ident, /as|with/)) {
+          return this.finish(node, ParseError.UnknownKeyword);
+        }
+        if (this.acceptIdent("as") && (!node.setIdentifier(this._parseIdent([ReferenceType.Module])) && !this.acceptDelim("*"))) {
+          return this.finish(node, ParseError.IdentifierOrWildcardExpected);
+        }
+        if (this.acceptIdent("with")) {
+          if (!node.setParameters(this._parseModuleConfig())) {
+            return this.finish(node, ParseError.LeftParenthesisExpected, [TokenType.ParenthesisR]);
+          }
+        }
+      }
+      if (!this.accept(TokenType.SemiColon) && !this.accept(TokenType.EOF)) {
+        return this.finish(node, ParseError.SemiColonExpected);
+      }
+      return this.finish(node);
+    }
+    _parseModuleConfig() {
+      const node = this.createNode(NodeType.ModuleConfig);
+      if (!this.accept(TokenType.ParenthesisL)) {
+        return null;
+      }
+      if (!node.addChild(this._parseModuleConfigDeclaration())) {
+        return this.finish(node, ParseError.VariableNameExpected);
+      }
+      while (this.accept(TokenType.Comma)) {
+        if (this.peek(TokenType.ParenthesisR)) {
+          break;
+        }
+        if (!node.addChild(this._parseModuleConfigDeclaration())) {
+          return this.finish(node, ParseError.VariableNameExpected);
+        }
+      }
+      if (!this.accept(TokenType.ParenthesisR)) {
+        return this.finish(node, ParseError.RightParenthesisExpected);
+      }
+      return this.finish(node);
+    }
+    _parseModuleConfigDeclaration() {
+      const node = this.create(ModuleConfiguration);
+      if (!node.setIdentifier(this._parseVariable())) {
+        return null;
+      }
+      if (!this.accept(TokenType.Colon) || !node.setValue(this._parseExpr(true))) {
+        return this.finish(node, ParseError.VariableValueExpected, [], [TokenType.Comma, TokenType.ParenthesisR]);
+      }
+      if (this.accept(TokenType.Exclamation)) {
+        if (this.hasWhitespace() || !this.acceptIdent("default")) {
+          return this.finish(node, ParseError.UnknownKeyword);
+        }
+      }
+      return this.finish(node);
+    }
+    _parseForward() {
+      if (!this.peekKeyword("@forward")) {
+        return null;
+      }
+      const node = this.create(Forward);
+      this.consumeToken();
+      if (!node.addChild(this._parseStringLiteral())) {
+        return this.finish(node, ParseError.StringLiteralExpected);
+      }
+      if (this.acceptIdent("as")) {
+        const identifier = this._parseIdent([ReferenceType.Forward]);
+        if (!node.setIdentifier(identifier)) {
+          return this.finish(node, ParseError.IdentifierExpected);
+        }
+        if (this.hasWhitespace() || !this.acceptDelim("*")) {
+          return this.finish(node, ParseError.WildcardExpected);
+        }
+      }
+      if (this.acceptIdent("with")) {
+        if (!node.setParameters(this._parseModuleConfig())) {
+          return this.finish(node, ParseError.LeftParenthesisExpected, [TokenType.ParenthesisR]);
+        }
+      } else if (this.peekIdent("hide") || this.peekIdent("show")) {
+        if (!node.addChild(this._parseForwardVisibility())) {
+          return this.finish(node, ParseError.IdentifierOrVariableExpected);
+        }
+      }
+      if (!this.accept(TokenType.SemiColon) && !this.accept(TokenType.EOF)) {
+        return this.finish(node, ParseError.SemiColonExpected);
+      }
+      return this.finish(node);
+    }
+    _parseForwardVisibility() {
+      const node = this.create(ForwardVisibility);
+      node.setIdentifier(this._parseIdent());
+      while (node.addChild(this._parseVariable() || this._parseIdent())) {
+        this.accept(TokenType.Comma);
+      }
+      return node.getChildren().length > 1 ? node : null;
+    }
+    _parseSupportsCondition() {
+      return this._parseInterpolation() || super._parseSupportsCondition();
+    }
+  };
+
+  // ../../node_modules/vscode-css-languageservice/lib/esm/parser/lessScanner.js
+  var _FSL3 = "/".charCodeAt(0);
+  var _NWL3 = "\n".charCodeAt(0);
+  var _CAR3 = "\r".charCodeAt(0);
+  var _LFD3 = "\f".charCodeAt(0);
+  var _TIC = "`".charCodeAt(0);
+  var _DOT3 = ".".charCodeAt(0);
+  var customTokenValue2 = TokenType.CustomToken;
+  var Ellipsis2 = customTokenValue2++;
+  var LESSScanner = class extends Scanner {
+    scanNext(offset) {
+      const tokenType = this.escapedJavaScript();
+      if (tokenType !== null) {
+        return this.finishToken(offset, tokenType);
+      }
+      if (this.stream.advanceIfChars([_DOT3, _DOT3, _DOT3])) {
+        return this.finishToken(offset, Ellipsis2);
+      }
+      return super.scanNext(offset);
+    }
+    comment() {
+      if (super.comment()) {
+        return true;
+      }
+      if (!this.inURL && this.stream.advanceIfChars([_FSL3, _FSL3])) {
+        this.stream.advanceWhileChar((ch) => {
+          switch (ch) {
+            case _NWL3:
+            case _CAR3:
+            case _LFD3:
+              return false;
+            default:
+              return true;
+          }
+        });
+        return true;
+      } else {
+        return false;
+      }
+    }
+    escapedJavaScript() {
+      const ch = this.stream.peekChar();
+      if (ch === _TIC) {
+        this.stream.advance(1);
+        this.stream.advanceWhileChar((ch2) => {
+          return ch2 !== _TIC;
+        });
+        return this.stream.advanceIfChar(_TIC) ? TokenType.EscapedJavaScript : TokenType.BadEscapedJavaScript;
+      }
+      return null;
+    }
+  };
+
+  // ../../node_modules/vscode-css-languageservice/lib/esm/parser/lessParser.js
+  var LESSParser = class extends Parser {
+    constructor() {
+      super(new LESSScanner());
+    }
+    _parseStylesheetStatement(isNested = false) {
+      if (this.peek(TokenType.AtKeyword)) {
+        return this._parseVariableDeclaration() || this._parsePlugin() || super._parseStylesheetAtStatement(isNested);
+      }
+      return this._tryParseMixinDeclaration() || this._tryParseMixinReference() || this._parseFunction() || this._parseRuleset(true);
+    }
+    _parseImport() {
+      if (!this.peekKeyword("@import") && !this.peekKeyword("@import-once")) {
+        return null;
+      }
+      const node = this.create(Import);
+      this.consumeToken();
+      if (this.accept(TokenType.ParenthesisL)) {
+        if (!this.accept(TokenType.Ident)) {
+          return this.finish(node, ParseError.IdentifierExpected, [TokenType.SemiColon]);
+        }
+        do {
+          if (!this.accept(TokenType.Comma)) {
+            break;
+          }
+        } while (this.accept(TokenType.Ident));
+        if (!this.accept(TokenType.ParenthesisR)) {
+          return this.finish(node, ParseError.RightParenthesisExpected, [TokenType.SemiColon]);
+        }
+      }
+      if (!node.addChild(this._parseURILiteral()) && !node.addChild(this._parseStringLiteral())) {
+        return this.finish(node, ParseError.URIOrStringExpected, [TokenType.SemiColon]);
+      }
+      if (!this.peek(TokenType.SemiColon) && !this.peek(TokenType.EOF)) {
+        node.setMedialist(this._parseMediaQueryList());
+      }
+      return this._completeParseImport(node);
+    }
+    _parsePlugin() {
+      if (!this.peekKeyword("@plugin")) {
+        return null;
+      }
+      const node = this.createNode(NodeType.Plugin);
+      this.consumeToken();
+      if (!node.addChild(this._parseStringLiteral())) {
+        return this.finish(node, ParseError.StringLiteralExpected);
+      }
+      if (!this.accept(TokenType.SemiColon)) {
+        return this.finish(node, ParseError.SemiColonExpected);
+      }
+      return this.finish(node);
+    }
+    _parseMediaQuery() {
+      const node = super._parseMediaQuery();
+      if (!node) {
+        const node2 = this.create(MediaQuery);
+        if (node2.addChild(this._parseVariable())) {
+          return this.finish(node2);
+        }
+        return null;
+      }
+      return node;
+    }
+    _parseMediaDeclaration(isNested = false) {
+      return this._tryParseRuleset(isNested) || this._tryToParseDeclaration() || this._tryParseMixinDeclaration() || this._tryParseMixinReference() || this._parseDetachedRuleSetMixin() || this._parseStylesheetStatement(isNested);
+    }
+    _parseMediaFeatureName() {
+      return this._parseIdent() || this._parseVariable();
+    }
+    _parseVariableDeclaration(panic = []) {
+      const node = this.create(VariableDeclaration);
+      const mark = this.mark();
+      if (!node.setVariable(this._parseVariable(true))) {
+        return null;
+      }
+      if (this.accept(TokenType.Colon)) {
+        if (this.prevToken) {
+          node.colonPosition = this.prevToken.offset;
+        }
+        if (node.setValue(this._parseDetachedRuleSet())) {
+          node.needsSemicolon = false;
+        } else if (!node.setValue(this._parseExpr())) {
+          return this.finish(node, ParseError.VariableValueExpected, [], panic);
+        }
+        node.addChild(this._parsePrio());
+      } else {
+        this.restoreAtMark(mark);
+        return null;
+      }
+      if (this.peek(TokenType.SemiColon)) {
+        node.semicolonPosition = this.token.offset;
+      }
+      return this.finish(node);
+    }
+    _parseDetachedRuleSet() {
+      let mark = this.mark();
+      if (this.peekDelim("#") || this.peekDelim(".")) {
+        this.consumeToken();
+        if (!this.hasWhitespace() && this.accept(TokenType.ParenthesisL)) {
+          let node = this.create(MixinDeclaration);
+          if (node.getParameters().addChild(this._parseMixinParameter())) {
+            while (this.accept(TokenType.Comma) || this.accept(TokenType.SemiColon)) {
+              if (this.peek(TokenType.ParenthesisR)) {
+                break;
+              }
+              if (!node.getParameters().addChild(this._parseMixinParameter())) {
+                this.markError(node, ParseError.IdentifierExpected, [], [TokenType.ParenthesisR]);
+              }
+            }
+          }
+          if (!this.accept(TokenType.ParenthesisR)) {
+            this.restoreAtMark(mark);
+            return null;
+          }
+        } else {
+          this.restoreAtMark(mark);
+          return null;
+        }
+      }
+      if (!this.peek(TokenType.CurlyL)) {
+        return null;
+      }
+      const content = this.create(BodyDeclaration);
+      this._parseBody(content, this._parseDetachedRuleSetBody.bind(this));
+      return this.finish(content);
+    }
+    _parseDetachedRuleSetBody() {
+      return this._tryParseKeyframeSelector() || this._parseRuleSetDeclaration();
+    }
+    _addLookupChildren(node) {
+      if (!node.addChild(this._parseLookupValue())) {
+        return false;
+      }
+      let expectsValue = false;
+      while (true) {
+        if (this.peek(TokenType.BracketL)) {
+          expectsValue = true;
+        }
+        if (!node.addChild(this._parseLookupValue())) {
+          break;
+        }
+        expectsValue = false;
+      }
+      return !expectsValue;
+    }
+    _parseLookupValue() {
+      const node = this.create(Node);
+      const mark = this.mark();
+      if (!this.accept(TokenType.BracketL)) {
+        this.restoreAtMark(mark);
+        return null;
+      }
+      if ((node.addChild(this._parseVariable(false, true)) || node.addChild(this._parsePropertyIdentifier())) && this.accept(TokenType.BracketR) || this.accept(TokenType.BracketR)) {
+        return node;
+      }
+      this.restoreAtMark(mark);
+      return null;
+    }
+    _parseVariable(declaration = false, insideLookup = false) {
+      const isPropertyReference = !declaration && this.peekDelim("$");
+      if (!this.peekDelim("@") && !isPropertyReference && !this.peek(TokenType.AtKeyword)) {
+        return null;
+      }
+      const node = this.create(Variable);
+      const mark = this.mark();
+      while (this.acceptDelim("@") || !declaration && this.acceptDelim("$")) {
+        if (this.hasWhitespace()) {
+          this.restoreAtMark(mark);
+          return null;
+        }
+      }
+      if (!this.accept(TokenType.AtKeyword) && !this.accept(TokenType.Ident)) {
+        this.restoreAtMark(mark);
+        return null;
+      }
+      if (!insideLookup && this.peek(TokenType.BracketL)) {
+        if (!this._addLookupChildren(node)) {
+          this.restoreAtMark(mark);
+          return null;
+        }
+      }
+      return node;
+    }
+    _parseTermExpression() {
+      return this._parseVariable() || this._parseEscaped() || super._parseTermExpression() || // preference for colors before mixin references
+      this._tryParseMixinReference(false);
+    }
+    _parseEscaped() {
+      if (this.peek(TokenType.EscapedJavaScript) || this.peek(TokenType.BadEscapedJavaScript)) {
+        const node = this.createNode(NodeType.EscapedValue);
+        this.consumeToken();
+        return this.finish(node);
+      }
+      if (this.peekDelim("~")) {
+        const node = this.createNode(NodeType.EscapedValue);
+        this.consumeToken();
+        if (this.accept(TokenType.String) || this.accept(TokenType.EscapedJavaScript)) {
+          return this.finish(node);
+        } else {
+          return this.finish(node, ParseError.TermExpected);
+        }
+      }
+      return null;
+    }
+    _parseOperator() {
+      const node = this._parseGuardOperator();
+      if (node) {
+        return node;
+      } else {
+        return super._parseOperator();
+      }
+    }
+    _parseGuardOperator() {
+      if (this.peekDelim(">")) {
+        const node = this.createNode(NodeType.Operator);
+        this.consumeToken();
+        this.acceptDelim("=");
+        return node;
+      } else if (this.peekDelim("=")) {
+        const node = this.createNode(NodeType.Operator);
+        this.consumeToken();
+        this.acceptDelim("<");
+        return node;
+      } else if (this.peekDelim("<")) {
+        const node = this.createNode(NodeType.Operator);
+        this.consumeToken();
+        this.acceptDelim("=");
+        return node;
+      }
+      return null;
+    }
+    _parseRuleSetDeclaration() {
+      if (this.peek(TokenType.AtKeyword)) {
+        return this._parseKeyframe() || this._parseMedia(true) || this._parseImport() || this._parseSupports(true) || this._parseLayer() || this._parsePropertyAtRule() || this._parseContainer(true) || this._parseDetachedRuleSetMixin() || this._parseVariableDeclaration() || this._parseRuleSetDeclarationAtStatement();
+      }
+      return this._tryParseMixinDeclaration() || this._tryParseRuleset(true) || this._tryParseMixinReference() || this._parseFunction() || this._parseExtend() || this._parseDeclaration();
+    }
+    _parseKeyframeIdent() {
+      return this._parseIdent([ReferenceType.Keyframe]) || this._parseVariable();
+    }
+    _parseKeyframeSelector() {
+      return this._parseDetachedRuleSetMixin() || super._parseKeyframeSelector();
+    }
+    // public _parseSimpleSelectorBody(): nodes.Node | null {
+    // 	return this._parseNestingSelector() || super._parseSimpleSelectorBody();
+    // }
+    _parseSelector(isNested) {
+      const node = this.create(Selector);
+      let hasContent = false;
+      if (isNested) {
+        hasContent = node.addChild(this._parseCombinator());
+      }
+      while (node.addChild(this._parseSimpleSelector())) {
+        hasContent = true;
+        const mark = this.mark();
+        if (node.addChild(this._parseGuard()) && this.peek(TokenType.CurlyL)) {
+          break;
+        }
+        this.restoreAtMark(mark);
+        node.addChild(this._parseCombinator());
+      }
+      return hasContent ? this.finish(node) : null;
+    }
+    _parseNestingSelector() {
+      if (this.peekDelim("&")) {
+        const node = this.createNode(NodeType.SelectorCombinator);
+        this.consumeToken();
+        while (!this.hasWhitespace() && (this.acceptDelim("-") || this.accept(TokenType.Num) || this.accept(TokenType.Dimension) || node.addChild(this._parseIdent()) || this.acceptDelim("&"))) {
+        }
+        return this.finish(node);
+      }
+      return null;
+    }
+    _parseSelectorIdent() {
+      if (!this.peekInterpolatedIdent()) {
+        return null;
+      }
+      const node = this.createNode(NodeType.SelectorInterpolation);
+      const hasContent = this._acceptInterpolatedIdent(node);
+      return hasContent ? this.finish(node) : null;
+    }
+    _parsePropertyIdentifier(inLookup = false) {
+      const propertyRegex = /^[\w-]+/;
+      if (!this.peekInterpolatedIdent() && !this.peekRegExp(this.token.type, propertyRegex)) {
+        return null;
+      }
+      const mark = this.mark();
+      const node = this.create(Identifier);
+      node.isCustomProperty = this.acceptDelim("-") && this.acceptDelim("-");
+      let childAdded = false;
+      if (!inLookup) {
+        if (node.isCustomProperty) {
+          childAdded = this._acceptInterpolatedIdent(node);
+        } else {
+          childAdded = this._acceptInterpolatedIdent(node, propertyRegex);
+        }
+      } else {
+        if (node.isCustomProperty) {
+          childAdded = node.addChild(this._parseIdent());
+        } else {
+          childAdded = node.addChild(this._parseRegexp(propertyRegex));
+        }
+      }
+      if (!childAdded) {
+        this.restoreAtMark(mark);
+        return null;
+      }
+      if (!inLookup && !this.hasWhitespace()) {
+        this.acceptDelim("+");
+        if (!this.hasWhitespace()) {
+          this.acceptIdent("_");
+        }
+      }
+      return this.finish(node);
+    }
+    peekInterpolatedIdent() {
+      return this.peek(TokenType.Ident) || this.peekDelim("@") || this.peekDelim("$") || this.peekDelim("-");
+    }
+    _acceptInterpolatedIdent(node, identRegex) {
+      let hasContent = false;
+      const indentInterpolation = () => {
+        const pos = this.mark();
+        if (this.acceptDelim("-")) {
+          if (!this.hasWhitespace()) {
+            this.acceptDelim("-");
+          }
+          if (this.hasWhitespace()) {
+            this.restoreAtMark(pos);
+            return null;
+          }
+        }
+        return this._parseInterpolation();
+      };
+      const accept = identRegex ? () => this.acceptRegexp(identRegex) : () => this.accept(TokenType.Ident);
+      while (accept() || node.addChild(this._parseInterpolation() || this.try(indentInterpolation))) {
+        hasContent = true;
+        if (this.hasWhitespace()) {
+          break;
+        }
+      }
+      return hasContent;
+    }
+    _parseInterpolation() {
+      const mark = this.mark();
+      if (this.peekDelim("@") || this.peekDelim("$")) {
+        const node = this.createNode(NodeType.Interpolation);
+        this.consumeToken();
+        if (this.hasWhitespace() || !this.accept(TokenType.CurlyL)) {
+          this.restoreAtMark(mark);
+          return null;
+        }
+        if (!node.addChild(this._parseIdent())) {
+          return this.finish(node, ParseError.IdentifierExpected);
+        }
+        if (!this.accept(TokenType.CurlyR)) {
+          return this.finish(node, ParseError.RightCurlyExpected);
+        }
+        return this.finish(node);
+      }
+      return null;
+    }
+    _tryParseMixinDeclaration() {
+      const mark = this.mark();
+      const node = this.create(MixinDeclaration);
+      if (!node.setIdentifier(this._parseMixinDeclarationIdentifier()) || !this.accept(TokenType.ParenthesisL)) {
+        this.restoreAtMark(mark);
+        return null;
+      }
+      if (node.getParameters().addChild(this._parseMixinParameter())) {
+        while (this.accept(TokenType.Comma) || this.accept(TokenType.SemiColon)) {
+          if (this.peek(TokenType.ParenthesisR)) {
+            break;
+          }
+          if (!node.getParameters().addChild(this._parseMixinParameter())) {
+            this.markError(node, ParseError.IdentifierExpected, [], [TokenType.ParenthesisR]);
+          }
+        }
+      }
+      if (!this.accept(TokenType.ParenthesisR)) {
+        this.restoreAtMark(mark);
+        return null;
+      }
+      node.setGuard(this._parseGuard());
+      if (!this.peek(TokenType.CurlyL)) {
+        this.restoreAtMark(mark);
+        return null;
+      }
+      return this._parseBody(node, this._parseMixInBodyDeclaration.bind(this));
+    }
+    _parseMixInBodyDeclaration() {
+      return this._parseFontFace() || this._parseRuleSetDeclaration();
+    }
+    _parseMixinDeclarationIdentifier() {
+      let identifier;
+      if (this.peekDelim("#") || this.peekDelim(".")) {
+        identifier = this.create(Identifier);
+        this.consumeToken();
+        if (this.hasWhitespace() || !identifier.addChild(this._parseIdent())) {
+          return null;
+        }
+      } else if (this.peek(TokenType.Hash)) {
+        identifier = this.create(Identifier);
+        this.consumeToken();
+      } else {
+        return null;
+      }
+      identifier.referenceTypes = [ReferenceType.Mixin];
+      return this.finish(identifier);
+    }
+    _parsePseudo() {
+      if (!this.peek(TokenType.Colon)) {
+        return null;
+      }
+      const mark = this.mark();
+      const node = this.create(ExtendsReference);
+      this.consumeToken();
+      if (this.acceptIdent("extend")) {
+        return this._completeExtends(node);
+      }
+      this.restoreAtMark(mark);
+      return super._parsePseudo();
+    }
+    _parseExtend() {
+      if (!this.peekDelim("&")) {
+        return null;
+      }
+      const mark = this.mark();
+      const node = this.create(ExtendsReference);
+      this.consumeToken();
+      if (this.hasWhitespace() || !this.accept(TokenType.Colon) || !this.acceptIdent("extend")) {
+        this.restoreAtMark(mark);
+        return null;
+      }
+      return this._completeExtends(node);
+    }
+    _completeExtends(node) {
+      if (!this.accept(TokenType.ParenthesisL)) {
+        return this.finish(node, ParseError.LeftParenthesisExpected);
+      }
+      const selectors = node.getSelectors();
+      if (!selectors.addChild(this._parseSelector(true))) {
+        return this.finish(node, ParseError.SelectorExpected);
+      }
+      while (this.accept(TokenType.Comma)) {
+        if (!selectors.addChild(this._parseSelector(true))) {
+          return this.finish(node, ParseError.SelectorExpected);
+        }
+      }
+      if (!this.accept(TokenType.ParenthesisR)) {
+        return this.finish(node, ParseError.RightParenthesisExpected);
+      }
+      return this.finish(node);
+    }
+    _parseDetachedRuleSetMixin() {
+      if (!this.peek(TokenType.AtKeyword)) {
+        return null;
+      }
+      const mark = this.mark();
+      const node = this.create(MixinReference);
+      if (node.addChild(this._parseVariable(true)) && (this.hasWhitespace() || !this.accept(TokenType.ParenthesisL))) {
+        this.restoreAtMark(mark);
+        return null;
+      }
+      if (!this.accept(TokenType.ParenthesisR)) {
+        return this.finish(node, ParseError.RightParenthesisExpected);
+      }
+      return this.finish(node);
+    }
+    _tryParseMixinReference(atRoot = true) {
+      const mark = this.mark();
+      const node = this.create(MixinReference);
+      let identifier = this._parseMixinDeclarationIdentifier();
+      while (identifier) {
+        this.acceptDelim(">");
+        const nextId = this._parseMixinDeclarationIdentifier();
+        if (nextId) {
+          node.getNamespaces().addChild(identifier);
+          identifier = nextId;
+        } else {
+          break;
+        }
+      }
+      if (!node.setIdentifier(identifier)) {
+        this.restoreAtMark(mark);
+        return null;
+      }
+      let hasArguments = false;
+      if (this.accept(TokenType.ParenthesisL)) {
+        hasArguments = true;
+        if (node.getArguments().addChild(this._parseMixinArgument())) {
+          while (this.accept(TokenType.Comma) || this.accept(TokenType.SemiColon)) {
+            if (this.peek(TokenType.ParenthesisR)) {
+              break;
+            }
+            if (!node.getArguments().addChild(this._parseMixinArgument())) {
+              return this.finish(node, ParseError.ExpressionExpected);
+            }
+          }
+        }
+        if (!this.accept(TokenType.ParenthesisR)) {
+          return this.finish(node, ParseError.RightParenthesisExpected);
+        }
+        identifier.referenceTypes = [ReferenceType.Mixin];
+      } else {
+        identifier.referenceTypes = [ReferenceType.Mixin, ReferenceType.Rule];
+      }
+      if (this.peek(TokenType.BracketL)) {
+        if (!atRoot) {
+          this._addLookupChildren(node);
+        }
+      } else {
+        node.addChild(this._parsePrio());
+      }
+      if (!hasArguments && !this.peek(TokenType.SemiColon) && !this.peek(TokenType.CurlyR) && !this.peek(TokenType.EOF)) {
+        this.restoreAtMark(mark);
+        return null;
+      }
+      return this.finish(node);
+    }
+    _parseMixinArgument() {
+      const node = this.create(FunctionArgument);
+      const pos = this.mark();
+      const argument = this._parseVariable();
+      if (argument) {
+        if (!this.accept(TokenType.Colon)) {
+          this.restoreAtMark(pos);
+        } else {
+          node.setIdentifier(argument);
+        }
+      }
+      if (node.setValue(this._parseDetachedRuleSet() || this._parseExpr(true))) {
+        return this.finish(node);
+      }
+      this.restoreAtMark(pos);
+      return null;
+    }
+    _parseMixinParameter() {
+      const node = this.create(FunctionParameter);
+      if (this.peekKeyword("@rest")) {
+        const restNode = this.create(Node);
+        this.consumeToken();
+        if (!this.accept(Ellipsis2)) {
+          return this.finish(node, ParseError.DotExpected, [], [TokenType.Comma, TokenType.ParenthesisR]);
+        }
+        node.setIdentifier(this.finish(restNode));
+        return this.finish(node);
+      }
+      if (this.peek(Ellipsis2)) {
+        const varargsNode = this.create(Node);
+        this.consumeToken();
+        node.setIdentifier(this.finish(varargsNode));
+        return this.finish(node);
+      }
+      let hasContent = false;
+      if (node.setIdentifier(this._parseVariable())) {
+        this.accept(TokenType.Colon);
+        hasContent = true;
+      }
+      if (!node.setDefaultValue(this._parseDetachedRuleSet() || this._parseExpr(true)) && !hasContent) {
+        return null;
+      }
+      return this.finish(node);
+    }
+    _parseGuard() {
+      if (!this.peekIdent("when")) {
+        return null;
+      }
+      const node = this.create(LessGuard);
+      this.consumeToken();
+      if (!node.getConditions().addChild(this._parseGuardCondition())) {
+        return this.finish(node, ParseError.ConditionExpected);
+      }
+      while (this.acceptIdent("and") || this.accept(TokenType.Comma)) {
+        if (!node.getConditions().addChild(this._parseGuardCondition())) {
+          return this.finish(node, ParseError.ConditionExpected);
+        }
+      }
+      return this.finish(node);
+    }
+    _parseGuardCondition() {
+      const node = this.create(GuardCondition);
+      node.isNegated = this.acceptIdent("not");
+      if (!this.accept(TokenType.ParenthesisL)) {
+        if (node.isNegated) {
+          return this.finish(node, ParseError.LeftParenthesisExpected);
+        }
+        return null;
+      }
+      if (!node.addChild(this._parseExpr())) {
+      }
+      if (!this.accept(TokenType.ParenthesisR)) {
+        return this.finish(node, ParseError.RightParenthesisExpected);
+      }
+      return this.finish(node);
+    }
+    _parseFunction() {
+      const pos = this.mark();
+      const node = this.create(Function);
+      if (!node.setIdentifier(this._parseFunctionIdentifier())) {
+        return null;
+      }
+      if (this.hasWhitespace() || !this.accept(TokenType.ParenthesisL)) {
+        this.restoreAtMark(pos);
+        return null;
+      }
+      if (node.getArguments().addChild(this._parseMixinArgument())) {
+        while (this.accept(TokenType.Comma) || this.accept(TokenType.SemiColon)) {
+          if (this.peek(TokenType.ParenthesisR)) {
+            break;
+          }
+          if (!node.getArguments().addChild(this._parseMixinArgument())) {
+            return this.finish(node, ParseError.ExpressionExpected);
+          }
+        }
+      }
+      if (!this.accept(TokenType.ParenthesisR)) {
+        return this.finish(node, ParseError.RightParenthesisExpected);
+      }
+      return this.finish(node);
+    }
+    _parseFunctionIdentifier() {
+      if (this.peekDelim("%")) {
+        const node = this.create(Identifier);
+        node.referenceTypes = [ReferenceType.Function];
+        this.consumeToken();
+        return this.finish(node);
+      }
+      return super._parseFunctionIdentifier();
+    }
+    _parseURLArgument() {
+      const pos = this.mark();
+      const node = super._parseURLArgument();
+      if (!node || !this.peek(TokenType.ParenthesisR)) {
+        this.restoreAtMark(pos);
+        const node2 = this.create(Node);
+        node2.addChild(this._parseBinaryExpr());
+        return this.finish(node2);
+      }
+      return node;
+    }
+  };
+
+  // src/workers/css-diagnostics-data.generated.js
+  var cssData = {
+    "version": 1.1,
+    "properties": [
+      {
+        "name": "-moz-animation"
+      },
+      {
+        "name": "-moz-animation-delay"
+      },
+      {
+        "name": "-moz-animation-direction"
+      },
+      {
+        "name": "-moz-animation-duration"
+      },
+      {
+        "name": "-moz-animation-iteration-count"
+      },
+      {
+        "name": "-moz-animation-name"
+      },
+      {
+        "name": "-moz-animation-play-state"
+      },
+      {
+        "name": "-moz-animation-timing-function"
+      },
+      {
+        "name": "-moz-appearance",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-moz-backface-visibility"
+      },
+      {
+        "name": "-moz-background-clip"
+      },
+      {
+        "name": "-moz-background-inline-policy"
+      },
+      {
+        "name": "-moz-background-origin"
+      },
+      {
+        "name": "-moz-binding",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-moz-border-bottom-colors",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-moz-border-image"
+      },
+      {
+        "name": "-moz-border-left-colors",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-moz-border-right-colors",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-moz-border-top-colors",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-moz-box-align"
+      },
+      {
+        "name": "-moz-box-direction"
+      },
+      {
+        "name": "-moz-box-flex"
+      },
+      {
+        "name": "-moz-box-flexgroup"
+      },
+      {
+        "name": "-moz-box-ordinal-group"
+      },
+      {
+        "name": "-moz-box-orient"
+      },
+      {
+        "name": "-moz-box-pack"
+      },
+      {
+        "name": "-moz-box-sizing"
+      },
+      {
+        "name": "-moz-column-count"
+      },
+      {
+        "name": "-moz-column-gap"
+      },
+      {
+        "name": "-moz-column-rule"
+      },
+      {
+        "name": "-moz-column-rule-color"
+      },
+      {
+        "name": "-moz-column-rule-style"
+      },
+      {
+        "name": "-moz-column-rule-width"
+      },
+      {
+        "name": "-moz-column-width"
+      },
+      {
+        "name": "-moz-columns"
+      },
+      {
+        "name": "-moz-context-properties",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-moz-float-edge",
+        "status": "obsolete"
+      },
+      {
+        "name": "-moz-font-feature-settings"
+      },
+      {
+        "name": "-moz-force-broken-image-icon",
+        "status": "obsolete"
+      },
+      {
+        "name": "-moz-hyphens"
+      },
+      {
+        "name": "-moz-orient",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-moz-outline-radius",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-moz-outline-radius-bottomleft",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-moz-outline-radius-bottomright",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-moz-outline-radius-topleft",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-moz-outline-radius-topright",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-moz-perspective"
+      },
+      {
+        "name": "-moz-perspective-origin"
+      },
+      {
+        "name": "-moz-stack-sizing",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-moz-text-align-last"
+      },
+      {
+        "name": "-moz-text-blink",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-moz-text-decoration-color"
+      },
+      {
+        "name": "-moz-text-decoration-line"
+      },
+      {
+        "name": "-moz-text-decoration-style"
+      },
+      {
+        "name": "-moz-text-size-adjust"
+      },
+      {
+        "name": "-moz-transform"
+      },
+      {
+        "name": "-moz-transform-origin"
+      },
+      {
+        "name": "-moz-transition"
+      },
+      {
+        "name": "-moz-transition-delay"
+      },
+      {
+        "name": "-moz-transition-duration"
+      },
+      {
+        "name": "-moz-transition-property"
+      },
+      {
+        "name": "-moz-transition-timing-function"
+      },
+      {
+        "name": "-moz-user-focus",
+        "status": "obsolete"
+      },
+      {
+        "name": "-moz-user-input",
+        "status": "obsolete"
+      },
+      {
+        "name": "-moz-user-modify",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-moz-user-select"
+      },
+      {
+        "name": "-moz-window-dragging",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-moz-window-shadow",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-ms-accelerator",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-ms-behavior"
+      },
+      {
+        "name": "-ms-block-progression",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-ms-content-zoom-chaining",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-ms-content-zoom-limit",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-ms-content-zoom-limit-max",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-ms-content-zoom-limit-min",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-ms-content-zoom-snap",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-ms-content-zoom-snap-points",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-ms-content-zoom-snap-type",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-ms-content-zooming",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-ms-filter",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-ms-flex"
+      },
+      {
+        "name": "-ms-flex-align"
+      },
+      {
+        "name": "-ms-flex-direction"
+      },
+      {
+        "name": "-ms-flex-flow"
+      },
+      {
+        "name": "-ms-flex-item-align"
+      },
+      {
+        "name": "-ms-flex-line-pack"
+      },
+      {
+        "name": "-ms-flex-order"
+      },
+      {
+        "name": "-ms-flex-pack"
+      },
+      {
+        "name": "-ms-flex-wrap"
+      },
+      {
+        "name": "-ms-flow-from",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-ms-flow-into",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-ms-grid-column"
+      },
+      {
+        "name": "-ms-grid-column-align"
+      },
+      {
+        "name": "-ms-grid-column-span"
+      },
+      {
+        "name": "-ms-grid-columns",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-ms-grid-layer"
+      },
+      {
+        "name": "-ms-grid-row"
+      },
+      {
+        "name": "-ms-grid-row-align"
+      },
+      {
+        "name": "-ms-grid-row-span"
+      },
+      {
+        "name": "-ms-grid-rows",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-ms-high-contrast-adjust",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-ms-hyphenate-limit-chars",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-ms-hyphenate-limit-lines",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-ms-hyphenate-limit-zone",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-ms-hyphens"
+      },
+      {
+        "name": "-ms-ime-align",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-ms-ime-mode"
+      },
+      {
+        "name": "-ms-interpolation-mode"
+      },
+      {
+        "name": "-ms-layout-grid"
+      },
+      {
+        "name": "-ms-layout-grid-char"
+      },
+      {
+        "name": "-ms-layout-grid-line"
+      },
+      {
+        "name": "-ms-layout-grid-mode"
+      },
+      {
+        "name": "-ms-layout-grid-type"
+      },
+      {
+        "name": "-ms-line-break"
+      },
+      {
+        "name": "-ms-overflow-style",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-ms-perspective"
+      },
+      {
+        "name": "-ms-perspective-origin"
+      },
+      {
+        "name": "-ms-perspective-origin-x"
+      },
+      {
+        "name": "-ms-perspective-origin-y"
+      },
+      {
+        "name": "-ms-progress-appearance"
+      },
+      {
+        "name": "-ms-scroll-chaining",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-ms-scroll-limit",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-ms-scroll-limit-x-max",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-ms-scroll-limit-x-min",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-ms-scroll-limit-y-max",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-ms-scroll-limit-y-min",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-ms-scroll-rails",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-ms-scroll-snap-points-x",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-ms-scroll-snap-points-y",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-ms-scroll-snap-type",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-ms-scroll-snap-x",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-ms-scroll-snap-y",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-ms-scroll-translation",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-ms-scrollbar-3dlight-color",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-ms-scrollbar-arrow-color",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-ms-scrollbar-base-color",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-ms-scrollbar-darkshadow-color",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-ms-scrollbar-face-color",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-ms-scrollbar-highlight-color",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-ms-scrollbar-shadow-color",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-ms-scrollbar-track-color",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-ms-text-align-last"
+      },
+      {
+        "name": "-ms-text-autospace",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-ms-text-combine-horizontal"
+      },
+      {
+        "name": "-ms-text-justify"
+      },
+      {
+        "name": "-ms-text-kashida-space"
+      },
+      {
+        "name": "-ms-text-overflow"
+      },
+      {
+        "name": "-ms-text-size-adjust"
+      },
+      {
+        "name": "-ms-text-underline-position"
+      },
+      {
+        "name": "-ms-touch-action"
+      },
+      {
+        "name": "-ms-touch-select",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-ms-transform"
+      },
+      {
+        "name": "-ms-transform-origin"
+      },
+      {
+        "name": "-ms-transform-origin-x"
+      },
+      {
+        "name": "-ms-transform-origin-y"
+      },
+      {
+        "name": "-ms-transform-origin-z"
+      },
+      {
+        "name": "-ms-user-select",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-ms-word-break"
+      },
+      {
+        "name": "-ms-word-wrap"
+      },
+      {
+        "name": "-ms-wrap-flow",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-ms-wrap-margin",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-ms-wrap-through",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-ms-writing-mode"
+      },
+      {
+        "name": "-ms-zoom"
+      },
+      {
+        "name": "-ms-zoom-animation"
+      },
+      {
+        "name": "-o-animation"
+      },
+      {
+        "name": "-o-animation-delay"
+      },
+      {
+        "name": "-o-animation-direction"
+      },
+      {
+        "name": "-o-animation-duration"
+      },
+      {
+        "name": "-o-animation-fill-mode"
+      },
+      {
+        "name": "-o-animation-iteration-count"
+      },
+      {
+        "name": "-o-animation-name"
+      },
+      {
+        "name": "-o-animation-play-state"
+      },
+      {
+        "name": "-o-animation-timing-function"
+      },
+      {
+        "name": "-o-border-image"
+      },
+      {
+        "name": "-o-object-fit"
+      },
+      {
+        "name": "-o-object-position"
+      },
+      {
+        "name": "-o-tab-size"
+      },
+      {
+        "name": "-o-table-baseline"
+      },
+      {
+        "name": "-o-text-overflow"
+      },
+      {
+        "name": "-o-transform"
+      },
+      {
+        "name": "-o-transform-origin"
+      },
+      {
+        "name": "-o-transition"
+      },
+      {
+        "name": "-o-transition-delay"
+      },
+      {
+        "name": "-o-transition-duration"
+      },
+      {
+        "name": "-o-transition-property"
+      },
+      {
+        "name": "-o-transition-timing-function"
+      },
+      {
+        "name": "-webkit-animation"
+      },
+      {
+        "name": "-webkit-animation-delay"
+      },
+      {
+        "name": "-webkit-animation-direction"
+      },
+      {
+        "name": "-webkit-animation-duration"
+      },
+      {
+        "name": "-webkit-animation-fill-mode"
+      },
+      {
+        "name": "-webkit-animation-iteration-count"
+      },
+      {
+        "name": "-webkit-animation-name"
+      },
+      {
+        "name": "-webkit-animation-play-state"
+      },
+      {
+        "name": "-webkit-animation-timing-function"
+      },
+      {
+        "name": "-webkit-appearance",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-webkit-backdrop-filter"
+      },
+      {
+        "name": "-webkit-backface-visibility"
+      },
+      {
+        "name": "-webkit-background-clip"
+      },
+      {
+        "name": "-webkit-background-composite"
+      },
+      {
+        "name": "-webkit-background-origin"
+      },
+      {
+        "name": "-webkit-border-before",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-webkit-border-before-color",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-webkit-border-before-style",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-webkit-border-before-width",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-webkit-border-image"
+      },
+      {
+        "name": "-webkit-box-align"
+      },
+      {
+        "name": "-webkit-box-direction"
+      },
+      {
+        "name": "-webkit-box-flex"
+      },
+      {
+        "name": "-webkit-box-flex-group"
+      },
+      {
+        "name": "-webkit-box-ordinal-group"
+      },
+      {
+        "name": "-webkit-box-orient"
+      },
+      {
+        "name": "-webkit-box-pack"
+      },
+      {
+        "name": "-webkit-box-reflect",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-webkit-box-sizing"
+      },
+      {
+        "name": "-webkit-break-after"
+      },
+      {
+        "name": "-webkit-break-before"
+      },
+      {
+        "name": "-webkit-break-inside"
+      },
+      {
+        "name": "-webkit-column-break-after"
+      },
+      {
+        "name": "-webkit-column-break-before"
+      },
+      {
+        "name": "-webkit-column-break-inside"
+      },
+      {
+        "name": "-webkit-column-count"
+      },
+      {
+        "name": "-webkit-column-gap"
+      },
+      {
+        "name": "-webkit-column-rule"
+      },
+      {
+        "name": "-webkit-column-rule-color"
+      },
+      {
+        "name": "-webkit-column-rule-style"
+      },
+      {
+        "name": "-webkit-column-rule-width"
+      },
+      {
+        "name": "-webkit-column-span"
+      },
+      {
+        "name": "-webkit-column-width"
+      },
+      {
+        "name": "-webkit-columns"
+      },
+      {
+        "name": "-webkit-filter"
+      },
+      {
+        "name": "-webkit-flow-from"
+      },
+      {
+        "name": "-webkit-flow-into"
+      },
+      {
+        "name": "-webkit-font-feature-settings"
+      },
+      {
+        "name": "-webkit-hyphens"
+      },
+      {
+        "name": "-webkit-line-break"
+      },
+      {
+        "name": "-webkit-line-clamp"
+      },
+      {
+        "name": "-webkit-margin-bottom-collapse"
+      },
+      {
+        "name": "-webkit-margin-collapse"
+      },
+      {
+        "name": "-webkit-margin-start"
+      },
+      {
+        "name": "-webkit-margin-top-collapse"
+      },
+      {
+        "name": "-webkit-mask",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-webkit-mask-attachment",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-webkit-mask-clip",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-webkit-mask-composite",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-webkit-mask-image",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-webkit-mask-origin",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-webkit-mask-position",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-webkit-mask-position-x",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-webkit-mask-position-y",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-webkit-mask-repeat",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-webkit-mask-repeat-x",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-webkit-mask-repeat-y",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-webkit-mask-size",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-webkit-nbsp-mode"
+      },
+      {
+        "name": "-webkit-overflow-scrolling",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-webkit-padding-start"
+      },
+      {
+        "name": "-webkit-perspective"
+      },
+      {
+        "name": "-webkit-perspective-origin"
+      },
+      {
+        "name": "-webkit-region-fragment"
+      },
+      {
+        "name": "-webkit-tap-highlight-color",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-webkit-text-fill-color"
+      },
+      {
+        "name": "-webkit-text-size-adjust"
+      },
+      {
+        "name": "-webkit-text-stroke"
+      },
+      {
+        "name": "-webkit-text-stroke-color"
+      },
+      {
+        "name": "-webkit-text-stroke-width"
+      },
+      {
+        "name": "-webkit-touch-callout",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-webkit-transform"
+      },
+      {
+        "name": "-webkit-transform-origin"
+      },
+      {
+        "name": "-webkit-transform-origin-x"
+      },
+      {
+        "name": "-webkit-transform-origin-y"
+      },
+      {
+        "name": "-webkit-transform-origin-z"
+      },
+      {
+        "name": "-webkit-transform-style"
+      },
+      {
+        "name": "-webkit-transition"
+      },
+      {
+        "name": "-webkit-transition-delay"
+      },
+      {
+        "name": "-webkit-transition-duration"
+      },
+      {
+        "name": "-webkit-transition-property"
+      },
+      {
+        "name": "-webkit-transition-timing-function"
+      },
+      {
+        "name": "-webkit-user-drag"
+      },
+      {
+        "name": "-webkit-user-modify",
+        "status": "nonstandard"
+      },
+      {
+        "name": "-webkit-user-select",
+        "status": "nonstandard"
+      },
+      {
+        "name": "accent-color"
+      },
+      {
+        "name": "additive-symbols"
+      },
+      {
+        "name": "align-content"
+      },
+      {
+        "name": "align-items"
+      },
+      {
+        "name": "align-self"
+      },
+      {
+        "name": "align-tracks",
+        "status": "nonstandard"
+      },
+      {
+        "name": "alignment-baseline"
+      },
+      {
+        "name": "all"
+      },
+      {
+        "name": "alt"
+      },
+      {
+        "name": "anchor-name"
+      },
+      {
+        "name": "anchor-scope"
+      },
+      {
+        "name": "animation"
+      },
+      {
+        "name": "animation-composition"
+      },
+      {
+        "name": "animation-delay"
+      },
+      {
+        "name": "animation-direction"
+      },
+      {
+        "name": "animation-duration"
+      },
+      {
+        "name": "animation-fill-mode"
+      },
+      {
+        "name": "animation-iteration-count"
+      },
+      {
+        "name": "animation-name"
+      },
+      {
+        "name": "animation-play-state"
+      },
+      {
+        "name": "animation-range"
+      },
+      {
+        "name": "animation-range-end"
+      },
+      {
+        "name": "animation-range-start"
+      },
+      {
+        "name": "animation-timeline"
+      },
+      {
+        "name": "animation-timing-function"
+      },
+      {
+        "name": "animation-trigger"
+      },
+      {
+        "name": "appearance"
+      },
+      {
+        "name": "ascent-override"
+      },
+      {
+        "name": "aspect-ratio"
+      },
+      {
+        "name": "backdrop-filter"
+      },
+      {
+        "name": "backface-visibility"
+      },
+      {
+        "name": "background"
+      },
+      {
+        "name": "background-attachment"
+      },
+      {
+        "name": "background-blend-mode"
+      },
+      {
+        "name": "background-clip"
+      },
+      {
+        "name": "background-color"
+      },
+      {
+        "name": "background-image"
+      },
+      {
+        "name": "background-origin"
+      },
+      {
+        "name": "background-position"
+      },
+      {
+        "name": "background-position-x"
+      },
+      {
+        "name": "background-position-y"
+      },
+      {
+        "name": "background-repeat"
+      },
+      {
+        "name": "background-size"
+      },
+      {
+        "name": "base-palette"
+      },
+      {
+        "name": "baseline-shift"
+      },
+      {
+        "name": "baseline-source"
+      },
+      {
+        "name": "behavior"
+      },
+      {
+        "name": "bleed"
+      },
+      {
+        "name": "block-size"
+      },
+      {
+        "name": "border"
+      },
+      {
+        "name": "border-block"
+      },
+      {
+        "name": "border-block-color"
+      },
+      {
+        "name": "border-block-end"
+      },
+      {
+        "name": "border-block-end-color"
+      },
+      {
+        "name": "border-block-end-style"
+      },
+      {
+        "name": "border-block-end-width"
+      },
+      {
+        "name": "border-block-start"
+      },
+      {
+        "name": "border-block-start-color"
+      },
+      {
+        "name": "border-block-start-style"
+      },
+      {
+        "name": "border-block-start-width"
+      },
+      {
+        "name": "border-block-style"
+      },
+      {
+        "name": "border-block-width"
+      },
+      {
+        "name": "border-bottom"
+      },
+      {
+        "name": "border-bottom-color"
+      },
+      {
+        "name": "border-bottom-left-radius"
+      },
+      {
+        "name": "border-bottom-right-radius"
+      },
+      {
+        "name": "border-bottom-style"
+      },
+      {
+        "name": "border-bottom-width"
+      },
+      {
+        "name": "border-collapse"
+      },
+      {
+        "name": "border-color"
+      },
+      {
+        "name": "border-end-end-radius"
+      },
+      {
+        "name": "border-end-start-radius"
+      },
+      {
+        "name": "border-image"
+      },
+      {
+        "name": "border-image-outset"
+      },
+      {
+        "name": "border-image-repeat"
+      },
+      {
+        "name": "border-image-slice"
+      },
+      {
+        "name": "border-image-source"
+      },
+      {
+        "name": "border-image-width"
+      },
+      {
+        "name": "border-inline"
+      },
+      {
+        "name": "border-inline-color"
+      },
+      {
+        "name": "border-inline-end"
+      },
+      {
+        "name": "border-inline-end-color"
+      },
+      {
+        "name": "border-inline-end-style"
+      },
+      {
+        "name": "border-inline-end-width"
+      },
+      {
+        "name": "border-inline-start"
+      },
+      {
+        "name": "border-inline-start-color"
+      },
+      {
+        "name": "border-inline-start-style"
+      },
+      {
+        "name": "border-inline-start-width"
+      },
+      {
+        "name": "border-inline-style"
+      },
+      {
+        "name": "border-inline-width"
+      },
+      {
+        "name": "border-left"
+      },
+      {
+        "name": "border-left-color"
+      },
+      {
+        "name": "border-left-style"
+      },
+      {
+        "name": "border-left-width"
+      },
+      {
+        "name": "border-radius"
+      },
+      {
+        "name": "border-right"
+      },
+      {
+        "name": "border-right-color"
+      },
+      {
+        "name": "border-right-style"
+      },
+      {
+        "name": "border-right-width"
+      },
+      {
+        "name": "border-spacing"
+      },
+      {
+        "name": "border-start-end-radius"
+      },
+      {
+        "name": "border-start-start-radius"
+      },
+      {
+        "name": "border-style"
+      },
+      {
+        "name": "border-top"
+      },
+      {
+        "name": "border-top-color"
+      },
+      {
+        "name": "border-top-left-radius"
+      },
+      {
+        "name": "border-top-right-radius"
+      },
+      {
+        "name": "border-top-style"
+      },
+      {
+        "name": "border-top-width"
+      },
+      {
+        "name": "border-width"
+      },
+      {
+        "name": "bottom"
+      },
+      {
+        "name": "box-align",
+        "status": "obsolete"
+      },
+      {
+        "name": "box-decoration-break"
+      },
+      {
+        "name": "box-direction",
+        "status": "obsolete"
+      },
+      {
+        "name": "box-flex",
+        "status": "obsolete"
+      },
+      {
+        "name": "box-flex-group",
+        "status": "obsolete"
+      },
+      {
+        "name": "box-lines",
+        "status": "obsolete"
+      },
+      {
+        "name": "box-ordinal-group",
+        "status": "obsolete"
+      },
+      {
+        "name": "box-orient",
+        "status": "obsolete"
+      },
+      {
+        "name": "box-pack",
+        "status": "obsolete"
+      },
+      {
+        "name": "box-shadow"
+      },
+      {
+        "name": "box-sizing"
+      },
+      {
+        "name": "break-after"
+      },
+      {
+        "name": "break-before"
+      },
+      {
+        "name": "break-inside"
+      },
+      {
+        "name": "caption-side"
+      },
+      {
+        "name": "caret"
+      },
+      {
+        "name": "caret-animation"
+      },
+      {
+        "name": "caret-color"
+      },
+      {
+        "name": "caret-shape"
+      },
+      {
+        "name": "clear"
+      },
+      {
+        "name": "clip",
+        "status": "obsolete"
+      },
+      {
+        "name": "clip-path"
+      },
+      {
+        "name": "clip-rule"
+      },
+      {
+        "name": "color"
+      },
+      {
+        "name": "color-interpolation-filters"
+      },
+      {
+        "name": "color-scheme"
+      },
+      {
+        "name": "column-count"
+      },
+      {
+        "name": "column-fill"
+      },
+      {
+        "name": "column-gap"
+      },
+      {
+        "name": "column-height"
+      },
+      {
+        "name": "column-rule"
+      },
+      {
+        "name": "column-rule-color"
+      },
+      {
+        "name": "column-rule-style"
+      },
+      {
+        "name": "column-rule-width"
+      },
+      {
+        "name": "column-span"
+      },
+      {
+        "name": "column-width"
+      },
+      {
+        "name": "column-wrap"
+      },
+      {
+        "name": "columns"
+      },
+      {
+        "name": "contain"
+      },
+      {
+        "name": "contain-intrinsic-block-size"
+      },
+      {
+        "name": "contain-intrinsic-height"
+      },
+      {
+        "name": "contain-intrinsic-inline-size"
+      },
+      {
+        "name": "contain-intrinsic-size"
+      },
+      {
+        "name": "contain-intrinsic-width"
+      },
+      {
+        "name": "container"
+      },
+      {
+        "name": "container-name"
+      },
+      {
+        "name": "container-type"
+      },
+      {
+        "name": "content"
+      },
+      {
+        "name": "content-visibility"
+      },
+      {
+        "name": "corner-block-end-shape"
+      },
+      {
+        "name": "corner-block-start-shape"
+      },
+      {
+        "name": "corner-bottom-left-shape"
+      },
+      {
+        "name": "corner-bottom-right-shape"
+      },
+      {
+        "name": "corner-bottom-shape"
+      },
+      {
+        "name": "corner-end-end-shape"
+      },
+      {
+        "name": "corner-end-start-shape"
+      },
+      {
+        "name": "corner-inline-end-shape"
+      },
+      {
+        "name": "corner-inline-start-shape"
+      },
+      {
+        "name": "corner-left-shape"
+      },
+      {
+        "name": "corner-right-shape"
+      },
+      {
+        "name": "corner-shape"
+      },
+      {
+        "name": "corner-start-end-shape"
+      },
+      {
+        "name": "corner-start-start-shape"
+      },
+      {
+        "name": "corner-top-left-shape"
+      },
+      {
+        "name": "corner-top-right-shape"
+      },
+      {
+        "name": "corner-top-shape"
+      },
+      {
+        "name": "counter-increment"
+      },
+      {
+        "name": "counter-reset"
+      },
+      {
+        "name": "counter-set"
+      },
+      {
+        "name": "cursor"
+      },
+      {
+        "name": "cx"
+      },
+      {
+        "name": "cy"
+      },
+      {
+        "name": "d"
+      },
+      {
+        "name": "descent-override"
+      },
+      {
+        "name": "direction"
+      },
+      {
+        "name": "display"
+      },
+      {
+        "name": "dominant-baseline"
+      },
+      {
+        "name": "dynamic-range-limit"
+      },
+      {
+        "name": "empty-cells"
+      },
+      {
+        "name": "enable-background"
+      },
+      {
+        "name": "fallback"
+      },
+      {
+        "name": "field-sizing"
+      },
+      {
+        "name": "fill"
+      },
+      {
+        "name": "fill-opacity"
+      },
+      {
+        "name": "fill-rule"
+      },
+      {
+        "name": "filter"
+      },
+      {
+        "name": "flex"
+      },
+      {
+        "name": "flex-basis"
+      },
+      {
+        "name": "flex-direction"
+      },
+      {
+        "name": "flex-flow"
+      },
+      {
+        "name": "flex-grow"
+      },
+      {
+        "name": "flex-shrink"
+      },
+      {
+        "name": "flex-wrap"
+      },
+      {
+        "name": "float"
+      },
+      {
+        "name": "flood-color"
+      },
+      {
+        "name": "flood-opacity"
+      },
+      {
+        "name": "font"
+      },
+      {
+        "name": "font-display"
+      },
+      {
+        "name": "font-family"
+      },
+      {
+        "name": "font-feature-settings"
+      },
+      {
+        "name": "font-kerning"
+      },
+      {
+        "name": "font-language-override"
+      },
+      {
+        "name": "font-optical-sizing"
+      },
+      {
+        "name": "font-palette"
+      },
+      {
+        "name": "font-size"
+      },
+      {
+        "name": "font-size-adjust"
+      },
+      {
+        "name": "font-smooth",
+        "status": "nonstandard"
+      },
+      {
+        "name": "font-stretch",
+        "status": "obsolete"
+      },
+      {
+        "name": "font-style"
+      },
+      {
+        "name": "font-synthesis"
+      },
+      {
+        "name": "font-synthesis-position",
+        "status": "experimental"
+      },
+      {
+        "name": "font-synthesis-small-caps"
+      },
+      {
+        "name": "font-synthesis-style"
+      },
+      {
+        "name": "font-synthesis-weight"
+      },
+      {
+        "name": "font-variant"
+      },
+      {
+        "name": "font-variant-alternates"
+      },
+      {
+        "name": "font-variant-caps"
+      },
+      {
+        "name": "font-variant-east-asian"
+      },
+      {
+        "name": "font-variant-emoji"
+      },
+      {
+        "name": "font-variant-ligatures"
+      },
+      {
+        "name": "font-variant-numeric"
+      },
+      {
+        "name": "font-variant-position"
+      },
+      {
+        "name": "font-variation-settings"
+      },
+      {
+        "name": "font-weight"
+      },
+      {
+        "name": "font-width",
+        "status": "experimental"
+      },
+      {
+        "name": "forced-color-adjust"
+      },
+      {
+        "name": "gap"
+      },
+      {
+        "name": "glyph-orientation-horizontal"
+      },
+      {
+        "name": "glyph-orientation-vertical"
+      },
+      {
+        "name": "grid"
+      },
+      {
+        "name": "grid-area"
+      },
+      {
+        "name": "grid-auto-columns"
+      },
+      {
+        "name": "grid-auto-flow"
+      },
+      {
+        "name": "grid-auto-rows"
+      },
+      {
+        "name": "grid-column"
+      },
+      {
+        "name": "grid-column-end"
+      },
+      {
+        "name": "grid-column-gap",
+        "status": "obsolete"
+      },
+      {
+        "name": "grid-column-start"
+      },
+      {
+        "name": "grid-gap",
+        "status": "obsolete"
+      },
+      {
+        "name": "grid-row"
+      },
+      {
+        "name": "grid-row-end"
+      },
+      {
+        "name": "grid-row-gap",
+        "status": "obsolete"
+      },
+      {
+        "name": "grid-row-start"
+      },
+      {
+        "name": "grid-template"
+      },
+      {
+        "name": "grid-template-areas"
+      },
+      {
+        "name": "grid-template-columns"
+      },
+      {
+        "name": "grid-template-rows"
+      },
+      {
+        "name": "hanging-punctuation"
+      },
+      {
+        "name": "height"
+      },
+      {
+        "name": "hyphenate-character"
+      },
+      {
+        "name": "hyphenate-limit-chars"
+      },
+      {
+        "name": "hyphens"
+      },
+      {
+        "name": "image-orientation"
+      },
+      {
+        "name": "image-rendering"
+      },
+      {
+        "name": "image-resolution",
+        "status": "experimental"
+      },
+      {
+        "name": "ime-mode",
+        "status": "obsolete"
+      },
+      {
+        "name": "inherits"
+      },
+      {
+        "name": "initial-letter"
+      },
+      {
+        "name": "initial-letter-align",
+        "status": "experimental"
+      },
+      {
+        "name": "initial-value"
+      },
+      {
+        "name": "inline-size"
+      },
+      {
+        "name": "inset"
+      },
+      {
+        "name": "inset-block"
+      },
+      {
+        "name": "inset-block-end"
+      },
+      {
+        "name": "inset-block-start"
+      },
+      {
+        "name": "inset-inline"
+      },
+      {
+        "name": "inset-inline-end"
+      },
+      {
+        "name": "inset-inline-start"
+      },
+      {
+        "name": "interactivity"
+      },
+      {
+        "name": "interest-delay"
+      },
+      {
+        "name": "interest-delay-end"
+      },
+      {
+        "name": "interest-delay-start"
+      },
+      {
+        "name": "interpolate-size",
+        "status": "experimental"
+      },
+      {
+        "name": "isolation"
+      },
+      {
+        "name": "justify-content"
+      },
+      {
+        "name": "justify-items"
+      },
+      {
+        "name": "justify-self"
+      },
+      {
+        "name": "justify-tracks",
+        "status": "nonstandard"
+      },
+      {
+        "name": "kerning"
+      },
+      {
+        "name": "left"
+      },
+      {
+        "name": "letter-spacing"
+      },
+      {
+        "name": "lighting-color"
+      },
+      {
+        "name": "line-break"
+      },
+      {
+        "name": "line-clamp"
+      },
+      {
+        "name": "line-gap-override"
+      },
+      {
+        "name": "line-height"
+      },
+      {
+        "name": "line-height-step",
+        "status": "experimental"
+      },
+      {
+        "name": "list-style"
+      },
+      {
+        "name": "list-style-image"
+      },
+      {
+        "name": "list-style-position"
+      },
+      {
+        "name": "list-style-type"
+      },
+      {
+        "name": "margin"
+      },
+      {
+        "name": "margin-block"
+      },
+      {
+        "name": "margin-block-end"
+      },
+      {
+        "name": "margin-block-start"
+      },
+      {
+        "name": "margin-bottom"
+      },
+      {
+        "name": "margin-inline"
+      },
+      {
+        "name": "margin-inline-end"
+      },
+      {
+        "name": "margin-inline-start"
+      },
+      {
+        "name": "margin-left"
+      },
+      {
+        "name": "margin-right"
+      },
+      {
+        "name": "margin-top"
+      },
+      {
+        "name": "margin-trim",
+        "status": "experimental"
+      },
+      {
+        "name": "marker"
+      },
+      {
+        "name": "marker-end"
+      },
+      {
+        "name": "marker-mid"
+      },
+      {
+        "name": "marker-start"
+      },
+      {
+        "name": "marks"
+      },
+      {
+        "name": "mask"
+      },
+      {
+        "name": "mask-border"
+      },
+      {
+        "name": "mask-border-mode"
+      },
+      {
+        "name": "mask-border-outset"
+      },
+      {
+        "name": "mask-border-repeat"
+      },
+      {
+        "name": "mask-border-slice"
+      },
+      {
+        "name": "mask-border-source"
+      },
+      {
+        "name": "mask-border-width"
+      },
+      {
+        "name": "mask-clip"
+      },
+      {
+        "name": "mask-composite"
+      },
+      {
+        "name": "mask-image"
+      },
+      {
+        "name": "mask-mode"
+      },
+      {
+        "name": "mask-origin"
+      },
+      {
+        "name": "mask-position"
+      },
+      {
+        "name": "mask-repeat"
+      },
+      {
+        "name": "mask-size"
+      },
+      {
+        "name": "mask-type"
+      },
+      {
+        "name": "masonry-auto-flow",
+        "status": "nonstandard"
+      },
+      {
+        "name": "math-depth"
+      },
+      {
+        "name": "math-shift"
+      },
+      {
+        "name": "math-style"
+      },
+      {
+        "name": "max-block-size"
+      },
+      {
+        "name": "max-height"
+      },
+      {
+        "name": "max-inline-size"
+      },
+      {
+        "name": "max-lines",
+        "status": "experimental"
+      },
+      {
+        "name": "max-width"
+      },
+      {
+        "name": "min-block-size"
+      },
+      {
+        "name": "min-height"
+      },
+      {
+        "name": "min-inline-size"
+      },
+      {
+        "name": "min-width"
+      },
+      {
+        "name": "mix-blend-mode"
+      },
+      {
+        "name": "motion"
+      },
+      {
+        "name": "motion-offset"
+      },
+      {
+        "name": "motion-path"
+      },
+      {
+        "name": "motion-rotation"
+      },
+      {
+        "name": "nav-down"
+      },
+      {
+        "name": "nav-index"
+      },
+      {
+        "name": "nav-left"
+      },
+      {
+        "name": "nav-right"
+      },
+      {
+        "name": "nav-up"
+      },
+      {
+        "name": "navigation"
+      },
+      {
+        "name": "negative"
+      },
+      {
+        "name": "object-fit"
+      },
+      {
+        "name": "object-position"
+      },
+      {
+        "name": "object-view-box",
+        "status": "experimental"
+      },
+      {
+        "name": "offset"
+      },
+      {
+        "name": "offset-anchor"
+      },
+      {
+        "name": "offset-block-end"
+      },
+      {
+        "name": "offset-block-start"
+      },
+      {
+        "name": "offset-distance"
+      },
+      {
+        "name": "offset-inline-end"
+      },
+      {
+        "name": "offset-inline-start"
+      },
+      {
+        "name": "offset-path"
+      },
+      {
+        "name": "offset-position"
+      },
+      {
+        "name": "offset-rotate"
+      },
+      {
+        "name": "opacity"
+      },
+      {
+        "name": "order"
+      },
+      {
+        "name": "orphans"
+      },
+      {
+        "name": "outline"
+      },
+      {
+        "name": "outline-color"
+      },
+      {
+        "name": "outline-offset"
+      },
+      {
+        "name": "outline-style"
+      },
+      {
+        "name": "outline-width"
+      },
+      {
+        "name": "overflow"
+      },
+      {
+        "name": "overflow-anchor"
+      },
+      {
+        "name": "overflow-block"
+      },
+      {
+        "name": "overflow-clip-box",
+        "status": "nonstandard"
+      },
+      {
+        "name": "overflow-clip-margin"
+      },
+      {
+        "name": "overflow-inline"
+      },
+      {
+        "name": "overflow-wrap"
+      },
+      {
+        "name": "overflow-x"
+      },
+      {
+        "name": "overflow-y"
+      },
+      {
+        "name": "overlay",
+        "status": "experimental"
+      },
+      {
+        "name": "override-colors"
+      },
+      {
+        "name": "overscroll-behavior"
+      },
+      {
+        "name": "overscroll-behavior-block"
+      },
+      {
+        "name": "overscroll-behavior-inline"
+      },
+      {
+        "name": "overscroll-behavior-x"
+      },
+      {
+        "name": "overscroll-behavior-y"
+      },
+      {
+        "name": "pad"
+      },
+      {
+        "name": "padding"
+      },
+      {
+        "name": "padding-block"
+      },
+      {
+        "name": "padding-block-end"
+      },
+      {
+        "name": "padding-block-start"
+      },
+      {
+        "name": "padding-bottom"
+      },
+      {
+        "name": "padding-inline"
+      },
+      {
+        "name": "padding-inline-end"
+      },
+      {
+        "name": "padding-inline-start"
+      },
+      {
+        "name": "padding-left"
+      },
+      {
+        "name": "padding-right"
+      },
+      {
+        "name": "padding-top"
+      },
+      {
+        "name": "page"
+      },
+      {
+        "name": "page-break-after",
+        "status": "obsolete"
+      },
+      {
+        "name": "page-break-before",
+        "status": "obsolete"
+      },
+      {
+        "name": "page-break-inside",
+        "status": "obsolete"
+      },
+      {
+        "name": "page-orientation"
+      },
+      {
+        "name": "paint-order"
+      },
+      {
+        "name": "perspective"
+      },
+      {
+        "name": "perspective-origin"
+      },
+      {
+        "name": "place-content"
+      },
+      {
+        "name": "place-items"
+      },
+      {
+        "name": "place-self"
+      },
+      {
+        "name": "pointer-events"
+      },
+      {
+        "name": "position"
+      },
+      {
+        "name": "position-anchor"
+      },
+      {
+        "name": "position-area"
+      },
+      {
+        "name": "position-try"
+      },
+      {
+        "name": "position-try-fallbacks"
+      },
+      {
+        "name": "position-try-order"
+      },
+      {
+        "name": "position-visibility"
+      },
+      {
+        "name": "prefix"
+      },
+      {
+        "name": "print-color-adjust"
+      },
+      {
+        "name": "quotes"
+      },
+      {
+        "name": "r"
+      },
+      {
+        "name": "range"
+      },
+      {
+        "name": "reading-flow"
+      },
+      {
+        "name": "reading-order"
+      },
+      {
+        "name": "resize"
+      },
+      {
+        "name": "right"
+      },
+      {
+        "name": "rotate"
+      },
+      {
+        "name": "row-gap"
+      },
+      {
+        "name": "ruby-align"
+      },
+      {
+        "name": "ruby-merge",
+        "status": "experimental"
+      },
+      {
+        "name": "ruby-overhang"
+      },
+      {
+        "name": "ruby-position"
+      },
+      {
+        "name": "ruby-span"
+      },
+      {
+        "name": "rx"
+      },
+      {
+        "name": "ry"
+      },
+      {
+        "name": "scale"
+      },
+      {
+        "name": "scroll-behavior"
+      },
+      {
+        "name": "scroll-initial-target",
+        "status": "experimental"
+      },
+      {
+        "name": "scroll-margin"
+      },
+      {
+        "name": "scroll-margin-block"
+      },
+      {
+        "name": "scroll-margin-block-end"
+      },
+      {
+        "name": "scroll-margin-block-start"
+      },
+      {
+        "name": "scroll-margin-bottom"
+      },
+      {
+        "name": "scroll-margin-inline"
+      },
+      {
+        "name": "scroll-margin-inline-end"
+      },
+      {
+        "name": "scroll-margin-inline-start"
+      },
+      {
+        "name": "scroll-margin-left"
+      },
+      {
+        "name": "scroll-margin-right"
+      },
+      {
+        "name": "scroll-margin-top"
+      },
+      {
+        "name": "scroll-marker-group"
+      },
+      {
+        "name": "scroll-padding"
+      },
+      {
+        "name": "scroll-padding-block"
+      },
+      {
+        "name": "scroll-padding-block-end"
+      },
+      {
+        "name": "scroll-padding-block-start"
+      },
+      {
+        "name": "scroll-padding-bottom"
+      },
+      {
+        "name": "scroll-padding-inline"
+      },
+      {
+        "name": "scroll-padding-inline-end"
+      },
+      {
+        "name": "scroll-padding-inline-start"
+      },
+      {
+        "name": "scroll-padding-left"
+      },
+      {
+        "name": "scroll-padding-right"
+      },
+      {
+        "name": "scroll-padding-top"
+      },
+      {
+        "name": "scroll-snap-align"
+      },
+      {
+        "name": "scroll-snap-coordinate",
+        "status": "obsolete"
+      },
+      {
+        "name": "scroll-snap-destination",
+        "status": "obsolete"
+      },
+      {
+        "name": "scroll-snap-points-x",
+        "status": "obsolete"
+      },
+      {
+        "name": "scroll-snap-points-y",
+        "status": "obsolete"
+      },
+      {
+        "name": "scroll-snap-stop"
+      },
+      {
+        "name": "scroll-snap-type"
+      },
+      {
+        "name": "scroll-snap-type-x",
+        "status": "obsolete"
+      },
+      {
+        "name": "scroll-snap-type-y",
+        "status": "obsolete"
+      },
+      {
+        "name": "scroll-target-group"
+      },
+      {
+        "name": "scroll-timeline"
+      },
+      {
+        "name": "scroll-timeline-axis"
+      },
+      {
+        "name": "scroll-timeline-name"
+      },
+      {
+        "name": "scrollbar-3dlight-color"
+      },
+      {
+        "name": "scrollbar-arrow-color"
+      },
+      {
+        "name": "scrollbar-base-color"
+      },
+      {
+        "name": "scrollbar-color"
+      },
+      {
+        "name": "scrollbar-darkshadow-color"
+      },
+      {
+        "name": "scrollbar-face-color"
+      },
+      {
+        "name": "scrollbar-gutter"
+      },
+      {
+        "name": "scrollbar-highlight-color"
+      },
+      {
+        "name": "scrollbar-shadow-color"
+      },
+      {
+        "name": "scrollbar-track-color"
+      },
+      {
+        "name": "scrollbar-width"
+      },
+      {
+        "name": "shape-image-threshold"
+      },
+      {
+        "name": "shape-margin"
+      },
+      {
+        "name": "shape-outside"
+      },
+      {
+        "name": "shape-rendering"
+      },
+      {
+        "name": "size"
+      },
+      {
+        "name": "size-adjust"
+      },
+      {
+        "name": "speak-as"
+      },
+      {
+        "name": "src"
+      },
+      {
+        "name": "stop-color"
+      },
+      {
+        "name": "stop-opacity"
+      },
+      {
+        "name": "stroke"
+      },
+      {
+        "name": "stroke-color",
+        "status": "experimental"
+      },
+      {
+        "name": "stroke-dasharray"
+      },
+      {
+        "name": "stroke-dashoffset"
+      },
+      {
+        "name": "stroke-linecap"
+      },
+      {
+        "name": "stroke-linejoin"
+      },
+      {
+        "name": "stroke-miterlimit"
+      },
+      {
+        "name": "stroke-opacity"
+      },
+      {
+        "name": "stroke-width"
+      },
+      {
+        "name": "suffix"
+      },
+      {
+        "name": "symbols"
+      },
+      {
+        "name": "syntax"
+      },
+      {
+        "name": "system"
+      },
+      {
+        "name": "tab-size"
+      },
+      {
+        "name": "table-layout"
+      },
+      {
+        "name": "text-align"
+      },
+      {
+        "name": "text-align-last"
+      },
+      {
+        "name": "text-anchor"
+      },
+      {
+        "name": "text-autospace"
+      },
+      {
+        "name": "text-box"
+      },
+      {
+        "name": "text-box-edge"
+      },
+      {
+        "name": "text-box-trim"
+      },
+      {
+        "name": "text-combine-upright"
+      },
+      {
+        "name": "text-decoration"
+      },
+      {
+        "name": "text-decoration-color"
+      },
+      {
+        "name": "text-decoration-inset"
+      },
+      {
+        "name": "text-decoration-line"
+      },
+      {
+        "name": "text-decoration-skip",
+        "status": "experimental"
+      },
+      {
+        "name": "text-decoration-skip-ink"
+      },
+      {
+        "name": "text-decoration-style"
+      },
+      {
+        "name": "text-decoration-thickness"
+      },
+      {
+        "name": "text-emphasis"
+      },
+      {
+        "name": "text-emphasis-color"
+      },
+      {
+        "name": "text-emphasis-position"
+      },
+      {
+        "name": "text-emphasis-style"
+      },
+      {
+        "name": "text-indent"
+      },
+      {
+        "name": "text-justify"
+      },
+      {
+        "name": "text-orientation"
+      },
+      {
+        "name": "text-overflow"
+      },
+      {
+        "name": "text-rendering"
+      },
+      {
+        "name": "text-shadow"
+      },
+      {
+        "name": "text-size-adjust",
+        "status": "experimental"
+      },
+      {
+        "name": "text-spacing-trim",
+        "status": "experimental"
+      },
+      {
+        "name": "text-transform"
+      },
+      {
+        "name": "text-underline-offset"
+      },
+      {
+        "name": "text-underline-position"
+      },
+      {
+        "name": "text-wrap"
+      },
+      {
+        "name": "text-wrap-mode"
+      },
+      {
+        "name": "text-wrap-style"
+      },
+      {
+        "name": "timeline-scope"
+      },
+      {
+        "name": "timeline-trigger"
+      },
+      {
+        "name": "timeline-trigger-exit-range"
+      },
+      {
+        "name": "timeline-trigger-exit-range-end"
+      },
+      {
+        "name": "timeline-trigger-exit-range-start"
+      },
+      {
+        "name": "timeline-trigger-name"
+      },
+      {
+        "name": "timeline-trigger-range"
+      },
+      {
+        "name": "timeline-trigger-range-end"
+      },
+      {
+        "name": "timeline-trigger-range-start"
+      },
+      {
+        "name": "timeline-trigger-source"
+      },
+      {
+        "name": "top"
+      },
+      {
+        "name": "touch-action"
+      },
+      {
+        "name": "transform"
+      },
+      {
+        "name": "transform-box"
+      },
+      {
+        "name": "transform-origin"
+      },
+      {
+        "name": "transform-style"
+      },
+      {
+        "name": "transition"
+      },
+      {
+        "name": "transition-behavior"
+      },
+      {
+        "name": "transition-delay"
+      },
+      {
+        "name": "transition-duration"
+      },
+      {
+        "name": "transition-property"
+      },
+      {
+        "name": "transition-timing-function"
+      },
+      {
+        "name": "translate"
+      },
+      {
+        "name": "trigger-scope"
+      },
+      {
+        "name": "types"
+      },
+      {
+        "name": "unicode-bidi"
+      },
+      {
+        "name": "unicode-range"
+      },
+      {
+        "name": "user-select"
+      },
+      {
+        "name": "vector-effect"
+      },
+      {
+        "name": "vertical-align"
+      },
+      {
+        "name": "view-timeline"
+      },
+      {
+        "name": "view-timeline-axis"
+      },
+      {
+        "name": "view-timeline-inset"
+      },
+      {
+        "name": "view-timeline-name"
+      },
+      {
+        "name": "view-transition-class"
+      },
+      {
+        "name": "view-transition-name"
+      },
+      {
+        "name": "visibility"
+      },
+      {
+        "name": "white-space"
+      },
+      {
+        "name": "white-space-collapse"
+      },
+      {
+        "name": "widows"
+      },
+      {
+        "name": "width"
+      },
+      {
+        "name": "will-change"
+      },
+      {
+        "name": "word-break"
+      },
+      {
+        "name": "word-spacing"
+      },
+      {
+        "name": "word-wrap"
+      },
+      {
+        "name": "writing-mode"
+      },
+      {
+        "name": "x"
+      },
+      {
+        "name": "y"
+      },
+      {
+        "name": "z-index"
+      },
+      {
+        "name": "zoom"
+      }
+    ],
+    "atDirectives": [
+      {
+        "name": "@-moz-document"
+      },
+      {
+        "name": "@-moz-keyframes"
+      },
+      {
+        "name": "@-ms-viewport"
+      },
+      {
+        "name": "@-o-keyframes"
+      },
+      {
+        "name": "@-o-viewport"
+      },
+      {
+        "name": "@-webkit-keyframes"
+      },
+      {
+        "name": "@charset"
+      },
+      {
+        "name": "@container"
+      },
+      {
+        "name": "@counter-style"
+      },
+      {
+        "name": "@document"
+      },
+      {
+        "name": "@font-face"
+      },
+      {
+        "name": "@font-feature-values"
+      },
+      {
+        "name": "@font-palette-values"
+      },
+      {
+        "name": "@import"
+      },
+      {
+        "name": "@keyframes"
+      },
+      {
+        "name": "@layer"
+      },
+      {
+        "name": "@media"
+      },
+      {
+        "name": "@namespace"
+      },
+      {
+        "name": "@page"
+      },
+      {
+        "name": "@position-try"
+      },
+      {
+        "name": "@property"
+      },
+      {
+        "name": "@scope"
+      },
+      {
+        "name": "@starting-style"
+      },
+      {
+        "name": "@supports"
+      },
+      {
+        "name": "@view-transition"
+      }
+    ],
+    "pseudoClasses": [],
+    "pseudoElements": []
+  };
+
+  // src/workers/css-diagnostics-service.ts
+  function createFacade(parser, validation) {
+    return {
+      configure: (settings) => {
+        validation.configure(settings);
+      },
+      doValidation: validation.doValidation.bind(validation),
+      parseStylesheet: parser.parseStylesheet.bind(parser)
+    };
+  }
+  var defaultLanguageServiceOptions = {};
+  function getCSSDiagnosticsService(options = defaultLanguageServiceOptions) {
+    const cssDataManager = new CSSDataManager(options);
+    return createFacade(new Parser(), new CSSValidation(cssDataManager));
+  }
+  function getSCSSDiagnosticsService(options = defaultLanguageServiceOptions) {
+    const cssDataManager = new CSSDataManager(options);
+    return createFacade(new SCSSParser(), new CSSValidation(cssDataManager));
+  }
+  function getLESSDiagnosticsService(options = defaultLanguageServiceOptions) {
+    const cssDataManager = new CSSDataManager(options);
+    return createFacade(new LESSParser(), new CSSValidation(cssDataManager));
+  }
+  var CSSDataManager = class {
+    constructor(options) {
+      this.dataProviders = [];
+      this._propertySet = {};
+      this._atDirectiveSet = {};
+      this._pseudoClassSet = {};
+      this._pseudoElementSet = {};
+      this._properties = [];
+      this._atDirectives = [];
+      this._pseudoClasses = [];
+      this._pseudoElements = [];
+      this.setDataProviders((options == null ? void 0 : options.useDefaultDataProvider) !== false, (options == null ? void 0 : options.customDataProviders) || []);
+    }
+    setDataProviders(builtIn, providers) {
+      this.dataProviders = [];
+      if (builtIn) {
+        this.dataProviders.push(new CSSDataProvider(cssData));
+      }
+      this.dataProviders.push(...providers);
+      this.collectData();
+    }
+    /**
+     * Collect all data  & handle duplicates
+     */
+    collectData() {
+      this._propertySet = {};
+      this._atDirectiveSet = {};
+      this._pseudoClassSet = {};
+      this._pseudoElementSet = {};
+      this.dataProviders.forEach((provider) => {
+        provider.provideProperties().forEach((p) => {
+          if (!this._propertySet[p.name]) {
+            this._propertySet[p.name] = p;
+          }
+        });
+        provider.provideAtDirectives().forEach((p) => {
+          if (!this._atDirectiveSet[p.name]) {
+            this._atDirectiveSet[p.name] = p;
+          }
+        });
+        provider.providePseudoClasses().forEach((p) => {
+          if (!this._pseudoClassSet[p.name]) {
+            this._pseudoClassSet[p.name] = p;
+          }
+        });
+        provider.providePseudoElements().forEach((p) => {
+          if (!this._pseudoElementSet[p.name]) {
+            this._pseudoElementSet[p.name] = p;
+          }
+        });
+      });
+      this._properties = values(this._propertySet);
+      this._atDirectives = values(this._atDirectiveSet);
+      this._pseudoClasses = values(this._pseudoClassSet);
+      this._pseudoElements = values(this._pseudoElementSet);
+    }
+    getProperty(name) {
+      return this._propertySet[name];
+    }
+    getAtDirective(name) {
+      return this._atDirectiveSet[name];
+    }
+    getPseudoClass(name) {
+      return this._pseudoClassSet[name];
+    }
+    getPseudoElement(name) {
+      return this._pseudoElementSet[name];
+    }
+    getProperties() {
+      return this._properties;
+    }
+    getAtDirectives() {
+      return this._atDirectives;
+    }
+    getPseudoClasses() {
+      return this._pseudoClasses;
+    }
+    getPseudoElements() {
+      return this._pseudoElements;
+    }
+    isKnownProperty(name) {
+      return name.toLowerCase() in this._propertySet;
+    }
+    isStandardProperty(name) {
+      return this.isKnownProperty(name) && (!this._propertySet[name.toLowerCase()].status || this._propertySet[name.toLowerCase()].status === "standard");
+    }
+  };
+
+  // src/workers/css-worker.ts
+  var CssWorker = class extends Mirror {
+    constructor(sender) {
+      super(sender);
+      this.$languageId = "css";
+      this.setTimeout(500);
+      this.service = getCSSDiagnosticsService();
+    }
+    setOptions(opts) {
+      this.mode = opts && opts.mode;
+      this.$configureService();
+    }
+    $configureService() {
+      switch (this.mode) {
+        case "less":
+          this.$languageId = "less";
+          this.service = getLESSDiagnosticsService();
+          break;
+        case "scss":
+          this.$languageId = "scss";
+          this.service = getSCSSDiagnosticsService();
+          break;
+        case "css":
+        default:
+          this.$languageId = "css";
+          this.service = getCSSDiagnosticsService();
+          break;
+      }
+    }
+    onUpdate() {
+      return __async(this, null, function* () {
+        var value = this.doc.getValue();
+        var errors = [];
+        var fullDocument = new MinTextDocument("file:///foo." + this.$languageId, this.$languageId, 1, value);
+        try {
+          let cssDocument = this.service.parseStylesheet(fullDocument);
+          errors = toAnnotations(this.service.doValidation(fullDocument, cssDocument));
+        } catch (e) {
+          console.error(e);
+        }
+        this.sender.emit("annotate", errors);
+      });
+    }
+  };
+  return __toCommonJS(css_worker_exports);
+})();
+aceLegacyWorkerModule = aceLegacyWorkerModule.default || aceLegacyWorkerModule;
+
+exports.Worker = aceLegacyWorkerModule.CssWorker;
+});

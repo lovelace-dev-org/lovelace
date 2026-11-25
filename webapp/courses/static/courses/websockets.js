@@ -11,7 +11,7 @@
 
 const WSWrapper = class {
     constructor(addr, ticket_url) {
-        this.addr = addr
+        this.path = addr
         this.socket = null
         this.ticket_url = ticket_url
     }
@@ -22,10 +22,18 @@ const WSWrapper = class {
             url: this.ticket_url,
             success: (data, status, jqxhr) => {
                 const ticket = data["ticket"]
+                this.addr = new URL(this.path, data["ws_server"]).href
                 this.open_ws(controller, ticket)
             },
             error: function(xhr, status, type) {
-                controller.error("Unauthorized")
+                const error = JSON.parse(xhr.responseText).error
+                if (error) {
+                    controller.error(error)
+                }
+                else {
+                    controller.error("Unauthorized")
+                }
+                controller.end()
             }
         })
     }
@@ -62,6 +70,7 @@ const WSWrapper = class {
                         }
                         break;
                     default:
+                        controller.end("Error")
                         controller.error("Websocket returned unknown operation")
                 }
             }
@@ -69,12 +78,14 @@ const WSWrapper = class {
                 controller.error("Websocket failed", data["reason"])
             }
             else {
+                controller.end("Error")
                 controller.error("Websocket error")
             }
         }
 
         const close = function (event) {
             controller.error("Websocket was closed")
+            controller.end()
         }
 
         this.socket.onmessage = receive

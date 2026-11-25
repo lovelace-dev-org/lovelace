@@ -1,0 +1,33 @@
+{% load i18n %}
+{% load static %}
+
+
+<div class="panel-content" data-refresh-url="{{ panel_refresh_url }}">
+  <div>
+    {% for qc, templates in question_classes %}
+      <div>{% trans 'Question Class' %} {{ qc }}</div>
+      {% for template in templates %}
+        <div class="item-header">
+            {{ template.content|truncatechars:60 }}
+            <span class="answer-config-actions">
+            <a class="right-float interactive"
+                onclick="editing.get_form(event, this)"
+                data-url="{% url 'routine_exercise:delete_template' course instance content qc template.variant %}"
+                ><img src="{% static 'courses/delete-16.png' %}"></a>
+            <a class="right-float interactive"
+                onclick="editing.get_form(event, this)"
+                data-url="{% url 'routine_exercise:edit_template' course instance content qc template.variant %}"
+                ><img src="{% static 'courses/edit.png' %}"></a>
+            </span>
+        </div>
+        {% endfor %}
+        <div>
+          <button type="button"
+                  class="staff-base-button add-button"
+                  onclick="editing.get_form(event, this)"
+                  data-url="{% url 'routine_exercise:add_template' course instance content qc %}">+
+          </button>
+        </div>
+    {% endfor %}
+  </div>
+</div>

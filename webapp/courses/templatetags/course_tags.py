@@ -1,11 +1,13 @@
 import itertools
 import time
 from datetime import datetime
+from django.conf import settings
 from django.urls import reverse
 from django.utils.html import mark_safe
+from django.utils.translation import gettext as _
 from django import template
 from lovelace import plugins as lovelace_plugins
-from courses.models import Calendar, StudentGroup
+from courses.models import Calendar, EmbeddedLink, StudentGroup
 from courses import markupparser
 from utils.base import get_deadline_urgency
 from utils.formatters import display_name
@@ -21,6 +23,10 @@ def full_name(user):
 @register.filter
 def enrolled(user, instance):
     return instance.user_enroll_status(user)
+
+@register.filter
+def staff(user, instance):
+    return instance.user_staff_status(user)
 
 @register.simple_tag
 def render_markup(content, instance):
@@ -39,6 +45,19 @@ def content_page_addons(context, content_data, content_level):
         content_data.get_content_additions(content_data, context, content_level)
     ))
 
+@register.simple_tag
+def get_debug_mode():
+    return settings.DEBUG
+
+@register.simple_tag
+def get_exam_mode():
+    return settings.EXAM_MODE
+
+# TODO: make this render icons instead of just permission count
+@register.simple_tag
+def permission_icons(permission):
+    permitted = permission.get_permissions()
+    return len(permitted)
 
 # {% base_static_extra %}
 @register.inclusion_tag("courses/static-files-include.html", takes_context=True)
@@ -81,6 +100,8 @@ def embed_frame(context, content_data):
     link = context["embedded_pages"][content_data["slug"]]
     page = link.embedded_page
 
+    content_data = page.dynamic_content(page, context, content_data)
+
     if context["user"].is_active:
         answer_count = page.get_user_answers(page, context["user"], context["instance"]).count()
         evaluation, quotient = page.get_user_evaluation(context["user"], context["instance"])
@@ -115,6 +136,7 @@ def embed_frame(context, content_data):
 @register.inclusion_tag("courses/user-menu-options.html", takes_context=True)
 def user_menu_extra(context):
     options = []
+
     for module in lovelace_plugins["user-menu"]:
         options.extend(module.includes.get_user_menu_options(context))
 
@@ -184,6 +206,26 @@ def calendar(context, calendar_data):
     def get_event_date(event):
         return event.start_time.date()
 
+    notices = []
+
+    link = None
+    if calendar.related_content:
+        try:
+            link = EmbeddedLink.objects.get(
+                instance=context["instance"],
+                embedded_page=calendar.related_content,
+            )
+        except EmbeddedLink.DoesNotExist:
+            notices.append(_(
+                "Configured related content is not found in this course instance. "
+                "Links will lead to student records instead of task answers."
+            ))
+        except EmbeddedLink.MultipleObjectsReturned:
+            notices.append(_(
+                "Configured related content is linked more than once. "
+                "Links will lead to student records instead of task answers."
+            ))
+
     for event_date, cal_dates in itertools.groupby(events, get_event_date):
         calendar_reservations[event_date] = []
         for cal_date in cal_dates:
@@ -206,23 +248,24 @@ def calendar(context, calendar_data):
                         entry["group"] = f"({group.name})\n"
                         entry["group"] += "\n".join(memberlist)
 
-                    if calendar.related_content:
-                        entry["answers_url"] = reverse(
-                            "courses:show_answers",
-                            kwargs={
-                                "user": reservation.user,
-                                "course": context["course"],
-                                "instance": context["instance"],
-                                "exercise": calendar.related_content,
-                            },
-                        )
-                    else:
+                    if link is None:
                         entry["answers_url"] = reverse(
                             "teacher:student_completion",
                             kwargs={
                                 "user": reservation.user,
                                 "course": context["course"],
                                 "instance": context["instance"],
+                            },
+                        )
+                    else:
+                        entry["answers_url"] = reverse(
+                            "courses:show_answers",
+                            kwargs={
+                                "user": reservation.user,
+                                "course": context["course"],
+                                "instance": context["instance"],
+                                "parent": link.parent,
+                                "exercise": calendar.related_content,
                             },
                         )
                     entry["message_url"] = reverse(
@@ -255,6 +298,7 @@ def calendar(context, calendar_data):
         "course_staff": context["course_staff"],
         "cal_reservations": calendar_reservations,
         "reserved_event_ids": reserved_event_ids,
+        "staff_notices": notices
     }
 
 
@@ -341,9 +385,3 @@ def progress_widget(context, node_item):
         "deadline": dl_string,
         "dl_urgency": urgency
     }
-
-
-
-
-
-

@@ -136,5 +136,5 @@ function collapse_task_list (page_bullet) {
 }
 
 $(document).ready(function () {
-    $(".teacher-form").submit(process_many)
+    $(".teacher-form").on("submit", process_many)
 })
